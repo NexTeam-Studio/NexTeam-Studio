@@ -303,6 +303,16 @@ function todayWindow(): { from: string; to: string } {
   return { from: start.toISOString(), to: end.toISOString() };
 }
 
+function photoQueryFromText(text: string): string {
+  const normalized = text
+    .replace(/\buse\s+getPhotos\b.*$/i, "")
+    .replace(/\binclude\s+sources\b.*$/i, "")
+    .replace(/[?.!]+$/g, "")
+    .trim();
+  const match = normalized.match(/\b(?:photos?|pictures?|images?)\s+(?:for|of)\s+(.+)$/i);
+  return (match?.[1] ?? normalized).replace(/[?.!]+$/g, "").trim();
+}
+
 function normalizeToolInput(toolName: string, input: unknown, messages: GatewayMessage[]): unknown {
   const record = input && typeof input === "object" && !Array.isArray(input) ? { ...input as Record<string, unknown> } : {};
   const userText = latestUserText(messages);
@@ -311,9 +321,11 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.from ??= fallback.from;
     record.to ??= fallback.to;
   }
-  if ((toolName === "getPhotos" || toolName === "getJobDetail") && !record.projectQuery && !record.nameQuery && !record.id) {
-    const key = toolName === "getPhotos" ? "projectQuery" : "nameQuery";
-    record[key] = userText;
+  if (toolName === "getPhotos" && !record.projectQuery) {
+    record.projectQuery = photoQueryFromText(userText);
+  }
+  if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
+    record.nameQuery = userText;
   }
   if (toolName === "lookupSiteJobBlueprintField" && !record.field && /gallon/i.test(userText)) {
     record.field = "poolGallons";

@@ -85,6 +85,41 @@ test("Nexi tool loop preloads obvious tools and records cache metrics", async ()
   assert.equal(usageLog.records[0].usage.cacheReadInputTokens, 64);
 });
 
+test("Nexi photo prompts extract the CompanyCam project query", async () => {
+  const calls = [];
+  let parsedToolArgs = null;
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "Find CompanyCam photos for Deborah Justice. Use getPhotos and include sources." }],
+    tools: [{
+      name: "getPhotos",
+      description: "Read photos.",
+      inputSchema: z.object({ projectQuery: z.string() }),
+      handler: async (_tenant, args) => {
+        parsedToolArgs = args;
+        return {
+          result: { project: { name: "Deborah Justice" }, media: [{ id: "photo_1" }] },
+          sources: [{ rail: "companycam", ref: "photo_1", label: "CompanyCam photo photo_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "I found one CompanyCam photo." }],
+        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+      }), { status: 200 });
+    }
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(parsedToolArgs.projectQuery, "Deborah Justice");
+  assert.equal(result.sources.length, 1);
+});
+
 test("Nexi service persists failureLog for source-enforced failures", async () => {
   const repository = new MemoryNexiRepository();
   const result = await answerNexiMessage({
