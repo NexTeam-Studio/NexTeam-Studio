@@ -9,7 +9,7 @@
 | core | M0.5 provider extraction | done | `packages/providers/src/jobber/JobberAdapter.ts`, `packages/providers/src/companycam/CompanyCamAdapter.ts`, `receipts/m0/smoke-m0.txt` |
 | core | M0.6 foundation services | done | `apps/server/src/server.ts`, `receipts/m0/local-version-health.json` |
 | core | M0.7 verify + receipts | done | Local verify/history scan plus staging `/api/version` SHA-match, `/api/health` all-green, and fresh Jobber/CompanyCam smokes in `receipts/m0/verify.txt`, `receipts/security/history-scan.txt`, `receipts/m0/staging-version-health.json`, and `receipts/m0/staging-smoke-m0.txt` |
-| nexi | M1 Nexi Job Desk | done | Local verify plus live staging SHA-match, health, A/B/C transcripts, Camp Mikell `101000` ingest, Firestore usageLog cache proof, and phone UI recording in `receipts/m1/verify.txt`, `receipts/m1/staging-version-health.json`, `receipts/m1/staging-live-transcripts.json`, `receipts/m1/staging-cache-proof.json`, `receipts/m1/staging-usage-log.json`, and `receipts/m1/staging-phone-chat.webm` |
+| nexi | M1 Nexi Job Desk | done | Local verify plus live staging SHA-match, health, A/B/C transcripts, Camp Mikell `101000` ingest, Firestore usageLog cache proof, phone UI recording, and Firebase auth landing in `receipts/m1/verify.txt`, `receipts/m1/staging-version-health.json`, `receipts/m1/staging-live-transcripts.json`, `receipts/m1/staging-cache-proof.json`, `receipts/m1/staging-usage-log.json`, `receipts/m1/staging-phone-chat.webm`, and `receipts/m1/firebase-auth-verify.txt` |
 | crm | M2 read-side skeleton | blocked | M0 priority consumed current run |
 | fielddocs | M4 read-side skeleton | blocked | M0 priority consumed current run |
 

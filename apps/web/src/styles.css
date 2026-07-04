@@ -45,6 +45,26 @@ input {
   color: #fff7e7;
 }
 
+.top-actions {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
+.signed-in {
+  margin: 8px 0 0;
+  color: rgba(255, 247, 231, 0.72);
+  font-size: 0.82rem;
+}
+
+.sign-out {
+  border: 1px solid rgba(255, 247, 231, 0.32);
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: #fff7e7;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .eyebrow {
   margin: 0 0 4px;
   color: #e4bf73;
@@ -169,6 +189,66 @@ h1 {
 
 .composer button:disabled {
   opacity: 0.48;
+}
+
+.auth-card {
+  width: min(430px, 100%);
+  display: grid;
+  gap: 16px;
+  padding: 30px;
+  border: 1px solid rgba(31, 33, 28, 0.16);
+  border-radius: 34px;
+  background: rgba(255, 250, 240, 0.92);
+  box-shadow: 0 28px 90px rgba(48, 44, 32, 0.28);
+}
+
+.auth-card h1 {
+  color: #26352c;
+}
+
+.auth-card p {
+  margin: 0;
+  color: #526055;
+  line-height: 1.45;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 7px;
+  color: #26352c;
+  font-size: 0.92rem;
+}
+
+.auth-form input {
+  border: 1px solid rgba(38, 53, 44, 0.18);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: #fffdf7;
+  color: #26352c;
+}
+
+.auth-form button {
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 18px;
+  color: #fff8ea;
+  background: #315f58;
+}
+
+.auth-form button:disabled {
+  opacity: 0.48;
+}
+
+.auth-error {
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(231, 95, 72, 0.14);
+  color: #9c3324 !important;
 }
 
 @keyframes rise {
