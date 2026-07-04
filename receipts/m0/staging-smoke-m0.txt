@@ -1,0 +1,42 @@
+﻿
+> smoke:m0
+> npm run smoke:jobber && npm run smoke:companycam
+
+
+> smoke:jobber
+> tsx tests/smoke/jobber-readonly-smoke.ts
+
+{
+  "ok": true,
+  "provider": "jobber",
+  "readOnly": true,
+  "jobCount": 25,
+  "firstJob": {
+    "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+    "tenantId": "aquatrace",
+    "status": "lead",
+    "source": "jobber"
+  }
+}
+
+> smoke:companycam
+> tsx tests/smoke/companycam-readonly-smoke.ts
+
+{
+  "ok": true,
+  "provider": "companycam",
+  "readOnly": true,
+  "projectCount": 10,
+  "mediaCountForFirstProject": 25,
+  "firstProject": {
+    "id": "107503799",
+    "name": "Deborah Justice",
+    "source": "companycam"
+  },
+  "firstMedia": {
+    "id": "3338800086",
+    "tenantId": "aquatrace",
+    "storageRef": "companycam:3338800086",
+    "hasExternalId": true
+  }
+}
