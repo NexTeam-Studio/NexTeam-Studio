@@ -1,0 +1,5 @@
+﻿
+> check:secret-history
+> node scripts/check-secret-history.mjs
+
+Secret history scan passed (89 reachable commits, 1974 reachable objects checked).
