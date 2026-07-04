@@ -1,0 +1,120 @@
+﻿BUILD LOGS
+scheduling build on Metal builder "builder-ckuljl"
+scheduling build on Metal builder "builder-ckuljl"
+fetched snapshot sha256:3de9524b518eeda104c5145979120119e587e32e2a4231ec9067bed2097b766c (95 MB bytes)
+[INFO] fetching snapshot
+[INFO] unpacking archive
+[INFO] [internal] load build definition from Dockerfile
+[INFO] [internal] load build definition from Dockerfile
+[INFO] [internal] load build definition from Dockerfile
+[INFO] [internal] load build definition from Dockerfile
+[INFO] [internal] load metadata for docker.io/library/node:22-bookworm-slim
+[INFO] [internal] load metadata for docker.io/library/node:22-bookworm-slim
+[INFO] [internal] load .dockerignore
+[INFO] [internal] load .dockerignore
+[INFO] [internal] load .dockerignore
+[INFO] [internal] load .dockerignore
+[INFO] [runtime 6/6] COPY --from=build /app/dist ./dist
+[INFO] [build 6/6] RUN npm run build
+[INFO] [build 5/6] COPY . .
+[INFO] [build 4/6] RUN npm ci
+[INFO] [build 3/6] COPY package.json package-lock.json ./
+[INFO] [internal] load build context
+[INFO] [build 2/6] WORKDIR /app
+[INFO] [build 1/6] FROM docker.io/library/node:22-bookworm-slim@sha256:813a7480f28fdadac1f7f5c824bcdad435b5bc1322a5968bbbdef8d058f9dff4
+[INFO] [build 1/6] FROM docker.io/library/node:22-bookworm-slim@sha256:813a7480f28fdadac1f7f5c824bcdad435b5bc1322a5968bbbdef8d058f9dff4
+[INFO] [internal] load build context
+[INFO] [internal] load build context
+[INFO] [build 1/6] FROM docker.io/library/node:22-bookworm-slim@sha256:813a7480f28fdadac1f7f5c824bcdad435b5bc1322a5968bbbdef8d058f9dff4
+[INFO] [build 1/6] FROM docker.io/library/node:22-bookworm-slim@sha256:813a7480f28fdadac1f7f5c824bcdad435b5bc1322a5968bbbdef8d058f9dff4
+[INFO] [build 1/6] FROM docker.io/library/node:22-bookworm-slim@sha256:813a7480f28fdadac1f7f5c824bcdad435b5bc1322a5968bbbdef8d058f9dff4
+[INFO] [internal] load build context
+[INFO] [internal] load build context
+[INFO] [build 2/6] WORKDIR /app
+[INFO] [build 3/6] COPY package.json package-lock.json ./
+[INFO] [build 3/6] COPY package.json package-lock.json ./
+[INFO] [build 4/6] RUN npm ci
+[INFO] npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: undefined,
+npm warn EBADENGINE   required: { node: '20.x' },
+npm warn EBADENGINE   current: { node: 'v22.23.1', npm: '10.9.8' }
+npm warn EBADENGINE }
+
+[INFO] npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+
+[INFO] npm warn deprecated uuid@9.0.1: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+
+[INFO] npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+
+[INFO] 
+added 518 packages, and audited 524 packages in 9s
+
+95 packages are looking for funding
+  run `npm fund` for details
+
+[INFO] 
+17 vulnerabilities (1 low, 11 moderate, 5 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+[INFO] npm notice
+npm notice New major version of npm available! 10.9.8 -> 11.18.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.18.0
+npm notice To update run: npm install -g npm@11.18.0
+npm notice
+
+[INFO] [build 4/6] RUN npm ci
+[INFO] [build 5/6] COPY . .
+[INFO] [build 5/6] COPY . .
+[INFO] [build 6/6] RUN npm run build
+[INFO] 
+> build
+> npm --workspace @nexteam/server run build && npm --workspace @nexteam/web run build
+
+
+[INFO] 
+> @nexteam/server@0.0.0 build
+> tsc -b
+
+
+[INFO] ../../packages/providers/src/companycam/CompanyCamAdapter.ts(7,8): error TS2307: Cannot find module '@nexteam/core' or its corresponding type declarations.
+
+[INFO] ../../packages/providers/src/jobber/JobberAdapter.ts(8,8): error TS2307: Cannot find module '@nexteam/core' or its corresponding type declarations.
+../../packages/providers/src/railFetch.ts(1,46): error TS2307: Cannot find module '@nexteam/core' or its corresponding type declarations.
+
+[INFO] ../../packages/nexi/src/gateway.ts(1,45): error TS2307: Cannot find module '@nexteam/core' or its corresponding type declarations.
+../../packages/nexi/src/gateway.ts(2,27): error TS2307: Cannot find module '@nexteam/core' or its corresponding type declarations.
+../../packages/nexi/src/sourceCheck.ts(1,29): error TS2307: Cannot find module '@nexteam/core' or its corresponding type declarations.
+
+[INFO] src/buildInfo.ts(2,39): error TS2307: Cannot find module '@nexteam/core' or its corresponding type declarations.
+src/health.ts(1,54): error TS2307: Cannot find module '@nexteam/core' or its corresponding type declarations.
+src/health.ts(2,50): error TS2307: Cannot find module '@nexteam/providers' or its corresponding type declarations.
+
+[INFO] src/server.ts(9,8): error TS2307: Cannot find module '@nexteam/core' or its corresponding type declarations.
+src/server.ts(10,35): error TS2307: Cannot find module '@nexteam/providers' or its corresponding type declarations.
+src/server.ts(20,47): error TS18046: 'error' is of type 'unknown'.
+src/usageLog.ts(2,37): error TS2307: Cannot find module '@nexteam/core' or its corresponding type declarations.
+
+[INFO] src/usageLog.ts(3,37): error TS2307: Cannot find module '@nexteam/nexi' or its corresponding type declarations.
+
+[INFO] npm error Lifecycle script `build` failed with error:
+
+[INFO] npm error code 2
+npm error path /app/apps/server
+
+[INFO] npm error workspace @nexteam/server@0.0.0
+npm error location /app/apps/server
+npm error command failed
+
+[INFO] npm error command sh -c tsc -b
+
+[ERRO] [build 6/6] RUN npm run build
+Build Failed: build daemon returned an error < failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 2 >
+
+DEPLOY LOGS
