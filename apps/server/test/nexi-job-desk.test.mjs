@@ -36,17 +36,11 @@ test("source check blocks factual answers without sources", () => {
   assert.equal(checked.answer, "I don't have a verified source for that yet.");
 });
 
-test("Nexi tool loop executes tools and records cache metrics", async () => {
+test("Nexi tool loop preloads obvious tools and records cache metrics", async () => {
   const calls = [];
   let parsedToolArgs = null;
   const fetchFn = async (_url, init) => {
     calls.push(JSON.parse(init.body));
-    if (calls.length === 1) {
-      return new Response(JSON.stringify({
-        content: [{ type: "tool_use", id: "toolu_1", name: "getSchedule", input: {} }],
-        usage: { input_tokens: 20, output_tokens: 4, cache_creation_input_tokens: 120, cache_read_input_tokens: 0 }
-      }), { status: 200 });
-    }
     return new Response(JSON.stringify({
       content: [{ type: "text", text: "I found one Jobber job for today." }],
       usage: { input_tokens: 10, output_tokens: 8, cache_creation_input_tokens: 0, cache_read_input_tokens: 64 }
@@ -80,14 +74,15 @@ test("Nexi tool loop executes tools and records cache metrics", async () => {
     env: { ANTHROPIC_API_KEY: "test-key" },
     fetchFn
   });
-  assert.equal(calls.length, 2);
-  assert.deepEqual(calls[0].tools[0].input_schema.required, ["from", "to"]);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].tools, []);
+  assert.match(calls[0].messages.at(-1).content, /Verified getSchedule result/);
   assert.match(parsedToolArgs.from, /^\d{4}-\d{2}-\d{2}T/);
   assert.match(parsedToolArgs.to, /^\d{4}-\d{2}-\d{2}T/);
   assert.equal(result.sources.length, 1);
   assert.equal(result.usage.cacheReadInputTokens, 64);
-  assert.equal(usageLog.records.length, 2);
-  assert.equal(usageLog.records[1].usage.cacheReadInputTokens, 64);
+  assert.equal(usageLog.records.length, 1);
+  assert.equal(usageLog.records[0].usage.cacheReadInputTokens, 64);
 });
 
 test("Nexi service persists failureLog for source-enforced failures", async () => {

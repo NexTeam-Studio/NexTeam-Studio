@@ -321,6 +321,38 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   return record;
 }
 
+function deterministicToolName(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>): string | null {
+  const lower = latestUserText(messages).toLowerCase();
+  if ((lower.includes("photo") || lower.includes("picture") || lower.includes("image")) && toolsByName.has("getPhotos")) {
+    return "getPhotos";
+  }
+  if (lower.includes("gallon") && toolsByName.has("lookupSiteJobBlueprintField")) {
+    return "lookupSiteJobBlueprintField";
+  }
+  if ((lower.includes("schedule") || lower.includes("today")) && toolsByName.has("getSchedule")) {
+    return "getSchedule";
+  }
+  return null;
+}
+
+async function runDeterministicTool(input: {
+  tenant: Tenant;
+  messages: GatewayMessage[];
+  toolsByName: Map<string, NexiTool>;
+}): Promise<ToolRunTrace | null> {
+  const toolName = deterministicToolName(input.messages, input.toolsByName);
+  if (!toolName) {
+    return null;
+  }
+  const tool = input.toolsByName.get(toolName);
+  if (!tool) {
+    return null;
+  }
+  const args = tool.inputSchema.parse(normalizeToolInput(tool.name, {}, input.messages));
+  const result = await tool.handler(input.tenant, args);
+  return { name: tool.name, result: result.result, sources: result.sources };
+}
+
 function toolUsesFromContent(content: AnthropicContentBlock[]): AnthropicToolUseBlock[] {
   return content.filter((block): block is AnthropicToolUseBlock =>
     block.type === "tool_use"
@@ -384,6 +416,23 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
   const toolRuns: ToolRunTrace[] = [];
   const rawIterations: unknown[] = [];
   const maxToolIterations = request.maxToolIterations ?? MAX_TOOL_ITERATIONS;
+  const deterministicRun = await runDeterministicTool({ tenant: request.tenant, messages, toolsByName });
+  if (deterministicRun) {
+    sources = [...sources, ...deterministicRun.sources];
+    toolRuns.push(deterministicRun);
+    messages.push({
+      role: "assistant",
+      content: `I found verified ${deterministicRun.name} source data and will use it for the final answer.`
+    });
+    messages.push({
+      role: "user",
+      content: [
+        `Verified ${deterministicRun.name} result:`,
+        toolResultContent(deterministicRun.result),
+        "Answer the original user request using only this verified result and keep the source labels attached in the API response."
+      ].join("\n")
+    });
+  }
 
   for (let iteration = 0; iteration <= maxToolIterations; iteration += 1) {
     let call: AnthropicCallResult;
@@ -393,7 +442,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         fetchFn: request.fetchFn,
         system: request.system,
         messages,
-        tools: toolDefinitions,
+        tools: deterministicRun ? [] : toolDefinitions,
         maxTokens: request.maxTokens
       });
     } catch (error) {
