@@ -1,0 +1,308 @@
+﻿[
+  {
+    "id": "xdzRWKCq3Dm7J8OcNyEG",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 109,
+      "outputTokens": 7,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 1033,
+      "totalTokens": 1149
+    },
+    "estimatedCostUsd": 0.000742,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:53:35.689Z"
+  },
+  {
+    "id": "Mzf5U6BVaJZycgIvhMaW",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 87,
+      "outputTokens": 7,
+      "cacheCreationInputTokens": 1033,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 1127
+    },
+    "estimatedCostUsd": 0.00424,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:53:31.314Z"
+  },
+  {
+    "id": "eUS5kPB7v29qLWwlAv6j",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 409,
+      "outputTokens": 70,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 479
+    },
+    "estimatedCostUsd": 0.002277,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:53:28.800Z"
+  },
+  {
+    "id": "ooxWSAjdf0wlo6Z5JEre",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 282,
+      "outputTokens": 70,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 352
+    },
+    "estimatedCostUsd": 0.001896,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:53:25.697Z"
+  },
+  {
+    "id": "ZhbWbqhRMasaQxkskK2R",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 2298,
+      "outputTokens": 280,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 2578
+    },
+    "estimatedCostUsd": 0.011094,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:53:22.672Z"
+  },
+  {
+    "id": "vNxMVe7xFZ391zbxtMWQ",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 15924,
+      "outputTokens": 1200,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 17124
+    },
+    "estimatedCostUsd": 0.065772,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:53:15.802Z"
+  },
+  {
+    "id": "q7cTE3jPvWtU2dQQfdyt",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 109,
+      "outputTokens": 7,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 1033,
+      "totalTokens": 1149
+    },
+    "estimatedCostUsd": 0.000742,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:45:59.400Z"
+  },
+  {
+    "id": "Zfxu4KbYW0XH5yL7VAoa",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 87,
+      "outputTokens": 7,
+      "cacheCreationInputTokens": 1033,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 1127
+    },
+    "estimatedCostUsd": 0.00424,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:45:53.747Z"
+  },
+  {
+    "id": "keOHCcpNL0UUGDHWklO1",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 408,
+      "outputTokens": 69,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 477
+    },
+    "estimatedCostUsd": 0.002259,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:45:36.672Z"
+  },
+  {
+    "id": "bVgfHlQuYmyNP6dbaQqA",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 282,
+      "outputTokens": 69,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 351
+    },
+    "estimatedCostUsd": 0.001881,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:45:33.609Z"
+  },
+  {
+    "id": "pjdhzJVon7mnt6dT0ej6",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 2298,
+      "outputTokens": 262,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 2560
+    },
+    "estimatedCostUsd": 0.010824,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:45:30.416Z"
+  },
+  {
+    "id": "4aTPj9EyEg3qWM6hVo1D",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 15924,
+      "outputTokens": 749,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 16673
+    },
+    "estimatedCostUsd": 0.059007,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:45:24.662Z"
+  },
+  {
+    "id": "vvCSRkmklS7jpAE8on7g",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 395,
+      "outputTokens": 56,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 451
+    },
+    "estimatedCostUsd": 0.002025,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:40:59.349Z"
+  },
+  {
+    "id": "lkwiAODevU6SrjvQDm9J",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 282,
+      "outputTokens": 56,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 338
+    },
+    "estimatedCostUsd": 0.001686,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:40:56.356Z"
+  },
+  {
+    "id": "tM3MJIzenGsiDWt0yXql",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 237,
+      "outputTokens": 137,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 374
+    },
+    "estimatedCostUsd": 0.002766,
+    "ok": false,
+    "errorSummary": "factual_answer_without_sources",
+    "createdAt": "2026-07-04T17:40:53.028Z"
+  },
+  {
+    "id": "IMvb8MkkxBKd8CmcjMtu",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 15924,
+      "outputTokens": 1200,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 17124
+    },
+    "estimatedCostUsd": 0.065772,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:40:48.933Z"
+  },
+  {
+    "id": "WO4zON2u7GBJllMXYEai",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 377,
+      "outputTokens": 54,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 1033,
+      "totalTokens": 1464
+    },
+    "estimatedCostUsd": 0.002251,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:36:06.838Z"
+  },
+  {
+    "id": "ElbrPqE7dYWm3uREecV6",
+    "model": "claude-sonnet-5",
+    "routeActionName": "/api/nexi/message",
+    "taskType": "job_desk_answer",
+    "usage": {
+      "inputTokens": 241,
+      "outputTokens": 116,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 1033,
+      "totalTokens": 1390
+    },
+    "estimatedCostUsd": 0.002773,
+    "ok": true,
+    "errorSummary": "",
+    "createdAt": "2026-07-04T17:36:04.978Z"
+  }
+]

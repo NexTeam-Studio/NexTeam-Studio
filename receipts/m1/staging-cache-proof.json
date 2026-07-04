@@ -1,0 +1,42 @@
+﻿{
+    "baseUrl":  "https://nexteam-studio-staging.up.railway.app",
+    "deployedSha":  "6acb52df152416a7814898261a5fa346f9d3e4e8",
+    "capturedAt":  "2026-07-04T17:53:37.0926023Z",
+    "first":  {
+                  "ok":  true,
+                  "answer":  "readiness check.",
+                  "sources":  [
+
+                              ],
+                  "conversationId":  "conv_0a145e88-b0f9-4b34-aeb5-6ba6d5fc0084",
+                  "usage":  {
+                                "inputTokens":  87,
+                                "outputTokens":  7,
+                                "cacheCreationInputTokens":  1033,
+                                "cacheReadInputTokens":  0,
+                                "totalTokens":  1127
+                            },
+                  "toolRuns":  [
+
+                               ]
+              },
+    "second":  {
+                   "ok":  true,
+                   "answer":  "readiness check.",
+                   "sources":  [
+
+                               ],
+                   "conversationId":  "conv_a947244e-ca1c-4d6a-a4eb-fcabcef6908c",
+                   "usage":  {
+                                 "inputTokens":  109,
+                                 "outputTokens":  7,
+                                 "cacheCreationInputTokens":  0,
+                                 "cacheReadInputTokens":  1033,
+                                 "totalTokens":  1149
+                             },
+                   "toolRuns":  [
+
+                                ]
+               },
+    "cacheReadOnSecond":  1033
+}

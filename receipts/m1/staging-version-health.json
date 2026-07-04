@@ -1,0 +1,40 @@
+﻿{
+    "baseUrl":  "https://nexteam-studio-staging.up.railway.app",
+    "expectedSha":  "6acb52df152416a7814898261a5fa346f9d3e4e8",
+    "version":  {
+                    "sha":  "6acb52df152416a7814898261a5fa346f9d3e4e8",
+                    "builtAt":  "2026-07-04T17:52:34.305Z"
+                },
+    "shaMatches":  true,
+    "health":  {
+                   "ok":  true,
+                   "checkedAt":  "2026-07-04T17:52:35.103Z",
+                   "rails":  {
+                                 "jobber":  {
+                                                "ok":  true,
+                                                "configured":  true,
+                                                "provider":  "jobber",
+                                                "op":  "graphql_read",
+                                                "latencyMs":  454,
+                                                "detail":  "Jobber GraphQL read succeeded."
+                                            },
+                                 "companycam":  {
+                                                    "ok":  true,
+                                                    "configured":  true,
+                                                    "provider":  "companycam",
+                                                    "op":  "projects_read",
+                                                    "latencyMs":  184,
+                                                    "detail":  "CompanyCam projects read succeeded."
+                                                },
+                                 "anthropic":  {
+                                                   "ok":  true,
+                                                   "configured":  true,
+                                                   "provider":  "anthropic",
+                                                   "op":  "configured_no_spend",
+                                                   "latencyMs":  0,
+                                                   "detail":  "Configured; live message call skipped by no-spend overnight limit."
+                                               }
+                             }
+               },
+    "checkedAt":  "2026-07-04T17:52:35.8357633Z"
+}
