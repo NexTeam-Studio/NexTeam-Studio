@@ -1,4 +1,4 @@
-import type { NexiTool, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
+import type { Media, NexiTool, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
 import { z } from "zod";
 import { CompanyCamAdapter, JobberAdapter } from "@nexteam/providers";
 
@@ -76,6 +76,12 @@ function source(rail: Source["rail"], ref: string, label: string): Source {
   return { rail, ref, label };
 }
 
+function companyCamPhotoSources(media: Media[]): Source[] {
+  return media
+    .slice(0, 3)
+    .map((item) => source("companycam", item.externalIds?.companycam ?? item.id, `CompanyCam photo ${item.id}`));
+}
+
 function firstBlueprintField(blueprints: SiteJobBlueprint[], field: string): { value: string | number; source: Source } | null {
   for (const siteJobBlueprint of blueprints) {
     const value = siteJobBlueprint.fields[field];
@@ -142,7 +148,10 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
         const media = await provider.getMedia(project);
         return {
           result: { project, media },
-          sources: [source("companycam", project.externalIds?.companycam ?? project.id, `CompanyCam project ${project.name}`)]
+          sources: [
+            source("companycam", project.externalIds?.companycam ?? project.id, `CompanyCam project ${project.name}`),
+            ...companyCamPhotoSources(media)
+          ]
         };
       }
     },

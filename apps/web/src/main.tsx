@@ -23,7 +23,7 @@ interface NexiResponse {
 }
 
 function sourceThumb(source: Source): React.ReactElement | null {
-  if (source.rail !== "companycam") {
+  if (source.rail !== "companycam" || !source.label.toLowerCase().includes("photo")) {
     return null;
   }
   return <img className="thumb" src={`/api/media/${encodeURIComponent(source.ref)}`} alt={source.label} loading="lazy" />;
@@ -39,6 +39,7 @@ function App(): React.ReactElement {
     }
   ]);
   const [draft, setDraft] = useState("");
+  const [conversationId] = useState(() => `web-${crypto.randomUUID()}`);
   const [working, setWorking] = useState(false);
   const [health, setHealth] = useState<"checking" | "green" | "red">("checking");
 
@@ -74,7 +75,7 @@ function App(): React.ReactElement {
       const response = await fetch("/api/nexi/message", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: "aquatrace", message: text })
+        body: JSON.stringify({ tenantId: "aquatrace", conversationId, message: text })
       });
       const body = await response.json() as NexiResponse;
       setMessages((current) => [
