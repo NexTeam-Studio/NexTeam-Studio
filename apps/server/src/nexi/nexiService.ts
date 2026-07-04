@@ -11,6 +11,7 @@ import type { NexiRepository } from "./nexiRepository.js";
 export interface NexiMessageInput {
   tenant: Tenant;
   message: string;
+  conversationId?: string | undefined;
   tools: NexiTool[];
   repository: NexiRepository;
   usageLog?: UsageLogWriter | undefined;
@@ -115,7 +116,7 @@ function gatewayForEnv(input: NexiMessageInput): (request: ToolLoopRequest) => P
 }
 
 export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMessageResult> {
-  const history = await input.repository.loadHistory(input.tenant.id, 8);
+  const history = await input.repository.loadHistory(input.tenant.id, input.conversationId, 8);
   const gateway = gatewayForEnv(input);
   try {
     const result = await gateway({
@@ -130,6 +131,7 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
     });
     const saved = await input.repository.saveConversation({
       tenantId: input.tenant.id,
+      conversationId: input.conversationId,
       userText: input.message,
       assistantText: result.answer,
       sources: result.sources

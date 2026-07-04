@@ -51,11 +51,15 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env): Router {
         res.status(400).json({ ok: false, error: "message is required" });
         return;
       }
+      const conversationId = typeof req.body?.conversationId === "string" && req.body.conversationId.trim()
+        ? req.body.conversationId.trim()
+        : undefined;
       const tenant = loadTenant(req);
       const stores = runtimeStores(env);
       const result = await answerNexiMessage({
         tenant,
         message,
+        conversationId,
         tools: createNexiJobDeskTools(env, stores.repository),
         repository: stores.repository,
         usageLog: stores.usageLog,

@@ -323,6 +323,7 @@ export interface Source {
 export interface ConversationRecord {
   id: ID;
   tenantId: ID;
+  conversationId?: ID | undefined;
   userText: string;
   assistantText: string;
   sources: Source[];

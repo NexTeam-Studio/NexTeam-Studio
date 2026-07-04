@@ -223,6 +223,7 @@ export const sourceSchema = z.object({
 export const conversationRecordSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
+  conversationId: idSchema.optional(),
   userText: z.string(),
   assistantText: z.string(),
   sources: z.array(sourceSchema),
