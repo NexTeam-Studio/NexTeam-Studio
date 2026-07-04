@@ -1,10 +1,14 @@
-﻿import type { NexiTool, Source, Tenant } from "@nexteam/core";
+import type { NexiTool, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
 import { z } from "zod";
 import { CompanyCamAdapter, JobberAdapter } from "@nexteam/providers";
 
 export interface ToolRunResult {
   result: unknown;
   sources: Source[];
+}
+
+export interface SiteJobBlueprintReader {
+  loadSiteJobBlueprints(tenantId: string, limit: number): Promise<SiteJobBlueprint[]>;
 }
 
 export const getScheduleInputSchema = z.object({
@@ -30,7 +34,20 @@ function source(rail: Source["rail"], ref: string, label: string): Source {
   return { rail, ref, label };
 }
 
-export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env): NexiTool[] {
+function firstBlueprintField(blueprints: SiteJobBlueprint[], field: string): { value: string | number; source: Source } | null {
+  for (const siteJobBlueprint of blueprints) {
+    const value = siteJobBlueprint.fields[field];
+    if (value !== undefined) {
+      return {
+        value,
+        source: source("native", siteJobBlueprint.id, `SiteJobBlueprint ${siteJobBlueprint.extractedFrom}`)
+      };
+    }
+  }
+  return null;
+}
+
+export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, siteJobBlueprintReader?: SiteJobBlueprintReader): NexiTool[] {
   return [
     {
       name: "getSchedule",
@@ -88,15 +105,24 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env): Ne
       name: "lookupSiteJobBlueprintField",
       description: "Read a field from a SiteJobBlueprint extraction result.",
       inputSchema: lookupSiteJobBlueprintFieldInputSchema,
-      handler: async (_tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
+      handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
         const input = lookupSiteJobBlueprintFieldInputSchema.parse(args);
         const fields = input.fields ?? {};
+        const inlineValue = fields[input.field];
+        if (inlineValue !== undefined) {
+          return {
+            result: { field: input.field, value: inlineValue },
+            sources: [source("native", "site-job-blueprint", "SiteJobBlueprint fields")]
+          };
+        }
+        const stored = siteJobBlueprintReader
+          ? firstBlueprintField(await siteJobBlueprintReader.loadSiteJobBlueprints(tenant.id, 10), input.field)
+          : null;
         return {
-          result: { field: input.field, value: fields[input.field] ?? null },
-          sources: [source("native", "site-job-blueprint", "SiteJobBlueprint fields")]
+          result: { field: input.field, value: stored?.value ?? null },
+          sources: stored ? [stored.source] : []
         };
       }
     }
   ];
 }
-

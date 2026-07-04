@@ -11,6 +11,7 @@ import type { GatewayMessage } from "@nexteam/nexi";
 
 export interface NexiRepository {
   loadHistory(tenantId: string, limit: number): Promise<GatewayMessage[]>;
+  loadSiteJobBlueprints(tenantId: string, limit: number): Promise<SiteJobBlueprint[]>;
   saveConversation(record: Omit<ConversationRecord, "id" | "createdAt">): Promise<ConversationRecord>;
   saveFailure(record: Omit<FailureLogRecord, "id" | "createdAt" | "module">): Promise<FailureLogRecord>;
   saveSiteJobBlueprint(record: SiteJobBlueprint): Promise<SiteJobBlueprint>;
@@ -33,6 +34,13 @@ export class MemoryNexiRepository implements NexiRepository {
         { role: "user", content: record.userText },
         { role: "assistant", content: record.assistantText }
       ]);
+  }
+
+  async loadSiteJobBlueprints(tenantId: string, limit: number): Promise<SiteJobBlueprint[]> {
+    return this.siteJobBlueprints
+      .filter((record) => record.tenantId === tenantId)
+      .slice(-limit)
+      .reverse();
   }
 
   async saveConversation(record: Omit<ConversationRecord, "id" | "createdAt">): Promise<ConversationRecord> {
@@ -76,6 +84,16 @@ export class FirestoreNexiRepository implements NexiRepository {
         { role: "user", content: record.userText },
         { role: "assistant", content: record.assistantText }
       ]);
+  }
+
+  async loadSiteJobBlueprints(tenantId: string, limit: number): Promise<SiteJobBlueprint[]> {
+    const snapshot = await this.db
+      .collection("siteJobBlueprints")
+      .where("tenantId", "==", tenantId)
+      .orderBy("extractedAt", "desc")
+      .limit(limit)
+      .get();
+    return snapshot.docs.map((doc) => siteJobBlueprintSchema.parse(doc.data()) as SiteJobBlueprint);
   }
 
   async saveConversation(record: Omit<ConversationRecord, "id" | "createdAt">): Promise<ConversationRecord> {

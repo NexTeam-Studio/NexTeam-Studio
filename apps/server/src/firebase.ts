@@ -11,11 +11,16 @@ function parseServiceAccount(raw: string): Record<string, unknown> {
 
 export function getAdminDb(env: NodeJS.ProcessEnv = process.env): Firestore | null {
   const raw = env.FIREBASE_SERVICE_ACCOUNT?.trim();
-  if (!raw) {
+  const projectId = env.FIREBASE_ADMIN_PROJECT_ID?.trim();
+  const clientEmail = env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim();
+  const privateKey = env.FIREBASE_ADMIN_PRIVATE_KEY?.trim().replace(/\\n/g, "\n");
+  if (!raw && (!projectId || !clientEmail || !privateKey)) {
     return null;
   }
   if (getApps().length === 0) {
-    initializeApp({ credential: cert(parseServiceAccount(raw)) });
+    initializeApp({
+      credential: cert(raw ? parseServiceAccount(raw) : { projectId, clientEmail, privateKey })
+    });
   }
   return getFirestore();
 }

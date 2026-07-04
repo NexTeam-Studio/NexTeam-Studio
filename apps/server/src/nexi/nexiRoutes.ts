@@ -56,7 +56,7 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env): Router {
       const result = await answerNexiMessage({
         tenant,
         message,
-        tools: createNexiJobDeskTools(env),
+        tools: createNexiJobDeskTools(env, stores.repository),
         repository: stores.repository,
         usageLog: stores.usageLog,
         env
