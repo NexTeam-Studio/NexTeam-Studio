@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { versionResponseSchema } from "@nexteam/core";
 
 function readGitSha(): string {
-  const envSha = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA;
+  const envSha = process.env.GIT_SHA || process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA;
   if (envSha?.trim()) {
     return envSha.trim();
   }
