@@ -87,6 +87,8 @@ app.post("/api/approval-queue/:id/approve", async (req: Request, res: Response) 
   }
 });
 
+app.use(express.static("apps/web/dist"));
+
 app.get("/", (_req: Request, res: Response) => {
   res.json({ ok: true, service: "nexteam-studio-server", version: getBuildInfo() });
 });
