@@ -189,6 +189,21 @@ export interface Quote {
   totals: { subtotal: number; tax: number; total: number };
 }
 
+export interface Invoice {
+  id: ID;
+  tenantId: ID;
+  clientId: ID;
+  jobId?: ID | undefined;
+  quoteId?: ID | undefined;
+  status: "draft" | "sent" | "paid" | "void" | "overdue";
+  title: string;
+  lineItems: LineItem[];
+  totals: { subtotal: number; tax: number; total: number };
+  dueAt?: string | undefined;
+  paidAt?: string | undefined;
+  externalIds?: { jobber?: string | undefined; stripe?: string | undefined } | undefined;
+}
+
 export interface JobDetail extends Job {
   client?: Client | undefined;
   property?: Property | undefined;
