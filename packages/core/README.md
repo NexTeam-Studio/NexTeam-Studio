@@ -1,6 +1,6 @@
 # Core Package
 
-This package is the shared contract layer for NexTeam Studio. It defines TypeScript interfaces, zod schemas, typed errors, logging helpers, the event bus contract, and the approval queue primitives.
+This package is the shared contract layer for NexTeam Studio. It defines TypeScript interfaces, zod schemas, typed errors, logging helpers, the event bus contract, and the approval queue primitives. M4 Field Docs relies on the `Media` contract to keep native media tenant-scoped and to prevent raw vendor URLs from reaching clients.
 
 All apps and feature packages depend on `@nexteam/core` instead of redefining tenant, CRM, media, approval, source, and usageLog shapes. Changes here ripple across the whole monorepo, so update tests and schemas together.
 

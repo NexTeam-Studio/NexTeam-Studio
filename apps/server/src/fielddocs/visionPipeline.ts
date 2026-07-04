@@ -18,8 +18,8 @@ export async function maybeRunVision(media: Media, env: NodeJS.ProcessEnv = proc
     enabled: true,
     media: {
       ...media,
-      aiTags: media.aiTags.length > 0 ? media.aiTags : ["vision_stub_pending"],
-      aiCaption: media.aiCaption ?? "Vision pipeline stub: live image analysis is not enabled in M4 read-side skeleton."
+      aiTags: media.aiTags.length > 0 ? media.aiTags : ["vision_pending_approval"],
+      aiCaption: media.aiCaption ?? "Vision pipeline placeholder: paid live image analysis is parked until an approved receipt run."
     }
   };
 }
