@@ -1,0 +1,490 @@
+{
+  "ok": true,
+  "dryRun": true,
+  "destructiveWrites": false,
+  "tenantId": "aquatrace",
+  "source": "jobber",
+  "pulledAt": "2026-07-04T20:39:26.131Z",
+  "schemaNote": "Jobber ProductOrService exposes defaultUnitCost; current read permissions hide lastQuoteLineItem, so defaultUnitCost is preserved as the accessible unit-price field for catalog seeding.",
+  "counts": {
+    "allProducts": 67,
+    "matchedProducts": 29,
+    "vgbItems": 26,
+    "standardLeakItems": 3
+  },
+  "matchedProducts": [
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvOTE3OTc1MQ==",
+      "name": "A001 - Swimming Pool or Spa Only Leak Detection Service",
+      "description": "Swimming Pool or Spa Leak Detection Service – Scope of Work\n\nUpon arrival, Aquatrace Swimming Pool Leak Detection will:\n\nDocument the current status, water level, and design of the pool or spa system prior to initiating any inspection or testing procedures.\n\nIncluded Testing Procedures (Performed As Required Within Approved Scope)\n\nAquatrace offers a range of diagnostic testing procedures. Your approved estimate and line item description specify which of these procedures are included in your base leak detection service. Only the specific tests listed or referenced in your line item are included in the base price; all other methods remain available as optional add-on procedures at additional charge if requested and feasible.\n\nWithin the set of tests included in your line item, the attending Aquatrace Technician will determine which procedures to employ, as needed, to complete a proper leak analysis:\n\n- Visual and field survey of pool/spa structure, interior surface, and accessible equipment (as required).\n\n- Electronic scanning of the pool/spa basin to identify potential leak points or penetrations (as required).\n\n- Pressure testing and/or cone-and-dye testing of plumbing, circulation, and filtration systems (as required).\n\n- Acoustic leak detection using specialized hydrophone listening devices to evaluate underground leak potential (as required).\n\n- Dye testing of visible penetrations, fittings, cracks, and structural transitions in the basin (as required).\n\n- SCUBA-supported underwater inspection and testing (including close visual inspection, dye application, and leak verification at depth) when necessary for safe and effective access (as required). Cold-water SCUBA and hazardous diving conditions are subject to additional surcharges as outlined in Aquatrace LLC’s Leak Detection Service Terms and Conditions (Swimming Pool & Spa Leak Detection – Scope & Terms).\n\n- Pipe camera inspection of accessible plumbing lines, conduits, or related components where system configuration and access allow (as required).\n\n- Vacuum testing of selected plumbing lines, fittings, or system components where appropriate for confirming leak presence or isolating sections (as required).\n\n- Surface and deck microphone listening (deck “listening” using a Fisher-style or similar surface microphone) to evaluate underground leak noise signatures through decking and surrounding hardscape (as required).\n\nPlease note: Not every test listed above will be performed on every project. Tests are selected based on your system design, reported symptoms, and the technician’s professional judgment.\n\nNote: If a test is not deemed necessary by the Aquatrace Technician, but the Client specifically requests it to be performed anyway, additional charges will apply based on the procedure requested and the current fee schedule, even if the total visit time remains within the standard included time. For details, refer to the “Additional Testing Charges” section in Aquatrace LLC’s Leak Detection Service Terms and Conditions.\n\nFollowing the inspection, Aquatrace may provide a diagnostic summary in electronic format which may include written documentation, photos, and/or video evidence (if applicable), along with professional recommendations for repair or further investigative steps if warranted.\n\n\nLight Niche Leak Disclaimer\n\nIf a leak is identified in the light niche area, diagnostics will be limited to the niche housing itself and the light conduit opening and connection point at the back of the light niche housing. Extended testing of the light conduit or any underground conduit pathway is not included as part of standard leak detection. In many cases, leaks in this area can be sealed from within the light niche housing without the need for full conduit testing.\n\nAny additional light conduit testing, electrical work, rewiring, or light fixture replacement will either be quoted separately under a new work order or referred to a licensed third-party contractor, whose work and warranties are solely their responsibility.\n\n\n--------------------------------------------------------\nWaterfall / Sheer Descent / Water Blade Disclaimer\n--------------------------------------------------------\n\nIf a leak is suspected in or around a waterfall, sheer descent, water blade, or similar water feature, diagnostics will be limited to visible and accessible components, operational observations, and any testing methods deemed appropriate within the approved scope of service.\n\nFormal isolated pressure testing at the waterfall unit connection itself is not included as part of standard leak detection. In many cases, these features are installed in a concealed manner within raised walls, bond beams, or other finished structures, and the plumbing connection at the unit may not be accessible without destructive access or demolition.\n\nAny additional testing, demolition, access creation, repair, replacement, replumbing, electrical work, or specialty contractor work related to a waterfall, sheer descent, water blade, or similar feature will either be quoted separately under a new work order or referred to a licensed third-party contractor, whose work and warranties are solely their responsibility.\n\n\n------------------------------------\nConcealed / Inaccessible Conditions\n------------------------------------\n\nAquatrace LLC is not responsible for identifying, testing, or confirming conditions concealed behind finished surfaces, within inaccessible structural areas, or within buried or otherwise inaccessible components unless such access and testing are expressly included in the approved estimate.\n\n\n\nClient Responsibilities & Requirements\n\nTo ensure the accuracy and efficiency of our leak detection process, the following must be in place prior to the scheduled inspection:\n\n120-Volt Power Requirement  \nA fully operational 120-volt power source must be available within proximity of the equipment pad. This includes a standard electrical receptacle or outlet that is functioning and safe for technician use.\n\nEquipment Access  \nThe pump, filter, valves, and associated plumbing systems must be easily accessible and unobstructed at the time of inspection (no locked gates, heavy storage, or unsafe conditions).\n\nWater Hose Access  \nA functioning garden hose with a standard connection must be connected and ready for immediate use at the pool/spa basin and equipment area prior to arrival. The hose must be positioned so that it reaches all required basin perimeter areas and the filtration equipment perimeter without the need for Aquatrace to locate, unroll, connect, or otherwise set up the hose, and it must be capable of delivering sufficient water pressure.\n\nPool and/or Spa Covers  \nAll pool and/or spa covers must be fully removed prior to inspection. If a cover is not removed upon arrival, Aquatrace, at its discretion, may assist with removal at the current hourly labor rate of $125.00 per hour (1-hour minimum applies) as outlined in our general pricing schedule.  \nPlease note: Aquatrace will not reinstall, fold, pack, or store pool or spa covers after the inspection.\n\nWater Clarity & Chemistry  \nWater must be reasonably clean, clear, and chemically safe to ensure proper testing procedures and technician safety. Main drains and the pool floor should be visible from the deck.\n\nPet & Animal Safety  \nAll pets or animals must be secured or confined away from the work area during the inspection. For safety and liability reasons, Aquatrace technicians will not proceed with services if aggressive or unsecured animals are present. Any delays caused by animals not being properly contained may result in rescheduling fees or hourly delay charges.\n\nImportant Notice: If any of the above requirements are not met at the time of service and result in the need to delay or reschedule, a $150.00 rescheduling fee will be applied. Additionally, any wait time or on-site delays due to non-compliance may be billed at $125.00 per hour (1-hour minimum), at the discretion of Aquatrace LLC.\n\nFloor Return & Pop-Up Floor Return Cleaner System Disclaimer\n\nFloor returns and pop-up floor return cleaner systems are not included as part of standard leak detection services and will incur additional fees due to the complexity of their design and operation.\n\nIf a floor return system and/or pop-up cleaner system is present and testing is requested, the following rate structure will apply:\n\n- $175.00 per floor return cleaner system (manifold/zone)  \n- $75.00 per pop-up return cleaner port  \n- $55.00 per standard floor return  \n\nDue to the intricate and varied nature of in-floor, pop-up cleaner, and floor return system components, and the fact that many components are plastic and may be brittle, aged, or chemically stressed, certain parts may be susceptible to damage during testing or disassembly. Aquatrace LLC is not responsible for breakage, reassembly, recalibration, or replacement of any such components and may recommend that a third-party service provider perform any necessary repairs or system resets.\n\nBy scheduling requested leak detection services with Aquatrace, the Client acknowledges and agrees that if a floor return and/or pop-up cleaner system is present and requested to be tested, either the above fee structure will be applied to the original estimate, or these systems will be excluded from testing during that visit.\n\nIf the Client chooses to exclude the floor return and/or pop-up system from initial testing and later requests a return visit for this purpose, the same fee schedule will apply, plus additional charges for return trip, equipment staging, and technician time as per Aquatrace’s standard rates.\n\nFor full details on additional diagnostic charges, cold-water SCUBA surcharges, hazardous diving fees, and service limitations, please refer to:  \n“Aquatrace LLC – Swimming Pool / Spa Leak Detection Service Terms and Conditions (Swimming Pool & Spa Leak Detection – Scope & Terms).”",
+      "category": "SERVICE",
+      "defaultUnitCost": 595,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvMTgxNjc0NTI=",
+      "name": "A002- Swimming Pool and Spa Leak Detection Service",
+      "description": "Swimming Pool or Spa Leak Detection Service – Scope of Work\n\nUpon arrival, Aquatrace Swimming Pool Leak Detection will:\n\nDocument the current status, water level, and design of the pool or spa system prior to initiating any inspection or testing procedures.\n\nIncluded Testing Procedures (Performed As Required Within Approved Scope)\n\nAquatrace offers a range of diagnostic testing procedures. Your approved estimate and line item description specify which of these procedures are included in your base leak detection service. Only the specific tests listed or referenced in your line item are included in the base price; all other methods remain available as optional add-on procedures at additional charge if requested and feasible.\n\nWithin the set of tests included in your line item, the attending Aquatrace Technician will determine which procedures to employ, as needed, to complete a proper leak analysis:\n\n- Visual and field survey of pool/spa structure, interior surface, and accessible equipment (as required).\n\n- Electronic scanning of the pool/spa basin to identify potential leak points or penetrations (as required).\n\n- Pressure testing and/or cone-and-dye testing of plumbing, circulation, and filtration systems (as required).\n\n- Acoustic leak detection using specialized hydrophone listening devices to evaluate underground leak potential (as required).\n\n- Dye testing of visible penetrations, fittings, cracks, and structural transitions in the basin (as required).\n\n- SCUBA-supported underwater inspection and testing (including close visual inspection, dye application, and leak verification at depth) when necessary for safe and effective access (as required). Cold-water SCUBA and hazardous diving conditions are subject to additional surcharges as outlined in Aquatrace LLC’s Leak Detection Service Terms and Conditions (Swimming Pool & Spa Leak Detection – Scope & Terms).\n\n- Pipe camera inspection of accessible plumbing lines, conduits, or related components where system configuration and access allow (as required).\n\n- Vacuum testing of selected plumbing lines, fittings, or system components where appropriate for confirming leak presence or isolating sections (as required).\n\n- Surface and deck microphone listening (deck “listening” using a Fisher-style or similar surface microphone) to evaluate underground leak noise signatures through decking and surrounding hardscape (as required).\n\nPlease note: Not every test listed above will be performed on every project. Tests are selected based on your system design, reported symptoms, and the technician’s professional judgment.\n\nNote: If a test is not deemed necessary by the Aquatrace Technician, but the Client specifically requests it to be performed anyway, additional charges will apply based on the procedure requested and the current fee schedule, even if the total visit time remains within the standard included time. For details, refer to the “Additional Testing Charges” section in Aquatrace LLC’s Leak Detection Service Terms and Conditions.\n\nFollowing the inspection, Aquatrace may provide a diagnostic summary in electronic format which may include written documentation, photos, and/or video evidence (if applicable), along with professional recommendations for repair or further investigative steps if warranted.\n\n\nLight Niche Leak Disclaimer\n\nIf a leak is identified in the light niche area, diagnostics will be limited to the niche housing itself and the light conduit opening and connection point at the back of the light niche housing. Extended testing of the light conduit or any underground conduit pathway is not included as part of standard leak detection. In many cases, leaks in this area can be sealed from within the light niche housing without the need for full conduit testing.\n\nAny additional light conduit testing, electrical work, rewiring, or light fixture replacement will either be quoted separately under a new work order or referred to a licensed third-party contractor, whose work and warranties are solely their responsibility.\n\n\n--------------------------------------------------------\nWaterfall / Sheer Descent / Water Blade Disclaimer\n--------------------------------------------------------\n\nIf a leak is suspected in or around a waterfall, sheer descent, water blade, or similar water feature, diagnostics will be limited to visible and accessible components, operational observations, and any testing methods deemed appropriate within the approved scope of service.\n\nFormal isolated pressure testing at the waterfall unit connection itself is not included as part of standard leak detection. In many cases, these features are installed in a concealed manner within raised walls, bond beams, or other finished structures, and the plumbing connection at the unit may not be accessible without destructive access or demolition.\n\nAny additional testing, demolition, access creation, repair, replacement, replumbing, electrical work, or specialty contractor work related to a waterfall, sheer descent, water blade, or similar feature will either be quoted separately under a new work order or referred to a licensed third-party contractor, whose work and warranties are solely their responsibility.\n\n\n------------------------------------\nConcealed / Inaccessible Conditions\n------------------------------------\n\nAquatrace LLC is not responsible for identifying, testing, or confirming conditions concealed behind finished surfaces, within inaccessible structural areas, or within buried or otherwise inaccessible components unless such access and testing are expressly included in the approved estimate.\n\n\n\nClient Responsibilities & Requirements\n\nTo ensure the accuracy and efficiency of our leak detection process, the following must be in place prior to the scheduled inspection:\n\n120-Volt Power Requirement  \nA fully operational 120-volt power source must be available within proximity of the equipment pad. This includes a standard electrical receptacle or outlet that is functioning and safe for technician use.\n\nEquipment Access  \nThe pump, filter, valves, and associated plumbing systems must be easily accessible and unobstructed at the time of inspection (no locked gates, heavy storage, or unsafe conditions).\n\nWater Hose Access  \nA functioning garden hose with a standard connection must be connected and ready for immediate use at the pool/spa basin and equipment area prior to arrival. The hose must be positioned so that it reaches all required basin perimeter areas and the filtration equipment perimeter without the need for Aquatrace to locate, unroll, connect, or otherwise set up the hose, and it must be capable of delivering sufficient water pressure.\n\nPool and/or Spa Covers  \nAll pool and/or spa covers must be fully removed prior to inspection. If a cover is not removed upon arrival, Aquatrace, at its discretion, may assist with removal at the current hourly labor rate of $125.00 per hour (1-hour minimum applies) as outlined in our general pricing schedule.  \nPlease note: Aquatrace will not reinstall, fold, pack, or store pool or spa covers after the inspection.\n\nWater Clarity & Chemistry  \nWater must be reasonably clean, clear, and chemically safe to ensure proper testing procedures and technician safety. Main drains and the pool floor should be visible from the deck.\n\nPet & Animal Safety  \nAll pets or animals must be secured or confined away from the work area during the inspection. For safety and liability reasons, Aquatrace technicians will not proceed with services if aggressive or unsecured animals are present. Any delays caused by animals not being properly contained may result in rescheduling fees or hourly delay charges.\n\nImportant Notice: If any of the above requirements are not met at the time of service and result in the need to delay or reschedule, a $150.00 rescheduling fee will be applied. Additionally, any wait time or on-site delays due to non-compliance may be billed at $125.00 per hour (1-hour minimum), at the discretion of Aquatrace LLC.\n\nFloor Return & Pop-Up Floor Return Cleaner System Disclaimer\n\nFloor returns and pop-up floor return cleaner systems are not included as part of standard leak detection services and will incur additional fees due to the complexity of their design and operation.\n\nIf a floor return system and/or pop-up cleaner system is present and testing is requested, the following rate structure will apply:\n\n- $175.00 per floor return cleaner system (manifold/zone)  \n- $75.00 per pop-up return cleaner port  \n- $55.00 per standard floor return  \n\nDue to the intricate and varied nature of in-floor, pop-up cleaner, and floor return system components, and the fact that many components are plastic and may be brittle, aged, or chemically stressed, certain parts may be susceptible to damage during testing or disassembly. Aquatrace LLC is not responsible for breakage, reassembly, recalibration, or replacement of any such components and may recommend that a third-party service provider perform any necessary repairs or system resets.\n\nBy scheduling requested leak detection services with Aquatrace, the Client acknowledges and agrees that if a floor return and/or pop-up cleaner system is present and requested to be tested, either the above fee structure will be applied to the original estimate, or these systems will be excluded from testing during that visit.\n\nIf the Client chooses to exclude the floor return and/or pop-up system from initial testing and later requests a return visit for this purpose, the same fee schedule will apply, plus additional charges for return trip, equipment staging, and technician time as per Aquatrace’s standard rates.\n\nFor full details on additional diagnostic charges, cold-water SCUBA surcharges, hazardous diving fees, and service limitations, please refer to:  \n“Aquatrace LLC – Swimming Pool / Spa Leak Detection Service Terms and Conditions (Swimming Pool & Spa Leak Detection – Scope & Terms).”",
+      "category": "SERVICE",
+      "defaultUnitCost": 795,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvMjgxNDM3MTM=",
+      "name": "Extended Mileage",
+      "description": "Extended mileage beyond a 50 mile radius\n\nActual Mileage - N/A (Extended Mileage - N/A)\n\n$2.50/mile",
+      "category": "SERVICE",
+      "defaultUnitCost": 2.5,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMjY=",
+      "name": "VGB-001 - Main Drain Cover Field Documentation — Zone 1",
+      "description": "VGB Service Line — Main Drain Cover Field Documentation\nZone 1 — Within 50 Miles of Fair Play, SC\n\nThis service is performed by a minimum two-person certified dive team. All Aquatrace LLC dive team personnel are certified divers regardless of their assigned project role. The pool stays full and operational — no draining required.\n\nIncluded in Base Rate:\n- Up to 4 drain covers documented\n- Up to 3 hours on-site\n- Underwater photography of each drain cover: condition, grate, body, label, and sump\n- Direct sump depth measurement taken at operating depth\n- Cover identification: make, model, listing number, and any visible expiration or service-life markings\n- Visible condition assessment per drain cover: Good / Monitor / Licensed Contractor Review Recommended\n- Documentation gap identification\n- Above-water photography of pool deck, drain approach, and relevant equipment\n- Written Field Documentation Report delivered as PDF within 5 business days of visit\n- High-resolution photo archive via shared link\n\nTravel included within 50-mile service area.\n\nAdditional drains beyond 4: see VGB-010.\nAdditional on-site time beyond 3 hours: see VGB-011 — billed at $250.00/hr (2-person team rate).\nCold water surcharges apply when water temperature is at or below 60°F: see VGB-020 and VGB-021.\nRescheduling within 72 hours of scheduled visit: see VGB-040.\n\nThis service is governed by the Aquatrace LLC VGB Service Line Contract and Disclaimer and the Aquatrace LLC standard Terms and Conditions, both incorporated into this quote by reference. This service is field documentation only. The Field Documentation Report does not constitute a determination of regulatory compliance, code conformance, or fitness for operation. Aquatrace LLC is not a licensed pool contractor, code official, engineer, or legal or insurance advisor. All findings are provided for informational purposes only.",
+      "category": "SERVICE",
+      "defaultUnitCost": 950,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMjc=",
+      "name": "VGB-002 - Main Drain Cover Field Documentation — Zone 2",
+      "description": "VGB Service Line — Main Drain Cover Field Documentation\nZone 2 — 51 to 150 Miles from Fair Play, SC\n\nThis service is performed by a minimum two-person certified dive team. All Aquatrace LLC dive team personnel are certified divers regardless of their assigned project role. The pool stays full and operational — no draining required.\n\nIncluded in Base Rate:\n- Up to 4 drain covers documented\n- Up to 3 hours on-site\n- Underwater photography of each drain cover: condition, grate, body, label, and sump\n- Direct sump depth measurement taken at operating depth\n- Cover identification: make, model, listing number, and any visible expiration or service-life markings\n- Visible condition assessment per drain cover: Good / Monitor / Licensed Contractor Review Recommended\n- Documentation gap identification\n- Above-water photography of pool deck, drain approach, and relevant equipment\n- Written Field Documentation Report delivered as PDF within 5 business days of visit\n- High-resolution photo archive via shared link\n\nTravel included within Zone 2. Overnight lodging and per diem apply when same-day return is not practical: see VGB-060 and VGB-061.\n\nAdditional drains beyond 4: see VGB-010.\nAdditional on-site time beyond 3 hours: see VGB-011 — billed at $250.00/hr (2-person team rate).\nCold water surcharges apply when water temperature is at or below 60°F: see VGB-020 and VGB-021.\nRescheduling within 72 hours of scheduled visit: see VGB-040.\n\nThis service is governed by the Aquatrace LLC VGB Service Line Contract and Disclaimer and the Aquatrace LLC standard Terms and Conditions, both incorporated into this quote by reference. This service is field documentation only. The Field Documentation Report does not constitute a determination of regulatory compliance, code conformance, or fitness for operation. Aquatrace LLC is not a licensed pool contractor, code official, engineer, or legal or insurance advisor. All findings are provided for informational purposes only.",
+      "category": "SERVICE",
+      "defaultUnitCost": 1150,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMjg=",
+      "name": "VGB-003 - Main Drain Cover Field Documentation — Zone 3",
+      "description": "VGB Service Line — Main Drain Cover Field Documentation\nZone 3 — 151 to 250 Miles from Fair Play, SC\n\nThis service is performed by a minimum two-person certified dive team. All Aquatrace LLC dive team personnel are certified divers regardless of their assigned project role. The pool stays full and operational — no draining required.\n\nOvernight lodging and per diem are typically required for Zone 3 visits and will be confirmed at time of booking. See VGB-060 and VGB-061.\n\nIncluded in Base Rate:\n- Up to 4 drain covers documented\n- Up to 3 hours on-site\n- Underwater photography of each drain cover: condition, grate, body, label, and sump\n- Direct sump depth measurement taken at operating depth\n- Cover identification: make, model, listing number, and any visible expiration or service-life markings\n- Visible condition assessment per drain cover: Good / Monitor / Licensed Contractor Review Recommended\n- Documentation gap identification\n- Above-water photography of pool deck, drain approach, and relevant equipment\n- Written Field Documentation Report delivered as PDF within 5 business days of visit\n- High-resolution photo archive via shared link\n\nTravel included within Zone 3. Overnight lodging and per diem billed at cost: see VGB-060 and VGB-061.\n\nAdditional drains beyond 4: see VGB-010.\nAdditional on-site time beyond 3 hours: see VGB-011 — billed at $250.00/hr (2-person team rate).\nCold water surcharges apply when water temperature is at or below 60°F: see VGB-020 and VGB-021.\nRescheduling within 72 hours of scheduled visit: see VGB-040.\n\nThis service is governed by the Aquatrace LLC VGB Service Line Contract and Disclaimer and the Aquatrace LLC standard Terms and Conditions, both incorporated into this quote by reference. This service is field documentation only. The Field Documentation Report does not constitute a determination of regulatory compliance, code conformance, or fitness for operation. Aquatrace LLC is not a licensed pool contractor, code official, engineer, or legal or insurance advisor. All findings are provided for informational purposes only.",
+      "category": "SERVICE",
+      "defaultUnitCost": 1450,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgyMzQ=",
+      "name": "VGB-004 - Main Drain Cover Field Documentation — Zone 4",
+      "description": "VGB Service Line — Main Drain Cover Field Documentation\nZone 4 — 251+ Miles from Fair Play, SC\n\nThis service is performed by a minimum two-person certified dive team. All Aquatrace LLC dive team personnel are certified divers regardless of their assigned project role. The pool stays full and operational — no draining required.\n\nBase rate matches Zone 3. Extended mileage beyond 250 miles is billed separately at $2.50 per mile using the existing Extended Mileage line item. Mileage is calculated portal to portal for all miles beyond 250 from Fair Play, SC.\n\nOvernight lodging and per diem are required for Zone 4 visits and will be confirmed at time of booking. See VGB-060 and VGB-061.\n\nIncluded in Base Rate:\n- Up to 4 drain covers documented\n- Up to 3 hours on-site\n- Underwater photography of each drain cover: condition, grate, body, label, and sump\n- Direct sump depth measurement taken at operating depth\n- Cover identification: make, model, listing number, and any visible expiration or service-life markings\n- Visible condition assessment per drain cover: Good / Monitor / Licensed Contractor Review Recommended\n- Documentation gap identification\n- Above-water photography of pool deck, drain approach, and relevant equipment\n- Written Field Documentation Report delivered as PDF within 5 business days of visit\n- High-resolution photo archive via shared link\n\nAdditional drains beyond 4: see VGB-010.\nAdditional on-site time beyond 3 hours: see VGB-011 — billed at $250.00/hr (2-person team rate).\nCold water surcharges apply when water temperature is at or below 60°F: see VGB-020 and VGB-021.\nExtended mileage beyond 250 miles: billed at $2.50/mile portal to portal — add existing Extended Mileage line item.\nOvernight lodging: see VGB-060. Per diem: see VGB-061.\nRescheduling within 72 hours of scheduled visit: see VGB-040.\n\nThis service is governed by the Aquatrace LLC VGB Service Line Contract and Disclaimer and the Aquatrace LLC standard Terms and Conditions, both incorporated into this quote by reference. This service is field documentation only. The Field Documentation Report does not constitute a determination of regulatory compliance, code conformance, or fitness for operation. Aquatrace LLC is not a licensed pool contractor, code official, engineer, or legal or insurance advisor. All findings are provided for informational purposes only.",
+      "category": "SERVICE",
+      "defaultUnitCost": 1450,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMjk=",
+      "name": "VGB-010 - Additional Drain Cover — Per Drain",
+      "description": "VGB Service Line — Additional Drain Cover Documentation\n\nAdditional drain cover documentation beyond the 4 covers included in the applicable base site rate (VGB-001, VGB-002, or VGB-003).\n\nEach additional drain cover receives the same full documentation scope as covers included in the base rate:\n- Underwater photography: condition, grate, body, label, and sump\n- Direct sump depth measurement at operating depth\n- Cover identification: make, model, listing number, and visible service-life markings\n- Visible condition assessment: Good / Monitor / Licensed Contractor Review Recommended\n- Documentation gap notation\n\nBilled per drain cover beyond the base inclusion of 4.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 100,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMzA=",
+      "name": "VGB-011 - Additional On-Site Time — Per Hour (2-Person Team)",
+      "description": "VGB Service Line — Additional On-Site Time\n\nAdditional on-site time beyond the 3 hours included in the applicable base site rate.\n\nRate: $250.00 per hour — reflects the minimum 2-person certified dive team rate.\nBilling: 1-hour increments.\n\nWhen it becomes apparent during a visit that additional time will be required, Aquatrace LLC will notify the client or the client's on-site representative prior to exceeding the included time allowance when practical.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 250,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMzE=",
+      "name": "VGB-012 - Second Pool — Same Facility, Same Visit — Zone 1",
+      "description": "VGB Service Line — Second Pool Documentation\nSame Facility, Same Visit — Zone 1 (Within 50 Miles of Fair Play, SC)\n\nReduced rate for documentation of a second pool at the same facility during the same scheduled visit. Applies to Zone 1 facilities within 50 miles of Fair Play, SC.\n\nIncludes the same full documentation scope as the base rate:\n- Up to 4 drain covers documented\n- Up to 3 additional hours on-site for the second pool\n- Underwater photography: condition, grate, body, label, and sump\n- Direct sump depth measurements at operating depth\n- Cover identification and visible condition assessment\n- Documentation gap identification\n- Written report section and photo archive for second pool\n\nAdditional drains beyond 4 on the second pool: see VGB-010.\nAdditional on-site time beyond included hours for second pool: see VGB-011 at $250.00/hr.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 650,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMzI=",
+      "name": "VGB-013 - Second Pool — Same Facility, Same Visit — Zone 2",
+      "description": "VGB Service Line — Second Pool Documentation\nSame Facility, Same Visit — Zone 2 (51 to 150 Miles from Fair Play, SC)\n\nReduced rate for documentation of a second pool at the same facility during the same scheduled visit. Applies to Zone 2 facilities 51 to 150 miles from Fair Play, SC.\n\nIncludes the same full documentation scope as the base rate:\n- Up to 4 drain covers documented\n- Up to 3 additional hours on-site for the second pool\n- Underwater photography: condition, grate, body, label, and sump\n- Direct sump depth measurements at operating depth\n- Cover identification and visible condition assessment\n- Documentation gap identification\n- Written report section and photo archive for second pool\n\nAdditional drains beyond 4 on the second pool: see VGB-010.\nAdditional on-site time beyond included hours for second pool: see VGB-011 at $250.00/hr.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 800,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMzM=",
+      "name": "VGB-014 - Second Pool — Same Facility, Same Visit — Zone 3",
+      "description": "VGB Service Line — Second Pool Documentation\nSame Facility, Same Visit — Zone 3 (151 to 250 Miles from Fair Play, SC)\n\nReduced rate for documentation of a second pool at the same facility during the same scheduled visit. Applies to Zone 3 facilities 151 to 250 miles from Fair Play, SC.\n\nIncludes the same full documentation scope as the base rate:\n- Up to 4 drain covers documented\n- Up to 3 additional hours on-site for the second pool\n- Underwater photography: condition, grate, body, label, and sump\n- Direct sump depth measurements at operating depth\n- Cover identification and visible condition assessment\n- Documentation gap identification\n- Written report section and photo archive for second pool\n\nAdditional drains beyond 4 on the second pool: see VGB-010.\nAdditional on-site time beyond included hours for second pool: see VGB-011 at $250.00/hr.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 1000,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgyMzU=",
+      "name": "VGB-015 - Second Pool — Same Facility, Same Visit — Zone 4",
+      "description": "VGB Service Line — Second Pool Documentation\nSame Facility, Same Visit — Zone 4 (251+ Miles from Fair Play, SC)\n\nReduced rate for documentation of a second pool at the same facility during the same scheduled visit. Applies to Zone 4 facilities 251 or more miles from Fair Play, SC.\n\nBase rate matches Zone 3. Extended mileage beyond 250 miles is billed separately at $2.50 per mile using the existing Extended Mileage line item.\n\nIncludes the same full documentation scope as the base rate:\n- Up to 4 drain covers documented\n- Up to 3 additional hours on-site for the second pool\n- Underwater photography: condition, grate, body, label, and sump\n- Direct sump depth measurements at operating depth\n- Cover identification and visible condition assessment\n- Documentation gap identification\n- Written report section and photo archive for second pool\n\nAdditional drains beyond 4 on the second pool: see VGB-010.\nAdditional on-site time beyond included hours for second pool: see VGB-011 at $250.00/hr.\nExtended mileage beyond 250 miles: add existing Extended Mileage line item at $2.50/mile portal to portal.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 1000,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMzQ=",
+      "name": "VGB-020 - Cold Water Surcharge — 50°F to Below 60°F — Per Occurrence",
+      "description": "VGB Service Line — Cold Water Dive Surcharge\nWater Temperature: 50°F to Below 60°F\n\nMandatory cold water dive surcharge applied when pool water temperature is at or above 50°F and below 60°F at the time of the scheduled visit.\n\nPer Aquatrace LLC standard dive operations policy:\n- One occurrence = a single continuous subsurface interval not to exceed 25 minutes.\n- Each additional subsurface interval required beyond the initial occurrence is billed as a separate occurrence at the same rate.\n\nThe anticipated number of occurrences will be discussed with the client at booking when cold water conditions are known or expected. Cold water applicability is determined based on reported water temperature at booking and confirmed on-site at the time of the visit.\n\nAquatrace LLC reserves the right to postpone or decline dive operations when water temperature or site conditions present an unreasonable safety risk regardless of prior scheduling. The client will not be charged for a visit declined solely on safety grounds prior to commencing dive operations.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 100,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMzU=",
+      "name": "VGB-021 - Cold Water Surcharge — Below 50°F — Per Occurrence",
+      "description": "VGB Service Line — Cold Water Dive Surcharge\nWater Temperature: Below 50°F\n\nMandatory cold water dive surcharge applied when pool water temperature is below 50°F at the time of the scheduled visit.\n\nPer Aquatrace LLC standard dive operations policy:\n- One occurrence = a single continuous subsurface interval not to exceed 15 minutes.\n- Each additional subsurface interval required beyond the initial occurrence is billed as a separate occurrence at the same rate.\n\nThe anticipated number of occurrences will be discussed with the client at booking when cold water conditions are known or expected. Cold water applicability is determined based on reported water temperature at booking and confirmed on-site at the time of the visit.\n\nAquatrace LLC reserves the right to postpone or decline dive operations when water temperature or site conditions present an unreasonable safety risk regardless of prior scheduling. The client will not be charged for a visit declined solely on safety grounds prior to commencing dive operations.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 150,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMzY=",
+      "name": "VGB-022 - Hazardous Dive Environment Fee — Minimum",
+      "description": "VGB Service Line — Hazardous Dive Environment Fee\n\nMandatory hazardous dive environment fee applied when site conditions include any of the following or other conditions that materially increase dive risk as determined by Aquatrace LLC:\n- Confined spaces\n- Limited visibility or dark water conditions\n- Overhead obstructions\n- Entanglement hazards\n- Other conditions that materially increase dive risk\n\nMinimum fee: $500.00.\nExact fee is determined based on site-specific conditions.\n\nAll hazardous dive conditions, terms, and fees must be agreed upon in writing by both parties prior to scheduling or commencing any dive operations. Aquatrace LLC reserves the right to require full payment of hazardous dive fees prior to scheduling. Aquatrace LLC may decline to perform dive operations if hazardous conditions cannot be adequately mitigated.\n\nThis line item represents the minimum charge. Final fee will be confirmed in writing prior to scheduling when hazardous conditions are identified.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 500,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMzc=",
+      "name": "VGB-030 - Rush Report Delivery — 48-Hour Turnaround",
+      "description": "VGB Service Line — Rush Report Delivery\n\nExpedited delivery of the written Field Documentation Report and high-resolution photo archive link within 48 hours of the completed site visit.\n\nStandard report delivery is within 5 business days of the site visit. Rush delivery upgrades turnaround to 48 hours from visit completion.\n\nRush delivery must be requested and confirmed at time of booking or immediately following the site visit. Subject to availability.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 150,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMzg=",
+      "name": "VGB-031 - Hard Copy Report Binder — Printed and Mailed",
+      "description": "VGB Service Line — Hard Copy Report Binder\n\nPrinted, tabbed, and mailed hard copy of the Field Documentation Report.\n\nSuitable for permit files, inspection packets, and physical record-keeping. Mailed via USPS standard or priority to the address provided at time of service.\n\nDigital PDF and photo archive are delivered per standard or rush turnaround regardless of whether a hard copy binder is ordered. Hard copy delivery timing is dependent on postal service and is separate from digital delivery.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 50,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwMzk=",
+      "name": "VGB-040 - Rescheduling Fee — Within 72 Hours",
+      "description": "VGB Service Line — Rescheduling Fee\n\nRescheduling fee applied when a scheduled VGB service visit is rescheduled by the client within 72 hours of the confirmed visit date and time.\n\nRequests to reschedule received at least 72 hours in advance of the confirmed visit date will be accommodated at no charge, subject to availability.\n\nThis fee is consistent with the Aquatrace LLC standard rescheduling policy applicable to all service lines. This fee does not apply to rescheduling initiated by Aquatrace LLC.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 150,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwNDA=",
+      "name": "VGB-050 - Annual Documentation Update — Zone 1",
+      "description": "VGB Service Line — Annual Documentation Update\nZone 1 — Within 50 Miles of Fair Play, SC\n\nAnnual condition update and photo refresh for facilities with an existing Aquatrace LLC Main Drain Cover Field Documentation Report on file.\n\nAvailable once per calendar year per site. Not available to facilities without an existing Aquatrace LLC documentation report on file.\n\nIncludes:\n- Updated underwater photography of all previously documented drain covers\n- Condition reassessment and updated rating per drain cover: Good / Monitor / Licensed Contractor Review Recommended\n- Updated written Field Documentation Report delivered as PDF\n- Refreshed high-resolution photo archive via shared link\n\nScope is a condition update to existing documentation — not a full initial documentation visit. Cold water surcharges apply if applicable at time of return visit (see VGB-020 and VGB-021).\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 650,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwNDE=",
+      "name": "VGB-051 - Annual Documentation Update — Zone 2",
+      "description": "VGB Service Line — Annual Documentation Update\nZone 2 — 51 to 150 Miles from Fair Play, SC\n\nAnnual condition update and photo refresh for facilities with an existing Aquatrace LLC Main Drain Cover Field Documentation Report on file.\n\nAvailable once per calendar year per site. Not available to facilities without an existing Aquatrace LLC documentation report on file.\n\nIncludes:\n- Updated underwater photography of all previously documented drain covers\n- Condition reassessment and updated rating per drain cover: Good / Monitor / Licensed Contractor Review Recommended\n- Updated written Field Documentation Report delivered as PDF\n- Refreshed high-resolution photo archive via shared link\n\nScope is a condition update to existing documentation — not a full initial documentation visit. Cold water surcharges apply if applicable at time of return visit (see VGB-020 and VGB-021).\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 800,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwNDI=",
+      "name": "VGB-052 - Annual Documentation Update — Zone 3",
+      "description": "VGB Service Line — Annual Documentation Update\nZone 3 — 151 to 250 Miles from Fair Play, SC\n\nAnnual condition update and photo refresh for facilities with an existing Aquatrace LLC Main Drain Cover Field Documentation Report on file.\n\nAvailable once per calendar year per site. Not available to facilities without an existing Aquatrace LLC documentation report on file.\n\nIncludes:\n- Updated underwater photography of all previously documented drain covers\n- Condition reassessment and updated rating per drain cover: Good / Monitor / Licensed Contractor Review Recommended\n- Updated written Field Documentation Report delivered as PDF\n- Refreshed high-resolution photo archive via shared link\n\nScope is a condition update to existing documentation — not a full initial documentation visit. Cold water surcharges apply if applicable at time of return visit (see VGB-020 and VGB-021). Overnight lodging and per diem apply when required (see VGB-060 and VGB-061).\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 1000,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgyMzY=",
+      "name": "VGB-053 - Annual Documentation Update — Zone 4",
+      "description": "VGB Service Line — Annual Documentation Update\nZone 4 — 251+ Miles from Fair Play, SC\n\nAnnual condition update and photo refresh for facilities with an existing Aquatrace LLC Main Drain Cover Field Documentation Report on file.\n\nAvailable once per calendar year per site. Not available to facilities without an existing Aquatrace LLC documentation report on file.\n\nBase rate matches Zone 3. Extended mileage beyond 250 miles is billed separately at $2.50 per mile using the existing Extended Mileage line item.\n\nIncludes:\n- Updated underwater photography of all previously documented drain covers\n- Condition reassessment and updated rating per drain cover: Good / Monitor / Licensed Contractor Review Recommended\n- Updated written Field Documentation Report delivered as PDF\n- Refreshed high-resolution photo archive via shared link\n\nScope is a condition update to existing documentation — not a full initial documentation visit. Cold water surcharges apply if applicable at time of return visit (see VGB-020 and VGB-021). Overnight lodging and per diem required (see VGB-060 and VGB-061). Extended mileage beyond 250 miles: add existing Extended Mileage line item at $2.50/mile portal to portal.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 1000,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwNDM=",
+      "name": "VGB-060 - Overnight Lodging — Per Person Per Night (At Cost)",
+      "description": "VGB Service Line — Overnight Lodging\n\nActual lodging cost per person per night for Aquatrace LLC team members when overnight stay is required due to site distance, multi-site scheduling, or travel logistics.\n\nBilled at actual cost with no markup. Receipts available upon request.\n\nOvernight requirement is discussed and confirmed with the client at time of booking and will not be applied as a surprise charge. Applies primarily to extended Zone 2 travel and all Zone 3 visits.\n\nPer diem for meals billed separately: see VGB-061.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 0,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwNDQ=",
+      "name": "VGB-061 - Per Diem — Meals — Per Person Per Day",
+      "description": "VGB Service Line — Meals Per Diem\n\nMeals per diem of $65.00 per person per day applied on travel days requiring overnight stay.\n\nCovers breakfast, lunch, and dinner for one Aquatrace LLC team member for one full travel or work day. Applies on days requiring overnight stay only.\n\nDay trips within Zone 1 and most Zone 2 visits do not incur per diem charges unless otherwise confirmed at booking.\n\nOvernight lodging billed separately at cost: see VGB-060.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 65,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwNDU=",
+      "name": "VGB-070 - Portfolio Discount — 10% — 3 to 4 Sites",
+      "description": "VGB Service Line — Portfolio Discount\n3 to 4 Sites Booked Together — 10% Off Base Site Rate Per Site\n\nPortfolio discount of 10% applied to the base site rate per site when 3 or 4 sites are booked and scheduled together in a single booking agreement.\n\nDiscount applies to base site rate only (VGB-001, VGB-002, or VGB-003 as applicable).\nAdd-on services including VGB-010, VGB-011, VGB-020, VGB-021, VGB-022, and all other line items are billed at standard rates.\n\nAll sites must be confirmed and scheduled together at time of agreement. Portfolio discount is not retroactive to prior individual bookings and is not available for sites booked separately over time.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 0,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwNDY=",
+      "name": "VGB-071 - Portfolio Discount — 15% — 5 to 9 Sites",
+      "description": "VGB Service Line — Portfolio Discount\n5 to 9 Sites Booked Together — 15% Off Base Site Rate Per Site\n\nPortfolio discount of 15% applied to the base site rate per site when 5 to 9 sites are booked and scheduled together in a single booking agreement.\n\nDiscount applies to base site rate only (VGB-001, VGB-002, or VGB-003 as applicable).\nAdd-on services including VGB-010, VGB-011, VGB-020, VGB-021, VGB-022, and all other line items are billed at standard rates.\n\nAll sites must be confirmed and scheduled together at time of agreement. Portfolio discount is not retroactive to prior individual bookings and is not available for sites booked separately over time.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 0,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDYzNTgwNDc=",
+      "name": "VGB-072 - Portfolio Discount — 20% — 10 or More Sites",
+      "description": "VGB Service Line — Portfolio Discount\n10 or More Sites Booked Together — 20% Off Base Site Rate Per Site\n\nPortfolio discount of 20% applied to the base site rate per site when 10 or more sites are booked and scheduled together in a single booking agreement.\n\nDiscount applies to base site rate only (VGB-001, VGB-002, or VGB-003 as applicable).\nAdd-on services including VGB-010, VGB-011, VGB-020, VGB-021, VGB-022, and all other line items are billed at standard rates.\n\nAll sites must be confirmed and scheduled together at time of agreement. Custom scheduling and route planning provided for bookings of 10 or more sites. Contact Aquatrace LLC directly to discuss multi-site route logistics.\n\nPortfolio discount is not retroactive to prior individual bookings and is not available for sites booked separately over time.\n\nAll standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 0,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    },
+    {
+      "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvNDY4NjY3Mjk=",
+      "name": "VGB-080 - Main Drain Cover Supply and Installation — Per Cover",
+      "description": "VGB Service Line — Main Drain Cover Supply and Installation\nPer Cover — Installed Underwater When Conditions Allow\n\nSupply and installation of one approved replacement main drain cover using the properly matched cover, hardware, and manufacturer-required installation method when the existing drain body, sump, frame, inserts, and attachment points are suitable for safe installation.\n\nIncludes:\n- Review of existing drain cover documentation or field measurements when available\n- Supply of one properly selected replacement drain cover when cover model/size/flow requirements can be confirmed\n- Removal of existing cover when accessible and practical\n- Installation of replacement cover using compatible manufacturer-approved fasteners\n- Basic underwater installation photography after installation\n- Confirmation notes added to the Aquatrace field documentation record\n\nImportant limitations:\nThis service depends on the condition and integrity of the permanently installed drain body, frame, threaded inserts, anchor points, sump, and surrounding structure. Aquatrace LLC is not responsible for pre-existing damage, stripped threads, missing threaded inserts, broken inserts, corroded hardware, damaged sump components, cracked drain bodies, brittle plastic, plaster/concrete damage, or attachment points that cannot securely accept the required fasteners.\n\nIf the existing attachment components are missing, stripped, broken, corroded, incompatible, or otherwise unsuitable, Aquatrace LLC may stop the installation, document the condition, and recommend repair or replacement by a qualified/licensed pool contractor. Additional repair, drain body replacement, structural work, specialty hardware, return trips, or extended diagnostic/installation time are not included unless separately authorized in writing.\n\nMain drain cover replacement does not guarantee overall pool or suction outlet system compliance unless the required system information, flow data, sump dimensions, cover rating, installation requirements, and site conditions can be verified. All standard VGB Service Line terms and conditions apply.",
+      "category": "SERVICE",
+      "defaultUnitCost": 0,
+      "internalUnitCost": 0,
+      "markup": 0,
+      "taxable": true,
+      "visible": true
+    }
+  ],
+  "searchResultCounts": {
+    "VGB": 27,
+    "Leak Detection": 21,
+    "Pool Leak Detection": 17,
+    "pool only": 17,
+    "pool spa": 9,
+    "mileage": 4,
+    "travel": 9
+  },
+  "discrepancyChecks": {
+    "vgb": [
+      {
+        "code": "VGB-001",
+        "status": "matched",
+        "label": "Zone 1 base documentation",
+        "expectedUnitPrice": 950,
+        "jobberUnitPrice": 950,
+        "jobberName": "VGB-001 - Main Drain Cover Field Documentation — Zone 1",
+        "note": ""
+      },
+      {
+        "code": "VGB-002",
+        "status": "matched",
+        "label": "Zone 2 base documentation",
+        "expectedUnitPrice": 1150,
+        "jobberUnitPrice": 1150,
+        "jobberName": "VGB-002 - Main Drain Cover Field Documentation — Zone 2",
+        "note": ""
+      },
+      {
+        "code": "VGB-003",
+        "status": "discrepancy",
+        "label": "Zone 3 base documentation",
+        "expectedUnitPrice": 1350,
+        "jobberUnitPrice": 1450,
+        "jobberName": "VGB-003 - Main Drain Cover Field Documentation — Zone 3",
+        "note": "Prior record conflicts with 1450."
+      },
+      {
+        "code": "VGB-004",
+        "status": "matched",
+        "label": "Zone 4 base documentation",
+        "expectedUnitPrice": null,
+        "jobberUnitPrice": 1450,
+        "jobberName": "VGB-004 - Main Drain Cover Field Documentation — Zone 4",
+        "note": ""
+      },
+      {
+        "code": "VGB-010",
+        "status": "matched",
+        "label": "Extra drain cover",
+        "expectedUnitPrice": null,
+        "jobberUnitPrice": 100,
+        "jobberName": "VGB-010 - Additional Drain Cover — Per Drain",
+        "note": ""
+      },
+      {
+        "code": "VGB-011",
+        "status": "matched",
+        "label": "Extra on-site hours",
+        "expectedUnitPrice": null,
+        "jobberUnitPrice": 250,
+        "jobberName": "VGB-011 - Additional On-Site Time — Per Hour (2-Person Team)",
+        "note": ""
+      },
+      {
+        "code": "VGB-020",
+        "status": "matched",
+        "label": "Cold-water surcharge at or below 60F",
+        "expectedUnitPrice": null,
+        "jobberUnitPrice": 100,
+        "jobberName": "VGB-020 - Cold Water Surcharge — 50°F to Below 60°F — Per Occurrence",
+        "note": ""
+      },
+      {
+        "code": "VGB-050",
+        "status": "matched",
+        "label": "Annual update Zone 1",
+        "expectedUnitPrice": 650,
+        "jobberUnitPrice": 650,
+        "jobberName": "VGB-050 - Annual Documentation Update — Zone 1",
+        "note": ""
+      },
+      {
+        "code": "VGB-051",
+        "status": "matched",
+        "label": "Annual update Zone 2",
+        "expectedUnitPrice": 800,
+        "jobberUnitPrice": 800,
+        "jobberName": "VGB-051 - Annual Documentation Update — Zone 2",
+        "note": ""
+      },
+      {
+        "code": "VGB-052",
+        "status": "matched",
+        "label": "Annual update Zone 3",
+        "expectedUnitPrice": 1000,
+        "jobberUnitPrice": 1000,
+        "jobberName": "VGB-052 - Annual Documentation Update — Zone 3",
+        "note": ""
+      },
+      {
+        "code": "VGB-070",
+        "status": "matched",
+        "label": "10 percent discount for 3-4 pools same route",
+        "expectedUnitPrice": null,
+        "jobberUnitPrice": 0,
+        "jobberName": "VGB-070 - Portfolio Discount — 10% — 3 to 4 Sites",
+        "note": ""
+      }
+    ],
+    "standardLeakDetection": [
+      {
+        "key": "pool_only",
+        "status": "matched",
+        "label": "Standard leak detection pool only",
+        "expectedUnitPrice": 595,
+        "jobberItems": [
+          {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvOTE3OTc1MQ==",
+            "name": "A001 - Swimming Pool or Spa Only Leak Detection Service",
+            "defaultUnitCost": 595
+          }
+        ]
+      },
+      {
+        "key": "pool_spa",
+        "status": "matched",
+        "label": "Standard leak detection pool+spa",
+        "expectedUnitPrice": 795,
+        "jobberItems": [
+          {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvMTgxNjc0NTI=",
+            "name": "A002- Swimming Pool and Spa Leak Detection Service",
+            "defaultUnitCost": 795
+          }
+        ]
+      },
+      {
+        "key": "travel_overage",
+        "status": "matched",
+        "label": "Travel/mileage over 50-mile radius",
+        "expectedUnitPrice": 2.5,
+        "jobberItems": [
+          {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb2R1Y3RPclNlcnZpY2UvMjgxNDM3MTM=",
+            "name": "Extended Mileage",
+            "defaultUnitCost": 2.5
+          }
+        ]
+      }
+    ]
+  },
+  "missingExpectedItems": []
+}
