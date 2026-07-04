@@ -25,6 +25,10 @@ function firestoreDoc<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+function sortByIsoDesc<T>(records: T[], field: keyof T): T[] {
+  return [...records].sort((left, right) => String(right[field]).localeCompare(String(left[field])));
+}
+
 export class MemoryNexiRepository implements NexiRepository {
   readonly conversations: ConversationRecord[] = [];
   readonly failureLog: FailureLogRecord[] = [];
@@ -78,12 +82,11 @@ export class FirestoreNexiRepository implements NexiRepository {
     const snapshot = await this.db
       .collection("conversations")
       .where("tenantId", "==", tenantId)
-      .orderBy("createdAt", "desc")
-      .limit(limit)
       .get();
     return snapshot.docs
       .map((doc) => conversationRecordSchema.parse(doc.data()))
-      .reverse()
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+      .slice(-limit)
       .flatMap((record): GatewayMessage[] => [
         { role: "user", content: record.userText },
         { role: "assistant", content: record.assistantText }
@@ -94,10 +97,11 @@ export class FirestoreNexiRepository implements NexiRepository {
     const snapshot = await this.db
       .collection("siteJobBlueprints")
       .where("tenantId", "==", tenantId)
-      .orderBy("extractedAt", "desc")
-      .limit(limit)
       .get();
-    return snapshot.docs.map((doc) => siteJobBlueprintSchema.parse(doc.data()) as SiteJobBlueprint);
+    return sortByIsoDesc(
+      snapshot.docs.map((doc) => siteJobBlueprintSchema.parse(doc.data()) as SiteJobBlueprint),
+      "extractedAt"
+    ).slice(0, limit);
   }
 
   async saveConversation(record: Omit<ConversationRecord, "id" | "createdAt">): Promise<ConversationRecord> {
