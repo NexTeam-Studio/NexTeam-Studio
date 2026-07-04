@@ -310,6 +310,7 @@ export interface NexiTool {
   name: string;
   description: string;
   inputSchema: ZodSchema;
+  inputJsonSchema?: Record<string, unknown> | undefined;
   handler: (tenant: Tenant, args: unknown) => Promise<{ result: unknown; sources: Source[] }>;
 }
 

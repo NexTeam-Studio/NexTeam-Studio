@@ -30,6 +30,48 @@ export const lookupSiteJobBlueprintFieldInputSchema = z.object({
   fields: z.record(z.union([z.string(), z.number()])).optional()
 });
 
+const getScheduleJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    from: { type: "string", description: "Inclusive ISO timestamp for the schedule window start." },
+    to: { type: "string", description: "Exclusive ISO timestamp for the schedule window end." }
+  },
+  required: ["from", "to"]
+};
+
+const getJobDetailJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    id: { type: "string", description: "Exact Jobber job id when known." },
+    nameQuery: { type: "string", description: "Customer, project, or job name to search for." }
+  }
+};
+
+const getPhotosJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    projectQuery: { type: "string", description: "CompanyCam project or customer name to search for, for example Deborah Justice." }
+  },
+  required: ["projectQuery"]
+};
+
+const lookupSiteJobBlueprintFieldJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    field: { type: "string", description: "SiteJobBlueprint field name. Use poolGallons for pool gallon questions." },
+    fields: {
+      type: "object",
+      additionalProperties: { anyOf: [{ type: "string" }, { type: "number" }] },
+      description: "Optional inline extracted fields when already available."
+    }
+  },
+  required: ["field"]
+};
+
 function source(rail: Source["rail"], ref: string, label: string): Source {
   return { rail, ref, label };
 }
@@ -53,6 +95,7 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
       name: "getSchedule",
       description: "Read Jobber schedule items for a date range.",
       inputSchema: getScheduleInputSchema,
+      inputJsonSchema: getScheduleJsonSchema,
       handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
         const input = getScheduleInputSchema.parse(args);
         const jobs = await JobberAdapter.fromEnv(env, tenant.id).getJobs({ from: input.from, to: input.to });
@@ -66,6 +109,7 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
       name: "getJobDetail",
       description: "Read a Jobber job detail by id or fuzzy name query.",
       inputSchema: getJobDetailInputSchema,
+      inputJsonSchema: getJobDetailJsonSchema,
       handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
         const input = getJobDetailInputSchema.parse(args);
         const ref: { id?: string; nameQuery?: string } = {};
@@ -86,6 +130,7 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
       name: "getPhotos",
       description: "Read CompanyCam project photos through the media provider.",
       inputSchema: getPhotosInputSchema,
+      inputJsonSchema: getPhotosJsonSchema,
       handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
         const input = getPhotosInputSchema.parse(args);
         const provider = CompanyCamAdapter.fromEnv(env, tenant.id);
@@ -105,6 +150,7 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
       name: "lookupSiteJobBlueprintField",
       description: "Read a field from a SiteJobBlueprint extraction result.",
       inputSchema: lookupSiteJobBlueprintFieldInputSchema,
+      inputJsonSchema: lookupSiteJobBlueprintFieldJsonSchema,
       handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
         const input = lookupSiteJobBlueprintFieldInputSchema.parse(args);
         const fields = input.fields ?? {};

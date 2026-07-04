@@ -38,11 +38,12 @@ test("source check blocks factual answers without sources", () => {
 
 test("Nexi tool loop executes tools and records cache metrics", async () => {
   const calls = [];
+  let parsedToolArgs = null;
   const fetchFn = async (_url, init) => {
     calls.push(JSON.parse(init.body));
     if (calls.length === 1) {
       return new Response(JSON.stringify({
-        content: [{ type: "tool_use", id: "toolu_1", name: "getSchedule", input: { from: "2026-07-04", to: "2026-07-05" } }],
+        content: [{ type: "tool_use", id: "toolu_1", name: "getSchedule", input: {} }],
         usage: { input_tokens: 20, output_tokens: 4, cache_creation_input_tokens: 120, cache_read_input_tokens: 0 }
       }), { status: 200 });
     }
@@ -60,10 +61,18 @@ test("Nexi tool loop executes tools and records cache metrics", async () => {
       name: "getSchedule",
       description: "Read schedule.",
       inputSchema: z.object({ from: z.string(), to: z.string() }),
-      handler: async () => ({
-        result: { jobs: [{ id: "job_1", title: "Leak detection" }] },
-        sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Leak detection" }]
-      })
+      inputJsonSchema: {
+        type: "object",
+        properties: { from: { type: "string" }, to: { type: "string" } },
+        required: ["from", "to"]
+      },
+      handler: async (_tenant, args) => {
+        parsedToolArgs = args;
+        return {
+          result: { jobs: [{ id: "job_1", title: "Leak detection" }] },
+          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Leak detection" }]
+        };
+      }
     }],
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
@@ -72,6 +81,9 @@ test("Nexi tool loop executes tools and records cache metrics", async () => {
     fetchFn
   });
   assert.equal(calls.length, 2);
+  assert.deepEqual(calls[0].tools[0].input_schema.required, ["from", "to"]);
+  assert.match(parsedToolArgs.from, /^\d{4}-\d{2}-\d{2}T/);
+  assert.match(parsedToolArgs.to, /^\d{4}-\d{2}-\d{2}T/);
   assert.equal(result.sources.length, 1);
   assert.equal(result.usage.cacheReadInputTokens, 64);
   assert.equal(usageLog.records.length, 2);

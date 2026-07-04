@@ -280,11 +280,45 @@ function toolDefinition(tool: NexiTool): GatewayToolDefinition {
   return {
     name: tool.name,
     description: tool.description,
-    input_schema: {
+    input_schema: tool.inputJsonSchema ?? {
       type: "object",
       additionalProperties: true
     }
   };
+}
+
+function latestUserText(messages: GatewayMessage[]): string {
+  for (const message of [...messages].reverse()) {
+    if (message.role === "user" && typeof message.content === "string") {
+      return message.content;
+    }
+  }
+  return "";
+}
+
+function todayWindow(): { from: string; to: string } {
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  return { from: start.toISOString(), to: end.toISOString() };
+}
+
+function normalizeToolInput(toolName: string, input: unknown, messages: GatewayMessage[]): unknown {
+  const record = input && typeof input === "object" && !Array.isArray(input) ? { ...input as Record<string, unknown> } : {};
+  const userText = latestUserText(messages);
+  if (toolName === "getSchedule") {
+    const fallback = todayWindow();
+    record.from ??= fallback.from;
+    record.to ??= fallback.to;
+  }
+  if ((toolName === "getPhotos" || toolName === "getJobDetail") && !record.projectQuery && !record.nameQuery && !record.id) {
+    const key = toolName === "getPhotos" ? "projectQuery" : "nameQuery";
+    record[key] = userText;
+  }
+  if (toolName === "lookupSiteJobBlueprintField" && !record.field && /gallon/i.test(userText)) {
+    record.field = "poolGallons";
+  }
+  return record;
 }
 
 function toolUsesFromContent(content: AnthropicContentBlock[]): AnthropicToolUseBlock[] {
@@ -425,7 +459,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         });
         continue;
       }
-      const args = tool.inputSchema.parse(toolUse.input ?? {});
+      const args = tool.inputSchema.parse(normalizeToolInput(toolUse.name, toolUse.input, messages));
       const result = await tool.handler(request.tenant, args);
       sources = [...sources, ...result.sources];
       toolRuns.push({ name: tool.name, result: result.result, sources: result.sources });
