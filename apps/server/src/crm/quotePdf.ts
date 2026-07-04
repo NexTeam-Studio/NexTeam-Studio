@@ -1,4 +1,4 @@
-import type { Client, Quote } from "@nexteam/core";
+import type { Client, Invoice, Quote } from "@nexteam/core";
 
 function escapePdfText(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
@@ -32,6 +32,51 @@ export function renderQuotePdf(quote: Quote, client?: Client): Buffer {
     `Total: ${money(quote.totals.total)}`,
     "",
     "This PDF is generated before outbound delivery and remains approval-gated."
+  ];
+  const content = textLines
+    .map((line, index) => {
+      const y = 750 - index * 18;
+      return `BT /F1 11 Tf 50 ${y} Td (${escapePdfText(line)}) Tj ET`;
+    })
+    .join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    `<< /Length ${Buffer.byteLength(content, "utf8")} >>\nstream\n${content}\nendstream`
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets.push(Buffer.byteLength(pdf, "utf8"));
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefStart = Buffer.byteLength(pdf, "utf8");
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let index = 1; index < offsets.length; index += 1) {
+    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
+  return Buffer.from(pdf, "utf8");
+}
+
+export function renderInvoicePdf(invoice: Invoice, client?: Client): Buffer {
+  const textLines = [
+    "NexTeam Studio Invoice",
+    `Invoice: ${invoice.title}`,
+    `Invoice ID: ${invoice.id}`,
+    `Tenant: ${invoice.tenantId}`,
+    `Client: ${client?.name ?? invoice.clientId}`,
+    `Status: ${invoice.status}`,
+    "",
+    ...invoice.lineItems.map((item) => `${item.code} ${item.name} x${item.quantity}: ${money(item.total)}`),
+    "",
+    `Subtotal: ${money(invoice.totals.subtotal)}`,
+    `Tax: ${money(invoice.totals.tax)}`,
+    `Total: ${money(invoice.totals.total)}`,
+    "",
+    "Card processing is handled by Stripe. NexTeam does not store card data."
   ];
   const content = textLines
     .map((line, index) => {

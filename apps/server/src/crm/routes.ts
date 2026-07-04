@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import {
@@ -7,13 +7,15 @@ import {
   type ApprovalQueueService,
   type Client,
   type EventBus,
+  type Invoice,
   type Quote
 } from "@nexteam/core";
 import { MemoryNativeCrmRepository, NativeAdapter, type NativeCrmRepository } from "@nexteam/providers";
 import { getAdminDb } from "../firebase.js";
 import { buildQuoteDraft, draftQuoteInputSchema } from "./quoteBuilder.js";
 import { FirestoreNativeCrmRepository } from "./nativeRepository.js";
-import { renderQuotePdf, renderQuotePortalHtml } from "./quotePdf.js";
+import { renderInvoicePdf, renderQuotePdf, renderQuotePortalHtml } from "./quotePdf.js";
+import { createStripeCheckoutSession, verifyStripeWebhookEvent } from "./stripe.js";
 
 const createClientBodySchema = z.object({
   tenantId: z.string().min(1).optional(),
@@ -28,6 +30,10 @@ const signQuoteBodySchema = z.object({
   tenantId: z.string().min(1),
   token: z.string().min(16),
   typedName: z.string().min(1)
+});
+
+const createInvoiceFromQuoteBodySchema = z.object({
+  tenantId: z.string().min(1).optional()
 });
 
 export interface CrmRouteDeps {
@@ -52,6 +58,20 @@ function createPortalToken(): string {
 function quotePreviewBody(quote: Quote): string {
   const lines = quote.lineItems.map((item) => `${item.code} ${item.name} x${item.quantity}: $${item.total.toFixed(2)}`);
   return [...lines, `Total: $${quote.totals.total.toFixed(2)}`].join("\n");
+}
+
+function invoiceFromQuote(quote: Quote): Invoice {
+  const base = {
+    id: `invoice_${randomUUID()}`,
+    tenantId: quote.tenantId,
+    clientId: quote.clientId,
+    status: "sent" as const,
+    title: `Invoice - ${quote.title}`,
+    lineItems: quote.lineItems,
+    totals: quote.totals,
+    quoteId: quote.id
+  };
+  return quote.jobId ? { ...base, jobId: quote.jobId } : base;
 }
 
 function sendRouteError(res: Response, error: unknown): void {
@@ -80,6 +100,18 @@ export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {
     const clients = await provider.getClients("");
     const client = clients.find((candidate) => candidate.id === quote.clientId);
     return client ? { provider, quote, client } : { provider, quote };
+  }
+
+  async function getInvoiceAndClient(tenantId: string, invoiceId: string): Promise<{ provider: NativeAdapter; invoice: Invoice; client?: Client }> {
+    const provider = providerForTenant(tenantId);
+    const invoices = await provider.getInvoices();
+    const invoice = invoices.find((candidate) => candidate.id === invoiceId);
+    if (!invoice) {
+      throw new RailError(`Native invoice ${invoiceId} was not found.`, { provider: "native", op: "getInvoice", status: 404 });
+    }
+    const clients = await provider.getClients("");
+    const client = clients.find((candidate) => candidate.id === invoice.clientId);
+    return client ? { provider, invoice, client } : { provider, invoice };
   }
 
   app.post("/api/crm/clients", async (req: Request, res: Response) => {
@@ -130,6 +162,30 @@ export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {
     }
   });
 
+  app.post("/api/crm/quotes/:id/invoice", async (req: Request, res: Response) => {
+    try {
+      const quoteId = req.params.id;
+      if (!quoteId) {
+        throw new RailError("Quote id is required.", { provider: "native", op: "createInvoiceFromQuote", status: 400 });
+      }
+      const input = createInvoiceFromQuoteBodySchema.parse(req.body);
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      const { provider, quote } = await getQuoteAndClient(tenantId, quoteId);
+      if (quote.status !== "signed") {
+        throw new RailError("Quote must be signed before an invoice is created.", { provider: "native", op: "createInvoiceFromQuote", status: 409 });
+      }
+      const existing = (await provider.getInvoices()).find((invoice) => invoice.quoteId === quote.id);
+      if (existing) {
+        res.json({ ok: true, invoice: existing, reused: true });
+        return;
+      }
+      const invoice = await provider.createInvoice(invoiceFromQuote(quote));
+      res.status(201).json({ ok: true, invoice });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.get("/api/crm/quotes/:id/pdf", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
@@ -140,6 +196,83 @@ export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {
       const { quote, client } = await getQuoteAndClient(tenantId, quoteId);
       res.setHeader("content-type", "application/pdf");
       res.send(renderQuotePdf(quote, client));
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/crm/invoices/:id/pdf", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      const invoiceId = req.params.id;
+      if (!invoiceId) {
+        throw new RailError("Invoice id is required.", { provider: "native", op: "renderInvoicePdf", status: 400 });
+      }
+      const { invoice, client } = await getInvoiceAndClient(tenantId, invoiceId);
+      res.setHeader("content-type", "application/pdf");
+      res.send(renderInvoicePdf(invoice, client));
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/crm/invoices/:id/checkout", async (req: Request, res: Response) => {
+    try {
+      const invoiceId = req.params.id;
+      if (!invoiceId) {
+        throw new RailError("Invoice id is required.", { provider: "stripe", op: "createCheckoutSession", status: 400 });
+      }
+      const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : defaultTenantId(env);
+      const { provider, invoice } = await getInvoiceAndClient(tenantId, invoiceId);
+      if (invoice.status === "paid" || invoice.status === "void") {
+        throw new RailError("Only open invoices can create Stripe checkout sessions.", { provider: "stripe", op: "createCheckoutSession", status: 409 });
+      }
+      const session = await createStripeCheckoutSession(env, invoice, req);
+      const externalIds = { ...(invoice.externalIds ?? {}), stripe: session.id };
+      const updatedInvoice = await provider.updateInvoice(invoice.id, { externalIds });
+      res.status(201).json({ ok: true, invoice: updatedInvoice, checkout: { sessionId: session.id, url: session.url } });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/stripe/webhook", async (req: Request, res: Response) => {
+    try {
+      const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
+      if (!rawBody) {
+        throw new RailError("Stripe webhook raw body was not captured.", { provider: "stripe", op: "webhook", status: 400 });
+      }
+      const event = verifyStripeWebhookEvent(env, rawBody, req.header("stripe-signature") ?? "");
+      if (event.type !== "checkout.session.completed") {
+        res.json({ ok: true, ignored: true, type: event.type });
+        return;
+      }
+      const session = event.data.object;
+      const metadata = typeof session.metadata === "object" && session.metadata ? session.metadata as Record<string, unknown> : {};
+      const invoiceId = typeof metadata.invoiceId === "string" ? metadata.invoiceId : "";
+      const tenantId = typeof metadata.tenantId === "string" ? metadata.tenantId : "";
+      const sessionId = typeof session.id === "string" ? session.id : "";
+      const paymentStatus = typeof session.payment_status === "string" ? session.payment_status : "";
+      if (!invoiceId || !tenantId || paymentStatus !== "paid") {
+        throw new RailError("Stripe checkout session is missing paid invoice metadata.", { provider: "stripe", op: "webhook", status: 400 });
+      }
+      const { provider, invoice } = await getInvoiceAndClient(tenantId, invoiceId);
+      const paidAt = new Date().toISOString();
+      const paidExternalIds = sessionId ? { ...(invoice.externalIds ?? {}), stripe: sessionId } : invoice.externalIds;
+      const paidInvoice = await provider.updateInvoice(invoice.id, {
+        status: "paid",
+        paidAt,
+        ...(paidExternalIds ? { externalIds: paidExternalIds } : {})
+      });
+      if (paidInvoice.jobId) {
+        await provider.updateJobStatus(paidInvoice.jobId, "paid");
+      }
+      await eventBus.emit({
+        tenantId: paidInvoice.tenantId,
+        type: "invoice.paid",
+        payload: { invoiceId: paidInvoice.id, clientId: paidInvoice.clientId, quoteId: paidInvoice.quoteId, stripeSessionId: sessionId, paidAt }
+      });
+      res.json({ ok: true, invoice: paidInvoice, eventType: "invoice.paid" });
     } catch (error) {
       sendRouteError(res, error);
     }

@@ -21,7 +21,9 @@ export interface NativeCrmRepository {
   listInvoices(tenantId: string): Promise<Invoice[]>;
   createClient(client: Client): Promise<Client>;
   createQuote(quote: Quote): Promise<Quote>;
+  createInvoice(invoice: Invoice): Promise<Invoice>;
   updateQuote(id: string, patch: Partial<Quote>): Promise<Quote>;
+  updateInvoice(id: string, patch: Partial<Invoice>): Promise<Invoice>;
   updateJob(id: string, patch: Partial<Job>): Promise<Job>;
 }
 
@@ -81,6 +83,11 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
     return quote;
   }
 
+  async createInvoice(invoice: Invoice): Promise<Invoice> {
+    this.records.invoices.push(invoice);
+    return invoice;
+  }
+
   async updateQuote(id: string, patch: Partial<Quote>): Promise<Quote> {
     const index = this.records.quotes.findIndex((quote) => quote.id === id);
     if (index === -1) {
@@ -92,6 +99,20 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
     }
     const next: Quote = { ...existing, ...patch };
     this.records.quotes[index] = next;
+    return next;
+  }
+
+  async updateInvoice(id: string, patch: Partial<Invoice>): Promise<Invoice> {
+    const index = this.records.invoices.findIndex((invoice) => invoice.id === id);
+    if (index === -1) {
+      throw new RailError(`Native invoice ${id} was not found.`, { provider: "native", op: "updateInvoice", status: 404 });
+    }
+    const existing = this.records.invoices[index];
+    if (!existing) {
+      throw new RailError(`Native invoice ${id} was not found.`, { provider: "native", op: "updateInvoice", status: 404 });
+    }
+    const next: Invoice = { ...existing, ...patch };
+    this.records.invoices[index] = next;
     return next;
   }
 
@@ -202,6 +223,21 @@ export class NativeAdapter implements CRMProvider {
 
   async updateQuote(id: string, patch: Partial<Quote>): Promise<Quote> {
     return this.repository.updateQuote(id, patch);
+  }
+
+  async createInvoice(invoice: Invoice): Promise<Invoice> {
+    if (invoice.tenantId !== this.tenantId) {
+      throw new RailError("Native invoice tenant mismatch.", { provider: "native", op: "createInvoice", status: 403 });
+    }
+    return this.repository.createInvoice(invoice);
+  }
+
+  async updateInvoice(id: string, patch: Partial<Invoice>): Promise<Invoice> {
+    const invoice = await this.repository.updateInvoice(id, patch);
+    if (invoice.tenantId !== this.tenantId) {
+      throw new RailError("Native invoice tenant mismatch.", { provider: "native", op: "updateInvoice", status: 403 });
+    }
+    return invoice;
   }
 
   async updateJobStatus(id: string, s: JobStatus): Promise<Job> {

@@ -1,4 +1,4 @@
-export type RailProvider = "jobber" | "companycam" | "anthropic" | "firebase" | "native" | "approval";
+export type RailProvider = "jobber" | "companycam" | "anthropic" | "firebase" | "native" | "approval" | "stripe";
 
 export interface RailErrorOptions {
   provider: RailProvider;

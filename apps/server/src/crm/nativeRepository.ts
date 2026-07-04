@@ -59,6 +59,11 @@ export class FirestoreNativeCrmRepository implements NativeCrmRepository {
     return quoteSchema.parse(quote);
   }
 
+  async createInvoice(invoice: Invoice): Promise<Invoice> {
+    await this.db.collection("invoices").doc(invoice.id).set(asDocumentData(invoice));
+    return invoiceSchema.parse(invoice);
+  }
+
   async updateQuote(id: string, patch: Partial<Quote>): Promise<Quote> {
     const ref = this.db.collection("quotes").doc(id);
     const snapshot = await ref.get();
@@ -66,6 +71,17 @@ export class FirestoreNativeCrmRepository implements NativeCrmRepository {
       throw new RailError(`Native quote ${id} was not found.`, { provider: "native", op: "updateQuote", status: 404 });
     }
     const next = quoteSchema.parse({ ...snapshot.data(), ...patch }) as Quote;
+    await ref.set(asDocumentData(next));
+    return next;
+  }
+
+  async updateInvoice(id: string, patch: Partial<Invoice>): Promise<Invoice> {
+    const ref = this.db.collection("invoices").doc(id);
+    const snapshot = await ref.get();
+    if (!snapshot.exists) {
+      throw new RailError(`Native invoice ${id} was not found.`, { provider: "native", op: "updateInvoice", status: 404 });
+    }
+    const next = invoiceSchema.parse({ ...snapshot.data(), ...patch }) as Invoice;
     await ref.set(asDocumentData(next));
     return next;
   }

@@ -1,11 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { ApprovalQueueService, InMemoryApprovalQueueRepository, invoiceSchema, quoteSchema } from "@nexteam/core";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { buildQuoteDraft } from "../dist/crm/quoteBuilder.js";
-import { renderQuotePdf } from "../dist/crm/quotePdf.js";
+import { renderInvoicePdf, renderQuotePdf } from "../dist/crm/quotePdf.js";
 import { createCrmReadTools, createCrmTools } from "../dist/crm/nexiTools.js";
 import { hashPortalToken } from "../dist/crm/routes.js";
+import { createStripeCheckoutSession, verifyStripeWebhookEvent } from "../dist/crm/stripe.js";
 
 const tenant = {
   id: "aquatrace",
@@ -156,4 +158,62 @@ test("CRM write nexi-tools create clients, draft quotes through ApprovalQueue, a
   const status = await invoiceStatus.handler(tenant, { clientId: "client_1" });
   assert.equal(status.result.invoices[0].status, "sent");
   assert.equal(status.sources[0].rail, "native");
+});
+
+test("NativeAdapter writes invoices and renders invoice PDFs", async () => {
+  const repository = new MemoryNativeCrmRepository({ clients: [client], properties: [property], jobs: [job] });
+  const adapter = new NativeAdapter(repository, "aquatrace");
+  const invoice = await adapter.createInvoice({
+    id: "invoice_native_write_1",
+    tenantId: "aquatrace",
+    clientId: "client_1",
+    jobId: "job_1",
+    status: "sent",
+    title: "Stripe test invoice",
+    lineItems: [{ id: "line_1", code: "VGB-001", name: "VGB Zone 1", quantity: 1, unitPrice: 9.5, total: 9.5 }],
+    totals: { subtotal: 9.5, tax: 0, total: 9.5 }
+  });
+  assert.equal(invoice.status, "sent");
+  const paid = await adapter.updateInvoice(invoice.id, { status: "paid", paidAt: "2026-07-04T20:00:00.000Z", externalIds: { stripe: "cs_test_receipt" } });
+  assert.equal(paid.status, "paid");
+  assert.equal(paid.externalIds.stripe, "cs_test_receipt");
+  const pdf = renderInvoicePdf(paid, client);
+  assert.equal(pdf.subarray(0, 5).toString("utf8"), "%PDF-");
+});
+
+test("Stripe rail refuses live keys and verifies webhook signatures", async () => {
+  await assert.rejects(
+    () => createStripeCheckoutSession(
+      { STRIPE_SECRET_KEY: "sk_live_disallowed" },
+      {
+        id: "invoice_1",
+        tenantId: "aquatrace",
+        clientId: "client_1",
+        status: "sent",
+        title: "Live key refusal",
+        lineItems: [],
+        totals: { subtotal: 1, tax: 0, total: 1 }
+      },
+      { protocol: "https", get: () => "example.test", headers: {} }
+    ),
+    /Live-mode Stripe keys/
+  );
+
+  const raw = Buffer.from(JSON.stringify({
+    id: "evt_test_1",
+    type: "checkout.session.completed",
+    data: {
+      object: {
+        id: "cs_test_receipt",
+        payment_status: "paid",
+        metadata: { invoiceId: "invoice_1", tenantId: "aquatrace" }
+      }
+    }
+  }));
+  const timestamp = Math.floor(Date.now() / 1000);
+  const secret = "whsec_test_receipt";
+  const signature = createHmac("sha256", secret).update(`${timestamp}.${raw.toString("utf8")}`).digest("hex");
+  const event = verifyStripeWebhookEvent({ STRIPE_WEBHOOK_SECRET: secret }, raw, `t=${timestamp},v1=${signature}`);
+  assert.equal(event.type, "checkout.session.completed");
+  assert.equal(event.data.object.id, "cs_test_receipt");
 });

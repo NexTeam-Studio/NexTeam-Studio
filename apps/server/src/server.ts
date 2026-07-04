@@ -2,6 +2,7 @@ import { Readable } from "node:stream";
 import express, { type Request, type Response } from "express";
 import {
   ApprovalQueueService,
+  FirestoreEventBus,
   InMemoryEventBus,
   InMemoryApprovalQueueRepository,
   RailError,
@@ -12,12 +13,22 @@ import { CompanyCamAdapter } from "@nexteam/providers";
 import { getBuildInfo } from "./buildInfo.js";
 import { buildHealth } from "./health.js";
 import { registerCrmRoutes } from "./crm/routes.js";
+import { getAdminDb } from "./firebase.js";
 
 const app = express();
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
-const eventBus = new InMemoryEventBus();
+const adminDb = getAdminDb();
+const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
 
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({
+  limit: "1mb",
+  verify: (req, _res, buf) => {
+    const request = req as Request & { rawBody?: Buffer };
+    if (request.originalUrl === "/api/stripe/webhook") {
+      request.rawBody = Buffer.from(buf);
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: false }));
 
 function sendError(res: Response, error: unknown): void {
