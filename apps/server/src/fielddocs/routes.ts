@@ -37,6 +37,11 @@ const reportPdfInputSchema = z.object({
   mediaIds: z.array(z.string()).default([])
 });
 
+const optionalImageSchema = z.object({
+  imageBase64: z.string().min(1).optional(),
+  imageMime: z.string().min(1).optional()
+});
+
 export interface FieldDocsRouteDeps {
   repository?: MediaRepository | undefined;
   eventBus?: EventBus | undefined;
@@ -88,8 +93,12 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.post("/api/fielddocs/uploads", async (req: Request, res: Response) => {
     try {
       const input = uploadMediaInputSchema.parse(req.body);
+      const imageInput = optionalImageSchema.parse(req.body);
       const initial = createNativeMediaFromUpload(input);
-      const vision = await maybeRunVision(initial, env);
+      const image = imageInput.imageBase64 && imageInput.imageMime
+        ? { base64: imageInput.imageBase64, mime: imageInput.imageMime }
+        : undefined;
+      const vision = await maybeRunVision(initial, env, image);
       const saved = await repository().saveMedia(vision.media);
       await eventBus.emit({
         tenantId: saved.tenantId,

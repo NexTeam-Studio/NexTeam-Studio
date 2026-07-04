@@ -13,4 +13,5 @@
 | crm | M2 read-side skeleton | done | `build/crm` receipt package: `receipts/m2/jobber-import-dry-run.json`, `receipts/m2/dependency-install-proof.txt` |
 | fielddocs | M4 read-side skeleton | done | `receipts/m4/verify.txt`, `receipts/m4/companycam-import-dry-run.json`, `receipts/m4/dependency-install-proof.txt` |
 | fielddocs | M4 upload + checklist + report foundation | done | `receipts/m4/upload-report-slice-verify.txt`, `receipts/m4/upload-report-slice-verify-exit.txt` |
-| fielddocs | M4 live AI caption + posted report receipt | blocked | Live paid vision/report-posting receipt waits for approved spend/outbound test window; no outbound report delivery attempted. |
+| fielddocs | M4 live AI caption receipt | done | `receipts/m4/live-vision-receipt.json` |
+| fielddocs | M4 posted report receipt | blocked | Outbound report delivery remains behind explicit approval; no outbound report delivery attempted. |

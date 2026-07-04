@@ -63,6 +63,29 @@ test("vision pipeline stub is wired off by default", async () => {
   assert.equal(result.media.aiCaption, "Skimmer throat dye test before repair.");
 });
 
+test("vision pipeline parses live Anthropic-style JSON responses with usage", async () => {
+  const result = await maybeRunVision(
+    skimmerPhoto,
+    { FIELD_DOCS_VISION_ENABLED: "true", ANTHROPIC_API_KEY: "test-key" },
+    { mime: "image/jpeg", base64: "ZmFrZQ==" },
+    async () => ({
+      ok: true,
+      status: 200,
+      async text() {
+        return JSON.stringify({
+          content: [{ type: "text", text: "{\"aiCaption\":\"Skimmer throat with dye test visible.\",\"aiTags\":[\"skimmer\",\"dye-test\"]}" }],
+          usage: { input_tokens: 100, output_tokens: 20 }
+        });
+      }
+    })
+  );
+  assert.equal(result.enabled, true);
+  assert.equal(result.media.aiCaption, "Skimmer throat with dye test visible.");
+  assert.deepEqual(result.media.aiTags, ["skimmer", "dye-test"]);
+  assert.equal(result.usage.totalTokens, 120);
+  assert.equal(result.estimatedCostUsd, 0.0006);
+});
+
 test("upload service creates native storage refs, thumbnails, and EXIF metadata", () => {
   const media = createNativeMediaFromUpload({
     tenantId: "aquatrace",
