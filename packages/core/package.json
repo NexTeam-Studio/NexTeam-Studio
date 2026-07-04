@@ -1,0 +1,23 @@
+{
+  "name": "@nexteam/core",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.1.0",
+    "pino": "^9.6.0",
+    "zod": "^3.25.76"
+  }
+}
+

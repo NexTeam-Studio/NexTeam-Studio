@@ -1,19 +1,38 @@
 {
+  "name": "nexteam-studio",
+  "private": true,
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "engines": {
-    "node": ">=22.0.0"
+    "node": "20.x"
   },
   "scripts": {
-    "dev": "vite",
-    "test": "node --test \"src/**/*.test.mjs\"",
+    "dev": "npm --workspace @nexteam/server run dev",
+    "dev:web": "npm --workspace @nexteam/web run dev",
+    "dev:server": "npm --workspace @nexteam/server run dev",
+    "test": "node --test \"packages/**/*.test.mjs\" \"apps/**/*.test.mjs\"",
+    "test:legacy": "node --test \"src/**/*.test.mjs\"",
+    "typecheck": "tsc -b",
+    "lint": "eslint \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/check-*.mjs\"",
+    "check:tenancy": "node scripts/check-tenancy.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check:provider-imports": "node scripts/check-provider-imports.mjs",
+    "check:blueprints": "node scripts/check-blueprint-identifiers.mjs",
+    "smoke:jobber": "tsx tests/smoke/jobber-readonly-smoke.ts",
+    "smoke:companycam": "tsx tests/smoke/companycam-readonly-smoke.ts",
+    "smoke:m0": "npm run smoke:jobber && npm run smoke:companycam",
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run check:tenancy && npm run check:secrets && npm run check:provider-imports && npm run check:blueprints",
     "test:firestore-rules:emulator": "node scripts/run-firestore-rules-emulator-tests.mjs",
     "test:firebase-auth-admin:emulator": "node scripts/run-firebase-auth-admin-emulator-tests.mjs",
     "dev:gbp": "node scripts/run-gbp-local-dev.mjs",
     "rail:local-api": "node scripts/run-rail-local-api.mjs",
-    "server": "node server.js",
-    "build": "vite build",
-    "preview": "vite preview",
-    "start": "node server.js",
+    "server": "npm --workspace @nexteam/server run start",
+    "build": "npm --workspace @nexteam/server run build && npm --workspace @nexteam/web run build",
+    "preview": "npm --workspace @nexteam/web run preview",
+    "start": "npm --workspace @nexteam/server run start",
     "vgb:campaign:dry-run": "node scripts/test-vgb-controlled-flow.mjs",
     "bragi:cron:dry-run": "node scripts/bragi-cron-foundation.mjs --dry-run",
     "bragi:cron:live": "node scripts/bragi-cron-foundation.mjs --live",
@@ -48,15 +67,24 @@
     "googleapis": "^171.4.0",
     "nodemailer": "^8.0.6",
     "pdf-parse": "^2.4.5",
+    "pino": "^9.6.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.2",
-    "xstate": "^5.29.0"
+    "xstate": "^5.29.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.1",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.19.9",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.31.0",
     "playwright": "^1.59.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
     "vite": "^5.4.11"
   }
 }
