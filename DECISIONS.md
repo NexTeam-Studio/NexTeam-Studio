@@ -1,4 +1,4 @@
-# DECISIONS
+﻿# DECISIONS
 
 | Time | Module | Decision | Reason | Receipt |
 |---|---|---|---|---|
@@ -12,3 +12,4 @@
 | 2026-07-04T00:20:00-04:00 | core | Local Node v24 was used for verification even though the target engine is Node 20. | The build manifest and Dockerfile target Node 20; the desktop runtime currently reports Node v24 and npm warned about the engine mismatch. | `receipts/m0/verify.txt` |
 | 2026-07-04T00:20:00-04:00 | core | Did not run `npm audit fix --force`. | `npm install` reported 17 vulnerabilities, but force-fixing during M0 could introduce unrelated dependency churn; record for owner review. | npm install output |
 | 2026-07-04T00:20:00-04:00 | core | Live `/api/version` SHA-match receipt is blocked until push plus a separate Railway environment. | GitHub CLI is unavailable, pushing waits for morning, and the live v1 Railway deployment must remain untouched. | `BUILDSTATE.md` |
+| 2026-07-04T00:35:00-04:00 | nexi | M1 route work is committed only as a blocked local skeleton, not as a completion claim. | Overnight no-spend and no-live-deploy limits conflict with the Bible's M1 live Claude/tool-loop, usage-cache, phone UI, and live transcript receipts. | receipts/m1/local-routes.json |

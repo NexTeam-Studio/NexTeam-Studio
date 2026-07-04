@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+﻿import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const files = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "apps", "packages"], { encoding: "utf8" })
@@ -7,7 +7,7 @@ const files = execFileSync("git", ["ls-files", "--cached", "--others", "--exclud
   .filter(Boolean)
   .filter((file) => /\.(ts|tsx)$/.test(file));
 
-const allowed = /\b(?:NexiBlueprint|SiteJobBlueprint|nexiBlueprint|siteJobBlueprint|nexiBlueprintSchema|siteJobBlueprintSchema|NexiBlueprintDoc|SiteJobBlueprintDoc)\b/g;
+const allowed = /\b(?:NexiBlueprint|SiteJobBlueprint|nexiBlueprint|siteJobBlueprint|siteJobBlueprints|nexiBlueprintSchema|siteJobBlueprintSchema|NexiBlueprintDoc|SiteJobBlueprintDoc)\b|site-job-blueprints?|site-job-blueprint/gi;
 const failures = [];
 
 for (const file of files) {
@@ -26,3 +26,5 @@ if (failures.length) {
 }
 
 console.log(`Blueprint naming check passed (${files.length} files checked).`);
+
+

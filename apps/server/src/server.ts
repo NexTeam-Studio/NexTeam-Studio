@@ -1,4 +1,4 @@
-import { Readable } from "node:stream";
+﻿import { Readable } from "node:stream";
 import express, { type Request, type Response } from "express";
 import {
   ApprovalQueueService,
@@ -9,12 +9,14 @@ import {
 } from "@nexteam/core";
 import { CompanyCamAdapter } from "@nexteam/providers";
 import { getBuildInfo } from "./buildInfo.js";
+import { createNexiRouter } from "./nexi/nexiRoutes.js";
 import { buildHealth } from "./health.js";
 
 const app = express();
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
 
 app.use(express.json({ limit: "1mb" }));
+app.use("/api/nexi", createNexiRouter(process.env));
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
@@ -97,3 +99,5 @@ if (process.env.NODE_ENV !== "test") {
     logger.info({ tenantId: process.env.TENANT_ID || "platform", module: "server", op: "listen", latencyMs: 0, ok: true, port });
   });
 }
+
+
