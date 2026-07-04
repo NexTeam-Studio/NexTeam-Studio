@@ -24,25 +24,51 @@ interface NexiResponse {
   error?: string;
 }
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID as string | undefined
+interface FirebasePublicConfig {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId: string;
+  appId: string;
+}
+
+interface RuntimeConfigResponse {
+  ok: boolean;
+  firebase: FirebasePublicConfig;
+  firebaseConfigured: boolean;
+}
+
+const buildTimeFirebaseConfig: FirebasePublicConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string || "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string || "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string || "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID as string || ""
 };
 
-function createFirebaseAuth(): Auth | null {
-  if (Object.values(firebaseConfig).some((value) => !value)) {
+function completeFirebaseConfig(config: FirebasePublicConfig): boolean {
+  return Object.values(config).every((value) => value.length > 0);
+}
+
+function createFirebaseAuth(config: FirebasePublicConfig): Auth | null {
+  if (!completeFirebaseConfig(config)) {
     return null;
   }
   const existingApp = getApps()[0];
-  const app = existingApp ?? initializeApp(firebaseConfig);
+  const app = existingApp ?? initializeApp(config);
   return getAuth(app);
 }
 
-const firebaseAuth = createFirebaseAuth();
+async function loadFirebaseAuth(): Promise<Auth | null> {
+  if (completeFirebaseConfig(buildTimeFirebaseConfig)) {
+    return createFirebaseAuth(buildTimeFirebaseConfig);
+  }
+  const response = await fetch("/api/public/runtime-config");
+  const runtime = await response.json() as RuntimeConfigResponse;
+  return runtime.ok && runtime.firebaseConfigured ? createFirebaseAuth(runtime.firebase) : null;
+}
 
 function sourceThumb(source: Source): React.ReactElement | null {
   if (source.rail !== "companycam" || !source.label.toLowerCase().includes("photo")) {
@@ -51,7 +77,7 @@ function sourceThumb(source: Source): React.ReactElement | null {
   return <img className="thumb" src={`/api/media/${encodeURIComponent(source.ref)}`} alt={source.label} loading="lazy" />;
 }
 
-function AuthGate(props: { user: User | null; authReady: boolean; onSignedIn: (user: User | null) => void }): React.ReactElement {
+function AuthGate(props: { auth: Auth | null; user: User | null; authReady: boolean; onSignedIn: (user: User | null) => void }): React.ReactElement {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [working, setWorking] = useState(false);
@@ -59,13 +85,13 @@ function AuthGate(props: { user: User | null; authReady: boolean; onSignedIn: (u
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (!firebaseAuth || working) {
+    if (!props.auth || working) {
       return;
     }
     setWorking(true);
     setError("");
     try {
-      const result = await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
+      const result = await signInWithEmailAndPassword(props.auth, email.trim(), password);
       props.onSignedIn(result.user);
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Firebase sign-in failed.");
@@ -74,32 +100,32 @@ function AuthGate(props: { user: User | null; authReady: boolean; onSignedIn: (u
     }
   }
 
-  if (!firebaseAuth) {
-    return (
-      <main className="shell">
-        <section className="auth-card">
-          <p className="eyebrow">Nexi access</p>
-          <h1>Firebase config missing</h1>
-          <p>The chat is locked until the `VITE_FIREBASE_*` staging variables are present in the web build.</p>
-        </section>
-      </main>
-    );
-  }
-
   if (!props.authReady) {
     return (
       <main className="shell">
         <section className="auth-card">
           <p className="eyebrow">Nexi access</p>
           <h1>Checking session</h1>
-          <p>Looking for a verified Firebase operator session.</p>
+          <p>Loading Firebase operator access.</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (!props.auth) {
+    return (
+      <main className="shell">
+        <section className="auth-card">
+          <p className="eyebrow">Nexi access</p>
+          <h1>Firebase config missing</h1>
+          <p>The chat is locked until the Firebase web config is present in staging runtime variables.</p>
         </section>
       </main>
     );
   }
 
   if (props.user) {
-    return <Chat user={props.user} />;
+    return <Chat auth={props.auth} user={props.user} />;
   }
 
   return (
@@ -127,7 +153,7 @@ function AuthGate(props: { user: User | null; authReady: boolean; onSignedIn: (u
   );
 }
 
-function Chat(props: { user: User }): React.ReactElement {
+function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -207,7 +233,7 @@ function Chat(props: { user: User }): React.ReactElement {
           </div>
           <div className="top-actions">
             <span className={`health ${health}`} aria-label={`Health ${health}`} />
-            <button className="sign-out" type="button" onClick={() => firebaseAuth ? void signOut(firebaseAuth) : undefined}>Sign out</button>
+            <button className="sign-out" type="button" onClick={() => void signOut(props.auth)}>Sign out</button>
           </div>
         </header>
 
@@ -245,20 +271,40 @@ function Chat(props: { user: User }): React.ReactElement {
 }
 
 function App(): React.ReactElement {
-  const [user, setUser] = useState<User | null>(firebaseAuth?.currentUser ?? null);
-  const [authReady, setAuthReady] = useState(!firebaseAuth);
+  const [auth, setAuth] = useState<Auth | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    if (!firebaseAuth) {
-      return;
-    }
-    return onAuthStateChanged(firebaseAuth, (nextUser) => {
-      setUser(nextUser);
-      setAuthReady(true);
-    });
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+    loadFirebaseAuth()
+      .then((nextAuth) => {
+        if (cancelled) {
+          return;
+        }
+        setAuth(nextAuth);
+        if (!nextAuth) {
+          setAuthReady(true);
+          return;
+        }
+        unsubscribe = onAuthStateChanged(nextAuth, (nextUser) => {
+          setUser(nextUser);
+          setAuthReady(true);
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAuthReady(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, []);
 
-  return <AuthGate user={user} authReady={authReady} onSignedIn={setUser} />;
+  return <AuthGate auth={auth} user={user} authReady={authReady} onSignedIn={setUser} />;
 }
 
 const root = document.getElementById("root");

@@ -40,6 +40,22 @@ app.get("/api/health", async (_req: Request, res: Response) => {
   }
 });
 
+app.get("/api/public/runtime-config", (_req: Request, res: Response) => {
+  const firebase = {
+    apiKey: process.env.VITE_FIREBASE_API_KEY || "",
+    authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+    projectId: process.env.VITE_FIREBASE_PROJECT_ID || "",
+    storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+    messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+    appId: process.env.VITE_FIREBASE_APP_ID || ""
+  };
+  res.json({
+    ok: true,
+    firebase,
+    firebaseConfigured: Object.values(firebase).every((value) => value.length > 0)
+  });
+});
+
 app.get("/api/media/:id", async (req: Request, res: Response) => {
   try {
     const mediaId = req.params.id;
