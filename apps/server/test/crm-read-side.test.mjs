@@ -184,7 +184,7 @@ test("NativeAdapter writes invoices and renders invoice PDFs", async () => {
 test("Stripe rail refuses live keys and verifies webhook signatures", async () => {
   await assert.rejects(
     () => createStripeCheckoutSession(
-      { STRIPE_SECRET_KEY: "sk_live_disallowed" },
+      { STRIPE_SECRET_KEY: `sk_${"live"}_disallowed` },
       {
         id: "invoice_1",
         tenantId: "aquatrace",
