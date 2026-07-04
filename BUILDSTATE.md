@@ -12,5 +12,6 @@
 | nexi | M1 Nexi Job Desk | done | `build/nexi` receipt package: `receipts/m1/staging-live-transcripts.json`, `receipts/m1/staging-cache-proof.json`, `receipts/m1/staging-phone-chat.webm` |
 | crm | M2 read-side skeleton | done | `receipts/m2/verify.txt`, `receipts/m2/jobber-import-dry-run.json`, `receipts/m2/dependency-install-proof.txt` |
 | crm | M2 native writes + quote foundation | done | `receipts/m2/native-write-slice-verify.txt`, `receipts/m2/native-write-slice-verify-exit.txt` |
+| crm | M2 Jobber-seeded pool leak catalog | done | `receipts/m2/jobber-catalog-pull.json` |
 | crm | M2 Stripe test payment receipt | blocked | Missing `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`; no checkout/session calls made. |
 | fielddocs | M4 read-side skeleton | done | `build/fielddocs` receipt package: `receipts/m4/companycam-import-dry-run.json`, `receipts/m4/dependency-install-proof.txt` |

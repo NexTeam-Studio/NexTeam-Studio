@@ -1,4 +1,4 @@
-import { getVgbCatalogItem } from "@nexteam/industry-packs";
+import { getPoolLeakCatalogItem } from "@nexteam/industry-packs";
 import { RailError, type LineItem, type QuoteDraft } from "@nexteam/core";
 import { z } from "zod";
 
@@ -24,7 +24,7 @@ function centsToCurrency(cents: number): number {
 
 export function buildQuoteDraft(input: DraftQuoteInput): QuoteDraft {
   const lineItems: LineItem[] = input.items.map((item, index) => {
-    const catalogItem = getVgbCatalogItem(item.catalogCode);
+    const catalogItem = getPoolLeakCatalogItem(item.catalogCode);
     if (!catalogItem) {
       throw new RailError(`VGB catalog item ${item.catalogCode} was not found.`, {
         provider: "native",

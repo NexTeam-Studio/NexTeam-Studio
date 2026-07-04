@@ -51,6 +51,25 @@ const CLIENTS_QUERY = `
   }
 `;
 
+const PRODUCTS_QUERY = `
+  query NexTeamProducts($first: Int!, $after: String, $searchTerm: String) {
+    products(first: $first, after: $after, searchTerm: $searchTerm) {
+      nodes {
+        id
+        name
+        description
+        category
+        defaultUnitCost
+        internalUnitCost
+        markup
+        taxable
+        visible
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;
+
 export interface JobberAdapterConfig {
   tenantId: string;
   clientId: string | undefined;
@@ -65,6 +84,18 @@ interface JobberTokenState {
   accessToken: string;
   refreshToken: string;
   accessTokenExpiresAt: number;
+}
+
+export interface JobberProductOrService {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  defaultUnitCost: number;
+  internalUnitCost: number | null;
+  markup: number | null;
+  taxable: boolean | null;
+  visible: boolean | null;
 }
 
 function normalizeJobStatus(status: string): JobStatus {
@@ -153,6 +184,21 @@ function mapJob(raw: unknown, tenantId: string): JobDetail {
   return job;
 }
 
+function mapProductOrService(raw: unknown): JobberProductOrService {
+  const record = asRecord(raw);
+  return {
+    id: text(record.id),
+    name: text(record.name),
+    description: text(record.description),
+    category: text(record.category),
+    defaultUnitCost: numberValue(record.defaultUnitCost),
+    internalUnitCost: record.internalUnitCost === null || record.internalUnitCost === undefined ? null : numberValue(record.internalUnitCost),
+    markup: record.markup === null || record.markup === undefined ? null : numberValue(record.markup),
+    taxable: typeof record.taxable === "boolean" ? record.taxable : null,
+    visible: typeof record.visible === "boolean" ? record.visible : null
+  };
+}
+
 function matchJob(job: JobDetail, ref: { id?: string; nameQuery?: string }): number {
   if (ref.id && (job.id === ref.id || job.externalIds?.jobber === ref.id)) {
     return 100;
@@ -234,6 +280,20 @@ export class JobberAdapter implements CRMProvider {
     }
     await this.graphql(JOBS_QUERY, { first: 1, after: null });
     return { ok: true, detail: "Jobber GraphQL read succeeded." };
+  }
+
+  async getProductsAndServices(searchTerm?: string, pageLimit = 25): Promise<JobberProductOrService[]> {
+    const products: JobberProductOrService[] = [];
+    let after: string | null = null;
+    let pages = 0;
+    do {
+      const payload = await this.graphql(PRODUCTS_QUERY, { first: 100, after, searchTerm: searchTerm?.trim() || null });
+      const connection = readConnection(payload, "products");
+      products.push(...connection.nodes.map(mapProductOrService));
+      after = connection.hasNextPage ? connection.endCursor : null;
+      pages += 1;
+    } while (after && pages < pageLimit);
+    return products;
   }
 
   private async listJobs(): Promise<JobDetail[]> {

@@ -145,7 +145,7 @@ export function createCrmTools(provider: CRMProvider, approvalQueue: ApprovalQue
           result: { quote: approvedQuote, approval },
           sources: [
             source(approvedQuote.id, `Native quote ${approvedQuote.title}`),
-            source("VGB-001..072", "Pool leak VGB line-item catalog")
+            source("jobber-products-services", "Jobber-seeded pool leak line-item catalog")
           ]
         };
       }

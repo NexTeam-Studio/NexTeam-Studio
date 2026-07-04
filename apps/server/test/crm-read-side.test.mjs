@@ -151,7 +151,7 @@ test("CRM write nexi-tools create clients, draft quotes through ApprovalQueue, a
   });
   assert.equal(drafted.result.quote.approvalId, drafted.result.approval.id);
   assert.equal(drafted.result.approval.kind, "quote");
-  assert.equal(drafted.sources.some((source) => source.ref === "VGB-001..072"), true);
+  assert.equal(drafted.sources.some((source) => source.ref === "jobber-products-services"), true);
 
   const status = await invoiceStatus.handler(tenant, { clientId: "client_1" });
   assert.equal(status.result.invoices[0].status, "sent");
