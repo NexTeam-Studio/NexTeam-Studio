@@ -1,0 +1,58 @@
+Hi Chris,
+
+Dive Factor full static site build has been published from the canonical NexTeam lane and the expanded file set is now on the FTP origin.
+
+Remote backup folder:
+_backup_before_divefactor_full_site_build_2026-06-15_1903
+
+Local backup record:
+C:\Users\Peyto\NexTeam-Studio\tmp\divefactor_full_live_backup_2026-06-15_1903
+
+Live URLs created or updated:
+https://divefactor.com/
+https://divefactor.com/underwater-services/
+https://divefactor.com/dive-training/
+https://divefactor.com/aquatic-programs/
+https://divefactor.com/safety-training/
+https://divefactor.com/aquatic-staff-training/
+https://divefactor.com/resources/
+https://divefactor.com/resources/below-waterline-inspection-guide/
+https://divefactor.com/resources/camp-scuba-experience-guide/
+https://divefactor.com/resources/aquatic-staff-cpr-first-aid-oxygen-guide/
+https://divefactor.com/robots.txt
+https://divefactor.com/sitemap.xml
+
+What is live right now:
+- New paths that did not previously exist are serving the new build on their plain public URLs, including Dive Training, Safety Training, Aquatic Staff Training, Resources, and all three article pages.
+- The updated origin files for the homepage, Underwater Services, Aquatic Programs, and shared assets are also uploaded and confirmed on the FTP origin.
+
+Remaining issue:
+- A stale proxy cache is still serving the older public versions of some pre-existing URLs without a query string, specifically:
+  https://divefactor.com/
+  https://divefactor.com/underwater-services/
+  https://divefactor.com/aquatic-programs/
+  https://divefactor.com/assets/site.css
+  https://divefactor.com/assets/site.js
+- Cache-busted origin checks confirm the new files are there and correct, for example:
+  https://divefactor.com/index.html?v=1907
+  https://divefactor.com/underwater-services/index.html?v=1907
+  https://divefactor.com/aquatic-programs/index.html?v=1907
+- This appears to be a reverse-proxy cache issue rather than an FTP upload issue.
+
+QA summary:
+- No live forms
+- No action or method attributes
+- CTA routing is tel/mailto only in the new build
+- Robots and sitemap uploaded
+- Desktop/mobile screenshots captured for the new homepage, Dive Training, and Resources layouts
+
+What was not touched:
+- No WordPress install
+- No database changes
+- No CRM routing
+- No payment links
+- No outreach
+
+I also updated the Dive Factor proof logs in the canonical lane with the publish trail and the cache issue note.
+
+Clawdia

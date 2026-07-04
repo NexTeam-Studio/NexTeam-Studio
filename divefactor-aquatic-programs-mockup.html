@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dive Factor Aquatic Programs and Dive Training - Local Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #a8e020;
+    --green-bright: #c8ff40;
+    --green-dark: #6a9010;
+    --red: #cc1a1a;
+    --silver: #c8c8c8;
+    --silver-bright: #e2e2e2;
+    --dark: #091017;
+    --dark2: #0b151d;
+    --dark3: #102433;
+    --panel: rgba(10, 18, 26, 0.78);
+    --panel-strong: rgba(12, 22, 31, 0.92);
+    --text: #dbe4ea;
+    --muted: rgba(219, 228, 234, 0.72);
+    --line: rgba(168, 224, 32, 0.2);
+    --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+    --nav-anchor-offset: 108px;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: var(--nav-anchor-offset);
+  }
+
+  section[id] {
+    scroll-margin-top: var(--nav-anchor-offset);
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 20% 0%, rgba(168, 224, 32, 0.08), transparent 25%),
+      radial-gradient(circle at 80% 18%, rgba(28, 92, 128, 0.2), transparent 24%),
+      linear-gradient(180deg, #081018 0%, #09141d 34%, #07141d 65%, #081018 100%);
+    color: var(--text);
+    font-family: "Lato", sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+  }
+
+  .bubbles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .bubble {
+    position: absolute;
+    bottom: -60px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(168, 224, 32, 0.18), rgba(168, 224, 32, 0.04));
+    border: 1px solid rgba(168, 224, 32, 0.12);
+    animation: rise linear infinite;
+  }
+
+  @keyframes rise {
+    0% {
+      transform: translateY(0) translateX(0);
+      opacity: 0;
+    }
+
+    10% {
+      opacity: 1;
+    }
+
+    90% {
+      opacity: 0.5;
+    }
+
+    100% {
+      transform: translateY(-110vh) translateX(40px);
+      opacity: 0;
+    }
+  }
+
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 14px 40px;
+    background: rgba(7, 12, 18, 0.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.18);
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav-logo img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 18px rgba(168, 224, 32, 0.2));
+  }
+
+  .nav-brand {
+    font-family: "Oswald", sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--green);
+    text-shadow: 0 0 12px rgba(168, 224, 32, 0.48);
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .nav-brand span {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    color: var(--silver);
+  }
+
+  .nav-links {
+    list-style: none;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .nav-links a {
+    font-family: "Oswald", sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--silver);
+    text-transform: uppercase;
+    transition: color 0.2s ease;
+  }
+
+  .nav-links a:hover {
+    color: var(--green);
+  }
+
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 138px 20px 90px;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(168, 224, 32, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(8, 51, 84, 0.42) 0%, transparent 55%),
+      linear-gradient(180deg, rgba(8, 13, 19, 0.94) 0%, rgba(7, 16, 24, 0.8) 36%, rgba(7, 18, 27, 0.95) 100%);
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(115deg, transparent 0 44%, rgba(204, 26, 26, 0.24) 44.4%, transparent 45%),
+      linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.22));
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--green), rgba(168, 224, 32, 0.35), var(--green), transparent);
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% {
+      opacity: 0.45;
+    }
+
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .hero-inner {
+    position: relative;
+    max-width: 1020px;
+  }
+
+  .hero-logo {
+    width: 240px;
+    height: 240px;
+    margin: 0 auto 34px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 30px rgba(168, 224, 32, 0.22));
+    animation: fadeDown 1s ease both;
+  }
+
+  @keyframes fadeDown {
+    from {
+      opacity: 0;
+      transform: translateY(-28px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .hero-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    font-family: "Oswald", sans-serif;
+    font-size: 13px;
+    letter-spacing: 5px;
+    color: var(--green);
+    text-transform: uppercase;
+    animation: fadeUp 1s 0.2s ease both;
+    opacity: 0;
+  }
+
+  .hero-kicker::before,
+  .hero-kicker::after {
+    content: "";
+    width: 42px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--red), var(--green));
+  }
+
+  .hero h1 {
+    font-family: "Oswald", sans-serif;
+    font-size: clamp(38px, 6vw, 76px);
+    line-height: 1.03;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #ffffff;
+    animation: fadeUp 1s 0.35s ease both;
+    opacity: 0;
+  }
+
+  .hero h1 span {
+    color: var(--green);
+    text-shadow: 0 0 28px rgba(168, 224, 32, 0.5);
+  }
+
+  .hero-sub {
+    max-width: 780px;
+    margin: 22px auto 0;
+    font-size: clamp(16px, 2vw, 20px);
+    line-height: 1.7;
+    color: var(--muted);
+    animation: fadeUp 1s 0.5s ease both;
+    opacity: 0;
+  }
+
+  .hero-note {
+    max-width: 820px;
+    margin: 24px auto 0;
+    padding: 12px 18px;
+    border: 1px solid rgba(168, 224, 32, 0.1);
+    background: rgba(12, 22, 31, 0.34);
+    color: rgba(219, 228, 234, 0.74);
+    font-size: 13px;
+    line-height: 1.7;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+    animation: fadeUp 1s 0.65s ease both;
+    opacity: 0;
+  }
+
+  .hero-cta {
+    margin-top: 40px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeUp 1s 0.8s ease both;
+    opacity: 0;
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(22px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .btn-primary,
+  .btn-outline {
+    display: inline-block;
+    padding: 14px 36px;
+    font-family: "Oswald", sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background: var(--green);
+    color: #0a0f0a;
+    border: none;
+  }
+
+  .btn-primary:hover {
+    background: var(--green-bright);
+    box-shadow: 0 0 26px rgba(168, 224, 32, 0.55);
+  }
+
+  .btn-outline {
+    border: 1.5px solid var(--green);
+    color: var(--green);
+    background: transparent;
+  }
+
+  .btn-outline:hover {
+    background: rgba(168, 224, 32, 0.08);
+    box-shadow: 0 0 18px rgba(168, 224, 32, 0.24);
+  }
+
+  .hero-scroll {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-family: "Oswald", sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: rgba(168, 224, 32, 0.52);
+    text-transform: uppercase;
+    animation: bounce 2s ease infinite;
+  }
+
+  .hero-scroll::before {
+    content: "";
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(180deg, transparent, rgba(168, 224, 32, 0.5));
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    50% {
+      transform: translateX(-50%) translateY(6px);
+    }
+  }
+
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 92px 20px;
+  }
+
+  .container {
+    max-width: 1140px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    margin-bottom: 12px;
+    font-family: "Oswald", sans-serif;
+    font-size: 11px;
+    letter-spacing: 6px;
+    color: var(--green);
+    text-transform: uppercase;
+  }
+
+  .section-title {
+    font-family: "Oswald", sans-serif;
+    font-size: clamp(30px, 5vw, 50px);
+    line-height: 1.04;
+    letter-spacing: 1px;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
+
+  .section-title span {
+    color: var(--silver);
+  }
+
+  .section-intro {
+    margin-top: 16px;
+    max-width: 760px;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.75;
+  }
+
+  .divider {
+    width: 110px;
+    height: 4px;
+    margin: 22px 0 0;
+    background: linear-gradient(90deg, var(--green), var(--red), transparent);
+    clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  }
+
+  .about,
+  .training {
+    background:
+      linear-gradient(180deg, rgba(13, 23, 32, 0.72), rgba(8, 16, 24, 0.4)),
+      radial-gradient(circle at 85% 16%, rgba(168, 224, 32, 0.08), transparent 28%);
+  }
+
+  .about-grid,
+  .split-grid {
+    margin-top: 34px;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 28px;
+  }
+
+  .panel-card {
+    position: relative;
+    padding: 28px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .panel-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 84px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--red));
+  }
+
+  .about-copy p,
+  .request-copy p,
+  .panel-copy p {
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.8;
+    margin-top: 16px;
+  }
+
+  .about-copy strong,
+  .request-copy strong,
+  .panel-copy strong {
+    color: var(--silver-bright);
+    font-weight: 700;
+  }
+
+  .operator-note {
+    margin-top: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid rgba(168, 224, 32, 0.22);
+    background: rgba(168, 224, 32, 0.04);
+    color: var(--silver-bright);
+    font-family: "Oswald", sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .operator-note::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 14px rgba(168, 224, 32, 0.7);
+  }
+
+  .focus-points,
+  .timeline-list,
+  .training-list,
+  .safety-list {
+    display: grid;
+    gap: 14px;
+    margin-top: 8px;
+  }
+
+  .focus-item,
+  .timeline-item,
+  .training-item,
+  .safety-item {
+    padding: 18px 18px 18px 22px;
+    border-left: 3px solid var(--red);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .focus-item h3,
+  .timeline-item h3,
+  .training-item h3,
+  .safety-item h3 {
+    font-family: "Oswald", sans-serif;
+    font-size: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+
+  .focus-item p,
+  .timeline-item p,
+  .training-item p,
+  .safety-item p {
+    margin-top: 8px;
+    color: var(--muted);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  .programs,
+  .safety {
+    background:
+      linear-gradient(180deg, rgba(11, 21, 29, 0.9), rgba(8, 15, 22, 0.7)),
+      radial-gradient(circle at 88% 8%, rgba(168, 224, 32, 0.08), transparent 20%);
+  }
+
+  .audiences,
+  .camp-day,
+  .request {
+    background:
+      linear-gradient(180deg, rgba(9, 18, 26, 0.35), rgba(9, 18, 26, 0.8)),
+      radial-gradient(circle at 12% 10%, rgba(168, 224, 32, 0.06), transparent 20%);
+  }
+
+  .program-grid,
+  .audience-grid,
+  .safety-grid {
+    margin-top: 36px;
+    display: grid;
+    gap: 22px;
+  }
+
+  .program-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .audience-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .safety-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .program-card,
+  .audience-card,
+  .request-card,
+  .contact-card,
+  .safety-card {
+    position: relative;
+    padding: 24px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .program-card::before,
+  .audience-card::before,
+  .request-card::before,
+  .contact-card::before,
+  .safety-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(168, 224, 32, 0.75), rgba(204, 26, 26, 0.8), transparent);
+  }
+
+  .program-card:hover,
+  .audience-card:hover,
+  .request-card:hover,
+  .contact-card:hover,
+  .safety-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(168, 224, 32, 0.34);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    color: var(--green);
+    margin-bottom: 16px;
+  }
+
+  .program-card h3,
+  .audience-card h3,
+  .request-card h3,
+  .contact-card h3,
+  .safety-card h3 {
+    font-family: "Oswald", sans-serif;
+    font-size: 23px;
+    line-height: 1.08;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+
+  .program-card p,
+  .audience-card p,
+  .request-card p,
+  .contact-card p,
+  .safety-card p {
+    margin-top: 10px;
+    color: var(--muted);
+    line-height: 1.72;
+    font-size: 15px;
+  }
+
+  .card-tag {
+    display: inline-block;
+    margin-bottom: 12px;
+    font-family: "Oswald", sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--green);
+    text-transform: uppercase;
+  }
+
+  .services-footnote {
+    margin-top: 24px;
+    padding: 16px 18px;
+    border-left: 3px solid var(--red);
+    background: rgba(204, 26, 26, 0.06);
+    color: rgba(219, 228, 234, 0.82);
+    line-height: 1.75;
+    font-size: 14px;
+  }
+
+  .camp-layout,
+  .request-layout {
+    margin-top: 34px;
+    display: grid;
+    grid-template-columns: 0.95fr 1.05fr;
+    gap: 28px;
+  }
+
+  .camp-points {
+    list-style: none;
+    margin-top: 18px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .camp-points li,
+  .request-list li {
+    position: relative;
+    padding-left: 20px;
+    color: var(--muted);
+    line-height: 1.75;
+  }
+
+  .camp-points li::before,
+  .request-list li::before {
+    content: "";
+    position: absolute;
+    top: 11px;
+    left: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 12px rgba(168, 224, 32, 0.4);
+  }
+
+  .camp-quote-note {
+    margin-top: 22px;
+    padding: 16px 18px;
+    border: 1px solid rgba(168, 224, 32, 0.2);
+    background: rgba(168, 224, 32, 0.05);
+    color: var(--silver-bright);
+    line-height: 1.72;
+  }
+
+  .cta-band {
+    padding: 88px 20px;
+  }
+
+  .cta-panel {
+    position: relative;
+    padding: 46px 34px;
+    border: 1px solid rgba(168, 224, 32, 0.2);
+    background:
+      linear-gradient(135deg, rgba(7, 16, 24, 0.88), rgba(12, 26, 36, 0.88)),
+      radial-gradient(circle at top right, rgba(168, 224, 32, 0.09), transparent 30%);
+    text-align: center;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .cta-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(120deg, transparent 0 35%, rgba(204, 26, 26, 0.12) 35.4%, transparent 36%),
+      linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.15));
+    pointer-events: none;
+  }
+
+  .cta-panel h2 {
+    position: relative;
+    font-family: "Oswald", sans-serif;
+    font-size: clamp(32px, 5vw, 54px);
+    line-height: 1.04;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+
+  .cta-panel h2 span {
+    color: var(--green);
+  }
+
+  .cta-panel p {
+    position: relative;
+    max-width: 720px;
+    margin: 18px auto 0;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.8;
+  }
+
+  .cta-panel .btn-primary {
+    position: relative;
+    margin-top: 28px;
+  }
+
+  .request-grid {
+    display: grid;
+    gap: 18px;
+  }
+
+  .request-card h3,
+  .contact-card h3 {
+    font-size: 21px;
+  }
+
+  .request-list {
+    list-style: none;
+    margin-top: 14px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .mock-form {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .mock-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .mock-field.full {
+    grid-column: 1 / -1;
+  }
+
+  .mock-field label {
+    font-family: "Oswald", sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--silver);
+    text-transform: uppercase;
+  }
+
+  .mock-field input,
+  .mock-field select,
+  .mock-field textarea {
+    width: 100%;
+    border: 1px solid rgba(168, 224, 32, 0.14);
+    background: rgba(7, 13, 19, 0.86);
+    color: var(--silver-bright);
+    padding: 12px 14px;
+    font: inherit;
+  }
+
+  .mock-field textarea {
+    min-height: 128px;
+    resize: vertical;
+  }
+
+  .mock-field input::placeholder,
+  .mock-field textarea::placeholder {
+    color: rgba(219, 228, 234, 0.4);
+  }
+
+  .mock-submit-button[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .mock-submit-button[disabled]:hover {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .mock-submit-note {
+    margin-top: 14px;
+    color: rgba(219, 228, 234, 0.62);
+    line-height: 1.7;
+    font-size: 13px;
+  }
+
+  .request-disclaimer {
+    margin-top: 28px;
+  }
+
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 30px 20px 44px;
+    border-top: 1px solid rgba(168, 224, 32, 0.16);
+    background: rgba(6, 10, 16, 0.94);
+  }
+
+  .footer-inner {
+    max-width: 1140px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    color: rgba(219, 228, 234, 0.58);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .footer-copy span {
+    color: var(--silver-bright);
+  }
+
+  @media (max-width: 1120px) {
+    .program-grid,
+    .audience-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 960px) {
+    nav {
+      padding: 14px 18px;
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .nav-links {
+      gap: 14px;
+      justify-content: flex-start;
+    }
+
+    .about-grid,
+    .split-grid,
+    .camp-layout,
+    .request-layout,
+    .safety-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .program-grid,
+    .audience-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .hero {
+      padding-top: 170px;
+    }
+
+    .hero-logo {
+      width: 200px;
+      height: 200px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    :root {
+      --nav-anchor-offset: 146px;
+    }
+
+    .hero {
+      min-height: auto;
+      padding: 182px 18px 80px;
+    }
+
+    .hero-kicker {
+      letter-spacing: 3px;
+    }
+
+    section {
+      padding: 74px 18px;
+    }
+
+    .program-grid,
+    .audience-grid,
+    .mock-form {
+      grid-template-columns: 1fr;
+    }
+
+    .btn-primary,
+    .btn-outline {
+      width: 100%;
+      text-align: center;
+    }
+
+    .hero-cta {
+      width: 100%;
+    }
+
+    .cta-panel {
+      padding: 34px 22px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="bubbles" id="bubbles"></div>
+
+<nav>
+  <a class="nav-logo" href="#top">
+    <img src="mockup-assets/Dive_Factor_Logo.png" alt="Dive Factor logo">
+    <div class="nav-brand">
+      Dive Factor
+      <span>Aquatic Programs</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#programs">Programs</a></li>
+    <li><a href="#audiences">Audiences</a></li>
+    <li><a href="#camp-day">Camp Day</a></li>
+    <li><a href="#training">Training</a></li>
+    <li><a href="#safety">Safety</a></li>
+    <li><a href="#request">Request</a></li>
+  </ul>
+</nav>
+
+<section class="hero" id="top">
+  <div class="hero-inner">
+    <img src="mockup-assets/Dive_Factor_Logo.png" class="hero-logo" alt="Dive Factor logo">
+    <p class="hero-kicker">Aquatic Programs and Dive Training</p>
+    <h1>Scuba Experiences, <span>Dive Training</span> and Aquatic Safety Programs</h1>
+    <p class="hero-sub">
+      Pool-based scuba experiences, beginner-friendly dive training, camp aquatic activities,
+      and DAN safety training programs for camps, youth groups, private groups, and future certified divers.
+    </p>
+    <div class="hero-note">
+      This local landing-page mockup positions Dive Factor as one brand with two lanes:
+      underwater services and aquatic programs. NAUI standards review pending for certification-specific details.
+      DAN standards review pending for safety-course details.
+    </div>
+    <div class="hero-cta">
+      <a href="#request" class="btn-primary">Request Program Info</a>
+      <a href="#programs" class="btn-outline">View Program Options</a>
+    </div>
+  </div>
+  <div class="hero-scroll">Scroll</div>
+</section>
+
+<section class="about" id="overview">
+  <div class="container">
+    <p class="section-label">Program Overview</p>
+    <h2 class="section-title">Structured Aquatic Experiences <span>Under One Brand</span></h2>
+    <div class="divider"></div>
+    <div class="about-grid">
+      <div class="panel-card about-copy">
+        <p>
+          <strong>Dive Factor Aquatic Programs and Dive Training</strong> is designed as a second
+          landing-page lane under the same Dive Factor brand. It complements the underwater-services
+          page rather than replacing it, expanding the brand into camp-friendly aquatic experiences,
+          youth programs, private dive training, and safety-focused staff development.
+        </p>
+        <p>
+          The tone stays professional, exciting, and family or camp friendly. This page frames Dive Factor
+          around structured pool-based scuba experiences, intro-level aquatic confidence building, private
+          instruction, and staff safety readiness for groups that want a premium underwater experience with
+          calm operational planning behind it.
+        </p>
+        <p>
+          Chris Sears remains part of the brand story, but the public-facing focus here is program structure,
+          safety planning, and a memorable underwater experience for camps, groups, and new divers.
+        </p>
+        <div class="operator-note">Same Dive Factor brand. Separate landing page. Local only.</div>
+      </div>
+      <div class="panel-card">
+        <div class="focus-points">
+          <div class="focus-item">
+            <h3>Camp Ready</h3>
+            <p>Built for camps, retreat centers, schools, and youth groups that want a guided underwater program lane.</p>
+          </div>
+          <div class="focus-item">
+            <h3>Training Forward</h3>
+            <p>Supports intro experiences, private dive training, scuba certification options, and future continuing education.</p>
+          </div>
+          <div class="focus-item">
+            <h3>Safety Driven</h3>
+            <p>Includes aquatic safety training, DAN safety training concepts, supervision planning, and review-gated standards language.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="programs" id="programs">
+  <div class="container">
+    <p class="section-label">Core Program Cards</p>
+    <h2 class="section-title">Program Options and <span>Training Lanes</span></h2>
+    <p class="section-intro">
+      These cards position Dive Factor around youth aquatic programs, pool-based scuba experience offers,
+      private training, and staff-readiness support without making unverified public certification claims.
+    </p>
+    <div class="divider"></div>
+    <div class="program-grid">
+      <article class="program-card">
+        <svg class="card-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="24" cy="24" r="10"></circle>
+          <path d="M14 24h20"></path>
+          <path d="M24 14c5 3 8 6 8 10s-3 7-8 10c-5-3-8-6-8-10s3-7 8-10z"></path>
+        </svg>
+        <span class="card-tag">Intro Experience</span>
+        <h3>Camp Try Scuba Experience</h3>
+        <p>Pool-based intro scuba experience for eligible campers and teen groups who want a guided first underwater experience.</p>
+      </article>
+
+      <article class="program-card">
+        <svg class="card-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M8 30c6-8 12-12 16-12s10 4 16 12"></path>
+          <path d="M12 34h24"></path>
+          <path d="M16 18l8-8 8 8"></path>
+        </svg>
+        <span class="card-tag">Youth Aquatic Programs</span>
+        <h3>Youth Aquatic Adventure Session</h3>
+        <p>Snorkel, mask, fins, underwater confidence, pool search games, underwater communication, and water-safety awareness.</p>
+      </article>
+
+      <article class="program-card">
+        <svg class="card-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M10 12h28v24H10z"></path>
+          <path d="M16 20h16"></path>
+          <path d="M16 27h10"></path>
+        </svg>
+        <span class="card-tag">Standards Review Pending</span>
+        <h3>Scuba Certification Options</h3>
+        <p>Beginner scuba certification, private training, refresher options, advanced or specialty interest, and continuing education options pending NAUI verification.</p>
+      </article>
+
+      <article class="program-card">
+        <svg class="card-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M8 36c4-10 8-16 16-16s12 6 16 16"></path>
+          <circle cx="24" cy="14" r="4"></circle>
+          <path d="M24 18v10"></path>
+        </svg>
+        <span class="card-tag">Private Training</span>
+        <h3>Private Dive Training</h3>
+        <p>Private or small-group scuba instruction for families, adults, and new divers who want a focused training environment.</p>
+      </article>
+
+      <article class="program-card">
+        <svg class="card-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M24 10v28"></path>
+          <path d="M10 24h28"></path>
+          <rect x="14" y="14" width="20" height="20" rx="4"></rect>
+        </svg>
+        <span class="card-tag">DAN Standards Review Pending</span>
+        <h3>DAN CPR / First Aid / AED Training</h3>
+        <p>Staff and group safety training options with final course naming and certification details held pending DAN verification.</p>
+      </article>
+
+      <article class="program-card">
+        <svg class="card-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M18 10h12l4 8v16H14V18z"></path>
+          <path d="M20 24h8"></path>
+          <path d="M24 20v8"></path>
+        </svg>
+        <span class="card-tag">DAN Standards Review Pending</span>
+        <h3>DAN Emergency Oxygen Training</h3>
+        <p>O2 administration training concepts for aquatic staff, dive support teams, and waterfront programs pending final DAN standards review.</p>
+      </article>
+
+      <article class="program-card">
+        <svg class="card-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M10 14h28v20H10z"></path>
+          <path d="M16 20h16"></path>
+          <path d="M16 27h12"></path>
+          <path d="M34 14v20"></path>
+        </svg>
+        <span class="card-tag">Staff Readiness</span>
+        <h3>Camp Staff Aquatic Safety Workshop</h3>
+        <p>A staff-focused workshop covering emergency readiness, oxygen awareness, response planning, and aquatic activity risk review.</p>
+      </article>
+
+      <article class="program-card">
+        <svg class="card-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M8 34h32"></path>
+          <path d="M14 30V14h20v16"></path>
+          <path d="M18 20h12"></path>
+          <path d="M24 14v16"></path>
+        </svg>
+        <span class="card-tag">Premium Package</span>
+        <h3>Full Camp Aquatic Program Package</h3>
+        <p>A premium package combining teen scuba experience, staff safety training, and aquatic readiness planning into one camp-program lane.</p>
+      </article>
+    </div>
+    <div class="services-footnote">
+      Public copy in this mockup intentionally uses pool-based scuba experience, intro scuba experience,
+      aquatic safety training, dive training, scuba certification options, youth aquatic programs,
+      camp staff safety training, DAN safety training, NAUI standards review pending, and DAN standards review pending.
+    </div>
+  </div>
+</section>
+
+<section class="audiences" id="audiences">
+  <div class="container">
+    <p class="section-label">Best-Fit Audiences</p>
+    <h2 class="section-title">Programs for Camps, Groups <span>and New Divers</span></h2>
+    <p class="section-intro">
+      This audience map keeps the page broad enough for camp and group demand while still supporting
+      private training, family participation, and staff-development use cases.
+    </p>
+    <div class="divider"></div>
+    <div class="audience-grid">
+      <article class="audience-card">
+        <span class="card-tag">Camp Partner</span>
+        <h3>Christian Summer Camps</h3>
+        <p>Good fit for camp-waterfront programming, camp staff readiness, and memorable pool-based scuba experiences.</p>
+      </article>
+      <article class="audience-card">
+        <span class="card-tag">Camp Partner</span>
+        <h3>YMCA and Youth Camps</h3>
+        <p>Works well for structured aquatic sessions, camp enrichment days, and staff safety training support.</p>
+      </article>
+      <article class="audience-card">
+        <span class="card-tag">Youth Group</span>
+        <h3>Church Youth Groups</h3>
+        <p>Short-format aquatic adventure sessions and group-friendly underwater experiences can fit retreat or activity calendars.</p>
+      </article>
+      <article class="audience-card">
+        <span class="card-tag">School Partner</span>
+        <h3>Private Schools</h3>
+        <p>Useful for enrichment programming, aquatic skill-building, and structured activity-day experiences.</p>
+      </article>
+      <article class="audience-card">
+        <span class="card-tag">Family Education</span>
+        <h3>Homeschool Groups</h3>
+        <p>Flexible group sessions and private training formats can support parent-led planning and custom pacing.</p>
+      </article>
+      <article class="audience-card">
+        <span class="card-tag">Outdoor Group</span>
+        <h3>Scout and Outdoor Groups</h3>
+        <p>Pairs well with adventure-focused underwater exposure, pool confidence, and supervised skills sessions.</p>
+      </article>
+      <article class="audience-card">
+        <span class="card-tag">Waterfront Venue</span>
+        <h3>Lake Camps</h3>
+        <p>Strong brand alignment for lake-based organizations that want a professional aquatic-program option under the Dive Factor brand.</p>
+      </article>
+      <article class="audience-card">
+        <span class="card-tag">Retreat Venue</span>
+        <h3>Retreat Centers</h3>
+        <p>Can support scheduled camp days, youth-group events, and staff-readiness workshops when facilities are suitable.</p>
+      </article>
+      <article class="audience-card">
+        <span class="card-tag">Athletic Group</span>
+        <h3>Swim Teams</h3>
+        <p>Useful for underwater confidence, communication, and staff or coach safety-readiness add-ons.</p>
+      </article>
+      <article class="audience-card">
+        <span class="card-tag">Aquatic Staff</span>
+        <h3>Lifeguard Teams</h3>
+        <p>A fit for aquatic staff readiness workshops and oxygen-awareness training concepts pending standards verification.</p>
+      </article>
+      <article class="audience-card">
+        <span class="card-tag">Private Group</span>
+        <h3>Family and Private Training Groups</h3>
+        <p>Private dive training and small-group learning make this lane useful beyond camp-only audiences.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="camp-day" id="camp-day">
+  <div class="container">
+    <p class="section-label">Camp Package Section</p>
+    <h2 class="section-title">Camp Water <span>Adventure Day</span></h2>
+    <p class="section-intro">
+      This section packages the page around a camp-friendly program concept that can scale by group type,
+      staffing, facility readiness, and approved scope.
+    </p>
+    <div class="divider"></div>
+    <div class="camp-layout">
+      <div class="panel-card panel-copy">
+        <p>
+          Camp Water Adventure Day is the clearest flagship package for camp and group marketing. It presents
+          Dive Factor as a premium aquatic-program partner that can bring an organized underwater experience,
+          a calm safety posture, and a memorable activity sequence to a suitable pool environment.
+        </p>
+        <p>
+          The structure below stays descriptive instead of promising final pricing or unverified standards details.
+          It is designed for custom quoting and approval-based planning.
+        </p>
+        <ul class="camp-points">
+          <li>Short classroom-style intro</li>
+          <li>Gear orientation</li>
+          <li>Pool-based scuba or snorkeling activity</li>
+          <li>Underwater communication and safety signals</li>
+          <li>Supervised pool rotations</li>
+          <li>Optional underwater search game</li>
+          <li>Photo or video documentation option if approved</li>
+          <li>Staff debrief</li>
+        </ul>
+        <div class="camp-quote-note">
+          Custom quoted by group size, program type, location, staffing, and equipment needs.
+        </div>
+      </div>
+      <div class="panel-card">
+        <div class="timeline-list">
+          <div class="timeline-item">
+            <h3>Arrival and Orientation</h3>
+            <p>Set expectations, gear layout, participant flow, and pool rules before any in-water activity begins.</p>
+          </div>
+          <div class="timeline-item">
+            <h3>Confidence and Communication</h3>
+            <p>Build comfort with masks, fins, breathing concepts, and simple underwater communication patterns.</p>
+          </div>
+          <div class="timeline-item">
+            <h3>Guided In-Water Rotations</h3>
+            <p>Use manageable stations and supervised group movement to keep the experience structured and camp friendly.</p>
+          </div>
+          <div class="timeline-item">
+            <h3>Wrap-Up and Next Steps</h3>
+            <p>Close with staff debrief, parent or leadership follow-up notes, and possible next-step program options.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="training" id="training">
+  <div class="container">
+    <p class="section-label">Dive Training and Certification Options</p>
+    <h2 class="section-title">Training Paths for <span>New and Returning Divers</span></h2>
+    <p class="section-intro">
+      This section gives Dive Factor a clear training identity without hard-coding certification details,
+      age limits, paperwork rules, or ratios that still need official source review.
+    </p>
+    <div class="divider"></div>
+    <div class="split-grid">
+      <div class="panel-card panel-copy">
+        <p>
+          Dive Factor can support beginner scuba certification, private scuba lessons, refresher or reactivation-style
+          options, advanced and specialty interest, family or private group training, and future dive trip preparation.
+        </p>
+        <p>
+          The positioning here is training-forward but careful. It shows a serious program lane while keeping exact
+          standards, forms, eligibility, and ratios behind current-source verification.
+        </p>
+        <div class="training-list">
+          <div class="training-item">
+            <h3>Beginner Scuba Certification</h3>
+            <p>Entry-level certification pathway positioned as an option pending current NAUI standards review.</p>
+          </div>
+          <div class="training-item">
+            <h3>Private Scuba Lessons</h3>
+            <p>Flexible one-on-one or small-group instruction for adults, families, and new divers.</p>
+          </div>
+          <div class="training-item">
+            <h3>Refresher and Reactivation Style Options</h3>
+            <p>Helpful for divers who want to rebuild confidence before travel, continuing education, or next-step training.</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel-card">
+        <div class="training-list">
+          <div class="training-item">
+            <h3>Advanced and Specialty Interest</h3>
+            <p>Presented as a future continuing-education path rather than a published standards promise.</p>
+          </div>
+          <div class="training-item">
+            <h3>Family and Private Group Training</h3>
+            <p>Supports coordinated learning for families and small groups who want a more personal pace.</p>
+          </div>
+          <div class="training-item">
+            <h3>Future Dive Trip Preparation</h3>
+            <p>Useful as a prep lane for travelers who want to build comfort before a destination trip or dive vacation.</p>
+          </div>
+        </div>
+        <div class="services-footnote">
+          Program eligibility, age requirements, paperwork, medical forms, and instructor ratios must be confirmed
+          against current NAUI standards before public launch.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="programs" id="dan">
+  <div class="container">
+    <p class="section-label">DAN Safety Training Section</p>
+    <h2 class="section-title">Aquatic Staff Readiness and <span>DAN Safety Training</span></h2>
+    <p class="section-intro">
+      This lane supports CPR, first aid, AED, emergency oxygen, incident-response planning, and camp safety days
+      while holding exact certification language behind official-source review.
+    </p>
+    <div class="divider"></div>
+    <div class="split-grid">
+      <div class="panel-card panel-copy">
+        <p>
+          Dive Factor can frame DAN safety training as part of a broader camp and aquatic readiness offer:
+          staff awareness, oxygen response planning, waterfront incident response discussion, and support
+          for better-prepared aquatic activity days.
+        </p>
+        <p>
+          This section is especially useful for camps, retreat centers, lifeguard teams, and youth organizations
+          that want more than just a fun experience and need a credible staff-safety story alongside it.
+        </p>
+      </div>
+      <div class="panel-card">
+        <div class="training-list">
+          <div class="training-item">
+            <h3>CPR / First Aid / AED</h3>
+            <p>Presented as an available training lane pending final DAN course-name and course-detail verification.</p>
+          </div>
+          <div class="training-item">
+            <h3>Emergency Oxygen Training</h3>
+            <p>Positioned for aquatic staff, dive support teams, and waterfront leaders who need oxygen-awareness planning.</p>
+          </div>
+          <div class="training-item">
+            <h3>Camp Safety Training Days</h3>
+            <p>Useful for combining response planning, aquatic readiness, and operational discussion into one staff workshop.</p>
+          </div>
+        </div>
+        <div class="services-footnote">
+          Course names, requirements, certification details, and materials must be confirmed against current DAN standards before public launch.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="safety" id="safety">
+  <div class="container">
+    <p class="section-label">Safety and Review Gate</p>
+    <h2 class="section-title">Program Planning Requires <span>Review and Approval</span></h2>
+    <p class="section-intro">
+      This note keeps the page professionally grounded. It makes the planning posture clear without making the homepage
+      feel defensive or heavy-handed.
+    </p>
+    <div class="divider"></div>
+    <div class="safety-grid">
+      <article class="safety-card">
+        <span class="card-tag">Youth and Camp Planning</span>
+        <h3>Operational Readiness Checks</h3>
+        <p>Parent or guardian authorization, medical screening or forms where required, camp or vendor approval, appropriate supervision, and pool or site suitability all need to be confirmed before a program is sold.</p>
+      </article>
+      <article class="safety-card">
+        <span class="card-tag">Standards and Coverage</span>
+        <h3>Standards Review Gates</h3>
+        <p>Instructor and student ratio confirmation, equipment and sanitation planning, emergency action planning, insurance and COI review, and NAUI or DAN standards verification remain required before public launch.</p>
+      </article>
+    </div>
+    <div class="split-grid">
+      <div class="panel-card">
+        <div class="safety-list">
+          <div class="safety-item">
+            <h3>Pool-Based Scuba Experience</h3>
+            <p>Keep the offer tied to suitable facilities, approved supervision, and clear pre-program planning.</p>
+          </div>
+          <div class="safety-item">
+            <h3>Aquatic Safety Training</h3>
+            <p>Position safety training as operational readiness support, not a guarantee of risk elimination.</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel-card">
+        <div class="safety-list">
+          <div class="safety-item">
+            <h3>Camp Staff Safety Training</h3>
+            <p>Present staff training as structured preparedness and response support pending final standards confirmation.</p>
+          </div>
+          <div class="safety-item">
+            <h3>Review Before Sale</h3>
+            <p>NAUI standards review pending and DAN standards review pending should stay visible until official-source verification is complete.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="container">
+    <div class="cta-panel">
+      <h2>Bring a Professional <span>Underwater Experience</span> to Your Camp or Group</h2>
+      <p>
+        Position Dive Factor around unforgettable pool-based scuba experiences, dive training,
+        youth aquatic programs, and camp staff safety training under one premium aquatic-program lane.
+      </p>
+      <a href="#request" class="btn-primary">Request Program Info</a>
+    </div>
+  </div>
+</section>
+
+<section class="request" id="request">
+  <div class="container">
+    <p class="section-label">Request Program Info</p>
+    <h2 class="section-title">Program Request <span>Placeholder</span></h2>
+    <p class="section-intro">
+      This form is visual only. No action, no method, no email routing, no CRM, no automation, and no live form behavior are enabled.
+    </p>
+    <div class="divider"></div>
+    <div class="request-layout">
+      <div class="panel-card request-copy">
+        <p>
+          This local mockup is designed to help future WordPress conversion and page planning. It keeps the
+          intake concept visible without inventing contact details, routing rules, payment links, or production handling.
+        </p>
+        <p>
+          The goal is to show how a camp, school, or family training request could be framed once final standards,
+          staffing, insurance review, and contact routing are approved.
+        </p>
+        <ul class="request-list">
+          <li>Program interest can cover camp day packages, dive training, safety workshops, or private groups</li>
+          <li>Participant age range and estimated group size should help scope staffing and suitability</li>
+          <li>Pool availability should be clarified before any schedule or equipment assumptions are made</li>
+          <li>Notes can capture location, goals, timing, and whether a camp or group leader is coordinating the request</li>
+        </ul>
+      </div>
+      <div class="request-grid">
+        <article class="request-card">
+          <h3>Request Program Info Form</h3>
+          <p>Placeholder-only visual form with disabled submission and no live routing of any kind.</p>
+          <form class="mock-form" novalidate aria-describedby="request-placeholder-note">
+            <div class="mock-field">
+              <label>Name</label>
+              <input type="text" placeholder="Pending intake setup">
+            </div>
+            <div class="mock-field">
+              <label>Organization / Camp / Group</label>
+              <input type="text" placeholder="Pending intake setup">
+            </div>
+            <div class="mock-field">
+              <label>Contact Info</label>
+              <input type="text" placeholder="Phone or email pending approval">
+            </div>
+            <div class="mock-field">
+              <label>Program Interest</label>
+              <select>
+                <option>Choose program lane</option>
+                <option>Camp Try Scuba Experience</option>
+                <option>Youth Aquatic Adventure Session</option>
+                <option>Scuba Certification Options</option>
+                <option>Private Dive Training</option>
+                <option>DAN Safety Training</option>
+                <option>Camp Staff Aquatic Safety Workshop</option>
+                <option>Full Camp Aquatic Program Package</option>
+              </select>
+            </div>
+            <div class="mock-field">
+              <label>Participant Age Range</label>
+              <input type="text" placeholder="Age range pending suitability review">
+            </div>
+            <div class="mock-field">
+              <label>Estimated Group Size</label>
+              <input type="text" placeholder="Group size pending final scope">
+            </div>
+            <div class="mock-field">
+              <label>Preferred Location</label>
+              <input type="text" placeholder="Camp, pool, school, or private location">
+            </div>
+            <div class="mock-field">
+              <label>Pool Available?</label>
+              <select>
+                <option>Choose one</option>
+                <option>Yes</option>
+                <option>No</option>
+              </select>
+            </div>
+            <div class="mock-field full">
+              <label>Notes</label>
+              <textarea placeholder="Program goals, timing, participant details, and site notes pending final intake approval"></textarea>
+            </div>
+            <div class="mock-field full">
+              <button type="submit" class="btn-outline mock-submit-button" disabled aria-disabled="true">Request Program Info</button>
+            </div>
+          </form>
+          <p class="mock-submit-note" id="request-placeholder-note">
+            No live form submission, email routing, CRM routing, payment links, or automation exists in this mockup.
+          </p>
+        </article>
+        <article class="contact-card">
+          <h3>Contact Placeholders</h3>
+          <p>Phone / Text: Pending approval</p>
+          <p>Email: Pending approval</p>
+          <p>Program scheduling workflow: Pending approval</p>
+          <p>Published standards details: Pending NAUI and DAN verification</p>
+        </article>
+      </div>
+    </div>
+    <div class="services-footnote request-disclaimer">
+      Guardrails used in this mockup: no guaranteed certification, no guaranteed safety, no no-risk claims,
+      no final age limits, no final pricing, no medical advice, and no public compliance language beyond review-pending placeholders.
+    </div>
+  </div>
+</section>
+
+<!--
+Internal mockup guardrail:
+Keep this page local only until NAUI source review, DAN source review, insurance review,
+camp/vendor approval, staffing assumptions, supervision ratios, and final intake routing are approved.
+-->
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-copy">Local mockup for <span>Dive Factor Aquatic Programs and Dive Training</span>. Not published. Not connected to WordPress.</div>
+    <div class="footer-note">Built as a separate Dive Factor landing page sibling to the underwater-services mockup. No live routing created.</div>
+  </div>
+</footer>
+
+<script>
+  const bubbleContainer = document.getElementById("bubbles");
+  for (let i = 0; i < 22; i += 1) {
+    const bubble = document.createElement("div");
+    const size = Math.random() * 20 + 6;
+    bubble.className = "bubble";
+    bubble.style.width = `${size}px`;
+    bubble.style.height = `${size}px`;
+    bubble.style.left = `${Math.random() * 100}%`;
+    bubble.style.animationDuration = `${Math.random() * 14 + 10}s`;
+    bubble.style.animationDelay = `${Math.random() * 12}s`;
+    bubbleContainer.appendChild(bubble);
+  }
+</script>
+
+</body>
+</html>

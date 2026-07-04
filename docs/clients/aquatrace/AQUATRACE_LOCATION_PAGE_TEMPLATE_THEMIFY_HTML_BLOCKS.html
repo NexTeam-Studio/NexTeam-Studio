@@ -1,0 +1,529 @@
+<!--
+Aquatrace location page template for Themify Ultra HTML blocks.
+
+Usage:
+1. Paste BLOCK 0 into the first HTML block on the page.
+2. Paste BLOCK 1 through BLOCK 6 into one or more additional HTML blocks.
+3. Replace every {{PLACEHOLDER}} value before publishing.
+4. Pair the hero or service sections with real Aquatrace field photos in neighboring Themify image modules when available.
+
+Design intent:
+- Match the current Aquatrace live theme
+- Montserrat content and headings
+- Josefin Sans eyebrow/utility text
+- Dark charcoal section bands
+- Bright cyan accent lines and buttons
+- White primary headings
+-->
+
+<!-- BLOCK 0: SHARED STYLES -->
+<style>
+  .aq-location-template,
+  .aq-location-template * {
+    box-sizing: border-box;
+  }
+
+  .aq-location-template {
+    --aq-dark: #1c1c1c;
+    --aq-cyan: #00ffff;
+    --aq-white: #ffffff;
+    --aq-ice: #f0f8ff;
+    --aq-copy: #d9f7ff;
+    --aq-soft-border: rgba(0, 255, 255, 0.24);
+    --aq-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+    font-family: Montserrat, Arial, sans-serif;
+    color: var(--aq-copy);
+    width: 100%;
+    margin: 0 auto 28px;
+  }
+
+  .aq-location-template a {
+    color: var(--aq-cyan);
+    text-decoration: none;
+  }
+
+  .aq-location-template a:hover {
+    color: var(--aq-white);
+  }
+
+  .aq-location-band {
+    background: var(--aq-dark);
+    border-top: 2px solid var(--aq-cyan);
+    border-bottom: 2px solid var(--aq-cyan);
+    padding: 38px 32px;
+    box-shadow: var(--aq-shadow);
+  }
+
+  .aq-location-shell {
+    background: linear-gradient(180deg, rgba(28, 28, 28, 0.98) 0%, rgba(28, 28, 28, 0.92) 100%);
+    border: 1px solid var(--aq-soft-border);
+    border-radius: 12px;
+    padding: 30px 28px;
+    box-shadow: var(--aq-shadow);
+  }
+
+  .aq-location-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.95fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  .aq-location-two-col {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+  }
+
+  .aq-location-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .aq-location-eyebrow {
+    margin: 0 0 12px;
+    font-family: "Josefin Sans", Arial, sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--aq-cyan);
+  }
+
+  .aq-location-title {
+    margin: 0 0 14px;
+    font-family: Montserrat, Arial, sans-serif;
+    font-size: clamp(32px, 4.5vw, 48px);
+    line-height: 1.08;
+    font-weight: 600;
+    color: var(--aq-white);
+  }
+
+  .aq-location-subtitle,
+  .aq-location-copy,
+  .aq-location-list,
+  .aq-location-faq-answer {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.68;
+    color: var(--aq-copy);
+  }
+
+  .aq-location-copy + .aq-location-copy {
+    margin-top: 14px;
+  }
+
+  .aq-location-section-title {
+    margin: 0 0 12px;
+    font-size: 28px;
+    line-height: 1.2;
+    font-weight: 600;
+    color: var(--aq-white);
+  }
+
+  .aq-location-card-title,
+  .aq-location-proof-title {
+    margin: 0 0 10px;
+    font-size: 22px;
+    line-height: 1.25;
+    font-weight: 600;
+    color: var(--aq-cyan);
+  }
+
+  .aq-location-proof,
+  .aq-location-card,
+  .aq-location-faq-item {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--aq-soft-border);
+    border-radius: 12px;
+    padding: 22px 20px;
+  }
+
+  .aq-location-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 22px;
+  }
+
+  .aq-location-button {
+    display: inline-block;
+    padding: 11px 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    background: var(--aq-cyan);
+    color: var(--aq-white) !important;
+    font-family: Montserrat, Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+    box-shadow: 0 10px 24px rgba(0, 255, 255, 0.18);
+  }
+
+  .aq-location-button:hover {
+    background: #7ffcff;
+    color: #1c1c1c !important;
+  }
+
+  .aq-location-button.is-secondary {
+    background: transparent;
+    border: 1px solid var(--aq-cyan);
+    color: var(--aq-cyan) !important;
+    box-shadow: none;
+  }
+
+  .aq-location-button.is-secondary:hover {
+    background: var(--aq-cyan);
+    color: #1c1c1c !important;
+  }
+
+  .aq-location-badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .aq-location-badge {
+    padding: 8px 12px;
+    border: 1px solid var(--aq-soft-border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--aq-ice);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .aq-location-list {
+    padding-left: 20px;
+  }
+
+  .aq-location-list li {
+    margin-bottom: 10px;
+  }
+
+  .aq-location-divider {
+    width: 88px;
+    height: 5px;
+    margin: 0 0 18px;
+    background: var(--aq-cyan);
+    border-radius: 999px;
+  }
+
+  .aq-location-link-list {
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .aq-location-link-list li + li {
+    margin-top: 10px;
+  }
+
+  .aq-location-link-list a {
+    color: var(--aq-cyan);
+    font-weight: 600;
+  }
+
+  .aq-location-faq {
+    display: grid;
+    gap: 16px;
+  }
+
+  .aq-location-faq-item summary {
+    cursor: pointer;
+    list-style: none;
+    font-size: 20px;
+    line-height: 1.35;
+    font-weight: 600;
+    color: var(--aq-white);
+  }
+
+  .aq-location-faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .aq-location-faq-answer {
+    margin-top: 14px;
+  }
+
+  .aq-location-small-note {
+    margin-top: 14px;
+    font-family: "Josefin Sans", Arial, sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--aq-cyan);
+  }
+
+  @media (max-width: 900px) {
+    .aq-location-grid,
+    .aq-location-two-col,
+    .aq-location-card-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .aq-location-band,
+    .aq-location-shell {
+      padding: 28px 22px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .aq-location-title {
+      font-size: 32px;
+    }
+
+    .aq-location-subtitle,
+    .aq-location-copy,
+    .aq-location-list,
+    .aq-location-faq-answer {
+      font-size: 16px;
+    }
+
+    .aq-location-section-title {
+      font-size: 24px;
+    }
+  }
+</style>
+
+<!-- BLOCK 1: HERO -->
+<div class="aq-location-template">
+  <section class="aq-location-band">
+    <div class="aq-location-grid">
+      <div>
+        <p class="aq-location-eyebrow">Aquatrace Swimming Pool Leak Detection</p>
+        <h1 class="aq-location-title">{{LOCATION_NAME}} Swimming Pool Leak Detection</h1>
+        <p class="aq-location-subtitle">
+          Professional swimming pool and spa leak detection for homeowners, specialty pool owners,
+          and commercial properties in {{LOCATION_NAME}} and nearby service areas.
+        </p>
+        <div class="aq-location-actions">
+          <a class="aq-location-button" href="/service-request/">Request Service</a>
+          <a class="aq-location-button is-secondary" href="/services/pool-leaks/">View Services</a>
+        </div>
+        <div class="aq-location-badge-row">
+          <span class="aq-location-badge">Standard Pools and Spas</span>
+          <span class="aq-location-badge">Custom Pools and Spas</span>
+          <span class="aq-location-badge">Infinity Edge Pools</span>
+          <span class="aq-location-badge">Commercial Pools</span>
+        </div>
+      </div>
+
+      <aside class="aq-location-proof">
+        <h2 class="aq-location-proof-title">What Pool Owners Usually Notice First</h2>
+        <ul class="aq-location-list">
+          <li>Water level dropping faster than normal</li>
+          <li>Wet spots near decking, plumbing runs, or equipment</li>
+          <li>Cracks, voids, or suspicious seepage around the pool shell</li>
+          <li>Spillover spas or water features not holding water correctly</li>
+          <li>Higher water bills without a clear explanation</li>
+        </ul>
+        <p class="aq-location-small-note">Replace {{LOCATION_NAME}} and local details before publishing</p>
+      </aside>
+    </div>
+  </section>
+</div>
+
+<!-- BLOCK 2: LOCAL INTRO -->
+<div class="aq-location-template">
+  <section class="aq-location-shell">
+    <div class="aq-location-divider"></div>
+    <div class="aq-location-two-col">
+      <div>
+        <h2 class="aq-location-section-title">Protecting Pools in {{LOCATION_NAME}}</h2>
+        <p class="aq-location-copy">
+          If you are dealing with unexplained water loss, a suspected plumbing issue, or signs of
+          structural seepage, Aquatrace helps pool owners in {{LOCATION_NAME}} move from guesswork
+          to a defined next step. Our process is built around accurate diagnostics, clear findings,
+          and practical recommendations.
+        </p>
+        <p class="aq-location-copy">
+          Depending on the pool and the symptom pattern, leak detection may include visual
+          inspection, dye testing, pressure testing, acoustic listening, water-loss analysis, and
+          underwater inspection when appropriate.
+        </p>
+      </div>
+
+      <div class="aq-location-card">
+        <h3 class="aq-location-card-title">Why Local Owners Call Aquatrace</h3>
+        <ul class="aq-location-list">
+          <li>They want a real leak detection process, not a quick guess.</li>
+          <li>They need help with standard, custom, infinity edge, or commercial pools.</li>
+          <li>They want a clear explanation of what was found and what comes next.</li>
+          <li>They want to limit water loss before it turns into a larger repair issue.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- BLOCK 3: PROCESS / DIFFERENTIATORS -->
+<div class="aq-location-template">
+  <section class="aq-location-shell">
+    <div class="aq-location-divider"></div>
+    <h2 class="aq-location-section-title">What Makes Aquatrace Different in {{LOCATION_NAME}}</h2>
+    <div class="aq-location-card-grid">
+      <div class="aq-location-card">
+        <h3 class="aq-location-card-title">Specialized Diagnostics</h3>
+        <p class="aq-location-copy">
+          Aquatrace focuses on leak detection. That means the visit is centered on identifying the
+          source of water loss and documenting what is actually happening.
+        </p>
+      </div>
+
+      <div class="aq-location-card">
+        <h3 class="aq-location-card-title">Real Pool-Type Experience</h3>
+        <p class="aq-location-copy">
+          From standard residential pools to custom features, attached spas, vanishing edges, and
+          commercial properties, the approach changes based on how the pool was built and how it is
+          behaving.
+        </p>
+      </div>
+
+      <div class="aq-location-card">
+        <h3 class="aq-location-card-title">Clear Findings</h3>
+        <p class="aq-location-copy">
+          Clients need more than a vague answer. The goal is to leave you with understandable
+          findings, likely leak locations, and practical next-step guidance.
+        </p>
+      </div>
+
+      <div class="aq-location-card">
+        <h3 class="aq-location-card-title">Service-First Communication</h3>
+        <p class="aq-location-copy">
+          If your pool in {{LOCATION_NAME}} is losing water, you should be able to request service,
+          understand the process, and move forward without chasing scattered information.
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- BLOCK 4: SERVICE LANES -->
+<div class="aq-location-template">
+  <section class="aq-location-band">
+    <div class="aq-location-divider"></div>
+    <h2 class="aq-location-section-title">Leak Detection Services Available for {{LOCATION_NAME}}</h2>
+    <div class="aq-location-card-grid">
+      <div class="aq-location-card">
+        <h3 class="aq-location-card-title">Standard Pools and Spas</h3>
+        <p class="aq-location-copy">
+          Residential pool and spa leak detection for common water-loss concerns, plumbing
+          suspicion, shell issues, and fittings.
+        </p>
+        <ul class="aq-location-link-list">
+          <li><a href="/services/pool-leaks/">Read more about standard pool and spa leaks</a></li>
+        </ul>
+      </div>
+
+      <div class="aq-location-card">
+        <h3 class="aq-location-card-title">Custom Pools and Spas</h3>
+        <p class="aq-location-copy">
+          Custom construction often means more complex plumbing paths, transitions, finish details,
+          and feature-specific troubleshooting.
+        </p>
+        <ul class="aq-location-link-list">
+          <li><a href="/services/custom-pool-and-spa-leaks/">Explore custom pool and spa leak services</a></li>
+        </ul>
+      </div>
+
+      <div class="aq-location-card">
+        <h3 class="aq-location-card-title">Infinity Edge Pools</h3>
+        <p class="aq-location-copy">
+          Vanishing-edge and negative-edge systems can behave differently than standard pools and
+          usually need a more specialized diagnostic process.
+        </p>
+        <ul class="aq-location-link-list">
+          <li><a href="/services/infinity-pool-leaks/">See infinity edge pool leak details</a></li>
+        </ul>
+      </div>
+
+      <div class="aq-location-card">
+        <h3 class="aq-location-card-title">Commercial Pools</h3>
+        <p class="aq-location-copy">
+          Commercial properties, clubs, and other larger facilities may need a more structured leak
+          detection process based on access, scheduling, and system complexity.
+        </p>
+        <ul class="aq-location-link-list">
+          <li><a href="/services/commercial-pool-leaks/">Learn about commercial pool leak detection</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- BLOCK 5: FAQ -->
+<div class="aq-location-template">
+  <section class="aq-location-shell">
+    <div class="aq-location-divider"></div>
+    <h2 class="aq-location-section-title">Frequently Asked Questions About Pool Leaks in {{LOCATION_NAME}}</h2>
+    <div class="aq-location-faq">
+      <details class="aq-location-faq-item">
+        <summary>How do I know whether my pool is leaking or just evaporating?</summary>
+        <p class="aq-location-faq-answer">
+          If the water loss seems excessive, the best starting point is a structured comparison such
+          as a bucket test and a symptom review. If the loss pattern still looks suspicious, a leak
+          detection appointment can help narrow down the cause.
+        </p>
+      </details>
+
+      <details class="aq-location-faq-item">
+        <summary>Do you only work on standard residential pools?</summary>
+        <p class="aq-location-faq-answer">
+          No. Aquatrace also works with custom pools and spas, infinity edge pools, and commercial
+          properties. The process depends on the pool type and the symptoms present on site.
+        </p>
+      </details>
+
+      <details class="aq-location-faq-item">
+        <summary>What happens after the leak is found?</summary>
+        <p class="aq-location-faq-answer">
+          The goal of the visit is to identify and communicate what is causing the water loss. From
+          there, the owner can make a more informed repair decision based on the findings.
+        </p>
+      </details>
+
+      <details class="aq-location-faq-item">
+        <summary>How do I request service in {{LOCATION_NAME}}?</summary>
+        <p class="aq-location-faq-answer">
+          Use the service request page to start the process. If you want to add a local call CTA on
+          this location page, replace the optional phone placeholders with the correct approved
+          number before publishing.
+        </p>
+      </details>
+    </div>
+  </section>
+</div>
+
+<!-- BLOCK 6: FINAL CTA -->
+<div class="aq-location-template">
+  <section class="aq-location-band">
+    <div class="aq-location-grid">
+      <div>
+        <p class="aq-location-eyebrow">Need Help With a Suspected Pool Leak?</p>
+        <h2 class="aq-location-section-title">Request Aquatrace Service for {{LOCATION_NAME}}</h2>
+        <p class="aq-location-copy">
+          If your pool or spa is losing water and you want a clearer answer about what is happening,
+          start with Aquatrace. Use the links below to request service, review the process, or send
+          visitors to additional help resources.
+        </p>
+        <div class="aq-location-actions">
+          <a class="aq-location-button" href="/service-request/">Request Service</a>
+          <a class="aq-location-button is-secondary" href="/resources/faq/">Read FAQ</a>
+        </div>
+      </div>
+
+      <div class="aq-location-proof">
+        <h3 class="aq-location-card-title">Helpful Link Options</h3>
+        <ul class="aq-location-link-list">
+          <li><a href="/swimming-pool-leak-detection-bucket-test/">Bucket Test</a></li>
+          <li><a href="/do-you-have-a-leak/">I Think I Have a Leak</a></li>
+          <li><a href="/our-swimming-pool-leak-detection-process/">Our Leak Detection Process</a></li>
+          <li><a href="/aquatrace-swimming-pool-leak-detection-service-locations/">All Service Areas</a></li>
+          <li><a href="tel:{{LOCAL_PHONE_RAW}}">Optional local call CTA: {{LOCAL_PHONE_DISPLAY}}</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>

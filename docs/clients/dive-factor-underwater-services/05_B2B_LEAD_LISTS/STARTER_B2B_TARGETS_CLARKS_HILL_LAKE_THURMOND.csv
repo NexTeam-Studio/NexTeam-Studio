@@ -1,0 +1,5 @@
+lead_id,market,business_name,category,website,source_url,status,notes
+thurmond-001,clarks_hill_thurmond,Clarks Hill Marina,marina,https://clarkshillmarina.com/boat-rentals,https://clarkshillmarina.com/boat-rentals,researched,Rental-led marina fit
+thurmond-002,clarks_hill_thurmond,Savannah Lakes Marina,marina,https://www.slmarina.com/,https://www.slmarina.com/,researched,Slip and pontoon activity
+thurmond-003,clarks_hill_thurmond,Soap Creek Marina,boat_club,https://soapcreekmarina.com/rentals/,https://soapcreekmarina.com/rentals/,researched,Rentals and club activity
+thurmond-004,clarks_hill_thurmond,Freedom Boat Club Lake Clarks Hill,boat_club,https://www.freedomboatclub.com/franchises/marina-boat-club-llc/lake-clarks-hill,https://www.freedomboatclub.com/franchises/marina-boat-club-llc/lake-clarks-hill,researched,Boat-club fit

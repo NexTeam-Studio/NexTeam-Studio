@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dive Factor Underwater Services - Local Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #a8e020;
+    --green-bright: #c8ff40;
+    --green-dark: #6a9010;
+    --red: #cc1a1a;
+    --silver: #c8c8c8;
+    --silver-bright: #e2e2e2;
+    --dark: #091017;
+    --dark2: #0b151d;
+    --dark3: #102433;
+    --panel: rgba(10, 18, 26, 0.78);
+    --panel-strong: rgba(12, 22, 31, 0.92);
+    --text: #dbe4ea;
+    --muted: rgba(219, 228, 234, 0.72);
+    --line: rgba(168, 224, 32, 0.2);
+    --red-line: rgba(204, 26, 26, 0.6);
+    --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+    --nav-anchor-offset: 108px;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: var(--nav-anchor-offset);
+  }
+
+  section[id] {
+    scroll-margin-top: var(--nav-anchor-offset);
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 20% 0%, rgba(168, 224, 32, 0.08), transparent 25%),
+      radial-gradient(circle at 80% 18%, rgba(28, 92, 128, 0.2), transparent 24%),
+      linear-gradient(180deg, #081018 0%, #09141d 34%, #07141d 65%, #081018 100%);
+    color: var(--text);
+    font-family: "Lato", sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+  }
+
+  .bubbles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .bubble {
+    position: absolute;
+    bottom: -60px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(168, 224, 32, 0.18), rgba(168, 224, 32, 0.04));
+    border: 1px solid rgba(168, 224, 32, 0.12);
+    animation: rise linear infinite;
+  }
+
+  @keyframes rise {
+    0% {
+      transform: translateY(0) translateX(0);
+      opacity: 0;
+    }
+
+    10% {
+      opacity: 1;
+    }
+
+    90% {
+      opacity: 0.5;
+    }
+
+    100% {
+      transform: translateY(-110vh) translateX(40px);
+      opacity: 0;
+    }
+  }
+
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 14px 40px;
+    background: rgba(7, 12, 18, 0.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.18);
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav-logo img {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 18px rgba(168, 224, 32, 0.2));
+  }
+
+  .nav-brand {
+    font-family: "Oswald", sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--green);
+    text-shadow: 0 0 12px rgba(168, 224, 32, 0.48);
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .nav-brand span {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    color: var(--silver);
+  }
+
+  .nav-links {
+    list-style: none;
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .nav-links a {
+    font-family: "Oswald", sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--silver);
+    text-transform: uppercase;
+    transition: color 0.2s ease;
+  }
+
+  .nav-links a:hover {
+    color: var(--green);
+  }
+
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 138px 20px 90px;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(168, 224, 32, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(8, 51, 84, 0.42) 0%, transparent 55%),
+      linear-gradient(180deg, rgba(8, 13, 19, 0.94) 0%, rgba(7, 16, 24, 0.8) 36%, rgba(7, 18, 27, 0.95) 100%);
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(115deg, transparent 0 44%, rgba(204, 26, 26, 0.24) 44.4%, transparent 45%),
+      linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.22));
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--green), rgba(168, 224, 32, 0.35), var(--green), transparent);
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% {
+      opacity: 0.45;
+    }
+
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .hero-inner {
+    position: relative;
+    max-width: 980px;
+  }
+
+  .hero-logo {
+    width: 240px;
+    height: 240px;
+    margin: 0 auto 34px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 30px rgba(168, 224, 32, 0.22));
+    animation: fadeDown 1s ease both;
+  }
+
+  @keyframes fadeDown {
+    from {
+      opacity: 0;
+      transform: translateY(-28px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .hero-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    font-family: "Oswald", sans-serif;
+    font-size: 13px;
+    letter-spacing: 5px;
+    color: var(--green);
+    text-transform: uppercase;
+    animation: fadeUp 1s 0.2s ease both;
+    opacity: 0;
+  }
+
+  .hero-kicker::before,
+  .hero-kicker::after {
+    content: "";
+    width: 42px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--red), var(--green));
+  }
+
+  .hero h1 {
+    font-family: "Oswald", sans-serif;
+    font-size: clamp(38px, 6vw, 78px);
+    line-height: 1.02;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #ffffff;
+    animation: fadeUp 1s 0.35s ease both;
+    opacity: 0;
+  }
+
+  .hero h1 span {
+    color: var(--green);
+    text-shadow: 0 0 28px rgba(168, 224, 32, 0.5);
+  }
+
+  .hero-sub {
+    max-width: 760px;
+    margin: 22px auto 0;
+    font-size: clamp(16px, 2vw, 20px);
+    line-height: 1.7;
+    color: var(--muted);
+    animation: fadeUp 1s 0.5s ease both;
+    opacity: 0;
+  }
+
+  .hero-note {
+    max-width: 790px;
+    margin: 24px auto 0;
+    padding: 12px 18px;
+    border: 1px solid rgba(168, 224, 32, 0.1);
+    background: rgba(12, 22, 31, 0.34);
+    color: rgba(219, 228, 234, 0.74);
+    font-size: 13px;
+    line-height: 1.7;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+    animation: fadeUp 1s 0.65s ease both;
+    opacity: 0;
+  }
+
+  .hero-cta {
+    margin-top: 40px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeUp 1s 0.8s ease both;
+    opacity: 0;
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(22px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .btn-primary,
+  .btn-outline {
+    display: inline-block;
+    padding: 14px 36px;
+    font-family: "Oswald", sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background: var(--green);
+    color: #0a0f0a;
+    border: none;
+  }
+
+  .btn-primary:hover {
+    background: var(--green-bright);
+    box-shadow: 0 0 26px rgba(168, 224, 32, 0.55);
+  }
+
+  .btn-outline {
+    border: 1.5px solid var(--green);
+    color: var(--green);
+    background: transparent;
+  }
+
+  .btn-outline:hover {
+    background: rgba(168, 224, 32, 0.08);
+    box-shadow: 0 0 18px rgba(168, 224, 32, 0.24);
+  }
+
+  .hero-scroll {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-family: "Oswald", sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: rgba(168, 224, 32, 0.52);
+    text-transform: uppercase;
+    animation: bounce 2s ease infinite;
+  }
+
+  .hero-scroll::before {
+    content: "";
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(180deg, transparent, rgba(168, 224, 32, 0.5));
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    50% {
+      transform: translateX(-50%) translateY(6px);
+    }
+  }
+
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 92px 20px;
+  }
+
+  .container {
+    max-width: 1140px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    margin-bottom: 12px;
+    font-family: "Oswald", sans-serif;
+    font-size: 11px;
+    letter-spacing: 6px;
+    color: var(--green);
+    text-transform: uppercase;
+  }
+
+  .section-title {
+    font-family: "Oswald", sans-serif;
+    font-size: clamp(30px, 5vw, 50px);
+    line-height: 1.04;
+    letter-spacing: 1px;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
+
+  .section-title span {
+    color: var(--silver);
+  }
+
+  .section-intro {
+    margin-top: 16px;
+    max-width: 720px;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.75;
+  }
+
+  .divider {
+    width: 110px;
+    height: 4px;
+    margin: 22px 0 0;
+    background: linear-gradient(90deg, var(--green), var(--red), transparent);
+    clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  }
+
+  .about {
+    background:
+      linear-gradient(180deg, rgba(13, 23, 32, 0.72), rgba(8, 16, 24, 0.4)),
+      radial-gradient(circle at 85% 16%, rgba(168, 224, 32, 0.08), transparent 28%);
+  }
+
+  .about-grid {
+    margin-top: 34px;
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 28px;
+  }
+
+  .panel-card {
+    position: relative;
+    padding: 28px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .panel-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 84px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--red));
+  }
+
+  .about-copy p,
+  .partner-copy p,
+  .request-copy p {
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.8;
+    margin-top: 16px;
+  }
+
+  .about-copy strong,
+  .request-copy strong {
+    color: var(--silver-bright);
+    font-weight: 700;
+  }
+
+  .operator-note {
+    margin-top: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid rgba(168, 224, 32, 0.22);
+    background: rgba(168, 224, 32, 0.04);
+    color: var(--silver-bright);
+    font-family: "Oswald", sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .operator-note::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 14px rgba(168, 224, 32, 0.7);
+  }
+
+  .focus-points {
+    display: grid;
+    gap: 14px;
+    margin-top: 8px;
+  }
+
+  .focus-item {
+    padding: 18px 18px 18px 22px;
+    border-left: 3px solid var(--red);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .focus-item h3 {
+    font-family: "Oswald", sans-serif;
+    font-size: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+
+  .focus-item p {
+    margin-top: 8px;
+    color: var(--muted);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  .services-grid,
+  .areas-grid,
+  .partners-grid {
+    margin-top: 36px;
+    display: grid;
+    gap: 22px;
+  }
+
+  .services-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .areas-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .partners-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .service-card,
+  .area-card,
+  .partner-card,
+  .request-card,
+  .contact-card {
+    position: relative;
+    padding: 24px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .service-card::before,
+  .area-card::before,
+  .partner-card::before,
+  .request-card::before,
+  .contact-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(168, 224, 32, 0.75), rgba(204, 26, 26, 0.8), transparent);
+  }
+
+  .service-card:hover,
+  .area-card:hover,
+  .partner-card:hover,
+  .request-card:hover,
+  .contact-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(168, 224, 32, 0.34);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  }
+
+  .service-icon,
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    color: var(--green);
+    margin-bottom: 16px;
+  }
+
+  .service-card h3,
+  .area-card h3,
+  .partner-card h3,
+  .request-card h3,
+  .contact-card h3 {
+    font-family: "Oswald", sans-serif;
+    font-size: 24px;
+    line-height: 1.08;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+
+  .service-card p,
+  .area-card p,
+  .partner-card p,
+  .request-card p,
+  .contact-card p {
+    margin-top: 10px;
+    color: var(--muted);
+    line-height: 1.72;
+    font-size: 15px;
+  }
+
+  .service-tag,
+  .area-tag,
+  .partner-tag {
+    display: inline-block;
+    margin-bottom: 12px;
+    font-family: "Oswald", sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--green);
+    text-transform: uppercase;
+  }
+
+  .services-footnote {
+    margin-top: 24px;
+    padding: 16px 18px;
+    border-left: 3px solid var(--red);
+    background: rgba(204, 26, 26, 0.06);
+    color: rgba(219, 228, 234, 0.82);
+    line-height: 1.75;
+    font-size: 14px;
+  }
+
+  .areas {
+    background:
+      linear-gradient(180deg, rgba(9, 18, 26, 0.35), rgba(9, 18, 26, 0.8)),
+      radial-gradient(circle at 12% 10%, rgba(168, 224, 32, 0.06), transparent 20%);
+  }
+
+  .area-card p.area-copy {
+    margin-top: 8px;
+  }
+
+  .area-card.primary-market {
+    border-color: rgba(168, 224, 32, 0.4);
+    background:
+      linear-gradient(180deg, rgba(18, 34, 28, 0.92), rgba(10, 19, 26, 0.86)),
+      rgba(10, 18, 26, 0.78);
+    box-shadow:
+      0 18px 42px rgba(0, 0, 0, 0.34),
+      0 0 0 1px rgba(168, 224, 32, 0.12);
+  }
+
+  .area-card.primary-market .area-tag {
+    color: var(--green-bright);
+    text-shadow: 0 0 14px rgba(168, 224, 32, 0.32);
+  }
+
+  .request-disclaimer {
+    margin-top: 28px;
+  }
+
+  .partners {
+    background:
+      linear-gradient(180deg, rgba(11, 21, 29, 0.9), rgba(8, 15, 22, 0.7)),
+      radial-gradient(circle at 88% 8%, rgba(168, 224, 32, 0.08), transparent 20%);
+  }
+
+  .partners-layout {
+    margin-top: 34px;
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 28px;
+  }
+
+  .partner-card p {
+    margin-top: 6px;
+  }
+
+  .cta-band {
+    padding: 88px 20px;
+  }
+
+  .cta-panel {
+    position: relative;
+    padding: 46px 34px;
+    border: 1px solid rgba(168, 224, 32, 0.2);
+    background:
+      linear-gradient(135deg, rgba(7, 16, 24, 0.88), rgba(12, 26, 36, 0.88)),
+      radial-gradient(circle at top right, rgba(168, 224, 32, 0.09), transparent 30%);
+    text-align: center;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .cta-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(120deg, transparent 0 35%, rgba(204, 26, 26, 0.12) 35.4%, transparent 36%),
+      linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.15));
+    pointer-events: none;
+  }
+
+  .cta-panel h2 {
+    position: relative;
+    font-family: "Oswald", sans-serif;
+    font-size: clamp(32px, 5vw, 54px);
+    line-height: 1.04;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+
+  .cta-panel h2 span {
+    color: var(--green);
+  }
+
+  .cta-panel p {
+    position: relative;
+    max-width: 720px;
+    margin: 18px auto 0;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.8;
+  }
+
+  .cta-panel .btn-primary {
+    position: relative;
+    margin-top: 28px;
+  }
+
+  .request {
+    background:
+      linear-gradient(180deg, rgba(8, 15, 22, 0.9), rgba(8, 13, 19, 0.95)),
+      radial-gradient(circle at 82% 12%, rgba(168, 224, 32, 0.08), transparent 24%);
+  }
+
+  .request-layout {
+    margin-top: 34px;
+    display: grid;
+    grid-template-columns: 0.95fr 1.05fr;
+    gap: 28px;
+  }
+
+  .request-grid {
+    display: grid;
+    gap: 18px;
+  }
+
+  .request-card h3,
+  .contact-card h3 {
+    font-size: 21px;
+  }
+
+  .request-list {
+    list-style: none;
+    margin-top: 14px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .request-list li {
+    color: var(--muted);
+    line-height: 1.7;
+    font-size: 15px;
+    padding-left: 18px;
+    position: relative;
+  }
+
+  .request-list li::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 12px rgba(168, 224, 32, 0.65);
+  }
+
+  .mock-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .mock-form .full {
+    grid-column: 1 / -1;
+  }
+
+  .mock-field {
+    display: grid;
+    gap: 8px;
+  }
+
+  .mock-field label {
+    font-family: "Oswald", sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--silver);
+    text-transform: uppercase;
+  }
+
+  .mock-field input,
+  .mock-field textarea,
+  .mock-field select {
+    width: 100%;
+    padding: 14px 14px;
+    border: 1px solid rgba(168, 224, 32, 0.16);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text);
+    font: inherit;
+  }
+
+  .mock-field textarea {
+    min-height: 124px;
+    resize: vertical;
+  }
+
+  .mock-field input::placeholder,
+  .mock-field textarea::placeholder {
+    color: rgba(219, 228, 234, 0.38);
+  }
+
+  .mock-submit-button[disabled] {
+    width: 100%;
+    cursor: not-allowed;
+    opacity: 0.55;
+    border-color: rgba(168, 224, 32, 0.2);
+    color: rgba(219, 228, 234, 0.6);
+    background: rgba(168, 224, 32, 0.05);
+    box-shadow: none;
+  }
+
+  .mock-submit-button[disabled]:hover {
+    background: rgba(168, 224, 32, 0.05);
+    box-shadow: none;
+    color: rgba(219, 228, 234, 0.6);
+  }
+
+  .mock-submit-note {
+    margin-top: 14px;
+    color: rgba(219, 228, 234, 0.7);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 28px 20px 38px;
+    border-top: 1px solid rgba(168, 224, 32, 0.12);
+    background: rgba(6, 10, 15, 0.85);
+  }
+
+  .footer-inner {
+    max-width: 1140px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .footer-copy,
+  .footer-note {
+    color: rgba(200, 200, 200, 0.68);
+    font-size: 13px;
+    letter-spacing: 0.2px;
+  }
+
+  .footer-copy span {
+    color: var(--green);
+  }
+
+  @media (max-width: 980px) {
+    :root {
+      --nav-anchor-offset: 132px;
+    }
+
+    nav {
+      padding: 14px 20px;
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .nav-links {
+      gap: 16px;
+    }
+
+    .about-grid,
+    .partners-layout,
+    .request-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .services-grid,
+    .areas-grid,
+    .partners-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    :root {
+      --nav-anchor-offset: 184px;
+    }
+
+    .hero {
+      padding-top: 160px;
+    }
+
+    .hero-logo {
+      width: 174px;
+      height: 174px;
+      margin-bottom: 28px;
+    }
+
+    .hero-kicker {
+      letter-spacing: 3px;
+      gap: 8px;
+    }
+
+    .hero-kicker::before,
+    .hero-kicker::after {
+      width: 24px;
+    }
+
+    .services-grid,
+    .areas-grid,
+    .partners-grid,
+    .mock-form {
+      grid-template-columns: 1fr;
+    }
+
+    .btn-primary,
+    .btn-outline {
+      width: 100%;
+      text-align: center;
+    }
+
+    section {
+      padding: 74px 20px;
+    }
+
+    .cta-panel {
+      padding: 34px 22px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="bubbles" id="bubbles"></div>
+
+<nav>
+  <a class="nav-logo" href="#top">
+    <img src="mockup-assets/Dive_Factor_Logo.png" alt="Dive Factor logo">
+    <div class="nav-brand">
+      Dive Factor
+      <span>Underwater Services</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#areas">Service Areas</a></li>
+    <li><a href="#partners">Partners</a></li>
+    <li><a href="#request">Request</a></li>
+  </ul>
+</nav>
+
+<section class="hero" id="top">
+  <div class="hero-inner">
+    <img src="mockup-assets/Dive_Factor_Logo.png" class="hero-logo" alt="Dive Factor logo">
+    <p class="hero-kicker">Professional Underwater Services</p>
+    <h1>Underwater Services for <span>Boats, Docks</span> and Waterfront Properties</h1>
+    <p class="hero-sub">
+      Professional below-waterline inspections, dock and lift visual checks, lost item recovery,
+      swim-area scans, and marina support around Lake Hartwell, Lake Keowee, and surrounding waters.
+    </p>
+    <div class="hero-note">
+      Visual inspection, photo/video documentation, and practical below-waterline visibility for boats, docks, lifts,
+      marinas, and waterfront properties.
+    </div>
+    <div class="hero-cta">
+      <a href="#request" class="btn-primary">Request Inspection</a>
+      <a href="#services" class="btn-outline">View Services</a>
+    </div>
+  </div>
+  <div class="hero-scroll">Scroll</div>
+</section>
+
+<section class="about" id="about">
+  <div class="container">
+    <p class="section-label">About Dive Factor</p>
+    <h2 class="section-title">Documentation-Led <span>Underwater Support</span></h2>
+    <div class="divider"></div>
+    <div class="about-grid">
+      <div class="panel-card about-copy">
+        <p>
+          <strong>Dive Factor Underwater Services</strong> is positioned as a professional underwater
+          service focused on visual inspection, below-waterline documentation, and practical condition reporting
+          for boats, docks, lifts, marinas, lake homeowners, and waterfront properties.
+        </p>
+        <p>
+          Led by Chris Sears, the brand keeps the premium, adventure-forward Dive Factor look while shifting the
+          business focus away from scuba training and guided expeditions toward photo/video documentation,
+          visual checks, and underwater support for real assets and real property concerns.
+        </p>
+        <p>
+          The phase-one offer direction is inspection-first: help owners and partners see what is happening below
+          the waterline before they guess, schedule repairs, or escalate the next step.
+        </p>
+        <div class="operator-note">Chris Sears reference retained without leading with training</div>
+      </div>
+      <div class="panel-card">
+        <div class="focus-points">
+          <div class="focus-item">
+            <h3>Visual First</h3>
+            <p>Photo/video documentation, written summaries, and practical next-step recommendations.</p>
+          </div>
+          <div class="focus-item">
+            <h3>Lake Market Ready</h3>
+            <p>Phase-one emphasis on Hartwell and Keowee, with Murray, Clarks Hill, and coastal markets staged behind them.</p>
+          </div>
+          <div class="focus-item">
+            <h3>Partner Friendly</h3>
+            <p>Structured to support marinas, fleets, builders, brokers, and waterfront managers without overclaiming scope.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="services" id="services">
+  <div class="container">
+    <p class="section-label">Core Services</p>
+    <h2 class="section-title">Below-Waterline <span>Service Menu</span></h2>
+    <p class="section-intro">
+      The page direction below stays anchored in visual inspection, underwater service, and documentation language.
+      It avoids public structural, engineering, salvage, or regulatory claims.
+    </p>
+    <div class="divider"></div>
+    <div class="services-grid">
+      <article class="service-card">
+        <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M6 30s4-10 18-10 18 10 18 10"></path>
+          <path d="M6 30c0 6 4 10 18 10s18-4 18-10"></path>
+          <circle cx="24" cy="26" r="4"></circle>
+          <path d="M20 20V12M28 20V12"></path>
+        </svg>
+        <span class="service-tag">Phase-One Offer</span>
+        <h3>Below-Waterline Inspection</h3>
+        <p>Underwater photo/video documentation, hull and running gear visual check, dock or lift visual review, and written summary.</p>
+      </article>
+
+      <article class="service-card">
+        <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M10 36V20l14-10 14 10v16"></path>
+          <rect x="18" y="28" width="12" height="8"></rect>
+          <path d="M6 36h36"></path>
+        </svg>
+        <span class="service-tag">Property Support</span>
+        <h3>Dock and Lift Visual Inspection</h3>
+        <p>Below-waterline checks for visible wear, fouling, obstruction concerns, and condition documentation around docks and boat lifts.</p>
+      </article>
+
+      <article class="service-card">
+        <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M8 24h32"></path>
+          <path d="M14 16l-6 8 6 8"></path>
+          <path d="M34 16l6 8-6 8"></path>
+          <circle cx="24" cy="24" r="6"></circle>
+        </svg>
+        <span class="service-tag">Boat Focus</span>
+        <h3>Prop and Running Gear Visual Check</h3>
+        <p>Visual confirmation of obvious line wrap, fouling, damage signals, and condition notes for propeller and running gear areas.</p>
+      </article>
+
+      <article class="service-card">
+        <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M9 18c3-3 8-5 15-5s12 2 15 5"></path>
+          <path d="M12 29c3 3 7 5 12 5s9-2 12-5"></path>
+          <path d="M24 12v22"></path>
+          <path d="M18 23l6 6 6-6"></path>
+        </svg>
+        <span class="service-tag">Recovery</span>
+        <h3>Lost Item Recovery</h3>
+        <p>Targeted underwater search and recovery support for dropped items when site conditions, access, and scope are appropriate.</p>
+      </article>
+
+      <article class="service-card">
+        <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M7 31c4-8 10-12 17-12s13 4 17 12"></path>
+          <path d="M11 35h26"></path>
+          <path d="M16 18l8-8 8 8"></path>
+        </svg>
+        <span class="service-tag">Homeowner Use</span>
+        <h3>Swim Area Hazard Scan</h3>
+        <p>Visual underwater sweep for common hazard concerns near swim zones, waterfront access points, and lake-home recreational areas.</p>
+      </article>
+
+      <article class="service-card">
+        <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="8" y="12" width="32" height="22" rx="3"></rect>
+          <path d="M16 20h16M16 27h10"></path>
+          <path d="M12 12l4-5h16l4 5"></path>
+        </svg>
+        <span class="service-tag">B2B Support</span>
+        <h3>Marina Partner Support</h3>
+        <p>Inspection-oriented partner support for marinas, clubs, rental fleets, and waterfront operators who need visual reporting and job documentation.</p>
+      </article>
+    </div>
+    <div class="services-footnote">
+      Public-facing wording in this mockup intentionally stays with "visual inspection," "photo/video documentation,"
+      "below-waterline check," and "underwater service" for a documentation-led, inspection-first presentation.
+    </div>
+  </div>
+</section>
+
+<section class="areas" id="areas">
+  <div class="container">
+    <p class="section-label">Service Areas</p>
+    <h2 class="section-title">Lake and Coastal <span>Markets</span></h2>
+    <p class="section-intro">
+      The phase-one market story starts around Hartwell and Keowee, then broadens into nearby lake and coastal opportunities
+      when the business case makes sense.
+    </p>
+    <div class="divider"></div>
+    <div class="areas-grid">
+      <article class="area-card primary-market">
+        <span class="area-tag">Phase One Priority</span>
+        <h3>Lake Hartwell</h3>
+        <p class="area-copy">Primary launch lane for immediate boat, dock, lift, marina, and waterfront-property positioning in the Hartwell market.</p>
+      </article>
+      <article class="area-card primary-market">
+        <span class="area-tag">Phase One Priority</span>
+        <h3>Lake Keowee</h3>
+        <p class="area-copy">Primary launch lane with premium waterfront owners, marina activity, and high-visibility property value for the immediate Keowee rollout.</p>
+      </article>
+      <article class="area-card">
+        <span class="area-tag">Expansion</span>
+        <h3>Lake Murray</h3>
+        <p class="area-copy">A larger follow-on market for boats, docks, swim areas, and partner-oriented inspection support.</p>
+      </article>
+      <article class="area-card">
+        <span class="area-tag">Expansion</span>
+        <h3>Clarks Hill / Lake Thurmond</h3>
+        <p class="area-copy">Lake-focused inspection and documentation support for homeowners, boat owners, and nearby operators.</p>
+      </article>
+      <article class="area-card">
+        <span class="area-tag">Phase Two</span>
+        <h3>Coastal South Carolina</h3>
+        <p class="area-copy">Review gate market only, not part of the immediate Hartwell/Keowee launch while coastal packaging, operations, and compliance review stay pending.</p>
+      </article>
+      <article class="area-card">
+        <span class="area-tag">Phase Two</span>
+        <h3>Coastal Georgia</h3>
+        <p class="area-copy">Review gate market only, not part of the immediate Hartwell/Keowee launch while coastal partner offers remain behind a separate review gate.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="partners" id="partners">
+  <div class="container">
+    <p class="section-label">B2B Partner Focus</p>
+    <h2 class="section-title">Partner-Ready <span>Support</span></h2>
+    <div class="divider"></div>
+    <div class="partners-layout">
+      <div class="panel-card partner-copy">
+        <p>
+          Dive Factor can be positioned for partner relationships where visual reporting, asset visibility,
+          recurring condition checks, and practical underwater support matter more than broad public claims.
+        </p>
+        <p>
+          The strongest B2B story is clear documentation, reliable scope control, and a premium presentation for businesses
+          that manage boats, waterfront property, or customer-facing lake access.
+        </p>
+        <p>
+          This section intentionally frames partner support around clear documentation, repeat visibility,
+          and practical underwater service support for partner-facing operations.
+        </p>
+      </div>
+      <div class="partners-grid">
+        <article class="partner-card">
+          <span class="partner-tag">Operations</span>
+          <h3>Marinas</h3>
+          <p>Visual documentation and below-waterline support for slips, customer concerns, and maintenance planning.</p>
+        </article>
+        <article class="partner-card">
+          <span class="partner-tag">Fleet Support</span>
+          <h3>Boat Clubs</h3>
+          <p>Inspection-oriented support for shared-use fleets and repeat condition checks across member-facing assets.</p>
+        </article>
+        <article class="partner-card">
+          <span class="partner-tag">Fleet Support</span>
+          <h3>Boat Rental Fleets</h3>
+          <p>Helpful for documenting hull condition, prop concerns, and post-incident visual checks without overclaiming scope.</p>
+        </article>
+        <article class="partner-card">
+          <span class="partner-tag">Referral Channel</span>
+          <h3>Dock Builders</h3>
+          <p>Useful as a supporting documentation and inspection lane where owners need visibility below the waterline.</p>
+        </article>
+        <article class="partner-card">
+          <span class="partner-tag">Referral Channel</span>
+          <h3>Lakefront Real Estate Agents</h3>
+          <p>Pre-listing, pre-purchase, and waterfront condition visibility can be packaged as a premium support service.</p>
+        </article>
+        <article class="partner-card">
+          <span class="partner-tag">Property Management</span>
+          <h3>Vacation Rental Managers</h3>
+          <p>Useful for swim-area checks, dock visibility concerns, and seasonal property preparation around guest-facing lake homes.</p>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="container">
+    <div class="cta-panel">
+      <h2>See What Is Happening <span>Below the Waterline</span></h2>
+      <p>
+        Position Dive Factor around professional underwater visibility, photo/video documentation, and practical visual checks
+        for boats, docks, lifts, marinas, and waterfront properties.
+      </p>
+      <a href="#request" class="btn-primary">Request Inspection</a>
+    </div>
+  </div>
+</section>
+
+<section class="request" id="request">
+  <div class="container">
+    <p class="section-label">Contact / Request Inspection</p>
+    <h2 class="section-title">Request an <span>Inspection</span></h2>
+    <p class="section-intro">
+      This section keeps contact details and request flow in placeholder mode until final contact info and intake handling are approved.
+    </p>
+    <div class="divider"></div>
+    <div class="request-layout">
+      <div class="panel-card request-copy">
+        <p>
+          This local mockup shows the intended page structure for a request-driven inspection homepage.
+          It keeps the tone premium and professional without inventing phone numbers, emails, final pricing, or unapproved claims.
+        </p>
+        <p>
+          Use this section later for the approved intake flow, response expectations, and scope-confirmation notes.
+        </p>
+        <ul class="request-list">
+          <li>Request type: boat, dock, lift, swim area, marina, or waterfront property</li>
+          <li>Service area: Hartwell, Keowee, Murray, Clarks Hill, coastal South Carolina, or coastal Georgia</li>
+          <li>Reason for request: documentation, visible concern, pre-purchase, post-storm, or recovery-related</li>
+          <li>Documentation note: photo/video and written summary expectations can be confirmed per job</li>
+        </ul>
+      </div>
+      <div class="request-grid">
+        <article class="request-card">
+          <h3>Request Inspection Form</h3>
+          <p>Placeholder-only visual form. No live submission, automation, email routing, CRM routing, or intake automation is enabled.</p>
+          <form class="mock-form" novalidate onsubmit="return false;" aria-describedby="request-placeholder-note">
+            <div class="mock-field">
+              <label>Name</label>
+              <input type="text" placeholder="Pending live intake setup">
+            </div>
+            <div class="mock-field">
+              <label>Preferred Contact</label>
+              <input type="text" placeholder="Phone or email pending approval">
+            </div>
+            <div class="mock-field">
+              <label>Service Area</label>
+              <select>
+                <option>Choose market</option>
+                <option>Lake Hartwell</option>
+                <option>Lake Keowee</option>
+                <option>Lake Murray</option>
+                <option>Clarks Hill / Lake Thurmond</option>
+                <option>Coastal South Carolina</option>
+                <option>Coastal Georgia</option>
+              </select>
+            </div>
+            <div class="mock-field">
+              <label>Asset Type</label>
+              <select>
+                <option>Choose asset</option>
+                <option>Boat</option>
+                <option>Dock</option>
+                <option>Boat Lift</option>
+                <option>Swim Area</option>
+                <option>Marina Support</option>
+              </select>
+            </div>
+            <div class="mock-field full">
+              <label>What do you need checked?</label>
+              <textarea placeholder="Visual documentation and request details pending final intake approval"></textarea>
+            </div>
+            <div class="mock-field full">
+              <button type="submit" class="btn-outline mock-submit-button" disabled aria-disabled="true">Request Inspection</button>
+            </div>
+          </form>
+          <p class="mock-submit-note" id="request-placeholder-note">Contact details, routing, email handling, CRM handling, and form submission behavior remain placeholder-only in this mockup.</p>
+        </article>
+        <article class="contact-card">
+          <h3>Contact Placeholders</h3>
+          <p>Phone / Text: Pending approval</p>
+          <p>Email: Pending approval</p>
+          <p>Social: @DiveFactor</p>
+          <p>Availability and final response workflow: Pending approval</p>
+        </article>
+      </div>
+    </div>
+      <div class="services-footnote request-disclaimer">
+        Public-facing copy in this mockup stays within visual inspection, photo/video documentation, below-waterline checks,
+        and underwater service language pending final compliance and operational review.
+      </div>
+    </div>
+</section>
+
+<!--
+Internal compliance guardrail for this mockup:
+Do not claim OSHA compliance, certified structural inspection, commercial diving contractor status,
+engineering sign-off, salvage guarantees, or emergency-response guarantees without final review and approval.
+-->
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-copy">Local revision mockup for <span>Dive Factor Underwater Services</span>. Not published. Not connected to live WordPress.</div>
+    <div class="footer-note">Visual reference only from the current DiveFactor.com style system.</div>
+  </div>
+</footer>
+
+<script>
+  const bubbleContainer = document.getElementById("bubbles");
+  for (let i = 0; i < 22; i += 1) {
+    const bubble = document.createElement("div");
+    const size = Math.random() * 20 + 6;
+    bubble.className = "bubble";
+    bubble.style.width = `${size}px`;
+    bubble.style.height = `${size}px`;
+    bubble.style.left = `${Math.random() * 100}%`;
+    bubble.style.animationDuration = `${Math.random() * 14 + 10}s`;
+    bubble.style.animationDelay = `${Math.random() * 12}s`;
+    bubbleContainer.appendChild(bubble);
+  }
+</script>
+
+</body>
+</html>

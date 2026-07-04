@@ -1,0 +1,62 @@
+{
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "test": "node --test \"src/**/*.test.mjs\"",
+    "test:firestore-rules:emulator": "node scripts/run-firestore-rules-emulator-tests.mjs",
+    "test:firebase-auth-admin:emulator": "node scripts/run-firebase-auth-admin-emulator-tests.mjs",
+    "dev:gbp": "node scripts/run-gbp-local-dev.mjs",
+    "rail:local-api": "node scripts/run-rail-local-api.mjs",
+    "server": "node server.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node server.js",
+    "vgb:campaign:dry-run": "node scripts/test-vgb-controlled-flow.mjs",
+    "bragi:cron:dry-run": "node scripts/bragi-cron-foundation.mjs --dry-run",
+    "bragi:cron:live": "node scripts/bragi-cron-foundation.mjs --live",
+    "bragi:cron:schedule": "node scripts/bragi-cron-foundation.mjs --schedule",
+    "bragi:cron:live-schedule": "node scripts/bragi-cron-foundation.mjs --schedule --live",
+    "bragi:continuity:dry-run": "node scripts/bragi-continuity-dry-run.mjs",
+    "bragi:wordpress:draft": "node scripts/run-bragi-aquatrace.mjs",
+    "bragi:mode-b": "node scripts/run-bragi-mode-b.mjs",
+    "bragi:notify-email:test": "node scripts/test-bragi-notification-email.mjs",
+    "bragi:telegram:test-notify": "node scripts/test-bragi-telegram-notification.mjs",
+    "bragi:telegram:test-command": "node scripts/test-bragi-telegram-command.mjs",
+    "companycam:test-readonly": "node scripts/companycam-test-readonly.mjs",
+    "companycam:nexi-roundtrip:test": "node scripts/test-nexi-companycam-roundtrip.mjs",
+    "gbp:rail:test": "node scripts/test-gbp-rail.mjs",
+    "rail:local-api:test": "node scripts/test-local-rail-api.mjs",
+    "test:live:firebase-auth": "node scripts/test-live-firebase-auth-routes.mjs",
+    "test:live:admin-gate": "node scripts/test-live-admin-gate.mjs",
+    "test:live:agent-architect": "node scripts/test-live-agent-architect-public-flow.mjs",
+    "test:live:firestore-isolation": "node scripts/test-live-firestore-tenant-isolation.mjs",
+    "test:live:blueprint-lifecycle": "node scripts/test-live-blueprint-lifecycle.mjs",
+    "test:live:mission-control": "node scripts/test-live-mission-control-ops.mjs",
+    "test:live:registry-ui": "node scripts/test-live-provisioned-registry-ui.mjs",
+    "test:live:resend": "node scripts/test-live-resend-send.mjs",
+    "test:live:readiness-e2e": "node scripts/test-live-readiness-e2e.mjs",
+    "deploy:firestore-rules:api": "node scripts/deploy-firestore-rules-via-api.mjs"
+  },
+  "dependencies": {
+    "@rive-app/react-canvas": "^4.27.3",
+    "express": "^4.19.2",
+    "firebase": "^12.11.0",
+    "firebase-admin": "^14.1.0",
+    "googleapis": "^171.4.0",
+    "nodemailer": "^8.0.6",
+    "pdf-parse": "^2.4.5",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.2",
+    "xstate": "^5.29.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "playwright": "^1.59.1",
+    "vite": "^5.4.11"
+  }
+}

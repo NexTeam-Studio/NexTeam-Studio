@@ -1,0 +1,1 @@
+window.__NEXTEAM_RUNTIME_CONFIG__ = window.__NEXTEAM_RUNTIME_CONFIG__ || {};

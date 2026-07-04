@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title desc">
+  <title id="title">Advisory bench placeholder avatar</title>
+  <desc id="desc">Generic placeholder avatar for a consult-only advisory agent.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#0EA5E9" />
+      <stop offset="100%" stop-color="#1E293B" />
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="40" fill="url(#bg)" />
+  <circle cx="120" cy="88" r="38" fill="#E2E8F0" opacity="0.92" />
+  <path
+    d="M58 196c7-35 31-54 62-54s55 19 62 54"
+    fill="#E2E8F0"
+    opacity="0.92"
+  />
+  <rect x="46" y="24" width="148" height="26" rx="13" fill="#08101F" opacity="0.78" />
+  <text
+    x="120"
+    y="42"
+    text-anchor="middle"
+    font-family="Arial, sans-serif"
+    font-size="12"
+    font-weight="700"
+    fill="#BAE6FD"
+    letter-spacing="1.5"
+  >
+    ADVISORY ONLY
+  </text>
+</svg>

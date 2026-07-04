@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dive Factor | Scuba Training & Dive Expeditions</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --green:   #a8e020;
+    --green-dark: #6a9010;
+    --red:     #cc1a1a;
+    --silver:  #c8c8c8;
+    --dark:    #0a0f0a;
+    --dark2:   #111a11;
+    --dark3:   #1c2e1c;
+    --text:    #dde8dd;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* ââ ANIMATED BUBBLES BACKGROUND ââ */
+  .bubbles {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .bubble {
+    position: absolute;
+    bottom: -60px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(168,224,32,0.18), rgba(168,224,32,0.04));
+    border: 1px solid rgba(168,224,32,0.12);
+    animation: rise linear infinite;
+  }
+  @keyframes rise {
+    0%   { transform: translateY(0) translateX(0); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.6; }
+    100% { transform: translateY(-110vh) translateX(40px); opacity: 0; }
+  }
+
+  /* ââ NAV ââ */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 40px;
+    background: rgba(8,12,8,0.88);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(168,224,32,0.2);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .nav-logo svg { width: 52px; height: 52px; }
+  .nav-brand {
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--green);
+    text-shadow: 0 0 12px rgba(168,224,32,0.5);
+    line-height: 1.1;
+  }
+  .nav-brand span { display: block; font-size: 11px; letter-spacing: 5px; color: var(--silver); font-weight: 400; }
+  .nav-links { display: flex; gap: 32px; list-style: none; }
+  .nav-links a {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px; letter-spacing: 2px;
+    color: var(--silver); text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--green); }
+
+  /* ââ HERO ââ */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 120px 20px 80px;
+    z-index: 1;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(168,224,32,0.06) 0%, transparent 65%),
+      radial-gradient(ellipse at 50% 100%, rgba(0,40,80,0.4) 0%, transparent 60%),
+      linear-gradient(180deg, #090d09 0%, #0d1a10 50%, #081018 100%);
+  }
+
+  /* waterline shimmer */
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--green), rgba(168,224,32,0.3), var(--green), transparent);
+    animation: shimmer 3s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  .hero-logo {
+    width: 220px; height: 220px;
+    margin-bottom: 36px;
+    animation: fadeDown 1s ease both;
+    filter: drop-shadow(0 0 30px rgba(168,224,32,0.25));
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-tagline {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(13px, 2vw, 16px);
+    letter-spacing: 6px;
+    color: var(--green);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    animation: fadeUp 1s 0.3s ease both;
+    opacity: 0;
+  }
+  .hero h1 {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(38px, 7vw, 72px);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: 2px;
+    color: #fff;
+    text-transform: uppercase;
+    animation: fadeUp 1s 0.5s ease both;
+    opacity: 0;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--green);
+    text-shadow: 0 0 30px rgba(168,224,32,0.6);
+  }
+  .hero-sub {
+    margin-top: 20px;
+    font-size: clamp(15px, 2vw, 18px);
+    color: rgba(200,200,200,0.8);
+    max-width: 580px;
+    line-height: 1.7;
+    animation: fadeUp 1s 0.7s ease both;
+    opacity: 0;
+  }
+  .hero-cta {
+    margin-top: 44px;
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+    animation: fadeUp 1s 0.9s ease both;
+    opacity: 0;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .btn-primary {
+    padding: 14px 36px;
+    background: var(--green);
+    color: #0a0f0a;
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: 3px; text-transform: uppercase;
+    border: none; cursor: pointer;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: background 0.2s, box-shadow 0.2s;
+    text-decoration: none; display: inline-block;
+  }
+  .btn-primary:hover {
+    background: #c8ff40;
+    box-shadow: 0 0 24px rgba(168,224,32,0.6);
+  }
+  .btn-outline {
+    padding: 13px 34px;
+    background: transparent;
+    color: var(--green);
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: 3px; text-transform: uppercase;
+    border: 1.5px solid var(--green);
+    cursor: pointer;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: all 0.2s;
+    text-decoration: none; display: inline-block;
+  }
+  .btn-outline:hover {
+    background: rgba(168,224,32,0.1);
+    box-shadow: 0 0 18px rgba(168,224,32,0.3);
+  }
+
+  .hero-scroll {
+    position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    font-size: 11px; letter-spacing: 3px; color: rgba(168,224,32,0.5);
+    font-family: 'Oswald', sans-serif;
+    animation: bounce 2s ease infinite;
+  }
+  @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+  .hero-scroll::before {
+    content: '';
+    width: 1px; height: 40px;
+    background: linear-gradient(180deg, transparent, rgba(168,224,32,0.5));
+  }
+
+  /* ââ SECTION BASE ââ */
+  section {
+    position: relative; z-index: 1;
+    padding: 90px 20px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .section-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px; letter-spacing: 6px;
+    color: var(--green); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(30px, 5vw, 48px);
+    font-weight: 700; text-transform: uppercase;
+    color: #fff; margin-bottom: 20px;
+    line-height: 1.1;
+  }
+  .section-title span { color: var(--green); }
+  .divider {
+    width: 60px; height: 3px;
+    background: linear-gradient(90deg, var(--red), var(--green));
+    margin-bottom: 36px;
+  }
+
+  /* ââ ABOUT ââ */
+  .about { background: linear-gradient(180deg, #081018 0%, var(--dark2) 100%); }
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px; align-items: center;
+  }
+  .about-text p {
+    font-size: 16px; line-height: 1.9;
+    color: rgba(200,210,200,0.85);
+    margin-bottom: 16px;
+  }
+  .about-text strong { color: var(--green); font-weight: 700; }
+  .naui-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-top: 24px;
+    padding: 12px 20px;
+    border: 1px solid rgba(168,224,32,0.3);
+    background: rgba(168,224,32,0.05);
+  }
+  .naui-badge svg { width: 28px; }
+  .naui-badge span {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px; letter-spacing: 3px;
+    color: var(--silver); text-transform: uppercase;
+  }
+  .about-stats {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 2px;
+  }
+  .stat-box {
+    background: rgba(168,224,32,0.04);
+    border: 1px solid rgba(168,224,32,0.12);
+    padding: 32px 24px;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .stat-box:hover {
+    border-color: rgba(168,224,32,0.4);
+    background: rgba(168,224,32,0.08);
+  }
+  .stat-num {
+    font-family: 'Oswald', sans-serif;
+    font-size: 44px; font-weight: 700;
+    color: var(--green);
+    text-shadow: 0 0 20px rgba(168,224,32,0.4);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 11px; letter-spacing: 3px;
+    color: var(--silver); text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  /* ââ SERVICES ââ */
+  .services { background: var(--dark2); }
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2px; margin-top: 12px;
+  }
+  .service-card {
+    background: rgba(10,16,10,0.8);
+    border: 1px solid rgba(168,224,32,0.1);
+    padding: 40px 32px;
+    transition: border-color 0.3s, transform 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .service-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--red), var(--green));
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.4s;
+  }
+  .service-card:hover { border-color: rgba(168,224,32,0.35); transform: translateY(-4px); }
+  .service-card:hover::before { transform: scaleX(1); }
+  .service-icon {
+    width: 48px; height: 48px; margin-bottom: 20px;
+    color: var(--green);
+  }
+  .service-card h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 20px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: #fff; margin-bottom: 12px;
+  }
+  .service-card p { font-size: 15px; line-height: 1.75; color: rgba(200,210,200,0.75); }
+
+  /* ââ DESTINATIONS ââ */
+  .destinations { background: linear-gradient(180deg, var(--dark2) 0%, #081018 100%); }
+  .dest-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px; margin-top: 12px;
+  }
+  .dest-card {
+    position: relative;
+    padding: 28px 24px 24px;
+    background: rgba(8,16,24,0.7);
+    border: 1px solid rgba(100,180,220,0.15);
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .dest-card:hover { border-color: rgba(168,224,32,0.4); transform: translateY(-3px); }
+  .dest-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(100,180,220,0.4), transparent);
+  }
+  .dest-flag {
+    font-size: 11px; letter-spacing: 4px;
+    color: rgba(100,200,255,0.6);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .dest-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 20px; font-weight: 600;
+    color: #fff; margin-bottom: 6px;
+  }
+  .dest-detail { font-size: 13px; color: rgba(180,200,220,0.65); line-height: 1.6; }
+
+  /* ââ CTA BAND ââ */
+  .cta-band {
+    background:
+      linear-gradient(135deg, rgba(204,26,26,0.15) 0%, rgba(168,224,32,0.1) 100%),
+      var(--dark2);
+    border-top: 1px solid rgba(168,224,32,0.2);
+    border-bottom: 1px solid rgba(168,224,32,0.2);
+    text-align: center;
+    padding: 80px 20px;
+  }
+  .cta-band h2 {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(28px, 5vw, 50px);
+    font-weight: 700; text-transform: uppercase;
+    color: #fff; margin-bottom: 16px;
+  }
+  .cta-band h2 span { color: var(--green); }
+  .cta-band p { font-size: 17px; color: rgba(200,210,200,0.8); margin-bottom: 36px; max-width: 560px; margin-left: auto; margin-right: auto; }
+
+  /* ââ CONTACT ââ */
+  .contact { background: var(--dark); text-align: center; }
+  .contact-grid {
+    display: flex; flex-wrap: wrap;
+    justify-content: center; gap: 40px;
+    margin-top: 48px;
+  }
+  .contact-item {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .contact-icon {
+    width: 44px; height: 44px;
+    border: 1px solid rgba(168,224,32,0.3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--green);
+  }
+  .contact-label { font-size: 11px; letter-spacing: 3px; color: var(--silver); text-transform: uppercase; }
+  .contact-value { font-family: 'Oswald', sans-serif; font-size: 17px; color: #fff; }
+
+  /* ââ FOOTER ââ */
+  footer {
+    position: relative; z-index: 1;
+    background: #060a06;
+    border-top: 1px solid rgba(168,224,32,0.12);
+    padding: 32px 20px;
+    text-align: center;
+  }
+  .footer-inner {
+    display: flex; flex-wrap: wrap;
+    align-items: center; justify-content: space-between;
+    max-width: 1100px; margin: 0 auto;
+    gap: 16px;
+  }
+  .footer-copy { font-size: 13px; color: rgba(180,190,180,0.5); letter-spacing: 1px; }
+  .footer-copy span { color: var(--green); }
+  .footer-naui { font-size: 12px; letter-spacing: 2px; color: rgba(168,224,32,0.4); text-transform: uppercase; }
+
+  /* ââ RESPONSIVE ââ */
+  @media (max-width: 768px) {
+    nav { padding: 12px 20px; }
+    .nav-links { display: none; }
+    .about-grid { grid-template-columns: 1fr; gap: 40px; }
+    .hero-logo { width: 160px; height: 160px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Bubbles -->
+<div class="bubbles" id="bubbles"></div>
+
+<!-- ââ NAV ââ -->
+<nav>
+  <div class="nav-logo">
+    <img src="images/Dive_Factor_Logo.png" style="width:52px;height:52px;object-fit:contain;" alt="Dive Factor Logo"/>
+    <div class="nav-brand">
+      DIVE FACTOR
+      <span>EST. 2025</span>
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#training">Training</a></li>
+    <li><a href="#destinations">Destinations</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- ââ HERO ââ -->
+<section class="hero">
+  <!-- Main logo -->
+  <img src="images/Dive_Factor_Logo.png" class="hero-logo" alt="Dive Factor Logo"/>
+
+  <p class="hero-tagline">NAUI Certified Scuba Training &amp; Dive Expeditions</p>
+  <h1>Dive <em>Deeper.</em><br>Go <em>Further.</em></h1>
+  <p class="hero-sub">Professional scuba instruction and guided dive trips to the most breathtaking freshwater destinations in the Southeast â with instructor <strong style="color:#fff">Chris Sears</strong>.</p>
+  <div class="hero-cta">
+    <a href="#training" class="btn-primary">Start Training</a>
+    <a href="#destinations" class="btn-outline">Explore Destinations</a>
+  </div>
+  <div class="hero-scroll">SCROLL</div>
+</section>
+
+<!-- ââ ABOUT ââ -->
+<section class="about" id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-text">
+        <p class="section-label">About Dive Factor</p>
+        <h2 class="section-title">Led by <span>Passion.</span><br>Backed by <span>NAUI.</span></h2>
+        <div class="divider"></div>
+        <p>Dive Factor was founded by <strong>Chris Sears</strong>, a NAUI Worldwideâcertified scuba instructor with a passion for introducing divers to the stunning underwater environments of the Southeast United States.</p>
+        <p>Whether you're a complete beginner or a seasoned diver looking for your next adventure, Dive Factor offers personalized training, expert guidance, and unforgettable dive excursions tailored to every skill level.</p>
+        <div class="naui-badge">
+          <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="14" cy="14" r="13" stroke="#a8e020" stroke-width="1.5"/>
+            <path d="M8 19V9l6 8V9" stroke="#a8e020" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 9h4M16 14h3M16 19h4" stroke="#a8e020" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span>NAUI Worldwide Certified Instructor Â· Chris Sears</span>
+        </div>
+      </div>
+      <div class="about-stats">
+        <div class="stat-box">
+          <div class="stat-num">NAUI</div>
+          <div class="stat-label">Certified Instructor</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">2</div>
+          <div class="stat-label">Regions Covered</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">8+</div>
+          <div class="stat-label">Premier Dive Sites</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">100%</div>
+          <div class="stat-label">Personalized</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ââ SERVICES / TRAINING ââ -->
+<section class="services" id="training">
+  <div class="container">
+    <p class="section-label">What We Offer</p>
+    <h2 class="section-title">Training &amp; <span>Expeditions</span></h2>
+    <div class="divider"></div>
+    <div class="services-grid">
+
+      <div class="service-card">
+        <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="24" cy="20" r="8"/><path d="M12 40c0-6.627 5.373-12 12-12s12 5.373 12 12"/>
+          <path d="M24 12V6M18 14l-4-4M30 14l4-4"/>
+        </svg>
+        <h3>Open Water Certification</h3>
+        <p>Start your underwater journey with NAUI Open Water Diver certification. Small class sizes, personal attention, real-world skills.</p>
+      </div>
+
+      <div class="service-card">
+        <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M8 36c4-8 12-14 16-14s12 6 16 14"/><circle cx="24" cy="16" r="6"/>
+          <path d="M14 22l-6 2M34 22l6 2"/>
+        </svg>
+        <h3>Advanced &amp; Specialty Courses</h3>
+        <p>Expand your capabilities with advanced open water, navigation, deep diving, and specialty certifications designed for serious divers.</p>
+      </div>
+
+      <div class="service-card">
+        <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M6 30s4-10 18-10 18 10 18 10"/><path d="M6 30c0 6 4 10 18 10s18-4 18-10"/>
+          <circle cx="24" cy="26" r="4"/><path d="M20 20V12M28 20V12"/>
+        </svg>
+        <h3>Guided Dive Trips</h3>
+        <p>Join guided dive excursions to hand-picked freshwater springs and lakes. Safety-first, adventure-focused, fully coordinated.</p>
+      </div>
+
+      <div class="service-card">
+        <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M10 36V20l14-10 14 10v16"/><rect x="18" y="28" width="12" height="8"/>
+          <path d="M6 36h36"/>
+        </svg>
+        <h3>Trip Planning &amp; Coordination</h3>
+        <p>Dive Factor handles the logistics â site selection, accommodations, gear needs â so you can focus on the dive.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ââ DESTINATIONS ââ -->
+<section class="destinations" id="destinations">
+  <div class="container">
+    <p class="section-label">Where We Dive</p>
+    <h2 class="section-title">Premier <span>Destinations</span></h2>
+    <div class="divider"></div>
+    <div class="dest-grid">
+
+      <div class="dest-card">
+        <p class="dest-flag">South Carolina</p>
+        <p class="dest-name">Lake Jocassee</p>
+        <p class="dest-detail">Crystal-clear mountain lake with stunning visibility, submerged forests, and diverse aquatic life in the Blue Ridge foothills.</p>
+      </div>
+
+      <div class="dest-card">
+        <p class="dest-flag">High Springs, FL</p>
+        <p class="dest-name">Ginnie Springs</p>
+        <p class="dest-detail">World-renowned cavern system with 68Â°F gin-clear water and incredible underwater cave formations.</p>
+      </div>
+
+      <div class="dest-card">
+        <p class="dest-flag">Williston, FL</p>
+        <p class="dest-name">Devil's Den</p>
+        <p class="dest-detail">Ancient underground spring in a prehistoric sinkhole â a surreal cathedral of water, stalactites, and fossils.</p>
+      </div>
+
+      <div class="dest-card">
+        <p class="dest-flag">Williston, FL</p>
+        <p class="dest-name">Blue Grotto</p>
+        <p class="dest-detail">60-foot deep spring grotto with a dramatic cavern entrance, crystal visibility, and permanent thermocline.</p>
+      </div>
+
+      <div class="dest-card">
+        <p class="dest-flag">Fanning Springs, FL</p>
+        <p class="dest-name">Fanning Springs</p>
+        <p class="dest-detail">First-magnitude spring flowing into the Suwannee River â lush, wildlife-rich, and serene.</p>
+      </div>
+
+      <div class="dest-card">
+        <p class="dest-flag">Troy, FL</p>
+        <p class="dest-name">Troy Spring</p>
+        <p class="dest-detail">Historic spring featuring the intact wreck of a Civil Warâera steamboat resting in its crystal floor.</p>
+      </div>
+
+      <div class="dest-card">
+        <p class="dest-flag">Chiefland, FL</p>
+        <p class="dest-name">Manatee Springs</p>
+        <p class="dest-detail">Dive alongside gentle West Indian manatees in this warm, first-magnitude freshwater spring sanctuary.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ââ CTA BAND ââ -->
+<section class="cta-band">
+  <div class="container">
+    <h2>Ready to <span>Take the Plunge?</span></h2>
+    <p>Full site coming soon â in the meantime, reach out directly to schedule your training or reserve your spot on the next dive trip.</p>
+    <a href="#contact" class="btn-primary">Get In Touch</a>
+  </div>
+</section>
+
+<!-- ââ CONTACT ââ -->
+<section class="contact" id="contact">
+  <div class="container">
+    <p class="section-label">Reach Out</p>
+    <h2 class="section-title">Contact <span>Chris</span></h2>
+    <div class="divider" style="margin:0 auto 16px;"></div>
+    <p style="color:rgba(200,210,200,0.7);font-size:16px;">Full website coming soon. For now, get in touch directly.</p>
+    <div class="contact-grid">
+      <div class="contact-item">
+        <div class="contact-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.5 10.8 19.79 19.79 0 01.44 2.18 2 2 0 012.42 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+          </svg>
+        </div>
+        <div class="contact-label">Phone / Text</div>
+        <div class="contact-value">Coming Soon</div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <div class="contact-label">Email</div>
+        <div class="contact-value">Coming Soon</div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M21 2H3v16h5l3 3 3-3h7V2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/>
+          </svg>
+        </div>
+        <div class="contact-label">Social</div>
+        <div class="contact-value">@DiveFactor</div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+          </svg>
+        </div>
+        <div class="contact-label">Website</div>
+        <div class="contact-value">Full Site Coming Soon</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ââ FOOTER ââ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-copy">&copy; 2025 <span>Dive Factor</span>. All rights reserved. Chris Sears, Instructor.</div>
+    <div class="footer-naui">NAUI Worldwide Certified</div>
+  </div>
+</footer>
+
+<script>
+  // Generate bubbles
+  const container = document.getElementById('bubbles');
+  for (let i = 0; i < 18; i++) {
+    const b = document.createElement('div');
+    b.classList.add('bubble');
+    const size = Math.random() * 18 + 6;
+    b.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      animation-duration:${Math.random()*14+10}s;
+      animation-delay:${Math.random()*12}s;
+    `;
+    container.appendChild(b);
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+lead_id,market,business_name,category,website,source_url,status,notes
+hartwell-001,hartwell,Portman Marina,marina,https://www.portmanmarina.com/,https://www.portmanmarina.com/,researched,Large inland marina with wet slips and waterfront traffic
+hartwell-002,hartwell,Big Water Marina,marina,https://www.bigwatermarina.com/,https://www.bigwatermarina.com/,researched,Marina with fuel rentals slips and campground activity
+hartwell-003,hartwell,Harbor Light Marina,marina,https://harborlightmarina.net/,https://harborlightmarina.net/,researched,Border-location marina with rentals and slip activity
+hartwell-004,hartwell,Sun Life Hartwell Marina,marina,https://sunlifehartwell.com/,https://sunlifehartwell.com/,researched,Slip storage and rental activity supports inspection opportunities
+hartwell-005,hartwell,Carefree Boat Club Lake Hartwell,boat_club,https://carefreeboats.com/lake-hartwell-marina-guide/,https://carefreeboats.com/lake-hartwell-marina-guide/,researched,Boat-club style audience and marina network angle
