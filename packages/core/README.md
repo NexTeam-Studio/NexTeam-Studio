@@ -1,6 +1,6 @@
 # Core Package
 
-This package is the shared contract layer for NexTeam Studio. It defines TypeScript interfaces, zod schemas, typed errors, logging helpers, the event bus contract, and the approval queue primitives.
+This package is the shared contract layer for NexTeam Studio. It defines TypeScript interfaces, zod schemas, typed errors, logging helpers, the event bus contract, and the approval queue primitives. M2 quote records also carry approval IDs, PDF refs, portal token hashes, and typed-signature metadata so quote delivery stays approval-gated and auditable.
 
 All apps and feature packages depend on `@nexteam/core` instead of redefining tenant, CRM, media, approval, source, and usageLog shapes. Changes here ripple across the whole monorepo, so update tests and schemas together.
 

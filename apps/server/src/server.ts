@@ -2,6 +2,7 @@ import { Readable } from "node:stream";
 import express, { type Request, type Response } from "express";
 import {
   ApprovalQueueService,
+  InMemoryEventBus,
   InMemoryApprovalQueueRepository,
   RailError,
   approvalItemSchema,
@@ -10,11 +11,14 @@ import {
 import { CompanyCamAdapter } from "@nexteam/providers";
 import { getBuildInfo } from "./buildInfo.js";
 import { buildHealth } from "./health.js";
+import { registerCrmRoutes } from "./crm/routes.js";
 
 const app = express();
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+const eventBus = new InMemoryEventBus();
 
 app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false }));
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
@@ -84,6 +88,8 @@ app.post("/api/approval-queue/:id/approve", async (req: Request, res: Response) 
     sendError(res, error);
   }
 });
+
+registerCrmRoutes(app, { approvalQueue, eventBus });
 
 app.get("/", (_req: Request, res: Response) => {
   res.json({ ok: true, service: "nexteam-studio-server", version: getBuildInfo() });

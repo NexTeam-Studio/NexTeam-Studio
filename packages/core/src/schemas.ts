@@ -125,6 +125,12 @@ export const quoteSchema = z.object({
   title: z.string(),
   lineItems: z.array(lineItemSchema),
   totals: z.object({ subtotal: z.number(), tax: z.number(), total: z.number() }),
+  approvalId: idSchema.optional(),
+  pdfRef: z.string().optional(),
+  portalTokenHash: z.string().optional(),
+  signedBy: z.string().optional(),
+  signedAt: z.string().optional(),
+  signatureIp: z.string().optional(),
   externalIds: z.object({ jobber: z.string().optional(), stripe: z.string().optional() }).optional()
 });
 

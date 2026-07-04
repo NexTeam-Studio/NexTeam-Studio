@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@nexteam/core": "0.0.0",
+    "@nexteam/industry-packs": "0.0.0",
     "@nexteam/nexi": "0.0.0",
     "@nexteam/providers": "0.0.0",
     "express": "^4.19.2",

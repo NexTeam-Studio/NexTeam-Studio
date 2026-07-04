@@ -187,6 +187,12 @@ export interface Quote {
   title: string;
   lineItems: LineItem[];
   totals: { subtotal: number; tax: number; total: number };
+  approvalId?: ID | undefined;
+  pdfRef?: string | undefined;
+  portalTokenHash?: string | undefined;
+  signedBy?: string | undefined;
+  signedAt?: string | undefined;
+  signatureIp?: string | undefined;
 }
 
 export interface Invoice {
