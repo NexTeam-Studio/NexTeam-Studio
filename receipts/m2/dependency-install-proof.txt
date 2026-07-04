@@ -1,0 +1,38 @@
+﻿M2 dependency install proof
+capturedAt=2026-07-04T19:29:59.5231118Z
+cwd=C:\Users\Peyto\NexTeam-Studio-worktrees\crm
+node=v24.14.0
+npm=11.9.0
+
+Third-party package entries:
+node_modules\zod mode=d----- linkType= target=
+node_modules\typescript mode=d----- linkType= target=
+node_modules\express mode=d----- linkType= target=
+node_modules\firebase-admin mode=d----- linkType= target=
+
+Workspace package entries:
+node_modules\@nexteam\core mode=d----l linkType=Junction target=C:\Users\Peyto\NexTeam-Studio-worktrees\crm\packages\core
+node_modules\@nexteam\providers mode=d----l linkType=Junction target=C:\Users\Peyto\NexTeam-Studio-worktrees\crm\packages\providers
+node_modules\@nexteam\server mode=d----l linkType=Junction target=C:\Users\Peyto\NexTeam-Studio-worktrees\crm\apps\server
+
+npm ls proof:
+nexteam-studio@ C:\Users\Peyto\NexTeam-Studio-worktrees\crm
++-- @nexteam/core@0.0.0 -> .\packages\core
+| +-- firebase-admin@14.1.0 deduped
+| `-- zod@3.25.76 deduped
++-- @nexteam/nexi@0.0.0 -> .\packages\nexi
+| +-- @nexteam/core@0.0.0 deduped -> .\packages\core
+| `-- zod@3.25.76 deduped
++-- @nexteam/providers@0.0.0 -> .\packages\providers
+| `-- @nexteam/core@0.0.0 deduped -> .\packages\core
++-- @nexteam/server@0.0.0 -> .\apps\server
+| +-- @nexteam/core@0.0.0 deduped -> .\packages\core
+| +-- @nexteam/providers@0.0.0 deduped -> .\packages\providers
+| +-- express@4.22.1 deduped
+| `-- firebase-admin@14.1.0 deduped
++-- express@4.22.1
++-- firebase-admin@14.1.0
++-- typescript@5.9.3
+`-- zod@3.25.76
+
+
