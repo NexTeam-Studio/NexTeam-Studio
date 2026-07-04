@@ -1,5 +1,7 @@
 ﻿import { Readable } from "node:stream";
 import express, { type Request, type Response } from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   ApprovalQueueService,
   InMemoryApprovalQueueRepository,
@@ -14,6 +16,7 @@ import { buildHealth } from "./health.js";
 
 const app = express();
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 
 app.use(express.json({ limit: "1mb" }));
 app.use("/api/nexi", createNexiRouter(process.env));
@@ -87,7 +90,7 @@ app.post("/api/approval-queue/:id/approve", async (req: Request, res: Response) 
   }
 });
 
-app.use(express.static("apps/web/dist"));
+app.use(express.static(webDistDir));
 
 app.get("/", (_req: Request, res: Response) => {
   res.json({ ok: true, service: "nexteam-studio-server", version: getBuildInfo() });
