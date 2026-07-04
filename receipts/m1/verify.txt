@@ -14,11 +14,11 @@
 > test
 > node --test "packages/**/*.test.mjs" "apps/**/*.test.mjs"
 
-✔ Camp Mikell fixture extracts 101000 gallons (4.8316ms)
-✔ source check blocks factual answers without sources (0.2192ms)
-✔ Media schema rejects exposed third-party URL fields (2.406ms)
-✔ NexiBlueprint and SiteJobBlueprint schemas remain distinct (1.2062ms)
-✔ Approval item defaults can park outbound execution (0.8114ms)
+✔ Camp Mikell fixture extracts 101000 gallons (6.5309ms)
+✔ source check blocks factual answers without sources (0.3376ms)
+✔ Media schema rejects exposed third-party URL fields (2.4051ms)
+✔ NexiBlueprint and SiteJobBlueprint schemas remain distinct (1.5555ms)
+✔ Approval item defaults can park outbound execution (1.2071ms)
 ℹ tests 5
 ℹ suites 0
 ℹ pass 5
@@ -26,7 +26,7 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 207.1595
+ℹ duration_ms 203.3746
 
 > check:tenancy
 > node scripts/check-tenancy.mjs
@@ -36,12 +36,12 @@ Tenancy check passed (24 files checked).
 > check:secrets
 > node scripts/check-secrets.mjs
 
-Secret scan passed (431 tracked non-doc files checked).
+Secret scan passed (429 tracked non-doc files checked).
 
 > check:secret-history
 > node scripts/check-secret-history.mjs
 
-Secret history scan passed (91 reachable commits, 2007 reachable objects checked).
+Secret history scan passed (92 reachable commits, 2017 reachable objects checked).
 
 > check:provider-imports
 > node scripts/check-provider-imports.mjs
