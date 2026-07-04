@@ -220,6 +220,45 @@ export const sourceSchema = z.object({
   label: z.string()
 });
 
+export const conversationRecordSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  userText: z.string(),
+  assistantText: z.string(),
+  sources: z.array(sourceSchema),
+  createdAt: z.string()
+});
+
+export const failureLogRecordSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  module: z.literal("nexi"),
+  op: z.string(),
+  question: z.string(),
+  reason: z.string(),
+  sources: z.array(sourceSchema),
+  createdAt: z.string()
+});
+
+export const usageLogRecordSchema = z.object({
+  tenantId: idSchema,
+  provider: z.literal("anthropic"),
+  model: z.string(),
+  routeActionName: z.string(),
+  taskType: z.string(),
+  usage: z.object({
+    inputTokens: z.number(),
+    outputTokens: z.number(),
+    cacheCreationInputTokens: z.number(),
+    cacheReadInputTokens: z.number(),
+    totalTokens: z.number()
+  }),
+  estimatedCostUsd: z.number().nullable(),
+  ok: z.boolean(),
+  errorSummary: z.string(),
+  createdAt: z.string()
+});
+
 export const versionResponseSchema = z.object({
   sha: z.string(),
   builtAt: z.string()
@@ -250,3 +289,6 @@ export type MediaDoc = z.infer<typeof mediaSchema>;
 export type SiteJobBlueprintDoc = z.infer<typeof siteJobBlueprintSchema>;
 export type NexiBlueprintDoc = z.infer<typeof nexiBlueprintSchema>;
 export type ApprovalItemDoc = z.infer<typeof approvalItemSchema>;
+export type ConversationDoc = z.infer<typeof conversationRecordSchema>;
+export type FailureLogDoc = z.infer<typeof failureLogRecordSchema>;
+export type UsageLogDoc = z.infer<typeof usageLogRecordSchema>;

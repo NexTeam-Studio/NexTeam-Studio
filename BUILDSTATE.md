@@ -9,7 +9,7 @@
 | core | M0.5 provider extraction | done | `packages/providers/src/jobber/JobberAdapter.ts`, `packages/providers/src/companycam/CompanyCamAdapter.ts`, `receipts/m0/smoke-m0.txt` |
 | core | M0.6 foundation services | done | `apps/server/src/server.ts`, `receipts/m0/local-version-health.json` |
 | core | M0.7 verify + receipts | blocked | Local verify/smoke/history scan done in `receipts/m0/verify.txt`, `receipts/m0/smoke-m0.txt`, and `receipts/security/history-scan.txt`; clean branches pushed; live `/api/version` SHA-match blocked by missing Railway staging target in `receipts/m0/push-railway-status.txt` |
-| nexi | M1 Nexi Job Desk | blocked | Local route skeleton receipts in `receipts/m1/verify.txt` and `receipts/m1/local-routes.json`; blocker: not yet Bible-compliant one-model-call tool loop, Firestore persistence, usage cache metrics, mobile UI, phone recording, or live deployment receipts |
+| nexi | M1 Nexi Job Desk | blocked | Local gateway/tool-loop, Firestore persistence, failureLog, cache-metric tests, Camp Mikell ingest, and mobile PWA UI done in `receipts/m1/verify.txt`, `receipts/m1/build.txt`, `receipts/m1/local-transcripts.json`, `receipts/m1/local-failurelog.json`, and `receipts/m1/mobile-ui.png`; live A/B/C transcripts, live cacheReadTokens>0 usageLog, phone recording, and staging deployment remain blocked by missing staging target/runtime secrets |
 | crm | M2 read-side skeleton | blocked | M0 priority consumed current run |
 | fielddocs | M4 read-side skeleton | blocked | M0 priority consumed current run |
 

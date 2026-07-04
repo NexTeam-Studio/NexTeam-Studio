@@ -1,0 +1,87 @@
+﻿{
+    "ingest":  {
+                   "ok":  true,
+                   "siteJobBlueprint":  {
+                                            "id":  "site_job_b558e2e6-3abc-42fc-af4d-52d6d69a9dc5",
+                                            "tenantId":  "aquatrace",
+                                            "kind":  "site_blueprint",
+                                            "fields":  {
+                                                           "poolGallons":  101000
+                                                       },
+                                            "extractedFrom":  "camp-mikell-checklist",
+                                            "extractedAt":  "2026-07-04T14:58:36.319Z"
+                                        }
+               },
+    "message":  {
+                    "ok":  true,
+                    "answer":  "The SiteJobBlueprint field value is 101000.",
+                    "sources":  [
+                                    {
+                                        "rail":  "native",
+                                        "ref":  "site-job-blueprint",
+                                        "label":  "SiteJobBlueprint fields"
+                                    }
+                                ],
+                    "conversationId":  "conv_58291c44-14d3-4848-8923-017667408ba9",
+                    "usage":  {
+                                  "inputTokens":  0,
+                                  "outputTokens":  0,
+                                  "cacheCreationInputTokens":  0,
+                                  "cacheReadInputTokens":  0,
+                                  "totalTokens":  0
+                              },
+                    "toolRuns":  [
+                                     {
+                                         "name":  "lookupSiteJobBlueprintField",
+                                         "result":  {
+                                                        "field":  "poolGallons",
+                                                        "value":  101000
+                                                    },
+                                         "sources":  [
+                                                         {
+                                                             "rail":  "native",
+                                                             "ref":  "site-job-blueprint",
+                                                             "label":  "SiteJobBlueprint fields"
+                                                         }
+                                                     ]
+                                     }
+                                 ]
+                },
+    "debugState":  {
+                       "ok":  true,
+                       "conversations":  [
+                                             {
+                                                 "id":  "conv_58291c44-14d3-4848-8923-017667408ba9",
+                                                 "tenantId":  "aquatrace",
+                                                 "userText":  "How many gallons are in the Camp Mikell SiteJobBlueprint?",
+                                                 "assistantText":  "The SiteJobBlueprint field value is 101000.",
+                                                 "sources":  [
+                                                                 {
+                                                                     "rail":  "native",
+                                                                     "ref":  "site-job-blueprint",
+                                                                     "label":  "SiteJobBlueprint fields"
+                                                                 }
+                                                             ],
+                                                 "createdAt":  "2026-07-04T14:58:36.353Z"
+                                             }
+                                         ],
+                       "failureLog":  [
+
+                                      ],
+                       "siteJobBlueprints":  [
+                                                 {
+                                                     "id":  "site_job_b558e2e6-3abc-42fc-af4d-52d6d69a9dc5",
+                                                     "tenantId":  "aquatrace",
+                                                     "kind":  "site_blueprint",
+                                                     "fields":  {
+                                                                    "poolGallons":  101000
+                                                                },
+                                                     "extractedFrom":  "camp-mikell-checklist",
+                                                     "extractedAt":  "2026-07-04T14:58:36.319Z"
+                                                 }
+                                             ],
+                       "usageLog":  [
+
+                                    ]
+                   }
+}

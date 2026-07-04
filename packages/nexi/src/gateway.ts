@@ -1,9 +1,10 @@
-import type { Source, UsageLogRecord } from "@nexteam/core";
+import type { NexiTool, Source, Tenant, UsageLogRecord } from "@nexteam/core";
 import { RailError } from "@nexteam/core";
 import { enforceSources } from "./sourceCheck.js";
 
 export const NEXI_ANTHROPIC_MODEL = "claude-sonnet-5";
 const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
+const MAX_TOOL_ITERATIONS = 6;
 
 export interface AnthropicUsagePayload {
   input_tokens?: number;
@@ -16,9 +17,11 @@ export interface UsageLogWriter {
   write(record: UsageLogRecord): Promise<void>;
 }
 
+export type GatewayMessageContent = string | Array<Record<string, unknown>>;
+
 export interface GatewayMessage {
   role: "user" | "assistant";
-  content: string;
+  content: GatewayMessageContent;
 }
 
 export interface GatewayToolDefinition {
@@ -36,8 +39,9 @@ export interface GatewayRequest {
   routeActionName: string;
   taskType: string;
   sources: Source[];
-  usageLog?: UsageLogWriter;
-  env?: NodeJS.ProcessEnv;
+  usageLog?: UsageLogWriter | undefined;
+  env?: NodeJS.ProcessEnv | undefined;
+  fetchFn?: typeof fetch | undefined;
 }
 
 export interface GatewayResponse {
@@ -45,6 +49,58 @@ export interface GatewayResponse {
   sources: Source[];
   usage: UsageLogRecord["usage"];
   raw: unknown;
+  failureReason?: string | undefined;
+}
+
+export interface ToolLoopRequest {
+  tenant: Tenant;
+  system: string;
+  messages: GatewayMessage[];
+  tools: NexiTool[];
+  maxTokens?: number;
+  routeActionName: string;
+  taskType: string;
+  usageLog?: UsageLogWriter | undefined;
+  env?: NodeJS.ProcessEnv | undefined;
+  fetchFn?: typeof fetch | undefined;
+  maxToolIterations?: number | undefined;
+}
+
+export interface ToolRunTrace {
+  name: string;
+  sources: Source[];
+  result: unknown;
+}
+
+export interface ToolLoopResponse extends GatewayResponse {
+  toolRuns: ToolRunTrace[];
+}
+
+interface AnthropicTextBlock {
+  type: "text";
+  text?: string;
+}
+
+interface AnthropicToolUseBlock {
+  type: "tool_use";
+  id: string;
+  name: string;
+  input?: unknown;
+}
+
+type AnthropicContentBlock = AnthropicTextBlock | AnthropicToolUseBlock | Record<string, unknown>;
+
+interface AnthropicPayload {
+  content?: AnthropicContentBlock[];
+  usage?: AnthropicUsagePayload;
+}
+
+interface AnthropicCallResult {
+  payload: AnthropicPayload;
+  usage: UsageLogRecord["usage"];
+  answer: string;
+  content: AnthropicContentBlock[];
+  latencyMs: number;
 }
 
 function normalizeNumber(value: unknown): number {
@@ -66,6 +122,26 @@ function normalizeUsage(usage: AnthropicUsagePayload | undefined): UsageLogRecor
   };
 }
 
+function addUsage(left: UsageLogRecord["usage"], right: UsageLogRecord["usage"]): UsageLogRecord["usage"] {
+  return {
+    inputTokens: left.inputTokens + right.inputTokens,
+    outputTokens: left.outputTokens + right.outputTokens,
+    cacheCreationInputTokens: left.cacheCreationInputTokens + right.cacheCreationInputTokens,
+    cacheReadInputTokens: left.cacheReadInputTokens + right.cacheReadInputTokens,
+    totalTokens: left.totalTokens + right.totalTokens
+  };
+}
+
+function emptyUsage(): UsageLogRecord["usage"] {
+  return {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheCreationInputTokens: 0,
+    cacheReadInputTokens: 0,
+    totalTokens: 0
+  };
+}
+
 function estimateCostUsd(usage: UsageLogRecord["usage"]): number {
   const input = usage.inputTokens * 3 / 1_000_000;
   const output = usage.outputTokens * 15 / 1_000_000;
@@ -74,19 +150,12 @@ function estimateCostUsd(usage: UsageLogRecord["usage"]): number {
   return Number((input + output + cacheWrite + cacheRead).toFixed(6));
 }
 
-function textFromPayload(payload: unknown): string {
-  if (!payload || typeof payload !== "object") {
-    return "";
-  }
-  const record = payload as Record<string, unknown>;
-  const content = Array.isArray(record.content) ? record.content : [];
-  return content.map((block) => {
-    if (!block || typeof block !== "object") {
-      return "";
-    }
-    const blockRecord = block as Record<string, unknown>;
-    return typeof blockRecord.text === "string" ? blockRecord.text : "";
-  }).filter(Boolean).join("\n").trim();
+function textFromContentBlocks(content: AnthropicContentBlock[] | undefined): string {
+  return (content ?? [])
+    .map((block) => block.type === "text" && typeof block.text === "string" ? block.text : "")
+    .filter(Boolean)
+    .join("\n")
+    .trim();
 }
 
 async function readJson(response: Response): Promise<unknown> {
@@ -107,7 +176,7 @@ function payloadMessage(payload: unknown): string {
   }
   if (payload && typeof payload === "object") {
     const record = payload as Record<string, unknown>;
-    const error = record.error && typeof record.error === "object" ? record.error as Record<string, unknown> : null;
+    const error = record.error && typeof record.error === "object" ? errorRecord(record.error) : null;
     const message = error?.message ?? record.message;
     if (typeof message === "string") {
       return message;
@@ -116,8 +185,46 @@ function payloadMessage(payload: unknown): string {
   return "Anthropic request failed.";
 }
 
-export async function callNexiGateway(request: GatewayRequest): Promise<GatewayResponse> {
-  const env = request.env ?? process.env;
+function errorRecord(error: unknown): Record<string, unknown> | null {
+  return error && typeof error === "object" ? error as Record<string, unknown> : null;
+}
+
+function isPayload(value: unknown): value is AnthropicPayload {
+  return Boolean(value && typeof value === "object");
+}
+
+async function writeUsageRecord(input: {
+  tenantId: string;
+  routeActionName: string;
+  taskType: string;
+  usage: UsageLogRecord["usage"];
+  ok: boolean;
+  errorSummary: string;
+  usageLog?: UsageLogWriter | undefined;
+}): Promise<void> {
+  await input.usageLog?.write({
+    tenantId: input.tenantId,
+    provider: "anthropic",
+    model: NEXI_ANTHROPIC_MODEL,
+    routeActionName: input.routeActionName,
+    taskType: input.taskType,
+    usage: input.usage,
+    estimatedCostUsd: estimateCostUsd(input.usage),
+    ok: input.ok,
+    errorSummary: input.errorSummary,
+    createdAt: new Date().toISOString()
+  });
+}
+
+async function sendAnthropicRequest(input: {
+  env?: NodeJS.ProcessEnv | undefined;
+  fetchFn?: typeof fetch | undefined;
+  system: string;
+  messages: GatewayMessage[];
+  tools?: GatewayToolDefinition[] | undefined;
+  maxTokens?: number | undefined;
+}): Promise<AnthropicCallResult> {
+  const env = input.env ?? process.env;
   const apiKey = env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) {
     throw new RailError("ANTHROPIC_API_KEY is not configured.", { provider: "anthropic", op: "messages", status: 400 });
@@ -125,20 +232,20 @@ export async function callNexiGateway(request: GatewayRequest): Promise<GatewayR
 
   const body = {
     model: NEXI_ANTHROPIC_MODEL,
-    max_tokens: request.maxTokens ?? 1200,
+    max_tokens: input.maxTokens ?? 1200,
     system: [
       {
         type: "text",
-        text: request.system,
+        text: input.system,
         cache_control: { type: "ephemeral" }
       }
     ],
-    messages: request.messages,
-    tools: request.tools ?? []
+    messages: input.messages,
+    tools: input.tools ?? []
   };
 
   const startedAt = Date.now();
-  const response = await fetch(ANTHROPIC_MESSAGES_URL, {
+  const response = await (input.fetchFn ?? fetch)(ANTHROPIC_MESSAGES_URL, {
     method: "POST",
     headers: {
       "x-api-key": apiKey,
@@ -148,25 +255,8 @@ export async function callNexiGateway(request: GatewayRequest): Promise<GatewayR
     body: JSON.stringify(body)
   });
   const payload = await readJson(response);
-  const usagePayload = payload && typeof payload === "object"
-    ? (payload as Record<string, unknown>).usage as AnthropicUsagePayload | undefined
-    : undefined;
-  const usage = normalizeUsage(usagePayload);
-  const answer = textFromPayload(payload);
-  const sourceCheck = enforceSources(answer, request.sources);
-  const record: UsageLogRecord = {
-    tenantId: request.tenantId,
-    provider: "anthropic",
-    model: NEXI_ANTHROPIC_MODEL,
-    routeActionName: request.routeActionName,
-    taskType: request.taskType,
-    usage,
-    estimatedCostUsd: estimateCostUsd(usage),
-    ok: response.ok && sourceCheck.ok,
-    errorSummary: response.ok ? sourceCheck.failureReason ?? "" : payloadMessage(payload),
-    createdAt: new Date().toISOString()
-  };
-  await request.usageLog?.write(record);
+  const parsedPayload = isPayload(payload) ? payload : {};
+  const usage = normalizeUsage(parsedPayload.usage);
 
   if (!response.ok) {
     throw new RailError(payloadMessage(payload), {
@@ -178,10 +268,184 @@ export async function callNexiGateway(request: GatewayRequest): Promise<GatewayR
   }
 
   return {
-    answer: sourceCheck.answer,
-    sources: request.sources,
+    payload: parsedPayload,
     usage,
-    raw: { payload, latencyMs: Date.now() - startedAt }
+    answer: textFromContentBlocks(parsedPayload.content),
+    content: parsedPayload.content ?? [],
+    latencyMs: Date.now() - startedAt
   };
 }
 
+function toolDefinition(tool: NexiTool): GatewayToolDefinition {
+  return {
+    name: tool.name,
+    description: tool.description,
+    input_schema: {
+      type: "object",
+      additionalProperties: true
+    }
+  };
+}
+
+function toolUsesFromContent(content: AnthropicContentBlock[]): AnthropicToolUseBlock[] {
+  return content.filter((block): block is AnthropicToolUseBlock =>
+    block.type === "tool_use"
+      && typeof (block as Record<string, unknown>).id === "string"
+      && typeof (block as Record<string, unknown>).name === "string"
+  );
+}
+
+function toolResultContent(result: unknown): string {
+  try {
+    return JSON.stringify(result);
+  } catch {
+    return JSON.stringify({ error: "Tool result could not be serialized." });
+  }
+}
+
+export async function callNexiGateway(request: GatewayRequest): Promise<GatewayResponse> {
+  let call: AnthropicCallResult;
+  try {
+    call = await sendAnthropicRequest(request);
+  } catch (error) {
+    const usage = emptyUsage();
+    await writeUsageRecord({
+      tenantId: request.tenantId,
+      routeActionName: request.routeActionName,
+      taskType: request.taskType,
+      usage,
+      ok: false,
+      errorSummary: error instanceof Error ? error.message : "Anthropic request failed.",
+      usageLog: request.usageLog
+    });
+    throw error;
+  }
+
+  const sourceCheck = enforceSources(call.answer, request.sources);
+  await writeUsageRecord({
+    tenantId: request.tenantId,
+    routeActionName: request.routeActionName,
+    taskType: request.taskType,
+    usage: call.usage,
+    ok: sourceCheck.ok,
+    errorSummary: sourceCheck.failureReason ?? "",
+    usageLog: request.usageLog
+  });
+
+  return {
+    answer: sourceCheck.answer,
+    sources: request.sources,
+    usage: call.usage,
+    raw: { payload: call.payload, latencyMs: call.latencyMs },
+    failureReason: sourceCheck.failureReason
+  };
+}
+
+export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoopResponse> {
+  const messages: GatewayMessage[] = [...request.messages];
+  const toolsByName = new Map(request.tools.map((tool) => [tool.name, tool]));
+  const toolDefinitions = request.tools.map(toolDefinition);
+  let sources: Source[] = [];
+  let totalUsage = emptyUsage();
+  const toolRuns: ToolRunTrace[] = [];
+  const rawIterations: unknown[] = [];
+  const maxToolIterations = request.maxToolIterations ?? MAX_TOOL_ITERATIONS;
+
+  for (let iteration = 0; iteration <= maxToolIterations; iteration += 1) {
+    let call: AnthropicCallResult;
+    try {
+      call = await sendAnthropicRequest({
+        env: request.env,
+        fetchFn: request.fetchFn,
+        system: request.system,
+        messages,
+        tools: toolDefinitions,
+        maxTokens: request.maxTokens
+      });
+    } catch (error) {
+      const usage = emptyUsage();
+      await writeUsageRecord({
+        tenantId: request.tenant.id,
+        routeActionName: request.routeActionName,
+        taskType: request.taskType,
+        usage,
+        ok: false,
+        errorSummary: error instanceof Error ? error.message : "Anthropic request failed.",
+        usageLog: request.usageLog
+      });
+      throw error;
+    }
+
+    totalUsage = addUsage(totalUsage, call.usage);
+    rawIterations.push({ payload: call.payload, latencyMs: call.latencyMs });
+    const toolUses = toolUsesFromContent(call.content);
+
+    if (toolUses.length === 0) {
+      const sourceCheck = enforceSources(call.answer, sources);
+      await writeUsageRecord({
+        tenantId: request.tenant.id,
+        routeActionName: request.routeActionName,
+        taskType: request.taskType,
+        usage: call.usage,
+        ok: sourceCheck.ok,
+        errorSummary: sourceCheck.failureReason ?? "",
+        usageLog: request.usageLog
+      });
+      return {
+        answer: sourceCheck.answer,
+        sources,
+        usage: totalUsage,
+        raw: { iterations: rawIterations },
+        failureReason: sourceCheck.failureReason,
+        toolRuns
+      };
+    }
+
+    await writeUsageRecord({
+      tenantId: request.tenant.id,
+      routeActionName: request.routeActionName,
+      taskType: request.taskType,
+      usage: call.usage,
+      ok: true,
+      errorSummary: "",
+      usageLog: request.usageLog
+    });
+
+    messages.push({ role: "assistant", content: call.content as Array<Record<string, unknown>> });
+    const toolResults: Record<string, unknown>[] = [];
+
+    for (const toolUse of toolUses) {
+      const tool = toolsByName.get(toolUse.name);
+      if (!tool) {
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: toolUse.id,
+          is_error: true,
+          content: `Unknown tool: ${toolUse.name}`
+        });
+        continue;
+      }
+      const args = tool.inputSchema.parse(toolUse.input ?? {});
+      const result = await tool.handler(request.tenant, args);
+      sources = [...sources, ...result.sources];
+      toolRuns.push({ name: tool.name, result: result.result, sources: result.sources });
+      toolResults.push({
+        type: "tool_result",
+        tool_use_id: toolUse.id,
+        content: toolResultContent(result.result)
+      });
+    }
+
+    messages.push({ role: "user", content: toolResults });
+  }
+
+  const answer = "I don't have that yet; the tool loop reached its safety limit.";
+  return {
+    answer,
+    sources,
+    usage: totalUsage,
+    raw: { iterations: rawIterations },
+    failureReason: "tool_iteration_limit_exceeded",
+    toolRuns
+  };
+}

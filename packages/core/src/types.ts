@@ -319,6 +319,26 @@ export interface Source {
   label: string;
 }
 
+export interface ConversationRecord {
+  id: ID;
+  tenantId: ID;
+  userText: string;
+  assistantText: string;
+  sources: Source[];
+  createdAt: string;
+}
+
+export interface FailureLogRecord {
+  id: ID;
+  tenantId: ID;
+  module: "nexi";
+  op: string;
+  question: string;
+  reason: string;
+  sources: Source[];
+  createdAt: string;
+}
+
 export interface UsageLogRecord {
   tenantId: ID;
   provider: "anthropic";

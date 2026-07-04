@@ -1,45 +1,39 @@
-﻿import type { NexiTool, Source, Tenant } from "@nexteam/core";
-import { enforceSources } from "@nexteam/nexi";
-
-export interface ConversationRecord {
-  id: string;
-  tenantId: string;
-  userText: string;
-  assistantText: string;
-  sources: Source[];
-  createdAt: string;
-}
-
-export interface FailureRecord {
-  id: string;
-  tenantId: string;
-  question: string;
-  reason: string;
-  createdAt: string;
-}
-
-export class MemoryNexiRepository {
-  readonly conversations: ConversationRecord[] = [];
-  readonly failureLog: FailureRecord[] = [];
-
-  async saveConversation(record: Omit<ConversationRecord, "id" | "createdAt">): Promise<ConversationRecord> {
-    const saved = { ...record, id: `conv_${crypto.randomUUID()}`, createdAt: new Date().toISOString() };
-    this.conversations.push(saved);
-    return saved;
-  }
-
-  async saveFailure(record: Omit<FailureRecord, "id" | "createdAt">): Promise<FailureRecord> {
-    const saved = { ...record, id: `fail_${crypto.randomUUID()}`, createdAt: new Date().toISOString() };
-    this.failureLog.push(saved);
-    return saved;
-  }
-}
+import type { NexiTool, Source, Tenant, UsageLogRecord } from "@nexteam/core";
+import { RailError } from "@nexteam/core";
+import {
+  runNexiToolLoop,
+  type ToolLoopRequest,
+  type ToolLoopResponse,
+  type UsageLogWriter
+} from "@nexteam/nexi";
+import type { NexiRepository } from "./nexiRepository.js";
 
 export interface NexiMessageInput {
   tenant: Tenant;
   message: string;
   tools: NexiTool[];
-  repository: MemoryNexiRepository;
+  repository: NexiRepository;
+  usageLog?: UsageLogWriter | undefined;
+  env?: NodeJS.ProcessEnv | undefined;
+  gateway?: ((request: ToolLoopRequest) => Promise<ToolLoopResponse>) | undefined;
+}
+
+export interface NexiMessageResult {
+  answer: string;
+  sources: Source[];
+  conversationId: string;
+  failureId?: string | undefined;
+  usage: UsageLogRecord["usage"];
+  toolRuns: ToolLoopResponse["toolRuns"];
+}
+
+function buildNexiSystemPrompt(tenant: Tenant): string {
+  return [
+    `You are ${tenant.branding.assistantName}, the NexTeam Job Desk assistant for ${tenant.name}.`,
+    "Use the provided tools for factual job, schedule, photo, and SiteJobBlueprint questions.",
+    "Never invent job data. If a factual answer lacks sources, say you do not have a verified source.",
+    "Keep phone answers short, direct, and operational. Ask at most one clarifying question."
+  ].join("\n");
 }
 
 function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args: unknown } | null {
@@ -79,24 +73,103 @@ function summarizeResult(toolName: string, result: unknown): string {
   return "I found a sourced record for that question.";
 }
 
-export async function answerNexiMessage(input: NexiMessageInput): Promise<{ answer: string; sources: Source[]; conversationId: string; failureId?: string }> {
-  const chosen = chooseTool(input.message, input.tools);
+export async function runExplicitLocalToolLoop(request: ToolLoopRequest): Promise<ToolLoopResponse> {
+  const latest = request.messages[request.messages.length - 1];
+  const message = typeof latest?.content === "string" ? latest.content : "";
+  const chosen = chooseTool(message, request.tools);
+  const usage = {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheCreationInputTokens: 0,
+    cacheReadInputTokens: 0,
+    totalTokens: 0
+  };
   if (!chosen) {
-    const failure = await input.repository.saveFailure({ tenantId: input.tenant.id, question: input.message, reason: "no_tool_selected" });
-    return { answer: "I don't have that tool wired yet.", sources: [], conversationId: "", failureId: failure.id };
+    return {
+      answer: "I don't have that tool wired yet.",
+      sources: [],
+      usage,
+      raw: { local: true },
+      failureReason: "no_tool_selected",
+      toolRuns: []
+    };
   }
-  const toolResult = await chosen.tool.handler(input.tenant, chosen.args);
-  const answer = summarizeResult(chosen.tool.name, toolResult.result);
-  const checked = enforceSources(answer, toolResult.sources);
-  const saved = await input.repository.saveConversation({
-    tenantId: input.tenant.id,
-    userText: input.message,
-    assistantText: checked.answer,
-    sources: toolResult.sources
-  });
-  if (!checked.ok) {
-    const failure = await input.repository.saveFailure({ tenantId: input.tenant.id, question: input.message, reason: checked.failureReason ?? "source_check_failed" });
-    return { answer: checked.answer, sources: toolResult.sources, conversationId: saved.id, failureId: failure.id };
+  const toolResult = await chosen.tool.handler(request.tenant, chosen.args);
+  return {
+    answer: summarizeResult(chosen.tool.name, toolResult.result),
+    sources: toolResult.sources,
+    usage,
+    raw: { local: true },
+    toolRuns: [{ name: chosen.tool.name, result: toolResult.result, sources: toolResult.sources }]
+  };
+}
+
+function gatewayForEnv(input: NexiMessageInput): (request: ToolLoopRequest) => Promise<ToolLoopResponse> {
+  if (input.gateway) {
+    return input.gateway;
   }
-  return { answer: checked.answer, sources: toolResult.sources, conversationId: saved.id };
+  if (input.env?.NEXI_LOCAL_FAKE_GATEWAY === "true") {
+    return runExplicitLocalToolLoop;
+  }
+  return runNexiToolLoop;
+}
+
+export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMessageResult> {
+  const history = await input.repository.loadHistory(input.tenant.id, 8);
+  const gateway = gatewayForEnv(input);
+  try {
+    const result = await gateway({
+      tenant: input.tenant,
+      system: buildNexiSystemPrompt(input.tenant),
+      messages: [...history, { role: "user", content: input.message }],
+      tools: input.tools,
+      routeActionName: "/api/nexi/message",
+      taskType: "job_desk_answer",
+      usageLog: input.usageLog,
+      env: input.env
+    });
+    const saved = await input.repository.saveConversation({
+      tenantId: input.tenant.id,
+      userText: input.message,
+      assistantText: result.answer,
+      sources: result.sources
+    });
+    let failureId: string | undefined;
+    if (result.failureReason) {
+      const failure = await input.repository.saveFailure({
+        tenantId: input.tenant.id,
+        op: "message",
+        question: input.message,
+        reason: result.failureReason,
+        sources: result.sources
+      });
+      failureId = failure.id;
+    }
+    return {
+      answer: result.answer,
+      sources: result.sources,
+      conversationId: saved.id,
+      failureId,
+      usage: result.usage,
+      toolRuns: result.toolRuns
+    };
+  } catch (error) {
+    const failure = await input.repository.saveFailure({
+      tenantId: input.tenant.id,
+      op: "message",
+      question: input.message,
+      reason: error instanceof Error ? error.message : "nexi_message_failed",
+      sources: []
+    });
+    if (error instanceof RailError) {
+      throw error;
+    }
+    throw new RailError(error instanceof Error ? error.message : "Nexi message failed.", {
+      provider: "anthropic",
+      op: "messages",
+      status: 500,
+      retryable: false,
+      cause: failure.id
+    });
+  }
 }

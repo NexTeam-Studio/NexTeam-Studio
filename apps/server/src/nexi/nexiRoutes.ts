@@ -1,10 +1,14 @@
-﻿import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response } from "express";
 import { type ArtifactKind, type Tenant } from "@nexteam/core";
+import { getAdminDb } from "../firebase.js";
+import { FirestoreUsageLogWriter, MemoryUsageLogWriter } from "../usageLog.js";
+import { FirestoreNexiRepository, MemoryNexiRepository, type NexiRepository } from "./nexiRepository.js";
 import { createNexiJobDeskTools } from "./nexiTools.js";
-import { answerNexiMessage, MemoryNexiRepository } from "./nexiService.js";
+import { answerNexiMessage } from "./nexiService.js";
 import { ingestSiteJobBlueprint } from "./siteJobBlueprintIngest.js";
 
-const repository = new MemoryNexiRepository();
+const memoryRepository = new MemoryNexiRepository();
+const memoryUsageLog = new MemoryUsageLogWriter();
 
 function defaultApproval(): Tenant["approval"] {
   const kinds: ArtifactKind[] = ["email", "sms", "gbp_post", "social_post", "article", "quote", "invoice", "site_publish", "review_reply"];
@@ -29,6 +33,14 @@ function sendError(res: Response, error: unknown): void {
   res.status(500).json({ ok: false, error: error instanceof Error ? error.message : "Unknown Nexi error" });
 }
 
+function runtimeStores(env: NodeJS.ProcessEnv): { repository: NexiRepository; usageLog: FirestoreUsageLogWriter | MemoryUsageLogWriter } {
+  const db = getAdminDb(env);
+  if (db) {
+    return { repository: new FirestoreNexiRepository(db), usageLog: new FirestoreUsageLogWriter(db) };
+  }
+  return { repository: memoryRepository, usageLog: memoryUsageLog };
+}
+
 export function createNexiRouter(env: NodeJS.ProcessEnv = process.env): Router {
   const router = Router();
 
@@ -40,20 +52,29 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env): Router {
         return;
       }
       const tenant = loadTenant(req);
-      const result = await answerNexiMessage({ tenant, message, tools: createNexiJobDeskTools(env), repository });
+      const stores = runtimeStores(env);
+      const result = await answerNexiMessage({
+        tenant,
+        message,
+        tools: createNexiJobDeskTools(env),
+        repository: stores.repository,
+        usageLog: stores.usageLog,
+        env
+      });
       res.json({ ok: true, ...result });
     } catch (error) {
       sendError(res, error);
     }
   });
 
-  router.post("/site-job-blueprints/ingest", (req: Request, res: Response) => {
+  router.post("/site-job-blueprints/ingest", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : process.env.TENANT_ID || "aquatrace";
       const sourceId = typeof req.body?.sourceId === "string" ? req.body.sourceId : "inline";
       const text = typeof req.body?.text === "string" ? req.body.text : "";
       const jobId = typeof req.body?.jobId === "string" ? req.body.jobId : undefined;
       const siteJobBlueprint = ingestSiteJobBlueprint({ tenantId, sourceId, text, jobId });
+      await runtimeStores(env).repository.saveSiteJobBlueprint(siteJobBlueprint);
       res.json({ ok: true, siteJobBlueprint });
     } catch (error) {
       sendError(res, error);
@@ -61,9 +82,14 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env): Router {
   });
 
   router.get("/debug/state", (_req: Request, res: Response) => {
-    res.json({ ok: true, conversations: repository.conversations, failureLog: repository.failureLog });
+    res.json({
+      ok: true,
+      conversations: memoryRepository.conversations,
+      failureLog: memoryRepository.failureLog,
+      siteJobBlueprints: memoryRepository.siteJobBlueprints,
+      usageLog: memoryUsageLog.records
+    });
   });
 
   return router;
 }
-
