@@ -21,6 +21,10 @@ function newId(prefix: string): string {
   return `${prefix}_${crypto.randomUUID()}`;
 }
 
+function firestoreDoc<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 export class MemoryNexiRepository implements NexiRepository {
   readonly conversations: ConversationRecord[] = [];
   readonly failureLog: FailureLogRecord[] = [];
@@ -98,7 +102,7 @@ export class FirestoreNexiRepository implements NexiRepository {
 
   async saveConversation(record: Omit<ConversationRecord, "id" | "createdAt">): Promise<ConversationRecord> {
     const saved = conversationRecordSchema.parse({ ...record, id: newId("conv"), createdAt: new Date().toISOString() });
-    await this.db.collection("conversations").doc(saved.id).set(saved);
+    await this.db.collection("conversations").doc(saved.id).set(firestoreDoc(saved));
     return saved;
   }
 
@@ -109,13 +113,13 @@ export class FirestoreNexiRepository implements NexiRepository {
       module: "nexi",
       createdAt: new Date().toISOString()
     });
-    await this.db.collection("failureLog").doc(saved.id).set(saved);
+    await this.db.collection("failureLog").doc(saved.id).set(firestoreDoc(saved));
     return saved;
   }
 
   async saveSiteJobBlueprint(record: SiteJobBlueprint): Promise<SiteJobBlueprint> {
     const saved = siteJobBlueprintSchema.parse(record) as SiteJobBlueprint;
-    await this.db.collection("siteJobBlueprints").doc(saved.id).set(saved);
+    await this.db.collection("siteJobBlueprints").doc(saved.id).set(firestoreDoc(saved));
     return saved;
   }
 }
