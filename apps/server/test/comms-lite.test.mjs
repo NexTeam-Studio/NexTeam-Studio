@@ -57,6 +57,7 @@ test("dedicated Nexi send mailbox can opt into read tools without making legacy 
     GMAIL_SEND_MAILBOX_REFRESH_TOKEN: "nexi-refresh",
     GMAIL_SEND_MAILBOX_READ_ENABLED: "true"
   });
+  assert.equal(rail.tenantId, "aquatrace");
   assert.equal(rail.readAdapters.has("ops"), true);
   assert.equal(rail.readAdapters.has("nexi"), true);
   assert.equal(typeof rail.readAdapters.get("nexi")?.searchEmail, "function");
@@ -84,7 +85,7 @@ test("Comms Nexi searchEmail returns email source refs", async () => {
       throw new Error("not used");
     }
   };
-  const rail = { readAdapters: new Map([["ops", readAdapter]]), sendAdapter: null };
+  const rail = { tenantId: "aquatrace", readAdapters: new Map([["ops", readAdapter]]), sendAdapter: null };
   const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
   const tool = createCommsNexiTools(rail, approvalQueue).find((candidate) => candidate.name === "searchEmail");
   assert.ok(tool);
@@ -94,9 +95,30 @@ test("Comms Nexi searchEmail returns email source refs", async () => {
   assert.equal(result.sources[0].ref, "email:ops:msg_1");
 });
 
+test("Comms Nexi tools reject tenant contexts outside the bound email rail", async () => {
+  let searched = false;
+  const readAdapter = {
+    mailbox: "ops",
+    async searchEmail() {
+      searched = true;
+      return [];
+    },
+    async getEmailThread() {
+      throw new Error("not used");
+    }
+  };
+  const rail = { tenantId: "aquatrace", readAdapters: new Map([["ops", readAdapter]]), sendAdapter: null };
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  const tool = createCommsNexiTools(rail, approvalQueue).find((candidate) => candidate.name === "searchEmail");
+  assert.ok(tool);
+  await assert.rejects(() => tool.handler({ ...tenant(), id: "other-tenant" }, { mailbox: "ops" }), /not configured for tenant other-tenant/);
+  assert.equal(searched, false);
+});
+
 test("draftEmail parks email in ApprovalQueue without sending", async () => {
   let sent = false;
   const rail = {
+    tenantId: "aquatrace",
     readAdapters: new Map(),
     sendAdapter: {
       mailbox: "nexi-send",
@@ -124,6 +146,7 @@ test("draftEmail parks email in ApprovalQueue without sending", async () => {
 test("CommsApprovalExecutor sends only approved dedicated-mailbox artifacts", async () => {
   const sentMessages = [];
   const rail = {
+    tenantId: "aquatrace",
     readAdapters: new Map(),
     sendAdapter: {
       mailbox: "nexi-send",
@@ -163,6 +186,7 @@ test("CommsApprovalExecutor sends only approved dedicated-mailbox artifacts", as
 
 test("CommsApprovalExecutor rejects artifacts targeting read-only mailbox aliases", async () => {
   const rail = {
+    tenantId: "aquatrace",
     readAdapters: new Map(),
     sendAdapter: {
       mailbox: "nexi-send",
@@ -196,8 +220,47 @@ test("CommsApprovalExecutor rejects artifacts targeting read-only mailbox aliase
   await assert.rejects(() => approvalQueue.executeApproved(item.id), /not the dedicated send mailbox/);
 });
 
+test("CommsApprovalExecutor rejects approved email artifacts from unbound tenants", async () => {
+  let sent = false;
+  const rail = {
+    tenantId: "aquatrace",
+    readAdapters: new Map(),
+    sendAdapter: {
+      mailbox: "nexi-send",
+      async sendEmail() {
+        sent = true;
+        return { provider: "gmail", id: "sent_1", acceptedAt: "2026-07-05T12:00:00.000Z", mailbox: "nexi-send" };
+      }
+    }
+  };
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CommsApprovalExecutor(rail));
+  const item = await approvalQueue.create({
+    tenantId: "other-tenant",
+    kind: "email",
+    preview: { title: "Wrong tenant", body: "Blocked." },
+    execute: {
+      service: "comms",
+      op: "sendEmail",
+      args: {
+        mailbox: "nexi-send",
+        outbound: {
+          tenantId: "other-tenant",
+          mailbox: "nexi-send",
+          to: ["owner@example.test"],
+          subject: "Wrong tenant",
+          bodyText: "Blocked."
+        }
+      }
+    },
+    createdBy: "nexi"
+  });
+  await approvalQueue.approve(item.id);
+  await assert.rejects(() => approvalQueue.executeApproved(item.id), /tenant that is not bound/);
+  assert.equal(sent, false);
+});
+
 test("Comms tools expose zod schemas for Nexi registry", () => {
   const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
-  const tools = createCommsNexiTools({ readAdapters: new Map(), sendAdapter: null }, approvalQueue);
+  const tools = createCommsNexiTools({ tenantId: "aquatrace", readAdapters: new Map(), sendAdapter: null }, approvalQueue);
   assert.equal(tools.every((tool) => tool.inputSchema instanceof z.ZodType), true);
 });

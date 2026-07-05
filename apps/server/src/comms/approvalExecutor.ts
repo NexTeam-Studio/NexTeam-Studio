@@ -36,6 +36,10 @@ export class CommsApprovalExecutor implements ApprovalExecutor {
     if (mailbox !== this.rail.sendAdapter.mailbox) {
       throw new RailError("Approved email artifact targets a mailbox that is not the dedicated send mailbox.", { provider: "gmail", op: "sendEmail", status: 403 });
     }
-    return this.rail.sendAdapter.sendEmail(outboundEmail(args.outbound));
+    const outbound = outboundEmail(args.outbound);
+    if (item.tenantId !== this.rail.tenantId || outbound.tenantId !== this.rail.tenantId) {
+      throw new RailError("Approved email artifact targets a tenant that is not bound to this email rail.", { provider: "gmail", op: "sendEmail", status: 403 });
+    }
+    return this.rail.sendAdapter.sendEmail(outbound);
   }
 }

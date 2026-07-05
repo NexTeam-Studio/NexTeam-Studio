@@ -68,13 +68,20 @@ function mailboxList(rail: CommsRail): string[] {
   return [...rail.readAdapters.keys()];
 }
 
+function assertCommsTenant(rail: CommsRail, tenant: Tenant, op: string): void {
+  if (tenant.id !== rail.tenantId) {
+    throw new RailError(`Email rail is not configured for tenant ${tenant.id}.`, { provider: "gmail", op, status: 403 });
+  }
+}
+
 export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQueueService): NexiTool[] {
   return [
     {
       name: "searchEmail",
       description: "Search read-only Aquatrace Gmail mailboxes by sender, subject, date, and keywords. Sources are email:<mailbox>:<messageId>.",
       inputSchema: searchEmailInputSchema,
-      handler: async (_tenant: Tenant, args: unknown) => {
+      handler: async (tenant: Tenant, args: unknown) => {
+        assertCommsTenant(rail, tenant, "searchEmail");
         const input = searchEmailInputSchema.parse(args);
         const adapters = readAdapters(rail, input.mailbox);
         if (adapters.length === 0) {
@@ -95,7 +102,8 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
       name: "getEmailThread",
       description: "Read email thread metadata from a read-only Aquatrace Gmail mailbox. Sources are email:<mailbox>:<messageId>.",
       inputSchema: getEmailThreadInputSchema,
-      handler: async (_tenant: Tenant, args: unknown) => {
+      handler: async (tenant: Tenant, args: unknown) => {
+        assertCommsTenant(rail, tenant, "getEmailThread");
         const input = getEmailThreadInputSchema.parse(args);
         const adapter = rail.readAdapters.get(input.mailbox);
         if (!adapter) {
@@ -112,7 +120,8 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
       name: "summarizeInbox",
       description: "Summarize emails received on a date across read-only Aquatrace Gmail mailboxes. Sources are email:<mailbox>:<messageId>.",
       inputSchema: summarizeInboxInputSchema,
-      handler: async (_tenant: Tenant, args: unknown) => {
+      handler: async (tenant: Tenant, args: unknown) => {
+        assertCommsTenant(rail, tenant, "summarizeInbox");
         const input = summarizeInboxInputSchema.parse(args);
         const window = inboxWindow(input.date);
         const adapters = readAdapters(rail, input.mailbox);
@@ -140,6 +149,7 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
       description: "Draft an outbound email from the dedicated Nexi mailbox by creating an ApprovalQueue item. This never sends directly.",
       inputSchema: draftEmailInputSchema,
       handler: async (tenant: Tenant, args: unknown) => {
+        assertCommsTenant(rail, tenant, "draftEmail");
         const input = draftEmailInputSchema.parse(args);
         if (!rail.sendAdapter) {
           throw new RailError("The dedicated Nexi send mailbox is not configured.", { provider: "gmail", op: "draftEmail", status: 503 });
