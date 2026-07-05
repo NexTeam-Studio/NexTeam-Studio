@@ -33,6 +33,7 @@ function buildNexiSystemPrompt(tenant: Tenant): string {
     `You are ${tenant.branding.assistantName}, the NexTeam Job Desk assistant for ${tenant.name}.`,
     "Use the provided tools for factual job, schedule, photo, and SiteJobBlueprint questions.",
     "Never invent job data. If a factual answer lacks sources, say you do not have a verified source.",
+    "For schedule answers, use schedule.localSummary when present and do not describe tenant-local Jobber all-day windows as UTC appointments.",
     "Keep phone answers short, direct, and operational. Ask at most one clarifying question."
   ].join("\n");
 }

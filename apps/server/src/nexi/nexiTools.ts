@@ -1,4 +1,4 @@
-import type { DocRef, Media, NexiTool, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
+import type { DocRef, Job, Media, NexiTool, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
 import { z } from "zod";
 import { CompanyCamAdapter, JobberAdapter } from "@nexteam/providers";
 import { readCompanyCamReports, siteJobBlueprintFromCompanyCamReport } from "./reportDocuments.js";
@@ -122,6 +122,63 @@ function companyCamDocumentSources(documents: DocRef[]): Source[] {
     .map((item) => source("companycam", item.externalIds?.companycam ?? item.id, `CompanyCam document ${item.label}`));
 }
 
+function safeTimeZone(timeZone: string): string {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone }).format(new Date());
+    return timeZone;
+  } catch {
+    return "America/New_York";
+  }
+}
+
+function localDateTimeParts(iso: string | undefined, timeZone: string): { date: string; time: string } | null {
+  const parsed = Date.parse(iso ?? "");
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: safeTimeZone(timeZone),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  }).formatToParts(new Date(parsed));
+  const readPart = (type: Intl.DateTimeFormatPartTypes): string => parts.find((part) => part.type === type)?.value ?? "";
+  const year = readPart("year");
+  const month = readPart("month");
+  const day = readPart("day");
+  const hour = readPart("hour");
+  const minute = readPart("minute");
+  const dayPeriod = readPart("dayPeriod").toUpperCase();
+  if (!year || !month || !day || !hour || !minute || !dayPeriod) {
+    return null;
+  }
+  return { date: `${year}-${month}-${day}`, time: `${hour}:${minute} ${dayPeriod}` };
+}
+
+function localSchedule(job: Job, timeZone: string): { date: string; localSummary: string; allDay: boolean } | undefined {
+  const start = localDateTimeParts(job.startAt, timeZone);
+  if (!start) {
+    return undefined;
+  }
+  const end = localDateTimeParts(job.endAt, timeZone);
+  const allDay = start.time === "12:00 AM" && end?.date === start.date && end.time.startsWith("11:59");
+  return {
+    date: start.date,
+    localSummary: allDay ? `${start.date} all day` : `${start.date} ${start.time}${end ? `-${end.time}` : ""}`,
+    allDay
+  };
+}
+
+function withLocalSchedule(jobs: Job[], timeZone: string): Array<Job & { schedule?: { date: string; localSummary: string; allDay: boolean } }> {
+  return jobs.map((job) => {
+    const schedule = localSchedule(job, timeZone);
+    return schedule ? { ...job, schedule } : job;
+  });
+}
+
 function normalizedSearchText(value: unknown): string {
   return String(value ?? "")
     .toLowerCase()
@@ -197,7 +254,7 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
         const input = getScheduleInputSchema.parse(args);
         const jobs = await JobberAdapter.fromEnv(env, tenant.id).getJobs({ from: input.from, to: input.to });
         return {
-          result: { jobs },
+          result: { window: { from: input.from, to: input.to, timezone: tenant.timezone }, jobs: withLocalSchedule(jobs, tenant.timezone) },
           sources: [source("jobber", "jobs", "Jobber jobs GraphQL read")]
         };
       }
