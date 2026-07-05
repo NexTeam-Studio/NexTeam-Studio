@@ -36,7 +36,8 @@ const property = {
   tenantId: "aquatrace",
   clientId: "client_1",
   address: { street1: "181 Isbell Road", city: "Fair Play", province: "SC", postalCode: "29643", country: "US" },
-  assets: []
+  assets: [],
+  externalIds: { jobber: "jobber_property_1" }
 };
 
 const job = {
@@ -79,6 +80,27 @@ test("NativeAdapter exposes CRM read methods", async () => {
   const detail = await adapter.getJobDetail({ nameQuery: "Swimming Pool" });
   assert.equal(detail.client?.name, "Deborah Justice");
   assert.equal(detail.property?.address.street1, "181 Isbell Road");
+  assert.equal(detail.property?.externalIds?.jobber, "jobber_property_1");
+});
+
+test("native import upserts remain idempotent by Jobber external ids", async () => {
+  const repository = new MemoryNativeCrmRepository({ clients: [client], properties: [property], jobs: [job] });
+  await repository.upsertClient({ ...client, id: "client_duplicate_native", name: "Deborah Justice Updated" });
+  await repository.upsertProperty({
+    ...property,
+    id: "property_duplicate_native",
+    address: { ...property.address, street1: "181 Isbell Road Updated" }
+  });
+  await repository.upsertJob({ ...job, id: "job_duplicate_native", title: "Updated Swimming Pool Leak Detection" });
+  const clients = await repository.listClients("aquatrace");
+  const properties = await repository.listProperties("aquatrace");
+  const jobs = await repository.listJobs("aquatrace");
+  assert.equal(clients.length, 1);
+  assert.equal(properties.length, 1);
+  assert.equal(jobs.length, 1);
+  assert.equal(clients[0].name, "Deborah Justice Updated");
+  assert.equal(properties[0].address.street1, "181 Isbell Road Updated");
+  assert.equal(jobs[0].title, "Updated Swimming Pool Leak Detection");
 });
 
 test("NativeAdapter writes native clients and approval-gated quote drafts", async () => {

@@ -54,6 +54,24 @@ export class FirestoreNativeCrmRepository implements NativeCrmRepository {
     return clientSchema.parse(client);
   }
 
+  async upsertClient(client: Client): Promise<Client> {
+    const parsed = clientSchema.parse(client) as Client;
+    await this.db.collection("clients").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    return parsed;
+  }
+
+  async upsertProperty(property: Property): Promise<Property> {
+    const parsed = propertySchema.parse(property) as Property;
+    await this.db.collection("properties").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    return parsed;
+  }
+
+  async upsertJob(job: Job): Promise<Job> {
+    const parsed = jobSchema.parse(job) as Job;
+    await this.db.collection("jobs").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    return parsed;
+  }
+
   async createQuote(quote: Quote): Promise<Quote> {
     await this.db.collection("quotes").doc(quote.id).set(asDocumentData(quote));
     return quoteSchema.parse(quote);

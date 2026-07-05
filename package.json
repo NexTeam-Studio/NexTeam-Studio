@@ -25,6 +25,7 @@
     "smoke:jobber": "tsx tests/smoke/jobber-readonly-smoke.ts",
     "smoke:companycam": "tsx tests/smoke/companycam-readonly-smoke.ts",
     "import:jobber:dry-run": "tsx scripts/jobber-import-dry-run.ts",
+    "import:jobber:native-write": "tsx scripts/jobber-import-dry-run.ts --write-native",
     "stripe:webhook:staging": "railway run --service NexTeam-Studio --environment staging -- tsx scripts/stripe-staging-webhook-setup.ts",
     "receipt:m2:stripe": "railway run --service NexTeam-Studio --environment staging -- tsx scripts/m2-stripe-payment-receipt.ts",
     "smoke:m0": "npm run smoke:jobber && npm run smoke:companycam",

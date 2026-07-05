@@ -20,6 +20,9 @@ export interface NativeCrmRepository {
   listQuotes(tenantId: string): Promise<Quote[]>;
   listInvoices(tenantId: string): Promise<Invoice[]>;
   createClient(client: Client): Promise<Client>;
+  upsertClient(client: Client): Promise<Client>;
+  upsertProperty(property: Property): Promise<Property>;
+  upsertJob(job: Job): Promise<Job>;
   createQuote(quote: Quote): Promise<Quote>;
   createInvoice(invoice: Invoice): Promise<Invoice>;
   updateQuote(id: string, patch: Partial<Quote>): Promise<Quote>;
@@ -38,6 +41,10 @@ export interface NativeCrmRecords {
 function matchesQuery(values: Array<string | undefined>, query: string): boolean {
   const needle = query.trim().toLowerCase();
   return !needle || values.filter(Boolean).join(" ").toLowerCase().includes(needle);
+}
+
+function sameNativeRecord<T extends { id: string; externalIds?: { jobber?: string | undefined } | undefined }>(left: T, right: T): boolean {
+  return left.id === right.id || Boolean(left.externalIds?.jobber && left.externalIds.jobber === right.externalIds?.jobber);
 }
 
 export class MemoryNativeCrmRepository implements NativeCrmRepository {
@@ -76,6 +83,42 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
   async createClient(client: Client): Promise<Client> {
     this.records.clients.push(client);
     return client;
+  }
+
+  async upsertClient(client: Client): Promise<Client> {
+    const index = this.records.clients.findIndex((record) => sameNativeRecord(record, client));
+    if (index === -1) {
+      this.records.clients.push(client);
+      return client;
+    }
+    const existing = this.records.clients[index];
+    const next = { ...existing, ...client };
+    this.records.clients[index] = next;
+    return next;
+  }
+
+  async upsertProperty(property: Property): Promise<Property> {
+    const index = this.records.properties.findIndex((record) => sameNativeRecord(record, property));
+    if (index === -1) {
+      this.records.properties.push(property);
+      return property;
+    }
+    const existing = this.records.properties[index];
+    const next = { ...existing, ...property };
+    this.records.properties[index] = next;
+    return next;
+  }
+
+  async upsertJob(job: Job): Promise<Job> {
+    const index = this.records.jobs.findIndex((record) => sameNativeRecord(record, job));
+    if (index === -1) {
+      this.records.jobs.push(job);
+      return job;
+    }
+    const existing = this.records.jobs[index];
+    const next = { ...existing, ...job };
+    this.records.jobs[index] = next;
+    return next;
   }
 
   async createQuote(quote: Quote): Promise<Quote> {

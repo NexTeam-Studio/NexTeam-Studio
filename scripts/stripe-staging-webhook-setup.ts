@@ -18,34 +18,55 @@ if (!stripeKey.startsWith("sk_test_")) {
   fail("STRIPE_SECRET_KEY must be a test-mode key.");
 }
 
+const webhookUrl = `${stagingBaseUrl}/api/stripe/webhook`;
+const webhookDescription = "NexTeam M2 staging invoice.paid webhook";
+
+async function stripeRequest<T>(path: string, init: RequestInit): Promise<T> {
+  const response = await fetch(`https://api.stripe.com/v1${path}`, {
+    ...init,
+    headers: {
+      authorization: `Bearer ${stripeKey}`,
+      ...init.headers
+    }
+  });
+  const payload = await response.json() as { error?: { message?: string } };
+  if (!response.ok) {
+    fail(payload.error?.message ?? `Stripe request ${path} failed.`);
+  }
+  return payload as T;
+}
+
+const existing = await stripeRequest<{
+  data?: Array<{ id?: string; url?: string; description?: string; livemode?: boolean }>;
+}>("/webhook_endpoints?limit=100", { method: "GET" });
+const deletedEndpointIds: string[] = [];
+for (const endpoint of existing.data ?? []) {
+  if (endpoint.id && endpoint.url === webhookUrl && endpoint.description === webhookDescription && endpoint.livemode === false) {
+    await stripeRequest(`/webhook_endpoints/${encodeURIComponent(endpoint.id)}`, { method: "DELETE" });
+    deletedEndpointIds.push(endpoint.id);
+  }
+}
+
 const body = new URLSearchParams({
-  url: `${stagingBaseUrl}/api/stripe/webhook`,
-  description: "NexTeam M2 staging invoice.paid webhook",
+  url: webhookUrl,
+  description: webhookDescription,
   "enabled_events[0]": "checkout.session.completed"
 });
 
-const response = await fetch("https://api.stripe.com/v1/webhook_endpoints", {
-  method: "POST",
-  headers: {
-    authorization: `Bearer ${stripeKey}`,
-    "content-type": "application/x-www-form-urlencoded"
-  },
-  body
-});
-
-const webhook = await response.json() as {
+const webhook = await stripeRequest<{
   id?: string;
   url?: string;
   status?: string;
   livemode?: boolean;
   enabled_events?: string[];
   secret?: string;
-  error?: { message?: string };
-};
-
-if (!response.ok) {
-  fail(webhook.error?.message ?? "Stripe webhook endpoint creation failed.");
-}
+}>("/webhook_endpoints", {
+  method: "POST",
+  headers: {
+    "content-type": "application/x-www-form-urlencoded"
+  },
+  body
+});
 if (webhook.livemode) {
   fail("Stripe returned a live-mode webhook endpoint; refusing to continue.");
 }
@@ -53,18 +74,25 @@ if (!webhook.secret?.startsWith("whsec_")) {
   fail("Stripe did not return a webhook signing secret.");
 }
 
-const setResult = spawnSync(
-  "railway",
-  ["variable", "set", "--service", "NexTeam-Studio", "--environment", "staging", "--skip-deploys", "--stdin", "STRIPE_WEBHOOK_SECRET"],
-  { input: webhook.secret, encoding: "utf8" }
-);
+const setResult = process.platform === "win32"
+  ? spawnSync(
+    "cmd.exe",
+    ["/d", "/s", "/c", "railway.cmd variable --service NexTeam-Studio --environment staging --skip-deploys --set-from-stdin STRIPE_WEBHOOK_SECRET"],
+    { input: webhook.secret, encoding: "utf8" }
+  )
+  : spawnSync(
+    "railway",
+    ["variable", "--service", "NexTeam-Studio", "--environment", "staging", "--skip-deploys", "--set-from-stdin", "STRIPE_WEBHOOK_SECRET"],
+    { input: webhook.secret, encoding: "utf8" }
+  );
 
 if (setResult.status !== 0) {
-  fail(`Railway variable set failed: ${setResult.stderr || setResult.stdout || "unknown error"}`);
+  fail(`Railway variable set failed with status ${setResult.status ?? "unknown"}.`);
 }
 
 console.log(JSON.stringify({
   ok: true,
+  cleanedPriorTestEndpoints: deletedEndpointIds,
   stripeWebhookEndpoint: {
     id: webhook.id,
     url: webhook.url,

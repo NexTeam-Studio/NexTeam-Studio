@@ -85,6 +85,7 @@ export interface Property {
   address: Address;
   geo?: { lat: number; lng: number } | undefined;
   assets: Asset[];
+  externalIds?: { jobber?: string | undefined } | undefined;
 }
 
 export interface LineItem {
@@ -193,6 +194,7 @@ export interface Quote {
   signedBy?: string | undefined;
   signedAt?: string | undefined;
   signatureIp?: string | undefined;
+  externalIds?: { jobber?: string | undefined; stripe?: string | undefined } | undefined;
 }
 
 export interface Invoice {

@@ -13,5 +13,8 @@
 | crm | M2 read-side skeleton | done | `receipts/m2/verify.txt`, `receipts/m2/jobber-import-dry-run.json`, `receipts/m2/dependency-install-proof.txt` |
 | crm | M2 native writes + quote foundation | done | `receipts/m2/native-write-slice-verify.txt`, `receipts/m2/native-write-slice-verify-exit.txt` |
 | crm | M2 Jobber-seeded pool leak catalog | done | `receipts/m2/jobber-catalog-pull.json` |
-| crm | M2 Stripe test payment code path | in_progress | Code added locally; live receipt blocked because staging env injection still reports missing `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`. |
+| crm | M2 full Jobber import dry-run | done | `receipts/m2/jobber-full-import-dry-run.json`; 625 clients, 625 jobs, 547 properties, all preserving Jobber external IDs; no Jobber writes. |
+| crm | M2 native Jobber import write | blocked | `receipts/m2/jobber-native-import-write.json`, `receipts/m2/staging-env-presence-check.json`; Railway staging env injection lacks `FIREBASE_SERVICE_ACCOUNT`, so no native Firestore writes were attempted. |
+| crm | M2 Stripe webhook setup | done | `receipts/m2/stripe-webhook-setup.json`; test-mode endpoint enabled, `STRIPE_WEBHOOK_SECRET` stored, no secret values printed. |
+| crm | M2 Stripe test payment live receipt | blocked | `receipts/m2/staging-crm-route-probe.json`; current staging SHA `c52a2e12030c575f199d4547ea931701867905af` does not include CRM routes, so `/api/crm/clients` returns 404. |
 | fielddocs | M4 read-side skeleton | done | `build/fielddocs` receipt package: `receipts/m4/companycam-import-dry-run.json`, `receipts/m4/dependency-install-proof.txt` |

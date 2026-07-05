@@ -82,7 +82,8 @@ export const propertySchema = z.object({
   clientId: idSchema,
   address: addressSchema,
   geo: z.object({ lat: z.number(), lng: z.number() }).optional(),
-  assets: z.array(assetSchema)
+  assets: z.array(assetSchema),
+  externalIds: z.object({ jobber: z.string().optional() }).optional()
 });
 
 export const lineItemSchema = z.object({
