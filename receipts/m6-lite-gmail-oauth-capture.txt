@@ -1,0 +1,36 @@
+M6-LITE Gmail OAuth capture receipt
+Captured: 2026-07-05T14:49:48-04:00
+
+Scope model:
+- chris: read-only mailbox 1, gmail.readonly only.
+- aquatraceleak: read-only mailbox 2, gmail.readonly only.
+- nexi: dedicated Nexi mailbox, gmail.readonly + gmail.send.
+- Sends remain ApprovalQueue-only; no direct/auto send path was executed.
+- The two existing read-only mailboxes remain structurally send-incapable.
+
+Railway staging variable presence check:
+- GMAIL_OAUTH_CLIENT_ID=388486763947-r0354jpdljlaepke51r44s2070n7pghm.apps.googleusercontent.com
+- GMAIL_OAUTH_CLIENT_SECRET=present
+- GMAIL_READONLY_MAILBOX_1_EMAIL=chris@aquatraceleak.com
+- GMAIL_READONLY_MAILBOX_1_ALIAS=chris
+- GMAIL_READONLY_MAILBOX_1_REFRESH_TOKEN=present
+- GMAIL_READONLY_MAILBOX_2_EMAIL=aquatraceleak@gmail.com
+- GMAIL_READONLY_MAILBOX_2_ALIAS=aquatraceleak
+- GMAIL_READONLY_MAILBOX_2_REFRESH_TOKEN=present
+- GMAIL_SEND_MAILBOX_EMAIL=nexi@aquatraceleak.com
+- GMAIL_SEND_MAILBOX_ALIAS=nexi
+- GMAIL_SEND_MAILBOX_REFRESH_TOKEN=present
+- GMAIL_SEND_MAILBOX_READ_ENABLED=true
+
+Security notes:
+- No refresh tokens, client secrets, or mailbox message bodies are included in this receipt.
+- The first external OAuth client was discarded because its secret was visible in a setup screenshot.
+- The active client used for all three captured mailboxes is the recreated external client above.
+
+Verification:
+- npm --workspace @nexteam/server run build
+  Result: pass
+- node --test apps/server/test/comms-lite.test.mjs
+  Result: pass
+  Tests: 8 passed, 0 failed
+  Coverage of this change: dedicated Nexi mailbox can opt into read tools while legacy read-only mailboxes remain send-incapable; draftEmail still parks ApprovalQueue artifacts without sending; ApprovalQueue executor rejects artifacts targeting read-only mailbox aliases.

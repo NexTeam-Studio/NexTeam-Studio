@@ -5,6 +5,7 @@ import { ApprovalQueueService, InMemoryApprovalQueueRepository } from "@nexteam/
 import { GmailReadOnlyAdapter, GmailSendAdapter } from "@nexteam/providers";
 import { createCommsNexiTools } from "../dist/comms/nexiTools.js";
 import { CommsApprovalExecutor } from "../dist/comms/approvalExecutor.js";
+import { createCommsRailFromEnv } from "../dist/comms/gmailRegistry.js";
 
 function tenant() {
   return {
@@ -41,6 +42,26 @@ test("Gmail send adapter is isolated to the dedicated sender class", () => {
   const adapter = new GmailSendAdapter(gmailConfig("nexi-send"));
   assert.equal(typeof adapter.sendEmail, "function");
   assert.equal("searchEmail" in adapter, false);
+});
+
+test("dedicated Nexi send mailbox can opt into read tools without making legacy mailboxes send-capable", () => {
+  const rail = createCommsRailFromEnv({
+    TENANT_ID: "aquatrace",
+    GMAIL_OAUTH_CLIENT_ID: "client-id",
+    GMAIL_OAUTH_CLIENT_SECRET: "client-secret",
+    GMAIL_READONLY_MAILBOX_1_EMAIL: "ops@example.test",
+    GMAIL_READONLY_MAILBOX_1_ALIAS: "ops",
+    GMAIL_READONLY_MAILBOX_1_REFRESH_TOKEN: "ops-refresh",
+    GMAIL_SEND_MAILBOX_EMAIL: "nexi@example.test",
+    GMAIL_SEND_MAILBOX_ALIAS: "nexi",
+    GMAIL_SEND_MAILBOX_REFRESH_TOKEN: "nexi-refresh",
+    GMAIL_SEND_MAILBOX_READ_ENABLED: "true"
+  });
+  assert.equal(rail.readAdapters.has("ops"), true);
+  assert.equal(rail.readAdapters.has("nexi"), true);
+  assert.equal(typeof rail.readAdapters.get("nexi")?.searchEmail, "function");
+  assert.equal("sendEmail" in rail.readAdapters.get("ops"), false);
+  assert.equal(rail.sendAdapter?.mailbox, "nexi");
 });
 
 test("Comms Nexi searchEmail returns email source refs", async () => {

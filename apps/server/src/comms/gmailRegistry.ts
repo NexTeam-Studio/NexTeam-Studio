@@ -44,6 +44,9 @@ export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
     }
   }
   const sendConfig = configFromEnv(env, "GMAIL_SEND_MAILBOX", "NEXI_SEND");
+  if (sendConfig && value(env, "GMAIL_SEND_MAILBOX_READ_ENABLED").toLowerCase() === "true") {
+    readAdapters.set(sendConfig.mailbox, new GmailReadOnlyAdapter(sendConfig));
+  }
   return {
     readAdapters,
     sendAdapter: sendConfig ? new GmailSendAdapter(sendConfig) : null
