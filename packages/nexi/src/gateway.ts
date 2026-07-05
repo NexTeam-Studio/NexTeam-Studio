@@ -732,8 +732,14 @@ function toolResultContent(result: unknown): string {
 function stripUnrequestedNextSteps(answer: string): string {
   const lines = answer.split(/\r?\n/);
   const cleaned: string[] = [];
+  const nextStepPattern = /\b(?:want me to|do you want me to|would you like|should i|anything else|or are you looking|if you need|let me know if you(?: want| would like|'d like))/i;
   for (const line of lines) {
-    if (/^\s*(?:want me to|do you want me to|would you like|should i|anything else|or are you looking|if you need)\b/i.test(line)) {
+    const nextStepIndex = line.search(nextStepPattern);
+    if (nextStepIndex >= 0) {
+      const factualPrefix = line.slice(0, nextStepIndex).trimEnd();
+      if (factualPrefix) {
+        cleaned.push(factualPrefix);
+      }
       break;
     }
     cleaned.push(line);
