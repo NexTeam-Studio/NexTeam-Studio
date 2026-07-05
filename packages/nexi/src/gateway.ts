@@ -549,6 +549,13 @@ function entityQueryFromText(text: string): string {
 function normalizeToolInput(toolName: string, input: unknown, messages: GatewayMessage[], tenant?: Tenant | undefined): unknown {
   const record = input && typeof input === "object" && !Array.isArray(input) ? { ...input as Record<string, unknown> } : {};
   const userText = latestUserText(messages);
+  const emailRef = emailRefFromText(userText);
+  if (toolName === "getEmailAttachment" && emailRef?.attachmentId) {
+    return { ...record, mailbox: emailRef.mailbox, messageId: emailRef.messageId, attachmentId: emailRef.attachmentId };
+  }
+  if (toolName === "getEmailMessage" && emailRef) {
+    return { ...record, mailbox: emailRef.mailbox, messageId: emailRef.messageId };
+  }
   if (toolName === "getSchedule") {
     const fallback = scheduleWindowFromConversation(messages, tenant?.timezone) ?? todayWindow(tenant?.timezone);
     record.from ??= fallback.from;
@@ -628,9 +635,28 @@ function looksLikeEmailSearchQuestion(lower: string): boolean {
   return /\b(?:emails?|mail|inbox|reply|replied|responded)\b/.test(lower);
 }
 
+function emailRefFromText(text: string): { mailbox: string; messageId: string; attachmentId?: string | undefined } | null {
+  const match = text.match(/\bemail:([^:\s]+):([^:\s]+)(?::([^:\s]+))?/i);
+  if (!match?.[1] || !match[2]) {
+    return null;
+  }
+  return {
+    mailbox: match[1],
+    messageId: match[2],
+    attachmentId: match[3]
+  };
+}
+
 function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>, tenant?: Tenant | undefined): string[] {
   const userText = latestUserText(messages);
   const lower = userText.toLowerCase();
+  const emailRef = emailRefFromText(userText);
+  if (emailRef?.attachmentId && toolsByName.has("getEmailAttachment")) {
+    return ["getEmailAttachment"];
+  }
+  if (emailRef && toolsByName.has("getEmailMessage")) {
+    return ["getEmailMessage"];
+  }
   if (looksLikeInboxSummaryQuestion(lower) && toolsByName.has("summarizeInbox")) {
     return ["summarizeInbox"];
   }

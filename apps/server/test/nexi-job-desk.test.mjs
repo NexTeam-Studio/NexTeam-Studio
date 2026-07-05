@@ -157,6 +157,50 @@ test("local Nexi fallback routes email source refs to getEmailMessage", async ()
   assert.equal(result.sources[0].ref, "email:chris:msg_1");
 });
 
+test("Nexi Anthropic gateway preloads email source refs with getEmailMessage", async () => {
+  const calls = [];
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "read email:chris:msg_1 and list attachments" }],
+    tools: [{
+      name: "summarizeInbox",
+      description: "Summarize inbox.",
+      inputSchema: z.object({ maxResults: z.number().optional() }),
+      handler: async () => {
+        throw new Error("summarizeInbox should not run for explicit email refs");
+      }
+    }, {
+      name: "getEmailMessage",
+      description: "Read email message.",
+      inputSchema: z.object({ mailbox: z.string(), messageId: z.string() }),
+      handler: async (_tenant, args) => {
+        toolCalls.push(args);
+        return {
+          result: { message: { id: "msg_1", tenantId: "aquatrace", mailbox: "chris", threadId: "thr_1", bodyText: "body", labels: [], attachments: [] } },
+          sources: [{ rail: "email", ref: "email:chris:msg_1", label: "Email chris msg_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "The email has no attachments." }],
+        usage: { input_tokens: 10, output_tokens: 6 }
+      }), { status: 200 });
+    }
+  });
+  assert.deepEqual(toolCalls, [{ mailbox: "chris", messageId: "msg_1" }]);
+  assert.match(calls[0].messages.at(-1).content, /Verified getEmailMessage result/);
+  assert.deepEqual(calls[0].tools, []);
+  assert.equal(result.toolRuns[0].name, "getEmailMessage");
+  assert.equal(result.sources[0].ref, "email:chris:msg_1");
+});
+
 test("Nexi schedule prompts parse requested calendar dates in tenant timezone", async () => {
   const calls = [];
   let parsedToolArgs = null;
