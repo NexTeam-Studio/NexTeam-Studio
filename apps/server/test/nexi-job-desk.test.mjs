@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { z } from "zod";
 import { ingestSiteJobBlueprint } from "../dist/nexi/siteJobBlueprintIngest.js";
 import { extractCompanyCamReportFields, siteJobBlueprintFromCompanyCamReport } from "../dist/nexi/reportDocuments.js";
+import { extractAquatraceDocument, ingestAquatraceReportSet, parseLossNotation } from "../dist/fielddocs/reportExtraction.js";
 import { answerNexiMessage, runExplicitLocalToolLoop } from "../dist/nexi/nexiService.js";
 import { createNexiJobDeskTools } from "../dist/nexi/nexiTools.js";
 import { MemoryNexiRepository } from "../dist/nexi/nexiRepository.js";
@@ -680,6 +681,81 @@ test("Nexi report prompts preload CompanyCam documents with the requested entity
   assert.equal(parsedToolArgs.projectQuery, "Deborah Justice");
   assert.match(parsedToolArgs.question, /Deborah Justice/);
   assert.equal(result.sources.length, 1);
+});
+
+test("Aquatrace report extraction handles locked report rules", () => {
+  const loss = parseLossNotation('2" + 1/2"');
+  assert.equal(loss.inchesPerDay, 2.5);
+
+  const jobReportText = `
+Summary Summary Valley View Condominiums Client Name Dillard, GA City / State Chris Sears Logan Sears Aquatrace Technician Name(s) Tuesday, June 16th, 2026 Project Service Date 3:00pm, June 16th, 2026 Project Service Completion Time
+Swimming Pool Leak Detection Details /Results
+-- 2 of 10 --
+Structure had a crack defect without water loss. Plumbing leak found at the return line with hard water loss.
+-- 3 of 10 --
+Conditions Upon Arrival Daily Evaporation Index 0 1/4" Reported Daily Loss 2" + 1/2" Pool/Spa Overview Skimmer System Type skimmer How many skimmers 2 13 wall returns / 5 cleaner ports
+Measurements Square Footage (Surface Area) 1048.9ft² Estimated Average Depth (Inches) 40in Estimated Approximate Gallons / Inch ... 650 Gallons/Inch Estimated Approximate Total Gallons 42,000 Gallons
+Testing Procedures Used dye test, pressure test Testing Procedures Successful dye test Results
+`;
+  const moasureText = "PLAN VIEW 134.2ft (1048.9ft²) Created on 16 Jun 2026 PLAN VIEW : EDGES 134.2ft (1048.9ft²) Created on 16 Jun 2026 Base Layer 1 (0.0ft), 39.8ft, (-0.0ft)";
+  const orphanMoasureText = "PLAN VIEW 94.0ft (526.6ft²) Created on 26 May 2026 Base Layer 1 (0.0ft), 19.8ft, (0.0ft)";
+  const evapText = 'Pool Evaporation Report Generated: June 16, 2026 ZIP Code 30537 Water Temp 83°F Surface Area 1049 ft² Observed Daily Loss 2" + 1/2" EVAPORATION ESTIMATE 0 3/4" inches / day 451 gallons / day POTENTIAL LEAK LOSS (AFTER EVAPORATION) 1 3/4" inches / day 1183 gallons / day TOTAL DAILY WATER LOSS 2 1/2" inches / day 1635 gallons / day';
+  const set = ingestAquatraceReportSet({
+    documents: [
+      { id: "checklist-0616", label: "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-16-2026.pdf", text: jobReportText },
+      { id: "moasure-0616", label: "Moasure Export (18).pdf", text: moasureText },
+      { id: "evap-0616", label: "Swimming Pool Evaporation Calculator _ Aquatrace Leak Detection (1).pdf", text: evapText },
+      { id: "moasure-orphan", label: "Moasure Export (12).pdf", text: orphanMoasureText }
+    ],
+    jobberHierarchyCandidates: [{
+      clientName: "Valley View Condominiums",
+      propertyName: "Pool",
+      tierPath: ["Valley View Condominiums", "Pool"],
+      jobberClientId: "jobber_client_1",
+      jobberPropertyId: "jobber_property_1"
+    }]
+  });
+
+  assert.equal(set.visits.length, 1);
+  const visit = set.visits[0];
+  assert.equal(visit.clientDisplayName, "Valley View Condominiums");
+  assert.equal(visit.serviceDateKey, "2026-06-16");
+  assert.deepEqual(visit.sourceDocumentIds, ["checklist-0616", "moasure-0616", "evap-0616"]);
+  assert.equal(visit.fields.gallonsPerInch, 655.5625);
+  assert.equal(visit.fields.observedDailyLossInchesPerDay, 2.5);
+  assert.equal(visit.fields.evapEstimateInchesPerDay, 0.75);
+  assert.equal(visit.fields.parentClientName, "Valley View Condominiums");
+  assert.equal(visit.jobReport.results.structure.status, "pass");
+  assert.equal(visit.jobReport.results.structure.defectWithoutLoss, true);
+  assert.equal(visit.jobReport.results.plumbing.status, "fail");
+  assert.equal(visit.jobReport.results.plumbing.hardWaterLossFound, true);
+  assert.match(visit.flags.join(","), /moasure_linked_by_date_match/);
+  assert.match(visit.flags.join(","), /evap_pdf_overrides_checklist_delta_inches:0.5/);
+  assert.match(visit.fields.legacyParsedCountsJson, /wallReturn/);
+  assert.equal(set.unresolvedDocs.length, 1);
+  assert.equal(set.unresolvedDocs[0].documentId, "moasure-orphan");
+});
+
+test("Aquatrace document classifier parses standalone Moasure and evap PDFs", () => {
+  const moasure = extractAquatraceDocument({
+    id: "l3-moasure",
+    label: "L3 Campus - Statehouse Arena.pdf",
+    text: "AQUATRACE : L3 CAMPUS - STATEHOUSE ARENA : PLAN VIEW 159.6ft (1224.6ft²) Created on 23 Jun 2026 DEPTH VIEW 1224.6ft² (197gal)"
+  });
+  assert.equal(moasure.documentType, "moasure_export");
+  assert.equal(moasure.createdDateKey, "2026-06-23");
+  assert.equal(moasure.titleClientHint, "L3 CAMPUS - STATEHOUSE ARENA");
+  assert.equal(moasure.areaSqFt, 1224.6);
+
+  const evap = extractAquatraceDocument({
+    id: "l3-evap",
+    label: "Swimming Pool Evaporation Calculator _ Aquatrace Leak Detection.pdf",
+    text: 'Pool Evaporation Report Generated: June 23, 2026 ZIP Code 32301 Water Temp 85°F Surface Area 1065 ft² EVAPORATION ESTIMATE 0 1/4" inches / day 199 gallons / day'
+  });
+  assert.equal(evap.documentType, "evap_calc");
+  assert.equal(evap.generatedDateKey, "2026-06-23");
+  assert.equal(evap.evapEstimate.inchesPerDay, 0.25);
+  assert.equal(evap.evapGallonsPerDay, 199);
 });
 
 test("Nexi issue prompts preload both Jobber and CompanyCam rails", async () => {

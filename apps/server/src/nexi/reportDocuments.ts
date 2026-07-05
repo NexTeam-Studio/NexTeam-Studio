@@ -1,9 +1,7 @@
 import { PDFParse } from "pdf-parse";
 import { siteJobBlueprintSchema, type DocRef, type ProjectRef, type SiteJobBlueprint, type Tenant } from "@nexteam/core";
 import { CompanyCamAdapter } from "@nexteam/providers";
-
-const TOTAL_GALLONS_LABEL = "Estimated Approximate Total Gallons";
-const FINDINGS_SECTION_LABEL = "Swimming Pool Leak Detection Details /Results";
+import { aquatraceReportTextSnippet, extractAquatraceReportFields } from "../fielddocs/reportExtraction.js";
 
 export interface CompanyCamReportExtraction {
   document: DocRef;
@@ -72,59 +70,8 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
   }
 }
 
-function numberFromMatch(match: RegExpMatchArray | null): number | null {
-  const value = match?.[1];
-  if (!value) {
-    return null;
-  }
-  const parsed = Number(value.replace(/,/g, ""));
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function extractPoolGallons(text: string): number | null {
-  return numberFromMatch(text.match(/Estimated Approximate Total Gallons\s*([\d,.]+)\s*Gallon[s]?/i))
-    ?? numberFromMatch(text.match(/Total Gallons\s*[:\-]?\s*([\d,.]+)/i))
-    ?? numberFromMatch(text.match(/([\d,.]+)\s*(?:pool\s*)?gallons?/i));
-}
-
-function extractFindings(text: string): string | null {
-  const normalized = normalizeText(text);
-  const lower = normalized.toLowerCase();
-  const startIndex = lower.indexOf(FINDINGS_SECTION_LABEL.toLowerCase());
-  if (startIndex < 0) {
-    return null;
-  }
-  const afterLabel = normalized
-    .slice(startIndex + FINDINGS_SECTION_LABEL.length)
-    .replace(/^--\s+\d+\s+of\s+\d+\s+--\s*/i, "")
-    .trim();
-  const nextPageMatch = afterLabel.match(/\s--\s+\d+\s+of\s+\d+\s+--/i);
-  const findings = (nextPageMatch ? afterLabel.slice(0, nextPageMatch.index) : afterLabel).trim();
-  if (!findings) {
-    return null;
-  }
-  return findings.length > 1200 ? `${findings.slice(0, 1200).trim()}...` : findings;
-}
-
 export function extractCompanyCamReportFields(text: string): Record<string, string | number> {
-  const fields: Record<string, string | number> = {};
-  const poolGallons = extractPoolGallons(text);
-  if (poolGallons !== null) {
-    fields.poolGallons = poolGallons;
-  }
-  const findings = extractFindings(text);
-  if (findings) {
-    fields.reportFindings = findings;
-  }
-  return fields;
-}
-
-function textSnippet(text: string): string {
-  const normalized = normalizeText(text);
-  const gallonsIndex = normalized.toLowerCase().indexOf(TOTAL_GALLONS_LABEL.toLowerCase());
-  const findingsIndex = normalized.toLowerCase().indexOf(FINDINGS_SECTION_LABEL.toLowerCase());
-  const anchor = [gallonsIndex, findingsIndex].filter((index) => index >= 0).sort((left, right) => left - right)[0] ?? 0;
-  return normalized.slice(Math.max(0, anchor - 160), anchor + 520);
+  return extractAquatraceReportFields(text);
 }
 
 export function siteJobBlueprintFromCompanyCamReport(input: {
@@ -179,7 +126,7 @@ export async function readCompanyCamReports(input: CompanyCamReportReadInput): P
       reports.push({
         document,
         fields: extractCompanyCamReportFields(text),
-        textSnippet: textSnippet(text),
+        textSnippet: aquatraceReportTextSnippet(text),
         byteLength: binary.buffer.byteLength,
         parsed: true
       });
