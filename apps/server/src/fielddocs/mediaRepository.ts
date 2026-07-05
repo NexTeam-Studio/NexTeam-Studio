@@ -71,8 +71,22 @@ export class MemoryMediaRepository implements MediaRepository {
   }
 }
 
+function removeUndefined(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(removeUndefined);
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, entry]) => entry !== undefined)
+        .map(([key, entry]) => [key, removeUndefined(entry)])
+    );
+  }
+  return value;
+}
+
 function asDocumentData(value: object): DocumentData {
-  return value as DocumentData;
+  return removeUndefined(value) as DocumentData;
 }
 
 export class FirestoreMediaRepository implements MediaRepository {
