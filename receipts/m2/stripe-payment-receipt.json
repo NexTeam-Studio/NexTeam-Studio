@@ -1,0 +1,316 @@
+{
+  "ok": true,
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "version": {
+    "status": 200,
+    "json": {
+      "sha": "0dcda8b28966de2217b7920f68013ccb7746ca41",
+      "builtAt": "2026-07-05T01:29:49.086Z"
+    },
+    "headers": {
+      "connection": "keep-alive",
+      "content-length": "87",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 05 Jul 2026 01:29:49 GMT",
+      "etag": "W/\"57-I9SdbB/NFJSiYnR0TXcIhPrqVfg\"",
+      "server": "railway-hikari",
+      "x-hikari-trace": "atl1.1v22",
+      "x-powered-by": "Express",
+      "x-railway-edge": "atl1",
+      "x-railway-request-id": "6jC3yaq8Ro6BkzqVN8N_Fg"
+    }
+  },
+  "clientCreate": {
+    "status": 201,
+    "json": {
+      "ok": true,
+      "client": {
+        "id": "client_813d1627-bc2f-4348-aa47-f1028c088c5c",
+        "tenantId": "aquatrace",
+        "name": "Stripe Receipt Test Client",
+        "emails": [
+          "stripe-receipt@example.test"
+        ],
+        "phones": [],
+        "tags": [],
+        "consent": {
+          "email": false,
+          "sms": false
+        }
+      }
+    },
+    "headers": {
+      "connection": "keep-alive",
+      "content-length": "233",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 05 Jul 2026 01:29:49 GMT",
+      "etag": "W/\"e9-mFFaUWw7Y22P1CMcVr3qucGg69M\"",
+      "server": "railway-hikari",
+      "x-hikari-trace": "atl1.1v22",
+      "x-powered-by": "Express",
+      "x-railway-edge": "atl1",
+      "x-railway-request-id": "5i5gRdd4TBiCB56RN8N_Fg"
+    }
+  },
+  "quoteDraft": {
+    "status": 201,
+    "json": {
+      "ok": true,
+      "quote": {
+        "id": "quote_db9292be-b2ba-47c3-bbc5-fb8176bea8aa",
+        "tenantId": "aquatrace",
+        "clientId": "client_813d1627-bc2f-4348-aa47-f1028c088c5c",
+        "status": "pending_approval",
+        "title": "M2 Stripe test-card receipt quote",
+        "lineItems": [
+          {
+            "id": "line_vgb-001_1",
+            "code": "VGB-001",
+            "name": "VGB-001 - Main Drain Cover Field Documentation — Zone 1",
+            "quantity": 1,
+            "unitPrice": 1,
+            "total": 1
+          }
+        ],
+        "totals": {
+          "subtotal": 1,
+          "tax": 0,
+          "total": 1
+        },
+        "approvalId": "appr_64570418-5510-4fe2-9800-85a51fff5b05",
+        "pdfRef": "native://quotes/aquatrace/quote_db9292be-b2ba-47c3-bbc5-fb8176bea8aa.pdf",
+        "portalTokenHash": "ede3348166ddbe1019694d197299bcae296de409dfa42f936c1de5e02e2b750a"
+      },
+      "approval": {
+        "id": "appr_64570418-5510-4fe2-9800-85a51fff5b05",
+        "tenantId": "aquatrace",
+        "kind": "quote",
+        "preview": {
+          "title": "M2 Stripe test-card receipt quote",
+          "body": "VGB-001 VGB-001 - Main Drain Cover Field Documentation — Zone 1 x1: $1.00\nTotal: $1.00"
+        },
+        "execute": {
+          "service": "crm",
+          "op": "sendQuote",
+          "args": {
+            "quoteId": "quote_db9292be-b2ba-47c3-bbc5-fb8176bea8aa",
+            "tenantId": "aquatrace"
+          }
+        },
+        "status": "pending",
+        "createdBy": "nexi"
+      },
+      "portalUrl": "/portal/quotes/quote_db9292be-b2ba-47c3-bbc5-fb8176bea8aa?tenantId=aquatrace&token=f37dc50aabd21555ec2d01a8aea99c3a1d2ab8eb02bacfab"
+    },
+    "headers": {
+      "connection": "keep-alive",
+      "content-length": "1221",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 05 Jul 2026 01:29:50 GMT",
+      "etag": "W/\"4c5-shZ8ZokNnWk0PYyEkfuK04OwU34\"",
+      "server": "railway-hikari",
+      "vary": "accept-encoding",
+      "x-hikari-trace": "atl1.1v22",
+      "x-powered-by": "Express",
+      "x-railway-edge": "atl1",
+      "x-railway-request-id": "ZoLS_bt4RIuO9VYvs_GTAg"
+    }
+  },
+  "approvalResult": {
+    "status": 200,
+    "json": {
+      "ok": true,
+      "item": {
+        "id": "appr_64570418-5510-4fe2-9800-85a51fff5b05",
+        "tenantId": "aquatrace",
+        "kind": "quote",
+        "preview": {
+          "title": "M2 Stripe test-card receipt quote",
+          "body": "VGB-001 VGB-001 - Main Drain Cover Field Documentation — Zone 1 x1: $1.00\nTotal: $1.00"
+        },
+        "execute": {
+          "service": "crm",
+          "op": "sendQuote",
+          "args": {
+            "quoteId": "quote_db9292be-b2ba-47c3-bbc5-fb8176bea8aa",
+            "tenantId": "aquatrace"
+          }
+        },
+        "status": "approved",
+        "createdBy": "nexi",
+        "decidedAt": "2026-07-05T01:29:50.797Z"
+      }
+    },
+    "headers": {
+      "connection": "keep-alive",
+      "content-length": "472",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 05 Jul 2026 01:29:50 GMT",
+      "etag": "W/\"1d8-xtikhCNrdVuVXIzFnDvOHskOEak\"",
+      "server": "railway-hikari",
+      "vary": "accept-encoding",
+      "x-hikari-trace": "atl1.1v22",
+      "x-powered-by": "Express",
+      "x-railway-edge": "atl1",
+      "x-railway-request-id": "_KqTgqU0SeWenyTts_GTAg"
+    }
+  },
+  "signResult": {
+    "status": 200,
+    "json": {
+      "ok": true,
+      "quote": {
+        "id": "quote_db9292be-b2ba-47c3-bbc5-fb8176bea8aa",
+        "tenantId": "aquatrace",
+        "clientId": "client_813d1627-bc2f-4348-aa47-f1028c088c5c",
+        "status": "signed",
+        "title": "M2 Stripe test-card receipt quote",
+        "lineItems": [
+          {
+            "id": "line_vgb-001_1",
+            "code": "VGB-001",
+            "name": "VGB-001 - Main Drain Cover Field Documentation — Zone 1",
+            "quantity": 1,
+            "unitPrice": 1,
+            "total": 1
+          }
+        ],
+        "totals": {
+          "subtotal": 1,
+          "tax": 0,
+          "total": 1
+        },
+        "approvalId": "appr_64570418-5510-4fe2-9800-85a51fff5b05",
+        "pdfRef": "native://quotes/aquatrace/quote_db9292be-b2ba-47c3-bbc5-fb8176bea8aa.pdf",
+        "portalTokenHash": "ede3348166ddbe1019694d197299bcae296de409dfa42f936c1de5e02e2b750a",
+        "signedBy": "Stripe Test Receipt",
+        "signedAt": "2026-07-05T01:29:52.040Z",
+        "signatureIp": "::ffff:100.64.0.5"
+      }
+    },
+    "headers": {
+      "connection": "keep-alive",
+      "content-length": "745",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 05 Jul 2026 01:29:52 GMT",
+      "etag": "W/\"2e9-sJGDMSwXeXjfy9Qv7wc9KbHHxms\"",
+      "server": "railway-hikari",
+      "vary": "accept-encoding",
+      "x-hikari-trace": "atl1.1v22",
+      "x-powered-by": "Express",
+      "x-railway-edge": "atl1",
+      "x-railway-request-id": "KK8JTMVnT9qktg1ss_GTAg"
+    }
+  },
+  "invoiceCreate": {
+    "status": 201,
+    "json": {
+      "ok": true,
+      "invoice": {
+        "id": "invoice_62f6c75e-bbfe-4467-8b69-294afd847cd5",
+        "tenantId": "aquatrace",
+        "clientId": "client_813d1627-bc2f-4348-aa47-f1028c088c5c",
+        "quoteId": "quote_db9292be-b2ba-47c3-bbc5-fb8176bea8aa",
+        "status": "sent",
+        "title": "Invoice - M2 Stripe test-card receipt quote",
+        "lineItems": [
+          {
+            "id": "line_vgb-001_1",
+            "code": "VGB-001",
+            "name": "VGB-001 - Main Drain Cover Field Documentation — Zone 1",
+            "quantity": 1,
+            "unitPrice": 1,
+            "total": 1
+          }
+        ],
+        "totals": {
+          "subtotal": 1,
+          "tax": 0,
+          "total": 1
+        }
+      }
+    },
+    "headers": {
+      "connection": "keep-alive",
+      "content-length": "481",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 05 Jul 2026 01:29:54 GMT",
+      "etag": "W/\"1e1-Dy/IGrpEbxDoYLZnH1azDbkaMds\"",
+      "server": "railway-hikari",
+      "vary": "accept-encoding",
+      "x-hikari-trace": "atl1.1v22",
+      "x-powered-by": "Express",
+      "x-railway-edge": "atl1",
+      "x-railway-request-id": "-Eeq_AE-Sn2Kcj3ojUJq2g"
+    }
+  },
+  "invoicePdf": {
+    "status": 200,
+    "contentType": "application/pdf",
+    "startsWithPdf": true
+  },
+  "checkout": {
+    "status": 201,
+    "json": {
+      "ok": true,
+      "invoice": {
+        "id": "invoice_62f6c75e-bbfe-4467-8b69-294afd847cd5",
+        "tenantId": "aquatrace",
+        "clientId": "client_813d1627-bc2f-4348-aa47-f1028c088c5c",
+        "quoteId": "quote_db9292be-b2ba-47c3-bbc5-fb8176bea8aa",
+        "status": "sent",
+        "title": "Invoice - M2 Stripe test-card receipt quote",
+        "lineItems": [
+          {
+            "id": "line_vgb-001_1",
+            "code": "VGB-001",
+            "name": "VGB-001 - Main Drain Cover Field Documentation — Zone 1",
+            "quantity": 1,
+            "unitPrice": 1,
+            "total": 1
+          }
+        ],
+        "totals": {
+          "subtotal": 1,
+          "tax": 0,
+          "total": 1
+        },
+        "externalIds": {
+          "stripe": "cs_test_a1moJ5YwstJ4RoYeBeh8kpLNtl8u4KJzd6lR03daiNhrGfbTvbodLG1nu2"
+        }
+      },
+      "checkout": {
+        "sessionId": "cs_test_a1moJ5YwstJ4RoYeBeh8kpLNtl8u4KJzd6lR03daiNhrGfbTvbodLG1nu2",
+        "url": "https://checkout.stripe.com/c/pay/cs_test_a1moJ5YwstJ4RoYeBeh8kpLNtl8u4KJzd6lR03daiNhrGfbTvbodLG1nu2#fidnandhYHdWcXxpYCc%2FJ2FgY2RwaXEnKSdicGRmZGhqaWBTZHdsZGtxJz8nZmprcXdqaScpJ2R1bE5gfCc%2FJ3VuWnFgdnFaMDRRQ0prRlVCSkQzbzB%2Fd2RrNmRvM1R0XzVUTFFpYHZUY3V8dFRWcFJRUUBtQjR%2FMVNET2l1MmB%2FQFc2SWk3MFNIazxQUD1rdWpkazRQRmB3Zk1nYkJoXz01NV1BSzxOc2R%2FJyknY3dqaFZgd3Ngdyc%2FcXdwYCknZ2RmbmJ3anBrYUZqaWp3Jz8nJmNjY2NjYycpJ2lkfGpwcVF8dWAnPyd2bGtiaWBabHFgaCcpJ2BrZGdpYFVpZGZgbWppYWB3dic%2FcXdwYHgl"
+      }
+    },
+    "headers": {
+      "connection": "keep-alive",
+      "content-length": "1159",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Sun, 05 Jul 2026 01:29:58 GMT",
+      "etag": "W/\"487-mhmCmhUpM+YJ65Pox7E0Y9H7QzI\"",
+      "server": "railway-hikari",
+      "vary": "accept-encoding",
+      "x-hikari-trace": "atl1.1v22",
+      "x-powered-by": "Express",
+      "x-railway-edge": "atl1",
+      "x-railway-request-id": "lvd3j4G1R-ab1pCFN8N_Fg"
+    }
+  },
+  "stripeTestCard": "4242",
+  "redirectResult": {
+    "redirected": true,
+    "error": null
+  },
+  "finalUrl": "https://nexteam-studio-staging.up.railway.app/portal/invoices/invoice_62f6c75e-bbfe-4467-8b69-294afd847cd5/paid?session_id=cs_test_a1moJ5YwstJ4RoYeBeh8kpLNtl8u4KJzd6lR03daiNhrGfbTvbodLG1nu2",
+  "paidReceipt": {
+    "invoiceStatus": "paid",
+    "paidAt": "2026-07-05T01:30:04.507Z",
+    "stripeSessionIdStored": true,
+    "eventId": "evt_920260b7-9a38-4530-84db-ca0c63bf008f",
+    "eventTs": "2026-07-05T01:30:05.167Z",
+    "eventType": "invoice.paid",
+    "eventStripeSessionIdStored": true
+  }
+}
