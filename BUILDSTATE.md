@@ -24,5 +24,6 @@
 | integration | M2/M4 merge to main + staging deploy | done | Merge commit `5050cda83978acbae223531893ec5361f2acff9b`; staging `/api/version` SHA-match and `/api/health` all-green in `receipts/main/staging-main-version.json`. |
 | schedule | M3 Scheduling worktree | opened | `build/schedule` from main after M2/M4 merge; receipts pending. |
 | content | M5 Content Engine worktree | opened | `build/content` from main after M2/M4 merge; outbound sends/publishing remain parked behind explicit approval and must build to ApprovalQueue only. |
-| voice | M12a Voice worktree | opened | `build/voice` from main after M2/M4 merge; receipts pending. |
+| voice | M12a Voice worktree | opened | `build/voice` from main after M2/M4 merge. |
+| voice | M12a voice chat foundation | done | Server-side `/api/voice/tts` ElevenLabs rail, web mic dictation, opt-in TTS playback, and mocked no-spend verify receipts in `receipts/m12a/verify.txt` and `receipts/m12a/staging-env-presence.json`. Live phone video receipt still pending. |
 | platform | M13 Platform worktree | opened | `build/platform` from main after M2/M4 merge; receipts pending. |
