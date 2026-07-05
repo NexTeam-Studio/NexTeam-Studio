@@ -217,6 +217,137 @@ test("Nexi photo prompts extract the CompanyCam project query", async () => {
   assert.equal(result.sources.length, 1);
 });
 
+test("Nexi exact photo prompt extracts trailing entity before photos", async () => {
+  const calls = [];
+  let parsedToolArgs = null;
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "Show me the Deborah Justice photos" }],
+    tools: [{
+      name: "getPhotos",
+      description: "Read photos.",
+      inputSchema: z.object({ projectQuery: z.string() }),
+      handler: async (_tenant, args) => {
+        parsedToolArgs = args;
+        return {
+          result: { project: { name: "Deborah Justice" }, media: [{ id: "photo_1" }] },
+          sources: [{ rail: "companycam", ref: "photo_1", label: "CompanyCam photo photo_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "I found one Deborah Justice photo." }],
+        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+      }), { status: 200 });
+    }
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(parsedToolArgs.projectQuery, "Deborah Justice");
+  assert.equal(result.sources.length, 1);
+  assert.equal(result.toolRuns[0].name, "getPhotos");
+});
+
+test("Nexi schedule follow-ups use prior conversation date window", async () => {
+  let parsedToolArgs = null;
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "What's on Monday July 6, 2026?" },
+      { role: "assistant", content: "Rachel Payne is scheduled on Monday July 6, 2026." },
+      { role: "user", content: "What's the ETA?" }
+    ],
+    tools: [{
+      name: "getSchedule",
+      description: "Read schedule.",
+      inputSchema: z.object({ from: z.string(), to: z.string() }),
+      inputJsonSchema: {
+        type: "object",
+        properties: { from: { type: "string" }, to: { type: "string" } },
+        required: ["from", "to"]
+      },
+      handler: async (_tenant, args) => {
+        parsedToolArgs = args;
+        return {
+          result: { jobs: [{ id: "job_1", title: "Rachel Payne leak detection" }] },
+          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne leak detection" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "Rachel Payne is scheduled all day Monday." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(parsedToolArgs, {
+    from: "2026-07-06T04:00:00.000Z",
+    to: "2026-07-07T04:00:00.000Z"
+  });
+  assert.equal(result.sources.length, 1);
+});
+
+test("Nexi reuses cached deterministic tool runs for context follow-ups", async () => {
+  const calls = [];
+  let toolCalled = false;
+  const cachedToolRuns = [{
+    name: "getSchedule",
+    result: {
+      window: { from: "2026-07-06T04:00:00.000Z", to: "2026-07-07T04:00:00.000Z" },
+      jobs: [{ id: "job_1", title: "Rachel Payne leak detection" }]
+    },
+    sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne leak detection" }]
+  }];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "What's on Monday July 6, 2026?" },
+      { role: "assistant", content: "Rachel Payne is scheduled on Monday July 6, 2026." },
+      { role: "user", content: "What's the ETA?" }
+    ],
+    tools: [{
+      name: "getSchedule",
+      description: "Read schedule.",
+      inputSchema: z.object({ from: z.string(), to: z.string() }),
+      inputJsonSchema: {
+        type: "object",
+        properties: { from: { type: "string" }, to: { type: "string" } },
+        required: ["from", "to"]
+      },
+      handler: async () => {
+        toolCalled = true;
+        throw new Error("cached follow-up should not re-query getSchedule");
+      }
+    }],
+    cachedToolRuns,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "Rachel Payne is still the Monday schedule item." }],
+        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+      }), { status: 200 });
+    }
+  });
+  assert.equal(toolCalled, false);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].tools, []);
+  assert.match(calls[0].messages.at(-2).content, /cached verified source data/);
+  assert.deepEqual(result.toolRuns, cachedToolRuns);
+  assert.equal(result.sources[0].ref, "job_1");
+});
+
 test("Nexi report prompts preload CompanyCam documents with the requested entity", async () => {
   const calls = [];
   let parsedToolArgs = null;
@@ -388,6 +519,55 @@ test("Nexi service persists failureLog for source-enforced failures", async () =
   assert.match(result.failureId, /^fail_/);
   assert.equal(repository.failureLog.length, 1);
   assert.equal(repository.failureLog[0].reason, "factual_answer_without_sources");
+});
+
+test("Nexi service persists tool runs for conversation reuse", async () => {
+  const repository = new MemoryNexiRepository();
+  const toolRuns = [{
+    name: "getSchedule",
+    result: { jobs: [{ id: "job_1", title: "Rachel Payne leak detection" }] },
+    sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne leak detection" }]
+  }];
+  const result = await answerNexiMessage({
+    tenant: tenant(),
+    message: "What's on Monday July 6, 2026?",
+    conversationId: "trial-date-context",
+    tools: [],
+    repository,
+    gateway: async (request) => {
+      assert.match(request.system, /Answer only what was asked/);
+      assert.deepEqual(request.cachedToolRuns, []);
+      return {
+        answer: "Rachel Payne is scheduled Monday.",
+        sources: toolRuns[0].sources,
+        usage: { inputTokens: 1, outputTokens: 1, cacheCreationInputTokens: 0, cacheReadInputTokens: 0, totalTokens: 2 },
+        raw: { test: true },
+        toolRuns
+      };
+    }
+  });
+  assert.equal(result.toolRuns.length, 1);
+  assert.equal(repository.conversations[0].toolRuns[0].name, "getSchedule");
+
+  await answerNexiMessage({
+    tenant: tenant(),
+    message: "What's the ETA?",
+    conversationId: "trial-date-context",
+    tools: [],
+    repository,
+    gateway: async (request) => {
+      assert.equal(request.cachedToolRuns.length, 1);
+      assert.equal(request.cachedToolRuns[0].name, "getSchedule");
+      return {
+        answer: "Same Monday schedule item.",
+        sources: request.cachedToolRuns[0].sources,
+        usage: { inputTokens: 1, outputTokens: 1, cacheCreationInputTokens: 0, cacheReadInputTokens: 0, totalTokens: 2 },
+        raw: { test: true },
+        toolRuns: request.cachedToolRuns
+      };
+    }
+  });
+  assert.equal(repository.conversations.length, 2);
 });
 
 test("CompanyCam report fields produce entity-keyed SiteJobBlueprints", async () => {

@@ -356,6 +356,7 @@ export interface ConversationRecord {
   userText: string;
   assistantText: string;
   sources: Source[];
+  toolRuns?: Array<{ name: string; sources: Source[]; result: unknown }> | undefined;
   createdAt: string;
 }
 

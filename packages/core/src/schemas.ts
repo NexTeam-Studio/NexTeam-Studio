@@ -257,6 +257,15 @@ export const sourceSchema = z.object({
   label: z.string()
 });
 
+const toolRunResultSchema = z.union([
+  z.record(z.string(), z.unknown()),
+  z.array(z.unknown()),
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.null()
+]);
+
 export const conversationRecordSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
@@ -264,6 +273,11 @@ export const conversationRecordSchema = z.object({
   userText: z.string(),
   assistantText: z.string(),
   sources: z.array(sourceSchema),
+  toolRuns: z.array(z.object({
+    name: z.string(),
+    sources: z.array(sourceSchema),
+    result: toolRunResultSchema
+  })).optional(),
   createdAt: z.string()
 });
 

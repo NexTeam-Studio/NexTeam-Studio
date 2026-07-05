@@ -57,6 +57,7 @@ export interface ToolLoopRequest {
   system: string;
   messages: GatewayMessage[];
   tools: NexiTool[];
+  cachedToolRuns?: ToolRunTrace[] | undefined;
   maxTokens?: number;
   routeActionName: string;
   taskType: string;
@@ -501,14 +502,36 @@ export function scheduleWindowFromText(text: string, timeZone?: string): { from:
   return null;
 }
 
+function textMessages(messages: GatewayMessage[]): string[] {
+  return messages
+    .map((message) => typeof message.content === "string" ? message.content : "")
+    .filter(Boolean);
+}
+
+function scheduleWindowFromConversation(messages: GatewayMessage[], timeZone?: string): { from: string; to: string } | null {
+  for (const text of [...textMessages(messages)].reverse()) {
+    const window = scheduleWindowFromText(text, timeZone);
+    if (window) {
+      return window;
+    }
+  }
+  return null;
+}
+
 function photoQueryFromText(text: string): string {
   const normalized = text
     .replace(/\buse\s+getPhotos\b.*$/i, "")
     .replace(/\binclude\s+sources\b.*$/i, "")
+    .replace(/^\s*(?:please\s+)?(?:show|find|get|pull|open)\s+(?:me\s+)?/i, "")
     .replace(/[?.!]+$/g, "")
     .trim();
   const match = normalized.match(/\b(?:photos?|pictures?|images?)\s+(?:for|of)\s+(.+)$/i);
-  return (match?.[1] ?? normalized).replace(/[?.!]+$/g, "").trim();
+  const trailingMatch = normalized.match(/^(?:the\s+)?(.+?)\s+(?:photos?|pictures?|images?)$/i);
+  return (match?.[1] ?? trailingMatch?.[1] ?? normalized)
+    .replace(/\b(?:the|a|an)\b/gi, " ")
+    .replace(/[?.!]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function entityQueryFromText(text: string): string {
@@ -527,7 +550,7 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   const record = input && typeof input === "object" && !Array.isArray(input) ? { ...input as Record<string, unknown> } : {};
   const userText = latestUserText(messages);
   if (toolName === "getSchedule") {
-    const fallback = scheduleWindowFromText(userText, tenant?.timezone) ?? todayWindow(tenant?.timezone);
+    const fallback = scheduleWindowFromConversation(messages, tenant?.timezone) ?? todayWindow(tenant?.timezone);
     record.from ??= fallback.from;
     record.to ??= fallback.to;
   }
@@ -574,6 +597,10 @@ function looksLikeScheduleQuestion(text: string): boolean {
     && /\b(?:what(?:'s| is)\s+on|what\s+do\s+we\s+have|who\s+is\s+scheduled|where\s+(?:am|are)\s+(?:i|we)|anything\s+on)\b/.test(lower);
 }
 
+function looksLikeScheduleFollowUp(text: string): boolean {
+  return /\b(?:eta|arrival|arrive|arrival\s+time|what\s+time|when\s+(?:is|are|do|does|will)|how\s+long)\b/i.test(text);
+}
+
 function uniqueToolNames(names: string[], toolsByName: Map<string, NexiTool>): string[] {
   return [...new Set(names)].filter((name) => toolsByName.has(name));
 }
@@ -586,7 +613,7 @@ function looksLikeTechnicianQuestion(lower: string): boolean {
   return /\b(?:technician|tech|who was there|who went|who did|who performed)\b/.test(lower);
 }
 
-function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>): string[] {
+function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>, tenant?: Tenant | undefined): string[] {
   const userText = latestUserText(messages);
   const lower = userText.toLowerCase();
   if (looksLikeTechnicianQuestion(lower)) {
@@ -615,10 +642,45 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   if (lower.includes("gallon") && toolsByName.has("lookupSiteJobBlueprintField")) {
     return ["lookupSiteJobBlueprintField"];
   }
-  if (looksLikeScheduleQuestion(userText) && toolsByName.has("getSchedule")) {
+  if (
+    (looksLikeScheduleQuestion(userText) || (looksLikeScheduleFollowUp(userText) && Boolean(scheduleWindowFromConversation(messages, tenant?.timezone))))
+    && toolsByName.has("getSchedule")
+  ) {
     return ["getSchedule"];
   }
   return [];
+}
+
+function latestCachedToolRuns(cachedToolRuns: ToolRunTrace[] | undefined, toolNames: string[]): ToolRunTrace[] {
+  const runs = cachedToolRuns ?? [];
+  return toolNames.flatMap((toolName) => {
+    const match = [...runs].reverse().find((run) => run.name === toolName);
+    return match ? [match] : [];
+  });
+}
+
+function hasExplicitPhotoTarget(text: string): boolean {
+  const lower = text.toLowerCase();
+  return /\b(?:photos?|pictures?|images?)\s+(?:for|of)\s+/.test(lower)
+    || /^\s*(?:please\s+)?(?:show|find|get|pull|open)\s+(?:me\s+)?(?:the\s+)?.+?\s+(?:photos?|pictures?|images?)\s*[?.!]*$/i.test(text);
+}
+
+function hasFreshLookupTarget(text: string, timeZone?: string): boolean {
+  return Boolean(scheduleWindowFromText(text, timeZone) || entityQueryFromText(text) || hasExplicitPhotoTarget(text));
+}
+
+function reusableCachedToolRuns(input: {
+  messages: GatewayMessage[];
+  toolsByName: Map<string, NexiTool>;
+  tenant: Tenant;
+  cachedToolRuns?: ToolRunTrace[] | undefined;
+}): ToolRunTrace[] {
+  const requested = deterministicToolNames(input.messages, input.toolsByName, input.tenant);
+  if (requested.length === 0 || hasFreshLookupTarget(latestUserText(input.messages), input.tenant.timezone)) {
+    return [];
+  }
+  const cached = latestCachedToolRuns(input.cachedToolRuns, requested);
+  return cached.length === requested.length ? cached : [];
 }
 
 async function runDeterministicTools(input: {
@@ -626,7 +688,7 @@ async function runDeterministicTools(input: {
   messages: GatewayMessage[];
   toolsByName: Map<string, NexiTool>;
 }): Promise<ToolRunTrace[]> {
-  const toolNames = deterministicToolNames(input.messages, input.toolsByName);
+  const toolNames = deterministicToolNames(input.messages, input.toolsByName, input.tenant);
   const runs: ToolRunTrace[] = [];
   for (const toolName of toolNames) {
     const tool = input.toolsByName.get(toolName);
@@ -714,14 +776,20 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
   const toolRuns: ToolRunTrace[] = [];
   const rawIterations: unknown[] = [];
   const maxToolIterations = request.maxToolIterations ?? MAX_TOOL_ITERATIONS;
-  const deterministicRuns = await runDeterministicTools({ tenant: request.tenant, messages, toolsByName });
+  const reusableRuns = reusableCachedToolRuns({
+    tenant: request.tenant,
+    messages,
+    toolsByName,
+    cachedToolRuns: request.cachedToolRuns
+  });
+  const deterministicRuns = reusableRuns.length > 0 ? reusableRuns : await runDeterministicTools({ tenant: request.tenant, messages, toolsByName });
   if (deterministicRuns.length > 0) {
     sources = [...sources, ...deterministicRuns.flatMap((run) => run.sources)];
     toolRuns.push(...deterministicRuns);
     const toolNames = deterministicRuns.map((run) => run.name).join(", ");
     messages.push({
       role: "assistant",
-      content: `I found verified source data from ${toolNames} and will use it for the final answer.`
+      content: `${reusableRuns.length > 0 ? "I found cached verified source data" : "I found verified source data"} from ${toolNames} and will use it for the final answer.`
     });
     messages.push({
       role: "user",

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { approvalItemSchema, jobSchema, mediaSchema, nexiBlueprintSchema, siteJobBlueprintSchema } from "../dist/index.js";
+import { approvalItemSchema, conversationRecordSchema, jobSchema, mediaSchema, nexiBlueprintSchema, siteJobBlueprintSchema } from "../dist/index.js";
 
 test("Media schema rejects exposed third-party URL fields", () => {
   const parsed = mediaSchema.parse({
@@ -67,3 +67,21 @@ test("Job schema preserves scheduled visit date fields", () => {
   assert.equal(job.endAt, "2026-07-07T03:59:59.000Z");
 });
 
+test("Conversation schema preserves tool run traces for reuse", () => {
+  const conversation = conversationRecordSchema.parse({
+    id: "conv_1",
+    tenantId: "aquatrace",
+    conversationId: "trial-date-context",
+    userText: "What's on Monday July 6, 2026?",
+    assistantText: "Rachel Payne is scheduled Monday.",
+    sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }],
+    toolRuns: [{
+      name: "getSchedule",
+      sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }],
+      result: { jobs: [{ id: "job_1", title: "Rachel Payne leak detection" }] }
+    }],
+    createdAt: "2026-07-05T16:00:00.000Z"
+  });
+  assert.equal(conversation.toolRuns[0].name, "getSchedule");
+  assert.equal(conversation.toolRuns[0].result.jobs[0].id, "job_1");
+});

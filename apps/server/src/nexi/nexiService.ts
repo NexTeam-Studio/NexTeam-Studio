@@ -34,6 +34,7 @@ function buildNexiSystemPrompt(tenant: Tenant): string {
     "Use the provided tools for factual job, schedule, photo, and SiteJobBlueprint questions.",
     "Never invent job data. If a factual answer lacks sources, say you do not have a verified source.",
     "For schedule answers, use schedule.localSummary when present and do not describe tenant-local Jobber all-day windows as UTC appointments.",
+    "Answer only what was asked in a scannable format: short lead sentence, compact bullets only when useful, no extra menu of options unless the user asks.",
     "Keep phone answers short, direct, and operational. Ask at most one clarifying question."
   ].join("\n");
 }
@@ -178,7 +179,12 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
   if (isUserFlaggedIncorrect(input.message)) {
     return answerUserFlaggedIncorrect(input);
   }
-  const history = await input.repository.loadHistory(input.tenant.id, input.conversationId, 8);
+  const recent = await input.repository.loadRecentConversations(input.tenant.id, input.conversationId, 8);
+  const history = recent.flatMap((record) => [
+    { role: "user" as const, content: record.userText },
+    { role: "assistant" as const, content: record.assistantText }
+  ]);
+  const cachedToolRuns = recent.flatMap((record) => record.toolRuns ?? []);
   const gateway = gatewayForEnv(input);
   try {
     const result = await gateway({
@@ -186,6 +192,7 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
       system: buildNexiSystemPrompt(input.tenant),
       messages: [...history, { role: "user", content: input.message }],
       tools: input.tools,
+      cachedToolRuns,
       routeActionName: "/api/nexi/message",
       taskType: "job_desk_answer",
       usageLog: input.usageLog,
@@ -196,7 +203,8 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
       conversationId: input.conversationId,
       userText: input.message,
       assistantText: result.answer,
-      sources: result.sources
+      sources: result.sources,
+      toolRuns: result.toolRuns
     });
     let failureId: string | undefined;
     if (result.failureReason) {
