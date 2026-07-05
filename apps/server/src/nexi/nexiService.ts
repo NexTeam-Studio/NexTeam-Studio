@@ -78,6 +78,10 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
     const tool = tools.find((candidate) => candidate.name === "getEmailMessage");
     return tool ? { tool, args: { mailbox: emailMessageRef[1], messageId: emailMessageRef[2] } } : null;
   }
+  if (/\b(?:needs? my attention|what needs attention|triage|urgent|important)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "triageInbox");
+    return tool ? { tool, args: { date: today.toISOString(), maxResults: 25 } } : null;
+  }
   if (/\b(?:email|emails|mail|inbox|reply|replied|came in)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "summarizeInbox");
     return tool ? { tool, args: { date: today.toISOString(), maxResults: 10 } } : null;
@@ -117,6 +121,10 @@ function summarizeResult(toolName: string, result: unknown): string {
   if (toolName === "getPhotos" && result && typeof result === "object") {
     const media = Array.isArray((result as { media?: unknown[] }).media) ? (result as { media: unknown[] }).media : [];
     return `I found ${media.length} CompanyCam media item${media.length === 1 ? "" : "s"}; thumbnails must be served through /api/media/:id.`;
+  }
+  if (toolName === "triageInbox" && result && typeof result === "object") {
+    const items = Array.isArray((result as { items?: unknown[] }).items) ? (result as { items: unknown[] }).items : [];
+    return `I found ${items.length} email item${items.length === 1 ? "" : "s"} needing attention after excluding spam and promos.`;
   }
   if (toolName === "lookupSiteJobBlueprintField" && result && typeof result === "object") {
     const value = (result as { value?: unknown }).value;

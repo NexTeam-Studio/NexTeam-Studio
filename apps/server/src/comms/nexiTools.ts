@@ -44,6 +44,12 @@ const summarizeInboxInputSchema = z.object({
   maxResults: z.number().int().min(1).max(25).optional()
 });
 
+const triageInboxInputSchema = z.object({
+  mailbox: z.string().optional(),
+  date: z.string().optional(),
+  maxResults: z.number().int().min(1).max(25).optional()
+});
+
 const draftEmailAttachmentSchema = z.object({
   filename: z.string().min(1).max(240),
   mime: z.string().min(1).max(160),
@@ -67,6 +73,20 @@ function emailSource(message: EmailMessageSummary): Source {
     ref: `email:${message.mailbox}:${message.id}`,
     label: `Email ${message.mailbox} ${message.id}`
   };
+}
+
+type TriageCategory = "client_inquiry" | "form_submission" | "service_notice" | "other";
+
+interface TriageItem {
+  rank: number;
+  priority: "high" | "normal" | "low";
+  category: TriageCategory;
+  mailbox: string;
+  messageId: string;
+  threadId: string;
+  receivedAt?: string | undefined;
+  sourceRef: string;
+  reason: string;
 }
 
 function readAdapters(input: CommsRail, mailbox?: string | undefined): EmailReadProvider[] {
@@ -161,6 +181,74 @@ function attachmentMediaRefs(attachments: OutboundEmailAttachment[] | undefined)
     return undefined;
   }
   return attachments.map((attachment) => `attachment:${attachment.filename}`);
+}
+
+function messageText(message: EmailMessageSummary): string {
+  return [
+    message.from,
+    message.to,
+    message.subject,
+    message.snippet,
+    ...message.labels
+  ].filter(Boolean).join(" ").toLowerCase();
+}
+
+function isNoise(message: EmailMessageSummary): boolean {
+  const text = messageText(message);
+  return message.labels.some((label) => /^(?:SPAM|TRASH|CATEGORY_PROMOTIONS|CATEGORY_SOCIAL)$/i.test(label))
+    || /\b(?:unsubscribe|newsletter|promo|promotion|sale|coupon|limited time|deal|webinar)\b/i.test(text);
+}
+
+function triageCategory(message: EmailMessageSummary): { category: TriageCategory; rank: number; reason: string } {
+  const text = messageText(message);
+  if (/\b(?:new lead|contact form|form submission|website form|wpforms|gravity forms|quote request|estimate request)\b/i.test(text)) {
+    return { category: "form_submission", rank: 20, reason: "Form submission or lead-intake language." };
+  }
+  if (/\b(?:leak|pool|spa|schedule|appointment|estimate|quote|repair|service|technician|call me|called|reply|responded|water loss|invoice question|question)\b/i.test(text)
+    && !/\b(?:no-?reply|donotreply|do-not-reply)\b/i.test(text)) {
+    return { category: "client_inquiry", rank: 10, reason: "Likely client inquiry or active service conversation." };
+  }
+  if (/\b(?:jobber|companycam|stripe|railway|firebase|google cloud|wordpress|domain|billing|subscription|receipt|security|alert|audit|failed|action required|verification)\b/i.test(text)) {
+    return { category: "service_notice", rank: 30, reason: "Legitimate service, billing, security, or audit notice." };
+  }
+  return { category: "other", rank: 90, reason: "Not classified as urgent Aquatrace work." };
+}
+
+function triagePriority(rank: number): TriageItem["priority"] {
+  if (rank <= 10) {
+    return "high";
+  }
+  if (rank <= 30) {
+    return "normal";
+  }
+  return "low";
+}
+
+function triageItems(messages: EmailMessageSummary[]): { items: TriageItem[]; excludedNoiseCount: number } {
+  let excludedNoiseCount = 0;
+  const items = messages.flatMap((message) => {
+    if (isNoise(message)) {
+      excludedNoiseCount += 1;
+      return [];
+    }
+    const category = triageCategory(message);
+    const rank = category.rank;
+    return [{
+      rank,
+      category: category.category,
+      mailbox: message.mailbox,
+      messageId: message.id,
+      threadId: message.threadId,
+      receivedAt: message.receivedAt,
+      sourceRef: `email:${message.mailbox}:${message.id}`,
+      reason: category.reason,
+      priority: triagePriority(rank)
+    }];
+  });
+  return {
+    excludedNoiseCount,
+    items: items.sort((a, b) => a.rank - b.rank || (b.receivedAt ?? "").localeCompare(a.receivedAt ?? ""))
+  };
 }
 
 export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQueueService): NexiTool[] {
@@ -277,6 +365,42 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
         return {
           result: { date: window.after.slice(0, 10), count: messages.length, mailboxes: grouped.map((group) => ({ mailbox: group.mailbox, count: group.messages.length })), messages },
           sources: messages.map(emailSource)
+        };
+      }
+    },
+    {
+      name: "triageInbox",
+      description: "Rank what needs attention in Aquatrace email. Excludes spam/promos and prioritizes client inquiries, form submissions, and legitimate service/audit notices. Sources are email:<mailbox>:<messageId>.",
+      inputSchema: triageInboxInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        assertCommsTenant(rail, tenant, "triageInbox");
+        const input = triageInboxInputSchema.parse(args);
+        const window = inboxWindow(input.date);
+        const adapters = readAdapters(rail, input.mailbox);
+        if (adapters.length === 0) {
+          throw new RailError(`No read-only email mailbox is configured. Available mailboxes: ${mailboxList(rail).join(", ") || "none"}.`, { provider: "gmail", op: "triageInbox", status: 503 });
+        }
+        const grouped = await Promise.all(adapters.map(async (adapter) => ({
+          mailbox: adapter.mailbox,
+          messages: await adapter.searchEmail({
+            after: window.after,
+            before: window.before,
+            keywords: "-in:spam -in:trash -category:promotions -category:social",
+            maxResults: input.maxResults ?? 25
+          })
+        })));
+        const messages = grouped.flatMap((group) => group.messages);
+        const triage = triageItems(messages);
+        const sourceMessages = triage.items.map((item) => messages.find((message) => message.id === item.messageId && message.mailbox === item.mailbox)).filter((message): message is EmailMessageSummary => !!message);
+        return {
+          result: {
+            date: window.after.slice(0, 10),
+            scannedCount: messages.length,
+            excludedNoiseCount: triage.excludedNoiseCount,
+            mailboxes: grouped.map((group) => ({ mailbox: group.mailbox, count: group.messages.length })),
+            items: triage.items
+          },
+          sources: sourceMessages.map(emailSource)
         };
       }
     },

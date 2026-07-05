@@ -130,6 +130,41 @@ test("local Nexi fallback routes email-today prompts to summarizeInbox before sc
   assert.equal(result.sources[0].rail, "email");
 });
 
+test("local Nexi fallback routes attention prompts to triageInbox", async () => {
+  const called = [];
+  const result = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "what needs my attention" }],
+    tools: [{
+      name: "getJobDetail",
+      description: "Read job detail.",
+      inputSchema: z.object({ nameQuery: z.string().optional() }),
+      handler: async () => {
+        called.push("getJobDetail");
+        return { result: { id: "job_1" }, sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job" }] };
+      }
+    }, {
+      name: "triageInbox",
+      description: "Triage inbox.",
+      inputSchema: z.object({ date: z.string(), maxResults: z.number().optional() }),
+      handler: async (_tenant, args) => {
+        called.push("triageInbox");
+        return {
+          result: { args, scannedCount: 1, excludedNoiseCount: 0, items: [{ category: "client_inquiry", messageId: "msg_1" }] },
+          sources: [{ rail: "email", ref: "email:chris:msg_1", label: "Email chris msg_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {}
+  });
+  assert.deepEqual(called, ["triageInbox"]);
+  assert.equal(result.toolRuns[0].name, "triageInbox");
+  assert.equal(result.sources[0].ref, "email:chris:msg_1");
+});
+
 test("local Nexi fallback routes email source refs to getEmailMessage", async () => {
   const called = [];
   const result = await runExplicitLocalToolLoop({
@@ -198,6 +233,50 @@ test("Nexi Anthropic gateway preloads email source refs with getEmailMessage", a
   assert.match(calls[0].messages.at(-1).content, /Verified getEmailMessage result/);
   assert.deepEqual(calls[0].tools, []);
   assert.equal(result.toolRuns[0].name, "getEmailMessage");
+  assert.equal(result.sources[0].ref, "email:chris:msg_1");
+});
+
+test("Nexi Anthropic gateway preloads triageInbox for attention prompts", async () => {
+  const calls = [];
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "what needs my attention" }],
+    tools: [{
+      name: "getJobDetail",
+      description: "Read job detail.",
+      inputSchema: z.object({ nameQuery: z.string().optional() }),
+      handler: async () => {
+        throw new Error("getJobDetail should not run for inbox triage prompts");
+      }
+    }, {
+      name: "triageInbox",
+      description: "Triage inbox.",
+      inputSchema: z.object({ date: z.string(), maxResults: z.number().optional() }),
+      handler: async (_tenant, args) => {
+        toolCalls.push(args);
+        return {
+          result: { scannedCount: 1, excludedNoiseCount: 0, items: [{ category: "client_inquiry", messageId: "msg_1" }] },
+          sources: [{ rail: "email", ref: "email:chris:msg_1", label: "Email chris msg_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "One client inquiry needs attention." }],
+        usage: { input_tokens: 10, output_tokens: 6 }
+      }), { status: 200 });
+    }
+  });
+  assert.equal(toolCalls.length, 1);
+  assert.match(calls[0].messages.at(-1).content, /Verified triageInbox result/);
+  assert.deepEqual(calls[0].tools, []);
+  assert.equal(result.toolRuns[0].name, "triageInbox");
   assert.equal(result.sources[0].ref, "email:chris:msg_1");
 });
 

@@ -578,6 +578,10 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   if (toolName === "summarizeInbox" && !record.maxResults) {
     record.maxResults = 10;
   }
+  if (toolName === "triageInbox") {
+    record.date ??= new Date().toISOString();
+    record.maxResults ??= 25;
+  }
   if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
     record.nameQuery = userText;
   }
@@ -635,6 +639,10 @@ function looksLikeEmailSearchQuestion(lower: string): boolean {
   return /\b(?:emails?|mail|inbox|reply|replied|responded)\b/.test(lower);
 }
 
+function looksLikeInboxTriageQuestion(lower: string): boolean {
+  return /\b(?:needs? my attention|what needs attention|triage|urgent|important)\b/.test(lower);
+}
+
 function emailRefFromText(text: string): { mailbox: string; messageId: string; attachmentId?: string | undefined } | null {
   const match = text.match(/\bemail:([^:\s]+):([^:\s]+)(?::([^:\s]+))?/i);
   if (!match?.[1] || !match[2]) {
@@ -659,6 +667,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikeInboxSummaryQuestion(lower) && toolsByName.has("summarizeInbox")) {
     return ["summarizeInbox"];
+  }
+  if (looksLikeInboxTriageQuestion(lower) && toolsByName.has("triageInbox")) {
+    return ["triageInbox"];
   }
   if (looksLikeEmailSearchQuestion(lower) && toolsByName.has("searchEmail")) {
     return ["searchEmail"];

@@ -108,6 +108,74 @@ test("Comms Nexi searchEmail returns email source refs", async () => {
   assert.equal(result.sources[0].ref, "email:ops:msg_1");
 });
 
+test("Comms Nexi triageInbox ranks Aquatrace attention items and excludes noise", async () => {
+  const readAdapter = {
+    mailbox: "ops",
+    async searchEmail(query) {
+      assert.match(query.keywords, /-category:promotions/);
+      return [{
+        id: "promo_1",
+        tenantId: "aquatrace",
+        mailbox: "ops",
+        threadId: "thr_promo",
+        from: "marketing@example.test",
+        subject: "Newsletter sale",
+        receivedAt: "2026-07-05T08:00:00.000Z",
+        snippet: "Unsubscribe for fewer promotions.",
+        labels: ["CATEGORY_PROMOTIONS"]
+      }, {
+        id: "client_1",
+        tenantId: "aquatrace",
+        mailbox: "ops",
+        threadId: "thr_client",
+        from: "client@example.test",
+        subject: "Pool leak question",
+        receivedAt: "2026-07-05T09:00:00.000Z",
+        snippet: "Can someone call me about the leak?",
+        labels: ["INBOX"]
+      }, {
+        id: "form_1",
+        tenantId: "aquatrace",
+        mailbox: "ops",
+        threadId: "thr_form",
+        from: "website@example.test",
+        subject: "New lead contact form",
+        receivedAt: "2026-07-05T10:00:00.000Z",
+        snippet: "Estimate request from the website form.",
+        labels: ["INBOX"]
+      }, {
+        id: "service_1",
+        tenantId: "aquatrace",
+        mailbox: "ops",
+        threadId: "thr_service",
+        from: "billing@stripe.example.test",
+        subject: "Stripe audit notice",
+        receivedAt: "2026-07-05T11:00:00.000Z",
+        snippet: "Action required for billing verification.",
+        labels: ["INBOX"]
+      }];
+    },
+    async getEmailThread() {
+      throw new Error("not used");
+    },
+    async getEmailMessage() {
+      throw new Error("not used");
+    },
+    async getEmailAttachment() {
+      throw new Error("not used");
+    }
+  };
+  const rail = { tenantId: "aquatrace", readAdapters: new Map([["ops", readAdapter]]), sendAdapter: null };
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  const tool = createCommsNexiTools(rail, approvalQueue).find((candidate) => candidate.name === "triageInbox");
+  assert.ok(tool);
+  const result = await tool.handler(tenant(), { mailbox: "ops", date: "2026-07-05T12:00:00.000Z" });
+  assert.equal(result.result.scannedCount, 4);
+  assert.equal(result.result.excludedNoiseCount, 1);
+  assert.deepEqual(result.result.items.map((item) => item.category), ["client_inquiry", "form_submission", "service_notice"]);
+  assert.deepEqual(result.sources.map((source) => source.ref), ["email:ops:client_1", "email:ops:form_1", "email:ops:service_1"]);
+});
+
 test("Comms Nexi tools reject tenant contexts outside the bound email rail", async () => {
   let searched = false;
   const readAdapter = {
