@@ -44,6 +44,45 @@ async function fillFirst(candidates: Locator[], value: string, label: string): P
   throw new Error(`Could not find Stripe Checkout field: ${label}`);
 }
 
+async function clickFirst(candidates: Locator[]): Promise<boolean> {
+  for (const candidate of candidates) {
+    try {
+      const locator = candidate.first();
+      await locator.waitFor({ state: "visible", timeout: 5_000 });
+      await locator.click({ timeout: 5_000, force: true });
+      return true;
+    } catch {
+      // Try the next selector shape; Stripe Checkout markup varies by account.
+    }
+  }
+  return false;
+}
+
+async function uncheckIfChecked(locator: Locator): Promise<void> {
+  try {
+    const target = locator.first();
+    await target.waitFor({ state: "visible", timeout: 2_500 });
+    if (await target.isChecked()) {
+      await target.uncheck({ force: true, timeout: 2_500 });
+    }
+  } catch {
+    // Link save is account/locale dependent; absence is fine for this receipt.
+  }
+}
+
+async function clickEnabledSubmit(pageLocator: Locator): Promise<void> {
+  const submit = pageLocator.first();
+  await submit.waitFor({ state: "visible", timeout: 30_000 });
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (await submit.isEnabled()) {
+      await submit.click({ timeout: 30_000 });
+      return;
+    }
+    await sleep(1_000);
+  }
+  throw new Error("Stripe Checkout submit button never became enabled.");
+}
+
 async function waitForPaidReceipt(invoiceId: string): Promise<Record<string, unknown>> {
   const db = getAdminDb();
   if (!db) {
@@ -142,6 +181,12 @@ await fillFirst([
   page.locator("input[type='email']"),
   page.locator("input[name='email']")
 ], "stripe-receipt@example.test", "email");
+await clickFirst([
+  page.locator("#payment-method-accordion-item-title-card"),
+  page.getByRole("radio", { name: /card/i }),
+  page.getByLabel(/card/i)
+]);
+await uncheckIfChecked(page.locator("#enableStripePass"));
 await fillFirst([
   page.getByLabel(/card number/i),
   page.getByPlaceholder(/1234|card number/i),
@@ -162,12 +207,20 @@ await fillFirst([
   page.locator("input[name='billingName']"),
   page.locator("input[name='name']")
 ], "Stripe Receipt Test", "cardholder name");
-await page.getByRole("button", { name: /pay|submit/i }).click({ timeout: 30_000 });
-await page.waitForURL(/\/portal\/invoices\/.*\/paid/, { timeout: 60000 });
+await fillFirst([
+  page.getByLabel(/zip|postal/i),
+  page.getByPlaceholder(/12345|zip|postal/i),
+  page.locator("input[name='billingPostalCode']")
+], "32084", "billing postal code").catch(() => {
+  // Postal code is not always rendered for test-mode Checkout sessions.
+});
+await clickEnabledSubmit(page.locator("[data-testid='hosted-payment-submit-button'], button[type='submit']"));
+const redirectResult = await page.waitForURL(/\/portal\/invoices\/.*\/paid/, { timeout: 30_000 })
+  .then(() => ({ redirected: true, error: null as string | null }))
+  .catch((error: unknown) => ({ redirected: false, error: error instanceof Error ? error.message : String(error) }));
 const finalUrl = page.url();
-await browser.close();
-
 const paidReceipt = await waitForPaidReceipt(invoiceId);
+await browser.close();
 
 await mkdir("receipts/m2", { recursive: true });
 const receipt = {
@@ -186,6 +239,7 @@ const receipt = {
   },
   checkout,
   stripeTestCard: "4242",
+  redirectResult,
   finalUrl,
   paidReceipt
 };
