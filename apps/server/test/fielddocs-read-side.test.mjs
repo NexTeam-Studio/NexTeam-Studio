@@ -7,7 +7,7 @@ import { createFieldDocsReadTools } from "../dist/fielddocs/nexiTools.js";
 import { maybeRunVision } from "../dist/fielddocs/visionPipeline.js";
 import { createNativeMediaFromUpload } from "../dist/fielddocs/uploadService.js";
 import { createLeakDetectionChecklist } from "../dist/fielddocs/checklists.js";
-import { renderFieldReportPdf } from "../dist/fielddocs/reportService.js";
+import { createFieldReportRecord, renderFieldReportPdf } from "../dist/fielddocs/reportService.js";
 
 const tenant = {
   id: "aquatrace",
@@ -112,9 +112,15 @@ test("before/after pairing and vision fallback are wired", async () => {
 });
 
 test("leak checklist and report PDF render", () => {
-  const checklist = createLeakDetectionChecklist({ tenantId: "aquatrace", jobId: "job_1" });
+  const checklist = createLeakDetectionChecklist({
+    tenantId: "aquatrace",
+    jobId: "job_1",
+    itemUpdates: [{ id: "item_2", status: "pass", note: "Skimmer throat inspected." }]
+  });
   assert.equal(checklist.templateId, "leak_detection_checklist_v1");
   assert.equal(checklist.items.length > 0, true);
+  assert.equal(checklist.items[1].status, "pass");
+  assert.equal(checklist.items[1].note, "Skimmer throat inspected.");
   const pdf = renderFieldReportPdf({
     tenantId: "aquatrace",
     jobId: "job_1",
@@ -124,6 +130,30 @@ test("leak checklist and report PDF render", () => {
     checklist
   });
   assert.equal(pdf.subarray(0, 5).toString("utf8"), "%PDF-");
+});
+
+test("native repository persists checklists and posted field report records", async () => {
+  const repository = new MemoryMediaRepository([skimmerPhoto, afterPhoto]);
+  const checklist = await repository.saveChecklist(createLeakDetectionChecklist({
+    tenantId: "aquatrace",
+    jobId: "job_1",
+    itemUpdates: [{ id: "item_6", status: "pass", note: "Before and after photos attached." }]
+  }));
+  const report = await repository.saveReport(createFieldReportRecord({
+    tenantId: "aquatrace",
+    jobId: "job_1",
+    title: "Leak detection field report",
+    findings: ["Skimmer throat leak observed."],
+    mediaIds: [skimmerPhoto.id, afterPhoto.id],
+    checklistId: checklist.id,
+    status: "posted"
+  }));
+  const storedChecklist = await repository.getChecklist("aquatrace", checklist.id);
+  const storedReport = await repository.getReport("aquatrace", report.id);
+  assert.equal(storedChecklist?.items[5].status, "pass");
+  assert.equal(storedReport?.status, "posted");
+  assert.equal(storedReport?.postedAt, storedReport?.createdAt);
+  assert.equal(storedReport?.pdfRef.endsWith(`${report.id}.pdf`), true);
 });
 
 test("Field Docs read tool searches native media repository", async () => {

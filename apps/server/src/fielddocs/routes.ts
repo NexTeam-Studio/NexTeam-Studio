@@ -6,7 +6,7 @@ import { getAdminDb } from "../firebase.js";
 import { createLeakDetectionChecklist } from "./checklists.js";
 import { FirestoreMediaRepository, MemoryMediaRepository, type MediaRepository } from "./mediaRepository.js";
 import { searchMediaWithVisionFallback } from "./photoSearch.js";
-import { renderFieldReportPdf } from "./reportService.js";
+import { createFieldReportRecord, renderFieldReportPdf } from "./reportService.js";
 import { createNativeMediaFromUpload, uploadMediaInputSchema } from "./uploadService.js";
 import { maybeRunVision } from "./visionPipeline.js";
 
@@ -26,7 +26,12 @@ const searchQuerySchema = z.object({
 const checklistInputSchema = z.object({
   tenantId: z.string().min(1),
   jobId: z.string().min(1).optional(),
-  visitId: z.string().min(1).optional()
+  visitId: z.string().min(1).optional(),
+  itemUpdates: z.array(z.object({
+    id: z.string().min(1),
+    status: z.enum(["pending", "pass", "fail", "not_applicable"]),
+    note: z.string().optional()
+  })).optional()
 });
 
 const reportPdfInputSchema = z.object({
@@ -34,7 +39,9 @@ const reportPdfInputSchema = z.object({
   jobId: z.string().min(1),
   title: z.string().min(1),
   findings: z.array(z.string()).default([]),
-  mediaIds: z.array(z.string()).default([])
+  mediaIds: z.array(z.string()).default([]),
+  checklistId: z.string().min(1).optional(),
+  status: z.enum(["draft", "posted"]).default("posted")
 });
 
 const optionalImageSchema = z.object({
@@ -121,10 +128,37 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
     }
   });
 
-  app.post("/api/fielddocs/checklists/leak-detection", (req: Request, res: Response) => {
+  app.post("/api/fielddocs/checklists/leak-detection", async (req: Request, res: Response) => {
     try {
       const input = checklistInputSchema.parse(req.body);
-      res.status(201).json({ ok: true, checklist: createLeakDetectionChecklist(input) });
+      const checklist = await repository().saveChecklist(createLeakDetectionChecklist(input));
+      res.status(201).json({ ok: true, checklist });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/fielddocs/reports", async (req: Request, res: Response) => {
+    try {
+      const input = reportPdfInputSchema.parse(req.body);
+      const repo = repository();
+      const media = (await Promise.all(input.mediaIds.map((id) => repo.getMedia(input.tenantId, id))))
+        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+      const checklist = input.checklistId
+        ? await repo.getChecklist(input.tenantId, input.checklistId)
+        : createLeakDetectionChecklist({ tenantId: input.tenantId, jobId: input.jobId });
+      const report = createFieldReportRecord({
+        tenantId: input.tenantId,
+        jobId: input.jobId,
+        title: input.title,
+        findings: input.findings,
+        mediaIds: media.map((item) => item.id),
+        checklistId: checklist?.id,
+        status: input.status
+      });
+      const saved = await repo.saveReport(report);
+      const pdfUrl = `/api/fielddocs/reports/${encodeURIComponent(saved.id)}/pdf?tenantId=${encodeURIComponent(saved.tenantId)}`;
+      res.status(201).json({ ok: true, report: saved, pdfUrl });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -136,7 +170,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
       const repo = repository();
       const media = (await Promise.all(input.mediaIds.map((id) => repo.getMedia(input.tenantId, id))))
         .filter((item): item is NonNullable<typeof item> => Boolean(item));
-      const checklist = createLeakDetectionChecklist({ tenantId: input.tenantId, jobId: input.jobId });
+      const checklist = input.checklistId
+        ? await repo.getChecklist(input.tenantId, input.checklistId)
+        : createLeakDetectionChecklist({ tenantId: input.tenantId, jobId: input.jobId });
+      const attachedChecklist = checklist ?? undefined;
       res.setHeader("content-type", "application/pdf");
       res.send(renderFieldReportPdf({
         tenantId: input.tenantId,
@@ -144,7 +181,37 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         title: input.title,
         findings: input.findings,
         media,
-        checklist
+        checklist: attachedChecklist
+      }));
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/fielddocs/reports/:id/pdf", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      const reportId = req.params.id;
+      if (!reportId) {
+        throw new RailError("Report id is required.", { provider: "native", op: "renderFieldReportPdf", status: 400 });
+      }
+      const repo = repository();
+      const report = await repo.getReport(tenantId, reportId);
+      if (!report) {
+        throw new RailError(`Field report ${reportId} was not found.`, { provider: "native", op: "renderFieldReportPdf", status: 404 });
+      }
+      const media = (await Promise.all(report.mediaIds.map((id) => repo.getMedia(report.tenantId, id))))
+        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+      const checklist = report.checklistId ? await repo.getChecklist(report.tenantId, report.checklistId) : undefined;
+      const attachedChecklist = checklist ?? undefined;
+      res.setHeader("content-type", "application/pdf");
+      res.send(renderFieldReportPdf({
+        tenantId: report.tenantId,
+        jobId: report.jobId,
+        title: report.title,
+        findings: report.findings,
+        media,
+        checklist: attachedChecklist
       }));
     } catch (error) {
       sendRouteError(res, error);

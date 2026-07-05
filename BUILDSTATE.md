@@ -14,4 +14,4 @@
 | fielddocs | M4 read-side skeleton | done | `receipts/m4/verify.txt`, `receipts/m4/companycam-import-dry-run.json`, `receipts/m4/dependency-install-proof.txt` |
 | fielddocs | M4 upload + checklist + report foundation | done | `receipts/m4/upload-report-slice-verify.txt`, `receipts/m4/upload-report-slice-verify-exit.txt` |
 | fielddocs | M4 live AI caption receipt | done | `receipts/m4/live-vision-receipt.json` |
-| fielddocs | M4 posted report receipt | blocked | Outbound report delivery remains behind explicit approval; no outbound report delivery attempted. |
+| fielddocs | M4 native posted report receipt | done | `receipts/m4/native-report-post-receipt.json`, `receipts/m4/native-report-post-output.txt`, `receipts/m4/native-field-report.pdf`; outbound report delivery remains approval-gated and was not attempted. |

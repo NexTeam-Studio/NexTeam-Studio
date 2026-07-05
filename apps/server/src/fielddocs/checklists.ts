@@ -22,6 +22,14 @@ export const checklistInstanceSchema = z.object({
 
 export type ChecklistInstance = z.infer<typeof checklistInstanceSchema>;
 
+export const checklistItemUpdateSchema = z.object({
+  id: z.string().min(1),
+  status: z.enum(["pending", "pass", "fail", "not_applicable"]),
+  note: z.string().optional()
+});
+
+export type ChecklistItemUpdate = z.infer<typeof checklistItemUpdateSchema>;
+
 export const leakDetectionChecklistTemplate = {
   id: "leak_detection_checklist_v1",
   title: "Leak Detection Checklist",
@@ -36,7 +44,13 @@ export const leakDetectionChecklistTemplate = {
   ]
 } as const;
 
-export function createLeakDetectionChecklist(input: { tenantId: string; jobId?: string | undefined; visitId?: string | undefined }): ChecklistInstance {
+export function createLeakDetectionChecklist(input: {
+  tenantId: string;
+  jobId?: string | undefined;
+  visitId?: string | undefined;
+  itemUpdates?: ChecklistItemUpdate[] | undefined;
+}): ChecklistInstance {
+  const updates = new Map((input.itemUpdates ?? []).map((item) => [item.id, item]));
   return checklistInstanceSchema.parse({
     id: `checklist_${randomUUID()}`,
     tenantId: input.tenantId,
@@ -44,12 +58,17 @@ export function createLeakDetectionChecklist(input: { tenantId: string; jobId?: 
     jobId: input.jobId,
     visitId: input.visitId,
     title: leakDetectionChecklistTemplate.title,
-    items: leakDetectionChecklistTemplate.items.map((label, index) => ({
-      id: `item_${index + 1}`,
-      label,
-      required: true,
-      status: "pending"
-    })),
+    items: leakDetectionChecklistTemplate.items.map((label, index) => {
+      const id = `item_${index + 1}`;
+      const update = updates.get(id);
+      return {
+        id,
+        label,
+        required: true,
+        status: update?.status ?? "pending",
+        note: update?.note
+      };
+    }),
     createdAt: new Date().toISOString()
   }) as ChecklistInstance;
 }

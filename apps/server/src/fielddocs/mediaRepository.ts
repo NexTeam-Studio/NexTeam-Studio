@@ -1,18 +1,28 @@
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
 import { mediaSchema, RailError, type Media } from "@nexteam/core";
+import { checklistInstanceSchema, type ChecklistInstance } from "./checklists.js";
+import { fieldReportRecordSchema, type FieldReportRecord } from "./reportService.js";
 
 export interface MediaRepository {
   listMedia(tenantId: string): Promise<Media[]>;
   getMedia(tenantId: string, id: string): Promise<Media | null>;
   saveMedia(media: Media): Promise<Media>;
   updateMedia(id: string, patch: Partial<Media>): Promise<Media>;
+  saveChecklist(checklist: ChecklistInstance): Promise<ChecklistInstance>;
+  getChecklist(tenantId: string, id: string): Promise<ChecklistInstance | null>;
+  saveReport(report: FieldReportRecord): Promise<FieldReportRecord>;
+  getReport(tenantId: string, id: string): Promise<FieldReportRecord | null>;
 }
 
 export class MemoryMediaRepository implements MediaRepository {
   private readonly records: Media[];
+  private readonly checklists: ChecklistInstance[];
+  private readonly reports: FieldReportRecord[];
 
-  constructor(records: Media[] = []) {
+  constructor(records: Media[] = [], checklists: ChecklistInstance[] = [], reports: FieldReportRecord[] = []) {
     this.records = [...records];
+    this.checklists = [...checklists];
+    this.reports = [...reports];
   }
 
   async listMedia(tenantId: string): Promise<Media[]> {
@@ -40,6 +50,24 @@ export class MemoryMediaRepository implements MediaRepository {
     const next = mediaSchema.parse({ ...existing, ...patch }) as Media;
     this.records[index] = next;
     return next;
+  }
+
+  async saveChecklist(checklist: ChecklistInstance): Promise<ChecklistInstance> {
+    this.checklists.push(checklist);
+    return checklistInstanceSchema.parse(checklist) as ChecklistInstance;
+  }
+
+  async getChecklist(tenantId: string, id: string): Promise<ChecklistInstance | null> {
+    return this.checklists.find((record) => record.tenantId === tenantId && record.id === id) ?? null;
+  }
+
+  async saveReport(report: FieldReportRecord): Promise<FieldReportRecord> {
+    this.reports.push(report);
+    return fieldReportRecordSchema.parse(report) as FieldReportRecord;
+  }
+
+  async getReport(tenantId: string, id: string): Promise<FieldReportRecord | null> {
+    return this.reports.find((record) => record.tenantId === tenantId && record.id === id) ?? null;
   }
 }
 
@@ -78,5 +106,33 @@ export class FirestoreMediaRepository implements MediaRepository {
     const next = mediaSchema.parse({ ...snapshot.data(), ...patch }) as Media;
     await ref.set(asDocumentData(next));
     return next;
+  }
+
+  async saveChecklist(checklist: ChecklistInstance): Promise<ChecklistInstance> {
+    await this.db.collection("checklists").doc(checklist.id).set(asDocumentData(checklist));
+    return checklistInstanceSchema.parse(checklist) as ChecklistInstance;
+  }
+
+  async getChecklist(tenantId: string, id: string): Promise<ChecklistInstance | null> {
+    const snapshot = await this.db.collection("checklists").doc(id).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+    const parsed = checklistInstanceSchema.parse(snapshot.data()) as ChecklistInstance;
+    return parsed.tenantId === tenantId ? parsed : null;
+  }
+
+  async saveReport(report: FieldReportRecord): Promise<FieldReportRecord> {
+    await this.db.collection("fieldReports").doc(report.id).set(asDocumentData(report));
+    return fieldReportRecordSchema.parse(report) as FieldReportRecord;
+  }
+
+  async getReport(tenantId: string, id: string): Promise<FieldReportRecord | null> {
+    const snapshot = await this.db.collection("fieldReports").doc(id).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+    const parsed = fieldReportRecordSchema.parse(snapshot.data()) as FieldReportRecord;
+    return parsed.tenantId === tenantId ? parsed : null;
   }
 }

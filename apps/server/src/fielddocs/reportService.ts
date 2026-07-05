@@ -1,5 +1,7 @@
 import type { Media } from "@nexteam/core";
 import type { ChecklistInstance } from "./checklists.js";
+import { randomUUID } from "node:crypto";
+import { z } from "zod";
 
 export interface FieldReportInput {
   tenantId: string;
@@ -10,13 +12,59 @@ export interface FieldReportInput {
   checklist?: ChecklistInstance | undefined;
 }
 
+export const fieldReportRecordSchema = z.object({
+  id: z.string().min(1),
+  tenantId: z.string().min(1),
+  jobId: z.string().min(1),
+  title: z.string().min(1),
+  findings: z.array(z.string()),
+  mediaIds: z.array(z.string()),
+  checklistId: z.string().optional(),
+  pdfRef: z.string().min(1),
+  status: z.enum(["draft", "posted"]),
+  createdAt: z.string(),
+  postedAt: z.string().optional()
+});
+
+export type FieldReportRecord = z.infer<typeof fieldReportRecordSchema>;
+
+export function createFieldReportRecord(input: {
+  tenantId: string;
+  jobId: string;
+  title: string;
+  findings: string[];
+  mediaIds: string[];
+  checklistId?: string | undefined;
+  status?: "draft" | "posted" | undefined;
+}): FieldReportRecord {
+  const id = `report_${randomUUID()}`;
+  const createdAt = new Date().toISOString();
+  const status = input.status ?? "posted";
+  const base = {
+    id,
+    tenantId: input.tenantId,
+    jobId: input.jobId,
+    title: input.title,
+    findings: input.findings,
+    mediaIds: input.mediaIds,
+    pdfRef: `native://tenants/${input.tenantId}/fieldReports/${id}.pdf`,
+    status,
+    createdAt
+  };
+  return fieldReportRecordSchema.parse({
+    ...base,
+    ...(input.checklistId ? { checklistId: input.checklistId } : {}),
+    ...(status === "posted" ? { postedAt: createdAt } : {})
+  }) as FieldReportRecord;
+}
+
 function escapePdfText(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
 
 function reportLines(input: FieldReportInput): string[] {
   return [
-    "NexTeam Field Report",
+    "Aquatrace Field Documentation Report",
     `Title: ${input.title}`,
     `Tenant: ${input.tenantId}`,
     `Job: ${input.jobId}`,
@@ -28,7 +76,12 @@ function reportLines(input: FieldReportInput): string[] {
     ...(input.checklist?.items.map((item) => `- ${item.label}: ${item.status}`) ?? ["- No checklist attached"]),
     "",
     "Media:",
-    ...input.media.map((item) => `- ${item.id}: ${item.aiCaption ?? item.storageRef}`)
+    ...input.media.map((item) => `- ${item.id}: ${item.aiCaption ?? item.storageRef}`),
+    "",
+    "Compliance Blocks:",
+    "- Field documentation only; no engineering, legal, or regulatory determination.",
+    "- Photos, checklist notes, and findings remain subject to operator review.",
+    "- VGB documentation template language is informational and approval-gated before delivery."
   ];
 }
 
