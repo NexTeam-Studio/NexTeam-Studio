@@ -256,6 +256,119 @@ test("Nexi report prompts preload CompanyCam documents with the requested entity
   assert.equal(result.sources.length, 1);
 });
 
+test("Nexi issue prompts preload both Jobber and CompanyCam rails", async () => {
+  const calls = [];
+  const toolNames = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What was the issue at Deborah Justice?" }],
+    tools: [
+      {
+        name: "getJobDetail",
+        description: "Read job.",
+        inputSchema: z.object({ nameQuery: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getJobDetail", args]);
+          return {
+            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", client: { name: "Deborah Justice" } } },
+            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
+          };
+        }
+      },
+      {
+        name: "getDocuments",
+        description: "Read documents.",
+        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getDocuments", args]);
+          return {
+            result: { reports: [{ fields: { reportFindings: "Leak at primary spa circulation line." } }] },
+            sources: [{ rail: "companycam", ref: "doc_1", label: "CompanyCam document Deborah Justice report" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "Jobber identifies the job and CompanyCam says the issue was the primary spa circulation line." }],
+        usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
+      }), { status: 200 });
+    }
+  });
+  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
+  assert.equal(toolNames[0][1].nameQuery, "What was the issue at Deborah Justice?");
+  assert.equal(toolNames[1][1].projectQuery, "Deborah Justice");
+  assert.match(calls[0].messages.at(-1).content, /Verified getJobDetail result/);
+  assert.match(calls[0].messages.at(-1).content, /Verified getDocuments result/);
+  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
+  assert.equal(result.sources.some((source) => source.rail === "companycam"), true);
+});
+
+test("Nexi technician prompts preload Jobber plus CompanyCam documents and photos", async () => {
+  const toolNames = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "Who was the technician for Deborah Justice?" }],
+    tools: [
+      {
+        name: "getJobDetail",
+        description: "Read job.",
+        inputSchema: z.object({ nameQuery: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getJobDetail", args]);
+          return {
+            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", client: { name: "Deborah Justice" } } },
+            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
+          };
+        }
+      },
+      {
+        name: "getDocuments",
+        description: "Read documents.",
+        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getDocuments", args]);
+          return {
+            result: { reports: [{ textSnippet: "Technician: Cody" }] },
+            sources: [{ rail: "companycam", ref: "doc_1", label: "CompanyCam document Deborah Justice report" }]
+          };
+        }
+      },
+      {
+        name: "getPhotos",
+        description: "Read photos.",
+        inputSchema: z.object({ projectQuery: z.string() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getPhotos", args]);
+          return {
+            result: { media: [{ id: "photo_1", capturedBy: "Cody" }] },
+            sources: [{ rail: "companycam", ref: "photo_1", label: "CompanyCam photo photo_1" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "CompanyCam indicates Cody was the technician." }],
+      usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments", "getPhotos"]);
+  assert.equal(toolNames[1][1].projectQuery, "Deborah Justice");
+  assert.equal(toolNames[2][1].projectQuery, "Deborah Justice");
+  assert.equal(result.toolRuns.length, 3);
+  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
+  assert.equal(result.sources.filter((source) => source.rail === "companycam").length, 2);
+});
+
 test("Nexi service persists failureLog for source-enforced failures", async () => {
   const repository = new MemoryNexiRepository();
   const result = await answerNexiMessage({

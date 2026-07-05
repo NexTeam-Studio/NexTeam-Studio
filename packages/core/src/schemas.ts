@@ -177,6 +177,7 @@ export const mediaSchema = z.object({
   }).optional(),
   aiTags: z.array(z.string()),
   aiCaption: z.string().optional(),
+  capturedBy: z.string().optional(),
   externalIds: z.object({ companycam: z.string().optional() }).optional()
 });
 

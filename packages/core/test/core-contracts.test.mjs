@@ -9,9 +9,11 @@ test("Media schema rejects exposed third-party URL fields", () => {
     type: "photo",
     storageRef: "companycam:123",
     aiTags: [],
+    capturedBy: "Cody",
     externalIds: { companycam: "123" }
   });
   assert.equal(parsed.storageRef, "companycam:123");
+  assert.equal(parsed.capturedBy, "Cody");
   assert.equal("sourceUrlNeverExposed" in parsed, false);
 });
 

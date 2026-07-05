@@ -81,6 +81,9 @@ app.get("/api/media/:id", async (req: Request, res: Response) => {
     const companyCam = CompanyCamAdapter.fromEnv(process.env);
     const binary = await companyCam.fetchBinary(mediaId);
     res.setHeader("content-type", binary.mime);
+    if (req.query.download === "1") {
+      res.setHeader("content-disposition", `attachment; filename="companycam-${mediaId.replace(/[^a-z0-9_-]/gi, "_")}.jpg"`);
+    }
     if (binary.stream instanceof Readable) {
       binary.stream.pipe(res);
       return;

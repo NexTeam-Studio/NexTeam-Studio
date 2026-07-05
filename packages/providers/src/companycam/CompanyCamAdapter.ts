@@ -44,6 +44,23 @@ function mapProject(raw: unknown): ProjectRef {
   };
 }
 
+function personName(raw: unknown): string {
+  const record = asRecord(raw);
+  return text(record.name)
+    || [text(record.first_name), text(record.last_name)].filter(Boolean).join(" ")
+    || text(record.email);
+}
+
+function pickCapturedBy(record: Record<string, unknown>): string {
+  for (const key of ["creator", "created_by", "user", "author", "employee"]) {
+    const name = personName(record[key]);
+    if (name) {
+      return name;
+    }
+  }
+  return "";
+}
+
 function mapMedia(raw: unknown, tenantId: string, projectId: string): Media {
   const record = asRecord(raw);
   const id = text(record.id);
@@ -63,6 +80,11 @@ function mapMedia(raw: unknown, tenantId: string, projectId: string): Media {
   const description = text(record.description);
   if (description) {
     media.aiCaption = description;
+  }
+  const capturedBy = pickCapturedBy(record);
+  if (capturedBy) {
+    media.capturedBy = capturedBy;
+    media.aiTags = [...media.aiTags, `captured_by:${capturedBy}`];
   }
   return media;
 }

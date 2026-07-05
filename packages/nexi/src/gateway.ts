@@ -532,7 +532,7 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.to ??= fallback.to;
   }
   if (toolName === "getPhotos" && !record.projectQuery) {
-    record.projectQuery = photoQueryFromText(userText);
+    record.projectQuery = entityQueryFromText(userText) || photoQueryFromText(userText);
   }
   if (toolName === "getDocuments") {
     if (!record.projectQuery) {
@@ -574,11 +574,29 @@ function looksLikeScheduleQuestion(text: string): boolean {
     && /\b(?:what(?:'s| is)\s+on|what\s+do\s+we\s+have|who\s+is\s+scheduled|where\s+(?:am|are)\s+(?:i|we)|anything\s+on)\b/.test(lower);
 }
 
-function deterministicToolName(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>): string | null {
+function uniqueToolNames(names: string[], toolsByName: Map<string, NexiTool>): string[] {
+  return [...new Set(names)].filter((name) => toolsByName.has(name));
+}
+
+function looksLikeIssueQuestion(lower: string): boolean {
+  return /\b(?:issue|problem|finding|findings|result|results|leak detection)\b/.test(lower);
+}
+
+function looksLikeTechnicianQuestion(lower: string): boolean {
+  return /\b(?:technician|tech|who was there|who went|who did|who performed)\b/.test(lower);
+}
+
+function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>): string[] {
   const userText = latestUserText(messages);
   const lower = userText.toLowerCase();
+  if (looksLikeTechnicianQuestion(lower)) {
+    return uniqueToolNames(["getJobDetail", "getDocuments", "getPhotos"], toolsByName);
+  }
+  if (looksLikeIssueQuestion(lower)) {
+    return uniqueToolNames(["getJobDetail", "getDocuments"], toolsByName);
+  }
   if ((lower.includes("photo") || lower.includes("picture") || lower.includes("image")) && toolsByName.has("getPhotos")) {
-    return "getPhotos";
+    return ["getPhotos"];
   }
   if (
     toolsByName.has("getDocuments")
@@ -592,33 +610,45 @@ function deterministicToolName(messages: GatewayMessage[], toolsByName: Map<stri
       || lower.includes("leak detection")
     )
   ) {
-    return "getDocuments";
+    return ["getDocuments"];
   }
   if (lower.includes("gallon") && toolsByName.has("lookupSiteJobBlueprintField")) {
-    return "lookupSiteJobBlueprintField";
+    return ["lookupSiteJobBlueprintField"];
   }
   if (looksLikeScheduleQuestion(userText) && toolsByName.has("getSchedule")) {
-    return "getSchedule";
+    return ["getSchedule"];
   }
-  return null;
+  return [];
 }
 
-async function runDeterministicTool(input: {
+async function runDeterministicTools(input: {
   tenant: Tenant;
   messages: GatewayMessage[];
   toolsByName: Map<string, NexiTool>;
-}): Promise<ToolRunTrace | null> {
-  const toolName = deterministicToolName(input.messages, input.toolsByName);
-  if (!toolName) {
-    return null;
+}): Promise<ToolRunTrace[]> {
+  const toolNames = deterministicToolNames(input.messages, input.toolsByName);
+  const runs: ToolRunTrace[] = [];
+  for (const toolName of toolNames) {
+    const tool = input.toolsByName.get(toolName);
+    if (!tool) {
+      continue;
+    }
+    try {
+      const args = tool.inputSchema.parse(normalizeToolInput(tool.name, {}, input.messages, input.tenant));
+      const result = await tool.handler(input.tenant, args);
+      runs.push({ name: tool.name, result: result.result, sources: result.sources });
+    } catch (error) {
+      if (toolNames.length === 1) {
+        throw error;
+      }
+      runs.push({
+        name: tool.name,
+        result: { error: error instanceof Error ? error.message : "Tool failed before returning source data." },
+        sources: []
+      });
+    }
   }
-  const tool = input.toolsByName.get(toolName);
-  if (!tool) {
-    return null;
-  }
-  const args = tool.inputSchema.parse(normalizeToolInput(tool.name, {}, input.messages, input.tenant));
-  const result = await tool.handler(input.tenant, args);
-  return { name: tool.name, result: result.result, sources: result.sources };
+  return runs;
 }
 
 function toolUsesFromContent(content: AnthropicContentBlock[]): AnthropicToolUseBlock[] {
@@ -684,20 +714,20 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
   const toolRuns: ToolRunTrace[] = [];
   const rawIterations: unknown[] = [];
   const maxToolIterations = request.maxToolIterations ?? MAX_TOOL_ITERATIONS;
-  const deterministicRun = await runDeterministicTool({ tenant: request.tenant, messages, toolsByName });
-  if (deterministicRun) {
-    sources = [...sources, ...deterministicRun.sources];
-    toolRuns.push(deterministicRun);
+  const deterministicRuns = await runDeterministicTools({ tenant: request.tenant, messages, toolsByName });
+  if (deterministicRuns.length > 0) {
+    sources = [...sources, ...deterministicRuns.flatMap((run) => run.sources)];
+    toolRuns.push(...deterministicRuns);
+    const toolNames = deterministicRuns.map((run) => run.name).join(", ");
     messages.push({
       role: "assistant",
-      content: `I found verified ${deterministicRun.name} source data and will use it for the final answer.`
+      content: `I found verified source data from ${toolNames} and will use it for the final answer.`
     });
     messages.push({
       role: "user",
       content: [
-        `Verified ${deterministicRun.name} result:`,
-        toolResultContent(deterministicRun.result),
-        "Answer the original user request using only this verified result and keep the source labels attached in the API response."
+        ...deterministicRuns.flatMap((run) => [`Verified ${run.name} result:`, toolResultContent(run.result)]),
+        "Answer the original user request using only these verified results. For job issue and technician questions, compare Jobber and CompanyCam rails before answering, and say clearly when one rail has no matching data. Keep the source labels attached in the API response."
       ].join("\n")
     });
   }
@@ -710,7 +740,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         fetchFn: request.fetchFn,
         system: request.system,
         messages,
-        tools: deterministicRun ? [] : toolDefinitions,
+        tools: deterministicRuns.length > 0 ? [] : toolDefinitions,
         maxTokens: request.maxTokens
       });
     } catch (error) {

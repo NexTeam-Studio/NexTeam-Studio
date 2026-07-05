@@ -133,6 +133,7 @@ export interface Media {
   exif?: { gps?: { lat: number; lng: number } | undefined; ts?: string | undefined } | undefined;
   aiTags: string[];
   aiCaption?: string | undefined;
+  capturedBy?: string | undefined;
   externalIds?: { companycam?: string | undefined } | undefined;
   sourceUrlNeverExposed?: never;
 }
