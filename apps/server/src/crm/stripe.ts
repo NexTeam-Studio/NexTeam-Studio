@@ -73,6 +73,7 @@ export async function createStripeCheckoutSession(
   const origin = originFromRequest(req, env);
   const body = new URLSearchParams({
     mode: "payment",
+    "payment_method_types[0]": "card",
     success_url: `${origin}/portal/invoices/${encodeURIComponent(invoice.id)}/paid?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/portal/invoices/${encodeURIComponent(invoice.id)}?tenantId=${encodeURIComponent(invoice.tenantId)}`,
     client_reference_id: invoice.id,

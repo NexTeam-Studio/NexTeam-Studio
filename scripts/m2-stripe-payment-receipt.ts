@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { chromium } from "playwright";
+import { chromium, type Locator } from "playwright";
+import { getAdminDb } from "../apps/server/src/firebase.js";
 
 const baseUrl = (process.env.STAGING_BASE_URL?.trim() || "https://nexteam-studio-staging.up.railway.app").replace(/\/$/, "");
 const receiptPath = "receipts/m2/stripe-payment-receipt.json";
@@ -21,6 +22,57 @@ function requireString(value: unknown, label: string): string {
     throw new Error(`${label} was not returned.`);
   }
   return value;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function fillFirst(candidates: Locator[], value: string, label: string): Promise<void> {
+  for (const candidate of candidates) {
+    try {
+      const locator = candidate.first();
+      await locator.waitFor({ state: "visible", timeout: 7_500 });
+      await locator.fill(value, { timeout: 7_500 });
+      return;
+    } catch {
+      // Try the next selector shape; Stripe Checkout changes labels between releases.
+    }
+  }
+  throw new Error(`Could not find Stripe Checkout field: ${label}`);
+}
+
+async function waitForPaidReceipt(invoiceId: string): Promise<Record<string, unknown>> {
+  const db = getAdminDb();
+  if (!db) {
+    throw new Error("Firebase Admin is required to verify invoice.paid receipt.");
+  }
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const invoiceSnapshot = await db.collection("invoices").doc(invoiceId).get();
+    const invoice = invoiceSnapshot.data() as { status?: string; paidAt?: string; externalIds?: { stripe?: string } } | undefined;
+    const eventsSnapshot = await db.collection("events")
+      .where("tenantId", "==", "aquatrace")
+      .where("type", "==", "invoice.paid")
+      .get();
+    const event = eventsSnapshot.docs
+      .map((doc) => doc.data() as { id?: string; payload?: { invoiceId?: string; stripeSessionId?: string }; ts?: string })
+      .find((candidate) => candidate.payload?.invoiceId === invoiceId);
+    if (invoice?.status === "paid" && event) {
+      return {
+        invoiceStatus: invoice.status,
+        paidAt: invoice.paidAt ?? null,
+        stripeSessionIdStored: Boolean(invoice.externalIds?.stripe),
+        eventId: event.id ?? null,
+        eventTs: event.ts ?? null,
+        eventType: "invoice.paid",
+        eventStripeSessionIdStored: Boolean(event.payload?.stripeSessionId)
+      };
+    }
+    await sleep(2_000);
+  }
+  throw new Error(`Timed out waiting for invoice.paid event for ${invoiceId}.`);
 }
 
 const version = await fetchJson("/api/version");
@@ -84,18 +136,38 @@ const checkoutUrl = requireString(asRecord(asRecord(checkout.json).checkout).url
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-await page.goto(checkoutUrl, { waitUntil: "networkidle" });
-await page.getByLabel(/email/i).fill("stripe-receipt@example.test");
-await page.getByLabel(/card number/i).fill("4242424242424242");
-await page.getByLabel(/expiration/i).fill("1235");
-await page.getByLabel(/cvc/i).fill("123");
-await page.getByLabel(/cardholder name|name on card|full name/i).fill("Stripe Receipt Test");
-await page.getByRole("button", { name: /pay|submit/i }).click();
+await page.goto(checkoutUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+await fillFirst([
+  page.getByLabel(/email/i),
+  page.locator("input[type='email']"),
+  page.locator("input[name='email']")
+], "stripe-receipt@example.test", "email");
+await fillFirst([
+  page.getByLabel(/card number/i),
+  page.getByPlaceholder(/1234|card number/i),
+  page.locator("input[name='cardNumber']")
+], "4242424242424242", "card number");
+await fillFirst([
+  page.getByLabel(/expiration|expiry/i),
+  page.getByPlaceholder(/MM\s*\/\s*YY|MM \/ YY/i),
+  page.locator("input[name='cardExpiry']")
+], "1235", "expiration");
+await fillFirst([
+  page.getByLabel(/cvc|security/i),
+  page.getByPlaceholder(/CVC|CVV/i),
+  page.locator("input[name='cardCvc']")
+], "123", "cvc");
+await fillFirst([
+  page.getByLabel(/cardholder name|name on card|full name/i),
+  page.locator("input[name='billingName']"),
+  page.locator("input[name='name']")
+], "Stripe Receipt Test", "cardholder name");
+await page.getByRole("button", { name: /pay|submit/i }).click({ timeout: 30_000 });
 await page.waitForURL(/\/portal\/invoices\/.*\/paid/, { timeout: 60000 });
 const finalUrl = page.url();
 await browser.close();
 
-await new Promise((resolve) => setTimeout(resolve, 3000));
+const paidReceipt = await waitForPaidReceipt(invoiceId);
 
 await mkdir("receipts/m2", { recursive: true });
 const receipt = {
@@ -115,8 +187,8 @@ const receipt = {
   checkout,
   stripeTestCard: "4242",
   finalUrl,
-  eventExpected: "invoice.paid"
+  paidReceipt
 };
 
 await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`);
-console.log(JSON.stringify({ ok: true, receiptPath, invoiceId, quoteId, eventExpected: "invoice.paid" }, null, 2));
+console.log(JSON.stringify({ ok: true, receiptPath, invoiceId, quoteId, eventType: paidReceipt.eventType }, null, 2));
