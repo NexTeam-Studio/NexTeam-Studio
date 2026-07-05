@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { approvalItemSchema, mediaSchema, nexiBlueprintSchema, siteJobBlueprintSchema } from "../dist/index.js";
+import { approvalItemSchema, jobSchema, mediaSchema, nexiBlueprintSchema, siteJobBlueprintSchema } from "../dist/index.js";
 
 test("Media schema rejects exposed third-party URL fields", () => {
   const parsed = mediaSchema.parse({
@@ -47,5 +47,21 @@ test("Approval item defaults can park outbound execution", () => {
     createdBy: "nexi"
   });
   assert.equal(item.status, "pending");
+});
+
+test("Job schema preserves scheduled visit date fields", () => {
+  const job = jobSchema.parse({
+    id: "job_1",
+    tenantId: "aquatrace",
+    clientId: "client_1",
+    status: "scheduled",
+    title: "Monday leak detection",
+    startAt: "2026-07-06T04:00:00.000Z",
+    endAt: "2026-07-07T03:59:59.000Z",
+    lineItems: [],
+    totals: { subtotal: 0, tax: 0, total: 0 }
+  });
+  assert.equal(job.startAt, "2026-07-06T04:00:00.000Z");
+  assert.equal(job.endAt, "2026-07-07T03:59:59.000Z");
 });
 

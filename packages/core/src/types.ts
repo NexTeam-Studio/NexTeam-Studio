@@ -104,6 +104,8 @@ export interface Job {
   propertyId?: ID;
   status: JobStatus;
   title: string;
+  startAt?: string | undefined;
+  endAt?: string | undefined;
   lineItems: LineItem[];
   totals: { subtotal: number; tax: number; total: number };
   externalIds?: { jobber?: string | undefined } | undefined;

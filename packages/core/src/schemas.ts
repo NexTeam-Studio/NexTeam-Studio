@@ -112,6 +112,8 @@ export const jobSchema = z.object({
   propertyId: idSchema.optional(),
   status: jobStatusSchema,
   title: z.string(),
+  startAt: z.string().optional(),
+  endAt: z.string().optional(),
   lineItems: z.array(lineItemSchema),
   totals: z.object({ subtotal: z.number(), tax: z.number(), total: z.number() }),
   externalIds: z.object({ jobber: z.string().optional() }).optional()

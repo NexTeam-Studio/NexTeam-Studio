@@ -95,6 +95,93 @@ test("Nexi tool loop preloads obvious tools and records cache metrics", async ()
   assert.equal(usageLog.records[0].usage.cacheReadInputTokens, 64);
 });
 
+test("Nexi schedule prompts parse requested calendar dates in tenant timezone", async () => {
+  const calls = [];
+  let parsedToolArgs = null;
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What's on Monday July 6, 2026?" }],
+    tools: [{
+      name: "getSchedule",
+      description: "Read schedule.",
+      inputSchema: z.object({ from: z.string(), to: z.string() }),
+      inputJsonSchema: {
+        type: "object",
+        properties: { from: { type: "string" }, to: { type: "string" } },
+        required: ["from", "to"]
+      },
+      handler: async (_tenant, args) => {
+        parsedToolArgs = args;
+        return {
+          result: {
+            jobs: [{
+              id: "job_1",
+              title: "Rachel Payne leak detection",
+              startAt: "2026-07-06T04:00:00.000Z",
+              endAt: "2026-07-07T03:59:59.000Z"
+            }]
+          },
+          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne leak detection" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "Rachel Payne is scheduled on Monday July 6." }],
+        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+      }), { status: 200 });
+    }
+  });
+  assert.equal(calls.length, 1);
+  assert.deepEqual(parsedToolArgs, {
+    from: "2026-07-06T04:00:00.000Z",
+    to: "2026-07-07T04:00:00.000Z"
+  });
+  assert.match(calls[0].messages.at(-1).content, /Verified getSchedule result/);
+  assert.equal(result.sources.length, 1);
+});
+
+test("Nexi does not force schedule lookup for meta questions that mention today", async () => {
+  const calls = [];
+  let toolCalled = false;
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What sources do you use today?" }],
+    tools: [{
+      name: "getSchedule",
+      description: "Read schedule.",
+      inputSchema: z.object({ from: z.string(), to: z.string() }),
+      handler: async () => {
+        toolCalled = true;
+        return {
+          result: { jobs: [] },
+          sources: [{ rail: "jobber", ref: "jobs", label: "Jobber jobs GraphQL read" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "I use Jobber, CompanyCam, and native SiteJobBlueprint sources." }],
+        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+      }), { status: 200 });
+    }
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].tools.length, 1);
+  assert.equal(toolCalled, false);
+  assert.equal(result.answer, "I use Jobber, CompanyCam, and native SiteJobBlueprint sources.");
+});
+
 test("Nexi photo prompts extract the CompanyCam project query", async () => {
   const calls = [];
   let parsedToolArgs = null;

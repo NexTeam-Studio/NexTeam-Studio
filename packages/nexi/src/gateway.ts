@@ -296,11 +296,209 @@ function latestUserText(messages: GatewayMessage[]): string {
   return "";
 }
 
-function todayWindow(): { from: string; to: string } {
-  const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+const DEFAULT_TIME_ZONE = "America/New_York";
+const WEEKDAY_INDEX: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6
+};
+const MONTH_INDEX: Record<string, number> = {
+  january: 0,
+  jan: 0,
+  february: 1,
+  feb: 1,
+  march: 2,
+  mar: 2,
+  april: 3,
+  apr: 3,
+  may: 4,
+  june: 5,
+  jun: 5,
+  july: 6,
+  jul: 6,
+  august: 7,
+  aug: 7,
+  september: 8,
+  sept: 8,
+  sep: 8,
+  october: 9,
+  oct: 9,
+  november: 10,
+  nov: 10,
+  december: 11,
+  dec: 11
+};
+const MONTH_PATTERN = Object.keys(MONTH_INDEX).sort((left, right) => right.length - left.length).join("|");
+const WEEKDAY_PATTERN = Object.keys(WEEKDAY_INDEX).join("|");
+
+interface CalendarDate {
+  year: number;
+  monthIndex: number;
+  day: number;
+}
+
+interface ZonedDateTimeParts extends CalendarDate {
+  hour: number;
+  minute: number;
+  second: number;
+}
+
+function safeTimeZone(timeZone?: string): string {
+  const candidate = timeZone?.trim() || DEFAULT_TIME_ZONE;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: candidate }).format(new Date());
+    return candidate;
+  } catch {
+    return DEFAULT_TIME_ZONE;
+  }
+}
+
+function zonedParts(date: Date, timeZone?: string): ZonedDateTimeParts {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: safeTimeZone(timeZone),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23"
+  });
+  const parts = formatter.formatToParts(date);
+  const readPart = (type: Intl.DateTimeFormatPartTypes): number => Number(parts.find((part) => part.type === type)?.value ?? "0");
+  const year = readPart("year");
+  const month = readPart("month");
+  const day = readPart("day");
+  if (!year || !month || !day) {
+    return {
+      year: date.getUTCFullYear(),
+      monthIndex: date.getUTCMonth(),
+      day: date.getUTCDate(),
+      hour: date.getUTCHours(),
+      minute: date.getUTCMinutes(),
+      second: date.getUTCSeconds()
+    };
+  }
+  return {
+    year,
+    monthIndex: month - 1,
+    day,
+    hour: readPart("hour"),
+    minute: readPart("minute"),
+    second: readPart("second")
+  };
+}
+
+function timeZoneOffsetMs(date: Date, timeZone?: string): number {
+  const parts = zonedParts(date, timeZone);
+  const asUtc = Date.UTC(parts.year, parts.monthIndex, parts.day, parts.hour, parts.minute, parts.second);
+  return asUtc - date.getTime();
+}
+
+function zonedDateTimeToUtc(parts: CalendarDate, timeZone?: string): Date {
+  const guess = new Date(Date.UTC(parts.year, parts.monthIndex, parts.day, 0, 0, 0, 0));
+  const first = new Date(guess.getTime() - timeZoneOffsetMs(guess, timeZone));
+  return new Date(guess.getTime() - timeZoneOffsetMs(first, timeZone));
+}
+
+function normalizeCalendarDate(year: number, monthIndex: number, day: number): CalendarDate {
+  const date = new Date(Date.UTC(year, monthIndex, day, 12, 0, 0, 0));
+  return { year: date.getUTCFullYear(), monthIndex: date.getUTCMonth(), day: date.getUTCDate() };
+}
+
+function compareCalendarDates(left: CalendarDate, right: CalendarDate): number {
+  const leftValue = Date.UTC(left.year, left.monthIndex, left.day);
+  const rightValue = Date.UTC(right.year, right.monthIndex, right.day);
+  return leftValue - rightValue;
+}
+
+function addCalendarDays(date: CalendarDate, days: number): CalendarDate {
+  return normalizeCalendarDate(date.year, date.monthIndex, date.day + days);
+}
+
+function dateWindow(date: CalendarDate, timeZone?: string): { from: string; to: string } {
+  const start = zonedDateTimeToUtc(date, timeZone);
+  const end = zonedDateTimeToUtc(addCalendarDays(date, 1), timeZone);
   return { from: start.toISOString(), to: end.toISOString() };
+}
+
+function todayWindow(timeZone?: string): { from: string; to: string } {
+  const today = zonedParts(new Date(), timeZone);
+  return dateWindow({ year: today.year, monthIndex: today.monthIndex, day: today.day }, timeZone);
+}
+
+function thisYearOrNext(monthIndex: number, day: number, timeZone?: string): CalendarDate {
+  const today = zonedParts(new Date(), timeZone);
+  let candidate = normalizeCalendarDate(today.year, monthIndex, day);
+  if (compareCalendarDates(candidate, today) < 0) {
+    candidate = normalizeCalendarDate(today.year + 1, monthIndex, day);
+  }
+  return candidate;
+}
+
+function parseYear(raw: string | undefined): number | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  const year = Number(raw);
+  if (!Number.isInteger(year)) {
+    return undefined;
+  }
+  return year < 100 ? 2000 + year : year;
+}
+
+export function scheduleWindowFromText(text: string, timeZone?: string): { from: string; to: string } | null {
+  const lower = text.toLowerCase();
+  if (/\btomorrow\b/.test(lower)) {
+    const today = zonedParts(new Date(), timeZone);
+    return dateWindow(addCalendarDays(today, 1), timeZone);
+  }
+  if (/\b(?:today|tonight)\b/.test(lower)) {
+    return todayWindow(timeZone);
+  }
+
+  const namedMonth = lower.match(new RegExp(`\\b(${MONTH_PATTERN})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{2,4}))?\\b`, "i"));
+  if (namedMonth) {
+    const monthName = namedMonth[1]?.replace(/\.$/, "").toLowerCase() ?? "";
+    const monthIndex = MONTH_INDEX[monthName];
+    const day = Number(namedMonth[2]);
+    const year = parseYear(namedMonth[3]);
+    if (monthIndex !== undefined && Number.isInteger(day) && day >= 1 && day <= 31) {
+      const calendarDate = year === undefined ? thisYearOrNext(monthIndex, day, timeZone) : normalizeCalendarDate(year, monthIndex, day);
+      return dateWindow(calendarDate, timeZone);
+    }
+  }
+
+  const numericDate = lower.match(/\b(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b/);
+  if (numericDate) {
+    const month = Number(numericDate[1]);
+    const day = Number(numericDate[2]);
+    const year = parseYear(numericDate[3]);
+    if (Number.isInteger(month) && Number.isInteger(day) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const calendarDate = year === undefined ? thisYearOrNext(month - 1, day, timeZone) : normalizeCalendarDate(year, month - 1, day);
+      return dateWindow(calendarDate, timeZone);
+    }
+  }
+
+  const weekday = lower.match(new RegExp(`\\b(next\\s+)?(${WEEKDAY_PATTERN})\\b`, "i"));
+  if (weekday) {
+    const targetDay = WEEKDAY_INDEX[weekday[2]?.toLowerCase() ?? ""];
+    if (targetDay !== undefined) {
+      const today = zonedParts(new Date(), timeZone);
+      const todayIndex = new Date(Date.UTC(today.year, today.monthIndex, today.day)).getUTCDay();
+      let delta = (targetDay - todayIndex + 7) % 7;
+      if (weekday[1] && delta === 0) {
+        delta = 7;
+      }
+      return dateWindow(addCalendarDays(today, delta), timeZone);
+    }
+  }
+
+  return null;
 }
 
 function photoQueryFromText(text: string): string {
@@ -325,11 +523,11 @@ function entityQueryFromText(text: string): string {
     .trim();
 }
 
-function normalizeToolInput(toolName: string, input: unknown, messages: GatewayMessage[]): unknown {
+function normalizeToolInput(toolName: string, input: unknown, messages: GatewayMessage[], tenant?: Tenant | undefined): unknown {
   const record = input && typeof input === "object" && !Array.isArray(input) ? { ...input as Record<string, unknown> } : {};
   const userText = latestUserText(messages);
   if (toolName === "getSchedule") {
-    const fallback = todayWindow();
+    const fallback = scheduleWindowFromText(userText, tenant?.timezone) ?? todayWindow(tenant?.timezone);
     record.from ??= fallback.from;
     record.to ??= fallback.to;
   }
@@ -359,8 +557,26 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   return record;
 }
 
+function hasScheduleDateCue(text: string): boolean {
+  const lower = text.toLowerCase();
+  return /\b(?:today|tonight|tomorrow)\b/.test(lower)
+    || new RegExp(`\\b(?:next\\s+)?(?:${WEEKDAY_PATTERN})\\b`, "i").test(lower)
+    || new RegExp(`\\b(?:${MONTH_PATTERN})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b`, "i").test(lower)
+    || /\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b/.test(lower);
+}
+
+function looksLikeScheduleQuestion(text: string): boolean {
+  const lower = text.toLowerCase();
+  if (/\b(?:schedule|calendar|appointments?|visits?|booked|jobs?)\b/.test(lower)) {
+    return true;
+  }
+  return hasScheduleDateCue(lower)
+    && /\b(?:what(?:'s| is)\s+on|what\s+do\s+we\s+have|who\s+is\s+scheduled|where\s+(?:am|are)\s+(?:i|we)|anything\s+on)\b/.test(lower);
+}
+
 function deterministicToolName(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>): string | null {
-  const lower = latestUserText(messages).toLowerCase();
+  const userText = latestUserText(messages);
+  const lower = userText.toLowerCase();
   if ((lower.includes("photo") || lower.includes("picture") || lower.includes("image")) && toolsByName.has("getPhotos")) {
     return "getPhotos";
   }
@@ -381,7 +597,7 @@ function deterministicToolName(messages: GatewayMessage[], toolsByName: Map<stri
   if (lower.includes("gallon") && toolsByName.has("lookupSiteJobBlueprintField")) {
     return "lookupSiteJobBlueprintField";
   }
-  if ((lower.includes("schedule") || lower.includes("today")) && toolsByName.has("getSchedule")) {
+  if (looksLikeScheduleQuestion(userText) && toolsByName.has("getSchedule")) {
     return "getSchedule";
   }
   return null;
@@ -400,7 +616,7 @@ async function runDeterministicTool(input: {
   if (!tool) {
     return null;
   }
-  const args = tool.inputSchema.parse(normalizeToolInput(tool.name, {}, input.messages));
+  const args = tool.inputSchema.parse(normalizeToolInput(tool.name, {}, input.messages, input.tenant));
   const result = await tool.handler(input.tenant, args);
   return { name: tool.name, result: result.result, sources: result.sources };
 }
@@ -560,7 +776,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         });
         continue;
       }
-      const args = tool.inputSchema.parse(normalizeToolInput(toolUse.name, toolUse.input, messages));
+      const args = tool.inputSchema.parse(normalizeToolInput(toolUse.name, toolUse.input, messages, request.tenant));
       const result = await tool.handler(request.tenant, args);
       sources = [...sources, ...result.sources];
       toolRuns.push({ name: tool.name, result: result.result, sources: result.sources });
