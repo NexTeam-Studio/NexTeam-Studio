@@ -1,0 +1,155 @@
+{
+  "generatedAt": "2026-07-05T02:44:17.526Z",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "operatorUid": "USX9Lc0M6mdRU7QxrMNjJhiV2p42",
+  "version": {
+    "status": 200,
+    "ok": true,
+    "body": {
+      "sha": "eabcb436e9b8f3296f632bd154acad2d457657a4",
+      "builtAt": "2026-07-05T02:44:04.277Z"
+    }
+  },
+  "health": {
+    "status": 200,
+    "ok": true,
+    "body": {
+      "ok": true,
+      "checkedAt": "2026-07-05T02:44:05.248Z",
+      "rails": {
+        "jobber": {
+          "ok": true,
+          "configured": true,
+          "provider": "jobber",
+          "op": "graphql_read",
+          "latencyMs": 636,
+          "detail": "Jobber GraphQL read succeeded."
+        },
+        "companycam": {
+          "ok": true,
+          "configured": true,
+          "provider": "companycam",
+          "op": "projects_read",
+          "latencyMs": 175,
+          "detail": "CompanyCam projects read succeeded."
+        },
+        "anthropic": {
+          "ok": true,
+          "configured": true,
+          "provider": "anthropic",
+          "op": "configured_no_spend",
+          "latencyMs": 0,
+          "detail": "Configured; live message call skipped by no-spend overnight limit."
+        }
+      }
+    }
+  },
+  "conversationIds": {
+    "p1aAndP1c": "trial-p1-live-tight-1783219444871",
+    "p1b": "trial-p1-live-meta-1783219444871"
+  },
+  "probes": {
+    "p1aDeborahGallonsDoesNotReturnCampMikell": {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "ok": true,
+        "answer": "I don't have a verified source for that yet.",
+        "sources": [],
+        "conversationId": "conv_3f82ea79-1d7c-45f1-8a17-7b54db93a662",
+        "failureId": "fail_23880cc5-b2e6-4d04-a9a7-c3985d6d73ec",
+        "usage": {
+          "inputTokens": 278,
+          "outputTokens": 188,
+          "cacheCreationInputTokens": 0,
+          "cacheReadInputTokens": 0,
+          "totalTokens": 466
+        },
+        "toolRuns": [
+          {
+            "name": "lookupSiteJobBlueprintField",
+            "result": {
+              "field": "poolGallons",
+              "value": null,
+              "requestedEntity": "Deborah Justice",
+              "matchedBlueprintId": null
+            },
+            "sources": []
+          }
+        ]
+      }
+    },
+    "p1cUserFlaggedIncorrectLoggedAgainstPriorDeborahAnswer": {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "ok": true,
+        "answer": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+        "sources": [],
+        "conversationId": "conv_30f1af07-ea53-4af5-b54e-a556dbf13ce2",
+        "failureId": "fail_3f3efe8b-4530-4c90-94ea-9dc553ae2c80",
+        "usage": {
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "cacheCreationInputTokens": 0,
+          "cacheReadInputTokens": 0,
+          "totalTokens": 0
+        },
+        "toolRuns": []
+      }
+    },
+    "p1bMetaSourcesNotStonewalled": {
+      "status": 200,
+      "ok": true,
+      "body": {
+        "ok": true,
+        "answer": "Here's how I pull information for you:\n\n- **Jobber schedule** – for reading upcoming/past job appointments in a date range.\n- **Jobber job details** – for specific job records, by job ID or by searching customer/project name.\n- **CompanyCam photos** – for project photos tied to a customer or project.\n- **SiteJobBlueprint field lookups** – for extracted job/property details (e.g., pool gallons), tied to a specific client, property, or job.\n\nI only answer factual job questions using data pulled from these sources — I don't guess or make up job details. If something isn't available through them, I'll tell you I don't have a verified source instead of inventing an answer.\n\nWant me to look something up right now?",
+        "sources": [],
+        "conversationId": "conv_3663c1a0-0413-4357-a21a-023e6e95ff1d",
+        "usage": {
+          "inputTokens": 80,
+          "outputTokens": 226,
+          "cacheCreationInputTokens": 0,
+          "cacheReadInputTokens": 1157,
+          "totalTokens": 1463
+        },
+        "toolRuns": []
+      }
+    }
+  },
+  "rawFailureLogEntries": {
+    "p1aFailure": {
+      "id": "fail_23880cc5-b2e6-4d04-a9a7-c3985d6d73ec",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "Findings are in the report. What are the total gallons of Deborah Justice",
+      "reason": "factual_answer_without_sources",
+      "sources": [],
+      "createdAt": "2026-07-05T02:44:09.653Z"
+    },
+    "p1cFailure": {
+      "id": "fail_3f3efe8b-4530-4c90-94ea-9dc553ae2c80",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "Wrong answer, that was a live receipt correction and should be logged.",
+      "reason": "user_flagged_incorrect",
+      "sources": [],
+      "correctionText": "Wrong answer, that was a live receipt correction and should be logged.",
+      "flaggedConversationId": "conv_3f82ea79-1d7c-45f1-8a17-7b54db93a662",
+      "flaggedQuestion": "Findings are in the report. What are the total gallons of Deborah Justice",
+      "flaggedAnswer": "I don't have a verified source for that yet.",
+      "flaggedAnswerSources": [],
+      "createdAt": "2026-07-05T02:44:10.498Z"
+    }
+  },
+  "pass": {
+    "versionShaMatchesHotfix": true,
+    "healthOk": true,
+    "p1aNoCampMikellGallons": true,
+    "p1cFailureReason": true,
+    "p1cLinkedToDeborahAnswer": true,
+    "p1bNoStonewall": true
+  }
+}
