@@ -1,0 +1,55 @@
+{
+  "receipt": "m6-lite-send-quality",
+  "capturedAt": "2026-07-05T19:54:00-04:00",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "deploy": {
+    "versionSha": "0a4708b8b3228c47d922beb364b8369eb6f5208f",
+    "shaMatch": true,
+    "healthOk": true,
+    "healthRails": {
+      "jobber": "ok",
+      "companycam": "ok",
+      "anthropic": "configured_no_spend"
+    }
+  },
+  "codeReceipt": {
+    "commit": "0a4708b8b3228c47d922beb364b8369eb6f5208f",
+    "contract": "OutboundEmail.attachments[] added to core contract",
+    "draftTool": "draftEmail trims subject, normalizes short paragraphs, appends Nexi/Aquatrace signature, generates text+HTML bodies, and preserves attachment metadata/content for approval execution",
+    "approvalExecutor": "validates attachment shape and still blocks any mailbox other than the dedicated Nexi send mailbox",
+    "gmailSendAdapter": "encodes text/html bodies and attachments as multipart MIME"
+  },
+  "liveApprovalQueueProofRedacted": {
+    "endpoint": "POST /api/approval-queue then GET /api/approval-queue?tenantId=aquatrace",
+    "itemId": "appr_66b326cf-12ba-498d-8b79-06cfedf97b11",
+    "kind": "email",
+    "createdBy": "nexi",
+    "status": "pending",
+    "pendingFound": true,
+    "service": "comms",
+    "op": "sendEmail",
+    "mailbox": "nexi",
+    "sendExecuted": false,
+    "recipientDomain": "example.test",
+    "subjectRedacted": true,
+    "bodyRedacted": true,
+    "attachmentBytesRedacted": true,
+    "hasProfessionalSignature": true,
+    "hasHtmlBody": true,
+    "attachmentCount": 1,
+    "mediaRefCount": 1
+  },
+  "verification": {
+    "build": "npm --workspace @nexteam/server run build",
+    "focusedTests": "node --test apps/server/test/comms-lite.test.mjs apps/server/test/nexi-job-desk.test.mjs",
+    "focusedTestsResult": "38 passing, 0 failing",
+    "secretScan": "npm run check:secrets",
+    "secretScanResult": "passed"
+  },
+  "hardLimits": {
+    "outboundSendExecuted": false,
+    "readOnlyMailboxesCanSend": false,
+    "piiInReceipt": false,
+    "secretsInReceipt": false
+  }
+}
