@@ -6,6 +6,7 @@
 import { useCallback, useState } from "react";
 import { createSOP, createSOPStep, sopToPreviewText, SOP_CATEGORIES, SOP_STATES } from "../schemas/sopSchema";
 import { useSOPLibrary } from "../hooks/useSOPLibrary";
+import { DEFAULT_ANTHROPIC_TEXT_MODEL } from "../../../lib/anthropicModels.js";
 
 const S = {
   page: {
@@ -293,7 +294,7 @@ export function SOPEditor({ existingSOP = null, onSaved, onCancel }) {
         method: "POST",
         headers: { "anthropic-version": "2023-06-01", "content-type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: DEFAULT_ANTHROPIC_TEXT_MODEL,
           max_tokens: 1024,
           system: `You are an SOP writing assistant for a field service business. 
 Given a plain-language description, respond ONLY with valid JSON for an SOP object with these fields:

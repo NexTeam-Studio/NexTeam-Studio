@@ -43,12 +43,16 @@ import {
 } from "./src/server/firebaseConversationTenantProvisioningRepository.js";
 import { createMissionControlOpsService } from "./src/server/missionControlOpsService.js";
 import { answerNexiOperatorQuestion } from "./src/server/nexiOperatorQueryService.js";
+import { createNexiV1Service } from "./src/server/nexiV1Service.js";
+import { buildJobberAuthorizeUrl, exchangeJobberAuthorizationCode } from "./src/server/jobberService.js";
+import { writeAnthropicUsageLog } from "./src/server/anthropicUsageLogService.js";
 import { createOperationalQuestionService } from "./src/server/operationalQuestionService.js";
 import { createCompanyCamRail } from "./src/features/missioncontrol/services/companyCamRailService.js";
 import {
   answerCompanyCamReportQuestion,
   formatCompanyCamReportAnswer,
 } from "./src/features/missioncontrol/services/companyCamQuestionService.js";
+import { resolveCompanyCamProjectDetailQuestion } from "./src/server/companyCamProjectDetailLookupService.js";
 import { assertTenantAccess, isPlatformOperator } from "./src/features/tenancy/services/tenantAccessPolicy.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -107,6 +111,9 @@ let cachedConversationTenantProvisioner = null;
 let cachedConversationTenantProvisioningDependencies = null;
 let cachedBlueprintRequestLifecycleService = null;
 let cachedMissionControlOpsService = null;
+let cachedNexiV1Service = null;
+const JOBBER_OAUTH_CAPTURE_COLLECTION = "integrationAuthCaptures";
+const JOBBER_OAUTH_CAPTURE_DOC_ID = "jobber";
 
 app.use(express.json({ limit: "15mb" }));
 
@@ -121,6 +128,54 @@ app.get("/health", (_req, res) => {
   });
 });
 
+app.get("/api/jobber/oauth/callback", async (req, res) => {
+  const code = typeof req.query.code === "string" ? req.query.code.trim() : "";
+  const state = typeof req.query.state === "string" ? req.query.state.trim() : "";
+
+  if (!code) {
+    return res.status(400).send("Missing code");
+  }
+
+  try {
+    const tokenPackage = await exchangeJobberAuthorizationCode({
+      code,
+      env: process.env,
+    });
+
+    await getFirebaseAdminDb(process.env)
+      .collection(JOBBER_OAUTH_CAPTURE_COLLECTION)
+      .doc(JOBBER_OAUTH_CAPTURE_DOC_ID)
+      .set({
+        provider: "jobber",
+        clientId: process.env.JOBBER_CLIENT_ID || "",
+        redirectUri: process.env.JOBBER_REDIRECT_URI || "",
+        accessToken: tokenPackage.accessToken,
+        refreshToken: tokenPackage.refreshToken,
+        expiresIn: tokenPackage.expiresIn || null,
+        tokenType: tokenPackage.tokenType || "Bearer",
+        scope: tokenPackage.scope || "",
+        state,
+        capturedAt: new Date().toISOString(),
+        source: "nexteam_product_plane_callback",
+      });
+
+    return res.send(`
+      <html><body style="font-family:sans-serif;text-align:center;padding:60px;background:#0f172a;color:#e2e8f0;">
+        <h2 style="color:#22c55e">Jobber authorization captured</h2>
+        <p>NexTeam received the Jobber authorization code and exchanged it successfully.</p>
+        <p>You can close this tab and return to Codex.</p>
+      </body></html>
+    `);
+  } catch (error) {
+    const message =
+      typeof error?.message === "string" && error.message.trim()
+        ? error.message.trim()
+        : "Jobber OAuth exchange failed.";
+    console.error("[jobber/oauth/callback] error:", message, error?.payload || "");
+    return res.status(500).send(`Jobber OAuth failed: ${message}`);
+  }
+});
+
 app.get("/runtime-env.js", (_req, res) => {
   const runtimeConfig = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => key.startsWith("VITE_"))
@@ -133,6 +188,38 @@ app.get("/runtime-env.js", (_req, res) => {
 function filterProxyResponseHeader(name) {
   const lower = String(name || "").toLowerCase();
   return !["connection", "content-encoding", "content-length", "keep-alive", "transfer-encoding"].includes(lower);
+}
+
+function buildCachedAnthropicSystem(system) {
+  if (Array.isArray(system)) {
+    return system;
+  }
+
+  const text = String(system || "").trim();
+  if (!text) {
+    return system;
+  }
+
+  return [
+    {
+      type: "text",
+      text,
+      cache_control: {
+        type: "ephemeral",
+      },
+    },
+  ];
+}
+
+function normalizeAnthropicProxyBody(body = {}) {
+  if (!body || typeof body !== "object") {
+    return body;
+  }
+
+  return {
+    ...body,
+    system: buildCachedAnthropicSystem(body.system),
+  };
 }
 
 function getConversationTenantProvisioner() {
@@ -208,6 +295,13 @@ function getMissionControlOpsService() {
     });
   }
   return cachedMissionControlOpsService;
+}
+
+function getNexiV1Service() {
+  if (!cachedNexiV1Service) {
+    cachedNexiV1Service = createNexiV1Service();
+  }
+  return cachedNexiV1Service;
 }
 
 async function listMissionControlRegistryClients({ maxResults = 50 } = {}) {
@@ -353,6 +447,7 @@ app.post("/api/anthropic/v1/messages", async (req, res) => {
     return res.status(500).json({ error: "Anthropic API key not configured." });
   }
 
+  const upstreamBody = normalizeAnthropicProxyBody(req.body);
   try {
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -362,8 +457,40 @@ app.post("/api/anthropic/v1/messages", async (req, res) => {
         "content-type": "application/json",
         "anthropic-dangerous-direct-browser-access": "true"
       },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(upstreamBody)
     });
+
+    const upstreamForLogging = upstream.clone();
+    const usageLogPromise = (async () => {
+      try {
+        const responseBuffer = Buffer.from(await upstreamForLogging.arrayBuffer());
+        let parsedPayload = null;
+        try {
+          parsedPayload = JSON.parse(responseBuffer.toString("utf8"));
+        } catch {
+          parsedPayload = null;
+        }
+
+        if (parsedPayload) {
+          await writeAnthropicUsageLog({
+            env: process.env,
+            tenantId: String(req.body?.metadata?.tenantId || req.body?.tenantId || "platform").trim() || "platform",
+            routeActionName: String(req.body?.metadata?.routeActionName || "anthropic_proxy").trim() || "anthropic_proxy",
+            taskType: String(req.body?.metadata?.taskType || "proxy_request").trim() || "proxy_request",
+            model: String(upstreamBody?.model || "").trim(),
+            usage: parsedPayload?.usage || null,
+            success: upstream.ok,
+            errorSummary: upstream.ok ? "" : String(parsedPayload?.error?.message || parsedPayload?.error || parsedPayload?.message || "").trim(),
+            metadata: {
+              source: "api_proxy",
+              stream: upstreamBody?.stream === true,
+            },
+          });
+        }
+      } catch (loggingError) {
+        console.error("[proxy/anthropic] usage log error:", loggingError.message);
+      }
+    })();
 
     res.status(upstream.status);
     upstream.headers.forEach((value, key) => {
@@ -372,13 +499,17 @@ app.post("/api/anthropic/v1/messages", async (req, res) => {
     });
 
     if (!upstream.body) {
+      await usageLogPromise;
       return res.end();
     }
 
     const reader = upstream.body.getReader();
     const pump = async () => {
       const { value, done } = await reader.read();
-      if (done) return res.end();
+      if (done) {
+        await usageLogPromise;
+        return res.end();
+      }
       res.write(value);
       return pump();
     };
@@ -1255,6 +1386,88 @@ app.post("/api/internal/companycam/report-question", async (req, res) => {
   }
 });
 
+app.post("/api/internal/companycam/project-detail-question", async (req, res) => {
+  try {
+    const expectedSecret = String(process.env.NEXTEAM_INTERNAL_SERVICE_SECRET || "").trim();
+    const receivedSecret = String(req.get("x-nexteam-service-secret") || "").trim();
+    if (!expectedSecret || receivedSecret !== expectedSecret) {
+      return res.status(401).json({ ok: false, error: "Unauthorized internal CompanyCam service request." });
+    }
+
+    const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId.trim() : "";
+    const question = typeof req.body?.question === "string" ? req.body.question.trim() : "";
+    if (!tenantId || !question) {
+      return res.status(400).json({ ok: false, error: "tenantId and question are required." });
+    }
+
+    const result = await resolveCompanyCamProjectDetailQuestion({
+      companyCamRail: createCompanyCamRail(),
+      tenantId,
+      question,
+      projectQuery: req.body?.projectQuery,
+      projectId: req.body?.projectId,
+    });
+
+    return res.json({
+      ok: true,
+      result,
+    });
+  } catch (err) {
+    const message = String(err?.message || "Internal CompanyCam project detail question failed.");
+    const status =
+      /not approved|scope denied|tenant/i.test(message) ? 403 :
+      /not found/i.test(message) ? 404 :
+      /required|unsupported/i.test(message) ? 400 :
+      500;
+    console.error("[internal/companycam/project-detail-question] error:", message);
+    return res.status(status).json({ ok: false, error: message });
+  }
+});
+
+app.post("/api/internal/nexi/v1/chat", async (req, res) => {
+  try {
+    const expectedSecret = String(process.env.NEXTEAM_INTERNAL_SERVICE_SECRET || "").trim();
+    const receivedSecret = String(req.get("x-nexteam-service-secret") || "").trim();
+    if (!expectedSecret || receivedSecret !== expectedSecret) {
+      return res.status(401).json({ ok: false, error: "NexTeam internal service secret is invalid." });
+    }
+
+    const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId.trim() : "aquatrace";
+    const question = typeof req.body?.question === "string" ? req.body.question.trim() : "";
+    const conversationId = typeof req.body?.conversationId === "string" ? req.body.conversationId.trim() : "";
+    const actor = typeof req.body?.actor === "object" && req.body.actor
+      ? req.body.actor
+      : {
+          uid: "nexteam-internal-service",
+          email: "nexteam-internal-service@nexteam.local",
+          tenantId,
+          roles: ["internal_service"],
+        };
+
+    const result = await getNexiV1Service().answerQuestion({
+      tenantId,
+      question,
+      actor,
+      conversationId,
+    });
+
+    return res.status(result.ok === false ? 400 : 200).json({
+      ok: result.ok !== false,
+      ...result,
+    });
+  } catch (err) {
+    const message = String(err?.message || "Internal Nexi v1 chat failed.");
+    const status =
+      /authorization|token|auth/i.test(message) ? 401 :
+      /tenant access denied/i.test(message) ? 403 :
+      /incomplete|not found/i.test(message) ? 404 :
+      /required/i.test(message) ? 400 :
+      Number(err?.status || 500);
+    console.error("[internal/nexi/v1/chat] error:", message);
+    return res.status(status).json({ ok: false, error: message });
+  }
+});
+
 app.post("/api/nexi/operator/query", async (req, res) => {
   try {
     const question = typeof req.body?.question === "string" ? req.body.question.trim() : "";
@@ -1283,6 +1496,49 @@ app.post("/api/nexi/operator/query", async (req, res) => {
       ok: false,
       error: message,
       payload: err?.payload || null,
+    });
+  }
+});
+
+app.post("/api/nexi/v1/chat", async (req, res) => {
+  try {
+    const { actorScope, actor } = await requireVerifiedActorFromRequest(req);
+    if (!isPlatformOperator(actorScope)) {
+      return res.status(403).json({ ok: false, error: "Nexi v1 is limited to platform operators in this build." });
+    }
+
+    const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId.trim() : "aquatrace";
+    const question = typeof req.body?.question === "string" ? req.body.question.trim() : "";
+    const conversationId = typeof req.body?.conversationId === "string" ? req.body.conversationId.trim() : "";
+    assertTenantAccess({
+      actorScope,
+      targetTenantId: tenantId,
+      action: "access Nexi v1 chat for",
+    });
+
+    const result = await getNexiV1Service().answerQuestion({
+      tenantId,
+      question,
+      actor,
+      conversationId,
+    });
+
+    return res.status(result.ok === false ? 400 : 200).json({
+      ok: result.ok !== false,
+      ...result,
+    });
+  } catch (err) {
+    const message = String(err?.message || "Nexi v1 chat failed.");
+    const status =
+      /authorization|token|auth/i.test(message) ? 401 :
+      /platform operators|tenant access denied/i.test(message) ? 403 :
+      /incomplete|not found/i.test(message) ? 404 :
+      /required/i.test(message) ? 400 :
+      Number(err?.status || 500);
+    console.error("[nexi/v1/chat] error:", message);
+    return res.status(status).json({
+      ok: false,
+      error: message,
     });
   }
 });

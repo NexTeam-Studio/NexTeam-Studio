@@ -1,0 +1,137 @@
+{
+  "checkedAt": "2026-07-05T01:35:02.4868483Z",
+  "roots": [
+    "C:\\Users\\Peyto\\NexTeam-Studio",
+    "C:\\Users\\Peyto\\NexTeam-Studio-worktrees"
+  ],
+  "pattern": "sk_live_[redacted]",
+  "printedValues": false,
+  "localScan": {
+    "ok": true,
+    "filesWithLiteralPrefix": [
+      {
+        "file": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\crm\\DECISIONS.md",
+        "tokenCount": 2,
+        "tokenShapes": [
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          },
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          }
+        ]
+      },
+      {
+        "file": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\crm\\apps\\server\\src\\crm\\stripe.ts",
+        "tokenCount": 1,
+        "tokenShapes": [
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          }
+        ]
+      },
+      {
+        "file": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\crm\\scripts\\stripe-staging-webhook-setup.ts",
+        "tokenCount": 1,
+        "tokenShapes": [
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          }
+        ]
+      },
+      {
+        "file": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\nexi\\DECISIONS.md",
+        "tokenCount": 1,
+        "tokenShapes": [
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          }
+        ]
+      },
+      {
+        "file": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\nexi\\receipts\\security\\sk-live-scan.json",
+        "tokenCount": 1,
+        "tokenShapes": [
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          }
+        ]
+      },
+      {
+        "file": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\integration-m2-m4\\scripts\\stripe-staging-webhook-setup.ts",
+        "tokenCount": 1,
+        "tokenShapes": [
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          }
+        ]
+      },
+      {
+        "file": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\integration-m2-m4\\receipts\\security\\sk-live-scan.json",
+        "tokenCount": 1,
+        "tokenShapes": [
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          }
+        ]
+      },
+      {
+        "file": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\integration-m2-m4\\DECISIONS.md",
+        "tokenCount": 3,
+        "tokenShapes": [
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          },
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          },
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          }
+        ]
+      },
+      {
+        "file": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\integration-m2-m4\\apps\\server\\src\\crm\\stripe.ts",
+        "tokenCount": 1,
+        "tokenShapes": [
+          {
+            "prefix": "sk_live_",
+            "length": 8,
+            "looksLikeRealKey": false
+          }
+        ]
+      }
+    ],
+    "realKeyShapedFindings": []
+  },
+  "stagingRuntimeScan": {
+    "ok": true,
+    "environment": "staging",
+    "liveStripeSecretVariableNames": [],
+    "STRIPE_SECRET_KEY_mode": "test",
+    "printedValues": false,
+    "checkedAt": "2026-07-05T01:35:02.353Z"
+  }
+}

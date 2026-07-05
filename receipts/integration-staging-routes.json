@@ -1,0 +1,55 @@
+{
+  "ok": true,
+  "base": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "0dcda8b28966de2217b7920f68013ccb7746ca41",
+  "versionStatus": 200,
+  "version": {
+    "sha": "0dcda8b28966de2217b7920f68013ccb7746ca41",
+    "builtAt": "2026-07-05T01:29:20.075Z"
+  },
+  "versionMatches": true,
+  "healthStatus": 200,
+  "healthOk": true,
+  "rails": {
+    "jobber": {
+      "ok": true,
+      "configured": true,
+      "provider": "jobber",
+      "op": "graphql_read",
+      "latencyMs": 620,
+      "detail": "Jobber GraphQL read succeeded."
+    },
+    "companycam": {
+      "ok": true,
+      "configured": true,
+      "provider": "companycam",
+      "op": "projects_read",
+      "latencyMs": 448,
+      "detail": "CompanyCam projects read succeeded."
+    },
+    "anthropic": {
+      "ok": true,
+      "configured": true,
+      "provider": "anthropic",
+      "op": "configured_no_spend",
+      "latencyMs": 0,
+      "detail": "Configured; live message call skipped by no-spend overnight limit."
+    }
+  },
+  "crm": {
+    "status": 201,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"ok\":true,\"client\":{\"id\":\"client_82a094ff-ffda-4f48-a75a-ccdd47762340\",\"tenantId\":\"aquatrace\",\"name\":\"Route Probe\",\"emails\":[],\"phones\":[],\"tags\":[],\"consent\":{\"email\":false,\"sms\":false}}}"
+  },
+  "fielddocs": {
+    "status": 201,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"ok\":true,\"checklist\":{\"id\":\"checklist_65e9cfe9-1c06-4e98-8109-8b1229f35f11\",\"tenantId\":\"aquatrace\",\"templateId\":\"leak_detection_checklist_v1\",\"jobId\":\"route_probe_job\",\"title\":\"Leak Detection Checklist\",\"items\":[{\"id\":\"item_1\",\"label\":\"Confirm static water loss baseline\",\"required\":true,\"status\":\"pending\"},{\"id\":\"item_2\",\"label\":\"Inspect skimmers and throats\",\"required\":true,\"status\":\"pending\"},{\"id\":\"item_3\",\"label\":\"Inspect returns and fittings\",\"required\":true,\"status\":\"pending\"},{\"id\":\"item_4\",\"label\":\"Dye-test suspect penetrations\",\"required\":true,\"status\":\"pending\"},{\"id\":\"item_5\",\"label\":\"Inspect equipment pad and visible plumbing\",\"required\":true,\"status\":\"pending\"},{\"id\":\"item_6\",\"label\":\"Capture before and after photos\",\"required\":true,\"status\":\"pending\"},{\"id\":\"item_7\",\"label\":\"Record findings and repair recommendation\",\"required\":true,\"status\":\"pending\"}],\"createdAt\":\"2026-07-05T01:29:21.754Z\"}}"
+  },
+  "nexiUnauth": {
+    "status": 401,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"ok\":false,\"error\":\"Firebase operator sign-in is required.\"}"
+  },
+  "checkedAt": "2026-07-05T01:29:23.020Z"
+}

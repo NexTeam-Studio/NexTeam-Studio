@@ -81,6 +81,40 @@ export async function writeYoastFieldsInEditor({
 
     await page.evaluate(setDomValue, { selector: "#yoast_wpseo_opengraph-title", value: values.socialTitle });
     await page.evaluate(setDomValue, { selector: "#yoast_wpseo_opengraph-description", value: values.socialDescription });
+    if (values.socialImageUrl) {
+      await waitForSelectorWithRetry(page, "#yoast_wpseo_opengraph-image");
+      await page.evaluate(setDomValue, { selector: "#yoast_wpseo_opengraph-image", value: values.socialImageUrl });
+      await page.evaluate((selector) => {
+        if (document.querySelector(selector)) {
+          const node = document.querySelector(selector);
+          node.value = "";
+          node.setAttribute("value", "");
+          node.dispatchEvent(new Event("input", { bubbles: true }));
+          node.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }, "#yoast_wpseo_opengraph-image-id");
+    }
+    if (values.twitterTitle) {
+      await waitForSelectorWithRetry(page, "#yoast_wpseo_twitter-title");
+      await page.evaluate(setDomValue, { selector: "#yoast_wpseo_twitter-title", value: values.twitterTitle });
+    }
+    if (values.twitterDescription) {
+      await waitForSelectorWithRetry(page, "#yoast_wpseo_twitter-description");
+      await page.evaluate(setDomValue, { selector: "#yoast_wpseo_twitter-description", value: values.twitterDescription });
+    }
+    if (values.twitterImageUrl) {
+      await waitForSelectorWithRetry(page, "#yoast_wpseo_twitter-image");
+      await page.evaluate(setDomValue, { selector: "#yoast_wpseo_twitter-image", value: values.twitterImageUrl });
+      await page.evaluate((selector) => {
+        if (document.querySelector(selector)) {
+          const node = document.querySelector(selector);
+          node.value = "";
+          node.setAttribute("value", "");
+          node.dispatchEvent(new Event("input", { bubbles: true }));
+          node.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }, "#yoast_wpseo_twitter-image-id");
+    }
 
     const proof = {};
     if (screenshotDir) {
@@ -98,6 +132,7 @@ export async function writeYoastFieldsInEditor({
     await page.evaluate(() => document.querySelector("#wpseo-meta-tab-social")?.click());
     await page.waitForTimeout(1200);
     await waitForSelectorWithRetry(page, "#yoast_wpseo_opengraph-title");
+    await waitForSelectorWithRetry(page, "#yoast_wpseo_twitter-title");
 
     const stored = await page.evaluate(() => ({
       focusKeyphrase: document.querySelector("#yoast_wpseo_focuskw")?.value || null,
@@ -105,12 +140,20 @@ export async function writeYoastFieldsInEditor({
       metaDescription: document.querySelector("#yoast_wpseo_metadesc")?.value || null,
       socialTitle: document.querySelector("#yoast_wpseo_opengraph-title")?.value || null,
       socialDescription: document.querySelector("#yoast_wpseo_opengraph-description")?.value || null,
+      socialImageUrl: document.querySelector("#yoast_wpseo_opengraph-image")?.value || null,
+      twitterTitle: document.querySelector("#yoast_wpseo_twitter-title")?.value || null,
+      twitterDescription: document.querySelector("#yoast_wpseo_twitter-description")?.value || null,
+      twitterImageUrl: document.querySelector("#yoast_wpseo_twitter-image")?.value || null,
       editorVisible: {
         focusKeyphrase: !!document.querySelector("#yoast_wpseo_focuskw"),
         seoTitle: !!document.querySelector("#yoast_wpseo_title"),
         metaDescription: !!document.querySelector("#yoast_wpseo_metadesc"),
         socialTitle: !!document.querySelector("#yoast_wpseo_opengraph-title"),
         socialDescription: !!document.querySelector("#yoast_wpseo_opengraph-description"),
+        socialImageUrl: !!document.querySelector("#yoast_wpseo_opengraph-image"),
+        twitterTitle: !!document.querySelector("#yoast_wpseo_twitter-title"),
+        twitterDescription: !!document.querySelector("#yoast_wpseo_twitter-description"),
+        twitterImageUrl: !!document.querySelector("#yoast_wpseo_twitter-image"),
       },
     }));
 

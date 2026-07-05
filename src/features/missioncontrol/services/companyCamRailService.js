@@ -3,6 +3,7 @@ import {
   getCompanyCamPhoto,
   hasCompanyCamToken,
   listCompanyCamPhotos,
+  listCompanyCamProjectPhotos,
   listCompanyCamProjectChecklists,
   listCompanyCamProjectDocuments,
   listCompanyCamProjects,
@@ -145,12 +146,14 @@ function toChecklistCollection(response) {
 export async function searchProjects({
   token = process.env.COMPANYCAM_API_TOKEN,
   perPage = 10,
+  page,
   query,
   modifiedSince,
 } = {}) {
   const response = await listCompanyCamProjects({
     token: normalizeCompanyCamToken(token),
     perPage,
+    page,
     query,
     modifiedSince,
   });
@@ -158,10 +161,17 @@ export async function searchProjects({
   return toProjectCollection(response).map((project) => normalizeCompanyCamProject(project));
 }
 
-export async function listAllPhotos({ token = process.env.COMPANYCAM_API_TOKEN, perPage = 100, query, modifiedSince } = {}) {
+export async function listAllPhotos({
+  token = process.env.COMPANYCAM_API_TOKEN,
+  perPage = 100,
+  page,
+  query,
+  modifiedSince,
+} = {}) {
   const response = await listCompanyCamPhotos({
     token: normalizeCompanyCamToken(token),
     perPage,
+    page,
     query,
     modifiedSince,
   });
@@ -211,6 +221,21 @@ export async function listProjectDocuments(projectId, { token = process.env.COMP
   return toDocumentCollection(response).map((document) => normalizeCompanyCamDocument(document));
 }
 
+export async function listProjectPhotos(projectId, { token = process.env.COMPANYCAM_API_TOKEN, perPage = 10 } = {}) {
+  const normalizedProjectId = String(projectId || "").trim();
+  if (!normalizedProjectId) {
+    throw new Error("A CompanyCam project ID is required.");
+  }
+
+  const response = await listCompanyCamProjectPhotos({
+    token: normalizeCompanyCamToken(token),
+    projectId: normalizedProjectId,
+    perPage,
+  });
+
+  return toPhotoCollection(response).map((photo) => normalizeCompanyCamPhoto(photo));
+}
+
 export async function listProjectChecklists(projectId, { token = process.env.COMPANYCAM_API_TOKEN } = {}) {
   const normalizedProjectId = String(projectId || "").trim();
   if (!normalizedProjectId) {
@@ -234,6 +259,7 @@ export function createCompanyCamRail({ token = process.env.COMPANYCAM_API_TOKEN 
     listAllPhotos: (options = {}) => listAllPhotos({ ...options, token: railToken }),
     getPhoto: (photoId, options = {}) => getPhoto(photoId, { ...options, token: railToken }),
     getProject: (projectId, options = {}) => getProject(projectId, { ...options, token: railToken }),
+    listProjectPhotos: (projectId, options = {}) => listProjectPhotos(projectId, { ...options, token: railToken }),
     listProjectDocuments: (projectId, options = {}) => listProjectDocuments(projectId, { ...options, token: railToken }),
     listProjectChecklists: (projectId, options = {}) => listProjectChecklists(projectId, { ...options, token: railToken }),
   };

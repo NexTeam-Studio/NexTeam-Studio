@@ -21,8 +21,14 @@ const FAST_LOOKUP_PATTERNS = [
 ];
 
 const REPORT_LOOKUP_PATTERNS = [
+  /\bgallonage\b/i,
   /\bgallons?\b/i,
   /\bpool volume\b/i,
+  /\bsquare footage\b/i,
+  /\bsquare foot\b/i,
+  /\bsq ft\b/i,
+  /\bsurface area\b/i,
+  /\bdimensions?\b/i,
   /\breport\b/i,
   /\bchecklist\b/i,
   /\bpdf\b/i,
@@ -35,7 +41,12 @@ const REPORT_LOOKUP_PATTERNS = [
   /\bparse\b/i,
   /\bextract\b/i,
   /\bmeasurement\b/i,
+  /\bfindings?\b/i,
+  /\bissues?\b/i,
+  /\bproblems?\b/i,
   /\baverage depth\b/i,
+  /\bdepth\b/i,
+  /\bgallons? per inch\b/i,
 ];
 
 function normalizeText(value = "") {
@@ -93,7 +104,7 @@ export function classifyOperationalQuestion(question = "") {
     fastScore += 3;
   }
 
-  if (/\b(gallons?|volume|report|checklist|pdf)\b/i.test(normalizedQuestion)) {
+  if (/\b(gallonage|gallons?|volume|report|checklist|pdf)\b/i.test(normalizedQuestion)) {
     reportScore += 2;
   }
 

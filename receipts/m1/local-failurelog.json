@@ -1,0 +1,54 @@
+﻿{
+    "response":  {
+                     "error":  "The remote server returned an error: (500) Internal Server Error.",
+                     "ok":  false
+                 },
+    "debugState":  {
+                       "ok":  true,
+                       "conversations":  [
+                                             {
+                                                 "id":  "conv_58291c44-14d3-4848-8923-017667408ba9",
+                                                 "tenantId":  "aquatrace",
+                                                 "userText":  "How many gallons are in the Camp Mikell SiteJobBlueprint?",
+                                                 "assistantText":  "The SiteJobBlueprint field value is 101000.",
+                                                 "sources":  [
+                                                                 {
+                                                                     "rail":  "native",
+                                                                     "ref":  "site-job-blueprint",
+                                                                     "label":  "SiteJobBlueprint fields"
+                                                                 }
+                                                             ],
+                                                 "createdAt":  "2026-07-04T14:58:36.353Z"
+                                             }
+                                         ],
+                       "failureLog":  [
+                                          {
+                                              "id":  "fail_682ccda7-2047-4724-a0cf-1e3c26701c9d",
+                                              "tenantId":  "aquatrace",
+                                              "module":  "nexi",
+                                              "op":  "message",
+                                              "question":  "Give me the verified Jobber job for the moon base.",
+                                              "reason":  "Jobber is missing access token or refresh-token configuration.",
+                                              "sources":  [
+
+                                                          ],
+                                              "createdAt":  "2026-07-04T14:58:46.866Z"
+                                          }
+                                      ],
+                       "siteJobBlueprints":  [
+                                                 {
+                                                     "id":  "site_job_b558e2e6-3abc-42fc-af4d-52d6d69a9dc5",
+                                                     "tenantId":  "aquatrace",
+                                                     "kind":  "site_blueprint",
+                                                     "fields":  {
+                                                                    "poolGallons":  101000
+                                                                },
+                                                     "extractedFrom":  "camp-mikell-checklist",
+                                                     "extractedAt":  "2026-07-04T14:58:36.319Z"
+                                                 }
+                                             ],
+                       "usageLog":  [
+
+                                    ]
+                   }
+}

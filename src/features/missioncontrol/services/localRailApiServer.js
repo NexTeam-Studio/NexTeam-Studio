@@ -6,6 +6,7 @@ import {
   assertAquatraceCompanyCamTenantScope,
   formatCompanyCamReportAnswer,
 } from "./companyCamQuestionService.js";
+import { resolveCompanyCamProjectDetailQuestion } from "../../../server/companyCamProjectDetailLookupService.js";
 import { createWordPressRail } from "./wordpressRailService.js";
 
 export const LOCAL_RAIL_API_HOST = "127.0.0.1";
@@ -350,6 +351,24 @@ export function createLocalRailApiApp(options = {}) {
     }
   });
 
+  app.get("/rail/companycam/projects/:projectId/photos", async (req, res) => {
+    try {
+      const tenantId = parseCompanyCamTenantScope(req.query.tenantId);
+      const perPage = req.query.perPage ? parseIntegerParam(req.query.perPage, "perPage") : undefined;
+      const photos = await context.companyCamRail.listProjectPhotos(req.params.projectId, { perPage });
+      return res.json({
+        ok: true,
+        result: {
+          tenantId,
+          count: photos.length,
+          photos,
+        },
+      });
+    } catch (error) {
+      return sendStructuredError(res, error);
+    }
+  });
+
   app.post("/rail/companycam/report-question", async (req, res) => {
     try {
       const body = req.body || {};
@@ -367,6 +386,26 @@ export function createLocalRailApiApp(options = {}) {
           ...result,
           answerText: formatCompanyCamReportAnswer(result),
         },
+      });
+    } catch (error) {
+      return sendStructuredError(res, error);
+    }
+  });
+
+  app.post("/rail/companycam/project-detail-question", async (req, res) => {
+    try {
+      const body = req.body || {};
+      const tenantId = parseCompanyCamTenantScope(body.tenantId);
+      const result = await resolveCompanyCamProjectDetailQuestion({
+        companyCamRail: context.companyCamRail,
+        tenantId,
+        question: body.question,
+        projectQuery: body.projectQuery,
+        projectId: body.projectId,
+      });
+      return res.json({
+        ok: true,
+        result,
       });
     } catch (error) {
       return sendStructuredError(res, error);

@@ -7,6 +7,20 @@ const OAUTH_PATH = join(REPO_ROOT, "credentials", "nexteam-gmail-oauth.json");
 const DEFAULT_TO_ADDRESS = "aquatraceleak@gmail.com";
 const DEFAULT_FROM_NAME = "Chris Sears - Aquatrace Swimming Pool Leak Detection";
 
+function getBrandName(config) {
+  return String(config?.displayName || config?.brandName || config?.profile?.brandName || "the client").trim();
+}
+
+function getReviewRecipient(config) {
+  return String(config?.approval?.reviewRecipient || config?.profile?.contact?.email || DEFAULT_TO_ADDRESS).trim();
+}
+
+function getFromName(config) {
+  const brandName = getBrandName(config);
+  const contactName = String(config?.profile?.contact?.primaryName || "Operator").trim();
+  return `${contactName} - ${brandName}`;
+}
+
 function loadGoogleOAuthSettings() {
   if (!existsSync(OAUTH_PATH)) {
     return { clientId: "", clientSecret: "", redirectUri: "" };
@@ -38,44 +52,28 @@ function buildRawMessage({ fromName, fromAddress, toAddress, subject, body }) {
   ].join("\r\n")).toString("base64url");
 }
 
-export function buildBragiModeBReviewEmail({ topic, location, articlePackage, draftResult, photoSelection, linkPlan }) {
-  const subject = `[Bragi Mode B Draft Review] ${location.display} | ${topic}`;
+export function buildBragiModeBReviewEmail({ topic, location, articlePackage, draftResult, config = null }) {
+  const brandName = getBrandName(config);
+  const subjectPrefix = String(config?.approval?.subjectPrefix || "[Bragi Mode B Draft Review]").trim();
+  const subject = `${subjectPrefix} ${location.display} | ${topic}`;
   const body = [
     "Chris,",
     "",
-    "Bragi created a new Aquatrace WordPress draft for review.",
+    `Bragi created a new ${brandName} WordPress draft for review.`,
     "",
-    `Topic: ${topic}`,
-    `Location: ${location.display}`,
     `Title: ${articlePackage.title}`,
     `Draft URL: ${draftResult.url}`,
-    `Edit URL: ${draftResult.editUrl}`,
-    `Post ID: ${draftResult.postId}`,
-    `WordPress status: ${draftResult.status}`,
-    "Published: no",
-    "Scheduled: no",
-    "",
-    `Focus keyword: ${articlePackage.focusKeyword}`,
-    `SEO title: ${articlePackage.seoTitle}`,
-    `Meta description: ${articlePackage.metaDescription}`,
-    "",
-    "Featured photo selection:",
-    `- CompanyCam photo ID: ${photoSelection?.selected?.photo?.id || "n/a"}`,
-    `- Score: ${photoSelection?.selected?.score ?? "n/a"}`,
-    `- Distance from target area: ${photoSelection?.selected?.distanceMiles ?? "n/a"} miles`,
-    `- Description: ${photoSelection?.selected?.photo?.description || "No CompanyCam description on file"}`,
-    "",
-    "Internal links used / intended:",
-    ...linkPlan.internalLinks.map((link) => `- ${link.url} (${link.purpose})`),
-    ...(linkPlan.externalLinks.length ? ["", "External link allowed:", ...linkPlan.externalLinks.map((link) => `- ${link.url} (${link.label})`)] : []),
-    "",
-    "Nothing was published automatically.",
   ].join("\n");
 
-  return { subject, body };
+  return {
+    subject,
+    body,
+    toAddress: getReviewRecipient(config),
+    fromName: getFromName(config),
+  };
 }
 
-export async function sendBragiModeBReviewEmail({ subject, body, toAddress = DEFAULT_TO_ADDRESS }) {
+export async function sendBragiModeBReviewEmail({ subject, body, toAddress = DEFAULT_TO_ADDRESS, fromName = DEFAULT_FROM_NAME }) {
   const oauth = loadGoogleOAuthSettings();
   const clientId = process.env.GOOGLE_CLIENT_ID || oauth.clientId;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET || oauth.clientSecret;
@@ -91,7 +89,7 @@ export async function sendBragiModeBReviewEmail({ subject, body, toAddress = DEF
   client.setCredentials({ refresh_token: refreshToken });
   const gmail = google.gmail({ version: "v1", auth: client });
   const raw = buildRawMessage({
-    fromName: DEFAULT_FROM_NAME,
+    fromName,
     fromAddress,
     toAddress,
     subject,

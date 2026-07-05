@@ -1,3 +1,5 @@
+import { getRuntimeConfigValue } from "../../../runtimeConfig.js";
+
 export const DEFAULT_BRAGI_ARTICLE_PACKAGE = {
   postId: 3273,
   title: "Your Pool Leak Seems to Have Stopped – Here’s Why That’s Not Good News",
@@ -29,10 +31,7 @@ function getBrowserOrigin() {
 }
 
 export function getBragiExecutionUrl() {
-  const configuredBase =
-    typeof import.meta !== "undefined" && import.meta?.env?.VITE_BRAGI_EXECUTION_API_BASE
-      ? normalizeBaseUrl(import.meta.env.VITE_BRAGI_EXECUTION_API_BASE)
-      : "";
+  const configuredBase = normalizeBaseUrl(getRuntimeConfigValue("VITE_BRAGI_EXECUTION_API_BASE", ""));
 
   if (configuredBase) {
     return `${configuredBase}/api/bragi/wordpress/execute`;

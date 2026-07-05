@@ -24,6 +24,15 @@ test("classifyOperationalQuestion detects report lookup phrasing", () => {
   assert.equal(result.reason, "heavy-companycam-report-request");
 });
 
+test("classifyOperationalQuestion detects square-footage report lookup phrasing", () => {
+  const result = classifyOperationalQuestion("What was the pool square footage at Oleta Falls?");
+
+  assert.equal(result.handled, true);
+  assert.equal(result.kind, "report_lookup");
+  assert.equal(result.lane, "work");
+  assert.equal(result.reason, "heavy-companycam-report-request");
+});
+
 test("classifyOperationalQuestion leaves unrelated prompts unsupported", () => {
   const result = classifyOperationalQuestion("Write a homepage section about leak detection.");
 

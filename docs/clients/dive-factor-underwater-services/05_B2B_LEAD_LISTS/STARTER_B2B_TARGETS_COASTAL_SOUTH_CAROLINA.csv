@@ -1,0 +1,4 @@
+lead_id,market,business_name,category,website,source_url,status,notes
+coastsc-001,coastal_sc,Beaufort Downtown Marina,marina,https://saltwaterfishing.sc.gov/coastalmarinas.html,https://saltwaterfishing.sc.gov/coastalmarinas.html,researched,Public marina listing with slips fuel and pumpout
+coastsc-002,coastal_sc,Dataw Island Marina,marina,https://datawmarina.com/,https://datawmarina.com/,researched,Working boatyard and maintenance environment
+coastsc-003,coastal_sc,South Carolina Clean Marina list,marina,https://sccm.scseagrant.org/find-a-clean-marina/,https://sccm.scseagrant.org/find-a-clean-marina/,researched,Source for future coastal marina targeting

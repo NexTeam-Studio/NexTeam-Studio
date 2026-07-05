@@ -6,6 +6,9 @@ import {
   uploadWordPressMedia,
   wordpressJsonHeaders,
 } from "./wordpressApi.js";
+import { existsSync, readFileSync } from "fs";
+import { join } from "path";
+import { writeYoastFieldsInEditor } from "./wordpressYoastEditor.js";
 
 const DEFAULT_COMMENT_STATUS = "closed";
 const DEFAULT_PING_STATUS = "closed";
@@ -14,6 +17,12 @@ const WORDPRESS_YOAST_META_KEYS = {
   seoTitle: "_yoast_wpseo_title",
   metaDescription: "_yoast_wpseo_metadesc",
 };
+const EDITOR_LOGIN_REFERENCE_PATH = "docs/internal/clawdia/reference/aquatrace/aquatrace-wordpress-editor-login.txt";
+
+function getReferenceText(relativePath) {
+  const filePath = join(process.cwd(), relativePath);
+  return existsSync(filePath) ? readFileSync(filePath, "utf8").replace(/^\uFEFF/, "") : "";
+}
 
 function normalizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -54,6 +63,28 @@ function buildWordPressRailContext(credentials = {}) {
     username,
     appPassword,
     authHeader: buildBasicAuthHeader(username, appPassword),
+  };
+}
+
+function resolveWordPressEditorCredentials(credentials = {}, railContext) {
+  const editorLoginRaw = getReferenceText(EDITOR_LOGIN_REFERENCE_PATH);
+  const fallbackEditorUsername = editorLoginRaw.match(/Username\s*\r?\n([^\r\n]+)/i)?.[1]?.trim() || "";
+  const fallbackEditorPassword = editorLoginRaw.match(/Password\s*\r?\n([^\r\n]+)/i)?.[1]?.trim() || "";
+
+  const username = normalizeText(
+    credentials.editorUsername || process.env.WORDPRESS_EDITOR_USERNAME || fallbackEditorUsername || railContext?.username
+  );
+  const password = normalizeText(
+    credentials.editorPassword || process.env.WORDPRESS_EDITOR_PASSWORD || fallbackEditorPassword
+  );
+
+  if (!username || !password) {
+    return null;
+  }
+
+  return {
+    username,
+    password,
   };
 }
 
@@ -222,6 +253,59 @@ export async function setYoastFields(postId, values = {}, { credentials } = {}) 
     credentials: railContext,
   });
   const verifiedMeta = verifiedPost?.meta || {};
+  const editorCredentials = resolveWordPressEditorCredentials(credentials, railContext);
+  const needsEditorSocialWrite = Boolean(
+    values?.socialTitle || values?.socialDescription || values?.socialImageUrl || values?.twitterTitle || values?.twitterDescription || values?.twitterImageUrl
+  );
+
+  let editorStored = {
+    socialTitle: values?.socialTitle || "",
+    socialDescription: values?.socialDescription || "",
+    socialImageUrl: values?.socialImageUrl || "",
+    twitterTitle: values?.twitterTitle || values?.socialTitle || "",
+    twitterDescription: values?.twitterDescription || values?.socialDescription || "",
+    twitterImageUrl: values?.twitterImageUrl || values?.socialImageUrl || "",
+    editorVisible: {
+      focusKeyphrase: false,
+      seoTitle: false,
+      metaDescription: false,
+      socialTitle: false,
+      socialDescription: false,
+      socialImageUrl: false,
+      twitterTitle: false,
+      twitterDescription: false,
+      twitterImageUrl: false,
+    },
+    skipped: needsEditorSocialWrite,
+    reason: needsEditorSocialWrite && !editorCredentials
+      ? "WordPress editor credentials are unavailable for Yoast social field writes."
+      : "",
+  };
+
+  if (needsEditorSocialWrite && editorCredentials) {
+    const editorResult = await writeYoastFieldsInEditor({
+      loginUrl: `${railContext.siteUrl}/wp-login.php`,
+      editUrl: buildWordPressEditUrl(railContext.siteUrl, normalizedPostId),
+      username: editorCredentials.username,
+      password: editorCredentials.password,
+      values: {
+        focusKeyphrase: values.focusKeyword ?? "",
+        seoTitle: values.seoTitle ?? "",
+        metaDescription: values.metaDescription ?? "",
+        socialTitle: values.socialTitle ?? "",
+        socialDescription: values.socialDescription ?? "",
+        socialImageUrl: values.socialImageUrl ?? "",
+        twitterTitle: values.twitterTitle ?? values.socialTitle ?? "",
+        twitterDescription: values.twitterDescription ?? values.socialDescription ?? "",
+        twitterImageUrl: values.twitterImageUrl ?? values.socialImageUrl ?? "",
+      },
+    });
+    editorStored = {
+      ...editorResult.stored,
+      skipped: false,
+      reason: "",
+    };
+  }
 
   return {
     postId: normalizedPostId,
@@ -229,10 +313,22 @@ export async function setYoastFields(postId, values = {}, { credentials } = {}) 
       focusKeyword: verifiedMeta[WORDPRESS_YOAST_META_KEYS.focusKeyword] ?? "",
       seoTitle: verifiedMeta[WORDPRESS_YOAST_META_KEYS.seoTitle] ?? "",
       metaDescription: verifiedMeta[WORDPRESS_YOAST_META_KEYS.metaDescription] ?? "",
+      socialTitle: editorStored.socialTitle ?? "",
+      socialDescription: editorStored.socialDescription ?? "",
+      socialImageUrl: editorStored.socialImageUrl ?? "",
+      twitterTitle: editorStored.twitterTitle ?? "",
+      twitterDescription: editorStored.twitterDescription ?? "",
+      twitterImageUrl: editorStored.twitterImageUrl ?? "",
+      editorVisible: editorStored.editorVisible,
+      skipped: editorStored.skipped,
+      reason: editorStored.reason,
     },
     yoastHeadJson: {
       title: verifiedPost?.yoast_head_json?.title || "",
       description: verifiedPost?.yoast_head_json?.description || "",
+      ogTitle: verifiedPost?.yoast_head_json?.og_title || "",
+      ogDescription: verifiedPost?.yoast_head_json?.og_description || "",
+      ogImage: verifiedPost?.yoast_head_json?.og_image || [],
     },
   };
 }

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
+import { DEFAULT_ANTHROPIC_TEXT_MODEL } from "../../../lib/anthropicModels.js";
 
 const BRAGI_LIBRARY_ROOT = join(process.cwd(), "docs", "clients", "aquatrace", "bragi");
 const DEFAULT_WEEKLY_SCHEDULE = {
@@ -362,7 +363,7 @@ export async function maybeGenerateBragiArticlePackage({
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
+      model: DEFAULT_ANTHROPIC_TEXT_MODEL,
       max_tokens: 4000,
       system: "You write clear, trustworthy Aquatrace article packages and return strict JSON only.",
       messages: [{ role: "user", content: buildAnthropicPrompt({ topic, packageSkeleton, library }) }],

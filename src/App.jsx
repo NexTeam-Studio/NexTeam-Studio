@@ -54,6 +54,7 @@ const GoogleBusinessProfileRail = lazy(() =>
   }))
 );
 const NexiBlueprintBetaPage = lazy(() => import("./features/marketing/components/NexiBlueprintBetaPage"));
+const NexiJobDeskPage = lazy(() => import("./features/nexiV1/components/NexiJobDeskPage.jsx"));
 
 function RouteFallback() {
   return (
@@ -87,6 +88,14 @@ export function App() {
           }
         />
         <Route path="/nexi-blueprint-beta" element={<NexiBlueprintBetaPage />} />
+        <Route
+          path="/nexi-job-desk"
+          element={
+            <AdminGate>
+              <NexiJobDeskPage />
+            </AdminGate>
+          }
+        />
         <Route path="/success" element={<SuccessScreen />} />
 
         <Route

@@ -6,9 +6,10 @@
  *
  * Reuses the same proxy and model already powering Nexi.
  */
+import { DEFAULT_ANTHROPIC_TEXT_MODEL } from "../../../lib/anthropicModels.js";
 
 const ANTHROPIC_API_URL = "/api/anthropic/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = DEFAULT_ANTHROPIC_TEXT_MODEL;
 const MAX_TOKENS = 1024;
 
 /**

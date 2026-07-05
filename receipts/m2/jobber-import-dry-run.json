@@ -1,0 +1,24 @@
+﻿
+> import:jobber:dry-run
+> tsx scripts/jobber-import-dry-run.ts
+
+{
+  "ok": true,
+  "dryRun": true,
+  "destructiveWrites": false,
+  "tenantId": "aquatrace",
+  "source": "jobber",
+  "pageLimit": 25,
+  "counts": {
+    "clients": 25,
+    "jobs": 25,
+    "properties": 24
+  },
+  "externalIdsPreserved": {
+    "clients": 25,
+    "jobs": 25,
+    "properties": 25
+  },
+  "sampledAt": "2026-07-04T19:28:57.994Z"
+}
+

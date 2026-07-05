@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
+import crypto from "node:crypto";
 import { join } from "node:path";
 import {
-  LOCAL_RAIL_API_DEFAULT_PORT,
   LOCAL_RAIL_API_HOST,
   startLocalRailApiServer,
 } from "../src/features/missioncontrol/services/localRailApiServer.js";
@@ -42,10 +42,11 @@ async function parseJson(response) {
 
 loadLocalEnv();
 process.env.RAIL_LOCAL_API_TOKEN = process.env.RAIL_LOCAL_API_TOKEN || "local-rail-api-test-token";
-process.env.RAIL_LOCAL_API_PORT = process.env.RAIL_LOCAL_API_PORT || String(LOCAL_RAIL_API_DEFAULT_PORT);
+
+const requestedPort = Number(process.env.RAIL_LOCAL_API_PORT || 3200 + crypto.randomInt(20, 200));
 
 const started = await startLocalRailApiServer({
-  port: Number(process.env.RAIL_LOCAL_API_PORT),
+  port: requestedPort,
 });
 
 const baseUrl = `http://${LOCAL_RAIL_API_HOST}:${started.address.port}`;
@@ -137,6 +138,28 @@ try {
   });
   const photoJson = await parseJson(photoResponse);
 
+  const projectsResponse = await fetch(
+    `${baseUrl}/rail/companycam/projects/search?tenantId=aquatrace&query=${encodeURIComponent("Camp Mikell")}`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.RAIL_LOCAL_API_TOKEN}`,
+      },
+    }
+  );
+  const projectsJson = await parseJson(projectsResponse);
+  const campMikellProjectId = projectsJson?.result?.projects?.[0]?.id || null;
+
+  const reportQuestionResponse = await fetch(`${baseUrl}/rail/companycam/report-question`, {
+    method: "POST",
+    headers: tokenHeaders,
+    body: JSON.stringify({
+      tenantId: "aquatrace",
+      question: "What are the total pool gallons in the report for Camp Mikell in Toccoa GA?",
+      projectId: campMikellProjectId,
+    }),
+  });
+  const reportQuestionJson = await parseJson(reportQuestionResponse);
+
   console.log(
     JSON.stringify(
       {
@@ -176,6 +199,15 @@ try {
           companyCamPhoto: {
             status: photoResponse.status,
             result: photoJson?.result?.photo || null,
+          },
+          companyCamProjects: {
+            status: projectsResponse.status,
+            count: projectsJson?.result?.count || 0,
+            sampleProject: projectsJson?.result?.projects?.[0] || null,
+          },
+          companyCamReportQuestion: {
+            status: reportQuestionResponse.status,
+            result: reportQuestionJson?.result || null,
           },
         },
       },

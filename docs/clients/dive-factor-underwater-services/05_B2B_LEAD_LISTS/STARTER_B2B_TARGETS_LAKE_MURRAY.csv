@@ -1,0 +1,5 @@
+lead_id,market,business_name,category,website,source_url,status,notes
+murray-001,murray,Putnam's Harbor,marina,https://putnamsharbor.com/,https://putnamsharbor.com/,researched,Premier marina positioning
+murray-002,murray,Timberlake Marina,marina,https://timberlakemarina.com/,https://timberlakemarina.com/,researched,Rental and marina traffic
+murray-003,murray,Better Boating,rental_fleet,https://www.betterboatrental.com/,https://www.betterboatrental.com/,researched,Large rental-fleet signal
+murray-004,murray,Lake Murray Boat Rentals,rental_fleet,https://lakemurrayboatrentals.com/book-now/,https://lakemurrayboatrentals.com/book-now/,researched,Rental-operator fit

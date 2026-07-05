@@ -1,4 +1,5 @@
 import { DEFAULT_BRAGI_ARTICLE_PACKAGE } from "./bragiExecutionClient.js";
+import { DEFAULT_ANTHROPIC_TEXT_MODEL } from "../../../lib/anthropicModels.js";
 
 function slugify(value) {
   return String(value || "article-draft")
@@ -71,7 +72,7 @@ Rules:
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
+      model: DEFAULT_ANTHROPIC_TEXT_MODEL,
       max_tokens: 2200,
       system: "You write clean, trustworthy article packages for business operators.",
       messages: [{ role: "user", content: prompt }],

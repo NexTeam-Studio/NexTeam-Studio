@@ -1,0 +1,2 @@
+﻿companycam dry-run exit=0
+

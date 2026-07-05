@@ -152,7 +152,7 @@ Success:
 
 ### `POST /rail/wp/yoast`
 
-Writes the three confirmed REST-writable Yoast fields.
+Writes the core REST-writable Yoast fields and, when local editor credentials are available, also writes Yoast social overrides through the editor seam.
 
 Request:
 
@@ -161,7 +161,13 @@ Request:
   "postId": 1234,
   "focusKeyword": "pool leak detection",
   "seoTitle": "SEO title here",
-  "metaDescription": "Meta description here"
+  "metaDescription": "Meta description here",
+  "socialTitle": "Optional social title",
+  "socialDescription": "Optional social description",
+  "socialImageUrl": "Optional absolute image URL",
+  "twitterTitle": "Optional Twitter title override",
+  "twitterDescription": "Optional Twitter description override",
+  "twitterImageUrl": "Optional Twitter image URL override"
 }
 ```
 

@@ -1,0 +1,52 @@
+﻿
+> verify
+> npm run lint && npm run typecheck && npm run test && npm run check:tenancy && npm run check:secrets && npm run check:secret-history && npm run check:provider-imports && npm run check:blueprints
+
+
+> lint
+> eslint "apps/**/*.{ts,tsx}" "packages/**/*.{ts,tsx}" "tests/**/*.ts" "scripts/check-*.mjs"
+
+
+> typecheck
+> tsc -b
+
+
+> test
+> node --test "packages/**/*.test.mjs" "apps/**/*.test.mjs"
+
+✔ Media schema rejects exposed third-party URL fields (1.7357ms)
+✔ NexiBlueprint and SiteJobBlueprint schemas remain distinct (0.9171ms)
+✔ Approval item defaults can park outbound execution (0.6244ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 155.0687
+
+> check:tenancy
+> node scripts/check-tenancy.mjs
+
+Tenancy check passed (20 files checked).
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (422 tracked non-doc files checked).
+
+> check:secret-history
+> node scripts/check-secret-history.mjs
+
+Secret history scan passed (89 reachable commits, 1974 reachable objects checked).
+
+> check:provider-imports
+> node scripts/check-provider-imports.mjs
+
+Provider boundary check passed (23 files checked).
+
+> check:blueprints
+> node scripts/check-blueprint-identifiers.mjs
+
+Blueprint naming check passed (20 files checked).

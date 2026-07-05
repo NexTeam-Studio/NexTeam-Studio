@@ -1,4 +1,7 @@
-const AQUATRACE_LOCATIONS = {
+import { buildAquatraceTenantClientConfig } from "./aquatraceTenantFoundation.js";
+import { buildBragiModeBClientConfigFromTenant } from "../../missioncontrol/services/bragiModeBTenantConfigAdapter.js";
+
+export const AQUATRACE_LOCATIONS = {
   "Fair Play SC": {
     label: "Fair Play SC",
     city: "Fair Play",
@@ -37,9 +40,7 @@ const AQUATRACE_LOCATIONS = {
   },
 };
 
-export const aquatraceBragiModeBClientProfile = {
-  id: "aquatrace",
-  displayName: "Aquatrace",
+export const aquatraceBragiModeBExtension = {
   approval: {
     reviewRecipient: "aquatraceleak@gmail.com",
     subjectPrefix: "[Bragi Mode B Draft Review]",
@@ -101,6 +102,7 @@ export const aquatraceBragiModeBClientProfile = {
       url: "https://aquatraceleak.com/services/pool-leaks/",
       purpose: "Core pool leak service page",
       anchors: ["pool leak detection", "swimming pool leak detection", "professional pool leak detection"],
+      required: true,
     },
     {
       url: "https://aquatraceleak.com/services/swimming-pool-leak-detection",
@@ -128,6 +130,7 @@ export const aquatraceBragiModeBClientProfile = {
       url: "https://aquatraceleak.com/service-request/",
       purpose: "Primary request path",
       anchors: ["request service", "schedule a diagnostic visit", "start with a service request"],
+      required: true,
     },
     {
       url: "https://aquatraceleak.com/contact",
@@ -161,3 +164,9 @@ export const aquatraceBragiModeBClientProfile = {
     },
   ],
 };
+
+export const aquatraceBragiModeBClientProfile = buildBragiModeBClientConfigFromTenant({
+  clientId: "aquatrace",
+  foundationConfig: buildAquatraceTenantClientConfig(),
+  modeBExtension: aquatraceBragiModeBExtension,
+});

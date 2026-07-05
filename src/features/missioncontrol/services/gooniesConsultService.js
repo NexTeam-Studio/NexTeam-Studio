@@ -1,3 +1,5 @@
+import { getRuntimeConfigValue } from "../../../runtimeConfig.js";
+
 const DEFAULT_BRAIN_PUBLIC_URL = "http://127.0.0.1:8788";
 const GOONIE_META = {
   chunk: { id: "chunk", name: "Chunk", role: "Research / Facts / Case Studies", consult_lane: "research_facts" },
@@ -97,8 +99,9 @@ function buildNamedGoonieRegex(agentId) {
 }
 
 function getConfiguredBrainPublicUrl() {
-  if (typeof import.meta !== "undefined" && import.meta?.env?.VITE_CLAWDIA_BRAIN_PUBLIC_URL) {
-    return normalizeText(import.meta.env.VITE_CLAWDIA_BRAIN_PUBLIC_URL);
+  const runtimeValue = getRuntimeConfigValue("VITE_CLAWDIA_BRAIN_PUBLIC_URL", "");
+  if (runtimeValue) {
+    return normalizeText(runtimeValue);
   }
   if (typeof process !== "undefined" && process?.env?.CLAWDIA_BRAIN_PUBLIC_URL) {
     return normalizeText(process.env.CLAWDIA_BRAIN_PUBLIC_URL);

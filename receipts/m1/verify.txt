@@ -1,0 +1,56 @@
+﻿
+> verify
+> npm run lint && npm run typecheck && npm run test && npm run check:tenancy && npm run check:secrets && npm run check:secret-history && npm run check:provider-imports && npm run check:blueprints
+
+
+> lint
+> eslint "apps/**/*.{ts,tsx}" "packages/**/*.{ts,tsx}" "tests/**/*.ts" "scripts/check-*.mjs"
+
+
+> typecheck
+> tsc -b
+
+
+> test
+> node --test "packages/**/*.test.mjs" "apps/**/*.test.mjs"
+
+✔ Camp Mikell fixture extracts 101000 gallons (3.6568ms)
+✔ source check blocks factual answers without sources (0.2195ms)
+✔ Nexi tool loop executes tools and records cache metrics (21.5586ms)
+✔ Nexi service persists failureLog for source-enforced failures (1.1193ms)
+✔ Media schema rejects exposed third-party URL fields (2.1206ms)
+✔ NexiBlueprint and SiteJobBlueprint schemas remain distinct (0.9042ms)
+✔ Approval item defaults can park outbound execution (0.6584ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 175.2694
+
+> check:tenancy
+> node scripts/check-tenancy.mjs
+
+Tenancy check passed (25 files checked).
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (436 tracked non-doc files checked).
+
+> check:secret-history
+> node scripts/check-secret-history.mjs
+
+Secret history scan passed (95 reachable commits, 2036 reachable objects checked).
+
+> check:provider-imports
+> node scripts/check-provider-imports.mjs
+
+Provider boundary check passed (29 files checked).
+
+> check:blueprints
+> node scripts/check-blueprint-identifiers.mjs
+
+Blueprint naming check passed (25 files checked).

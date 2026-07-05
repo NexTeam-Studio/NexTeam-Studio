@@ -1,4 +1,4 @@
-node_modules/
+﻿node_modules/
 .DS_Store
 Thumbs.db
 *.log
@@ -8,3 +8,15 @@ Thumbs.db
 !.env.example
 dist/
 build/
+credentials/
+docs/internal/clawdia/reference/**/*.txt
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!railway.json
+!firebase.json
+!firestore.indexes.json
+!docs/internal/goonies/GOONIES_DASHBOARD_REGISTRY.json
+!receipts/**/*.json
+

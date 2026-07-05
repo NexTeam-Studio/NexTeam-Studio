@@ -1,0 +1,4 @@
+lead_id,market,business_name,category,website,source_url,status,notes
+coastga-001,coastal_ga,Jekyll Harbor Marina,marina,https://jekyllharbor.com/,https://jekyllharbor.com/,researched,Established coastal marina target
+coastga-002,coastal_ga,Brunswick Landing Marina,marina,https://brunswicklandingmarina.com/services/,https://brunswicklandingmarina.com/services/,researched,Relevant because of haul and bottom-cleaning context
+coastga-003,coastal_ga,Georgia Clean Marina Program,marina,https://coastalgadnr.org/CleanMarina,https://coastalgadnr.org/CleanMarina,researched,Source for future marina targeting and environmental context

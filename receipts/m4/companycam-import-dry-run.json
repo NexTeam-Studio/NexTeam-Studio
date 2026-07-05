@@ -1,0 +1,53 @@
+﻿
+> import:companycam:dry-run
+> tsx scripts/companycam-import-dry-run.ts
+
+{
+  "ok": true,
+  "dryRun": true,
+  "destructiveWrites": false,
+  "tenantId": "aquatrace",
+  "source": "companycam",
+  "projectLimit": 3,
+  "counts": {
+    "projects": 3,
+    "media": 69,
+    "docs": 5
+  },
+  "externalIdsPreserved": {
+    "projects": 3,
+    "media": 69,
+    "docs": 5
+  },
+  "projects": [
+    {
+      "id": "107503799",
+      "name": "Deborah Justice",
+      "externalIds": {
+        "companycam": "107503799"
+      },
+      "media": 25,
+      "docs": 2
+    },
+    {
+      "id": "108479333",
+      "name": "American Lifestyle Pools",
+      "externalIds": {
+        "companycam": "108479333"
+      },
+      "media": 19,
+      "docs": 3
+    },
+    {
+      "id": "108497177",
+      "name": "Renaissance Downtown Asheville Hotel",
+      "externalIds": {
+        "companycam": "108497177"
+      },
+      "media": 25,
+      "docs": 0
+    }
+  ],
+  "sampledAt": "2026-07-04T19:29:12.442Z"
+}
+

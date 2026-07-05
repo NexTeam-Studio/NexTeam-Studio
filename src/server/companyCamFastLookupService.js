@@ -24,11 +24,14 @@ function sanitizeSearchFragment(value = "") {
 
 const LOW_SIGNAL_TOKENS = new Set([
   "account",
+  "address",
   "at",
   "can",
   "client",
   "companycam",
   "customer",
+  "detail",
+  "details",
   "find",
   "for",
   "homeowner",
@@ -38,12 +41,19 @@ const LOW_SIGNAL_TOKENS = new Set([
   "lookup",
   "me",
   "owner",
+  "pool",
   "project",
+  "square",
+  "footage",
   "show",
   "status",
+  "technician",
+  "tech",
   "tell",
   "the",
   "up",
+  "was",
+  "were",
   "what",
   "who",
   "you",
@@ -149,7 +159,11 @@ function buildCandidateQueries(question = "") {
   const normalized = normalizeText(question);
   const derivedQuery = deriveSearchQuery(normalized);
   const derivedAddressParts = splitAddressAndLocation(derivedQuery);
-  const candidates = new Set(buildProjectSearchQueries(normalized, derivedQuery));
+  const candidates = new Set(buildProjectSearchQueries(normalized));
+
+  if (isUsefulCandidateQuery(derivedQuery)) {
+    candidates.add(derivedQuery);
+  }
 
   if (derivedAddressParts.streetOnly) {
     candidates.add(derivedAddressParts.streetOnly);
@@ -180,6 +194,13 @@ function buildCandidateQueries(question = "") {
         "status",
         "job",
         "companycam",
+        "pool",
+        "square",
+        "footage",
+        "technician",
+        "tech",
+        "was",
+        "were",
       ].includes(token)
   );
   if (compactTokens.length) {

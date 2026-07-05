@@ -1,0 +1,6 @@
+Safety branch: archive/pre-bible-main
+Archive commit: 865c57a Archive pre-bible main state
+Cleanup commit: b80a2b6 Remove credential reference files from archive index
+Net diff versus main after cleanup: 415 files changed, 48003 insertions(+), 253 deletions(-)
+Credential-risk note: two Aquatrace reference text files were accidentally included in the first local archive commit summary, then removed from the branch index in b80a2b6 and ignored. Do not push archive/pre-bible-main before owner review and credential rotation decision.
+

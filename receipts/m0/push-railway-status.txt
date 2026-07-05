@@ -1,0 +1,18 @@
+﻿$ git ls-remote --heads origin build/core build/nexi
+62f9a689ad44cc503082300d902fb81b83335d0d	refs/heads/build/core
+bc43bf2a013341692f229b5b0a61da624301c43f	refs/heads/build/nexi
+
+$ railway status
+node.exe : No linked project found. Run railway link to connect to a project
+At C:\Users\Peyto\AppData\Roaming\npm\railway.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/@railway/cli/bin/railway.js" ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (No linked proje...ct to a project:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+$ railway list --json summary
+project=cozy-sparkle; services=NexTeam-Studio; environments=production
+project=clawdia-bot; services=clawdia-bot; environments=production
+
+deploy_status=blocked
+blocker=no Railway staging environment or linked staging service was available; production-only NexTeam-Studio target was not touched

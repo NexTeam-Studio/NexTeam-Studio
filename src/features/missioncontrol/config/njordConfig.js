@@ -1,3 +1,5 @@
+import { getRuntimeConfigValue } from "../../../runtimeConfig.js";
+
 /**
  * Njord Host Agent — Configuration
  *
@@ -35,7 +37,7 @@ export const NJORD_CONFIG = {
    * Test email address for campaign dry-runs.
    * Must be confirmed before broader sends are considered.
    */
-  testEmailAddress: import.meta.env.VITE_NJORD_TEST_EMAIL || "",
+  testEmailAddress: getRuntimeConfigValue("VITE_NJORD_TEST_EMAIL", ""),
 
   /**
    * Firestore collection for Njord session logs.

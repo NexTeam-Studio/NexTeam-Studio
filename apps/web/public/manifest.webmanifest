@@ -1,0 +1,8 @@
+{
+  "name": "Nexi Job Desk",
+  "short_name": "Nexi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ede2cf",
+  "theme_color": "#26352c"
+}

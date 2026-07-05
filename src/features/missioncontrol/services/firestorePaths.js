@@ -143,3 +143,118 @@ export function portalMemberDocPath(clientId, userId) {
   if (!safeClientId || !safeUserId) throw new Error("[firestorePaths] Invalid clientId or userId");
   return `clientOrganizations/${safeClientId}/members/${safeUserId}`;
 }
+
+/**
+ * ClientOrganizations invite document path.
+ * @param {string} clientId
+ * @param {string} inviteId
+ * @returns {string}
+ */
+export function clientOrgInviteDocPath(clientId, inviteId) {
+  const safeClientId = sanitizeSegment(clientId);
+  const safeInviteId = sanitizeSegment(inviteId);
+  if (!safeClientId || !safeInviteId) throw new Error("[firestorePaths] Invalid clientId or inviteId");
+  return `clientOrganizations/${safeClientId}/invites/${safeInviteId}`;
+}
+
+/**
+ * ClientOrganizations delivery-state document path.
+ * @param {string} clientId
+ * @param {string} stateId
+ * @returns {string}
+ */
+export function clientOrgDeliveryStateDocPath(clientId, stateId = "current") {
+  const safeClientId = sanitizeSegment(clientId);
+  const safeStateId = sanitizeSegment(stateId);
+  if (!safeClientId || !safeStateId) throw new Error("[firestorePaths] Invalid clientId or stateId");
+  return `clientOrganizations/${safeClientId}/deliveryState/${safeStateId}`;
+}
+
+/**
+ * BlueprintRequests collection path.
+ * @returns {string}
+ */
+export function blueprintRequestCollectionPath() {
+  return "blueprintRequests";
+}
+
+/**
+ * BlueprintRequests document path.
+ * @param {string} requestId
+ * @returns {string}
+ */
+export function blueprintRequestDocPath(requestId) {
+  const safeRequestId = sanitizeSegment(requestId);
+  if (!safeRequestId) throw new Error("[firestorePaths] Invalid blueprintRequest requestId");
+  return `blueprintRequests/${safeRequestId}`;
+}
+
+/**
+ * BlueprintRequests events subcollection path.
+ * @param {string} requestId
+ * @returns {string}
+ */
+export function blueprintRequestEventCollectionPath(requestId) {
+  const safeRequestId = sanitizeSegment(requestId);
+  if (!safeRequestId) throw new Error("[firestorePaths] Invalid blueprintRequest requestId");
+  return `blueprintRequests/${safeRequestId}/events`;
+}
+
+/**
+ * BlueprintRequests event document path.
+ * @param {string} requestId
+ * @param {string} eventId
+ * @returns {string}
+ */
+export function blueprintRequestEventDocPath(requestId, eventId) {
+  const safeRequestId = sanitizeSegment(requestId);
+  const safeEventId = sanitizeSegment(eventId);
+  if (!safeRequestId || !safeEventId) throw new Error("[firestorePaths] Invalid blueprintRequest requestId or eventId");
+  return `blueprintRequests/${safeRequestId}/events/${safeEventId}`;
+}
+
+/**
+ * Tenant-scoped Nexi v1 conversation log collection path.
+ * @param {string} tenantId
+ * @returns {string}
+ */
+export function nexiConversationLogCollectionPath(tenantId) {
+  assertSafeTenantId(tenantId);
+  return `tenants/${tenantId}/nexiConversationLog`;
+}
+
+/**
+ * Tenant-scoped Nexi v1 conversation log document path.
+ * @param {string} tenantId
+ * @param {string} logId
+ * @returns {string}
+ */
+export function nexiConversationLogDocPath(tenantId, logId) {
+  assertSafeTenantId(tenantId);
+  const safeLogId = sanitizeSegment(logId);
+  if (!safeLogId) throw new Error("[firestorePaths] Invalid nexi conversation log id");
+  return `tenants/${tenantId}/nexiConversationLog/${safeLogId}`;
+}
+
+/**
+ * Tenant-scoped Nexi v1 failure log collection path.
+ * @param {string} tenantId
+ * @returns {string}
+ */
+export function nexiFailureLogCollectionPath(tenantId) {
+  assertSafeTenantId(tenantId);
+  return `tenants/${tenantId}/nexiFailureLog`;
+}
+
+/**
+ * Tenant-scoped Nexi v1 failure log document path.
+ * @param {string} tenantId
+ * @param {string} failureId
+ * @returns {string}
+ */
+export function nexiFailureLogDocPath(tenantId, failureId) {
+  assertSafeTenantId(tenantId);
+  const safeFailureId = sanitizeSegment(failureId);
+  if (!safeFailureId) throw new Error("[firestorePaths] Invalid nexi failure log id");
+  return `tenants/${tenantId}/nexiFailureLog/${safeFailureId}`;
+}

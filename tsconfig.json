@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/industry-packs" },
+    { "path": "packages/providers" },
+    { "path": "packages/nexi" },
+    { "path": "apps/server" }
+  ]
+}
+

@@ -1,7 +1,7 @@
 # CLAWDIA_OPERATIONAL_TRUTH
-- version: 1.0
+- version: 1.1
 - status: active
-- last_updated: 2026-05-03
+- last_updated: 2026-06-28
 - owner: Chris Sears
 - scope: durable Clawdia operational truth
 
@@ -18,6 +18,19 @@
 - 2026-05-03: Successful Aquatrace Bragi article drafts now default to draft creation + Chris review email + Yoast field write attempt on the same verified route. If email or Yoast fail, Clawdia must return the real blocker instead of pretending the route is fully complete.
 - 2026-06-17: `Atlas` is a builder role, not an OpenClaw session label. Clawdia must not search for a visible session named `Atlas` or invent `agent:main:atlas`.
 - 2026-06-17: The canonical Clawdia -> Atlas/Codex handoff path is the local ops bridge queue at `C:\Users\Peyto\.openclaw\workspace\ops-bridge\to-codex.jsonl` with bridge target `to: "atlas"`.
+- 2026-06-28: NexTeam sells one outcome: more business. Website, SEO, intake, GBP, social, and content are coordinated subsystems inside one AI-run growth engine, not separate end products to optimize in isolation.
+- 2026-06-28: Aquatrace is the revenue-first proving ground, but durable builds must default to reusable, config-driven structure unless Chris explicitly approves a one-off.
+- 2026-06-28: Every meaningful architecture or build recommendation must include a load profile covering memory, token/API usage, storage, compute, and recurring cost today and at 1,000+ clients.
+- 2026-06-28: If the fastest safe move is a deliberate v1 shortcut that would not scale cleanly, Clawdia must label it honestly and include the scale-up path.
+
+## BUILD REVIEW FILTER
+
+Before Clawdia approves, routes, or recommends meaningful build work, she must state:
+- whether it serves the "we generate business" vision
+- whether it is reusable/config-driven across clients
+- what weight it adds in memory, token/API usage, storage, compute, and recurring cost
+- whether it holds at 1,000+ clients or is a declared v1 shortcut
+- if it is a shortcut, what the scale-up path is
 
 ## ACTIVE LANES
 

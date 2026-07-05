@@ -1,0 +1,50 @@
+Hi Chris,
+
+Dive Factor static publish is complete.
+
+Backup folder path:
+- Remote: _backup_before_divefactor_static_publish_2026-06-15_1808
+- Local: C:\Users\Peyto\NexTeam-Studio\tmp\divefactor_live_backup_2026-06-15_1808
+
+Files backed up:
+- index.html
+- .htaccess
+- images/Dive_Factor_Logo.png
+
+Files uploaded:
+- /index.html
+- /assets/site.css
+- /assets/site.js
+- /underwater-services/index.html
+- /aquatic-programs/index.html
+- /images/Dive_Factor_Logo.png
+
+Live URLs:
+- https://divefactor.com/
+- https://divefactor.com/underwater-services/
+- https://divefactor.com/aquatic-programs/
+
+QA result:
+- Public GET verification succeeded for all three URLs
+- Public asset fetch succeeded for the shared CSS and approved logo
+- No live forms, no mailto routing, no CRM routing, and no payment links found in deployed HTML
+- Responsive breakpoints and mobile nav behavior are present in the shared CSS
+
+What was not touched:
+- No WordPress install
+- No database changes
+- No live form routing
+- No email routing from the site
+- No CRM routing
+- No payment links
+- No .well-known changes
+- No .htaccess edits
+
+Remaining issues:
+- The FTPS certificate did not match the provided hostname, so I completed the upload over explicit FTPS with certificate verification bypassed after confirming the expected account contents.
+- Some HEAD/default curl probes returned 406 Not Acceptable while standard browser-style GET requests rendered correctly, so GET-based verification was used as the public QA method.
+
+Proof log path:
+- C:\Users\Peyto\NexTeam-Studio\docs\clients\dive-factor-underwater-services\10_PROOF_LOGS\PROOF_LOG.md
+
+-Clawdia

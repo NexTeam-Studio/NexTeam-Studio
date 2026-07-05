@@ -1,0 +1,58 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 1948 >>
+stream
+BT /F1 10 Tf 50 750 Td (Aquatrace Field Documentation Report) Tj ET
+BT /F1 10 Tf 50 733 Td (Title: Aquatrace leak detection field report) Tj ET
+BT /F1 10 Tf 50 716 Td (Tenant: aquatrace) Tj ET
+BT /F1 10 Tf 50 699 Td (Job: aquatrace-real-job-fielddocs-receipt) Tj ET
+BT /F1 10 Tf 50 682 Td () Tj ET
+BT /F1 10 Tf 50 665 Td (Findings:) Tj ET
+BT /F1 10 Tf 50 648 Td (- Skimmer throat dye test documented before repair.) Tj ET
+BT /F1 10 Tf 50 631 Td (- After photo attached for operator review.) Tj ET
+BT /F1 10 Tf 50 614 Td (- Report is native FieldDocs documentation only; no outbound delivery was performed.) Tj ET
+BT /F1 10 Tf 50 597 Td () Tj ET
+BT /F1 10 Tf 50 580 Td (Checklist:) Tj ET
+BT /F1 10 Tf 50 563 Td (- Confirm static water loss baseline: pending) Tj ET
+BT /F1 10 Tf 50 546 Td (- Inspect skimmers and throats: pass) Tj ET
+BT /F1 10 Tf 50 529 Td (- Inspect returns and fittings: pending) Tj ET
+BT /F1 10 Tf 50 512 Td (- Dye-test suspect penetrations: pass) Tj ET
+BT /F1 10 Tf 50 495 Td (- Inspect equipment pad and visible plumbing: pending) Tj ET
+BT /F1 10 Tf 50 478 Td (- Capture before and after photos: pass) Tj ET
+BT /F1 10 Tf 50 461 Td (- Record findings and repair recommendation: pass) Tj ET
+BT /F1 10 Tf 50 444 Td () Tj ET
+BT /F1 10 Tf 50 427 Td (Media:) Tj ET
+BT /F1 10 Tf 50 410 Td (- media_3a7e765a-4285-436e-82b1-3bc8b81c91d4: Uploaded photo tagged before, skimmer, dye-test.) Tj ET
+BT /F1 10 Tf 50 393 Td (- media_8b650c5a-63fe-4c4a-83d0-ea10b4be2172: Uploaded photo tagged after, skimmer, repair.) Tj ET
+BT /F1 10 Tf 50 376 Td () Tj ET
+BT /F1 10 Tf 50 359 Td (Compliance Blocks:) Tj ET
+BT /F1 10 Tf 50 342 Td (- Field documentation only; no engineering, legal, or regulatory determination.) Tj ET
+BT /F1 10 Tf 50 325 Td (- Photos, checklist notes, and findings remain subject to operator review.) Tj ET
+BT /F1 10 Tf 50 308 Td (- VGB documentation template language is informational and approval-gated before delivery.) Tj ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2311
+%%EOF

@@ -1,0 +1,290 @@
+# Dive Factor Static Site Publish Log
+
+## Purpose
+
+Track the approved static HTML publishing workflow for `DiveFactor.com`.
+
+This log is the canonical publish trail for:
+
+- backup confirmation
+- files prepared
+- files uploaded
+- QA results
+- blockers
+
+## Entries
+
+### 2026-06-16 15:48 America/New_York - Boutique static redesign redeployed with fresh backup and full live QA
+
+- publish mode: static HTML over FTP / explicit FTPS
+- canonical lane: `C:\Users\Peyto\NexTeam-Studio\docs\clients\dive-factor-underwater-services`
+- local package source:
+  - `07_WEBSITE_SEO/STATIC_SITE_PACKAGE`
+- research/support files updated before deploy:
+  - `scripts/collect-divefactor-competitive-research.mjs`
+  - `02_MARKET_RESEARCH/SERVICE_PAGE_RESEARCH_SOURCE_LOG.csv`
+  - `02_MARKET_RESEARCH/WEBSITE_COMPETITIVE_RESEARCH_INDEX.md`
+  - `02_MARKET_RESEARCH/WEBSITE_COPY_VOCABULARY_AND_POSITIONING_NOTES.md`
+- connection notes:
+  - FTP server: `ftp.aquatraceswimmingpoolleakdetection.com`
+  - username: `clawdia-atlas@divefactor.com`
+  - transport: explicit FTPS
+  - the FTPS account resolved directly into the live website root used for deployment
+  - the server certificate principal still does not match the provided hostname, so the deploy script recorded the mismatch and continued only after confirming the expected site content
+- backup proof:
+  - local backup folder: `C:\Users\Peyto\NexTeam-Studio\tmp\divefactor_live_backup_2026-06-16_154130`
+  - remote backup folder: `/_backup_before_divefactor_boutique_redeploy_2026-06-16_154130`
+- files uploaded:
+  - `/index.html`
+  - `/robots.txt`
+  - `/sitemap.xml`
+  - `/aquatic-programs/index.html`
+  - `/aquatic-staff-training/index.html`
+  - `/assets/site.css`
+  - `/assets/site.js`
+  - `/dive-training/index.html`
+  - `/images/Dive_Factor_Logo.png`
+  - `/images/resources/aquatic-staff-cpr-guide.jpg`
+  - `/images/resources/below-waterline-guide.jpg`
+  - `/images/resources/camp-scuba-experience-guide.jpg`
+  - `/images/resources/scuba-training-options.jpg`
+  - `/images/site/aquatic-programs.jpg`
+  - `/images/site/aquatic-staff-training.jpg`
+  - `/images/site/dive-training.jpg`
+  - `/images/site/home-hero.jpg`
+  - `/images/site/safety-training.jpg`
+  - `/images/site/underwater-services.jpg`
+  - `/resources/index.html`
+  - `/resources/aquatic-staff-cpr-first-aid-oxygen-guide/index.html`
+  - `/resources/below-waterline-inspection-guide/index.html`
+  - `/resources/camp-scuba-experience-guide/index.html`
+  - `/resources/scuba-training-options-for-new-divers/index.html`
+  - `/safety-training/index.html`
+  - `/underwater-services/index.html`
+- public QA result:
+  - all `26` uploaded public URLs returned `200` under browser-style GET verification
+  - key page checks included:
+    - `https://divefactor.com/`
+    - `https://divefactor.com/underwater-services/`
+    - `https://divefactor.com/dive-training/`
+    - `https://divefactor.com/aquatic-programs/`
+    - `https://divefactor.com/safety-training/`
+    - `https://divefactor.com/aquatic-staff-training/`
+    - `https://divefactor.com/resources/`
+    - `https://divefactor.com/resources/below-waterline-inspection-guide/`
+    - `https://divefactor.com/resources/camp-scuba-experience-guide/`
+    - `https://divefactor.com/resources/aquatic-staff-cpr-first-aid-oxygen-guide/`
+    - `https://divefactor.com/resources/scuba-training-options-for-new-divers/`
+    - `https://divefactor.com/robots.txt`
+    - `https://divefactor.com/sitemap.xml`
+  - CTA checks passed for phone, mailto, and internal service/resource links
+  - responsive browser QA passed on desktop and mobile without horizontal overflow
+  - no live forms, no payment links, no CRM routing, and no unsafe positive compliance claims were found in the deployed public HTML
+- remaining note:
+  - a first visual pass hit stale cache on previously existing plain URLs, but cache-busted follow-up requests confirmed the new origin files and current public build
+- Chris completion email:
+  - subject: `Dive Factor Boutique Static Deploy Complete`
+  - recipient: `chris@aquatraceleak.com`
+  - Gmail message id: `19ed1fdf01e8556d`
+
+### 2026-06-16 13:20 America/New_York - Local boutique package cleaned again, live deployment not started
+
+- publish mode planned: static HTML over FTP / explicit FTPS
+- canonical lane: `C:\Users\Peyto\NexTeam-Studio\docs\clients\dive-factor-underwater-services`
+- local source package refreshed:
+  - `07_WEBSITE_SEO/STATIC_SITE_PACKAGE`
+- local support files updated:
+  - `scripts/build-divefactor-static-site.mjs`
+  - `scripts/collect-divefactor-competitive-research.mjs`
+  - `02_MARKET_RESEARCH/SERVICE_PAGE_RESEARCH_SOURCE_LOG.csv`
+  - `02_MARKET_RESEARCH/WEBSITE_COMPETITIVE_RESEARCH_INDEX.md`
+  - `02_MARKET_RESEARCH/WEBSITE_COPY_VOCABULARY_AND_POSITIONING_NOTES.md`
+- package changes completed locally:
+  - removed the remaining internal-sounding public copy from the homepage, resources hub, shared contact band, and footer
+  - fixed the resources-page primary CTA so the label and destination match
+  - removed the final exact banned phrase hit from the below-waterline article
+  - rebuilt the package and confirmed `sitemap.xml` includes `/resources/scuba-training-options-for-new-divers/`
+- local QA notes:
+  - broken internal file references: `0` across `11` HTML pages
+  - exact banned claim phrase hits: `0`
+  - form tags or live routing attributes: `0`
+- live-state verification before deploy:
+  - `https://divefactor.com/` still serves the earlier June 15 multi-lane build rather than the refreshed boutique package
+  - `https://divefactor.com/resources/scuba-training-options-for-new-divers/` still returns `404`
+- blocker:
+  - remote deployment did not start because the specific FTPS password for `clawdia-atlas@divefactor.com` is not recoverable from the currently accessible local context, so a fresh remote backup cannot be created safely
+  - the stricter research cleanup currently yields `177` relevant rows, so the canonical `250`-page research proof minimum still needs more curation before the redesign is fully finalized
+- Chris status email:
+  - subject: `Dive Factor Boutique Redesign Status - Local Package Ready, Deploy Blocked`
+  - Gmail message id: `19ed174a447f009f`
+- next publish action:
+  - recover or re-supply the specific Dive Factor FTPS password
+  - finish the source-log curation to `250` relevant research pages
+  - create a new dated remote backup folder
+  - upload the refreshed boutique package
+  - verify the live URLs and assets, then send Chris the final deployment summary
+
+### 2026-06-15 20:58 America/New_York - Boutique redesign package rebuilt locally, live publish pending credential recovery
+
+- publish mode planned: static HTML over FTP / explicit FTPS
+- canonical lane: `C:\Users\Peyto\NexTeam-Studio\docs\clients\dive-factor-underwater-services`
+- local source package refreshed:
+  - `07_WEBSITE_SEO/STATIC_SITE_PACKAGE`
+- local support files added or updated:
+  - `07_WEBSITE_SEO/IMAGE_CREDITS.md`
+  - `07_WEBSITE_SEO/IMAGE_SOURCE_CACHE/site/*`
+  - `07_WEBSITE_SEO/IMAGE_SOURCE_CACHE/resources/*`
+  - `02_MARKET_RESEARCH/WEBSITE_COMPETITIVE_RESEARCH_INDEX.md`
+  - `02_MARKET_RESEARCH/WEBSITE_COPY_VOCABULARY_AND_POSITIONING_NOTES.md`
+  - `02_MARKET_RESEARCH/SERVICE_PAGE_RESEARCH_SOURCE_LOG.csv`
+- package changes completed locally:
+  - rebuilt homepage as a boutique billboard/gateway
+  - upgraded all five primary service/training pages
+  - upgraded the resources hub
+  - upgraded all three existing article pages
+  - added `/resources/scuba-training-options-for-new-divers/`
+  - added local site/resource image assets and versioned CSS/JS query strings for cache-busting
+- local QA notes:
+  - broken internal file references: `0` across `11` HTML pages
+  - banned claims review: no unsafe positive claims found; disallowed terms only appear in negative boundary context where they are explicitly rejected
+  - mobile viewport check: local Playwright pass succeeded for homepage, multiple service pages, and the new scuba-training article
+- blocker:
+  - remote deployment could not start because the earlier FTP password is not recoverable from the currently accessible local context
+- next publish action:
+  - once the FTP password is available again, create a new dated remote backup folder, upload the redesigned package, verify all live URLs and assets, confirm the cache-busted asset paths, then send Chris the completion email with the final live URL list
+
+### 2026-06-15 19:08 America/New_York - Full static site build uploaded to origin, stale proxy cache still affecting older plain URLs
+
+- publish mode: static HTML over FTP / explicit FTPS
+- canonical lane: `C:\Users\Peyto\NexTeam-Studio\docs\clients\dive-factor-underwater-services`
+- local source package:
+  - `07_WEBSITE_SEO/STATIC_SITE_PACKAGE`
+  - `07_WEBSITE_SEO/STATIC_SITE_PACKAGE_2026-06-15_full-build.zip`
+- remote backup folder created before overwrite:
+  - `_backup_before_divefactor_full_site_build_2026-06-15_1903`
+- local backup record saved:
+  - `C:\Users\Peyto\NexTeam-Studio\tmp\divefactor_full_live_backup_2026-06-15_1903`
+- remote files backed up:
+  - `.htaccess`
+  - `index.html`
+  - `assets/site.css`
+  - `assets/site.js`
+  - `images/Dive_Factor_Logo.png`
+  - `underwater-services/index.html`
+  - `aquatic-programs/index.html`
+- files uploaded:
+  - `/index.html`
+  - `/robots.txt`
+  - `/sitemap.xml`
+  - `/assets/site.css`
+  - `/assets/site.js`
+  - `/images/Dive_Factor_Logo.png`
+  - `/underwater-services/index.html`
+  - `/dive-training/index.html`
+  - `/aquatic-programs/index.html`
+  - `/safety-training/index.html`
+  - `/aquatic-staff-training/index.html`
+  - `/resources/index.html`
+  - `/resources/below-waterline-inspection-guide/index.html`
+  - `/resources/camp-scuba-experience-guide/index.html`
+  - `/resources/aquatic-staff-cpr-first-aid-oxygen-guide/index.html`
+- live URL set targeted:
+  - `https://divefactor.com/`
+  - `https://divefactor.com/underwater-services/`
+  - `https://divefactor.com/dive-training/`
+  - `https://divefactor.com/aquatic-programs/`
+  - `https://divefactor.com/safety-training/`
+  - `https://divefactor.com/aquatic-staff-training/`
+  - `https://divefactor.com/resources/`
+  - `https://divefactor.com/resources/below-waterline-inspection-guide/`
+  - `https://divefactor.com/resources/camp-scuba-experience-guide/`
+  - `https://divefactor.com/resources/aquatic-staff-cpr-first-aid-oxygen-guide/`
+  - `https://divefactor.com/robots.txt`
+  - `https://divefactor.com/sitemap.xml`
+- QA notes:
+  - local package QA confirmed no live forms, no `action` / `method` attributes, no banned public-claim phrases, and no broken internal links across the 10 HTML pages
+  - live GET checks returned `200` for all page and asset URLs requested during QA
+  - Playwright screenshots captured responsive checks for the new homepage build, Dive Training, and Resources layouts
+  - plain public URLs for newly introduced paths served the new content immediately
+  - cache-busted requests such as `https://divefactor.com/index.html?v=1907` confirmed the new origin files for the homepage and other previously existing paths
+- remaining live issue:
+  - an upstream proxy cache still served older versions of some previously existing plain URLs during QA, specifically `/`, `/underwater-services/`, `/aquatic-programs/`, `/assets/site.css`, and `/assets/site.js`
+  - because the cache-busted origin URLs and FTP reads both show the new files, this remaining issue is documented as cache-related rather than upload-related
+- not touched:
+  - no WordPress install
+  - no database creation or changes
+  - no CRM routing
+  - no payment links
+  - no outreach
+  - no `.well-known` changes
+- Chris email summary:
+  - subject: `Dive Factor Full Static Site Build Publish Update`
+  - Gmail message id: `19ecd8b4219af6bf`
+
+### 2026-06-15 - Static HTML publish approved, local package prep started
+
+- publish mode: static HTML over FTP / explicit FTPS
+- canonical lane: `C:\Users\Peyto\NexTeam-Studio\docs\clients\dive-factor-underwater-services`
+- local source inputs:
+  - `C:\Users\Peyto\NexTeam-Studio\divefactor-underwater-services-mockup-v3.html`
+  - `C:\Users\Peyto\NexTeam-Studio\divefactor-aquatic-programs-mockup.html`
+  - `C:\Users\Peyto\NexTeam-Studio\mockup-assets\Dive_Factor_Logo.png`
+- local publish package created:
+  - `07_WEBSITE_SEO/STATIC_SITE_PACKAGE/index.html`
+  - `07_WEBSITE_SEO/STATIC_SITE_PACKAGE/underwater-services/index.html`
+  - `07_WEBSITE_SEO/STATIC_SITE_PACKAGE/aquatic-programs/index.html`
+  - `07_WEBSITE_SEO/STATIC_SITE_PACKAGE/assets/site.css`
+  - `07_WEBSITE_SEO/STATIC_SITE_PACKAGE/assets/site.js`
+  - `07_WEBSITE_SEO/STATIC_SITE_PACKAGE/images/Dive_Factor_Logo.png`
+- content decisions applied:
+  - removed placeholder mockup forms and any live routing behavior
+  - preserved two-lane Dive Factor brand structure
+  - kept safe wording for underwater services and aquatic programs
+  - retained review-pending language where NAUI or DAN details would otherwise become too specific
+- blocker:
+  - FTP password not yet provided, so live backup, upload, verification, and completion email remain blocked
+- next action:
+  - receive FTP password, connect to `/home/aquatr7/divefactor.com`, create dated remote backup folder, upload approved static package, verify live URLs, run QA, and send Chris the completion summary
+
+### 2026-06-15 18:10 America/New_York - Static HTML publish completed
+
+- FTP endpoint used:
+  - server: `ftp.aquatraceswimmingpoolleakdetection.com`
+  - username: `clawdia-atlas@divefactor.com`
+  - transport: explicit FTPS
+- connection note:
+  - the FTPS certificate principal did not match the provided hostname, so upload work was completed over explicit FTPS with certificate verification bypassed after confirming the expected account content and recording the mismatch in the proof trail
+- remote backup folder created:
+  - `_backup_before_divefactor_static_publish_2026-06-15_1808`
+- remote files backed up:
+  - `_backup_before_divefactor_static_publish_2026-06-15_1808/index.html`
+  - `_backup_before_divefactor_static_publish_2026-06-15_1808/.htaccess`
+  - `_backup_before_divefactor_static_publish_2026-06-15_1808/images/Dive_Factor_Logo.png`
+- local backup record saved:
+  - `C:\Users\Peyto\NexTeam-Studio\tmp\divefactor_live_backup_2026-06-15_1808`
+- files uploaded:
+  - `/index.html`
+  - `/assets/site.css`
+  - `/assets/site.js`
+  - `/underwater-services/index.html`
+  - `/aquatic-programs/index.html`
+  - `/images/Dive_Factor_Logo.png`
+- live URL verification:
+  - `https://divefactor.com/`
+  - `https://divefactor.com/underwater-services/`
+  - `https://divefactor.com/aquatic-programs/`
+- QA notes:
+  - browser-style GET verification returned the new root homepage and both new lane pages
+  - public asset fetch confirmed the uploaded CSS and logo were reachable
+  - deployed HTML sweep found no live forms, mailto links, CRM routing, or payment links
+  - shared CSS includes responsive breakpoints and mobile navigation behavior for narrower viewports
+  - direct `HEAD` and some default curl probes returned `406 Not Acceptable` even while normal GET requests rendered successfully, so GET-based verification was used as the authoritative public QA path
+- not touched:
+  - no WordPress install
+  - no database creation or changes
+  - no form routing
+  - no email routing from the site
+  - no CRM routing
+  - no payment links
+  - no `.well-known` changes
+  - no `.htaccess` changes on the live root

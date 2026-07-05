@@ -76,9 +76,15 @@ const styles = {
     border: "1px solid #30363D",
     fontWeight: 700,
     cursor: "pointer",
+    transition: "background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 80ms ease, opacity 140ms ease",
   },
   error: {
     color: "#F87171",
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  status: {
+    color: "#A5B4FC",
     fontSize: 13,
     marginBottom: 12,
   },
@@ -141,13 +147,26 @@ export function AdminGate({ children }) {
   const [operatorEmail, setOperatorEmail] = useState("");
   const [operatorPassword, setOperatorPassword] = useState("");
   const [error, setError] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
   const [firebaseOperatorAuthed, setFirebaseOperatorAuthed] = useState(false);
   const [checkingFirebaseAuth, setCheckingFirebaseAuth] = useState(firebaseOperatorGateEnabled);
   const [actorProfile, setActorProfile] = useState(null);
+  const [resettingFirebaseSession, setResettingFirebaseSession] = useState(false);
+  const [resetButtonActive, setResetButtonActive] = useState(false);
   const isAuthed = useMemo(
     () => firebaseOperatorAuthed || !firebaseOperatorGateEnabled,
     [firebaseOperatorAuthed, firebaseOperatorGateEnabled]
   );
+  const resetButtonStyle = useMemo(() => ({
+    ...styles.secondaryButton,
+    marginTop: 12,
+    background: resetButtonActive || resettingFirebaseSession ? "rgba(79, 70, 229, 0.16)" : "#0D1117",
+    borderColor: resetButtonActive || resettingFirebaseSession ? "rgba(129, 140, 248, 0.9)" : "#30363D",
+    boxShadow: resetButtonActive || resettingFirebaseSession ? "0 0 0 3px rgba(99, 102, 241, 0.18)" : "none",
+    transform: resetButtonActive ? "translateY(1px)" : "translateY(0)",
+    opacity: resettingFirebaseSession ? 0.92 : 1,
+    cursor: resettingFirebaseSession ? "progress" : "pointer",
+  }), [resetButtonActive, resettingFirebaseSession]);
 
   useEffect(() => {
     if (!firebaseOperatorGateEnabled) {
@@ -234,13 +253,17 @@ export function AdminGate({ children }) {
           This surface now requires a real Firebase operator account with server-issued platform claims. Legacy client-side password fallback is disabled.
         </p>
         {error ? <div style={styles.error}>{error}</div> : null}
+        {statusMessage ? <div style={styles.status}>{statusMessage}</div> : null}
 
         {firebaseOperatorGateEnabled ? (
           <>
             <input
               type="email"
               value={operatorEmail}
-              onChange={(event) => setOperatorEmail(event.target.value)}
+              onChange={(event) => {
+                setOperatorEmail(event.target.value);
+                setStatusMessage("");
+              }}
               placeholder="Operator email"
               autoComplete="username"
               style={styles.input}
@@ -248,7 +271,10 @@ export function AdminGate({ children }) {
             <input
               type="password"
               value={operatorPassword}
-              onChange={(event) => setOperatorPassword(event.target.value)}
+              onChange={(event) => {
+                setOperatorPassword(event.target.value);
+                setStatusMessage("");
+              }}
               placeholder="Operator password"
               autoComplete="current-password"
               style={styles.input}
@@ -256,6 +282,7 @@ export function AdminGate({ children }) {
                 if (event.key === "Enter") {
                   event.preventDefault();
                   setError("");
+                  setStatusMessage("");
                   signInFirebaseOperator({ email: operatorEmail, password: operatorPassword })
                     .then(() => {
                       setFirebaseOperatorAuthed(true);
@@ -272,6 +299,7 @@ export function AdminGate({ children }) {
               disabled={checkingFirebaseAuth}
               onClick={() => {
                 setError("");
+                setStatusMessage("");
                 signInFirebaseOperator({ email: operatorEmail, password: operatorPassword })
                   .then(() => {
                     setFirebaseOperatorAuthed(true);
@@ -288,15 +316,29 @@ export function AdminGate({ children }) {
             </p>
             <button
               type="button"
-              style={{ ...styles.secondaryButton, marginTop: 12 }}
-              onClick={() => {
+              style={resetButtonStyle}
+              disabled={resettingFirebaseSession}
+              onMouseDown={() => setResetButtonActive(true)}
+              onMouseUp={() => setResetButtonActive(false)}
+              onMouseLeave={() => setResetButtonActive(false)}
+              onBlur={() => setResetButtonActive(false)}
+              onClick={async () => {
                 setError("");
-                signOutFirebaseSession().catch((authError) => {
+                setStatusMessage("");
+                setResettingFirebaseSession(true);
+                setResetButtonActive(true);
+                try {
+                  await signOutFirebaseSession();
+                  setStatusMessage("Firebase session cleared. Sign in again to refresh operator claims.");
+                } catch (authError) {
                   setError(String(authError?.message || "Failed to clear Firebase session."));
-                });
+                } finally {
+                  setResettingFirebaseSession(false);
+                  setResetButtonActive(false);
+                }
               }}
             >
-              Reset Firebase Session
+              {resettingFirebaseSession ? "Resetting Firebase Session..." : "Reset Firebase Session"}
             </button>
           </>
         ) : (

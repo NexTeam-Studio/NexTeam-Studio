@@ -56,9 +56,16 @@ export function hasCompanyCamToken(token = process.env.COMPANYCAM_API_TOKEN) {
   return Boolean(String(token || "").trim());
 }
 
-export async function listCompanyCamProjects({ token = process.env.COMPANYCAM_API_TOKEN, perPage = 5, query, modifiedSince } = {}) {
+export async function listCompanyCamProjects({
+  token = process.env.COMPANYCAM_API_TOKEN,
+  perPage = 5,
+  page,
+  query,
+  modifiedSince,
+} = {}) {
   return fetchCompanyCam("/projects", token, {
     per_page: perPage,
+    page,
     query,
     modified_since: modifiedSince,
   });
@@ -67,11 +74,13 @@ export async function listCompanyCamProjects({ token = process.env.COMPANYCAM_AP
 export async function listCompanyCamPhotos({
   token = process.env.COMPANYCAM_API_TOKEN,
   perPage = 100,
+  page,
   query,
   modifiedSince,
 } = {}) {
   return fetchCompanyCam("/photos", token, {
     per_page: perPage,
+    page,
     query,
     modified_since: modifiedSince,
   });

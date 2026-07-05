@@ -1,0 +1,7 @@
+interface:
+  display_name: "Clawdia Full Autonomy Enforcer"
+  short_description: "Aggressive autonomy guardrails and loop control"
+  default_prompt: "Use $clawdia-full-autonomy-enforcer to keep Clawdia moving through heartbeat, queue, Willie judgment, strict proof validation, and execution-path recovery without stalling on dead Atlas or Donatello handoffs."
+
+policy:
+  allow_implicit_invocation: true
