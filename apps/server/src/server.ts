@@ -17,6 +17,7 @@ import { createNexiRouter } from "./nexi/nexiRoutes.js";
 import { buildHealth } from "./health.js";
 import { registerCrmRoutes } from "./crm/routes.js";
 import { getAdminDb } from "./firebase.js";
+import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
 
 const app = express();
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
@@ -122,6 +123,7 @@ app.post("/api/approval-queue/:id/approve", async (req: Request, res: Response) 
 });
 
 registerCrmRoutes(app, { approvalQueue, eventBus });
+registerFieldDocsRoutes(app, { eventBus });
 app.use(express.static(webDistDir));
 
 app.get("/", (_req: Request, res: Response) => {

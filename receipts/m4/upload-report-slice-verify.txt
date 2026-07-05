@@ -1,0 +1,58 @@
+﻿
+> verify
+> npm run lint && npm run typecheck && npm run test && npm run check:tenancy && npm run check:secrets && npm run check:secret-history && npm run check:provider-imports && npm run check:blueprints
+
+
+> lint
+> eslint "apps/**/*.{ts,tsx}" "packages/**/*.{ts,tsx}" "tests/**/*.ts" "scripts/check-*.mjs"
+
+
+> typecheck
+> tsc -b
+
+
+> test
+> node --test "packages/**/*.test.mjs" "apps/**/*.test.mjs"
+
+✔ natural-language photo search matches imported metadata (1.0678ms)
+✔ vision pipeline stub is wired off by default (0.1912ms)
+✔ upload service creates native storage refs, thumbnails, and EXIF metadata (0.8704ms)
+✔ before/after pairing and vision fallback are wired (0.3822ms)
+✔ leak checklist and report PDF render (0.7422ms)
+✔ Field Docs read tool searches native media repository (0.6305ms)
+✔ Media schema rejects exposed third-party URL fields (2.0223ms)
+✔ NexiBlueprint and SiteJobBlueprint schemas remain distinct (1.1376ms)
+✔ Approval item defaults can park outbound execution (0.7666ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 197.9
+
+> check:tenancy
+> node scripts/check-tenancy.mjs
+
+Tenancy check passed (28 files checked).
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (446 tracked non-doc files checked).
+
+> check:secret-history
+> node scripts/check-secret-history.mjs
+
+Secret history scan passed (120 reachable commits, 2299 reachable objects checked).
+
+> check:provider-imports
+> node scripts/check-provider-imports.mjs
+
+Provider boundary check passed (32 files checked).
+
+> check:blueprints
+> node scripts/check-blueprint-identifiers.mjs
+
+Blueprint naming check passed (28 files checked).

@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "generatedAt": "2026-07-05T00:28:01.763Z",
+  "hardLimits": {
+    "companyCamWrite": false,
+    "outboundDelivery": false,
+    "paidVisionCall": false
+  },
+  "upload": {
+    "mediaIds": [
+      "media_3a7e765a-4285-436e-82b1-3bc8b81c91d4",
+      "media_8b650c5a-63fe-4c4a-83d0-ea10b4be2172"
+    ],
+    "storageRefsAreNative": true,
+    "thumbnailsCreated": true,
+    "exifGpsCaptured": true
+  },
+  "vision": {
+    "beforeEnabled": false,
+    "beforeReason": "FIELD_DOCS_VISION_ENABLED is not true.",
+    "afterEnabled": false,
+    "afterReason": "FIELD_DOCS_VISION_ENABLED is not true.",
+    "actualSpendUsd": 0
+  },
+  "checklist": {
+    "id": "checklist_5d81597e-71f5-40c6-9423-a7888ea8c394",
+    "templateId": "leak_detection_checklist_v1",
+    "completedItems": 4
+  },
+  "report": {
+    "id": "report_d2b71ca2-f997-4abc-852c-79b843471b45",
+    "status": "posted",
+    "pdfRef": "native://tenants/aquatrace/fieldReports/report_d2b71ca2-f997-4abc-852c-79b843471b45.pdf",
+    "postedAt": "2026-07-05T00:28:01.754Z",
+    "pdfPath": "receipts/m4/native-field-report.pdf",
+    "pdfMagic": "%PDF-"
+  },
+  "search": {
+    "query": "show me skimmer photo from Aquatrace job",
+    "topHitId": "media_3a7e765a-4285-436e-82b1-3bc8b81c91d4",
+    "hitCount": 2
+  },
+  "beforeAfter": {
+    "pairCount": 1,
+    "firstPair": {
+      "before": "media_3a7e765a-4285-436e-82b1-3bc8b81c91d4",
+      "after": "media_8b650c5a-63fe-4c4a-83d0-ea10b4be2172"
+    }
+  }
+}

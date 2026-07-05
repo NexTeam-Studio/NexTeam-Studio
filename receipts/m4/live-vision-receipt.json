@@ -1,0 +1,43 @@
+{
+  "ok": true,
+  "dryRun": false,
+  "destructiveWrites": false,
+  "outboundSent": false,
+  "tenantId": "aquatrace",
+  "source": "companycam+anthropic",
+  "spendCapUsd": 5,
+  "estimatedCostUsd": 0.01302,
+  "sampledAt": "2026-07-04T20:42:40.542Z",
+  "companyCamPhoto": {
+    "projectId": "107503799",
+    "projectName": "Deborah Justice",
+    "mediaId": "3338800086",
+    "mime": "image/jpeg",
+    "byteLength": 839693,
+    "storageRef": "companycam:3338800086"
+  },
+  "vision": {
+    "enabled": true,
+    "reason": "",
+    "aiCaption": "Outdoor pool equipment pad showing PVC piping with a black diverter valve and two pipe stubs emerging from bare dirt surrounded by pine straw mulch.",
+    "aiTags": [
+      "pool equipment",
+      "pvc pipe",
+      "diverter valve",
+      "plumbing",
+      "pipe fitting",
+      "pine straw",
+      "backyard",
+      "pool pump",
+      "exposed pipe",
+      "maintenance"
+    ],
+    "usage": {
+      "inputTokens": 3670,
+      "outputTokens": 134,
+      "cacheCreationInputTokens": 0,
+      "cacheReadInputTokens": 0,
+      "totalTokens": 3804
+    }
+  }
+}
