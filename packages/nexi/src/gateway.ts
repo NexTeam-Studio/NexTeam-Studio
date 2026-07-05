@@ -729,6 +729,18 @@ function toolResultContent(result: unknown): string {
   }
 }
 
+function stripUnrequestedNextSteps(answer: string): string {
+  const lines = answer.split(/\r?\n/);
+  const cleaned: string[] = [];
+  for (const line of lines) {
+    if (/^\s*(?:want me to|do you want me to|would you like|should i|anything else|or are you looking|if you need)\b/i.test(line)) {
+      break;
+    }
+    cleaned.push(line);
+  }
+  return cleaned.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 export async function callNexiGateway(request: GatewayRequest): Promise<GatewayResponse> {
   let call: AnthropicCallResult;
   try {
@@ -747,7 +759,7 @@ export async function callNexiGateway(request: GatewayRequest): Promise<GatewayR
     throw error;
   }
 
-  const sourceCheck = enforceSources(call.answer, request.sources, latestUserText(request.messages));
+  const sourceCheck = enforceSources(stripUnrequestedNextSteps(call.answer), request.sources, latestUserText(request.messages));
   await writeUsageRecord({
     tenantId: request.tenantId,
     routeActionName: request.routeActionName,
@@ -830,7 +842,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
     const toolUses = toolUsesFromContent(call.content);
 
     if (toolUses.length === 0) {
-      const sourceCheck = enforceSources(call.answer, sources, latestUserText(request.messages));
+      const sourceCheck = enforceSources(stripUnrequestedNextSteps(call.answer), sources, latestUserText(request.messages));
       await writeUsageRecord({
         tenantId: request.tenant.id,
         routeActionName: request.routeActionName,

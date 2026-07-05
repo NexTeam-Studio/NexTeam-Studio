@@ -242,7 +242,7 @@ test("Nexi exact photo prompt extracts trailing entity before photos", async () 
     fetchFn: async (_url, init) => {
       calls.push(JSON.parse(init.body));
       return new Response(JSON.stringify({
-        content: [{ type: "text", text: "I found one Deborah Justice photo." }],
+        content: [{ type: "text", text: "I found one Deborah Justice photo.\n\nWant me to pull specific photos?" }],
         usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
       }), { status: 200 });
     }
@@ -251,6 +251,7 @@ test("Nexi exact photo prompt extracts trailing entity before photos", async () 
   assert.equal(parsedToolArgs.projectQuery, "Deborah Justice");
   assert.equal(result.sources.length, 1);
   assert.equal(result.toolRuns[0].name, "getPhotos");
+  assert.equal(result.answer, "I found one Deborah Justice photo.");
 });
 
 test("Nexi schedule follow-ups use prior conversation date window", async () => {
