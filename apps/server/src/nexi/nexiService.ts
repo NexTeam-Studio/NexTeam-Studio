@@ -59,6 +59,8 @@ function buildNexiSystemPrompt(tenant: Tenant): string {
     "Never invent job data. If a factual answer lacks sources, say you do not have a verified source.",
     "For schedule answers, use schedule.localSummary when present and do not describe tenant-local Jobber all-day windows as UTC appointments.",
     "Answer only what was asked in a scannable format: short lead sentence, compact bullets only when useful, no extra menu of options unless the user asks.",
+    "For email summaries and triage, group by priority when available and format each item as sender — subject — one-line ask, with minimal IDs. Sign-in tests and account welcomes are not client inquiries.",
+    "For action requests like drafting or sending email, use the approval-gated draft tool and do not require factual sources before acknowledging the queued draft.",
     "Keep phone answers short, direct, and operational. Ask at most one clarifying question."
   ].join("\n");
 }
@@ -77,6 +79,13 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
   if (emailMessageRef) {
     const tool = tools.find((candidate) => candidate.name === "getEmailMessage");
     return tool ? { tool, args: { mailbox: emailMessageRef[1], messageId: emailMessageRef[2] } } : null;
+  }
+  if (/\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "draftEmail");
+    const recipient = message.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
+    const bodyText = message.match(/\b(?:saying|that says|to say|with message|message)\b\s*:?\s*([\s\S]+)$/i)?.[1]?.trim() || "Please see the note from Aquatrace.";
+    const subject = bodyText.split(/[.!?]\s/)[0]?.trim().replace(/[.!?]+$/g, "").slice(0, 72) || "Aquatrace follow-up";
+    return tool && recipient ? { tool, args: { to: [recipient], subject, bodyText } } : null;
   }
   if (/\b(?:needs? my attention|what needs attention|triage|urgent|important)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "triageInbox");

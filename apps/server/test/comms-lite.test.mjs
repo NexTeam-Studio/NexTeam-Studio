@@ -124,6 +124,16 @@ test("Comms Nexi triageInbox ranks Aquatrace attention items and excludes noise"
         snippet: "Unsubscribe for fewer promotions.",
         labels: ["CATEGORY_PROMOTIONS"]
       }, {
+        id: "signin_1",
+        tenantId: "aquatrace",
+        mailbox: "ops",
+        threadId: "thr_signin",
+        from: "accounts@example.test",
+        subject: "Sign-in test email",
+        receivedAt: "2026-07-05T07:00:00.000Z",
+        snippet: "Welcome to your new account.",
+        labels: ["INBOX"]
+      }, {
         id: "client_1",
         tenantId: "aquatrace",
         mailbox: "ops",
@@ -170,10 +180,55 @@ test("Comms Nexi triageInbox ranks Aquatrace attention items and excludes noise"
   const tool = createCommsNexiTools(rail, approvalQueue).find((candidate) => candidate.name === "triageInbox");
   assert.ok(tool);
   const result = await tool.handler(tenant(), { mailbox: "ops", date: "2026-07-05T12:00:00.000Z" });
-  assert.equal(result.result.scannedCount, 4);
-  assert.equal(result.result.excludedNoiseCount, 1);
+  assert.equal(result.result.scannedCount, 5);
+  assert.equal(result.result.excludedNoiseCount, 2);
   assert.deepEqual(result.result.items.map((item) => item.category), ["client_inquiry", "form_submission", "service_notice"]);
+  assert.deepEqual(Object.keys(result.result.groupedByPriority), ["high", "normal", "low"]);
+  assert.equal(result.result.items[0].sender, "client@example.test");
+  assert.equal(result.result.items[0].subject, "Pool leak question");
+  assert.equal(result.result.items[0].askSummary, "asking about a possible leak");
   assert.deepEqual(result.sources.map((source) => source.ref), ["email:ops:client_1", "email:ops:form_1", "email:ops:service_1"]);
+});
+
+test("Comms Nexi summarizeInbox handles invalid date strings and returns sender-subject-ask items", async () => {
+  let observedQuery = null;
+  const readAdapter = {
+    mailbox: "ops",
+    async searchEmail(query) {
+      observedQuery = query;
+      return [{
+        id: "semrush_1",
+        tenantId: "aquatrace",
+        mailbox: "ops",
+        threadId: "thr_semrush",
+        from: "Semrush <audit@example.test>",
+        subject: "Semrush site audit",
+        receivedAt: "2026-07-05T09:00:00.000Z",
+        snippet: "Audit found crawl warnings to review.",
+        labels: ["INBOX"]
+      }];
+    },
+    async getEmailThread() {
+      throw new Error("not used");
+    },
+    async getEmailMessage() {
+      throw new Error("not used");
+    },
+    async getEmailAttachment() {
+      throw new Error("not used");
+    }
+  };
+  const rail = { tenantId: "aquatrace", readAdapters: new Map([["ops", readAdapter]]), sendAdapter: null };
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  const tool = createCommsNexiTools(rail, approvalQueue).find((candidate) => candidate.name === "summarizeInbox");
+  assert.ok(tool);
+  const result = await tool.handler(tenant(), { mailbox: "ops", date: "not-a-date", maxResults: 10 });
+  assert.match(observedQuery.after, /^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/);
+  assert.match(observedQuery.before, /^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/);
+  assert.equal(result.result.items[0].sender, "Semrush");
+  assert.equal(result.result.items[0].subject, "Semrush site audit");
+  assert.equal(result.result.items[0].askSummary, "Audit found crawl warnings to review.");
+  assert.equal(result.sources[0].ref, "email:ops:semrush_1");
 });
 
 test("Comms Nexi tools reject tenant contexts outside the bound email rail", async () => {

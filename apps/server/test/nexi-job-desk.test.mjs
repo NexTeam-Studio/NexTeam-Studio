@@ -7,7 +7,7 @@ import { answerNexiMessage, runExplicitLocalToolLoop } from "../dist/nexi/nexiSe
 import { createNexiJobDeskTools } from "../dist/nexi/nexiTools.js";
 import { MemoryNexiRepository } from "../dist/nexi/nexiRepository.js";
 import { MemoryUsageLogWriter } from "../dist/usageLog.js";
-import { enforceSources, promptIsMetaOrFeedback, runNexiToolLoop } from "@nexteam/nexi";
+import { enforceSources, promptIsActionRequest, promptIsMetaOrFeedback, runNexiToolLoop } from "@nexteam/nexi";
 
 function tenant() {
   return {
@@ -44,6 +44,14 @@ test("source check does not block meta or feedback turns", () => {
   assert.equal(promptIsMetaOrFeedback("The thumbnails are not clickable or savable"), true);
   const feedback = enforceSources("I logged that correction against my prior job answer.", [], "Wrong answer");
   assert.equal(feedback.ok, true);
+});
+
+test("source check does not block email action commands or honest tool failures", () => {
+  assert.equal(promptIsActionRequest("Send an email to owner@example.test saying I will call Thursday."), true);
+  const action = enforceSources("I drafted the email and parked it for approval.", [], "Send an email to owner@example.test saying I will call Thursday.");
+  assert.equal(action.ok, true);
+  const failure = enforceSources("I couldn't read that email yet. I logged the tool failure instead of guessing.", [], "What did the Semrush site audit say?");
+  assert.equal(failure.ok, true);
 });
 
 test("Nexi tool loop preloads obvious tools and records cache metrics", async () => {
@@ -234,6 +242,87 @@ test("Nexi Anthropic gateway preloads email source refs with getEmailMessage", a
   assert.deepEqual(calls[0].tools, []);
   assert.equal(result.toolRuns[0].name, "getEmailMessage");
   assert.equal(result.sources[0].ref, "email:chris:msg_1");
+});
+
+test("Nexi Anthropic gateway preloads draftEmail for send-email action commands", async () => {
+  const calls = [];
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "Send an email to owner@example.test saying I can confirm Thursday." }],
+    tools: [{
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string().optional() }),
+      handler: async () => {
+        throw new Error("searchEmail should not run for send commands");
+      }
+    }, {
+      name: "draftEmail",
+      description: "Draft email.",
+      inputSchema: z.object({ to: z.array(z.string().email()), subject: z.string(), bodyText: z.string() }),
+      handler: async (_tenant, args) => {
+        toolCalls.push(args);
+        return {
+          result: { approval: { id: "approval_1", status: "pending" } },
+          sources: [{ rail: "native", ref: "approval_1", label: "ApprovalQueue email draft approval_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "I drafted the email and parked it for approval." }],
+        usage: { input_tokens: 10, output_tokens: 6 }
+      }), { status: 200 });
+    }
+  });
+  assert.deepEqual(toolCalls, [{
+    to: ["owner@example.test"],
+    subject: "I can confirm Thursday",
+    bodyText: "I can confirm Thursday."
+  }]);
+  assert.match(calls[0].messages.at(-1).content, /Verified draftEmail result/);
+  assert.deepEqual(calls[0].tools, []);
+  assert.equal(result.toolRuns[0].name, "draftEmail");
+  assert.equal(result.sources[0].ref, "approval_1");
+  assert.equal(result.answer, "I drafted the email and parked it for approval.");
+});
+
+test("Nexi Anthropic gateway sanitizes deterministic email tool failures", async () => {
+  const calls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What did the Semrush site audit say?" }],
+    tools: [{
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string().optional() }),
+      handler: async () => {
+        throw new Error("Invalid time value");
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      assert.doesNotMatch(JSON.stringify(calls[0]), /Invalid time value/);
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "I couldn't read that email yet. I logged the tool failure instead of guessing." }],
+        usage: { input_tokens: 10, output_tokens: 6 }
+      }), { status: 200 });
+    }
+  });
+  assert.equal(result.toolRuns[0].name, "searchEmail");
+  assert.match(JSON.stringify(result.toolRuns[0].result), /failed safely/);
+  assert.doesNotMatch(JSON.stringify(result.toolRuns[0].result), /Invalid time value/);
+  assert.equal(result.answer, "I couldn't read that email yet. I logged the tool failure instead of guessing.");
 });
 
 test("Nexi Anthropic gateway preloads triageInbox for attention prompts", async () => {
@@ -847,4 +936,29 @@ test("Nexi service logs user-flagged incorrect answers with correction context",
   assert.match(repository.failureLog[0].correctionText, /CompanyCam/);
   assert.equal(repository.failureLog[0].flaggedAnswer, "No technician is listed in Jobber.");
   assert.match(result.answer, /logged/i);
+});
+
+test("Nexi service logs softer correction wording before the source gate can fire", async () => {
+  const repository = new MemoryNexiRepository();
+  await repository.saveConversation({
+    tenantId: "aquatrace",
+    conversationId: "trial-day-1b",
+    userText: "What was the issue at Camp Mikell?",
+    assistantText: "The job title says swimming pool leak detection.",
+    sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Camp Mikell" }]
+  });
+  const result = await answerNexiMessage({
+    tenant: tenant(),
+    message: "That was incorrect, it's in CompanyCam.",
+    conversationId: "trial-day-1b",
+    tools: [],
+    repository,
+    gateway: async () => {
+      throw new Error("correction handling should not call the model");
+    }
+  });
+  assert.match(result.failureId, /^fail_/);
+  assert.equal(repository.failureLog[0].reason, "user_flagged_incorrect");
+  assert.match(repository.failureLog[0].correctionText, /CompanyCam/);
+  assert.equal(repository.failureLog[0].flaggedAnswer, "The job title says swimming pool leak detection.");
 });

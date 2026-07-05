@@ -25,7 +25,19 @@ const META_PROMPT_PATTERNS = [
 
 const FEEDBACK_PROMPT_PATTERNS = [
   /\b(?:wrong answer|wrong|incorrect|not correct|somewhat correct|correction|you'?re incorrect|you are incorrect)\b/i,
-  /\b(?:bug|ui|thumbnail|thumbnails|clickable|savable|saveable|tap|tappable)\b/i
+  /\b(?:bug|ui|thumbnail|thumbnails|clickable|savable|saveable|tap|tappable)\b/i,
+  /\b(?:formatting feedback|response format|answer format|format should|format needs|too verbose|minimal ids?|sender\s*\+\s*subject|scannable)\b/i
+];
+
+const ACTION_PROMPT_PATTERNS = [
+  /\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/i,
+  /\bemail\s+[\w.+-]+@[\w.-]+\.\w+\s+(?:saying|that|to say)\b/i
+];
+
+const HONEST_FAILURE_PATTERNS = [
+  /\b(?:i\s+)?(?:couldn'?t|could not|can'?t|cannot|wasn'?t able to|am not able to)\s+(?:read|reach|access|verify|pull|check|search|open)\b/i,
+  /\b(?:tool|email rail|gmail rail|provider)\s+(?:failed|returned an error|did not return|could not return)\b/i,
+  /\b(?:no verified|not verified|without a verified source|no matching source|no matching email)\b/i
 ];
 
 export interface SourceCheckResult {
@@ -44,9 +56,21 @@ export function promptIsMetaOrFeedback(prompt: string): boolean {
   return [...META_PROMPT_PATTERNS, ...FEEDBACK_PROMPT_PATTERNS].some((pattern) => pattern.test(normalized));
 }
 
+export function promptIsActionRequest(prompt: string): boolean {
+  const normalized = prompt.trim();
+  return ACTION_PROMPT_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+export function answerIsHonestFailure(answer: string): boolean {
+  const normalized = answer.trim();
+  return HONEST_FAILURE_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
 export function enforceSources(answer: string, sources: Source[], userPrompt = ""): SourceCheckResult {
   if (
     !promptIsMetaOrFeedback(userPrompt)
+    && !promptIsActionRequest(userPrompt)
+    && !answerIsHonestFailure(answer)
     && answerMentionsFactualRailData(answer)
     && sources.length === 0
   ) {

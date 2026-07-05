@@ -550,6 +550,21 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   const record = input && typeof input === "object" && !Array.isArray(input) ? { ...input as Record<string, unknown> } : {};
   const userText = latestUserText(messages);
   const emailRef = emailRefFromText(userText);
+  if (toolName === "draftEmail") {
+    const parsed = draftEmailInputFromText(userText);
+    if (typeof record.to === "string") {
+      record.to = [record.to];
+    }
+    if (typeof record.cc === "string") {
+      record.cc = [record.cc];
+    }
+    if (typeof record.bcc === "string") {
+      record.bcc = [record.bcc];
+    }
+    record.to ??= parsed.to;
+    record.subject ??= parsed.subject;
+    record.bodyText ??= parsed.bodyText;
+  }
   if (toolName === "getEmailAttachment" && emailRef?.attachmentId) {
     return { ...record, mailbox: emailRef.mailbox, messageId: emailRef.messageId, attachmentId: emailRef.attachmentId };
   }
@@ -636,7 +651,14 @@ function looksLikeInboxSummaryQuestion(lower: string): boolean {
 }
 
 function looksLikeEmailSearchQuestion(lower: string): boolean {
-  return /\b(?:emails?|mail|inbox|reply|replied|responded)\b/.test(lower);
+  return /\b(?:emails?|mail|inbox|reply|replied|responded)\b/.test(lower)
+    || /\bsemrush\b/.test(lower)
+    || /\bsite audit\b/.test(lower);
+}
+
+function looksLikeEmailDraftAction(lower: string): boolean {
+  return /\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/.test(lower)
+    || /\bemail\s+[\w.+-]+@[\w.-]+\.\w+\s+(?:saying|that|to say)\b/.test(lower);
 }
 
 function looksLikeInboxTriageQuestion(lower: string): boolean {
@@ -655,6 +677,31 @@ function emailRefFromText(text: string): { mailbox: string; messageId: string; a
   };
 }
 
+function firstEmailAddress(text: string): string | undefined {
+  return text.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
+}
+
+function draftBodyFromText(text: string): string {
+  const match = text.match(/\b(?:saying|that says|to say|with message|message)\b\s*:?\s*([\s\S]+)$/i);
+  return (match?.[1] ?? "Please see the note from Aquatrace.").trim().replace(/^["']|["']$/g, "");
+}
+
+function draftSubjectFromBody(bodyText: string): string {
+  const firstSentence = bodyText.split(/[.!?]\s/)[0]?.trim() || "Aquatrace follow-up";
+  const compact = firstSentence.replace(/[.!?]+$/g, "").replace(/\s+/g, " ").slice(0, 72).trim();
+  return compact.length >= 8 ? compact : "Aquatrace follow-up";
+}
+
+function draftEmailInputFromText(text: string): { to: string[]; subject: string; bodyText: string } {
+  const to = firstEmailAddress(text);
+  const bodyText = draftBodyFromText(text);
+  return {
+    to: to ? [to] : [],
+    subject: draftSubjectFromBody(bodyText),
+    bodyText
+  };
+}
+
 function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>, tenant?: Tenant | undefined): string[] {
   const userText = latestUserText(messages);
   const lower = userText.toLowerCase();
@@ -664,6 +711,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (emailRef && toolsByName.has("getEmailMessage")) {
     return ["getEmailMessage"];
+  }
+  if (looksLikeEmailDraftAction(lower) && firstEmailAddress(userText) && toolsByName.has("draftEmail")) {
+    return ["draftEmail"];
   }
   if (looksLikeInboxSummaryQuestion(lower) && toolsByName.has("summarizeInbox")) {
     return ["summarizeInbox"];
@@ -757,13 +807,10 @@ async function runDeterministicTools(input: {
       const args = tool.inputSchema.parse(normalizeToolInput(tool.name, {}, input.messages, input.tenant));
       const result = await tool.handler(input.tenant, args);
       runs.push({ name: tool.name, result: result.result, sources: result.sources });
-    } catch (error) {
-      if (toolNames.length === 1) {
-        throw error;
-      }
+    } catch {
       runs.push({
         name: tool.name,
-        result: { error: error instanceof Error ? error.message : "Tool failed before returning source data." },
+        result: safeToolErrorResult(tool.name),
         sources: []
       });
     }
@@ -785,6 +832,13 @@ function toolResultContent(result: unknown): string {
   } catch {
     return JSON.stringify({ error: "Tool result could not be serialized." });
   }
+}
+
+function safeToolErrorResult(toolName: string): Record<string, string> {
+  return {
+    error: `${toolName} failed safely before returning verified source data.`,
+    userMessage: "I couldn't complete that lookup yet. I logged the tool failure instead of guessing."
+  };
 }
 
 function stripUnrequestedNextSteps(answer: string): string {
@@ -950,15 +1004,26 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         });
         continue;
       }
-      const args = tool.inputSchema.parse(normalizeToolInput(toolUse.name, toolUse.input, messages, request.tenant));
-      const result = await tool.handler(request.tenant, args);
-      sources = [...sources, ...result.sources];
-      toolRuns.push({ name: tool.name, result: result.result, sources: result.sources });
-      toolResults.push({
-        type: "tool_result",
-        tool_use_id: toolUse.id,
-        content: toolResultContent(result.result)
-      });
+      try {
+        const args = tool.inputSchema.parse(normalizeToolInput(toolUse.name, toolUse.input, messages, request.tenant));
+        const result = await tool.handler(request.tenant, args);
+        sources = [...sources, ...result.sources];
+        toolRuns.push({ name: tool.name, result: result.result, sources: result.sources });
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: toolUse.id,
+          content: toolResultContent(result.result)
+        });
+      } catch {
+        const safeResult = safeToolErrorResult(tool.name);
+        toolRuns.push({ name: tool.name, result: safeResult, sources: [] });
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: toolUse.id,
+          is_error: true,
+          content: toolResultContent(safeResult)
+        });
+      }
     }
 
     messages.push({ role: "user", content: toolResults });

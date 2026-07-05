@@ -75,17 +75,23 @@ function emailSource(message: EmailMessageSummary): Source {
   };
 }
 
-type TriageCategory = "client_inquiry" | "form_submission" | "service_notice" | "other";
+type TriageCategory = "client_inquiry" | "form_submission" | "service_notice" | "account_noise" | "other";
 
-interface TriageItem {
-  rank: number;
-  priority: "high" | "normal" | "low";
-  category: TriageCategory;
+interface EmailDisplayItem {
   mailbox: string;
   messageId: string;
   threadId: string;
   receivedAt?: string | undefined;
+  sender: string;
+  subject: string;
+  askSummary: string;
   sourceRef: string;
+  category: TriageCategory;
+}
+
+interface TriageItem extends EmailDisplayItem {
+  rank: number;
+  priority: "high" | "normal" | "low";
   reason: string;
 }
 
@@ -97,8 +103,33 @@ function readAdapters(input: CommsRail, mailbox?: string | undefined): EmailRead
   return [...input.readAdapters.values()];
 }
 
+function validDateOrFallback(value: string | undefined, fallback = new Date()): Date {
+  const raw = value?.trim();
+  if (!raw) {
+    return fallback;
+  }
+  const lower = raw.toLowerCase();
+  if (lower === "today") {
+    return fallback;
+  }
+  if (lower === "yesterday") {
+    return new Date(fallback.getTime() - 24 * 60 * 60 * 1000);
+  }
+  if (lower === "tomorrow") {
+    return new Date(fallback.getTime() + 24 * 60 * 60 * 1000);
+  }
+  const dayOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (dayOnly) {
+    const parsed = new Date(`${dayOnly[1]}-${dayOnly[2]}-${dayOnly[3]}T00:00:00.000Z`);
+    return Number.isFinite(parsed.getTime()) ? parsed : fallback;
+  }
+  const parsed = new Date(raw);
+  return Number.isFinite(parsed.getTime()) ? parsed : fallback;
+}
+
 function inboxWindow(date = new Date().toISOString()): { after: string; before: string } {
-  const day = date.slice(0, 10);
+  const parsed = validDateOrFallback(date);
+  const day = parsed.toISOString().slice(0, 10);
   const start = new Date(`${day}T00:00:00.000Z`);
   const end = new Date(start);
   end.setUTCDate(start.getUTCDate() + 1);
@@ -193,14 +224,87 @@ function messageText(message: EmailMessageSummary): string {
   ].filter(Boolean).join(" ").toLowerCase();
 }
 
+function senderLabel(message: EmailMessageSummary): string {
+  const from = message.from?.trim();
+  if (!from) {
+    return "Unknown sender";
+  }
+  const nameMatch = from.match(/^"?([^"<]+)"?\s*</);
+  const emailMatch = from.match(/<([^>]+)>/)?.[1] ?? from.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
+  return (nameMatch?.[1] ?? emailMatch ?? from).trim();
+}
+
+function subjectLabel(message: EmailMessageSummary): string {
+  return cleanSubject(message.subject || "(no subject)") || "(no subject)";
+}
+
+function oneLineAsk(message: EmailMessageSummary, category: TriageCategory): string {
+  const text = (message.snippet || message.subject || "").replace(/\s+/g, " ").trim();
+  if (/confirm/i.test(text)) {
+    return "asking to confirm details";
+  }
+  if (/\b(?:schedule|appointment|book|available|thursday|friday|monday|tuesday|wednesday|saturday|sunday)\b/i.test(text)) {
+    return "asking about scheduling";
+  }
+  if (/\b(?:quote|estimate|price|cost)\b/i.test(text)) {
+    return "asking for pricing or an estimate";
+  }
+  if (/\b(?:leak|water loss|losing water)\b/i.test(text)) {
+    return "asking about a possible leak";
+  }
+  if (/\b(?:invoice|payment|paid|charge|billing)\b/i.test(text)) {
+    return "asking about billing or payment";
+  }
+  if (category === "form_submission") {
+    return "new form submission to review";
+  }
+  if (category === "service_notice") {
+    return text ? text.slice(0, 140) : "service or audit notice to review";
+  }
+  if (category === "account_noise") {
+    return "account sign-in or welcome notice; no client action";
+  }
+  return text ? text.slice(0, 140) : "no clear ask in metadata";
+}
+
+function displayItem(message: EmailMessageSummary, category: TriageCategory): EmailDisplayItem {
+  return {
+    mailbox: message.mailbox,
+    messageId: message.id,
+    threadId: message.threadId,
+    receivedAt: message.receivedAt,
+    sender: senderLabel(message),
+    subject: subjectLabel(message),
+    askSummary: oneLineAsk(message, category),
+    sourceRef: `email:${message.mailbox}:${message.id}`,
+    category
+  };
+}
+
+function groupByPriority(items: TriageItem[]): Record<TriageItem["priority"], TriageItem[]> {
+  return {
+    high: items.filter((item) => item.priority === "high"),
+    normal: items.filter((item) => item.priority === "normal"),
+    low: items.filter((item) => item.priority === "low")
+  };
+}
+
+function summaryItems(messages: EmailMessageSummary[]): EmailDisplayItem[] {
+  return messages.map((message) => displayItem(message, triageCategory(message).category));
+}
+
 function isNoise(message: EmailMessageSummary): boolean {
   const text = messageText(message);
   return message.labels.some((label) => /^(?:SPAM|TRASH|CATEGORY_PROMOTIONS|CATEGORY_SOCIAL)$/i.test(label))
-    || /\b(?:unsubscribe|newsletter|promo|promotion|sale|coupon|limited time|deal|webinar)\b/i.test(text);
+    || /\b(?:unsubscribe|newsletter|promo|promotion|sale|coupon|limited time|deal|webinar)\b/i.test(text)
+    || /\b(?:sign-?in|sign in test|login test|verification code|security code|welcome to your new account|welcome to .* account|new account|account created)\b/i.test(text);
 }
 
 function triageCategory(message: EmailMessageSummary): { category: TriageCategory; rank: number; reason: string } {
   const text = messageText(message);
+  if (/\b(?:sign-?in|sign in test|login test|verification code|security code|welcome to your new account|welcome to .* account|new account|account created)\b/i.test(text)) {
+    return { category: "account_noise", rank: 95, reason: "Account sign-in, test, or welcome notice; not a client inquiry." };
+  }
   if (/\b(?:new lead|contact form|form submission|website form|wpforms|gravity forms|quote request|estimate request)\b/i.test(text)) {
     return { category: "form_submission", rank: 20, reason: "Form submission or lead-intake language." };
   }
@@ -233,14 +337,10 @@ function triageItems(messages: EmailMessageSummary[]): { items: TriageItem[]; ex
     }
     const category = triageCategory(message);
     const rank = category.rank;
+    const display = displayItem(message, category.category);
     return [{
+      ...display,
       rank,
-      category: category.category,
-      mailbox: message.mailbox,
-      messageId: message.id,
-      threadId: message.threadId,
-      receivedAt: message.receivedAt,
-      sourceRef: `email:${message.mailbox}:${message.id}`,
       reason: category.reason,
       priority: triagePriority(rank)
     }];
@@ -362,8 +462,16 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
           })
         })));
         const messages = grouped.flatMap((group) => group.messages);
+        const items = summaryItems(messages);
         return {
-          result: { date: window.after.slice(0, 10), count: messages.length, mailboxes: grouped.map((group) => ({ mailbox: group.mailbox, count: group.messages.length })), messages },
+          result: {
+            date: window.after.slice(0, 10),
+            count: messages.length,
+            mailboxes: grouped.map((group) => ({ mailbox: group.mailbox, count: group.messages.length })),
+            formatRule: "Lead with sender, subject, and one-line ask. Use minimal IDs and cite sources only as email:<mailbox>:<messageId>.",
+            items,
+            messages
+          },
           sources: messages.map(emailSource)
         };
       }
@@ -398,6 +506,8 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
             scannedCount: messages.length,
             excludedNoiseCount: triage.excludedNoiseCount,
             mailboxes: grouped.map((group) => ({ mailbox: group.mailbox, count: group.messages.length })),
+            formatRule: "Group by priority. Each item must be sender — subject — one-line ask. Use minimal IDs.",
+            groupedByPriority: groupByPriority(triage.items),
             items: triage.items
           },
           sources: sourceMessages.map(emailSource)
