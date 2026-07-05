@@ -1,0 +1,115 @@
+{
+  "generatedAt": "2026-07-05T02:37:08.752Z",
+  "p1aWrongEntitySourceBug": {
+    "rawToolCall": {
+      "name": "lookupSiteJobBlueprintField",
+      "args": {
+        "field": "poolGallons",
+        "requestedEntity": "Deborah Justice"
+      }
+    },
+    "rawToolResult": {
+      "result": {
+        "field": "poolGallons",
+        "value": null,
+        "requestedEntity": "Deborah Justice",
+        "matchedBlueprintId": null
+      },
+      "sources": []
+    },
+    "controlToolCall": {
+      "name": "lookupSiteJobBlueprintField",
+      "args": {
+        "field": "poolGallons",
+        "requestedEntity": "Camp Mikell"
+      }
+    },
+    "controlToolResult": {
+      "result": {
+        "field": "poolGallons",
+        "value": 101000,
+        "requestedEntity": "Camp Mikell",
+        "matchedBlueprintId": "site_job_camp_mikell"
+      },
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "site_job_camp_mikell",
+          "label": "SiteJobBlueprint camp-mikell-checklist-live"
+        }
+      ]
+    },
+    "pass": true
+  },
+  "p1bSourceCheckOverfiring": {
+    "metaPrompt": {
+      "prompt": "What sources do you use",
+      "answerBeforeGate": "I use Jobber, CompanyCam, and native SiteJobBlueprint sources.",
+      "sourceCheck": {
+        "ok": true,
+        "answer": "I use Jobber, CompanyCam, and native SiteJobBlueprint sources."
+      }
+    },
+    "uiFeedbackPrompt": {
+      "prompt": "The photos in that reply show thumbnails but are not clickable or savable",
+      "answerBeforeGate": "I logged the thumbnail UI bug for the chat image viewer.",
+      "sourceCheck": {
+        "ok": true,
+        "answer": "I logged the thumbnail UI bug for the chat image viewer."
+      }
+    },
+    "businessFactStillBlocked": {
+      "prompt": "How many gallons are in the job?",
+      "answerBeforeGate": "The job has 101000 gallons.",
+      "sourceCheck": {
+        "ok": false,
+        "answer": "I don't have a verified source for that yet.",
+        "failureReason": "factual_answer_without_sources"
+      }
+    }
+  },
+  "p1cUserFlaggedCorrections": {
+    "response": {
+      "answer": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "sources": [],
+      "conversationId": "conv_779dc85b-0abe-4dd7-84d1-1ff2cb136b7f",
+      "failureId": "fail_d6a6711f-5c3b-4a86-96ce-7a9a08d3c8bf",
+      "usage": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheReadInputTokens": 0,
+        "totalTokens": 0
+      },
+      "toolRuns": []
+    },
+    "failureLogEntry": {
+      "id": "fail_d6a6711f-5c3b-4a86-96ce-7a9a08d3c8bf",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "Wrong answer, that was Camp Mikell and Deborah Justice is in CompanyCam.",
+      "reason": "user_flagged_incorrect",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "site_job_camp_mikell",
+          "label": "SiteJobBlueprint camp-mikell-checklist-live"
+        }
+      ],
+      "correctionText": "Wrong answer, that was Camp Mikell and Deborah Justice is in CompanyCam.",
+      "flaggedConversationId": "conv_063bb1ea-3332-43c8-93df-12c46c83fe31",
+      "flaggedQuestion": "What are the total gallons of Deborah Justice",
+      "flaggedAnswer": "Total gallons: 101,000. Source: SiteJobBlueprint camp-mikell-checklist-live.",
+      "flaggedAnswerSources": [
+        {
+          "rail": "native",
+          "ref": "site_job_camp_mikell",
+          "label": "SiteJobBlueprint camp-mikell-checklist-live"
+        }
+      ],
+      "createdAt": "2026-07-05T02:37:08.752Z"
+    },
+    "pass": true
+  }
+}
