@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { z } from "zod";
 import { ingestSiteJobBlueprint } from "../dist/nexi/siteJobBlueprintIngest.js";
 import { extractCompanyCamReportFields, siteJobBlueprintFromCompanyCamReport } from "../dist/nexi/reportDocuments.js";
-import { answerNexiMessage } from "../dist/nexi/nexiService.js";
+import { answerNexiMessage, runExplicitLocalToolLoop } from "../dist/nexi/nexiService.js";
 import { createNexiJobDeskTools } from "../dist/nexi/nexiTools.js";
 import { MemoryNexiRepository } from "../dist/nexi/nexiRepository.js";
 import { MemoryUsageLogWriter } from "../dist/usageLog.js";
@@ -93,6 +93,41 @@ test("Nexi tool loop preloads obvious tools and records cache metrics", async ()
   assert.equal(result.usage.cacheReadInputTokens, 64);
   assert.equal(usageLog.records.length, 1);
   assert.equal(usageLog.records[0].usage.cacheReadInputTokens, 64);
+});
+
+test("local Nexi fallback routes email-today prompts to summarizeInbox before schedule", async () => {
+  const called = [];
+  const result = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "what emails came in today" }],
+    tools: [{
+      name: "getSchedule",
+      description: "Read schedule.",
+      inputSchema: z.object({ from: z.string(), to: z.string() }),
+      handler: async () => {
+        called.push("getSchedule");
+        return { result: { jobs: [] }, sources: [{ rail: "jobber", ref: "jobs", label: "Jobber jobs" }] };
+      }
+    }, {
+      name: "summarizeInbox",
+      description: "Summarize inbox.",
+      inputSchema: z.object({ date: z.string(), maxResults: z.number().optional() }),
+      handler: async (_tenant, args) => {
+        called.push("summarizeInbox");
+        return {
+          result: { count: 1, args, mailboxes: [{ mailbox: "nexi", count: 1 }], messages: [] },
+          sources: [{ rail: "email", ref: "email:nexi:msg_1", label: "Email nexi msg_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {}
+  });
+  assert.deepEqual(called, ["summarizeInbox"]);
+  assert.equal(result.toolRuns[0].name, "summarizeInbox");
+  assert.equal(result.sources[0].rail, "email");
 });
 
 test("Nexi schedule prompts parse requested calendar dates in tenant timezone", async () => {

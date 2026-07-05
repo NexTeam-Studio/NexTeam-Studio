@@ -68,6 +68,10 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
   const today = new Date();
   const from = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
   const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+  if (/\b(?:email|emails|mail|inbox|reply|replied|came in)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "summarizeInbox");
+    return tool ? { tool, args: { date: today.toISOString(), maxResults: 10 } } : null;
+  }
   if (lower.includes("schedule") || lower.includes("today")) {
     const tool = tools.find((candidate) => candidate.name === "getSchedule");
     return tool ? { tool, args: { from, to } } : null;
