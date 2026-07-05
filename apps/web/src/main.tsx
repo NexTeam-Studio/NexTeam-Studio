@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type Auth, type User } from "firebase/auth";
@@ -38,6 +38,23 @@ interface RuntimeConfigResponse {
   firebase: FirebasePublicConfig;
   firebaseConfigured: boolean;
 }
+
+interface BrowserSpeechRecognition {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: { results: ArrayLike<{ 0: { transcript: string } }> }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+type BrowserSpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
+type VoiceWindow = Window & {
+  SpeechRecognition?: BrowserSpeechRecognitionConstructor;
+  webkitSpeechRecognition?: BrowserSpeechRecognitionConstructor;
+};
 
 const buildTimeFirebaseConfig: FirebasePublicConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string || "",
@@ -166,6 +183,15 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   const [conversationId] = useState(() => `web-${crypto.randomUUID()}`);
   const [working, setWorking] = useState(false);
   const [health, setHealth] = useState<"checking" | "green" | "red">("checking");
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState("Voice off");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
+  const voiceWindow = window as VoiceWindow;
+  const SpeechRecognition = voiceWindow.SpeechRecognition ?? voiceWindow.webkitSpeechRecognition;
+  const speechSupported = Boolean(SpeechRecognition);
 
   useEffect(() => {
     let cancelled = false;
@@ -186,6 +212,89 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
     };
   }, []);
 
+  useEffect(() => () => {
+    recognitionRef.current?.stop();
+    audioRef.current?.pause();
+  }, []);
+
+  async function speakAssistant(text: string): Promise<void> {
+    if (!voiceEnabled || !text.trim()) {
+      return;
+    }
+    setSpeaking(true);
+    setVoiceStatus("Nexi is speaking");
+    try {
+      audioRef.current?.pause();
+      const response = await fetch("/api/voice/tts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      if (!response.ok) {
+        throw new Error("TTS unavailable");
+      }
+      const url = URL.createObjectURL(await response.blob());
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        setSpeaking(false);
+        setVoiceStatus("Voice ready");
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        setSpeaking(false);
+        setVoiceStatus("Voice playback failed");
+      };
+      await audio.play();
+    } catch {
+      setSpeaking(false);
+      setVoiceStatus("Voice playback blocked");
+    }
+  }
+
+  function toggleVoice(): void {
+    const next = !voiceEnabled;
+    setVoiceEnabled(next);
+    setVoiceStatus(next ? "Voice ready" : "Voice off");
+    if (!next) {
+      audioRef.current?.pause();
+      recognitionRef.current?.stop();
+      setListening(false);
+      setSpeaking(false);
+    }
+  }
+
+  function startDictation(): void {
+    if (!SpeechRecognition || listening) {
+      setVoiceStatus("Mic not supported here");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript?.trim() ?? "";
+      if (transcript) {
+        setDraft((current) => [current, transcript].filter(Boolean).join(" ").trim());
+        setVoiceStatus("Dictation captured");
+      }
+    };
+    recognition.onerror = () => {
+      setListening(false);
+      setVoiceStatus("Mic capture failed");
+    };
+    recognition.onend = () => {
+      setListening(false);
+      recognitionRef.current = null;
+    };
+    recognitionRef.current = recognition;
+    setListening(true);
+    setVoiceStatus("Listening");
+    recognition.start();
+  }
+
   async function sendMessage(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     const text = draft.trim();
@@ -203,20 +312,24 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
         body: JSON.stringify({ tenantId: "aquatrace", conversationId, message: text })
       });
       const body = await response.json() as NexiResponse;
+      const assistantText = body.ok ? body.answer ?? "I do not have an answer yet." : body.error ?? "Nexi could not answer that.";
       setMessages((current) => [
         ...current,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          text: body.ok ? body.answer ?? "I do not have an answer yet." : body.error ?? "Nexi could not answer that.",
+          text: assistantText,
           sources: body.sources ?? []
         }
       ]);
+      void speakAssistant(assistantText);
     } catch {
+      const fallback = "Nexi could not reach the authenticated Job Desk API.";
       setMessages((current) => [
         ...current,
-        { id: crypto.randomUUID(), role: "assistant", text: "Nexi could not reach the authenticated Job Desk API.", sources: [] }
+        { id: crypto.randomUUID(), role: "assistant", text: fallback, sources: [] }
       ]);
+      void speakAssistant(fallback);
     } finally {
       setWorking(false);
     }
@@ -233,6 +346,9 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
           </div>
           <div className="top-actions">
             <span className={`health ${health}`} aria-label={`Health ${health}`} />
+            <button className={`voice-toggle ${voiceEnabled ? "on" : ""}`} type="button" onClick={toggleVoice}>
+              {voiceEnabled ? "Voice on" : "Enable voice"}
+            </button>
             <button className="sign-out" type="button" onClick={() => void signOut(props.auth)}>Sign out</button>
           </div>
         </header>
@@ -256,7 +372,22 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
           {working ? <div className="typing">Nexi is checking the rails...</div> : null}
         </div>
 
+        <div className="voice-strip" aria-live="polite">
+          <span className={`voice-dot ${listening ? "listening" : speaking ? "speaking" : voiceEnabled ? "ready" : ""}`} />
+          <span>{voiceStatus}</span>
+          {!speechSupported ? <span className="voice-note">Speech input unsupported in this browser</span> : null}
+        </div>
+
         <form className="composer" onSubmit={sendMessage}>
+          <button
+            aria-label="Dictate message"
+            className={`mic ${listening ? "active" : ""}`}
+            disabled={!speechSupported || working}
+            type="button"
+            onClick={startDictation}
+          >
+            Mic
+          </button>
           <input
             aria-label="Message Nexi"
             value={draft}

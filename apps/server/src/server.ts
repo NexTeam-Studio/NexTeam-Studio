@@ -18,6 +18,7 @@ import { buildHealth } from "./health.js";
 import { registerCrmRoutes } from "./crm/routes.js";
 import { getAdminDb } from "./firebase.js";
 import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
+import { createVoiceRouter } from "./voice/routes.js";
 
 const app = express();
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
@@ -36,6 +37,7 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 app.use("/api/nexi", createNexiRouter(process.env));
+app.use("/api/voice", createVoiceRouter(process.env));
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
