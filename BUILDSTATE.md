@@ -29,6 +29,6 @@
 | integration | M2/M4 merge to main + staging deploy | done | Merge commit `5050cda83978acbae223531893ec5361f2acff9b`; staging `/api/version` SHA-match and `/api/health` all-green in `receipts/main/staging-main-version.json`. |
 | schedule | M3 Scheduling worktree | opened | `build/schedule` from main after M2/M4 merge; receipts pending. |
 | content | M5 Content Engine worktree | opened | `build/content` from main after M2/M4 merge; outbound sends/publishing remain parked behind explicit approval and must build to ApprovalQueue only. |
-| comms | M6-LITE Email Rail | queued | Pulled into current window after M1 trial fixes: Gmail read-only tools for two existing Aquatrace mailboxes, send-capable third mailbox only through ApprovalQueue, PII-redacted receipts, OAuth consent pending. |
+| comms | M6-LITE Email Rail local foundation | blocked | Code and local proof complete in `build/comms-lite`; live read/send receipts blocked until owner completes Gmail OAuth consent and third mailbox creation. Receipts: `receipts/m6-lite-verify.txt`, `receipts/m6-lite-oauth-readiness.txt`. |
 | voice | M12a Voice worktree | opened | `build/voice` from main after M2/M4 merge; receipts pending. |
 | platform | M13 Platform worktree | opened | `build/platform` from main after M2/M4 merge; receipts pending. |
