@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "base": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "5050cda83978acbae223531893ec5361f2acff9b",
+  "version": {
+    "sha": "5050cda83978acbae223531893ec5361f2acff9b",
+    "builtAt": "2026-07-05T01:49:47.946Z"
+  },
+  "versionMatches": true,
+  "health": {
+    "ok": true,
+    "checkedAt": "2026-07-05T01:49:49.229Z",
+    "rails": {
+      "jobber": {
+        "ok": true,
+        "configured": true,
+        "provider": "jobber",
+        "op": "graphql_read",
+        "latencyMs": 656,
+        "detail": "Jobber GraphQL read succeeded."
+      },
+      "companycam": {
+        "ok": true,
+        "configured": true,
+        "provider": "companycam",
+        "op": "projects_read",
+        "latencyMs": 445,
+        "detail": "CompanyCam projects read succeeded."
+      },
+      "anthropic": {
+        "ok": true,
+        "configured": true,
+        "provider": "anthropic",
+        "op": "configured_no_spend",
+        "latencyMs": 0,
+        "detail": "Configured; live message call skipped by no-spend overnight limit."
+      }
+    }
+  },
+  "checkedAt": "2026-07-05T01:49:50.0106376Z",
+  "note": "Receipt commit is separate from deployed code; staging was deployed from merge commit 5050cda83978acbae223531893ec5361f2acff9b."
+}
