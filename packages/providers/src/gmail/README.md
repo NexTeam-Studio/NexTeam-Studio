@@ -2,11 +2,13 @@
 
 This directory contains the Gmail adapters for the M6-LITE Email Rail.
 
-`GmailReadOnlyAdapter` supports `searchEmail` and `getEmailThread` only. It intentionally has no `sendEmail` method, so the two existing Aquatrace read mailboxes are structurally send-incapable even if a token were mis-scoped.
+`GmailReadOnlyAdapter` supports `searchEmail`, `getEmailThread`, `getEmailMessage`, and `getEmailAttachment` only. It intentionally has no `sendEmail` method, so the two existing Aquatrace read mailboxes are structurally send-incapable even if a token were mis-scoped.
 
 `GmailSendAdapter` supports `sendEmail` and is only intended for the third dedicated Nexi mailbox. Server code calls it from the ApprovalQueue executor after a pending email artifact is approved. If the dedicated Nexi mailbox should also be searchable, register the same mailbox with `GmailReadOnlyAdapter` via the server registry; do not add read methods to `GmailSendAdapter`.
 
 The server comms rail is bound to one `tenantId` at construction time. Nexi email tools and the ApprovalQueue executor must reject any tenant context that does not match the rail's bound tenant before touching an adapter.
+
+Full message bodies and attachment metadata may be returned to Nexi for an operator answer, but bodies, snippets, subjects, addresses, raw data, and attachment bytes must be redacted before durable logs or receipts. `getEmailAttachment` retrieves the binary to prove access, then returns only safe metadata and byte count to Nexi.
 
 Railway staging env contract:
 

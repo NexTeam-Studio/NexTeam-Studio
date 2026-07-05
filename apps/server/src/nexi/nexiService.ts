@@ -39,7 +39,7 @@ function redactEmailContent(value: unknown): unknown {
   }
   const record = value as JsonRecord;
   return Object.fromEntries(Object.entries(record).map(([key, entry]) => {
-    if (/^(?:body|bodyText|bodyHtml|snippet|text|html)$/i.test(key)) {
+    if (/^(?:body|bodyText|bodyHtml|snippet|text|html|subject|from|to|cc|bcc|data|content|raw)$/i.test(key)) {
       return [key, "[redacted-email-content]"];
     }
     return [key, redactEmailContent(entry)];
@@ -68,6 +68,16 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
   const today = new Date();
   const from = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
   const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+  const emailAttachmentRef = message.match(/\bemail:([^:\s]+):([^:\s]+):([^:\s]+)/i);
+  if (emailAttachmentRef) {
+    const tool = tools.find((candidate) => candidate.name === "getEmailAttachment");
+    return tool ? { tool, args: { mailbox: emailAttachmentRef[1], messageId: emailAttachmentRef[2], attachmentId: emailAttachmentRef[3] } } : null;
+  }
+  const emailMessageRef = message.match(/\bemail:([^:\s]+):([^:\s]+)/i);
+  if (emailMessageRef) {
+    const tool = tools.find((candidate) => candidate.name === "getEmailMessage");
+    return tool ? { tool, args: { mailbox: emailMessageRef[1], messageId: emailMessageRef[2] } } : null;
+  }
   if (/\b(?:email|emails|mail|inbox|reply|replied|came in)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "summarizeInbox");
     return tool ? { tool, args: { date: today.toISOString(), maxResults: 10 } } : null;

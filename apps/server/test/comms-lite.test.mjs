@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { Readable } from "node:stream";
 import { z } from "zod";
 import { ApprovalQueueService, InMemoryApprovalQueueRepository } from "@nexteam/core";
 import { GmailReadOnlyAdapter, GmailSendAdapter } from "@nexteam/providers";
@@ -34,6 +35,8 @@ test("Gmail read-only adapter is structurally send-incapable", () => {
   const adapter = new GmailReadOnlyAdapter(gmailConfig("ops"));
   assert.equal(typeof adapter.searchEmail, "function");
   assert.equal(typeof adapter.getEmailThread, "function");
+  assert.equal(typeof adapter.getEmailMessage, "function");
+  assert.equal(typeof adapter.getEmailAttachment, "function");
   assert.equal("sendEmail" in adapter, false);
   assert.equal(typeof adapter.sendEmail, "undefined");
 });
@@ -83,6 +86,12 @@ test("Comms Nexi searchEmail returns email source refs", async () => {
     },
     async getEmailThread() {
       throw new Error("not used");
+    },
+    async getEmailMessage() {
+      throw new Error("not used");
+    },
+    async getEmailAttachment() {
+      throw new Error("not used");
     }
   };
   const rail = { tenantId: "aquatrace", readAdapters: new Map([["ops", readAdapter]]), sendAdapter: null };
@@ -105,6 +114,12 @@ test("Comms Nexi tools reject tenant contexts outside the bound email rail", asy
     },
     async getEmailThread() {
       throw new Error("not used");
+    },
+    async getEmailMessage() {
+      throw new Error("not used");
+    },
+    async getEmailAttachment() {
+      throw new Error("not used");
     }
   };
   const rail = { tenantId: "aquatrace", readAdapters: new Map([["ops", readAdapter]]), sendAdapter: null };
@@ -113,6 +128,138 @@ test("Comms Nexi tools reject tenant contexts outside the bound email rail", asy
   assert.ok(tool);
   await assert.rejects(() => tool.handler({ ...tenant(), id: "other-tenant" }, { mailbox: "ops" }), /not configured for tenant other-tenant/);
   assert.equal(searched, false);
+});
+
+test("Gmail read adapter parses full message bodies and attachment metadata", async () => {
+  const adapter = new GmailReadOnlyAdapter(gmailConfig("ops"));
+  adapter.gmailGet = async (_path, _op, parse) => parse({
+    id: "msg_1",
+    threadId: "thr_1",
+    labelIds: ["INBOX"],
+    snippet: "Snippet",
+    payload: {
+      mimeType: "multipart/mixed",
+      headers: [
+        { name: "From", value: "client@example.test" },
+        { name: "To", value: "ops@example.test" },
+        { name: "Subject", value: "Leak report" },
+        { name: "Date", value: "Sun, 05 Jul 2026 09:00:00 -0400" }
+      ],
+      parts: [{
+        mimeType: "text/plain",
+        body: { data: Buffer.from("Plain body", "utf8").toString("base64url"), size: 10 }
+      }, {
+        mimeType: "text/html",
+        body: { data: Buffer.from("<p>HTML body</p>", "utf8").toString("base64url"), size: 16 }
+      }, {
+        mimeType: "application/pdf",
+        filename: "report.pdf",
+        headers: [{ name: "Content-Disposition", value: "attachment; filename=report.pdf" }],
+        body: { attachmentId: "att_1", size: 1234 }
+      }]
+    }
+  });
+  const message = await adapter.getEmailMessage("msg_1");
+  assert.equal(message.bodyText, "Plain body");
+  assert.equal(message.bodyHtml, "<p>HTML body</p>");
+  assert.equal(message.attachments.length, 1);
+  assert.equal(message.attachments[0].id, "att_1");
+  assert.equal(message.attachments[0].filename, "report.pdf");
+  assert.equal(message.attachments[0].inline, false);
+});
+
+test("Gmail read adapter retrieves attachment binaries without adding send capability", async () => {
+  const adapter = new GmailReadOnlyAdapter(gmailConfig("ops"));
+  adapter.gmailGet = async (path, _op, parse) => {
+    if (path.includes("/attachments/")) {
+      return parse({ data: Buffer.from("PDF", "utf8").toString("base64url"), size: 3 });
+    }
+    return parse({
+      id: "msg_1",
+      threadId: "thr_1",
+      labelIds: ["INBOX"],
+      snippet: "",
+      payload: {
+        headers: [],
+        parts: [{
+          mimeType: "application/pdf",
+          filename: "report.pdf",
+          body: { attachmentId: "att_1", size: 3 }
+        }]
+      }
+    });
+  };
+  const binary = await adapter.getEmailAttachment("msg_1", "att_1");
+  const chunks = [];
+  for await (const chunk of binary.stream) {
+    chunks.push(Buffer.from(chunk));
+  }
+  assert.equal(Buffer.concat(chunks).toString("utf8"), "PDF");
+  assert.equal(binary.filename, "report.pdf");
+  assert.equal(binary.mime, "application/pdf");
+  assert.equal("sendEmail" in adapter, false);
+});
+
+test("Comms Nexi getEmailMessage returns body and attachment listing with email source", async () => {
+  const readAdapter = {
+    mailbox: "ops",
+    async searchEmail() {
+      throw new Error("not used");
+    },
+    async getEmailThread() {
+      throw new Error("not used");
+    },
+    async getEmailMessage() {
+      return {
+        id: "msg_1",
+        tenantId: "aquatrace",
+        mailbox: "ops",
+        threadId: "thr_1",
+        subject: "Leak report",
+        bodyText: "Client says the pool is leaking.",
+        labels: ["INBOX"],
+        attachments: [{ id: "att_1", tenantId: "aquatrace", mailbox: "ops", messageId: "msg_1", filename: "report.pdf", mime: "application/pdf", byteSize: 42, inline: false }]
+      };
+    },
+    async getEmailAttachment() {
+      throw new Error("not used");
+    }
+  };
+  const rail = { tenantId: "aquatrace", readAdapters: new Map([["ops", readAdapter]]), sendAdapter: null };
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  const tool = createCommsNexiTools(rail, approvalQueue).find((candidate) => candidate.name === "getEmailMessage");
+  assert.ok(tool);
+  const result = await tool.handler(tenant(), { mailbox: "ops", messageId: "msg_1" });
+  assert.equal(result.result.message.bodyText, "Client says the pool is leaking.");
+  assert.equal(result.result.message.attachments[0].filename, "report.pdf");
+  assert.equal(result.sources[0].ref, "email:ops:msg_1");
+});
+
+test("Comms Nexi getEmailAttachment retrieves bytes but returns metadata only", async () => {
+  const readAdapter = {
+    mailbox: "ops",
+    async searchEmail() {
+      throw new Error("not used");
+    },
+    async getEmailThread() {
+      throw new Error("not used");
+    },
+    async getEmailMessage() {
+      throw new Error("not used");
+    },
+    async getEmailAttachment() {
+      return { stream: Readable.from([Buffer.from("secret-pdf")]), mime: "application/pdf", filename: "report.pdf" };
+    }
+  };
+  const rail = { tenantId: "aquatrace", readAdapters: new Map([["ops", readAdapter]]), sendAdapter: null };
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  const tool = createCommsNexiTools(rail, approvalQueue).find((candidate) => candidate.name === "getEmailAttachment");
+  assert.ok(tool);
+  const result = await tool.handler(tenant(), { mailbox: "ops", messageId: "msg_1", attachmentId: "att_1" });
+  assert.equal(result.result.attachment.filename, "report.pdf");
+  assert.equal(result.result.attachment.byteSize, 10);
+  assert.equal(result.result.attachment.content, "[binary-not-returned]");
+  assert.equal(result.sources[0].ref, "email:ops:msg_1:att_1");
 });
 
 test("draftEmail parks email in ApprovalQueue without sending", async () => {

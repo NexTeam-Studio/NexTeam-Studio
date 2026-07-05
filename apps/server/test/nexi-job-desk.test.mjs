@@ -130,6 +130,33 @@ test("local Nexi fallback routes email-today prompts to summarizeInbox before sc
   assert.equal(result.sources[0].rail, "email");
 });
 
+test("local Nexi fallback routes email source refs to getEmailMessage", async () => {
+  const called = [];
+  const result = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "read email:chris:msg_1 and list attachments" }],
+    tools: [{
+      name: "getEmailMessage",
+      description: "Read email message.",
+      inputSchema: z.object({ mailbox: z.string(), messageId: z.string() }),
+      handler: async (_tenant, args) => {
+        called.push(args);
+        return {
+          result: { message: { id: "msg_1", tenantId: "aquatrace", mailbox: "chris", threadId: "thr_1", bodyText: "body", labels: [], attachments: [] } },
+          sources: [{ rail: "email", ref: "email:chris:msg_1", label: "Email chris msg_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {}
+  });
+  assert.deepEqual(called, [{ mailbox: "chris", messageId: "msg_1" }]);
+  assert.equal(result.toolRuns[0].name, "getEmailMessage");
+  assert.equal(result.sources[0].ref, "email:chris:msg_1");
+});
+
 test("Nexi schedule prompts parse requested calendar dates in tenant timezone", async () => {
   const calls = [];
   let parsedToolArgs = null;

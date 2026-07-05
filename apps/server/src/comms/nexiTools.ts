@@ -25,6 +25,17 @@ const getEmailThreadInputSchema = z.object({
   threadId: z.string()
 });
 
+const getEmailMessageInputSchema = z.object({
+  mailbox: z.string(),
+  messageId: z.string()
+});
+
+const getEmailAttachmentInputSchema = z.object({
+  mailbox: z.string(),
+  messageId: z.string(),
+  attachmentId: z.string()
+});
+
 const summarizeInboxInputSchema = z.object({
   mailbox: z.string().optional(),
   date: z.string().optional(),
@@ -68,6 +79,28 @@ function mailboxList(rail: CommsRail): string[] {
   return [...rail.readAdapters.keys()];
 }
 
+async function streamByteCount(stream: NodeJS.ReadableStream | ReadableStream<Uint8Array>): Promise<number> {
+  let total = 0;
+  if (Symbol.asyncIterator in Object(stream)) {
+    for await (const chunk of stream as AsyncIterable<Uint8Array | Buffer | string>) {
+      total += Buffer.byteLength(chunk as string | Uint8Array);
+    }
+    return total;
+  }
+  const reader = (stream as ReadableStream<Uint8Array>).getReader();
+  try {
+    for (;;) {
+      const next = await reader.read();
+      if (next.done) {
+        return total;
+      }
+      total += next.value.byteLength;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 function assertCommsTenant(rail: CommsRail, tenant: Tenant, op: string): void {
   if (tenant.id !== rail.tenantId) {
     throw new RailError(`Email rail is not configured for tenant ${tenant.id}.`, { provider: "gmail", op, status: 403 });
@@ -100,7 +133,7 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
     },
     {
       name: "getEmailThread",
-      description: "Read email thread metadata from a read-only Aquatrace Gmail mailbox. Sources are email:<mailbox>:<messageId>.",
+      description: "Read an email thread, including full message bodies and attachment listings. Bodies must not be written to logs or receipts. Sources are email:<mailbox>:<messageId>.",
       inputSchema: getEmailThreadInputSchema,
       handler: async (tenant: Tenant, args: unknown) => {
         assertCommsTenant(rail, tenant, "getEmailThread");
@@ -113,6 +146,53 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
         return {
           result: { thread },
           sources: thread.messages.map(emailSource)
+        };
+      }
+    },
+    {
+      name: "getEmailMessage",
+      description: "Read one full Gmail message body plus attachment listing from a configured mailbox. Bodies must not be written to logs or receipts. Sources are email:<mailbox>:<messageId>.",
+      inputSchema: getEmailMessageInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        assertCommsTenant(rail, tenant, "getEmailMessage");
+        const input = getEmailMessageInputSchema.parse(args);
+        const adapter = rail.readAdapters.get(input.mailbox);
+        if (!adapter) {
+          throw new RailError(`Read-only email mailbox ${input.mailbox} is not configured.`, { provider: "gmail", op: "getEmailMessage", status: 503 });
+        }
+        const message = await adapter.getEmailMessage(input.messageId);
+        return {
+          result: { message },
+          sources: [emailSource(message)]
+        };
+      }
+    },
+    {
+      name: "getEmailAttachment",
+      description: "Retrieve an email attachment binary from Gmail and return only safe metadata plus byte count. Attachment bytes are not returned to Nexi text logs. Source is email:<mailbox>:<messageId>:<attachmentId>.",
+      inputSchema: getEmailAttachmentInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        assertCommsTenant(rail, tenant, "getEmailAttachment");
+        const input = getEmailAttachmentInputSchema.parse(args);
+        const adapter = rail.readAdapters.get(input.mailbox);
+        if (!adapter) {
+          throw new RailError(`Read-only email mailbox ${input.mailbox} is not configured.`, { provider: "gmail", op: "getEmailAttachment", status: 503 });
+        }
+        const attachment = await adapter.getEmailAttachment(input.messageId, input.attachmentId);
+        const byteSize = await streamByteCount(attachment.stream);
+        return {
+          result: {
+            attachment: {
+              mailbox: input.mailbox,
+              messageId: input.messageId,
+              attachmentId: input.attachmentId,
+              filename: attachment.filename,
+              mime: attachment.mime,
+              byteSize,
+              content: "[binary-not-returned]"
+            }
+          },
+          sources: [{ rail: "email", ref: `email:${input.mailbox}:${input.messageId}:${input.attachmentId}`, label: `Email attachment ${input.mailbox} ${input.attachmentId}` }]
         };
       }
     },

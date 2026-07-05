@@ -1,5 +1,8 @@
 import {
   RailError,
+  type Binary,
+  type EmailAttachmentSummary,
+  type EmailMessageDetail,
   type EmailMessageSummary,
   type EmailReadProvider,
   type EmailSearchQuery,
@@ -8,6 +11,7 @@ import {
   type OutboundEmail,
   type SendReceipt
 } from "@nexteam/core";
+import { Readable } from "node:stream";
 import { asArray, asRecord, railFetchJson, text } from "../railFetch.js";
 
 export interface GmailMailboxConfig {
@@ -27,14 +31,30 @@ interface GmailMessagePayload {
   threadId: string;
   labelIds: string[];
   snippet: string;
-  payload?: {
-    headers?: Array<{ name: string; value: string }>;
+  payload?: GmailMessagePart | undefined;
+}
+
+interface GmailMessagePart {
+  partId?: string | undefined;
+  mimeType?: string | undefined;
+  filename?: string | undefined;
+  headers?: Array<{ name: string; value: string }> | undefined;
+  body?: {
+    data?: string | undefined;
+    attachmentId?: string | undefined;
+    size?: number | undefined;
   } | undefined;
+  parts?: GmailMessagePart[] | undefined;
 }
 
 interface GmailThreadPayload {
   id: string;
   messages: GmailMessagePayload[];
+}
+
+interface GmailAttachmentPayload {
+  data: string;
+  size?: number | undefined;
 }
 
 interface TokenState {
@@ -63,18 +83,32 @@ function parseList(payload: unknown): GmailListResponse {
 
 function parseMessage(payload: unknown): GmailMessagePayload {
   const record = asRecord(payload);
-  const payloadRecord = asRecord(record.payload);
   return {
     id: text(record.id),
     threadId: text(record.threadId),
     labelIds: asArray(record.labelIds).map((label) => text(label)).filter(Boolean),
     snippet: text(record.snippet),
-    payload: {
-      headers: asArray(payloadRecord.headers).map((header) => {
-        const headerRecord = asRecord(header);
-        return { name: text(headerRecord.name), value: text(headerRecord.value) };
-      }).filter((header) => header.name)
-    }
+    payload: parseMessagePart(record.payload)
+  };
+}
+
+function parseMessagePart(payload: unknown): GmailMessagePart {
+  const record = asRecord(payload);
+  const body = asRecord(record.body);
+  return {
+    partId: text(record.partId) || undefined,
+    mimeType: text(record.mimeType) || undefined,
+    filename: text(record.filename) || undefined,
+    headers: asArray(record.headers).map((header) => {
+      const headerRecord = asRecord(header);
+      return { name: text(headerRecord.name), value: text(headerRecord.value) };
+    }).filter((header) => header.name),
+    body: {
+      data: text(body.data) || undefined,
+      attachmentId: text(body.attachmentId) || undefined,
+      size: Number.isFinite(Number(body.size)) ? Number(body.size) : undefined
+    },
+    parts: asArray(record.parts).map(parseMessagePart)
   };
 }
 
@@ -89,6 +123,25 @@ function parseThread(payload: unknown): GmailThreadPayload {
 function header(message: GmailMessagePayload, name: string): string | undefined {
   const found = message.payload?.headers?.find((candidate) => candidate.name.toLowerCase() === name.toLowerCase());
   return found?.value || undefined;
+}
+
+function partHeader(part: GmailMessagePart, name: string): string | undefined {
+  const found = part.headers?.find((candidate) => candidate.name.toLowerCase() === name.toLowerCase());
+  return found?.value || undefined;
+}
+
+function allParts(part: GmailMessagePart | undefined): GmailMessagePart[] {
+  if (!part) {
+    return [];
+  }
+  return [part, ...(part.parts ?? []).flatMap(allParts)];
+}
+
+function decodeBase64Url(value: string | undefined): string {
+  if (!value) {
+    return "";
+  }
+  return Buffer.from(value, "base64url").toString("utf8");
 }
 
 function buildGmailQuery(query: EmailSearchQuery): string {
@@ -123,6 +176,43 @@ function messageSummary(config: GmailMailboxConfig, message: GmailMessagePayload
     receivedAt: header(message, "Date"),
     snippet: message.snippet,
     labels: message.labelIds
+  };
+}
+
+function attachmentSummaries(config: GmailMailboxConfig, message: GmailMessagePayload): EmailAttachmentSummary[] {
+  return allParts(message.payload)
+    .filter((part) => !!part.body?.attachmentId)
+    .map((part) => {
+      const contentDisposition = partHeader(part, "Content-Disposition")?.toLowerCase() ?? "";
+      return {
+        id: part.body?.attachmentId ?? "",
+        tenantId: config.tenantId ?? "aquatrace",
+        mailbox: config.mailbox,
+        messageId: message.id,
+        filename: part.filename || "attachment",
+        mime: part.mimeType,
+        byteSize: part.body?.size,
+        inline: contentDisposition.includes("inline")
+      };
+    })
+    .filter((attachment) => attachment.id);
+}
+
+function messageDetail(config: GmailMailboxConfig, message: GmailMessagePayload): EmailMessageDetail {
+  const parts = allParts(message.payload);
+  return {
+    ...messageSummary(config, message),
+    bodyText: parts.filter((part) => part.mimeType?.toLowerCase() === "text/plain").map((part) => decodeBase64Url(part.body?.data)).filter(Boolean).join("\n\n") || undefined,
+    bodyHtml: parts.filter((part) => part.mimeType?.toLowerCase() === "text/html").map((part) => decodeBase64Url(part.body?.data)).filter(Boolean).join("\n\n") || undefined,
+    attachments: attachmentSummaries(config, message)
+  };
+}
+
+function parseAttachment(payload: unknown): GmailAttachmentPayload {
+  const record = asRecord(payload);
+  return {
+    data: text(record.data),
+    size: Number.isFinite(Number(record.size)) ? Number(record.size) : undefined
   };
 }
 
@@ -229,19 +319,35 @@ export class GmailReadOnlyAdapter extends GmailBaseAdapter implements EmailReadP
   }
 
   async getEmailThread(threadId: string): Promise<EmailThread> {
-    const params = new URLSearchParams({
-      format: "metadata",
-      metadataHeaders: "From"
-    });
-    params.append("metadataHeaders", "To");
-    params.append("metadataHeaders", "Subject");
-    params.append("metadataHeaders", "Date");
+    const params = new URLSearchParams({ format: "full" });
     const thread = await this.gmailGet(`threads/${encodeURIComponent(threadId)}?${params.toString()}`, "threads_get_metadata", parseThread);
     return {
       id: thread.id,
       tenantId: this.config.tenantId ?? "aquatrace",
       mailbox: this.config.mailbox,
-      messages: thread.messages.map((message) => messageSummary(this.config, message))
+      messages: thread.messages.map((message) => messageDetail(this.config, message))
+    };
+  }
+
+  async getEmailMessage(messageId: string): Promise<EmailMessageDetail> {
+    const params = new URLSearchParams({ format: "full" });
+    const message = await this.gmailGet(`messages/${encodeURIComponent(messageId)}?${params.toString()}`, "messages_get_full", parseMessage);
+    return messageDetail(this.config, message);
+  }
+
+  async getEmailAttachment(messageId: string, attachmentId: string): Promise<Binary> {
+    const detail = await this.getEmailMessage(messageId);
+    const attachment = detail.attachments.find((candidate) => candidate.id === attachmentId);
+    const payload = await this.gmailGet(
+      `messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
+      "messages_attachments_get",
+      parseAttachment
+    );
+    const buffer = Buffer.from(payload.data, "base64url");
+    return {
+      stream: Readable.from([buffer]),
+      mime: attachment?.mime || "application/octet-stream",
+      filename: attachment?.filename
     };
   }
 }

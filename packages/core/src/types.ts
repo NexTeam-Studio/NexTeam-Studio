@@ -302,11 +302,28 @@ export interface EmailMessageSummary {
   labels: string[];
 }
 
+export interface EmailAttachmentSummary {
+  id: ID;
+  tenantId: ID;
+  mailbox: string;
+  messageId: ID;
+  filename: string;
+  mime?: string | undefined;
+  byteSize?: number | undefined;
+  inline: boolean;
+}
+
+export interface EmailMessageDetail extends EmailMessageSummary {
+  bodyText?: string | undefined;
+  bodyHtml?: string | undefined;
+  attachments: EmailAttachmentSummary[];
+}
+
 export interface EmailThread {
   id: ID;
   tenantId: ID;
   mailbox: string;
-  messages: EmailMessageSummary[];
+  messages: EmailMessageSummary[] | EmailMessageDetail[];
 }
 
 export interface CRMProvider {
@@ -336,6 +353,8 @@ export interface EmailReadProvider {
   readonly mailbox: string;
   searchEmail(query: EmailSearchQuery): Promise<EmailMessageSummary[]>;
   getEmailThread(threadId: ID): Promise<EmailThread>;
+  getEmailMessage(messageId: ID): Promise<EmailMessageDetail>;
+  getEmailAttachment(messageId: ID, attachmentId: ID): Promise<Binary>;
 }
 
 export interface EmailSendProvider {
