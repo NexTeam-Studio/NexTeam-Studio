@@ -51,6 +51,25 @@ const CLIENTS_QUERY = `
   }
 `;
 
+const PRODUCTS_QUERY = `
+  query NexTeamProducts($first: Int!, $after: String, $searchTerm: String) {
+    products(first: $first, after: $after, searchTerm: $searchTerm) {
+      nodes {
+        id
+        name
+        description
+        category
+        defaultUnitCost
+        internalUnitCost
+        markup
+        taxable
+        visible
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;
+
 export interface JobberAdapterConfig {
   tenantId: string;
   clientId: string | undefined;
@@ -65,6 +84,18 @@ interface JobberTokenState {
   accessToken: string;
   refreshToken: string;
   accessTokenExpiresAt: number;
+}
+
+export interface JobberProductOrService {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  defaultUnitCost: number;
+  internalUnitCost: number | null;
+  markup: number | null;
+  taxable: boolean | null;
+  visible: boolean | null;
 }
 
 function normalizeJobStatus(status: string): JobStatus {
@@ -110,6 +141,10 @@ function mapClient(raw: unknown, tenantId: string): Client {
   return client;
 }
 
+function mapClients(nodes: unknown[], tenantId: string): Client[] {
+  return nodes.map((node) => mapClient(node, tenantId));
+}
+
 function mapJob(raw: unknown, tenantId: string): JobDetail {
   const record = asRecord(raw);
   const client = mapClient(record.client, tenantId);
@@ -147,10 +182,26 @@ function mapJob(raw: unknown, tenantId: string): JobDetail {
       tenantId,
       clientId: client.id,
       address,
-      assets: []
+      assets: [],
+      externalIds: { jobber: propertyId }
     };
   }
   return job;
+}
+
+function mapProductOrService(raw: unknown): JobberProductOrService {
+  const record = asRecord(raw);
+  return {
+    id: text(record.id),
+    name: text(record.name),
+    description: text(record.description),
+    category: text(record.category),
+    defaultUnitCost: numberValue(record.defaultUnitCost),
+    internalUnitCost: record.internalUnitCost === null || record.internalUnitCost === undefined ? null : numberValue(record.internalUnitCost),
+    markup: record.markup === null || record.markup === undefined ? null : numberValue(record.markup),
+    taxable: typeof record.taxable === "boolean" ? record.taxable : null,
+    visible: typeof record.visible === "boolean" ? record.visible : null
+  };
 }
 
 function matchJob(job: JobDetail, ref: { id?: string; nameQuery?: string }): number {
@@ -166,6 +217,12 @@ function matchJob(job: JobDetail, ref: { id?: string; nameQuery?: string }): num
     .join(" ")
     .toLowerCase();
   return haystack.includes(query) ? 20 : 0;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 export class JobberAdapter implements CRMProvider {
@@ -198,8 +255,7 @@ export class JobberAdapter implements CRMProvider {
   }
 
   async getClients(q: string): Promise<Client[]> {
-    const payload = await this.graphql(CLIENTS_QUERY, { first: 25, after: null });
-    const clients = readConnection(payload, "clients").nodes.map((node) => mapClient(node, this.config.tenantId));
+    const clients = await this.listClients();
     const query = q.trim().toLowerCase();
     return query ? clients.filter((client) => [client.name, client.company ?? ""].join(" ").toLowerCase().includes(query)) : clients;
   }
@@ -236,9 +292,46 @@ export class JobberAdapter implements CRMProvider {
     return { ok: true, detail: "Jobber GraphQL read succeeded." };
   }
 
+  async getProductsAndServices(searchTerm?: string, pageLimit = 25): Promise<JobberProductOrService[]> {
+    const products: JobberProductOrService[] = [];
+    let after: string | null = null;
+    let pages = 0;
+    do {
+      const payload = await this.graphql(PRODUCTS_QUERY, { first: 100, after, searchTerm: searchTerm?.trim() || null });
+      const connection = readConnection(payload, "products");
+      products.push(...connection.nodes.map(mapProductOrService));
+      after = connection.hasNextPage ? connection.endCursor : null;
+      pages += 1;
+    } while (after && pages < pageLimit);
+    return products;
+  }
+
   private async listJobs(): Promise<JobDetail[]> {
-    const payload = await this.graphql(JOBS_QUERY, { first: 25, after: null });
-    return readConnection(payload, "jobs").nodes.map((node) => mapJob(node, this.config.tenantId));
+    const jobs: JobDetail[] = [];
+    let after: string | null = null;
+    let pages = 0;
+    do {
+      const payload = await this.graphql(JOBS_QUERY, { first: 25, after });
+      const connection = readConnection(payload, "jobs");
+      jobs.push(...connection.nodes.map((node) => mapJob(node, this.config.tenantId)));
+      after = connection.hasNextPage ? connection.endCursor : null;
+      pages += 1;
+    } while (after && pages < 25);
+    return jobs;
+  }
+
+  private async listClients(): Promise<Client[]> {
+    const clients: Client[] = [];
+    let after: string | null = null;
+    let pages = 0;
+    do {
+      const payload = await this.graphql(CLIENTS_QUERY, { first: 25, after });
+      const connection = readConnection(payload, "clients");
+      clients.push(...mapClients(connection.nodes, this.config.tenantId));
+      after = connection.hasNextPage ? connection.endCursor : null;
+      pages += 1;
+    } while (after && pages < 25);
+    return clients;
   }
 
   private async ensureAccessToken(): Promise<string> {
@@ -283,25 +376,48 @@ export class JobberAdapter implements CRMProvider {
 
   private async graphql(query: string, variables: Record<string, unknown>): Promise<unknown> {
     const accessToken = await this.ensureAccessToken();
-    return railFetchJson(JOBBER_GRAPHQL_ENDPOINT, {
-      provider: "jobber",
-      op: "graphql",
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${accessToken}`,
-        "content-type": "application/json",
-        "X-JOBBER-GRAPHQL-VERSION": this.graphqlVersion
-      },
-      body: JSON.stringify({ query, variables }),
-      retry401: async () => {
-        await this.refreshAccessToken();
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        return await railFetchJson(JOBBER_GRAPHQL_ENDPOINT, {
+          provider: "jobber",
+          op: "graphql",
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            "content-type": "application/json",
+            "X-JOBBER-GRAPHQL-VERSION": this.graphqlVersion
+          },
+          body: JSON.stringify({ query, variables }),
+          retry401: async () => {
+            await this.refreshAccessToken();
+          }
+        }, (payload) => {
+          const record = asRecord(payload);
+          const errors = asArray(record.errors);
+          if (errors.length > 0) {
+            const detail = errors
+              .map((error) => text(asRecord(error).message))
+              .filter(Boolean)
+              .slice(0, 3)
+              .join("; ");
+            const retryable = detail.toLowerCase().includes("throttled");
+            throw new RailError(`Jobber GraphQL returned errors${detail ? `: ${detail}` : ""}.`, {
+              provider: "jobber",
+              op: "graphql",
+              status: 400,
+              retryable
+            });
+          }
+          return payload;
+        });
+      } catch (error) {
+        if (error instanceof RailError && error.retryable && attempt < 4) {
+          await sleep(1_500 * (attempt + 1));
+          continue;
+        }
+        throw error;
       }
-    }, (payload) => {
-      const record = asRecord(payload);
-      if (Array.isArray(record.errors)) {
-        throw new RailError("Jobber GraphQL returned errors.", { provider: "jobber", op: "graphql", status: 400 });
-      }
-      return payload;
-    });
+    }
+    throw new RailError("Jobber GraphQL retry loop exited unexpectedly.", { provider: "jobber", op: "graphql", status: 500 });
   }
 }

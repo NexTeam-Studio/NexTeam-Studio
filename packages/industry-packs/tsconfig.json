@@ -6,12 +6,5 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
-  "references": [
-    { "path": "../../packages/core" },
-    { "path": "../../packages/industry-packs" },
-    { "path": "../../packages/providers" },
-    { "path": "../../packages/nexi" }
-  ],
   "include": ["src/**/*.ts"]
 }
-

@@ -82,7 +82,8 @@ export const propertySchema = z.object({
   clientId: idSchema,
   address: addressSchema,
   geo: z.object({ lat: z.number(), lng: z.number() }).optional(),
-  assets: z.array(assetSchema)
+  assets: z.array(assetSchema),
+  externalIds: z.object({ jobber: z.string().optional() }).optional()
 });
 
 export const lineItemSchema = z.object({
@@ -114,6 +115,39 @@ export const jobSchema = z.object({
   lineItems: z.array(lineItemSchema),
   totals: z.object({ subtotal: z.number(), tax: z.number(), total: z.number() }),
   externalIds: z.object({ jobber: z.string().optional() }).optional()
+});
+
+export const quoteSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  clientId: idSchema,
+  jobId: idSchema.optional(),
+  status: z.enum(["draft", "pending_approval", "sent", "signed", "declined"]),
+  title: z.string(),
+  lineItems: z.array(lineItemSchema),
+  totals: z.object({ subtotal: z.number(), tax: z.number(), total: z.number() }),
+  approvalId: idSchema.optional(),
+  pdfRef: z.string().optional(),
+  portalTokenHash: z.string().optional(),
+  signedBy: z.string().optional(),
+  signedAt: z.string().optional(),
+  signatureIp: z.string().optional(),
+  externalIds: z.object({ jobber: z.string().optional(), stripe: z.string().optional() }).optional()
+});
+
+export const invoiceSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  clientId: idSchema,
+  jobId: idSchema.optional(),
+  quoteId: idSchema.optional(),
+  status: z.enum(["draft", "sent", "paid", "void", "overdue"]),
+  title: z.string(),
+  lineItems: z.array(lineItemSchema),
+  totals: z.object({ subtotal: z.number(), tax: z.number(), total: z.number() }),
+  dueAt: z.string().optional(),
+  paidAt: z.string().optional(),
+  externalIds: z.object({ jobber: z.string().optional(), stripe: z.string().optional() }).optional()
 });
 
 export const visitSchema = z.object({
@@ -285,6 +319,8 @@ export type TenantDoc = z.infer<typeof tenantSchema>;
 export type ClientDoc = z.infer<typeof clientSchema>;
 export type PropertyDoc = z.infer<typeof propertySchema>;
 export type JobDoc = z.infer<typeof jobSchema>;
+export type QuoteDoc = z.infer<typeof quoteSchema>;
+export type InvoiceDoc = z.infer<typeof invoiceSchema>;
 export type VisitDoc = z.infer<typeof visitSchema>;
 export type MediaDoc = z.infer<typeof mediaSchema>;
 export type SiteJobBlueprintDoc = z.infer<typeof siteJobBlueprintSchema>;

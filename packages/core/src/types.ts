@@ -85,6 +85,7 @@ export interface Property {
   address: Address;
   geo?: { lat: number; lng: number } | undefined;
   assets: Asset[];
+  externalIds?: { jobber?: string | undefined } | undefined;
 }
 
 export interface LineItem {
@@ -187,6 +188,28 @@ export interface Quote {
   title: string;
   lineItems: LineItem[];
   totals: { subtotal: number; tax: number; total: number };
+  approvalId?: ID | undefined;
+  pdfRef?: string | undefined;
+  portalTokenHash?: string | undefined;
+  signedBy?: string | undefined;
+  signedAt?: string | undefined;
+  signatureIp?: string | undefined;
+  externalIds?: { jobber?: string | undefined; stripe?: string | undefined } | undefined;
+}
+
+export interface Invoice {
+  id: ID;
+  tenantId: ID;
+  clientId: ID;
+  jobId?: ID | undefined;
+  quoteId?: ID | undefined;
+  status: "draft" | "sent" | "paid" | "void" | "overdue";
+  title: string;
+  lineItems: LineItem[];
+  totals: { subtotal: number; tax: number; total: number };
+  dueAt?: string | undefined;
+  paidAt?: string | undefined;
+  externalIds?: { jobber?: string | undefined; stripe?: string | undefined } | undefined;
 }
 
 export interface JobDetail extends Job {
