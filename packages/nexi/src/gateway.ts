@@ -841,6 +841,25 @@ function safeToolErrorResult(toolName: string): Record<string, string> {
   };
 }
 
+const EMAIL_READ_TOOL_NAMES = new Set(["searchEmail", "getEmailThread", "getEmailMessage", "getEmailAttachment"]);
+
+function emailNoSourceFallback(toolRuns: ToolLoopResponse["toolRuns"]): { answer: string; failureReason: string } | undefined {
+  const emailRun = toolRuns.find((run) => EMAIL_READ_TOOL_NAMES.has(run.name) && run.sources.length === 0);
+  if (!emailRun) {
+    return undefined;
+  }
+  if (emailRun.name === "searchEmail") {
+    return {
+      answer: "I couldn't find a matching email for that query yet. I logged the lookup instead of guessing.",
+      failureReason: "email_lookup_without_sources"
+    };
+  }
+  return {
+    answer: "I couldn't read that email item yet. I logged the tool failure instead of guessing.",
+    failureReason: "email_read_without_sources"
+  };
+}
+
 function stripUnrequestedNextSteps(answer: string): string {
   const lines = answer.split(/\r?\n/);
   const cleaned: string[] = [];
@@ -916,6 +935,26 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
   if (deterministicRuns.length > 0) {
     sources = [...sources, ...deterministicRuns.flatMap((run) => run.sources)];
     toolRuns.push(...deterministicRuns);
+    const emailFallback = emailNoSourceFallback(deterministicRuns);
+    if (emailFallback) {
+      await writeUsageRecord({
+        tenantId: request.tenant.id,
+        routeActionName: request.routeActionName,
+        taskType: request.taskType,
+        usage: emptyUsage(),
+        ok: false,
+        errorSummary: emailFallback.failureReason,
+        usageLog: request.usageLog
+      });
+      return {
+        answer: emailFallback.answer,
+        sources,
+        usage: totalUsage,
+        raw: { iterations: rawIterations },
+        failureReason: emailFallback.failureReason,
+        toolRuns
+      };
+    }
     const toolNames = deterministicRuns.map((run) => run.name).join(", ");
     messages.push({
       role: "assistant",

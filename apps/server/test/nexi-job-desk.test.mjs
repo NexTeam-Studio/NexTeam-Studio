@@ -52,6 +52,8 @@ test("source check does not block email action commands or honest tool failures"
   assert.equal(action.ok, true);
   const failure = enforceSources("I couldn't read that email yet. I logged the tool failure instead of guessing.", [], "What did the Semrush site audit say?");
   assert.equal(failure.ok, true);
+  const noSource = enforceSources("I don't have a verified source for that yet.", [], "What did the Semrush site audit say?");
+  assert.equal(noSource.ok, true);
 });
 
 test("Nexi tool loop preloads obvious tools and records cache metrics", async () => {
@@ -294,7 +296,6 @@ test("Nexi Anthropic gateway preloads draftEmail for send-email action commands"
 });
 
 test("Nexi Anthropic gateway sanitizes deterministic email tool failures", async () => {
-  const calls = [];
   const result = await runNexiToolLoop({
     tenant: tenant(),
     system: "Use tools.",
@@ -310,19 +311,38 @@ test("Nexi Anthropic gateway sanitizes deterministic email tool failures", async
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
     env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      assert.doesNotMatch(JSON.stringify(calls[0]), /Invalid time value/);
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "I couldn't read that email yet. I logged the tool failure instead of guessing." }],
-        usage: { input_tokens: 10, output_tokens: 6 }
-      }), { status: 200 });
+    fetchFn: async () => {
+      throw new Error("Anthropic should not be called for a deterministic email tool failure");
     }
   });
   assert.equal(result.toolRuns[0].name, "searchEmail");
   assert.match(JSON.stringify(result.toolRuns[0].result), /failed safely/);
   assert.doesNotMatch(JSON.stringify(result.toolRuns[0].result), /Invalid time value/);
-  assert.equal(result.answer, "I couldn't read that email yet. I logged the tool failure instead of guessing.");
+  assert.equal(result.answer, "I couldn't find a matching email for that query yet. I logged the lookup instead of guessing.");
+  assert.equal(result.failureReason, "email_lookup_without_sources");
+});
+
+test("Nexi Anthropic gateway turns empty deterministic email searches into logged honest failures", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What did the Semrush site audit say?" }],
+    tools: [{
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string().optional() }),
+      handler: async () => ({ result: { messages: [] }, sources: [] })
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("Anthropic should not be called for an empty deterministic email lookup");
+    }
+  });
+  assert.equal(result.toolRuns[0].name, "searchEmail");
+  assert.equal(result.answer, "I couldn't find a matching email for that query yet. I logged the lookup instead of guessing.");
+  assert.equal(result.failureReason, "email_lookup_without_sources");
 });
 
 test("Nexi Anthropic gateway preloads triageInbox for attention prompts", async () => {

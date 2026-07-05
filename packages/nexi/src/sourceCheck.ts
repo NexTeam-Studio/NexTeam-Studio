@@ -37,7 +37,8 @@ const ACTION_PROMPT_PATTERNS = [
 const HONEST_FAILURE_PATTERNS = [
   /\b(?:i\s+)?(?:couldn'?t|could not|can'?t|cannot|wasn'?t able to|am not able to)\s+(?:read|reach|access|verify|pull|check|search|open)\b/i,
   /\b(?:tool|email rail|gmail rail|provider)\s+(?:failed|returned an error|did not return|could not return)\b/i,
-  /\b(?:no verified|not verified|without a verified source|no matching source|no matching email)\b/i
+  /\b(?:no verified|not verified|without a verified source|no matching source|no matching email)\b/i,
+  /\b(?:don'?t|do not|doesn'?t|does not)\s+have\s+(?:a\s+)?verified source\b/i
 ];
 
 export interface SourceCheckResult {
