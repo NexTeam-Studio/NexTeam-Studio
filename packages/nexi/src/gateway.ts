@@ -565,6 +565,12 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
       record.question = userText;
     }
   }
+  if (toolName === "searchEmail" && !record.keywords) {
+    record.keywords = userText;
+  }
+  if (toolName === "summarizeInbox" && !record.maxResults) {
+    record.maxResults = 10;
+  }
   if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
     record.nameQuery = userText;
   }
@@ -613,9 +619,24 @@ function looksLikeTechnicianQuestion(lower: string): boolean {
   return /\b(?:technician|tech|who was there|who went|who did|who performed)\b/.test(lower);
 }
 
+function looksLikeInboxSummaryQuestion(lower: string): boolean {
+  return /\b(?:emails?|mail|inbox)\b/.test(lower)
+    && /\b(?:came in|received|today|this morning|this afternoon|summarize|summary|what(?:'s| is) in)\b/.test(lower);
+}
+
+function looksLikeEmailSearchQuestion(lower: string): boolean {
+  return /\b(?:emails?|mail|inbox|reply|replied|responded)\b/.test(lower);
+}
+
 function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>, tenant?: Tenant | undefined): string[] {
   const userText = latestUserText(messages);
   const lower = userText.toLowerCase();
+  if (looksLikeInboxSummaryQuestion(lower) && toolsByName.has("summarizeInbox")) {
+    return ["summarizeInbox"];
+  }
+  if (looksLikeEmailSearchQuestion(lower) && toolsByName.has("searchEmail")) {
+    return ["searchEmail"];
+  }
   if (looksLikeTechnicianQuestion(lower)) {
     return uniqueToolNames(["getJobDetail", "getDocuments", "getPhotos"], toolsByName);
   }

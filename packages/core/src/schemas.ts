@@ -252,7 +252,7 @@ export const approvalItemSchema = z.object({
 });
 
 export const sourceSchema = z.object({
-  rail: z.enum(["jobber", "companycam", "native", "gsc", "gbp"]),
+  rail: z.enum(["jobber", "companycam", "native", "gsc", "gbp", "email"]),
   ref: z.string(),
   label: z.string()
 });

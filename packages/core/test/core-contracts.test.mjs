@@ -85,3 +85,15 @@ test("Conversation schema preserves tool run traces for reuse", () => {
   assert.equal(conversation.toolRuns[0].name, "getSchedule");
   assert.equal(conversation.toolRuns[0].result.jobs[0].id, "job_1");
 });
+
+test("Source schema accepts email rail refs", () => {
+  const conversation = conversationRecordSchema.parse({
+    id: "conv_email_1",
+    tenantId: "aquatrace",
+    userText: "What emails came in today?",
+    assistantText: "One email came in today.",
+    sources: [{ rail: "email", ref: "email:ops:msg_1", label: "Email ops msg_1" }],
+    createdAt: "2026-07-05T16:00:00.000Z"
+  });
+  assert.equal(conversation.sources[0].ref, "email:ops:msg_1");
+});

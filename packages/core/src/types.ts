@@ -255,10 +255,14 @@ export interface MediaMeta {
 
 export interface OutboundEmail {
   tenantId: ID;
+  mailbox?: string | undefined;
   to: string[];
+  cc?: string[] | undefined;
+  bcc?: string[] | undefined;
   subject: string;
   bodyText: string;
   bodyHtml?: string | undefined;
+  replyToMessageId?: ID | undefined;
 }
 
 export interface OutboundSms {
@@ -271,6 +275,38 @@ export interface SendReceipt {
   provider: string;
   id: ID;
   acceptedAt: string;
+  mailbox?: string | undefined;
+  threadId?: ID | undefined;
+}
+
+export interface EmailSearchQuery {
+  mailbox?: string | undefined;
+  sender?: string | undefined;
+  subject?: string | undefined;
+  keywords?: string | undefined;
+  after?: string | undefined;
+  before?: string | undefined;
+  maxResults?: number | undefined;
+}
+
+export interface EmailMessageSummary {
+  id: ID;
+  tenantId: ID;
+  mailbox: string;
+  threadId: ID;
+  from?: string | undefined;
+  to?: string | undefined;
+  subject?: string | undefined;
+  receivedAt?: string | undefined;
+  snippet?: string | undefined;
+  labels: string[];
+}
+
+export interface EmailThread {
+  id: ID;
+  tenantId: ID;
+  mailbox: string;
+  messages: EmailMessageSummary[];
 }
 
 export interface CRMProvider {
@@ -294,6 +330,17 @@ export interface CommsProvider {
   sendEmail(m: OutboundEmail): Promise<SendReceipt>;
   sendSms?(m: OutboundSms): Promise<SendReceipt>;
   suppressionCheck(clientId: ID, channel: "email" | "sms"): Promise<boolean>;
+}
+
+export interface EmailReadProvider {
+  readonly mailbox: string;
+  searchEmail(query: EmailSearchQuery): Promise<EmailMessageSummary[]>;
+  getEmailThread(threadId: ID): Promise<EmailThread>;
+}
+
+export interface EmailSendProvider {
+  readonly mailbox: string;
+  sendEmail(message: OutboundEmail): Promise<SendReceipt>;
 }
 
 export type EventType =
@@ -344,7 +391,7 @@ export interface NexiTool {
 }
 
 export interface Source {
-  rail: "jobber" | "companycam" | "native" | "gsc" | "gbp";
+  rail: "jobber" | "companycam" | "native" | "gsc" | "gbp" | "email";
   ref: string;
   label: string;
 }

@@ -28,6 +28,30 @@ export interface NexiMessageResult {
   toolRuns: ToolLoopResponse["toolRuns"];
 }
 
+type JsonRecord = Record<string, unknown>;
+
+function redactEmailContent(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(redactEmailContent);
+  }
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+  const record = value as JsonRecord;
+  return Object.fromEntries(Object.entries(record).map(([key, entry]) => {
+    if (/^(?:body|bodyText|bodyHtml|snippet|text|html)$/i.test(key)) {
+      return [key, "[redacted-email-content]"];
+    }
+    return [key, redactEmailContent(entry)];
+  }));
+}
+
+function persistableToolRuns(toolRuns: ToolLoopResponse["toolRuns"]): ToolLoopResponse["toolRuns"] {
+  return toolRuns.map((run) => run.sources.some((source) => source.rail === "email")
+    ? { ...run, result: redactEmailContent(run.result) }
+    : run);
+}
+
 function buildNexiSystemPrompt(tenant: Tenant): string {
   return [
     `You are ${tenant.branding.assistantName}, the NexTeam Job Desk assistant for ${tenant.name}.`,
@@ -204,7 +228,7 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
       userText: input.message,
       assistantText: result.answer,
       sources: result.sources,
-      toolRuns: result.toolRuns
+      toolRuns: persistableToolRuns(result.toolRuns)
     });
     let failureId: string | undefined;
     if (result.failureReason) {
