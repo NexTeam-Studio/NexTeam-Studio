@@ -1,0 +1,17 @@
+{
+  "capturedAt": "2026-07-05T19:24:32.331Z",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "d231400756b6ed4e9e5a1260efd5ac38e1b70b8c",
+  "version": {
+    "sha": "d231400756b6ed4e9e5a1260efd5ac38e1b70b8c",
+    "builtAt": "2026-07-05T19:24:30.498Z"
+  },
+  "requestTenantId": "other-tenant",
+  "expectedStatus": 403,
+  "actualStatus": 403,
+  "passed": true,
+  "redactedResponse": {
+    "ok": false,
+    "error": "Email rail is not configured for tenant other-tenant."
+  }
+}

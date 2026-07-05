@@ -1,0 +1,40 @@
+{
+    "capturedAt":  "2026-07-05T15:23:16.7926483-04:00",
+    "baseUrl":  "https://nexteam-studio-staging.up.railway.app",
+    "expectedSha":  "d231400756b6ed4e9e5a1260efd5ac38e1b70b8c",
+    "version":  {
+                    "sha":  "d231400756b6ed4e9e5a1260efd5ac38e1b70b8c",
+                    "builtAt":  "2026-07-05T19:23:14.539Z"
+                },
+    "shaMatch":  true,
+    "health":  {
+                   "ok":  true,
+                   "checkedAt":  "2026-07-05T19:23:15.882Z",
+                   "rails":  {
+                                 "jobber":  {
+                                                "ok":  true,
+                                                "configured":  true,
+                                                "provider":  "jobber",
+                                                "op":  "graphql_read",
+                                                "latencyMs":  699,
+                                                "detail":  "Jobber GraphQL read succeeded."
+                                            },
+                                 "companycam":  {
+                                                    "ok":  true,
+                                                    "configured":  true,
+                                                    "provider":  "companycam",
+                                                    "op":  "projects_read",
+                                                    "latencyMs":  454,
+                                                    "detail":  "CompanyCam projects read succeeded."
+                                                },
+                                 "anthropic":  {
+                                                   "ok":  true,
+                                                   "configured":  true,
+                                                   "provider":  "anthropic",
+                                                   "op":  "configured_no_spend",
+                                                   "latencyMs":  0,
+                                                   "detail":  "Configured; live message call skipped by no-spend overnight limit."
+                                               }
+                             }
+               }
+}
