@@ -5,6 +5,7 @@ import {
   type EmailMessageSummary,
   type EmailReadProvider,
   type NexiTool,
+  type OutboundEmailAttachment,
   type Source,
   type Tenant
 } from "@nexteam/core";
@@ -43,13 +44,22 @@ const summarizeInboxInputSchema = z.object({
   maxResults: z.number().int().min(1).max(25).optional()
 });
 
+const draftEmailAttachmentSchema = z.object({
+  filename: z.string().min(1).max(240),
+  mime: z.string().min(1).max(160),
+  contentBase64: z.string().min(1).max(20_000_000)
+});
+
 const draftEmailInputSchema = z.object({
   to: z.array(z.string().email()).min(1),
   cc: z.array(z.string().email()).optional(),
   bcc: z.array(z.string().email()).optional(),
   subject: z.string().min(1),
-  bodyText: z.string().min(1)
+  bodyText: z.string().min(1),
+  attachments: z.array(draftEmailAttachmentSchema).max(10).optional()
 });
+
+const AQUATRACE_SIGNATURE = "Nexi\nAquatrace Swimming Pool Leak Detection";
 
 function emailSource(message: EmailMessageSummary): Source {
   return {
@@ -105,6 +115,52 @@ function assertCommsTenant(rail: CommsRail, tenant: Tenant, op: string): void {
   if (tenant.id !== rail.tenantId) {
     throw new RailError(`Email rail is not configured for tenant ${tenant.id}.`, { provider: "gmail", op, status: 403 });
   }
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function cleanSubject(subject: string): string {
+  return subject.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function cleanBodyParagraphs(bodyText: string): string[] {
+  return bodyText
+    .replace(/\r\n/g, "\n")
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim().replace(/[ \t]+/g, " "))
+    .filter(Boolean);
+}
+
+function hasAquatraceSignature(bodyText: string): boolean {
+  return /Aquatrace Swimming Pool Leak Detection/i.test(bodyText);
+}
+
+function brandedEmailBody(bodyText: string): { bodyText: string; bodyHtml: string } {
+  const paragraphs = cleanBodyParagraphs(bodyText);
+  const baseBody = paragraphs.join("\n\n");
+  const text = hasAquatraceSignature(baseBody) ? baseBody : `${baseBody}\n\n${AQUATRACE_SIGNATURE}`;
+  const htmlParagraphs = text
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+  return {
+    bodyText: text,
+    bodyHtml: `<div>${htmlParagraphs}</div>`
+  };
+}
+
+function attachmentMediaRefs(attachments: OutboundEmailAttachment[] | undefined): string[] | undefined {
+  if (!attachments?.length) {
+    return undefined;
+  }
+  return attachments.map((attachment) => `attachment:${attachment.filename}`);
 }
 
 export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQueueService): NexiTool[] {
@@ -234,12 +290,20 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
         if (!rail.sendAdapter) {
           throw new RailError("The dedicated Nexi send mailbox is not configured.", { provider: "gmail", op: "draftEmail", status: 503 });
         }
+        const subject = cleanSubject(input.subject);
+        const body = brandedEmailBody(input.bodyText);
+        const attachments = input.attachments?.map((attachment) => ({
+          filename: attachment.filename,
+          mime: attachment.mime,
+          contentBase64: attachment.contentBase64
+        }));
         const approval = await approvalQueue.create({
           tenantId: tenant.id,
           kind: "email",
           preview: {
-            title: input.subject,
-            body: input.bodyText
+            title: subject,
+            body: body.bodyText,
+            mediaRefs: attachmentMediaRefs(attachments)
           },
           execute: {
             service: "comms",
@@ -252,8 +316,10 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
                 to: input.to,
                 ...(input.cc ? { cc: input.cc } : {}),
                 ...(input.bcc ? { bcc: input.bcc } : {}),
-                subject: input.subject,
-                bodyText: input.bodyText
+                subject,
+                bodyText: body.bodyText,
+                bodyHtml: body.bodyHtml,
+                ...(attachments?.length ? { attachments } : {})
               }
             }
           },

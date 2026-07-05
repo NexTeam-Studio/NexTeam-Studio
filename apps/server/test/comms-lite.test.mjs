@@ -31,6 +31,10 @@ function gmailConfig(mailbox) {
   };
 }
 
+function decodeRawMessage(raw) {
+  return Buffer.from(raw, "base64url").toString("utf8");
+}
+
 test("Gmail read-only adapter is structurally send-incapable", () => {
   const adapter = new GmailReadOnlyAdapter(gmailConfig("ops"));
   assert.equal(typeof adapter.searchEmail, "function");
@@ -290,6 +294,41 @@ test("draftEmail parks email in ApprovalQueue without sending", async () => {
   assert.equal((await approvalQueue.listPending("aquatrace")).length, 1);
 });
 
+test("draftEmail applies branded template and preserves attachments for approval", async () => {
+  const attachmentBase64 = Buffer.from("report-pdf", "utf8").toString("base64");
+  const rail = {
+    tenantId: "aquatrace",
+    readAdapters: new Map(),
+    sendAdapter: {
+      mailbox: "nexi",
+      async sendEmail() {
+        throw new Error("should not send before approval");
+      }
+    }
+  };
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CommsApprovalExecutor(rail));
+  const tool = createCommsNexiTools(rail, approvalQueue).find((candidate) => candidate.name === "draftEmail");
+  assert.ok(tool);
+  const result = await tool.handler(tenant(), {
+    to: ["owner@example.test"],
+    subject: "  Leak report follow-up  ",
+    bodyText: "Here is the report.\n\nLet me know if you want me to schedule the next step.",
+    attachments: [{
+      filename: "leak-report.pdf",
+      mime: "application/pdf",
+      contentBase64: attachmentBase64
+    }]
+  });
+  const approval = result.result.approval;
+  assert.equal(approval.status, "pending");
+  assert.equal(approval.preview.title, "Leak report follow-up");
+  assert.match(approval.preview.body, /Nexi\nAquatrace Swimming Pool Leak Detection/);
+  assert.deepEqual(approval.preview.mediaRefs, ["attachment:leak-report.pdf"]);
+  assert.equal(approval.execute.args.outbound.bodyHtml.includes("Aquatrace Swimming Pool Leak Detection"), true);
+  assert.equal(approval.execute.args.outbound.attachments[0].filename, "leak-report.pdf");
+  assert.equal(approval.execute.args.outbound.attachments[0].contentBase64, attachmentBase64);
+});
+
 test("CommsApprovalExecutor sends only approved dedicated-mailbox artifacts", async () => {
   const sentMessages = [];
   const rail = {
@@ -329,6 +368,76 @@ test("CommsApprovalExecutor sends only approved dedicated-mailbox artifacts", as
   assert.equal(executed.item.status, "executed");
   assert.equal(sentMessages.length, 1);
   assert.equal(sentMessages[0].mailbox, "nexi-send");
+});
+
+test("CommsApprovalExecutor preserves approved email attachments for dedicated send adapter", async () => {
+  const sentMessages = [];
+  const attachmentBase64 = Buffer.from("PDF", "utf8").toString("base64");
+  const rail = {
+    tenantId: "aquatrace",
+    readAdapters: new Map(),
+    sendAdapter: {
+      mailbox: "nexi-send",
+      async sendEmail(message) {
+        sentMessages.push(message);
+        return { provider: "gmail", id: "sent_1", acceptedAt: "2026-07-05T12:00:00.000Z", mailbox: "nexi-send" };
+      }
+    }
+  };
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CommsApprovalExecutor(rail));
+  const item = await approvalQueue.create({
+    tenantId: "aquatrace",
+    kind: "email",
+    preview: { title: "Approved send", body: "Send after approval.", mediaRefs: ["attachment:report.pdf"] },
+    execute: {
+      service: "comms",
+      op: "sendEmail",
+      args: {
+        mailbox: "nexi-send",
+        outbound: {
+          tenantId: "aquatrace",
+          mailbox: "nexi-send",
+          to: ["owner@example.test"],
+          subject: "Approved send",
+          bodyText: "Send after approval.",
+          attachments: [{ filename: "report.pdf", mime: "application/pdf", contentBase64: attachmentBase64 }]
+        }
+      }
+    },
+    createdBy: "nexi"
+  });
+  await approvalQueue.approve(item.id);
+  const executed = await approvalQueue.executeApproved(item.id);
+  assert.equal(executed.item.status, "executed");
+  assert.equal(sentMessages[0].attachments[0].filename, "report.pdf");
+  assert.equal(sentMessages[0].attachments[0].contentBase64, attachmentBase64);
+});
+
+test("Gmail send adapter encodes branded HTML and attachments as multipart MIME", async () => {
+  let rawPayload = "";
+  const attachmentBase64 = Buffer.from("report-pdf", "utf8").toString("base64");
+  const adapter = new GmailSendAdapter(gmailConfig("nexi"));
+  adapter.gmailPost = async (_path, _op, payload, parse) => {
+    rawPayload = payload.raw;
+    return parse({ id: "sent_1", threadId: "thr_1" });
+  };
+  await adapter.sendEmail({
+    tenantId: "aquatrace",
+    mailbox: "nexi",
+    to: ["owner@example.test"],
+    subject: "Leak report",
+    bodyText: "Here is the report.\n\nNexi\nAquatrace Swimming Pool Leak Detection",
+    bodyHtml: "<div><p>Here is the report.</p><p>Nexi<br>Aquatrace Swimming Pool Leak Detection</p></div>",
+    attachments: [{ filename: "leak-report.pdf", mime: "application/pdf", contentBase64: attachmentBase64 }]
+  });
+  const raw = decodeRawMessage(rawPayload);
+  assert.match(raw, /Content-Type: multipart\/mixed/);
+  assert.match(raw, /Content-Type: multipart\/alternative/);
+  assert.match(raw, /Content-Type: text\/html; charset=UTF-8/);
+  assert.match(raw, /Aquatrace Swimming Pool Leak Detection/);
+  assert.match(raw, /Content-Disposition: attachment; filename="leak-report\.pdf"/);
+  assert.match(raw, /Content-Type: application\/pdf; name="leak-report\.pdf"/);
+  assert.match(raw, /cmVwb3J0LXBkZg==/);
 });
 
 test("CommsApprovalExecutor rejects artifacts targeting read-only mailbox aliases", async () => {

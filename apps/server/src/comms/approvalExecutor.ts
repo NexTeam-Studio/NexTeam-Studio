@@ -1,5 +1,25 @@
-import { DryRunApprovalExecutor, RailError, type ApprovalExecutor, type ApprovalItem, type OutboundEmail } from "@nexteam/core";
+import { DryRunApprovalExecutor, RailError, type ApprovalExecutor, type ApprovalItem, type OutboundEmail, type OutboundEmailAttachment } from "@nexteam/core";
 import type { CommsRail } from "./gmailRegistry.js";
+
+function outboundAttachments(value: unknown): OutboundEmailAttachment[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value)) {
+    throw new RailError("Approved email artifact has invalid attachment metadata.", { provider: "approval", op: "sendEmail", status: 400 });
+  }
+  return value.map((entry) => {
+    const record = entry && typeof entry === "object" ? entry as Partial<OutboundEmailAttachment> : {};
+    if (!record.filename || !record.mime || !record.contentBase64) {
+      throw new RailError("Approved email attachment is missing filename, mime, or content.", { provider: "approval", op: "sendEmail", status: 400 });
+    }
+    return {
+      filename: String(record.filename),
+      mime: String(record.mime),
+      contentBase64: String(record.contentBase64)
+    };
+  });
+}
 
 function outboundEmail(value: unknown): OutboundEmail {
   const record = value && typeof value === "object" ? value as Partial<OutboundEmail> : {};
@@ -15,6 +35,7 @@ function outboundEmail(value: unknown): OutboundEmail {
     subject: String(record.subject),
     bodyText: String(record.bodyText),
     bodyHtml: record.bodyHtml ? String(record.bodyHtml) : undefined,
+    attachments: outboundAttachments(record.attachments),
     replyToMessageId: record.replyToMessageId ? String(record.replyToMessageId) : undefined
   };
 }

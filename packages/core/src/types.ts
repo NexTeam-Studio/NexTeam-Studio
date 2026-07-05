@@ -262,7 +262,14 @@ export interface OutboundEmail {
   subject: string;
   bodyText: string;
   bodyHtml?: string | undefined;
+  attachments?: OutboundEmailAttachment[] | undefined;
   replyToMessageId?: ID | undefined;
+}
+
+export interface OutboundEmailAttachment {
+  filename: string;
+  mime: string;
+  contentBase64: string;
 }
 
 export interface OutboundSms {

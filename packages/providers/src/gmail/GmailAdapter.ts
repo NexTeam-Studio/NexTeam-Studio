@@ -9,6 +9,7 @@ import {
   type EmailSendProvider,
   type EmailThread,
   type OutboundEmail,
+  type OutboundEmailAttachment,
   type SendReceipt
 } from "@nexteam/core";
 import { Readable } from "node:stream";
@@ -216,18 +217,106 @@ function parseAttachment(payload: unknown): GmailAttachmentPayload {
   };
 }
 
-function encodeMime(message: OutboundEmail): string {
-  const headers = [
-    `To: ${message.to.join(", ")}`,
-    ...(message.cc?.length ? [`Cc: ${message.cc.join(", ")}`] : []),
-    ...(message.bcc?.length ? [`Bcc: ${message.bcc.join(", ")}`] : []),
-    `Subject: ${message.subject}`,
-    "MIME-Version: 1.0",
+function sanitizeHeader(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function quotedParam(value: string): string {
+  return sanitizeHeader(value).replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
+}
+
+function wrapBase64(value: string): string {
+  const normalized = value.replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+  return (padded.match(/.{1,76}/g) ?? []).join("\r\n");
+}
+
+function baseHeaders(message: OutboundEmail): string[] {
+  return [
+    `To: ${message.to.map(sanitizeHeader).join(", ")}`,
+    ...(message.cc?.length ? [`Cc: ${message.cc.map(sanitizeHeader).join(", ")}`] : []),
+    ...(message.bcc?.length ? [`Bcc: ${message.bcc.map(sanitizeHeader).join(", ")}`] : []),
+    `Subject: ${sanitizeHeader(message.subject)}`,
+    "MIME-Version: 1.0"
+  ];
+}
+
+function alternativePart(message: OutboundEmail, boundary: string): string[] {
+  return [
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    "",
+    `--${boundary}`,
     "Content-Type: text/plain; charset=UTF-8",
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    message.bodyText,
+    `--${boundary}`,
+    "Content-Type: text/html; charset=UTF-8",
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    message.bodyHtml ?? `<pre>${escapeHtml(message.bodyText)}</pre>`,
+    `--${boundary}--`
+  ];
+}
+
+function attachmentPart(attachment: OutboundEmailAttachment): string[] {
+  const filename = quotedParam(attachment.filename);
+  const mime = sanitizeHeader(attachment.mime || "application/octet-stream");
+  return [
+    `Content-Type: ${mime}; name="${filename}"`,
+    `Content-Disposition: attachment; filename="${filename}"`,
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrapBase64(attachment.contentBase64)
+  ];
+}
+
+function rawMime(message: OutboundEmail): string {
+  const attachments = message.attachments ?? [];
+  if (attachments.length > 0) {
+    const mixedBoundary = `nexteam-mixed-${crypto.randomUUID()}`;
+    const alternativeBoundary = `nexteam-alt-${crypto.randomUUID()}`;
+    const lines = [
+      ...baseHeaders(message),
+      `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
+      "",
+      `--${mixedBoundary}`,
+      ...alternativePart(message, alternativeBoundary),
+      ...attachments.flatMap((attachment) => [
+        `--${mixedBoundary}`,
+        ...attachmentPart(attachment)
+      ]),
+      `--${mixedBoundary}--`
+    ];
+    return lines.join("\r\n");
+  }
+  if (message.bodyHtml) {
+    const boundary = `nexteam-alt-${crypto.randomUUID()}`;
+    return [
+      ...baseHeaders(message),
+      ...alternativePart(message, boundary)
+    ].join("\r\n");
+  }
+  return [
+    ...baseHeaders(message),
+    "Content-Type: text/plain; charset=UTF-8",
+    "Content-Transfer-Encoding: 8bit",
     "",
     message.bodyText
-  ];
-  return Buffer.from(headers.join("\r\n"), "utf8")
+  ].join("\r\n");
+}
+
+function encodeMime(message: OutboundEmail): string {
+  return Buffer.from(rawMime(message), "utf8")
     .toString("base64")
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
