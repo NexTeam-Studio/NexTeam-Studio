@@ -1,22 +1,22 @@
 {
-    "capturedAt":  "2026-07-05T15:23:16.7926483-04:00",
+    "capturedAt":  "2026-07-05T15:40:20.3864943-04:00",
     "baseUrl":  "https://nexteam-studio-staging.up.railway.app",
-    "expectedSha":  "d231400756b6ed4e9e5a1260efd5ac38e1b70b8c",
+    "expectedSha":  "eb59b0e612a651ee3535ba8704602ec19e4b0da0",
     "version":  {
-                    "sha":  "d231400756b6ed4e9e5a1260efd5ac38e1b70b8c",
-                    "builtAt":  "2026-07-05T19:23:14.539Z"
+                    "sha":  "eb59b0e612a651ee3535ba8704602ec19e4b0da0",
+                    "builtAt":  "2026-07-05T19:40:18.219Z"
                 },
     "shaMatch":  true,
     "health":  {
                    "ok":  true,
-                   "checkedAt":  "2026-07-05T19:23:15.882Z",
+                   "checkedAt":  "2026-07-05T19:40:19.479Z",
                    "rails":  {
                                  "jobber":  {
                                                 "ok":  true,
                                                 "configured":  true,
                                                 "provider":  "jobber",
                                                 "op":  "graphql_read",
-                                                "latencyMs":  699,
+                                                "latencyMs":  647,
                                                 "detail":  "Jobber GraphQL read succeeded."
                                             },
                                  "companycam":  {
@@ -24,7 +24,7 @@
                                                     "configured":  true,
                                                     "provider":  "companycam",
                                                     "op":  "projects_read",
-                                                    "latencyMs":  454,
+                                                    "latencyMs":  438,
                                                     "detail":  "CompanyCam projects read succeeded."
                                                 },
                                  "anthropic":  {

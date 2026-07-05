@@ -27,7 +27,7 @@ Verification commands:
   Result: pass
 - node --test apps/server/test/comms-lite.test.mjs apps/server/test/nexi-job-desk.test.mjs
   Result: pass
-  Tests: 29 passed, 0 failed
+  Tests: 35 passed, 0 failed
 
 PII/secrets:
 - No Gmail message bodies, subjects, snippets, refresh tokens, client secrets, or auth tokens are included.

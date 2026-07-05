@@ -1,15 +1,15 @@
 {
-  "capturedAt": "2026-07-05T19:24:04.654Z",
+  "capturedAt": "2026-07-05T19:41:14.993Z",
   "baseUrl": "https://nexteam-studio-staging.up.railway.app",
-  "expectedSha": "d231400756b6ed4e9e5a1260efd5ac38e1b70b8c",
+  "expectedSha": "eb59b0e612a651ee3535ba8704602ec19e4b0da0",
   "version": {
-    "sha": "d231400756b6ed4e9e5a1260efd5ac38e1b70b8c",
-    "builtAt": "2026-07-05T19:23:50.642Z"
+    "sha": "eb59b0e612a651ee3535ba8704602ec19e4b0da0",
+    "builtAt": "2026-07-05T19:41:00.722Z"
   },
   "prompt": "what emails came in today",
   "ok": true,
   "answerReceived": true,
-  "answerLength": 715,
+  "answerLength": 860,
   "sourceCount": 17,
   "emailSourceCount": 17,
   "nonEmailSourceCount": 0,
@@ -56,10 +56,10 @@
   "usedGmailTool": true,
   "usage": {
     "inputTokens": 5688,
-    "outputTokens": 304,
+    "outputTokens": 382,
     "cacheCreationInputTokens": 0,
     "cacheReadInputTokens": 0,
-    "totalTokens": 5992
+    "totalTokens": 6070
   },
   "redactedResponse": {
     "ok": true,
