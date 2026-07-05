@@ -336,6 +336,14 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   if (toolName === "getPhotos" && !record.projectQuery) {
     record.projectQuery = photoQueryFromText(userText);
   }
+  if (toolName === "getDocuments") {
+    if (!record.projectQuery) {
+      record.projectQuery = entityQueryFromText(userText) || photoQueryFromText(userText);
+    }
+    if (!record.question) {
+      record.question = userText;
+    }
+  }
   if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
     record.nameQuery = userText;
   }
@@ -355,6 +363,20 @@ function deterministicToolName(messages: GatewayMessage[], toolsByName: Map<stri
   const lower = latestUserText(messages).toLowerCase();
   if ((lower.includes("photo") || lower.includes("picture") || lower.includes("image")) && toolsByName.has("getPhotos")) {
     return "getPhotos";
+  }
+  if (
+    toolsByName.has("getDocuments")
+    && (
+      lower.includes("report")
+      || lower.includes("document")
+      || lower.includes("checklist")
+      || lower.includes("finding")
+      || lower.includes("result")
+      || lower.includes("issue")
+      || lower.includes("leak detection")
+    )
+  ) {
+    return "getDocuments";
   }
   if (lower.includes("gallon") && toolsByName.has("lookupSiteJobBlueprintField")) {
     return "lookupSiteJobBlueprintField";

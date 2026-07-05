@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { z } from "zod";
 import { ingestSiteJobBlueprint } from "../dist/nexi/siteJobBlueprintIngest.js";
+import { extractCompanyCamReportFields, siteJobBlueprintFromCompanyCamReport } from "../dist/nexi/reportDocuments.js";
 import { answerNexiMessage } from "../dist/nexi/nexiService.js";
 import { createNexiJobDeskTools } from "../dist/nexi/nexiTools.js";
 import { MemoryNexiRepository } from "../dist/nexi/nexiRepository.js";
@@ -129,6 +130,45 @@ test("Nexi photo prompts extract the CompanyCam project query", async () => {
   assert.equal(result.sources.length, 1);
 });
 
+test("Nexi report prompts preload CompanyCam documents with the requested entity", async () => {
+  const calls = [];
+  let parsedToolArgs = null;
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What were the pool leak detection results for Deborah Justice in CompanyCam report?" }],
+    tools: [{
+      name: "getDocuments",
+      description: "Read documents.",
+      inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+      handler: async (_tenant, args) => {
+        parsedToolArgs = args;
+        return {
+          result: {
+            project: { id: "107503799", name: "Deborah Justice" },
+            reports: [{ fields: { reportFindings: "Leak found at return fitting." } }]
+          },
+          sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document leak checklist" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "The CompanyCam report says leak found at return fitting." }],
+        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+      }), { status: 200 });
+    }
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(parsedToolArgs.projectQuery, "Deborah Justice");
+  assert.match(parsedToolArgs.question, /Deborah Justice/);
+  assert.equal(result.sources.length, 1);
+});
+
 test("Nexi service persists failureLog for source-enforced failures", async () => {
   const repository = new MemoryNexiRepository();
   const result = await answerNexiMessage({
@@ -148,6 +188,48 @@ test("Nexi service persists failureLog for source-enforced failures", async () =
   assert.match(result.failureId, /^fail_/);
   assert.equal(repository.failureLog.length, 1);
   assert.equal(repository.failureLog[0].reason, "factual_answer_without_sources");
+});
+
+test("CompanyCam report fields produce entity-keyed SiteJobBlueprints", async () => {
+  const fields = extractCompanyCamReportFields(`
+Swimming Pool Leak Detection Details /Results
+-- 2 of 10 --
+Leak detection found water loss at the return line and skimmer throat.
+-- 3 of 10 --
+Estimated Approximate Total Gallons
+32,500 Gallons
+`);
+  assert.equal(fields.poolGallons, 32500);
+  assert.match(fields.reportFindings, /return line/i);
+  const blueprint = siteJobBlueprintFromCompanyCamReport({
+    tenantId: "aquatrace",
+    project: {
+      id: "107503799",
+      name: "Deborah Justice",
+      externalIds: { companycam: "107503799" },
+      address: { street1: "181 Isbell Road", city: "Fair Play", province: "South Carolina", postalCode: "29643" }
+    },
+    report: {
+      document: {
+        id: "18218446",
+        tenantId: "aquatrace",
+        label: "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf",
+        storageRef: "companycam-doc:18218446",
+        externalIds: { companycam: "18218446" }
+      },
+      fields,
+      textSnippet: "Estimated Approximate Total Gallons 32,500 Gallons",
+      byteLength: 1024,
+      parsed: true
+    }
+  });
+  assert.equal(blueprint.fields.projectName, "Deborah Justice");
+  assert.equal(blueprint.fields.poolGallons, 32500);
+  const repository = new MemoryNexiRepository();
+  await repository.saveSiteJobBlueprint(blueprint);
+  const tool = createNexiJobDeskTools({}, repository).find((candidate) => candidate.name === "lookupSiteJobBlueprintField");
+  const match = await tool.handler(tenant(), { field: "poolGallons", requestedEntity: "Deborah Justice" });
+  assert.equal(match.result.value, 32500);
 });
 
 test("SiteJobBlueprint field lookup rejects mismatched requested entity", async () => {

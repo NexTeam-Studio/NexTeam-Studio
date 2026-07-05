@@ -231,6 +231,9 @@ export interface DocRef {
   tenantId: ID;
   label: string;
   storageRef: string;
+  mime?: string | undefined;
+  byteSize?: number | undefined;
+  updatedAt?: string | undefined;
   externalIds?: { companycam?: string | undefined } | undefined;
 }
 

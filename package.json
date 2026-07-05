@@ -29,6 +29,7 @@
     "stripe:webhook:staging": "railway run --service NexTeam-Studio --environment staging -- tsx scripts/stripe-staging-webhook-setup.ts",
     "receipt:m2:stripe": "railway run --service NexTeam-Studio --environment staging -- tsx scripts/m2-stripe-payment-receipt.ts",
     "import:companycam:dry-run": "tsx scripts/companycam-import-dry-run.ts",
+    "receipt:m1:companycam-report-ingest": "railway run --service NexTeam-Studio --environment staging -- tsx scripts/nexi-companycam-report-ingest.ts",
     "receipt:m4:report": "tsx scripts/fielddocs-native-report-receipt.ts",
     "smoke:m0": "npm run smoke:jobber && npm run smoke:companycam",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run check:tenancy && npm run check:secrets && npm run check:secret-history && npm run check:provider-imports && npm run check:blueprints",

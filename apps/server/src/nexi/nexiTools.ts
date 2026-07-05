@@ -1,6 +1,7 @@
-import type { Media, NexiTool, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
+import type { DocRef, Media, NexiTool, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
 import { z } from "zod";
 import { CompanyCamAdapter, JobberAdapter } from "@nexteam/providers";
+import { readCompanyCamReports, siteJobBlueprintFromCompanyCamReport } from "./reportDocuments.js";
 
 export interface ToolRunResult {
   result: unknown;
@@ -23,6 +24,11 @@ export const getJobDetailInputSchema = z.object({
 
 export const getPhotosInputSchema = z.object({
   projectQuery: z.string()
+});
+
+export const getDocumentsInputSchema = z.object({
+  projectQuery: z.string(),
+  question: z.string().optional()
 });
 
 export const lookupSiteJobBlueprintFieldInputSchema = z.object({
@@ -61,6 +67,22 @@ const getPhotosJsonSchema = {
   required: ["projectQuery"]
 };
 
+const getDocumentsJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    projectQuery: {
+      type: "string",
+      description: "CompanyCam project or customer name to search for, for example Deborah Justice."
+    },
+    question: {
+      type: "string",
+      description: "Original user question so the report reader can prioritize findings, gallons, or checklist documents."
+    }
+  },
+  required: ["projectQuery"]
+};
+
 const lookupSiteJobBlueprintFieldJsonSchema = {
   type: "object",
   additionalProperties: false,
@@ -92,6 +114,12 @@ function companyCamPhotoSources(media: Media[]): Source[] {
   return media
     .slice(0, 3)
     .map((item) => source("companycam", item.externalIds?.companycam ?? item.id, `CompanyCam photo ${item.id}`));
+}
+
+function companyCamDocumentSources(documents: DocRef[]): Source[] {
+  return documents
+    .slice(0, 3)
+    .map((item) => source("companycam", item.externalIds?.companycam ?? item.id, `CompanyCam document ${item.label}`));
 }
 
 function normalizedSearchText(value: unknown): string {
@@ -214,6 +242,39 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
           sources: [
             source("companycam", project.externalIds?.companycam ?? project.id, `CompanyCam project ${project.name}`),
             ...companyCamPhotoSources(media)
+          ]
+        };
+      }
+    },
+    {
+      name: "getDocuments",
+      description: "Read CompanyCam project documents/reports and extract leak-detection report fields such as findings and pool gallons.",
+      inputSchema: getDocumentsInputSchema,
+      inputJsonSchema: getDocumentsJsonSchema,
+      handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
+        const input = getDocumentsInputSchema.parse(args);
+        const result = await readCompanyCamReports({
+          tenant,
+          projectQuery: input.projectQuery,
+          question: input.question,
+          env
+        });
+        const parsedReports = result.reports.filter((report) => report.parsed);
+        const siteJobBlueprints = result.project
+          ? parsedReports
+            .filter((report) => Object.keys(report.fields).length > 0)
+            .map((report) => siteJobBlueprintFromCompanyCamReport({ tenantId: tenant.id, project: result.project as NonNullable<typeof result.project>, report }))
+          : [];
+        return {
+          result: {
+            project: result.project,
+            documents: result.documents,
+            reports: result.reports,
+            suggestedSiteJobBlueprints: siteJobBlueprints
+          },
+          sources: [
+            ...(result.project ? [source("companycam", result.project.externalIds?.companycam ?? result.project.id, `CompanyCam project ${result.project.name}`)] : []),
+            ...companyCamDocumentSources(parsedReports.map((report) => report.document))
           ]
         };
       }
