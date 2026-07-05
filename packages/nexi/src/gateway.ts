@@ -313,6 +313,18 @@ function photoQueryFromText(text: string): string {
   return (match?.[1] ?? normalized).replace(/[?.!]+$/g, "").trim();
 }
 
+function entityQueryFromText(text: string): string {
+  const normalized = text.replace(/[?.!]+$/g, "").trim();
+  const matches = [...normalized.matchAll(
+    /\b(?:for|of|at)\s+(.+?)(?=\s+(?:in|from|on|with|report|pool|job|photos?|pictures?|images?|results?|gallons?|total)\b|[?.!]|$)/gi
+  )];
+  const candidate = matches.at(-1)?.[1] ?? "";
+  return candidate
+    .replace(/\b(?:the|a|an)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function normalizeToolInput(toolName: string, input: unknown, messages: GatewayMessage[]): unknown {
   const record = input && typeof input === "object" && !Array.isArray(input) ? { ...input as Record<string, unknown> } : {};
   const userText = latestUserText(messages);
@@ -329,6 +341,12 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   }
   if (toolName === "lookupSiteJobBlueprintField" && !record.field && /gallon/i.test(userText)) {
     record.field = "poolGallons";
+  }
+  if (toolName === "lookupSiteJobBlueprintField" && !record.requestedEntity) {
+    const requestedEntity = entityQueryFromText(userText);
+    if (requestedEntity) {
+      record.requestedEntity = requestedEntity;
+    }
   }
   return record;
 }
@@ -399,7 +417,7 @@ export async function callNexiGateway(request: GatewayRequest): Promise<GatewayR
     throw error;
   }
 
-  const sourceCheck = enforceSources(call.answer, request.sources);
+  const sourceCheck = enforceSources(call.answer, request.sources, latestUserText(request.messages));
   await writeUsageRecord({
     tenantId: request.tenantId,
     routeActionName: request.routeActionName,
@@ -476,7 +494,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
     const toolUses = toolUsesFromContent(call.content);
 
     if (toolUses.length === 0) {
-      const sourceCheck = enforceSources(call.answer, sources);
+      const sourceCheck = enforceSources(call.answer, sources, latestUserText(request.messages));
       await writeUsageRecord({
         tenantId: request.tenant.id,
         routeActionName: request.routeActionName,

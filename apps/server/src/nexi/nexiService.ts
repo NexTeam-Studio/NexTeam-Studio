@@ -52,10 +52,21 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
   }
   if (lower.includes("gallon")) {
     const tool = tools.find((candidate) => candidate.name === "lookupSiteJobBlueprintField");
-    return tool ? { tool, args: { field: "poolGallons", fields: { poolGallons: 101000 } } } : null;
+    return tool ? { tool, args: { field: "poolGallons", requestedEntity: entityQueryFromText(message) } } : null;
   }
   const detailTool = tools.find((candidate) => candidate.name === "getJobDetail");
   return detailTool ? { tool: detailTool, args: { nameQuery: message } } : null;
+}
+
+function entityQueryFromText(text: string): string {
+  const normalized = text.replace(/[?.!]+$/g, "").trim();
+  const matches = [...normalized.matchAll(
+    /\b(?:for|of|at)\s+(.+?)(?=\s+(?:in|from|on|with|report|pool|job|photos?|pictures?|images?|results?|gallons?|total)\b|[?.!]|$)/gi
+  )];
+  return (matches.at(-1)?.[1] ?? "")
+    .replace(/\b(?:the|a|an)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function summarizeResult(toolName: string, result: unknown): string {
@@ -115,7 +126,57 @@ function gatewayForEnv(input: NexiMessageInput): (request: ToolLoopRequest) => P
   return runNexiToolLoop;
 }
 
+function isUserFlaggedIncorrect(message: string): boolean {
+  return /\b(?:wrong answer|wrong|incorrect|not correct|somewhat correct|you'?re incorrect|you are incorrect)\b/i.test(message);
+}
+
+function emptyUsage(): UsageLogRecord["usage"] {
+  return {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheCreationInputTokens: 0,
+    cacheReadInputTokens: 0,
+    totalTokens: 0
+  };
+}
+
+async function answerUserFlaggedIncorrect(input: NexiMessageInput): Promise<NexiMessageResult> {
+  const recent = await input.repository.loadRecentConversations(input.tenant.id, input.conversationId, 8);
+  const flagged = recent.at(-1);
+  const failure = await input.repository.saveFailure({
+    tenantId: input.tenant.id,
+    op: "message",
+    question: input.message,
+    reason: "user_flagged_incorrect",
+    sources: flagged?.sources ?? [],
+    correctionText: input.message,
+    flaggedConversationId: flagged?.id,
+    flaggedQuestion: flagged?.userText,
+    flaggedAnswer: flagged?.assistantText,
+    flaggedAnswerSources: flagged?.sources
+  });
+  const answer = "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.";
+  const saved = await input.repository.saveConversation({
+    tenantId: input.tenant.id,
+    conversationId: input.conversationId,
+    userText: input.message,
+    assistantText: answer,
+    sources: []
+  });
+  return {
+    answer,
+    sources: [],
+    conversationId: saved.id,
+    failureId: failure.id,
+    usage: emptyUsage(),
+    toolRuns: []
+  };
+}
+
 export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMessageResult> {
+  if (isUserFlaggedIncorrect(input.message)) {
+    return answerUserFlaggedIncorrect(input);
+  }
   const history = await input.repository.loadHistory(input.tenant.id, input.conversationId, 8);
   const gateway = gatewayForEnv(input);
   try {

@@ -361,6 +361,11 @@ export interface FailureLogRecord {
   question: string;
   reason: string;
   sources: Source[];
+  correctionText?: string | undefined;
+  flaggedConversationId?: ID | undefined;
+  flaggedQuestion?: string | undefined;
+  flaggedAnswer?: string | undefined;
+  flaggedAnswerSources?: Source[] | undefined;
   createdAt: string;
 }
 

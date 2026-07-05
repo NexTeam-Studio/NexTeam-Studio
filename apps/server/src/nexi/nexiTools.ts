@@ -27,7 +27,10 @@ export const getPhotosInputSchema = z.object({
 
 export const lookupSiteJobBlueprintFieldInputSchema = z.object({
   field: z.string(),
-  fields: z.record(z.union([z.string(), z.number()])).optional()
+  fields: z.record(z.union([z.string(), z.number()])).optional(),
+  requestedEntity: z.string().optional(),
+  jobId: z.string().optional(),
+  sourceRef: z.string().optional()
 });
 
 const getScheduleJsonSchema = {
@@ -67,6 +70,15 @@ const lookupSiteJobBlueprintFieldJsonSchema = {
       type: "object",
       additionalProperties: { anyOf: [{ type: "string" }, { type: "number" }] },
       description: "Optional inline extracted fields when already available."
+    },
+    requestedEntity: {
+      type: "string",
+      description: "Client, property, or job name from the user's request. Required when answering client/job-specific fields."
+    },
+    jobId: { type: "string", description: "Exact native job id when known." },
+    sourceRef: {
+      type: "string",
+      description: "Source identifier for inline fields, used to prevent cross-client field reuse."
     }
   },
   required: ["field"]
@@ -82,13 +94,64 @@ function companyCamPhotoSources(media: Media[]): Source[] {
     .map((item) => source("companycam", item.externalIds?.companycam ?? item.id, `CompanyCam photo ${item.id}`));
 }
 
-function firstBlueprintField(blueprints: SiteJobBlueprint[], field: string): { value: string | number; source: Source } | null {
+function normalizedSearchText(value: unknown): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function includesAllSearchTokens(haystack: string, needle: string): boolean {
+  const tokens = normalizedSearchText(needle).split(/\s+/).filter((token) => token.length > 1);
+  return tokens.length > 0 && tokens.every((token) => haystack.includes(token));
+}
+
+function blueprintMatchesRequest(
+  siteJobBlueprint: SiteJobBlueprint,
+  request: { requestedEntity?: string | undefined; jobId?: string | undefined; sourceRef?: string | undefined }
+): boolean {
+  if (request.jobId && siteJobBlueprint.jobId !== request.jobId) {
+    return false;
+  }
+  const requestedEntity = request.requestedEntity?.trim();
+  const sourceRef = request.sourceRef?.trim();
+  if (!requestedEntity && !sourceRef) {
+    return true;
+  }
+  const haystack = normalizedSearchText([
+    siteJobBlueprint.id,
+    siteJobBlueprint.jobId,
+    siteJobBlueprint.extractedFrom,
+    JSON.stringify(siteJobBlueprint.fields)
+  ].join(" "));
+  if (sourceRef && !includesAllSearchTokens(haystack, sourceRef)) {
+    return false;
+  }
+  return requestedEntity ? includesAllSearchTokens(haystack, requestedEntity) : true;
+}
+
+function inlineFieldMatchesRequest(input: z.infer<typeof lookupSiteJobBlueprintFieldInputSchema>): boolean {
+  if (input.jobId || input.requestedEntity) {
+    return Boolean(input.sourceRef && includesAllSearchTokens(input.sourceRef, input.requestedEntity ?? input.jobId ?? ""));
+  }
+  return true;
+}
+
+function firstBlueprintField(
+  blueprints: SiteJobBlueprint[],
+  field: string,
+  request: { requestedEntity?: string | undefined; jobId?: string | undefined; sourceRef?: string | undefined }
+): { value: string | number; source: Source; matchedId: string } | null {
   for (const siteJobBlueprint of blueprints) {
+    if (!blueprintMatchesRequest(siteJobBlueprint, request)) {
+      continue;
+    }
     const value = siteJobBlueprint.fields[field];
     if (value !== undefined) {
       return {
         value,
-        source: source("native", siteJobBlueprint.id, `SiteJobBlueprint ${siteJobBlueprint.extractedFrom}`)
+        source: source("native", siteJobBlueprint.id, `SiteJobBlueprint ${siteJobBlueprint.extractedFrom}`),
+        matchedId: siteJobBlueprint.id
       };
     }
   }
@@ -164,17 +227,22 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
         const input = lookupSiteJobBlueprintFieldInputSchema.parse(args);
         const fields = input.fields ?? {};
         const inlineValue = fields[input.field];
-        if (inlineValue !== undefined) {
+        if (inlineValue !== undefined && inlineFieldMatchesRequest(input)) {
           return {
-            result: { field: input.field, value: inlineValue },
-            sources: [source("native", "site-job-blueprint", "SiteJobBlueprint fields")]
+            result: { field: input.field, value: inlineValue, requestedEntity: input.requestedEntity ?? null },
+            sources: [source("native", input.sourceRef ?? "site-job-blueprint", "SiteJobBlueprint fields")]
           };
         }
         const stored = siteJobBlueprintReader
-          ? firstBlueprintField(await siteJobBlueprintReader.loadSiteJobBlueprints(tenant.id, 10), input.field)
+          ? firstBlueprintField(await siteJobBlueprintReader.loadSiteJobBlueprints(tenant.id, 10), input.field, input)
           : null;
         return {
-          result: { field: input.field, value: stored?.value ?? null },
+          result: {
+            field: input.field,
+            value: stored?.value ?? null,
+            requestedEntity: input.requestedEntity ?? null,
+            matchedBlueprintId: stored?.matchedId ?? null
+          },
           sources: stored ? [stored.source] : []
         };
       }

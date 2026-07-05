@@ -272,6 +272,11 @@ export const failureLogRecordSchema = z.object({
   question: z.string(),
   reason: z.string(),
   sources: z.array(sourceSchema),
+  correctionText: z.string().optional(),
+  flaggedConversationId: idSchema.optional(),
+  flaggedQuestion: z.string().optional(),
+  flaggedAnswer: z.string().optional(),
+  flaggedAnswerSources: z.array(sourceSchema).optional(),
   createdAt: z.string()
 });
 

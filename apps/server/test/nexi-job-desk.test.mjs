@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import { z } from "zod";
 import { ingestSiteJobBlueprint } from "../dist/nexi/siteJobBlueprintIngest.js";
 import { answerNexiMessage } from "../dist/nexi/nexiService.js";
+import { createNexiJobDeskTools } from "../dist/nexi/nexiTools.js";
 import { MemoryNexiRepository } from "../dist/nexi/nexiRepository.js";
 import { MemoryUsageLogWriter } from "../dist/usageLog.js";
-import { enforceSources, runNexiToolLoop } from "@nexteam/nexi";
+import { enforceSources, promptIsMetaOrFeedback, runNexiToolLoop } from "@nexteam/nexi";
 
 function tenant() {
   return {
@@ -34,6 +35,14 @@ test("source check blocks factual answers without sources", () => {
   const checked = enforceSources("The job has 101000 gallons.", []);
   assert.equal(checked.ok, false);
   assert.equal(checked.answer, "I don't have a verified source for that yet.");
+});
+
+test("source check does not block meta or feedback turns", () => {
+  const meta = enforceSources("I use Jobber, CompanyCam, and native SiteJobBlueprint sources.", [], "What sources do you use");
+  assert.equal(meta.ok, true);
+  assert.equal(promptIsMetaOrFeedback("The thumbnails are not clickable or savable"), true);
+  const feedback = enforceSources("I logged that correction against my prior job answer.", [], "Wrong answer");
+  assert.equal(feedback.ok, true);
 });
 
 test("Nexi tool loop preloads obvious tools and records cache metrics", async () => {
@@ -139,4 +148,55 @@ test("Nexi service persists failureLog for source-enforced failures", async () =
   assert.match(result.failureId, /^fail_/);
   assert.equal(repository.failureLog.length, 1);
   assert.equal(repository.failureLog[0].reason, "factual_answer_without_sources");
+});
+
+test("SiteJobBlueprint field lookup rejects mismatched requested entity", async () => {
+  const repository = new MemoryNexiRepository();
+  await repository.saveSiteJobBlueprint({
+    id: "site_job_camp_mikell",
+    tenantId: "aquatrace",
+    kind: "site_blueprint",
+    fields: { poolGallons: 101000 },
+    extractedFrom: "camp-mikell-checklist-live",
+    extractedAt: new Date().toISOString()
+  });
+  const tool = createNexiJobDeskTools({}, repository).find((candidate) => candidate.name === "lookupSiteJobBlueprintField");
+  assert.ok(tool);
+
+  const mismatch = await tool.handler(tenant(), { field: "poolGallons", requestedEntity: "Deborah Justice" });
+  assert.deepEqual(mismatch.sources, []);
+  assert.equal(mismatch.result.value, null);
+  assert.equal(mismatch.result.requestedEntity, "Deborah Justice");
+
+  const match = await tool.handler(tenant(), { field: "poolGallons", requestedEntity: "Camp Mikell" });
+  assert.equal(match.result.value, 101000);
+  assert.equal(match.sources.length, 1);
+  assert.match(match.sources[0].label, /camp-mikell-checklist-live/);
+});
+
+test("Nexi service logs user-flagged incorrect answers with correction context", async () => {
+  const repository = new MemoryNexiRepository();
+  await repository.saveConversation({
+    tenantId: "aquatrace",
+    conversationId: "trial-day-1",
+    userText: "Who are the technicians for Deborah Justice",
+    assistantText: "No technician is listed in Jobber.",
+    sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
+  });
+  const result = await answerNexiMessage({
+    tenant: tenant(),
+    message: "Wrong answer, the technician was in CompanyCam.",
+    conversationId: "trial-day-1",
+    tools: [],
+    repository,
+    gateway: async () => {
+      throw new Error("correction handling should not call the model");
+    }
+  });
+  assert.match(result.failureId, /^fail_/);
+  assert.equal(repository.failureLog.length, 1);
+  assert.equal(repository.failureLog[0].reason, "user_flagged_incorrect");
+  assert.match(repository.failureLog[0].correctionText, /CompanyCam/);
+  assert.equal(repository.failureLog[0].flaggedAnswer, "No technician is listed in Jobber.");
+  assert.match(result.answer, /logged/i);
 });
