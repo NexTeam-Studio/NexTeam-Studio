@@ -26,7 +26,7 @@
 | fielddocs | M4 upload + checklist + report foundation | done | `receipts/m4/upload-report-slice-verify.txt`, `receipts/m4/upload-report-slice-verify-exit.txt` |
 | fielddocs | M4 live AI caption receipt | done | `receipts/m4/live-vision-receipt.json` |
 | fielddocs | M4 native posted report receipt | done | `receipts/m4/native-report-post-receipt.json`, `receipts/m4/native-report-post-output.txt`, `receipts/m4/native-field-report.pdf`; outbound report delivery remains approval-gated and was not attempted. |
-| fielddocs | M4 report extraction schema | blocked | Local schema, tests, and 12-PDF sample ingest receipt complete in `receipts/m4/report-extraction-schema-receipt.json`; live staging transcript against two clients still pending before Item 7 unparks. |
+| fielddocs | M4 report extraction schema | done | Local schema, tests, 12-PDF sample ingest, staging `/api/version` SHA-match for `96d57327aa373f48fdcb1e3f56394fb40acb0b33`, health green, and two-client live findings transcript in `receipts/m4/report-extraction-schema-receipt.json`. |
 | integration | M2/M4 merge to main + staging deploy | done | Merge commit `5050cda83978acbae223531893ec5361f2acff9b`; staging `/api/version` SHA-match and `/api/health` all-green in `receipts/main/staging-main-version.json`. |
 | schedule | M3 Scheduling worktree | opened | `build/schedule` from main after M2/M4 merge; receipts pending. |
 | content | M5 Content Engine worktree | opened | `build/content` from main after M2/M4 merge; outbound sends/publishing remain parked behind explicit approval and must build to ApprovalQueue only. |
