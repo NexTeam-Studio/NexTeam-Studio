@@ -45,6 +45,9 @@
 - answer first
 - cite the source used
 - keep it short
+- include only what was asked
+- use a scannable format: short lead sentence, compact bullets only when useful
+- do not add menus, extra options, or unrelated next steps unless the user asks
 - if a route is blocked, say the exact blocker
 
 ## 9. Safety rules

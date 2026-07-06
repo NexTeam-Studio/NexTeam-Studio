@@ -1,0 +1,525 @@
+{
+  "capturedAt": "2026-07-05T19:41:14.993Z",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "eb59b0e612a651ee3535ba8704602ec19e4b0da0",
+  "version": {
+    "sha": "eb59b0e612a651ee3535ba8704602ec19e4b0da0",
+    "builtAt": "2026-07-05T19:41:00.722Z"
+  },
+  "prompt": "what emails came in today",
+  "ok": true,
+  "answerReceived": true,
+  "answerLength": 860,
+  "sourceCount": 17,
+  "emailSourceCount": 17,
+  "nonEmailSourceCount": 0,
+  "sourceRefs": [
+    "email:chris:19f3354877e85a73",
+    "email:chris:19f3354868af2b35",
+    "email:chris:19f332634cecf91b",
+    "email:chris:19f3287cb07c2e25",
+    "email:chris:19f3269baedb0c92",
+    "email:chris:19f3232b197902b9",
+    "email:chris:19f3182837a50660",
+    "email:chris:19f31553ef1527bf",
+    "email:chris:19f30d49d842351b",
+    "email:chris:19f2fd3f2e2945cd",
+    "email:aquatraceleak:19f3388174cd8ef9",
+    "email:aquatraceleak:19f332db081e5e3a",
+    "email:aquatraceleak:19f3012925809014",
+    "email:aquatraceleak:19f2fd41f3283ec3",
+    "email:aquatraceleak:19f2fccf543b0b67",
+    "email:nexi:19f337257a512189",
+    "email:nexi:19f337256310676e"
+  ],
+  "toolRunSummary": [
+    {
+      "name": "summarizeInbox",
+      "sourceCount": 17,
+      "resultCount": 17,
+      "mailboxes": [
+        {
+          "mailbox": "chris",
+          "count": 10
+        },
+        {
+          "mailbox": "aquatraceleak",
+          "count": 5
+        },
+        {
+          "mailbox": "nexi",
+          "count": 2
+        }
+      ]
+    }
+  ],
+  "usedGmailTool": true,
+  "usage": {
+    "inputTokens": 5688,
+    "outputTokens": 382,
+    "cacheCreationInputTokens": 0,
+    "cacheReadInputTokens": 0,
+    "totalTokens": 6070
+  },
+  "redactedResponse": {
+    "ok": true,
+    "answer": "[redacted-email-content]",
+    "sources": [
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      },
+      {
+        "rail": "[redacted-string]",
+        "ref": "[redacted-string]",
+        "label": "[redacted-string]"
+      }
+    ],
+    "toolRuns": [
+      {
+        "name": "[redacted-string]",
+        "result": {
+          "date": "[redacted-string]",
+          "count": 17,
+          "mailboxes": [
+            {
+              "mailbox": "[redacted-string]",
+              "count": 10
+            },
+            {
+              "mailbox": "[redacted-string]",
+              "count": 5
+            },
+            {
+              "mailbox": "[redacted-string]",
+              "count": 2
+            }
+          ],
+          "messages": [
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            },
+            {
+              "id": "[redacted-string]",
+              "tenantId": "[redacted-string]",
+              "mailbox": "[redacted-string]",
+              "threadId": "[redacted-string]",
+              "from": "[redacted-email-content]",
+              "to": "[redacted-email-content]",
+              "subject": "[redacted-email-content]",
+              "receivedAt": "[redacted-string]",
+              "snippet": "[redacted-email-content]",
+              "labels": [
+                "[redacted-string]",
+                "[redacted-string]"
+              ]
+            }
+          ]
+        },
+        "sources": [
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          },
+          {
+            "rail": "[redacted-string]",
+            "ref": "[redacted-string]",
+            "label": "[redacted-string]"
+          }
+        ]
+      }
+    ]
+  }
+}

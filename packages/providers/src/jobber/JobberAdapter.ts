@@ -163,6 +163,14 @@ function mapJob(raw: unknown, tenantId: string): JobDetail {
     client,
     notes: text(record.instructions)
   };
+  const startAt = text(record.startAt);
+  const endAt = text(record.endAt);
+  if (startAt) {
+    job.startAt = startAt;
+  }
+  if (endAt) {
+    job.endAt = endAt;
+  }
   const propertyId = text(property.id);
   if (propertyId) {
     const address = {
@@ -225,6 +233,33 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
+function isFullArchiveRange(from: number, to: number): boolean {
+  return from <= Date.UTC(1970, 0, 2) && to >= Date.UTC(2099, 0, 1);
+}
+
+export function filterJobsByScheduleRange<T extends Pick<Job, "startAt" | "endAt">>(
+  jobs: T[],
+  range: { from: string; to: string }
+): T[] {
+  const from = Date.parse(range.from);
+  const to = Date.parse(range.to);
+  if (!Number.isFinite(from) || !Number.isFinite(to) || from >= to || isFullArchiveRange(from, to)) {
+    return jobs;
+  }
+  return jobs.filter((job) => {
+    const start = Date.parse(job.startAt ?? "");
+    if (!Number.isFinite(start)) {
+      return false;
+    }
+    const parsedEnd = Date.parse(job.endAt ?? "");
+    const end = Number.isFinite(parsedEnd) ? parsedEnd : start;
+    if (end === start) {
+      return start >= from && start < to;
+    }
+    return start < to && end > from;
+  });
+}
+
 export class JobberAdapter implements CRMProvider {
   private tokenState: JobberTokenState;
   private readonly graphqlVersion: string;
@@ -262,16 +297,7 @@ export class JobberAdapter implements CRMProvider {
 
   async getJobs(range: { from: string; to: string }): Promise<Job[]> {
     const jobs = await this.listJobs();
-    const from = Date.parse(range.from);
-    const to = Date.parse(range.to);
-    if (!Number.isFinite(from) || !Number.isFinite(to)) {
-      return jobs;
-    }
-    return jobs.filter((job) => {
-      const raw = job.notes ?? "";
-      if (!raw) return true;
-      return true;
-    });
+    return filterJobsByScheduleRange(jobs, range);
   }
 
   async getJobDetail(ref: { id?: string; nameQuery?: string }): Promise<JobDetail> {

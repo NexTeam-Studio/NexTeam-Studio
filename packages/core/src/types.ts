@@ -104,6 +104,8 @@ export interface Job {
   propertyId?: ID;
   status: JobStatus;
   title: string;
+  startAt?: string | undefined;
+  endAt?: string | undefined;
   lineItems: LineItem[];
   totals: { subtotal: number; tax: number; total: number };
   externalIds?: { jobber?: string | undefined } | undefined;
@@ -131,6 +133,7 @@ export interface Media {
   exif?: { gps?: { lat: number; lng: number } | undefined; ts?: string | undefined } | undefined;
   aiTags: string[];
   aiCaption?: string | undefined;
+  capturedBy?: string | undefined;
   externalIds?: { companycam?: string | undefined } | undefined;
   sourceUrlNeverExposed?: never;
 }
@@ -231,6 +234,9 @@ export interface DocRef {
   tenantId: ID;
   label: string;
   storageRef: string;
+  mime?: string | undefined;
+  byteSize?: number | undefined;
+  updatedAt?: string | undefined;
   externalIds?: { companycam?: string | undefined } | undefined;
 }
 
@@ -249,10 +255,21 @@ export interface MediaMeta {
 
 export interface OutboundEmail {
   tenantId: ID;
+  mailbox?: string | undefined;
   to: string[];
+  cc?: string[] | undefined;
+  bcc?: string[] | undefined;
   subject: string;
   bodyText: string;
   bodyHtml?: string | undefined;
+  attachments?: OutboundEmailAttachment[] | undefined;
+  replyToMessageId?: ID | undefined;
+}
+
+export interface OutboundEmailAttachment {
+  filename: string;
+  mime: string;
+  contentBase64: string;
 }
 
 export interface OutboundSms {
@@ -265,6 +282,55 @@ export interface SendReceipt {
   provider: string;
   id: ID;
   acceptedAt: string;
+  mailbox?: string | undefined;
+  threadId?: ID | undefined;
+}
+
+export interface EmailSearchQuery {
+  mailbox?: string | undefined;
+  sender?: string | undefined;
+  subject?: string | undefined;
+  keywords?: string | undefined;
+  after?: string | undefined;
+  before?: string | undefined;
+  maxResults?: number | undefined;
+}
+
+export interface EmailMessageSummary {
+  id: ID;
+  tenantId: ID;
+  mailbox: string;
+  threadId: ID;
+  from?: string | undefined;
+  to?: string | undefined;
+  subject?: string | undefined;
+  receivedAt?: string | undefined;
+  snippet?: string | undefined;
+  labels: string[];
+}
+
+export interface EmailAttachmentSummary {
+  id: ID;
+  tenantId: ID;
+  mailbox: string;
+  messageId: ID;
+  filename: string;
+  mime?: string | undefined;
+  byteSize?: number | undefined;
+  inline: boolean;
+}
+
+export interface EmailMessageDetail extends EmailMessageSummary {
+  bodyText?: string | undefined;
+  bodyHtml?: string | undefined;
+  attachments: EmailAttachmentSummary[];
+}
+
+export interface EmailThread {
+  id: ID;
+  tenantId: ID;
+  mailbox: string;
+  messages: EmailMessageSummary[] | EmailMessageDetail[];
 }
 
 export interface CRMProvider {
@@ -288,6 +354,19 @@ export interface CommsProvider {
   sendEmail(m: OutboundEmail): Promise<SendReceipt>;
   sendSms?(m: OutboundSms): Promise<SendReceipt>;
   suppressionCheck(clientId: ID, channel: "email" | "sms"): Promise<boolean>;
+}
+
+export interface EmailReadProvider {
+  readonly mailbox: string;
+  searchEmail(query: EmailSearchQuery): Promise<EmailMessageSummary[]>;
+  getEmailThread(threadId: ID): Promise<EmailThread>;
+  getEmailMessage(messageId: ID): Promise<EmailMessageDetail>;
+  getEmailAttachment(messageId: ID, attachmentId: ID): Promise<Binary>;
+}
+
+export interface EmailSendProvider {
+  readonly mailbox: string;
+  sendEmail(message: OutboundEmail): Promise<SendReceipt>;
 }
 
 export type EventType =
@@ -338,7 +417,7 @@ export interface NexiTool {
 }
 
 export interface Source {
-  rail: "jobber" | "companycam" | "native" | "gsc" | "gbp";
+  rail: "jobber" | "companycam" | "native" | "gsc" | "gbp" | "email";
   ref: string;
   label: string;
 }
@@ -350,6 +429,7 @@ export interface ConversationRecord {
   userText: string;
   assistantText: string;
   sources: Source[];
+  toolRuns?: Array<{ name: string; sources: Source[]; result: unknown }> | undefined;
   createdAt: string;
 }
 
@@ -361,6 +441,11 @@ export interface FailureLogRecord {
   question: string;
   reason: string;
   sources: Source[];
+  correctionText?: string | undefined;
+  flaggedConversationId?: ID | undefined;
+  flaggedQuestion?: string | undefined;
+  flaggedAnswer?: string | undefined;
+  flaggedAnswerSources?: Source[] | undefined;
   createdAt: string;
 }
 
