@@ -1,0 +1,112 @@
+{
+  "ok": true,
+  "dryRun": false,
+  "destructiveVendorWrites": false,
+  "vendorMode": "companycam_read_only",
+  "tenantId": "aquatrace",
+  "projectQuery": "Deborah Justice",
+  "question": "What were the leak detection results and total gallons for Deborah Justice?",
+  "project": {
+    "id": "107503799",
+    "name": "Deborah Justice",
+    "externalIds": {
+      "companycam": "107503799"
+    },
+    "address": {
+      "street1": "181 Isbell Road",
+      "city": "Fair Play",
+      "province": "South Carolina",
+      "postalCode": "29643",
+      "country": "US"
+    }
+  },
+  "counts": {
+    "candidateProjects": 1,
+    "documents": 2,
+    "parsedReports": 2,
+    "savedSiteJobBlueprints": 1
+  },
+  "documents": [
+    {
+      "id": "18218446",
+      "tenantId": "aquatrace",
+      "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf",
+      "storageRef": "companycam-doc:18218446",
+      "externalIds": {
+        "companycam": "18218446"
+      },
+      "mime": "application/pdf",
+      "byteSize": 10739845
+    },
+    {
+      "id": "18217485",
+      "tenantId": "aquatrace",
+      "label": "Deoborah Justice, Fair Play, SC.pdf",
+      "storageRef": "companycam-doc:18217485",
+      "externalIds": {
+        "companycam": "18217485"
+      },
+      "mime": "application/pdf",
+      "byteSize": 3089601
+    }
+  ],
+  "reports": [
+    {
+      "document": {
+        "id": "18218446",
+        "tenantId": "aquatrace",
+        "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf",
+        "storageRef": "companycam-doc:18218446",
+        "externalIds": {
+          "companycam": "18218446"
+        },
+        "mime": "application/pdf",
+        "byteSize": 10739845
+      },
+      "fields": {
+        "poolGallons": 37602,
+        "reportFindings": "-- 2 of 24 -- A small amount of water loss is present in the deep end skimmer throat at missing grout locations Although no water loss is present, several towels are missing in the shallow end skimmer throat At normal operation level of the spa water line, several areas are missing grout. A small amount of water loss is occurring in these areas Come and dye testing along with pressure testing and acoustical location devices, water loss is occurring in primary spa circulation line. The damaged area is estimated to be below the valving at the filtration equipment as indicated in the marked up photo The swimming pool main drain nearest the spa is missing pool finish material within the main drain sump area. Water loss is occurring at this area actively. All other main drains in the swimming pool are also missing the same coating. However, there is no water loss present currently at those three locations A small crack is present in the shallow end to the left of the steps near the autofill line. No water is actively being lost at this location All other swimming pool and spa basin structure, plumbing and filtration systems systems were in proper working condition at the time of this in..."
+      },
+      "textSnippet": "water loss beyond evaporation present at the time of this inspection? Yes No N/A If water loss beyond evaporation was present, was the water loss area located? Swimming Pool Leak Detection Details /Results -- 2 of 24 -- A small amount of water loss is present in the deep end skimmer throat at missing grout locations Although no water loss is present, several towels are missing in the shallow end skimmer throat At normal operation level of the spa water line, several areas are missing grout. A small amount of water loss is occurring in these areas Come and dye testing along with pressure testing and acoustical location devices, water loss is occurring in primary spa circul",
+      "byteLength": 10739845,
+      "parsed": true
+    },
+    {
+      "document": {
+        "id": "18217485",
+        "tenantId": "aquatrace",
+        "label": "Deoborah Justice, Fair Play, SC.pdf",
+        "storageRef": "companycam-doc:18217485",
+        "externalIds": {
+          "companycam": "18217485"
+        },
+        "mime": "application/pdf",
+        "byteSize": 3089601
+      },
+      "fields": {},
+      "textSnippet": "X Y 7.0ft 18.3ft 24.3ft 19.8ft 23.7ft 18.7ft 7.4ft 4.7ft 5.1ft 4.9ft 7.9ft SCALE: 1:93.9 (Scale to Fit) 0 4' 0\" 8' 0\" 16' 0\" 24' 0\" 32' 0\" ft/in DEOBORAH JUSTICE, FAIR PLAY, SC : PLAN VIEW 143.2ft (1002.7ft²) Created on 02 Jul 2026 Page 1 -- 1 of 4 -- X Y 7.0ft 18.3ft 24.3ft 19.8ft 23.7ft 18.7ft 7.4ft 4.7ft SCALE: 1:93.9 (Scale to Fit) 0 4' 0\" 8' 0\" 16' 0\" 24' 0\" 32' 0\" ft/in DEOBORAH JUSTICE, FAIR PLAY, SC : BASE LAYER : PLAN VIEW 143.2ft (1002.7ft²) Created on 02 Jul 2026 Page 2 -- 2 of 4 -- X Y 5.1ft 2.6ft 3.9ft",
+      "byteLength": 3089601,
+      "parsed": true
+    }
+  ],
+  "savedSiteJobBlueprints": [
+    {
+      "id": "site_job_companycam_18218446",
+      "tenantId": "aquatrace",
+      "jobId": "companycam-project:107503799",
+      "kind": "site_blueprint",
+      "fields": {
+        "poolGallons": 37602,
+        "reportFindings": "-- 2 of 24 -- A small amount of water loss is present in the deep end skimmer throat at missing grout locations Although no water loss is present, several towels are missing in the shallow end skimmer throat At normal operation level of the spa water line, several areas are missing grout. A small amount of water loss is occurring in these areas Come and dye testing along with pressure testing and acoustical location devices, water loss is occurring in primary spa circulation line. The damaged area is estimated to be below the valving at the filtration equipment as indicated in the marked up photo The swimming pool main drain nearest the spa is missing pool finish material within the main drain sump area. Water loss is occurring at this area actively. All other main drains in the swimming pool are also missing the same coating. However, there is no water loss present currently at those three locations A small crack is present in the shallow end to the left of the steps near the autofill line. No water is actively being lost at this location All other swimming pool and spa basin structure, plumbing and filtration systems systems were in proper working condition at the time of this in...",
+        "projectName": "Deborah Justice",
+        "documentLabel": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf",
+        "companyCamProjectId": "107503799",
+        "companyCamDocumentId": "18218446",
+        "projectAddress": "181 Isbell Road, Fair Play, South Carolina, 29643"
+      },
+      "extractedFrom": "companycam-doc:18218446",
+      "extractedAt": "2026-07-05T14:39:54.816Z"
+    }
+  ],
+  "sampledAt": "2026-07-05T14:39:55.203Z"
+}

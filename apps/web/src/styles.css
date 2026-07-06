@@ -280,11 +280,36 @@ h1 {
   font-size: 0.82rem;
 }
 
+.source-photo {
+  border-radius: 20px;
+}
+
+.thumb-button {
+  border: 0;
+  padding: 0;
+  border-radius: 14px;
+  background: transparent;
+  line-height: 0;
+  cursor: zoom-in;
+}
+
 .thumb {
   width: 42px;
   height: 42px;
   object-fit: cover;
   border-radius: 14px;
+  box-shadow: 0 0 0 2px rgba(49, 95, 88, 0.18);
+}
+
+.save-link {
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 6px 9px;
+  background: rgba(49, 95, 88, 0.12);
+  color: #315f58;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .typing {
@@ -380,6 +405,55 @@ h1 {
   border-radius: 16px;
   background: rgba(231, 95, 72, 0.14);
   color: #9c3324 !important;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(20, 27, 23, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.lightbox-card {
+  width: min(680px, 100%);
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 26px;
+  background: #fff8ea;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.34);
+}
+
+.lightbox-card img {
+  width: 100%;
+  max-height: min(72vh, 740px);
+  object-fit: contain;
+  border-radius: 18px;
+  background: #1f211c;
+}
+
+.lightbox-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lightbox-actions a,
+.lightbox-actions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 16px;
+  color: #fff8ea;
+  background: #315f58;
+  text-decoration: none;
+}
+
+.lightbox-actions button {
+  background: #b06b34;
 }
 
 @keyframes rise {

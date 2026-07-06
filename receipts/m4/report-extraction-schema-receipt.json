@@ -1,0 +1,708 @@
+{
+  "ok": true,
+  "generatedAt": "2026-07-05T21:39:08.916Z",
+  "corpus": {
+    "requestedMinimumPdfCount": 9,
+    "attachedPdfCount": 12,
+    "parsedPdfCount": 12,
+    "additionalClientSetIncluded": "L3 Campus - Statehouse Arena",
+    "fullPdfTextStored": false,
+    "files": [
+      {
+        "filename": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 05-06-2026.pdf",
+        "byteLength": 3047489,
+        "ok": true
+      },
+      {
+        "filename": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 05-12-2026.pdf",
+        "byteLength": 1864545,
+        "ok": true
+      },
+      {
+        "filename": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 05-26-2026.pdf",
+        "byteLength": 1528743,
+        "ok": true
+      },
+      {
+        "filename": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-05-2026.pdf",
+        "byteLength": 16206131,
+        "ok": true
+      },
+      {
+        "filename": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-16-2026.pdf",
+        "byteLength": 4794324,
+        "ok": true
+      },
+      {
+        "filename": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-23-2026.pdf",
+        "byteLength": 2930458,
+        "ok": true
+      },
+      {
+        "filename": "Moasure Export (8).pdf",
+        "byteLength": 1406569,
+        "ok": true
+      },
+      {
+        "filename": "Moasure Export (12).pdf",
+        "byteLength": 1654395,
+        "ok": true
+      },
+      {
+        "filename": "Moasure Export (18).pdf",
+        "byteLength": 1399483,
+        "ok": true
+      },
+      {
+        "filename": "L3 Campus - Statehouse Arena.pdf",
+        "byteLength": 3273211,
+        "ok": true
+      },
+      {
+        "filename": "Swimming Pool Evaporation Calculator _ Aquatrace Leak Detection.pdf",
+        "byteLength": 323629,
+        "ok": true
+      },
+      {
+        "filename": "Swimming Pool Evaporation Calculator _ Aquatrace Leak Detection (1).pdf",
+        "byteLength": 332087,
+        "ok": true
+      }
+    ]
+  },
+  "documentSummaries": [
+    {
+      "id": "exported-current-aquatrace-swimming-pool-leak-detection-checklist-05-06-2026",
+      "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 05-06-2026.pdf",
+      "type": "job_report",
+      "flags": [
+        "companycam_generated_filename_without_client"
+      ],
+      "clientDisplayName": "Phil Lavezzo - The Colony",
+      "serviceDateKey": "2026-05-05",
+      "technicians": [
+        "Chris",
+        "Logan"
+      ],
+      "totalGallons": 31123.2,
+      "surfaceAreaSqFt": 778,
+      "gallonsPerInch": 486.25,
+      "findingsPreview": "-- 2 of 29 -- Upon arrival, the pool was approximately 5 feet below normal operating level. Due to the low water level, only a visual inspection could be performed on the pool structure above the current waterline. Press..."
+    },
+    {
+      "id": "exported-current-aquatrace-swimming-pool-leak-detection-checklist-05-12-2026",
+      "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 05-12-2026.pdf",
+      "type": "job_report",
+      "flags": [
+        "companycam_generated_filename_without_client"
+      ],
+      "clientDisplayName": "Sandals Luxury Pools and Spas - Mehl Residence",
+      "serviceDateKey": "2026-05-12",
+      "technicians": [
+        "Chris"
+      ],
+      "totalGallons": 10500,
+      "surfaceAreaSqFt": null,
+      "gallonsPerInch": null,
+      "findingsPreview": "-- 2 of 18 -- A small amount of water loss was present around the pool pump lid upon arrival Water loss is present in proximity to the return jet line in the wall behind the filtration equipment. A small crack was observ..."
+    },
+    {
+      "id": "exported-current-aquatrace-swimming-pool-leak-detection-checklist-05-26-2026",
+      "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 05-26-2026.pdf",
+      "type": "job_report",
+      "flags": [
+        "companycam_generated_filename_without_client"
+      ],
+      "clientDisplayName": "William Manning",
+      "serviceDateKey": "2026-05-26",
+      "technicians": [
+        "Chris",
+        "Logan"
+      ],
+      "totalGallons": 18429.6,
+      "surfaceAreaSqFt": 526.6,
+      "gallonsPerInch": 329.125,
+      "findingsPreview": "-- 2 of 20 -- Multiple areas regarding the full pool system have issues, one of which was remedied during the leak detection. These areas are as follows; • Within the pool vinyl liner, below the blocked off shallow end r..."
+    },
+    {
+      "id": "exported-current-aquatrace-swimming-pool-leak-detection-checklist-06-05-2026",
+      "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-05-2026.pdf",
+      "type": "job_report",
+      "flags": [
+        "companycam_generated_filename_without_client",
+        "legacy_free_text_counts_best_effort_parsed"
+      ],
+      "clientDisplayName": "Camp Mikell - Alex Mastej",
+      "serviceDateKey": "2026-06-05",
+      "technicians": [
+        "Chris",
+        "Catherine"
+      ],
+      "totalGallons": 101000,
+      "surfaceAreaSqFt": null,
+      "gallonsPerInch": null,
+      "findingsPreview": "-- 2 of 23 -- An estimated 1700 gallons daily water loss are occurring backwash line An estimated 2,000 gallons are occurring at main rain number three. There is a defect under the main drain cover within the pool struct..."
+    },
+    {
+      "id": "exported-current-aquatrace-swimming-pool-leak-detection-checklist-06-16-2026",
+      "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-16-2026.pdf",
+      "type": "job_report",
+      "flags": [
+        "companycam_generated_filename_without_client"
+      ],
+      "clientDisplayName": "Valley View Condominiums",
+      "serviceDateKey": "2026-06-16",
+      "technicians": [
+        "Chris",
+        "Logan"
+      ],
+      "totalGallons": 35402.4,
+      "surfaceAreaSqFt": 1048.9,
+      "gallonsPerInch": 655.5625,
+      "findingsPreview": "-- 2 of 27 -- Significant water loss is present in the deep end skimmer throat. Missing grout is present where the tile.and grout meet the PVC skimmer body. Sealant will be required to properly resolve water loss at this..."
+    },
+    {
+      "id": "exported-current-aquatrace-swimming-pool-leak-detection-checklist-06-23-2026",
+      "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-23-2026.pdf",
+      "type": "job_report",
+      "flags": [
+        "companycam_generated_filename_without_client"
+      ],
+      "clientDisplayName": "L3 Campus - Statehouse Arena",
+      "serviceDateKey": "2026-06-23",
+      "technicians": [
+        "Chris"
+      ],
+      "totalGallons": 24250,
+      "surfaceAreaSqFt": null,
+      "gallonsPerInch": null,
+      "findingsPreview": "-- 2 of 22 -- A small amount of water loss is present in the filtration equipment room at the filter drain cap The entire structure of the swimming pool basi and plumbing were in proper working condition. No normal water..."
+    },
+    {
+      "id": "moasure-export-8",
+      "label": "Moasure Export (8).pdf",
+      "type": "moasure_export",
+      "flags": [
+        "moasure_filename_or_title_has_no_client_identity"
+      ],
+      "titleClientHint": null,
+      "createdDateKey": "2026-05-05",
+      "perimeterFt": 118.8,
+      "areaSqFt": 778,
+      "edgeCount": 2
+    },
+    {
+      "id": "moasure-export-12",
+      "label": "Moasure Export (12).pdf",
+      "type": "moasure_export",
+      "flags": [
+        "moasure_filename_or_title_has_no_client_identity"
+      ],
+      "titleClientHint": null,
+      "createdDateKey": "2026-05-26",
+      "perimeterFt": 94,
+      "areaSqFt": 526.6,
+      "edgeCount": 6
+    },
+    {
+      "id": "moasure-export-18",
+      "label": "Moasure Export (18).pdf",
+      "type": "moasure_export",
+      "flags": [
+        "moasure_filename_or_title_has_no_client_identity"
+      ],
+      "titleClientHint": null,
+      "createdDateKey": "2026-06-16",
+      "perimeterFt": 134.2,
+      "areaSqFt": 1048.9,
+      "edgeCount": 0
+    },
+    {
+      "id": "l3-campus-statehouse-arena",
+      "label": "L3 Campus - Statehouse Arena.pdf",
+      "type": "moasure_export",
+      "flags": [],
+      "titleClientHint": "L3 CAMPUS - STATEHOUSE ARENA",
+      "createdDateKey": "2026-06-23",
+      "perimeterFt": 159.6,
+      "areaSqFt": 1224.6,
+      "edgeCount": 3
+    },
+    {
+      "id": "swimming-pool-evaporation-calculator-aquatrace-leak-detection",
+      "label": "Swimming Pool Evaporation Calculator _ Aquatrace Leak Detection.pdf",
+      "type": "evap_calc",
+      "flags": [],
+      "generatedDateKey": "2026-06-23",
+      "zipCode": "32301",
+      "surfaceAreaSqFt": 1065,
+      "observedDailyLossInchesPerDay": null,
+      "evapEstimateInchesPerDay": 0.25,
+      "leakLossAfterEvapInchesPerDay": null,
+      "totalDailyLossInchesPerDay": null
+    },
+    {
+      "id": "swimming-pool-evaporation-calculator-aquatrace-leak-detection-1",
+      "label": "Swimming Pool Evaporation Calculator _ Aquatrace Leak Detection (1).pdf",
+      "type": "evap_calc",
+      "flags": [],
+      "generatedDateKey": "2026-06-16",
+      "zipCode": "30537",
+      "surfaceAreaSqFt": 1049,
+      "observedDailyLossInchesPerDay": 2.5,
+      "evapEstimateInchesPerDay": 0.75,
+      "leakLossAfterEvapInchesPerDay": 1.75,
+      "totalDailyLossInchesPerDay": null
+    }
+  ],
+  "counts": {
+    "jobReports": 6,
+    "moasureExports": 4,
+    "evapCalcs": 2,
+    "visits": 6,
+    "unresolvedDocs": 0
+  },
+  "lockedRules": {
+    "r1MoasureDateMatch": [
+      {
+        "visitKey": "phil-lavezzo-the-colony:2026-05-05",
+        "sourceDocumentIds": [
+          "exported-current-aquatrace-swimming-pool-leak-detection-checklist-05-06-2026",
+          "moasure-export-8"
+        ]
+      },
+      {
+        "visitKey": "william-manning:2026-05-26",
+        "sourceDocumentIds": [
+          "exported-current-aquatrace-swimming-pool-leak-detection-checklist-05-26-2026",
+          "moasure-export-12"
+        ]
+      },
+      {
+        "visitKey": "valley-view-condominiums:2026-06-16",
+        "sourceDocumentIds": [
+          "exported-current-aquatrace-swimming-pool-leak-detection-checklist-06-16-2026",
+          "moasure-export-18",
+          "swimming-pool-evaporation-calculator-aquatrace-leak-detection-1"
+        ]
+      },
+      {
+        "visitKey": "l3-campus-statehouse-arena:2026-06-23",
+        "sourceDocumentIds": [
+          "exported-current-aquatrace-swimming-pool-leak-detection-checklist-06-23-2026",
+          "l3-campus-statehouse-arena",
+          "swimming-pool-evaporation-calculator-aquatrace-leak-detection"
+        ]
+      }
+    ],
+    "r3EvapPdfWins": [],
+    "r3SyntheticConflictProof": {
+      "realSampleConflictPresent": false,
+      "reason": "The attached real sample PDFs did not contain a parsed checklist/evap conflict; this deterministic fixture proves the conflict path without altering source data.",
+      "visitKey": "r3-fixture:2026-06-16",
+      "checklistEvapIndexInchesPerDay": 0.25,
+      "evapPdfEstimateInchesPerDay": 0.75,
+      "flags": [
+        "evap_pdf_overrides_checklist_delta_inches:0.5"
+      ],
+      "authoritativeSource": "evap_pdf"
+    },
+    "r4LossNotation": [
+      {
+        "visitKey": "valley-view-condominiums:2026-06-16",
+        "observedDailyLossInchesPerDay": 2.5
+      }
+    ],
+    "r8NamingAnomalies": [
+      "phil-lavezzo-the-colony:2026-05-05",
+      "sandals-luxury-pools-and-spas-mehl-residence:2026-05-12",
+      "william-manning:2026-05-26",
+      "camp-mikell-alex-mastej:2026-06-05",
+      "valley-view-condominiums:2026-06-16",
+      "l3-campus-statehouse-arena:2026-06-23"
+    ],
+    "r9GallonsPerInchFormula": [
+      {
+        "visitKey": "phil-lavezzo-the-colony:2026-05-05",
+        "moasureAreaSqFt": 778,
+        "gallonsPerInch": 486.25,
+        "formula": "sq ft * 0.625"
+      },
+      {
+        "visitKey": "sandals-luxury-pools-and-spas-mehl-residence:2026-05-12",
+        "moasureAreaSqFt": null,
+        "gallonsPerInch": null,
+        "formula": "sq ft * 0.625"
+      },
+      {
+        "visitKey": "william-manning:2026-05-26",
+        "moasureAreaSqFt": 526.6,
+        "gallonsPerInch": 329.125,
+        "formula": "sq ft * 0.625"
+      },
+      {
+        "visitKey": "camp-mikell-alex-mastej:2026-06-05",
+        "moasureAreaSqFt": null,
+        "gallonsPerInch": null,
+        "formula": "sq ft * 0.625"
+      },
+      {
+        "visitKey": "valley-view-condominiums:2026-06-16",
+        "moasureAreaSqFt": 1048.9,
+        "gallonsPerInch": 655.5625,
+        "formula": "sq ft * 0.625"
+      },
+      {
+        "visitKey": "l3-campus-statehouse-arena:2026-06-23",
+        "moasureAreaSqFt": 1224.6,
+        "gallonsPerInch": 765.375,
+        "formula": "sq ft * 0.625"
+      }
+    ],
+    "unresolvedDocsParkedForReview": []
+  },
+  "visits": [
+    {
+      "visitKey": "phil-lavezzo-the-colony:2026-05-05",
+      "clientDisplayName": "Phil Lavezzo - The Colony",
+      "serviceDateKey": "2026-05-05",
+      "sourceDocumentIds": [
+        "exported-current-aquatrace-swimming-pool-leak-detection-checklist-05-06-2026",
+        "moasure-export-8"
+      ],
+      "hierarchy": null,
+      "selectedFields": {
+        "cityState": "Arden, NC",
+        "technicians": "Chris, Logan",
+        "serviceDate": "2026-05-05",
+        "poolGallons": 31123.2,
+        "surfaceAreaSqFt": 778,
+        "moasureAreaSqFt": 778,
+        "gallonsPerInch": 486.25,
+        "gallonsPerInchAuthority": "moasure_area",
+        "checklistEvapIndexInchesPerDay": null,
+        "observedDailyLossInchesPerDay": null,
+        "evapEstimateInchesPerDay": null,
+        "leakLossAfterEvapInchesPerDay": null,
+        "totalDailyLossInchesPerDay": null,
+        "structureResultStatus": "not_applicable",
+        "plumbingResultStatus": "not_applicable",
+        "filtrationResultStatus": "not_applicable"
+      },
+      "flags": [
+        "companycam_generated_filename_without_client",
+        "moasure_linked_by_date_match"
+      ],
+      "findingsPreview": "-- 2 of 29 -- Upon arrival, the pool was approximately 5 feet below normal operating level. Due to the low water level, only a visual inspection could be performed on the pool structure above the current waterline. Pressure testing was performed on the return..."
+    },
+    {
+      "visitKey": "sandals-luxury-pools-and-spas-mehl-residence:2026-05-12",
+      "clientDisplayName": "Sandals Luxury Pools and Spas - Mehl Residence",
+      "serviceDateKey": "2026-05-12",
+      "sourceDocumentIds": [
+        "exported-current-aquatrace-swimming-pool-leak-detection-checklist-05-12-2026"
+      ],
+      "hierarchy": {
+        "clientName": "Sandals Luxury Pools and Spas",
+        "propertyName": "Mehl Residence",
+        "tierPath": [
+          "Sandals Luxury Pools and Spas",
+          "Mehl Residence"
+        ]
+      },
+      "selectedFields": {
+        "cityState": "Carnesville GA",
+        "technicians": "Chris",
+        "serviceDate": "2026-05-12",
+        "poolGallons": 10500,
+        "surfaceAreaSqFt": null,
+        "moasureAreaSqFt": null,
+        "gallonsPerInch": null,
+        "gallonsPerInchAuthority": null,
+        "checklistEvapIndexInchesPerDay": null,
+        "observedDailyLossInchesPerDay": null,
+        "evapEstimateInchesPerDay": null,
+        "leakLossAfterEvapInchesPerDay": null,
+        "totalDailyLossInchesPerDay": null,
+        "structureResultStatus": "not_applicable",
+        "plumbingResultStatus": "not_applicable",
+        "filtrationResultStatus": "not_applicable"
+      },
+      "flags": [
+        "companycam_generated_filename_without_client",
+        "jobber_hierarchy_candidate_attached"
+      ],
+      "findingsPreview": "-- 2 of 18 -- A small amount of water loss was present around the pool pump lid upon arrival Water loss is present in proximity to the return jet line in the wall behind the filtration equipment. A small crack was observed in the pool finish just above and bel..."
+    },
+    {
+      "visitKey": "william-manning:2026-05-26",
+      "clientDisplayName": "William Manning",
+      "serviceDateKey": "2026-05-26",
+      "sourceDocumentIds": [
+        "exported-current-aquatrace-swimming-pool-leak-detection-checklist-05-26-2026",
+        "moasure-export-12"
+      ],
+      "hierarchy": null,
+      "selectedFields": {
+        "cityState": "Lake City, FL",
+        "technicians": "Chris, Logan",
+        "serviceDate": "2026-05-26",
+        "poolGallons": 18429.6,
+        "surfaceAreaSqFt": 526.6,
+        "moasureAreaSqFt": 526.6,
+        "gallonsPerInch": 329.125,
+        "gallonsPerInchAuthority": "moasure_area",
+        "checklistEvapIndexInchesPerDay": null,
+        "observedDailyLossInchesPerDay": null,
+        "evapEstimateInchesPerDay": null,
+        "leakLossAfterEvapInchesPerDay": null,
+        "totalDailyLossInchesPerDay": null,
+        "structureResultStatus": "not_applicable",
+        "plumbingResultStatus": "not_applicable",
+        "filtrationResultStatus": "not_applicable"
+      },
+      "flags": [
+        "companycam_generated_filename_without_client",
+        "moasure_linked_by_date_match"
+      ],
+      "findingsPreview": "-- 2 of 20 -- Multiple areas regarding the full pool system have issues, one of which was remedied during the leak detection. These areas are as follows; • Within the pool vinyl liner, below the blocked off shallow end return jet, a small pinhole was able to b..."
+    },
+    {
+      "visitKey": "camp-mikell-alex-mastej:2026-06-05",
+      "clientDisplayName": "Camp Mikell - Alex Mastej",
+      "serviceDateKey": "2026-06-05",
+      "sourceDocumentIds": [
+        "exported-current-aquatrace-swimming-pool-leak-detection-checklist-06-05-2026"
+      ],
+      "hierarchy": null,
+      "selectedFields": {
+        "cityState": "Toccoa, Georgia",
+        "technicians": "Chris, Catherine",
+        "serviceDate": "2026-06-05",
+        "poolGallons": 101000,
+        "surfaceAreaSqFt": null,
+        "moasureAreaSqFt": null,
+        "gallonsPerInch": null,
+        "gallonsPerInchAuthority": null,
+        "checklistEvapIndexInchesPerDay": null,
+        "observedDailyLossInchesPerDay": null,
+        "evapEstimateInchesPerDay": null,
+        "leakLossAfterEvapInchesPerDay": null,
+        "totalDailyLossInchesPerDay": null,
+        "structureResultStatus": "not_applicable",
+        "plumbingResultStatus": "not_applicable",
+        "filtrationResultStatus": "not_applicable"
+      },
+      "flags": [
+        "companycam_generated_filename_without_client",
+        "legacy_free_text_counts_best_effort_parsed"
+      ],
+      "findingsPreview": "-- 2 of 23 -- An estimated 1700 gallons daily water loss are occurring backwash line An estimated 2,000 gallons are occurring at main rain number three. There is a defect under the main drain cover within the pool structure Swimming Pool Entry Corner Left Plas..."
+    },
+    {
+      "visitKey": "valley-view-condominiums:2026-06-16",
+      "clientDisplayName": "Valley View Condominiums",
+      "serviceDateKey": "2026-06-16",
+      "sourceDocumentIds": [
+        "exported-current-aquatrace-swimming-pool-leak-detection-checklist-06-16-2026",
+        "moasure-export-18",
+        "swimming-pool-evaporation-calculator-aquatrace-leak-detection-1"
+      ],
+      "hierarchy": null,
+      "selectedFields": {
+        "cityState": "Dillard, GA",
+        "technicians": "Chris, Logan",
+        "serviceDate": "2026-06-16",
+        "poolGallons": 35402.4,
+        "surfaceAreaSqFt": 1048.9,
+        "moasureAreaSqFt": 1048.9,
+        "gallonsPerInch": 655.5625,
+        "gallonsPerInchAuthority": "moasure_area",
+        "checklistEvapIndexInchesPerDay": null,
+        "observedDailyLossInchesPerDay": 2.5,
+        "evapEstimateInchesPerDay": 0.75,
+        "leakLossAfterEvapInchesPerDay": 1.75,
+        "totalDailyLossInchesPerDay": null,
+        "structureResultStatus": "not_applicable",
+        "plumbingResultStatus": "not_applicable",
+        "filtrationResultStatus": "not_applicable"
+      },
+      "flags": [
+        "companycam_generated_filename_without_client",
+        "moasure_linked_by_date_match",
+        "evap_linked_by_date_match"
+      ],
+      "findingsPreview": "-- 2 of 27 -- Significant water loss is present in the deep end skimmer throat. Missing grout is present where the tile.and grout meet the PVC skimmer body. Sealant will be required to properly resolve water loss at this location Several cracks were present on..."
+    },
+    {
+      "visitKey": "l3-campus-statehouse-arena:2026-06-23",
+      "clientDisplayName": "L3 Campus - Statehouse Arena",
+      "serviceDateKey": "2026-06-23",
+      "sourceDocumentIds": [
+        "exported-current-aquatrace-swimming-pool-leak-detection-checklist-06-23-2026",
+        "l3-campus-statehouse-arena",
+        "swimming-pool-evaporation-calculator-aquatrace-leak-detection"
+      ],
+      "hierarchy": {
+        "clientName": "L3 Campus",
+        "propertyName": "Statehouse Arena",
+        "tierPath": [
+          "L3 Campus",
+          "Statehouse Arena"
+        ]
+      },
+      "selectedFields": {
+        "cityState": "Tallahassee FL",
+        "technicians": "Chris",
+        "serviceDate": "2026-06-23",
+        "poolGallons": 24250,
+        "surfaceAreaSqFt": null,
+        "moasureAreaSqFt": 1224.6,
+        "gallonsPerInch": 765.375,
+        "gallonsPerInchAuthority": "moasure_area",
+        "checklistEvapIndexInchesPerDay": null,
+        "observedDailyLossInchesPerDay": null,
+        "evapEstimateInchesPerDay": 0.25,
+        "leakLossAfterEvapInchesPerDay": null,
+        "totalDailyLossInchesPerDay": null,
+        "structureResultStatus": "not_applicable",
+        "plumbingResultStatus": "not_applicable",
+        "filtrationResultStatus": "not_applicable"
+      },
+      "flags": [
+        "companycam_generated_filename_without_client",
+        "moasure_linked_by_date_match",
+        "evap_linked_by_date_match",
+        "jobber_hierarchy_candidate_attached"
+      ],
+      "findingsPreview": "-- 2 of 22 -- A small amount of water loss is present in the filtration equipment room at the filter drain cap The entire structure of the swimming pool basi and plumbing were in proper working condition. No normal water level leaks were present in these areas..."
+    }
+  ],
+  "liveTranscript": [
+    {
+      "prompt": "What were the leak detection findings for Valley View Condominiums from the CompanyCam report?",
+      "status": 200,
+      "ok": true,
+      "answer": "**Leak Detection Findings — Valley View Condominiums** (Dillard, GA — service date 06/16/2026, techs: Chris Sears & Logan)\n*Source: CompanyCam report \"Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-16-2026.pdf\"*\n\n- **Deep end skimmer throat:** Significant water loss — missing grout where tile meets PVC skimmer body; sealant required to resolve.\n- **Shallow end & middle skimmers:** Cracks present causing small water loss at normal operating level; prior sealant already applied at shallow end skimmer.\n- **Filtration/pump area:** Small water loss at pool pump outlet where plumbing threads into pump housing. Recommend rebuilding pump (seals/bearings) during outlet repair due to age.\n- **Deep end wall & other locations:** Cracks noted but **no active water loss** — flagged as potential future issues only.\n- **Equipment room/heater area:** Condensation observed (interior and exterior wall) — **not a leak**, confirmed as heater condensation only.\n\n**Quantified loss (from Evaporation Calculator, same visit):**\n- Evaporation estimate: 0.75\"/day (~451 gal/day)\n- Potential leak loss (beyond evaporation): **1.75\"/day (~1,183 gal/day)** — flagged as \"significant unexplained water loss, strongly suggests an active leak\"\n- Total daily water loss: 2.5\"/day (~1,635 gal/day)\n\n**Rail comparison:** No matching Jobber job data was available (getJobDetail failed) — all findings above are sourced solely from the CompanyCam rail. No Jobber-side notes to cross-check against.",
+      "sources": [
+        {
+          "rail": "companycam",
+          "ref": "107294302",
+          "label": "CompanyCam project Valley View Condominiums"
+        },
+        {
+          "rail": "companycam",
+          "ref": "17867388",
+          "label": "CompanyCam document Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-16-2026.pdf"
+        },
+        {
+          "rail": "companycam",
+          "ref": "18142072",
+          "label": "CompanyCam document Swimming Pool Evaporation Calculator | Aquatrace Leak Detection.pdf"
+        },
+        {
+          "rail": "companycam",
+          "ref": "17851902",
+          "label": "CompanyCam document Moasure Export (18).pdf"
+        }
+      ],
+      "usage": {
+        "inputTokens": 5582,
+        "outputTokens": 585,
+        "cacheCreationInputTokens": 0,
+        "cacheReadInputTokens": 0,
+        "totalTokens": 6167
+      },
+      "failureReason": null,
+      "toolRuns": [
+        {
+          "name": "getJobDetail",
+          "sourceCount": 0
+        },
+        {
+          "name": "getDocuments",
+          "sourceCount": 4,
+          "reportCount": 3,
+          "parsedReportCount": 3
+        }
+      ]
+    },
+    {
+      "prompt": "What were the leak detection findings for Camp Mikell from the CompanyCam report?",
+      "status": 200,
+      "ok": true,
+      "answer": "Leak Detection Checklist for Camp Mikell (Alex Mastej), performed 6/5/2026 by Chris & Catherine — source: CompanyCam doc 17663518.\n\n**Water loss findings:**\n- ~1,700 gal/day at the backwash line\n- ~2,000 gal/day at main drain #3, with a defect under the main drain cover\n- Entry corner: plaster defect, missing grout at two tiles, small water loss\n- Entry deck: 4 cracked tiles, no water loss\n- Tile Defect 1: tiles separating from wall, missing grout, small water loss\n- Skimmer 5: multiple tile defects, missing grout at skimmer throat, small water loss\n- Tile Defect 2: tile/grout separating, small water loss\n- Tile Defect 3: broken tiles, no water loss\n- Skimmer 7: multiple tile defects, tile/grout separating — **no loss yet, but high potential**\n- Floor return basins: water loss around several fitting/plaster perimeters\n- Equipment room: Jandy skimmer valve showing pressure loss at seals\n- Sand Filter 1: small leak around multi-port valve (top and bottom half)\n\n**Summary flags:** hard water loss confirmed in structure, plumbing, roof/solar, and filtration categories; no hard loss found in lights.\n\n**Pool specs:** ~101,000 gallons, avg depth 56\", 16 skimmers, 16 wall returns, 4 floor returns, 17 main drains, 17 lights.\n\nNote: Jobber has no matching job-detail record for this lookup — findings above are CompanyCam-only.",
+      "sources": [
+        {
+          "rail": "companycam",
+          "ref": "106765062",
+          "label": "CompanyCam project Alex Mastej"
+        },
+        {
+          "rail": "companycam",
+          "ref": "17663518",
+          "label": "CompanyCam document Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-05-2026.pdf"
+        }
+      ],
+      "usage": {
+        "inputTokens": 3890,
+        "outputTokens": 548,
+        "cacheCreationInputTokens": 0,
+        "cacheReadInputTokens": 0,
+        "totalTokens": 4438
+      },
+      "failureReason": null,
+      "toolRuns": [
+        {
+          "name": "getJobDetail",
+          "sourceCount": 0
+        },
+        {
+          "name": "getDocuments",
+          "sourceCount": 2,
+          "reportCount": 1,
+          "parsedReportCount": 1
+        }
+      ]
+    }
+  ],
+  "stagingProof": {
+    "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+    "expectedSha": "96d57327aa373f48fdcb1e3f56394fb40acb0b33",
+    "version": {
+      "sha": "96d57327aa373f48fdcb1e3f56394fb40acb0b33",
+      "builtAt": "2026-07-05T21:52:43.931Z"
+    },
+    "shaMatches": true,
+    "health": {
+      "ok": true,
+      "checkedAt": "2026-07-05T21:52:44.984Z",
+      "rails": {
+        "jobber": {
+          "ok": true,
+          "configured": true,
+          "provider": "jobber",
+          "op": "graphql_read",
+          "latencyMs": 450,
+          "detail": "Jobber GraphQL read succeeded."
+        },
+        "companycam": {
+          "ok": true,
+          "configured": true,
+          "provider": "companycam",
+          "op": "projects_read",
+          "latencyMs": 435,
+          "detail": "CompanyCam projects read succeeded."
+        },
+        "anthropic": {
+          "ok": true,
+          "configured": true,
+          "provider": "anthropic",
+          "op": "configured_no_spend",
+          "latencyMs": 0,
+          "detail": "Configured; live message call skipped by no-spend overnight limit."
+        }
+      }
+    }
+  }
+}

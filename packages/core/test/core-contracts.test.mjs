@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { approvalItemSchema, mediaSchema, nexiBlueprintSchema, siteJobBlueprintSchema } from "../dist/index.js";
+import { approvalItemSchema, conversationRecordSchema, jobSchema, mediaSchema, nexiBlueprintSchema, siteJobBlueprintSchema } from "../dist/index.js";
 
 test("Media schema rejects exposed third-party URL fields", () => {
   const parsed = mediaSchema.parse({
@@ -9,9 +9,11 @@ test("Media schema rejects exposed third-party URL fields", () => {
     type: "photo",
     storageRef: "companycam:123",
     aiTags: [],
+    capturedBy: "Cody",
     externalIds: { companycam: "123" }
   });
   assert.equal(parsed.storageRef, "companycam:123");
+  assert.equal(parsed.capturedBy, "Cody");
   assert.equal("sourceUrlNeverExposed" in parsed, false);
 });
 
@@ -49,3 +51,49 @@ test("Approval item defaults can park outbound execution", () => {
   assert.equal(item.status, "pending");
 });
 
+test("Job schema preserves scheduled visit date fields", () => {
+  const job = jobSchema.parse({
+    id: "job_1",
+    tenantId: "aquatrace",
+    clientId: "client_1",
+    status: "scheduled",
+    title: "Monday leak detection",
+    startAt: "2026-07-06T04:00:00.000Z",
+    endAt: "2026-07-07T03:59:59.000Z",
+    lineItems: [],
+    totals: { subtotal: 0, tax: 0, total: 0 }
+  });
+  assert.equal(job.startAt, "2026-07-06T04:00:00.000Z");
+  assert.equal(job.endAt, "2026-07-07T03:59:59.000Z");
+});
+
+test("Conversation schema preserves tool run traces for reuse", () => {
+  const conversation = conversationRecordSchema.parse({
+    id: "conv_1",
+    tenantId: "aquatrace",
+    conversationId: "trial-date-context",
+    userText: "What's on Monday July 6, 2026?",
+    assistantText: "Rachel Payne is scheduled Monday.",
+    sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }],
+    toolRuns: [{
+      name: "getSchedule",
+      sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }],
+      result: { jobs: [{ id: "job_1", title: "Rachel Payne leak detection" }] }
+    }],
+    createdAt: "2026-07-05T16:00:00.000Z"
+  });
+  assert.equal(conversation.toolRuns[0].name, "getSchedule");
+  assert.equal(conversation.toolRuns[0].result.jobs[0].id, "job_1");
+});
+
+test("Source schema accepts email rail refs", () => {
+  const conversation = conversationRecordSchema.parse({
+    id: "conv_email_1",
+    tenantId: "aquatrace",
+    userText: "What emails came in today?",
+    assistantText: "One email came in today.",
+    sources: [{ rail: "email", ref: "email:ops:msg_1", label: "Email ops msg_1" }],
+    createdAt: "2026-07-05T16:00:00.000Z"
+  });
+  assert.equal(conversation.sources[0].ref, "email:ops:msg_1");
+});

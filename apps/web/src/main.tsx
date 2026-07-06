@@ -101,7 +101,19 @@ function sourceThumb(source: Source): React.ReactElement | null {
   if (source.rail !== "companycam" || !source.label.toLowerCase().includes("photo")) {
     return null;
   }
-  return <img className="thumb" src={`/api/media/${encodeURIComponent(source.ref)}`} alt={source.label} loading="lazy" />;
+  return <img className="thumb" src={mediaUrl(source)} alt={source.label} loading="lazy" />;
+}
+
+function mediaUrl(source: Source): string {
+  return `/api/media/${encodeURIComponent(source.ref)}`;
+}
+
+function mediaDownloadUrl(source: Source): string {
+  return `${mediaUrl(source)}?download=1`;
+}
+
+function sourceIsPhoto(source: Source): boolean {
+  return source.rail === "companycam" && source.label.toLowerCase().includes("photo");
 }
 
 function dayRange(day: string, view: "day" | "week" | "map"): { from: string; to: string } {
@@ -178,7 +190,7 @@ function SchedulePanel(): React.ReactElement {
             <div>
               <p className="visit-time">{formatVisitTime(visit.start)} - {formatVisitTime(visit.end)}</p>
               <h3>{visit.title}</h3>
-              <p>{visit.location?.label ?? "No location label"} · {visit.assignedTo.join(", ") || "Unassigned"}</p>
+              <p>{visit.location?.label ?? "No location label"} - {visit.assignedTo.join(", ") || "Unassigned"}</p>
             </div>
             <span className="visit-status">{visit.status}</span>
             {view === "map" ? (
@@ -282,6 +294,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   const [conversationId] = useState(() => `web-${crypto.randomUUID()}`);
   const [working, setWorking] = useState(false);
   const [health, setHealth] = useState<"checking" | "green" | "red">("checking");
+  const [activeMedia, setActiveMedia] = useState<Source | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -361,9 +374,23 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
               {message.sources.length > 0 ? (
                 <div className="sources">
                   {message.sources.map((source) => (
-                    <span className="source" key={`${source.rail}:${source.ref}`}>
-                      {sourceThumb(source)}
+                    <span className={`source ${sourceIsPhoto(source) ? "source-photo" : ""}`} key={`${source.rail}:${source.ref}`}>
+                      {sourceIsPhoto(source) ? (
+                        <button
+                          aria-label={`Open full-size ${source.label}`}
+                          className="thumb-button"
+                          type="button"
+                          onClick={() => setActiveMedia(source)}
+                        >
+                          {sourceThumb(source)}
+                        </button>
+                      ) : null}
                       <span>{source.label}</span>
+                      {sourceIsPhoto(source) ? (
+                        <a className="save-link" href={mediaDownloadUrl(source)} download={`companycam-${source.ref}.jpg`}>
+                          Save
+                        </a>
+                      ) : null}
                     </span>
                   ))}
                 </div>
@@ -385,6 +412,19 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
       </section>
       <SchedulePanel />
       </div>
+      {activeMedia ? (
+        <div className="lightbox" role="dialog" aria-modal="true" aria-label={activeMedia.label} onClick={() => setActiveMedia(null)}>
+          <div className="lightbox-card" onClick={(event) => event.stopPropagation()}>
+            <img src={mediaUrl(activeMedia)} alt={activeMedia.label} />
+            <div className="lightbox-actions">
+              <a href={mediaDownloadUrl(activeMedia)} download={`companycam-${activeMedia.ref}.jpg`}>
+                Save full-size
+              </a>
+              <button type="button" onClick={() => setActiveMedia(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

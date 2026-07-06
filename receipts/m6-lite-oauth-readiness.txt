@@ -1,0 +1,49 @@
+M6-LITE Gmail OAuth readiness
+
+Status: ready for owner OAuth consent and third mailbox creation.
+
+Do not paste refresh tokens or OAuth secrets in chat. Store them only in Railway staging variables.
+
+Shared OAuth client variables:
+- GMAIL_OAUTH_CLIENT_ID
+- GMAIL_OAUTH_CLIENT_SECRET
+
+Read-only mailbox 1 consent:
+- Sign into the first existing Aquatrace mailbox.
+- Consent only: https://www.googleapis.com/auth/gmail.readonly
+- Store:
+  - GMAIL_READONLY_MAILBOX_1_EMAIL
+  - GMAIL_READONLY_MAILBOX_1_ALIAS
+  - GMAIL_READONLY_MAILBOX_1_REFRESH_TOKEN
+
+Read-only mailbox 2 consent:
+- Sign into the second existing Aquatrace mailbox.
+- Consent only: https://www.googleapis.com/auth/gmail.readonly
+- Store:
+  - GMAIL_READONLY_MAILBOX_2_EMAIL
+  - GMAIL_READONLY_MAILBOX_2_ALIAS
+  - GMAIL_READONLY_MAILBOX_2_REFRESH_TOKEN
+
+Dedicated send mailbox:
+- Create/confirm the third mailbox, for example nexi@aquatraceleak.com.
+- Sign into that mailbox only.
+- Consent only: https://www.googleapis.com/auth/gmail.send
+- Store:
+  - GMAIL_SEND_MAILBOX_EMAIL
+  - GMAIL_SEND_MAILBOX_ALIAS
+  - GMAIL_SEND_MAILBOX_REFRESH_TOKEN
+
+If a different OAuth client is needed for any mailbox, use the per-mailbox overrides:
+- *_CLIENT_ID
+- *_CLIENT_SECRET
+
+Implemented local proof:
+- Read-only adapter has no sendEmail method.
+- Send adapter has no read/search methods.
+- draftEmail creates an ApprovalQueue item and does not send.
+- ApprovalQueue executor sends only after approval and only when the artifact targets the dedicated send mailbox alias.
+- Artifact targeting a read-only mailbox alias is rejected before send.
+
+Live receipts still owed after Railway variables exist:
+- Read transcript: "what emails came in today" with email:<mailbox>:<messageId> sources.
+- Send trail: draft -> approved -> executed -> Gmail messageId to owner-controlled test address.

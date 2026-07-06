@@ -1,6 +1,7 @@
-import type { Media, NexiTool, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
+import type { DocRef, Job, Media, NexiTool, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
 import { z } from "zod";
 import { CompanyCamAdapter, JobberAdapter } from "@nexteam/providers";
+import { readCompanyCamReports, siteJobBlueprintFromCompanyCamReport } from "./reportDocuments.js";
 
 export interface ToolRunResult {
   result: unknown;
@@ -25,9 +26,17 @@ export const getPhotosInputSchema = z.object({
   projectQuery: z.string()
 });
 
+export const getDocumentsInputSchema = z.object({
+  projectQuery: z.string(),
+  question: z.string().optional()
+});
+
 export const lookupSiteJobBlueprintFieldInputSchema = z.object({
   field: z.string(),
-  fields: z.record(z.union([z.string(), z.number()])).optional()
+  fields: z.record(z.union([z.string(), z.number()])).optional(),
+  requestedEntity: z.string().optional(),
+  jobId: z.string().optional(),
+  sourceRef: z.string().optional()
 });
 
 const getScheduleJsonSchema = {
@@ -58,6 +67,22 @@ const getPhotosJsonSchema = {
   required: ["projectQuery"]
 };
 
+const getDocumentsJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    projectQuery: {
+      type: "string",
+      description: "CompanyCam project or customer name to search for, for example Deborah Justice."
+    },
+    question: {
+      type: "string",
+      description: "Original user question so the report reader can prioritize findings, gallons, or checklist documents."
+    }
+  },
+  required: ["projectQuery"]
+};
+
 const lookupSiteJobBlueprintFieldJsonSchema = {
   type: "object",
   additionalProperties: false,
@@ -67,6 +92,15 @@ const lookupSiteJobBlueprintFieldJsonSchema = {
       type: "object",
       additionalProperties: { anyOf: [{ type: "string" }, { type: "number" }] },
       description: "Optional inline extracted fields when already available."
+    },
+    requestedEntity: {
+      type: "string",
+      description: "Client, property, or job name from the user's request. Required when answering client/job-specific fields."
+    },
+    jobId: { type: "string", description: "Exact native job id when known." },
+    sourceRef: {
+      type: "string",
+      description: "Source identifier for inline fields, used to prevent cross-client field reuse."
     }
   },
   required: ["field"]
@@ -82,13 +116,127 @@ function companyCamPhotoSources(media: Media[]): Source[] {
     .map((item) => source("companycam", item.externalIds?.companycam ?? item.id, `CompanyCam photo ${item.id}`));
 }
 
-function firstBlueprintField(blueprints: SiteJobBlueprint[], field: string): { value: string | number; source: Source } | null {
+function companyCamDocumentSources(documents: DocRef[]): Source[] {
+  return documents
+    .slice(0, 3)
+    .map((item) => source("companycam", item.externalIds?.companycam ?? item.id, `CompanyCam document ${item.label}`));
+}
+
+function safeTimeZone(timeZone: string): string {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone }).format(new Date());
+    return timeZone;
+  } catch {
+    return "America/New_York";
+  }
+}
+
+function localDateTimeParts(iso: string | undefined, timeZone: string): { date: string; time: string } | null {
+  const parsed = Date.parse(iso ?? "");
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: safeTimeZone(timeZone),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  }).formatToParts(new Date(parsed));
+  const readPart = (type: Intl.DateTimeFormatPartTypes): string => parts.find((part) => part.type === type)?.value ?? "";
+  const year = readPart("year");
+  const month = readPart("month");
+  const day = readPart("day");
+  const hour = readPart("hour");
+  const minute = readPart("minute");
+  const dayPeriod = readPart("dayPeriod").toUpperCase();
+  if (!year || !month || !day || !hour || !minute || !dayPeriod) {
+    return null;
+  }
+  return { date: `${year}-${month}-${day}`, time: `${hour}:${minute} ${dayPeriod}` };
+}
+
+function localSchedule(job: Job, timeZone: string): { date: string; localSummary: string; allDay: boolean } | undefined {
+  const start = localDateTimeParts(job.startAt, timeZone);
+  if (!start) {
+    return undefined;
+  }
+  const end = localDateTimeParts(job.endAt, timeZone);
+  const allDay = start.time === "12:00 AM" && end?.date === start.date && end.time.startsWith("11:59");
+  return {
+    date: start.date,
+    localSummary: allDay ? `${start.date} all day` : `${start.date} ${start.time}${end ? `-${end.time}` : ""}`,
+    allDay
+  };
+}
+
+function withLocalSchedule(jobs: Job[], timeZone: string): Array<Job & { schedule?: { date: string; localSummary: string; allDay: boolean } }> {
+  return jobs.map((job) => {
+    const schedule = localSchedule(job, timeZone);
+    return schedule ? { ...job, schedule } : job;
+  });
+}
+
+function normalizedSearchText(value: unknown): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function includesAllSearchTokens(haystack: string, needle: string): boolean {
+  const tokens = normalizedSearchText(needle).split(/\s+/).filter((token) => token.length > 1);
+  return tokens.length > 0 && tokens.every((token) => haystack.includes(token));
+}
+
+function blueprintMatchesRequest(
+  siteJobBlueprint: SiteJobBlueprint,
+  request: { requestedEntity?: string | undefined; jobId?: string | undefined; sourceRef?: string | undefined }
+): boolean {
+  if (request.jobId && siteJobBlueprint.jobId !== request.jobId) {
+    return false;
+  }
+  const requestedEntity = request.requestedEntity?.trim();
+  const sourceRef = request.sourceRef?.trim();
+  if (!requestedEntity && !sourceRef) {
+    return true;
+  }
+  const haystack = normalizedSearchText([
+    siteJobBlueprint.id,
+    siteJobBlueprint.jobId,
+    siteJobBlueprint.extractedFrom,
+    JSON.stringify(siteJobBlueprint.fields)
+  ].join(" "));
+  if (sourceRef && !includesAllSearchTokens(haystack, sourceRef)) {
+    return false;
+  }
+  return requestedEntity ? includesAllSearchTokens(haystack, requestedEntity) : true;
+}
+
+function inlineFieldMatchesRequest(input: z.infer<typeof lookupSiteJobBlueprintFieldInputSchema>): boolean {
+  if (input.jobId || input.requestedEntity) {
+    return Boolean(input.sourceRef && includesAllSearchTokens(input.sourceRef, input.requestedEntity ?? input.jobId ?? ""));
+  }
+  return true;
+}
+
+function firstBlueprintField(
+  blueprints: SiteJobBlueprint[],
+  field: string,
+  request: { requestedEntity?: string | undefined; jobId?: string | undefined; sourceRef?: string | undefined }
+): { value: string | number; source: Source; matchedId: string } | null {
   for (const siteJobBlueprint of blueprints) {
+    if (!blueprintMatchesRequest(siteJobBlueprint, request)) {
+      continue;
+    }
     const value = siteJobBlueprint.fields[field];
     if (value !== undefined) {
       return {
         value,
-        source: source("native", siteJobBlueprint.id, `SiteJobBlueprint ${siteJobBlueprint.extractedFrom}`)
+        source: source("native", siteJobBlueprint.id, `SiteJobBlueprint ${siteJobBlueprint.extractedFrom}`),
+        matchedId: siteJobBlueprint.id
       };
     }
   }
@@ -106,7 +254,7 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
         const input = getScheduleInputSchema.parse(args);
         const jobs = await JobberAdapter.fromEnv(env, tenant.id).getJobs({ from: input.from, to: input.to });
         return {
-          result: { jobs },
+          result: { window: { from: input.from, to: input.to, timezone: tenant.timezone }, jobs: withLocalSchedule(jobs, tenant.timezone) },
           sources: [source("jobber", "jobs", "Jobber jobs GraphQL read")]
         };
       }
@@ -156,6 +304,39 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
       }
     },
     {
+      name: "getDocuments",
+      description: "Read CompanyCam project documents/reports and extract leak-detection report fields such as findings and pool gallons.",
+      inputSchema: getDocumentsInputSchema,
+      inputJsonSchema: getDocumentsJsonSchema,
+      handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
+        const input = getDocumentsInputSchema.parse(args);
+        const result = await readCompanyCamReports({
+          tenant,
+          projectQuery: input.projectQuery,
+          question: input.question,
+          env
+        });
+        const parsedReports = result.reports.filter((report) => report.parsed);
+        const siteJobBlueprints = result.project
+          ? parsedReports
+            .filter((report) => Object.keys(report.fields).length > 0)
+            .map((report) => siteJobBlueprintFromCompanyCamReport({ tenantId: tenant.id, project: result.project as NonNullable<typeof result.project>, report }))
+          : [];
+        return {
+          result: {
+            project: result.project,
+            documents: result.documents,
+            reports: result.reports,
+            suggestedSiteJobBlueprints: siteJobBlueprints
+          },
+          sources: [
+            ...(result.project ? [source("companycam", result.project.externalIds?.companycam ?? result.project.id, `CompanyCam project ${result.project.name}`)] : []),
+            ...companyCamDocumentSources(parsedReports.map((report) => report.document))
+          ]
+        };
+      }
+    },
+    {
       name: "lookupSiteJobBlueprintField",
       description: "Read a field from a SiteJobBlueprint extraction result.",
       inputSchema: lookupSiteJobBlueprintFieldInputSchema,
@@ -164,17 +345,22 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
         const input = lookupSiteJobBlueprintFieldInputSchema.parse(args);
         const fields = input.fields ?? {};
         const inlineValue = fields[input.field];
-        if (inlineValue !== undefined) {
+        if (inlineValue !== undefined && inlineFieldMatchesRequest(input)) {
           return {
-            result: { field: input.field, value: inlineValue },
-            sources: [source("native", "site-job-blueprint", "SiteJobBlueprint fields")]
+            result: { field: input.field, value: inlineValue, requestedEntity: input.requestedEntity ?? null },
+            sources: [source("native", input.sourceRef ?? "site-job-blueprint", "SiteJobBlueprint fields")]
           };
         }
         const stored = siteJobBlueprintReader
-          ? firstBlueprintField(await siteJobBlueprintReader.loadSiteJobBlueprints(tenant.id, 10), input.field)
+          ? firstBlueprintField(await siteJobBlueprintReader.loadSiteJobBlueprints(tenant.id, 10), input.field, input)
           : null;
         return {
-          result: { field: input.field, value: stored?.value ?? null },
+          result: {
+            field: input.field,
+            value: stored?.value ?? null,
+            requestedEntity: input.requestedEntity ?? null,
+            matchedBlueprintId: stored?.matchedId ?? null
+          },
           sources: stored ? [stored.source] : []
         };
       }
