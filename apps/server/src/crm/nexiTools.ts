@@ -62,6 +62,7 @@ function groupJobs(jobs: Job[]): Record<Job["status"], number> {
 }
 
 export function createCrmReadTools(provider: CRMProvider): NexiTool[] {
+  const readable = provider as InvoiceReadableProvider;
   return [
     {
       name: "clientLookup",
@@ -87,6 +88,27 @@ export function createCrmReadTools(provider: CRMProvider): NexiTool[] {
         return {
           result: { counts: groupJobs(jobs), jobs },
           sources: [source("jobs", "Native CRM jobs")]
+        };
+      }
+    },
+    {
+      name: "invoiceStatus",
+      description: "Read native CRM invoice status by invoice id or client id.",
+      inputSchema: invoiceStatusInputSchema,
+      handler: async (_tenant: Tenant, args: unknown) => {
+        if (!readable.getInvoices) {
+          throw new RailError("The configured CRM provider cannot read native invoices.", { provider: "native", op: "invoiceStatus", status: 501 });
+        }
+        const input = invoiceStatusInputSchema.parse(args);
+        const invoices = (await readable.getInvoices()).filter((invoice) =>
+          (input.invoiceId ? invoice.id === input.invoiceId : true)
+          && (input.clientId ? invoice.clientId === input.clientId : true)
+        );
+        return {
+          result: { invoices },
+          sources: invoices.length
+            ? invoices.map((invoice) => source(invoice.id, `Native invoice ${invoice.title}`))
+            : [source("invoices", "Native CRM invoices")]
         };
       }
     }
@@ -147,28 +169,6 @@ export function createCrmTools(provider: CRMProvider, approvalQueue: ApprovalQue
             source(approvedQuote.id, `Native quote ${approvedQuote.title}`),
             source("jobber-products-services", "Jobber-seeded pool leak line-item catalog")
           ]
-        };
-      }
-    },
-    {
-      name: "invoiceStatus",
-      description: "Read native CRM invoice status by invoice id or client id.",
-      inputSchema: invoiceStatusInputSchema,
-      handler: async (_tenant: Tenant, args: unknown) => {
-        const readable = provider as InvoiceReadableProvider;
-        if (!readable.getInvoices) {
-          throw new RailError("The configured CRM provider cannot read native invoices.", { provider: "native", op: "invoiceStatus", status: 501 });
-        }
-        const input = invoiceStatusInputSchema.parse(args);
-        const invoices = (await readable.getInvoices()).filter((invoice) =>
-          (input.invoiceId ? invoice.id === input.invoiceId : true)
-          && (input.clientId ? invoice.clientId === input.clientId : true)
-        );
-        return {
-          result: { invoices },
-          sources: invoices.length
-            ? invoices.map((invoice) => source(invoice.id, `Native invoice ${invoice.title}`))
-            : [source("invoices", "Native CRM invoices")]
         };
       }
     }

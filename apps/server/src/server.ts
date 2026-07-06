@@ -24,9 +24,12 @@ import { createCommsNexiTools } from "./comms/nexiTools.js";
 import { createContentNexiTools } from "./content/nexiTools.js";
 import { InMemoryContentRepository } from "./content/repository.js";
 import { registerContentRoutes } from "./content/routes.js";
+import { createCrmReadTools } from "./crm/nexiTools.js";
+import { FirestoreNativeCrmRepository } from "./crm/nativeRepository.js";
 import { createSchedulingNexiTools } from "./scheduling/nexiTools.js";
 import { InMemorySchedulingRepository } from "./scheduling/repository.js";
 import { registerSchedulingRoutes } from "./scheduling/routes.js";
+import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 
 const app = express();
 const commsRail = createCommsRailFromEnv(process.env);
@@ -36,6 +39,8 @@ const schedulingRepository = new InMemorySchedulingRepository();
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
+const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();
+const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TENANT_ID || "aquatrace");
 
 app.use(express.json({
   limit: "1mb",
@@ -49,6 +54,7 @@ app.use(express.json({
 app.use(express.urlencoded({ extended: false }));
 app.use("/api/nexi", createNexiRouter(process.env, {
   extraTools: [
+    ...createCrmReadTools(nativeCrmProvider),
     ...createCommsNexiTools(commsRail, approvalQueue),
     ...createContentNexiTools({ repository: contentRepository, approvalQueue }),
     ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env })

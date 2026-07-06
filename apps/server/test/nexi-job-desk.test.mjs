@@ -434,6 +434,160 @@ test("Nexi Anthropic gateway preloads triageInbox for attention prompts", async 
   assert.equal(result.sources[0].ref, "email:chris:msg_1");
 });
 
+test("Nexi payment-status prompts exhaust schedule, Jobber, native invoice, and email rails", async () => {
+  const calls = [];
+  const toolNames = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "What was on today's schedule?" },
+      { role: "assistant", content: "Rachel Payne was today's pool." },
+      { role: "user", content: "did todays pool pay?" }
+    ],
+    tools: [
+      {
+        name: "getSchedule",
+        description: "Read schedule.",
+        inputSchema: z.object({ from: z.string(), to: z.string() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getSchedule", args]);
+          return {
+            result: { jobs: [{ id: "job_1", title: "Rachel Payne leak detection", client: { name: "Rachel Payne" } }] },
+            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }]
+          };
+        }
+      },
+      {
+        name: "getJobDetail",
+        description: "Read job detail.",
+        inputSchema: z.object({ nameQuery: z.string().optional(), id: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getJobDetail", args]);
+          return {
+            result: { job: { id: "job_1", status: "lead", title: "Rachel Payne leak detection" } },
+            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }]
+          };
+        }
+      },
+      {
+        name: "invoiceStatus",
+        description: "Read native invoice status.",
+        inputSchema: z.object({ invoiceId: z.string().optional(), clientId: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["invoiceStatus", args]);
+          return {
+            result: { invoices: [{ id: "inv_1", title: "Rachel Payne invoice", status: "paid", balanceCents: 0 }] },
+            sources: [{ rail: "native", ref: "inv_1", label: "Native invoice Rachel Payne" }]
+          };
+        }
+      },
+      {
+        name: "searchEmail",
+        description: "Search email receipts.",
+        inputSchema: z.object({ keywords: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["searchEmail", args]);
+          return {
+            result: { messages: [{ messageId: "msg_1", subject: "Payment received" }] },
+            sources: [{ rail: "email", ref: "email:chris:msg_1", label: "Email chris msg_1" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "Yes. Native invoices show Rachel Payne paid with a zero balance, and email has a payment receipt." }],
+        usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
+      }), { status: 200 });
+    }
+  });
+  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getSchedule", "getJobDetail", "invoiceStatus", "searchEmail"]);
+  assert.match(calls[0].messages.at(-1).content, /For payment, paid\/unpaid, invoice, balance, and receipt questions/i);
+  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
+  assert.equal(result.sources.some((source) => source.rail === "native"), true);
+  assert.equal(result.sources.some((source) => source.rail === "email"), true);
+});
+
+test("Nexi tomorrow schedule prompts reject fabricated stale tool dates", async () => {
+  let parsedToolArgs = null;
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "what time is tomorrows pool" }],
+    tools: [{
+      name: "getSchedule",
+      description: "Read schedule.",
+      inputSchema: z.object({ from: z.string(), to: z.string() }),
+      handler: async (_tenant, args) => {
+        parsedToolArgs = args;
+        return {
+          result: { jobs: [{ id: "job_1", title: "Forrest Ferguson leak detection" }] },
+          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Forrest Ferguson" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "Forrest Ferguson is on tomorrow's schedule." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.ok(parsedToolArgs);
+  assert.doesNotMatch(parsedToolArgs.from, /^2024-01-/);
+  assert.doesNotMatch(parsedToolArgs.to, /^2024-01-/);
+  assert.equal(new Date(parsedToolArgs.to).getTime() - new Date(parsedToolArgs.from).getTime(), 24 * 60 * 60 * 1000);
+  assert.equal(result.toolRuns[0].name, "getSchedule");
+  assert.equal(result.sources.length, 1);
+});
+
+test("Nexi distance prompts return capability gaps instead of missing-data failures", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "how far is Forrest Ferguson from the shop?" }],
+    tools: [],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("capability gaps should not call the model");
+    }
+  });
+  assert.equal(result.failureReason, "capability_not_available");
+  assert.match(result.answer, /can't measure drive distance/i);
+  assert.doesNotMatch(result.answer, /written down anywhere/i);
+  assert.deepEqual(result.toolRuns, []);
+});
+
+test("Nexi address-only follow-ups preserve the prior distance capability intent", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "how far is Forrest Ferguson from the shop?" },
+      { role: "assistant", content: "I can't measure drive distance in chat yet." },
+      { role: "user", content: "123 Main Road" }
+    ],
+    tools: [],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("address-only distance follow-ups should not call the model");
+    }
+  });
+  assert.equal(result.failureReason, "capability_not_available");
+  assert.match(result.answer, /can't measure drive distance/i);
+  assert.doesNotMatch(result.answer, /written down anywhere/i);
+});
+
 test("Nexi schedule prompts parse requested calendar dates in tenant timezone", async () => {
   const calls = [];
   let parsedToolArgs = null;

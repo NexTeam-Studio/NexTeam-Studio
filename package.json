@@ -22,6 +22,8 @@
     "check:secret-history": "node scripts/check-secret-history.mjs",
     "check:provider-imports": "node scripts/check-provider-imports.mjs",
     "check:blueprints": "node scripts/check-blueprint-identifiers.mjs",
+    "build:nexi-regression-wall": "node scripts/build-nexi-regression-wall-cases.mjs",
+    "regression:nexi:wall": "node scripts/run-nexi-regression-wall.mjs",
     "smoke:jobber": "tsx tests/smoke/jobber-readonly-smoke.ts",
     "smoke:companycam": "tsx tests/smoke/companycam-readonly-smoke.ts",
     "import:jobber:dry-run": "tsx scripts/jobber-import-dry-run.ts",

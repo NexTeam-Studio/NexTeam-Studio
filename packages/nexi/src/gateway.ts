@@ -454,11 +454,11 @@ function parseYear(raw: string | undefined): number | undefined {
 
 export function scheduleWindowFromText(text: string, timeZone?: string): { from: string; to: string } | null {
   const lower = text.toLowerCase();
-  if (/\btomorrow\b/.test(lower)) {
+  if (/\btomorrow(?:'s|s)?\b/.test(lower)) {
     const today = zonedParts(new Date(), timeZone);
     return dateWindow(addCalendarDays(today, 1), timeZone);
   }
-  if (/\b(?:today|tonight)\b/.test(lower)) {
+  if (/\b(?:today|tonight)(?:'s|s)?\b/.test(lower)) {
     return todayWindow(timeZone);
   }
 
@@ -592,9 +592,11 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     return { ...record, mailbox: emailRef.mailbox, messageId: emailRef.messageId };
   }
   if (toolName === "getSchedule") {
-    const fallback = scheduleWindowFromConversation(messages, tenant?.timezone) ?? todayWindow(tenant?.timezone);
-    record.from ??= fallback.from;
-    record.to ??= fallback.to;
+    const traceable = scheduleWindowFromText(userText, tenant?.timezone)
+      ?? (looksLikeScheduleFollowUp(userText) ? scheduleWindowFromConversation(messages, tenant?.timezone) : null);
+    const fallback = traceable ?? scheduleWindowFromConversation(messages, tenant?.timezone) ?? todayWindow(tenant?.timezone);
+    record.from = fallback.from;
+    record.to = fallback.to;
   }
   if (toolName === "getPhotos" && !record.projectQuery) {
     record.projectQuery = correctionFollowUp
@@ -612,7 +614,10 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     }
   }
   if (toolName === "searchEmail" && !record.keywords) {
-    record.keywords = userText;
+    const entity = entityQueryFromText(userText) || entityQueryFromMessages(messages);
+    record.keywords = looksLikePaymentStatusQuestion(lowerUserText)
+      ? [entity, "paid payment receipt invoice zero balance"].filter(Boolean).join(" ")
+      : userText;
   }
   if (toolName === "summarizeInbox" && !record.maxResults) {
     record.maxResults = 10;
@@ -640,7 +645,7 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
 
 function hasScheduleDateCue(text: string): boolean {
   const lower = text.toLowerCase();
-  return /\b(?:today|tonight|tomorrow)\b/.test(lower)
+  return /\b(?:today|tonight|tomorrow)(?:'s|s)?\b/.test(lower)
     || new RegExp(`\\b(?:next\\s+)?(?:${WEEKDAY_PATTERN})\\b`, "i").test(lower)
     || new RegExp(`\\b(?:${MONTH_PATTERN})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b`, "i").test(lower)
     || /\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b/.test(lower);
@@ -701,6 +706,62 @@ function looksLikeInboxTriageQuestion(lower: string): boolean {
   return /\b(?:needs? my attention|what needs attention|triage|urgent|important)\b/.test(lower);
 }
 
+function looksLikePaymentStatusQuestion(lower: string): boolean {
+  return /\b(?:paid|pay|payment|invoice|zero\s+balance|balance|receipt|owes?|owed|due|collected|charged)\b/.test(lower);
+}
+
+function looksLikeRevenueQuestion(lower: string): boolean {
+  return /\b(?:ytd|year\s+to\s+date|revenue|gross|sales)\b/.test(lower);
+}
+
+function looksLikePipelineQuestion(lower: string): boolean {
+  return /\b(?:approved\s+but\s+not\s+scheduled|pipeline|unscheduled|not\s+scheduled)\b/.test(lower);
+}
+
+function looksLikeDistanceQuestion(lower: string): boolean {
+  return /\b(?:how\s+far|distance|miles?|drive\s+time|travel\s+time|from\s+(?:here|my house|the shop))\b/.test(lower);
+}
+
+function looksLikeMapAction(lower: string): boolean {
+  return /\b(?:open|launch)\b.*\b(?:google\s+maps|maps?)\b/.test(lower);
+}
+
+function looksLikeAddressOnlyFollowUp(text: string): boolean {
+  return /^\s*\d{1,6}\s+[a-z0-9 .'-]+(?:road|rd|street|st|lane|ln|drive|dr|avenue|ave|court|ct|circle|cir|way|trail|trl|highway|hwy)\b/i.test(text);
+}
+
+function recentUserTextMatches(messages: GatewayMessage[], predicate: (lower: string) => boolean): boolean {
+  return [...messages]
+    .reverse()
+    .slice(1, 8)
+    .some((message) => message.role === "user" && typeof message.content === "string" && predicate(message.content.toLowerCase()));
+}
+
+function capabilityGapForRequest(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>): { answer: string; failureReason: string } | null {
+  const userText = latestUserText(messages);
+  const lower = userText.toLowerCase();
+  const distanceFollowUp = looksLikeAddressOnlyFollowUp(userText) && recentUserTextMatches(messages, looksLikeDistanceQuestion);
+  if ((looksLikeDistanceQuestion(lower) || distanceFollowUp) && !toolsByName.has("getDistance")) {
+    return {
+      answer: "I can't measure drive distance in chat yet because the distance tool is not wired to Nexi. I logged it as capability_not_available.",
+      failureReason: "capability_not_available"
+    };
+  }
+  if (looksLikeMapAction(lower) && !toolsByName.has("openMap")) {
+    return {
+      answer: "I can't open Google Maps from here yet. I can give you the address, but the map-opening tool is not wired to Nexi.",
+      failureReason: "capability_not_available"
+    };
+  }
+  if (looksLikeRevenueQuestion(lower) && !toolsByName.has("revenueSummary")) {
+    return {
+      answer: "I can't total revenue from chat yet because the revenue summary tool is not wired to Nexi. I logged it as capability_not_available.",
+      failureReason: "capability_not_available"
+    };
+  }
+  return null;
+}
+
 function emailRefFromText(text: string): { mailbox: string; messageId: string; attachmentId?: string | undefined } | null {
   const match = text.match(/\bemail:([^:\s]+):([^:\s]+)(?::([^:\s]+))?/i);
   if (!match?.[1] || !match[2]) {
@@ -759,6 +820,12 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikeCorrectionFollowUp(lower)) {
     return uniqueToolNames(["getJobDetail", "getDocuments"], toolsByName);
+  }
+  if (looksLikePaymentStatusQuestion(lower)) {
+    return uniqueToolNames(["getSchedule", "getJobDetail", "invoiceStatus", "searchEmail"], toolsByName);
+  }
+  if (looksLikePipelineQuestion(lower)) {
+    return uniqueToolNames(["getPipeline"], toolsByName);
   }
   if (looksLikeEmailSearchQuestion(lower) && toolsByName.has("searchEmail")) {
     return ["searchEmail"];
@@ -959,6 +1026,26 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
   const messages: GatewayMessage[] = [...request.messages];
   const toolsByName = new Map(request.tools.map((tool) => [tool.name, tool]));
   const toolDefinitions = request.tools.map(toolDefinition);
+  const capabilityGap = capabilityGapForRequest(messages, toolsByName);
+  if (capabilityGap) {
+    await writeUsageRecord({
+      tenantId: request.tenant.id,
+      routeActionName: request.routeActionName,
+      taskType: request.taskType,
+      usage: emptyUsage(),
+      ok: false,
+      errorSummary: capabilityGap.failureReason,
+      usageLog: request.usageLog
+    });
+    return {
+      answer: capabilityGap.answer,
+      sources: [],
+      usage: emptyUsage(),
+      raw: { capabilityGap: true },
+      failureReason: capabilityGap.failureReason,
+      toolRuns: []
+    };
+  }
   let sources: Source[] = [];
   let totalUsage = emptyUsage();
   const toolRuns: ToolRunTrace[] = [];
@@ -1003,7 +1090,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
       role: "user",
       content: [
         ...deterministicRuns.flatMap((run) => [`Verified ${run.name} result:`, toolResultContent(run.result)]),
-        "Answer the original user request using only these checked records. For job issue, technician, completion-time, service-time, and report/checklist questions, compare Jobber and CompanyCam before answering; do not treat Jobber's missing completion/status field as proof that no CompanyCam report answer exists. Say clearly when one system has no matching data. Keep record labels attached in the API response."
+        "Answer the original user request using only these checked records. For job issue, technician, completion-time, service-time, and report/checklist questions, compare Jobber and CompanyCam before answering; do not treat Jobber's missing completion/status field as proof that no CompanyCam report answer exists. For payment, paid/unpaid, invoice, balance, and receipt questions, compare Jobber, native invoices, and email receipts before answering; do not treat lead status as proof of unpaid. Say clearly when one system has no matching data. Keep record labels attached in the API response."
       ].join("\n")
     });
   }
