@@ -1511,13 +1511,14 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T19:11:29.680Z",
         "originalConversationId": "receipt_m6_lite_email_1783278661068",
         "question": "what emails came in today",
-        "expectedIntent": "schedule_lookup",
+        "expectedIntent": "email_summary",
         "requiredTools": [
-          "getSchedule"
+          "summarizeInbox"
         ],
         "forbiddenTools": [],
         "assertions": [
-          "noJan2024"
+          "usesRequiredRails",
+          "noRawToolError"
         ]
       }
     ]
@@ -1530,13 +1531,14 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T19:17:08.856Z",
         "originalConversationId": "receipt_m6_lite_email_1783279021532",
         "question": "what emails came in today",
-        "expectedIntent": "schedule_lookup",
+        "expectedIntent": "email_summary",
         "requiredTools": [
-          "getSchedule"
+          "summarizeInbox"
         ],
         "forbiddenTools": [],
         "assertions": [
-          "noJan2024"
+          "usesRequiredRails",
+          "noRawToolError"
         ]
       }
     ]
@@ -1549,13 +1551,14 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T19:24:03.330Z",
         "originalConversationId": "receipt_m6_lite_email_1783279431677",
         "question": "what emails came in today",
-        "expectedIntent": "schedule_lookup",
+        "expectedIntent": "email_summary",
         "requiredTools": [
-          "getSchedule"
+          "summarizeInbox"
         ],
         "forbiddenTools": [],
         "assertions": [
-          "noJan2024"
+          "usesRequiredRails",
+          "noRawToolError"
         ]
       }
     ]
@@ -1610,13 +1613,14 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T19:41:13.562Z",
         "originalConversationId": "receipt_m6_lite_email_1783280461752",
         "question": "what emails came in today",
-        "expectedIntent": "schedule_lookup",
+        "expectedIntent": "email_summary",
         "requiredTools": [
-          "getSchedule"
+          "summarizeInbox"
         ],
         "forbiddenTools": [],
         "assertions": [
-          "noJan2024"
+          "usesRequiredRails",
+          "noRawToolError"
         ]
       }
     ]
@@ -1629,12 +1633,13 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T20:05:00.984Z",
         "originalConversationId": "conv_9f0b7fc7-bdd6-44d6-8bea-c4ba0c0805a9",
         "question": "what needs my attention",
-        "expectedIntent": "general_job_fact",
+        "expectedIntent": "email_triage",
         "requiredTools": [
-          "getJobDetail"
+          "triageInbox"
         ],
         "forbiddenTools": [],
         "assertions": [
+          "usesRequiredRails",
           "noRawToolError"
         ]
       }
@@ -1648,13 +1653,14 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T20:24:57.631Z",
         "originalConversationId": "web-7b1fe59c-e129-41ea-b20d-4234ccf7b34b",
         "question": "What emails came in today",
-        "expectedIntent": "schedule_lookup",
+        "expectedIntent": "email_summary",
         "requiredTools": [
-          "getSchedule"
+          "summarizeInbox"
         ],
         "forbiddenTools": [],
         "assertions": [
-          "noJan2024"
+          "usesRequiredRails",
+          "noRawToolError"
         ]
       },
       {
@@ -1676,12 +1682,13 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T20:27:22.262Z",
         "originalConversationId": "web-7b1fe59c-e129-41ea-b20d-4234ccf7b34b",
         "question": "What needs my attention",
-        "expectedIntent": "general_job_fact",
+        "expectedIntent": "email_triage",
         "requiredTools": [
-          "getJobDetail"
+          "triageInbox"
         ],
         "forbiddenTools": [],
         "assertions": [
+          "usesRequiredRails",
           "noRawToolError"
         ]
       },
@@ -2023,12 +2030,13 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T22:59:21.456Z",
         "originalConversationId": "web-5e196eff-deab-4334-b17c-4a44dea92e59",
         "question": "whats important from chris@aquatraceleak.com",
-        "expectedIntent": "general_job_fact",
+        "expectedIntent": "email_triage",
         "requiredTools": [
-          "getJobDetail"
+          "triageInbox"
         ],
         "forbiddenTools": [],
         "assertions": [
+          "usesRequiredRails",
           "noRawToolError"
         ]
       },
@@ -2068,14 +2076,16 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T23:25:30.373Z",
         "originalConversationId": "web-5e196eff-deab-4334-b17c-4a44dea92e59",
         "question": "ok, where is the answer then, i corrected you and you should have replied with correct answer",
-        "expectedIntent": "email_search_or_read",
+        "expectedIntent": "job_detail_cross_rail",
         "requiredTools": [
-          "searchEmail"
+          "getJobDetail",
+          "getDocuments"
         ],
         "forbiddenTools": [
-          "draftEmail"
+          "searchEmail"
         ],
         "assertions": [
+          "usesRequiredRails",
           "noRawToolError"
         ]
       },
@@ -2101,13 +2111,13 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T23:26:13.337Z",
         "originalConversationId": "web-5e196eff-deab-4334-b17c-4a44dea92e59",
         "question": "correct",
-        "expectedIntent": "general_job_fact",
-        "requiredTools": [
-          "getJobDetail"
+        "expectedIntent": "feedback_or_correction",
+        "requiredTools": [],
+        "forbiddenTools": [
+          "searchEmail"
         ],
-        "forbiddenTools": [],
         "assertions": [
-          "noRawToolError"
+          "noNoSourceStonewall"
         ]
       },
       {
@@ -2208,14 +2218,16 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T02:08:57.037Z",
         "originalConversationId": "conv_a9863445-67f8-4986-b1b6-253f430cb326",
         "question": "ok, where is the answer then, i corrected you and you should have replied with correct answer",
-        "expectedIntent": "email_search_or_read",
+        "expectedIntent": "job_detail_cross_rail",
         "requiredTools": [
-          "searchEmail"
+          "getJobDetail",
+          "getDocuments"
         ],
         "forbiddenTools": [
-          "draftEmail"
+          "searchEmail"
         ],
         "assertions": [
+          "usesRequiredRails",
           "noRawToolError"
         ]
       }
@@ -2287,14 +2299,16 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T03:27:43.254Z",
         "originalConversationId": "wave2-correction-1783308424665-dcb59e30-8ff7-4886-8852-cee3a4a62c60",
         "question": "ok, where is the answer then, i corrected you and you should have replied with correct answer",
-        "expectedIntent": "email_search_or_read",
+        "expectedIntent": "job_detail_cross_rail",
         "requiredTools": [
-          "searchEmail"
+          "getJobDetail",
+          "getDocuments"
         ],
         "forbiddenTools": [
-          "draftEmail"
+          "searchEmail"
         ],
         "assertions": [
+          "usesRequiredRails",
           "noRawToolError"
         ]
       }
@@ -2366,14 +2380,16 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T03:29:39.252Z",
         "originalConversationId": "wave2-correction-1783308541875-f299d636-af1b-4b27-afd9-6bf3a029cb73",
         "question": "ok, where is the answer then, i corrected you and you should have replied with correct answer",
-        "expectedIntent": "email_search_or_read",
+        "expectedIntent": "job_detail_cross_rail",
         "requiredTools": [
-          "searchEmail"
+          "getJobDetail",
+          "getDocuments"
         ],
         "forbiddenTools": [
-          "draftEmail"
+          "searchEmail"
         ],
         "assertions": [
+          "usesRequiredRails",
           "noRawToolError"
         ]
       }
@@ -2445,14 +2461,16 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T03:37:29.226Z",
         "originalConversationId": "wave2-correction-1783309015143-2890e6d9-007c-4004-baef-0455d9ad6512",
         "question": "ok, where is the answer then, i corrected you and you should have replied with correct answer",
-        "expectedIntent": "email_search_or_read",
+        "expectedIntent": "job_detail_cross_rail",
         "requiredTools": [
-          "searchEmail"
+          "getJobDetail",
+          "getDocuments"
         ],
         "forbiddenTools": [
-          "draftEmail"
+          "searchEmail"
         ],
         "assertions": [
+          "usesRequiredRails",
           "noRawToolError"
         ]
       }
@@ -2524,14 +2542,16 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T03:40:05.014Z",
         "originalConversationId": "wave2-correction-1783309166056-7ec4283c-c80f-4b8d-a151-da9d01e7205c",
         "question": "ok, where is the answer then, i corrected you and you should have replied with correct answer",
-        "expectedIntent": "email_search_or_read",
+        "expectedIntent": "job_detail_cross_rail",
         "requiredTools": [
-          "searchEmail"
+          "getJobDetail",
+          "getDocuments"
         ],
         "forbiddenTools": [
-          "draftEmail"
+          "searchEmail"
         ],
         "assertions": [
+          "usesRequiredRails",
           "noRawToolError"
         ]
       }
@@ -2545,16 +2565,15 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T12:17:14.782Z",
         "originalConversationId": "web-3e22bec7-ef7c-4827-94b3-dcb5115277df",
         "question": "Did I send the report more medallion Pool company last week?",
-        "expectedIntent": "job_detail_cross_rail",
+        "expectedIntent": "email_search_or_read",
         "requiredTools": [
-          "getJobDetail",
-          "getDocuments"
-        ],
-        "forbiddenTools": [
           "searchEmail"
         ],
+        "forbiddenTools": [
+          "draftEmail"
+        ],
         "assertions": [
-          "usesRequiredRails"
+          "noRawToolError"
         ]
       },
       {
@@ -2562,16 +2581,15 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T12:17:50.545Z",
         "originalConversationId": "web-3e22bec7-ef7c-4827-94b3-dcb5115277df",
         "question": "There is a report for medallion Pool company last week in company camp. But I need you to check the aqua Trace leak in Gmail mail box for it",
-        "expectedIntent": "job_detail_cross_rail",
+        "expectedIntent": "email_search_or_read",
         "requiredTools": [
-          "getJobDetail",
-          "getDocuments"
-        ],
-        "forbiddenTools": [
           "searchEmail"
         ],
+        "forbiddenTools": [
+          "draftEmail"
+        ],
         "assertions": [
-          "usesRequiredRails"
+          "noRawToolError"
         ]
       },
       {
@@ -2597,16 +2615,15 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T12:18:46.422Z",
         "originalConversationId": "web-3e22bec7-ef7c-4827-94b3-dcb5115277df",
         "question": "Check email for a report sent to medallion Pool company last week",
-        "expectedIntent": "job_detail_cross_rail",
+        "expectedIntent": "email_search_or_read",
         "requiredTools": [
-          "getJobDetail",
-          "getDocuments"
-        ],
-        "forbiddenTools": [
           "searchEmail"
         ],
+        "forbiddenTools": [
+          "draftEmail"
+        ],
         "assertions": [
-          "usesRequiredRails"
+          "noRawToolError"
         ]
       },
       {
@@ -2614,11 +2631,13 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T12:19:05.002Z",
         "originalConversationId": "web-3e22bec7-ef7c-4827-94b3-dcb5115277df",
         "question": "aquatraceleak@gmail.com",
-        "expectedIntent": "general_job_fact",
+        "expectedIntent": "email_search_or_read",
         "requiredTools": [
-          "getJobDetail"
+          "searchEmail"
         ],
-        "forbiddenTools": [],
+        "forbiddenTools": [
+          "draftEmail"
+        ],
         "assertions": [
           "noRawToolError"
         ]

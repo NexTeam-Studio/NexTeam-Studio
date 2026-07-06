@@ -32,7 +32,16 @@ function classify(question) {
       assertions: ["draftQueued", "noNoSourceStonewall"]
     };
   }
-  if (/\b(?:wrong|incorrect|not correct|somewhat correct|correction|format sucks|format|feedback|wasting\s+(?:api\s+)?tokens|asked\s+that|should\s+already|clickable|savable|saveable|tappable|explain this date)\b/.test(lower)) {
+  if (/\b(?:where\s+is\s+the\s+answer|what\s+is\s+the\s+answer|correct\s+answer|i\s+corrected\s+you|you\s+should\s+have\s+(?:replied|answered)|find\s+it\s+then)\b/.test(lower)) {
+    return {
+      expectedIntent: "job_detail_cross_rail",
+      requiredTools: ["getJobDetail", "getDocuments"],
+      forbiddenTools: ["searchEmail"],
+      assertions: ["usesRequiredRails", "noRawToolError"]
+    };
+  }
+  if (/\b(?:wrong|incorrect|not correct|somewhat correct|correction|corrected|format sucks|format|feedback|organization|organize|roagaize|readable|client would never|wasting\s+(?:api\s+)?tokens|asked\s+that|should\s+already|clickable|savable|saveable|tappable|explain this date)\b/.test(lower)
+    || /^\s*(?:correct|ok|okay|good)\s*[.!]?\s*$/.test(lower)) {
     return {
       expectedIntent: "feedback_or_correction",
       requiredTools: [],
@@ -105,6 +114,32 @@ function classify(question) {
       assertions: ["usesRequiredRails"]
     };
   }
+  if (/\b(?:needs? my attention|what needs attention|triage|urgent|important)\b/.test(lower)) {
+    return {
+      expectedIntent: "email_triage",
+      requiredTools: ["triageInbox"],
+      forbiddenTools: [],
+      assertions: ["usesRequiredRails", "noRawToolError"]
+    };
+  }
+  if (/\b(?:emails?|mail|gmail|inbox|semrush|site audit|reply|replied|responded|oleta)\b/.test(lower)
+    || /\b(?:sent|send)\b.*\breport\b/.test(lower)
+    || /\bmedallion\s+pool\s+company\b.*\b(?:email|mail|gmail|sent|send|report)\b/.test(lower)) {
+    if (/\b(?:came in today|emails came in|what emails)\b/.test(lower)) {
+      return {
+        expectedIntent: "email_summary",
+        requiredTools: ["summarizeInbox"],
+        forbiddenTools: [],
+        assertions: ["usesRequiredRails", "noRawToolError"]
+      };
+    }
+    return {
+      expectedIntent: "email_search_or_read",
+      requiredTools: ["searchEmail"],
+      forbiddenTools: ["draftEmail"],
+      assertions: ["noRawToolError"]
+    };
+  }
   if (/\b(?:schedule|calendar|appointments?|visits?|booked|tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday|eta|what time|when is)\b/.test(lower)) {
     return {
       expectedIntent: "schedule_lookup",
@@ -127,30 +162,6 @@ function classify(question) {
       requiredTools: ["getJobDetail", "getDocuments"],
       forbiddenTools: ["searchEmail"],
       assertions: ["usesRequiredRails"]
-    };
-  }
-  if (/\b(?:emails?|mail|inbox|semrush|site audit|reply|replied|medallion|oleta)\b/.test(lower)) {
-    if (/\b(?:needs? my attention|important|urgent|triage)\b/.test(lower)) {
-      return {
-        expectedIntent: "email_triage",
-        requiredTools: ["triageInbox"],
-        forbiddenTools: [],
-        assertions: ["usesRequiredRails", "noRawToolError"]
-      };
-    }
-    if (/\b(?:came in today|emails came in|what emails)\b/.test(lower)) {
-      return {
-        expectedIntent: "email_summary",
-        requiredTools: ["summarizeInbox"],
-        forbiddenTools: [],
-        assertions: ["usesRequiredRails", "noRawToolError"]
-      };
-    }
-    return {
-      expectedIntent: "email_search_or_read",
-      requiredTools: ["searchEmail"],
-      forbiddenTools: ["draftEmail"],
-      assertions: ["noRawToolError"]
     };
   }
   return {

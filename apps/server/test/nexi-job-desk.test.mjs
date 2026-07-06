@@ -43,6 +43,8 @@ test("source check does not block meta or feedback turns", () => {
   const meta = enforceSources("I use Jobber, CompanyCam, and native SiteJobBlueprint sources.", [], "What sources do you use");
   assert.equal(meta.ok, true);
   assert.equal(promptIsMetaOrFeedback("The thumbnails are not clickable or savable"), true);
+  assert.equal(promptIsMetaOrFeedback("Great detail, organization and format sucks"), true);
+  assert.equal(promptIsMetaOrFeedback("correct"), true);
   const feedback = enforceSources("I logged that correction against my prior job answer.", [], "Wrong answer");
   assert.equal(feedback.ok, true);
 });
@@ -338,6 +340,44 @@ test("Nexi Anthropic gateway preloads draftEmail for send-me-at action commands"
   assert.equal(result.toolRuns[0].name, "draftEmail");
   assert.equal(result.sources[0].ref, "approval_1");
   assert.equal(result.answer, "I drafted the email and parked it for approval.");
+});
+
+test("Nexi Anthropic gateway treats mailbox address follow-ups as email search context", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "Check email for a report sent to Medallion Pool Company last week" },
+      { role: "assistant", content: "Which mailbox should I check?" },
+      { role: "user", content: "aquatraceleak@gmail.com" }
+    ],
+    tools: [{
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ mailbox: z.string().optional(), keywords: z.string().optional() }),
+      handler: async (_tenant, args) => {
+        toolCalls.push(args);
+        return {
+          result: { count: 1, messages: [{ id: "msg_1", mailbox: "aquatraceleak", subject: "Medallion report" }] },
+          sources: [{ rail: "email", ref: "email:aquatraceleak:msg_1", label: "Email aquatraceleak msg_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I found one Medallion Pool Company report email." }],
+      usage: { input_tokens: 10, output_tokens: 6 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(toolCalls, [{
+    mailbox: "aquatraceleak",
+    keywords: "Check email for a report sent to Medallion Pool Company last week"
+  }]);
+  assert.equal(result.toolRuns[0].name, "searchEmail");
+  assert.equal(result.sources[0].ref, "email:aquatraceleak:msg_1");
 });
 
 test("Nexi Anthropic gateway sanitizes deterministic email tool failures", async () => {
@@ -1431,6 +1471,48 @@ test("Nexi service persists tool runs for conversation reuse", async () => {
       };
     }
   });
+  assert.equal(repository.conversations.length, 2);
+});
+
+test("Nexi service returns the stable conversation id, not the Firestore record id", async () => {
+  const repository = new MemoryNexiRepository();
+  let secondMessages = [];
+  const first = await answerNexiMessage({
+    tenant: tenant(),
+    message: "What is on today's schedule?",
+    tools: [],
+    repository,
+    gateway: async () => ({
+      answer: "Rachel Payne is scheduled today.",
+      sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }],
+      usage: { inputTokens: 1, outputTokens: 1, cacheCreationInputTokens: 0, cacheReadInputTokens: 0, totalTokens: 2 },
+      raw: { test: true },
+      toolRuns: [{ name: "getSchedule", result: { jobs: [] }, sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }] }]
+    })
+  });
+  assert.match(first.conversationId, /^thread_/);
+  assert.equal(repository.conversations[0].conversationId, first.conversationId);
+  assert.notEqual(repository.conversations[0].id, first.conversationId);
+
+  const second = await answerNexiMessage({
+    tenant: tenant(),
+    message: "What's the ETA?",
+    conversationId: first.conversationId,
+    tools: [],
+    repository,
+    gateway: async (request) => {
+      secondMessages = request.messages;
+      return {
+        answer: "Same schedule item.",
+        sources: request.cachedToolRuns[0].sources,
+        usage: { inputTokens: 1, outputTokens: 1, cacheCreationInputTokens: 0, cacheReadInputTokens: 0, totalTokens: 2 },
+        raw: { test: true },
+        toolRuns: request.cachedToolRuns
+      };
+    }
+  });
+  assert.equal(second.conversationId, first.conversationId);
+  assert.equal(secondMessages.some((message) => message.role === "user" && message.content === "What is on today's schedule?"), true);
   assert.equal(repository.conversations.length, 2);
 });
 

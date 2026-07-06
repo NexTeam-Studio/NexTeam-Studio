@@ -508,6 +508,14 @@ function textMessages(messages: GatewayMessage[]): string[] {
     .filter(Boolean);
 }
 
+function previousUserText(messages: GatewayMessage[]): string {
+  const previous = [...messages]
+    .reverse()
+    .slice(1)
+    .find((message) => message.role === "user" && typeof message.content === "string");
+  return typeof previous?.content === "string" ? previous.content : "";
+}
+
 function scheduleWindowFromConversation(messages: GatewayMessage[], timeZone?: string): { from: string; to: string } | null {
   for (const text of [...textMessages(messages)].reverse()) {
     const window = scheduleWindowFromText(text, timeZone);
@@ -621,7 +629,13 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     }
   }
   if (toolName === "searchEmail" && !record.keywords) {
+    const mailboxOnlyFollowUp = firstEmailAddress(userText) && recentUserTextMatches(messages, looksLikeEmailSearchQuestion);
     const entity = entityQueryFromText(userText) || entityQueryFromMessages(messages);
+    if (mailboxOnlyFollowUp) {
+      record.mailbox ??= mailboxAliasFromEmailAddress(firstEmailAddress(userText));
+      record.keywords = previousUserText(messages) || entity || userText;
+      return record;
+    }
     record.keywords = looksLikePaymentStatusQuestion(lowerUserText)
       ? [entity, "paid payment receipt invoice zero balance"].filter(Boolean).join(" ")
       : userText;
@@ -698,9 +712,11 @@ function looksLikeInboxSummaryQuestion(lower: string): boolean {
 }
 
 function looksLikeEmailSearchQuestion(lower: string): boolean {
-  return /\b(?:emails?|mail|inbox|reply|replied|responded)\b/.test(lower)
+  return /\b(?:emails?|mail|gmail|inbox|reply|replied|responded|sent)\b/.test(lower)
     || /\bsemrush\b/.test(lower)
-    || /\bsite audit\b/.test(lower);
+    || /\bsite audit\b/.test(lower)
+    || /\b(?:send|sent)\b.*\breport\b/.test(lower)
+    || /\bmedallion\s+pool\s+company\b/.test(lower);
 }
 
 function looksLikeEmailDraftAction(lower: string): boolean {
@@ -804,6 +820,16 @@ function firstEmailAddress(text: string): string | undefined {
   return text.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
 }
 
+function mailboxAliasFromEmailAddress(email: string | undefined): string | undefined {
+  if (!email) {
+    return undefined;
+  }
+  return email.split("@")[0]
+    ?.replace(/[^a-z0-9_-]+/gi, "_")
+    .replace(/^_+|_+$/g, "")
+    .toLowerCase();
+}
+
 function draftBodyFromText(text: string): string {
   const match = text.match(/\b(?:saying|that says|to say|with message|message|tell(?:ing)?\s+(?:them|him|her|me)?)\b\s*:?\s*([\s\S]+)$/i);
   return (match?.[1] ?? "Please see the note from Aquatrace.").trim().replace(/^["']|["']$/g, "");
@@ -843,6 +869,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikeInboxTriageQuestion(lower) && toolsByName.has("triageInbox")) {
     return ["triageInbox"];
+  }
+  if (firstEmailAddress(userText) && recentUserTextMatches(messages, looksLikeEmailSearchQuestion) && toolsByName.has("searchEmail")) {
+    return ["searchEmail"];
   }
   if (looksLikeCorrectionFollowUp(lower)) {
     return uniqueToolNames(["getJobDetail", "getDocuments"], toolsByName);

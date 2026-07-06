@@ -198,8 +198,13 @@ function emptyUsage(): UsageLogRecord["usage"] {
   };
 }
 
+function stableConversationId(input: NexiMessageInput): string {
+  return input.conversationId ?? `thread_${crypto.randomUUID()}`;
+}
+
 async function answerUserFlaggedIncorrect(input: NexiMessageInput): Promise<NexiMessageResult> {
-  const recent = await input.repository.loadRecentConversations(input.tenant.id, input.conversationId, 8);
+  const conversationId = stableConversationId(input);
+  const recent = await input.repository.loadRecentConversations(input.tenant.id, conversationId, 8);
   const flagged = recent.at(-1);
   const failure = await input.repository.saveFailure({
     tenantId: input.tenant.id,
@@ -216,7 +221,7 @@ async function answerUserFlaggedIncorrect(input: NexiMessageInput): Promise<Nexi
   const answer = "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.";
   const saved = await input.repository.saveConversation({
     tenantId: input.tenant.id,
-    conversationId: input.conversationId,
+    conversationId,
     userText: input.message,
     assistantText: answer,
     sources: []
@@ -224,7 +229,7 @@ async function answerUserFlaggedIncorrect(input: NexiMessageInput): Promise<Nexi
   return {
     answer,
     sources: [],
-    conversationId: saved.id,
+    conversationId: saved.conversationId ?? saved.id,
     failureId: failure.id,
     usage: emptyUsage(),
     toolRuns: []
@@ -235,7 +240,8 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
   if (isUserFlaggedIncorrect(input.message)) {
     return answerUserFlaggedIncorrect(input);
   }
-  const recent = await input.repository.loadRecentConversations(input.tenant.id, input.conversationId, 8);
+  const conversationId = stableConversationId(input);
+  const recent = await input.repository.loadRecentConversations(input.tenant.id, conversationId, 8);
   const history = recent.flatMap((record) => [
     { role: "user" as const, content: record.userText },
     { role: "assistant" as const, content: record.assistantText }
@@ -256,7 +262,7 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
     });
     const saved = await input.repository.saveConversation({
       tenantId: input.tenant.id,
-      conversationId: input.conversationId,
+      conversationId,
       userText: input.message,
       assistantText: result.answer,
       sources: result.sources,
@@ -276,7 +282,7 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
     return {
       answer: result.answer,
       sources: result.sources,
-      conversationId: saved.id,
+      conversationId: saved.conversationId ?? saved.id,
       failureId,
       usage: result.usage,
       toolRuns: result.toolRuns
