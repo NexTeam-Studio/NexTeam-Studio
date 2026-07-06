@@ -5,7 +5,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type 
 import "./styles.css";
 
 interface Source {
-  rail: "jobber" | "companycam" | "native" | "gsc" | "gbp";
+  rail: "jobber" | "companycam" | "native" | "gsc" | "gbp" | "email";
   ref: string;
   label: string;
 }

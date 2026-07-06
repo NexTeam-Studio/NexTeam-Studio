@@ -97,7 +97,7 @@ function runAssertions(testCase, result) {
 }
 
 async function postNexiMessage({ idToken, conversationId, message }) {
-  const response = await fetchJson(`${baseUrl.replace(/\\/$/, "")}/api/nexi/message`, {
+  const response = await fetchJson(`${baseUrl.replace(/\/$/, "")}/api/nexi/message`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -150,7 +150,7 @@ try {
         ok,
         failures: assertionFailures,
         tools: result ? toolNames(result) : [],
-        answerSample: result ? answerText(result).replace(/\\s+/g, " ").slice(0, 240) : "",
+        answerSample: result ? answerText(result).replace(/\s+/g, " ").slice(0, 240) : "",
         latencyMs: Date.now() - startedAt
       });
     }
