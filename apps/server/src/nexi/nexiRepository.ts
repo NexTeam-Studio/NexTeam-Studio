@@ -44,9 +44,12 @@ export class MemoryNexiRepository implements NexiRepository {
   }
 
   async loadRecentConversations(tenantId: string, conversationId: string | undefined, limit: number): Promise<ConversationRecord[]> {
+    if (!conversationId) {
+      return [];
+    }
     return this.conversations
       .filter((record) => record.tenantId === tenantId)
-      .filter((record) => !conversationId || record.conversationId === conversationId)
+      .filter((record) => record.conversationId === conversationId)
       .slice(-limit);
   }
 
@@ -93,13 +96,16 @@ export class FirestoreNexiRepository implements NexiRepository {
   }
 
   async loadRecentConversations(tenantId: string, conversationId: string | undefined, limit: number): Promise<ConversationRecord[]> {
+    if (!conversationId) {
+      return [];
+    }
     const snapshot = await this.db
       .collection("conversations")
       .where("tenantId", "==", tenantId)
+      .where("conversationId", "==", conversationId)
       .get();
     return snapshot.docs
       .map((doc) => conversationRecordSchema.parse(doc.data()))
-      .filter((record) => !conversationId || record.conversationId === conversationId)
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
       .slice(-limit);
   }

@@ -6,7 +6,7 @@ import { extractCompanyCamReportFields, siteJobBlueprintFromCompanyCamReport } f
 import { extractAquatraceDocument, ingestAquatraceReportSet, parseLossNotation } from "../dist/fielddocs/reportExtraction.js";
 import { answerNexiMessage, runExplicitLocalToolLoop } from "../dist/nexi/nexiService.js";
 import { createNexiJobDeskTools } from "../dist/nexi/nexiTools.js";
-import { MemoryNexiRepository } from "../dist/nexi/nexiRepository.js";
+import { FirestoreNexiRepository, MemoryNexiRepository } from "../dist/nexi/nexiRepository.js";
 import { MemoryUsageLogWriter } from "../dist/usageLog.js";
 import { enforceSources, promptIsActionRequest, promptIsMetaOrFeedback, runNexiToolLoop } from "@nexteam/nexi";
 
@@ -1550,4 +1550,36 @@ test("Nexi service logs softer correction wording before the source gate can fir
   assert.equal(repository.failureLog[0].reason, "user_flagged_incorrect");
   assert.match(repository.failureLog[0].correctionText, /CompanyCam/);
   assert.equal(repository.failureLog[0].flaggedAnswer, "The job title says swimming pool leak detection.");
+});
+
+test("Firestore conversation history reads are scoped to one conversation", async () => {
+  const whereCalls = [];
+  let collectionCalls = 0;
+  const query = {
+    where(field, operator, value) {
+      whereCalls.push({ field, operator, value });
+      return this;
+    },
+    async get() {
+      return { docs: [] };
+    }
+  };
+  const db = {
+    collection(name) {
+      collectionCalls += 1;
+      assert.equal(name, "conversations");
+      return query;
+    }
+  };
+  const repository = new FirestoreNexiRepository(db);
+
+  assert.deepEqual(await repository.loadRecentConversations("aquatrace", undefined, 8), []);
+  assert.equal(collectionCalls, 0);
+
+  await repository.loadRecentConversations("aquatrace", "trial-session-1", 8);
+
+  assert.deepEqual(whereCalls, [
+    { field: "tenantId", operator: "==", value: "aquatrace" },
+    { field: "conversationId", operator: "==", value: "trial-session-1" }
+  ]);
 });
