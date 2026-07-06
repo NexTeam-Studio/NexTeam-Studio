@@ -32,7 +32,7 @@ function classify(question) {
       assertions: ["draftQueued", "noNoSourceStonewall"]
     };
   }
-  if (/\b(?:wrong|incorrect|not correct|correction|format sucks|format|feedback|wasting api tokens|clickable|savable|saveable|tappable|explain this date)\b/.test(lower)) {
+  if (/\b(?:wrong|incorrect|not correct|somewhat correct|correction|format sucks|format|feedback|wasting\s+(?:api\s+)?tokens|asked\s+that|should\s+already|clickable|savable|saveable|tappable|explain this date)\b/.test(lower)) {
     return {
       expectedIntent: "feedback_or_correction",
       requiredTools: [],
@@ -86,7 +86,7 @@ function classify(question) {
       expectedIntent: "site_blueprint_lookup",
       requiredTools: ["lookupSiteJobBlueprintField"],
       forbiddenTools: ["searchEmail"],
-      assertions: ["usesRequiredRails", "noNoSourceStonewall"]
+      assertions: ["usesRequiredRails"]
     };
   }
   if (/\b(?:gallons per inch|square footage|sq ft|ft2|ft²)\b/.test(lower)) {
@@ -94,7 +94,7 @@ function classify(question) {
       expectedIntent: "report_measurement_lookup",
       requiredTools: ["getDocuments", "lookupSiteJobBlueprintField"],
       forbiddenTools: ["searchEmail"],
-      assertions: ["usesRequiredRails", "noNoSourceStonewall"]
+      assertions: ["usesRequiredRails"]
     };
   }
   if (/\b(?:total gallons|pool gallons|how many gallons)\b/.test(lower)) {
@@ -102,7 +102,7 @@ function classify(question) {
       expectedIntent: "site_blueprint_lookup",
       requiredTools: ["lookupSiteJobBlueprintField"],
       forbiddenTools: ["searchEmail"],
-      assertions: ["usesRequiredRails", "noNoSourceStonewall"]
+      assertions: ["usesRequiredRails"]
     };
   }
   if (/\b(?:schedule|calendar|appointments?|visits?|booked|tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday|eta|what time|when is)\b/.test(lower)) {

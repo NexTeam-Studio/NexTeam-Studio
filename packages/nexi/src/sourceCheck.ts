@@ -17,6 +17,7 @@ const FACTUAL_RAIL_WORDS = [
 ];
 
 const META_PROMPT_PATTERNS = [
+  /\breply\s+with\s+exactly\b/i,
   /\bwhat\s+sources?\s+do\s+you\s+use\b/i,
   /\bwhat\s+(?:tools?|rails?|systems?)\s+do\s+you\s+use\b/i,
   /\bhow\s+do\s+you\s+(?:get|pull|verify|use)\s+(?:data|sources?|information)\b/i,
@@ -26,6 +27,7 @@ const META_PROMPT_PATTERNS = [
 const FEEDBACK_PROMPT_PATTERNS = [
   /\b(?:wrong answer|wrong|incorrect|not correct|somewhat correct|correction|you'?re incorrect|you are incorrect)\b/i,
   /\b(?:bug|ui|thumbnail|thumbnails|clickable|savable|saveable|tap|tappable)\b/i,
+  /\b(?:wasting\s+(?:api\s+)?tokens|asked\s+that|should\s+already)\b/i,
   /\b(?:formatting feedback|response format|answer format|format should|format needs|too verbose|minimal ids?|sender\s*\+\s*subject|scannable)\b/i
 ];
 

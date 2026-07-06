@@ -1,6 +1,6 @@
 import type { NexiTool, Source, Tenant, UsageLogRecord } from "@nexteam/core";
 import { RailError } from "@nexteam/core";
-import { enforceSources } from "./sourceCheck.js";
+import { enforceSources, promptIsMetaOrFeedback } from "./sourceCheck.js";
 
 export const NEXI_ANTHROPIC_MODEL = "claude-sonnet-5";
 const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
@@ -549,15 +549,22 @@ function entityQueryFromText(text: string): string {
 function entityQueryFromMessages(messages: GatewayMessage[], options: { skipLatest?: boolean } = {}): string {
   const sourceMessages = options.skipLatest ? messages.slice(0, -1) : messages;
   for (const message of [...sourceMessages].reverse()) {
-    if (message.role !== "user" || typeof message.content !== "string") {
+    if (typeof message.content !== "string") {
       continue;
     }
-    const entity = entityQueryFromText(message.content) || (/\b(?:photos?|pictures?|images?)\b/i.test(message.content) ? photoQueryFromText(message.content) : "");
+    const entity = entityQueryFromText(message.content)
+      || (/\b(?:photos?|pictures?|images?)\b/i.test(message.content) ? photoQueryFromText(message.content) : "")
+      || namedEntityFromText(message.content);
     if (entity && !looksLikeGenericEntityCandidate(entity)) {
       return entity;
     }
   }
   return "";
+}
+
+function namedEntityFromText(text: string): string {
+  const match = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\s+(?:is|was|has|on|at|[-—])/);
+  return match?.[1]?.trim() ?? "";
 }
 
 function looksLikeGenericEntityCandidate(entity: string): boolean {
@@ -673,7 +680,7 @@ function looksLikeIssueQuestion(lower: string): boolean {
 }
 
 function looksLikeTechnicianQuestion(lower: string): boolean {
-  return /\b(?:technician|tech|who was there|who went|who did|who performed)\b/.test(lower);
+  return /\b(?:technician|tech|assigned|who was there|who went|who did|who performed)\b/.test(lower);
 }
 
 function looksLikeJobDetailQuestion(lower: string): boolean {
@@ -762,6 +769,25 @@ function capabilityGapForRequest(messages: GatewayMessage[], toolsByName: Map<st
   return null;
 }
 
+function directNoToolResponseForRequest(messages: GatewayMessage[]): { answer: string; failureReason?: string | undefined } | null {
+  const userText = latestUserText(messages);
+  const exactReply = userText.match(/^\s*reply\s+with\s+exactly\s*:?\s*([\s\S]+?)\s*$/i)?.[1]?.trim();
+  if (exactReply) {
+    return { answer: exactReply.replace(/^["']|["']$/g, "") };
+  }
+  if (!promptIsMetaOrFeedback(userText)) {
+    return null;
+  }
+  if (/\bwhat\s+sources?\s+do\s+you\s+use\b|\bwhat\s+(?:tools?|rails?|systems?)\s+do\s+you\s+use\b|\bwhat\s+can\s+you\s+(?:access|see|check|do)\b/i.test(userText)) {
+    return {
+      answer: "I can check Aquatrace work records, schedules, job reports, photos, saved site notes, invoices, and connected email when those are wired for this tenant."
+    };
+  }
+  return {
+    answer: "You're right. I noted that feedback so we can fix the behavior instead of repeating it."
+  };
+}
+
 function emailRefFromText(text: string): { mailbox: string; messageId: string; attachmentId?: string | undefined } | null {
   const match = text.match(/\bemail:([^:\s]+):([^:\s]+)(?::([^:\s]+))?/i);
   if (!match?.[1] || !match[2]) {
@@ -827,6 +853,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   if (looksLikePipelineQuestion(lower)) {
     return uniqueToolNames(["getPipeline"], toolsByName);
   }
+  if (lower.includes("gallon") && toolsByName.has("lookupSiteJobBlueprintField")) {
+    return uniqueToolNames(["getDocuments", "lookupSiteJobBlueprintField"], toolsByName);
+  }
   if (looksLikeEmailSearchQuestion(lower) && toolsByName.has("searchEmail")) {
     return ["searchEmail"];
   }
@@ -852,9 +881,6 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
     )
   ) {
     return ["getDocuments"];
-  }
-  if (lower.includes("gallon") && toolsByName.has("lookupSiteJobBlueprintField")) {
-    return ["lookupSiteJobBlueprintField"];
   }
   if (
     (looksLikeScheduleQuestion(userText) || (looksLikeScheduleFollowUp(userText) && Boolean(scheduleWindowFromConversation(messages, tenant?.timezone))))
@@ -1026,6 +1052,26 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
   const messages: GatewayMessage[] = [...request.messages];
   const toolsByName = new Map(request.tools.map((tool) => [tool.name, tool]));
   const toolDefinitions = request.tools.map(toolDefinition);
+  const directResponse = directNoToolResponseForRequest(messages);
+  if (directResponse) {
+    await writeUsageRecord({
+      tenantId: request.tenant.id,
+      routeActionName: request.routeActionName,
+      taskType: request.taskType,
+      usage: emptyUsage(),
+      ok: !directResponse.failureReason,
+      errorSummary: directResponse.failureReason ?? "",
+      usageLog: request.usageLog
+    });
+    return {
+      answer: directResponse.answer,
+      sources: [],
+      usage: emptyUsage(),
+      raw: { directNoToolResponse: true },
+      failureReason: directResponse.failureReason,
+      toolRuns: []
+    };
+  }
   const capabilityGap = capabilityGapForRequest(messages, toolsByName);
   if (capabilityGap) {
     await writeUsageRecord({

@@ -14,6 +14,12 @@ const receiptPath = process.env.NEXI_REGRESSION_RECEIPT || "receipts/m1/nexi-reg
 const runId = `regression-wall-${Date.now()}-${randomUUID().slice(0, 8)}`;
 const caseFilter = process.env.NEXI_REGRESSION_CASE || "";
 const limit = Number(process.env.NEXI_REGRESSION_LIMIT || "0");
+const caseDelayMs = Number(process.env.NEXI_REGRESSION_CASE_DELAY_MS || "750");
+const quotaRetryLimit = Number(process.env.NEXI_REGRESSION_QUOTA_RETRIES || "6");
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function selectedSessions() {
   let remaining = Number.isFinite(limit) && limit > 0 ? limit : Infinity;
@@ -111,6 +117,23 @@ async function postNexiMessage({ idToken, conversationId, message }) {
   return response.json;
 }
 
+async function postNexiMessageWithQuotaRetry(input) {
+  let lastError = null;
+  for (let attempt = 0; attempt <= quotaRetryLimit; attempt += 1) {
+    try {
+      return await postNexiMessage(input);
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : String(caught);
+      lastError = caught;
+      if (!/RESOURCE_EXHAUSTED|quota exceeded/i.test(message) || attempt >= quotaRetryLimit) {
+        throw caught;
+      }
+      await sleep(Math.min(60_000, 5_000 * 2 ** attempt));
+    }
+  }
+  throw lastError;
+}
+
 const sessions = selectedSessions();
 const results = [];
 let passed = 0;
@@ -126,7 +149,7 @@ try {
       let error = "";
       let assertionFailures = [];
       try {
-        result = await postNexiMessage({
+        result = await postNexiMessageWithQuotaRetry({
           idToken: proofSession.idToken,
           conversationId,
           message: testCase.question
@@ -153,6 +176,9 @@ try {
         answerSample: result ? answerText(result).replace(/\s+/g, " ").slice(0, 240) : "",
         latencyMs: Date.now() - startedAt
       });
+      if (caseDelayMs > 0) {
+        await sleep(caseDelayMs);
+      }
     }
   }
 } finally {

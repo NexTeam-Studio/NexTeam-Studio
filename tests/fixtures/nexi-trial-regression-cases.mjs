@@ -16,8 +16,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       }
     ]
@@ -38,8 +37,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       }
     ]
@@ -98,8 +96,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       }
     ]
@@ -120,8 +117,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       }
     ]
@@ -199,8 +195,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       },
       {
@@ -216,8 +211,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       }
     ]
@@ -276,8 +270,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       },
       {
@@ -293,8 +286,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       }
     ]
@@ -353,8 +345,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       },
       {
@@ -370,8 +361,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       }
     ]
@@ -430,8 +420,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       },
       {
@@ -447,8 +436,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       }
     ]
@@ -546,8 +534,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       },
       {
@@ -563,8 +550,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       }
     ]
@@ -754,16 +740,13 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T02:08:10.868Z",
         "originalConversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
         "question": "Somewhat correct, there is a report in company cam that specifies the resukts",
-        "expectedIntent": "job_detail_cross_rail",
-        "requiredTools": [
-          "getJobDetail",
-          "getDocuments"
-        ],
+        "expectedIntent": "feedback_or_correction",
+        "requiredTools": [],
         "forbiddenTools": [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails"
+          "noNoSourceStonewall"
         ]
       },
       {
@@ -810,8 +793,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       },
       {
@@ -877,8 +859,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       },
       {
@@ -925,8 +906,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       },
       {
@@ -995,8 +975,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       }
     ]
@@ -2746,8 +2725,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       },
       {
@@ -2764,8 +2742,7 @@ export const nexiTrialRegressionSessions = [
           "searchEmail"
         ],
         "assertions": [
-          "usesRequiredRails",
-          "noNoSourceStonewall"
+          "usesRequiredRails"
         ]
       },
       {

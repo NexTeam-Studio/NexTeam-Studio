@@ -639,7 +639,7 @@ test("Nexi schedule prompts parse requested calendar dates in tenant timezone", 
   assert.equal(result.sources.length, 1);
 });
 
-test("Nexi does not force schedule lookup for meta questions that mention today", async () => {
+test("Nexi answers meta questions directly without exposing tools", async () => {
   const calls = [];
   let toolCalled = false;
   const result = await runNexiToolLoop({
@@ -669,10 +669,58 @@ test("Nexi does not force schedule lookup for meta questions that mention today"
       }), { status: 200 });
     }
   });
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].tools.length, 1);
+  assert.equal(calls.length, 0);
   assert.equal(toolCalled, false);
-  assert.equal(result.answer, "I use Jobber, CompanyCam, and native SiteJobBlueprint sources.");
+  assert.match(result.answer, /work records/);
+  assert.deepEqual(result.toolRuns, []);
+});
+
+test("Nexi exact echo turns never route to email search", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "Reply with exactly: readiness check." }],
+    tools: [{
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string() }),
+      handler: async () => {
+        throw new Error("searchEmail must not run for exact echo turns");
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("Anthropic must not run for exact echo turns");
+    }
+  });
+  assert.equal(result.answer, "readiness check.");
+  assert.deepEqual(result.toolRuns, []);
+});
+
+test("Nexi feedback about token waste never routes to email search", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "I asked that and now you are wasting api tokens because you should already infer what I asked here" }],
+    tools: [{
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string() }),
+      handler: async () => {
+        throw new Error("searchEmail must not run for feedback turns");
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("Anthropic must not run for feedback turns");
+    }
+  });
+  assert.match(result.answer, /noted that feedback/);
+  assert.deepEqual(result.toolRuns, []);
 });
 
 test("Nexi photo prompts extract the CompanyCam project query", async () => {
@@ -879,6 +927,95 @@ test("Nexi report prompts preload CompanyCam documents with the requested entity
   assert.equal(parsedToolArgs.projectQuery, "Deborah Justice");
   assert.match(parsedToolArgs.question, /Deborah Justice/);
   assert.equal(result.sources.length, 1);
+});
+
+test("Nexi assigned follow-ups use the prior job subject and getJobDetail", async () => {
+  const calls = [];
+  let parsedToolArgs = null;
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "What's on Monday July 6, 2026?" },
+      { role: "assistant", content: "Rachel Payne is on Monday." },
+      { role: "user", content: "who is assigned to it" }
+    ],
+    tools: [{
+      name: "getJobDetail",
+      description: "Read job detail.",
+      inputSchema: z.object({ nameQuery: z.string() }),
+      handler: async (_tenant, args) => {
+        parsedToolArgs = args;
+        return {
+          result: { job: { title: "Rachel Payne", assignedTo: ["Chris"] } },
+          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "Chris is assigned." }],
+        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+      }), { status: 200 });
+    }
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(parsedToolArgs.nameQuery, "Rachel Payne");
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail"]);
+});
+
+test("Nexi total-gallons report questions also run SiteJobBlueprint lookup", async () => {
+  const calls = [];
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "Findings are in the report. What are the total gallons of Deborah Justice" }],
+    tools: [
+      {
+        name: "getDocuments",
+        description: "Read CompanyCam docs.",
+        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getDocuments", args]);
+          return {
+            result: { documents: [{ id: "doc_1", text: "Total gallons 37602" }] },
+            sources: [{ rail: "companycam", ref: "doc_1", label: "CompanyCam document Deborah Justice report" }]
+          };
+        }
+      },
+      {
+        name: "lookupSiteJobBlueprintField",
+        description: "Read blueprint field.",
+        inputSchema: z.object({ field: z.string(), requestedEntity: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["lookupSiteJobBlueprintField", args]);
+          return {
+            result: { value: 37602 },
+            sources: [{ rail: "native", ref: "blueprint_1", label: "SiteJobBlueprint Deborah Justice" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "Deborah Justice total gallons are 37,602." }],
+        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+      }), { status: 200 });
+    }
+  });
+  assert.equal(calls.length, 1);
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getDocuments", "lookupSiteJobBlueprintField"]);
+  assert.equal(toolCalls[1][1].field, "poolGallons");
+  assert.equal(toolCalls[1][1].requestedEntity, "Deborah Justice");
 });
 
 test("Aquatrace report extraction handles locked report rules", () => {
