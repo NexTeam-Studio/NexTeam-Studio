@@ -97,11 +97,15 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: Nex
         : undefined;
       const tenant = loadTenant(req);
       const stores = runtimeStores(env);
+      const tools = [
+        ...createNexiJobDeskTools(env, stores.repository),
+        ...(deps.extraTools ?? [])
+      ];
       const result = await answerNexiMessage({
         tenant,
         message,
         conversationId,
-        tools: [...createNexiJobDeskTools(env, stores.repository), ...(deps.extraTools ?? [])],
+        tools,
         repository: stores.repository,
         usageLog: stores.usageLog,
         env

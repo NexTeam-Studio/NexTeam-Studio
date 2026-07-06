@@ -12,6 +12,7 @@ const COMPANYCAM_BASE_URL = "https://api.companycam.com/v2";
 export interface CompanyCamAdapterConfig {
   tenantId: string;
   token: string | undefined;
+  healthQuery?: string | undefined;
 }
 
 function companyCamHeaders(token: string): HeadersInit {
@@ -138,7 +139,7 @@ export class CompanyCamAdapter implements MediaProvider {
   constructor(private readonly config: CompanyCamAdapterConfig) {}
 
   static fromEnv(env: NodeJS.ProcessEnv, tenantId = env.TENANT_ID || "aquatrace"): CompanyCamAdapter {
-    return new CompanyCamAdapter({ tenantId, token: env.COMPANYCAM_API_TOKEN });
+    return new CompanyCamAdapter({ tenantId, token: env.COMPANYCAM_API_TOKEN, healthQuery: env.COMPANYCAM_HEALTH_QUERY });
   }
 
   isConfigured(): boolean {
@@ -265,7 +266,7 @@ export class CompanyCamAdapter implements MediaProvider {
     if (!this.config.token) {
       return { ok: true, detail: "CompanyCam not configured; skipped." };
     }
-    await this.findProjects("");
+    await this.findProjects(this.config.healthQuery ?? "");
     return { ok: true, detail: "CompanyCam projects read succeeded." };
   }
 }

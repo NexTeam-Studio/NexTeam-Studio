@@ -1,0 +1,989 @@
+{
+  "capturedAt": "2026-07-06T03:40:10.108Z",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "ae3266e941acb0684d0a01b710fd127f5260f826",
+  "version": {
+    "sha": "ae3266e941acb0684d0a01b710fd127f5260f826",
+    "builtAt": "2026-07-06T03:38:53.630Z"
+  },
+  "shaMatches": true,
+  "health": {
+    "ok": true,
+    "checkedAt": "2026-07-06T03:38:54.654Z",
+    "rails": {
+      "jobber": {
+        "ok": true,
+        "configured": true,
+        "provider": "jobber",
+        "op": "graphql_read",
+        "latencyMs": 622,
+        "detail": "Jobber GraphQL read succeeded."
+      },
+      "companycam": {
+        "ok": true,
+        "configured": true,
+        "provider": "companycam",
+        "op": "projects_read",
+        "latencyMs": 216,
+        "detail": "CompanyCam projects read succeeded."
+      },
+      "anthropic": {
+        "ok": true,
+        "configured": true,
+        "provider": "anthropic",
+        "op": "configured_no_spend",
+        "latencyMs": 0,
+        "detail": "Configured; live message call skipped by no-spend overnight limit."
+      }
+    }
+  },
+  "p1Regression": [
+    {
+      "label": "P1-K send action routes to ApprovalQueue draft",
+      "prompt": "send me an email at [redacted-email], tell me bryson city s on checdule for tomorrow",
+      "status": 200,
+      "ok": true,
+      "answer": "Email drafted and queued for approval — not sent yet.\n\n- **To:** [redacted-email]\n- **Subject:** bryson city s on checdule for tomorrow\n- **Status:** pending approval (id: appr_c7ff1e31...)",
+      "conversationId": "conv_3b377acd-1039-4502-ae31-0b4645d74e04",
+      "failureId": null,
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_c7ff1e31-c500-4b96-9239-04aeb616b8e8",
+          "label": "ApprovalQueue email draft appr_c7ff1e31-c500-4b96-9239-04aeb616b8e8"
+        }
+      ],
+      "usage": {
+        "inputTokens": 889,
+        "outputTokens": 142,
+        "cacheCreationInputTokens": 0,
+        "cacheReadInputTokens": 0,
+        "totalTokens": 1031
+      },
+      "toolRuns": [
+        {
+          "name": "draftEmail",
+          "sourceCount": 1,
+          "resultShape": [
+            "approval"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "P1-L completion data checks CompanyCam before saying none exists",
+      "prompt": "what was the service ime competion for deborah justice",
+      "status": 200,
+      "ok": true,
+      "answer": "Service completion time for Deborah Justice (Swimming Pool Leak Detection):\n\n- **Completion time:** 3:10pm, Thursday July 2nd, 2026 — *(source: CompanyCam checklist report, doc 18218446)*\n- **Technicians:** Chris, Logan\n- Jobber has no completion-time field on this job record (status: lead) — the CompanyCam report is the only rail with this data.",
+      "conversationId": "conv_1f57f06d-0c4b-43b4-9295-28bc5552d09e",
+      "failureId": null,
+      "sources": [
+        {
+          "rail": "jobber",
+          "ref": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+          "label": "Jobber job Swimming Pool Leak Detection Service"
+        },
+        {
+          "rail": "companycam",
+          "ref": "107503799",
+          "label": "CompanyCam project Deborah Justice"
+        },
+        {
+          "rail": "companycam",
+          "ref": "18218446",
+          "label": "CompanyCam document Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf"
+        },
+        {
+          "rail": "companycam",
+          "ref": "18217485",
+          "label": "CompanyCam document Deoborah Justice, Fair Play, SC.pdf"
+        }
+      ],
+      "usage": {
+        "inputTokens": 6007,
+        "outputTokens": 141,
+        "cacheCreationInputTokens": 0,
+        "cacheReadInputTokens": 0,
+        "totalTokens": 6148
+      },
+      "toolRuns": [
+        {
+          "name": "getJobDetail",
+          "sourceCount": 1,
+          "resultShape": [
+            "job"
+          ]
+        },
+        {
+          "name": "getDocuments",
+          "sourceCount": 3,
+          "resultShape": [
+            "project",
+            "documents",
+            "reports",
+            "suggestedSiteJobBlueprints"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "P1-C correction is logged",
+      "prompt": "yes there is, incorrect here, service comletion is in company cam reports",
+      "status": 200,
+      "ok": true,
+      "answer": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "conversationId": "conv_715ca4ae-82a1-44db-92c7-b3f35eb33bd5",
+      "failureId": "fail_292686d8-ec7f-427d-bb4a-ce5058447997",
+      "sources": [],
+      "usage": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheReadInputTokens": 0,
+        "totalTokens": 0
+      },
+      "toolRuns": []
+    },
+    {
+      "label": "P1-M correction follow-up reroutes to CompanyCam reports",
+      "prompt": "ok, where is the answer then, i corrected you and you should have replied with correct answer",
+      "status": 200,
+      "ok": true,
+      "answer": "**Service completion confirmed — Deborah Justice, Fair Play, SC**\n\n- **Completion time:** 3:10pm, Thursday July 2nd, 2026\n- **Technicians:** Chris, Logan\n- **Source:** CompanyCam report (doc 18218446 — Aquatrace Swimming Pool Leak Detection Checklist, 07-02-2026)\n\nNote: Jobber's `getJobDetail` had no completion/status data for this job — this answer comes from the CompanyCam checklist rail, not Jobber.",
+      "conversationId": "conv_8ecf1607-829d-4c1f-8cd2-3c275d71711a",
+      "failureId": null,
+      "sources": [
+        {
+          "rail": "companycam",
+          "ref": "107503799",
+          "label": "CompanyCam project Deborah Justice"
+        },
+        {
+          "rail": "companycam",
+          "ref": "18218446",
+          "label": "CompanyCam document Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf"
+        },
+        {
+          "rail": "companycam",
+          "ref": "18217485",
+          "label": "CompanyCam document Deoborah Justice, Fair Play, SC.pdf"
+        }
+      ],
+      "usage": {
+        "inputTokens": 5426,
+        "outputTokens": 182,
+        "cacheCreationInputTokens": 0,
+        "cacheReadInputTokens": 0,
+        "totalTokens": 5608
+      },
+      "toolRuns": [
+        {
+          "name": "getJobDetail",
+          "sourceCount": 0,
+          "resultShape": [
+            "error",
+            "userMessage"
+          ]
+        },
+        {
+          "name": "getDocuments",
+          "sourceCount": 3,
+          "resultShape": [
+            "project",
+            "documents",
+            "reports",
+            "suggestedSiteJobBlueprints"
+          ]
+        }
+      ]
+    }
+  ],
+  "m3Scheduling": {
+    "anchorOne": {
+      "ok": true,
+      "visit": {
+        "id": "visit_27caeb45-6ceb-4215-ab76-c2e43d895523",
+        "tenantId": "aquatrace",
+        "jobId": "receipt-bryson-anchor-1783309206478",
+        "title": "Bryson City cluster",
+        "start": "2026-07-08T08:00:00.000Z",
+        "end": "2026-07-08T10:00:00.000Z",
+        "assignedTo": [
+          "crew-1"
+        ],
+        "location": {
+          "label": "Bryson City cluster",
+          "address": {
+            "street1": "400 Jacobs Road",
+            "city": "Bryson City",
+            "province": "NC",
+            "postalCode": "28713",
+            "country": "US"
+          },
+          "geo": {
+            "lat": 35.4309,
+            "lng": -83.4474
+          }
+        },
+        "status": "pending_approval"
+      },
+      "conflicts": [
+        {
+          "id": "visit_6d1d4023-a55e-4fa7-8859-f248f051925d",
+          "tenantId": "aquatrace",
+          "jobId": "receipt-bryson-anchor-1783309050734",
+          "title": "Bryson City cluster",
+          "start": "2026-07-08T08:00:00.000Z",
+          "end": "2026-07-08T10:00:00.000Z",
+          "assignedTo": [
+            "crew-1"
+          ],
+          "location": {
+            "label": "Bryson City cluster",
+            "address": {
+              "street1": "400 Jacobs Road",
+              "city": "Bryson City",
+              "province": "NC",
+              "postalCode": "28713",
+              "country": "US"
+            },
+            "geo": {
+              "lat": 35.4309,
+              "lng": -83.4474
+            }
+          },
+          "status": "pending_approval"
+        }
+      ],
+      "approval": {
+        "id": "appr_9349ef21-e75f-4371-9b93-ee70a0a36d00",
+        "tenantId": "aquatrace",
+        "kind": "email",
+        "preview": {
+          "title": "Booking notification: Bryson City cluster",
+          "body": "Visit is parked for 2026-07-08T08:00:00.000Z - 2026-07-08T10:00:00.000Z. Outbound notification requires approval."
+        },
+        "execute": {
+          "service": "scheduling",
+          "op": "sendBookingNotification",
+          "args": {
+            "visitId": "visit_27caeb45-6ceb-4215-ab76-c2e43d895523",
+            "to": null,
+            "channel": "email",
+            "etaMinutes": null
+          }
+        },
+        "status": "pending",
+        "createdBy": "nexi"
+      }
+    },
+    "anchorTwo": {
+      "ok": true,
+      "visit": {
+        "id": "visit_65c826bc-7017-4676-a1dd-ca1cda3c2532",
+        "tenantId": "aquatrace",
+        "jobId": "receipt-asheville-anchor-1783309206671",
+        "title": "Asheville afternoon",
+        "start": "2026-07-08T13:00:00.000Z",
+        "end": "2026-07-08T15:00:00.000Z",
+        "assignedTo": [
+          "crew-1"
+        ],
+        "location": {
+          "label": "Asheville afternoon",
+          "address": {
+            "street1": "1 North Pack Square",
+            "city": "Asheville",
+            "province": "NC",
+            "postalCode": "28801",
+            "country": "US"
+          },
+          "geo": {
+            "lat": 35.5951,
+            "lng": -82.5515
+          }
+        },
+        "status": "pending_approval"
+      },
+      "conflicts": [
+        {
+          "id": "visit_80435458-7492-4fab-83a7-05df51d5d81c",
+          "tenantId": "aquatrace",
+          "jobId": "receipt-asheville-anchor-1783309050924",
+          "title": "Asheville afternoon",
+          "start": "2026-07-08T13:00:00.000Z",
+          "end": "2026-07-08T15:00:00.000Z",
+          "assignedTo": [
+            "crew-1"
+          ],
+          "location": {
+            "label": "Asheville afternoon",
+            "address": {
+              "street1": "1 North Pack Square",
+              "city": "Asheville",
+              "province": "NC",
+              "postalCode": "28801",
+              "country": "US"
+            },
+            "geo": {
+              "lat": 35.5951,
+              "lng": -82.5515
+            }
+          },
+          "status": "pending_approval"
+        }
+      ],
+      "approval": {
+        "id": "appr_fa8922f5-97f2-4a89-b03b-42f1080f64d3",
+        "tenantId": "aquatrace",
+        "kind": "email",
+        "preview": {
+          "title": "Booking notification: Asheville afternoon",
+          "body": "Visit is parked for 2026-07-08T13:00:00.000Z - 2026-07-08T15:00:00.000Z. Outbound notification requires approval."
+        },
+        "execute": {
+          "service": "scheduling",
+          "op": "sendBookingNotification",
+          "args": {
+            "visitId": "visit_65c826bc-7017-4676-a1dd-ca1cda3c2532",
+            "to": null,
+            "channel": "email",
+            "etaMinutes": null
+          }
+        },
+        "status": "pending",
+        "createdBy": "nexi"
+      }
+    },
+    "slotSearch": {
+      "ok": true,
+      "suggestions": [
+        {
+          "start": "2026-07-08T10:00:00.000Z",
+          "end": "2026-07-08T12:00:00.000Z",
+          "driveMinutes": 71,
+          "conflictCount": 0,
+          "reasoning": [
+            "No calendar conflict in this slot.",
+            "Drive from previous visit Bryson City cluster: 71 min.",
+            "Drive to next visit Asheville afternoon: 0 min."
+          ],
+          "previousVisitId": "visit_27caeb45-6ceb-4215-ab76-c2e43d895523",
+          "nextVisitId": "visit_80435458-7492-4fab-83a7-05df51d5d81c"
+        },
+        {
+          "start": "2026-07-08T10:30:00.000Z",
+          "end": "2026-07-08T12:30:00.000Z",
+          "driveMinutes": 71,
+          "conflictCount": 0,
+          "reasoning": [
+            "No calendar conflict in this slot.",
+            "Drive from previous visit Bryson City cluster: 71 min.",
+            "Drive to next visit Asheville afternoon: 0 min."
+          ],
+          "previousVisitId": "visit_27caeb45-6ceb-4215-ab76-c2e43d895523",
+          "nextVisitId": "visit_80435458-7492-4fab-83a7-05df51d5d81c"
+        },
+        {
+          "start": "2026-07-08T11:00:00.000Z",
+          "end": "2026-07-08T13:00:00.000Z",
+          "driveMinutes": 71,
+          "conflictCount": 0,
+          "reasoning": [
+            "No calendar conflict in this slot.",
+            "Drive from previous visit Bryson City cluster: 71 min.",
+            "Drive to next visit Asheville afternoon: 0 min."
+          ],
+          "previousVisitId": "visit_27caeb45-6ceb-4215-ab76-c2e43d895523",
+          "nextVisitId": "visit_80435458-7492-4fab-83a7-05df51d5d81c"
+        },
+        {
+          "start": "2026-07-08T15:00:00.000Z",
+          "end": "2026-07-08T17:00:00.000Z",
+          "driveMinutes": 0,
+          "conflictCount": 1,
+          "reasoning": [
+            "1 overlapping visit(s) would need review.",
+            "Drive from previous visit Asheville afternoon: 0 min.",
+            "No next same-day drive leg."
+          ],
+          "previousVisitId": "visit_65c826bc-7017-4676-a1dd-ca1cda3c2532"
+        },
+        {
+          "start": "2026-07-08T08:00:00.000Z",
+          "end": "2026-07-08T10:00:00.000Z",
+          "driveMinutes": 0,
+          "conflictCount": 2,
+          "reasoning": [
+            "2 overlapping visit(s) would need review.",
+            "No previous same-day drive leg.",
+            "Drive to next visit Asheville afternoon: 0 min."
+          ],
+          "nextVisitId": "visit_80435458-7492-4fab-83a7-05df51d5d81c"
+        }
+      ]
+    },
+    "selectedSlot": {
+      "start": "2026-07-08T10:00:00.000Z",
+      "end": "2026-07-08T12:00:00.000Z",
+      "driveMinutes": 71,
+      "conflictCount": 0,
+      "reasoning": [
+        "No calendar conflict in this slot.",
+        "Drive from previous visit Bryson City cluster: 71 min.",
+        "Drive to next visit Asheville afternoon: 0 min."
+      ],
+      "previousVisitId": "visit_27caeb45-6ceb-4215-ab76-c2e43d895523",
+      "nextVisitId": "visit_80435458-7492-4fab-83a7-05df51d5d81c"
+    },
+    "booking": {
+      "ok": true,
+      "visit": {
+        "id": "visit_8be9dfb0-ac5c-4abd-84ea-8ab042521fb0",
+        "tenantId": "aquatrace",
+        "jobId": "receipt-asheville-add-on-1783309207476",
+        "title": "Asheville add-on",
+        "start": "2026-07-08T10:00:00.000Z",
+        "end": "2026-07-08T12:00:00.000Z",
+        "assignedTo": [
+          "crew-1"
+        ],
+        "location": {
+          "label": "Asheville add-on",
+          "address": {
+            "street1": "1 North Pack Square",
+            "city": "Asheville",
+            "province": "NC",
+            "postalCode": "28801",
+            "country": "US"
+          },
+          "geo": {
+            "lat": 35.5951,
+            "lng": -82.5515
+          }
+        },
+        "status": "pending_approval"
+      },
+      "conflicts": [],
+      "approval": {
+        "id": "appr_d0750b2a-2e6e-4d61-bed6-0f646315b5c2",
+        "tenantId": "aquatrace",
+        "kind": "email",
+        "preview": {
+          "title": "Booking notification: Asheville add-on",
+          "body": "Visit is parked for 2026-07-08T10:00:00.000Z - 2026-07-08T12:00:00.000Z. Outbound notification requires approval."
+        },
+        "execute": {
+          "service": "scheduling",
+          "op": "sendBookingNotification",
+          "args": {
+            "visitId": "visit_8be9dfb0-ac5c-4abd-84ea-8ab042521fb0",
+            "to": null,
+            "channel": "email",
+            "etaMinutes": null
+          }
+        },
+        "status": "pending",
+        "createdBy": "nexi"
+      }
+    },
+    "calendar": {
+      "ok": true,
+      "visits": [
+        {
+          "id": "visit_6d1d4023-a55e-4fa7-8859-f248f051925d",
+          "tenantId": "aquatrace",
+          "jobId": "receipt-bryson-anchor-1783309050734",
+          "title": "Bryson City cluster",
+          "start": "2026-07-08T08:00:00.000Z",
+          "end": "2026-07-08T10:00:00.000Z",
+          "assignedTo": [
+            "crew-1"
+          ],
+          "location": {
+            "label": "Bryson City cluster",
+            "address": {
+              "street1": "400 Jacobs Road",
+              "city": "Bryson City",
+              "province": "NC",
+              "postalCode": "28713",
+              "country": "US"
+            },
+            "geo": {
+              "lat": 35.4309,
+              "lng": -83.4474
+            }
+          },
+          "status": "pending_approval"
+        },
+        {
+          "id": "visit_27caeb45-6ceb-4215-ab76-c2e43d895523",
+          "tenantId": "aquatrace",
+          "jobId": "receipt-bryson-anchor-1783309206478",
+          "title": "Bryson City cluster",
+          "start": "2026-07-08T08:00:00.000Z",
+          "end": "2026-07-08T10:00:00.000Z",
+          "assignedTo": [
+            "crew-1"
+          ],
+          "location": {
+            "label": "Bryson City cluster",
+            "address": {
+              "street1": "400 Jacobs Road",
+              "city": "Bryson City",
+              "province": "NC",
+              "postalCode": "28713",
+              "country": "US"
+            },
+            "geo": {
+              "lat": 35.4309,
+              "lng": -83.4474
+            }
+          },
+          "status": "pending_approval"
+        },
+        {
+          "id": "visit_8be9dfb0-ac5c-4abd-84ea-8ab042521fb0",
+          "tenantId": "aquatrace",
+          "jobId": "receipt-asheville-add-on-1783309207476",
+          "title": "Asheville add-on",
+          "start": "2026-07-08T10:00:00.000Z",
+          "end": "2026-07-08T12:00:00.000Z",
+          "assignedTo": [
+            "crew-1"
+          ],
+          "location": {
+            "label": "Asheville add-on",
+            "address": {
+              "street1": "1 North Pack Square",
+              "city": "Asheville",
+              "province": "NC",
+              "postalCode": "28801",
+              "country": "US"
+            },
+            "geo": {
+              "lat": 35.5951,
+              "lng": -82.5515
+            }
+          },
+          "status": "pending_approval"
+        },
+        {
+          "id": "visit_80435458-7492-4fab-83a7-05df51d5d81c",
+          "tenantId": "aquatrace",
+          "jobId": "receipt-asheville-anchor-1783309050924",
+          "title": "Asheville afternoon",
+          "start": "2026-07-08T13:00:00.000Z",
+          "end": "2026-07-08T15:00:00.000Z",
+          "assignedTo": [
+            "crew-1"
+          ],
+          "location": {
+            "label": "Asheville afternoon",
+            "address": {
+              "street1": "1 North Pack Square",
+              "city": "Asheville",
+              "province": "NC",
+              "postalCode": "28801",
+              "country": "US"
+            },
+            "geo": {
+              "lat": 35.5951,
+              "lng": -82.5515
+            }
+          },
+          "status": "pending_approval"
+        },
+        {
+          "id": "visit_65c826bc-7017-4676-a1dd-ca1cda3c2532",
+          "tenantId": "aquatrace",
+          "jobId": "receipt-asheville-anchor-1783309206671",
+          "title": "Asheville afternoon",
+          "start": "2026-07-08T13:00:00.000Z",
+          "end": "2026-07-08T15:00:00.000Z",
+          "assignedTo": [
+            "crew-1"
+          ],
+          "location": {
+            "label": "Asheville afternoon",
+            "address": {
+              "street1": "1 North Pack Square",
+              "city": "Asheville",
+              "province": "NC",
+              "postalCode": "28801",
+              "country": "US"
+            },
+            "geo": {
+              "lat": 35.5951,
+              "lng": -82.5515
+            }
+          },
+          "status": "pending_approval"
+        },
+        {
+          "id": "visit_2c58c19b-a8a2-4725-be57-9c11d1ba147e",
+          "tenantId": "aquatrace",
+          "jobId": "receipt-asheville-add-on-1783309051640",
+          "title": "Asheville add-on",
+          "start": "2026-07-08T15:00:00.000Z",
+          "end": "2026-07-08T17:00:00.000Z",
+          "assignedTo": [
+            "crew-1"
+          ],
+          "location": {
+            "label": "Asheville add-on",
+            "address": {
+              "street1": "1 North Pack Square",
+              "city": "Asheville",
+              "province": "NC",
+              "postalCode": "28801",
+              "country": "US"
+            },
+            "geo": {
+              "lat": 35.5951,
+              "lng": -82.5515
+            }
+          },
+          "status": "pending_approval"
+        }
+      ]
+    },
+    "screenshot": {
+      "ok": true,
+      "path": "receipts/wave2/m3-calendar-staging.png"
+    }
+  },
+  "m5Content": {
+    "draft": {
+      "ok": true,
+      "drafts": [
+        {
+          "id": "content_gbp_post_05b96669-7702-46e9-8e84-238f33dcdcbf",
+          "tenantId": "aquatrace",
+          "kind": "gbp_post",
+          "title": "Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC",
+          "body": "Aquatrace Swimming Pool Leak Detection completed a pool leak detection visit in Fair Play, SC.\n\nCompanyCam report found active water loss in the spa circulation line and nearest spa main drain; completion time 3:10pm with Chris and Logan.\n\nField photos are attached for owner review (1 media item).\n\nReply or request an estimate if your pool is losing more water than evaporation explains.",
+          "mediaRefs": [
+            "3338800086"
+          ],
+          "jobId": "jobber-deborah-justice-2026-07-02",
+          "status": "approval_pending",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "jobber-deborah-justice-2026-07-02",
+              "label": "Native completed job Swimming Pool Leak Detection Service"
+            },
+            {
+              "rail": "native",
+              "ref": "3338800086",
+              "label": "Native content media 3338800086"
+            }
+          ],
+          "createdAt": "2026-07-06T03:40:08.782Z",
+          "approvalId": "appr_afca90e8-b64d-4222-9439-6ad72754b72d"
+        },
+        {
+          "id": "content_social_post_4b6f443c-8240-4693-8c73-ca96bef75137",
+          "tenantId": "aquatrace",
+          "kind": "social_post",
+          "title": "Field note: Fair Play, SC leak detection",
+          "body": "Field note from Aquatrace Swimming Pool Leak Detection: not every leak is obvious from the surface.\n\nCompanyCam report found active water loss in the spa circulation line and nearest spa main drain; completion time 3:10pm with Chris and Logan.\n\nA documented inspection gives owners a cleaner next step than guessing with water bills and buckets.",
+          "mediaRefs": [
+            "3338800086"
+          ],
+          "jobId": "jobber-deborah-justice-2026-07-02",
+          "status": "approval_pending",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "jobber-deborah-justice-2026-07-02",
+              "label": "Native completed job Swimming Pool Leak Detection Service"
+            },
+            {
+              "rail": "native",
+              "ref": "3338800086",
+              "label": "Native content media 3338800086"
+            }
+          ],
+          "createdAt": "2026-07-06T03:40:08.782Z",
+          "approvalId": "appr_ac83f0b6-2e22-4495-bc63-13ca719d322e"
+        },
+        {
+          "id": "content_article_f70c14f2-979d-4988-9dcf-e9647aa574b6",
+          "tenantId": "aquatrace",
+          "kind": "article",
+          "title": "How pool leak detection works in Fair Play, SC",
+          "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace Swimming Pool Leak Detection uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nCompanyCam report found active water loss in the spa circulation line and nearest spa main drain; completion time 3:10pm with Chris and Logan.\n\nFor pool owners in Western North Carolina and Upstate South Carolina, the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+          "mediaRefs": [
+            "3338800086"
+          ],
+          "jobId": "jobber-deborah-justice-2026-07-02",
+          "status": "approval_pending",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "jobber-deborah-justice-2026-07-02",
+              "label": "Native completed job Swimming Pool Leak Detection Service"
+            },
+            {
+              "rail": "native",
+              "ref": "3338800086",
+              "label": "Native content media 3338800086"
+            }
+          ],
+          "createdAt": "2026-07-06T03:40:08.782Z",
+          "approvalId": "appr_dc913b87-148a-480c-8601-ba9a4d9f5a4c"
+        }
+      ],
+      "publishingDeferred": true
+    },
+    "queue": {
+      "ok": true,
+      "drafts": [
+        {
+          "id": "content_gbp_post_05b96669-7702-46e9-8e84-238f33dcdcbf",
+          "tenantId": "aquatrace",
+          "kind": "gbp_post",
+          "title": "Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC",
+          "body": "Aquatrace Swimming Pool Leak Detection completed a pool leak detection visit in Fair Play, SC.\n\nCompanyCam report found active water loss in the spa circulation line and nearest spa main drain; completion time 3:10pm with Chris and Logan.\n\nField photos are attached for owner review (1 media item).\n\nReply or request an estimate if your pool is losing more water than evaporation explains.",
+          "mediaRefs": [
+            "3338800086"
+          ],
+          "jobId": "jobber-deborah-justice-2026-07-02",
+          "status": "approval_pending",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "jobber-deborah-justice-2026-07-02",
+              "label": "Native completed job Swimming Pool Leak Detection Service"
+            },
+            {
+              "rail": "native",
+              "ref": "3338800086",
+              "label": "Native content media 3338800086"
+            }
+          ],
+          "createdAt": "2026-07-06T03:40:08.782Z",
+          "approvalId": "appr_afca90e8-b64d-4222-9439-6ad72754b72d"
+        },
+        {
+          "id": "content_social_post_4b6f443c-8240-4693-8c73-ca96bef75137",
+          "tenantId": "aquatrace",
+          "kind": "social_post",
+          "title": "Field note: Fair Play, SC leak detection",
+          "body": "Field note from Aquatrace Swimming Pool Leak Detection: not every leak is obvious from the surface.\n\nCompanyCam report found active water loss in the spa circulation line and nearest spa main drain; completion time 3:10pm with Chris and Logan.\n\nA documented inspection gives owners a cleaner next step than guessing with water bills and buckets.",
+          "mediaRefs": [
+            "3338800086"
+          ],
+          "jobId": "jobber-deborah-justice-2026-07-02",
+          "status": "approval_pending",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "jobber-deborah-justice-2026-07-02",
+              "label": "Native completed job Swimming Pool Leak Detection Service"
+            },
+            {
+              "rail": "native",
+              "ref": "3338800086",
+              "label": "Native content media 3338800086"
+            }
+          ],
+          "createdAt": "2026-07-06T03:40:08.782Z",
+          "approvalId": "appr_ac83f0b6-2e22-4495-bc63-13ca719d322e"
+        },
+        {
+          "id": "content_article_f70c14f2-979d-4988-9dcf-e9647aa574b6",
+          "tenantId": "aquatrace",
+          "kind": "article",
+          "title": "How pool leak detection works in Fair Play, SC",
+          "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace Swimming Pool Leak Detection uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nCompanyCam report found active water loss in the spa circulation line and nearest spa main drain; completion time 3:10pm with Chris and Logan.\n\nFor pool owners in Western North Carolina and Upstate South Carolina, the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+          "mediaRefs": [
+            "3338800086"
+          ],
+          "jobId": "jobber-deborah-justice-2026-07-02",
+          "status": "approval_pending",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "jobber-deborah-justice-2026-07-02",
+              "label": "Native completed job Swimming Pool Leak Detection Service"
+            },
+            {
+              "rail": "native",
+              "ref": "3338800086",
+              "label": "Native content media 3338800086"
+            }
+          ],
+          "createdAt": "2026-07-06T03:40:08.782Z",
+          "approvalId": "appr_dc913b87-148a-480c-8601-ba9a4d9f5a4c"
+        },
+        {
+          "id": "content_gbp_post_cf93fd0d-8041-4014-8c14-2b81bb09e86f",
+          "tenantId": "aquatrace",
+          "kind": "gbp_post",
+          "title": "Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC",
+          "body": "Aquatrace Swimming Pool Leak Detection completed a pool leak detection visit in Fair Play, SC.\n\nCompanyCam report found active water loss in the spa circulation line and nearest spa main drain; completion time 3:10pm with Chris and Logan.\n\nField photos are attached for owner review (1 media item).\n\nReply or request an estimate if your pool is losing more water than evaporation explains.",
+          "mediaRefs": [
+            "3338800086"
+          ],
+          "jobId": "jobber-deborah-justice-2026-07-02",
+          "status": "publish_ready",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "jobber-deborah-justice-2026-07-02",
+              "label": "Native completed job Swimming Pool Leak Detection Service"
+            },
+            {
+              "rail": "native",
+              "ref": "3338800086",
+              "label": "Native content media 3338800086"
+            }
+          ],
+          "createdAt": "2026-07-06T03:37:35.147Z",
+          "approvalId": "appr_9e0fda35-701c-49b2-9765-8265ebd48664"
+        },
+        {
+          "id": "content_social_post_b9d2f9a8-0d1a-4540-bce5-467f18075f93",
+          "tenantId": "aquatrace",
+          "kind": "social_post",
+          "title": "Field note: Fair Play, SC leak detection",
+          "body": "Field note from Aquatrace Swimming Pool Leak Detection: not every leak is obvious from the surface.\n\nCompanyCam report found active water loss in the spa circulation line and nearest spa main drain; completion time 3:10pm with Chris and Logan.\n\nA documented inspection gives owners a cleaner next step than guessing with water bills and buckets.",
+          "mediaRefs": [
+            "3338800086"
+          ],
+          "jobId": "jobber-deborah-justice-2026-07-02",
+          "status": "approval_pending",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "jobber-deborah-justice-2026-07-02",
+              "label": "Native completed job Swimming Pool Leak Detection Service"
+            },
+            {
+              "rail": "native",
+              "ref": "3338800086",
+              "label": "Native content media 3338800086"
+            }
+          ],
+          "createdAt": "2026-07-06T03:37:35.147Z",
+          "approvalId": "appr_340d673e-0be9-42ff-a9a8-b6facc8ac4e4"
+        },
+        {
+          "id": "content_article_8230453f-c6fa-485f-b382-35c325e218d4",
+          "tenantId": "aquatrace",
+          "kind": "article",
+          "title": "How pool leak detection works in Fair Play, SC",
+          "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace Swimming Pool Leak Detection uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nCompanyCam report found active water loss in the spa circulation line and nearest spa main drain; completion time 3:10pm with Chris and Logan.\n\nFor pool owners in Western North Carolina and Upstate South Carolina, the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+          "mediaRefs": [
+            "3338800086"
+          ],
+          "jobId": "jobber-deborah-justice-2026-07-02",
+          "status": "approval_pending",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "jobber-deborah-justice-2026-07-02",
+              "label": "Native completed job Swimming Pool Leak Detection Service"
+            },
+            {
+              "rail": "native",
+              "ref": "3338800086",
+              "label": "Native content media 3338800086"
+            }
+          ],
+          "createdAt": "2026-07-06T03:37:35.147Z",
+          "approvalId": "appr_278346b6-e346-4ba6-9e77-21b4aff124fd"
+        }
+      ]
+    },
+    "approval": {
+      "ok": true,
+      "draft": {
+        "id": "content_gbp_post_05b96669-7702-46e9-8e84-238f33dcdcbf",
+        "tenantId": "aquatrace",
+        "kind": "gbp_post",
+        "title": "Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC",
+        "body": "Aquatrace Swimming Pool Leak Detection completed a pool leak detection visit in Fair Play, SC.\n\nCompanyCam report found active water loss in the spa circulation line and nearest spa main drain; completion time 3:10pm with Chris and Logan.\n\nField photos are attached for owner review (1 media item).\n\nReply or request an estimate if your pool is losing more water than evaporation explains.",
+        "mediaRefs": [
+          "3338800086"
+        ],
+        "jobId": "jobber-deborah-justice-2026-07-02",
+        "status": "publish_ready",
+        "sources": [
+          {
+            "rail": "native",
+            "ref": "jobber-deborah-justice-2026-07-02",
+            "label": "Native completed job Swimming Pool Leak Detection Service"
+          },
+          {
+            "rail": "native",
+            "ref": "3338800086",
+            "label": "Native content media 3338800086"
+          }
+        ],
+        "createdAt": "2026-07-06T03:40:08.782Z",
+        "approvalId": "appr_afca90e8-b64d-4222-9439-6ad72754b72d"
+      },
+      "approval": {
+        "id": "appr_afca90e8-b64d-4222-9439-6ad72754b72d",
+        "tenantId": "aquatrace",
+        "kind": "gbp_post",
+        "preview": {
+          "title": "Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC",
+          "body": "Aquatrace Swimming Pool Leak Detection completed a pool leak detection visit in Fair Play, SC.\n\nCompanyCam report found active water loss in the spa circulation line and nearest spa main drain; completion time 3:10pm with Chris and Logan.\n\nField photos are attached for owner review (1 media item).\n\nReply or request an estimate if your pool is losing more water than evaporation explains.",
+          "mediaRefs": [
+            "3338800086"
+          ]
+        },
+        "execute": {
+          "service": "content",
+          "op": "publishGbpPost",
+          "args": {
+            "draftId": "content_gbp_post_05b96669-7702-46e9-8e84-238f33dcdcbf",
+            "tenantId": "aquatrace",
+            "publishingDeferredUntilCredentials": true
+          }
+        },
+        "status": "approved",
+        "createdBy": "nexi",
+        "decidedAt": "2026-07-06T03:40:09.035Z"
+      },
+      "publishingDeferred": true
+    },
+    "stats": {
+      "ok": true,
+      "stats": {
+        "drafts": 6,
+        "pendingApproval": 4,
+        "publishReady": 2,
+        "publishedDeferred": 0,
+        "impressions": 0,
+        "clicks": 0,
+        "calls": 0,
+        "bookings": 0
+      },
+      "publishingDeferred": true
+    },
+    "publishBoundary": "Publishing to GBP/Meta/WordPress was not executed; artifacts are approval/publish-ready only."
+  },
+  "pass": {
+    "shaMatches": true,
+    "healthOk": true,
+    "p1SendDraftQueued": true,
+    "p1CompletionUsesCompanyCam": true,
+    "p1CorrectionLogged": true,
+    "p1CorrectionFollowupUsesCompanyCam": true,
+    "m3FoundSlot": true,
+    "m3BookedApprovalQueued": true,
+    "m3CalendarShowsVisit": true,
+    "m3ScreenshotCaptured": true,
+    "m5DraftedRealJob": true,
+    "m5ApprovalPublishReady": true,
+    "m5PublishingDeferred": true
+  },
+  "ok": true
+}

@@ -672,7 +672,7 @@ function looksLikeTechnicianQuestion(lower: string): boolean {
 }
 
 function looksLikeJobDetailQuestion(lower: string): boolean {
-  return /\b(?:completion|completed|complete|service\s+(?:time|date|completion)|arrival|arrived|onsite|on-site|water\s+temp|air\s+temp|daily\s+loss|bucket|measurements?|main\s+drains?|skimmers?|returns?|lights?|filtration|testing\s+procedures?)\b/.test(lower);
+  return /\b(?:completion|competion|completed|complete|service\s+(?:time|date|completion|competion|[a-z]+\s+(?:completion|competion))|arrival|arrived|onsite|on-site|water\s+temp|air\s+temp|daily\s+loss|bucket|measurements?|main\s+drains?|skimmers?|returns?|lights?|filtration|testing\s+procedures?)\b/.test(lower);
 }
 
 function looksLikeCorrectionFollowUp(lower: string): boolean {
@@ -875,8 +875,8 @@ function toolResultContent(result: unknown): string {
 
 function safeToolErrorResult(toolName: string): Record<string, string> {
   return {
-    error: `${toolName} failed safely before returning verified source data.`,
-    userMessage: "I couldn't complete that lookup yet. I logged the tool failure instead of guessing."
+    error: `${toolName} failed safely before returning checked data.`,
+    userMessage: "I couldn't finish that check. I wrote it down so we can fix it."
   };
 }
 
@@ -889,12 +889,12 @@ function emailNoSourceFallback(toolRuns: ToolLoopResponse["toolRuns"]): { answer
   }
   if (emailRun.name === "searchEmail") {
     return {
-      answer: "I couldn't find a matching email for that query yet. I logged the lookup instead of guessing.",
+      answer: "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
       failureReason: "email_lookup_without_sources"
     };
   }
   return {
-    answer: "I couldn't read that email item yet. I logged the tool failure instead of guessing.",
+    answer: "I couldn't open that email yet. I wrote it down so we can fix it.",
     failureReason: "email_read_without_sources"
   };
 }
@@ -997,13 +997,13 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
     const toolNames = deterministicRuns.map((run) => run.name).join(", ");
     messages.push({
       role: "assistant",
-      content: `${reusableRuns.length > 0 ? "I found cached verified source data" : "I found verified source data"} from ${toolNames} and will use it for the final answer.`
+      content: `${reusableRuns.length > 0 ? "I found saved checked records" : "I found checked records"} from ${toolNames} and will use them for the final answer.`
     });
     messages.push({
       role: "user",
       content: [
         ...deterministicRuns.flatMap((run) => [`Verified ${run.name} result:`, toolResultContent(run.result)]),
-        "Answer the original user request using only these verified results. For job issue and technician questions, compare Jobber and CompanyCam rails before answering, and say clearly when one rail has no matching data. Keep the source labels attached in the API response."
+        "Answer the original user request using only these checked records. For job issue, technician, completion-time, service-time, and report/checklist questions, compare Jobber and CompanyCam before answering; do not treat Jobber's missing completion/status field as proof that no CompanyCam report answer exists. Say clearly when one system has no matching data. Keep record labels attached in the API response."
       ].join("\n")
     });
   }

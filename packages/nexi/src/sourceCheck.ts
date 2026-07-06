@@ -39,7 +39,8 @@ const HONEST_FAILURE_PATTERNS = [
   /\b(?:i\s+)?(?:couldn'?t|could not|can'?t|cannot|wasn'?t able to|am not able to)\s+(?:read|reach|access|verify|pull|check|search|open)\b/i,
   /\b(?:tool|email rail|gmail rail|provider)\s+(?:failed|returned an error|did not return|could not return)\b/i,
   /\b(?:no verified|not verified|without a verified source|no matching source|no matching email)\b/i,
-  /\b(?:don'?t|do not|doesn'?t|does not)\s+have\s+(?:a\s+)?verified source\b/i
+  /\b(?:don'?t|do not|doesn'?t|does not)\s+have\s+(?:a\s+)?verified source\b/i,
+  /\b(?:don'?t|do not)\s+have\s+that\s+written\s+down\b/i
 ];
 
 export interface SourceCheckResult {
@@ -78,7 +79,7 @@ export function enforceSources(answer: string, sources: Source[], userPrompt = "
   ) {
     return {
       ok: false,
-      answer: "I don't have a verified source for that yet.",
+      answer: "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
       failureReason: "factual_answer_without_sources"
     };
   }
