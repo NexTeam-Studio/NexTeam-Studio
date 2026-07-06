@@ -67,7 +67,7 @@ Last reviewed: 2026-07-05
 | Rive | UNKNOWN | NEXTEAM | Local avatar asset and React canvas runtime. | No credential/key found; dependency and asset stored in repo. | DECIDE |
 | NPM package registry | UNKNOWN | NEXTEAM | Dependency install from public npm packages. | No npm auth token found in repo/Railway/current env scans. | DECIDE |
 | Firebase CLI | `chris@aquatraceleak.com` per prior inventory | NEXTEAM | Firestore rules/deploy management. | Local Firebase CLI auth cache outside repo. | SHOULD MOVE |
-| Railway API/CLI access | `Chris1BATA / chris1bata@gmail.com` via GitHub per prior inventory | NEXTEAM | Deploys, env-name audits, staging/production management. | Local Railway CLI auth cache outside repo; no `RAILWAY_API_TOKEN` name observed in current local env-name sweep. | SHOULD MOVE |
+| Railway API/CLI access | `Chris1BATA / chris1bata@gmail.com` via GitHub per prior inventory | NEXTEAM | Deploys, env-name audits, staging/production management. | Local Railway CLI auth cache outside repo; token values cleared by `railway logout` on 2026-07-06, re-auth or a dashboard-created project token is required for future CLI deploys. | SHOULD MOVE |
 
 ## Parked/Backlog Services With No Active Credential Verified
 
