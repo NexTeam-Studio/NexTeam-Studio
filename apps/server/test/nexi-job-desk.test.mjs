@@ -49,6 +49,7 @@ test("source check does not block meta or feedback turns", () => {
 
 test("source check does not block email action commands or honest tool failures", () => {
   assert.equal(promptIsActionRequest("Send an email to owner@example.test saying I will call Thursday."), true);
+  assert.equal(promptIsActionRequest("send me an email at owner@example.test, tell me Bryson City is on schedule for tomorrow"), true);
   const action = enforceSources("I drafted the email and parked it for approval.", [], "Send an email to owner@example.test saying I will call Thursday.");
   assert.equal(action.ok, true);
   const failure = enforceSources("I couldn't read that email yet. I logged the tool failure instead of guessing.", [], "What did the Semrush site audit say?");
@@ -291,6 +292,49 @@ test("Nexi Anthropic gateway preloads draftEmail for send-email action commands"
   }]);
   assert.match(calls[0].messages.at(-1).content, /Verified draftEmail result/);
   assert.deepEqual(calls[0].tools, []);
+  assert.equal(result.toolRuns[0].name, "draftEmail");
+  assert.equal(result.sources[0].ref, "approval_1");
+  assert.equal(result.answer, "I drafted the email and parked it for approval.");
+});
+
+test("Nexi Anthropic gateway preloads draftEmail for send-me-at action commands", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "send me an email at owner@example.test, tell me Bryson City is on schedule for tomorrow" }],
+    tools: [{
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string().optional() }),
+      handler: async () => {
+        throw new Error("searchEmail should not run for send commands");
+      }
+    }, {
+      name: "draftEmail",
+      description: "Draft email.",
+      inputSchema: z.object({ to: z.array(z.string().email()), subject: z.string(), bodyText: z.string() }),
+      handler: async (_tenant, args) => {
+        toolCalls.push(args);
+        return {
+          result: { approval: { id: "approval_1", status: "pending" } },
+          sources: [{ rail: "native", ref: "approval_1", label: "ApprovalQueue email draft approval_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I drafted the email and parked it for approval." }],
+      usage: { input_tokens: 10, output_tokens: 6 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(toolCalls, [{
+    to: ["owner@example.test"],
+    subject: "Bryson City is on schedule for tomorrow",
+    bodyText: "Bryson City is on schedule for tomorrow"
+  }]);
   assert.equal(result.toolRuns[0].name, "draftEmail");
   assert.equal(result.sources[0].ref, "approval_1");
   assert.equal(result.answer, "I drafted the email and parked it for approval.");
@@ -803,12 +847,119 @@ test("Nexi issue prompts preload both Jobber and CompanyCam rails", async () => 
     }
   });
   assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
-  assert.equal(toolNames[0][1].nameQuery, "What was the issue at Deborah Justice?");
+  assert.equal(toolNames[0][1].nameQuery, "Deborah Justice");
   assert.equal(toolNames[1][1].projectQuery, "Deborah Justice");
   assert.match(calls[0].messages.at(-1).content, /Verified getJobDetail result/);
   assert.match(calls[0].messages.at(-1).content, /Verified getDocuments result/);
   assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
   assert.equal(result.sources.some((source) => source.rail === "companycam"), true);
+});
+
+test("Nexi completion-time prompts preload Jobber and CompanyCam report rails", async () => {
+  const toolNames = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "what was the service time completion for Deborah Justice" }],
+    tools: [
+      {
+        name: "getJobDetail",
+        description: "Read job.",
+        inputSchema: z.object({ nameQuery: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getJobDetail", args]);
+          return {
+            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", status: "lead", client: { name: "Deborah Justice" } } },
+            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
+          };
+        }
+      },
+      {
+        name: "getDocuments",
+        description: "Read documents.",
+        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getDocuments", args]);
+          return {
+            result: { reports: [{ fields: { completionTime: "3:10pm, Thursday July 2nd, 2026", technicianNames: ["Chris", "Logan"] } }] },
+            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "CompanyCam says Deborah Justice was completed at 3:10pm Thursday July 2, 2026 by Chris and Logan." }],
+      usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
+  assert.equal(toolNames[0][1].nameQuery, "Deborah Justice");
+  assert.equal(toolNames[1][1].projectQuery, "Deborah Justice");
+  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
+  assert.equal(result.sources.some((source) => source.ref === "18218446"), true);
+});
+
+test("Nexi correction follow-ups resume CompanyCam report lookup instead of email search", async () => {
+  const toolNames = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "what was the service time completion for Deborah Justice" },
+      { role: "assistant", content: "Deborah Justice is currently a lead and no completion date exists." },
+      { role: "user", content: "yes there is, incorrect here, service completion is in company cam reports" },
+      { role: "assistant", content: "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer." },
+      { role: "user", content: "ok, where is the answer then, i corrected you and you should have replied with correct answer" }
+    ],
+    tools: [
+      {
+        name: "searchEmail",
+        description: "Search email.",
+        inputSchema: z.object({ keywords: z.string().optional() }),
+        handler: async () => {
+          throw new Error("searchEmail should not run for correction follow-ups");
+        }
+      },
+      {
+        name: "getJobDetail",
+        description: "Read job.",
+        inputSchema: z.object({ nameQuery: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getJobDetail", args]);
+          return {
+            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", status: "lead", client: { name: "Deborah Justice" } } },
+            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
+          };
+        }
+      },
+      {
+        name: "getDocuments",
+        description: "Read documents.",
+        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getDocuments", args]);
+          return {
+            result: { reports: [{ fields: { completionTime: "3:10pm, Thursday July 2nd, 2026", technicianNames: ["Chris", "Logan"] } }] },
+            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "The answer is in CompanyCam: Deborah Justice was completed at 3:10pm Thursday July 2, 2026 by Chris and Logan." }],
+      usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
+  assert.equal(toolNames[0][1].nameQuery, "Deborah Justice");
+  assert.equal(toolNames[1][1].projectQuery, "Deborah Justice");
+  assert.equal(result.sources.some((source) => source.ref === "18218446"), true);
 });
 
 test("Nexi technician prompts preload Jobber plus CompanyCam documents and photos", async () => {

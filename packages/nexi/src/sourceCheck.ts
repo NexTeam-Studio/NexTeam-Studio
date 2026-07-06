@@ -31,6 +31,7 @@ const FEEDBACK_PROMPT_PATTERNS = [
 
 const ACTION_PROMPT_PATTERNS = [
   /\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/i,
+  /\b(?:send|draft|compose|write)\s+(?:me\s+)?(?:an?\s+)?email\s+(?:at|to)\s+[\w.+-]+@[\w.-]+\.\w+\b/i,
   /\bemail\s+[\w.+-]+@[\w.-]+\.\w+\s+(?:saying|that|to say)\b/i
 ];
 

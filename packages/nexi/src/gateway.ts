@@ -546,9 +546,29 @@ function entityQueryFromText(text: string): string {
     .trim();
 }
 
+function entityQueryFromMessages(messages: GatewayMessage[], options: { skipLatest?: boolean } = {}): string {
+  const sourceMessages = options.skipLatest ? messages.slice(0, -1) : messages;
+  for (const message of [...sourceMessages].reverse()) {
+    if (message.role !== "user" || typeof message.content !== "string") {
+      continue;
+    }
+    const entity = entityQueryFromText(message.content) || (/\b(?:photos?|pictures?|images?)\b/i.test(message.content) ? photoQueryFromText(message.content) : "");
+    if (entity && !looksLikeGenericEntityCandidate(entity)) {
+      return entity;
+    }
+  }
+  return "";
+}
+
+function looksLikeGenericEntityCandidate(entity: string): boolean {
+  return /^(?:companycam|company cam|jobber|reports?|documents?|checklists?|photos?|pictures?|images?|answer|correct answer)$/i.test(entity.trim());
+}
+
 function normalizeToolInput(toolName: string, input: unknown, messages: GatewayMessage[], tenant?: Tenant | undefined): unknown {
   const record = input && typeof input === "object" && !Array.isArray(input) ? { ...input as Record<string, unknown> } : {};
   const userText = latestUserText(messages);
+  const lowerUserText = userText.toLowerCase();
+  const correctionFollowUp = looksLikeCorrectionFollowUp(lowerUserText);
   const emailRef = emailRefFromText(userText);
   if (toolName === "draftEmail") {
     const parsed = draftEmailInputFromText(userText);
@@ -577,11 +597,15 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.to ??= fallback.to;
   }
   if (toolName === "getPhotos" && !record.projectQuery) {
-    record.projectQuery = entityQueryFromText(userText) || photoQueryFromText(userText);
+    record.projectQuery = correctionFollowUp
+      ? entityQueryFromMessages(messages, { skipLatest: true })
+      : entityQueryFromText(userText) || photoQueryFromText(userText) || entityQueryFromMessages(messages);
   }
   if (toolName === "getDocuments") {
     if (!record.projectQuery) {
-      record.projectQuery = entityQueryFromText(userText) || photoQueryFromText(userText);
+      record.projectQuery = correctionFollowUp
+        ? entityQueryFromMessages(messages, { skipLatest: true })
+        : entityQueryFromText(userText) || photoQueryFromText(userText) || entityQueryFromMessages(messages);
     }
     if (!record.question) {
       record.question = userText;
@@ -598,7 +622,9 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.maxResults ??= 25;
   }
   if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
-    record.nameQuery = userText;
+    record.nameQuery = correctionFollowUp
+      ? entityQueryFromMessages(messages, { skipLatest: true }) || userText
+      : entityQueryFromText(userText) || entityQueryFromMessages(messages) || userText;
   }
   if (toolName === "lookupSiteJobBlueprintField" && !record.field && /gallon/i.test(userText)) {
     record.field = "poolGallons";
@@ -645,6 +671,15 @@ function looksLikeTechnicianQuestion(lower: string): boolean {
   return /\b(?:technician|tech|who was there|who went|who did|who performed)\b/.test(lower);
 }
 
+function looksLikeJobDetailQuestion(lower: string): boolean {
+  return /\b(?:completion|completed|complete|service\s+(?:time|date|completion)|arrival|arrived|onsite|on-site|water\s+temp|air\s+temp|daily\s+loss|bucket|measurements?|main\s+drains?|skimmers?|returns?|lights?|filtration|testing\s+procedures?)\b/.test(lower);
+}
+
+function looksLikeCorrectionFollowUp(lower: string): boolean {
+  return /\b(?:where\s+is\s+the\s+answer|what\s+is\s+the\s+answer|correct\s+answer|i\s+corrected\s+you|you\s+should\s+have\s+(?:replied|answered)|find\s+it\s+then)\b/.test(lower)
+    || (/\b(?:incorrect|wrong|correction|corrected)\b/.test(lower) && /\bcompany\s*cam\b/.test(lower));
+}
+
 function looksLikeInboxSummaryQuestion(lower: string): boolean {
   return /\b(?:emails?|mail|inbox)\b/.test(lower)
     && /\b(?:came in|received|today|this morning|this afternoon|summarize|summary|what(?:'s| is) in)\b/.test(lower);
@@ -658,6 +693,7 @@ function looksLikeEmailSearchQuestion(lower: string): boolean {
 
 function looksLikeEmailDraftAction(lower: string): boolean {
   return /\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/.test(lower)
+    || /\b(?:send|draft|compose|write)\s+(?:me\s+)?(?:an?\s+)?email\s+(?:at|to)\s+[\w.+-]+@[\w.-]+\.\w+\b/.test(lower)
     || /\bemail\s+[\w.+-]+@[\w.-]+\.\w+\s+(?:saying|that|to say)\b/.test(lower);
 }
 
@@ -682,7 +718,7 @@ function firstEmailAddress(text: string): string | undefined {
 }
 
 function draftBodyFromText(text: string): string {
-  const match = text.match(/\b(?:saying|that says|to say|with message|message)\b\s*:?\s*([\s\S]+)$/i);
+  const match = text.match(/\b(?:saying|that says|to say|with message|message|tell(?:ing)?\s+(?:them|him|her|me)?)\b\s*:?\s*([\s\S]+)$/i);
   return (match?.[1] ?? "Please see the note from Aquatrace.").trim().replace(/^["']|["']$/g, "");
 }
 
@@ -721,13 +757,16 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   if (looksLikeInboxTriageQuestion(lower) && toolsByName.has("triageInbox")) {
     return ["triageInbox"];
   }
+  if (looksLikeCorrectionFollowUp(lower)) {
+    return uniqueToolNames(["getJobDetail", "getDocuments"], toolsByName);
+  }
   if (looksLikeEmailSearchQuestion(lower) && toolsByName.has("searchEmail")) {
     return ["searchEmail"];
   }
   if (looksLikeTechnicianQuestion(lower)) {
     return uniqueToolNames(["getJobDetail", "getDocuments", "getPhotos"], toolsByName);
   }
-  if (looksLikeIssueQuestion(lower)) {
+  if (looksLikeIssueQuestion(lower) || looksLikeJobDetailQuestion(lower)) {
     return uniqueToolNames(["getJobDetail", "getDocuments"], toolsByName);
   }
   if ((lower.includes("photo") || lower.includes("picture") || lower.includes("image")) && toolsByName.has("getPhotos")) {
