@@ -18,12 +18,16 @@ import { buildHealth } from "./health.js";
 import { registerCrmRoutes } from "./crm/routes.js";
 import { getAdminDb } from "./firebase.js";
 import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
+import { CommsApprovalExecutor } from "./comms/approvalExecutor.js";
+import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
+import { createCommsNexiTools } from "./comms/nexiTools.js";
 import { createContentNexiTools } from "./content/nexiTools.js";
 import { InMemoryContentRepository } from "./content/repository.js";
 import { registerContentRoutes } from "./content/routes.js";
 
 const app = express();
-const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+const commsRail = createCommsRailFromEnv(process.env);
+const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CommsApprovalExecutor(commsRail));
 const contentRepository = new InMemoryContentRepository();
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const adminDb = getAdminDb();
@@ -40,7 +44,10 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 app.use("/api/nexi", createNexiRouter(process.env, {
-  extraTools: createContentNexiTools({ repository: contentRepository, approvalQueue })
+  extraTools: [
+    ...createCommsNexiTools(commsRail, approvalQueue),
+    ...createContentNexiTools({ repository: contentRepository, approvalQueue })
+  ]
 }));
 
 function sendError(res: Response, error: unknown): void {
@@ -87,6 +94,9 @@ app.get("/api/media/:id", async (req: Request, res: Response) => {
     const companyCam = CompanyCamAdapter.fromEnv(process.env);
     const binary = await companyCam.fetchBinary(mediaId);
     res.setHeader("content-type", binary.mime);
+    if (req.query.download === "1") {
+      res.setHeader("content-disposition", `attachment; filename="companycam-${mediaId.replace(/[^a-z0-9_-]/gi, "_")}.jpg"`);
+    }
     if (binary.stream instanceof Readable) {
       binary.stream.pipe(res);
       return;
@@ -123,6 +133,19 @@ app.post("/api/approval-queue/:id/approve", async (req: Request, res: Response) 
     }
     const item = await approvalQueue.approve(approvalId);
     res.json({ ok: true, item });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+app.post("/api/approval-queue/:id/execute", async (req: Request, res: Response) => {
+  try {
+    const approvalId = req.params.id;
+    if (!approvalId) {
+      throw new RailError("Approval id is required.", { provider: "approval", op: "execute", status: 400 });
+    }
+    const result = await approvalQueue.executeApproved(approvalId);
+    res.json({ ok: true, ...result });
   } catch (error) {
     sendError(res, error);
   }

@@ -1,0 +1,62 @@
+{
+  "receipt": "m6-lite-inbox-triage",
+  "capturedAt": "2026-07-05T20:05:00-04:00",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "deploy": {
+    "versionSha": "9d6b60f50d626153fb58c5636067fbc6473dfd8f",
+    "shaMatch": true,
+    "healthOk": true,
+    "healthRails": {
+      "jobber": "ok",
+      "companycam": "ok",
+      "anthropic": "configured_no_spend"
+    }
+  },
+  "codeReceipt": {
+    "commit": "9d6b60f50d626153fb58c5636067fbc6473dfd8f",
+    "tool": "triageInbox",
+    "routing": "The prompt 'what needs my attention' routes to triageInbox in both the local fallback and Anthropic gateway preloader.",
+    "rankingRules": [
+      "client_inquiry: leak, pool, spa, schedule, appointment, estimate, quote, repair, service, technician, reply, water-loss, or client question language",
+      "form_submission: new lead, contact form, website form, quote request, estimate request, WPForms/Gravity Forms language",
+      "service_notice: Jobber, CompanyCam, Stripe, Railway, Firebase, Google Cloud, WordPress, domain, billing, subscription, receipt, security, audit, verification, failed/action-required language",
+      "noise excluded: spam/trash/promotions/social labels plus unsubscribe/newsletter/promo/sale/coupon/deal/webinar language"
+    ]
+  },
+  "liveTranscriptRedacted": {
+    "endpoint": "POST /api/nexi/message",
+    "auth": "Firebase custom token minted in-memory under Railway staging env; token not printed or stored",
+    "prompt": "what needs my attention",
+    "ok": true,
+    "status": 200,
+    "sourceCount": 11,
+    "emailSourceCount": 11,
+    "toolNames": [
+      "triageInbox"
+    ],
+    "triageScannedCount": 11,
+    "triageExcludedNoiseCount": 0,
+    "triageItemCount": 11,
+    "categoryCounts": {
+      "client_inquiry": 5,
+      "service_notice": 3,
+      "other": 3
+    },
+    "answerRedacted": true,
+    "toolResultsRedacted": true,
+    "subjectsRedacted": true,
+    "sendExecuted": false
+  },
+  "verification": {
+    "build": "npm --workspace @nexteam/server run build",
+    "focusedTests": "node --test apps/server/test/comms-lite.test.mjs apps/server/test/nexi-job-desk.test.mjs",
+    "focusedTestsResult": "41 passing, 0 failing",
+    "secretScan": "npm run check:secrets",
+    "secretScanResult": "passed"
+  },
+  "hardLimits": {
+    "outboundSendExecuted": false,
+    "piiInReceipt": false,
+    "secretsInReceipt": false
+  }
+}

@@ -112,6 +112,8 @@ export const jobSchema = z.object({
   propertyId: idSchema.optional(),
   status: jobStatusSchema,
   title: z.string(),
+  startAt: z.string().optional(),
+  endAt: z.string().optional(),
   lineItems: z.array(lineItemSchema),
   totals: z.object({ subtotal: z.number(), tax: z.number(), total: z.number() }),
   externalIds: z.object({ jobber: z.string().optional() }).optional()
@@ -175,6 +177,7 @@ export const mediaSchema = z.object({
   }).optional(),
   aiTags: z.array(z.string()),
   aiCaption: z.string().optional(),
+  capturedBy: z.string().optional(),
   externalIds: z.object({ companycam: z.string().optional() }).optional()
 });
 
@@ -249,10 +252,19 @@ export const approvalItemSchema = z.object({
 });
 
 export const sourceSchema = z.object({
-  rail: z.enum(["jobber", "companycam", "native", "gsc", "gbp"]),
+  rail: z.enum(["jobber", "companycam", "native", "gsc", "gbp", "email"]),
   ref: z.string(),
   label: z.string()
 });
+
+const toolRunResultSchema = z.union([
+  z.record(z.string(), z.unknown()),
+  z.array(z.unknown()),
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.null()
+]);
 
 export const conversationRecordSchema = z.object({
   id: idSchema,
@@ -261,6 +273,11 @@ export const conversationRecordSchema = z.object({
   userText: z.string(),
   assistantText: z.string(),
   sources: z.array(sourceSchema),
+  toolRuns: z.array(z.object({
+    name: z.string(),
+    sources: z.array(sourceSchema),
+    result: toolRunResultSchema
+  })).optional(),
   createdAt: z.string()
 });
 
@@ -272,6 +289,11 @@ export const failureLogRecordSchema = z.object({
   question: z.string(),
   reason: z.string(),
   sources: z.array(sourceSchema),
+  correctionText: z.string().optional(),
+  flaggedConversationId: idSchema.optional(),
+  flaggedQuestion: z.string().optional(),
+  flaggedAnswer: z.string().optional(),
+  flaggedAnswerSources: z.array(sourceSchema).optional(),
   createdAt: z.string()
 });
 

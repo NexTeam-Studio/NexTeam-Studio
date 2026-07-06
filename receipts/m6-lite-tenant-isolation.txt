@@ -1,0 +1,33 @@
+M6-LITE tenant isolation verification
+Captured: 2026-07-05T15:19:56-04:00
+
+Requirement:
+- All three mailbox adapters must be bound to tenantId=aquatrace.
+- Email rails must be structurally invisible to any other tenant context.
+- Enforcement must be architectural, not convention.
+
+Binding code:
+- apps/server/src/comms/gmailRegistry.ts
+  - CommsRail now includes tenantId.
+  - createCommsRailFromEnv binds tenantId from TENANT_ID, defaulting to aquatrace.
+  - Each GmailMailboxConfig receives that tenantId.
+- apps/server/src/comms/nexiTools.ts
+  - assertCommsTenant rejects tenant.id !== rail.tenantId before searchEmail, getEmailThread, summarizeInbox, or draftEmail reads adapter maps.
+- apps/server/src/comms/approvalExecutor.ts
+  - execute rejects approved email artifacts when item.tenantId or outbound.tenantId differs from rail.tenantId before Gmail sendEmail.
+
+Negative tests:
+- Comms Nexi tools reject tenant contexts outside the bound email rail.
+  - A fake other-tenant searchEmail call throws before adapter.searchEmail runs.
+- CommsApprovalExecutor rejects approved email artifacts from unbound tenants.
+  - A fake other-tenant approved send throws before sendAdapter.sendEmail runs.
+
+Verification commands:
+- npm --workspace @nexteam/server run build
+  Result: pass
+- node --test apps/server/test/comms-lite.test.mjs apps/server/test/nexi-job-desk.test.mjs
+  Result: pass
+  Tests: 35 passed, 0 failed
+
+PII/secrets:
+- No Gmail message bodies, subjects, snippets, refresh tokens, client secrets, or auth tokens are included.

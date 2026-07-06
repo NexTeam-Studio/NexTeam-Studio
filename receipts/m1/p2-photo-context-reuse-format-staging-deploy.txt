@@ -1,0 +1,15 @@
+M1 P2 photo/context/reuse/format staging deploy
+
+Generated: 2026-07-05T16:11:12Z
+Branch: build/nexi
+Pinned code commit: e7b5489d7b4926a849083418c1edbee5d22ee60a
+Railway project/environment/service: cozy-sparkle / staging / NexTeam-Studio
+Railway deploy command: railway up --service NexTeam-Studio --environment staging --detach
+Railway deployment id: e0baf04a-d02c-4595-834b-39a37174d399
+Railway upload output: receipts/m1/p2-photo-context-reuse-format-staging-deploy-up.txt
+Live SHA-match and health proof: receipts/m1/p2-photo-context-reuse-format-live-staging.json
+
+Notes:
+- GIT_SHA was set to the pinned code commit before deploy.
+- The Railway variable-set command printed no stdout; no secret values were printed.
+- The receipts commit does not modify deployed code, so the SHA-match remains the code commit above.

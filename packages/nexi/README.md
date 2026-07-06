@@ -4,4 +4,4 @@ This package contains the assistant gateway pieces shared by Nexi-facing modules
 
 It connects modules to Anthropic through one controlled gateway and uses `@nexteam/core` sources so factual answers can be checked before they reach users. Module-specific tools should be registered outside this package and passed in.
 
-When something breaks, start with `src/gateway.ts` for model calls/tool flow/usageLog, `src/sourceCheck.ts` for missing-source failures, and package tests for cache metric or source enforcement regressions.
+When something breaks, start with `src/gateway.ts` for model calls/tool flow/usageLog and deterministic intent routing such as send-email actions, cross-rail job details, and correction follow-ups. Use `src/sourceCheck.ts` for missing-source failures, and package tests for cache metric or source enforcement regressions.
