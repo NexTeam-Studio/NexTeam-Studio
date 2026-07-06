@@ -902,6 +902,57 @@ test("Nexi completion-time prompts preload Jobber and CompanyCam report rails", 
   assert.equal(result.sources.some((source) => source.ref === "18218446"), true);
 });
 
+test("Nexi completion-time typo prompts still preload Jobber and CompanyCam report rails", async () => {
+  const toolNames = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "what was the service ime competion for Deborah Justice" }],
+    tools: [
+      {
+        name: "getJobDetail",
+        description: "Read job.",
+        inputSchema: z.object({ nameQuery: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getJobDetail", args]);
+          return {
+            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", status: "lead", client: { name: "Deborah Justice" } } },
+            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
+          };
+        }
+      },
+      {
+        name: "getDocuments",
+        description: "Read documents.",
+        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolNames.push(["getDocuments", args]);
+          return {
+            result: { reports: [{ fields: { completionTime: "3:10pm, Thursday July 2nd, 2026", technicianNames: ["Chris", "Logan"] } }] },
+            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      const request = JSON.parse(init.body);
+      assert.match(request.messages.at(-1).content, /do not treat Jobber's missing completion\/status field/i);
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "CompanyCam says Deborah Justice was completed at 3:10pm Thursday July 2, 2026 by Chris and Logan." }],
+        usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
+      }), { status: 200 });
+    }
+  });
+  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
+  assert.equal(toolNames[0][1].nameQuery, "Deborah Justice");
+  assert.equal(toolNames[1][1].projectQuery, "Deborah Justice");
+  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
+  assert.equal(result.sources.some((source) => source.ref === "18218446"), true);
+});
+
 test("Nexi correction follow-ups resume CompanyCam report lookup instead of email search", async () => {
   const toolNames = [];
   const result = await runNexiToolLoop({

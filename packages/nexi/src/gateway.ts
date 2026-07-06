@@ -672,7 +672,7 @@ function looksLikeTechnicianQuestion(lower: string): boolean {
 }
 
 function looksLikeJobDetailQuestion(lower: string): boolean {
-  return /\b(?:completion|completed|complete|service\s+(?:time|date|completion)|arrival|arrived|onsite|on-site|water\s+temp|air\s+temp|daily\s+loss|bucket|measurements?|main\s+drains?|skimmers?|returns?|lights?|filtration|testing\s+procedures?)\b/.test(lower);
+  return /\b(?:completion|competion|completed|complete|service\s+(?:time|date|completion|competion|[a-z]+\s+(?:completion|competion))|arrival|arrived|onsite|on-site|water\s+temp|air\s+temp|daily\s+loss|bucket|measurements?|main\s+drains?|skimmers?|returns?|lights?|filtration|testing\s+procedures?)\b/.test(lower);
 }
 
 function looksLikeCorrectionFollowUp(lower: string): boolean {
@@ -1003,7 +1003,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
       role: "user",
       content: [
         ...deterministicRuns.flatMap((run) => [`Verified ${run.name} result:`, toolResultContent(run.result)]),
-        "Answer the original user request using only these verified results. For job issue and technician questions, compare Jobber and CompanyCam rails before answering, and say clearly when one rail has no matching data. Keep the source labels attached in the API response."
+        "Answer the original user request using only these verified results. For job issue, technician, completion-time, service-time, and report/checklist questions, compare Jobber and CompanyCam rails before answering; do not treat Jobber's missing completion/status field as proof that no CompanyCam report answer exists. Say clearly when one rail has no matching data. Keep the source labels attached in the API response."
       ].join("\n")
     });
   }
