@@ -21,10 +21,14 @@ import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
 import { CommsApprovalExecutor } from "./comms/approvalExecutor.js";
 import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
 import { createCommsNexiTools } from "./comms/nexiTools.js";
+import { createSchedulingNexiTools } from "./scheduling/nexiTools.js";
+import { InMemorySchedulingRepository } from "./scheduling/repository.js";
+import { registerSchedulingRoutes } from "./scheduling/routes.js";
 
 const app = express();
 const commsRail = createCommsRailFromEnv(process.env);
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CommsApprovalExecutor(commsRail));
+const schedulingRepository = new InMemorySchedulingRepository();
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
@@ -39,7 +43,12 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
-app.use("/api/nexi", createNexiRouter(process.env, { extraTools: createCommsNexiTools(commsRail, approvalQueue) }));
+app.use("/api/nexi", createNexiRouter(process.env, {
+  extraTools: [
+    ...createCommsNexiTools(commsRail, approvalQueue),
+    ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env })
+  ]
+}));
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
@@ -144,6 +153,7 @@ app.post("/api/approval-queue/:id/execute", async (req: Request, res: Response) 
 
 registerCrmRoutes(app, { approvalQueue, eventBus });
 registerFieldDocsRoutes(app, { eventBus });
+registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env });
 app.use(express.static(webDistDir));
 
 app.get("/", (_req: Request, res: Response) => {
