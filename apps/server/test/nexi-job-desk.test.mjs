@@ -36,7 +36,7 @@ test("Camp Mikell fixture extracts 101000 gallons", () => {
 test("source check blocks factual answers without sources", () => {
   const checked = enforceSources("The job has 101000 gallons.", []);
   assert.equal(checked.ok, false);
-  assert.equal(checked.answer, "I don't have a verified source for that yet.");
+  assert.equal(checked.answer, "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.");
 });
 
 test("source check does not block meta or feedback turns", () => {
@@ -52,9 +52,9 @@ test("source check does not block email action commands or honest tool failures"
   assert.equal(promptIsActionRequest("send me an email at owner@example.test, tell me Bryson City is on schedule for tomorrow"), true);
   const action = enforceSources("I drafted the email and parked it for approval.", [], "Send an email to owner@example.test saying I will call Thursday.");
   assert.equal(action.ok, true);
-  const failure = enforceSources("I couldn't read that email yet. I logged the tool failure instead of guessing.", [], "What did the Semrush site audit say?");
+  const failure = enforceSources("I couldn't open that email yet. I wrote it down so we can fix it.", [], "What did the Semrush site audit say?");
   assert.equal(failure.ok, true);
-  const noSource = enforceSources("I don't have a verified source for that yet.", [], "What did the Semrush site audit say?");
+  const noSource = enforceSources("I don't have that written down anywhere yet. I wrote it down so we can fill the gap.", [], "What did the Semrush site audit say?");
   assert.equal(noSource.ok, true);
 });
 
@@ -363,7 +363,7 @@ test("Nexi Anthropic gateway sanitizes deterministic email tool failures", async
   assert.equal(result.toolRuns[0].name, "searchEmail");
   assert.match(JSON.stringify(result.toolRuns[0].result), /failed safely/);
   assert.doesNotMatch(JSON.stringify(result.toolRuns[0].result), /Invalid time value/);
-  assert.equal(result.answer, "I couldn't find a matching email for that query yet. I logged the lookup instead of guessing.");
+  assert.equal(result.answer, "I couldn't find an email that matched that. I wrote it down so we can fill the gap.");
   assert.equal(result.failureReason, "email_lookup_without_sources");
 });
 
@@ -386,7 +386,7 @@ test("Nexi Anthropic gateway turns empty deterministic email searches into logge
     }
   });
   assert.equal(result.toolRuns[0].name, "searchEmail");
-  assert.equal(result.answer, "I couldn't find a matching email for that query yet. I logged the lookup instead of guessing.");
+  assert.equal(result.answer, "I couldn't find an email that matched that. I wrote it down so we can fill the gap.");
   assert.equal(result.failureReason, "email_lookup_without_sources");
 });
 
@@ -683,7 +683,7 @@ test("Nexi reuses cached deterministic tool runs for context follow-ups", async 
   assert.equal(toolCalled, false);
   assert.equal(calls.length, 1);
   assert.deepEqual(calls[0].tools, []);
-  assert.match(calls[0].messages.at(-2).content, /cached verified source data/);
+  assert.match(calls[0].messages.at(-2).content, /saved checked records/);
   assert.deepEqual(result.toolRuns, cachedToolRuns);
   assert.equal(result.sources[0].ref, "job_1");
 });
@@ -1081,7 +1081,7 @@ test("Nexi service persists failureLog for source-enforced failures", async () =
     tools: [],
     repository,
     gateway: async () => ({
-      answer: "I don't have a verified source for that yet.",
+      answer: "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
       sources: [],
       usage: { inputTokens: 1, outputTokens: 1, cacheCreationInputTokens: 0, cacheReadInputTokens: 0, totalTokens: 2 },
       raw: { test: true },
