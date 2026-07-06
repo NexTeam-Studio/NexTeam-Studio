@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { RailError, type ArtifactKind, type Tenant } from "@nexteam/core";
+import { RailError, type ArtifactKind, type NexiTool, type Tenant } from "@nexteam/core";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { getAdminAuth, getAdminDb } from "../firebase.js";
 import { FirestoreUsageLogWriter, MemoryUsageLogWriter } from "../usageLog.js";
@@ -77,7 +77,11 @@ async function requireNexiOperator(req: Request, env: NodeJS.ProcessEnv): Promis
   }
 }
 
-export function createNexiRouter(env: NodeJS.ProcessEnv = process.env): Router {
+export interface NexiRouterDeps {
+  extraTools?: NexiTool[] | undefined;
+}
+
+export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: NexiRouterDeps = {}): Router {
   const router = Router();
 
   router.post("/message", async (req: Request, res: Response) => {
@@ -93,11 +97,15 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env): Router {
         : undefined;
       const tenant = loadTenant(req);
       const stores = runtimeStores(env);
+      const tools = [
+        ...createNexiJobDeskTools(env, stores.repository),
+        ...(deps.extraTools ?? [])
+      ];
       const result = await answerNexiMessage({
         tenant,
         message,
         conversationId,
-        tools: createNexiJobDeskTools(env, stores.repository),
+        tools,
         repository: stores.repository,
         usageLog: stores.usageLog,
         env

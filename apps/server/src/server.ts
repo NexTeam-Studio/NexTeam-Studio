@@ -18,9 +18,13 @@ import { buildHealth } from "./health.js";
 import { registerCrmRoutes } from "./crm/routes.js";
 import { getAdminDb } from "./firebase.js";
 import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
+import { createSchedulingNexiTools } from "./scheduling/nexiTools.js";
+import { InMemorySchedulingRepository } from "./scheduling/repository.js";
+import { registerSchedulingRoutes } from "./scheduling/routes.js";
 
 const app = express();
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+const schedulingRepository = new InMemorySchedulingRepository();
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
@@ -35,7 +39,9 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
-app.use("/api/nexi", createNexiRouter(process.env));
+app.use("/api/nexi", createNexiRouter(process.env, {
+  extraTools: createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env })
+}));
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
@@ -124,6 +130,7 @@ app.post("/api/approval-queue/:id/approve", async (req: Request, res: Response) 
 
 registerCrmRoutes(app, { approvalQueue, eventBus });
 registerFieldDocsRoutes(app, { eventBus });
+registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env });
 app.use(express.static(webDistDir));
 
 app.get("/", (_req: Request, res: Response) => {
