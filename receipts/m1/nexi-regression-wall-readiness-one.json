@@ -1,0 +1,25 @@
+{
+  "ok": false,
+  "runId": "regression-wall-1783376357346-fc27e0f7",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 1,
+  "passed": 0,
+  "failed": 1,
+  "caseFilter": "readiness-check",
+  "limit": 1,
+  "results": [
+    {
+      "id": "20260704174553-1-reply-with-exactly-readiness-check",
+      "createdAt": "2026-07-04T17:45:53.922Z",
+      "expectedIntent": "meta_echo",
+      "ok": false,
+      "failures": [
+        "Nexi message failed (500): 8 RESOURCE_EXHAUSTED: Quota exceeded."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 5646
+    }
+  ]
+}

@@ -1,0 +1,559 @@
+{
+  "ok": true,
+  "generatedAt": "2026-07-06T21:02:53.693Z",
+  "sourceReceipt": "receipts/m1/nexi-trial-full-session-export-redacted.json",
+  "scope": {
+    "conversations": 170,
+    "groupedSessions": 80,
+    "failureLog": 50,
+    "usageLog": 198
+  },
+  "classes": {
+    "CLASS_A_SINGLE_RAIL_CONCLUSION": "A business/job/payment/status question can be answered after only one plausible rail, or with a missing rail entirely.",
+    "CLASS_B_FABRICATED_OR_UNTRACEABLE_TOOL_INPUTS": "Tool parameters, especially dates, can come from stale/LLM-invented values rather than user words or verified context.",
+    "CLASS_C_INTENT_MISROUTING": "Action, feedback/correction, meta, and fact intents compete in one routing path and collapse into the wrong tool family.",
+    "CLASS_D_CAPABILITY_GAP_AS_DATA_FAILURE": "No-capability situations are worded/logged as if data was checked and missing.",
+    "CLASS_E_SOURCE_GATE_SCOPE": "The source gate applies to non-business-fact turns or overrides a better action/meta/correction response.",
+    "CLASS_F_CLIENT_UI_CONTRACT_GAP": "The backend answer is present, but the UI contract required by the trial is missing.",
+    "CLASS_G_OUTPUT_QUALITY_RULE_NOT_ENFORCED": "Formatting/triage standards live in prose instead of server-side response contracts.",
+    "CLASS_Z_NEEDS_MANUAL_REVIEW": "Classifier could not confidently map this entry; human audit required."
+  },
+  "classCounts": {
+    "CLASS_B_FABRICATED_OR_UNTRACEABLE_TOOL_INPUTS": 9,
+    "CLASS_A_SINGLE_RAIL_CONCLUSION": 24,
+    "CLASS_E_SOURCE_GATE_SCOPE": 8,
+    "CLASS_C_INTENT_MISROUTING": 17,
+    "CLASS_D_CAPABILITY_GAP_AS_DATA_FAILURE": 5,
+    "CLASS_F_CLIENT_UI_CONTRACT_GAP": 1,
+    "CLASS_G_OUTPUT_QUALITY_RULE_NOT_ENFORCED": 1
+  },
+  "firestoreFailureMap": [
+    {
+      "id": "fail_ab35f26a-96d8-4153-8baf-35f7efc9473d",
+      "index": 1,
+      "createdAt": "2026-07-04T17:20:27.571Z",
+      "question": "What Jobber jobs are on the schedule today? Use getSchedule and include sources.",
+      "reason": "[\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"from\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"to\"\n    ],\n    \"message\": \"Required\"\n  }\n]",
+      "class": "CLASS_B_FABRICATED_OR_UNTRACEABLE_TOOL_INPUTS",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_057461b8-a67e-4959-a3bb-1c0b5f9e1f0b",
+      "index": 2,
+      "createdAt": "2026-07-04T17:20:35.325Z",
+      "question": "Find CompanyCam photos for Deborah Justice. Use getPhotos and include sources.",
+      "reason": "[\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"projectQuery\"\n    ],\n    \"message\": \"Required\"\n  }\n]",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_2128b512-151e-4d38-a75c-dd63fc321f8f",
+      "index": 3,
+      "createdAt": "2026-07-04T17:21:07.895Z",
+      "question": "What Jobber jobs are on the schedule today? Use getSchedule and include sources.",
+      "reason": "[\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"from\"\n    ],\n    \"message\": \"Required\"\n  },\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"to\"\n    ],\n    \"message\": \"Required\"\n  }\n]",
+      "class": "CLASS_B_FABRICATED_OR_UNTRACEABLE_TOOL_INPUTS",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_0da92569-fd56-48b4-9501-3bf297cfa97a",
+      "index": 4,
+      "createdAt": "2026-07-04T17:21:11.557Z",
+      "question": "Find CompanyCam photos for Deborah Justice. Use getPhotos and include sources.",
+      "reason": "[\n  {\n    \"code\": \"invalid_type\",\n    \"expected\": \"string\",\n    \"received\": \"undefined\",\n    \"path\": [\n      \"projectQuery\"\n    ],\n    \"message\": \"Required\"\n  }\n]",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_31519655-13bd-4ba7-938f-58150041c2b1",
+      "index": 5,
+      "createdAt": "2026-07-04T17:25:34.891Z",
+      "question": "What Jobber jobs are on the schedule today? Use getSchedule and include sources.",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_B_FABRICATED_OR_UNTRACEABLE_TOOL_INPUTS",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_5d649b6c-4dda-409c-9cd7-f1a209c7634b",
+      "index": 6,
+      "createdAt": "2026-07-04T17:25:48.187Z",
+      "question": "How many pool gallons are in the Camp Mikell SiteJobBlueprint? Use lookupSiteJobBlueprintField for poolGallons and include sources.",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_61b1053a-e0ea-46af-af0a-932888c76122",
+      "index": 7,
+      "createdAt": "2026-07-04T17:35:49.101Z",
+      "question": "What Jobber jobs are on the schedule today? Use getSchedule and include sources.",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_B_FABRICATED_OR_UNTRACEABLE_TOOL_INPUTS",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_ac72e8e4-e6bd-4951-b099-7aa0d48f9f1f",
+      "index": 8,
+      "createdAt": "2026-07-04T17:40:53.699Z",
+      "question": "Find CompanyCam photos for Deborah Justice. Use getPhotos and include sources.",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_c06a9e00-f16f-4bb7-89d1-34bdf0088193",
+      "index": 9,
+      "createdAt": "2026-07-05T01:58:34.546Z",
+      "question": "What is our current ytd revenue",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_8a4adc9d-9fb0-44eb-9412-821cfbf34f0c",
+      "index": 10,
+      "createdAt": "2026-07-05T01:59:25.088Z",
+      "question": "Who owes us money",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_aecc87c1-0e37-4dfc-beb4-2a0625e31517",
+      "index": 11,
+      "createdAt": "2026-07-05T02:01:37.227Z",
+      "question": "Show me Deborah Justice pool photos",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_7e3ea576-4cb5-4eff-bdcc-6ac53c8c8e78",
+      "index": 12,
+      "createdAt": "2026-07-05T02:02:10.353Z",
+      "question": "What sources do you use",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_E_SOURCE_GATE_SCOPE",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_e0de09be-3e85-4edb-8e2c-28186a81e903",
+      "index": 13,
+      "createdAt": "2026-07-05T02:08:11.379Z",
+      "question": "Somewhat correct, there is a report in company cam that specifies the resukts",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_52dadf49-2291-4777-92a7-76e3c8857d5a",
+      "index": 14,
+      "createdAt": "2026-07-05T02:08:37.554Z",
+      "question": "The photos in that reply show thumbnails but are t clickable or savable",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_900bd339-dffc-4426-a93a-e9db27af82e9",
+      "index": 15,
+      "createdAt": "2026-07-05T02:10:36.433Z",
+      "question": "Same.report shows results of leak detection. What are they",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_568a5da2-00f4-4d7b-97e1-ba9e4e5f7df2",
+      "index": 16,
+      "createdAt": "2026-07-05T02:42:48.998Z",
+      "question": "Findings are in the report. What are the total gallons of Deborah Justice",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_7c39815f-142d-49c2-8136-c3355bea21dc",
+      "index": 17,
+      "createdAt": "2026-07-05T02:43:01.886Z",
+      "question": "Wrong answer, that was a live receipt correction and should be logged.",
+      "reason": "user_flagged_incorrect",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_23880cc5-b2e6-4d04-a9a7-c3985d6d73ec",
+      "index": 18,
+      "createdAt": "2026-07-05T02:44:09.653Z",
+      "question": "Findings are in the report. What are the total gallons of Deborah Justice",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_3f3efe8b-4530-4c90-94ea-9dc553ae2c80",
+      "index": 19,
+      "createdAt": "2026-07-05T02:44:10.498Z",
+      "question": "Wrong answer, that was a live receipt correction and should be logged.",
+      "reason": "user_flagged_incorrect",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_391ba8f3-2ffc-4669-8e9e-b476fed30257",
+      "index": 20,
+      "createdAt": "2026-07-05T15:26:21.882Z",
+      "question": "Show me the Deborah Justice photos",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_379e6091-79d6-4b10-9365-30a7395752c7",
+      "index": 21,
+      "createdAt": "2026-07-05T15:28:57.368Z",
+      "question": "What is approved but not scheduled yet",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_B_FABRICATED_OR_UNTRACEABLE_TOOL_INPUTS",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_69e362e0-800f-40a2-969f-34bc17832509",
+      "index": 22,
+      "createdAt": "2026-07-05T20:27:05.662Z",
+      "question": "Great detail, organization and format sucks,",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_8e434448-5592-4892-8acb-f14233d882ac",
+      "index": 23,
+      "createdAt": "2026-07-05T20:28:45.575Z",
+      "question": "Emails pulled but no information specific. We need to figure out how to roagaize these in a reasonably readable format. A client would never use this again fomatteds like this",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_E_SOURCE_GATE_SCOPE",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_c93a3d96-3fd1-409b-8696-af40db660be9",
+      "index": 24,
+      "createdAt": "2026-07-05T20:29:07.935Z",
+      "question": "What did semrush site audit say",
+      "reason": "Invalid time value",
+      "class": "CLASS_B_FABRICATED_OR_UNTRACEABLE_TOOL_INPUTS",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_7740dbd5-7912-432d-ba14-41c26165572d",
+      "index": 25,
+      "createdAt": "2026-07-05T20:29:28.085Z",
+      "question": "That was an email in the inbox",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_E_SOURCE_GATE_SCOPE",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_44c3e539-c136-4878-b0c7-5216a989e8a8",
+      "index": 26,
+      "createdAt": "2026-07-05T20:30:01.568Z",
+      "question": "Send me an email to chris1bata@gmail.com. Bryson City job is confirmed for tomorrow.",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_373c42dc-a14a-4db3-8818-fa43a3e9f337",
+      "index": 27,
+      "createdAt": "2026-07-05T21:06:28.503Z",
+      "question": "What did the Semrush site audit say",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_E_SOURCE_GATE_SCOPE",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_4622e671-1f4c-41db-9a93-13ee834173a0",
+      "index": 28,
+      "createdAt": "2026-07-05T21:06:38.187Z",
+      "question": "That was incorrect, this feedback should be logged as a correction.",
+      "reason": "user_flagged_incorrect",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_2a81a0f8-54dc-4c51-9485-a9c4a6d226f5",
+      "index": 29,
+      "createdAt": "2026-07-05T21:13:59.737Z",
+      "question": "What did the Semrush site audit say",
+      "reason": "email_lookup_without_sources",
+      "class": "CLASS_E_SOURCE_GATE_SCOPE",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_c9b9a46d-f70d-43ac-995b-24b8a009e8bd",
+      "index": 30,
+      "createdAt": "2026-07-05T21:14:09.148Z",
+      "question": "That was incorrect, this feedback should be logged as a correction.",
+      "reason": "user_flagged_incorrect",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_1500a659-69ff-4ec7-9b61-a541a977270f",
+      "index": 31,
+      "createdAt": "2026-07-05T22:58:53.634Z",
+      "question": "send me an email at chris1bata@gmail.com, tell me bryson city s on checdule for tomorrow",
+      "reason": "email_lookup_without_sources",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_8e6a3910-a81c-4c41-a6d0-9120b4bd100a",
+      "index": 32,
+      "createdAt": "2026-07-05T23:24:54.499Z",
+      "question": "yes there is, incorrect here, service comletion is in company cam reports",
+      "reason": "user_flagged_incorrect",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_6d1cc90a-1787-4644-93e8-f008ccb920f3",
+      "index": 33,
+      "createdAt": "2026-07-05T23:25:30.888Z",
+      "question": "ok, where is the answer then, i corrected you and you should have replied with correct answer",
+      "reason": "email_lookup_without_sources",
+      "class": "CLASS_E_SOURCE_GATE_SCOPE",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_bc7c656d-46a5-4c3f-834d-432452ec6b39",
+      "index": 34,
+      "createdAt": "2026-07-06T02:08:21.033Z",
+      "question": "yes there is, incorrect here, service completion is in company cam reports",
+      "reason": "user_flagged_incorrect",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_1a846797-38bd-4cb4-ba9e-9151b3b1ce49",
+      "index": 35,
+      "createdAt": "2026-07-06T03:27:04.629Z",
+      "question": "yes there is, incorrect here, service comletion is in company cam reports",
+      "reason": "user_flagged_incorrect",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_bc14ed0d-e1fd-425d-b1ad-0b59cfaec898",
+      "index": 36,
+      "createdAt": "2026-07-06T03:29:01.883Z",
+      "question": "yes there is, incorrect here, service comletion is in company cam reports",
+      "reason": "user_flagged_incorrect",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_187d2fc7-5fb2-4813-ab58-2e49f04d85be",
+      "index": 37,
+      "createdAt": "2026-07-06T03:36:55.025Z",
+      "question": "yes there is, incorrect here, service comletion is in company cam reports",
+      "reason": "user_flagged_incorrect",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_292686d8-ec7f-427d-bb4a-ce5058447997",
+      "index": 38,
+      "createdAt": "2026-07-06T03:39:26.071Z",
+      "question": "yes there is, incorrect here, service comletion is in company cam reports",
+      "reason": "user_flagged_incorrect",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_a5d08ffa-59a7-4462-8e22-1b6fe0793ce0",
+      "index": 39,
+      "createdAt": "2026-07-06T12:17:51.062Z",
+      "question": "There is a report for medallion Pool company last week in company camp. But I need you to check the aqua Trace leak in Gmail mail box for it",
+      "reason": "email_lookup_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_60193bbd-78cb-4ac2-ac4c-9a22301320eb",
+      "index": 40,
+      "createdAt": "2026-07-06T12:18:19.802Z",
+      "question": "You need to infer what I mean. Regardless of typos. The report should be sitting in one of the email boxes as sent and I also copy ourselves on those so we should also have a receipt in the mail",
+      "reason": "email_lookup_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_8869c30f-fb53-48b6-af77-190d452f294a",
+      "index": 41,
+      "createdAt": "2026-07-06T12:18:46.916Z",
+      "question": "Check email for a report sent to medallion Pool company last week",
+      "reason": "email_lookup_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_d1fd2695-4bdf-4130-858d-8f6cedc93fd4",
+      "index": 42,
+      "createdAt": "2026-07-06T12:29:02.500Z",
+      "question": "Deborah Justice is in company cam and you have shown me the pictures before",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_22b78dd3-68d2-48df-bc3e-ddd8539df12e",
+      "index": 43,
+      "createdAt": "2026-07-06T12:31:48.983Z",
+      "question": "Open Denver Justice pool address in Google maps",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_D_CAPABILITY_GAP_AS_DATA_FAILURE",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_37840ccb-6067-480c-be2b-6e234fc5032a",
+      "index": 44,
+      "createdAt": "2026-07-06T20:24:35.910Z",
+      "question": "did todays pool pay?",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_308eddac-f309-4080-8cf9-9c240be0ad75",
+      "index": 45,
+      "createdAt": "2026-07-06T20:25:11.975Z",
+      "question": "what was the issue at todays pool",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_edd184d7-e2a1-4323-8932-16ade4b1265e",
+      "index": 46,
+      "createdAt": "2026-07-06T20:28:58.648Z",
+      "question": "incorrect. it is paid in jobber and also email receipt was sent and zero blaanc einvoce sent, bth viweable in email",
+      "reason": "user_flagged_incorrect",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_49ce2836-9ad0-4669-9cb8-987b160aaeef",
+      "index": 47,
+      "createdAt": "2026-07-06T20:29:47.322Z",
+      "question": "explain this date you randonly pulled from your ass",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_E_SOURCE_GATE_SCOPE",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_e2527faa-87da-49ca-bc20-091a5b62dad4",
+      "index": 48,
+      "createdAt": "2026-07-06T20:30:50.032Z",
+      "question": "how far is deborah justice from here",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_D_CAPABILITY_GAP_AS_DATA_FAILURE",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_1a6ca8a6-682e-44f1-9c95-860a350681d4",
+      "index": 49,
+      "createdAt": "2026-07-06T20:31:33.843Z",
+      "question": "how far is it from my house",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_D_CAPABILITY_GAP_AS_DATA_FAILURE",
+      "evidence": "Firestore failureLog"
+    },
+    {
+      "id": "fail_9c84a3b6-38ea-47b3-99ca-969cfe48dc9d",
+      "index": 50,
+      "createdAt": "2026-07-06T20:31:45.378Z",
+      "question": "102 kate lane fair play sc",
+      "reason": "factual_answer_without_sources",
+      "class": "CLASS_D_CAPABILITY_GAP_AS_DATA_FAILURE",
+      "evidence": "Firestore failureLog"
+    }
+  ],
+  "ownerReportedFailureMap": [
+    {
+      "failure": "P1-A Deborah Justice gallons reused Camp Mikell 101000",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "root": "Blueprint lookup was not keyed to requested entity/job."
+    },
+    {
+      "failure": "Camp Mikell issue answered from Jobber title while CompanyCam report held the real answer",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "root": "Jobber plausible hit ended search early."
+    },
+    {
+      "failure": "Deborah Justice completion time answered from Jobber lead status while CompanyCam report held completion 3:10pm",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "root": "Jobber absence treated as reality."
+    },
+    {
+      "failure": "Rachel Payne paid status answered unpaid from Jobber lead while Jobber/email showed paid/zero-balance evidence",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "root": "Payment question lacked invoice/email rails and stopped at lead status."
+    },
+    {
+      "failure": "Tomorrow schedule queried Jan 1-2 2024",
+      "class": "CLASS_B_FABRICATED_OR_UNTRACEABLE_TOOL_INPUTS",
+      "root": "LLM-supplied stale schedule args were not overridden/rejected."
+    },
+    {
+      "failure": "ETA follow-up used July 5 when conversation context was July 6",
+      "class": "CLASS_B_FABRICATED_OR_UNTRACEABLE_TOOL_INPUTS",
+      "root": "Relative date context was not pinned as deterministic state."
+    },
+    {
+      "failure": "Send email routed to email search",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "root": "Action command was allowed to compete with fact/email-search routing."
+    },
+    {
+      "failure": "Correction follow-up routed to email lookup instead of CompanyCam retry",
+      "class": "CLASS_C_INTENT_MISROUTING",
+      "root": "Feedback/correction was not a durable intent class with recovery policy."
+    },
+    {
+      "failure": "Formatting feedback/source questions got no-source stonewall",
+      "class": "CLASS_E_SOURCE_GATE_SCOPE",
+      "root": "Source gate treated meta/action/feedback as business facts."
+    },
+    {
+      "failure": "Semrush email body path surfaced Invalid time value",
+      "class": "CLASS_B_FABRICATED_OR_UNTRACEABLE_TOOL_INPUTS",
+      "root": "Date parsing exception escaped tool boundary."
+    },
+    {
+      "failure": "Distance/how far/open maps questions got missing-data phrasing",
+      "class": "CLASS_D_CAPABILITY_GAP_AS_DATA_FAILURE",
+      "root": "No distance/maps capability surfaced as data absence instead of not-yet-built capability."
+    },
+    {
+      "failure": "CompanyCam reports initially unreachable; photos-only access was insufficient",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "root": "Report/document rail was missing from findings policy."
+    },
+    {
+      "failure": "Deborah Justice photo regression no-source despite known project",
+      "class": "CLASS_A_SINGLE_RAIL_CONCLUSION",
+      "root": "Entity extraction/project matching was per-phrase, not policy-backed alias search."
+    },
+    {
+      "failure": "Photo thumbnails not tappable/savable",
+      "class": "CLASS_F_CLIENT_UI_CONTRACT_GAP",
+      "root": "Server returned media but UI lacked required interaction contract."
+    },
+    {
+      "failure": "Inbox triage summarized noise as if actionable",
+      "class": "CLASS_G_OUTPUT_QUALITY_RULE_NOT_ENFORCED",
+      "root": "Triage category/rank was prompt-shaped before server-side category rules."
+    }
+  ]
+}

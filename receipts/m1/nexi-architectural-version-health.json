@@ -1,0 +1,40 @@
+﻿{
+    "ok":  true,
+    "checkedAt":  "2026-07-06T22:20:43.5744804Z",
+    "baseUrl":  "https://nexteam-studio-staging.up.railway.app",
+    "expectedSha":  "fb3cd745f43bb473a1fc98165cad3c0ddf488060",
+    "version":  {
+                    "sha":  "fb3cd745f43bb473a1fc98165cad3c0ddf488060",
+                    "builtAt":  "2026-07-06T22:20:41.422Z"
+                },
+    "health":  {
+                   "ok":  true,
+                   "checkedAt":  "2026-07-06T22:20:42.452Z",
+                   "rails":  {
+                                 "jobber":  {
+                                                "ok":  true,
+                                                "configured":  true,
+                                                "provider":  "jobber",
+                                                "op":  "graphql_read",
+                                                "latencyMs":  343,
+                                                "detail":  "Jobber GraphQL read succeeded."
+                                            },
+                                 "companycam":  {
+                                                    "ok":  true,
+                                                    "configured":  true,
+                                                    "provider":  "companycam",
+                                                    "op":  "projects_read",
+                                                    "latencyMs":  492,
+                                                    "detail":  "CompanyCam projects read succeeded."
+                                                },
+                                 "anthropic":  {
+                                                   "ok":  true,
+                                                   "configured":  true,
+                                                   "provider":  "anthropic",
+                                                   "op":  "configured_no_spend",
+                                                   "latencyMs":  0,
+                                                   "detail":  "Configured; live message call skipped by no-spend overnight limit."
+                                               }
+                             }
+               }
+}
