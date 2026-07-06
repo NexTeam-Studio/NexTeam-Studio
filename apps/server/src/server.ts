@@ -18,9 +18,13 @@ import { buildHealth } from "./health.js";
 import { registerCrmRoutes } from "./crm/routes.js";
 import { getAdminDb } from "./firebase.js";
 import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
+import { createContentNexiTools } from "./content/nexiTools.js";
+import { InMemoryContentRepository } from "./content/repository.js";
+import { registerContentRoutes } from "./content/routes.js";
 
 const app = express();
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+const contentRepository = new InMemoryContentRepository();
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
@@ -35,7 +39,9 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
-app.use("/api/nexi", createNexiRouter(process.env));
+app.use("/api/nexi", createNexiRouter(process.env, {
+  extraTools: createContentNexiTools({ repository: contentRepository, approvalQueue })
+}));
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
@@ -124,6 +130,7 @@ app.post("/api/approval-queue/:id/approve", async (req: Request, res: Response) 
 
 registerCrmRoutes(app, { approvalQueue, eventBus });
 registerFieldDocsRoutes(app, { eventBus });
+registerContentRoutes(app, { repository: contentRepository, approvalQueue, eventBus, env: process.env });
 app.use(express.static(webDistDir));
 
 app.get("/", (_req: Request, res: Response) => {
