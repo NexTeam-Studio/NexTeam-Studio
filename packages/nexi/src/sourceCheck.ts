@@ -28,6 +28,7 @@ const FEEDBACK_PROMPT_PATTERNS = [
   /\b(?:wrong answer|wrong|incorrect|not correct|somewhat correct|correction|you'?re incorrect|you are incorrect)\b/i,
   /\b(?:bug|ui|thumbnail|thumbnails|clickable|savable|saveable|tap|tappable)\b/i,
   /\b(?:wasting\s+(?:api\s+)?tokens|asked\s+that|should\s+already)\b/i,
+  /\b(?:explain\s+this\s+date|random(?:ly|only)|randonly|pulled\s+from\s+your)\b/i,
   /\b(?:formatting feedback|response format|answer format|format should|format needs|format sucks|organization|organize|roagaize|readable|client would never|too verbose|minimal ids?|sender\s*\+\s*subject|scannable)\b/i,
   /^\s*(?:correct|ok|okay|good)\s*[.!]?\s*$/i
 ];

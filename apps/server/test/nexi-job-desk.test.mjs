@@ -763,6 +763,31 @@ test("Nexi feedback about token waste never routes to email search", async () =>
   assert.deepEqual(result.toolRuns, []);
 });
 
+test("Nexi frustrated date feedback never triggers the source stonewall", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "explain this date you randonly pulled from your ass" }],
+    tools: [{
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string() }),
+      handler: async () => {
+        throw new Error("searchEmail must not run for date feedback turns");
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("Anthropic must not run for date feedback turns");
+    }
+  });
+  assert.match(result.answer, /noted that feedback/);
+  assert.doesNotMatch(result.answer, /written down anywhere/i);
+  assert.deepEqual(result.toolRuns, []);
+});
+
 test("Nexi photo prompts extract the CompanyCam project query", async () => {
   const calls = [];
   let parsedToolArgs = null;
