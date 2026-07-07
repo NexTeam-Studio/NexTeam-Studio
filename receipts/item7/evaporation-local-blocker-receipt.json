@@ -1,0 +1,47 @@
+{
+  "module": "item7-evaporation",
+  "phase": "local-build-and-staging-env-probe",
+  "codeCommit": "23111bc030e44ae43b6e8b48af7d21d750e2ce5c",
+  "status": "blocked_on_staging_openweather_key",
+  "localVerification": {
+    "npmInstall": "passed; real node_modules installed in build/evaporation worktree",
+    "npmRunBuild": "passed",
+    "targetedTests": "node --test apps/server/test/evaporation.test.mjs: 5/5 passing",
+    "npmRunLint": "passed",
+    "npmRunTypecheck": "passed",
+    "npmRunTest": "106/106 passing",
+    "checkTenancy": "passed",
+    "checkSecrets": "passed",
+    "checkProviderImports": "passed",
+    "checkBlueprints": "passed",
+    "checkSecretHistory": "passed; 230 reachable commits, 3583 reachable objects checked"
+  },
+  "stagingEnvProbe": {
+    "command": "scripts/security/invoke-railway-staging.ps1 -RailwayArgs run --service NexTeam-Studio --environment staging -- node scripts/probe-evaporation-staging-env.mjs",
+    "printedSecretValues": false,
+    "result": {
+      "OPENWEATHER_API_KEY": false,
+      "OPENWEATHERMAP_API_KEY": false,
+      "TENANT_ID": null
+    }
+  },
+  "implemented": {
+    "calculator": "Aquatrace v20 formula ported from the existing calculator.",
+    "weather": "OpenWeather current weather and 8-slot forecast client with ZIP or address geocoding.",
+    "pdf": "Branded Aquatrace evaporation PDF renderer.",
+    "routes": [
+      "POST /api/evaporation/run",
+      "GET /api/evaporation/reports/:id/pdf"
+    ],
+    "nexiTool": "runEvaporation returns report metadata, PDF URL, attachment metadata, and native source."
+  },
+  "credentialIncident": {
+    "secretClass": "OpenWeather API key",
+    "whereItExists": "legacy Aquatrace calculator source file outside this repo",
+    "whereItSurfaced": "local tool output while inspecting legacy formula lines",
+    "repeatedInReceipt": false,
+    "reusedForStaging": false,
+    "requiredOwnerAction": "Rotate the old OpenWeather key, then add the replacement as OPENWEATHER_API_KEY in Railway staging."
+  },
+  "exactBlocker": "Railway staging has neither OPENWEATHER_API_KEY nor OPENWEATHERMAP_API_KEY, so the live OpenWeather-backed evaporation receipt cannot run yet."
+}
