@@ -139,9 +139,9 @@ try {
     reportId: routeRun.json?.report?.id,
     pdfUrl: routeRun.json?.pdfUrl,
     attachment: routeRun.json?.attachment,
-    calculation: routeRun.json?.report?.calculation,
+    result: routeRun.json?.report?.result,
     currentWeather: routeRun.json?.report?.currentWeather,
-    forecastSlots: routeRun.json?.report?.calculation?.forecast?.length ?? 0
+    forecastSlots: routeRun.json?.report?.result?.forecast?.length ?? 0
   };
   assert(routeRun.ok && routeRun.json?.ok, `evaporation route failed: ${routeRun.json?.error || routeRun.text}`);
 
@@ -151,7 +151,7 @@ try {
     currentWeather: report.currentWeather,
     forecast: report.forecast
   });
-  const liveCalc = report.calculation;
+  const liveCalc = report.result;
   assertClose(liveCalc.gallonsPerInch, manual.gallonsPerInch, 0.0001, "gallonsPerInch");
   assertClose(liveCalc.observedLossInchesPerDay, manual.observedLossInchesPerDay, 0.0001, "observedLossInchesPerDay");
   assertClose(liveCalc.evapInchesPerDay, manual.evapInchesPerDay, 0.0001, "evapInchesPerDay");
