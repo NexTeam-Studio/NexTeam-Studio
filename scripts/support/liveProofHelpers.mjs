@@ -216,13 +216,30 @@ export function resolveServiceAccountPath() {
   return requireEnv("GOOGLE_APPLICATION_CREDENTIALS");
 }
 
-export function createAdminTokenMinter({ serviceAccountPath = resolveServiceAccountPath() } = {}) {
-  const credentials = JSON.parse(readFileSync(serviceAccountPath, "utf8"));
+function resolveAdminCredentials({ serviceAccountPath } = {}) {
+  const raw = optionalEnv("FIREBASE_SERVICE_ACCOUNT");
+  if (raw) {
+    return JSON.parse(raw);
+  }
+
+  const projectId = optionalEnv("FIREBASE_ADMIN_PROJECT_ID");
+  const clientEmail = optionalEnv("FIREBASE_ADMIN_CLIENT_EMAIL");
+  const privateKey = optionalEnv("FIREBASE_ADMIN_PRIVATE_KEY").replace(/\\n/g, "\n");
+  if (projectId && clientEmail && privateKey) {
+    return { projectId, clientEmail, privateKey };
+  }
+
+  const path = serviceAccountPath || resolveServiceAccountPath();
+  return JSON.parse(readFileSync(path, "utf8"));
+}
+
+export function createAdminTokenMinter({ serviceAccountPath = "" } = {}) {
+  const credentials = resolveAdminCredentials({ serviceAccountPath });
   const appName = `live-proof-admin-${randomUUID()}`;
   const app = initializeAdminApp(
     {
       credential: cert(credentials),
-      projectId: credentials.project_id,
+      projectId: credentials.project_id || credentials.projectId,
     },
     appName
   );

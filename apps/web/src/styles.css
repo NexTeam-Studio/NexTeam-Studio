@@ -24,6 +24,19 @@ input {
     linear-gradient(145deg, #f6eedf 0%, #d3e4d5 48%, #e1c092 100%);
 }
 
+.ops-shell {
+  place-items: stretch;
+}
+
+.ops-grid {
+  width: min(1120px, 100%);
+  display: grid;
+  grid-template-columns: minmax(340px, 430px) minmax(320px, 1fr);
+  align-items: stretch;
+  gap: 18px;
+  margin: auto;
+}
+
 .phone {
   width: min(430px, 100%);
   min-height: min(820px, calc(100vh - 36px));
@@ -34,6 +47,124 @@ input {
   border-radius: 34px;
   background: rgba(255, 250, 240, 0.9);
   box-shadow: 0 28px 90px rgba(48, 44, 32, 0.28);
+}
+
+.schedule-card {
+  min-height: min(820px, calc(100vh - 36px));
+  padding: 24px;
+  overflow: auto;
+  border: 1px solid rgba(31, 33, 28, 0.16);
+  border-radius: 34px;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 240, 0.94), rgba(250, 239, 218, 0.88)),
+    radial-gradient(circle at 100% 0%, rgba(49, 95, 88, 0.16), transparent 34%);
+  box-shadow: 0 28px 90px rgba(48, 44, 32, 0.2);
+}
+
+.schedule-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.schedule-heading h2 {
+  margin: 0;
+  color: #26352c;
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  line-height: 0.92;
+}
+
+.schedule-heading input {
+  min-width: 150px;
+  border: 1px solid rgba(38, 53, 44, 0.18);
+  border-radius: 999px;
+  padding: 11px 13px;
+  background: #fffdf7;
+  color: #26352c;
+}
+
+.view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 16px;
+}
+
+.view-tabs button {
+  border: 1px solid rgba(49, 95, 88, 0.24);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: #315f58;
+  background: rgba(255, 253, 247, 0.72);
+  text-transform: capitalize;
+}
+
+.view-tabs button.active {
+  color: #fff8ea;
+  background: #315f58;
+}
+
+.schedule-status {
+  margin: 16px 0 0;
+  color: #526055;
+}
+
+.visit-list {
+  display: grid;
+  gap: 12px;
+}
+
+.visit-list.map {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.visit-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(38, 53, 44, 0.11);
+  border-radius: 24px;
+  background: rgba(255, 253, 247, 0.86);
+}
+
+.visit-card h3,
+.visit-card p {
+  margin: 0;
+}
+
+.visit-card h3 {
+  color: #26352c;
+  font-size: 1.16rem;
+}
+
+.visit-card p {
+  color: #526055;
+  line-height: 1.35;
+}
+
+.visit-time {
+  margin-bottom: 6px !important;
+  color: #b06b34 !important;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.visit-status {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #26352c;
+  background: rgba(228, 191, 115, 0.3);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.map-line {
+  border-top: 1px solid rgba(38, 53, 44, 0.1);
+  padding-top: 10px;
+  font-size: 0.88rem;
 }
 
 .topbar {
@@ -162,11 +293,36 @@ h1 {
   font-size: 0.82rem;
 }
 
+.source-photo {
+  border-radius: 20px;
+}
+
+.thumb-button {
+  border: 0;
+  padding: 0;
+  border-radius: 14px;
+  background: transparent;
+  line-height: 0;
+  cursor: zoom-in;
+}
+
 .thumb {
   width: 42px;
   height: 42px;
   object-fit: cover;
   border-radius: 14px;
+  box-shadow: 0 0 0 2px rgba(49, 95, 88, 0.18);
+}
+
+.save-link {
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 6px 9px;
+  background: rgba(49, 95, 88, 0.12);
+  color: #315f58;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .typing {
@@ -312,6 +468,55 @@ h1 {
   color: #9c3324 !important;
 }
 
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(20, 27, 23, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.lightbox-card {
+  width: min(680px, 100%);
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 26px;
+  background: #fff8ea;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.34);
+}
+
+.lightbox-card img {
+  width: 100%;
+  max-height: min(72vh, 740px);
+  object-fit: contain;
+  border-radius: 18px;
+  background: #1f211c;
+}
+
+.lightbox-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lightbox-actions a,
+.lightbox-actions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 16px;
+  color: #fff8ea;
+  background: #315f58;
+  text-decoration: none;
+}
+
+.lightbox-actions button {
+  background: #b06b34;
+}
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -320,5 +525,16 @@ h1 {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 880px) {
+  .ops-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .phone,
+  .schedule-card {
+    min-height: auto;
   }
 }

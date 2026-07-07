@@ -1,0 +1,142 @@
+{
+  "receipt": "m6-lite-p1-hij-live-fix",
+  "capturedAt": "2026-07-05T17:13:18-04:00",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "deploy": {
+    "versionSha": "a87be7848dd4cd5fed16f5cdda1d96019298e4c0",
+    "shaMatch": true,
+    "healthOk": true,
+    "healthRails": {
+      "jobber": "ok",
+      "companycam": "ok",
+      "anthropic": "configured_no_spend"
+    }
+  },
+  "fixes": {
+    "p1h": {
+      "summary": "F7 source gate now exempts email action commands, meta-feedback, and correction turns; draft email routes to ApprovalQueue instead of being source-gated.",
+      "tests": [
+        "source check does not block email action commands or honest tool failures",
+        "Nexi Anthropic gateway preloads draftEmail for send-email action commands",
+        "Nexi service logs softer correction wording before the source gate can fire"
+      ]
+    },
+    "p1i": {
+      "summary": "Invalid email date/tool failures are sanitized; raw tool exceptions do not reach the user.",
+      "tests": [
+        "Comms Nexi summarizeInbox handles invalid date strings and returns sender-subject-ask items",
+        "Nexi Anthropic gateway sanitizes deterministic email tool failures",
+        "Nexi Anthropic gateway turns empty deterministic email searches into logged honest failures"
+      ]
+    },
+    "p1j": {
+      "summary": "Inbox summaries and triage expose sender, subject, one-line ask, grouped priority data, and classify sign-in/account-welcome mail as noise rather than client inquiry.",
+      "tests": [
+        "Comms Nexi triageInbox ranks Aquatrace attention items and excludes noise",
+        "Comms Nexi summarizeInbox handles invalid date strings and returns sender-subject-ask items"
+      ]
+    }
+  },
+  "liveTranscriptRedacted": {
+    "endpoint": "POST /api/nexi/message",
+    "auth": "Firebase custom token minted in-memory under Railway staging env; token not printed or stored",
+    "tenantId": "aquatrace",
+    "conversationId": "m6-lite-live-fix-1783286037965",
+    "turns": [
+      {
+        "turn": "semrush",
+        "prompt": "What did the Semrush site audit say",
+        "status": 200,
+        "ok": true,
+        "answerRedacted": "[email body redacted per PII rule; returned clean honest failure: could not find matching email, logged instead of guessing]",
+        "rawInvalidTimeLeak": false,
+        "noSourceStonewall": false,
+        "failureId": "fail_2a81a0f8-54dc-4c51-9485-a9c4a6d226f5",
+        "toolRuns": [
+          {
+            "name": "searchEmail",
+            "sourceCount": 0
+          }
+        ],
+        "usageTotalTokens": 0
+      },
+      {
+        "turn": "send-command",
+        "prompt": "Send an email to [email] saying I received the audit and will review it today.",
+        "status": 200,
+        "ok": true,
+        "answerRedacted": "Draft queued for approval; recipient redacted; no outbound send executed.",
+        "rawInvalidTimeLeak": false,
+        "noSourceStonewall": false,
+        "failureId": null,
+        "toolRuns": [
+          {
+            "name": "draftEmail",
+            "sourceRail": "native",
+            "sourceRef": "appr_9eb9e5c0-127f-4dad-9854-f1b153d58d5d"
+          }
+        ],
+        "usageTotalTokens": 987
+      },
+      {
+        "turn": "format-feedback",
+        "prompt": "Formatting feedback: attention items must lead with sender, subject, and one-line ask, grouped by priority with minimal IDs.",
+        "status": 200,
+        "ok": true,
+        "answerRedacted": "Acknowledged formatting rule without source-gate stonewall.",
+        "rawInvalidTimeLeak": false,
+        "noSourceStonewall": false,
+        "failureId": null,
+        "toolRuns": [],
+        "usageTotalTokens": 2696
+      },
+      {
+        "turn": "correction",
+        "prompt": "That was incorrect, this feedback should be logged as a correction.",
+        "status": 200,
+        "ok": true,
+        "answerRedacted": "Confirmed logged as user_flagged_incorrect and tied to prior answer.",
+        "rawInvalidTimeLeak": false,
+        "noSourceStonewall": false,
+        "failureId": "fail_c9b9a46d-f70d-43ac-995b-24b8a009e8bd",
+        "toolRuns": [],
+        "usageTotalTokens": 0
+      }
+    ]
+  },
+  "failureLogAuditRedacted": [
+    {
+      "id": "fail_2a81a0f8-54dc-4c51-9485-a9c4a6d226f5",
+      "reason": "email_lookup_without_sources",
+      "op": "message",
+      "sources": [],
+      "piiRedacted": true
+    },
+    {
+      "id": "fail_c9b9a46d-f70d-43ac-995b-24b8a009e8bd",
+      "reason": "user_flagged_incorrect",
+      "op": "message",
+      "correctionText": "That was incorrect, this feedback should be logged as a correction.",
+      "flaggedConversationId": "conv_920f4068-14e3-413a-90da-6be1dde191cd",
+      "flaggedQuestion": "Formatting feedback: attention items must lead with sender, subject, and one-line ask, grouped by priority with minimal IDs.",
+      "flaggedAnswer": "[redacted]",
+      "piiRedacted": true
+    }
+  ],
+  "verification": {
+    "build": "npm run build",
+    "buildResult": "passed",
+    "typecheck": "npm run typecheck",
+    "typecheckResult": "passed",
+    "focusedTests": "node --test apps/server/test/nexi-job-desk.test.mjs apps/server/test/comms-lite.test.mjs",
+    "focusedTestsResult": "47 passing, 0 failing",
+    "secretScan": "npm run check:secrets",
+    "secretScanResult": "passed before receipt commit"
+  },
+  "hardLimits": {
+    "outboundSendExecuted": false,
+    "piiInReceipt": false,
+    "secretsInReceipt": false,
+    "productionTouched": false
+  }
+}

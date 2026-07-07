@@ -1,0 +1,4867 @@
+{
+  "ok": true,
+  "tenantId": "aquatrace",
+  "window": {
+    "local": "2026-07-04 21:50-22:15 America/New_York",
+    "start": "2026-07-05T01:50:00.000Z",
+    "end": "2026-07-05T02:15:00.000Z"
+  },
+  "note": "Firestore conversations do not persist raw toolRuns in current M1; replayedRawToolData reruns read-only rails for audit evidence.",
+  "counts": {
+    "conversations": 15,
+    "failureLog": 7,
+    "honestFailureMatches": 2,
+    "siteJobBlueprints": 8
+  },
+  "answers": [
+    {
+      "id": "conv_7914315b-b4d0-4bcb-972c-8c1fca49bef3",
+      "createdAt": "2026-07-05T01:54:15.668Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "What's on schedule for monday",
+      "assistantText": "Here's what I can confirm from the verified schedule data — note that this dataset doesn't include specific date/time fields per job, so I can't 100% confirm which are for Monday specifically. However, these are the jobs currently marked **status: \"scheduled\"** (as opposed to \"lead\"):\n\n**Scheduled Jobs (from getSchedule):**\n\n1. **Commercial Main Drain Measurements & Cover Replacements** — $125\n   Client: ASP of Asheville\n   Property: 59 Running Creek Trail, Arden, NC 28704\n\n2. **Commercial Main Drain Measurements & Cover Replacements** — $125\n   Client: ASP of Asheville\n   Property: 90 Vintage Road, Candler, NC 28715\n\n3. **Swimming Pool / Spa Leak Detection Service** — $1,500\n   Client: ASP of Asheville\n   Property: 204 Hendersonville Road, Asheville, NC 28803\n\n4. **Swimming Pool Plumbing** — $455\n   Client: Ben Construction Inc\n   Property: 245 McDaniel Avenue, Greenville, SC 29601\n\n5. **Swimming Pool Leak Detection Service** — $650\n   Client: Randolph Hunter\n   Property: 301 Thornblade Boulevard, Greer, SC 29650\n\n⚠️ I don't have a verified date/time field in this data to confirm these fall on Monday specifically — everything else returned was status \"lead\" (not yet scheduled). If you want jobs confirmed for a specific date, I'd need a schedule query filtered by date rather than a general job list.",
+      "storedSources": [
+        {
+          "rail": "jobber",
+          "ref": "jobs",
+          "label": "Jobber jobs GraphQL read"
+        }
+      ],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": [
+          "schedule_or_technician"
+        ],
+        "jobberScheduleToday": [
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 795,
+              "tax": 0,
+              "total": 795
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+              "tenantId": "aquatrace",
+              "name": "Deborah Justice",
+              "emails": [
+                "deborahhopegreenhouses@gmail.com"
+              ],
+              "phones": [
+                "8649030288"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+              "address": {
+                "street1": "181 Isbell Road",
+                "city": "Fair Play",
+                "province": "South Carolina",
+                "postalCode": "29643",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkwOTI0ODc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng==",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 660,
+              "tax": 0,
+              "total": 660
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkwOTI0ODc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng==",
+              "tenantId": "aquatrace",
+              "name": "American Lifestyle Pools",
+              "emails": [
+                "jeffcasealp@gmail.com"
+              ],
+              "phones": [
+                "7705805581"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng=="
+              },
+              "company": "American Lifestyle Pools"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODgwMQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODgwMQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng==",
+              "address": {
+                "street1": "5728 Grand Reunion Drive",
+                "city": "Hoschton",
+                "province": "Georgia",
+                "postalCode": "30548",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjIzNDY=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc=",
+            "status": "lead",
+            "title": "Partial - Plumbing Pressure Test Only - Commercial Pool - Renaissance Hotel",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1850,
+              "tax": 0,
+              "total": 1850
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjIzNDY="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc=",
+              "tenantId": "aquatrace",
+              "name": "Renaissance Downtown Asheville Hotel",
+              "emails": [
+                "Ari.Tukachinsky@windsorhospitality.com"
+              ],
+              "phones": [
+                "7743645555"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc="
+              },
+              "company": "Renaissance Downtown Asheville Hotel"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA3NzMwMg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA3NzMwMg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc=",
+              "address": {
+                "street1": "31 Woodfin Street",
+                "city": "Asheville",
+                "province": "North Carolina",
+                "postalCode": "28801",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDMyNDY=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 770,
+              "tax": 0,
+              "total": 770
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDMyNDY="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA=",
+              "tenantId": "aquatrace",
+              "name": "Rachel Payne",
+              "emails": [
+                "rachel.george.payne@gmail.com"
+              ],
+              "phones": [
+                "+18285577103"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTQ1MDIxMA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTQ1MDIxMA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA=",
+              "address": {
+                "street1": "400 Jacobs Road",
+                "city": "Bryson City",
+                "province": "North Carolina",
+                "postalCode": "28713",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjI3MzQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1120,
+              "tax": 0,
+              "total": 1120
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjI3MzQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "tenantId": "aquatrace",
+              "name": "Medallion Pool Company",
+              "emails": [
+                "dallas@medallionpool.com",
+                "melody@medallionpool.com"
+              ],
+              "phones": [
+                "8282030625"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg="
+              },
+              "company": "Medallion Pool Company"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODA1OQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODA1OQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "address": {
+                "street1": "1126 Upper Thomas Branch Road",
+                "city": "Marshall",
+                "province": "North Carolina",
+                "postalCode": "28753",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk0MzA5Mjc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection - Spa Only",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 880,
+              "tax": 0,
+              "total": 880
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk0MzA5Mjc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg=",
+              "tenantId": "aquatrace",
+              "name": "Oleta Falls Community",
+              "emails": [
+                "BrandonMelton25@gmail.com"
+              ],
+              "phones": [
+                "4014871163"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg="
+              },
+              "company": "Oleta Falls Community"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDcyNjgyNQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDcyNjgyNQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg=",
+              "address": {
+                "street1": "765 Oleta Mill Trail",
+                "city": "Hendersonville",
+                "province": "North Carolina",
+                "postalCode": "28792",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4MTI0Nzc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4MTI0Nzc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk=",
+              "tenantId": "aquatrace",
+              "name": "Dick Leopard",
+              "emails": [
+                "dickleopard@aol.com"
+              ],
+              "phones": [
+                "8643500538"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3MjE1MQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3MjE1MQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk=",
+              "address": {
+                "street1": "224 Carson Road",
+                "city": "Easley",
+                "province": "South Carolina",
+                "postalCode": "29642",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDg2MTQ4MzI=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ=",
+            "status": "lead",
+            "title": "Statehouse Arena - Commercial Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1710,
+              "tax": 0,
+              "total": 1710
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDg2MTQ4MzI="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ=",
+              "tenantId": "aquatrace",
+              "name": "L3 Campus",
+              "emails": [
+                "twalker@l3campus.com"
+              ],
+              "phones": [
+                "9137497157"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ="
+              },
+              "company": "L3 Campus"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4OTY3MA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4OTY3MA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ=",
+              "address": {
+                "street1": "600 West Lafayette Street",
+                "city": "Tallahassee",
+                "province": "Florida",
+                "postalCode": "32304",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgzNTk1Nzc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgzNTk1Nzc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg=",
+              "tenantId": "aquatrace",
+              "name": "Dave Clark",
+              "emails": [
+                "davenanderson1@gmail.com"
+              ],
+              "phones": [
+                "8648847685"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDE4NjkzNg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDE4NjkzNg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg=",
+              "address": {
+                "street1": "1821 Club Drive",
+                "city": "Anderson",
+                "province": "South Carolina",
+                "postalCode": "29625",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NTQ2MjQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI=",
+            "status": "lead",
+            "title": "Partial - Plumbing - Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 650,
+              "tax": 0,
+              "total": 650
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NTQ2MjQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI=",
+              "tenantId": "aquatrace",
+              "name": "Heather Weaver",
+              "emails": [
+                "Hhweaver23@gmail.com"
+              ],
+              "phones": [
+                "828-713-1337"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTgwMjIwMw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTgwMjIwMw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI=",
+              "address": {
+                "street1": "300 Morgan Branch Road",
+                "city": "Weaverville",
+                "province": "North Carolina",
+                "postalCode": "28787",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgyOTMzODc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 695,
+              "tax": 0,
+              "total": 695
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgyOTMzODc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ=",
+              "tenantId": "aquatrace",
+              "name": "Bill Pridemore",
+              "emails": [
+                "bp338@yahoo.com"
+              ],
+              "phones": [
+                "8643803700"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4MTQ3Mw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4MTQ3Mw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ=",
+              "address": {
+                "street1": "5 Rugosa Way",
+                "city": "Greer",
+                "province": "South Carolina",
+                "postalCode": "29650",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgxMDUxODM=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgxMDUxODM="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk=",
+              "tenantId": "aquatrace",
+              "name": "Sloan Cheves",
+              "emails": [
+                "sloancheves@hotmail.com"
+              ],
+              "phones": [
+                "8643460368"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNzQyNg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNzQyNg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk=",
+              "address": {
+                "street1": "100 Chapman Place",
+                "city": "Greenville",
+                "province": "South Carolina",
+                "postalCode": "29605",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2MzMzOTE=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU=",
+            "status": "lead",
+            "title": "Commercial - Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1450,
+              "tax": 0,
+              "total": 1450
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2MzMzOTE="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU=",
+              "tenantId": "aquatrace",
+              "name": "Valley View Condominiums",
+              "emails": [
+                "voni.gay@gmail.com"
+              ],
+              "phones": [
+                "7064902303"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU="
+              },
+              "company": "Valley View Condominiums"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNDIyMQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNDIyMQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU=",
+              "address": {
+                "street1": "158 Sun Valley Circle",
+                "city": "Dillard",
+                "province": "Georgia",
+                "postalCode": "30537",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc5MjU3NTQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+            "status": "lead",
+            "title": "ASP Asheville - AC Hotel - Commercial Main Drain Cover Reattachment",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 250,
+              "tax": 0,
+              "total": 250
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc5MjU3NTQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+              "tenantId": "aquatrace",
+              "name": "ASP of Asheville",
+              "emails": [
+                "aspofasheville@gmail.com"
+              ],
+              "phones": [
+                "8285515511",
+                "8287726469"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg=="
+              },
+              "company": "ASP of Asheville"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NjE5OTQ1OQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NjE5OTQ1OQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+              "address": {
+                "street1": "186 Hendersonville Road",
+                "city": "Asheville",
+                "province": "North Carolina",
+                "postalCode": "28803",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NDA0NzU=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+            "status": "lead",
+            "title": "General Repair - Underwater Sealant Application",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 0,
+              "tax": 0,
+              "total": 0
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NDA0NzU="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "tenantId": "aquatrace",
+              "name": "Alex Mastej",
+              "emails": [
+                "Alex@campmikell.com"
+              ],
+              "phones": [
+                "908-783-9485"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "address": {
+                "street1": "237 Camp Mikell Court",
+                "city": "Toccoa",
+                "province": "Georgia",
+                "postalCode": "30577",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2Mzc5MjQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2Mzc5MjQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ=",
+              "tenantId": "aquatrace",
+              "name": "Zac Campbell",
+              "emails": [
+                "Zaccampbell89@gmail.com"
+              ],
+              "phones": [
+                "8643786616"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTYyMjY0Mw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTYyMjY0Mw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ=",
+              "address": {
+                "street1": "2274 Old Hodges Road",
+                "city": "Abbeville",
+                "province": "South Carolina",
+                "postalCode": "29620",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDcxMzk5MTM=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1295,
+              "tax": 0,
+              "total": 1295
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDcxMzk5MTM="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "tenantId": "aquatrace",
+              "name": "Medallion Pool Company",
+              "emails": [
+                "dallas@medallionpool.com",
+                "melody@medallionpool.com"
+              ],
+              "phones": [
+                "8282030625"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg="
+              },
+              "company": "Medallion Pool Company"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODU4MDU3Nw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODU4MDU3Nw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "address": {
+                "street1": "51 North Merrimon Avenue",
+                "city": "Woodfin",
+                "province": "North Carolina",
+                "postalCode": "28804",
+                "country": "United States",
+                "street2": "Suite 101"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY4NzI3MjA=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+            "status": "lead",
+            "title": "Commercial - Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 2700,
+              "tax": 0,
+              "total": 2700
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY4NzI3MjA="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "tenantId": "aquatrace",
+              "name": "Alex Mastej",
+              "emails": [
+                "Alex@campmikell.com"
+              ],
+              "phones": [
+                "908-783-9485"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "address": {
+                "street1": "237 Camp Mikell Court",
+                "city": "Toccoa",
+                "province": "Georgia",
+                "postalCode": "30577",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY1MzU0MDM=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw==",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY1MzU0MDM="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw==",
+              "tenantId": "aquatrace",
+              "name": "David Williams",
+              "emails": [
+                "jdavidwilliams@gmail.com"
+              ],
+              "phones": [
+                "8643539299"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw=="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzk3MjYwNzUw",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzk3MjYwNzUw",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw==",
+              "address": {
+                "street1": "407 Lake Front Road",
+                "city": "Townville",
+                "province": "South Carolina",
+                "postalCode": "29689",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDU5ODAxMjI=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDU5ODAxMjI="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI=",
+              "tenantId": "aquatrace",
+              "name": "Ryan McAlister",
+              "emails": [
+                "ryanmcalister21@yahoo.com"
+              ],
+              "phones": [
+                "864-263-8016"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzY1NTExNA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzY1NTExNA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI=",
+              "address": {
+                "street1": "136 Pecan Drive",
+                "city": "Liberty",
+                "province": "South Carolina",
+                "postalCode": "29657",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzODU0NjQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 695,
+              "tax": 0,
+              "total": 695
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzODU0NjQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk=",
+              "tenantId": "aquatrace",
+              "name": "Lindsey & Matt Yelverton",
+              "emails": [
+                "lindsay1022@gmail.com"
+              ],
+              "phones": [
+                "843-637-0171",
+                "843-566-2250"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1NDI2Nw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1NDI2Nw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk=",
+              "address": {
+                "street1": "117 Founders Drive",
+                "city": "Flat Rock",
+                "province": "North Carolina",
+                "postalCode": "28731",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQzMDA=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 695,
+              "tax": 0,
+              "total": 695
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQzMDA="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA=",
+              "tenantId": "aquatrace",
+              "name": "Ameena & Yaseen Zia",
+              "emails": [
+                "zia3272@gmail.com"
+              ],
+              "phones": [
+                "314-435-3614"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1MzIwNA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1MzIwNA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA=",
+              "address": {
+                "street1": "187 Samuel Drive",
+                "city": "Mills River",
+                "province": "North Carolina",
+                "postalCode": "28759",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYxOTY1NDc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 740,
+              "tax": 0,
+              "total": 740
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYxOTY1NDc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc=",
+              "tenantId": "aquatrace",
+              "name": "Sam Etheridge",
+              "emails": [
+                "Chefridge@gmail.com",
+                "chefridge@gmail.com"
+              ],
+              "phones": [
+                "828-424-1629"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODA5MzM3Mg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODA5MzM3Mg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc=",
+              "address": {
+                "street1": "9 Alclare Drive",
+                "city": "Asheville",
+                "province": "North Carolina",
+                "postalCode": "28804",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDI4MDEwOTc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 895,
+              "tax": 0,
+              "total": 895
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDI4MDEwOTc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ=",
+              "tenantId": "aquatrace",
+              "name": "David Savino",
+              "emails": [
+                "David.Savino@yahoo.com",
+                "david.savino@yahoo.com"
+              ],
+              "phones": [
+                "(315) 246-8737"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0Mzc0ODgxMw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0Mzc0ODgxMw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ=",
+              "address": {
+                "street1": "44 Rodeo Drive",
+                "city": "Leicester",
+                "province": "North Carolina",
+                "postalCode": "28748",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQxMzY=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQxMzY="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM=",
+              "tenantId": "aquatrace",
+              "name": "Ivey Goss",
+              "emails": [
+                "jitmgoss@gmail.com"
+              ],
+              "phones": [
+                "7069883176"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzE2NjAyMQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzE2NjAyMQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM=",
+              "address": {
+                "street1": "948 Reno Road",
+                "city": "Royston",
+                "province": "Georgia",
+                "postalCode": "30662",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          }
+        ],
+        "jobberJobDetail": {
+          "error": "No matching Jobber job was found."
+        },
+        "companyCamProjects": []
+      }
+    },
+    {
+      "id": "conv_54e46ed7-a3d9-4015-b8fc-853a97e22dcb",
+      "createdAt": "2026-07-05T01:57:58.518Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "A lot of information here. Mich of these are unscheduled or late jobs.  There is a job on schedule for Monday July 6. What is it",
+      "assistantText": "I don't have a verified source confirming which specific job is scheduled for **Monday, July 6** — the getSchedule data doesn't include date/time fields for jobs. Here's what I can confirm: only **5 jobs** total have `status: \"scheduled\"` in the system (everything else is `status: \"lead\"`):\n\n1. **Commercial Main Drain Measurements & Cover Replacements** — $125\n   ASP of Asheville | 59 Running Creek Trail, Arden, NC 28704\n\n2. **Commercial Main Drain Measurements & Cover Replacements** — $125\n   ASP of Asheville | 90 Vintage Road, Candler, NC 28715\n\n3. **Swimming Pool / Spa Leak Detection Service** — $1,500\n   ASP of Asheville | 204 Hendersonville Road, Asheville, NC 28803\n\n4. **Swimming Pool Plumbing** — $455\n   Ben Construction Inc | 245 McDaniel Avenue, Greenville, SC 29601\n\n5. **Swimming Pool Leak Detection Service** — $650\n   Randolph Hunter | 301 Thornblade Boulevard, Greer, SC 29650 (phone: 843-437-3390)\n\n**I can't tell you which one is specifically on July 6** without a date-stamped schedule field. Can you confirm — do you know the client name or address for the July 6 job? That'll help me pinpoint it from this list, or I can flag this as a data gap for whoever manages the Jobber schedule sync.",
+      "storedSources": [
+        {
+          "rail": "jobber",
+          "ref": "jobs",
+          "label": "Jobber jobs GraphQL read"
+        }
+      ],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": [
+          "schedule_or_technician"
+        ],
+        "jobberScheduleToday": [
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 795,
+              "tax": 0,
+              "total": 795
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+              "tenantId": "aquatrace",
+              "name": "Deborah Justice",
+              "emails": [
+                "deborahhopegreenhouses@gmail.com"
+              ],
+              "phones": [
+                "8649030288"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+              "address": {
+                "street1": "181 Isbell Road",
+                "city": "Fair Play",
+                "province": "South Carolina",
+                "postalCode": "29643",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkwOTI0ODc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng==",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 660,
+              "tax": 0,
+              "total": 660
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkwOTI0ODc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng==",
+              "tenantId": "aquatrace",
+              "name": "American Lifestyle Pools",
+              "emails": [
+                "jeffcasealp@gmail.com"
+              ],
+              "phones": [
+                "7705805581"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng=="
+              },
+              "company": "American Lifestyle Pools"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODgwMQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODgwMQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng==",
+              "address": {
+                "street1": "5728 Grand Reunion Drive",
+                "city": "Hoschton",
+                "province": "Georgia",
+                "postalCode": "30548",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjIzNDY=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc=",
+            "status": "lead",
+            "title": "Partial - Plumbing Pressure Test Only - Commercial Pool - Renaissance Hotel",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1850,
+              "tax": 0,
+              "total": 1850
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjIzNDY="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc=",
+              "tenantId": "aquatrace",
+              "name": "Renaissance Downtown Asheville Hotel",
+              "emails": [
+                "Ari.Tukachinsky@windsorhospitality.com"
+              ],
+              "phones": [
+                "7743645555"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc="
+              },
+              "company": "Renaissance Downtown Asheville Hotel"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA3NzMwMg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA3NzMwMg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc=",
+              "address": {
+                "street1": "31 Woodfin Street",
+                "city": "Asheville",
+                "province": "North Carolina",
+                "postalCode": "28801",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDMyNDY=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 770,
+              "tax": 0,
+              "total": 770
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDMyNDY="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA=",
+              "tenantId": "aquatrace",
+              "name": "Rachel Payne",
+              "emails": [
+                "rachel.george.payne@gmail.com"
+              ],
+              "phones": [
+                "+18285577103"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTQ1MDIxMA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTQ1MDIxMA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA=",
+              "address": {
+                "street1": "400 Jacobs Road",
+                "city": "Bryson City",
+                "province": "North Carolina",
+                "postalCode": "28713",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjI3MzQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1120,
+              "tax": 0,
+              "total": 1120
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjI3MzQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "tenantId": "aquatrace",
+              "name": "Medallion Pool Company",
+              "emails": [
+                "dallas@medallionpool.com",
+                "melody@medallionpool.com"
+              ],
+              "phones": [
+                "8282030625"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg="
+              },
+              "company": "Medallion Pool Company"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODA1OQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODA1OQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "address": {
+                "street1": "1126 Upper Thomas Branch Road",
+                "city": "Marshall",
+                "province": "North Carolina",
+                "postalCode": "28753",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk0MzA5Mjc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection - Spa Only",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 880,
+              "tax": 0,
+              "total": 880
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk0MzA5Mjc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg=",
+              "tenantId": "aquatrace",
+              "name": "Oleta Falls Community",
+              "emails": [
+                "BrandonMelton25@gmail.com"
+              ],
+              "phones": [
+                "4014871163"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg="
+              },
+              "company": "Oleta Falls Community"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDcyNjgyNQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDcyNjgyNQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg=",
+              "address": {
+                "street1": "765 Oleta Mill Trail",
+                "city": "Hendersonville",
+                "province": "North Carolina",
+                "postalCode": "28792",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4MTI0Nzc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4MTI0Nzc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk=",
+              "tenantId": "aquatrace",
+              "name": "Dick Leopard",
+              "emails": [
+                "dickleopard@aol.com"
+              ],
+              "phones": [
+                "8643500538"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3MjE1MQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3MjE1MQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk=",
+              "address": {
+                "street1": "224 Carson Road",
+                "city": "Easley",
+                "province": "South Carolina",
+                "postalCode": "29642",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDg2MTQ4MzI=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ=",
+            "status": "lead",
+            "title": "Statehouse Arena - Commercial Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1710,
+              "tax": 0,
+              "total": 1710
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDg2MTQ4MzI="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ=",
+              "tenantId": "aquatrace",
+              "name": "L3 Campus",
+              "emails": [
+                "twalker@l3campus.com"
+              ],
+              "phones": [
+                "9137497157"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ="
+              },
+              "company": "L3 Campus"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4OTY3MA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4OTY3MA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ=",
+              "address": {
+                "street1": "600 West Lafayette Street",
+                "city": "Tallahassee",
+                "province": "Florida",
+                "postalCode": "32304",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgzNTk1Nzc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgzNTk1Nzc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg=",
+              "tenantId": "aquatrace",
+              "name": "Dave Clark",
+              "emails": [
+                "davenanderson1@gmail.com"
+              ],
+              "phones": [
+                "8648847685"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDE4NjkzNg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDE4NjkzNg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg=",
+              "address": {
+                "street1": "1821 Club Drive",
+                "city": "Anderson",
+                "province": "South Carolina",
+                "postalCode": "29625",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NTQ2MjQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI=",
+            "status": "lead",
+            "title": "Partial - Plumbing - Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 650,
+              "tax": 0,
+              "total": 650
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NTQ2MjQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI=",
+              "tenantId": "aquatrace",
+              "name": "Heather Weaver",
+              "emails": [
+                "Hhweaver23@gmail.com"
+              ],
+              "phones": [
+                "828-713-1337"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTgwMjIwMw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTgwMjIwMw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI=",
+              "address": {
+                "street1": "300 Morgan Branch Road",
+                "city": "Weaverville",
+                "province": "North Carolina",
+                "postalCode": "28787",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgyOTMzODc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 695,
+              "tax": 0,
+              "total": 695
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgyOTMzODc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ=",
+              "tenantId": "aquatrace",
+              "name": "Bill Pridemore",
+              "emails": [
+                "bp338@yahoo.com"
+              ],
+              "phones": [
+                "8643803700"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4MTQ3Mw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4MTQ3Mw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ=",
+              "address": {
+                "street1": "5 Rugosa Way",
+                "city": "Greer",
+                "province": "South Carolina",
+                "postalCode": "29650",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgxMDUxODM=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgxMDUxODM="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk=",
+              "tenantId": "aquatrace",
+              "name": "Sloan Cheves",
+              "emails": [
+                "sloancheves@hotmail.com"
+              ],
+              "phones": [
+                "8643460368"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNzQyNg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNzQyNg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk=",
+              "address": {
+                "street1": "100 Chapman Place",
+                "city": "Greenville",
+                "province": "South Carolina",
+                "postalCode": "29605",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2MzMzOTE=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU=",
+            "status": "lead",
+            "title": "Commercial - Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1450,
+              "tax": 0,
+              "total": 1450
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2MzMzOTE="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU=",
+              "tenantId": "aquatrace",
+              "name": "Valley View Condominiums",
+              "emails": [
+                "voni.gay@gmail.com"
+              ],
+              "phones": [
+                "7064902303"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU="
+              },
+              "company": "Valley View Condominiums"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNDIyMQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNDIyMQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU=",
+              "address": {
+                "street1": "158 Sun Valley Circle",
+                "city": "Dillard",
+                "province": "Georgia",
+                "postalCode": "30537",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc5MjU3NTQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+            "status": "lead",
+            "title": "ASP Asheville - AC Hotel - Commercial Main Drain Cover Reattachment",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 250,
+              "tax": 0,
+              "total": 250
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc5MjU3NTQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+              "tenantId": "aquatrace",
+              "name": "ASP of Asheville",
+              "emails": [
+                "aspofasheville@gmail.com"
+              ],
+              "phones": [
+                "8285515511",
+                "8287726469"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg=="
+              },
+              "company": "ASP of Asheville"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NjE5OTQ1OQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NjE5OTQ1OQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+              "address": {
+                "street1": "186 Hendersonville Road",
+                "city": "Asheville",
+                "province": "North Carolina",
+                "postalCode": "28803",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NDA0NzU=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+            "status": "lead",
+            "title": "General Repair - Underwater Sealant Application",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 0,
+              "tax": 0,
+              "total": 0
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NDA0NzU="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "tenantId": "aquatrace",
+              "name": "Alex Mastej",
+              "emails": [
+                "Alex@campmikell.com"
+              ],
+              "phones": [
+                "908-783-9485"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "address": {
+                "street1": "237 Camp Mikell Court",
+                "city": "Toccoa",
+                "province": "Georgia",
+                "postalCode": "30577",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2Mzc5MjQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2Mzc5MjQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ=",
+              "tenantId": "aquatrace",
+              "name": "Zac Campbell",
+              "emails": [
+                "Zaccampbell89@gmail.com"
+              ],
+              "phones": [
+                "8643786616"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTYyMjY0Mw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTYyMjY0Mw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ=",
+              "address": {
+                "street1": "2274 Old Hodges Road",
+                "city": "Abbeville",
+                "province": "South Carolina",
+                "postalCode": "29620",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDcxMzk5MTM=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1295,
+              "tax": 0,
+              "total": 1295
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDcxMzk5MTM="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "tenantId": "aquatrace",
+              "name": "Medallion Pool Company",
+              "emails": [
+                "dallas@medallionpool.com",
+                "melody@medallionpool.com"
+              ],
+              "phones": [
+                "8282030625"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg="
+              },
+              "company": "Medallion Pool Company"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODU4MDU3Nw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODU4MDU3Nw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "address": {
+                "street1": "51 North Merrimon Avenue",
+                "city": "Woodfin",
+                "province": "North Carolina",
+                "postalCode": "28804",
+                "country": "United States",
+                "street2": "Suite 101"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY4NzI3MjA=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+            "status": "lead",
+            "title": "Commercial - Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 2700,
+              "tax": 0,
+              "total": 2700
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY4NzI3MjA="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "tenantId": "aquatrace",
+              "name": "Alex Mastej",
+              "emails": [
+                "Alex@campmikell.com"
+              ],
+              "phones": [
+                "908-783-9485"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "address": {
+                "street1": "237 Camp Mikell Court",
+                "city": "Toccoa",
+                "province": "Georgia",
+                "postalCode": "30577",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY1MzU0MDM=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw==",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY1MzU0MDM="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw==",
+              "tenantId": "aquatrace",
+              "name": "David Williams",
+              "emails": [
+                "jdavidwilliams@gmail.com"
+              ],
+              "phones": [
+                "8643539299"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw=="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzk3MjYwNzUw",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzk3MjYwNzUw",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw==",
+              "address": {
+                "street1": "407 Lake Front Road",
+                "city": "Townville",
+                "province": "South Carolina",
+                "postalCode": "29689",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDU5ODAxMjI=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDU5ODAxMjI="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI=",
+              "tenantId": "aquatrace",
+              "name": "Ryan McAlister",
+              "emails": [
+                "ryanmcalister21@yahoo.com"
+              ],
+              "phones": [
+                "864-263-8016"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzY1NTExNA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzY1NTExNA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI=",
+              "address": {
+                "street1": "136 Pecan Drive",
+                "city": "Liberty",
+                "province": "South Carolina",
+                "postalCode": "29657",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzODU0NjQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 695,
+              "tax": 0,
+              "total": 695
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzODU0NjQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk=",
+              "tenantId": "aquatrace",
+              "name": "Lindsey & Matt Yelverton",
+              "emails": [
+                "lindsay1022@gmail.com"
+              ],
+              "phones": [
+                "843-637-0171",
+                "843-566-2250"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1NDI2Nw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1NDI2Nw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk=",
+              "address": {
+                "street1": "117 Founders Drive",
+                "city": "Flat Rock",
+                "province": "North Carolina",
+                "postalCode": "28731",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQzMDA=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 695,
+              "tax": 0,
+              "total": 695
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQzMDA="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA=",
+              "tenantId": "aquatrace",
+              "name": "Ameena & Yaseen Zia",
+              "emails": [
+                "zia3272@gmail.com"
+              ],
+              "phones": [
+                "314-435-3614"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1MzIwNA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1MzIwNA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA=",
+              "address": {
+                "street1": "187 Samuel Drive",
+                "city": "Mills River",
+                "province": "North Carolina",
+                "postalCode": "28759",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYxOTY1NDc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 740,
+              "tax": 0,
+              "total": 740
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYxOTY1NDc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc=",
+              "tenantId": "aquatrace",
+              "name": "Sam Etheridge",
+              "emails": [
+                "Chefridge@gmail.com",
+                "chefridge@gmail.com"
+              ],
+              "phones": [
+                "828-424-1629"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODA5MzM3Mg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODA5MzM3Mg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc=",
+              "address": {
+                "street1": "9 Alclare Drive",
+                "city": "Asheville",
+                "province": "North Carolina",
+                "postalCode": "28804",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDI4MDEwOTc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 895,
+              "tax": 0,
+              "total": 895
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDI4MDEwOTc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ=",
+              "tenantId": "aquatrace",
+              "name": "David Savino",
+              "emails": [
+                "David.Savino@yahoo.com",
+                "david.savino@yahoo.com"
+              ],
+              "phones": [
+                "(315) 246-8737"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0Mzc0ODgxMw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0Mzc0ODgxMw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ=",
+              "address": {
+                "street1": "44 Rodeo Drive",
+                "city": "Leicester",
+                "province": "North Carolina",
+                "postalCode": "28748",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQxMzY=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQxMzY="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM=",
+              "tenantId": "aquatrace",
+              "name": "Ivey Goss",
+              "emails": [
+                "jitmgoss@gmail.com"
+              ],
+              "phones": [
+                "7069883176"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzE2NjAyMQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzE2NjAyMQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM=",
+              "address": {
+                "street1": "948 Reno Road",
+                "city": "Royston",
+                "province": "Georgia",
+                "postalCode": "30662",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          }
+        ],
+        "jobberJobDetail": {
+          "error": "No matching Jobber job was found."
+        },
+        "companyCamProjects": []
+      }
+    },
+    {
+      "id": "conv_18cf5260-e0d2-4d0c-a56a-efe72837e764",
+      "createdAt": "2026-07-05T01:58:34.059Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "What is our current ytd revenue",
+      "assistantText": "I don't have a verified source for that yet.",
+      "storedSources": [],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    {
+      "id": "conv_7ae4fe5b-ecf0-49bf-a203-6df9c155a887",
+      "createdAt": "2026-07-05T01:59:24.594Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "Who owes us money",
+      "assistantText": "I don't have a verified source for that yet.",
+      "storedSources": [],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    {
+      "id": "conv_422b422d-0d07-459c-b8e2-9f7e52cee82f",
+      "createdAt": "2026-07-05T02:01:36.601Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "Show me Deborah Justice pool photos",
+      "assistantText": "I don't have a verified source for that yet.",
+      "storedSources": [],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": []
+      }
+    },
+    {
+      "id": "conv_5afbede9-5ebf-4af9-bfed-ed1318a95611",
+      "createdAt": "2026-07-05T02:02:09.845Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "What sources do you use",
+      "assistantText": "I don't have a verified source for that yet.",
+      "storedSources": [],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": [
+          "meta_or_feedback"
+        ]
+      }
+    },
+    {
+      "id": "conv_8904c2f5-12d3-4c40-9c0f-0cbc06e9bbb5",
+      "createdAt": "2026-07-05T02:03:27.449Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "What was the issue at camp mikell",
+      "assistantText": "Found it — here's the verified job detail:\n\n**Camp Mikell — General Repair: Underwater Sealant Application**\n- **Status:** Lead (not yet scheduled)\n- **Client:** Alex Mastej (Alex@campmikell.com, 908-783-9485)\n- **Property:** 237 Camp Mikell Court, Toccoa, GA 30577\n- **Notes:** none on file\n- **Line items/total:** none entered yet ($0)\n\nThe job title indicates the issue is an **underwater sealant application** repair, but there are no detailed notes in Jobber describing the specific problem. Since it's still a \"lead,\" it hasn't been quoted or scheduled yet.\n\nWant me to check CompanyCam for photos that might show the actual issue?",
+      "storedSources": [
+        {
+          "rail": "jobber",
+          "ref": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NDA0NzU=",
+          "label": "Jobber job General Repair - Underwater Sealant Application"
+        }
+      ],
+      "grade": "needs_manual_review",
+      "replayedRawToolData": {
+        "tags": [
+          "issue_or_report"
+        ],
+        "jobberJobDetail": {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NDA0NzU=",
+          "tenantId": "aquatrace",
+          "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+          "status": "lead",
+          "title": "General Repair - Underwater Sealant Application",
+          "lineItems": [],
+          "totals": {
+            "subtotal": 0,
+            "tax": 0,
+            "total": 0
+          },
+          "externalIds": {
+            "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NDA0NzU="
+          },
+          "client": {
+            "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+            "tenantId": "aquatrace",
+            "name": "Alex Mastej",
+            "emails": [
+              "Alex@campmikell.com"
+            ],
+            "phones": [
+              "908-783-9485"
+            ],
+            "tags": [],
+            "consent": {
+              "email": false,
+              "sms": false
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc="
+            }
+          },
+          "notes": "",
+          "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+          "property": {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+            "address": {
+              "street1": "237 Camp Mikell Court",
+              "city": "Toccoa",
+              "province": "Georgia",
+              "postalCode": "30577",
+              "country": "United States"
+            },
+            "assets": []
+          }
+        },
+        "companyCamProjects": [
+          {
+            "id": "106765062",
+            "name": "Alex Mastej",
+            "externalIds": {
+              "companycam": "106765062"
+            },
+            "address": {
+              "street1": "237 Camp Mikell Court",
+              "city": "Toccoa",
+              "province": "Georgia",
+              "postalCode": "30577",
+              "country": "US"
+            }
+          },
+          {
+            "id": "70892670",
+            "name": "Brenda Bigley",
+            "externalIds": {
+              "companycam": "70892670"
+            },
+            "address": {
+              "street1": "1222 Camp Mikell Road",
+              "city": "Toccoa",
+              "province": "Georgia",
+              "postalCode": "30577",
+              "country": "US"
+            }
+          }
+        ],
+        "companyCamDocuments": [
+          {
+            "id": "17663518",
+            "tenantId": "aquatrace",
+            "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-05-2026.pdf",
+            "storageRef": "companycam-doc:17663518",
+            "externalIds": {
+              "companycam": "17663518"
+            }
+          }
+        ],
+        "companyCamMediaSample": [
+          {
+            "id": "3254875984",
+            "tenantId": "aquatrace",
+            "jobId": "106765062",
+            "type": "photo",
+            "storageRef": "companycam:3254875984",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3254875984"
+            }
+          },
+          {
+            "id": "3254875494",
+            "tenantId": "aquatrace",
+            "jobId": "106765062",
+            "type": "photo",
+            "storageRef": "companycam:3254875494",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3254875494"
+            }
+          },
+          {
+            "id": "3254874005",
+            "tenantId": "aquatrace",
+            "jobId": "106765062",
+            "type": "photo",
+            "storageRef": "companycam:3254874005",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3254874005"
+            }
+          },
+          {
+            "id": "3254827642",
+            "tenantId": "aquatrace",
+            "jobId": "106765062",
+            "type": "photo",
+            "storageRef": "companycam:3254827642",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3254827642"
+            }
+          },
+          {
+            "id": "3254827360",
+            "tenantId": "aquatrace",
+            "jobId": "106765062",
+            "type": "photo",
+            "storageRef": "companycam:3254827360",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3254827360"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "conv_647adc58-977d-4415-b792-d5cf07806e3f",
+      "createdAt": "2026-07-05T02:07:02.865Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "You're incorrect, this would have been referenced in companycan",
+      "assistantText": "You're right to push on that — I found the CompanyCam project. Here's what's verified:\n\n**Camp Mikell (Alex Mastej) — CompanyCam Project**\n- 25 photos on file, spanning multiple visit dates\n- Property: 237 Camp Mikell Court, Toccoa, GA 30577\n\n**However:** none of these photos have AI tags or descriptions attached in the data I can access — so I can't tell you what the photos actually show (crack location, sealant failure, etc.) without visually reviewing them myself, which I'm not able to do from here.\n\nCombined with the Jobber job title — **\"General Repair: Underwater Sealant Application\"** — the issue is very likely a failed/damaged underwater sealant joint (common at pool shell seams, steps, or fittings) that needed re-sealing. But I don't have a note or tagged photo confirming the exact spot or cause.\n\nWant me to pull the raw photo links so someone can review them directly?",
+      "storedSources": [
+        {
+          "rail": "companycam",
+          "ref": "106765062",
+          "label": "CompanyCam project Alex Mastej"
+        },
+        {
+          "rail": "companycam",
+          "ref": "3254875984",
+          "label": "CompanyCam photo 3254875984"
+        },
+        {
+          "rail": "companycam",
+          "ref": "3254875494",
+          "label": "CompanyCam photo 3254875494"
+        },
+        {
+          "rail": "companycam",
+          "ref": "3254874005",
+          "label": "CompanyCam photo 3254874005"
+        }
+      ],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": [
+          "meta_or_feedback"
+        ]
+      }
+    },
+    {
+      "id": "conv_77455692-e638-435b-8bd7-a7d270a3958b",
+      "createdAt": "2026-07-05T02:08:10.868Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "Somewhat correct, there is a report in company cam that specifies the resukts",
+      "assistantText": "I don't have a verified source for that yet.",
+      "storedSources": [],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": []
+      }
+    },
+    {
+      "id": "conv_8bb756a4-43db-4582-9dee-2e30fddd8c3f",
+      "createdAt": "2026-07-05T02:08:37.056Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "The photos in that reply show thumbnails but are t clickable or savable",
+      "assistantText": "I don't have a verified source for that yet.",
+      "storedSources": [],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": []
+      }
+    },
+    {
+      "id": "conv_61d89fdf-e148-4661-ac2a-c098bedfc387",
+      "createdAt": "2026-07-05T02:09:10.686Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "What were the pool leak detection results for Deborah Justice in company cam report",
+      "assistantText": "I found the CompanyCam project for Deborah Justice (181 Isbell Road, Fair Play, SC) — 25 photos on file.\n\n**However:** none of these photos have any tags, descriptions, or attached report data in the data I can access. There's no leak detection results, notes, or findings text tied to this media — just raw photo files.\n\nI don't have a verified source for the actual leak detection results/findings. That report (if it exists as written text or a PDF) isn't something I can pull through this photo lookup.\n\nWant me to check the Jobber job detail for Deborah Justice — sometimes findings get logged there instead?",
+      "storedSources": [
+        {
+          "rail": "companycam",
+          "ref": "107503799",
+          "label": "CompanyCam project Deborah Justice"
+        },
+        {
+          "rail": "companycam",
+          "ref": "3338800086",
+          "label": "CompanyCam photo 3338800086"
+        },
+        {
+          "rail": "companycam",
+          "ref": "3338756524",
+          "label": "CompanyCam photo 3338756524"
+        },
+        {
+          "rail": "companycam",
+          "ref": "3338754200",
+          "label": "CompanyCam photo 3338754200"
+        }
+      ],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": [
+          "issue_or_report"
+        ],
+        "jobberJobDetail": {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+          "tenantId": "aquatrace",
+          "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+          "status": "lead",
+          "title": "Swimming Pool Leak Detection Service",
+          "lineItems": [],
+          "totals": {
+            "subtotal": 795,
+            "tax": 0,
+            "total": 795
+          },
+          "externalIds": {
+            "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU="
+          },
+          "client": {
+            "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+            "tenantId": "aquatrace",
+            "name": "Deborah Justice",
+            "emails": [
+              "deborahhopegreenhouses@gmail.com"
+            ],
+            "phones": [
+              "8649030288"
+            ],
+            "tags": [],
+            "consent": {
+              "email": false,
+              "sms": false
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA="
+            }
+          },
+          "notes": "",
+          "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+          "property": {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+            "address": {
+              "street1": "181 Isbell Road",
+              "city": "Fair Play",
+              "province": "South Carolina",
+              "postalCode": "29643",
+              "country": "United States"
+            },
+            "assets": []
+          }
+        },
+        "companyCamProjects": [
+          {
+            "id": "107503799",
+            "name": "Deborah Justice",
+            "externalIds": {
+              "companycam": "107503799"
+            },
+            "address": {
+              "street1": "181 Isbell Road",
+              "city": "Fair Play",
+              "province": "South Carolina",
+              "postalCode": "29643",
+              "country": "US"
+            }
+          }
+        ],
+        "companyCamDocuments": [
+          {
+            "id": "18218446",
+            "tenantId": "aquatrace",
+            "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf",
+            "storageRef": "companycam-doc:18218446",
+            "externalIds": {
+              "companycam": "18218446"
+            }
+          },
+          {
+            "id": "18217485",
+            "tenantId": "aquatrace",
+            "label": "Deoborah Justice, Fair Play, SC.pdf",
+            "storageRef": "companycam-doc:18217485",
+            "externalIds": {
+              "companycam": "18217485"
+            }
+          }
+        ],
+        "companyCamMediaSample": [
+          {
+            "id": "3338800086",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338800086",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338800086"
+            }
+          },
+          {
+            "id": "3338756524",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338756524",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338756524"
+            }
+          },
+          {
+            "id": "3338754200",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338754200",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338754200"
+            }
+          },
+          {
+            "id": "3338751881",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338751881",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338751881"
+            }
+          },
+          {
+            "id": "3338681696",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338681696",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338681696"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "conv_3f33db47-5e8e-4659-89b1-e0b490db2f37",
+      "createdAt": "2026-07-05T02:10:06.484Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "Findings are in the report. What are the total gallons of Deborah Justice",
+      "assistantText": "**Deborah Justice — Pool Volume**\n\n- **Total Gallons:** 101,000 gallons\n\n*Source: SiteJobBlueprint (verified field: poolGallons)*",
+      "storedSources": [
+        {
+          "rail": "native",
+          "ref": "site_job_f80b7850-01a9-43d1-9634-f943fff3536a",
+          "label": "SiteJobBlueprint camp-mikell-checklist-live"
+        }
+      ],
+      "grade": "wrong",
+      "replayedRawToolData": {
+        "tags": [
+          "gallons",
+          "issue_or_report"
+        ],
+        "jobberJobDetail": {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+          "tenantId": "aquatrace",
+          "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+          "status": "lead",
+          "title": "Swimming Pool Leak Detection Service",
+          "lineItems": [],
+          "totals": {
+            "subtotal": 795,
+            "tax": 0,
+            "total": 795
+          },
+          "externalIds": {
+            "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU="
+          },
+          "client": {
+            "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+            "tenantId": "aquatrace",
+            "name": "Deborah Justice",
+            "emails": [
+              "deborahhopegreenhouses@gmail.com"
+            ],
+            "phones": [
+              "8649030288"
+            ],
+            "tags": [],
+            "consent": {
+              "email": false,
+              "sms": false
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA="
+            }
+          },
+          "notes": "",
+          "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+          "property": {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+            "address": {
+              "street1": "181 Isbell Road",
+              "city": "Fair Play",
+              "province": "South Carolina",
+              "postalCode": "29643",
+              "country": "United States"
+            },
+            "assets": []
+          }
+        },
+        "companyCamProjects": [
+          {
+            "id": "107503799",
+            "name": "Deborah Justice",
+            "externalIds": {
+              "companycam": "107503799"
+            },
+            "address": {
+              "street1": "181 Isbell Road",
+              "city": "Fair Play",
+              "province": "South Carolina",
+              "postalCode": "29643",
+              "country": "US"
+            }
+          }
+        ],
+        "companyCamDocuments": [
+          {
+            "id": "18218446",
+            "tenantId": "aquatrace",
+            "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf",
+            "storageRef": "companycam-doc:18218446",
+            "externalIds": {
+              "companycam": "18218446"
+            }
+          },
+          {
+            "id": "18217485",
+            "tenantId": "aquatrace",
+            "label": "Deoborah Justice, Fair Play, SC.pdf",
+            "storageRef": "companycam-doc:18217485",
+            "externalIds": {
+              "companycam": "18217485"
+            }
+          }
+        ],
+        "companyCamMediaSample": [
+          {
+            "id": "3338800086",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338800086",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338800086"
+            }
+          },
+          {
+            "id": "3338756524",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338756524",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338756524"
+            }
+          },
+          {
+            "id": "3338754200",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338754200",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338754200"
+            }
+          },
+          {
+            "id": "3338751881",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338751881",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338751881"
+            }
+          },
+          {
+            "id": "3338681696",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338681696",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338681696"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "conv_dbc14c11-23c0-4f9e-998e-a0277bd2f275",
+      "createdAt": "2026-07-05T02:10:35.915Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "Same.report shows results of leak detection. What are they",
+      "assistantText": "I don't have a verified source for that yet.",
+      "storedSources": [],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": [
+          "issue_or_report"
+        ],
+        "jobberJobDetail": {
+          "error": "No matching Jobber job was found."
+        },
+        "companyCamProjects": []
+      }
+    },
+    {
+      "id": "conv_e98336ed-9e68-415c-8c55-f48460263a2d",
+      "createdAt": "2026-07-05T02:11:12.781Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "Who are the technicians for Deborah Justice",
+      "assistantText": "The Jobber job for Deborah Justice (\"Swimming Pool Leak Detection Service\") is still in **lead** status — no technician has been assigned or scheduled yet.\n\nI don't have a verified source listing technician assignments for this job.",
+      "storedSources": [
+        {
+          "rail": "jobber",
+          "ref": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+          "label": "Jobber job Swimming Pool Leak Detection Service"
+        }
+      ],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": [
+          "schedule_or_technician"
+        ],
+        "jobberScheduleToday": [
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 795,
+              "tax": 0,
+              "total": 795
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+              "tenantId": "aquatrace",
+              "name": "Deborah Justice",
+              "emails": [
+                "deborahhopegreenhouses@gmail.com"
+              ],
+              "phones": [
+                "8649030288"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+              "address": {
+                "street1": "181 Isbell Road",
+                "city": "Fair Play",
+                "province": "South Carolina",
+                "postalCode": "29643",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkwOTI0ODc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng==",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 660,
+              "tax": 0,
+              "total": 660
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkwOTI0ODc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng==",
+              "tenantId": "aquatrace",
+              "name": "American Lifestyle Pools",
+              "emails": [
+                "jeffcasealp@gmail.com"
+              ],
+              "phones": [
+                "7705805581"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng=="
+              },
+              "company": "American Lifestyle Pools"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODgwMQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODgwMQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC83NzI0Njg2Ng==",
+              "address": {
+                "street1": "5728 Grand Reunion Drive",
+                "city": "Hoschton",
+                "province": "Georgia",
+                "postalCode": "30548",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjIzNDY=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc=",
+            "status": "lead",
+            "title": "Partial - Plumbing Pressure Test Only - Commercial Pool - Renaissance Hotel",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1850,
+              "tax": 0,
+              "total": 1850
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjIzNDY="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc=",
+              "tenantId": "aquatrace",
+              "name": "Renaissance Downtown Asheville Hotel",
+              "emails": [
+                "Ari.Tukachinsky@windsorhospitality.com"
+              ],
+              "phones": [
+                "7743645555"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc="
+              },
+              "company": "Renaissance Downtown Asheville Hotel"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA3NzMwMg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA3NzMwMg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ2MjM4MDc=",
+              "address": {
+                "street1": "31 Woodfin Street",
+                "city": "Asheville",
+                "province": "North Carolina",
+                "postalCode": "28801",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDMyNDY=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 770,
+              "tax": 0,
+              "total": 770
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDMyNDY="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA=",
+              "tenantId": "aquatrace",
+              "name": "Rachel Payne",
+              "emails": [
+                "rachel.george.payne@gmail.com"
+              ],
+              "phones": [
+                "+18285577103"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTQ1MDIxMA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTQ1MDIxMA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQ5ODA5MjA=",
+              "address": {
+                "street1": "400 Jacobs Road",
+                "city": "Bryson City",
+                "province": "North Carolina",
+                "postalCode": "28713",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjI3MzQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1120,
+              "tax": 0,
+              "total": 1120
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDkxNjI3MzQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "tenantId": "aquatrace",
+              "name": "Medallion Pool Company",
+              "emails": [
+                "dallas@medallionpool.com",
+                "melody@medallionpool.com"
+              ],
+              "phones": [
+                "8282030625"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg="
+              },
+              "company": "Medallion Pool Company"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODA1OQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MTA1ODA1OQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "address": {
+                "street1": "1126 Upper Thomas Branch Road",
+                "city": "Marshall",
+                "province": "North Carolina",
+                "postalCode": "28753",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk0MzA5Mjc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection - Spa Only",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 880,
+              "tax": 0,
+              "total": 880
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk0MzA5Mjc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg=",
+              "tenantId": "aquatrace",
+              "name": "Oleta Falls Community",
+              "emails": [
+                "BrandonMelton25@gmail.com"
+              ],
+              "phones": [
+                "4014871163"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg="
+              },
+              "company": "Oleta Falls Community"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDcyNjgyNQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDcyNjgyNQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDQyNzg2Mzg=",
+              "address": {
+                "street1": "765 Oleta Mill Trail",
+                "city": "Hendersonville",
+                "province": "North Carolina",
+                "postalCode": "28792",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4MTI0Nzc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4MTI0Nzc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk=",
+              "tenantId": "aquatrace",
+              "name": "Dick Leopard",
+              "emails": [
+                "dickleopard@aol.com"
+              ],
+              "phones": [
+                "8643500538"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3MjE1MQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3MjE1MQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTAyNzk=",
+              "address": {
+                "street1": "224 Carson Road",
+                "city": "Easley",
+                "province": "South Carolina",
+                "postalCode": "29642",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDg2MTQ4MzI=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ=",
+            "status": "lead",
+            "title": "Statehouse Arena - Commercial Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1710,
+              "tax": 0,
+              "total": 1710
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDg2MTQ4MzI="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ=",
+              "tenantId": "aquatrace",
+              "name": "L3 Campus",
+              "emails": [
+                "twalker@l3campus.com"
+              ],
+              "phones": [
+                "9137497157"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ="
+              },
+              "company": "L3 Campus"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4OTY3MA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4OTY3MA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzc4OTkyMTQ=",
+              "address": {
+                "street1": "600 West Lafayette Street",
+                "city": "Tallahassee",
+                "province": "Florida",
+                "postalCode": "32304",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgzNTk1Nzc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgzNTk1Nzc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg=",
+              "tenantId": "aquatrace",
+              "name": "Dave Clark",
+              "emails": [
+                "davenanderson1@gmail.com"
+              ],
+              "phones": [
+                "8648847685"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDE4NjkzNg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MDE4NjkzNg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDM3MzQ0ODg=",
+              "address": {
+                "street1": "1821 Club Drive",
+                "city": "Anderson",
+                "province": "South Carolina",
+                "postalCode": "29625",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NTQ2MjQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI=",
+            "status": "lead",
+            "title": "Partial - Plumbing - Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 650,
+              "tax": 0,
+              "total": 650
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NTQ2MjQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI=",
+              "tenantId": "aquatrace",
+              "name": "Heather Weaver",
+              "emails": [
+                "Hhweaver23@gmail.com"
+              ],
+              "phones": [
+                "828-713-1337"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTgwMjIwMw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTgwMjIwMw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMjEyNzI=",
+              "address": {
+                "street1": "300 Morgan Branch Road",
+                "city": "Weaverville",
+                "province": "North Carolina",
+                "postalCode": "28787",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgyOTMzODc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 695,
+              "tax": 0,
+              "total": 695
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgyOTMzODc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ=",
+              "tenantId": "aquatrace",
+              "name": "Bill Pridemore",
+              "emails": [
+                "bp338@yahoo.com"
+              ],
+              "phones": [
+                "8643803700"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4MTQ3Mw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc4MTQ3Mw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMzMDE2NTQ=",
+              "address": {
+                "street1": "5 Rugosa Way",
+                "city": "Greer",
+                "province": "South Carolina",
+                "postalCode": "29650",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgxMDUxODM=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDgxMDUxODM="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk=",
+              "tenantId": "aquatrace",
+              "name": "Sloan Cheves",
+              "emails": [
+                "sloancheves@hotmail.com"
+              ],
+              "phones": [
+                "8643460368"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNzQyNg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNzQyNg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNTA2NDk=",
+              "address": {
+                "street1": "100 Chapman Place",
+                "city": "Greenville",
+                "province": "South Carolina",
+                "postalCode": "29605",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2MzMzOTE=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU=",
+            "status": "lead",
+            "title": "Commercial - Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1450,
+              "tax": 0,
+              "total": 1450
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2MzMzOTE="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU=",
+              "tenantId": "aquatrace",
+              "name": "Valley View Condominiums",
+              "emails": [
+                "voni.gay@gmail.com"
+              ],
+              "phones": [
+                "7064902303"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU="
+              },
+              "company": "Valley View Condominiums"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNDIyMQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTUzNDIyMQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMwNDc2NDU=",
+              "address": {
+                "street1": "158 Sun Valley Circle",
+                "city": "Dillard",
+                "province": "Georgia",
+                "postalCode": "30537",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc5MjU3NTQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+            "status": "lead",
+            "title": "ASP Asheville - AC Hotel - Commercial Main Drain Cover Reattachment",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 250,
+              "tax": 0,
+              "total": 250
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc5MjU3NTQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+              "tenantId": "aquatrace",
+              "name": "ASP of Asheville",
+              "emails": [
+                "aspofasheville@gmail.com"
+              ],
+              "phones": [
+                "8285515511",
+                "8287726469"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg=="
+              },
+              "company": "ASP of Asheville"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NjE5OTQ1OQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NjE5OTQ1OQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+              "address": {
+                "street1": "186 Hendersonville Road",
+                "city": "Asheville",
+                "province": "North Carolina",
+                "postalCode": "28803",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NDA0NzU=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+            "status": "lead",
+            "title": "General Repair - Underwater Sealant Application",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 0,
+              "tax": 0,
+              "total": 0
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc4NDA0NzU="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "tenantId": "aquatrace",
+              "name": "Alex Mastej",
+              "emails": [
+                "Alex@campmikell.com"
+              ],
+              "phones": [
+                "908-783-9485"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "address": {
+                "street1": "237 Camp Mikell Court",
+                "city": "Toccoa",
+                "province": "Georgia",
+                "postalCode": "30577",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2Mzc5MjQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDc2Mzc5MjQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ=",
+              "tenantId": "aquatrace",
+              "name": "Zac Campbell",
+              "emails": [
+                "Zaccampbell89@gmail.com"
+              ],
+              "phones": [
+                "8643786616"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTYyMjY0Mw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTYyMjY0Mw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMxMzgxMTQ=",
+              "address": {
+                "street1": "2274 Old Hodges Road",
+                "city": "Abbeville",
+                "province": "South Carolina",
+                "postalCode": "29620",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDcxMzk5MTM=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 1295,
+              "tax": 0,
+              "total": 1295
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDcxMzk5MTM="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "tenantId": "aquatrace",
+              "name": "Medallion Pool Company",
+              "emails": [
+                "dallas@medallionpool.com",
+                "melody@medallionpool.com"
+              ],
+              "phones": [
+                "8282030625"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg="
+              },
+              "company": "Medallion Pool Company"
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODU4MDU3Nw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODU4MDU3Nw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIxMTA0Mzg=",
+              "address": {
+                "street1": "51 North Merrimon Avenue",
+                "city": "Woodfin",
+                "province": "North Carolina",
+                "postalCode": "28804",
+                "country": "United States",
+                "street2": "Suite 101"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY4NzI3MjA=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+            "status": "lead",
+            "title": "Commercial - Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 2700,
+              "tax": 0,
+              "total": 2700
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY4NzI3MjA="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "tenantId": "aquatrace",
+              "name": "Alex Mastej",
+              "emails": [
+                "Alex@campmikell.com"
+              ],
+              "phones": [
+                "908-783-9485"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODc4NDMzOA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDIzMTIxMjc=",
+              "address": {
+                "street1": "237 Camp Mikell Court",
+                "city": "Toccoa",
+                "province": "Georgia",
+                "postalCode": "30577",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY1MzU0MDM=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw==",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDY1MzU0MDM="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw==",
+              "tenantId": "aquatrace",
+              "name": "David Williams",
+              "emails": [
+                "jdavidwilliams@gmail.com"
+              ],
+              "phones": [
+                "8643539299"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw=="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzk3MjYwNzUw",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzk3MjYwNzUw",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC85MDMzNTgzMw==",
+              "address": {
+                "street1": "407 Lake Front Road",
+                "city": "Townville",
+                "province": "South Carolina",
+                "postalCode": "29689",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDU5ODAxMjI=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDU5ODAxMjI="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI=",
+              "tenantId": "aquatrace",
+              "name": "Ryan McAlister",
+              "emails": [
+                "ryanmcalister21@yahoo.com"
+              ],
+              "phones": [
+                "864-263-8016"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzY1NTExNA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzY1NTExNA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDExODQwODI=",
+              "address": {
+                "street1": "136 Pecan Drive",
+                "city": "Liberty",
+                "province": "South Carolina",
+                "postalCode": "29657",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzODU0NjQ=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 695,
+              "tax": 0,
+              "total": 695
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzODU0NjQ="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk=",
+              "tenantId": "aquatrace",
+              "name": "Lindsey & Matt Yelverton",
+              "emails": [
+                "lindsay1022@gmail.com"
+              ],
+              "phones": [
+                "843-637-0171",
+                "843-566-2250"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1NDI2Nw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1NDI2Nw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTczMDk=",
+              "address": {
+                "street1": "117 Founders Drive",
+                "city": "Flat Rock",
+                "province": "North Carolina",
+                "postalCode": "28731",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQzMDA=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 695,
+              "tax": 0,
+              "total": 695
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQzMDA="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA=",
+              "tenantId": "aquatrace",
+              "name": "Ameena & Yaseen Zia",
+              "emails": [
+                "zia3272@gmail.com"
+              ],
+              "phones": [
+                "314-435-3614"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1MzIwNA==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODI1MzIwNA==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE3OTYzMTA=",
+              "address": {
+                "street1": "187 Samuel Drive",
+                "city": "Mills River",
+                "province": "North Carolina",
+                "postalCode": "28759",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYxOTY1NDc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 740,
+              "tax": 0,
+              "total": 740
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYxOTY1NDc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc=",
+              "tenantId": "aquatrace",
+              "name": "Sam Etheridge",
+              "emails": [
+                "Chefridge@gmail.com",
+                "chefridge@gmail.com"
+              ],
+              "phones": [
+                "828-424-1629"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODA5MzM3Mg==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0ODA5MzM3Mg==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDE2Mzg4MDc=",
+              "address": {
+                "street1": "9 Alclare Drive",
+                "city": "Asheville",
+                "province": "North Carolina",
+                "postalCode": "28804",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDI4MDEwOTc=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 895,
+              "tax": 0,
+              "total": 895
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDI4MDEwOTc="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ=",
+              "tenantId": "aquatrace",
+              "name": "David Savino",
+              "emails": [
+                "David.Savino@yahoo.com",
+                "david.savino@yahoo.com"
+              ],
+              "phones": [
+                "(315) 246-8737"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0Mzc0ODgxMw==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0Mzc0ODgxMw==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xMzcwNTc4ODQ=",
+              "address": {
+                "street1": "44 Rodeo Drive",
+                "city": "Leicester",
+                "province": "North Carolina",
+                "postalCode": "28748",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          },
+          {
+            "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQxMzY=",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM=",
+            "status": "lead",
+            "title": "Swimming Pool Leak Detection Service",
+            "lineItems": [],
+            "totals": {
+              "subtotal": 595,
+              "tax": 0,
+              "total": 595
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDYzMzQxMzY="
+            },
+            "client": {
+              "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM=",
+              "tenantId": "aquatrace",
+              "name": "Ivey Goss",
+              "emails": [
+                "jitmgoss@gmail.com"
+              ],
+              "phones": [
+                "7069883176"
+              ],
+              "tags": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              },
+              "externalIds": {
+                "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM="
+              }
+            },
+            "notes": "",
+            "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzE2NjAyMQ==",
+            "property": {
+              "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzE2NjAyMQ==",
+              "tenantId": "aquatrace",
+              "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDA2NzM3OTM=",
+              "address": {
+                "street1": "948 Reno Road",
+                "city": "Royston",
+                "province": "Georgia",
+                "postalCode": "30662",
+                "country": "United States"
+              },
+              "assets": []
+            }
+          }
+        ],
+        "jobberJobDetail": {
+          "id": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+          "tenantId": "aquatrace",
+          "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+          "status": "lead",
+          "title": "Swimming Pool Leak Detection Service",
+          "lineItems": [],
+          "totals": {
+            "subtotal": 795,
+            "tax": 0,
+            "total": 795
+          },
+          "externalIds": {
+            "jobber": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU="
+          },
+          "client": {
+            "id": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+            "tenantId": "aquatrace",
+            "name": "Deborah Justice",
+            "emails": [
+              "deborahhopegreenhouses@gmail.com"
+            ],
+            "phones": [
+              "8649030288"
+            ],
+            "tags": [],
+            "consent": {
+              "email": false,
+              "sms": false
+            },
+            "externalIds": {
+              "jobber": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA="
+            }
+          },
+          "notes": "",
+          "propertyId": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+          "property": {
+            "id": "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0OTc3NTY5OA==",
+            "tenantId": "aquatrace",
+            "clientId": "Z2lkOi8vSm9iYmVyL0NsaWVudC8xNDMyOTUxNzA=",
+            "address": {
+              "street1": "181 Isbell Road",
+              "city": "Fair Play",
+              "province": "South Carolina",
+              "postalCode": "29643",
+              "country": "United States"
+            },
+            "assets": []
+          }
+        },
+        "companyCamProjects": [
+          {
+            "id": "107503799",
+            "name": "Deborah Justice",
+            "externalIds": {
+              "companycam": "107503799"
+            },
+            "address": {
+              "street1": "181 Isbell Road",
+              "city": "Fair Play",
+              "province": "South Carolina",
+              "postalCode": "29643",
+              "country": "US"
+            }
+          }
+        ],
+        "companyCamDocuments": [
+          {
+            "id": "18218446",
+            "tenantId": "aquatrace",
+            "label": "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf",
+            "storageRef": "companycam-doc:18218446",
+            "externalIds": {
+              "companycam": "18218446"
+            }
+          },
+          {
+            "id": "18217485",
+            "tenantId": "aquatrace",
+            "label": "Deoborah Justice, Fair Play, SC.pdf",
+            "storageRef": "companycam-doc:18217485",
+            "externalIds": {
+              "companycam": "18217485"
+            }
+          }
+        ],
+        "companyCamMediaSample": [
+          {
+            "id": "3338800086",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338800086",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338800086"
+            }
+          },
+          {
+            "id": "3338756524",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338756524",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338756524"
+            }
+          },
+          {
+            "id": "3338754200",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338754200",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338754200"
+            }
+          },
+          {
+            "id": "3338751881",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338751881",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338751881"
+            }
+          },
+          {
+            "id": "3338681696",
+            "tenantId": "aquatrace",
+            "jobId": "107503799",
+            "type": "photo",
+            "storageRef": "companycam:3338681696",
+            "aiTags": [],
+            "externalIds": {
+              "companycam": "3338681696"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "conv_f12807f4-82e8-40c4-b03d-a2b4886b3d7f",
+      "createdAt": "2026-07-05T02:11:49.039Z",
+      "conversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
+      "prompt": "Wrong answer",
+      "assistantText": "I re-checked the Jobber record directly, and confirmed the same result:\n\n**Deborah Justice — Swimming Pool Leak Detection Service**\n- **Status:** Lead\n- **Notes:** empty\n- **No technician/assignee field is populated on this job**\n\nThere is no technician listed anywhere in the Jobber job data — it hasn't been scheduled or assigned to a crew yet. I don't have a verified source showing a technician name for this job.\n\nIf a technician was actually on-site (matching the 25 CompanyCam photos), that assignment isn't reflected in Jobber. Want me to check the schedule around the photo dates to see if a tech was booked under a different job entry?",
+      "storedSources": [
+        {
+          "rail": "jobber",
+          "ref": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+          "label": "Jobber job Swimming Pool Leak Detection Service"
+        }
+      ],
+      "grade": "honest-fail",
+      "replayedRawToolData": {
+        "tags": [
+          "meta_or_feedback"
+        ]
+      }
+    }
+  ],
+  "rawFailureLogEntries": [
+    {
+      "id": "fail_c06a9e00-f16f-4bb7-89d1-34bdf0088193",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "What is our current ytd revenue",
+      "reason": "factual_answer_without_sources",
+      "sources": [],
+      "createdAt": "2026-07-05T01:58:34.546Z"
+    },
+    {
+      "id": "fail_8a4adc9d-9fb0-44eb-9412-821cfbf34f0c",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "Who owes us money",
+      "reason": "factual_answer_without_sources",
+      "sources": [],
+      "createdAt": "2026-07-05T01:59:25.088Z"
+    },
+    {
+      "id": "fail_aecc87c1-0e37-4dfc-beb4-2a0625e31517",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "Show me Deborah Justice pool photos",
+      "reason": "factual_answer_without_sources",
+      "sources": [],
+      "createdAt": "2026-07-05T02:01:37.227Z"
+    },
+    {
+      "id": "fail_7e3ea576-4cb5-4eff-bdcc-6ac53c8c8e78",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "What sources do you use",
+      "reason": "factual_answer_without_sources",
+      "sources": [],
+      "createdAt": "2026-07-05T02:02:10.353Z"
+    },
+    {
+      "id": "fail_e0de09be-3e85-4edb-8e2c-28186a81e903",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "Somewhat correct, there is a report in company cam that specifies the resukts",
+      "reason": "factual_answer_without_sources",
+      "sources": [],
+      "createdAt": "2026-07-05T02:08:11.379Z"
+    },
+    {
+      "id": "fail_52dadf49-2291-4777-92a7-76e3c8857d5a",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "The photos in that reply show thumbnails but are t clickable or savable",
+      "reason": "factual_answer_without_sources",
+      "sources": [],
+      "createdAt": "2026-07-05T02:08:37.554Z"
+    },
+    {
+      "id": "fail_900bd339-dffc-4426-a93a-e9db27af82e9",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "Same.report shows results of leak detection. What are they",
+      "reason": "factual_answer_without_sources",
+      "sources": [],
+      "createdAt": "2026-07-05T02:10:36.433Z"
+    }
+  ],
+  "honestFailureMatches": [
+    {
+      "id": "fail_c06a9e00-f16f-4bb7-89d1-34bdf0088193",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "What is our current ytd revenue",
+      "reason": "factual_answer_without_sources",
+      "sources": [],
+      "createdAt": "2026-07-05T01:58:34.546Z"
+    },
+    {
+      "id": "fail_8a4adc9d-9fb0-44eb-9412-821cfbf34f0c",
+      "tenantId": "aquatrace",
+      "module": "nexi",
+      "op": "message",
+      "question": "Who owes us money",
+      "reason": "factual_answer_without_sources",
+      "sources": [],
+      "createdAt": "2026-07-05T01:59:25.088Z"
+    }
+  ],
+  "siteJobBlueprints": [
+    {
+      "id": "site_job_238d2925-b9c1-417d-8a3e-d8dbc4bc6c82",
+      "tenantId": "aquatrace",
+      "kind": "site_blueprint",
+      "fields": {
+        "poolGallons": 101000
+      },
+      "extractedFrom": "camp-mikell-checklist-live",
+      "extractedAt": "2026-07-04T17:40:36.057Z"
+    },
+    {
+      "id": "site_job_2a8e1c29-b4fc-4b59-9cc7-02204ecf539c",
+      "tenantId": "aquatrace",
+      "kind": "site_blueprint",
+      "fields": {
+        "poolGallons": 101000
+      },
+      "extractedFrom": "camp-mikell-checklist-live",
+      "extractedAt": "2026-07-04T17:09:27.826Z"
+    },
+    {
+      "id": "site_job_2f649bc5-a13a-41f4-8f49-ae4e6eb7411a",
+      "tenantId": "aquatrace",
+      "kind": "site_blueprint",
+      "fields": {
+        "poolGallons": 101000
+      },
+      "extractedFrom": "camp-mikell-checklist-live",
+      "extractedAt": "2026-07-04T17:30:20.965Z"
+    },
+    {
+      "id": "site_job_41f29a70-001f-4095-9d6b-16948d2c314a",
+      "tenantId": "aquatrace",
+      "kind": "site_blueprint",
+      "fields": {
+        "poolGallons": 101000
+      },
+      "extractedFrom": "camp-mikell-checklist-live",
+      "extractedAt": "2026-07-04T17:45:13.455Z"
+    },
+    {
+      "id": "site_job_5aa292fe-6137-4a86-b076-9f38fa70d579",
+      "tenantId": "aquatrace",
+      "kind": "site_blueprint",
+      "fields": {
+        "poolGallons": 101000
+      },
+      "extractedFrom": "camp-mikell-checklist-live",
+      "extractedAt": "2026-07-04T17:20:23.761Z"
+    },
+    {
+      "id": "site_job_8f46ef72-ddbd-43f9-86af-93ea353ab790",
+      "tenantId": "aquatrace",
+      "kind": "site_blueprint",
+      "fields": {
+        "poolGallons": 101000
+      },
+      "extractedFrom": "camp-mikell-checklist-live",
+      "extractedAt": "2026-07-04T17:35:40.989Z"
+    },
+    {
+      "id": "site_job_e030b121-6c6c-497d-9b9c-1d12961ff60b",
+      "tenantId": "aquatrace",
+      "kind": "site_blueprint",
+      "fields": {
+        "poolGallons": 101000
+      },
+      "extractedFrom": "camp-mikell-checklist-live",
+      "extractedAt": "2026-07-04T17:25:29.910Z"
+    },
+    {
+      "id": "site_job_f80b7850-01a9-43d1-9634-f943fff3536a",
+      "tenantId": "aquatrace",
+      "kind": "site_blueprint",
+      "fields": {
+        "poolGallons": 101000
+      },
+      "extractedFrom": "camp-mikell-checklist-live",
+      "extractedAt": "2026-07-04T17:53:02.831Z"
+    }
+  ]
+}

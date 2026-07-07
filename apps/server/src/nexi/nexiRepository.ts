@@ -11,6 +11,7 @@ import type { GatewayMessage } from "@nexteam/nexi";
 
 export interface NexiRepository {
   loadHistory(tenantId: string, conversationId: string | undefined, limit: number): Promise<GatewayMessage[]>;
+  loadRecentConversations(tenantId: string, conversationId: string | undefined, limit: number): Promise<ConversationRecord[]>;
   loadSiteJobBlueprints(tenantId: string, limit: number): Promise<SiteJobBlueprint[]>;
   saveConversation(record: Omit<ConversationRecord, "id" | "createdAt">): Promise<ConversationRecord>;
   saveFailure(record: Omit<FailureLogRecord, "id" | "createdAt" | "module">): Promise<FailureLogRecord>;
@@ -35,14 +36,21 @@ export class MemoryNexiRepository implements NexiRepository {
   readonly siteJobBlueprints: SiteJobBlueprint[] = [];
 
   async loadHistory(tenantId: string, conversationId: string | undefined, limit: number): Promise<GatewayMessage[]> {
-    return this.conversations
-      .filter((record) => record.tenantId === tenantId)
-      .filter((record) => !conversationId || record.conversationId === conversationId)
-      .slice(-limit)
+    return (await this.loadRecentConversations(tenantId, conversationId, limit))
       .flatMap((record): GatewayMessage[] => [
         { role: "user", content: record.userText },
         { role: "assistant", content: record.assistantText }
       ]);
+  }
+
+  async loadRecentConversations(tenantId: string, conversationId: string | undefined, limit: number): Promise<ConversationRecord[]> {
+    if (!conversationId) {
+      return [];
+    }
+    return this.conversations
+      .filter((record) => record.tenantId === tenantId)
+      .filter((record) => record.conversationId === conversationId)
+      .slice(-limit);
   }
 
   async loadSiteJobBlueprints(tenantId: string, limit: number): Promise<SiteJobBlueprint[]> {
@@ -80,19 +88,26 @@ export class FirestoreNexiRepository implements NexiRepository {
   constructor(private readonly db: Firestore) {}
 
   async loadHistory(tenantId: string, conversationId: string | undefined, limit: number): Promise<GatewayMessage[]> {
-    const snapshot = await this.db
-      .collection("conversations")
-      .where("tenantId", "==", tenantId)
-      .get();
-    return snapshot.docs
-      .map((doc) => conversationRecordSchema.parse(doc.data()))
-      .filter((record) => !conversationId || record.conversationId === conversationId)
-      .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
-      .slice(-limit)
+    return (await this.loadRecentConversations(tenantId, conversationId, limit))
       .flatMap((record): GatewayMessage[] => [
         { role: "user", content: record.userText },
         { role: "assistant", content: record.assistantText }
       ]);
+  }
+
+  async loadRecentConversations(tenantId: string, conversationId: string | undefined, limit: number): Promise<ConversationRecord[]> {
+    if (!conversationId) {
+      return [];
+    }
+    const snapshot = await this.db
+      .collection("conversations")
+      .where("tenantId", "==", tenantId)
+      .where("conversationId", "==", conversationId)
+      .get();
+    return snapshot.docs
+      .map((doc) => conversationRecordSchema.parse(doc.data()))
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+      .slice(-limit);
   }
 
   async loadSiteJobBlueprints(tenantId: string, limit: number): Promise<SiteJobBlueprint[]> {

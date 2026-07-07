@@ -1,0 +1,32 @@
+{
+  "capturedAt": "2026-07-05T19:40:03.732Z",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "eb59b0e612a651ee3535ba8704602ec19e4b0da0",
+  "version": {
+    "sha": "eb59b0e612a651ee3535ba8704602ec19e4b0da0",
+    "builtAt": "2026-07-05T19:39:57.732Z"
+  },
+  "bodyProof": {
+    "usedTool": true,
+    "sourceRef": "email:chris:19f3354877e85a73",
+    "bodyTextPresent": true,
+    "bodyHtmlPresent": false,
+    "attachmentCount": 0,
+    "sourceCount": 1,
+    "answerReceived": true,
+    "answerLength": 29
+  },
+  "attachmentProof": {
+    "searched": true,
+    "found": true,
+    "mailbox": "chris",
+    "messageId": "19f2a45598f94422",
+    "attachmentId": "ANGjdJ-3QG5vZnLZsxRNzd5dvLc8s6CJ_OGYqIeOGrYtK6LDwT-8RjcyXyTf1g6B4EefZ6LUfy6MfKYwa9x2vCaLB5GQ-nOr0W_rvDc2b_uE32stH96sbzPVAf-ih9Fu9qtaqGsj5MpoKZKE2MvnJX-feFYgCpj0OfOsaS-tqFj6m1rfvVRAwjDYy27onmfULIvSmoByP65UkAeyVqRpm5He6B9VbSolLLkiq9Zovij7plT8pr1yyS6Toq-YOCWq98Hh3jD7rKqwNhNgC09kIei3FJWDl2ks3c3nsqEn_rk7fPSCz7ltWay2dtixCCfQoTvGFSqmacrXPFCu0T3PqhEE8LGNQN18CNvukLGjd9V3rC1jD2iZVbobzKPH_vgQaAuLjxJFBUcxTznoDrJ3",
+    "mime": "application/octet-stream",
+    "filenamePresent": false,
+    "listedAttachmentCount": 23,
+    "declaredByteSize": 11865,
+    "retrievedByteSize": 11865
+  },
+  "piiPolicy": "Bodies, snippets, subjects, senders, recipients, filenames, and attachment bytes intentionally omitted."
+}

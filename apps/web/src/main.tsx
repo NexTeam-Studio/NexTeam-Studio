@@ -5,7 +5,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type 
 import "./styles.css";
 
 interface Source {
-  rail: "jobber" | "companycam" | "native" | "gsc" | "gbp";
+  rail: "jobber" | "companycam" | "native" | "gsc" | "gbp" | "email";
   ref: string;
   label: string;
 }
@@ -21,6 +21,33 @@ interface NexiResponse {
   ok: boolean;
   answer?: string;
   sources?: Source[];
+  error?: string;
+}
+
+interface ScheduledVisit {
+  id: string;
+  jobId: string;
+  title: string;
+  start: string;
+  end: string;
+  assignedTo: string[];
+  status: string;
+  location?: {
+    label: string;
+    geo?: { lat: number; lng: number };
+    address?: {
+      street1: string;
+      city: string;
+      province: string;
+      postalCode: string;
+      country: string;
+    };
+  };
+}
+
+interface CalendarResponse {
+  ok: boolean;
+  visits?: ScheduledVisit[];
   error?: string;
 }
 
@@ -91,7 +118,108 @@ function sourceThumb(source: Source): React.ReactElement | null {
   if (source.rail !== "companycam" || !source.label.toLowerCase().includes("photo")) {
     return null;
   }
-  return <img className="thumb" src={`/api/media/${encodeURIComponent(source.ref)}`} alt={source.label} loading="lazy" />;
+  return <img className="thumb" src={mediaUrl(source)} alt={source.label} loading="lazy" />;
+}
+
+function mediaUrl(source: Source): string {
+  return `/api/media/${encodeURIComponent(source.ref)}`;
+}
+
+function mediaDownloadUrl(source: Source): string {
+  return `${mediaUrl(source)}?download=1`;
+}
+
+function sourceIsPhoto(source: Source): boolean {
+  return source.rail === "companycam" && source.label.toLowerCase().includes("photo");
+}
+
+function dayRange(day: string, view: "day" | "week" | "map"): { from: string; to: string } {
+  const from = new Date(`${day}T00:00:00.000Z`);
+  const to = new Date(from);
+  to.setUTCDate(to.getUTCDate() + (view === "week" ? 7 : 1));
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+function formatVisitTime(value: string): string {
+  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
+}
+
+function SchedulePanel(): React.ReactElement {
+  const [view, setView] = useState<"day" | "week" | "map">("day");
+  const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10));
+  const [visits, setVisits] = useState<ScheduledVisit[]>([]);
+  const [status, setStatus] = useState("Loading schedule...");
+
+  useEffect(() => {
+    let cancelled = false;
+    const range = dayRange(day, view);
+    setStatus("Loading schedule...");
+    fetch(`/api/scheduling/calendar?tenantId=aquatrace&from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`)
+      .then((response) => response.json() as Promise<CalendarResponse>)
+      .then((body) => {
+        if (cancelled) {
+          return;
+        }
+        if (!body.ok) {
+          setStatus(body.error ?? "Schedule unavailable.");
+          setVisits([]);
+          return;
+        }
+        setVisits(body.visits ?? []);
+        setStatus((body.visits ?? []).length ? "" : "No native visits in this window yet.");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStatus("Schedule API unreachable.");
+          setVisits([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [day, view]);
+
+  return (
+    <aside className="schedule-card">
+      <div className="schedule-heading">
+        <div>
+          <p className="eyebrow">M3 Scheduling</p>
+          <h2>Calendar Board</h2>
+        </div>
+        <input aria-label="Schedule date" type="date" value={day} onChange={(event) => setDay(event.target.value)} />
+      </div>
+      <div className="view-tabs" aria-label="Calendar views">
+        {(["day", "week", "map"] as const).map((candidate) => (
+          <button
+            className={candidate === view ? "active" : ""}
+            key={candidate}
+            type="button"
+            onClick={() => setView(candidate)}
+          >
+            {candidate}
+          </button>
+        ))}
+      </div>
+      {status ? <p className="schedule-status">{status}</p> : null}
+      <div className={`visit-list ${view}`}>
+        {visits.map((visit) => (
+          <article className="visit-card" key={visit.id}>
+            <div>
+              <p className="visit-time">{formatVisitTime(visit.start)} - {formatVisitTime(visit.end)}</p>
+              <h3>{visit.title}</h3>
+              <p>{visit.location?.label ?? "No location label"} - {visit.assignedTo.join(", ") || "Unassigned"}</p>
+            </div>
+            <span className="visit-status">{visit.status}</span>
+            {view === "map" ? (
+              <p className="map-line">
+                {visit.location?.geo ? `${visit.location.geo.lat.toFixed(4)}, ${visit.location.geo.lng.toFixed(4)}` : "No coordinates yet"}
+              </p>
+            ) : null}
+          </article>
+        ))}
+      </div>
+    </aside>
+  );
 }
 
 function AuthGate(props: { auth: Auth | null; user: User | null; authReady: boolean; onSignedIn: (user: User | null) => void }): React.ReactElement {
@@ -183,6 +311,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   const [conversationId] = useState(() => `web-${crypto.randomUUID()}`);
   const [working, setWorking] = useState(false);
   const [health, setHealth] = useState<"checking" | "green" | "red">("checking");
+  const [activeMedia, setActiveMedia] = useState<Source | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
@@ -336,7 +465,8 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   }
 
   return (
-    <main className="shell">
+    <main className="shell ops-shell">
+      <div className="ops-grid">
       <section className="phone">
         <header className="topbar">
           <div>
@@ -360,9 +490,23 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
               {message.sources.length > 0 ? (
                 <div className="sources">
                   {message.sources.map((source) => (
-                    <span className="source" key={`${source.rail}:${source.ref}`}>
-                      {sourceThumb(source)}
+                    <span className={`source ${sourceIsPhoto(source) ? "source-photo" : ""}`} key={`${source.rail}:${source.ref}`}>
+                      {sourceIsPhoto(source) ? (
+                        <button
+                          aria-label={`Open full-size ${source.label}`}
+                          className="thumb-button"
+                          type="button"
+                          onClick={() => setActiveMedia(source)}
+                        >
+                          {sourceThumb(source)}
+                        </button>
+                      ) : null}
                       <span>{source.label}</span>
+                      {sourceIsPhoto(source) ? (
+                        <a className="save-link" href={mediaDownloadUrl(source)} download={`companycam-${source.ref}.jpg`}>
+                          Save
+                        </a>
+                      ) : null}
                     </span>
                   ))}
                 </div>
@@ -397,6 +541,21 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
           <button type="submit" disabled={working || !draft.trim()}>Send</button>
         </form>
       </section>
+      <SchedulePanel />
+      </div>
+      {activeMedia ? (
+        <div className="lightbox" role="dialog" aria-modal="true" aria-label={activeMedia.label} onClick={() => setActiveMedia(null)}>
+          <div className="lightbox-card" onClick={(event) => event.stopPropagation()}>
+            <img src={mediaUrl(activeMedia)} alt={activeMedia.label} />
+            <div className="lightbox-actions">
+              <a href={mediaDownloadUrl(activeMedia)} download={`companycam-${activeMedia.ref}.jpg`}>
+                Save full-size
+              </a>
+              <button type="button" onClick={() => setActiveMedia(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

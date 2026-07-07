@@ -1,0 +1,204 @@
+{
+  "capturedAt": "2026-07-06T02:08:58.471Z",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "4ec91d51a2bed03e8d329824c2eee4c1aa9b736f",
+  "version": {
+    "sha": "4ec91d51a2bed03e8d329824c2eee4c1aa9b736f",
+    "builtAt": "2026-07-06T02:07:47.282Z"
+  },
+  "health": {
+    "ok": true,
+    "rails": {
+      "jobber": {
+        "ok": true,
+        "configured": true,
+        "op": "graphql_read"
+      },
+      "companycam": {
+        "ok": true,
+        "configured": true,
+        "op": "projects_read"
+      },
+      "anthropic": {
+        "ok": true,
+        "configured": true,
+        "op": "configured_no_spend"
+      }
+    }
+  },
+  "turns": [
+    {
+      "label": "P1-K exact send command",
+      "ok": true,
+      "answer": "Draft email queued for approval (id: appr_5c5208c3-4371-4c05-953a-0d42ae8e802d) - pending your confirmation to send.\n\n- **To:** [redacted-email]\n- **Subject:** bryson city s on checdule for tomorrow\n- **Body:** \"bryson city s on checdule for tomorrow\" (sent as typed - no schedule details were pulled in)\n\nNote: I don't have verified schedule data confirming Bryson City is on tomorrow's schedule - that wasn't looked up before drafting.",
+      "conversationId": "conv_990f2ef4-36f3-4ede-b430-9e61091f8ff5",
+      "failureId": null,
+      "sourceRefs": [
+        {
+          "rail": "native",
+          "ref": "appr_5c5208c3-4371-4c05-953a-0d42ae8e802d",
+          "label": "ApprovalQueue email draft appr_5c5208c3-4371-4c05-953a-0d42ae8e802d"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "draftEmail",
+          "sourceCount": 1,
+          "sourceRefs": [
+            {
+              "rail": "native",
+              "ref": "appr_5c5208c3-4371-4c05-953a-0d42ae8e802d",
+              "label": "ApprovalQueue email draft appr_5c5208c3-4371-4c05-953a-0d42ae8e802d"
+            }
+          ],
+          "resultShape": [
+            "approval"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "P1-L Deborah Justice completion time",
+      "ok": true,
+      "answer": "**Deborah Justice - 181 Isbell Road, Fair Play, SC**\n\n**Completion time: 3:10pm, Thursday July 2nd, 2026** *(source: CompanyCam checklist doc 18218446)*\n- Service date: 07/02/2026\n- Technicians: Chris, Logan\n\n**Rail comparison:**\n- **CompanyCam:** Has completion time, technicians, and full inspection report (leak findings, pool measurements, etc.)\n- **Jobber:** Job status is still \"lead\" with no completion date/time recorded - Jobber has no matching completion data for this job.\n\nBottom line: the completion time only exists in CompanyCam; Jobber hasn't been updated to reflect the job as done.",
+      "conversationId": "conv_a9863445-67f8-4986-b1b6-253f430cb326",
+      "failureId": null,
+      "sourceRefs": [
+        {
+          "rail": "jobber",
+          "ref": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+          "label": "Jobber job Swimming Pool Leak Detection Service"
+        },
+        {
+          "rail": "companycam",
+          "ref": "107503799",
+          "label": "CompanyCam project Deborah Justice"
+        },
+        {
+          "rail": "companycam",
+          "ref": "18218446",
+          "label": "CompanyCam document Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf"
+        },
+        {
+          "rail": "companycam",
+          "ref": "18217485",
+          "label": "CompanyCam document Deoborah Justice, Fair Play, SC.pdf"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "getJobDetail",
+          "sourceCount": 1,
+          "sourceRefs": [
+            {
+              "rail": "jobber",
+              "ref": "Z2lkOi8vSm9iYmVyL0pvYi8xNDk1NDM0MTU=",
+              "label": "Jobber job Swimming Pool Leak Detection Service"
+            }
+          ],
+          "resultShape": [
+            "job"
+          ]
+        },
+        {
+          "name": "getDocuments",
+          "sourceCount": 3,
+          "sourceRefs": [
+            {
+              "rail": "companycam",
+              "ref": "107503799",
+              "label": "CompanyCam project Deborah Justice"
+            },
+            {
+              "rail": "companycam",
+              "ref": "18218446",
+              "label": "CompanyCam document Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf"
+            },
+            {
+              "rail": "companycam",
+              "ref": "18217485",
+              "label": "CompanyCam document Deoborah Justice, Fair Play, SC.pdf"
+            }
+          ],
+          "resultShape": [
+            "documents",
+            "project",
+            "reports",
+            "suggestedSiteJobBlueprints"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "P1-C correction log setup",
+      "ok": true,
+      "answer": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "conversationId": "conv_f819fa9e-74d0-471e-a68b-660f7bb16c81",
+      "failureId": "fail_bc7c656d-46a5-4c3f-834d-432452ec6b39",
+      "sourceRefs": [],
+      "toolRuns": []
+    },
+    {
+      "label": "P1-M correction follow-up",
+      "ok": true,
+      "answer": "Confirmed - service completion for Deborah Justice (181 Isbell Road, Fair Play, SC) comes from the CompanyCam report, not Jobber.\n\n- **Completion time:** 3:10pm, Thursday July 2, 2026\n- **Technicians:** Chris, Logan\n- **Source:** CompanyCam report (doc ID 18218446 - \"Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf\")\n\nJobber rail: no data - getJobDetail lookup failed, so there's no Jobber-side completion record to compare against for this job.",
+      "conversationId": "conv_3eaaf892-657f-419b-a525-f2821050e04d",
+      "failureId": null,
+      "sourceRefs": [
+        {
+          "rail": "companycam",
+          "ref": "107503799",
+          "label": "CompanyCam project Deborah Justice"
+        },
+        {
+          "rail": "companycam",
+          "ref": "18218446",
+          "label": "CompanyCam document Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf"
+        },
+        {
+          "rail": "companycam",
+          "ref": "18217485",
+          "label": "CompanyCam document Deoborah Justice, Fair Play, SC.pdf"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "getJobDetail",
+          "sourceCount": 0,
+          "sourceRefs": [],
+          "resultShape": [
+            "error",
+            "userMessage"
+          ]
+        },
+        {
+          "name": "getDocuments",
+          "sourceCount": 3,
+          "sourceRefs": [
+            {
+              "rail": "companycam",
+              "ref": "107503799",
+              "label": "CompanyCam project Deborah Justice"
+            },
+            {
+              "rail": "companycam",
+              "ref": "18218446",
+              "label": "CompanyCam document Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf"
+            },
+            {
+              "rail": "companycam",
+              "ref": "18217485",
+              "label": "CompanyCam document Deoborah Justice, Fair Play, SC.pdf"
+            }
+          ],
+          "resultShape": [
+            "documents",
+            "project",
+            "reports",
+            "suggestedSiteJobBlueprints"
+          ]
+        }
+      ]
+    }
+  ]
+}
