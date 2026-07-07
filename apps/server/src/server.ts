@@ -32,7 +32,13 @@ import { registerEvaporationRoutes } from "./evaporation/routes.js";
 import { createSchedulingNexiTools } from "./scheduling/nexiTools.js";
 import { InMemorySchedulingRepository } from "./scheduling/repository.js";
 import { registerSchedulingRoutes } from "./scheduling/routes.js";
+import { enforceToolEntitlements } from "./platform/entitlements.js";
+import { MemoryStorageWriter } from "./platform/backup.js";
+import { FirebaseStorageWriter } from "./platform/storage.js";
+import { FirestorePlatformRepository, InMemoryPlatformRepository } from "./platform/repository.js";
+import { loadTenantFromPlatform, registerPlatformRoutes } from "./platform/routes.js";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
+import { createVoiceRouter } from "./voice/routes.js";
 
 const app = express();
 const commsRail = createCommsRailFromEnv(process.env);
@@ -45,6 +51,8 @@ const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus
 const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();
 const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TENANT_ID || "aquatrace");
 const evaporationRepository = new MemoryEvaporationRepository();
+const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
+const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 
 app.use(express.json({
   limit: "1mb",
@@ -57,6 +65,12 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 app.use("/api/nexi", createNexiRouter(process.env, {
+  loadTenant: async (req) => {
+    const body = req.body as { tenantId?: unknown };
+    const tenantId = typeof body?.tenantId === "string" && body.tenantId.trim() ? body.tenantId.trim() : process.env.TENANT_ID || "aquatrace";
+    return loadTenantFromPlatform(platformRepository, tenantId, process.env);
+  },
+  filterTools: (tenant, tools) => enforceToolEntitlements(tenant, tools).tools,
   extraTools: [
     ...createCrmReadTools(nativeCrmProvider),
     ...createCommsNexiTools(commsRail, approvalQueue),
@@ -65,6 +79,7 @@ app.use("/api/nexi", createNexiRouter(process.env, {
     ...createEvaporationNexiTools({ repository: evaporationRepository, env: process.env })
   ]
 }));
+app.use("/api/voice", createVoiceRouter(process.env));
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
@@ -172,6 +187,7 @@ registerFieldDocsRoutes(app, { eventBus });
 registerContentRoutes(app, { repository: contentRepository, approvalQueue, eventBus, env: process.env });
 registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env });
 registerEvaporationRoutes(app, { repository: evaporationRepository, env: process.env });
+registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
 app.use(express.static(webDistDir));
 
 app.get("/", (_req: Request, res: Response) => {

@@ -18,6 +18,17 @@ export type MediaAdapterKind = "companycam" | "native";
 export type EmailAdapterKind = "gmail_relay" | "sendgrid";
 export type SmsAdapterKind = "twilio";
 export type TenantPlan = "nexi" | "marketing" | "suite";
+export type PlatformModule =
+  | "nexi"
+  | "crm"
+  | "fielddocs"
+  | "scheduling"
+  | "content"
+  | "campaigns"
+  | "comms"
+  | "voice"
+  | "platform"
+  | "evaporation";
 
 export type ArtifactKind =
   | "email"
@@ -48,6 +59,56 @@ export interface Tenant {
   approval: Record<ArtifactKind, { autoApprove: boolean; cleanStreak: number }>;
   timezone: string;
   plan: TenantPlan;
+}
+
+export interface PlatformPlan {
+  id: TenantPlan;
+  name: string;
+  monthlyUsd: number;
+  modules: PlatformModule[];
+}
+
+export interface TenantSubscription {
+  id: ID;
+  tenantId: ID;
+  plan: TenantPlan;
+  status: "trialing" | "active" | "past_due" | "canceled" | "incomplete";
+  stripeCustomerId?: string | undefined;
+  stripeSubscriptionId?: string | undefined;
+  currentPeriodEnd?: string | undefined;
+  updatedAt: string;
+}
+
+export interface TenantAdapterStatus {
+  tenantId: ID;
+  adapter: "crm" | "media" | "email" | "sms" | "maps" | "llm" | "voice";
+  provider: string;
+  configured: boolean;
+  ok: boolean;
+  checkedAt: string;
+  detail?: string | undefined;
+}
+
+export interface TenantCostSummary {
+  tenantId: ID;
+  periodStart: string;
+  periodEnd: string;
+  estimatedCostUsd: number;
+  usageLogCount: number;
+}
+
+export interface PlatformBackupRecord {
+  id: ID;
+  tenantId: ID;
+  storageRef: string;
+  collectionCounts: Record<string, number>;
+  createdAt: string;
+}
+
+export interface TenantDataExport {
+  tenantId: ID;
+  exportedAt: string;
+  collections: Record<string, unknown[]>;
 }
 
 export type JobStatus =
@@ -451,7 +512,7 @@ export interface FailureLogRecord {
 
 export interface UsageLogRecord {
   tenantId: ID;
-  provider: "anthropic";
+  provider: "anthropic" | "elevenlabs";
   model: string;
   routeActionName: string;
   taskType: string;
@@ -461,6 +522,8 @@ export interface UsageLogRecord {
     cacheCreationInputTokens: number;
     cacheReadInputTokens: number;
     totalTokens: number;
+    characters?: number | undefined;
+    audioBytes?: number | undefined;
   };
   estimatedCostUsd: number | null;
   ok: boolean;

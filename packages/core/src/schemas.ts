@@ -57,6 +57,69 @@ export const tenantSchema = z.object({
   plan: z.enum(["nexi", "marketing", "suite"])
 });
 
+export const platformModuleSchema = z.enum([
+  "nexi",
+  "crm",
+  "fielddocs",
+  "scheduling",
+  "content",
+  "campaigns",
+  "comms",
+  "voice",
+  "platform",
+  "evaporation"
+]);
+
+export const platformPlanSchema = z.object({
+  id: z.enum(["nexi", "marketing", "suite"]),
+  name: z.string().min(1),
+  monthlyUsd: z.number().min(0),
+  modules: z.array(platformModuleSchema)
+});
+
+export const tenantSubscriptionSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  plan: z.enum(["nexi", "marketing", "suite"]),
+  status: z.enum(["trialing", "active", "past_due", "canceled", "incomplete"]),
+  stripeCustomerId: z.string().optional(),
+  stripeSubscriptionId: z.string().optional(),
+  currentPeriodEnd: z.string().optional(),
+  updatedAt: z.string()
+});
+
+export const tenantAdapterStatusSchema = z.object({
+  tenantId: idSchema,
+  adapter: z.enum(["crm", "media", "email", "sms", "maps", "llm", "voice"]),
+  provider: z.string().min(1),
+  configured: z.boolean(),
+  ok: z.boolean(),
+  checkedAt: z.string(),
+  detail: z.string().optional()
+});
+
+export const tenantCostSummarySchema = z.object({
+  tenantId: idSchema,
+  periodStart: z.string(),
+  periodEnd: z.string(),
+  estimatedCostUsd: z.number(),
+  usageLogCount: z.number().int().min(0)
+});
+
+export const platformBackupRecordSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  storageRef: z.string().min(1),
+  collectionCounts: z.record(z.number().int().min(0)),
+  createdAt: z.string()
+});
+
+export const tenantDataExportSchema = z.object({
+  tenantId: idSchema,
+  exportedAt: z.string(),
+  collections: z.record(z.array(z.unknown()))
+});
+
 export const clientSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
@@ -299,7 +362,7 @@ export const failureLogRecordSchema = z.object({
 
 export const usageLogRecordSchema = z.object({
   tenantId: idSchema,
-  provider: z.literal("anthropic"),
+  provider: z.enum(["anthropic", "elevenlabs"]),
   model: z.string(),
   routeActionName: z.string(),
   taskType: z.string(),
@@ -308,7 +371,9 @@ export const usageLogRecordSchema = z.object({
     outputTokens: z.number(),
     cacheCreationInputTokens: z.number(),
     cacheReadInputTokens: z.number(),
-    totalTokens: z.number()
+    totalTokens: z.number(),
+    characters: z.number().optional(),
+    audioBytes: z.number().optional()
   }),
   estimatedCostUsd: z.number().nullable(),
   ok: z.boolean(),
@@ -338,6 +403,12 @@ export const healthResponseSchema = z.object({
 });
 
 export type TenantDoc = z.infer<typeof tenantSchema>;
+export type PlatformPlanDoc = z.infer<typeof platformPlanSchema>;
+export type TenantSubscriptionDoc = z.infer<typeof tenantSubscriptionSchema>;
+export type TenantAdapterStatusDoc = z.infer<typeof tenantAdapterStatusSchema>;
+export type TenantCostSummaryDoc = z.infer<typeof tenantCostSummarySchema>;
+export type PlatformBackupRecordDoc = z.infer<typeof platformBackupRecordSchema>;
+export type TenantDataExportDoc = z.infer<typeof tenantDataExportSchema>;
 export type ClientDoc = z.infer<typeof clientSchema>;
 export type PropertyDoc = z.infer<typeof propertySchema>;
 export type JobDoc = z.infer<typeof jobSchema>;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type Auth, type User } from "firebase/auth";
@@ -51,6 +51,50 @@ interface CalendarResponse {
   error?: string;
 }
 
+interface PlatformPlan {
+  id: "nexi" | "marketing" | "suite";
+  name: string;
+  monthlyUsd: number;
+  modules: string[];
+}
+
+interface PlatformTenantRow {
+  tenant: {
+    id: string;
+    name: string;
+    plan: "nexi" | "marketing" | "suite";
+  };
+  plan: PlatformPlan;
+  modules: string[];
+  subscription?: {
+    status: string;
+    stripeSubscriptionId?: string;
+  } | null;
+  adapterStatuses: Array<{
+    adapter: string;
+    provider: string;
+    configured: boolean;
+    ok: boolean;
+    detail?: string;
+  }>;
+  cost: {
+    estimatedCostUsd: number;
+    usageLogCount: number;
+  };
+}
+
+interface PlatformTenantResponse {
+  ok: boolean;
+  tenants?: PlatformTenantRow[];
+  error?: string;
+}
+
+interface PlatformPlansResponse {
+  ok: boolean;
+  plans?: PlatformPlan[];
+  error?: string;
+}
+
 interface FirebasePublicConfig {
   apiKey: string;
   authDomain: string;
@@ -65,6 +109,23 @@ interface RuntimeConfigResponse {
   firebase: FirebasePublicConfig;
   firebaseConfigured: boolean;
 }
+
+interface BrowserSpeechRecognition {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: { results: ArrayLike<{ 0: { transcript: string } }> }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+type BrowserSpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
+type VoiceWindow = Window & {
+  SpeechRecognition?: BrowserSpeechRecognitionConstructor;
+  webkitSpeechRecognition?: BrowserSpeechRecognitionConstructor;
+};
 
 const buildTimeFirebaseConfig: FirebasePublicConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string || "",
@@ -253,7 +314,9 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
   }
 
   if (props.user) {
-    return <Chat auth={props.auth} user={props.user} />;
+    return window.location.pathname.startsWith("/platform")
+      ? <PlatformConsole auth={props.auth} user={props.user} />
+      : <Chat auth={props.auth} user={props.user} />;
   }
 
   return (
@@ -281,6 +344,114 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
   );
 }
 
+function PlatformConsole(props: { auth: Auth; user: User }): React.ReactElement {
+  const [rows, setRows] = useState<PlatformTenantRow[]>([]);
+  const [plans, setPlans] = useState<PlatformPlan[]>([]);
+  const [status, setStatus] = useState("Loading platform console...");
+  const [workingTenant, setWorkingTenant] = useState("");
+
+  async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
+    const token = await props.user.getIdToken();
+    return fetch(path, {
+      ...init,
+      headers: {
+        ...(init?.headers ?? {}),
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json"
+      }
+    });
+  }
+
+  async function refresh(): Promise<void> {
+    setStatus("Loading platform console...");
+    try {
+      const [tenantBody, planBody] = await Promise.all([
+        authedFetch("/api/platform/tenants").then((response) => response.json() as Promise<PlatformTenantResponse>),
+        authedFetch("/api/platform/plans").then((response) => response.json() as Promise<PlatformPlansResponse>)
+      ]);
+      if (!tenantBody.ok || !planBody.ok) {
+        setStatus(tenantBody.error ?? planBody.error ?? "Platform console unavailable.");
+        return;
+      }
+      setRows(tenantBody.tenants ?? []);
+      setPlans(planBody.plans ?? []);
+      setStatus("");
+    } catch {
+      setStatus("Platform console could not reach the server.");
+    }
+  }
+
+  async function runBackup(tenantId: string): Promise<void> {
+    setWorkingTenant(tenantId);
+    setStatus(`Running backup for ${tenantId}...`);
+    try {
+      const body = await authedFetch(`/api/platform/tenants/${encodeURIComponent(tenantId)}/backups/run`, { method: "POST", body: "{}" })
+        .then((response) => response.json() as Promise<{ ok: boolean; backup?: { storageRef: string }; error?: string }>);
+      setStatus(body.ok ? `Backup saved: ${body.backup?.storageRef ?? "storage file"}` : body.error ?? "Backup failed.");
+      await refresh();
+    } catch {
+      setStatus("Backup request failed.");
+    } finally {
+      setWorkingTenant("");
+    }
+  }
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  return (
+    <main className="shell platform-shell">
+      <section className="platform-hero">
+        <div>
+          <p className="eyebrow">M13 Platform</p>
+          <h1>Tenant Command Center</h1>
+          <p className="signed-in">{props.user.email ?? "Platform operator"}</p>
+        </div>
+        <button className="sign-out" type="button" onClick={() => void signOut(props.auth)}>Sign out</button>
+      </section>
+
+      <section className="plan-grid">
+        {plans.map((plan) => (
+          <article className="plan-card" key={plan.id}>
+            <p className="eyebrow">{plan.id}</p>
+            <h2>{plan.name}</h2>
+            <p className="plan-price">${plan.monthlyUsd}/mo</p>
+            <p>{plan.modules.join(", ")}</p>
+          </article>
+        ))}
+      </section>
+
+      {status ? <p className="schedule-status">{status}</p> : null}
+
+      <section className="tenant-table">
+        {rows.map((row) => (
+          <article className="tenant-row" key={row.tenant.id}>
+            <div>
+              <p className="eyebrow">{row.tenant.id}</p>
+              <h2>{row.tenant.name}</h2>
+              <p>{row.plan.name} plan · {row.subscription?.status ?? "no subscription"} · ${row.cost.estimatedCostUsd.toFixed(4)} tracked</p>
+            </div>
+            <div className="adapter-pills">
+              {row.adapterStatuses.map((adapter) => (
+                <span className={adapter.ok ? "pill ok" : "pill warn"} key={adapter.adapter}>
+                  {adapter.adapter}: {adapter.configured ? adapter.provider : "not set"}
+                </span>
+              ))}
+            </div>
+            <div className="tenant-actions">
+              <a href={`/api/platform/tenants/${encodeURIComponent(row.tenant.id)}/export`} target="_blank" rel="noreferrer">Export</a>
+              <button type="button" disabled={workingTenant === row.tenant.id} onClick={() => void runBackup(row.tenant.id)}>
+                {workingTenant === row.tenant.id ? "Backing up..." : "Run backup"}
+              </button>
+            </div>
+          </article>
+        ))}
+      </section>
+    </main>
+  );
+}
+
 function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -295,6 +466,15 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   const [working, setWorking] = useState(false);
   const [health, setHealth] = useState<"checking" | "green" | "red">("checking");
   const [activeMedia, setActiveMedia] = useState<Source | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState("Voice off");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
+  const voiceWindow = window as VoiceWindow;
+  const SpeechRecognition = voiceWindow.SpeechRecognition ?? voiceWindow.webkitSpeechRecognition;
+  const speechSupported = Boolean(SpeechRecognition);
 
   useEffect(() => {
     let cancelled = false;
@@ -315,6 +495,89 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
     };
   }, []);
 
+  useEffect(() => () => {
+    recognitionRef.current?.stop();
+    audioRef.current?.pause();
+  }, []);
+
+  async function speakAssistant(text: string): Promise<void> {
+    if (!voiceEnabled || !text.trim()) {
+      return;
+    }
+    setSpeaking(true);
+    setVoiceStatus("Nexi is speaking");
+    try {
+      audioRef.current?.pause();
+      const response = await fetch("/api/voice/tts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: "aquatrace", text })
+      });
+      if (!response.ok) {
+        throw new Error("TTS unavailable");
+      }
+      const url = URL.createObjectURL(await response.blob());
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        setSpeaking(false);
+        setVoiceStatus("Voice ready");
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        setSpeaking(false);
+        setVoiceStatus("Voice playback failed");
+      };
+      await audio.play();
+    } catch {
+      setSpeaking(false);
+      setVoiceStatus("Voice playback blocked");
+    }
+  }
+
+  function toggleVoice(): void {
+    const next = !voiceEnabled;
+    setVoiceEnabled(next);
+    setVoiceStatus(next ? "Voice ready" : "Voice off");
+    if (!next) {
+      audioRef.current?.pause();
+      recognitionRef.current?.stop();
+      setListening(false);
+      setSpeaking(false);
+    }
+  }
+
+  function startDictation(): void {
+    if (!SpeechRecognition || listening) {
+      setVoiceStatus("Mic not supported here");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript?.trim() ?? "";
+      if (transcript) {
+        setDraft((current) => [current, transcript].filter(Boolean).join(" ").trim());
+        setVoiceStatus("Dictation captured");
+      }
+    };
+    recognition.onerror = () => {
+      setListening(false);
+      setVoiceStatus("Mic capture failed");
+    };
+    recognition.onend = () => {
+      setListening(false);
+      recognitionRef.current = null;
+    };
+    recognitionRef.current = recognition;
+    setListening(true);
+    setVoiceStatus("Listening");
+    recognition.start();
+  }
+
   async function sendMessage(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     const text = draft.trim();
@@ -332,20 +595,24 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
         body: JSON.stringify({ tenantId: "aquatrace", conversationId, message: text })
       });
       const body = await response.json() as NexiResponse;
+      const assistantText = body.ok ? body.answer ?? "I do not have an answer yet." : body.error ?? "Nexi could not answer that.";
       setMessages((current) => [
         ...current,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          text: body.ok ? body.answer ?? "I do not have an answer yet." : body.error ?? "Nexi could not answer that.",
+          text: assistantText,
           sources: body.sources ?? []
         }
       ]);
+      void speakAssistant(assistantText);
     } catch {
+      const fallback = "Nexi could not reach the authenticated Job Desk API.";
       setMessages((current) => [
         ...current,
-        { id: crypto.randomUUID(), role: "assistant", text: "Nexi could not reach the authenticated Job Desk API.", sources: [] }
+        { id: crypto.randomUUID(), role: "assistant", text: fallback, sources: [] }
       ]);
+      void speakAssistant(fallback);
     } finally {
       setWorking(false);
     }
@@ -363,6 +630,9 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
           </div>
           <div className="top-actions">
             <span className={`health ${health}`} aria-label={`Health ${health}`} />
+            <button className={`voice-toggle ${voiceEnabled ? "on" : ""}`} type="button" onClick={toggleVoice}>
+              {voiceEnabled ? "Voice on" : "Enable voice"}
+            </button>
             <button className="sign-out" type="button" onClick={() => void signOut(props.auth)}>Sign out</button>
           </div>
         </header>
@@ -400,7 +670,22 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
           {working ? <div className="typing">Nexi is checking the rails...</div> : null}
         </div>
 
+        <div className="voice-strip" aria-live="polite">
+          <span className={`voice-dot ${listening ? "listening" : speaking ? "speaking" : voiceEnabled ? "ready" : ""}`} />
+          <span>{voiceStatus}</span>
+          {!speechSupported ? <span className="voice-note">Speech input unsupported in this browser</span> : null}
+        </div>
+
         <form className="composer" onSubmit={sendMessage}>
+          <button
+            aria-label="Dictate message"
+            className={`mic ${listening ? "active" : ""}`}
+            disabled={!speechSupported || working}
+            type="button"
+            onClick={startDictation}
+          >
+            Mic
+          </button>
           <input
             aria-label="Message Nexi"
             value={draft}

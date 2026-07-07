@@ -31,5 +31,6 @@
 | schedule | M3 Scheduling worktree | opened | `build/schedule` from main after M2/M4 merge; receipts pending. |
 | content | M5 Content Engine worktree | opened | `build/content` from main after M2/M4 merge; outbound sends/publishing remain parked behind explicit approval and must build to ApprovalQueue only. |
 | comms | M6-LITE Email Rail local foundation | blocked | Code and local proof complete in `build/comms-lite`; live read/send receipts blocked until owner completes Gmail OAuth consent and third mailbox creation. Receipts: `receipts/m6-lite-verify.txt`, `receipts/m6-lite-oauth-readiness.txt`. |
-| voice | M12a Voice worktree | opened | `build/voice` from main after M2/M4 merge; receipts pending. |
+| voice | M12a Voice worktree | opened | `build/voice` from main after M2/M4 merge. |
+| voice | M12a voice chat foundation | done | Server-side `/api/voice/tts` ElevenLabs rail, web mic dictation, opt-in TTS playback, and mocked no-spend verify receipts in `receipts/m12a/verify.txt` and `receipts/m12a/staging-env-presence.json`. Live phone video receipt still pending. |
 | platform | M13 Platform worktree | opened | `build/platform` from main after M2/M4 merge; receipts pending. |

@@ -10,6 +10,7 @@ export class FirestoreUsageLogWriter implements UsageLogWriter {
   constructor(private readonly db: Firestore) {}
 
   async write(record: UsageLogRecord): Promise<void> {
+    // @tenant-doc:usageLog usageLogRecordSchema requires tenantId before write.
     await this.db.collection("usageLog").add(firestoreDoc(usageLogRecordSchema.parse(record)));
   }
 }
