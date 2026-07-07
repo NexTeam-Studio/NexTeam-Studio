@@ -5,7 +5,7 @@ import express from "express";
 import { enforceToolEntitlements, toolEntitlementMatrix } from "../dist/platform/entitlements.js";
 import { MemoryStorageWriter, runTenantBackup } from "../dist/platform/backup.js";
 import { createStripeTestSubscription } from "../dist/platform/billing.js";
-import { InMemoryPlatformRepository, defaultTenant, subscriptionFromStripe } from "../dist/platform/repository.js";
+import { FirestorePlatformRepository, InMemoryPlatformRepository, defaultTenant, subscriptionFromStripe } from "../dist/platform/repository.js";
 import { registerPlatformRoutes } from "../dist/platform/routes.js";
 
 function tool(name) {
@@ -38,6 +38,44 @@ function usageRecord(tenantId, cost) {
   };
 }
 
+function fakeTenantFirestore({ direct = null, query = [] } = {}) {
+  return {
+    collection(name) {
+      assert.equal(name, "tenants");
+      return {
+        doc(id) {
+          return {
+            async get() {
+              return {
+                exists: direct !== null && id === direct.id,
+                data: () => direct
+              };
+            }
+          };
+        },
+        where(field, op, value) {
+          assert.equal(field, "tenantId");
+          assert.equal(op, "==");
+          return {
+            async get() {
+              const docs = query
+                .filter((entry) => entry.tenantId === value)
+                .map((entry) => ({ data: () => entry }));
+              return { empty: docs.length === 0, docs };
+            }
+          };
+        },
+        async get() {
+          return {
+            empty: query.length === 0,
+            docs: query.map((entry) => ({ data: () => entry }))
+          };
+        }
+      };
+    }
+  };
+}
+
 test("platform entitlement registry removes tools outside the tenant plan", () => {
   const tenant = defaultTenant("second-test", "nexi");
   const result = enforceToolEntitlements(tenant, [
@@ -60,6 +98,16 @@ test("suite tenant keeps scheduling and marketing tools", () => {
     tool("findSlot")
   ]);
   assert.deepEqual(result.tools.map((entry) => entry.name), ["getJobDetail", "draftPostFromJob", "findSlot"]);
+});
+
+test("firestore platform repository falls back when legacy Aquatrace tenant docs are partial", async () => {
+  const repository = new FirestorePlatformRepository(fakeTenantFirestore({
+    query: [{ tenantId: "aquatrace" }]
+  }));
+  const tenant = await repository.getTenant("aquatrace");
+  assert.equal(tenant.id, "aquatrace");
+  assert.equal(tenant.plan, "suite");
+  assert.equal(tenant.adapters.crm, "native");
 });
 
 test("platform repository summarizes cost, records backup, and exports per tenant", async () => {

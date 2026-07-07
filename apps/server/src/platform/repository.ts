@@ -184,21 +184,41 @@ export class InMemoryPlatformRepository implements PlatformRepository {
 export class FirestorePlatformRepository implements PlatformRepository {
   constructor(private readonly db: Firestore) {}
 
+  private parseTenantCandidate(data: unknown): Tenant | null {
+    const parsed = tenantSchema.safeParse(data);
+    return parsed.success ? parsed.data as Tenant : null;
+  }
+
   async listTenants(): Promise<Tenant[]> {
     // @platform-admin-read: platform operator console intentionally lists tenant roots.
     const snapshot = await this.db.collection("tenants").get();
     if (snapshot.empty) {
       return [defaultTenant()];
     }
-    return snapshot.docs.map((doc) => tenantSchema.parse(doc.data()) as Tenant);
+    const tenants = snapshot.docs
+      .map((doc) => this.parseTenantCandidate(doc.data()))
+      .filter((tenant): tenant is Tenant => tenant !== null);
+    return tenants.length > 0 ? tenants : [defaultTenant()];
   }
 
   async getTenant(tenantId: string): Promise<Tenant | null> {
-    const snapshot = await this.db.collection("tenants").where("tenantId", "==", tenantId).get();
-    if (snapshot.empty) {
-      return tenantId === DEFAULT_TENANT_ID ? defaultTenant() : null;
+    const direct = await this.db.collection("tenants").doc(tenantId).get();
+    if (direct.exists) {
+      const tenant = this.parseTenantCandidate(direct.data());
+      if (tenant) {
+        return tenant;
+      }
     }
-    return tenantSchema.parse(snapshot.docs[0]?.data()) as Tenant;
+
+    const snapshot = await this.db.collection("tenants").where("tenantId", "==", tenantId).get();
+    for (const doc of snapshot.docs) {
+      const tenant = this.parseTenantCandidate(doc.data());
+      if (tenant) {
+        return tenant;
+      }
+    }
+
+    return tenantId === DEFAULT_TENANT_ID ? defaultTenant() : null;
   }
 
   async upsertTenant(tenant: Tenant): Promise<Tenant> {
