@@ -652,6 +652,16 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.date ??= new Date().toISOString();
     record.maxResults ??= 25;
   }
+  if (toolName === "draftCampaign") {
+    record.templateId ??= "vgb-hotel-gm-outreach";
+    record.audience ??= {
+      channel: "email",
+      tagsAny: ["test"],
+      consentRequired: true,
+      excludeSuppressed: true,
+      maxResults: 2
+    };
+  }
   if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
     record.nameQuery = correctionFollowUp
       ? entityQueryFromMessages(messages, { skipLatest: true }) || userText
@@ -746,6 +756,14 @@ function looksLikeEmailDraftAction(lower: string): boolean {
 function looksLikeEvaporationRunQuestion(lower: string): boolean {
   return /\b(?:run|calculate|check|make|create)\b.*\b(?:evap|evaporation|bucket\s+test|water\s+loss)\b/.test(lower)
     || /\b(?:evap|evaporation)\s+(?:calculator|report|pdf)\b/.test(lower);
+}
+
+function looksLikeCampaignDraftAction(lower: string): boolean {
+  return /\b(?:draft|queue|build|create|start|run)\b.*\b(?:campaign|sequence|newsletter|outreach)\b/.test(lower);
+}
+
+function looksLikeCampaignQueueQuestion(lower: string): boolean {
+  return /\b(?:campaign|sequence|newsletter|outreach)\b.*\b(?:queue|queued|status|stats|tracking|opens?|clicks?|unsubscribe|suppression)\b/.test(lower);
 }
 
 function looksLikeInboxTriageQuestion(lower: string): boolean {
@@ -957,6 +975,12 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikeEvaporationRunQuestion(lower) && toolsByName.has("runEvaporation")) {
     return ["runEvaporation"];
+  }
+  if (looksLikeCampaignDraftAction(lower) && toolsByName.has("draftCampaign")) {
+    return ["draftCampaign"];
+  }
+  if (looksLikeCampaignQueueQuestion(lower) && toolsByName.has("campaignQueue")) {
+    return ["campaignQueue"];
   }
   if (looksLikeInboxSummaryQuestion(lower) && toolsByName.has("summarizeInbox")) {
     return ["summarizeInbox"];
