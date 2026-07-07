@@ -570,6 +570,11 @@ function entityQueryFromMessages(messages: GatewayMessage[], options: { skipLate
   return "";
 }
 
+function bareEntityFromText(text: string): string {
+  const trimmed = text.replace(/[?.!]+$/g, "").trim();
+  return /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(trimmed) ? trimmed : "";
+}
+
 function namedEntityFromText(text: string): string {
   const match = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\s+(?:is|was|has|on|at|[-—])/);
   return match?.[1]?.trim() ?? "";
@@ -616,13 +621,13 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   if (toolName === "getPhotos" && !record.projectQuery) {
     record.projectQuery = correctionFollowUp
       ? entityQueryFromMessages(messages, { skipLatest: true })
-      : entityQueryFromText(userText) || photoQueryFromText(userText) || entityQueryFromMessages(messages);
+      : entityQueryFromText(userText) || bareEntityFromText(userText) || photoQueryFromText(userText) || entityQueryFromMessages(messages);
   }
   if (toolName === "getDocuments") {
     if (!record.projectQuery) {
       record.projectQuery = correctionFollowUp
         ? entityQueryFromMessages(messages, { skipLatest: true })
-        : entityQueryFromText(userText) || photoQueryFromText(userText) || entityQueryFromMessages(messages);
+        : entityQueryFromText(userText) || bareEntityFromText(userText) || photoQueryFromText(userText) || entityQueryFromMessages(messages);
     }
     if (!record.question) {
       record.question = userText;
@@ -650,13 +655,13 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
     record.nameQuery = correctionFollowUp
       ? entityQueryFromMessages(messages, { skipLatest: true }) || userText
-      : entityQueryFromText(userText) || entityQueryFromMessages(messages) || userText;
+      : entityQueryFromText(userText) || bareEntityFromText(userText) || entityQueryFromMessages(messages) || userText;
   }
   if (toolName === "lookupSiteJobBlueprintField" && !record.field && /gallon/i.test(userText)) {
     record.field = "poolGallons";
   }
   if (toolName === "lookupSiteJobBlueprintField" && !record.requestedEntity) {
-    const requestedEntity = entityQueryFromText(userText);
+    const requestedEntity = entityQueryFromText(userText) || bareEntityFromText(userText);
     if (requestedEntity) {
       record.requestedEntity = requestedEntity;
     }
@@ -699,6 +704,10 @@ function looksLikeTechnicianQuestion(lower: string): boolean {
 
 function looksLikeJobDetailQuestion(lower: string): boolean {
   return /\b(?:address|completion|competion|completed|complete|service\s+(?:time|date|completion|competion|[a-z]+\s+(?:completion|competion))|arrival|arrived|onsite|on-site|water\s+temp|air\s+temp|daily\s+loss|bucket|measurements?|main\s+drains?|skimmers?|returns?|lights?|filtration|testing\s+procedures?)\b/.test(lower);
+}
+
+function looksLikeReportMeasurementQuestion(lower: string): boolean {
+  return /\b(?:gallons per inch|square footage|sq ft|ft2|ftÂ²|total gallons|pool gallons|how many gallons|measurements?)\b/.test(lower);
 }
 
 function looksLikeCorrectionFollowUp(lower: string): boolean {
@@ -882,6 +891,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikePipelineQuestion(lower)) {
     return uniqueToolNames(["getPipeline"], toolsByName);
+  }
+  if (bareEntityFromText(userText) && recentUserTextMatches(messages, looksLikeReportMeasurementQuestion)) {
+    return uniqueToolNames(["getDocuments", "lookupSiteJobBlueprintField"], toolsByName);
   }
   if (lower.includes("gallon") && toolsByName.has("lookupSiteJobBlueprintField")) {
     return uniqueToolNames(["getDocuments", "lookupSiteJobBlueprintField"], toolsByName);

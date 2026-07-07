@@ -1058,6 +1058,57 @@ test("Nexi total-gallons report questions also run SiteJobBlueprint lookup", asy
   assert.equal(toolCalls[1][1].requestedEntity, "Deborah Justice");
 });
 
+test("Nexi bare entity follow-ups inherit report measurement rails", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "What is the square footage of the Deborah Justice pool and how many gallons per inch?" },
+      { role: "assistant", content: "I found the report numbers." },
+      { role: "user", content: "Deborah Justice" }
+    ],
+    tools: [
+      {
+        name: "getDocuments",
+        description: "Read CompanyCam docs.",
+        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getDocuments", args]);
+          return {
+            result: { documents: [{ id: "doc_1", text: "Square footage 1002.7; gallons per inch 626.7" }] },
+            sources: [{ rail: "companycam", ref: "doc_1", label: "CompanyCam document Deborah Justice report" }]
+          };
+        }
+      },
+      {
+        name: "lookupSiteJobBlueprintField",
+        description: "Read blueprint field.",
+        inputSchema: z.object({ field: z.string().optional(), requestedEntity: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["lookupSiteJobBlueprintField", args]);
+          return {
+            result: { value: 37602 },
+            sources: [{ rail: "native", ref: "blueprint_1", label: "SiteJobBlueprint Deborah Justice" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "Deborah Justice has 1,002.7 sq ft and 626.7 gallons per inch." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getDocuments", "lookupSiteJobBlueprintField"]);
+  assert.equal(toolCalls[0][1].projectQuery, "Deborah Justice");
+  assert.equal(toolCalls[1][1].requestedEntity, "Deborah Justice");
+  assert.equal(result.sources.some((source) => source.rail === "companycam"), true);
+  assert.equal(result.sources.some((source) => source.rail === "native"), true);
+});
+
 test("Aquatrace report extraction handles locked report rules", () => {
   const loss = parseLossNotation('2" + 1/2"');
   assert.equal(loss.inchesPerDay, 2.5);
