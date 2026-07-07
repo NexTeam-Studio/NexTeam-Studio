@@ -19,7 +19,7 @@ export function getAdminDb(env: NodeJS.ProcessEnv = process.env): Firestore | nu
     return null;
   }
   if (getApps().length === 0) {
-    const storageBucket = env.FIREBASE_STORAGE_BUCKET?.trim();
+    const storageBucket = env.FIREBASE_STORAGE_BUCKET?.trim() || env.VITE_FIREBASE_STORAGE_BUCKET?.trim();
     initializeApp({
       credential: cert(raw ? parseServiceAccount(raw) : { projectId, clientEmail, privateKey }),
       ...(storageBucket ? { storageBucket } : {})
@@ -37,7 +37,7 @@ export function getAdminAuth(env: NodeJS.ProcessEnv = process.env): Auth | null 
     return null;
   }
   if (getApps().length === 0) {
-    const storageBucket = env.FIREBASE_STORAGE_BUCKET?.trim();
+    const storageBucket = env.FIREBASE_STORAGE_BUCKET?.trim() || env.VITE_FIREBASE_STORAGE_BUCKET?.trim();
     initializeApp({
       credential: cert(raw ? parseServiceAccount(raw) : { projectId, clientEmail, privateKey }),
       ...(storageBucket ? { storageBucket } : {})

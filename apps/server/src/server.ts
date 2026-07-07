@@ -47,7 +47,7 @@ const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus
 const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();
 const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TENANT_ID || "aquatrace");
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
-const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
+const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 
 app.use(express.json({
   limit: "1mb",
