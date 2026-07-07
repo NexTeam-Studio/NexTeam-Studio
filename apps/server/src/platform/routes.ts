@@ -5,6 +5,7 @@ import type { DecodedIdToken } from "firebase-admin/auth";
 import { getAdminAuth } from "../firebase.js";
 import { runTenantBackup, type StorageWriter } from "./backup.js";
 import { createStripeTestSubscription } from "./billing.js";
+import { toolEntitlementMatrix } from "./entitlements.js";
 import { modulesForPlan, PLATFORM_PLANS } from "./plans.js";
 import { defaultTenant, planCatalog, subscriptionFromStripe, type PlatformRepository } from "./repository.js";
 
@@ -208,6 +209,20 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantExport", status: 400 });
       }
       res.json({ ok: true, export: await deps.repository.exportTenantData(tenantId) });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/tenants/:tenantId/tool-entitlements", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env);
+      const tenantId = req.params.tenantId;
+      if (!tenantId) {
+        throw new RailError("Tenant id is required.", { provider: "platform", op: "toolEntitlements", status: 400 });
+      }
+      const tenant = await loadTenantFromPlatform(deps.repository, tenantId, env);
+      res.json({ ok: true, tenantId, plan: tenant.plan, tools: toolEntitlementMatrix(tenant) });
     } catch (error) {
       sendRouteError(res, error);
     }

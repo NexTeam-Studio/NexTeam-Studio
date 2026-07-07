@@ -56,3 +56,10 @@ export function requireTenantModule(tenant: Tenant, module: PlatformModule): voi
     throw new RailError(`${tenant.name} is not subscribed to ${module}.`, { provider: "platform", op: "entitlement", status: 403 });
   }
 }
+
+export function toolEntitlementMatrix(tenant: Tenant): Array<{ name: string; module: PlatformModule; allowed: boolean }> {
+  const allowedModules = modulesForPlan(tenant.plan);
+  return Object.entries(TOOL_MODULES)
+    .map(([name, module]) => ({ name, module, allowed: allowedModules.has(module) }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+}

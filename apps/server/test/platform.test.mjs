@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import express from "express";
-import { enforceToolEntitlements } from "../dist/platform/entitlements.js";
+import { enforceToolEntitlements, toolEntitlementMatrix } from "../dist/platform/entitlements.js";
 import { MemoryStorageWriter, runTenantBackup } from "../dist/platform/backup.js";
 import { createStripeTestSubscription } from "../dist/platform/billing.js";
 import { InMemoryPlatformRepository, defaultTenant, subscriptionFromStripe } from "../dist/platform/repository.js";
@@ -47,6 +47,9 @@ test("platform entitlement registry removes tools outside the tenant plan", () =
   ]);
   assert.deepEqual(result.tools.map((entry) => entry.name), ["getJobDetail"]);
   assert.deepEqual(result.blocked.map((entry) => entry.name), ["draftPostFromJob", "findSlot"]);
+  const matrix = toolEntitlementMatrix(tenant);
+  assert.equal(matrix.find((entry) => entry.name === "draftPostFromJob")?.allowed, false);
+  assert.equal(matrix.find((entry) => entry.name === "getJobDetail")?.allowed, true);
 });
 
 test("suite tenant keeps scheduling and marketing tools", () => {
@@ -133,6 +136,10 @@ test("platform routes expose tenants, test subscription, backup, and export", as
     const backup = await fetch(`${base}/api/platform/tenants/second-test/backups/run`, { method: "POST" }).then((response) => response.json());
     assert.equal(backup.ok, true);
     assert.match(backup.backup.storageRef, /^backups\/second-test\//);
+
+    const entitlements = await fetch(`${base}/api/platform/tenants/second-test/tool-entitlements`).then((response) => response.json());
+    assert.equal(entitlements.ok, true);
+    assert.equal(entitlements.tools.find((entry) => entry.name === "draftPostFromJob").allowed, false);
 
     const exported = await fetch(`${base}/api/platform/tenants/second-test/export`).then((response) => response.json());
     assert.equal(exported.ok, true);
