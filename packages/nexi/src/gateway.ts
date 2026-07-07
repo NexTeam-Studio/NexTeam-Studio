@@ -666,6 +666,15 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
       record.requestedEntity = requestedEntity;
     }
   }
+  if (toolName === "runEvaporation") {
+    const parsed = evaporationInputFromText(userText);
+    record.address ??= parsed.address;
+    record.zip ??= parsed.zip;
+    record.surfaceAreaFt2 ??= parsed.surfaceAreaFt2;
+    record.waterTempF ??= parsed.waterTempF;
+    record.observedLoss ??= parsed.observedLoss;
+    record.windMphOverride ??= parsed.windMphOverride;
+  }
   return record;
 }
 
@@ -732,6 +741,11 @@ function looksLikeEmailDraftAction(lower: string): boolean {
   return /\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/.test(lower)
     || /\b(?:send|draft|compose|write)\s+(?:me\s+)?(?:an?\s+)?email\s+(?:at|to)\s+[\w.+-]+@[\w.-]+\.\w+\b/.test(lower)
     || /\bemail\s+[\w.+-]+@[\w.-]+\.\w+\s+(?:saying|that|to say)\b/.test(lower);
+}
+
+function looksLikeEvaporationRunQuestion(lower: string): boolean {
+  return /\b(?:run|calculate|check|make|create)\b.*\b(?:evap|evaporation|bucket\s+test|water\s+loss)\b/.test(lower)
+    || /\b(?:evap|evaporation)\s+(?:calculator|report|pdf)\b/.test(lower);
 }
 
 function looksLikeInboxTriageQuestion(lower: string): boolean {
@@ -861,6 +875,73 @@ function draftEmailInputFromText(text: string): { to: string[]; subject: string;
   };
 }
 
+function numberFromMatch(text: string, pattern: RegExp): number | undefined {
+  const value = text.match(pattern)?.[1];
+  if (!value) {
+    return undefined;
+  }
+  const parsed = Number(value.replace(/,/g, ""));
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function evaporationAddressFromText(text: string): string | undefined {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  const match = normalized.match(
+    /\b(?:for|at)\s+(.+?)(?=\s+(?:with|using|surface\s+area|pool\s+area|water\s+temp|water\s+temperature|observed\s+loss|daily\s+loss|loss)\b|[?.!]|$)/i
+  );
+  const address = (match?.[1] ?? "")
+    .replace(/\b(?:the\s+)?(?:evap|evaporation|calculator|report|pdf)\b/gi, " ")
+    .replace(/\s+,/g, ",")
+    .replace(/\s+/g, " ")
+    .trim();
+  return address || undefined;
+}
+
+function evaporationInputFromText(text: string): Record<string, unknown> {
+  const surfaceAreaFt2 = numberFromMatch(
+    text,
+    /\b(?:surface\s+area|pool\s+area|area)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:square\s*feet|sq\.?\s*ft|ft2)\b/i
+  );
+  const waterTempF = numberFromMatch(
+    text,
+    /\b(?:water\s+temp(?:erature)?|water\s+temperature)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:degrees?|deg|f|fahrenheit)?\b/i
+  );
+  const observedLossInches = numberFromMatch(
+    text,
+    /\b(?:observed\s+daily\s+loss|daily\s+loss|observed\s+loss|water\s+loss|loss)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:inches?|in\.?|")\b/i
+  );
+  const observationDays = numberFromMatch(
+    text,
+    /\b(?:over|across|for)\s+([\d,.]+)\s*(?:days?|24-hour|24\s*hours?)\b/i
+  ) ?? 1;
+  const windMphOverride = numberFromMatch(
+    text,
+    /\b(?:wind|wind\s+speed)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:mph|miles?\s+per\s+hour)\b/i
+  );
+  const zip = text.match(/\b(\d{5})(?:-\d{4})?\b/)?.[1];
+  const parsed: Record<string, unknown> = {};
+  const address = evaporationAddressFromText(text);
+  if (address) {
+    parsed.address = address;
+  }
+  if (zip) {
+    parsed.zip = zip;
+  }
+  if (surfaceAreaFt2 !== undefined) {
+    parsed.surfaceAreaFt2 = surfaceAreaFt2;
+  }
+  if (waterTempF !== undefined) {
+    parsed.waterTempF = waterTempF;
+  }
+  if (observedLossInches !== undefined) {
+    parsed.observedLoss = { inches: observedLossInches, observationDays };
+  }
+  if (windMphOverride !== undefined) {
+    parsed.windMphOverride = windMphOverride;
+  }
+  return parsed;
+}
+
 function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>, tenant?: Tenant | undefined): string[] {
   const userText = latestUserText(messages);
   const lower = userText.toLowerCase();
@@ -873,6 +954,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikeEmailDraftAction(lower) && firstEmailAddress(userText) && toolsByName.has("draftEmail")) {
     return ["draftEmail"];
+  }
+  if (looksLikeEvaporationRunQuestion(lower) && toolsByName.has("runEvaporation")) {
+    return ["runEvaporation"];
   }
   if (looksLikeInboxSummaryQuestion(lower) && toolsByName.has("summarizeInbox")) {
     return ["summarizeInbox"];
@@ -948,7 +1032,12 @@ function hasExplicitPhotoTarget(text: string): boolean {
 }
 
 function hasFreshLookupTarget(text: string, timeZone?: string): boolean {
-  return Boolean(scheduleWindowFromText(text, timeZone) || entityQueryFromText(text) || hasExplicitPhotoTarget(text));
+  return Boolean(
+    scheduleWindowFromText(text, timeZone)
+    || entityQueryFromText(text)
+    || hasExplicitPhotoTarget(text)
+    || looksLikeEvaporationRunQuestion(text.toLowerCase())
+  );
 }
 
 function reusableCachedToolRuns(input: {

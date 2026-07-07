@@ -342,6 +342,74 @@ test("Nexi Anthropic gateway preloads draftEmail for send-me-at action commands"
   assert.equal(result.answer, "I drafted the email and parked it for approval.");
 });
 
+test("Nexi Anthropic gateway preloads runEvaporation for evap report requests", async () => {
+  const calls = [];
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{
+      role: "user",
+      content: "Run the evap for 100 Main Street, Bryson City, NC 28713 with surface area 500 square feet, water temperature 82 degrees, and observed daily loss 1.5 inches."
+    }],
+    tools: [{
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string().optional() }),
+      handler: async () => {
+        throw new Error("searchEmail should not run for evap requests");
+      }
+    }, {
+      name: "runEvaporation",
+      description: "Run evaporation.",
+      inputSchema: z.object({
+        address: z.string(),
+        zip: z.string().optional(),
+        surfaceAreaFt2: z.number(),
+        waterTempF: z.number(),
+        observedLoss: z.object({ inches: z.number(), observationDays: z.number() }).optional()
+      }),
+      handler: async (_tenant, args) => {
+        toolCalls.push(args);
+        return {
+          result: {
+            report: {
+              id: "evap_1",
+              calculation: {
+                evapInchesPerDay: 1.2384,
+                leakInchesPerDay: 0.2616
+              }
+            },
+            pdfUrl: "/api/evaporation/reports/evap_1/pdf?tenantId=aquatrace"
+          },
+          sources: [{ rail: "native", ref: "evap_1", label: "Aquatrace evaporation report evap_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "I ran the evaporation report and made the PDF." }],
+        usage: { input_tokens: 10, output_tokens: 6 }
+      }), { status: 200 });
+    }
+  });
+  assert.deepEqual(toolCalls, [{
+    address: "100 Main Street, Bryson City, NC 28713",
+    zip: "28713",
+    surfaceAreaFt2: 500,
+    waterTempF: 82,
+    observedLoss: { inches: 1.5, observationDays: 1 }
+  }]);
+  assert.match(calls[0].messages.at(-1).content, /Verified runEvaporation result/);
+  assert.deepEqual(calls[0].tools, []);
+  assert.equal(result.toolRuns[0].name, "runEvaporation");
+  assert.equal(result.sources[0].ref, "evap_1");
+});
+
 test("Nexi Anthropic gateway treats mailbox address follow-ups as email search context", async () => {
   const toolCalls = [];
   const result = await runNexiToolLoop({

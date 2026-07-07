@@ -88,6 +88,21 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
     const subject = bodyText.split(/[.!?]\s/)[0]?.trim().replace(/[.!?]+$/g, "").slice(0, 72) || "Aquatrace follow-up";
     return tool && recipient ? { tool, args: { to: [recipient], subject, bodyText } } : null;
   }
+  if (/\b(?:run|calculate|check|make|create)\b.*\b(?:evap|evaporation|bucket\s+test|water\s+loss)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "runEvaporation");
+    const address = message.match(/\b(?:for|at)\s+(.+?)(?=\s+(?:with|using|surface\s+area|pool\s+area|water\s+temp|water\s+temperature|observed\s+loss|daily\s+loss|loss)\b|[?.!]|$)/i)?.[1]?.trim();
+    const zip = message.match(/\b(\d{5})(?:-\d{4})?\b/)?.[1];
+    const surfaceAreaFt2 = Number(message.match(/\b(?:surface\s+area|pool\s+area|area)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:square\s*feet|sq\.?\s*ft|ft2)\b/i)?.[1]?.replace(/,/g, ""));
+    const waterTempF = Number(message.match(/\b(?:water\s+temp(?:erature)?|water\s+temperature)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:degrees?|deg|f|fahrenheit)?\b/i)?.[1]?.replace(/,/g, ""));
+    const observedLoss = Number(message.match(/\b(?:observed\s+daily\s+loss|daily\s+loss|observed\s+loss|water\s+loss|loss)\s*(?:is|of|=|:)?\s*([\d,.]+)\s*(?:inches?|in\.?|")\b/i)?.[1]?.replace(/,/g, ""));
+    const args: Record<string, unknown> = {};
+    if (address) args.address = address;
+    if (zip) args.zip = zip;
+    if (Number.isFinite(surfaceAreaFt2)) args.surfaceAreaFt2 = surfaceAreaFt2;
+    if (Number.isFinite(waterTempF)) args.waterTempF = waterTempF;
+    if (Number.isFinite(observedLoss)) args.observedLoss = { inches: observedLoss, observationDays: 1 };
+    return tool ? { tool, args } : null;
+  }
   if (/\b(?:needs? my attention|what needs attention|triage|urgent|important)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "triageInbox");
     return tool ? { tool, args: { date: today.toISOString(), maxResults: 25 } } : null;
@@ -139,6 +154,11 @@ function summarizeResult(toolName: string, result: unknown): string {
   if (toolName === "lookupSiteJobBlueprintField" && result && typeof result === "object") {
     const value = (result as { value?: unknown }).value;
     return value === null || value === undefined ? "I do not have that SiteJobBlueprint field yet." : `The SiteJobBlueprint field value is ${String(value)}.`;
+  }
+  if (toolName === "runEvaporation" && result && typeof result === "object") {
+    const report = (result as { report?: { calculation?: { evapInchesPerDay?: unknown; leakInchesPerDay?: unknown } } }).report;
+    const calculation = report?.calculation;
+    return `I ran the Aquatrace evaporation report. Estimated evaporation is ${String(calculation?.evapInchesPerDay ?? "unknown")} inches/day; leak loss after evaporation is ${String(calculation?.leakInchesPerDay ?? "unknown")} inches/day.`;
   }
   return "I found a sourced record for that question.";
 }
