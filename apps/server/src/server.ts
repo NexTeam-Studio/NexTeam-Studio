@@ -35,6 +35,7 @@ import { FirebaseStorageWriter } from "./platform/storage.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository } from "./platform/repository.js";
 import { loadTenantFromPlatform, registerPlatformRoutes } from "./platform/routes.js";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
+import { createVoiceRouter } from "./voice/routes.js";
 
 const app = express();
 const commsRail = createCommsRailFromEnv(process.env);
@@ -73,6 +74,7 @@ app.use("/api/nexi", createNexiRouter(process.env, {
     ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env })
   ]
 }));
+app.use("/api/voice", createVoiceRouter(process.env));
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
