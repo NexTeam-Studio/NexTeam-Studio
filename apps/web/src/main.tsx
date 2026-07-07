@@ -357,7 +357,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
       const response = await fetch("/api/voice/tts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ tenantId: "aquatrace", text })
       });
       if (!response.ok) {
         throw new Error("TTS unavailable");

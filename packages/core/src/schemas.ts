@@ -299,7 +299,7 @@ export const failureLogRecordSchema = z.object({
 
 export const usageLogRecordSchema = z.object({
   tenantId: idSchema,
-  provider: z.literal("anthropic"),
+  provider: z.enum(["anthropic", "elevenlabs"]),
   model: z.string(),
   routeActionName: z.string(),
   taskType: z.string(),
@@ -308,7 +308,9 @@ export const usageLogRecordSchema = z.object({
     outputTokens: z.number(),
     cacheCreationInputTokens: z.number(),
     cacheReadInputTokens: z.number(),
-    totalTokens: z.number()
+    totalTokens: z.number(),
+    characters: z.number().optional(),
+    audioBytes: z.number().optional()
   }),
   estimatedCostUsd: z.number().nullable(),
   ok: z.boolean(),

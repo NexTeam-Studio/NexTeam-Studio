@@ -451,7 +451,7 @@ export interface FailureLogRecord {
 
 export interface UsageLogRecord {
   tenantId: ID;
-  provider: "anthropic";
+  provider: "anthropic" | "elevenlabs";
   model: string;
   routeActionName: string;
   taskType: string;
@@ -461,6 +461,8 @@ export interface UsageLogRecord {
     cacheCreationInputTokens: number;
     cacheReadInputTokens: number;
     totalTokens: number;
+    characters?: number | undefined;
+    audioBytes?: number | undefined;
   };
   estimatedCostUsd: number | null;
   ok: boolean;
