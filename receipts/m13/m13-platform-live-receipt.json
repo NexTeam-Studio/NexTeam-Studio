@@ -1,29 +1,29 @@
 {
-  "ok": false,
+  "ok": true,
   "baseUrl": "https://nexteam-studio-staging.up.railway.app",
-  "expectedSha": "1f58c0a43d5a7d9f45136aa0498d98669fd2dc9d",
-  "tenantId": "m13-test-1783398380883-489891eb",
-  "createdAt": "2026-07-07T04:26:20.883Z",
+  "expectedSha": "17bc4b59c1d95b3f13f8a50d013fb0929cce5e10",
+  "tenantId": "m13-test-1783430449774-08e38b5d",
+  "createdAt": "2026-07-07T13:20:49.774Z",
   "checks": {
     "version": {
       "status": 200,
       "body": {
-        "sha": "1f58c0a43d5a7d9f45136aa0498d98669fd2dc9d",
-        "builtAt": "2026-07-07T04:26:20.068Z"
+        "sha": "17bc4b59c1d95b3f13f8a50d013fb0929cce5e10",
+        "builtAt": "2026-07-07T13:20:50.026Z"
       }
     },
     "health": {
       "status": 200,
       "body": {
         "ok": true,
-        "checkedAt": "2026-07-07T04:26:21.190Z",
+        "checkedAt": "2026-07-07T13:20:51.224Z",
         "rails": {
           "jobber": {
             "ok": true,
             "configured": true,
             "provider": "jobber",
             "op": "graphql_read",
-            "latencyMs": 613,
+            "latencyMs": 689,
             "detail": "Jobber GraphQL read succeeded."
           },
           "companycam": {
@@ -31,7 +31,7 @@
             "configured": true,
             "provider": "companycam",
             "op": "projects_read",
-            "latencyMs": 357,
+            "latencyMs": 360,
             "detail": "CompanyCam projects read succeeded."
           },
           "anthropic": {
@@ -99,8 +99,8 @@
       "body": {
         "ok": true,
         "tenant": {
-          "id": "m13-test-1783398380883-489891eb",
-          "name": "m13-test-1783398380883-489891eb",
+          "id": "m13-test-1783430449774-08e38b5d",
+          "name": "m13-test-1783430449774-08e38b5d",
           "industryPack": "pool_leak",
           "branding": {
             "assistantName": "Nexi"
@@ -152,13 +152,13 @@
           "plan": "nexi"
         },
         "subscription": {
-          "id": "sub_m13-test-1783398380883-489891eb_c6e67aa1-5f85-44c9-9a8f-64f5b3ffd611",
-          "tenantId": "m13-test-1783398380883-489891eb",
+          "id": "sub_m13-test-1783430449774-08e38b5d_70a3f80d-3f0e-4f01-a809-5be90fb4e2af",
+          "tenantId": "m13-test-1783430449774-08e38b5d",
           "plan": "nexi",
           "status": "active",
-          "stripeCustomerId": "cus_Uq6oonNCxKSXRK",
-          "stripeSubscriptionId": "sub_1TqQaSPGOA6j5zrav7maJEsi",
-          "updatedAt": "2026-07-07T04:26:26.658Z"
+          "stripeCustomerId": "cus_UqFQeZXzkzziMf",
+          "stripeSubscriptionId": "sub_1TqYviPGOA6j5zraylTJ3zv7",
+          "updatedAt": "2026-07-07T13:20:56.799Z"
         },
         "stripeMode": "test"
       }
@@ -167,7 +167,7 @@
       "status": 200,
       "body": {
         "ok": true,
-        "tenantId": "m13-test-1783398380883-489891eb",
+        "tenantId": "m13-test-1783430449774-08e38b5d",
         "plan": "nexi",
         "tools": [
           {
@@ -294,15 +294,183 @@
       }
     },
     "backup": {
-      "status": 500,
+      "status": 201,
       "body": {
-        "ok": false,
-        "error": "The specified bucket does not exist."
+        "ok": true,
+        "backup": {
+          "id": "backup_576928c5-ad19-4b78-932b-7761365eaf71",
+          "tenantId": "m13-test-1783430449774-08e38b5d",
+          "storageRef": "backups/m13-test-1783430449774-08e38b5d/2026-07-07T13-20-57-941Z.json",
+          "collectionCounts": {
+            "tenants": 1,
+            "tenantSubscriptions": 1,
+            "tenantAdapterStatuses": 0,
+            "clients": 0,
+            "properties": 0,
+            "jobs": 0,
+            "quotes": 0,
+            "invoices": 0,
+            "media": 0,
+            "siteJobBlueprints": 0,
+            "conversations": 0,
+            "failureLog": 0,
+            "usageLog": 0,
+            "platformBackups": 0
+          },
+          "createdAt": "2026-07-07T13:20:57.941Z"
+        }
       }
+    },
+    "backups": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "backups": [
+          {
+            "id": "backup_576928c5-ad19-4b78-932b-7761365eaf71",
+            "tenantId": "m13-test-1783430449774-08e38b5d",
+            "storageRef": "backups/m13-test-1783430449774-08e38b5d/2026-07-07T13-20-57-941Z.json",
+            "collectionCounts": {
+              "tenants": 1,
+              "tenantSubscriptions": 1,
+              "tenantAdapterStatuses": 0,
+              "clients": 0,
+              "properties": 0,
+              "jobs": 0,
+              "quotes": 0,
+              "invoices": 0,
+              "media": 0,
+              "siteJobBlueprints": 0,
+              "conversations": 0,
+              "failureLog": 0,
+              "usageLog": 0,
+              "platformBackups": 0
+            },
+            "createdAt": "2026-07-07T13:20:57.941Z"
+          }
+        ]
+      }
+    },
+    "export": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "export": {
+          "tenantId": "m13-test-1783430449774-08e38b5d",
+          "exportedAt": "2026-07-07T13:20:59.493Z",
+          "collections": {
+            "tenants": [
+              {
+                "adapters": {
+                  "media": "companycam",
+                  "email": "gmail_relay",
+                  "crm": "native"
+                },
+                "timezone": "America/New_York",
+                "approval": {
+                  "gbp_post": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "quote": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "review_reply": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "sms": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "invoice": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "article": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "email": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "site_publish": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "social_post": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  }
+                },
+                "branding": {
+                  "assistantName": "Nexi"
+                },
+                "name": "m13-test-1783430449774-08e38b5d",
+                "tenantId": "m13-test-1783430449774-08e38b5d",
+                "id": "m13-test-1783430449774-08e38b5d",
+                "plan": "nexi",
+                "industryPack": "pool_leak"
+              }
+            ],
+            "tenantSubscriptions": [
+              {
+                "stripeSubscriptionId": "sub_1TqYviPGOA6j5zraylTJ3zv7",
+                "tenantId": "m13-test-1783430449774-08e38b5d",
+                "id": "sub_m13-test-1783430449774-08e38b5d_70a3f80d-3f0e-4f01-a809-5be90fb4e2af",
+                "stripeCustomerId": "cus_UqFQeZXzkzziMf",
+                "plan": "nexi",
+                "status": "active",
+                "updatedAt": "2026-07-07T13:20:56.799Z"
+              }
+            ],
+            "tenantAdapterStatuses": [],
+            "clients": [],
+            "properties": [],
+            "jobs": [],
+            "quotes": [],
+            "invoices": [],
+            "media": [],
+            "siteJobBlueprints": [],
+            "conversations": [],
+            "failureLog": [],
+            "usageLog": [],
+            "platformBackups": [
+              {
+                "id": "backup_576928c5-ad19-4b78-932b-7761365eaf71",
+                "tenantId": "m13-test-1783430449774-08e38b5d",
+                "storageRef": "backups/m13-test-1783430449774-08e38b5d/2026-07-07T13-20-57-941Z.json",
+                "collectionCounts": {
+                  "tenants": 1,
+                  "tenantSubscriptions": 1,
+                  "tenantAdapterStatuses": 0,
+                  "clients": 0,
+                  "properties": 0,
+                  "jobs": 0,
+                  "quotes": 0,
+                  "invoices": 0,
+                  "media": 0,
+                  "siteJobBlueprints": 0,
+                  "conversations": 0,
+                  "failureLog": 0,
+                  "usageLog": 0,
+                  "platformBackups": 0
+                },
+                "createdAt": "2026-07-07T13:20:57.941Z"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "plantedTenancyProbe": {
+      "caught": true,
+      "output": "Tenancy check failed:\n- tests/fixtures/tenancy/unscoped-query.fixture.ts: Firestore collection \"jobs\" lacks tenantId evidence"
     }
   },
-  "error": "backup failed: The specified bucket does not exist.",
-  "completedAt": "2026-07-07T04:26:30.845Z",
+  "completedAt": "2026-07-07T13:20:59.648Z",
   "operator": {
     "mode": "custom-token",
     "email": "owner@aquatrace.com",

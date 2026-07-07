@@ -1,29 +1,29 @@
 {
-  "ok": false,
+  "ok": true,
   "baseUrl": "https://nexteam-studio-staging.up.railway.app",
-  "expectedSha": "c0b44fe3801d1ed2f94d0a309beb93abe31c836f",
+  "expectedSha": "17bc4b59c1d95b3f13f8a50d013fb0929cce5e10",
   "tenantId": "aquatrace",
-  "createdAt": "2026-07-07T04:54:50.483Z",
+  "createdAt": "2026-07-07T13:20:50.167Z",
   "checks": {
     "version": {
       "status": 200,
       "body": {
-        "sha": "c0b44fe3801d1ed2f94d0a309beb93abe31c836f",
-        "builtAt": "2026-07-07T04:54:49.539Z"
+        "sha": "17bc4b59c1d95b3f13f8a50d013fb0929cce5e10",
+        "builtAt": "2026-07-07T13:20:50.286Z"
       }
     },
     "health": {
       "status": 200,
       "body": {
         "ok": true,
-        "checkedAt": "2026-07-07T04:54:50.738Z",
+        "checkedAt": "2026-07-07T13:20:51.515Z",
         "rails": {
           "jobber": {
             "ok": true,
             "configured": true,
             "provider": "jobber",
             "op": "graphql_read",
-            "latencyMs": 612,
+            "latencyMs": 670,
             "detail": "Jobber GraphQL read succeeded."
           },
           "companycam": {
@@ -31,7 +31,7 @@
             "configured": true,
             "provider": "companycam",
             "op": "projects_read",
-            "latencyMs": 416,
+            "latencyMs": 404,
             "detail": "CompanyCam projects read succeeded."
           },
           "anthropic": {
@@ -46,18 +46,39 @@
       }
     },
     "tts": {
-      "status": 404,
-      "ok": false,
-      "provider": null,
-      "voiceIdPresent": false,
-      "characterCount": null,
-      "audioBytesHeader": null,
-      "estimatedCostUsd": null,
-      "audioBytesActual": 248,
-      "contentType": "application/json; charset=utf-8"
+      "status": 200,
+      "ok": true,
+      "provider": "elevenlabs",
+      "voiceIdPresent": true,
+      "characterCount": 61,
+      "audioBytesHeader": 48527,
+      "estimatedCostUsd": 0.0183,
+      "audioBytesActual": 48527,
+      "contentType": "audio/mpeg"
+    },
+    "usageLog": {
+      "found": true,
+      "id": "82qDyDfq2KMv2tOk6lDx",
+      "tenantId": "aquatrace",
+      "provider": "elevenlabs",
+      "model": "eleven_multilingual_v2",
+      "routeActionName": "/api/voice/tts",
+      "taskType": "voice_tts",
+      "usage": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheReadInputTokens": 0,
+        "totalTokens": 0,
+        "characters": 61,
+        "audioBytes": 48527
+      },
+      "estimatedCostUsd": 0.0183,
+      "ok": true,
+      "errorSummary": "",
+      "createdAt": "2026-07-07T13:20:52.554Z"
     }
   },
-  "error": "voice TTS failed with status 404",
-  "completedAt": "2026-07-07T04:54:53.185Z",
+  "completedAt": "2026-07-07T13:20:53.271Z",
   "redaction": "No API keys, tokens, passwords, audio content, or email bodies are recorded. Receipt stores only endpoint metadata and usageLog cost fields."
 }
