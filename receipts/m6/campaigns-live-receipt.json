@@ -1,0 +1,1105 @@
+{
+  "ok": true,
+  "receiptName": "m6-campaigns-live-receipt",
+  "startedAt": "2026-07-07T17:30:23.094Z",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "deploySha": "49120d6b53f4128fe0bcd0ea95465e288277ec4f",
+  "tenantId": "aquatrace-m6-receipt-1783445423094",
+  "contactUnderTest": "contact_nexi_sender",
+  "checks": {
+    "versionShaMatched": true,
+    "healthGreen": true,
+    "templatePresent": true,
+    "audienceConsentAndSuppressionVisible": true,
+    "firstStepApprovalQueuedOnly": true,
+    "dnsBoundaryBlocked": true,
+    "openClickRecorded": true,
+    "unsubscribeRecorded": true,
+    "secondStepSuppressed": true,
+    "transactionalApprovalOnly": true,
+    "nexiDraftCampaignToolRun": true,
+    "noOutboundExecutionServices": true
+  },
+  "finishedAt": "2026-07-07T17:30:32.094Z",
+  "operator": {
+    "mode": "custom-token",
+    "email": "owner@aquatrace.com",
+    "uidPresent": true
+  },
+  "raw": {
+    "version": {
+      "sha": "49120d6b53f4128fe0bcd0ea95465e288277ec4f",
+      "builtAt": "2026-07-07T17:30:23.410Z"
+    },
+    "health": {
+      "ok": true,
+      "checkedAt": "2026-07-07T17:30:24.339Z",
+      "rails": {
+        "jobber": {
+          "ok": true,
+          "configured": true,
+          "provider": "jobber",
+          "op": "graphql_read",
+          "latencyMs": 389,
+          "detail": "Jobber GraphQL read succeeded."
+        },
+        "companycam": {
+          "ok": true,
+          "configured": true,
+          "provider": "companycam",
+          "op": "projects_read",
+          "latencyMs": 372,
+          "detail": "CompanyCam projects read succeeded."
+        },
+        "anthropic": {
+          "ok": true,
+          "configured": true,
+          "provider": "anthropic",
+          "op": "configured_no_spend",
+          "latencyMs": 0,
+          "detail": "Configured; live message call skipped by no-spend overnight limit."
+        }
+      }
+    },
+    "tenant": {
+      "ok": true,
+      "tenant": {
+        "id": "aquatrace-m6-receipt-1783445423094",
+        "name": "Aquatrace M6 Receipt",
+        "industryPack": "pool_leak",
+        "branding": {
+          "assistantName": "Nexi"
+        },
+        "adapters": {
+          "crm": "native",
+          "media": "native",
+          "email": "[email:14ade259ea526d14]",
+          "sms": "twilio"
+        },
+        "approval": {
+          "email": "[email:c9a560c74de368dc]",
+          "sms": {
+            "autoApprove": false,
+            "cleanStreak": 0
+          },
+          "gbp_post": {
+            "autoApprove": false,
+            "cleanStreak": 0
+          },
+          "social_post": {
+            "autoApprove": false,
+            "cleanStreak": 0
+          },
+          "article": {
+            "autoApprove": false,
+            "cleanStreak": 0
+          },
+          "quote": {
+            "autoApprove": false,
+            "cleanStreak": 0
+          },
+          "invoice": {
+            "autoApprove": false,
+            "cleanStreak": 0
+          },
+          "site_publish": {
+            "autoApprove": false,
+            "cleanStreak": 0
+          },
+          "review_reply": {
+            "autoApprove": false,
+            "cleanStreak": 0
+          }
+        },
+        "timezone": "America/New_York",
+        "plan": "suite"
+      }
+    },
+    "templates": {
+      "ok": true,
+      "templates": [
+        {
+          "id": "vgb-hotel-gm-outreach",
+          "tenantId": "aquatrace",
+          "name": "VGB Hotel GM Outreach",
+          "description": "Approval-gated starter sequence for commercial pool operators who may need VGB drain-cover help.",
+          "audience": {
+            "tenantId": "aquatrace",
+            "channel": "email",
+            "tagsAny": [
+              "vgb",
+              "commercial",
+              "hotel"
+            ],
+            "consentRequired": true,
+            "excludeSuppressed": true,
+            "maxResults": 100
+          },
+          "sequence": [
+            {
+              "id": "step_1_intro",
+              "channel": "email",
+              "delayHours": 0,
+              "subject": "Quick VGB safety check for {{companyOrName}}",
+              "body": "[redacted length=249 sha=8d72fc999899d749]",
+              "stopOnReply": true,
+              "stopOnUnsubscribe": true
+            },
+            {
+              "id": "step_2_followup",
+              "channel": "email",
+              "delayHours": 72,
+              "subject": "Following up on VGB drain-cover readiness",
+              "body": "[redacted length=183 sha=095b9bc7e19eb175]",
+              "stopOnReply": true,
+              "stopOnUnsubscribe": true
+            }
+          ],
+          "complianceNotes": [
+            "Existing-contact or explicit opt-in only.",
+            "One-click unsubscribe must be present before queueing.",
+            "Bulk/list execution is blocked until SPF, DKIM, and DMARC are confirmed."
+          ]
+        }
+      ]
+    },
+    "audiencePreview": {
+      "ok": true,
+      "filter": {
+        "tenantId": "aquatrace-m6-receipt-1783445423094",
+        "channel": "email",
+        "tagsAny": [
+          "vgb"
+        ],
+        "consentRequired": true,
+        "excludeSuppressed": true,
+        "maxResults": 3
+      },
+      "selected": [
+        {
+          "id": "contact_chris_owner",
+          "tenantId": "aquatrace-m6-receipt-1783445423094",
+          "name": "Chris Owner Test",
+          "company": "Aquatrace",
+          "emails": [
+            "[email:21a5bf16996e3d78]"
+          ],
+          "phones": [],
+          "tags": [
+            "vgb",
+            "commercial",
+            "hotel",
+            "test"
+          ],
+          "consent": {
+            "email": "[email:b5bea41b6c623f7c]",
+            "sms": false
+          }
+        },
+        {
+          "id": "contact_nexi_sender",
+          "tenantId": "aquatrace-m6-receipt-1783445423094",
+          "name": "Nexi Mailbox Test",
+          "company": "Aquatrace",
+          "emails": [
+            "[email:5945a8c1ac51f23b]"
+          ],
+          "phones": [],
+          "tags": [
+            "vgb",
+            "commercial",
+            "test"
+          ],
+          "consent": {
+            "email": "[email:b5bea41b6c623f7c]",
+            "sms": false
+          }
+        }
+      ],
+      "excluded": [
+        {
+          "contactId": "contact_no_email_consent",
+          "reason": "missing_email_consent"
+        }
+      ]
+    },
+    "testRun": {
+      "ok": true,
+      "campaign": {
+        "id": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+        "tenantId": "aquatrace-m6-receipt-1783445423094",
+        "name": "M6 live receipt 2026-07-07T17:30:23.094Z",
+        "templateId": "vgb-hotel-gm-outreach",
+        "audience": {
+          "tenantId": "aquatrace-m6-receipt-1783445423094",
+          "channel": "email",
+          "clientIds": [
+            "contact_nexi_sender"
+          ],
+          "consentRequired": true,
+          "excludeSuppressed": true,
+          "maxResults": 1
+        },
+        "sequence": [
+          {
+            "id": "step_1_intro",
+            "channel": "email",
+            "delayHours": 0,
+            "subject": "Quick VGB safety check for {{companyOrName}}",
+            "body": "[redacted length=249 sha=8d72fc999899d749]",
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          },
+          {
+            "id": "step_2_followup",
+            "channel": "email",
+            "delayHours": 72,
+            "subject": "Following up on VGB drain-cover readiness",
+            "body": "[redacted length=183 sha=095b9bc7e19eb175]",
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          }
+        ],
+        "status": "approval_queued",
+        "createdAt": "2026-07-07T17:30:25.157Z",
+        "updatedAt": "2026-07-07T17:30:25.157Z"
+      },
+      "template": {
+        "id": "vgb-hotel-gm-outreach",
+        "tenantId": "aquatrace-m6-receipt-1783445423094",
+        "name": "VGB Hotel GM Outreach",
+        "description": "Approval-gated starter sequence for commercial pool operators who may need VGB drain-cover help.",
+        "audience": {
+          "tenantId": "aquatrace-m6-receipt-1783445423094",
+          "channel": "email",
+          "tagsAny": [
+            "vgb",
+            "commercial",
+            "hotel"
+          ],
+          "consentRequired": true,
+          "excludeSuppressed": true,
+          "maxResults": 100
+        },
+        "sequence": [
+          {
+            "id": "step_1_intro",
+            "channel": "email",
+            "delayHours": 0,
+            "subject": "Quick VGB safety check for {{companyOrName}}",
+            "body": "[redacted length=249 sha=8d72fc999899d749]",
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          },
+          {
+            "id": "step_2_followup",
+            "channel": "email",
+            "delayHours": 72,
+            "subject": "Following up on VGB drain-cover readiness",
+            "body": "[redacted length=183 sha=095b9bc7e19eb175]",
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          }
+        ],
+        "complianceNotes": [
+          "Existing-contact or explicit opt-in only.",
+          "One-click unsubscribe must be present before queueing.",
+          "Bulk/list execution is blocked until SPF, DKIM, and DMARC are confirmed."
+        ]
+      },
+      "audience": {
+        "selected": [
+          {
+            "id": "contact_nexi_sender",
+            "tenantId": "aquatrace-m6-receipt-1783445423094",
+            "name": "Nexi Mailbox Test",
+            "company": "Aquatrace",
+            "emails": [
+              "[email:5945a8c1ac51f23b]"
+            ],
+            "phones": [],
+            "tags": [
+              "vgb",
+              "commercial",
+              "test"
+            ],
+            "consent": {
+              "email": "[email:b5bea41b6c623f7c]",
+              "sms": false
+            }
+          }
+        ],
+        "excluded": []
+      },
+      "plannedSends": [
+        {
+          "id": "send_camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12_contact_nexi_sender_step_1_intro",
+          "contactId": "contact_nexi_sender",
+          "stepId": "step_1_intro",
+          "channel": "email",
+          "sendAt": "2026-07-07T17:30:25.158Z",
+          "stopOnReply": true,
+          "stopOnUnsubscribe": true
+        }
+      ],
+      "queuedApprovals": [
+        {
+          "id": "appr_100ad6e5-4866-4265-b403-c4e6bcf3daf7",
+          "tenantId": "aquatrace-m6-receipt-1783445423094",
+          "kind": "email",
+          "preview": {
+            "title": "EMAIL campaign step for Aquatrace",
+            "bodyLength": 511,
+            "bodySha": "cc3399e316b73180",
+            "mediaRefs": []
+          },
+          "execute": {
+            "service": "campaigns",
+            "op": "bulkExecutionBlocked",
+            "args": {
+              "campaignId": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+              "stepId": "step_1_intro",
+              "contactId": "contact_nexi_sender",
+              "executionBlocked": true,
+              "outbound": {
+                "tenantId": "aquatrace-m6-receipt-1783445423094",
+                "mailbox": "nexi",
+                "to": [
+                  "[email:5945a8c1ac51f23b]"
+                ],
+                "subject": "Quick VGB safety check for Aquatrace",
+                "bodyText": "[redacted length=464 sha=673ef8c513e97453]"
+              }
+            }
+          },
+          "status": "pending",
+          "createdBy": "nexi"
+        }
+      ],
+      "suppressed": [],
+      "boundary": {
+        "approvalQueueAllowed": true,
+        "executionBlocked": true,
+        "reason": "Bulk/list email execution is blocked until SPF, DKIM, and DMARC are confirmed."
+      },
+      "machineState": "approvalQueued",
+      "sendsAreApprovalQueuedOnly": true
+    },
+    "open": {
+      "ok": true,
+      "event": {
+        "id": "camptrk_7e31be05-31d8-4b64-a0e5-7b83b9d8ed5c",
+        "tenantId": "aquatrace-m6-receipt-1783445423094",
+        "campaignId": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+        "contactId": "contact_nexi_sender",
+        "channel": "email",
+        "type": "open",
+        "stepId": "step_1_intro",
+        "createdAt": "2026-07-07T17:30:25.286Z",
+        "metadata": {}
+      }
+    },
+    "click": {
+      "ok": true,
+      "event": {
+        "id": "camptrk_cb41a9a7-4cbc-40b5-bd17-70c0d9011223",
+        "tenantId": "aquatrace-m6-receipt-1783445423094",
+        "campaignId": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+        "contactId": "contact_nexi_sender",
+        "channel": "email",
+        "type": "click",
+        "stepId": "step_1_intro",
+        "url": "https://aquatraceleak.com/vgb",
+        "createdAt": "2026-07-07T17:30:25.417Z",
+        "metadata": {}
+      }
+    },
+    "unsubscribe": {
+      "ok": true,
+      "suppression": {
+        "id": "supp_8274dab3-c14b-48a6-a489-89bb58cdefa8",
+        "tenantId": "aquatrace-m6-receipt-1783445423094",
+        "contactId": "contact_nexi_sender",
+        "channel": "email",
+        "reason": "unsubscribed",
+        "createdAt": "2026-07-07T17:30:25.542Z",
+        "source": "campaign:camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12"
+      },
+      "tracking": {
+        "id": "camptrk_2d5d75cd-e5dc-4402-aad9-99496729d3dd",
+        "tenantId": "aquatrace-m6-receipt-1783445423094",
+        "campaignId": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+        "contactId": "contact_nexi_sender",
+        "channel": "email",
+        "type": "unsubscribe",
+        "createdAt": "2026-07-07T17:30:25.543Z",
+        "metadata": {
+          "suppressionId": "supp_8274dab3-c14b-48a6-a489-89bb58cdefa8",
+          "reason": "unsubscribed"
+        }
+      },
+      "message": "You are unsubscribed from this campaign channel."
+    },
+    "secondStep": {
+      "ok": true,
+      "campaign": {
+        "id": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+        "tenantId": "aquatrace-m6-receipt-1783445423094",
+        "name": "M6 live receipt 2026-07-07T17:30:23.094Z",
+        "templateId": "vgb-hotel-gm-outreach",
+        "audience": {
+          "tenantId": "aquatrace-m6-receipt-1783445423094",
+          "channel": "email",
+          "clientIds": [
+            "contact_nexi_sender"
+          ],
+          "consentRequired": true,
+          "excludeSuppressed": true,
+          "maxResults": 1
+        },
+        "sequence": [
+          {
+            "id": "step_1_intro",
+            "channel": "email",
+            "delayHours": 0,
+            "subject": "Quick VGB safety check for {{companyOrName}}",
+            "body": "[redacted length=249 sha=8d72fc999899d749]",
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          },
+          {
+            "id": "step_2_followup",
+            "channel": "email",
+            "delayHours": 72,
+            "subject": "Following up on VGB drain-cover readiness",
+            "body": "[redacted length=183 sha=095b9bc7e19eb175]",
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          }
+        ],
+        "status": "approval_queued",
+        "createdAt": "2026-07-07T17:30:25.157Z",
+        "updatedAt": "2026-07-07T17:30:25.157Z"
+      },
+      "template": {
+        "id": "vgb-hotel-gm-outreach",
+        "tenantId": "aquatrace-m6-receipt-1783445423094",
+        "name": "VGB Hotel GM Outreach",
+        "description": "Approval-gated starter sequence for commercial pool operators who may need VGB drain-cover help.",
+        "audience": {
+          "tenantId": "aquatrace-m6-receipt-1783445423094",
+          "channel": "email",
+          "tagsAny": [
+            "vgb",
+            "commercial",
+            "hotel"
+          ],
+          "consentRequired": true,
+          "excludeSuppressed": true,
+          "maxResults": 100
+        },
+        "sequence": [
+          {
+            "id": "step_1_intro",
+            "channel": "email",
+            "delayHours": 0,
+            "subject": "Quick VGB safety check for {{companyOrName}}",
+            "body": "[redacted length=249 sha=8d72fc999899d749]",
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          },
+          {
+            "id": "step_2_followup",
+            "channel": "email",
+            "delayHours": 72,
+            "subject": "Following up on VGB drain-cover readiness",
+            "body": "[redacted length=183 sha=095b9bc7e19eb175]",
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          }
+        ],
+        "complianceNotes": [
+          "Existing-contact or explicit opt-in only.",
+          "One-click unsubscribe must be present before queueing.",
+          "Bulk/list execution is blocked until SPF, DKIM, and DMARC are confirmed."
+        ]
+      },
+      "audience": {
+        "selected": [
+          {
+            "id": "contact_nexi_sender",
+            "tenantId": "aquatrace-m6-receipt-1783445423094",
+            "name": "Nexi Mailbox Test",
+            "company": "Aquatrace",
+            "emails": [
+              "[email:5945a8c1ac51f23b]"
+            ],
+            "phones": [],
+            "tags": [
+              "vgb",
+              "commercial",
+              "test"
+            ],
+            "consent": {
+              "email": "[email:b5bea41b6c623f7c]",
+              "sms": false
+            }
+          }
+        ],
+        "excluded": []
+      },
+      "plannedSends": [
+        {
+          "id": "send_camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12_contact_nexi_sender_step_2_followup",
+          "contactId": "contact_nexi_sender",
+          "stepId": "step_2_followup",
+          "channel": "email",
+          "sendAt": "2026-07-10T17:30:25.681Z",
+          "stopOnReply": true,
+          "stopOnUnsubscribe": true
+        }
+      ],
+      "queuedApprovals": [],
+      "suppressed": [
+        {
+          "contactId": "contact_nexi_sender",
+          "stepId": "step_2_followup",
+          "reason": "suppressed"
+        }
+      ],
+      "boundary": {
+        "approvalQueueAllowed": true,
+        "executionBlocked": true,
+        "reason": "Bulk/list email execution is blocked until SPF, DKIM, and DMARC are confirmed."
+      },
+      "machineState": "suppressed",
+      "sendsAreApprovalQueuedOnly": true
+    },
+    "reportDelivery": {
+      "ok": true,
+      "approval": {
+        "id": "appr_24de7c7b-4e42-4c54-8d91-415691e80c0a",
+        "tenantId": "aquatrace-m6-receipt-1783445423094",
+        "kind": "email",
+        "preview": {
+          "title": "Report delivery: M6 receipt report delivery test",
+          "bodyLength": 116,
+          "bodySha": "86151efb3ba256ff",
+          "mediaRefs": []
+        },
+        "execute": {
+          "service": "campaigns",
+          "op": "transactionalApprovalRequired",
+          "args": {
+            "outbound": {
+              "tenantId": "aquatrace-m6-receipt-1783445423094",
+              "to": [
+                "[email:21a5bf16996e3d78]"
+              ],
+              "subject": "M6 receipt report delivery test",
+              "bodyText": "[redacted length=74 sha=ae034f4d0aefe39e]"
+            }
+          }
+        },
+        "status": "pending",
+        "createdBy": "system"
+      },
+      "sendsAreApprovalQueuedOnly": true
+    },
+    "invoicePaid": {
+      "ok": true,
+      "approval": {
+        "id": "appr_dac8907f-3567-4432-9674-e7e6f32d3fb0",
+        "tenantId": "aquatrace-m6-receipt-1783445423094",
+        "kind": "email",
+        "preview": {
+          "title": "Review request queued for Receipt Test Client",
+          "bodyLength": 191,
+          "bodySha": "8593794b086c8dc2",
+          "mediaRefs": []
+        },
+        "execute": {
+          "service": "campaigns",
+          "op": "transactionalApprovalRequiredAfterDelay",
+          "args": {
+            "delayHours": 48,
+            "invoiceId": "inv_m6_receipt",
+            "outbound": {
+              "tenantId": "aquatrace-m6-receipt-1783445423094",
+              "to": [
+                "[email:21a5bf16996e3d78]"
+              ],
+              "subject": "Thank you from Aquatrace",
+              "bodyText": "[redacted length=92 sha=8742605bb78b766b]"
+            }
+          }
+        },
+        "status": "pending",
+        "createdBy": "system"
+      },
+      "delayHours": 48,
+      "sendsAreApprovalQueuedOnly": true
+    },
+    "nexi": {
+      "answer": "VGB Hotel GM Outreach campaign is drafted and parked for approval — not sent.\n\n- **Matched contact:** 1 (Chris Owner Test, [email:21a5bf16996e3d78]) — only one contact on the test list, no exclusions or suppressions\n- **Sequence:**\n  - Step 1 (immediate): \"Quick VGB safety check for {{companyOrName}}\" — intro, stops on reply/unsubscribe\n  - Step 2 (+72 hrs): \"Following up on VGB drain-cover readiness\" — follow-up, stops on reply/unsubscribe\n- **Status:** Sitting in the approval queue, one pending item for Chris's email\n- **Why it's blocked from going out on its own:** bulk email sending is locked until SPF, DKIM, and DMARC are confirmed — so nothing sends until you approve it manually\n\nIt's parked exactly where you wanted it. Let me know when you want it approved to actually send.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "camp_2d3b9310-51ee-4bad-9ba8-97f9ef3b5257",
+          "label": "Campaign VGB Hotel GM Outreach"
+        },
+        {
+          "rail": "native",
+          "ref": "appr_ca461ef5-50f4-496a-9f98-f6af2e05af5a",
+          "label": "ApprovalQueue campaign item appr_ca461ef5-50f4-496a-9f98-f6af2e05af5a"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "draftCampaign",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "camp_2d3b9310-51ee-4bad-9ba8-97f9ef3b5257",
+              "label": "Campaign VGB Hotel GM Outreach"
+            },
+            {
+              "rail": "native",
+              "ref": "appr_ca461ef5-50f4-496a-9f98-f6af2e05af5a",
+              "label": "ApprovalQueue campaign item appr_ca461ef5-50f4-496a-9f98-f6af2e05af5a"
+            }
+          ],
+          "result": {
+            "campaign": {
+              "id": "camp_2d3b9310-51ee-4bad-9ba8-97f9ef3b5257",
+              "tenantId": "aquatrace-m6-receipt-1783445423094",
+              "name": "VGB Hotel GM Outreach",
+              "templateId": "vgb-hotel-gm-outreach",
+              "audience": {
+                "tenantId": "aquatrace-m6-receipt-1783445423094",
+                "channel": "email",
+                "tagsAny": [
+                  "test"
+                ],
+                "consentRequired": true,
+                "excludeSuppressed": true,
+                "maxResults": 2
+              },
+              "sequence": [
+                {
+                  "id": "step_1_intro",
+                  "channel": "email",
+                  "delayHours": 0,
+                  "subject": "Quick VGB safety check for {{companyOrName}}",
+                  "body": "[redacted length=249 sha=8d72fc999899d749]",
+                  "stopOnReply": true,
+                  "stopOnUnsubscribe": true
+                },
+                {
+                  "id": "step_2_followup",
+                  "channel": "email",
+                  "delayHours": 72,
+                  "subject": "Following up on VGB drain-cover readiness",
+                  "body": "[redacted length=183 sha=095b9bc7e19eb175]",
+                  "stopOnReply": true,
+                  "stopOnUnsubscribe": true
+                }
+              ],
+              "status": "approval_queued",
+              "createdAt": "2026-07-07T17:30:26.727Z",
+              "updatedAt": "2026-07-07T17:30:26.727Z"
+            },
+            "template": {
+              "id": "vgb-hotel-gm-outreach",
+              "tenantId": "aquatrace-m6-receipt-1783445423094",
+              "name": "VGB Hotel GM Outreach",
+              "description": "Approval-gated starter sequence for commercial pool operators who may need VGB drain-cover help.",
+              "audience": {
+                "tenantId": "aquatrace-m6-receipt-1783445423094",
+                "channel": "email",
+                "tagsAny": [
+                  "vgb",
+                  "commercial",
+                  "hotel"
+                ],
+                "consentRequired": true,
+                "excludeSuppressed": true,
+                "maxResults": 100
+              },
+              "sequence": [
+                {
+                  "id": "step_1_intro",
+                  "channel": "email",
+                  "delayHours": 0,
+                  "subject": "Quick VGB safety check for {{companyOrName}}",
+                  "body": "[redacted length=249 sha=8d72fc999899d749]",
+                  "stopOnReply": true,
+                  "stopOnUnsubscribe": true
+                },
+                {
+                  "id": "step_2_followup",
+                  "channel": "email",
+                  "delayHours": 72,
+                  "subject": "Following up on VGB drain-cover readiness",
+                  "body": "[redacted length=183 sha=095b9bc7e19eb175]",
+                  "stopOnReply": true,
+                  "stopOnUnsubscribe": true
+                }
+              ],
+              "complianceNotes": [
+                "Existing-contact or explicit opt-in only.",
+                "One-click unsubscribe must be present before queueing.",
+                "Bulk/list execution is blocked until SPF, DKIM, and DMARC are confirmed."
+              ]
+            },
+            "selectedCount": 1,
+            "excluded": [],
+            "queuedApprovals": [
+              {
+                "id": "appr_ca461ef5-50f4-496a-9f98-f6af2e05af5a",
+                "tenantId": "aquatrace-m6-receipt-1783445423094",
+                "kind": "email",
+                "preview": {
+                  "title": "EMAIL campaign step for Aquatrace",
+                  "bodyLength": 510,
+                  "bodySha": "a6e0a6a3746ddfa4",
+                  "mediaRefs": []
+                },
+                "execute": {
+                  "service": "campaigns",
+                  "op": "bulkExecutionBlocked",
+                  "args": {
+                    "campaignId": "camp_2d3b9310-51ee-4bad-9ba8-97f9ef3b5257",
+                    "stepId": "step_1_intro",
+                    "contactId": "contact_chris_owner",
+                    "executionBlocked": true,
+                    "outbound": {
+                      "tenantId": "aquatrace-m6-receipt-1783445423094",
+                      "mailbox": "nexi",
+                      "to": [
+                        "[email:21a5bf16996e3d78]"
+                      ],
+                      "subject": "Quick VGB safety check for Aquatrace",
+                      "bodyText": "[redacted length=463 sha=6f33859347adf352]"
+                    }
+                  }
+                },
+                "status": "pending",
+                "createdBy": "nexi"
+              }
+            ],
+            "suppressed": [],
+            "boundary": {
+              "approvalQueueAllowed": true,
+              "executionBlocked": true,
+              "reason": "Bulk/list email execution is blocked until SPF, DKIM, and DMARC are confirmed."
+            },
+            "machineState": "approvalQueued",
+            "sendsAreApprovalQueuedOnly": true
+          }
+        }
+      ]
+    },
+    "stats": {
+      "ok": true,
+      "stats": {
+        "campaigns": [
+          {
+            "id": "camp_2d3b9310-51ee-4bad-9ba8-97f9ef3b5257",
+            "tenantId": "aquatrace-m6-receipt-1783445423094",
+            "name": "VGB Hotel GM Outreach",
+            "templateId": "vgb-hotel-gm-outreach",
+            "audience": {
+              "tenantId": "aquatrace-m6-receipt-1783445423094",
+              "channel": "email",
+              "tagsAny": [
+                "test"
+              ],
+              "consentRequired": true,
+              "excludeSuppressed": true,
+              "maxResults": 2
+            },
+            "sequence": [
+              {
+                "id": "step_1_intro",
+                "channel": "email",
+                "delayHours": 0,
+                "subject": "Quick VGB safety check for {{companyOrName}}",
+                "body": "[redacted length=249 sha=8d72fc999899d749]",
+                "stopOnReply": true,
+                "stopOnUnsubscribe": true
+              },
+              {
+                "id": "step_2_followup",
+                "channel": "email",
+                "delayHours": 72,
+                "subject": "Following up on VGB drain-cover readiness",
+                "body": "[redacted length=183 sha=095b9bc7e19eb175]",
+                "stopOnReply": true,
+                "stopOnUnsubscribe": true
+              }
+            ],
+            "status": "approval_queued",
+            "createdAt": "2026-07-07T17:30:26.727Z",
+            "updatedAt": "2026-07-07T17:30:26.727Z"
+          },
+          {
+            "id": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+            "tenantId": "aquatrace-m6-receipt-1783445423094",
+            "name": "M6 live receipt 2026-07-07T17:30:23.094Z",
+            "templateId": "vgb-hotel-gm-outreach",
+            "audience": {
+              "tenantId": "aquatrace-m6-receipt-1783445423094",
+              "channel": "email",
+              "clientIds": [
+                "contact_nexi_sender"
+              ],
+              "consentRequired": true,
+              "excludeSuppressed": true,
+              "maxResults": 1
+            },
+            "sequence": [
+              {
+                "id": "step_1_intro",
+                "channel": "email",
+                "delayHours": 0,
+                "subject": "Quick VGB safety check for {{companyOrName}}",
+                "body": "[redacted length=249 sha=8d72fc999899d749]",
+                "stopOnReply": true,
+                "stopOnUnsubscribe": true
+              },
+              {
+                "id": "step_2_followup",
+                "channel": "email",
+                "delayHours": 72,
+                "subject": "Following up on VGB drain-cover readiness",
+                "body": "[redacted length=183 sha=095b9bc7e19eb175]",
+                "stopOnReply": true,
+                "stopOnUnsubscribe": true
+              }
+            ],
+            "status": "approval_queued",
+            "createdAt": "2026-07-07T17:30:25.157Z",
+            "updatedAt": "2026-07-07T17:30:25.157Z"
+          }
+        ],
+        "suppressions": [
+          {
+            "id": "supp_8274dab3-c14b-48a6-a489-89bb58cdefa8",
+            "tenantId": "aquatrace-m6-receipt-1783445423094",
+            "contactId": "contact_nexi_sender",
+            "channel": "email",
+            "reason": "unsubscribed",
+            "createdAt": "2026-07-07T17:30:25.542Z",
+            "source": "campaign:camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12"
+          }
+        ],
+        "tracking": [
+          {
+            "id": "camptrk_e37c9d81-fb11-47c7-8229-b19d9af6adfd",
+            "tenantId": "aquatrace-m6-receipt-1783445423094",
+            "campaignId": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+            "contactId": "contact_nexi_sender",
+            "channel": "email",
+            "type": "queued",
+            "stepId": "step_1_intro",
+            "createdAt": "2026-07-07T17:30:25.161Z",
+            "metadata": {
+              "approvalId": "appr_100ad6e5-4866-4265-b403-c4e6bcf3daf7",
+              "sendAt": "2026-07-07T17:30:25.158Z",
+              "executionBlocked": true
+            }
+          },
+          {
+            "id": "camptrk_7e31be05-31d8-4b64-a0e5-7b83b9d8ed5c",
+            "tenantId": "aquatrace-m6-receipt-1783445423094",
+            "campaignId": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+            "contactId": "contact_nexi_sender",
+            "channel": "email",
+            "type": "open",
+            "stepId": "step_1_intro",
+            "createdAt": "2026-07-07T17:30:25.286Z",
+            "metadata": {}
+          },
+          {
+            "id": "camptrk_cb41a9a7-4cbc-40b5-bd17-70c0d9011223",
+            "tenantId": "aquatrace-m6-receipt-1783445423094",
+            "campaignId": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+            "contactId": "contact_nexi_sender",
+            "channel": "email",
+            "type": "click",
+            "stepId": "step_1_intro",
+            "url": "https://aquatraceleak.com/vgb",
+            "createdAt": "2026-07-07T17:30:25.417Z",
+            "metadata": {}
+          },
+          {
+            "id": "camptrk_2d5d75cd-e5dc-4402-aad9-99496729d3dd",
+            "tenantId": "aquatrace-m6-receipt-1783445423094",
+            "campaignId": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+            "contactId": "contact_nexi_sender",
+            "channel": "email",
+            "type": "unsubscribe",
+            "createdAt": "2026-07-07T17:30:25.543Z",
+            "metadata": {
+              "suppressionId": "supp_8274dab3-c14b-48a6-a489-89bb58cdefa8",
+              "reason": "unsubscribed"
+            }
+          },
+          {
+            "id": "camptrk_9f6e99a4-62ae-429f-850f-5fed83baacbf",
+            "tenantId": "aquatrace-m6-receipt-1783445423094",
+            "campaignId": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+            "contactId": "contact_nexi_sender",
+            "channel": "email",
+            "type": "suppressed",
+            "stepId": "step_2_followup",
+            "createdAt": "2026-07-07T17:30:25.681Z",
+            "metadata": {
+              "reason": "suppressed"
+            }
+          },
+          {
+            "id": "camptrk_3d2d32cd-4669-4f79-bdde-f74d826ee008",
+            "tenantId": "aquatrace-m6-receipt-1783445423094",
+            "campaignId": "camp_2d3b9310-51ee-4bad-9ba8-97f9ef3b5257",
+            "contactId": "contact_chris_owner",
+            "channel": "email",
+            "type": "queued",
+            "stepId": "step_1_intro",
+            "createdAt": "2026-07-07T17:30:26.728Z",
+            "metadata": {
+              "approvalId": "appr_ca461ef5-50f4-496a-9f98-f6af2e05af5a",
+              "sendAt": "2026-07-07T17:30:26.728Z",
+              "executionBlocked": true
+            }
+          }
+        ],
+        "totals": {
+          "queued": 2,
+          "open": 1,
+          "click": 1,
+          "unsubscribe": 1,
+          "suppressed": 1
+        }
+      }
+    },
+    "approvalQueue": {
+      "count": 4,
+      "campaignPending": [
+        {
+          "id": "appr_100ad6e5-4866-4265-b403-c4e6bcf3daf7",
+          "kind": "email",
+          "status": "pending",
+          "execute": {
+            "service": "campaigns",
+            "op": "bulkExecutionBlocked",
+            "args": {
+              "campaignId": "camp_7e685e06-9eaa-4b60-86b7-c947ad8b5c12",
+              "stepId": "step_1_intro",
+              "contactId": "contact_nexi_sender",
+              "executionBlocked": true,
+              "outbound": {
+                "tenantId": "aquatrace-m6-receipt-1783445423094",
+                "mailbox": "nexi",
+                "to": [
+                  "[email:5945a8c1ac51f23b]"
+                ],
+                "subject": "Quick VGB safety check for Aquatrace",
+                "bodyText": "[redacted length=464 sha=673ef8c513e97453]"
+              }
+            }
+          },
+          "preview": {
+            "title": "EMAIL campaign step for Aquatrace",
+            "bodyLength": 511,
+            "bodySha": "cc3399e316b73180",
+            "mediaRefs": []
+          }
+        },
+        {
+          "id": "appr_24de7c7b-4e42-4c54-8d91-415691e80c0a",
+          "kind": "email",
+          "status": "pending",
+          "execute": {
+            "service": "campaigns",
+            "op": "transactionalApprovalRequired",
+            "args": {
+              "outbound": {
+                "tenantId": "aquatrace-m6-receipt-1783445423094",
+                "to": [
+                  "[email:21a5bf16996e3d78]"
+                ],
+                "subject": "M6 receipt report delivery test",
+                "bodyText": "[redacted length=74 sha=ae034f4d0aefe39e]"
+              }
+            }
+          },
+          "preview": {
+            "title": "Report delivery: M6 receipt report delivery test",
+            "bodyLength": 116,
+            "bodySha": "86151efb3ba256ff",
+            "mediaRefs": []
+          }
+        },
+        {
+          "id": "appr_dac8907f-3567-4432-9674-e7e6f32d3fb0",
+          "kind": "email",
+          "status": "pending",
+          "execute": {
+            "service": "campaigns",
+            "op": "transactionalApprovalRequiredAfterDelay",
+            "args": {
+              "delayHours": 48,
+              "invoiceId": "inv_m6_receipt",
+              "outbound": {
+                "tenantId": "aquatrace-m6-receipt-1783445423094",
+                "to": [
+                  "[email:21a5bf16996e3d78]"
+                ],
+                "subject": "Thank you from Aquatrace",
+                "bodyText": "[redacted length=92 sha=8742605bb78b766b]"
+              }
+            }
+          },
+          "preview": {
+            "title": "Review request queued for Receipt Test Client",
+            "bodyLength": 191,
+            "bodySha": "8593794b086c8dc2",
+            "mediaRefs": []
+          }
+        },
+        {
+          "id": "appr_ca461ef5-50f4-496a-9f98-f6af2e05af5a",
+          "kind": "email",
+          "status": "pending",
+          "execute": {
+            "service": "campaigns",
+            "op": "bulkExecutionBlocked",
+            "args": {
+              "campaignId": "camp_2d3b9310-51ee-4bad-9ba8-97f9ef3b5257",
+              "stepId": "step_1_intro",
+              "contactId": "contact_chris_owner",
+              "executionBlocked": true,
+              "outbound": {
+                "tenantId": "aquatrace-m6-receipt-1783445423094",
+                "mailbox": "nexi",
+                "to": [
+                  "[email:21a5bf16996e3d78]"
+                ],
+                "subject": "Quick VGB safety check for Aquatrace",
+                "bodyText": "[redacted length=463 sha=6f33859347adf352]"
+              }
+            }
+          },
+          "preview": {
+            "title": "EMAIL campaign step for Aquatrace",
+            "bodyLength": 510,
+            "bodySha": "a6e0a6a3746ddfa4",
+            "mediaRefs": []
+          }
+        }
+      ]
+    }
+  }
+}
