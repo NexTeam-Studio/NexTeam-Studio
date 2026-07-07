@@ -690,15 +690,15 @@ function uniqueToolNames(names: string[], toolsByName: Map<string, NexiTool>): s
 }
 
 function looksLikeIssueQuestion(lower: string): boolean {
-  return /\b(?:issue|problem|finding|findings|result|results|leak detection)\b/.test(lower);
+  return /\b(?:issue|issues|ssues|problem|finding|findings|found|result|results|leak detection)\b/.test(lower);
 }
 
 function looksLikeTechnicianQuestion(lower: string): boolean {
-  return /\b(?:technician|tech|assigned|who was there|who went|who did|who performed)\b/.test(lower);
+  return /\b(?:technicians?|techs?|assigned|who was there|who went|who did|who performed)\b/.test(lower);
 }
 
 function looksLikeJobDetailQuestion(lower: string): boolean {
-  return /\b(?:completion|competion|completed|complete|service\s+(?:time|date|completion|competion|[a-z]+\s+(?:completion|competion))|arrival|arrived|onsite|on-site|water\s+temp|air\s+temp|daily\s+loss|bucket|measurements?|main\s+drains?|skimmers?|returns?|lights?|filtration|testing\s+procedures?)\b/.test(lower);
+  return /\b(?:address|completion|competion|completed|complete|service\s+(?:time|date|completion|competion|[a-z]+\s+(?:completion|competion))|arrival|arrived|onsite|on-site|water\s+temp|air\s+temp|daily\s+loss|bucket|measurements?|main\s+drains?|skimmers?|returns?|lights?|filtration|testing\s+procedures?)\b/.test(lower);
 }
 
 function looksLikeCorrectionFollowUp(lower: string): boolean {
@@ -805,7 +805,8 @@ function directNoToolResponseForRequest(messages: GatewayMessage[]): { answer: s
 }
 
 function emailRefFromText(text: string): { mailbox: string; messageId: string; attachmentId?: string | undefined } | null {
-  const match = text.match(/\bemail:([^:\s]+):([^:\s]+)(?::([^:\s]+))?/i);
+  const match = text.match(/\bemail:([^:\s]+):([^:\s]+)(?::([^:\s]+))?/i)
+    ?? text.match(/\bread\s+email\s+([a-z0-9_-]+)\s+([a-z0-9_-]+)(?:\s+attachment\s+([a-z0-9_-]+))?/i);
   if (!match?.[1] || !match[2]) {
     return null;
   }

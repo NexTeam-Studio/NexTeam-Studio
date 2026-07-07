@@ -14,9 +14,17 @@ function slug(value) {
     .slice(0, 80) || "case";
 }
 
-function classify(question) {
+function classify(question, previousPolicy) {
+  const raw = String(question || "").trim();
   const lower = String(question || "").toLowerCase();
-  if (/^reply with exactly:/i.test(String(question || "").trim())) {
+  if (
+    previousPolicy
+    && /^(?:job_detail_cross_rail|report_measurement_lookup|site_blueprint_lookup|companycam_photo_lookup)$/.test(previousPolicy.expectedIntent)
+    && /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3}$/.test(raw)
+  ) {
+    return previousPolicy;
+  }
+  if (/^reply with exactly:/i.test(raw)) {
     return {
       expectedIntent: "meta_echo",
       requiredTools: [],
@@ -114,6 +122,14 @@ function classify(question) {
       assertions: ["usesRequiredRails"]
     };
   }
+  if (/\bread\s+email(?::[a-z0-9_-]+:[a-z0-9_-]+|\s+[a-z0-9_-]+\s+[a-z0-9_-]+)\b/.test(lower)) {
+    return {
+      expectedIntent: "email_direct_read",
+      requiredTools: ["getEmailMessage"],
+      forbiddenTools: ["draftEmail"],
+      assertions: ["noRawToolError"]
+    };
+  }
   if (/\b(?:needs? my attention|what needs attention|triage|urgent|important)\b/.test(lower)) {
     return {
       expectedIntent: "email_triage",
@@ -156,7 +172,7 @@ function classify(question) {
       assertions: ["usesRequiredRails"]
     };
   }
-  if (/\b(?:issue|issues|problem|finding|findings|result|results|report|document|checklist|technician|tech|completion|competion|service time|gallons|square footage|gallons per inch)\b/.test(lower)) {
+  if (/\b(?:issue|issues|ssues|problem|finding|findings|found|result|results|report|document|checklist|technicians?|techs?|completion|competion|service time|gallons|square footage|gallons per inch)\b/.test(lower)) {
     return {
       expectedIntent: "job_detail_cross_rail",
       requiredTools: ["getJobDetail", "getDocuments"],
@@ -173,10 +189,11 @@ function classify(question) {
 }
 
 const sessions = Object.entries(exportReceipt.sessions)
-  .map(([conversationId, turns]) => ({
-    conversationId,
-    cases: turns.map((turn, index) => {
-      const policy = classify(turn.userText);
+  .map(([conversationId, turns]) => {
+    let previousPolicy = null;
+    const cases = turns.map((turn, index) => {
+      const policy = classify(turn.userText, previousPolicy);
+      previousPolicy = policy;
       return {
         id: `${turn.createdAt.replace(/[^0-9]/g, "").slice(0, 14)}-${index + 1}-${slug(turn.userText)}`,
         createdAt: turn.createdAt,
@@ -187,8 +204,9 @@ const sessions = Object.entries(exportReceipt.sessions)
         forbiddenTools: policy.forbiddenTools,
         assertions: policy.assertions
       };
-    })
-  }))
+    });
+    return { conversationId, cases };
+  })
   .filter((session) => session.cases.length > 0)
   .sort((left, right) => String(left.cases[0]?.createdAt || "").localeCompare(String(right.cases[0]?.createdAt || "")));
 

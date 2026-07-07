@@ -818,13 +818,16 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T02:11:12.781Z",
         "originalConversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
         "question": "Who are the technicians for Deborah Justice",
-        "expectedIntent": "general_job_fact",
+        "expectedIntent": "job_detail_cross_rail",
         "requiredTools": [
-          "getJobDetail"
+          "getJobDetail",
+          "getDocuments"
         ],
-        "forbiddenTools": [],
+        "forbiddenTools": [
+          "searchEmail"
+        ],
         "assertions": [
-          "noRawToolError"
+          "usesRequiredRails"
         ]
       },
       {
@@ -1571,9 +1574,9 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T19:34:34.724Z",
         "originalConversationId": "receipt_m6_lite_body_1783280070977",
         "question": "read email:chris:19f3354877e85a73 and tell me whether it has attachments; do not quote or summarize the body",
-        "expectedIntent": "email_search_or_read",
+        "expectedIntent": "email_direct_read",
         "requiredTools": [
-          "searchEmail"
+          "getEmailMessage"
         ],
         "forbiddenTools": [
           "draftEmail"
@@ -1592,9 +1595,9 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T19:40:01.336Z",
         "originalConversationId": "receipt_m6_lite_body_1783280398789",
         "question": "read email:chris:19f3354877e85a73 and tell me whether it has attachments; do not quote or summarize the body",
-        "expectedIntent": "email_search_or_read",
+        "expectedIntent": "email_direct_read",
         "requiredTools": [
-          "searchEmail"
+          "getEmailMessage"
         ],
         "forbiddenTools": [
           "draftEmail"
@@ -2769,13 +2772,16 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T12:30:58.375Z",
         "originalConversationId": "web-3e22bec7-ef7c-4827-94b3-dcb5115277df",
         "question": "Deborah Justice",
-        "expectedIntent": "general_job_fact",
+        "expectedIntent": "report_measurement_lookup",
         "requiredTools": [
-          "getJobDetail"
+          "getDocuments",
+          "lookupSiteJobBlueprintField"
         ],
-        "forbiddenTools": [],
+        "forbiddenTools": [
+          "searchEmail"
+        ],
         "assertions": [
-          "noRawToolError"
+          "usesRequiredRails"
         ]
       },
       {
@@ -2838,13 +2844,16 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T20:27:56.420Z",
         "originalConversationId": "web-7e2524c5-9aca-4df2-936c-bdee3f70702b",
         "question": "what ssues were found on rachel paynes pool",
-        "expectedIntent": "general_job_fact",
+        "expectedIntent": "job_detail_cross_rail",
         "requiredTools": [
-          "getJobDetail"
+          "getJobDetail",
+          "getDocuments"
         ],
-        "forbiddenTools": [],
+        "forbiddenTools": [
+          "searchEmail"
+        ],
         "assertions": [
-          "noRawToolError"
+          "usesRequiredRails"
         ]
       },
       {
