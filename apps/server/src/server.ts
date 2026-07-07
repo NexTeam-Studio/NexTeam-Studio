@@ -26,6 +26,9 @@ import { InMemoryContentRepository } from "./content/repository.js";
 import { registerContentRoutes } from "./content/routes.js";
 import { createCrmReadTools } from "./crm/nexiTools.js";
 import { FirestoreNativeCrmRepository } from "./crm/nativeRepository.js";
+import { createEvaporationNexiTools } from "./evaporation/nexiTools.js";
+import { MemoryEvaporationRepository } from "./evaporation/repository.js";
+import { registerEvaporationRoutes } from "./evaporation/routes.js";
 import { createSchedulingNexiTools } from "./scheduling/nexiTools.js";
 import { InMemorySchedulingRepository } from "./scheduling/repository.js";
 import { registerSchedulingRoutes } from "./scheduling/routes.js";
@@ -41,6 +44,7 @@ const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
 const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();
 const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TENANT_ID || "aquatrace");
+const evaporationRepository = new MemoryEvaporationRepository();
 
 app.use(express.json({
   limit: "1mb",
@@ -57,7 +61,8 @@ app.use("/api/nexi", createNexiRouter(process.env, {
     ...createCrmReadTools(nativeCrmProvider),
     ...createCommsNexiTools(commsRail, approvalQueue),
     ...createContentNexiTools({ repository: contentRepository, approvalQueue }),
-    ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env })
+    ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env }),
+    ...createEvaporationNexiTools({ repository: evaporationRepository, env: process.env })
   ]
 }));
 
@@ -166,6 +171,7 @@ registerCrmRoutes(app, { approvalQueue, eventBus });
 registerFieldDocsRoutes(app, { eventBus });
 registerContentRoutes(app, { repository: contentRepository, approvalQueue, eventBus, env: process.env });
 registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env });
+registerEvaporationRoutes(app, { repository: evaporationRepository, env: process.env });
 app.use(express.static(webDistDir));
 
 app.get("/", (_req: Request, res: Response) => {
