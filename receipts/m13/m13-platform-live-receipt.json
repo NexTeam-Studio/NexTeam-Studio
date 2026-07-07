@@ -1,0 +1,312 @@
+{
+  "ok": false,
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "1f58c0a43d5a7d9f45136aa0498d98669fd2dc9d",
+  "tenantId": "m13-test-1783398380883-489891eb",
+  "createdAt": "2026-07-07T04:26:20.883Z",
+  "checks": {
+    "version": {
+      "status": 200,
+      "body": {
+        "sha": "1f58c0a43d5a7d9f45136aa0498d98669fd2dc9d",
+        "builtAt": "2026-07-07T04:26:20.068Z"
+      }
+    },
+    "health": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "checkedAt": "2026-07-07T04:26:21.190Z",
+        "rails": {
+          "jobber": {
+            "ok": true,
+            "configured": true,
+            "provider": "jobber",
+            "op": "graphql_read",
+            "latencyMs": 613,
+            "detail": "Jobber GraphQL read succeeded."
+          },
+          "companycam": {
+            "ok": true,
+            "configured": true,
+            "provider": "companycam",
+            "op": "projects_read",
+            "latencyMs": 357,
+            "detail": "CompanyCam projects read succeeded."
+          },
+          "anthropic": {
+            "ok": true,
+            "configured": true,
+            "provider": "anthropic",
+            "op": "configured_no_spend",
+            "latencyMs": 0,
+            "detail": "Configured; live message call skipped by no-spend overnight limit."
+          }
+        }
+      }
+    },
+    "plans": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "plans": [
+          {
+            "id": "nexi",
+            "name": "Nexi",
+            "monthlyUsd": 149,
+            "modules": [
+              "nexi",
+              "crm",
+              "fielddocs",
+              "comms"
+            ]
+          },
+          {
+            "id": "marketing",
+            "name": "Marketing",
+            "monthlyUsd": 399,
+            "modules": [
+              "nexi",
+              "crm",
+              "fielddocs",
+              "comms",
+              "content",
+              "campaigns"
+            ]
+          },
+          {
+            "id": "suite",
+            "name": "Suite",
+            "monthlyUsd": 799,
+            "modules": [
+              "nexi",
+              "crm",
+              "fielddocs",
+              "scheduling",
+              "content",
+              "campaigns",
+              "comms",
+              "voice",
+              "platform",
+              "evaporation"
+            ]
+          }
+        ]
+      }
+    },
+    "subscribeTestTenant": {
+      "status": 201,
+      "body": {
+        "ok": true,
+        "tenant": {
+          "id": "m13-test-1783398380883-489891eb",
+          "name": "m13-test-1783398380883-489891eb",
+          "industryPack": "pool_leak",
+          "branding": {
+            "assistantName": "Nexi"
+          },
+          "adapters": {
+            "crm": "native",
+            "media": "companycam",
+            "email": "gmail_relay"
+          },
+          "approval": {
+            "email": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "sms": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "gbp_post": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "social_post": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "article": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "quote": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "invoice": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "site_publish": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "review_reply": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            }
+          },
+          "timezone": "America/New_York",
+          "plan": "nexi"
+        },
+        "subscription": {
+          "id": "sub_m13-test-1783398380883-489891eb_c6e67aa1-5f85-44c9-9a8f-64f5b3ffd611",
+          "tenantId": "m13-test-1783398380883-489891eb",
+          "plan": "nexi",
+          "status": "active",
+          "stripeCustomerId": "cus_Uq6oonNCxKSXRK",
+          "stripeSubscriptionId": "sub_1TqQaSPGOA6j5zrav7maJEsi",
+          "updatedAt": "2026-07-07T04:26:26.658Z"
+        },
+        "stripeMode": "test"
+      }
+    },
+    "entitlements": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "tenantId": "m13-test-1783398380883-489891eb",
+        "plan": "nexi",
+        "tools": [
+          {
+            "name": "approve",
+            "module": "content",
+            "allowed": false
+          },
+          {
+            "name": "bookVisit",
+            "module": "scheduling",
+            "allowed": false
+          },
+          {
+            "name": "clientLookup",
+            "module": "crm",
+            "allowed": true
+          },
+          {
+            "name": "contentQueue",
+            "module": "content",
+            "allowed": false
+          },
+          {
+            "name": "contentStats",
+            "module": "content",
+            "allowed": false
+          },
+          {
+            "name": "draftEmail",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "draftPostFromJob",
+            "module": "content",
+            "allowed": false
+          },
+          {
+            "name": "findSlot",
+            "module": "scheduling",
+            "allowed": false
+          },
+          {
+            "name": "getDocuments",
+            "module": "fielddocs",
+            "allowed": true
+          },
+          {
+            "name": "getEmailAttachment",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "getEmailMessage",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "getEmailThread",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "getJobDetail",
+            "module": "nexi",
+            "allowed": true
+          },
+          {
+            "name": "getPhotos",
+            "module": "fielddocs",
+            "allowed": true
+          },
+          {
+            "name": "getPipeline",
+            "module": "crm",
+            "allowed": true
+          },
+          {
+            "name": "getSchedule",
+            "module": "nexi",
+            "allowed": true
+          },
+          {
+            "name": "invoiceStatus",
+            "module": "crm",
+            "allowed": true
+          },
+          {
+            "name": "lookupSiteJobBlueprintField",
+            "module": "fielddocs",
+            "allowed": true
+          },
+          {
+            "name": "moveVisit",
+            "module": "scheduling",
+            "allowed": false
+          },
+          {
+            "name": "runEvaporation",
+            "module": "evaporation",
+            "allowed": false
+          },
+          {
+            "name": "searchEmail",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "summarizeInbox",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "triageInbox",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "whatsMyDay",
+            "module": "scheduling",
+            "allowed": false
+          }
+        ]
+      }
+    },
+    "backup": {
+      "status": 500,
+      "body": {
+        "ok": false,
+        "error": "The specified bucket does not exist."
+      }
+    }
+  },
+  "error": "backup failed: The specified bucket does not exist.",
+  "completedAt": "2026-07-07T04:26:30.845Z",
+  "operator": {
+    "mode": "custom-token",
+    "email": "owner@aquatrace.com",
+    "uidPresent": true
+  },
+  "redaction": "No secrets, passwords, tokens, API keys, or email bodies are recorded. Stripe customer/subscription ids are test-mode identifiers only."
+}

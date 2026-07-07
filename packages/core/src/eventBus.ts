@@ -48,6 +48,7 @@ export class FirestoreEventBus implements EventBus {
       ts: new Date().toISOString(),
       processedBy: []
     }) as BusEvent;
+    // @tenant-doc:events busEventSchema requires tenantId before write.
     await this.db.collection("events").doc(event.id).set(event);
   }
 

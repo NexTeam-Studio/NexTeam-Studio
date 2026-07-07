@@ -51,6 +51,50 @@ interface CalendarResponse {
   error?: string;
 }
 
+interface PlatformPlan {
+  id: "nexi" | "marketing" | "suite";
+  name: string;
+  monthlyUsd: number;
+  modules: string[];
+}
+
+interface PlatformTenantRow {
+  tenant: {
+    id: string;
+    name: string;
+    plan: "nexi" | "marketing" | "suite";
+  };
+  plan: PlatformPlan;
+  modules: string[];
+  subscription?: {
+    status: string;
+    stripeSubscriptionId?: string;
+  } | null;
+  adapterStatuses: Array<{
+    adapter: string;
+    provider: string;
+    configured: boolean;
+    ok: boolean;
+    detail?: string;
+  }>;
+  cost: {
+    estimatedCostUsd: number;
+    usageLogCount: number;
+  };
+}
+
+interface PlatformTenantResponse {
+  ok: boolean;
+  tenants?: PlatformTenantRow[];
+  error?: string;
+}
+
+interface PlatformPlansResponse {
+  ok: boolean;
+  plans?: PlatformPlan[];
+  error?: string;
+}
+
 interface FirebasePublicConfig {
   apiKey: string;
   authDomain: string;
@@ -253,7 +297,9 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
   }
 
   if (props.user) {
-    return <Chat auth={props.auth} user={props.user} />;
+    return window.location.pathname.startsWith("/platform")
+      ? <PlatformConsole auth={props.auth} user={props.user} />
+      : <Chat auth={props.auth} user={props.user} />;
   }
 
   return (
@@ -276,6 +322,114 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
             {working ? "Signing in..." : "Sign In"}
           </button>
         </form>
+      </section>
+    </main>
+  );
+}
+
+function PlatformConsole(props: { auth: Auth; user: User }): React.ReactElement {
+  const [rows, setRows] = useState<PlatformTenantRow[]>([]);
+  const [plans, setPlans] = useState<PlatformPlan[]>([]);
+  const [status, setStatus] = useState("Loading platform console...");
+  const [workingTenant, setWorkingTenant] = useState("");
+
+  async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
+    const token = await props.user.getIdToken();
+    return fetch(path, {
+      ...init,
+      headers: {
+        ...(init?.headers ?? {}),
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json"
+      }
+    });
+  }
+
+  async function refresh(): Promise<void> {
+    setStatus("Loading platform console...");
+    try {
+      const [tenantBody, planBody] = await Promise.all([
+        authedFetch("/api/platform/tenants").then((response) => response.json() as Promise<PlatformTenantResponse>),
+        authedFetch("/api/platform/plans").then((response) => response.json() as Promise<PlatformPlansResponse>)
+      ]);
+      if (!tenantBody.ok || !planBody.ok) {
+        setStatus(tenantBody.error ?? planBody.error ?? "Platform console unavailable.");
+        return;
+      }
+      setRows(tenantBody.tenants ?? []);
+      setPlans(planBody.plans ?? []);
+      setStatus("");
+    } catch {
+      setStatus("Platform console could not reach the server.");
+    }
+  }
+
+  async function runBackup(tenantId: string): Promise<void> {
+    setWorkingTenant(tenantId);
+    setStatus(`Running backup for ${tenantId}...`);
+    try {
+      const body = await authedFetch(`/api/platform/tenants/${encodeURIComponent(tenantId)}/backups/run`, { method: "POST", body: "{}" })
+        .then((response) => response.json() as Promise<{ ok: boolean; backup?: { storageRef: string }; error?: string }>);
+      setStatus(body.ok ? `Backup saved: ${body.backup?.storageRef ?? "storage file"}` : body.error ?? "Backup failed.");
+      await refresh();
+    } catch {
+      setStatus("Backup request failed.");
+    } finally {
+      setWorkingTenant("");
+    }
+  }
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  return (
+    <main className="shell platform-shell">
+      <section className="platform-hero">
+        <div>
+          <p className="eyebrow">M13 Platform</p>
+          <h1>Tenant Command Center</h1>
+          <p className="signed-in">{props.user.email ?? "Platform operator"}</p>
+        </div>
+        <button className="sign-out" type="button" onClick={() => void signOut(props.auth)}>Sign out</button>
+      </section>
+
+      <section className="plan-grid">
+        {plans.map((plan) => (
+          <article className="plan-card" key={plan.id}>
+            <p className="eyebrow">{plan.id}</p>
+            <h2>{plan.name}</h2>
+            <p className="plan-price">${plan.monthlyUsd}/mo</p>
+            <p>{plan.modules.join(", ")}</p>
+          </article>
+        ))}
+      </section>
+
+      {status ? <p className="schedule-status">{status}</p> : null}
+
+      <section className="tenant-table">
+        {rows.map((row) => (
+          <article className="tenant-row" key={row.tenant.id}>
+            <div>
+              <p className="eyebrow">{row.tenant.id}</p>
+              <h2>{row.tenant.name}</h2>
+              <p>{row.plan.name} plan · {row.subscription?.status ?? "no subscription"} · ${row.cost.estimatedCostUsd.toFixed(4)} tracked</p>
+            </div>
+            <div className="adapter-pills">
+              {row.adapterStatuses.map((adapter) => (
+                <span className={adapter.ok ? "pill ok" : "pill warn"} key={adapter.adapter}>
+                  {adapter.adapter}: {adapter.configured ? adapter.provider : "not set"}
+                </span>
+              ))}
+            </div>
+            <div className="tenant-actions">
+              <a href={`/api/platform/tenants/${encodeURIComponent(row.tenant.id)}/export`} target="_blank" rel="noreferrer">Export</a>
+              <button type="button" disabled={workingTenant === row.tenant.id} onClick={() => void runBackup(row.tenant.id)}>
+                {workingTenant === row.tenant.id ? "Backing up..." : "Run backup"}
+              </button>
+            </div>
+          </article>
+        ))}
       </section>
     </main>
   );
