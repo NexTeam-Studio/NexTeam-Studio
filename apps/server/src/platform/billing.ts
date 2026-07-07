@@ -76,11 +76,12 @@ export async function createStripeTestSubscription(input: {
     "metadata[plan]": input.plan
   }));
   const paymentMethodId = input.env.STRIPE_TEST_PAYMENT_METHOD?.trim() || "pm_card_visa";
-  await stripeFormRequest(input.env, `/payment_methods/${encodeURIComponent(paymentMethodId)}/attach`, new URLSearchParams({
+  const attachedPaymentMethod = await stripeFormRequest(input.env, `/payment_methods/${encodeURIComponent(paymentMethodId)}/attach`, new URLSearchParams({
     customer: customer.id
   }));
+  const customerPaymentMethodId = attachedPaymentMethod.id;
   await stripeFormRequest(input.env, `/customers/${encodeURIComponent(customer.id)}`, new URLSearchParams({
-    "invoice_settings[default_payment_method]": paymentMethodId
+    "invoice_settings[default_payment_method]": customerPaymentMethodId
   }));
   const product = await stripeFormRequest(input.env, "/products", new URLSearchParams({
     name: `NexTeam ${plan.name}`,
@@ -98,7 +99,7 @@ export async function createStripeTestSubscription(input: {
   const subscription = await stripeFormRequest(input.env, "/subscriptions", new URLSearchParams({
     customer: customer.id,
     "items[0][price]": price.id,
-    default_payment_method: paymentMethodId,
+    default_payment_method: customerPaymentMethodId,
     payment_behavior: "error_if_incomplete",
     "metadata[tenantId]": input.tenantId,
     "metadata[plan]": input.plan
