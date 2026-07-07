@@ -15,6 +15,9 @@ import { CompanyCamAdapter } from "@nexteam/providers";
 import { getBuildInfo } from "./buildInfo.js";
 import { createNexiRouter } from "./nexi/nexiRoutes.js";
 import { buildHealth } from "./health.js";
+import { createCampaignNexiTools } from "./campaigns/nexiTools.js";
+import { InMemoryCampaignRepository } from "./campaigns/repository.js";
+import { registerCampaignRoutes } from "./campaigns/routes.js";
 import { registerCrmRoutes } from "./crm/routes.js";
 import { getAdminDb } from "./firebase.js";
 import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
@@ -45,6 +48,7 @@ const commsRail = createCommsRailFromEnv(process.env);
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CommsApprovalExecutor(commsRail));
 const contentRepository = new InMemoryContentRepository();
 const schedulingRepository = new InMemorySchedulingRepository();
+const campaignRepository = new InMemoryCampaignRepository(process.env.TENANT_ID || "aquatrace");
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
@@ -75,6 +79,7 @@ app.use("/api/nexi", createNexiRouter(process.env, {
     ...createCrmReadTools(nativeCrmProvider),
     ...createCommsNexiTools(commsRail, approvalQueue),
     ...createContentNexiTools({ repository: contentRepository, approvalQueue }),
+    ...createCampaignNexiTools({ repository: campaignRepository, approvalQueue, env: process.env }),
     ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env }),
     ...createEvaporationNexiTools({ repository: evaporationRepository, env: process.env })
   ]
@@ -185,6 +190,7 @@ app.post("/api/approval-queue/:id/execute", async (req: Request, res: Response) 
 registerCrmRoutes(app, { approvalQueue, eventBus });
 registerFieldDocsRoutes(app, { eventBus });
 registerContentRoutes(app, { repository: contentRepository, approvalQueue, eventBus, env: process.env });
+registerCampaignRoutes(app, { repository: campaignRepository, approvalQueue, env: process.env });
 registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env });
 registerEvaporationRoutes(app, { repository: evaporationRepository, env: process.env });
 registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
