@@ -456,6 +456,126 @@ h1 {
   background: #b06b34;
 }
 
+.platform-shell {
+  max-width: 1180px;
+  gap: 16px;
+}
+
+.platform-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 32px;
+  border-radius: 34px;
+  color: #fff8ea;
+  background:
+    radial-gradient(circle at top left, rgba(250, 190, 77, 0.2), transparent 34rem),
+    linear-gradient(135deg, #1f3d3a 0%, #315f58 55%, #fff8ea 55%, #f3dfc2 100%);
+  box-shadow: 0 28px 90px rgba(48, 44, 32, 0.2);
+}
+
+.platform-hero h1 {
+  margin: 4px 0;
+  font-size: clamp(2.1rem, 5vw, 4.4rem);
+  line-height: 0.95;
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.plan-card,
+.tenant-row {
+  padding: 20px;
+  border: 1px solid rgba(38, 53, 44, 0.12);
+  border-radius: 28px;
+  background: rgba(255, 250, 240, 0.94);
+  box-shadow: 0 18px 54px rgba(48, 44, 32, 0.12);
+}
+
+.plan-card h2,
+.tenant-row h2 {
+  margin: 4px 0;
+  color: #26352c;
+}
+
+.plan-price {
+  margin: 0;
+  color: #315f58;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.tenant-table {
+  display: grid;
+  gap: 14px;
+}
+
+.tenant-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.tenant-row p {
+  margin: 0;
+  color: #526055;
+}
+
+.adapter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.pill.ok {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.pill.warn {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.tenant-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.tenant-actions a,
+.tenant-actions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 16px;
+  color: #fff8ea;
+  background: #315f58;
+  font-weight: 850;
+  text-align: center;
+  text-decoration: none;
+}
+
+.tenant-actions button {
+  cursor: pointer;
+}
+
+.tenant-actions button:disabled {
+  opacity: 0.5;
+}
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -475,5 +595,16 @@ h1 {
   .phone,
   .schedule-card {
     min-height: auto;
+  }
+
+  .platform-hero,
+  .tenant-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .plan-grid,
+  .tenant-row {
+    grid-template-columns: 1fr;
   }
 }

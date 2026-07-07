@@ -16,7 +16,7 @@ function defaultApproval(): Tenant["approval"] {
   return Object.fromEntries(kinds.map((kind) => [kind, { autoApprove: false, cleanStreak: 0 }])) as Tenant["approval"];
 }
 
-function loadTenant(req: Request): Tenant {
+function loadDefaultTenant(req: Request): Tenant {
   const tenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim() ? req.body.tenantId.trim() : process.env.TENANT_ID || "aquatrace";
   return {
     id: tenantId,
@@ -79,6 +79,8 @@ async function requireNexiOperator(req: Request, env: NodeJS.ProcessEnv): Promis
 
 export interface NexiRouterDeps {
   extraTools?: NexiTool[] | undefined;
+  loadTenant?: ((req: Request) => Promise<Tenant> | Tenant) | undefined;
+  filterTools?: ((tenant: Tenant, tools: NexiTool[]) => NexiTool[]) | undefined;
 }
 
 export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: NexiRouterDeps = {}): Router {
@@ -95,12 +97,13 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: Nex
       const conversationId = typeof req.body?.conversationId === "string" && req.body.conversationId.trim()
         ? req.body.conversationId.trim()
         : undefined;
-      const tenant = loadTenant(req);
+      const tenant = deps.loadTenant ? await deps.loadTenant(req) : loadDefaultTenant(req);
       const stores = runtimeStores(env);
-      const tools = [
+      const rawTools = [
         ...createNexiJobDeskTools(env, stores.repository),
         ...(deps.extraTools ?? [])
       ];
+      const tools = deps.filterTools ? deps.filterTools(tenant, rawTools) : rawTools;
       const result = await answerNexiMessage({
         tenant,
         message,
