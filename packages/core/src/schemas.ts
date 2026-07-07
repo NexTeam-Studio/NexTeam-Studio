@@ -67,7 +67,8 @@ export const platformModuleSchema = z.enum([
   "comms",
   "voice",
   "platform",
-  "evaporation"
+  "evaporation",
+  "sites"
 ]);
 
 export const platformPlanSchema = z.object({

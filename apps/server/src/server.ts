@@ -37,6 +37,8 @@ import { MemoryStorageWriter } from "./platform/backup.js";
 import { FirebaseStorageWriter } from "./platform/storage.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository } from "./platform/repository.js";
 import { loadTenantFromPlatform, registerPlatformRoutes } from "./platform/routes.js";
+import { FirestoreSitesRepository, InMemorySitesRepository } from "./sites/repository.js";
+import { registerSitesRoutes } from "./sites/routes.js";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { createVoiceRouter } from "./voice/routes.js";
 
@@ -53,6 +55,7 @@ const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TEN
 const evaporationRepository = new MemoryEvaporationRepository();
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
+const sitesRepository = adminDb ? new FirestoreSitesRepository(adminDb) : new InMemorySitesRepository();
 
 app.use(express.json({
   limit: "1mb",
@@ -188,6 +191,7 @@ registerContentRoutes(app, { repository: contentRepository, approvalQueue, event
 registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env });
 registerEvaporationRoutes(app, { repository: evaporationRepository, env: process.env });
 registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
+registerSitesRoutes(app, { repository: sitesRepository, approvalQueue, eventBus, env: process.env });
 app.use(express.static(webDistDir));
 
 app.get("/", (_req: Request, res: Response) => {
