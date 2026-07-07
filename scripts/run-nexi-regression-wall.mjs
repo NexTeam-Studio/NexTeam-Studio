@@ -7,6 +7,7 @@ import {
   resolveBaseUrl
 } from "./support/liveProofHelpers.mjs";
 import { nexiTrialRegressionSessions } from "../tests/fixtures/nexi-trial-regression-cases.mjs";
+import { nexiOwnerReportedRegressionSessions } from "../tests/fixtures/nexi-owner-reported-regression-cases.mjs";
 
 const baseUrl = process.env.NEXI_BASE_URL || resolveBaseUrl();
 const tenantId = process.env.TENANT_ID || "aquatrace";
@@ -16,6 +17,10 @@ const caseFilter = process.env.NEXI_REGRESSION_CASE || "";
 const limit = Number(process.env.NEXI_REGRESSION_LIMIT || "0");
 const caseDelayMs = Number(process.env.NEXI_REGRESSION_CASE_DELAY_MS || "750");
 const quotaRetryLimit = Number(process.env.NEXI_REGRESSION_QUOTA_RETRIES || "6");
+const allRegressionSessions = [
+  ...nexiTrialRegressionSessions,
+  ...nexiOwnerReportedRegressionSessions
+];
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -24,7 +29,7 @@ function sleep(ms) {
 function selectedSessions() {
   let remaining = Number.isFinite(limit) && limit > 0 ? limit : Infinity;
   const sessions = [];
-  for (const session of nexiTrialRegressionSessions) {
+  for (const session of allRegressionSessions) {
     const cases = session.cases.filter((testCase) => !caseFilter || testCase.id.includes(caseFilter) || testCase.question.includes(caseFilter));
     if (cases.length === 0) {
       continue;

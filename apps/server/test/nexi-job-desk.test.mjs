@@ -674,6 +674,76 @@ test("Nexi distance prompts return capability gaps instead of missing-data failu
   assert.deepEqual(result.toolRuns, []);
 });
 
+test("Nexi report-PDF email requests return capability gaps instead of email search misses", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "email me the report PDFs" }],
+    tools: [{
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string().optional() }),
+      handler: async () => {
+        throw new Error("searchEmail should not run for missing report-PDF send capability");
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("capability gaps should not call the model");
+    }
+  });
+  assert.equal(result.failureReason, "capability_not_available");
+  assert.match(result.answer, /attach and email report PDFs/i);
+  assert.doesNotMatch(result.answer, /find an email|matched/i);
+  assert.deepEqual(result.toolRuns, []);
+});
+
+test("Nexi broad client list and count prompts route to CRM clientLookup", async () => {
+  const prompts = ["show me a client list", "how many clients do we have"];
+  for (const prompt of prompts) {
+    const toolCalls = [];
+    const result = await runNexiToolLoop({
+      tenant: tenant(),
+      system: "Use tools.",
+      messages: [{ role: "user", content: prompt }],
+      tools: [
+        {
+          name: "clientLookup",
+          description: "Read native CRM clients.",
+          inputSchema: z.object({ q: z.string().default("") }),
+          handler: async (_tenant, args) => {
+            toolCalls.push(args);
+            return {
+              result: { clients: [{ id: "client_1", name: "Deborah Justice" }, { id: "client_2", name: "Rachel Payne" }] },
+              sources: [{ rail: "native", ref: "clients", label: "Native CRM clients" }]
+            };
+          }
+        },
+        {
+          name: "searchEmail",
+          description: "Search email.",
+          inputSchema: z.object({ keywords: z.string().optional() }),
+          handler: async () => {
+            throw new Error("searchEmail should not run for client list prompts");
+          }
+        }
+      ],
+      routeActionName: "/api/nexi/message",
+      taskType: "job_desk_answer",
+      env: { ANTHROPIC_API_KEY: "test-key" },
+      fetchFn: async () => new Response(JSON.stringify({
+        content: [{ type: "text", text: "There are 2 clients: Deborah Justice and Rachel Payne." }],
+        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+      }), { status: 200 })
+    });
+    assert.deepEqual(result.toolRuns.map((run) => run.name), ["clientLookup"]);
+    assert.equal(toolCalls[0].q, "");
+    assert.equal(result.sources.some((source) => source.ref === "clients"), true);
+  }
+});
+
 test("Nexi address-only follow-ups preserve the prior distance capability intent", async () => {
   const result = await runNexiToolLoop({
     tenant: tenant(),
@@ -1151,6 +1221,65 @@ test("Nexi total-gallons report questions also run SiteJobBlueprint lookup", asy
   assert.equal(toolCalls[1][1].requestedEntity, "Deborah Justice");
 });
 
+test("Nexi total-gallons job questions run Jobber and CompanyCam before blueprint fields", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What are the total gallons for Deborah Justice?" }],
+    tools: [
+      {
+        name: "getJobDetail",
+        description: "Read Jobber job.",
+        inputSchema: z.object({ nameQuery: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getJobDetail", args]);
+          return {
+            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", status: "lead", client: { name: "Deborah Justice" } } },
+            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
+          };
+        }
+      },
+      {
+        name: "getDocuments",
+        description: "Read CompanyCam docs.",
+        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getDocuments", args]);
+          return {
+            result: { documents: [{ id: "doc_1", text: "Total gallons 37602" }] },
+            sources: [{ rail: "companycam", ref: "doc_1", label: "CompanyCam document Deborah Justice report" }]
+          };
+        }
+      },
+      {
+        name: "lookupSiteJobBlueprintField",
+        description: "Read blueprint field.",
+        inputSchema: z.object({ field: z.string(), requestedEntity: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["lookupSiteJobBlueprintField", args]);
+          return {
+            result: { value: 37602 },
+            sources: [{ rail: "native", ref: "blueprint_1", label: "SiteJobBlueprint Deborah Justice" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I checked Jobber and the CompanyCam report. Deborah Justice total gallons are 37,602." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail", "getDocuments", "lookupSiteJobBlueprintField"]);
+  assert.equal(toolCalls[0][1].nameQuery, "Deborah Justice");
+  assert.equal(toolCalls[1][1].projectQuery, "Deborah Justice");
+  assert.equal(toolCalls[2][1].field, "poolGallons");
+  assert.equal(toolCalls[2][1].requestedEntity, "Deborah Justice");
+});
+
 test("Nexi bare entity follow-ups inherit report measurement rails", async () => {
   const toolCalls = [];
   const result = await runNexiToolLoop({
@@ -1457,7 +1586,7 @@ test("Nexi completion-time typo prompts still preload Jobber and CompanyCam repo
     env: { ANTHROPIC_API_KEY: "test-key" },
     fetchFn: async (_url, init) => {
       const request = JSON.parse(init.body);
-      assert.match(request.messages.at(-1).content, /do not treat Jobber's missing completion\/status field/i);
+      assert.match(request.messages.at(-1).content, /do not treat Jobber's missing completion\/status\/measurement field/i);
       return new Response(JSON.stringify({
         content: [{ type: "text", text: "CompanyCam says Deborah Justice was completed at 3:10pm Thursday July 2, 2026 by Chris and Logan." }],
         usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
