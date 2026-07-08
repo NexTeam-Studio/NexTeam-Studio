@@ -1,0 +1,199 @@
+{
+  "ok": true,
+  "receiptName": "m11-mobile-live-api-receipt-current",
+  "startedAt": "2026-07-08T14:31:32.763Z",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "ad91b6e8ac2ad670115db031fe7a198d7fa50af7",
+  "tenantId": "aquatrace",
+  "runId": "m11-live-1783521092763-9988ce20",
+  "checks": {
+    "versionShaMatched": true,
+    "healthGreen": true,
+    "assignedScheduleOnly": true,
+    "oneJobReadWorks": true,
+    "pushRegistered": true,
+    "syncBatchApplied": true,
+    "approvalsVisibleToOwner": true
+  },
+  "raw": {
+    "version": {
+      "sha": "ad91b6e8ac2ad670115db031fe7a198d7fa50af7",
+      "builtAt": "2026-07-08T14:31:32.829Z"
+    },
+    "health": {
+      "ok": true,
+      "checkedAt": "2026-07-08T14:31:33.849Z",
+      "rails": {
+        "jobber": {
+          "ok": true,
+          "configured": true,
+          "provider": "jobber",
+          "op": "graphql_read",
+          "latencyMs": 655,
+          "detail": "Jobber GraphQL read succeeded."
+        },
+        "companycam": {
+          "ok": true,
+          "configured": true,
+          "provider": "companycam",
+          "op": "projects_read",
+          "latencyMs": 217,
+          "detail": "CompanyCam projects read succeeded."
+        },
+        "anthropic": {
+          "ok": true,
+          "configured": true,
+          "provider": "anthropic",
+          "op": "configured_no_spend",
+          "latencyMs": 0,
+          "detail": "Configured; live message call skipped by no-spend overnight limit."
+        }
+      }
+    },
+    "schedule": {
+      "ok": true,
+      "schedule": {
+        "tenantId": "aquatrace",
+        "date": "2026-07-07",
+        "technicianId": "tech_chris",
+        "cachedAt": "2026-07-08T14:31:33.997Z",
+        "expiresAt": "2026-07-09T08:31:33.997Z",
+        "jobs": [
+          {
+            "tenantId": "aquatrace",
+            "jobId": "job_deborah_justice",
+            "clientId": "client_deborah_justice",
+            "clientName": "Deborah Justice",
+            "propertyId": "property_isbell_road",
+            "propertyName": "181 Isbell Road",
+            "serviceAddress": {
+              "line1": "181 Isbell Road",
+              "city": "Fair Play",
+              "state": "SC",
+              "postalCode": "29643",
+              "geo": {
+                "latitude": 34.5121,
+                "longitude": -82.9853,
+                "accuracyMeters": 6
+              }
+            },
+            "scheduledStart": "2026-07-07T14:00:00.000Z",
+            "scheduledEnd": "2026-07-07T17:00:00.000Z",
+            "status": "scheduled",
+            "technicianIds": [
+              "tech_chris",
+              "tech_logan"
+            ],
+            "jobAccessLinkIds": [
+              "link_deborah_subcontractor"
+            ],
+            "checklistTemplateIds": [
+              "aquatrace-leak-detection"
+            ],
+            "notes": "",
+            "updatedAt": "2026-07-07T12:50:00.000Z"
+          }
+        ]
+      },
+      "access": {
+        "tenantId": "aquatrace",
+        "tenantUserId": "H7ht0iJdWqhQjPaKozon5ndmonJ2",
+        "role": "OWNER"
+      }
+    },
+    "job": {
+      "ok": true,
+      "job": {
+        "tenantId": "aquatrace",
+        "jobId": "job_deborah_justice",
+        "clientId": "client_deborah_justice",
+        "clientName": "Deborah Justice",
+        "propertyId": "property_isbell_road",
+        "propertyName": "181 Isbell Road",
+        "serviceAddress": {
+          "line1": "181 Isbell Road",
+          "city": "Fair Play",
+          "state": "SC",
+          "postalCode": "29643",
+          "geo": {
+            "latitude": 34.5121,
+            "longitude": -82.9853,
+            "accuracyMeters": 6
+          }
+        },
+        "scheduledStart": "2026-07-07T14:00:00.000Z",
+        "scheduledEnd": "2026-07-07T17:00:00.000Z",
+        "status": "scheduled",
+        "technicianIds": [
+          "tech_chris",
+          "tech_logan"
+        ],
+        "jobAccessLinkIds": [
+          "link_deborah_subcontractor"
+        ],
+        "checklistTemplateIds": [
+          "aquatrace-leak-detection"
+        ],
+        "notes": "",
+        "updatedAt": "2026-07-07T12:50:00.000Z"
+      }
+    },
+    "push": {
+      "ok": true,
+      "registration": {
+        "tenantId": "aquatrace",
+        "tenantUserId": "H7ht0iJdWqhQjPaKozon5ndmonJ2",
+        "role": "OWNER",
+        "expoPushToken": "ExponentPushToken[m11-live-1783521092763-9988ce20]",
+        "deviceId": "m11-live-1783521092763-9988ce20",
+        "platform": "ios",
+        "registeredAt": "2026-07-08T14:31:34.266Z"
+      }
+    },
+    "sync": {
+      "ok": true,
+      "results": [
+        {
+          "opId": "m11-live-1783521092763-9988ce20_checklist",
+          "ok": true,
+          "remoteUpdatedAt": "2026-07-07T14:01:00.000Z",
+          "conflicts": []
+        },
+        {
+          "opId": "m11-live-1783521092763-9988ce20_photo",
+          "ok": true,
+          "remoteUpdatedAt": "2026-07-07T14:02:00.000Z",
+          "remoteUrl": "gs://nexteam-studio.firebasestorage.app/aquatrace/field-photos/m11-live-1783521092763-9988ce20_photo_local.jpg",
+          "conflicts": []
+        },
+        {
+          "opId": "m11-live-1783521092763-9988ce20_close",
+          "ok": true,
+          "remoteUpdatedAt": "2026-07-07T14:03:00.000Z",
+          "conflicts": []
+        }
+      ],
+      "summary": {
+        "attempted": 3,
+        "synced": 3,
+        "conflicts": 0
+      }
+    },
+    "approvals": {
+      "seededId": "appr_0503df5a-8a2a-4df2-b2b3-e9b67c4bcad7",
+      "listedCount": 1
+    }
+  },
+  "finishedAt": "2026-07-08T14:31:34.940Z",
+  "operator": {
+    "mode": "custom-token",
+    "email": "owner@aquatrace.com",
+    "uidPresent": true
+  },
+  "boundaries": {
+    "outboundExecuted": false,
+    "productionDeploy": false,
+    "jobberWrites": false,
+    "companyCamWrites": false
+  }
+}

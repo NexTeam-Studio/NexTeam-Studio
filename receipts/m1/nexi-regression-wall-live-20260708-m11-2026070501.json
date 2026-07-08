@@ -1,0 +1,62 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783521903702-c7e0937d",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "caseFilter": "2026070501",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705015415-1-what-s-on-schedule-for-monday",
+      "createdAt": "2026-07-05T01:54:15.668Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "Nothing on the books for Monday — schedule's clear.",
+      "latencyMs": 21618
+    },
+    {
+      "id": "20260705015758-2-a-lot-of-information-here-mich-of-these-are-unscheduled-or-late-jobs-there-is-a-",
+      "createdAt": "2026-07-05T01:57:58.518Z",
+      "expectedIntent": "pipeline_status",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPipeline"
+      ],
+      "answerSample": "I don't have date/time info in these records to confirm which job lands specifically on Monday, July 6 — this pipeline data shows status but no scheduled dates. Here's what's currently marked **scheduled** (5 total): - Swimming Pool Leak De",
+      "latencyMs": 9310
+    },
+    {
+      "id": "20260705015834-3-what-is-our-current-ytd-revenue",
+      "createdAt": "2026-07-05T01:58:34.059Z",
+      "expectedIntent": "capability_gap_revenue",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't total revenue from chat yet because the revenue summary tool is not wired to Nexi. I logged it as capability_not_available.",
+      "latencyMs": 1807
+    },
+    {
+      "id": "20260705015924-4-who-owes-us-money",
+      "createdAt": "2026-07-05T01:59:24.594Z",
+      "expectedIntent": "payment_status_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule",
+        "getJobDetail",
+        "invoiceStatus",
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 57983
+    }
+  ]
+}

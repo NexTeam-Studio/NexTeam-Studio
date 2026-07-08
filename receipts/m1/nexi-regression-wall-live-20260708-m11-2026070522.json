@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783523166546-2c13f295",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 2,
+  "passed": 2,
+  "failed": 0,
+  "caseFilter": "2026070522",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705225853-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
+      "createdAt": "2026-07-05T22:58:53.094Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft queued for approval — it's waiting on your sign-off before it goes out to chris1bata@gmail.com. One thing: the draft just says \"Bryson City's on schedule for tomorrow\" but doesn't include actual job details.",
+      "latencyMs": 4156
+    },
+    {
+      "id": "20260705225921-2-whats-important-from-chris-aquatraceleak-com",
+      "createdAt": "2026-07-05T22:59:21.456Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "**High priority:** - Chris Sears (Aquatrace) - Aquatrace Anderson County Commercial Pool Research - RESET Pass - looks like an internal research note on a commercial pool lead in Anderson County, no direct ask. Everything else came in low: ",
+      "latencyMs": 6378
+    }
+  ]
+}

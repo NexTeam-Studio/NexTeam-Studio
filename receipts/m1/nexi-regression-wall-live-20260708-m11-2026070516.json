@@ -1,0 +1,121 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783522740206-5ed7ecf7",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 9,
+  "passed": 9,
+  "failed": 0,
+  "caseFilter": "2026070516",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705160350-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T16:03:50.029Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found **25 photos** on the Deborah Justice job (181 Isbell Road, Fair Play, SC) in CompanyCam. None of them have tags or descriptions attached — just the raw shots.",
+      "latencyMs": 4809
+    },
+    {
+      "id": "20260705160410-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T16:04:10.013Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the books for Monday, July 6: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC. Scheduled all day. Status: lead, total $770.",
+      "latencyMs": 23167
+    },
+    {
+      "id": "20260705160414-2-what-s-the-eta",
+      "createdAt": "2026-07-05T16:04:14.736Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific ETA or arrival time is listed — it's scheduled as an all-day job for Monday, July 6, with no set start time in the record.",
+      "latencyMs": 7231
+    },
+    {
+      "id": "20260705160517-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T16:05:17.847Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found **25 photos** on the Deborah Justice job (181 Isbell Road, Fair Play, SC). None of them have descriptions or tags attached — they're straight uploads from CompanyCam.",
+      "latencyMs": 5294
+    },
+    {
+      "id": "20260705160542-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T16:05:42.810Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on Monday, July 6, 2026: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC - Status: lead - Scheduled: all day - Estimated total: $770",
+      "latencyMs": 32583
+    },
+    {
+      "id": "20260705160553-2-what-s-the-eta",
+      "createdAt": "2026-07-05T16:05:53.521Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific ETA/time is set — it's scheduled as an all-day job for Monday, July 6, 2026, no start time given.",
+      "latencyMs": 9413
+    },
+    {
+      "id": "20260705161046-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T16:10:46.130Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "**Deborah Justice** — 181 Isbell Road, Fair Play, SC 29643 25 photos on file in CompanyCam, no tags applied to any of them. IDs: 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 3338748995, 3338749169, 333",
+      "latencyMs": 6321
+    },
+    {
+      "id": "20260705161106-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T16:11:06.914Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the schedule for Monday, July 6, 2026: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC – all day – lead status – $770 total",
+      "latencyMs": 21356
+    },
+    {
+      "id": "20260705161111-2-what-s-the-eta",
+      "createdAt": "2026-07-05T16:11:11.049Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific ETA or time window is set — it's scheduled as an **all-day** job for Monday, July 6, 2026, not tied to a particular hour.",
+      "latencyMs": 3367
+    }
+  ]
+}

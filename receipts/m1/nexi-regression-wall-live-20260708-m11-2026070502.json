@@ -1,0 +1,210 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783521996130-474c2509",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 17,
+  "passed": 17,
+  "failed": 0,
+  "caseFilter": "2026070502",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705020136-5-show-me-deborah-justice-pool-photos",
+      "createdAt": "2026-07-05T02:01:36.601Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
+      "latencyMs": 3865
+    },
+    {
+      "id": "20260705020209-6-what-sources-do-you-use",
+      "createdAt": "2026-07-05T02:02:09.845Z",
+      "expectedIntent": "meta_capability",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can check Aquatrace work records, schedules, job reports, photos, saved site notes, invoices, and connected email when those are wired for this tenant.",
+      "latencyMs": 985
+    },
+    {
+      "id": "20260705020327-7-what-was-the-issue-at-camp-mikell",
+      "createdAt": "2026-07-05T02:03:27.449Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Leak detection inspection at Camp Mikell (237 Camp Mikell Court) on 6/5/2026 found significant water loss across several areas, per the CompanyCam leak detection checklist (Jobber has no findings on file — job is still at \"lead\" status with",
+      "latencyMs": 35582
+    },
+    {
+      "id": "20260705020702-8-you-re-incorrect-this-would-have-been-referenced-in-companycan",
+      "createdAt": "2026-07-05T02:07:02.865Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1086
+    },
+    {
+      "id": "20260705020810-9-somewhat-correct-there-is-a-report-in-company-cam-that-specifies-the-resukts",
+      "createdAt": "2026-07-05T02:08:10.868Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 945
+    },
+    {
+      "id": "20260705020837-10-the-photos-in-that-reply-show-thumbnails-but-are-t-clickable-or-savable",
+      "createdAt": "2026-07-05T02:08:37.056Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 926
+    },
+    {
+      "id": "20260705020910-11-what-were-the-pool-leak-detection-results-for-deborah-justice-in-company-cam-rep",
+      "createdAt": "2026-07-05T02:09:10.686Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Here's what the CompanyCam leak detection checklist found at Deborah Justice's pool (181 Isbell Road, Fair Play, SC), inspected 7/2/2026 by Chris and Logan, completed 3:10pm Thursday: - **Deep end skimmer throat** – small water loss at miss",
+      "latencyMs": 31950
+    },
+    {
+      "id": "20260705021006-12-findings-are-in-the-report-what-are-the-total-gallons-of-deborah-justice",
+      "createdAt": "2026-07-05T02:10:06.484Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "Total pool volume: **37,602 gallons** (from the CompanyCam leak detection checklist, based on 1,002.7 sq ft surface area and 60\" average depth). Jobber has no measurement data on file for this job — it only shows lead status with no notes, ",
+      "latencyMs": 29821
+    },
+    {
+      "id": "20260705021035-13-same-report-shows-results-of-leak-detection-what-are-they",
+      "createdAt": "2026-07-05T02:10:35.915Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I don't see a leak detection report or checklist for Deborah Justice's job in the connected CompanyCam records right now — the getDocuments check came back empty (no reports, no documents). Jobber also has nothing useful: this job is tied t",
+      "latencyMs": 32838
+    },
+    {
+      "id": "20260705021112-14-who-are-the-technicians-for-deborah-justice",
+      "createdAt": "2026-07-05T02:11:12.781Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "getPhotos"
+      ],
+      "answerSample": "**Chris and Logan** — per the CompanyCam leak detection checklist, completed 3:10pm Thursday, July 2nd, 2026. Jobber has no technician assigned on this job (status: lead, no notes) — this info comes solely from the CompanyCam report.",
+      "latencyMs": 38724
+    },
+    {
+      "id": "20260705021149-15-wrong-answer",
+      "createdAt": "2026-07-05T02:11:49.039Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1168
+    },
+    {
+      "id": "20260705024248-1-findings-are-in-the-report-what-are-the-total-gallons-of-deborah-justice",
+      "createdAt": "2026-07-05T02:42:48.510Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "**37,602 gallons** total pool volume for Deborah Justice's pool. - Surface area: 1,002.7 sq ft - Average depth: 60 in - Gallons per inch: 626.6875 This is from the CompanyCam leak detection checklist report; Jobber's job record doesn't trac",
+      "latencyMs": 31989
+    },
+    {
+      "id": "20260705024300-2-what-sources-do-you-use",
+      "createdAt": "2026-07-05T02:43:00.828Z",
+      "expectedIntent": "meta_capability",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can check Aquatrace work records, schedules, job reports, photos, saved site notes, invoices, and connected email when those are wired for this tenant.",
+      "latencyMs": 1169
+    },
+    {
+      "id": "20260705024302-3-wrong-answer-that-was-a-live-receipt-correction-and-should-be-logged",
+      "createdAt": "2026-07-05T02:43:02.191Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1015
+    },
+    {
+      "id": "20260705024409-1-findings-are-in-the-report-what-are-the-total-gallons-of-deborah-justice",
+      "createdAt": "2026-07-05T02:44:09.167Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "Deborah Justice's pool holds **37,602 gallons**, per the leak detection checklist (surface area 1,002.7 sq ft, average depth 60 in).",
+      "latencyMs": 33800
+    },
+    {
+      "id": "20260705024410-2-wrong-answer-that-was-a-live-receipt-correction-and-should-be-logged",
+      "createdAt": "2026-07-05T02:44:10.672Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1062
+    },
+    {
+      "id": "20260705024415-1-what-sources-do-you-use",
+      "createdAt": "2026-07-05T02:44:15.790Z",
+      "expectedIntent": "meta_capability",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can check Aquatrace work records, schedules, job reports, photos, saved site notes, invoices, and connected email when those are wired for this tenant.",
+      "latencyMs": 856
+    }
+  ]
+}

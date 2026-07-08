@@ -1,0 +1,271 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783522316708-ccb55fc6",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 21,
+  "passed": 21,
+  "failed": 0,
+  "caseFilter": "2026070515",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705150543-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T15:05:43.830Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the books for Monday, July 6: - **Swimming Pool Leak Detection** — Rachel Payne, 400 Jacobs Road, Bryson City, NC — all-day — status: lead, quoted $770",
+      "latencyMs": 31627
+    },
+    {
+      "id": "20260705151207-1-what-s-on-schedule-for-tomorrow",
+      "createdAt": "2026-07-05T15:12:07.936Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "Nothing on the books for tomorrow — the schedule is clear, no jobs listed.",
+      "latencyMs": 29673
+    },
+    {
+      "id": "20260705151314-2-who-is-assigned-to-it",
+      "createdAt": "2026-07-05T15:13:14.062Z",
+      "expectedIntent": "general_job_fact",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "getPhotos"
+      ],
+      "answerSample": "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
+      "latencyMs": 36684
+    },
+    {
+      "id": "20260705151417-3-no-what-is-the-eta-for-the-job",
+      "createdAt": "2026-07-05T15:14:17.306Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "There's no ETA to give — the schedule for tomorrow (7/9) shows no jobs at all, so there's nothing assigned yet.",
+      "latencyMs": 3939
+    },
+    {
+      "id": "20260705151821-4-what-was-the-issue-at-camp-mikell",
+      "createdAt": "2026-07-05T15:18:21.050Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "**Camp Mikell (Alex Mastej) — leak detection findings from June 5, 2026 checklist:** - **Backwash line:** ~1,700 gal/day water loss - **Main drain #3:** ~2,000 gal/day water loss, plus a defect under the drain cover - **Pool entry corner (l",
+      "latencyMs": 38896
+    },
+    {
+      "id": "20260705151859-5-what-was-the-issue-at-forrest-gerguson",
+      "createdAt": "2026-07-05T15:18:59.474Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I couldn't pull the Jobber job details for Forrest Ferguson — that check failed on my end. From CompanyCam, the only document on file is a **Moasure Export** (a laser measurement scan from 7/15/2025) — it's a plan-view layout of the pool ar",
+      "latencyMs": 31577
+    },
+    {
+      "id": "20260705152536-6-ok-all-of-these-were-reasonably-correct-but-the-format-should-only-be-inclusive-",
+      "createdAt": "2026-07-05T15:25:36.518Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1113
+    },
+    {
+      "id": "20260705152621-7-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T15:26:21.399Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "**Deborah Justice — 181 Isbell Road, Fair Play, SC** 25 photos on file in CompanyCam, no captions or tags attached. I don't have image previews to display here, but here are the photo IDs",
+      "latencyMs": 10816
+    },
+    {
+      "id": "20260705152707-8-what-is-on-schedule-for-next-week",
+      "createdAt": "2026-07-05T15:27:07.156Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "**Next week: one job on the schedule.** - **Forrest Ferguson** — Swimming Pool Leak Detection Service - 290 River Oaks Drive, Hartwell, GA - Tuesday, 7/15 (all day) - Status: lead, $650",
+      "latencyMs": 21701
+    },
+    {
+      "id": "20260705152825-9-i-asked-that-and-now-you-are-wasting-api-tokens-because-you-should-already-inger",
+      "createdAt": "2026-07-05T15:28:25.589Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1000
+    },
+    {
+      "id": "20260705152856-10-what-is-approved-but-not-scheduled-yet",
+      "createdAt": "2026-07-05T15:28:56.873Z",
+      "expectedIntent": "pipeline_status",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPipeline"
+      ],
+      "answerSample": "No jobs are currently in \"approved\" (quoted) status. **Pipeline breakdown:** - Lead: 620 jobs - Quoted/Approved: 0 - Scheduled: 5 - Everything else (in progress, complete, invoiced, paid): 0 Since there are zero jobs sitting in \"quoted\" sta",
+      "latencyMs": 8923
+    },
+    {
+      "id": "20260705151240-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T15:12:40.261Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the books for Monday, July 6: - **Rachel Payne** – Swimming Pool Leak Detection (lead status) - 400 Jacobs Road, Bryson City, NC 28713 - All-day appointment - Quoted total: $770",
+      "latencyMs": 24544
+    },
+    {
+      "id": "20260705152401-1-what-was-the-issue-at-deborah-justice",
+      "createdAt": "2026-07-05T15:24:01.391Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Leak detection on 181 Isbell Road (Fair Play, SC) turned up several problem spots — mostly minor, one active leak. - **Active leak:** Primary spa circulation line, damaged section estimated below the valving at the filtration equipment (con",
+      "latencyMs": 43446
+    },
+    {
+      "id": "20260705152435-1-who-was-the-technician-for-deborah-justice",
+      "createdAt": "2026-07-05T15:24:35.035Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "getPhotos"
+      ],
+      "answerSample": "Chris and Logan handled the leak detection service for Deborah Justice. - Service date: July 2, 2026, completed 3:10pm - Per the checklist report, Chris Sears logged most field entries during the inspection",
+      "latencyMs": 31966
+    },
+    {
+      "id": "20260705152441-1-show-me-photos-for-deborah-justice",
+      "createdAt": "2026-07-05T15:24:41.023Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on file for Deborah Justice — 181 Isbell Road, Fair Play, SC. They're stored in CompanyCam under this job. None have descriptions or tags attached, so I can't tell you what's pictured in each without opening them.",
+      "latencyMs": 4874
+    },
+    {
+      "id": "20260705152555-1-what-was-the-issue-at-deborah-justice",
+      "createdAt": "2026-07-05T15:25:55.824Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Here's what the leak detection inspection found at Deborah Justice (181 Isbell Road, Fair Play, SC — service date 7/2/2026, techs Chris & Logan): - **Deep end skimmer throat:** small water loss at missing grout locations - **Spa water line:",
+      "latencyMs": 32316
+    },
+    {
+      "id": "20260705152637-1-who-was-the-technician-for-deborah-justice",
+      "createdAt": "2026-07-05T15:26:37.006Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "getPhotos"
+      ],
+      "answerSample": "Chris and Logan were the technicians on the Deborah Justice job (leak detection service, 181 Isbell Road, Fair Play, SC — completed 3:10pm, July 2, 2026).",
+      "latencyMs": 29867
+    },
+    {
+      "id": "20260705152641-1-show-me-photos-for-deborah-justice",
+      "createdAt": "2026-07-05T15:26:41.641Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos for Deborah Justice at 181 Isbell Road, Fair Play, SC — all logged in CompanyCam. None have descriptions or tags attached yet, just raw shots from the job.",
+      "latencyMs": 6226
+    },
+    {
+      "id": "20260705155819-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T15:58:19.918Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on the Deborah Justice job (181 Isbell Road, Fair Play, SC). They're all logged in CompanyCam without tags or descriptions, so I can't tell you what's in each shot from here — you'll need to open CompanyCam to view them.",
+      "latencyMs": 4868
+    },
+    {
+      "id": "20260705155841-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T15:58:41.718Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on Monday, July 6, 2026: - **Swimming Pool Leak Detection** (lead status) - Rachel Payne, 400 Jacobs Road, Bryson City, NC - scheduled all day, total $770",
+      "latencyMs": 21278
+    },
+    {
+      "id": "20260705155845-2-what-s-the-eta",
+      "createdAt": "2026-07-05T15:58:45.724Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific arrival time is listed — it's scheduled as an all-day job on July 6, 2026, with no set ETA in Jobber.",
+      "latencyMs": 4664
+    }
+  ]
+}

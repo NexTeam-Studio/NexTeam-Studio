@@ -1,0 +1,85 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783522855914-d46bca9b",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 6,
+  "passed": 6,
+  "failed": 0,
+  "caseFilter": "2026070519",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705191129-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:11:29.680Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "15 emails came in today across both mailboxes — mostly promo/spam, with a couple worth a look: **Worth your attention:** - Taylor Walker - Re: Monarch Gainesville - Thursday - asking what your week of July 27 or first week of August looks l",
+      "latencyMs": 8362
+    },
+    {
+      "id": "20260705191708-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:17:08.856Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "15 emails today, mostly promos/newsletters. The one worth a look: - **Taylor Walker – \"Re: Monarch Gainesville - Thursday\"** – asking if week of July 27 or first week of August works for you. Rest is noise: - Jessica Thornton – \"fast loc fo",
+      "latencyMs": 7136
+    },
+    {
+      "id": "20260705192403-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:24:03.330Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "15 emails came in today across your inboxes — but almost all are spam/promo. Here's the real one worth a look: **Actually worth your attention:** - **Taylor Walker (L3 Campus)** – Re: Monarch Gainesville - Thursday – asking what your week o",
+      "latencyMs": 9654
+    },
+    {
+      "id": "20260705193434-1-read-email-chris-19f3354877e85a73-and-tell-me-whether-it-has-attachments-do-not-",
+      "createdAt": "2026-07-05T19:34:34.724Z",
+      "expectedIntent": "email_direct_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getEmailMessage"
+      ],
+      "answerSample": "No attachments on that email.",
+      "latencyMs": 3030
+    },
+    {
+      "id": "20260705194001-1-read-email-chris-19f3354877e85a73-and-tell-me-whether-it-has-attachments-do-not-",
+      "createdAt": "2026-07-05T19:40:01.336Z",
+      "expectedIntent": "email_direct_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getEmailMessage"
+      ],
+      "answerSample": "No, this email has no attachments.",
+      "latencyMs": 3278
+    },
+    {
+      "id": "20260705194113-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:41:13.562Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "15 emails came in today across your two mailboxes. Here's what's actually worth a look: **Needs a reply** - Taylor Walker - Re: Monarch Gainesville - Thursday - asking if the week of July 27 or first week of August works for you - Trail cam",
+      "latencyMs": 8825
+    }
+  ]
+}

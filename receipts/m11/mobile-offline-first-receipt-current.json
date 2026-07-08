@@ -1,0 +1,122 @@
+{
+  "ok": true,
+  "module": "M11 Mobile",
+  "generatedAt": "2026-07-08T14:17:52.008Z",
+  "scope": "offline-first core plus Expo/API shell",
+  "expoShell": {
+    "appJson": "apps/mobile/app.json",
+    "entry": "apps/mobile/app/index.tsx",
+    "apiClient": "apps/mobile/src/native/apiClient.ts"
+  },
+  "serverRail": {
+    "routes": "apps/server/src/mobile/routes.ts",
+    "accessPolicy": "apps/server/src/mobile/access.ts",
+    "repository": "apps/server/src/mobile/repository.ts"
+  },
+  "airplaneModeFlow": {
+    "schedulePreloaded": [
+      {
+        "jobId": "job_deborah_justice",
+        "clientName": "Deborah Justice",
+        "technicianIds": [
+          "tech_chris",
+          "tech_logan"
+        ]
+      }
+    ],
+    "unassignedJobCached": false,
+    "offlineNexi": {
+      "canAskNexi": false,
+      "showSpinner": false,
+      "message": "Nexi needs internet. Your checklist, notes, and photos are still saving here and will sync when the signal comes back."
+    },
+    "checklist": {
+      "syncStatus": "queued",
+      "answers": {
+        "arrived": true,
+        "waterLossInches": 2.5,
+        "result": "Fail: suction-side leak found"
+      }
+    },
+    "photo": {
+      "syncStatus": "queued",
+      "exif": {
+        "capturedAt": "2026-07-07T15:12:00.000Z",
+        "latitude": 34.51212,
+        "longitude": -82.98531,
+        "accuracyMeters": 5,
+        "deviceModel": "iPhone Field Test"
+      },
+      "nearestClientMatch": {
+        "clientId": "client_deborah_justice",
+        "clientName": "Deborah Justice",
+        "propertyId": "property_isbell_road",
+        "propertyName": "181 Isbell Road",
+        "distanceMeters": 2,
+        "matchedBy": "gps_nearest_client"
+      }
+    },
+    "closeOut": {
+      "status": "completed",
+      "notes": "Checklist complete and photos captured offline."
+    },
+    "pendingBeforeReconnect": 0,
+    "offlineSync": {
+      "status": "offline",
+      "attempted": 0,
+      "synced": 0,
+      "conflicts": 0,
+      "remaining": 3
+    },
+    "reconnectSync": {
+      "status": "synced",
+      "attempted": 3,
+      "synced": 3,
+      "conflicts": 1,
+      "remaining": 0
+    },
+    "remoteOperationsApplied": [
+      {
+        "opId": "checklist_1",
+        "type": "checklist.upsert",
+        "actorTenantUserId": "tech_chris"
+      },
+      {
+        "opId": "photo_upload_3",
+        "type": "photo.upload",
+        "actorTenantUserId": "tech_chris"
+      },
+      {
+        "opId": "job_status_4",
+        "type": "jobStatus.update",
+        "actorTenantUserId": "tech_chris"
+      }
+    ],
+    "conflicts": [
+      {
+        "conflictId": "conflict_5",
+        "tenantId": "aquatrace",
+        "opId": "job_status_4",
+        "jobId": "job_deborah_justice",
+        "field": "status",
+        "localValue": "completed",
+        "remoteValue": "needs_review",
+        "localUpdatedAt": "2026-07-07T13:02:00.000Z",
+        "remoteUpdatedAt": "2026-07-07T13:30:00.000Z",
+        "resolution": "last_write_wins",
+        "requiresReview": true,
+        "createdAt": "2026-07-07T13:03:00.000Z"
+      }
+    ]
+  },
+  "hardLimits": {
+    "outboundSends": "none",
+    "productionDeploy": "none",
+    "jobberWrites": "none",
+    "companyCamWrites": "none"
+  },
+  "realDeviceReceipt": {
+    "status": "blocked",
+    "exactBlocker": "No real phone is connected to this Codex runtime; Expo shell is built, but the Bible-required phone video/airplane-mode device proof still needs a physical device session."
+  }
+}

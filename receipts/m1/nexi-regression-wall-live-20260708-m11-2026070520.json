@@ -1,0 +1,93 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783522898087-ae06be81",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 7,
+  "passed": 7,
+  "failed": 0,
+  "caseFilter": "2026070520",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705200500-1-what-needs-my-attention",
+      "createdAt": "2026-07-05T20:05:00.984Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "**One thing that needs a real look:** - Chris Sears (Aquatrace) — Anderson County Commercial Pool Research, RESET Pass — internal research note flagged as a client inquiry, worth a quick read to confirm it's not action-needed from a custome",
+      "latencyMs": 5214
+    },
+    {
+      "id": "20260705202457-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T20:24:57.631Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "15 emails today, mostly promos/newsletters. Here's what actually needs eyes: **Needs a reply** - Taylor Walker – Re: Monarch Gainesville - Thursday – asking what your week of July 27 or first week of August looks like - Jennifer Cortez (via",
+      "latencyMs": 7955
+    },
+    {
+      "id": "20260705202705-2-great-detail-organization-and-format-sucks",
+      "createdAt": "2026-07-05T20:27:05.145Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1206
+    },
+    {
+      "id": "20260705202722-3-what-needs-my-attention",
+      "createdAt": "2026-07-05T20:27:22.262Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "**High priority** - Chris Sears – Anderson County Commercial Pool Research (RESET Pass) – internal research note, no client action needed but flagged high, worth a quick look **Worth a reply** - Taylor Walker – Re: Monarch Gainesville - Thu",
+      "latencyMs": 11908
+    },
+    {
+      "id": "20260705202845-4-emails-pulled-but-no-information-specific-we-need-to-figure-out-how-to-roagaize-",
+      "createdAt": "2026-07-05T20:28:45.075Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1114
+    },
+    {
+      "id": "20260705202927-5-that-was-an-email-in-the-inbox",
+      "createdAt": "2026-07-05T20:29:27.537Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "Nothing in the inbox is dated today — these records run from June 18 to July 7, 2026. Here's what's actually there, organized simply: **Promotional/spam (skip) — 15 total** - Sierra: 9 clearance/new-arrival emails (June 30 – July 7) - Uline",
+      "latencyMs": 16213
+    },
+    {
+      "id": "20260705203001-6-send-me-an-email-to-chris1bata-gmail-com-bryson-city-job-is-confirmed-for-tomorr",
+      "createdAt": "2026-07-05T20:30:01.072Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "That draft didn't pick up the actual message — it's queued with a generic placeholder instead of your Bryson City confirmation text.",
+      "latencyMs": 3174
+    }
+  ]
+}

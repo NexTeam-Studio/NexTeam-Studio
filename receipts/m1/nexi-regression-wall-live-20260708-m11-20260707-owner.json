@@ -1,0 +1,61 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783524276334-dc0662c1",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "caseFilter": "20260707-owner",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260707-owner-1-total-gallons-deborah-justice-cross-rail",
+      "createdAt": "2026-07-07T23:59:00.000-04:00",
+      "expectedIntent": "report_measurement_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "**37,602 gallons** — Deborah Justice's pool, 181 Isbell Road, Fair Play, SC (from the leak detection checklist, service date 07/02/2026). - Surface area: 1,002.7 sq ft - Average depth: 60 in - Gallons per inch: 626.6875 Jobber has no pool v",
+      "latencyMs": 23886
+    },
+    {
+      "id": "20260707-owner-2-show-me-a-client-list",
+      "createdAt": "2026-07-07T23:59:01.000-04:00",
+      "expectedIntent": "crm_client_list",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "clientLookup"
+      ],
+      "answerSample": "You've got **645 clients** on file for Aquatrace. That's too many to list one by one here—",
+      "latencyMs": 8894
+    },
+    {
+      "id": "20260707-owner-3-how-many-clients-do-we-have",
+      "createdAt": "2026-07-07T23:59:02.000-04:00",
+      "expectedIntent": "crm_client_list",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "clientLookup"
+      ],
+      "answerSample": "You've got **645 clients** on file for Aquatrace, based on the current client records pulled. A handful of those are internal/test entries (Stripe test clients, route probes) rather than actual customers, so your real active client count is",
+      "latencyMs": 5202
+    },
+    {
+      "id": "20260707-owner-4-email-me-report-pdfs",
+      "createdAt": "2026-07-07T23:59:03.000-04:00",
+      "expectedIntent": "capability_gap_report_pdf_email",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't attach and email report PDFs from chat yet. I logged it as capability_not_available.",
+      "latencyMs": 1108
+    }
+  ]
+}
