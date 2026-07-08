@@ -79,6 +79,7 @@ async function requireNexiOperator(req: Request, env: NodeJS.ProcessEnv): Promis
 
 export interface NexiRouterDeps {
   extraTools?: NexiTool[] | undefined;
+  extraToolsForRequest?: ((req: Request, tenant: Tenant) => Promise<NexiTool[]> | NexiTool[]) | undefined;
   loadTenant?: ((req: Request) => Promise<Tenant> | Tenant) | undefined;
   filterTools?: ((tenant: Tenant, tools: NexiTool[]) => NexiTool[]) | undefined;
 }
@@ -99,9 +100,11 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: Nex
         : undefined;
       const tenant = deps.loadTenant ? await deps.loadTenant(req) : loadDefaultTenant(req);
       const stores = runtimeStores(env);
+      const requestTools = deps.extraToolsForRequest ? await deps.extraToolsForRequest(req, tenant) : [];
       const rawTools = [
         ...createNexiJobDeskTools(env, stores.repository),
-        ...(deps.extraTools ?? [])
+        ...(deps.extraTools ?? []),
+        ...requestTools
       ];
       const tools = deps.filterTools ? deps.filterTools(tenant, rawTools) : rawTools;
       const result = await answerNexiMessage({

@@ -1,0 +1,40 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783516979768-24008427",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 2,
+  "passed": 2,
+  "failed": 0,
+  "caseFilter": "2026070514",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705144853-1-what-were-the-pool-leak-detection-results-for-deborah-justice-in-companycam-repo",
+      "createdAt": "2026-07-05T14:48:53.350Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "**181 Isbell Road, Fair Play, SC — Leak Detection Checklist, 07/02/2026 (Chris, Logan)** Water loss found in: - **Deep end skimmer throat** – small water loss at missing grout locations - **Spa water line areas** – missing grout, small wate",
+      "latencyMs": 31149
+    },
+    {
+      "id": "20260705144901-2-what-are-the-total-gallons-of-deborah-justice",
+      "createdAt": "2026-07-05T14:49:01.802Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "**37,602 gallons** — from the CompanyCam leak detection checklist (surface area 1,002.7 sq ft, avg depth 60\"). Jobber's job record has no pool measurement or gallons data on file — this figure comes only from the CompanyCam report.",
+      "latencyMs": 29595
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783517665634-1cc3eb81",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 7,
+  "passed": 7,
+  "failed": 0,
+  "caseFilter": "2026070520",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705200500-1-what-needs-my-attention",
+      "createdAt": "2026-07-05T20:05:00.984Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "One item needs your attention today: **High priority** - Chris Sears - \"Aquatrace Anderson County Commercial Pool Research - RESET Pass\" - looks like a research/lead note on Anderson County commercial pools, worth a quick review to confirm ",
+      "latencyMs": 5149
+    },
+    {
+      "id": "20260705202457-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T20:24:57.631Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "12 came in today across your inboxes — mostly noise, one worth a look. **Worth noting:** - Chris Sears (self) - \"Anderson County Commercial Pool Research - RESET Pass\" - internal research note, not client-facing, but flagged as a client inq",
+      "latencyMs": 6035
+    },
+    {
+      "id": "20260705202705-2-great-detail-organization-and-format-sucks",
+      "createdAt": "2026-07-05T20:27:05.145Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1008
+    },
+    {
+      "id": "20260705202722-3-what-needs-my-attention",
+      "createdAt": "2026-07-05T20:27:22.262Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "**High priority:** - Chris Sears (self note) - Anderson County Commercial Pool Research, RESET Pass - internal research log, no action needed from a client, just flagged for your review **Everything else is low priority, nothing urgent:** -",
+      "latencyMs": 4871
+    },
+    {
+      "id": "20260705202845-4-emails-pulled-but-no-information-specific-we-need-to-figure-out-how-to-roagaize-",
+      "createdAt": "2026-07-05T20:28:45.075Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 883
+    },
+    {
+      "id": "20260705202927-5-that-was-an-email-in-the-inbox",
+      "createdAt": "2026-07-05T20:29:27.537Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "Nothing from a client today — just internal notes and store promos. Here's what's actually in the inbox: **Internal / worth a glance:** - Chris Sears → Clawdia - \"Re: [Daily Aquatrace SEO Audit]\" - your own request to research upstate SC po",
+      "latencyMs": 13478
+    },
+    {
+      "id": "20260705203001-6-send-me-an-email-to-chris1bata-gmail-com-bryson-city-job-is-confirmed-for-tomorr",
+      "createdAt": "2026-07-05T20:30:01.072Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "That draft came out generic — it's missing the actual message about the Bryson City job. Let me get this right before it goes out.",
+      "latencyMs": 3386
+    }
+  ]
+}

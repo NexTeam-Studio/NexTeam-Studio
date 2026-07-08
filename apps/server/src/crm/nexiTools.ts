@@ -12,7 +12,7 @@ import {
 } from "@nexteam/core";
 import { buildQuoteDraft, draftQuoteInputSchema } from "./quoteBuilder.js";
 
-const clientLookupInputSchema = z.object({ q: z.string() });
+const clientLookupInputSchema = z.object({ q: z.string().default("") });
 const createClientInputSchema = z.object({
   name: z.string().min(1),
   company: z.string().min(1).optional(),
@@ -66,7 +66,7 @@ export function createCrmReadTools(provider: CRMProvider): NexiTool[] {
   return [
     {
       name: "clientLookup",
-      description: "Read native CRM clients by name, company, email, or phone.",
+      description: "Read native CRM clients by name, company, email, or phone. Pass an empty query for the tenant client list.",
       inputSchema: clientLookupInputSchema,
       handler: async (_tenant: Tenant, args: unknown) => {
         const input = clientLookupInputSchema.parse(args);

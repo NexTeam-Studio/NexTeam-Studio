@@ -15,6 +15,10 @@ import { CompanyCamAdapter } from "@nexteam/providers";
 import { getBuildInfo } from "./buildInfo.js";
 import { createNexiRouter } from "./nexi/nexiRoutes.js";
 import { buildHealth } from "./health.js";
+import { actorIdForAccess, requireTenantRole } from "./auth/accessContext.js";
+import { createCampaignNexiTools } from "./campaigns/nexiTools.js";
+import { InMemoryCampaignRepository } from "./campaigns/repository.js";
+import { registerCampaignRoutes } from "./campaigns/routes.js";
 import { registerCrmRoutes } from "./crm/routes.js";
 import { getAdminDb } from "./firebase.js";
 import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
@@ -37,6 +41,8 @@ import { MemoryStorageWriter } from "./platform/backup.js";
 import { FirebaseStorageWriter } from "./platform/storage.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository } from "./platform/repository.js";
 import { loadTenantFromPlatform, registerPlatformRoutes } from "./platform/routes.js";
+import { FirestoreSitesRepository, InMemorySitesRepository } from "./sites/repository.js";
+import { registerSitesRoutes } from "./sites/routes.js";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { createVoiceRouter } from "./voice/routes.js";
 
@@ -45,6 +51,7 @@ const commsRail = createCommsRailFromEnv(process.env);
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CommsApprovalExecutor(commsRail));
 const contentRepository = new InMemoryContentRepository();
 const schedulingRepository = new InMemorySchedulingRepository();
+const campaignRepository = new InMemoryCampaignRepository(process.env.TENANT_ID || "aquatrace");
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
@@ -53,6 +60,7 @@ const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TEN
 const evaporationRepository = new MemoryEvaporationRepository();
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
+const sitesRepository = adminDb ? new FirestoreSitesRepository(adminDb) : new InMemorySitesRepository();
 
 app.use(express.json({
   limit: "1mb",
@@ -77,7 +85,27 @@ app.use("/api/nexi", createNexiRouter(process.env, {
     ...createContentNexiTools({ repository: contentRepository, approvalQueue }),
     ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env }),
     ...createEvaporationNexiTools({ repository: evaporationRepository, env: process.env })
-  ]
+  ],
+  extraToolsForRequest: async (req, tenant) => {
+    let access;
+    try {
+      access = await requireTenantRole(req, process.env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: tenant.id,
+        op: "campaignToolRegistry"
+      });
+    } catch (error) {
+      if (error instanceof RailError && (error.status === 401 || error.status === 403)) {
+        return [];
+      }
+      throw error;
+    }
+    return createCampaignNexiTools({
+      repository: campaignRepository,
+      approvalQueue,
+      env: process.env,
+      actorId: actorIdForAccess(access)
+    });
+  }
 }));
 app.use("/api/voice", createVoiceRouter(process.env));
 
@@ -185,9 +213,11 @@ app.post("/api/approval-queue/:id/execute", async (req: Request, res: Response) 
 registerCrmRoutes(app, { approvalQueue, eventBus });
 registerFieldDocsRoutes(app, { eventBus });
 registerContentRoutes(app, { repository: contentRepository, approvalQueue, eventBus, env: process.env });
+registerCampaignRoutes(app, { repository: campaignRepository, approvalQueue, env: process.env });
 registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env });
 registerEvaporationRoutes(app, { repository: evaporationRepository, env: process.env });
 registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
+registerSitesRoutes(app, { repository: sitesRepository, approvalQueue, eventBus, env: process.env });
 app.use(express.static(webDistDir));
 
 app.get("/", (_req: Request, res: Response) => {

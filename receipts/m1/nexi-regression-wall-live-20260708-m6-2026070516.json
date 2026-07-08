@@ -1,0 +1,121 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783517495012-feb76bff",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 9,
+  "passed": 9,
+  "failed": 0,
+  "caseFilter": "2026070516",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705160350-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T16:03:50.029Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on file for the Deborah Justice job (181 Isbell Road, Fair Play, SC). They're all logged in CompanyCam but not tagged with descriptions, so I can't tell you what each one shows without pulling them up.",
+      "latencyMs": 5765
+    },
+    {
+      "id": "20260705160410-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T16:04:10.013Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the books for Monday, July 6, 2026: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC 28713 (all day) — status: lead, quoted at $770",
+      "latencyMs": 21093
+    },
+    {
+      "id": "20260705160414-2-what-s-the-eta",
+      "createdAt": "2026-07-05T16:04:14.736Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific time listed — it's scheduled as an all-day job for Monday, July 6, 2026, with no set arrival window written down.",
+      "latencyMs": 3130
+    },
+    {
+      "id": "20260705160517-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T16:05:17.847Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on file for **Deborah Justice** (181 Isbell Road, Fair Play, SC). They're all in CompanyCam under this job — none have tags or descriptions added yet.",
+      "latencyMs": 4250
+    },
+    {
+      "id": "20260705160542-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T16:05:42.810Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the books for Monday, July 6, 2026: - **Swimming Pool Leak Detection** — Rachel Payne, 400 Jacobs Road, Bryson City, NC — all-day appointment, lead status, $770 quoted.",
+      "latencyMs": 27821
+    },
+    {
+      "id": "20260705160553-2-what-s-the-eta",
+      "createdAt": "2026-07-05T16:05:53.521Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific arrival time is listed — it's scheduled as an all-day appointment for July 6, 2026, not tied to a set hour.",
+      "latencyMs": 3016
+    },
+    {
+      "id": "20260705161046-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T16:10:46.130Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on the Deborah Justice job (181 Isbell Road, Fair Play, SC). They're all logged in CompanyCam with no descriptions or tags attached — just image captures from the job site. If you want, I can pull specific ones by date or ha",
+      "latencyMs": 4349
+    },
+    {
+      "id": "20260705161106-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T16:11:06.914Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the books for Monday, July 6: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC — all-day, status: lead, total $770",
+      "latencyMs": 29008
+    },
+    {
+      "id": "20260705161111-2-what-s-the-eta",
+      "createdAt": "2026-07-05T16:11:11.049Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific arrival time listed — it's scheduled as an all-day job on Monday, July 6, with no set window.",
+      "latencyMs": 2578
+    }
+  ]
+}

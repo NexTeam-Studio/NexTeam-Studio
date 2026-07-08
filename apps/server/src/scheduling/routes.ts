@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
-import { type ApprovalQueueService, RailError } from "@nexteam/core";
+import { type ApprovalQueueService, type Job, RailError } from "@nexteam/core";
+import { JobberAdapter } from "@nexteam/providers";
 import { detectConflicts, driveTimeProviderFromEnv, suggestSlots, type ScheduledVisit, type ScheduleLocation } from "./schedulingEngine.js";
 import type { SchedulingRepository } from "./repository.js";
 import { queueScheduleNotification } from "./notifications.js";
@@ -70,6 +71,71 @@ export interface SchedulingRouteDeps {
   repository: SchedulingRepository;
   approvalQueue: ApprovalQueueService;
   env?: NodeJS.ProcessEnv | undefined;
+  jobber?: JobberScheduleReader | null | undefined;
+}
+
+export interface JobberScheduleReader {
+  isConfigured(): boolean;
+  getJobs(range: { from: string; to: string }): Promise<Job[]>;
+}
+
+function addressLabel(job: Job): string {
+  const property = "property" in job && job.property && typeof job.property === "object" ? job.property as { address?: Partial<{ street1: string; city: string; province: string; postalCode: string; country: string }> } : null;
+  const address = property?.address;
+  return [
+    address?.street1,
+    address?.city,
+    address?.province
+  ].filter(Boolean).join(", ") || "Jobber schedule";
+}
+
+function addDefaultEnd(start: string): string {
+  const date = new Date(start);
+  if (!Number.isFinite(date.getTime())) {
+    return start;
+  }
+  date.setUTCHours(date.getUTCHours() + 2);
+  return date.toISOString();
+}
+
+export function jobberVisitFromJob(job: Job): ScheduledVisit | null {
+  if (!job.startAt) {
+    return null;
+  }
+  return {
+    id: `jobber_${job.externalIds?.jobber ?? job.id}`,
+    tenantId: job.tenantId,
+    jobId: job.id,
+    title: job.title,
+    start: job.startAt,
+    end: job.endAt && job.endAt !== job.startAt ? job.endAt : addDefaultEnd(job.startAt),
+    assignedTo: [],
+    location: { label: addressLabel(job) },
+    status: job.status === "complete" ? "complete" : "scheduled",
+    source: "jobber",
+    readOnly: true
+  };
+}
+
+async function listJobberOverlayVisits(input: {
+  tenantId: string;
+  range: { from?: string; to?: string };
+  env: NodeJS.ProcessEnv;
+  reader?: JobberScheduleReader | null | undefined;
+}): Promise<{ visits: ScheduledVisit[]; warning?: string | undefined }> {
+  if (!input.range.from || !input.range.to) {
+    return { visits: [], warning: "Jobber overlay skipped because calendar range was incomplete." };
+  }
+  const reader = input.reader === undefined ? JobberAdapter.fromEnv(input.env, input.tenantId) : input.reader;
+  if (!reader || !reader.isConfigured()) {
+    return { visits: [] };
+  }
+  try {
+    const jobs = await reader.getJobs({ from: input.range.from, to: input.range.to });
+    return { visits: jobs.map(jobberVisitFromJob).filter((visit): visit is ScheduledVisit => Boolean(visit)) };
+  } catch (error) {
+    return { visits: [], warning: error instanceof Error ? error.message : "Jobber overlay unavailable." };
+  }
 }
 
 export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps): void {
@@ -85,7 +151,21 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
       if (to) {
         range.to = to;
       }
-      res.json({ ok: true, visits: await deps.repository.listVisits(tenantId, range) });
+      const nativeVisits = (await deps.repository.listVisits(tenantId, range)).map((visit) => ({ ...visit, source: visit.source ?? "native" as const }));
+      const overlay = await listJobberOverlayVisits({
+        tenantId,
+        range,
+        env: deps.env ?? process.env,
+        reader: deps.jobber
+      });
+      const nativeJobIds = new Set(nativeVisits.map((visit) => visit.jobId));
+      const jobberVisits = overlay.visits.filter((visit) => !nativeJobIds.has(visit.jobId));
+      res.json({
+        ok: true,
+        visits: [...nativeVisits, ...jobberVisits].sort((left, right) => left.start.localeCompare(right.start)),
+        sourceCounts: { native: nativeVisits.length, jobber: jobberVisits.length },
+        warnings: overlay.warning ? [overlay.warning] : []
+      });
     } catch (error) {
       sendError(res, error);
     }

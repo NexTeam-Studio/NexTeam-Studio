@@ -1,0 +1,512 @@
+{
+  "ok": true,
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "4af13ec7bcfca519d3f2728f13643e6948c6e866",
+  "tenantId": "m13-test-1783486951423-34e4df14",
+  "createdAt": "2026-07-08T05:02:31.423Z",
+  "checks": {
+    "version": {
+      "status": 200,
+      "body": {
+        "sha": "4af13ec7bcfca519d3f2728f13643e6948c6e866",
+        "builtAt": "2026-07-08T05:02:31.546Z"
+      }
+    },
+    "health": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "checkedAt": "2026-07-08T05:02:32.749Z",
+        "rails": {
+          "jobber": {
+            "ok": true,
+            "configured": true,
+            "provider": "jobber",
+            "op": "graphql_read",
+            "latencyMs": 645,
+            "detail": "Jobber GraphQL read succeeded."
+          },
+          "companycam": {
+            "ok": true,
+            "configured": true,
+            "provider": "companycam",
+            "op": "projects_read",
+            "latencyMs": 373,
+            "detail": "CompanyCam projects read succeeded."
+          },
+          "anthropic": {
+            "ok": true,
+            "configured": true,
+            "provider": "anthropic",
+            "op": "configured_no_spend",
+            "latencyMs": 0,
+            "detail": "Configured; live message call skipped by no-spend overnight limit."
+          }
+        }
+      }
+    },
+    "plans": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "plans": [
+          {
+            "id": "nexi",
+            "name": "Nexi",
+            "monthlyUsd": 149,
+            "modules": [
+              "nexi",
+              "crm",
+              "fielddocs",
+              "comms"
+            ]
+          },
+          {
+            "id": "marketing",
+            "name": "Marketing",
+            "monthlyUsd": 399,
+            "modules": [
+              "nexi",
+              "crm",
+              "fielddocs",
+              "comms",
+              "content",
+              "campaigns",
+              "sites"
+            ]
+          },
+          {
+            "id": "suite",
+            "name": "Suite",
+            "monthlyUsd": 799,
+            "modules": [
+              "nexi",
+              "crm",
+              "fielddocs",
+              "scheduling",
+              "content",
+              "campaigns",
+              "comms",
+              "voice",
+              "platform",
+              "evaporation",
+              "sites"
+            ]
+          }
+        ]
+      }
+    },
+    "subscribeTestTenant": {
+      "status": 201,
+      "body": {
+        "ok": true,
+        "tenant": {
+          "id": "m13-test-1783486951423-34e4df14",
+          "name": "m13-test-1783486951423-34e4df14",
+          "industryPack": "pool_leak",
+          "branding": {
+            "assistantName": "Nexi"
+          },
+          "adapters": {
+            "crm": "native",
+            "media": "companycam",
+            "email": "gmail_relay"
+          },
+          "approval": {
+            "email": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "sms": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "gbp_post": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "social_post": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "article": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "quote": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "invoice": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "site_publish": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            },
+            "review_reply": {
+              "autoApprove": false,
+              "cleanStreak": 0
+            }
+          },
+          "timezone": "America/New_York",
+          "plan": "nexi"
+        },
+        "subscription": {
+          "id": "sub_m13-test-1783486951423-34e4df14_5d52ae8f-2069-4ec4-8d86-0c4c405fbddb",
+          "tenantId": "m13-test-1783486951423-34e4df14",
+          "plan": "nexi",
+          "status": "active",
+          "stripeCustomerId": "cus_UqUcDlweeySs8s",
+          "stripeSubscriptionId": "sub_1Tqnd1PGOA6j5zraGMoP7umX",
+          "updatedAt": "2026-07-08T05:02:38.176Z"
+        },
+        "stripeMode": "test"
+      }
+    },
+    "entitlements": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "tenantId": "m13-test-1783486951423-34e4df14",
+        "plan": "nexi",
+        "tools": [
+          {
+            "name": "approve",
+            "module": "content",
+            "allowed": false
+          },
+          {
+            "name": "audiencePreview",
+            "module": "campaigns",
+            "allowed": false
+          },
+          {
+            "name": "bookVisit",
+            "module": "scheduling",
+            "allowed": false
+          },
+          {
+            "name": "campaignQueue",
+            "module": "campaigns",
+            "allowed": false
+          },
+          {
+            "name": "clientLookup",
+            "module": "crm",
+            "allowed": true
+          },
+          {
+            "name": "contentQueue",
+            "module": "content",
+            "allowed": false
+          },
+          {
+            "name": "contentStats",
+            "module": "content",
+            "allowed": false
+          },
+          {
+            "name": "draftCampaign",
+            "module": "campaigns",
+            "allowed": false
+          },
+          {
+            "name": "draftEmail",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "draftPostFromJob",
+            "module": "content",
+            "allowed": false
+          },
+          {
+            "name": "findSlot",
+            "module": "scheduling",
+            "allowed": false
+          },
+          {
+            "name": "getDocuments",
+            "module": "fielddocs",
+            "allowed": true
+          },
+          {
+            "name": "getEmailAttachment",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "getEmailMessage",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "getEmailThread",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "getJobDetail",
+            "module": "nexi",
+            "allowed": true
+          },
+          {
+            "name": "getPhotos",
+            "module": "fielddocs",
+            "allowed": true
+          },
+          {
+            "name": "getPipeline",
+            "module": "crm",
+            "allowed": true
+          },
+          {
+            "name": "getSchedule",
+            "module": "nexi",
+            "allowed": true
+          },
+          {
+            "name": "invoiceStatus",
+            "module": "crm",
+            "allowed": true
+          },
+          {
+            "name": "lookupSiteJobBlueprintField",
+            "module": "fielddocs",
+            "allowed": true
+          },
+          {
+            "name": "moveVisit",
+            "module": "scheduling",
+            "allowed": false
+          },
+          {
+            "name": "queueReportDelivery",
+            "module": "campaigns",
+            "allowed": false
+          },
+          {
+            "name": "queueReviewRequest",
+            "module": "campaigns",
+            "allowed": false
+          },
+          {
+            "name": "runEvaporation",
+            "module": "evaporation",
+            "allowed": false
+          },
+          {
+            "name": "searchEmail",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "summarizeInbox",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "suppressCampaignContact",
+            "module": "campaigns",
+            "allowed": false
+          },
+          {
+            "name": "triageInbox",
+            "module": "comms",
+            "allowed": true
+          },
+          {
+            "name": "whatsMyDay",
+            "module": "scheduling",
+            "allowed": false
+          }
+        ]
+      }
+    },
+    "backup": {
+      "status": 201,
+      "body": {
+        "ok": true,
+        "backup": {
+          "id": "backup_4d866aee-e688-4b25-ab06-8c25d2d74c21",
+          "tenantId": "m13-test-1783486951423-34e4df14",
+          "storageRef": "backups/m13-test-1783486951423-34e4df14/2026-07-08T05-02-39-369Z.json",
+          "collectionCounts": {
+            "tenants": 1,
+            "tenantSubscriptions": 1,
+            "tenantAdapterStatuses": 0,
+            "clients": 0,
+            "properties": 0,
+            "jobs": 0,
+            "quotes": 0,
+            "invoices": 0,
+            "media": 0,
+            "siteJobBlueprints": 0,
+            "conversations": 0,
+            "failureLog": 0,
+            "usageLog": 0,
+            "platformBackups": 0
+          },
+          "createdAt": "2026-07-08T05:02:39.369Z"
+        }
+      }
+    },
+    "backups": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "backups": [
+          {
+            "id": "backup_4d866aee-e688-4b25-ab06-8c25d2d74c21",
+            "tenantId": "m13-test-1783486951423-34e4df14",
+            "storageRef": "backups/m13-test-1783486951423-34e4df14/2026-07-08T05-02-39-369Z.json",
+            "collectionCounts": {
+              "tenants": 1,
+              "tenantSubscriptions": 1,
+              "tenantAdapterStatuses": 0,
+              "clients": 0,
+              "properties": 0,
+              "jobs": 0,
+              "quotes": 0,
+              "invoices": 0,
+              "media": 0,
+              "siteJobBlueprints": 0,
+              "conversations": 0,
+              "failureLog": 0,
+              "usageLog": 0,
+              "platformBackups": 0
+            },
+            "createdAt": "2026-07-08T05:02:39.369Z"
+          }
+        ]
+      }
+    },
+    "export": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "export": {
+          "tenantId": "m13-test-1783486951423-34e4df14",
+          "exportedAt": "2026-07-08T05:02:41.334Z",
+          "collections": {
+            "tenants": [
+              {
+                "adapters": {
+                  "media": "companycam",
+                  "email": "gmail_relay",
+                  "crm": "native"
+                },
+                "timezone": "America/New_York",
+                "approval": {
+                  "gbp_post": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "quote": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "review_reply": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "sms": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "invoice": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "article": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "email": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "site_publish": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  },
+                  "social_post": {
+                    "cleanStreak": 0,
+                    "autoApprove": false
+                  }
+                },
+                "branding": {
+                  "assistantName": "Nexi"
+                },
+                "name": "m13-test-1783486951423-34e4df14",
+                "tenantId": "m13-test-1783486951423-34e4df14",
+                "id": "m13-test-1783486951423-34e4df14",
+                "plan": "nexi",
+                "industryPack": "pool_leak"
+              }
+            ],
+            "tenantSubscriptions": [
+              {
+                "stripeSubscriptionId": "sub_1Tqnd1PGOA6j5zraGMoP7umX",
+                "tenantId": "m13-test-1783486951423-34e4df14",
+                "id": "sub_m13-test-1783486951423-34e4df14_5d52ae8f-2069-4ec4-8d86-0c4c405fbddb",
+                "stripeCustomerId": "cus_UqUcDlweeySs8s",
+                "plan": "nexi",
+                "status": "active",
+                "updatedAt": "2026-07-08T05:02:38.176Z"
+              }
+            ],
+            "tenantAdapterStatuses": [],
+            "clients": [],
+            "properties": [],
+            "jobs": [],
+            "quotes": [],
+            "invoices": [],
+            "media": [],
+            "siteJobBlueprints": [],
+            "conversations": [],
+            "failureLog": [],
+            "usageLog": [],
+            "platformBackups": [
+              {
+                "id": "backup_4d866aee-e688-4b25-ab06-8c25d2d74c21",
+                "tenantId": "m13-test-1783486951423-34e4df14",
+                "storageRef": "backups/m13-test-1783486951423-34e4df14/2026-07-08T05-02-39-369Z.json",
+                "collectionCounts": {
+                  "tenants": 1,
+                  "tenantSubscriptions": 1,
+                  "tenantAdapterStatuses": 0,
+                  "clients": 0,
+                  "properties": 0,
+                  "jobs": 0,
+                  "quotes": 0,
+                  "invoices": 0,
+                  "media": 0,
+                  "siteJobBlueprints": 0,
+                  "conversations": 0,
+                  "failureLog": 0,
+                  "usageLog": 0,
+                  "platformBackups": 0
+                },
+                "createdAt": "2026-07-08T05:02:39.369Z"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "plantedTenancyProbe": {
+      "caught": true,
+      "output": "Tenancy check failed:\n- tests/fixtures/tenancy/unscoped-query.fixture.ts: Firestore collection \"jobs\" lacks tenantId evidence"
+    }
+  },
+  "completedAt": "2026-07-08T05:02:41.604Z",
+  "operator": {
+    "mode": "custom-token",
+    "email": "owner@aquatrace.com",
+    "uidPresent": true
+  },
+  "redaction": "No secrets, passwords, tokens, API keys, or email bodies are recorded. Stripe customer/subscription ids are test-mode identifiers only."
+}

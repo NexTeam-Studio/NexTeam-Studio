@@ -1,0 +1,85 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783517617521-28715d46",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 6,
+  "passed": 6,
+  "failed": 0,
+  "caseFilter": "2026070519",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705191129-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:11:29.680Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "12 emails today, mostly promos/notifications — nothing that needs action: **Chris mailbox (7)** - CarParts.com - clearance sale - promo, no action - The Home Depot - 4th of July deals ending - promo, no action - Chris Sears (self-sent) - An",
+      "latencyMs": 7516
+    },
+    {
+      "id": "20260705191708-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:17:08.856Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "12 emails today, mostly ads and alerts — nothing needs action. - **CarParts.com** – clearance sale promo, no ask - **The Home Depot** – 4th of July deals promo, no ask - **Chris Sears (self-sent)** – Anderson County commercial pool research",
+      "latencyMs": 5940
+    },
+    {
+      "id": "20260705192403-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:24:03.330Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "12 emails today, mostly promos and alerts — no client inquiries needing action. **Worth noting:** - Your own note to self — \"Aquatrace Anderson County Commercial Pool Research - RESET Pass\" (self-sent, looks like a lead-research log) - Trai",
+      "latencyMs": 6411
+    },
+    {
+      "id": "20260705193434-1-read-email-chris-19f3354877e85a73-and-tell-me-whether-it-has-attachments-do-not-",
+      "createdAt": "2026-07-05T19:34:34.724Z",
+      "expectedIntent": "email_direct_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getEmailMessage"
+      ],
+      "answerSample": "No attachments on that email.",
+      "latencyMs": 2457
+    },
+    {
+      "id": "20260705194001-1-read-email-chris-19f3354877e85a73-and-tell-me-whether-it-has-attachments-do-not-",
+      "createdAt": "2026-07-05T19:40:01.336Z",
+      "expectedIntent": "email_direct_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getEmailMessage"
+      ],
+      "answerSample": "No attachments on that email.",
+      "latencyMs": 2727
+    },
+    {
+      "id": "20260705194113-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:41:13.562Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "12 emails came in today, mostly newsletters/promos — nothing urgent needing a reply. **Worth a glance:** - Trail camera alert – CELLUCORE20 wireless camera hasn't checked in since July 4, may have lost connection or battery - Chris Sears (s",
+      "latencyMs": 5853
+    }
+  ]
+}

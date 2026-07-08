@@ -11,13 +11,13 @@ export const PLATFORM_PLANS: Record<TenantPlan, PlatformPlan> = {
     id: "marketing",
     name: "Marketing",
     monthlyUsd: 399,
-    modules: ["nexi", "crm", "fielddocs", "comms", "content", "campaigns"]
+    modules: ["nexi", "crm", "fielddocs", "comms", "content", "campaigns", "sites"]
   },
   suite: {
     id: "suite",
     name: "Suite",
     monthlyUsd: 799,
-    modules: ["nexi", "crm", "fielddocs", "scheduling", "content", "campaigns", "comms", "voice", "platform", "evaporation"]
+    modules: ["nexi", "crm", "fielddocs", "scheduling", "content", "campaigns", "comms", "voice", "platform", "evaporation", "sites"]
   }
 };
 

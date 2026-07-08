@@ -82,6 +82,14 @@ function classify(question, previousPolicy) {
       assertions: ["capabilityGap", "noNoSourceStonewall"]
     };
   }
+  if (/\b(?:email|send|draft|forward)\b/.test(lower) && /\b(?:report|reports|pdf|pdfs|attachment|attachments)\b/.test(lower)) {
+    return {
+      expectedIntent: "capability_gap_report_pdf_email",
+      requiredTools: [],
+      forbiddenTools: ["searchEmail"],
+      assertions: ["capabilityGap", "noNoSourceStonewall"]
+    };
+  }
   if (/\b(?:paid|pay|payment|invoice|zero\s+balance|receipt|owes?|owed|due|collected|charged)\b/.test(lower)) {
     return {
       expectedIntent: "payment_status_cross_rail",
@@ -109,15 +117,15 @@ function classify(question, previousPolicy) {
   if (/\b(?:gallons per inch|square footage|sq ft|ft2|ft²)\b/.test(lower)) {
     return {
       expectedIntent: "report_measurement_lookup",
-      requiredTools: ["getDocuments", "lookupSiteJobBlueprintField"],
+      requiredTools: ["getJobDetail", "getDocuments", "lookupSiteJobBlueprintField"],
       forbiddenTools: ["searchEmail"],
       assertions: ["usesRequiredRails"]
     };
   }
   if (/\b(?:total gallons|pool gallons|how many gallons)\b/.test(lower)) {
     return {
-      expectedIntent: "site_blueprint_lookup",
-      requiredTools: ["lookupSiteJobBlueprintField"],
+      expectedIntent: "report_measurement_lookup",
+      requiredTools: ["getJobDetail", "getDocuments", "lookupSiteJobBlueprintField"],
       forbiddenTools: ["searchEmail"],
       assertions: ["usesRequiredRails"]
     };
@@ -154,6 +162,14 @@ function classify(question, previousPolicy) {
       requiredTools: ["searchEmail"],
       forbiddenTools: ["draftEmail"],
       assertions: ["noRawToolError"]
+    };
+  }
+  if (/\b(?:client\s+list|list\s+(?:the\s+)?clients|show\s+me\s+(?:the\s+)?clients|show\s+me\s+a\s+client\s+list|how\s+many\s+clients|client\s+count|all\s+clients)\b/.test(lower)) {
+    return {
+      expectedIntent: "crm_client_list",
+      requiredTools: ["clientLookup"],
+      forbiddenTools: ["searchEmail"],
+      assertions: ["usesRequiredRails", "noRawToolError"]
     };
   }
   if (/\b(?:schedule|calendar|appointments?|visits?|booked|tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday|eta|what time|when is)\b/.test(lower)) {
