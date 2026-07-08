@@ -762,8 +762,14 @@ function looksLikeEmailDraftAction(lower: string): boolean {
 }
 
 function looksLikeReportPdfEmailRequest(lower: string): boolean {
-  return /\b(?:email|send|draft|forward)\b/.test(lower)
-    && /\b(?:report|reports|pdf|pdfs)\b/.test(lower);
+  const searchingExistingMail =
+    /\b(?:did\s+i\s+send|check\s+(?:email|gmail|mail)|look\s+(?:in|through)\s+(?:email|gmail|mail|inbox)|mail\s*box|mailbox|inbox|receipt\s+in\s+(?:the\s+)?mail|report\s+(?:was\s+)?sent)\b/.test(lower);
+  if (searchingExistingMail) {
+    return false;
+  }
+
+  return /\b(?:email|send|draft|forward)\s+(?:me\s+|to\s+me\s+|[\w.+-]+@[\w.-]+\.\w+\s+)?(?:the\s+)?(?:report|reports|pdf|pdfs)\b/.test(lower)
+    || /\b(?:report|reports|pdf|pdfs)\b.*\b(?:email|send|draft|forward)\s+(?:it|them|to|me)\b/.test(lower);
 }
 
 function looksLikeEvaporationRunQuestion(lower: string): boolean {

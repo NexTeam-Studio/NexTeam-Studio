@@ -700,6 +700,48 @@ test("Nexi report-PDF email requests return capability gaps instead of email sea
   assert.deepEqual(result.toolRuns, []);
 });
 
+test("Nexi existing-report email questions stay on Gmail search", async () => {
+  const prompts = [
+    "Did I send the report more medallion Pool company last week?",
+    "Check email for a report sent to medallion Pool company last week",
+    "You need to infer what I mean. Regardless of typos. The report should be sitting in one of the email boxes as sent and I also copy ourselves on those so we should also have a receipt in the mail"
+  ];
+
+  for (const prompt of prompts) {
+    const toolCalls = [];
+    const result = await runNexiToolLoop({
+      tenant: tenant(),
+      system: "Use tools.",
+      messages: [{ role: "user", content: prompt }],
+      tools: [{
+        name: "searchEmail",
+        description: "Search email.",
+        inputSchema: z.object({ keywords: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(args);
+          return {
+            result: { count: 1, messages: [{ id: "msg_1", mailbox: "aquatraceleak", subject: "Medallion report" }] },
+            sources: [{ rail: "email", ref: "email:aquatraceleak:msg_1", label: "Email aquatraceleak msg_1" }]
+          };
+        }
+      }],
+      routeActionName: "/api/nexi/message",
+      taskType: "job_desk_answer",
+      env: { ANTHROPIC_API_KEY: "test-key" },
+      fetchFn: async () => new Response(JSON.stringify({
+        content: [{ type: "text", text: "I found one Medallion Pool Company report email." }],
+        usage: { input_tokens: 10, output_tokens: 6 }
+      }), { status: 200 })
+    });
+
+    assert.equal(toolCalls.length, 1);
+    assert.equal(typeof toolCalls[0].keywords, "string");
+    assert.ok(toolCalls[0].keywords.length > 0);
+    assert.equal(result.toolRuns[0].name, "searchEmail");
+    assert.notEqual(result.failureReason, "capability_not_available");
+  }
+});
+
 test("Nexi broad client list and count prompts route to CRM clientLookup", async () => {
   const prompts = ["show me a client list", "how many clients do we have"];
   for (const prompt of prompts) {
