@@ -36,6 +36,7 @@ export const MobileScheduleJobSchema = z.object({
   scheduledEnd: z.string().min(1),
   status: MobileJobStatusSchema,
   technicianIds: z.array(z.string().min(1)),
+  jobAccessLinkIds: z.array(z.string().min(1)).default([]),
   checklistTemplateIds: z.array(z.string().min(1)).default([]),
   notes: z.string().default(""),
   updatedAt: z.string().min(1)
@@ -177,6 +178,29 @@ export const NexiMobileConnectionSchema = z.object({
   message: z.string().min(1)
 });
 
+export const MobilePushRegistrationSchema = z.object({
+  tenantId: TenantIdSchema,
+  tenantUserId: z.string().min(1),
+  role: z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]),
+  expoPushToken: z.string().min(1),
+  deviceId: z.string().min(1),
+  platform: z.enum(["ios", "android", "web", "unknown"]).default("unknown"),
+  registeredAt: z.string().min(1)
+});
+
+export const MobileSyncRequestSchema = z.object({
+  operations: z.array(OfflineOperationSchema).min(1)
+});
+
+export const MobileSyncResultSchema = z.object({
+  opId: z.string().min(1),
+  ok: z.boolean(),
+  remoteUpdatedAt: z.string().min(1).optional(),
+  remoteUrl: z.string().min(1).optional(),
+  conflicts: z.array(MobileConflictSchema).default([]),
+  error: z.string().optional()
+});
+
 export type GeoPoint = z.infer<typeof GeoPointSchema>;
 export type MobileJobStatus = z.infer<typeof MobileJobStatusSchema>;
 export type MobileScheduleJob = z.infer<typeof MobileScheduleJobSchema>;
@@ -190,3 +214,6 @@ export type OfflineOperation = z.infer<typeof OfflineOperationSchema>;
 export type MobileConflict = z.infer<typeof MobileConflictSchema>;
 export type SyncSummary = z.infer<typeof SyncSummarySchema>;
 export type NexiMobileConnection = z.infer<typeof NexiMobileConnectionSchema>;
+export type MobilePushRegistration = z.infer<typeof MobilePushRegistrationSchema>;
+export type MobileSyncRequest = z.infer<typeof MobileSyncRequestSchema>;
+export type MobileSyncResult = z.infer<typeof MobileSyncResultSchema>;

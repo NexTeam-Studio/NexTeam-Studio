@@ -9,6 +9,7 @@
   "references": [
     { "path": "../../packages/core" },
     { "path": "../../packages/industry-packs" },
+    { "path": "../mobile" },
     { "path": "../../packages/providers" },
     { "path": "../../packages/nexi" }
   ],

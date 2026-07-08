@@ -11,6 +11,7 @@ export interface AccessContext {
   tenantUserId: string;
   role: TenantRole;
   accessKind: AccessKind;
+  jobAccessLinkId?: string | undefined;
   email?: string | undefined;
 }
 
@@ -119,6 +120,7 @@ export async function requireAccessContext(
     tenantUserId: claimString(decoded, "tenantUserId") ?? decoded.uid,
     role: normalizeRole(decoded, env),
     accessKind: accessKind(decoded),
+    ...(claimString(decoded, "jobAccessLinkId") ? { jobAccessLinkId: claimString(decoded, "jobAccessLinkId") } : {}),
     ...(decoded.email ? { email: decoded.email } : {})
   };
 }

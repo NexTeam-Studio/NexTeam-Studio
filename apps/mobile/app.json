@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "NexTeam Field",
+    "slug": "nexteam-field",
+    "scheme": "nexteam-field",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "studio.nexteam.field"
+    },
+    "android": {
+      "package": "studio.nexteam.field",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "NexTeam uses the camera to attach field photos to assigned jobs while offline."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "NexTeam uses location to match photos to the nearest assigned client."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0f766e"
+        }
+      ]
+    ],
+    "extra": {
+      "apiBaseUrl": "https://nexteam-studio-staging.up.railway.app"
+    }
+  }
+}

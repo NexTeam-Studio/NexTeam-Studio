@@ -5,8 +5,8 @@
     { "path": "packages/industry-packs" },
     { "path": "packages/providers" },
     { "path": "packages/nexi" },
+    { "path": "apps/mobile" },
     { "path": "apps/server" },
-    { "path": "apps/mobile" }
   ]
 }
 

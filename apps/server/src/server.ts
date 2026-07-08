@@ -33,6 +33,8 @@ import { FirestoreNativeCrmRepository } from "./crm/nativeRepository.js";
 import { createEvaporationNexiTools } from "./evaporation/nexiTools.js";
 import { MemoryEvaporationRepository } from "./evaporation/repository.js";
 import { registerEvaporationRoutes } from "./evaporation/routes.js";
+import { InMemoryMobileRepository } from "./mobile/repository.js";
+import { registerMobileRoutes } from "./mobile/routes.js";
 import { createSchedulingNexiTools } from "./scheduling/nexiTools.js";
 import { InMemorySchedulingRepository } from "./scheduling/repository.js";
 import { registerSchedulingRoutes } from "./scheduling/routes.js";
@@ -58,6 +60,7 @@ const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus
 const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();
 const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TENANT_ID || "aquatrace");
 const evaporationRepository = new MemoryEvaporationRepository();
+const mobileRepository = new InMemoryMobileRepository();
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 const sitesRepository = adminDb ? new FirestoreSitesRepository(adminDb) : new InMemorySitesRepository();
@@ -216,6 +219,7 @@ registerContentRoutes(app, { repository: contentRepository, approvalQueue, event
 registerCampaignRoutes(app, { repository: campaignRepository, approvalQueue, env: process.env });
 registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env });
 registerEvaporationRoutes(app, { repository: evaporationRepository, env: process.env });
+registerMobileRoutes(app, { repository: mobileRepository, approvalQueue, env: process.env });
 registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
 registerSitesRoutes(app, { repository: sitesRepository, approvalQueue, eventBus, env: process.env });
 app.use(express.static(webDistDir));
