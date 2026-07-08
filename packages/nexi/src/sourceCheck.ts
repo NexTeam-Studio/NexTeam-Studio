@@ -22,7 +22,7 @@ const META_PROMPT_PATTERNS = [
   /\bwhat\s+sources?\s+do\s+you\s+use\b/i,
   /\bwhat\s+(?:tools?|rails?|systems?)\s+do\s+you\s+use\b/i,
   /\bhow\s+do\s+you\s+(?:get|pull|verify|use)\s+(?:data|sources?|information)\b/i,
-  /\bwhat\s+can\s+you\s+(?:access|see|check|do)\b/i,
+  /\bwhat\s+can\s+you\s+(?:access|see|check|do|help\s+me\s+do)\b/i,
   /\bwhy\s+did\s+(?:that|this|it)\s+fail\b/i,
   /\bhow\s+do\s+i\s+upload\s+(?:photos?|pictures?|images?|videos?)\b/i
 ];
