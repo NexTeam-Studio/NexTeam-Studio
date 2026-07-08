@@ -9,6 +9,7 @@ import {
 } from "./support/liveProofHelpers.mjs";
 import { nexiTrialRegressionSessions } from "../tests/fixtures/nexi-trial-regression-cases.mjs";
 import { nexiOwnerReportedRegressionSessions } from "../tests/fixtures/nexi-owner-reported-regression-cases.mjs";
+import { nexiClassRegressionSessions } from "../tests/regression/class-regression-suites.mjs";
 
 const baseUrl = process.env.NEXI_BASE_URL || resolveBaseUrl();
 const tenantId = process.env.TENANT_ID || "aquatrace";
@@ -22,7 +23,8 @@ const quotaRetryLimit = Number(process.env.NEXI_REGRESSION_QUOTA_RETRIES || "6")
 const proofSessionMaxAgeMs = Number(process.env.NEXI_REGRESSION_PROOF_SESSION_MAX_AGE_MS || String(45 * 60 * 1000));
 const allRegressionSessions = [
   ...nexiTrialRegressionSessions,
-  ...nexiOwnerReportedRegressionSessions
+  ...nexiOwnerReportedRegressionSessions,
+  ...nexiClassRegressionSessions
 ];
 
 let proofSession = null;
@@ -109,6 +111,9 @@ function runAssertions(testCase, result) {
   }
   if (testCase.assertions.includes("draftQueued") && !/(draft|queued|approval|pending)/i.test(answer)) {
     failures.push("email action did not queue an approval draft");
+  }
+  if (testCase.assertions.includes("capabilitiesList") && !/(schedule|job details|reports?|photos?|client lists?|inbox|draft emails?|evaporation)/i.test(answer)) {
+    failures.push("capabilities answer did not list usable Nexi abilities");
   }
   if (testCase.assertions.includes("noSingleRailPaymentConclusion")) {
     if (!names.includes("invoiceStatus") || !names.includes("searchEmail")) {

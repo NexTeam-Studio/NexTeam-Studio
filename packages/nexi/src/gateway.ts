@@ -890,7 +890,8 @@ function uniqueToolNames(names: string[], toolsByName: Map<string, NexiTool>): s
 }
 
 function looksLikeIssueQuestion(lower: string): boolean {
-  return /\b(?:issue|issues|ssues|problem|finding|findings|found|result|results|leak detection)\b/.test(lower);
+  return /\b(?:issue|issues|ssues|problem|finding|findings|found|result|results|leak detection)\b/.test(lower)
+    || /\b(?:leak\s+report|report\s+(?:find|found|finding|findings)|what\s+did\s+.+\s+report\s+find)\b/.test(lower);
 }
 
 function looksLikeTechnicianQuestion(lower: string): boolean {
@@ -930,7 +931,7 @@ function looksLikeCorrectionFollowUp(lower: string): boolean {
 
 function looksLikeInboxSummaryQuestion(lower: string): boolean {
   return /\b(?:emails?|mail|inbox)\b/.test(lower)
-    && /\b(?:came in|received|today|this morning|this afternoon|summarize|summary|what(?:'s| is) in|check\s+(?:my\s+|the\s+)?(?:inbox|mailbox)|unread)\b/.test(lower);
+    && /\b(?:came in|received|today|this morning|this afternoon|summarize|summary|rundown|run\s*down|recap|what(?:'s| is) in|check\s+(?:my\s+|the\s+)?(?:inbox|mailbox)|unread)\b/.test(lower);
 }
 
 function looksLikeEmailSearchQuestion(lower: string): boolean {
@@ -954,7 +955,7 @@ function looksLikeReportPdfEmailRequest(lower: string): boolean {
     return false;
   }
 
-  return /\b(?:email|send|draft|forward)\s+(?:me\s+|to\s+me\s+|[\w.+-]+@[\w.-]+\.\w+\s+)?(?:the\s+)?(?:report|reports|pdf|pdfs)\b/.test(lower)
+  return /\b(?:email|send|draft|forward)\s+(?:me\s+|to\s+me\s+|[\w.+-]+@[\w.-]+\.\w+\s+)?(?:the\s+|all\s+|every\s+)?(?:[\w\s'-]+\s+)?(?:report|reports|pdf|pdfs)\b/.test(lower)
     || /\b(?:report|reports|pdf|pdfs)\b.*\b(?:email|send|draft|forward)\s+(?:it|them|to|me)\b/.test(lower);
 }
 
@@ -981,6 +982,10 @@ function looksLikePaymentStatusQuestion(lower: string): boolean {
 
 function looksLikeRevenueQuestion(lower: string): boolean {
   return /\b(?:ytd|year\s+to\s+date|revenue|gross|sales)\b/.test(lower);
+}
+
+function looksLikeAccountsReceivableSummaryQuestion(lower: string): boolean {
+  return /\b(?:who\s+owes\s+(?:us\s+)?money|who\s+hasn'?t\s+paid|unpaid\s+(?:clients?|invoices?)|accounts?\s+receivable|a\/r|ar\s+summary)\b/.test(lower);
 }
 
 function looksLikePipelineQuestion(lower: string): boolean {
@@ -1041,6 +1046,12 @@ function capabilityGapForRequest(messages: GatewayMessage[], toolsByName: Map<st
       failureReason: "capability_not_available"
     };
   }
+  if (looksLikeAccountsReceivableSummaryQuestion(lower) && !toolsByName.has("accountsReceivableSummary")) {
+    return {
+      answer: "I can't give a reliable who-owes-us-money list from chat yet because the accounts-receivable summary tool is not wired to Nexi. I logged it as capability_not_available.",
+      failureReason: "capability_not_available"
+    };
+  }
   if (
     looksLikeReportPdfEmailRequest(lower)
     && !toolsByName.has("draftReportEmail")
@@ -1064,7 +1075,7 @@ function directNoToolResponseForRequest(messages: GatewayMessage[]): { answer: s
   if (!promptIsMetaOrFeedback(userText)) {
     return null;
   }
-  if (/\bwhat\s+commands?\s+can\s+i\s+use\b|\bwhat\s+sources?\s+do\s+you\s+use\b|\bwhat\s+(?:tools?|rails?|systems?)\s+do\s+you\s+use\b|\bwhat\s+can\s+you\s+(?:access|see|check|do)\b/i.test(userText)) {
+  if (/\bwhat\s+commands?\s+can\s+i\s+use\b|\bwhat\s+sources?\s+do\s+you\s+use\b|\bwhat\s+(?:tools?|rails?|systems?)\s+do\s+you\s+use\b|\bwhat\s+can\s+you\s+(?:access|see|check|do|help\s+me\s+do)\b/i.test(userText)) {
     return {
       answer: "You can ask me about today's schedule, work records, job details, CompanyCam reports and photos, client lists, invoices, inbox summaries, important unread email, draft emails for your approval, evaporation reports, content drafts, and website updates. If something is not live yet, I'll say that plainly instead of acting like the information is missing."
     };
