@@ -1,0 +1,25 @@
+{
+  "policy": "Receipt or export artifacts over approximately 50MB are stored in Firebase Storage. Git commits only this pointer metadata: storage path, size, checksum, and upload timestamp.",
+  "bucket": "nexteam-studio.firebasestorage.app",
+  "uploadedAt": "2026-07-08T22:59:06.848Z",
+  "artifacts": [
+    {
+      "source": "receipts/m1/nexi-trial-full-session-export-20260708-part9-redacted.json",
+      "storagePath": "receipts/part9/exports/2026-07-08/nexi-trial-full-session-export-20260708-part9-redacted.json",
+      "gsUri": "gs://nexteam-studio.firebasestorage.app/receipts/part9/exports/2026-07-08/nexi-trial-full-session-export-20260708-part9-redacted.json",
+      "sizeBytes": 108198616,
+      "sha256": "36ca5fda114d749117f0faa1c19cc38fd732eb49f00e9796e0888647749e51be",
+      "generation": "1783551558220657",
+      "crc32c": "EOFKvA=="
+    },
+    {
+      "source": "receipts/m1/nexi-trial-session-export-20260708-redacted.json",
+      "storagePath": "receipts/part9/exports/2026-07-08/nexi-trial-session-export-20260708-redacted.json",
+      "gsUri": "gs://nexteam-studio.firebasestorage.app/receipts/part9/exports/2026-07-08/nexi-trial-session-export-20260708-redacted.json",
+      "sizeBytes": 47463443,
+      "sha256": "32177a1818c359f844b6bceef6f60cc8be87f2466ce91102658fb4c94a0a0266",
+      "generation": "1783551563076626",
+      "crc32c": "XXEYJg=="
+    }
+  ]
+}
