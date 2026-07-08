@@ -17,10 +17,14 @@ const caseFilter = process.env.NEXI_REGRESSION_CASE || "";
 const limit = Number(process.env.NEXI_REGRESSION_LIMIT || "0");
 const caseDelayMs = Number(process.env.NEXI_REGRESSION_CASE_DELAY_MS || "750");
 const quotaRetryLimit = Number(process.env.NEXI_REGRESSION_QUOTA_RETRIES || "6");
+const proofSessionMaxAgeMs = Number(process.env.NEXI_REGRESSION_PROOF_SESSION_MAX_AGE_MS || String(45 * 60 * 1000));
 const allRegressionSessions = [
   ...nexiTrialRegressionSessions,
   ...nexiOwnerReportedRegressionSessions
 ];
+
+let proofSession = null;
+let proofSessionCreatedAt = 0;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -122,18 +126,45 @@ async function postNexiMessage({ idToken, conversationId, message }) {
   return response.json;
 }
 
+function isExpiredAuthError(message) {
+  return /auth\/id-token-expired|id token has expired/i.test(message);
+}
+
+async function rotateProofSession() {
+  if (proofSession) {
+    await proofSession.dispose().catch(() => {});
+  }
+  proofSession = await createOperatorProofSession();
+  proofSessionCreatedAt = Date.now();
+  return proofSession;
+}
+
+async function getProofSession({ force = false } = {}) {
+  if (!proofSession || force || Date.now() - proofSessionCreatedAt > proofSessionMaxAgeMs) {
+    return rotateProofSession();
+  }
+  return proofSession;
+}
+
 async function postNexiMessageWithQuotaRetry(input) {
   let lastError = null;
   for (let attempt = 0; attempt <= quotaRetryLimit; attempt += 1) {
-    try {
-      return await postNexiMessage(input);
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : String(caught);
-      lastError = caught;
-      if (!/RESOURCE_EXHAUSTED|quota exceeded/i.test(message) || attempt >= quotaRetryLimit) {
-        throw caught;
+    for (let authAttempt = 0; authAttempt < 2; authAttempt += 1) {
+      const session = await getProofSession({ force: authAttempt > 0 });
+      try {
+        return await postNexiMessage({ ...input, idToken: session.idToken });
+      } catch (caught) {
+        const message = caught instanceof Error ? caught.message : String(caught);
+        lastError = caught;
+        if (isExpiredAuthError(message) && authAttempt === 0) {
+          continue;
+        }
+        if (!/RESOURCE_EXHAUSTED|quota exceeded/i.test(message) || attempt >= quotaRetryLimit) {
+          throw caught;
+        }
+        await sleep(Math.min(60_000, 5_000 * 2 ** attempt));
+        break;
       }
-      await sleep(Math.min(60_000, 5_000 * 2 ** attempt));
     }
   }
   throw lastError;
@@ -143,7 +174,6 @@ const sessions = selectedSessions();
 const results = [];
 let passed = 0;
 let failed = 0;
-const proofSession = await createOperatorProofSession();
 
 try {
   for (const session of sessions) {
@@ -155,7 +185,6 @@ try {
       let assertionFailures = [];
       try {
         result = await postNexiMessageWithQuotaRetry({
-          idToken: proofSession.idToken,
           conversationId,
           message: testCase.question
         });
@@ -187,7 +216,9 @@ try {
     }
   }
 } finally {
-  await proofSession.dispose();
+  if (proofSession) {
+    await proofSession.dispose();
+  }
 }
 
 const receipt = {
