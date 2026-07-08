@@ -104,6 +104,8 @@ const OfflineOperationBaseSchema = z.object({
   tenantId: TenantIdSchema,
   opId: z.string().min(1),
   jobId: z.string().min(1),
+  actorTenantUserId: z.string().min(1).optional(),
+  jobAccessLinkId: z.string().min(1).optional(),
   createdAt: z.string().min(1),
   localUpdatedAt: z.string().min(1),
   baseRemoteUpdatedAt: z.string().min(1).optional()

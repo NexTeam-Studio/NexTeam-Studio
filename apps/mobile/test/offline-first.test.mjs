@@ -53,6 +53,25 @@ function makeSchedule() {
         checklistTemplateIds: ["aquatrace-leak-detection"],
         notes: "",
         updatedAt: "2026-07-07T12:50:00.000Z"
+      },
+      {
+        tenantId: "aquatrace",
+        jobId: "job_office_only",
+        clientId: "client_office_only",
+        clientName: "Office Only",
+        serviceAddress: {
+          line1: "200 Not Assigned Road",
+          city: "Bryson City",
+          state: "NC",
+          postalCode: "28713"
+        },
+        scheduledStart: "2026-07-07T18:00:00.000Z",
+        scheduledEnd: "2026-07-07T19:00:00.000Z",
+        status: "scheduled",
+        technicianIds: ["tech_catherine"],
+        checklistTemplateIds: ["aquatrace-leak-detection"],
+        notes: "",
+        updatedAt: "2026-07-07T12:51:00.000Z"
       }
     ]
   };
@@ -139,6 +158,7 @@ test("M11 airplane-mode job flow syncs after reconnect with conflict flags", asy
     technicianId: "tech_chris"
   });
   assert.equal(schedule.jobs.length, 1);
+  assert.equal(store.getCachedJob("aquatrace", "job_office_only"), null);
 
   controller.setOnline(false);
   assert.deepEqual(controller.getNexiConnectionState(), {
@@ -209,6 +229,11 @@ test("M11 airplane-mode job flow syncs after reconnect with conflict flags", asy
   });
   assert.equal(closedJob.status, "completed");
   assert.equal(store.listPendingOperations("aquatrace").length, 3);
+  assert.deepEqual(store.listPendingOperations("aquatrace").map((operation) => operation.actorTenantUserId), [
+    "tech_chris",
+    "tech_chris",
+    "tech_chris"
+  ]);
 
   const offlineSummary = await controller.syncNow("aquatrace");
   assert.deepEqual(offlineSummary, {
@@ -241,4 +266,28 @@ test("M11 airplane-mode job flow syncs after reconnect with conflict flags", asy
   assert.equal(conflicts[0]?.field, "status");
   assert.equal(conflicts[0]?.resolution, "last_write_wins");
   assert.equal(conflicts[0]?.requiresReview, true);
+});
+
+test("M11 mobile rejects unassigned cached job writes", async () => {
+  const store = new InMemoryMobileStore();
+  const remote = new FakeRemoteAdapter(makeSchedule());
+  const controller = new MobileOfflineController({
+    store,
+    remote,
+    now: makeClock(),
+    idFactory: makeIdFactory()
+  });
+
+  store.upsertCachedJob({
+    ...makeSchedule().jobs[1],
+    technicianIds: ["tech_catherine"]
+  });
+
+  assert.throws(() => controller.updateChecklist({
+    tenantId: "aquatrace",
+    jobId: "job_office_only",
+    checklistId: "aquatrace-leak-detection",
+    answers: { arrived: true },
+    updatedBy: "tech_chris"
+  }), /not assigned/);
 });

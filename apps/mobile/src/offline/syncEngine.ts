@@ -130,11 +130,15 @@ export class MobileOfflineController {
     if (schedule.tenantId !== input.tenantId) {
       throw new Error("Remote schedule returned the wrong tenant.");
     }
-    return this.store.upsertSchedule(schedule);
+    return this.store.upsertSchedule({
+      ...schedule,
+      technicianId: input.technicianId,
+      jobs: schedule.jobs.filter((job) => job.technicianIds.includes(input.technicianId))
+    });
   }
 
   updateChecklist(input: ChecklistUpdateInput) {
-    const job = this.requireCachedJob(input.tenantId, input.jobId);
+    const job = this.requireCachedJobForActor(input.tenantId, input.jobId, input.updatedBy);
     const updatedAt = this.now();
     const existing = this.store.getChecklistDraft(input.tenantId, input.jobId, input.checklistId);
     const answers = {
@@ -160,6 +164,7 @@ export class MobileOfflineController {
         tenantId: input.tenantId,
         opId: this.idFactory("checklist"),
         jobId: input.jobId,
+        actorTenantUserId: input.updatedBy,
         createdAt: updatedAt,
         localUpdatedAt: updatedAt,
         baseRemoteUpdatedAt: job.updatedAt,
@@ -176,7 +181,7 @@ export class MobileOfflineController {
   }
 
   captureJobPhoto(input: PhotoCaptureInput) {
-    const job = this.requireCachedJob(input.tenantId, input.jobId);
+    const job = this.requireCachedJobForActor(input.tenantId, input.jobId, input.capturedBy);
     const createdAt = this.now();
     const localPhotoId = this.idFactory("photo");
     const candidates = input.candidates ?? this.clientCandidatesFromCachedJobs(input.tenantId);
@@ -208,6 +213,7 @@ export class MobileOfflineController {
         tenantId: input.tenantId,
         opId: this.idFactory("photo_upload"),
         jobId: input.jobId,
+        actorTenantUserId: input.capturedBy,
         createdAt,
         localUpdatedAt: createdAt,
         baseRemoteUpdatedAt: job.updatedAt,
@@ -228,7 +234,7 @@ export class MobileOfflineController {
   }
 
   closeOutJob(input: JobCloseOutInput) {
-    const job = this.requireCachedJob(input.tenantId, input.jobId);
+    const job = this.requireCachedJobForActor(input.tenantId, input.jobId, input.updatedBy);
     const updatedAt = this.now();
     const nextJob = this.store.upsertCachedJob({
       ...job,
@@ -242,6 +248,7 @@ export class MobileOfflineController {
         tenantId: input.tenantId,
         opId: this.idFactory("job_status"),
         jobId: input.jobId,
+        actorTenantUserId: input.updatedBy,
         createdAt: updatedAt,
         localUpdatedAt: updatedAt,
         baseRemoteUpdatedAt: job.updatedAt,
@@ -257,8 +264,8 @@ export class MobileOfflineController {
     return nextJob;
   }
 
-  async syncNow(tenantId: string): Promise<SyncSummary> {
-    const pending = this.store.listPendingOperations(tenantId);
+  async syncNow(tenantId: string, actorTenantUserId?: string): Promise<SyncSummary> {
+    const pending = this.pendingOperationsForActor(tenantId, actorTenantUserId);
     if (!this.store.isOnline()) {
       return SyncSummarySchema.parse({
         status: "offline",
@@ -277,6 +284,11 @@ export class MobileOfflineController {
       attempted += 1;
       try {
         const parsedOperation = OfflineOperationSchema.parse(operation);
+        const actor = this.actorForOperation(parsedOperation);
+        if (!actor) {
+          throw new Error("Offline operation is missing an actor.");
+        }
+        this.requireCachedJobForActor(parsedOperation.tenantId, parsedOperation.jobId, actor);
         const result = await this.remote.applyOperation(parsedOperation);
         for (const conflict of result.conflicts ?? []) {
           this.store.addConflict({
@@ -304,7 +316,7 @@ export class MobileOfflineController {
       }
     }
 
-    const remaining = this.store.listPendingOperations(tenantId).length;
+    const remaining = this.pendingOperationsForActor(tenantId, actorTenantUserId).length;
     return SyncSummarySchema.parse({
       status: remaining === 0 ? "synced" : "partial",
       attempted,
@@ -340,6 +352,27 @@ export class MobileOfflineController {
       throw new Error("That job is not cached on this device yet.");
     }
     return job;
+  }
+
+  private requireCachedJobForActor(tenantId: string, jobId: string, actorTenantUserId: string) {
+    const job = this.requireCachedJob(tenantId, jobId);
+    if (!job.technicianIds.includes(actorTenantUserId)) {
+      throw new Error("That job is not assigned to this user.");
+    }
+    return job;
+  }
+
+  private actorForOperation(operation: OfflineOperation): string | null {
+    if (operation.actorTenantUserId) return operation.actorTenantUserId;
+    if (operation.type === "checklist.upsert") return operation.payload.updatedBy;
+    if (operation.type === "photo.upload") return operation.payload.capturedBy;
+    return operation.payload.updatedBy;
+  }
+
+  private pendingOperationsForActor(tenantId: string, actorTenantUserId?: string): OfflineOperation[] {
+    return this.store
+      .listPendingOperations(tenantId)
+      .filter((operation) => !actorTenantUserId || this.actorForOperation(operation) === actorTenantUserId);
   }
 
   private clientCandidatesFromCachedJobs(tenantId: string): ClientLocationCandidate[] {
