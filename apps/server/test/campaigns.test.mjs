@@ -5,6 +5,7 @@ import {
   ApprovalQueueService,
   InMemoryApprovalQueueRepository
 } from "@nexteam/core";
+import { assertAccessRole } from "../dist/auth/accessContext.js";
 import { selectAudience } from "../dist/campaigns/audience.js";
 import { complianceConfigFromEnv, outboundBoundary } from "../dist/campaigns/compliance.js";
 import { createCampaignNexiTools } from "../dist/campaigns/nexiTools.js";
@@ -100,6 +101,8 @@ test("campaign queueing parks approvals only and marks DNS boundary blocked", as
   assert.equal(result.machineState, "approvalQueued");
   assert.equal(result.queuedApprovals.length, 2);
   assert.match(result.queuedApprovals[0].preview.body, /unsubscribe/i);
+  assert.equal(result.queuedApprovals.every((item) => item.createdBy === "user"), true);
+  assert.equal(result.queuedApprovals.every((item) => item.execute.args.actorId === "unknown-actor"), true);
   assert.equal(result.queuedApprovals.every((item) => item.execute.service === "campaigns"), true);
   assert.equal(result.queuedApprovals.every((item) => item.execute.op === "bulkExecutionBlocked"), true);
 
@@ -168,7 +171,11 @@ test("transactional report and review emails are approval queued, including 48-h
 
   assert.equal(report.execute.service, "campaigns");
   assert.equal(report.execute.op, "transactionalApprovalRequired");
+  assert.equal(report.createdBy, "user");
+  assert.equal(report.execute.args.actorId, "unknown-actor");
   assert.equal(review.execute.op, "transactionalApprovalRequiredAfterDelay");
+  assert.equal(review.createdBy, "user");
+  assert.equal(review.execute.args.actorId, "unknown-actor");
   assert.equal(review.execute.args.delayHours, 48);
 
   const pending = await approvalQueue.listPending("aquatrace");
@@ -177,7 +184,7 @@ test("transactional report and review emails are approval queued, including 48-h
 
 test("campaign Nexi tools expose approval-gated campaign operations", async () => {
   const { repository, approvalQueue } = campaignService();
-  const tools = createCampaignNexiTools({ repository, approvalQueue });
+  const tools = createCampaignNexiTools({ repository, approvalQueue, actorId: "internal:owner-1" });
   const audiencePreview = tools.find((tool) => tool.name === "audiencePreview");
   const draftCampaign = tools.find((tool) => tool.name === "draftCampaign");
   const campaignQueue = tools.find((tool) => tool.name === "campaignQueue");
@@ -191,6 +198,8 @@ test("campaign Nexi tools expose approval-gated campaign operations", async () =
     audience: { channel: "email", clientIds: ["contact_chris_owner"] }
   });
   assert.equal(draft.result.queuedApprovals.length, 1);
+  assert.equal(draft.result.queuedApprovals[0].createdBy, "user");
+  assert.equal(draft.result.queuedApprovals[0].execute.args.actorId, "internal:owner-1");
   assert.equal(draft.result.sendsAreApprovalQueuedOnly, true);
   assert.equal(draft.sources.every((source) => source.rail === "native"), true);
 
@@ -234,6 +243,8 @@ test("campaign routes expose template, test-run, tracking, unsubscribe, and stat
     assert.equal(run.ok, true);
     assert.equal(run.sendsAreApprovalQueuedOnly, true);
     assert.equal(run.queuedApprovals.length, 1);
+    assert.equal(run.queuedApprovals[0].createdBy, "user");
+    assert.equal(run.queuedApprovals[0].execute.args.actorId, "internal:local-owner");
 
     const campaignId = run.campaign.id;
     const opened = await fetch(`${base}/api/campaigns/track/open`, {
@@ -268,6 +279,29 @@ test("campaign routes expose template, test-run, tracking, unsubscribe, and stat
   } finally {
     server.close();
   }
+});
+
+test("campaign AccessContext gate blocks technician and job-link contexts", () => {
+  assert.equal(assertAccessRole({
+    tenantId: "aquatrace",
+    tenantUserId: "owner_1",
+    role: "OWNER",
+    accessKind: "internal"
+  }, ["OWNER", "OFFICE_ADMIN"]).tenantUserId, "owner_1");
+
+  assert.throws(() => assertAccessRole({
+    tenantId: "aquatrace",
+    tenantUserId: "tech_1",
+    role: "TECHNICIAN",
+    accessKind: "internal"
+  }, ["OWNER", "OFFICE_ADMIN"]), /role cannot perform/);
+
+  assert.throws(() => assertAccessRole({
+    tenantId: "aquatrace",
+    tenantUserId: "subcontractor-link",
+    role: "TECHNICIAN",
+    accessKind: "job_link"
+  }, ["OWNER", "OFFICE_ADMIN"]), /role cannot perform/);
 });
 
 test("DNS boundary stays blocked until SPF, DKIM, and DMARC are confirmed", () => {

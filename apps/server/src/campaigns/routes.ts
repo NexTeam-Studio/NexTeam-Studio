@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { RailError, type ApprovalQueueService, type ArtifactKind, type Tenant } from "@nexteam/core";
+import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
 import type { CampaignRepository } from "./repository.js";
 import { unsubscribeInputSchema } from "./schemas.js";
 import { CampaignService } from "./service.js";
@@ -74,8 +75,12 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
 
   app.get("/api/campaigns/templates", async (req: Request, res: Response) => {
     try {
-      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : env.TENANT_ID || "aquatrace";
-      res.json({ ok: true, templates: await deps.repository.listTemplates(tenantId) });
+      const requestedTenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : env.TENANT_ID || "aquatrace";
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId,
+        op: "campaignTemplates"
+      });
+      res.json({ ok: true, templates: await deps.repository.listTemplates(access.tenantId) });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -84,7 +89,11 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
   app.post("/api/campaigns/audience/preview", async (req: Request, res: Response) => {
     try {
       const tenantInput = tenantSchema.parse(req.body ?? {});
-      const tenant = tenantFrom(tenantInput, env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: tenantInput.tenantId,
+        op: "campaignAudiencePreview"
+      });
+      const tenant = tenantFrom({ ...tenantInput, tenantId: access.tenantId }, env);
       const preview = await service.previewAudience(tenant, req.body?.filter ?? req.body);
       res.json({ ok: true, ...preview });
     } catch (error) {
@@ -95,8 +104,12 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
   app.post("/api/campaigns/test-run", async (req: Request, res: Response) => {
     try {
       const tenantInput = tenantSchema.parse(req.body ?? {});
-      const tenant = tenantFrom(tenantInput, env);
-      const result = await service.queueTemplateCampaign(tenant, req.body);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: tenantInput.tenantId,
+        op: "campaignTestRun"
+      });
+      const tenant = tenantFrom({ ...tenantInput, tenantId: access.tenantId }, env);
+      const result = await service.queueTemplateCampaign(tenant, req.body, actorIdForAccess(access));
       res.status(201).json({ ok: true, ...result, sendsAreApprovalQueuedOnly: true });
     } catch (error) {
       sendRouteError(res, error);
@@ -106,12 +119,16 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
   app.post("/api/campaigns/:id/queue-step", async (req: Request, res: Response) => {
     try {
       const input = queueStepInputSchema.parse(req.body ?? {});
-      const tenant = tenantFrom({ tenantId: input.tenantId }, env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: input.tenantId ?? env.TENANT_ID ?? "aquatrace",
+        op: "campaignQueueStep"
+      });
+      const tenant = tenantFrom({ tenantId: access.tenantId }, env);
       const campaignId = req.params.id;
       if (!campaignId) {
         throw new RailError("Campaign id is required.", { provider: "native", op: "queueCampaignStep", status: 400 });
       }
-      const result = await service.queueStep(tenant, campaignId, input.stepId);
+      const result = await service.queueStep(tenant, campaignId, input.stepId, undefined, actorIdForAccess(access));
       res.status(201).json({ ok: true, ...result, sendsAreApprovalQueuedOnly: true });
     } catch (error) {
       sendRouteError(res, error);
@@ -155,8 +172,12 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
   app.post("/api/campaigns/transactional/report-delivery", async (req: Request, res: Response) => {
     try {
       const input = reportDeliverySchema.parse(req.body ?? {});
-      const tenant = tenantFrom({ tenantId: input.tenantId }, env);
-      const approval = await service.queueTransactionalReportDelivery(tenant, input);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: input.tenantId ?? env.TENANT_ID ?? "aquatrace",
+        op: "campaignReportDelivery"
+      });
+      const tenant = tenantFrom({ tenantId: access.tenantId }, env);
+      const approval = await service.queueTransactionalReportDelivery(tenant, input, actorIdForAccess(access));
       res.status(201).json({ ok: true, approval, sendsAreApprovalQueuedOnly: true });
     } catch (error) {
       sendRouteError(res, error);
@@ -166,8 +187,12 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
   app.post("/api/campaigns/transactional/invoice-paid", async (req: Request, res: Response) => {
     try {
       const input = invoicePaidSchema.parse(req.body ?? {});
-      const tenant = tenantFrom({ tenantId: input.tenantId }, env);
-      const approval = await service.queueInvoicePaidReviewRequest(tenant, input);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: input.tenantId ?? env.TENANT_ID ?? "aquatrace",
+        op: "campaignInvoicePaid"
+      });
+      const tenant = tenantFrom({ tenantId: access.tenantId }, env);
+      const approval = await service.queueInvoicePaidReviewRequest(tenant, input, actorIdForAccess(access));
       res.status(201).json({ ok: true, approval, delayHours: 48, sendsAreApprovalQueuedOnly: true });
     } catch (error) {
       sendRouteError(res, error);
@@ -177,7 +202,11 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
   app.get("/api/campaigns/stats", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : env.TENANT_ID || "aquatrace";
-      const tenant = tenantFrom({ tenantId }, env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: tenantId,
+        op: "campaignStats"
+      });
+      const tenant = tenantFrom({ tenantId: access.tenantId }, env);
       res.json({ ok: true, stats: await service.stats(tenant) });
     } catch (error) {
       sendRouteError(res, error);

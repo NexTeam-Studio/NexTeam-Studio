@@ -50,8 +50,10 @@ export function createCampaignNexiTools(input: {
   repository: CampaignRepository;
   approvalQueue: ApprovalQueueService;
   env?: NodeJS.ProcessEnv | undefined;
+  actorId?: string | undefined;
 }): NexiTool[] {
   const service = new CampaignService(input);
+  const actorId = input.actorId ?? "unknown-actor";
   return [
     {
       name: "audiencePreview",
@@ -76,7 +78,7 @@ export function createCampaignNexiTools(input: {
       inputSchema: draftCampaignInputSchema,
       handler: async (tenant, args) => {
         const parsed = draftCampaignInputSchema.parse(args);
-        const result = await service.queueTemplateCampaign(tenant, parsed);
+        const result = await service.queueTemplateCampaign(tenant, parsed, actorId);
         return {
           result: {
             campaign: result.campaign,
@@ -131,7 +133,7 @@ export function createCampaignNexiTools(input: {
       inputSchema: queueReportDeliveryInputSchema,
       handler: async (tenant, args) => {
         const parsed = queueReportDeliveryInputSchema.parse(args);
-        const approval = await service.queueTransactionalReportDelivery(tenant, parsed);
+        const approval = await service.queueTransactionalReportDelivery(tenant, parsed, actorId);
         return {
           result: { approval, sendsAreApprovalQueuedOnly: true },
           sources: [source(approval.id, `ApprovalQueue report delivery ${approval.id}`)]
@@ -144,7 +146,7 @@ export function createCampaignNexiTools(input: {
       inputSchema: queueReviewRequestInputSchema,
       handler: async (tenant, args) => {
         const parsed = queueReviewRequestInputSchema.parse(args);
-        const approval = await service.queueInvoicePaidReviewRequest(tenant, parsed);
+        const approval = await service.queueInvoicePaidReviewRequest(tenant, parsed, actorId);
         return {
           result: { approval, delayHours: 48, sendsAreApprovalQueuedOnly: true },
           sources: [source(approval.id, `ApprovalQueue review request ${approval.id}`)]

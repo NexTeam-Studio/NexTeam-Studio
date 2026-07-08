@@ -95,6 +95,12 @@ function outboundArgs(input: {
   };
 }
 
+function withActor(args: unknown, actorId: string): unknown {
+  return args && typeof args === "object" && !Array.isArray(args)
+    ? { ...(args as Record<string, unknown>), actorId }
+    : { actorId, payload: args };
+}
+
 async function recordTracking(input: {
   repository: CampaignRepository;
   tenantId: string;
@@ -133,7 +139,7 @@ export class CampaignService {
     return { filter, selected: audience.contacts, excluded: audience.excluded };
   }
 
-  async queueTemplateCampaign(tenant: Tenant, raw: unknown): Promise<QueueCampaignResult> {
+  async queueTemplateCampaign(tenant: Tenant, raw: unknown, actorId = "unknown-actor"): Promise<QueueCampaignResult> {
     const input = campaignRunSchema.parse(raw);
     const template = await this.deps.repository.getTemplate(tenant.id, input.templateId);
     if (!template) {
@@ -150,10 +156,16 @@ export class CampaignService {
       sequence: template.sequence,
       status: "approval_queued"
     }));
-    return this.queueStep(tenant, campaign.id, template.sequence[0]?.id ?? "", audience.contacts);
+    return this.queueStep(tenant, campaign.id, template.sequence[0]?.id ?? "", audience.contacts, actorId);
   }
 
-  async queueStep(tenant: Tenant, campaignId: string, stepId: string, contactsOverride?: CampaignContact[] | undefined): Promise<QueueCampaignResult> {
+  async queueStep(
+    tenant: Tenant,
+    campaignId: string,
+    stepId: string,
+    contactsOverride?: CampaignContact[] | undefined,
+    actorId = "unknown-actor"
+  ): Promise<QueueCampaignResult> {
     const campaign = await this.deps.repository.getCampaign(tenant.id, campaignId);
     if (!campaign) {
       throw new RailError(`Campaign ${campaignId} was not found.`, { provider: "native", op: "queueCampaignStep", status: 404 });
@@ -218,16 +230,16 @@ export class CampaignService {
         execute: {
           service: "campaigns",
           op: boundary.executionBlocked ? "bulkExecutionBlocked" : "approvalRequired",
-          args: outboundArgs({
+          args: withActor(outboundArgs({
             tenant,
             contact,
             step,
             campaignId,
             rendered,
             executionBlocked: boundary.executionBlocked
-          })
+          }), actorId)
         },
-        createdBy: "nexi"
+        createdBy: "user"
       });
       queuedApprovals.push(approval);
       await recordTracking({
@@ -331,7 +343,7 @@ export class CampaignService {
     to: string;
     reportTitle: string;
     reportRef: string;
-  }): Promise<ApprovalItem> {
+  }, actorId = "unknown-actor"): Promise<ApprovalItem> {
     return this.deps.approvalQueue.create({
       tenantId: tenant.id,
       kind: "email",
@@ -343,6 +355,7 @@ export class CampaignService {
         service: "campaigns",
         op: "transactionalApprovalRequired",
         args: {
+          actorId,
           outbound: {
             tenantId: tenant.id,
             to: [input.to],
@@ -351,7 +364,7 @@ export class CampaignService {
           }
         }
       },
-      createdBy: "system"
+      createdBy: "user"
     });
   }
 
@@ -359,7 +372,7 @@ export class CampaignService {
     to: string;
     invoiceId: string;
     clientName: string;
-  }): Promise<ApprovalItem> {
+  }, actorId = "unknown-actor"): Promise<ApprovalItem> {
     return this.deps.approvalQueue.create({
       tenantId: tenant.id,
       kind: "email",
@@ -371,6 +384,7 @@ export class CampaignService {
         service: "campaigns",
         op: "transactionalApprovalRequiredAfterDelay",
         args: {
+          actorId,
           delayHours: 48,
           invoiceId: input.invoiceId,
           outbound: {
@@ -381,7 +395,7 @@ export class CampaignService {
           }
         }
       },
-      createdBy: "system"
+      createdBy: "user"
     });
   }
 }

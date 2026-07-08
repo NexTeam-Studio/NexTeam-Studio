@@ -15,6 +15,7 @@ import { CompanyCamAdapter } from "@nexteam/providers";
 import { getBuildInfo } from "./buildInfo.js";
 import { createNexiRouter } from "./nexi/nexiRoutes.js";
 import { buildHealth } from "./health.js";
+import { actorIdForAccess, requireTenantRole } from "./auth/accessContext.js";
 import { createCampaignNexiTools } from "./campaigns/nexiTools.js";
 import { InMemoryCampaignRepository } from "./campaigns/repository.js";
 import { registerCampaignRoutes } from "./campaigns/routes.js";
@@ -79,10 +80,29 @@ app.use("/api/nexi", createNexiRouter(process.env, {
     ...createCrmReadTools(nativeCrmProvider),
     ...createCommsNexiTools(commsRail, approvalQueue),
     ...createContentNexiTools({ repository: contentRepository, approvalQueue }),
-    ...createCampaignNexiTools({ repository: campaignRepository, approvalQueue, env: process.env }),
     ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env }),
     ...createEvaporationNexiTools({ repository: evaporationRepository, env: process.env })
-  ]
+  ],
+  extraToolsForRequest: async (req, tenant) => {
+    let access;
+    try {
+      access = await requireTenantRole(req, process.env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: tenant.id,
+        op: "campaignToolRegistry"
+      });
+    } catch (error) {
+      if (error instanceof RailError && (error.status === 401 || error.status === 403)) {
+        return [];
+      }
+      throw error;
+    }
+    return createCampaignNexiTools({
+      repository: campaignRepository,
+      approvalQueue,
+      env: process.env,
+      actorId: actorIdForAccess(access)
+    });
+  }
 }));
 app.use("/api/voice", createVoiceRouter(process.env));
 
