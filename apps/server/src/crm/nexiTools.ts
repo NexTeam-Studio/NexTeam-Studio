@@ -16,6 +16,7 @@ const clientLookupInputSchema = z.object({ q: z.string().default("") });
 const createClientInputSchema = z.object({
   name: z.string().min(1),
   company: z.string().min(1).optional(),
+  address: z.string().min(1).optional(),
   emails: z.array(z.string()).default([]),
   phones: z.array(z.string()).default([]),
   consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
@@ -127,17 +128,44 @@ export function createCrmTools(provider: CRMProvider, approvalQueue: ApprovalQue
           throw new RailError("The configured CRM provider cannot create native clients.", { provider: "native", op: "createClient", status: 501 });
         }
         const input = createClientInputSchema.parse(args);
-        const client = await provider.createClient({
+        const client = {
           tenantId: tenant.id,
           name: input.name,
-          company: input.company,
+          ...(input.company ? { company: input.company } : {}),
           emails: input.emails,
           phones: input.phones,
           consent: input.consent
+        };
+        const body = [
+          `Name: ${client.name}`,
+          client.company ? `Company: ${client.company}` : "",
+          client.emails.length ? `Email: ${client.emails.join(", ")}` : "",
+          client.phones.length ? `Phone: ${client.phones.join(", ")}` : "",
+          input.address ? `Address note: ${input.address}` : "",
+          `Email OK: ${client.consent.email ? "yes" : "no"}`,
+          `Text OK: ${client.consent.sms ? "yes" : "no"}`
+        ].filter(Boolean).join("\n");
+        const approval = await approvalQueue.create({
+          tenantId: tenant.id,
+          kind: "client",
+          preview: {
+            title: `Create client: ${client.name}`,
+            body
+          },
+          execute: {
+            service: "crm",
+            op: "createClient",
+            args: {
+              tenantId: tenant.id,
+              client,
+              ...(input.address ? { addressNote: input.address } : {})
+            }
+          },
+          createdBy: "nexi"
         });
         return {
-          result: { client },
-          sources: [source(client.id, `Native client ${client.name}`)]
+          result: { approval, pendingClient: client, addressNote: input.address, writesAreApprovalQueuedOnly: true },
+          sources: [source(approval.id, `ApprovalQueue client create ${approval.id}`)]
         };
       }
     },

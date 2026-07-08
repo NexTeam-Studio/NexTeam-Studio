@@ -243,7 +243,7 @@ KNOWN VARIANTS:
 - (3) how do I upload photos
 - (3) Run the evap for 100 Main Street, Bryson City, NC 28713 with surface area 500 square feet, water temperature 82 degrees, and observed daily loss 1.5 inches.
 - (3) use the evaporation calculator on Deborah Justice's pool
-- (module audit) `createClient` exists in `createCrmTools`, but server registers only `createCrmReadTools` into `/api/nexi/message`.
+- (module audit) `createClient` existed in `createCrmTools`, but server registered only `createCrmReadTools` into `/api/nexi/message`. Phase 0 item 2 now wires `createCrmTools`, routes create-client prompts deterministically, and queues writes through ApprovalQueue; local smoke receipt: `receipts/phase0/create-client-nexi-local-smoke-20260708.json`.
 - (module audit) M4 native upload endpoints exist, but owner-facing photo upload is not complete without the M11 real-device path.
 - (module audit) M5 content tools exist in Nexi, but content queue visibility must be re-proven through owner-facing chat/UI after Part 9.
 - (module audit) M12a voice has backend/web foundation receipts, but live hands-free phone/video proof is still pending.

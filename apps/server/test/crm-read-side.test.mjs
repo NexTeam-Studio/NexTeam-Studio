@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { ApprovalQueueService, InMemoryApprovalQueueRepository, invoiceSchema, quoteSchema } from "@nexteam/core";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
+import { CrmApprovalExecutor } from "../dist/crm/approvalExecutor.js";
 import { buildQuoteDraft } from "../dist/crm/quoteBuilder.js";
 import { renderInvoicePdf, renderQuotePdf } from "../dist/crm/quotePdf.js";
 import { createCrmReadTools, createCrmTools } from "../dist/crm/nexiTools.js";
@@ -156,7 +157,7 @@ test("CRM write nexi-tools create clients, draft quotes through ApprovalQueue, a
     totals: { subtotal: 795, tax: 0, total: 795 }
   };
   const adapter = NativeAdapter.fromRecords("aquatrace", { clients: [client], properties: [property], jobs: [job], invoices: [invoice] });
-  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CrmApprovalExecutor(adapter));
   const tools = createCrmTools(adapter, approvalQueue);
   const createClient = tools.find((tool) => tool.name === "createClient");
   const draftQuote = tools.find((tool) => tool.name === "draftQuote");
@@ -165,8 +166,20 @@ test("CRM write nexi-tools create clients, draft quotes through ApprovalQueue, a
   assert.ok(draftQuote);
   assert.ok(invoiceStatus);
 
-  const created = await createClient.handler(tenant, { name: "Portal Client", emails: ["portal@example.test"], phones: [], consent: { email: true, sms: false } });
-  assert.equal(created.result.client.tenantId, "aquatrace");
+  const queued = await createClient.handler(tenant, {
+    name: "Portal Client",
+    address: "123 Test Lane, Fair Play, SC",
+    emails: ["portal@example.test"],
+    phones: [],
+    consent: { email: true, sms: false }
+  });
+  assert.equal(queued.result.approval.kind, "client");
+  assert.equal(queued.result.writesAreApprovalQueuedOnly, true);
+  assert.equal((await adapter.getClients("Portal Client")).length, 0);
+  await approvalQueue.approve(queued.result.approval.id);
+  const executed = await approvalQueue.executeApproved(queued.result.approval.id);
+  assert.equal(executed.result.client.tenantId, "aquatrace");
+  assert.equal((await adapter.getClients("Portal Client")).length, 1);
 
   const drafted = await draftQuote.handler(tenant, {
     clientId: "client_1",

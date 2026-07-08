@@ -17,6 +17,7 @@ function tenant(): Tenant {
     branding: { assistantName: "Nexi" },
     adapters: { crm: "jobber", media: "companycam", email: "gmail_relay" },
     approval: {
+      client: { autoApprove: false, cleanStreak: 0 },
       email: { autoApprove: false, cleanStreak: 0 },
       sms: { autoApprove: false, cleanStreak: 0 },
       gbp_post: { autoApprove: false, cleanStreak: 0 },

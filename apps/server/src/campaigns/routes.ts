@@ -48,7 +48,7 @@ const invoicePaidSchema = z.object({
 function tenantFrom(input: { tenantId?: string | undefined; tenantName?: string | undefined }, env: NodeJS.ProcessEnv): Tenant {
   const tenantId = input.tenantId || env.TENANT_ID || "aquatrace";
   const approval = Object.fromEntries(
-    (["email", "sms", "gbp_post", "social_post", "article", "quote", "invoice", "site_publish", "review_reply"] satisfies ArtifactKind[])
+    (["client", "email", "sms", "gbp_post", "social_post", "article", "quote", "invoice", "site_publish", "review_reply"] satisfies ArtifactKind[])
       .map((kind) => [kind, { autoApprove: false, cleanStreak: 0 }])
   ) as Tenant["approval"];
   return {

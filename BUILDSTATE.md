@@ -16,7 +16,7 @@
 | nexi | M1 P2-F/P2-G cross-rail + photo UI | done | Job issue/technician prompts preload Jobber plus CompanyCam rails, CompanyCam photo sources open full-size and save through `/api/media`, full verify and live staging probes in `receipts/m1/p2f-p2g-crossrail-photo-ui-verify.txt`, `receipts/m1/p2f-p2g-staging-deploy.txt`, and `receipts/m1/p2f-p2g-live-staging.json` |
 | nexi | M1 trial P2 photo/date/reuse/format fixes | done | Exact `show me the Deborah Justice photos` parser regression fixed, date follow-ups keep conversation date windows, cached tool traces persist for reuse, concise answer endings are enforced server-side, full verify and live staging SHA-match/probes in `receipts/m1/p2-photo-context-reuse-format-verify.txt`, `receipts/m1/p2-photo-context-reuse-format-staging-deploy.txt`, `receipts/m1/p2-photo-context-reuse-format-staging-deploy-up.txt`, and `receipts/m1/p2-photo-context-reuse-format-live-staging.json` |
 | crm | M2 read-side skeleton | done | `receipts/m2/verify.txt`, `receipts/m2/jobber-import-dry-run.json`, `receipts/m2/dependency-install-proof.txt` |
-| crm | M2 native writes + quote foundation | in_progress | Part 9 reality gate correction: backend `createClient`/`draftQuote` code exists, but `/api/nexi/message` currently registers `createCrmReadTools` only, so owner-facing Nexi createClient/quote writes are not live. Prior backend receipts: `receipts/m2/native-write-slice-verify.txt`, `receipts/m2/native-write-slice-verify-exit.txt`. |
+| crm | M2 native writes + quote foundation | in_progress | Phase 0 reality-gate correction wired `createClient`/`draftQuote` into `/api/nexi/message`; `createClient` is ApprovalQueue-gated and locally receipted at `receipts/phase0/create-client-nexi-local-smoke-20260708.json`. Live staging owner-facing receipt still required before `done`. Prior backend receipts: `receipts/m2/native-write-slice-verify.txt`, `receipts/m2/native-write-slice-verify-exit.txt`. |
 | crm | M2 Jobber-seeded pool leak catalog | done | `receipts/m2/jobber-catalog-pull.json` |
 | crm | M2 full Jobber import dry-run | done | `receipts/m2/jobber-full-import-dry-run.json`; 625 clients, 625 jobs, 547 properties, all preserving Jobber external IDs; no Jobber writes. |
 | crm | M2 native Jobber import write | done | `receipts/m2/jobber-native-import-write-integration.json`; 625 clients, 625 jobs, and 547 properties written to native collections with external IDs preserved. `jobberWrites:false`, `destructiveWrites:false`. |
@@ -41,7 +41,7 @@
 
 ## Part 9 User-Facing Reality Gate Audit - 2026-07-08
 
-- `createClient`: NOT DONE. The write tool exists in `createCrmTools`, but the live Nexi registry uses only `createCrmReadTools`, so the owner cannot create a client through Nexi today.
+- `createClient`: IN PROGRESS. Phase 0 now registers `createCrmTools` in the Nexi chat registry and queues client creation through ApprovalQueue. Local smoke receipt passes; live staging owner-facing approval/execute receipt is still required.
 - `photo upload`: NOT DONE. Backend upload/report pieces exist, but owner-facing upload/capture waits on the M11 real-device path.
 - `content queue visibility`: NOT MARKED DONE in this BUILDSTATE. Content Nexi tools exist (`draftPostFromJob`, `contentQueue`, `approve`, `contentStats`), but M5 is still recorded as `opened`; it needs a fresh Part 9 owner-facing queue visibility receipt before any `done` claim.
 - `campaign execution`: BLOCKED. Queue/build/compliance pieces are receipted; list execution remains behind DNS, physical address, and explicit approval.

@@ -1,0 +1,114 @@
+{
+  "receipt": "phase0-create-client-nexi-local-smoke",
+  "capturedAt": "2026-07-08T23:41:40.725Z",
+  "prompt": "add a new client Lane Evans, address 123 Main Road, Fair Play SC, email lane@example.test, phone 864-555-0100",
+  "checks": {
+    "routedToCreateClient": true,
+    "approvalQueued": true,
+    "noWriteBeforeApproval": true,
+    "executeCreatedClient": true,
+    "approvalQueueGated": true
+  },
+  "answer": "I parked Lane Evans as a new client for approval.",
+  "toolRuns": [
+    {
+      "name": "createClient",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_eacd2990-64f9-47b2-ad52-5226dd8abcf9",
+          "label": "ApprovalQueue client create appr_eacd2990-64f9-47b2-ad52-5226dd8abcf9"
+        }
+      ],
+      "result": {
+        "approval": {
+          "id": "appr_eacd2990-64f9-47b2-ad52-5226dd8abcf9",
+          "tenantId": "aquatrace",
+          "kind": "client",
+          "preview": {
+            "title": "Create client: Lane Evans",
+            "body": "Name: Lane Evans\nEmail: lane@example.test\nPhone: 8645550100\nAddress note: 123 Main Road, Fair Play SC\nEmail OK: no\nText OK: no"
+          },
+          "execute": {
+            "service": "crm",
+            "op": "createClient",
+            "args": {
+              "tenantId": "aquatrace",
+              "client": {
+                "tenantId": "aquatrace",
+                "name": "Lane Evans",
+                "emails": [
+                  "lane@example.test"
+                ],
+                "phones": [
+                  "8645550100"
+                ],
+                "consent": {
+                  "email": false,
+                  "sms": false
+                }
+              },
+              "addressNote": "123 Main Road, Fair Play SC"
+            }
+          },
+          "status": "pending",
+          "createdBy": "nexi"
+        },
+        "pendingClient": {
+          "tenantId": "aquatrace",
+          "name": "Lane Evans",
+          "emails": [
+            "lane@example.test"
+          ],
+          "phones": [
+            "8645550100"
+          ],
+          "consent": {
+            "email": false,
+            "sms": false
+          }
+        },
+        "addressNote": "123 Main Road, Fair Play SC",
+        "writesAreApprovalQueuedOnly": true
+      }
+    }
+  ],
+  "approvalId": "appr_eacd2990-64f9-47b2-ad52-5226dd8abcf9",
+  "executeResult": {
+    "client": {
+      "id": "client_4c97a40e-eda8-44b2-9e88-7f0a089c825c",
+      "tenantId": "aquatrace",
+      "name": "Lane Evans",
+      "emails": [
+        "lane@example.test"
+      ],
+      "phones": [
+        "8645550100"
+      ],
+      "tags": [],
+      "consent": {
+        "email": false,
+        "sms": false
+      }
+    },
+    "addressNote": "123 Main Road, Fair Play SC"
+  },
+  "clientsAfterApproval": [
+    {
+      "id": "client_4c97a40e-eda8-44b2-9e88-7f0a089c825c",
+      "tenantId": "aquatrace",
+      "name": "Lane Evans",
+      "emails": [
+        "lane@example.test"
+      ],
+      "phones": [
+        "8645550100"
+      ],
+      "tags": [],
+      "consent": {
+        "email": false,
+        "sms": false
+      }
+    }
+  ]
+}

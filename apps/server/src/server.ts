@@ -16,6 +16,7 @@ import { getBuildInfo } from "./buildInfo.js";
 import { createNexiRouter } from "./nexi/nexiRoutes.js";
 import { buildHealth } from "./health.js";
 import { actorIdForAccess, requireTenantRole } from "./auth/accessContext.js";
+import { CompositeApprovalExecutor } from "./approval/compositeExecutor.js";
 import { createCampaignNexiTools } from "./campaigns/nexiTools.js";
 import { InMemoryCampaignRepository } from "./campaigns/repository.js";
 import { registerCampaignRoutes } from "./campaigns/routes.js";
@@ -29,7 +30,8 @@ import { createContextNexiTools } from "./context/nexiTools.js";
 import { createContentNexiTools } from "./content/nexiTools.js";
 import { InMemoryContentRepository } from "./content/repository.js";
 import { registerContentRoutes } from "./content/routes.js";
-import { createCrmReadTools } from "./crm/nexiTools.js";
+import { CrmApprovalExecutor } from "./crm/approvalExecutor.js";
+import { createCrmTools } from "./crm/nexiTools.js";
 import { FirestoreNativeCrmRepository } from "./crm/nativeRepository.js";
 import { createEvaporationNexiTools } from "./evaporation/nexiTools.js";
 import { MemoryEvaporationRepository } from "./evaporation/repository.js";
@@ -52,7 +54,6 @@ import { createVoiceRouter } from "./voice/routes.js";
 
 const app = express();
 const commsRail = createCommsRailFromEnv(process.env);
-const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CommsApprovalExecutor(commsRail));
 const contentRepository = new InMemoryContentRepository();
 const schedulingRepository = new InMemorySchedulingRepository();
 const campaignRepository = new InMemoryCampaignRepository(process.env.TENANT_ID || "aquatrace");
@@ -61,6 +62,16 @@ const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
 const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();
 const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TENANT_ID || "aquatrace");
+const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CompositeApprovalExecutor([
+  {
+    canExecute: (item) => item.execute.service === "comms" && item.execute.op === "sendEmail",
+    executor: new CommsApprovalExecutor(commsRail)
+  },
+  {
+    canExecute: (item) => item.execute.service === "crm" && item.execute.op === "createClient",
+    executor: new CrmApprovalExecutor(nativeCrmProvider)
+  }
+]));
 const evaporationRepository = new MemoryEvaporationRepository();
 const mobileRepository = new InMemoryMobileRepository();
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
@@ -86,7 +97,7 @@ app.use("/api/nexi", createNexiRouter(process.env, {
   filterTools: (tenant, tools) => enforceToolEntitlements(tenant, tools).tools,
   extraTools: [
     ...createContextNexiTools({ env: process.env }),
-    ...createCrmReadTools(nativeCrmProvider),
+    ...createCrmTools(nativeCrmProvider, approvalQueue),
     ...createCommsNexiTools(commsRail, approvalQueue),
     ...createContentNexiTools({ repository: contentRepository, approvalQueue }),
     ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env }),

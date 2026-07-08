@@ -733,6 +733,14 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   const lowerUserText = userText.toLowerCase();
   const correctionFollowUp = looksLikeCorrectionFollowUp(lowerUserText);
   const emailRef = emailRefFromText(userText);
+  if (toolName === "createClient") {
+    const parsed = createClientInputFromText(userText);
+    record.name ??= parsed.name;
+    record.address ??= parsed.address;
+    record.emails ??= parsed.emails;
+    record.phones ??= parsed.phones;
+    record.consent ??= parsed.consent;
+  }
   if (toolName === "draftEmail") {
     const parsed = draftEmailInputFromText(userText);
     if (typeof record.to === "string") {
@@ -1112,6 +1120,49 @@ function firstEmailAddress(text: string): string | undefined {
   return text.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
 }
 
+function firstPhoneNumber(text: string): string | undefined {
+  const labeled = text.match(/\b(?:phone|number|cell|call|text)\s*(?:is|=|:)?\s*([+()\d][+()\d\s.-]{6,})\b/i)?.[1];
+  const fallback = text.match(/\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/)?.[0];
+  return (labeled ?? fallback)?.replace(/[^\d+]/g, "").trim();
+}
+
+function looksLikeCreateClientAction(lower: string): boolean {
+  return /\b(?:add|create|set\s+up|make)\b.{0,40}\b(?:new\s+)?client\b/.test(lower)
+    || /\b(?:new\s+client|client\s+create)\b/.test(lower);
+}
+
+function createClientNameFromText(text: string): string {
+  const match = text.match(/\b(?:add|create|set\s+up|make)\s+(?:a\s+)?(?:new\s+)?client\s*,?\s*(?:named\s+|called\s+)?(.+?)(?=,|\s+(?:at|address|email|e-mail|phone|number|with)\b|[?.!]|$)/i)
+    ?? text.match(/\bclient\s+(?:named\s+|called\s+)?(.+?)(?=,|\s+(?:at|address|email|e-mail|phone|number|with)\b|[?.!]|$)/i);
+  const name = (match?.[1] ?? "")
+    .replace(/\b(?:named|called)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return name || text.replace(/[?.!]+$/g, "").trim();
+}
+
+function createClientAddressFromText(text: string): string | undefined {
+  const match = text.match(/\b(?:address\s*(?:is|=|:)?|at)\s+(.+?)(?=,\s*(?:email|e-mail|phone|number|with)\b|\s+(?:email|e-mail|phone|number)\b|[?.!]|$)/i);
+  const address = match?.[1]?.replace(/\s+/g, " ").trim();
+  return address || undefined;
+}
+
+function createClientInputFromText(text: string): { name: string; address?: string | undefined; emails: string[]; phones: string[]; consent: { email: boolean; sms: boolean } } {
+  const email = firstEmailAddress(text);
+  const phone = firstPhoneNumber(text);
+  const lower = text.toLowerCase();
+  return {
+    name: createClientNameFromText(text),
+    address: createClientAddressFromText(text),
+    emails: email ? [email] : [],
+    phones: phone ? [phone] : [],
+    consent: {
+      email: /\b(?:email\s+ok|can\s+email|email\s+consent|opt(?:ed)?\s+in\s+for\s+email)\b/.test(lower),
+      sms: /\b(?:text\s+ok|sms\s+ok|can\s+text|text\s+consent|opt(?:ed)?\s+in\s+for\s+(?:sms|text))\b/.test(lower)
+    }
+  };
+}
+
 function mailboxAliasFromEmailAddress(email: string | undefined): string | undefined {
   if (!email) {
     return undefined;
@@ -1219,6 +1270,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (emailRef && toolsByName.has("getEmailMessage")) {
     return ["getEmailMessage"];
+  }
+  if (looksLikeCreateClientAction(lower) && toolsByName.has("createClient")) {
+    return ["createClient"];
   }
   if (looksLikeEmailDraftAction(lower) && firstEmailAddress(userText) && toolsByName.has("draftEmail")) {
     return ["draftEmail"];

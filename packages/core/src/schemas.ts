@@ -23,6 +23,7 @@ export const addressSchema = z.object({
 });
 
 export const artifactKindSchema = z.enum([
+  "client",
   "email",
   "sms",
   "gbp_post",

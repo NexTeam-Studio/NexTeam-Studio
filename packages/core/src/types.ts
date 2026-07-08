@@ -32,6 +32,7 @@ export type PlatformModule =
   | "sites";
 
 export type ArtifactKind =
+  | "client"
   | "email"
   | "sms"
   | "gbp_post"
