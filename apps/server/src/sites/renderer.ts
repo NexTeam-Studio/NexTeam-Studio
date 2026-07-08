@@ -8,6 +8,19 @@ function escapeHtml(value: string) {
     .replaceAll('"', "&quot;");
 }
 
+function galleryImageSrc(item: Extract<SiteBlock, { type: "gallery" }>["items"][number]): string | null {
+  if (item.thumbRef.startsWith("/api/media/")) {
+    return item.thumbRef;
+  }
+  if (item.thumbRef.startsWith("companycam:")) {
+    return `/api/media/${encodeURIComponent(item.thumbRef.replace(/^companycam:/, ""))}`;
+  }
+  if (/^\d{6,}$/.test(item.mediaId)) {
+    return `/api/media/${encodeURIComponent(item.mediaId)}`;
+  }
+  return null;
+}
+
 function renderHero(block: Extract<SiteBlock, { type: "hero" }>) {
   return `
     <section class="hero">
@@ -63,11 +76,16 @@ function renderGallery(block: Extract<SiteBlock, { type: "gallery" }>) {
         <h2>${escapeHtml(block.heading)}</h2>
       </div>
       <div class="gallery">
-        ${block.items.map((item) => `
+        ${block.items.map((item) => {
+          const src = galleryImageSrc(item);
+          return `
           <figure>
-            <div class="photo-tile" data-media-id="${escapeHtml(item.mediaId)}">${escapeHtml(item.caption.slice(0, 1))}</div>
+            ${src
+              ? `<img class="photo-tile real-photo" src="${escapeHtml(src)}" alt="${escapeHtml(item.caption)}" loading="lazy" data-media-id="${escapeHtml(item.mediaId)}" />`
+              : `<div class="photo-tile" data-media-id="${escapeHtml(item.mediaId)}">${escapeHtml(item.caption.slice(0, 1))}</div>`}
             <figcaption>${escapeHtml(item.caption)}</figcaption>
-          </figure>`).join("")}
+          </figure>`;
+        }).join("")}
       </div>
     </section>`;
 }
@@ -234,6 +252,7 @@ export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
       .split, .lead { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 24px; align-items: start; }
       .map-card, form { padding: 24px; display: flex; flex-wrap: wrap; gap: 10px; }
       .photo-tile {
+        width: 100%;
         min-height: 190px;
         border-radius: 26px;
         display: grid;
@@ -243,6 +262,7 @@ export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
         font-weight: 900;
         background: linear-gradient(135deg, var(--deep), var(--water));
       }
+      .real-photo { height: 220px; object-fit: cover; }
       figure { margin: 0; }
       figcaption { padding: 10px 4px; font: 700 0.95rem ui-sans-serif, system-ui, sans-serif; }
       .warm { background: rgba(239, 226, 200, 0.42); margin-inline: calc(50% - 50vw); padding-inline: calc(50vw - 50%); }

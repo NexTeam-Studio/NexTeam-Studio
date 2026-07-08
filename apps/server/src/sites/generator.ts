@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { generatedSiteSchema, siteGenerationInputSchema, type GeneratedSite, type SiteBlock, type SiteGenerationInput } from "./schemas.js";
 import { renderStaticSite } from "./renderer.js";
 
@@ -143,7 +142,7 @@ export function generatePoolLeakSite(input: SiteGenerationInput = {}, now = new 
   ];
 
   const siteWithoutHtml = {
-    id: `site_${randomUUID()}`,
+    id: `site_${tenantId}_${slug}`,
     tenantId,
     slug,
     title: businessName,

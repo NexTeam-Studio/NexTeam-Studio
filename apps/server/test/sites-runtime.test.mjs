@@ -7,6 +7,7 @@ import {
   InMemoryEventBus
 } from "@nexteam/core";
 import { generatePoolLeakSite } from "../dist/sites/generator.js";
+import { createSitesNexiTools } from "../dist/sites/nexiTools.js";
 import { InMemorySitesRepository } from "../dist/sites/repository.js";
 import { registerSitesRoutes } from "../dist/sites/routes.js";
 
@@ -28,14 +29,15 @@ test("M8 generates Aquatrace site blocks and renders static HTML", () => {
     slug: "aquatrace",
     gallery: [
       {
-        mediaId: "media_real_job_photo",
-        thumbRef: "native://media/media_real_job_photo",
+        mediaId: "3338800086",
+        thumbRef: "companycam:3338800086",
         caption: "Return fitting dye test from a real leak detection job"
       }
     ]
   }, "2026-07-07T20:00:00.000Z");
 
   assert.equal(site.tenantId, "aquatrace");
+  assert.equal(site.id, "site_aquatrace_aquatrace");
   assert.equal(site.slug, "aquatrace");
   assert.deepEqual(site.blocks.map((block) => block.type), [
     "hero",
@@ -49,6 +51,7 @@ test("M8 generates Aquatrace site blocks and renders static HTML", () => {
   ]);
   assert.match(site.html, /Find the leak\. Keep the water\./);
   assert.match(site.html, /Return fitting dye test/);
+  assert.match(site.html, /\/api\/media\/3338800086/);
   assert.equal(site.customDomainStatus, "pending_cloudflare");
 });
 
@@ -124,4 +127,70 @@ test("M8 lead form creates lead, event, and approval-queued owner notification o
     const pending = await approvalQueue.listPending("aquatrace");
     assert.deepEqual(pending.map((item) => item.kind), ["site_publish", "email"]);
   });
+});
+
+test("M8 operator UI customization is tenant-scoped and owner/admin gated", async () => {
+  const app = express();
+  app.use(express.json());
+  const repository = new InMemorySitesRepository();
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  registerSitesRoutes(app, {
+    repository,
+    approvalQueue,
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const patchResponse = await fetch(`${baseUrl}/api/sites/operator-ui`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        preset: "deep_water",
+        density: "compact"
+      })
+    });
+    assert.equal(patchResponse.status, 200);
+    const patched = await patchResponse.json();
+    assert.equal(patched.ok, true);
+    assert.equal(patched.theme.tenantId, "aquatrace");
+    assert.equal(patched.theme.density, "compact");
+    assert.equal(patched.theme.colors.headerBackground, "#07363d");
+    assert.equal(patched.actorId, "internal:local-owner");
+
+    const getResponse = await fetch(`${baseUrl}/api/sites/operator-ui?tenantId=aquatrace`);
+    assert.equal(getResponse.status, 200);
+    const fetched = await getResponse.json();
+    assert.equal(fetched.theme.colors.accent, "#0e7490");
+  });
+});
+
+test("M8 Nexi tool changes Job Desk appearance without touching another tenant", async () => {
+  const repository = new InMemorySitesRepository();
+  const [tool] = createSitesNexiTools({
+    repository,
+    access: {
+      tenantId: "aquatrace",
+      tenantUserId: "owner_chris",
+      role: "OWNER",
+      accessKind: "internal"
+    }
+  });
+
+  const tenant = {
+    id: "aquatrace",
+    name: "Aquatrace",
+    industryPack: "pool_leak",
+    branding: { assistantName: "Nexi" },
+    adapters: { crm: "jobber", media: "companycam", email: "gmail_relay" },
+    approval: {},
+    timezone: "America/New_York",
+    plan: "suite"
+  };
+  const result = await tool.handler(tenant, { preset: "sandbar", plainRequest: "change my chat colors to warm sand" });
+  assert.equal(result.result.tenantScoped, true);
+  assert.equal(result.result.actorId, "internal:owner_chris");
+  assert.equal(result.result.theme.colors.headerBackground, "#5d3d24");
+  assert.equal((await repository.getOperatorUiTheme("aquatrace")).colors.accent, "#d97706");
+  assert.equal(await repository.getOperatorUiTheme("other-tenant"), null);
 });

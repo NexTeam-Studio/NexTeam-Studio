@@ -121,6 +121,36 @@ export const siteLeadSchema = z.object({
   createdAt: z.string().min(1)
 });
 
+export const operatorUiColorsSchema = z.object({
+  shellBackground: z.string().min(1).optional(),
+  panelBackground: z.string().min(1).optional(),
+  headerBackground: z.string().min(1).optional(),
+  accent: z.string().min(1).optional(),
+  accentText: z.string().min(1).optional(),
+  userBubble: z.string().min(1).optional(),
+  assistantBubble: z.string().min(1).optional(),
+  text: z.string().min(1).optional()
+});
+
+export const operatorUiThemeSchema = z.object({
+  id: z.string().min(1),
+  tenantId: z.string().min(1),
+  surface: z.literal("job_desk"),
+  name: z.string().min(1),
+  colors: operatorUiColorsSchema,
+  density: z.enum(["comfortable", "compact"]),
+  updatedBy: z.string().min(1),
+  updatedAt: z.string().min(1)
+});
+
+export const operatorUiThemeInputSchema = z.object({
+  tenantId: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
+  preset: z.enum(["aquatrace", "deep_water", "high_contrast", "sandbar"]).optional(),
+  colors: operatorUiColorsSchema.default({}),
+  density: z.enum(["comfortable", "compact"]).optional()
+});
+
 export const siteGenerationInputSchema = z.object({
   tenantId: z.string().min(1).optional(),
   businessName: z.string().min(1).optional(),
@@ -166,5 +196,7 @@ export const leadSubmissionSchema = z.object({
 export type SiteBlock = z.infer<typeof siteBlockSchema>;
 export type GeneratedSite = z.infer<typeof generatedSiteSchema>;
 export type SiteLead = z.infer<typeof siteLeadSchema>;
+export type OperatorUiTheme = z.infer<typeof operatorUiThemeSchema>;
+export type OperatorUiThemeInput = z.infer<typeof operatorUiThemeInputSchema>;
 export type SiteGenerationInput = z.infer<typeof siteGenerationInputSchema>;
 export type LeadSubmissionInput = z.infer<typeof leadSubmissionSchema>;

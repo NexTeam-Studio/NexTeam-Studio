@@ -103,6 +103,17 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
     if (Number.isFinite(observedLoss)) args.observedLoss = { inches: observedLoss, observationDays: 1 };
     return tool ? { tool, args } : null;
   }
+  if (/\b(?:change|update|make|set)\b.*\b(?:chat|job\s*desk|interface|screen|ui|colors?|colours?|theme)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "customizeOperatorUi");
+    const preset = /\b(?:blue|water|teal|ocean)\b/i.test(lower)
+      ? "deep_water"
+      : /\b(?:contrast|bold|easy to read)\b/i.test(lower)
+        ? "high_contrast"
+        : /\b(?:sand|warm|tan|gold)\b/i.test(lower)
+          ? "sandbar"
+          : "aquatrace";
+    return tool ? { tool, args: { preset, plainRequest: message } } : null;
+  }
   if (/\b(?:needs? my attention|what needs attention|triage|urgent|important)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "triageInbox");
     return tool ? { tool, args: { date: today.toISOString(), maxResults: 25 } } : null;
@@ -159,6 +170,10 @@ function summarizeResult(toolName: string, result: unknown): string {
     const report = (result as { report?: { calculation?: { evapInchesPerDay?: unknown; leakInchesPerDay?: unknown } } }).report;
     const calculation = report?.calculation;
     return `I ran the Aquatrace evaporation report. Estimated evaporation is ${String(calculation?.evapInchesPerDay ?? "unknown")} inches/day; leak loss after evaporation is ${String(calculation?.leakInchesPerDay ?? "unknown")} inches/day.`;
+  }
+  if (toolName === "customizeOperatorUi" && result && typeof result === "object") {
+    const theme = (result as { theme?: { name?: unknown; density?: unknown } }).theme;
+    return `I updated the Job Desk look${theme?.name ? ` to ${String(theme.name)}` : ""}. Refresh the screen if you do not see it right away.`;
   }
   return "I found a sourced record for that question.";
 }

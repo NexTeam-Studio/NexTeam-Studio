@@ -7,8 +7,9 @@ import {
   type EventBus
 } from "@nexteam/core";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
+import { buildOperatorUiTheme, defaultOperatorUiTheme } from "./appearance.js";
 import { generatePoolLeakSite } from "./generator.js";
-import { leadSubmissionSchema } from "./schemas.js";
+import { leadSubmissionSchema, operatorUiThemeInputSchema } from "./schemas.js";
 import type { SitesRepository } from "./repository.js";
 
 export interface SitesRouteDeps {
@@ -100,6 +101,43 @@ export function registerSitesRoutes(app: Express, deps: SitesRouteDeps): void {
         throw new RailError("Site was not found.", { provider: "native", op: "getSite", status: 404 });
       }
       res.json({ ok: true, site });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/sites/operator-ui", async (req: Request, res: Response) => {
+    try {
+      const requestedTenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId,
+        op: "operatorUiRead"
+      });
+      const theme = await deps.repository.getOperatorUiTheme(access.tenantId)
+        ?? defaultOperatorUiTheme(access.tenantId);
+      res.json({ ok: true, theme });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.patch("/api/sites/operator-ui", async (req: Request, res: Response) => {
+    try {
+      const input = operatorUiThemeInputSchema.parse(req.body);
+      const requestedTenantId = input.tenantId ?? defaultTenantId(env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId,
+        op: "operatorUiUpdate"
+      });
+      const existing = await deps.repository.getOperatorUiTheme(access.tenantId);
+      const theme = buildOperatorUiTheme({
+        tenantId: access.tenantId,
+        patch: input,
+        existing,
+        actorId: actorIdForAccess(access)
+      });
+      const saved = await deps.repository.saveOperatorUiTheme(theme);
+      res.json({ ok: true, theme: saved, actorId: actorIdForAccess(access) });
     } catch (error) {
       sendRouteError(res, error);
     }

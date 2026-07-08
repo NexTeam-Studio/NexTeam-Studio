@@ -19,13 +19,26 @@ input {
   display: grid;
   place-items: center;
   padding: 18px;
-  background:
+  background: var(--jobdesk-shell-background,
     radial-gradient(circle at 20% 10%, rgba(77, 130, 104, 0.28), transparent 28%),
-    linear-gradient(145deg, #f6eedf 0%, #d3e4d5 48%, #e1c092 100%);
+    linear-gradient(145deg, #f6eedf 0%, #d3e4d5 48%, #e1c092 100%));
 }
 
 .ops-shell {
   place-items: stretch;
+}
+
+.ops-shell.density-compact .thread {
+  gap: 8px;
+  padding: 14px;
+}
+
+.ops-shell.density-compact .bubble {
+  padding: 10px 12px;
+}
+
+.ops-shell.density-compact .topbar {
+  padding: 18px;
 }
 
 .ops-grid {
@@ -45,7 +58,7 @@ input {
   overflow: hidden;
   border: 1px solid rgba(31, 33, 28, 0.16);
   border-radius: 34px;
-  background: rgba(255, 250, 240, 0.9);
+  background: var(--jobdesk-panel-background, rgba(255, 250, 240, 0.9));
   box-shadow: 0 28px 90px rgba(48, 44, 32, 0.28);
 }
 
@@ -172,7 +185,7 @@ input {
   align-items: center;
   justify-content: space-between;
   padding: 24px 24px 18px;
-  background: #26352c;
+  background: var(--jobdesk-header-background, #26352c);
   color: #fff7e7;
 }
 
@@ -200,8 +213,8 @@ input {
   border: 1px solid rgba(228, 191, 115, 0.5);
   border-radius: 999px;
   padding: 7px 10px;
-  color: #26352c;
-  background: #e4bf73;
+  color: var(--jobdesk-accent-text, #26352c);
+  background: var(--jobdesk-accent, #e4bf73);
 }
 
 .voice-toggle.on {
@@ -264,14 +277,15 @@ h1 {
 
 .bubble.user {
   align-self: end;
-  color: #fff8ea;
-  background: #315f58;
+  color: var(--jobdesk-accent-text, #fff8ea);
+  background: var(--jobdesk-user-bubble, #315f58);
   border-bottom-right-radius: 6px;
 }
 
 .bubble.assistant {
   align-self: start;
-  background: #fff8ea;
+  color: var(--jobdesk-text, #26352c);
+  background: var(--jobdesk-assistant-bubble, #fff8ea);
   border: 1px solid rgba(38, 53, 44, 0.12);
   border-bottom-left-radius: 6px;
 }
@@ -389,14 +403,14 @@ h1 {
   border: 0;
   border-radius: 999px;
   padding: 0 18px;
-  color: #fff8ea;
-  background: #b06b34;
+  color: var(--jobdesk-accent-text, #fff8ea);
+  background: var(--jobdesk-accent, #b06b34);
 }
 
 .composer .mic {
   padding: 0 14px;
-  color: #26352c;
-  background: #e4bf73;
+  color: var(--jobdesk-accent-text, #26352c);
+  background: var(--jobdesk-accent, #e4bf73);
 }
 
 .composer .mic.active {
@@ -508,8 +522,8 @@ h1 {
   border: 0;
   border-radius: 999px;
   padding: 12px 16px;
-  color: #fff8ea;
-  background: #315f58;
+  color: var(--jobdesk-accent-text, #fff8ea);
+  background: var(--jobdesk-user-bubble, #315f58);
   text-decoration: none;
 }
 

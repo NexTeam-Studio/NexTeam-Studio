@@ -122,6 +122,29 @@ interface OperatorContext {
   role: TenantRole;
 }
 
+interface OperatorUiTheme {
+  tenantId: string;
+  name: string;
+  colors: {
+    shellBackground?: string;
+    panelBackground?: string;
+    headerBackground?: string;
+    accent?: string;
+    accentText?: string;
+    userBubble?: string;
+    assistantBubble?: string;
+    text?: string;
+  };
+  density: "comfortable" | "compact";
+  updatedAt: string;
+}
+
+interface OperatorUiThemeResponse {
+  ok: boolean;
+  theme?: OperatorUiTheme;
+  error?: string;
+}
+
 interface BrowserSpeechRecognition {
   lang: string;
   continuous: boolean;
@@ -505,6 +528,7 @@ function PlatformConsole(props: { auth: Auth; user: User }): React.ReactElement 
 
 function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
+  const [operatorTheme, setOperatorTheme] = useState<OperatorUiTheme | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -545,6 +569,28 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
       cancelled = true;
     };
   }, [props.user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    props.user.getIdToken()
+      .then((idToken) => fetch(`/api/sites/operator-ui?tenantId=${encodeURIComponent(operatorContext.tenantId)}`, {
+        headers: { authorization: `Bearer ${idToken}` }
+      }))
+      .then((response) => response.json() as Promise<OperatorUiThemeResponse>)
+      .then((body) => {
+        if (!cancelled && body.ok && body.theme) {
+          setOperatorTheme(body.theme);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOperatorTheme(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [operatorContext.tenantId, props.user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -688,8 +734,19 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
     }
   }
 
+  const themeStyle = operatorTheme ? {
+    "--jobdesk-shell-background": operatorTheme.colors.shellBackground,
+    "--jobdesk-panel-background": operatorTheme.colors.panelBackground,
+    "--jobdesk-header-background": operatorTheme.colors.headerBackground,
+    "--jobdesk-accent": operatorTheme.colors.accent,
+    "--jobdesk-accent-text": operatorTheme.colors.accentText,
+    "--jobdesk-user-bubble": operatorTheme.colors.userBubble,
+    "--jobdesk-assistant-bubble": operatorTheme.colors.assistantBubble,
+    "--jobdesk-text": operatorTheme.colors.text
+  } as React.CSSProperties : undefined;
+
   return (
-    <main className="shell ops-shell">
+    <main className={`shell ops-shell density-${operatorTheme?.density ?? "comfortable"}`} style={themeStyle}>
       <div className="ops-grid">
       <section className="phone">
         <header className="topbar">

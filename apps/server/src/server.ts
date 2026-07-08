@@ -45,6 +45,7 @@ import { FirestorePlatformRepository, InMemoryPlatformRepository } from "./platf
 import { loadTenantFromPlatform, registerPlatformRoutes } from "./platform/routes.js";
 import { FirestoreSitesRepository, InMemorySitesRepository } from "./sites/repository.js";
 import { registerSitesRoutes } from "./sites/routes.js";
+import { createSitesNexiTools } from "./sites/nexiTools.js";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { createVoiceRouter } from "./voice/routes.js";
 
@@ -107,7 +108,10 @@ app.use("/api/nexi", createNexiRouter(process.env, {
       approvalQueue,
       env: process.env,
       actorId: actorIdForAccess(access)
-    });
+    }).concat(createSitesNexiTools({
+      repository: sitesRepository,
+      access
+    }));
   }
 }));
 app.use("/api/voice", createVoiceRouter(process.env));

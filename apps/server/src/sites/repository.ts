@@ -1,5 +1,12 @@
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
-import { generatedSiteSchema, siteLeadSchema, type GeneratedSite, type SiteLead } from "./schemas.js";
+import {
+  generatedSiteSchema,
+  operatorUiThemeSchema,
+  siteLeadSchema,
+  type GeneratedSite,
+  type OperatorUiTheme,
+  type SiteLead
+} from "./schemas.js";
 
 export interface SitesRepository {
   saveSite(site: GeneratedSite): Promise<GeneratedSite>;
@@ -7,11 +14,14 @@ export interface SitesRepository {
   listSites(tenantId: string): Promise<GeneratedSite[]>;
   saveLead(lead: SiteLead): Promise<SiteLead>;
   listLeads(tenantId: string, slug?: string): Promise<SiteLead[]>;
+  saveOperatorUiTheme(theme: OperatorUiTheme): Promise<OperatorUiTheme>;
+  getOperatorUiTheme(tenantId: string): Promise<OperatorUiTheme | null>;
 }
 
 export class InMemorySitesRepository implements SitesRepository {
   private readonly sites = new Map<string, GeneratedSite>();
   private readonly leads = new Map<string, SiteLead>();
+  private readonly operatorUiThemes = new Map<string, OperatorUiTheme>();
 
   async saveSite(site: GeneratedSite): Promise<GeneratedSite> {
     const parsed = generatedSiteSchema.parse(site) as GeneratedSite;
@@ -37,6 +47,16 @@ export class InMemorySitesRepository implements SitesRepository {
     return Array.from(this.leads.values())
       .filter((lead) => lead.tenantId === tenantId && (!slug || lead.slug === slug))
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+  }
+
+  async saveOperatorUiTheme(theme: OperatorUiTheme): Promise<OperatorUiTheme> {
+    const parsed = operatorUiThemeSchema.parse(theme) as OperatorUiTheme;
+    this.operatorUiThemes.set(parsed.tenantId, parsed);
+    return parsed;
+  }
+
+  async getOperatorUiTheme(tenantId: string): Promise<OperatorUiTheme | null> {
+    return this.operatorUiThemes.get(tenantId) ?? null;
   }
 }
 
@@ -100,5 +120,17 @@ export class FirestoreSitesRepository implements SitesRepository {
     return snapshot.docs
       .map((doc) => siteLeadSchema.parse(doc.data()) as SiteLead)
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+  }
+
+  async saveOperatorUiTheme(theme: OperatorUiTheme): Promise<OperatorUiTheme> {
+    const parsed = operatorUiThemeSchema.parse(theme) as OperatorUiTheme;
+    // @tenant-doc:operatorUiPreferences operatorUiThemeSchema requires tenantId before write.
+    await this.db.collection("operatorUiPreferences").doc(`${parsed.tenantId}_job_desk`).set(asDocumentData(parsed));
+    return parsed;
+  }
+
+  async getOperatorUiTheme(tenantId: string): Promise<OperatorUiTheme | null> {
+    const doc = await this.db.collection("operatorUiPreferences").doc(`${tenantId}_job_desk`).get();
+    return doc.exists ? (operatorUiThemeSchema.parse(doc.data()) as OperatorUiTheme) : null;
   }
 }
