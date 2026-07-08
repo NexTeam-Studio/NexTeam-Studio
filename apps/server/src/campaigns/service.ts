@@ -101,6 +101,14 @@ function withActor(args: unknown, actorId: string): unknown {
     : { actorId, payload: args };
 }
 
+function templateDefaultVariables(template: CampaignTemplate | null): Record<string, string> {
+  return Object.fromEntries(
+    (template?.variables ?? [])
+      .filter((variable) => typeof variable.defaultValue === "string")
+      .map((variable) => [variable.key, variable.defaultValue as string])
+  );
+}
+
 async function recordTracking(input: {
   repository: CampaignRepository;
   tenantId: string;
@@ -154,6 +162,7 @@ export class CampaignService {
       templateId: template.id,
       audience: audienceFilter,
       sequence: template.sequence,
+      variables: input.variables,
       status: "approval_queued"
     }));
     return this.queueStep(tenant, campaign.id, template.sequence[0]?.id ?? "", audience.contacts, actorId);
@@ -179,6 +188,10 @@ export class CampaignService {
     }
     const config = complianceConfigFromEnv(this.deps.env ?? process.env);
     const boundary = outboundBoundary(config, step.channel);
+    const variables = {
+      ...templateDefaultVariables(template),
+      ...(campaign.variables ?? {})
+    };
     const audience = contactsOverride
       ? { contacts: contactsOverride, excluded: [] }
       : await selectAudience({
@@ -218,7 +231,9 @@ export class CampaignService {
         contact,
         step,
         campaignId,
-        baseUrl: baseUrl(this.deps.env ?? process.env)
+        baseUrl: baseUrl(this.deps.env ?? process.env),
+        variables,
+        physicalAddress: config.physicalAddress
       });
       const approval = await this.deps.approvalQueue.create({
         tenantId: tenant.id,
@@ -263,6 +278,7 @@ export class CampaignService {
         description: campaign.name,
         audience: campaign.audience,
         sequence: campaign.sequence,
+        variables: [],
         complianceNotes: []
       },
       audience: { selected: audience.contacts, excluded: audience.excluded },

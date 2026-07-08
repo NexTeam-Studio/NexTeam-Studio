@@ -3,7 +3,7 @@ import { z } from "zod";
 import { RailError, type ApprovalQueueService, type ArtifactKind, type Tenant } from "@nexteam/core";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
 import type { CampaignRepository } from "./repository.js";
-import { unsubscribeInputSchema } from "./schemas.js";
+import { campaignTemplateSchema, unsubscribeInputSchema } from "./schemas.js";
 import { CampaignService } from "./service.js";
 
 export interface CampaignRouteDeps {
@@ -81,6 +81,20 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
         op: "campaignTemplates"
       });
       res.json({ ok: true, templates: await deps.repository.listTemplates(access.tenantId) });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/campaigns/templates", async (req: Request, res: Response) => {
+    try {
+      const template = campaignTemplateSchema.parse(req.body ?? {});
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: template.tenantId,
+        op: "campaignTemplateUpsert"
+      });
+      const saved = await deps.repository.saveTemplate({ ...template, tenantId: access.tenantId });
+      res.status(201).json({ ok: true, template: saved });
     } catch (error) {
       sendRouteError(res, error);
     }

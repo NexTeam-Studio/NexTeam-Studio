@@ -28,12 +28,21 @@ export const audienceFilterSchema = z.object({
   maxResults: z.number().int().min(1).max(500).default(100)
 });
 
+export const campaignTemplateVariableSchema = z.object({
+  key: z.string().min(1).regex(/^[A-Za-z][A-Za-z0-9_]*$/),
+  label: z.string().min(1),
+  description: z.string().optional(),
+  required: z.boolean().default(false),
+  defaultValue: z.string().optional()
+});
+
 export const sequenceStepSchema = z.object({
   id: z.string().min(1),
   channel: campaignChannelSchema,
   delayHours: z.number().min(0).default(0),
   subject: z.string().min(1).optional(),
   body: z.string().min(1),
+  variables: z.record(z.string()).default({}),
   stopOnReply: z.boolean().default(true),
   stopOnUnsubscribe: z.boolean().default(true)
 });
@@ -45,6 +54,7 @@ export const campaignTemplateSchema = z.object({
   description: z.string().min(1),
   audience: audienceFilterSchema,
   sequence: z.array(sequenceStepSchema).min(1),
+  variables: z.array(campaignTemplateVariableSchema).default([]),
   complianceNotes: z.array(z.string()).default([])
 });
 
@@ -55,6 +65,7 @@ export const campaignSchema = z.object({
   templateId: z.string().optional(),
   audience: audienceFilterSchema,
   sequence: z.array(sequenceStepSchema).min(1),
+  variables: z.record(z.string()).default({}),
   status: z.enum(["draft", "approval_queued", "blocked", "completed"]),
   createdAt: z.string(),
   updatedAt: z.string()
@@ -88,6 +99,7 @@ export const campaignRunSchema = z.object({
   templateId: z.string().min(1).default("vgb-hotel-gm-outreach"),
   name: z.string().min(1).optional(),
   audience: audienceFilterSchema.optional(),
+  variables: z.record(z.string()).default({}),
   dryRun: z.boolean().default(false)
 });
 
@@ -102,6 +114,7 @@ export const unsubscribeInputSchema = z.object({
 export type CampaignChannel = z.infer<typeof campaignChannelSchema>;
 export type CampaignContact = z.infer<typeof campaignContactSchema>;
 export type AudienceFilter = z.infer<typeof audienceFilterSchema>;
+export type CampaignTemplateVariable = z.infer<typeof campaignTemplateVariableSchema>;
 export type SequenceStep = z.infer<typeof sequenceStepSchema>;
 export type CampaignTemplate = z.infer<typeof campaignTemplateSchema>;
 export type Campaign = z.infer<typeof campaignSchema>;

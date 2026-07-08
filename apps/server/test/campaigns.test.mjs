@@ -101,6 +101,8 @@ test("campaign queueing parks approvals only and marks DNS boundary blocked", as
   assert.equal(result.machineState, "approvalQueued");
   assert.equal(result.queuedApprovals.length, 2);
   assert.match(result.queuedApprovals[0].preview.body, /unsubscribe/i);
+  assert.match(result.queuedApprovals[0].preview.body, /Mailing address:/i);
+  assert.match(result.queuedApprovals[0].preview.body, /Physical mailing address required/i);
   assert.equal(result.queuedApprovals.every((item) => item.createdBy === "user"), true);
   assert.equal(result.queuedApprovals.every((item) => item.execute.args.actorId === "unknown-actor"), true);
   assert.equal(result.queuedApprovals.every((item) => item.execute.service === "campaigns"), true);
@@ -154,6 +156,56 @@ test("open, click, unsubscribe, and second-step suppression are recorded", async
   assert.equal(stats.totals.unsubscribe, 1);
   assert.equal(stats.totals.suppressed, 1);
   assert.equal((await repository.listSuppressions("aquatrace")).length, 1);
+});
+
+test("configurable tenant templates render variables and physical address compliance text", async () => {
+  const { repository, service } = campaignService({
+    M6_PHYSICAL_ADDRESS: "Aquatrace, 102 Kate Lane, Bryson City, NC 28713"
+  });
+  await repository.saveTemplate({
+    id: "job-confirmation",
+    tenantId: "aquatrace",
+    name: "Job Confirmation",
+    description: "Tenant-editable job confirmation template.",
+    audience: {
+      tenantId: "aquatrace",
+      channel: "email",
+      clientIds: ["contact_chris_owner"],
+      consentRequired: true,
+      excludeSuppressed: true
+    },
+    variables: [
+      {
+        key: "arrivalWindow",
+        label: "Arrival window",
+        required: true,
+        defaultValue: "tomorrow"
+      }
+    ],
+    sequence: [
+      {
+        id: "confirm_visit",
+        channel: "email",
+        delayHours: 0,
+        subject: "{{businessName}} visit for {{companyOrName}}",
+        body: "Hi {{name}},\n\nWe have you down for {{arrivalWindow}}.\n\n{{unsubscribeLink}}",
+        stopOnReply: true,
+        stopOnUnsubscribe: true
+      }
+    ],
+    complianceNotes: ["Template must render through ApprovalQueue before any send."]
+  });
+
+  const result = await service.queueTemplateCampaign(tenant(), {
+    templateId: "job-confirmation",
+    variables: { arrivalWindow: "Thursday morning" }
+  });
+
+  const approval = result.queuedApprovals[0];
+  assert.match(approval.preview.body, /Thursday morning/);
+  assert.match(approval.preview.body, /102 Kate Lane/);
+  assert.match(approval.preview.body, /Unsubscribe:/);
+  assert.equal(approval.execute.args.outbound.bodyText.includes("102 Kate Lane"), true);
 });
 
 test("transactional report and review emails are approval queued, including 48-hour review delay", async () => {
@@ -227,6 +279,38 @@ test("campaign routes expose template, test-run, tracking, unsubscribe, and stat
     const templates = await fetch(`${base}/api/campaigns/templates`).then((response) => response.json());
     assert.equal(templates.ok, true);
     assert.equal(templates.templates[0].id, "vgb-hotel-gm-outreach");
+
+    const savedTemplate = await fetch(`${base}/api/campaigns/templates`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        id: "route-template",
+        tenantId: "aquatrace",
+        name: "Route Template",
+        description: "Saved through the role-gated template route.",
+        audience: {
+          tenantId: "aquatrace",
+          channel: "email",
+          clientIds: ["contact_chris_owner"],
+          consentRequired: true,
+          excludeSuppressed: true
+        },
+        variables: [{ key: "offerName", label: "Offer name", defaultValue: "pool check" }],
+        sequence: [
+          {
+            id: "route_step",
+            channel: "email",
+            delayHours: 0,
+            subject: "{{offerName}}",
+            body: "Hi {{name}}, this is the {{offerName}} template.",
+            stopOnReply: true,
+            stopOnUnsubscribe: true
+          }
+        ]
+      })
+    }).then((response) => response.json());
+    assert.equal(savedTemplate.ok, true);
+    assert.equal(savedTemplate.template.variables[0].key, "offerName");
 
     const run = await fetch(`${base}/api/campaigns/test-run`, {
       method: "POST",
@@ -305,10 +389,19 @@ test("campaign AccessContext gate blocks technician and job-link contexts", () =
 });
 
 test("DNS boundary stays blocked until SPF, DKIM, and DMARC are confirmed", () => {
-  assert.equal(outboundBoundary(complianceConfigFromEnv({}), "email").executionBlocked, true);
+  const noConfig = outboundBoundary(complianceConfigFromEnv({}), "email");
+  assert.equal(noConfig.executionBlocked, true);
+  assert.match(noConfig.reason, /SPF, DKIM, and DMARC/);
+  assert.match(noConfig.reason, /physical mailing address/);
   assert.equal(outboundBoundary(complianceConfigFromEnv({
     M6_SPF_CONFIRMED: "true",
     M6_DKIM_CONFIRMED: "true",
     M6_DMARC_CONFIRMED: "true"
+  }), "email").executionBlocked, true);
+  assert.equal(outboundBoundary(complianceConfigFromEnv({
+    M6_SPF_CONFIRMED: "true",
+    M6_DKIM_CONFIRMED: "true",
+    M6_DMARC_CONFIRMED: "true",
+    M6_PHYSICAL_ADDRESS: "Aquatrace, 102 Kate Lane, Bryson City, NC 28713"
   }), "email").executionBlocked, false);
 });

@@ -69,6 +69,19 @@ export function vgbHotelGmTemplate(tenantId: ID): CampaignTemplate {
         stopOnUnsubscribe: true
       }
     ],
+    variables: [
+      {
+        key: "companyOrName",
+        label: "Company or contact name",
+        description: "Defaults to company name when present, otherwise the contact name.",
+        required: true
+      },
+      {
+        key: "businessName",
+        label: "Tenant business name",
+        required: true
+      }
+    ],
     complianceNotes: [
       "Existing-contact or explicit opt-in only.",
       "One-click unsubscribe must be present before queueing.",
