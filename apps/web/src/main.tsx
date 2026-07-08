@@ -32,6 +32,8 @@ interface ScheduledVisit {
   end: string;
   assignedTo: string[];
   status: string;
+  source?: "native" | "jobber";
+  readOnly?: boolean;
   location?: {
     label: string;
     geo?: { lat: number; lng: number };
@@ -48,6 +50,8 @@ interface ScheduledVisit {
 interface CalendarResponse {
   ok: boolean;
   visits?: ScheduledVisit[];
+  sourceCounts?: { native: number; jobber: number };
+  warnings?: string[];
   error?: string;
 }
 
@@ -226,6 +230,10 @@ function formatVisitTime(value: string): string {
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
 }
 
+function visitStatusLabel(visit: ScheduledVisit): string {
+  return visit.source === "jobber" || visit.readOnly ? "Jobber read-only" : visit.status;
+}
+
 function SchedulePanel(props: { tenantId: string }): React.ReactElement {
   const [view, setView] = useState<"day" | "week" | "map">("day");
   const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10));
@@ -248,7 +256,12 @@ function SchedulePanel(props: { tenantId: string }): React.ReactElement {
           return;
         }
         setVisits(body.visits ?? []);
-        setStatus((body.visits ?? []).length ? "" : "No native visits in this window yet.");
+        if (!(body.visits ?? []).length) {
+          setStatus("No native or Jobber visits in this window yet.");
+          return;
+        }
+        const jobberCount = body.sourceCounts?.jobber ?? 0;
+        setStatus(jobberCount ? `${jobberCount} Jobber visit${jobberCount === 1 ? "" : "s"} shown read-only.` : "");
       })
       .catch(() => {
         if (!cancelled) {
@@ -291,7 +304,7 @@ function SchedulePanel(props: { tenantId: string }): React.ReactElement {
               <h3>{visit.title}</h3>
               <p>{visit.location?.label ?? "No location label"} - {visit.assignedTo.join(", ") || "Unassigned"}</p>
             </div>
-            <span className="visit-status">{visit.status}</span>
+            <span className="visit-status">{visitStatusLabel(visit)}</span>
             {view === "map" ? (
               <p className="map-line">
                 {visit.location?.geo ? `${visit.location.geo.lat.toFixed(4)}, ${visit.location.geo.lng.toFixed(4)}` : "No coordinates yet"}
