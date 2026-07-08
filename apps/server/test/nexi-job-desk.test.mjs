@@ -410,6 +410,74 @@ test("Nexi Anthropic gateway preloads runEvaporation for evap report requests", 
   assert.equal(result.sources[0].ref, "evap_1");
 });
 
+test("Nexi Anthropic gateway preloads draftCampaign for campaign action commands", async () => {
+  const calls = [];
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "Draft the VGB hotel GM outreach campaign for the Chris-owned test list." }],
+    tools: [{
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string().optional() }),
+      handler: async () => {
+        throw new Error("searchEmail should not run for campaign draft requests");
+      }
+    }, {
+      name: "draftCampaign",
+      description: "Draft campaign.",
+      inputSchema: z.object({
+        templateId: z.string(),
+        audience: z.object({
+          channel: z.enum(["email", "sms"]),
+          tagsAny: z.array(z.string()).optional(),
+          consentRequired: z.boolean(),
+          excludeSuppressed: z.boolean(),
+          maxResults: z.number()
+        })
+      }),
+      handler: async (_tenant, args) => {
+        toolCalls.push(args);
+        return {
+          result: {
+            campaign: { id: "camp_1", name: "VGB Hotel GM Outreach" },
+            selectedCount: 2,
+            queuedApprovals: [{ id: "appr_1" }],
+            boundary: { executionBlocked: true },
+            sendsAreApprovalQueuedOnly: true
+          },
+          sources: [{ rail: "native", ref: "camp_1", label: "Campaign VGB Hotel GM Outreach" }]
+        };
+      }
+    }],
+    fetchFn: async (_url, init) => {
+      calls.push(JSON.parse(init.body));
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "I queued the campaign draft for approval only." }],
+        usage: { input_tokens: 5, output_tokens: 5 }
+      }), { status: 200 });
+    },
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer"
+  });
+
+  assert.deepEqual(toolCalls, [{
+    templateId: "vgb-hotel-gm-outreach",
+    audience: {
+      channel: "email",
+      tagsAny: ["test"],
+      consentRequired: true,
+      excludeSuppressed: true,
+      maxResults: 2
+    }
+  }]);
+  assert.match(calls[0].messages.at(-1).content, /Verified draftCampaign result/);
+  assert.deepEqual(calls[0].tools, []);
+  assert.equal(result.toolRuns[0].name, "draftCampaign");
+  assert.equal(result.sources[0].ref, "camp_1");
+});
+
 test("Nexi Anthropic gateway treats mailbox address follow-ups as email search context", async () => {
   const toolCalls = [];
   const result = await runNexiToolLoop({
