@@ -1,0 +1,135 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783530235788-04e0e126",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 10,
+  "offset": 60,
+  "results": [
+    {
+      "id": "20260705151859-5-what-was-the-issue-at-forrest-gerguson",
+      "createdAt": "2026-07-05T15:18:59.474Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I don't have the job issue written down for Forrest Ferguson. - Jobber job details check failed on my end (it got logged to fix), so no issue/status came back from there. - CompanyCam only has a Moasure measurement export for this site (290",
+      "latencyMs": 85419
+    },
+    {
+      "id": "20260705152536-6-ok-all-of-these-were-reasonably-correct-but-the-format-should-only-be-inclusive-",
+      "createdAt": "2026-07-05T15:25:36.518Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 982
+    },
+    {
+      "id": "20260705152621-7-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T15:26:21.399Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "25 photos on file for Deborah Justice (181 Isbell Road, Fair Play, SC). No captions or tags saved on them — just the image set in CompanyCam.",
+      "latencyMs": 4415
+    },
+    {
+      "id": "20260705152707-8-what-is-on-schedule-for-next-week",
+      "createdAt": "2026-07-05T15:27:07.156Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "Only one job on the books for that window: - **Clarion Hotel – Commercial Main Drain Survey** (lead status) - Client: ASP of Asheville - Address: 234 Hendersonville Road, Asheville - Date: July 8, all day",
+      "latencyMs": 86146
+    },
+    {
+      "id": "20260705152825-9-i-asked-that-and-now-you-are-wasting-api-tokens-because-you-should-already-inger",
+      "createdAt": "2026-07-05T15:28:25.589Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1337
+    },
+    {
+      "id": "20260705152856-10-what-is-approved-but-not-scheduled-yet",
+      "createdAt": "2026-07-05T15:28:56.873Z",
+      "expectedIntent": "pipeline_status",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPipeline"
+      ],
+      "answerSample": "5 jobs are scheduled (not yet started): - **Swimming Pool Leak Detection Service** – $650 - **Swimming Pool Plumbing** – $455 - **Commercial Main Drain Measurements & Cover Replacements** – $125 - **Commercial Main Drain Measurements & Cove",
+      "latencyMs": 7964
+    },
+    {
+      "id": "20260705151240-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T15:12:40.261Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the books for Monday, July 6: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC — all day, lead status, $770",
+      "latencyMs": 67099
+    },
+    {
+      "id": "20260705152401-1-what-was-the-issue-at-deborah-justice",
+      "createdAt": "2026-07-05T15:24:01.391Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Leak detection at Deborah Justice (181 Isbell Road, Fair Play, SC) found active water loss in several spots — job record couldn't be pulled from Jobber, so this is from the CompanyCam leak detection checklist (7/2/2026, techs Chris & Logan)",
+      "latencyMs": 74724
+    },
+    {
+      "id": "20260705152435-1-who-was-the-technician-for-deborah-justice",
+      "createdAt": "2026-07-05T15:24:35.035Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "getPhotos"
+      ],
+      "answerSample": "Chris and Logan handled the leak detection service for Deborah Justice on July 2, 2026 — Chris Sears is named throughout the report as the one completing the checklist (completed 3:10pm that day).",
+      "latencyMs": 75785
+    },
+    {
+      "id": "20260705152441-1-show-me-photos-for-deborah-justice",
+      "createdAt": "2026-07-05T15:24:41.023Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on the Deborah Justice job at 181 Isbell Road, Fair Play, SC — all logged in CompanyCam. No captions or tags are attached to them, so I can't tell you what's pictured without opening them up.",
+      "latencyMs": 3775
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783531327481-f7c4f8f3",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 10,
+  "offset": 150,
+  "results": [
+    {
+      "id": "20260706122834-10-show-me-pictures-from-deborah-justice",
+      "createdAt": "2026-07-06T12:28:34.383Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
+      "latencyMs": 5390
+    },
+    {
+      "id": "20260706122902-11-deborah-justice-is-in-company-cam-and-you-have-shown-me-the-pictures-before",
+      "createdAt": "2026-07-06T12:29:02.029Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
+      "latencyMs": 5385
+    },
+    {
+      "id": "20260706122934-12-what-is-the-square-footage-of-the-deborah-justice-pool-and-how-many-gallons-per-",
+      "createdAt": "2026-07-06T12:29:34.183Z",
+      "expectedIntent": "report_measurement_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "Deborah Justice's pool at 181 Isbell Road, Fair Play, SC: - **Surface area:** 1,002.7 sq ft - **Average depth:** 60 inches - **Gallons per inch:** 626.7 - **Total pool gallons:** 37,602 This is from the leak detection checklist dated 07/02/",
+      "latencyMs": 87784
+    },
+    {
+      "id": "20260706123034-13-gallons-per-inch-and-square-footage-are-both-available-in-the-same-report-in-the",
+      "createdAt": "2026-07-06T12:30:34.313Z",
+      "expectedIntent": "report_measurement_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have those figures pulled up right now — the job detail check didn't complete, and I couldn't find a matching Mosier measurement document in CompanyCam or Jobber. Since the earlier numbers I gave you (1,002.7 sq ft, 626.7 gal/inch, ",
+      "latencyMs": 102111
+    },
+    {
+      "id": "20260706123058-14-deborah-justice",
+      "createdAt": "2026-07-06T12:30:58.375Z",
+      "expectedIntent": "report_measurement_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have a clean read on Deborah Justice's job right now: - **Jobber:** the job detail check failed to complete, so I can't confirm status/measurements there. - **CompanyCam:** no documents or reports came back, and there's no matching ",
+      "latencyMs": 4241
+    },
+    {
+      "id": "20260706123130-15-how-many-miles-are-we-away-from-today-s-pool",
+      "createdAt": "2026-07-06T12:31:30.012Z",
+      "expectedIntent": "capability_gap_distance_or_maps",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't measure drive distance in chat yet because the distance tool is not wired to Nexi. I logged it as capability_not_available.",
+      "latencyMs": 1155
+    },
+    {
+      "id": "20260706123148-16-open-denver-justice-pool-address-in-google-maps",
+      "createdAt": "2026-07-06T12:31:48.481Z",
+      "expectedIntent": "capability_gap_distance_or_maps",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't open Google Maps from here yet. I can give you the address, but the map-opening tool is not wired to Nexi.",
+      "latencyMs": 1098
+    },
+    {
+      "id": "20260706202634-1-did-todays-pool-pay",
+      "createdAt": "2026-07-06T20:26:34.266Z",
+      "expectedIntent": "payment_status_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule",
+        "getJobDetail",
+        "invoiceStatus",
+        "searchEmail"
+      ],
+      "answerSample": "Today's job (Clarion Hotel - Commercial Main Drain Survey, $750) isn't invoiced yet. - No matching invoice for this job/client (ASP of Asheville) in the invoice records — the invoice list only shows unrelated Stripe test/debug invoices for ",
+      "latencyMs": 153563
+    },
+    {
+      "id": "20260706202756-2-what-ssues-were-found-on-rachel-paynes-pool",
+      "createdAt": "2026-07-06T20:27:56.420Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I don't have that written down. The job lookup for Rachel Payne's pool failed on the Jobber side, and there are no documents, reports, or checklists on record in CompanyCam either. No issues can be confirmed from either system right now — I",
+      "latencyMs": 53726
+    },
+    {
+      "id": "20260706202830-3-did-she-pay",
+      "createdAt": "2026-07-06T20:28:30.328Z",
+      "expectedIntent": "payment_status_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule",
+        "getJobDetail",
+        "invoiceStatus",
+        "searchEmail"
+      ],
+      "answerSample": "No, not paid. - Rachel Payne / ASP of Asheville isn't listed as a client on any invoice — all the invoice records on file are unrelated Stripe test invoices for other clients. - No payment or receipt email found for this job. - Jobber has t",
+      "latencyMs": 5474
+    }
+  ]
+}

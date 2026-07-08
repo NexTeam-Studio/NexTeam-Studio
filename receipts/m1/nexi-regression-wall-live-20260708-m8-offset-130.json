@@ -1,0 +1,134 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783531327423-ec378861",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 10,
+  "offset": 130,
+  "results": [
+    {
+      "id": "20260706032900-1-what-was-the-service-ime-competion-for-deborah-justice",
+      "createdAt": "2026-07-06T03:29:00.723Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Service completion for Deborah Justice (181 Isbell Road, Fair Play, SC): - **Completed:** 3:10pm, Thursday July 2nd, 2026 - **Techs:** Chris, Logan This is from the CompanyCam leak detection checklist report — Jobber didn't return job detai",
+      "latencyMs": 49199
+    },
+    {
+      "id": "20260706032902-1-yes-there-is-incorrect-here-service-comletion-is-in-company-cam-reports",
+      "createdAt": "2026-07-06T03:29:02.061Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 900
+    },
+    {
+      "id": "20260706032939-2-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
+      "createdAt": "2026-07-06T03:29:39.252Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "For ASP of Asheville (234 Hendersonville Road, Asheville, NC): - **Jobber:** couldn't pull job details right now — that check failed on my end, so I don't have a completion status from Jobber to compare. - **CompanyCam:** no reports or docu",
+      "latencyMs": 89749
+    },
+    {
+      "id": "20260706033628-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
+      "createdAt": "2026-07-06T03:36:28.514Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft queued, but it needs your approval before it goes out. One thing to flag: I don't actually have Bryson City's schedule for tomorrow pulled up yet, so the draft body is just a placeholder line (\"bryson city s on checdule for tomorrow\")",
+      "latencyMs": 10591
+    },
+    {
+      "id": "20260706033653-1-what-was-the-service-ime-competion-for-deborah-justice",
+      "createdAt": "2026-07-06T03:36:53.765Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Service completion for Deborah Justice: **3:10pm, Thursday July 2nd, 2026** (per the CompanyCam leak detection checklist). - Techs on site: Chris, Logan - Jobber has no completion time logged (job still shows as a lead), so this comes from ",
+      "latencyMs": 54688
+    },
+    {
+      "id": "20260706033655-1-yes-there-is-incorrect-here-service-comletion-is-in-company-cam-reports",
+      "createdAt": "2026-07-06T03:36:55.203Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1139
+    },
+    {
+      "id": "20260706033729-2-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
+      "createdAt": "2026-07-06T03:37:29.226Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "For ASP of Asheville (234 Hendersonville Road, Asheville, NC): CompanyCam shows no documents or reports on file, and Jobber's job detail check itself failed to return data. So I don't have a service completion record in either system right ",
+      "latencyMs": 102190
+    },
+    {
+      "id": "20260706033859-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
+      "createdAt": "2026-07-06T03:38:59.688Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft queued for approval — email to chris1bata@gmail.com is ready to send once approved. One flag: I don't have tomorrow's schedule pulled up, so I can't confirm Bryson City is actually on it. The draft just repeats your note as-is.",
+      "latencyMs": 6885
+    },
+    {
+      "id": "20260706033924-1-what-was-the-service-ime-competion-for-deborah-justice",
+      "createdAt": "2026-07-06T03:39:24.866Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Service completion for Deborah Justice's leak detection job: **3:10pm, Thursday July 2nd, 2026** — techs Chris and Logan. This is from the CompanyCam checklist report (Jobber doesn't have a completion time logged for this job, just the lead",
+      "latencyMs": 104668
+    },
+    {
+      "id": "20260706033926-1-yes-there-is-incorrect-here-service-comletion-is-in-company-cam-reports",
+      "createdAt": "2026-07-06T03:39:26.247Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 946
+    }
+  ]
+}

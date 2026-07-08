@@ -1,0 +1,135 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783530713212-8bdca8c7",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 10,
+  "offset": 80,
+  "results": [
+    {
+      "id": "20260705160542-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T16:05:42.810Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on Monday, July 6, 2026 (all day): - **Swimming Pool Leak Detection** – lead status, Rachel Payne, 400 Jacobs Road, Bryson City, NC – $770 total",
+      "latencyMs": 47707
+    },
+    {
+      "id": "20260705160553-2-what-s-the-eta",
+      "createdAt": "2026-07-05T16:05:53.521Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific ETA or time window is set — it's scheduled as an all-day job on July 6, 2026, with no start/end time listed.",
+      "latencyMs": 2825
+    },
+    {
+      "id": "20260705161046-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T16:10:46.130Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on the Deborah Justice job (181 Isbell Road, Fair Play, SC), all in CompanyCam. None have tags or descriptions attached — just raw shots. Here are the CompanyCam photo IDs: - 3338800086 - 3338756524 - 3338754200 - 3338751881",
+      "latencyMs": 5439
+    },
+    {
+      "id": "20260705161106-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T16:11:06.914Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on Monday, July 6, 2026: - **Swimming Pool Leak Detection** (lead status) – Rachel Payne, 400 Jacobs Road, Bryson City, NC. All-day appointment, no specific time set. Total: $770.",
+      "latencyMs": 44068
+    },
+    {
+      "id": "20260705161111-2-what-s-the-eta",
+      "createdAt": "2026-07-05T16:11:11.049Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific ETA is set — it's booked as an all-day appointment on July 6, 2026, with no start/end time listed.",
+      "latencyMs": 2986
+    },
+    {
+      "id": "20260705191129-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:11:29.680Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "18 emails today, mostly noise. Two worth a look: **Needs a reply:** - Taylor Walker – Re: Monarch Gainesville - Thursday – asking if the week of July 27 or first week of August works for you **Skip/junk (16):** - 2 delivery failure notices ",
+      "latencyMs": 6830
+    },
+    {
+      "id": "20260705191708-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:17:08.856Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "18 emails came in today across your two mailboxes — mostly noise, but two worth a look. **Worth your attention** - Taylor Walker – Re: Monarch Gainesville - Thursday – asking what your availability looks like week of July 27 or first week o",
+      "latencyMs": 7832
+    },
+    {
+      "id": "20260705192403-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:24:03.330Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "18 emails came in today across your two mailboxes. Only two are worth a look — the rest is spam/notifications. **Needs a reply:** - Taylor Walker - Re: Monarch Gainesville - Thursday - asking what your week of July 27 or first week of Augus",
+      "latencyMs": 7296
+    },
+    {
+      "id": "20260705193434-1-read-email-chris-19f3354877e85a73-and-tell-me-whether-it-has-attachments-do-not-",
+      "createdAt": "2026-07-05T19:34:34.724Z",
+      "expectedIntent": "email_direct_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getEmailMessage"
+      ],
+      "answerSample": "No attachments on that email.",
+      "latencyMs": 2868
+    },
+    {
+      "id": "20260705194001-1-read-email-chris-19f3354877e85a73-and-tell-me-whether-it-has-attachments-do-not-",
+      "createdAt": "2026-07-05T19:40:01.336Z",
+      "expectedIntent": "email_direct_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getEmailMessage"
+      ],
+      "answerSample": "No attachments on that email.",
+      "latencyMs": 2559
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783530918655-3452927c",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 10,
+  "offset": 100,
+  "results": [
+    {
+      "id": "20260705210636-3-formatting-feedback-attention-items-must-lead-with-sender-subject-and-one-line-a",
+      "createdAt": "2026-07-05T21:06:36.919Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1065
+    },
+    {
+      "id": "20260705210638-4-that-was-incorrect-this-feedback-should-be-logged-as-a-correction",
+      "createdAt": "2026-07-05T21:06:38.365Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1010
+    },
+    {
+      "id": "20260705211359-1-what-did-the-semrush-site-audit-say",
+      "createdAt": "2026-07-05T21:13:59.229Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 1552
+    },
+    {
+      "id": "20260705211403-2-send-an-email-to-nexi-aquatraceleak-com-saying-i-received-the-audit-and-will-rev",
+      "createdAt": "2026-07-05T21:14:03.812Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft is queued for approval — send it whenever you're ready. - To: nexi@aquatraceleak.com - Subject: I received the audit and will review it today - Body: \"I received the audit and will review it today.\"",
+      "latencyMs": 3100
+    },
+    {
+      "id": "20260705211407-3-formatting-feedback-attention-items-must-lead-with-sender-subject-and-one-line-a",
+      "createdAt": "2026-07-05T21:14:07.953Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 883
+    },
+    {
+      "id": "20260705211409-4-that-was-incorrect-this-feedback-should-be-logged-as-a-correction",
+      "createdAt": "2026-07-05T21:14:09.333Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 851
+    },
+    {
+      "id": "20260705215015-1-what-were-the-leak-detection-findings-for-valley-view-condominiums-from-the-comp",
+      "createdAt": "2026-07-05T21:50:15.832Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Here's what techs Chris and Logan found on the June 16, 2026 leak detection visit: **Skimmers** - Deep end skimmer throat: significant water loss, missing grout where tile meets the PVC skimmer body — needs sealant to resolve. - Shallow end",
+      "latencyMs": 65862
+    },
+    {
+      "id": "20260705215044-1-what-were-the-leak-detection-findings-for-l3-campus-statehouse-arena-from-the-co",
+      "createdAt": "2026-07-05T21:50:44.244Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I don't have that written down. The job lookup failed to return anything (I couldn't pull job details for L3 Campus Statehouse Arena), and there are no CompanyCam documents or reports on file for it either. I can't confirm leak detection fi",
+      "latencyMs": 58436
+    },
+    {
+      "id": "20260705215138-1-what-were-the-leak-detection-findings-for-valley-view-condominiums-from-the-comp",
+      "createdAt": "2026-07-05T21:51:38.907Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Leak detection checklist from CompanyCam (service date 06/16/2026, techs Chris & Logan): - **Deep end skimmer throat:** Significant water loss. Missing grout where tile meets the PVC skimmer body — needs sealant to resolve. - **Shallow end ",
+      "latencyMs": 64769
+    },
+    {
+      "id": "20260705215212-1-what-were-the-leak-detection-findings-for-camp-mikell-from-the-companycam-report",
+      "createdAt": "2026-07-05T21:52:12.979Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Pool: 101,000 gallons, avg depth 56\". Techs: Chris & Catherine, completed 3:30pm Fri June 5, 2026. **Water loss found:** - Backwash line — ~1,700 gal/day - Main drain #3 — ~2,000 gal/day, plus a defect under the main drain cover in the pool",
+      "latencyMs": 82501
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783530918477-a2118bc6",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 10,
+  "offset": 110,
+  "results": [
+    {
+      "id": "20260705215312-1-what-were-the-leak-detection-findings-for-valley-view-condominiums-from-the-comp",
+      "createdAt": "2026-07-05T21:53:12.578Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Here's what techs Chris and Logan found during the June 16, 2026 leak detection at Valley View Condominiums: **Water loss confirmed:** - Deep end skimmer throat — significant water loss; missing grout where tile meets the PVC skimmer body. ",
+      "latencyMs": 63863
+    },
+    {
+      "id": "20260705215347-1-what-were-the-leak-detection-findings-for-camp-mikell-from-the-companycam-report",
+      "createdAt": "2026-07-05T21:53:47.803Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "**Camp Mikell (237 Camp Mikell Court, Toccoa, GA) – Leak Detection Checklist, serviced 6/5/2026 by Chris & Catherine:** - **Backwash line:** ~1,700 gallons/day water loss - **Main drain #3:** ~2,000 gallons water loss; defect found under th",
+      "latencyMs": 113176
+    },
+    {
+      "id": "20260705225853-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
+      "createdAt": "2026-07-05T22:58:53.094Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft queued for approval, sent to chris1bata@gmail.com — subject \"bryson city s on checdule for tomorrow.\" One issue: I don't have Bryson City's actual schedule details for tomorrow in the connected records, so the draft just repeats your ",
+      "latencyMs": 4660
+    },
+    {
+      "id": "20260705225921-2-whats-important-from-chris-aquatraceleak-com",
+      "createdAt": "2026-07-05T22:59:21.456Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "Nothing urgent from a client — the top-flagged items are routine site/system notices. Here's what's actually worth a look: **Site/system (auto-flagged high, not client asks)** - Aquatrace Leak Detection site — theme auto-update — no action ",
+      "latencyMs": 9533
+    },
+    {
+      "id": "20260705232426-3-what-was-the-service-ime-competion-for-deborah-justice",
+      "createdAt": "2026-07-05T23:24:26.556Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Service completed 3:10pm, Thursday July 2nd, 2026 for Deborah Justice (Fair Play, SC) — per the CompanyCam checklist report. Techs on site: Chris, Logan. Jobber has no completion time logged (job is still marked \"lead\" status), so that deta",
+      "latencyMs": 76926
+    },
+    {
+      "id": "20260705232454-4-yes-there-is-incorrect-here-service-comletion-is-in-company-cam-reports",
+      "createdAt": "2026-07-05T23:24:54.702Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1070
+    },
+    {
+      "id": "20260705232530-5-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
+      "createdAt": "2026-07-05T23:25:30.373Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Confirmed: **3:10pm, Thursday July 2nd, 2026** — that's the service completion time from the CompanyCam checklist report for Deborah Justice (Fair Play, SC). Techs on site: Chris, Logan. Jobber shows this job as \"lead\" status with no comple",
+      "latencyMs": 3404
+    },
+    {
+      "id": "20260705232559-6-using-company-cam-find-the-completion-time-for-deboarh-justice",
+      "createdAt": "2026-07-05T23:25:59.324Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I don't have that written down right now — the CompanyCam lookup for Deborah Justice's job failed to return anything this time, and the job detail check also came back empty. Earlier I quoted a 3:10pm completion time, but I can't re-verify ",
+      "latencyMs": 40730
+    },
+    {
+      "id": "20260705232613-7-correct",
+      "createdAt": "2026-07-05T23:26:13.337Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1204
+    },
+    {
+      "id": "20260706202435-8-did-todays-pool-pay",
+      "createdAt": "2026-07-06T20:24:35.401Z",
+      "expectedIntent": "payment_status_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule",
+        "getJobDetail",
+        "invoiceStatus",
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 67680
+    }
+  ]
+}

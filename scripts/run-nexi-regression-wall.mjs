@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import {
   createOperatorProofSession,
   fetchJson,
+  resolveOperatorProofIdentity,
   resolveBaseUrl
 } from "./support/liveProofHelpers.mjs";
 import { nexiTrialRegressionSessions } from "../tests/fixtures/nexi-trial-regression-cases.mjs";
@@ -15,6 +16,7 @@ const receiptPath = process.env.NEXI_REGRESSION_RECEIPT || "receipts/m1/nexi-reg
 const runId = `regression-wall-${Date.now()}-${randomUUID().slice(0, 8)}`;
 const caseFilter = process.env.NEXI_REGRESSION_CASE || "";
 const limit = Number(process.env.NEXI_REGRESSION_LIMIT || "0");
+const offset = Number(process.env.NEXI_REGRESSION_OFFSET || "0");
 const caseDelayMs = Number(process.env.NEXI_REGRESSION_CASE_DELAY_MS || "750");
 const quotaRetryLimit = Number(process.env.NEXI_REGRESSION_QUOTA_RETRIES || "6");
 const proofSessionMaxAgeMs = Number(process.env.NEXI_REGRESSION_PROOF_SESSION_MAX_AGE_MS || String(45 * 60 * 1000));
@@ -32,16 +34,27 @@ function sleep(ms) {
 
 function selectedSessions() {
   let remaining = Number.isFinite(limit) && limit > 0 ? limit : Infinity;
+  let skipped = Number.isFinite(offset) && offset > 0 ? offset : 0;
   const sessions = [];
   for (const session of allRegressionSessions) {
     const cases = session.cases.filter((testCase) => !caseFilter || testCase.id.includes(caseFilter) || testCase.question.includes(caseFilter));
     if (cases.length === 0) {
       continue;
     }
-    const selected = cases.slice(0, remaining);
+    const selected = [];
+    for (const testCase of cases) {
+      if (skipped > 0) {
+        skipped -= 1;
+        continue;
+      }
+      if (remaining <= 0) {
+        break;
+      }
+      selected.push(testCase);
+      remaining -= 1;
+    }
     if (selected.length > 0) {
       sessions.push({ ...session, cases: selected });
-      remaining -= selected.length;
     }
     if (remaining <= 0) {
       break;
@@ -134,7 +147,12 @@ async function rotateProofSession() {
   if (proofSession) {
     await proofSession.dispose().catch(() => {});
   }
-  proofSession = await createOperatorProofSession();
+  proofSession = await createOperatorProofSession({
+    identity: {
+      ...resolveOperatorProofIdentity(),
+      tenantId
+    }
+  });
   proofSessionCreatedAt = Date.now();
   return proofSession;
 }
@@ -175,6 +193,28 @@ const results = [];
 let passed = 0;
 let failed = 0;
 
+function buildReceipt({ complete = false } = {}) {
+  return {
+    ok: complete && failed === 0,
+    complete,
+    runId,
+    baseUrl,
+    tenantId,
+    total: passed + failed,
+    passed,
+    failed,
+    caseFilter: caseFilter || null,
+    limit: Number.isFinite(limit) && limit > 0 ? limit : null,
+    offset: Number.isFinite(offset) && offset > 0 ? offset : null,
+    results
+  };
+}
+
+function writeReceipt({ complete = false } = {}) {
+  mkdirSync(dirname(receiptPath), { recursive: true });
+  writeFileSync(receiptPath, `${JSON.stringify(buildReceipt({ complete }), null, 2)}\n`, "utf8");
+}
+
 try {
   for (const session of sessions) {
     let conversationId = `${runId}-${session.conversationId.replace(/[^a-z0-9_-]/gi, "_").slice(0, 48)}`;
@@ -210,6 +250,7 @@ try {
         answerSample: result ? answerText(result).replace(/\s+/g, " ").slice(0, 240) : "",
         latencyMs: Date.now() - startedAt
       });
+      writeReceipt({ complete: false });
       if (caseDelayMs > 0) {
         await sleep(caseDelayMs);
       }
@@ -221,21 +262,8 @@ try {
   }
 }
 
-const receipt = {
-  ok: failed === 0,
-  runId,
-  baseUrl,
-  tenantId,
-  total: passed + failed,
-  passed,
-  failed,
-  caseFilter: caseFilter || null,
-  limit: Number.isFinite(limit) && limit > 0 ? limit : null,
-  results
-};
-
-mkdirSync(dirname(receiptPath), { recursive: true });
-writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
+writeReceipt({ complete: true });
+const receipt = buildReceipt({ complete: true });
 
 console.log(JSON.stringify({
   ok: receipt.ok,

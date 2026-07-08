@@ -1,0 +1,145 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783529141639-611c6a07",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 10,
+  "offset": null,
+  "results": [
+    {
+      "id": "20260704172042-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:20:42.712Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - Blueprint lookup (lookupSiteJobBlueprintField): no matching value for poolGallons — matchedBlueprintId came back empty. - Job detail (getJobDetail): that check failed to complete, so no data came through. -",
+      "latencyMs": 53368
+    },
+    {
+      "id": "20260704172049-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:20:49.617Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField came back with no value for poolGallons — no matching blueprint was found. - getJobDetail failed to complete on this check. - getDocuments returned nothing for Camp Mikell (no do",
+      "latencyMs": 81419
+    },
+    {
+      "id": "20260704172534-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:25:34.406Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on today's schedule (July 8): - **Clarion Hotel - Commercial Main Drain Survey** — ASP of Asheville, 234 Hendersonville Road, Asheville, NC — all-day, status: lead, total $750 *Source: Jobber (getSchedule)*",
+      "latencyMs": 60457
+    },
+    {
+      "id": "20260704172544-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:25:44.767Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 CompanyCam photos for Deborah Justice (181 Isbell Road, Fair Play, SC). **Source: CompanyCam** - Photo IDs: 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 3338748995, 3338749169, 3338749380, 333",
+      "latencyMs": 7212
+    },
+    {
+      "id": "20260704172547-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:25:47.688Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField: no matching blueprint found for Camp Mikell, poolGallons came back empty - getJobDetail: the check failed before returning data - getDocuments: no documents or suggested bluepri",
+      "latencyMs": 47165
+    },
+    {
+      "id": "20260704172554-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:25:54.012Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. The pool gallons lookup for Camp Mikell came back empty (no matched blueprint), the job detail check failed to return data, and there were no documents or reports on file for this site either. Can't confirm a",
+      "latencyMs": 84863
+    },
+    {
+      "id": "20260704172947-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:29:47.787Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on today's schedule (all day, 7/8): - **Clarion Hotel - Commercial Main Drain Survey** — ASP of Asheville, 234 Hendersonville Road, Asheville, NC — status: lead — $750 Source: Jobber (getSchedule)",
+      "latencyMs": 52678
+    },
+    {
+      "id": "20260704173045-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:30:45.190Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "I couldn't pull today's schedule — the check failed on my end, and I've logged it to get fixed. I don't have another way to see the job list right now, so I can't give you today's Jobber jobs.",
+      "latencyMs": 44890
+    },
+    {
+      "id": "20260704173052-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:30:52.873Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 CompanyCam photos for Deborah Justice's job. - **Job:** Deborah Justice — 181 Isbell Road, Fair Play, SC 29643 - **Photo count:** 25 - **Source:** CompanyCam (project ID 107503799) Photo IDs: 3338800086, 3338756524, 3338754200, 333",
+      "latencyMs": 7261
+    },
+    {
+      "id": "20260704173057-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:30:57.286Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField for Camp Mikell's poolGallons came back empty (no matched blueprint). - getJobDetail failed to return checked data on this pass. - getDocuments found no project, documents, or su",
+      "latencyMs": 46131
+    }
+  ]
+}

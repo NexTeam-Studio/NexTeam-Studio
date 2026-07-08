@@ -1,0 +1,194 @@
+{
+  "ok": true,
+  "receiptName": "nexi-regression-wall-live-20260708-m8-aggregate",
+  "createdAt": "2026-07-08T17:31:59.312Z",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "deploySha": "425a26f5b87e846295d017f5e68d8dc373a8ecca",
+  "total": 174,
+  "passed": 174,
+  "failed": 0,
+  "duplicateIds": [],
+  "failures": [],
+  "chunks": [
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-000.json",
+      "offset": 0,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-010.json",
+      "offset": 10,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-020.json",
+      "offset": 20,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-030.json",
+      "offset": 30,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-040.json",
+      "offset": 40,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-050.json",
+      "offset": 50,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-060.json",
+      "offset": 60,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-070.json",
+      "offset": 70,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-080.json",
+      "offset": 80,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-090.json",
+      "offset": 90,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-100.json",
+      "offset": 100,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-110.json",
+      "offset": 110,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-120.json",
+      "offset": 120,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-130.json",
+      "offset": 130,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-140.json",
+      "offset": 140,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-150.json",
+      "offset": 150,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-160.json",
+      "offset": 160,
+      "limit": 10,
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m8-offset-170.json",
+      "offset": 170,
+      "limit": 10,
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "ok": true,
+      "complete": true
+    }
+  ]
+}

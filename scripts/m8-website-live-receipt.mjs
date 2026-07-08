@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import {
   createOperatorProofSession,
   fetchJson,
+  resolveOperatorProofIdentity,
   resolveBaseUrl
 } from "./support/liveProofHelpers.mjs";
 
@@ -89,7 +90,12 @@ const receipt = {
 
 let proof = null;
 try {
-  proof = await createOperatorProofSession();
+  proof = await createOperatorProofSession({
+    identity: {
+      ...resolveOperatorProofIdentity(),
+      tenantId
+    }
+  });
   const idToken = proof.idToken;
 
   const version = await request("/api/version");
@@ -246,4 +252,3 @@ try {
     error: receipt.error
   }, null, 2));
 }
-

@@ -1,0 +1,139 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783531327423-bfb5b0f3",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 10,
+  "offset": 140,
+  "results": [
+    {
+      "id": "20260706034005-2-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
+      "createdAt": "2026-07-06T03:40:05.014Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "The job detail check itself failed on our end, and CompanyCam has no documents or reports on file for this project. - **Jobber (job detail):** couldn't complete the check — it didn't return usable data - **CompanyCam (109286383, ASP of Ashe",
+      "latencyMs": 44755
+    },
+    {
+      "id": "20260706121714-1-did-i-send-the-report-more-medallion-pool-company-last-week",
+      "createdAt": "2026-07-06T12:17:14.782Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 1561
+    },
+    {
+      "id": "20260706121750-2-there-is-a-report-for-medallion-pool-company-last-week-in-company-camp-but-i-nee",
+      "createdAt": "2026-07-06T12:17:50.545Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 1409
+    },
+    {
+      "id": "20260706121819-3-you-need-to-infer-what-i-mean-regardless-of-typos-the-report-should-be-sitting-i",
+      "createdAt": "2026-07-06T12:18:19.313Z",
+      "expectedIntent": "payment_status_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule",
+        "getJobDetail",
+        "invoiceStatus",
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 162889
+    },
+    {
+      "id": "20260706121846-4-check-email-for-a-report-sent-to-medallion-pool-company-last-week",
+      "createdAt": "2026-07-06T12:18:46.422Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 1076
+    },
+    {
+      "id": "20260706121905-5-aquatraceleak-gmail-com",
+      "createdAt": "2026-07-06T12:19:05.002Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 1016
+    },
+    {
+      "id": "20260706122032-6-do-you-see-any-emails-for-medallion-pool-company",
+      "createdAt": "2026-07-06T12:20:32.005Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "Found 2 emails with Medallion Pool Company, but neither is the leak report. - **Jun 2** – W-9/COI exchange with Melody Eppler (Medallion) - **Jun 2** – Related W-9/COI thread with Jared Marcengill No report send is showing up in the chris m",
+      "latencyMs": 4748
+    },
+    {
+      "id": "20260706122140-7-check-the-email-inbox-and-see-if-they-were-four-was-sent-to-oleta-falls-communit",
+      "createdAt": "2026-07-06T12:21:40.740Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "Found 2 sent emails on that thread from the chris mailbox (Jun 2, both marked SENT), but the subject/recipient details came back redacted so I can't confirm they were actually addressed to Oleta Falls Community — just that they exist and we",
+      "latencyMs": 3737
+    },
+    {
+      "id": "20260706122253-8-what-s-on-schedule-for-today",
+      "createdAt": "2026-07-06T12:22:53.363Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "I couldn't pull today's schedule — that check failed on my end. I wrote it down so we can fix it. Nothing else to report until I can get a clean read.",
+      "latencyMs": 69894
+    },
+    {
+      "id": "20260706122545-9-what-s-on-schedule-for-today",
+      "createdAt": "2026-07-06T12:25:45.151Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on today's schedule: - **Clarion Hotel - Commercial Main Drain Survey** (all day) — client ASP of Asheville, 234 Hendersonville Road, Asheville. Status: lead. Quoted total $750.",
+      "latencyMs": 112347
+    }
+  ]
+}

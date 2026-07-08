@@ -1,0 +1,330 @@
+{
+  "ok": true,
+  "receiptName": "m8-website-live-receipt-current",
+  "startedAt": "2026-07-08T15:59:53.298Z",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "425a26f5b87e846295d017f5e68d8dc373a8ecca",
+  "tenantId": "aquatrace",
+  "runId": "m8-live-1783526393298-38f02dc5",
+  "checks": {
+    "versionShaMatched": true,
+    "healthGreen": true,
+    "siteGeneratedFromTenantData": true,
+    "internalSiteRendered": true,
+    "operatorUiDirectWrite": true,
+    "operatorUiNexiTool": true,
+    "phoneViewportLeadSubmitted": true,
+    "leadVisibleInCrmIntake": true,
+    "nexiOwnerNotificationQueuedOnly": true
+  },
+  "raw": {
+    "version": {
+      "sha": "425a26f5b87e846295d017f5e68d8dc373a8ecca",
+      "builtAt": "2026-07-08T15:59:53.351Z"
+    },
+    "health": {
+      "ok": true,
+      "checkedAt": "2026-07-08T15:59:54.544Z",
+      "rails": {
+        "jobber": {
+          "ok": true,
+          "configured": true,
+          "provider": "jobber",
+          "op": "graphql_read",
+          "latencyMs": 657,
+          "detail": "Jobber GraphQL read succeeded."
+        },
+        "companycam": {
+          "ok": true,
+          "configured": true,
+          "provider": "companycam",
+          "op": "projects_read",
+          "latencyMs": 379,
+          "detail": "CompanyCam projects read succeeded."
+        },
+        "anthropic": {
+          "ok": true,
+          "configured": true,
+          "provider": "anthropic",
+          "op": "configured_no_spend",
+          "latencyMs": 0,
+          "detail": "Configured; live message call skipped by no-spend overnight limit."
+        }
+      }
+    },
+    "generated": {
+      "ok": true,
+      "site": {
+        "id": "site_aquatrace_aquatrace",
+        "tenantId": "aquatrace",
+        "slug": "aquatrace",
+        "title": "Aquatrace Swimming Pool Leak Detection",
+        "theme": "pool_leak",
+        "blocks": [
+          {
+            "id": "hero",
+            "type": "hero",
+            "eyebrow": "Leak answers without draining the pool",
+            "headline": "Find the leak. Keep the water.",
+            "subhead": "Aquatrace Swimming Pool Leak Detection helps pool owners, builders, and property managers figure out where water is going with pressure testing, dye testing, underwater documentation, and reports people can actually use.",
+            "primaryCta": {
+              "label": "Request leak help",
+              "href": "#estimate"
+            },
+            "proofPoints": [
+              "Pool stays full",
+              "Photo-backed reports",
+              "Residential and commercial",
+              "864-991-5444"
+            ]
+          },
+          {
+            "id": "services",
+            "type": "services",
+            "heading": "Straight answers for the problems that waste water, time, and money.",
+            "services": [
+              {
+                "name": "Pool Leak Detection",
+                "description": "Pressure testing, dye testing, equipment checks, and plain-English findings for pool owners who need the real answer.",
+                "startingAt": "Standard pool-only detection from $595"
+              },
+              {
+                "name": "Pool + Spa Leak Detection",
+                "description": "A full pool and attached-spa diagnostic visit with findings organized for the owner, builder, or property manager.",
+                "startingAt": "Pool + spa detection from $795"
+              },
+              {
+                "name": "Commercial/VGB Field Documentation",
+                "description": "Underwater documentation and drain-cover reporting for commercial pools that need clean records without draining.",
+                "startingAt": "Quoted by route and site"
+              }
+            ]
+          },
+          {
+            "id": "service-area",
+            "type": "service_area_map",
+            "heading": "Built for routes across the Upstate, western NC, and nearby commercial pools.",
+            "center": "Fair Play, SC",
+            "areas": [
+              "Fair Play",
+              "Seneca",
+              "Anderson",
+              "Greenville",
+              "Bryson City",
+              "Western North Carolina"
+            ]
+          },
+          {
+            "id": "gallery",
+            "type": "gallery",
+            "heading": "Proof from the field, not guesswork from the deck.",
+            "items": [
+              {
+                "mediaId": "3338800086",
+                "thumbRef": "companycam:3338800086",
+                "caption": "Real Aquatrace field photo routed through the media proxy"
+              }
+            ]
+          },
+          {
+            "id": "reviews",
+            "type": "reviews",
+            "heading": "Owners hire Aquatrace when they need a clear answer.",
+            "reviews": [
+              {
+                "quote": "They found what everyone else missed and explained it without making us feel dumb.",
+                "attribution": "Residential pool owner"
+              },
+              {
+                "quote": "The report was clear enough for our maintenance team and ownership group.",
+                "attribution": "Commercial property manager"
+              }
+            ]
+          },
+          {
+            "id": "badges",
+            "type": "compliance_badges",
+            "heading": "Field standards",
+            "badges": [
+              "Pressure testing",
+              "Dye testing",
+              "Underwater documentation",
+              "Photo-backed findings",
+              "Approval-gated follow-up"
+            ]
+          },
+          {
+            "id": "articles",
+            "type": "article_index",
+            "heading": "Helpful leak guides before you book.",
+            "articles": [
+              {
+                "title": "How to tell if pool water loss is normal",
+                "excerpt": "A plain-English leak guide drafted for Aquatrace owners and managers.",
+                "href": "/guides/pool-water-loss"
+              }
+            ]
+          },
+          {
+            "id": "lead-form",
+            "type": "lead_form",
+            "heading": "Tell us what the pool is doing.",
+            "intro": "Share the city, how much water you are losing, and whether it is a pool, spa, or commercial site. Nexi will park the request for owner review.",
+            "action": "/api/sites/aquatrace/leads"
+          }
+        ],
+        "html": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <title>Aquatrace Swimming Pool Leak Detection</title>\n    <meta name=\"description\" content=\"Swimming pool leak detection, pressure testing, dye testing, and field documentation.\" />\n    <style>\n      :root {\n        --ink: #14231f;\n        --deep: #0f393d;\n        --water: #4eb8c7;\n        --foam: #effaf8;\n        --sand: #efe2c8;\n        --coral: #d56a4a;\n        --card: rgba(255, 255, 255, 0.82);\n      }\n      * { box-sizing: border-box; }\n      body {\n        margin: 0;\n        font-family: Georgia, \"Times New Roman\", serif;\n        color: var(--ink);\n        background:\n          radial-gradient(circle at 18% 12%, rgba(78, 184, 199, 0.28), transparent 32rem),\n          linear-gradient(135deg, #f7f0df 0%, #e8f8f5 48%, #fef8ed 100%);\n      }\n      header, main, footer { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }\n      header { padding: 26px 0; display: flex; justify-content: space-between; gap: 16px; align-items: center; }\n      nav a { color: var(--deep); text-decoration: none; margin-left: 18px; font-weight: 700; }\n      .brand { font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }\n      .hero {\n        min-height: 72vh;\n        display: grid;\n        grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);\n        gap: 34px;\n        align-items: center;\n        padding: 54px 0 76px;\n      }\n      .eyebrow { color: var(--coral); text-transform: uppercase; letter-spacing: 0.14em; font: 800 0.78rem system-ui, sans-serif; }\n      h1, h2, h3 { line-height: 0.96; margin: 0; }\n      h1 { font-size: clamp(3.8rem, 10vw, 8.4rem); max-width: 9ch; }\n      h2 { font-size: clamp(2.4rem, 5vw, 4.8rem); }\n      h3 { font-size: 1.45rem; }\n      p, label, span, a, button, textarea, input { font-family: ui-sans-serif, system-ui, sans-serif; }\n      .subhead { font-size: clamp(1.1rem, 2.1vw, 1.45rem); max-width: 58ch; }\n      .button, button {\n        display: inline-flex;\n        border: 0;\n        border-radius: 999px;\n        background: var(--deep);\n        color: white;\n        padding: 14px 22px;\n        text-decoration: none;\n        font-weight: 800;\n        cursor: pointer;\n      }\n      .proof-card, .card, .map-card, blockquote, form {\n        background: var(--card);\n        border: 1px solid rgba(15, 57, 61, 0.16);\n        box-shadow: 0 26px 80px rgba(15, 57, 61, 0.14);\n        border-radius: 28px;\n      }\n      .proof-card { padding: 24px; display: grid; gap: 14px; transform: rotate(2deg); }\n      .proof-card span, .badges span, .map-card span {\n        display: inline-flex;\n        width: fit-content;\n        border-radius: 999px;\n        background: white;\n        padding: 10px 13px;\n        font-weight: 800;\n      }\n      .section { padding: 72px 0; }\n      .section-heading { margin-bottom: 24px; }\n      .cards, .gallery, .reviews { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }\n      .card { padding: 24px; min-height: 220px; }\n      .card strong { color: var(--coral); }\n      .split, .lead { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 24px; align-items: start; }\n      .map-card, form { padding: 24px; display: flex; flex-wrap: wrap; gap: 10px; }\n      .photo-tile {\n        width: 100%;\n        min-height: 190px;\n        border-radius: 26px;\n        display: grid;\n        place-items: center;\n        color: white;\n        font-size: 4rem;\n        font-weight: 900;\n        background: linear-gradient(135deg, var(--deep), var(--water));\n      }\n      .real-photo { height: 220px; object-fit: cover; }\n      figure { margin: 0; }\n      figcaption { padding: 10px 4px; font: 700 0.95rem ui-sans-serif, system-ui, sans-serif; }\n      .warm { background: rgba(239, 226, 200, 0.42); margin-inline: calc(50% - 50vw); padding-inline: calc(50vw - 50%); }\n      blockquote { margin: 0; padding: 24px; }\n      blockquote p { font-size: 1.05rem; }\n      cite { font-style: normal; font-weight: 900; }\n      .badges { display: flex; gap: 12px; flex-wrap: wrap; padding: 34px 0; }\n      .article-list { display: grid; gap: 12px; }\n      .article-list a { display: grid; gap: 4px; color: var(--ink); text-decoration: none; border-bottom: 1px solid rgba(20, 35, 31, 0.18); padding: 16px 0; }\n      form { display: grid; }\n      label { display: grid; gap: 6px; font-weight: 800; width: 100%; }\n      input, textarea { border: 1px solid rgba(15, 57, 61, 0.28); border-radius: 14px; padding: 12px; font: inherit; background: white; }\n      textarea { min-height: 130px; }\n      footer { padding: 42px 0 60px; color: rgba(20, 35, 31, 0.72); }\n      @media (max-width: 760px) {\n        header { align-items: flex-start; flex-direction: column; }\n        nav a { margin: 0 14px 0 0; }\n        .hero, .split, .lead, .cards, .gallery, .reviews { grid-template-columns: 1fr; }\n        .proof-card { transform: none; }\n      }\n    </style>\n  </head>\n  <body>\n    <header>\n      <div class=\"brand\">Aquatrace Swimming Pool Leak Detection</div>\n      <nav>\n        <a href=\"#services\">Services</a>\n        <a href=\"#gallery\">Proof</a>\n        <a href=\"#estimate\">Estimate</a>\n      </nav>\n    </header>\n    <main>\n      \n    <section class=\"hero\">\n      <div class=\"hero-copy\">\n        <p class=\"eyebrow\">Leak answers without draining the pool</p>\n        <h1>Find the leak. Keep the water.</h1>\n        <p class=\"subhead\">Aquatrace Swimming Pool Leak Detection helps pool owners, builders, and property managers figure out where water is going with pressure testing, dye testing, underwater documentation, and reports people can actually use.</p>\n        <a class=\"button\" href=\"#estimate\">Request leak help</a>\n      </div>\n      <div class=\"proof-card\">\n        <span>Pool stays full</span><span>Photo-backed reports</span><span>Residential and commercial</span><span>864-991-5444</span>\n      </div>\n    </section>\n\n    <section class=\"section\" id=\"services\">\n      <div class=\"section-heading\">\n        <p class=\"eyebrow\">Services</p>\n        <h2>Straight answers for the problems that waste water, time, and money.</h2>\n      </div>\n      <div class=\"cards\">\n        \n          <article class=\"card\">\n            <h3>Pool Leak Detection</h3>\n            <p>Pressure testing, dye testing, equipment checks, and plain-English findings for pool owners who need the real answer.</p>\n            <strong>Standard pool-only detection from $595</strong>\n          </article>\n          <article class=\"card\">\n            <h3>Pool + Spa Leak Detection</h3>\n            <p>A full pool and attached-spa diagnostic visit with findings organized for the owner, builder, or property manager.</p>\n            <strong>Pool + spa detection from $795</strong>\n          </article>\n          <article class=\"card\">\n            <h3>Commercial/VGB Field Documentation</h3>\n            <p>Underwater documentation and drain-cover reporting for commercial pools that need clean records without draining.</p>\n            <strong>Quoted by route and site</strong>\n          </article>\n      </div>\n    </section>\n\n    <section class=\"section split\">\n      <div>\n        <p class=\"eyebrow\">Service Area</p>\n        <h2>Built for routes across the Upstate, western NC, and nearby commercial pools.</h2>\n        <p>Based near Fair Play, SC, serving pool owners, builders, and property managers across:</p>\n      </div>\n      <div class=\"map-card\">\n        <span>Fair Play</span><span>Seneca</span><span>Anderson</span><span>Greenville</span><span>Bryson City</span><span>Western North Carolina</span>\n      </div>\n    </section>\n\n    <section class=\"section\" id=\"gallery\">\n      <div class=\"section-heading\">\n        <p class=\"eyebrow\">Field Proof</p>\n        <h2>Proof from the field, not guesswork from the deck.</h2>\n      </div>\n      <div class=\"gallery\">\n        \n          <figure>\n            <img class=\"photo-tile real-photo\" src=\"/api/media/3338800086\" alt=\"Real Aquatrace field photo routed through the media proxy\" loading=\"lazy\" data-media-id=\"3338800086\" />\n            <figcaption>Real Aquatrace field photo routed through the media proxy</figcaption>\n          </figure>\n      </div>\n    </section>\n\n    <section class=\"section warm\">\n      <div class=\"section-heading\">\n        <p class=\"eyebrow\">Reviews</p>\n        <h2>Owners hire Aquatrace when they need a clear answer.</h2>\n      </div>\n      <div class=\"reviews\">\n        \n          <blockquote>\n            <p>They found what everyone else missed and explained it without making us feel dumb.</p>\n            <cite>Residential pool owner</cite>\n          </blockquote>\n          <blockquote>\n            <p>The report was clear enough for our maintenance team and ownership group.</p>\n            <cite>Commercial property manager</cite>\n          </blockquote>\n      </div>\n    </section>\n\n    <section class=\"badges\" aria-label=\"Field standards\">\n      <span>Pressure testing</span><span>Dye testing</span><span>Underwater documentation</span><span>Photo-backed findings</span><span>Approval-gated follow-up</span>\n    </section>\n\n    <section class=\"section\">\n      <div class=\"section-heading\">\n        <p class=\"eyebrow\">Guides</p>\n        <h2>Helpful leak guides before you book.</h2>\n      </div>\n      <div class=\"article-list\">\n        \n          <a href=\"/guides/pool-water-loss\">\n            <strong>How to tell if pool water loss is normal</strong>\n            <span>A plain-English leak guide drafted for Aquatrace owners and managers.</span>\n          </a>\n      </div>\n    </section>\n\n    <section class=\"section lead\" id=\"estimate\">\n      <div>\n        <p class=\"eyebrow\">Start Here</p>\n        <h2>Tell us what the pool is doing.</h2>\n        <p>Share the city, how much water you are losing, and whether it is a pool, spa, or commercial site. Nexi will park the request for owner review.</p>\n      </div>\n      <form method=\"post\" action=\"/api/sites/aquatrace/leads\">\n        <label>Name <input name=\"name\" autocomplete=\"name\" required /></label>\n        <label>Email <input name=\"email\" type=\"email\" autocomplete=\"email\" /></label>\n        <label>Phone <input name=\"phone\" autocomplete=\"tel\" /></label>\n        <label>City <input name=\"city\" autocomplete=\"address-level2\" /></label>\n        <label>What are you seeing? <textarea name=\"message\" required></textarea></label>\n        <input type=\"hidden\" name=\"consent.email\" value=\"true\" />\n        <button type=\"submit\">Request leak help</button>\n      </form>\n    </section>\n    </main>\n    <footer>\n      <strong>Aquatrace Swimming Pool Leak Detection</strong><br />\n      Internal NexTeam staging build. Custom domain and SSL are pending owner Cloudflare setup.\n    </footer>\n  </body>\n</html>",
+        "internalUrl": "/sites/aquatrace",
+        "status": "staged",
+        "customDomainStatus": "pending_cloudflare",
+        "approvalId": "appr_0f4f9d10-9bbc-4c9b-b7d8-7af001ac207c",
+        "createdAt": "2026-07-08T15:59:54.674Z",
+        "updatedAt": "2026-07-08T15:59:54.674Z"
+      },
+      "approval": {
+        "id": "appr_0f4f9d10-9bbc-4c9b-b7d8-7af001ac207c",
+        "tenantId": "aquatrace",
+        "kind": "site_publish",
+        "preview": {
+          "title": "Prepare Aquatrace Swimming Pool Leak Detection website for custom domain",
+          "body": "Internal site is staged at /sites/aquatrace. Custom domain and SSL stay parked until Cloudflare setup is approved."
+        },
+        "execute": {
+          "service": "sites",
+          "op": "publishCustomDomain",
+          "args": {
+            "siteId": "site_aquatrace_aquatrace",
+            "slug": "aquatrace",
+            "internalUrl": "/sites/aquatrace",
+            "customDomainRequiresCloudflare": true,
+            "noExternalPublish": true,
+            "actorId": "internal:H7ht0iJdWqhQjPaKozon5ndmonJ2"
+          }
+        },
+        "status": "pending",
+        "createdBy": "user"
+      },
+      "customDomainDeferred": true
+    },
+    "siteHtml": {
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytes": 10781,
+      "containsLeadForm": true,
+      "containsMediaProxyImage": true,
+      "containsCustomDomainNotice": true
+    },
+    "operatorUiDirect": {
+      "ok": true,
+      "theme": {
+        "id": "aquatrace_job_desk",
+        "tenantId": "aquatrace",
+        "surface": "job_desk",
+        "name": "Aquatrace Job Desk",
+        "colors": {
+          "shellBackground": "#dceff1",
+          "panelBackground": "#f6ffff",
+          "headerBackground": "#07363d",
+          "accent": "#0e7490",
+          "accentText": "#f8fdff",
+          "userBubble": "#155e75",
+          "assistantBubble": "#f0fdfa",
+          "text": "#102a2d"
+        },
+        "density": "compact",
+        "updatedBy": "internal:H7ht0iJdWqhQjPaKozon5ndmonJ2",
+        "updatedAt": "2026-07-08T15:59:55.626Z"
+      },
+      "actorId": "internal:H7ht0iJdWqhQjPaKozon5ndmonJ2"
+    },
+    "operatorUiNexi": {
+      "answer": "Done — your Job Desk is now set to a warm sand palette with compact density. Only your view changed, nothing external.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "aquatrace_job_desk",
+          "label": "Job Desk appearance for Aquatrace"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "customizeOperatorUi",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "aquatrace_job_desk",
+              "label": "Job Desk appearance for Aquatrace"
+            }
+          ]
+        }
+      ]
+    },
+    "phoneLeadSubmit": {
+      "ok": true,
+      "screenshotPath": "receipts/m8/website-mobile-lead-form-current.png",
+      "bodyText": "{\"ok\":true,\"lead\":{\"id\":\"lead_c8d3fa2b-130b-4503-a7c2-4e1101ecff30\",\"tenantId\":\"aquatrace\",\"siteId\":\"site_aquatrace_aquatrace\",\"slug\":\"aquatrace\",\"name\":\"M8 Receipt Lead m8-live-1783526393298-38f02dc5\",\"email\":\"m8-receipt@example.test\",\"phone\":\"8645550108\",\"city\":\"Bryson City\",\"message\":\"Pool is losing about two inches per day and needs an estimate.\",\"consent\":{\"email\":true,\"sms\":false},\"source\":\"m8_site_form\",\"status\":\"new\",\"createdAt\":\"2026-07-08T16:00:09.213Z\"},\"event\":\"lead.received\",\"approval\":{\"id\":\"appr_eb6eb099-bad9-41c5-8069-acfc33f586e5\",\"tenantId\":\"aquatrace\",\"kind\":\"email\",\"preview\":{\"title\":\"New website lead: M8 Receipt Lead m8-live-1783526393298-38f02dc5\",\"body\":\"M8 Receipt Lead m8-live-1783526393298-38f02dc5 asked for leak help from Bryson City. Review the lead before any re"
+    },
+    "leads": {
+      "count": 1,
+      "matchingLead": {
+        "id": "lead_c8d3fa2b-130b-4503-a7c2-4e1101ecff30",
+        "tenantId": "aquatrace",
+        "siteId": "site_aquatrace_aquatrace",
+        "slug": "aquatrace",
+        "name": "M8 Receipt Lead m8-live-1783526393298-38f02dc5",
+        "email": "m8-receipt@example.test",
+        "phone": "8645550108",
+        "city": "Bryson City",
+        "message": "Pool is losing about two inches per day and needs an estimate.",
+        "consent": {
+          "email": true,
+          "sms": false
+        },
+        "source": "m8_site_form",
+        "status": "new",
+        "createdAt": "2026-07-08T16:00:09.213Z"
+      }
+    },
+    "approvals": {
+      "pendingCount": 2,
+      "sitePublishApprovalId": "appr_0f4f9d10-9bbc-4c9b-b7d8-7af001ac207c",
+      "leadNotification": {
+        "id": "appr_eb6eb099-bad9-41c5-8069-acfc33f586e5",
+        "tenantId": "aquatrace",
+        "kind": "email",
+        "preview": {
+          "title": "New website lead: M8 Receipt Lead m8-live-1783526393298-38f02dc5",
+          "body": "M8 Receipt Lead m8-live-1783526393298-38f02dc5 asked for leak help from Bryson City. Review the lead before any reply is sent."
+        },
+        "execute": {
+          "service": "sites",
+          "op": "notifyOwnerOfLead",
+          "args": {
+            "leadId": "lead_c8d3fa2b-130b-4503-a7c2-4e1101ecff30",
+            "slug": "aquatrace",
+            "noOutboundSend": true
+          }
+        },
+        "status": "pending",
+        "createdBy": "system"
+      }
+    }
+  },
+  "finishedAt": "2026-07-08T16:00:10.561Z",
+  "operator": {
+    "mode": "custom-token",
+    "email": "owner@aquatrace.com",
+    "uidPresent": true
+  },
+  "boundaries": {
+    "outboundExecuted": false,
+    "productionDeploy": false,
+    "customDomainDeferredForCloudflare": true,
+    "companyCamWrites": false,
+    "jobberWrites": false
+  },
+  "ownerNeeds": {
+    "cloudflare": "When ready for a public launch, point the chosen Aquatrace domain/subdomain at the staging/production site service and approve SSL/custom-domain setup.",
+    "m11Phone": "M11 still needs the owner phone airplane-mode recording; this script only proves M8's phone-sized web lead form."
+  }
+}

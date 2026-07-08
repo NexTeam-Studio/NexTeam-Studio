@@ -1,0 +1,131 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783530713360-23715cd9",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 10,
+  "offset": 90,
+  "results": [
+    {
+      "id": "20260705194113-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:41:13.562Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "18 emails came in today (July 8), 10 in chris@ and 8 in aquatraceleak@. Only two are worth your attention: **Needs a reply:** - Taylor Walker - Re: Monarch Gainesville - Thursday - asking if the week of July 27 or first week of August works",
+      "latencyMs": 6536
+    },
+    {
+      "id": "20260705200500-1-what-needs-my-attention",
+      "createdAt": "2026-07-05T20:05:00.984Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "Nothing urgent from clients today — the top flagged items are actually automated notices, not real inquiries. Here's what's worth a look: **Needs a reply:** - Taylor Walker – Re: Monarch Gainesville - Thursday – asking what your week of Jul",
+      "latencyMs": 10699
+    },
+    {
+      "id": "20260705202457-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T20:24:57.631Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "18 emails came in today across your two mailboxes. Here's what actually matters: **Needs a reply:** - Taylor Walker - Re: Monarch Gainesville - Thursday - asking what your availability looks like week of July 27 or first week of August **Wo",
+      "latencyMs": 7596
+    },
+    {
+      "id": "20260705202705-2-great-detail-organization-and-format-sucks",
+      "createdAt": "2026-07-05T20:27:05.145Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 916
+    },
+    {
+      "id": "20260705202722-3-what-needs-my-attention",
+      "createdAt": "2026-07-05T20:27:22.262Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "Only one item actually needs you today — the rest is noise or FYI. **Reply needed:** - Taylor Walker - Re: Monarch Gainesville - Thursday - wants your availability for week of July 27 or first week of August **Worth a quick look:** - Anders",
+      "latencyMs": 6025
+    },
+    {
+      "id": "20260705202845-4-emails-pulled-but-no-information-specific-we-need-to-figure-out-how-to-roagaize-",
+      "createdAt": "2026-07-05T20:28:45.075Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1065
+    },
+    {
+      "id": "20260705202927-5-that-was-an-email-in-the-inbox",
+      "createdAt": "2026-07-05T20:29:27.537Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "Nothing new since that last check — this is the same batch, just none of it's job-related. Here's the honest read: **Nothing needs your attention.** All 21 emails are promos or internal system notes: - **Sierra clothing store** — 10 promo e",
+      "latencyMs": 6749
+    },
+    {
+      "id": "20260705203001-6-send-me-an-email-to-chris1bata-gmail-com-bryson-city-job-is-confirmed-for-tomorr",
+      "createdAt": "2026-07-05T20:30:01.072Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "That draft didn't come out right — the subject and body are just placeholder text, not the actual Bryson City confirmation message. I need to redo this one before sending.",
+      "latencyMs": 4164
+    },
+    {
+      "id": "20260705210628-1-what-did-the-semrush-site-audit-say",
+      "createdAt": "2026-07-05T21:06:28.010Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 1475
+    },
+    {
+      "id": "20260705210631-2-send-an-email-to-nexi-aquatraceleak-com-saying-i-received-the-audit-and-will-rev",
+      "createdAt": "2026-07-05T21:06:31.948Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft's queued for approval, not sent yet. - To: nexi@aquatraceleak.com - Subject: I received the audit and will review it today - Body: \"I received the audit and will review it today.\" Just give the word and I'll send it.",
+      "latencyMs": 3045
+    }
+  ]
+}
