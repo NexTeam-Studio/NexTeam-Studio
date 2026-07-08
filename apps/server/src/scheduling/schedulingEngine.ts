@@ -15,6 +15,8 @@ export interface ScheduledVisit extends Visit {
   title: string;
   location: ScheduleLocation;
   status: "scheduled" | "pending_approval" | "complete";
+  source?: "native" | "jobber" | undefined;
+  readOnly?: boolean | undefined;
 }
 
 export interface SlotSearchInput {
