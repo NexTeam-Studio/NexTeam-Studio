@@ -1,0 +1,50 @@
+{
+  "receipt": "phase0-content-queue-visibility-local-smoke",
+  "capturedAt": "2026-07-08T19:53:44.4259961-04:00",
+  "worktree": "C:/Users/Peyto/NexTeam-Studio-worktrees/phase0-reality",
+  "branch": "build/phase0-reality-gate",
+  "baseHeadBeforeChange": "ef2c1469d21d68ddbe1c73675585887ac87e974e",
+  "phase0Item": 3,
+  "ownerFacingRequirement": "show me the content queue returns real pending drafts the owner can approve or reject from chat or /web UI",
+  "changesProven": {
+    "nexiRouter": [
+      "content queue prompts deterministically run contentQueue",
+      "approve content draft prompts run contentQueue then approve, using the pending draft id from the queue result when the owner does not paste an id",
+      "reject content draft prompts run contentQueue then rejectContentDraft",
+      "content queue prompts do not route to campaignQueue or searchEmail"
+    ],
+    "webUi": [
+      "/web Job Desk now includes an M5 Content Queue card",
+      "card loads /api/content/queue and filters approval_pending drafts",
+      "Approve button posts /api/content/drafts/:id/approve",
+      "Reject button posts /api/content/drafts/:id/reject"
+    ],
+    "approvalBoundary": [
+      "approve marks the content draft publish_ready and approval item approved",
+      "reject marks the content draft rejected and approval item rejected",
+      "publishing remains deferred; no GBP/Meta/WordPress publish is executed"
+    ]
+  },
+  "verification": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    "build": {
+      "command": "npm run build",
+      "exitCode": 0
+    },
+    "focusedTests": {
+      "command": "node --test apps/server/test/content-engine.test.mjs apps/server/test/nexi-job-desk.test.mjs",
+      "exitCode": 0,
+      "summary": "69 passing, 0 failing",
+      "newNamedCases": [
+        "Nexi content tools draft, list, approve, reject, and summarize without executing publish",
+        "content routes expose queue approve and reject decisions for the web UI",
+        "Nexi content queue prompts route to content queue approve and reject tools"
+      ]
+    }
+  },
+  "liveStagingReceiptRequired": true,
+  "secrets": "No secret values included."
+}

@@ -38,7 +38,7 @@ export interface ContentDraft {
   body: string;
   mediaRefs: string[];
   jobId?: string | undefined;
-  status: "draft" | "approval_pending" | "publish_ready" | "published_deferred";
+  status: "draft" | "approval_pending" | "publish_ready" | "published_deferred" | "rejected";
   approvalId?: string | undefined;
   sources: Source[];
   calendarSlot?: string | undefined;
@@ -232,6 +232,7 @@ export function summarizeContentStats(drafts: ContentDraft[], performance: Conte
     pendingApproval: drafts.filter((draft) => draft.status === "approval_pending").length,
     publishReady: drafts.filter((draft) => draft.status === "publish_ready").length,
     publishedDeferred: drafts.filter((draft) => draft.status === "published_deferred").length,
+    rejected: drafts.filter((draft) => draft.status === "rejected").length,
     impressions: performance.reduce((sum, item) => sum + item.impressions, 0),
     clicks: performance.reduce((sum, item) => sum + item.clicks, 0),
     calls: performance.reduce((sum, item) => sum + item.calls, 0),

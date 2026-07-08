@@ -50,6 +50,11 @@ input {
   margin: auto;
 }
 
+.side-panels {
+  display: grid;
+  gap: 18px;
+}
+
 .phone {
   width: min(430px, 100%);
   min-height: min(820px, calc(100vh - 36px));
@@ -62,8 +67,8 @@ input {
   box-shadow: 0 28px 90px rgba(48, 44, 32, 0.28);
 }
 
-.schedule-card {
-  min-height: min(820px, calc(100vh - 36px));
+.schedule-card,
+.content-card {
   padding: 24px;
   overflow: auto;
   border: 1px solid rgba(31, 33, 28, 0.16);
@@ -72,6 +77,10 @@ input {
     linear-gradient(180deg, rgba(255, 250, 240, 0.94), rgba(250, 239, 218, 0.88)),
     radial-gradient(circle at 100% 0%, rgba(49, 95, 88, 0.16), transparent 34%);
   box-shadow: 0 28px 90px rgba(48, 44, 32, 0.2);
+}
+
+.schedule-card {
+  min-height: min(520px, calc(100vh - 36px));
 }
 
 .schedule-heading {
@@ -95,6 +104,14 @@ input {
   padding: 11px 13px;
   background: #fffdf7;
   color: #26352c;
+}
+
+.refresh-button {
+  border: 1px solid rgba(49, 95, 88, 0.24);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: #315f58;
+  background: rgba(255, 253, 247, 0.72);
 }
 
 .view-tabs {
@@ -178,6 +195,70 @@ input {
   border-top: 1px solid rgba(38, 53, 44, 0.1);
   padding-top: 10px;
   font-size: 0.88rem;
+}
+
+.content-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.content-draft {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(38, 53, 44, 0.11);
+  border-radius: 24px;
+  background: rgba(255, 253, 247, 0.86);
+}
+
+.content-draft h3,
+.content-draft p {
+  margin: 0;
+}
+
+.content-draft h3 {
+  color: #26352c;
+  font-size: 1.08rem;
+}
+
+.content-draft p {
+  color: #526055;
+  line-height: 1.36;
+}
+
+.content-draft-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #b06b34;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.content-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.content-actions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 13px;
+  color: #fff8ea;
+  background: #315f58;
+  font-weight: 850;
+}
+
+.content-actions button.secondary {
+  color: #26352c;
+  background: rgba(228, 191, 115, 0.4);
+}
+
+.content-actions button:disabled {
+  opacity: 0.48;
 }
 
 .topbar {

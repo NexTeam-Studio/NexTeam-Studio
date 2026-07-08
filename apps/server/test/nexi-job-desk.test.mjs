@@ -1018,6 +1018,116 @@ test("Nexi create-client prompts route to approval-gated CRM createClient", asyn
   assert.equal(result.sources.some((source) => source.ref === "approval_client_1"), true);
 });
 
+test("Nexi content queue prompts route to content queue approve and reject tools", async () => {
+  const calls = [];
+  const pendingDraft = {
+    id: "content_gbp_post_12345678-abcd-4abc-8abc-123456789abc",
+    title: "Aquatrace completed leak detection in Bryson City",
+    status: "approval_pending"
+  };
+  const tools = [
+    {
+      name: "contentQueue",
+      description: "List content drafts.",
+      inputSchema: z.object({ tenantId: z.string().optional() }),
+      handler: async () => {
+        calls.push(["contentQueue", {}]);
+        return {
+          result: { drafts: [pendingDraft], publishingDeferred: true },
+          sources: [{ rail: "native", ref: pendingDraft.id, label: "Native content draft Aquatrace completed leak detection in Bryson City" }]
+        };
+      }
+    },
+    {
+      name: "approve",
+      description: "Approve content draft.",
+      inputSchema: z.object({ draftId: z.string() }),
+      handler: async (_tenant, args) => {
+        calls.push(["approve", args]);
+        return {
+          result: { draft: { ...pendingDraft, status: "publish_ready" }, approval: { status: "approved" }, publishingDeferred: true },
+          sources: [{ rail: "native", ref: pendingDraft.id, label: "Native content draft Aquatrace completed leak detection in Bryson City" }]
+        };
+      }
+    },
+    {
+      name: "rejectContentDraft",
+      description: "Reject content draft.",
+      inputSchema: z.object({ draftId: z.string() }),
+      handler: async (_tenant, args) => {
+        calls.push(["rejectContentDraft", args]);
+        return {
+          result: { draft: { ...pendingDraft, status: "rejected" }, approval: { status: "rejected" }, publishingDeferred: true },
+          sources: [{ rail: "native", ref: pendingDraft.id, label: "Native content draft Aquatrace completed leak detection in Bryson City" }]
+        };
+      }
+    },
+    {
+      name: "campaignQueue",
+      description: "Read campaign queue.",
+      inputSchema: z.object({}),
+      handler: async () => {
+        throw new Error("campaignQueue should not run for content queue prompts");
+      }
+    },
+    {
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string().optional() }),
+      handler: async () => {
+        throw new Error("searchEmail should not run for content queue prompts");
+      }
+    }
+  ];
+
+  const queueResult = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "show me the content queue" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "There is 1 content draft waiting for approval." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(queueResult.toolRuns.map((run) => run.name), ["contentQueue"]);
+
+  const approveResult = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "approve the first content draft" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "Approved. It is publish-ready, but publishing is still deferred." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(approveResult.toolRuns.map((run) => run.name), ["contentQueue", "approve"]);
+  assert.equal(calls.some(([name, args]) => name === "approve" && args.draftId === pendingDraft.id), true);
+
+  const rejectResult = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: `reject content draft ${pendingDraft.id}` }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "Rejected. It will not be published." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(rejectResult.toolRuns.map((run) => run.name), ["contentQueue", "rejectContentDraft"]);
+  assert.equal(calls.some(([name, args]) => name === "rejectContentDraft" && args.draftId === pendingDraft.id), true);
+});
+
 test("Nexi address-only follow-ups preserve the prior distance capability intent", async () => {
   const result = await runNexiToolLoop({
     tenant: tenant(),

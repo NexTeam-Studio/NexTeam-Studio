@@ -756,6 +756,12 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.subject ??= parsed.subject;
     record.bodyText ??= parsed.bodyText;
   }
+  if (toolName === "approve") {
+    record.draftId ??= contentDraftIdFromText(userText) ?? contentDraftIdFromPriorRuns(priorRuns);
+  }
+  if (toolName === "rejectContentDraft") {
+    record.draftId ??= contentDraftIdFromText(userText) ?? contentDraftIdFromPriorRuns(priorRuns);
+  }
   if (toolName === "getEmailAttachment" && emailRef?.attachmentId) {
     return { ...record, mailbox: emailRef.mailbox, messageId: emailRef.messageId, attachmentId: emailRef.attachmentId };
   }
@@ -980,6 +986,22 @@ function looksLikeCampaignQueueQuestion(lower: string): boolean {
   return /\b(?:campaign|sequence|newsletter|outreach)\b.*\b(?:queue|queued|status|stats|tracking|opens?|clicks?|unsubscribe|suppression)\b/.test(lower);
 }
 
+function looksLikeContentQueueQuestion(lower: string): boolean {
+  if (/\b(?:campaign|sequence|newsletter|outreach)\b/.test(lower)) {
+    return false;
+  }
+  return /\b(?:content|post|posts|gbp|social|article|articles|draft|drafts)\b.*\b(?:queue|queued|pending|waiting|approve|approval|ready)\b/.test(lower)
+    || /\bshow\s+me\s+(?:the\s+)?content\s+queue\b/.test(lower);
+}
+
+function looksLikeContentApproveAction(lower: string): boolean {
+  return /\bapprove\b.*\b(?:content|post|gbp|social|article|draft|queue|content_[a-z_]+_[a-f0-9-]{8,})\b/.test(lower);
+}
+
+function looksLikeContentRejectAction(lower: string): boolean {
+  return /\b(?:reject|decline|trash|discard)\b.*\b(?:content|post|gbp|social|article|draft|queue|content_[a-z_]+_[a-f0-9-]{8,})\b/.test(lower);
+}
+
 function looksLikeInboxTriageQuestion(lower: string): boolean {
   return /\b(?:needs? my attention|what needs attention|triage|urgent|important|order\s+unread|sort\s+unread|rank\s+unread)\b/.test(lower);
 }
@@ -1194,6 +1216,30 @@ function draftEmailInputFromText(text: string): { to: string[]; subject: string;
   };
 }
 
+function contentDraftIdFromText(text: string): string | undefined {
+  return text.match(/\bcontent_[a-z_]+_[a-f0-9-]{8,}\b/i)?.[0];
+}
+
+function contentDraftIdFromPriorRuns(priorRuns: ToolRunTrace[]): string | undefined {
+  for (const run of [...priorRuns].reverse()) {
+    if (run.name !== "contentQueue" && run.name !== "draftPostFromJob") {
+      continue;
+    }
+    const result = run.result && typeof run.result === "object" ? run.result as Record<string, unknown> : {};
+    const drafts = Array.isArray(result.drafts) ? result.drafts : [];
+    for (const draft of drafts) {
+      if (!draft || typeof draft !== "object") {
+        continue;
+      }
+      const record = draft as Record<string, unknown>;
+      if (typeof record.id === "string" && record.status === "approval_pending") {
+        return record.id;
+      }
+    }
+  }
+  return undefined;
+}
+
 function numberFromMatch(text: string, pattern: RegExp): number | undefined {
   const value = text.match(pattern)?.[1];
   if (!value) {
@@ -1288,6 +1334,15 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikeCurrentWeatherQuestion(lower) && toolsByName.has("getCurrentWeather")) {
     return ["getCurrentWeather"];
+  }
+  if (looksLikeContentApproveAction(lower) && toolsByName.has("approve")) {
+    return uniqueToolNames(["contentQueue", "approve"], toolsByName);
+  }
+  if (looksLikeContentRejectAction(lower) && toolsByName.has("rejectContentDraft")) {
+    return uniqueToolNames(["contentQueue", "rejectContentDraft"], toolsByName);
+  }
+  if (looksLikeContentQueueQuestion(lower) && toolsByName.has("contentQueue")) {
+    return ["contentQueue"];
   }
   if (looksLikeCampaignDraftAction(lower) && toolsByName.has("draftCampaign")) {
     return ["draftCampaign"];

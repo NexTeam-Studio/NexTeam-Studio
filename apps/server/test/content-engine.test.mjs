@@ -114,25 +114,27 @@ test("job.completed event drafts a GBP post and does not publish", async () => {
   assert.equal(pending[0].execute.op, "publishGbpPost");
 });
 
-test("Nexi content tools draft, list, approve, and summarize without executing publish", async () => {
+test("Nexi content tools draft, list, approve, reject, and summarize without executing publish", async () => {
   const repository = new InMemoryContentRepository();
   const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
   const tools = createContentNexiTools({ repository, approvalQueue });
   const draftPostFromJob = tools.find((tool) => tool.name === "draftPostFromJob");
   const contentQueue = tools.find((tool) => tool.name === "contentQueue");
   const approve = tools.find((tool) => tool.name === "approve");
+  const rejectContentDraft = tools.find((tool) => tool.name === "rejectContentDraft");
   const contentStats = tools.find((tool) => tool.name === "contentStats");
 
   const draftOutput = await draftPostFromJob.handler(tenant(), {
     job: completedJob(),
     media,
-    requestedKinds: ["article"]
+    requestedKinds: ["article", "social_post"]
   });
   const draftId = draftOutput.result.drafts[0].id;
+  const rejectDraftId = draftOutput.result.drafts[1].id;
   assert.equal(draftOutput.result.publishingDeferred, true);
 
   const queueOutput = await contentQueue.handler(tenant(), {});
-  assert.equal(queueOutput.result.drafts.length, 1);
+  assert.equal(queueOutput.result.drafts.length, 2);
   assert.equal(queueOutput.sources[0].rail, "native");
 
   const approveOutput = await approve.handler(tenant(), { draftId });
@@ -140,7 +142,61 @@ test("Nexi content tools draft, list, approve, and summarize without executing p
   assert.equal(approveOutput.result.approval.status, "approved");
   assert.equal(approveOutput.result.publishingDeferred, true);
 
+  const rejectOutput = await rejectContentDraft.handler(tenant(), { draftId: rejectDraftId });
+  assert.equal(rejectOutput.result.draft.status, "rejected");
+  assert.equal(rejectOutput.result.approval.status, "rejected");
+  assert.equal(rejectOutput.result.publishingDeferred, true);
+
   const statsOutput = await contentStats.handler(tenant(), {});
   assert.equal(statsOutput.result.stats.publishReady, 1);
+  assert.equal(statsOutput.result.stats.rejected, 1);
   assert.equal(statsOutput.result.publishingDeferred, true);
+});
+
+test("content routes expose queue approve and reject decisions for the web UI", async () => {
+  const app = express();
+  app.use(express.json());
+  const repository = new InMemoryContentRepository();
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  registerContentRoutes(app, { repository, approvalQueue });
+
+  const server = app.listen(0);
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    const draftBody = {
+      job: completedJob(),
+      media,
+      requestedKinds: ["gbp_post", "social_post"]
+    };
+    const draftResponse = await fetch(`${baseUrl}/api/content/jobs/${completedJob().id}/draft`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(draftBody)
+    }).then((response) => response.json());
+    assert.equal(draftResponse.ok, true);
+
+    const queueResponse = await fetch(`${baseUrl}/api/content/queue?tenantId=aquatrace`).then((response) => response.json());
+    assert.equal(queueResponse.ok, true);
+    assert.equal(queueResponse.drafts.length, 2);
+
+    const approveResponse = await fetch(`${baseUrl}/api/content/drafts/${queueResponse.drafts[0].id}/approve`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    }).then((response) => response.json());
+    assert.equal(approveResponse.ok, true);
+    assert.equal(approveResponse.draft.status, "publish_ready");
+
+    const rejectResponse = await fetch(`${baseUrl}/api/content/drafts/${queueResponse.drafts[1].id}/reject`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    }).then((response) => response.json());
+    assert.equal(rejectResponse.ok, true);
+    assert.equal(rejectResponse.draft.status, "rejected");
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
 });

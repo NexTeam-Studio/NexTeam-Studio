@@ -245,7 +245,7 @@ KNOWN VARIANTS:
 - (3) use the evaporation calculator on Deborah Justice's pool
 - (module audit) `createClient` existed in `createCrmTools`, but server registered only `createCrmReadTools` into `/api/nexi/message`. Phase 0 item 2 now wires `createCrmTools`, routes create-client prompts deterministically, and queues writes through ApprovalQueue; local smoke receipt: `receipts/phase0/create-client-nexi-local-smoke-20260708.json`.
 - (module audit) M4 native upload endpoints exist, but owner-facing photo upload is not complete without the M11 real-device path.
-- (module audit) M5 content tools exist in Nexi, but content queue visibility must be re-proven through owner-facing chat/UI after Part 9.
+- (module audit) M5 content tools existed, but content queue visibility was not proven through owner-facing chat/UI after Part 9. Phase 0 item 3 now routes content queue prompts to `contentQueue`, supports approve/reject decisions, and exposes a `/web` Content Queue card; local smoke receipt: `receipts/phase0/content-queue-visibility-local-smoke-20260708.json`.
 - (module audit) M12a voice has backend/web foundation receipts, but live hands-free phone/video proof is still pending.
 
 STATUS: OPEN - BUILDSTATE reality-gate correction in progress.
@@ -256,6 +256,8 @@ REGRESSION TEST IDS:
 
 - `20260708-owner-p1x-use-evaporation-calculator-deborah-justice`
 - `20260708-owner-p2aa-how-do-i-upload-photos`
+- `phase0-content-queue-chat-route-visible`
+- `phase0-content-queue-web-approve-reject-visible`
 - Future module reality-gate checks under `receipts/part9/module-reality-gate-20260708.json`
 
 ## CLASS G - FORMAT/TONE REGRESSION

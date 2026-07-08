@@ -44,6 +44,11 @@ const approveSchema = z.object({
   draftId: z.string().min(1)
 });
 
+const rejectSchema = z.object({
+  tenantId: z.string().optional(),
+  draftId: z.string().min(1)
+});
+
 const contentStatsSchema = z.object({
   tenantId: z.string().optional()
 });
@@ -104,6 +109,25 @@ export function createContentNexiTools(input: {
         }
         const approval = draft.approvalId ? await input.approvalQueue.approve(draft.approvalId) : null;
         const updated = await input.repository.updateDraft(tenantId, draft.id, { status: "publish_ready" });
+        return {
+          result: { draft: updated, approval, publishingDeferred: true },
+          sources: [source(draft.id, `Native content draft ${draft.title}`)]
+        };
+      }
+    },
+    {
+      name: "rejectContentDraft",
+      description: "Reject a queued content draft without publishing it.",
+      inputSchema: rejectSchema,
+      handler: async (tenant, args) => {
+        const parsed = rejectSchema.parse(args);
+        const tenantId = parsed.tenantId ?? tenant.id;
+        const draft = await input.repository.getDraft(tenantId, parsed.draftId);
+        if (!draft) {
+          return { result: { draft: null, publishingDeferred: true }, sources: [] };
+        }
+        const approval = draft.approvalId ? await input.approvalQueue.reject(draft.approvalId) : null;
+        const updated = await input.repository.updateDraft(tenantId, draft.id, { status: "rejected" });
         return {
           result: { draft: updated, approval, publishingDeferred: true },
           sources: [source(draft.id, `Native content draft ${draft.title}`)]

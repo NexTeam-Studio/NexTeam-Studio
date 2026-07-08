@@ -174,6 +174,27 @@ export function registerContentRoutes(app: Express, deps: ContentRouteDeps): voi
     }
   });
 
+  app.post("/api/content/drafts/:id/reject", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : defaultTenantId(env);
+      const draftId = req.params.id;
+      if (!draftId) {
+        throw new RailError("Content draft id is required.", { provider: "native", op: "rejectContentDraft", status: 400 });
+      }
+      const draft = await deps.repository.getDraft(tenantId, draftId);
+      if (!draft) {
+        throw new RailError(`Content draft ${draftId} was not found.`, { provider: "native", op: "rejectContentDraft", status: 404 });
+      }
+      const approval = draft.approvalId ? await deps.approvalQueue.reject(draft.approvalId) : null;
+      const updated = await deps.repository.updateDraft(tenantId, draft.id, {
+        status: "rejected"
+      });
+      res.json({ ok: true, draft: updated, approval, publishingDeferred: true });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.get("/api/content/calendar", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);

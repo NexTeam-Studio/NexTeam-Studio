@@ -86,6 +86,14 @@ export class ApprovalQueueService {
     return this.repository.update(id, { status: "approved", decidedAt: new Date().toISOString() });
   }
 
+  async reject(id: ID): Promise<ApprovalItem> {
+    const item = await this.repository.get(id);
+    if (!item) {
+      throw new RailError(`Approval item ${id} was not found.`, { provider: "approval", op: "reject", status: 404 });
+    }
+    return this.repository.update(id, { status: "rejected", decidedAt: new Date().toISOString() });
+  }
+
   async executeApproved(id: ID): Promise<{ item: ApprovalItem; result: unknown }> {
     const item = await this.repository.get(id);
     if (!item || item.status !== "approved") {

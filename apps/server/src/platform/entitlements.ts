@@ -22,6 +22,7 @@ const TOOL_MODULES: Record<string, PlatformModule> = {
   draftPostFromJob: "content",
   contentQueue: "content",
   approve: "content",
+  rejectContentDraft: "content",
   contentStats: "content",
   audiencePreview: "campaigns",
   draftCampaign: "campaigns",
