@@ -1,0 +1,61 @@
+{
+  "module": "M11 Mobile",
+  "phase": "offline-first core",
+  "status": "partial_done_real_device_receipt_pending",
+  "codeCommit": "c8e747c",
+  "createdAt": "2026-07-07T17:54:00-04:00",
+  "scope": {
+    "implemented": [
+      "mobile workspace package @nexteam/mobile",
+      "tenant-scoped cached day schedule",
+      "offline checklist drafts",
+      "offline photo capture queue with EXIF GPS and timestamp metadata",
+      "nearest-client photo matching with tenant filter",
+      "offline job close-out queue",
+      "reconnect sync through MobileRemoteAdapter",
+      "last-write-wins conflict flags for review",
+      "graceful offline Nexi state with no fake answers or spinner"
+    ],
+    "notYetClaimedComplete": [
+      "real-device airplane-mode video receipt",
+      "native Expo UI shell",
+      "push notification device receipt",
+      "approval UI on device"
+    ]
+  },
+  "sourceSeed": {
+    "repo": "C:\\Users\\Peyto\\aquatrace-app",
+    "patternsReviewed": [
+      "utils/offlineSync.ts",
+      "utils/checklistOffline.ts",
+      "utils/photoEntries.ts"
+    ]
+  },
+  "localReceipt": {
+    "testFile": "apps/mobile/test/offline-first.test.mjs",
+    "scenario": "preload schedule -> airplane mode -> checklist -> GPS photo -> close-out -> reconnect -> sync -> conflict flag",
+    "assertions": [
+      "schedule cached before offline work",
+      "Nexi offline state returns canAskNexi=false and showSpinner=false",
+      "checklist draft queues locally",
+      "photo queues locally with EXIF timestamp/GPS",
+      "nearest-client match ignores another tenant even when closer",
+      "job close-out queues locally",
+      "offline sync attempt leaves three queued operations",
+      "reconnect sync applies all three operations",
+      "remote office change produces a last-write-wins conflict flag",
+      "pending queue is empty after reconnect"
+    ],
+    "result": "pass"
+  },
+  "verification": {
+    "npmCi": "pass against real node_modules; npm reported existing audit warnings and local Node v24 vs repo Node 20 engine warning",
+    "mobileBuild": "npm --workspace @nexteam/mobile run build passed",
+    "focusedTest": "node --test apps/mobile/test/offline-first.test.mjs passed 1/1",
+    "fullVerify": "npm run verify passed; test suite 120/120; tenancy, secrets, secret-history, provider-imports, and blueprints all passed"
+  },
+  "mergeGate": {
+    "requested": false,
+    "reason": "M11 full Bible receipt still requires a real device airplane-mode run and native UI receipt."
+  }
+}

@@ -1,0 +1,257 @@
+{
+  "ok": true,
+  "runId": "item7-evap-1783476408241-eae776f3",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "95480cf9d573fa567824863ef4e46c6ce044d70f",
+  "tenantId": "aquatrace",
+  "scenario": {
+    "clientName": "Item 7 live receipt",
+    "address": "100 Main Street, Bryson City, NC 28713",
+    "zip": "28713",
+    "surfaceAreaFt2": 500,
+    "waterTempF": 82,
+    "observedLoss": {
+      "inches": 1.5,
+      "observationDays": 1
+    }
+  },
+  "createdAt": "2026-07-08T02:06:48.241Z",
+  "checks": {
+    "version": {
+      "status": 200,
+      "body": {
+        "sha": "95480cf9d573fa567824863ef4e46c6ce044d70f",
+        "builtAt": "2026-07-08T02:06:48.370Z"
+      }
+    },
+    "health": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "checkedAt": "2026-07-08T02:06:49.299Z",
+        "rails": {
+          "jobber": {
+            "ok": true,
+            "configured": true,
+            "provider": "jobber",
+            "op": "graphql_read",
+            "latencyMs": 385,
+            "detail": "Jobber GraphQL read succeeded."
+          },
+          "companycam": {
+            "ok": true,
+            "configured": true,
+            "provider": "companycam",
+            "op": "projects_read",
+            "latencyMs": 395,
+            "detail": "CompanyCam projects read succeeded."
+          },
+          "anthropic": {
+            "ok": true,
+            "configured": true,
+            "provider": "anthropic",
+            "op": "configured_no_spend",
+            "latencyMs": 0,
+            "detail": "Configured; live message call skipped by no-spend overnight limit."
+          }
+        }
+      }
+    },
+    "routeRun": {
+      "status": 201,
+      "ok": true,
+      "reportId": "evap_95c4216b-4699-49e8-96bf-9e788d55107a",
+      "pdfUrl": "/api/evaporation/reports/evap_95c4216b-4699-49e8-96bf-9e788d55107a/pdf?tenantId=aquatrace",
+      "attachment": {
+        "filename": "aquatrace-evaporation-item-7-live-receipt.pdf",
+        "mime": "application/pdf",
+        "storageRef": "native://tenants/aquatrace/evaporationReports/evap_95c4216b-4699-49e8-96bf-9e788d55107a.pdf"
+      },
+      "result": {
+        "gallonsPerInch": 311.6883,
+        "observedLossInchesPerDay": 1.5,
+        "evapInchesPerDay": 0.4638,
+        "evapGallonsPerDay": 144.6,
+        "leakInchesPerDay": 1.0362,
+        "leakGallonsPerDay": 323,
+        "totalLossInchesPerDay": 1.5,
+        "totalLossGallonsPerDay": 467.5,
+        "severity": "significant",
+        "note": "Significant unexplained water loss is above expected evaporation. This strongly suggests an active leak.",
+        "projected24HourEvapInches": 0.5539,
+        "projected24HourEvapGallons": 172.6,
+        "forecast": [
+          {
+            "at": "2026-07-08T03:00:00.000Z",
+            "airTempF": 71.8,
+            "relativeHumidityPct": 95,
+            "windMph": 1.9,
+            "evapInchesForThreeHours": 0.0487,
+            "evapGallonsForThreeHours": 15.2
+          },
+          {
+            "at": "2026-07-08T06:00:00.000Z",
+            "airTempF": 72.05,
+            "relativeHumidityPct": 94,
+            "windMph": 1.05,
+            "evapInchesForThreeHours": 0.0352,
+            "evapGallonsForThreeHours": 11
+          },
+          {
+            "at": "2026-07-08T09:00:00.000Z",
+            "airTempF": 71.92,
+            "relativeHumidityPct": 95,
+            "windMph": 0.85,
+            "evapInchesForThreeHours": 0.0316,
+            "evapGallonsForThreeHours": 9.8
+          },
+          {
+            "at": "2026-07-08T12:00:00.000Z",
+            "airTempF": 72.3,
+            "relativeHumidityPct": 96,
+            "windMph": 0.47,
+            "evapInchesForThreeHours": 0.0243,
+            "evapGallonsForThreeHours": 7.6
+          },
+          {
+            "at": "2026-07-08T15:00:00.000Z",
+            "airTempF": 79.93,
+            "relativeHumidityPct": 58,
+            "windMph": 3.36,
+            "evapInchesForThreeHours": 0.1024,
+            "evapGallonsForThreeHours": 31.9
+          },
+          {
+            "at": "2026-07-08T18:00:00.000Z",
+            "airTempF": 92.91,
+            "relativeHumidityPct": 44,
+            "windMph": 6.6,
+            "evapInchesForThreeHours": 0.1456,
+            "evapGallonsForThreeHours": 45.4
+          },
+          {
+            "at": "2026-07-08T21:00:00.000Z",
+            "airTempF": 84.27,
+            "relativeHumidityPct": 58,
+            "windMph": 4,
+            "evapInchesForThreeHours": 0.096,
+            "evapGallonsForThreeHours": 29.9
+          },
+          {
+            "at": "2026-07-09T00:00:00.000Z",
+            "airTempF": 78.73,
+            "relativeHumidityPct": 76,
+            "windMph": 3.31,
+            "evapInchesForThreeHours": 0.0701,
+            "evapGallonsForThreeHours": 21.8
+          }
+        ]
+      },
+      "currentWeather": {
+        "city": "Bryson City",
+        "airTempF": 71.8,
+        "relativeHumidityPct": 95,
+        "windMph": 2.48,
+        "fetchedAt": "2026-07-08T02:06:49.621Z",
+        "zip": "28713",
+        "lat": 35.4241,
+        "lon": -83.4392
+      },
+      "forecastSlots": 8
+    },
+    "manualComparison": {
+      "ok": true,
+      "manual": {
+        "gallonsPerInch": 311.6883,
+        "observedLossInchesPerDay": 1.5,
+        "evapInchesPerDay": 0.4638,
+        "evapGallonsPerDay": 144.6,
+        "leakInchesPerDay": 1.0362,
+        "leakGallonsPerDay": 323,
+        "totalLossInchesPerDay": 1.5,
+        "totalLossGallonsPerDay": 467.5,
+        "projected24HourEvapInches": 0.5539,
+        "projected24HourEvapGallons": 172.6,
+        "forecast": [
+          {
+            "at": "2026-07-08T03:00:00.000Z",
+            "evapInchesForThreeHours": 0.0487,
+            "evapGallonsForThreeHours": 15.2
+          },
+          {
+            "at": "2026-07-08T06:00:00.000Z",
+            "evapInchesForThreeHours": 0.0352,
+            "evapGallonsForThreeHours": 11
+          },
+          {
+            "at": "2026-07-08T09:00:00.000Z",
+            "evapInchesForThreeHours": 0.0316,
+            "evapGallonsForThreeHours": 9.8
+          },
+          {
+            "at": "2026-07-08T12:00:00.000Z",
+            "evapInchesForThreeHours": 0.0243,
+            "evapGallonsForThreeHours": 7.6
+          },
+          {
+            "at": "2026-07-08T15:00:00.000Z",
+            "evapInchesForThreeHours": 0.1024,
+            "evapGallonsForThreeHours": 31.9
+          },
+          {
+            "at": "2026-07-08T18:00:00.000Z",
+            "evapInchesForThreeHours": 0.1456,
+            "evapGallonsForThreeHours": 45.4
+          },
+          {
+            "at": "2026-07-08T21:00:00.000Z",
+            "evapInchesForThreeHours": 0.096,
+            "evapGallonsForThreeHours": 29.9
+          },
+          {
+            "at": "2026-07-09T00:00:00.000Z",
+            "evapInchesForThreeHours": 0.0701,
+            "evapGallonsForThreeHours": 21.8
+          }
+        ]
+      },
+      "live": {
+        "gallonsPerInch": 311.6883,
+        "observedLossInchesPerDay": 1.5,
+        "evapInchesPerDay": 0.4638,
+        "evapGallonsPerDay": 144.6,
+        "leakInchesPerDay": 1.0362,
+        "leakGallonsPerDay": 323,
+        "projected24HourEvapInches": 0.5539,
+        "projected24HourEvapGallons": 172.6
+      },
+      "formula": "Aquatrace v20 evaporation formula recomputed independently inside the receipt script from the live weather values."
+    },
+    "pdf": {
+      "status": 200,
+      "ok": true,
+      "contentType": "application/pdf",
+      "contentDisposition": "inline; filename=\"aquatrace-evaporation-item-7-live-receipt.pdf\"",
+      "bytes": 3104,
+      "magic": "%PDF-"
+    },
+    "nexiTranscript": {
+      "prompt": "Run the evap for 100 Main Street, Bryson City, NC 28713 with surface area 500 square feet, water temperature 82 degrees, and observed daily loss 1.5 inches.",
+      "answer": "**Significant unexplained water loss — likely an active leak.**\n\n- Observed daily loss: 1.5 in/day\n- Expected evaporation: 0.46 in/day (144.6 gal)\n- Unexplained (leak) loss: 1.04 in/day (323 gal)\n- Total loss: 467.5 gal/day\n\nCurrent conditions in Bryson City: 72°F air, 95% humidity, light wind (2.5 mph) — low evaporation environment, so most of that 1.5\" loss isn't explained by weather.\n\nReport saved and posted for 100 Main Street, Bryson City, NC 28713.",
+      "tools": [
+        "runEvaporation"
+      ],
+      "sourceRefs": [
+        "native:evap_8e372928-d56f-46ab-bd4d-981772d4b2c6"
+      ],
+      "conversationId": "item7-evap-898f22d1-5c1f-4c8a-925e-7ade2f90cded"
+    }
+  },
+  "completedAt": "2026-07-08T02:06:54.100Z",
+  "operator": {
+    "mode": "custom-token",
+    "email": "owner@aquatrace.com",
+    "uidPresent": true
+  },
+  "redaction": "No API keys, tokens, passwords, email bodies, or private client records are recorded. The address is the explicit public test address used for the receipt."
+}

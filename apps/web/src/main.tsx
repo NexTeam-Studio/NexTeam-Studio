@@ -32,6 +32,8 @@ interface ScheduledVisit {
   end: string;
   assignedTo: string[];
   status: string;
+  source?: "native" | "jobber";
+  readOnly?: boolean;
   location?: {
     label: string;
     geo?: { lat: number; lng: number };
@@ -48,6 +50,8 @@ interface ScheduledVisit {
 interface CalendarResponse {
   ok: boolean;
   visits?: ScheduledVisit[];
+  sourceCounts?: { native: number; jobber: number };
+  warnings?: string[];
   error?: string;
 }
 
@@ -110,6 +114,14 @@ interface RuntimeConfigResponse {
   firebaseConfigured: boolean;
 }
 
+type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
+
+interface OperatorContext {
+  tenantId: string;
+  tenantUserId: string;
+  role: TenantRole;
+}
+
 interface BrowserSpeechRecognition {
   lang: string;
   continuous: boolean;
@@ -135,6 +147,36 @@ const buildTimeFirebaseConfig: FirebasePublicConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string || "",
   appId: import.meta.env.VITE_FIREBASE_APP_ID as string || ""
 };
+
+const DEFAULT_TENANT_ID = "aquatrace";
+
+function claimString(claims: Record<string, unknown>, key: string): string | undefined {
+  const value = claims[key];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function claimRole(claims: Record<string, unknown>): TenantRole {
+  const explicit = claimString(claims, "tenantRole") ?? claimString(claims, "role");
+  const roles = Array.isArray(claims.roles) ? claims.roles.map((role) => String(role).toUpperCase()) : [];
+  const candidates = [explicit, ...roles].filter(Boolean).map((role) => String(role).toUpperCase());
+  if (candidates.includes("OFFICE_ADMIN") || candidates.includes("OFFICE") || candidates.includes("ADMIN")) return "OFFICE_ADMIN";
+  if (candidates.includes("TECHNICIAN") || candidates.includes("TECH")) return "TECHNICIAN";
+  return "OWNER";
+}
+
+function fallbackOperatorContext(user: User): OperatorContext {
+  return { tenantId: DEFAULT_TENANT_ID, tenantUserId: user.uid, role: "OWNER" };
+}
+
+async function loadOperatorContext(user: User): Promise<OperatorContext> {
+  const token = await user.getIdTokenResult();
+  const claims = token.claims as Record<string, unknown>;
+  return {
+    tenantId: claimString(claims, "tenantId") ?? claimString(claims, "tenant_id") ?? DEFAULT_TENANT_ID,
+    tenantUserId: claimString(claims, "tenantUserId") ?? user.uid,
+    role: claimRole(claims)
+  };
+}
 
 function completeFirebaseConfig(config: FirebasePublicConfig): boolean {
   return Object.values(config).every((value) => value.length > 0);
@@ -188,7 +230,11 @@ function formatVisitTime(value: string): string {
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
 }
 
-function SchedulePanel(): React.ReactElement {
+function visitStatusLabel(visit: ScheduledVisit): string {
+  return visit.source === "jobber" || visit.readOnly ? "Jobber read-only" : visit.status;
+}
+
+function SchedulePanel(props: { tenantId: string }): React.ReactElement {
   const [view, setView] = useState<"day" | "week" | "map">("day");
   const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10));
   const [visits, setVisits] = useState<ScheduledVisit[]>([]);
@@ -198,7 +244,7 @@ function SchedulePanel(): React.ReactElement {
     let cancelled = false;
     const range = dayRange(day, view);
     setStatus("Loading schedule...");
-    fetch(`/api/scheduling/calendar?tenantId=aquatrace&from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`)
+    fetch(`/api/scheduling/calendar?tenantId=${encodeURIComponent(props.tenantId)}&from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`)
       .then((response) => response.json() as Promise<CalendarResponse>)
       .then((body) => {
         if (cancelled) {
@@ -210,7 +256,12 @@ function SchedulePanel(): React.ReactElement {
           return;
         }
         setVisits(body.visits ?? []);
-        setStatus((body.visits ?? []).length ? "" : "No native visits in this window yet.");
+        if (!(body.visits ?? []).length) {
+          setStatus("No native or Jobber visits in this window yet.");
+          return;
+        }
+        const jobberCount = body.sourceCounts?.jobber ?? 0;
+        setStatus(jobberCount ? `${jobberCount} Jobber visit${jobberCount === 1 ? "" : "s"} shown read-only.` : "");
       })
       .catch(() => {
         if (!cancelled) {
@@ -221,7 +272,7 @@ function SchedulePanel(): React.ReactElement {
     return () => {
       cancelled = true;
     };
-  }, [day, view]);
+  }, [day, props.tenantId, view]);
 
   return (
     <aside className="schedule-card">
@@ -253,7 +304,7 @@ function SchedulePanel(): React.ReactElement {
               <h3>{visit.title}</h3>
               <p>{visit.location?.label ?? "No location label"} - {visit.assignedTo.join(", ") || "Unassigned"}</p>
             </div>
-            <span className="visit-status">{visit.status}</span>
+            <span className="visit-status">{visitStatusLabel(visit)}</span>
             {view === "map" ? (
               <p className="map-line">
                 {visit.location?.geo ? `${visit.location.geo.lat.toFixed(4)}, ${visit.location.geo.lng.toFixed(4)}` : "No coordinates yet"}
@@ -453,6 +504,7 @@ function PlatformConsole(props: { auth: Auth; user: User }): React.ReactElement 
 }
 
 function Chat(props: { auth: Auth; user: User }): React.ReactElement {
+  const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -475,6 +527,24 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   const voiceWindow = window as VoiceWindow;
   const SpeechRecognition = voiceWindow.SpeechRecognition ?? voiceWindow.webkitSpeechRecognition;
   const speechSupported = Boolean(SpeechRecognition);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadOperatorContext(props.user)
+      .then((context) => {
+        if (!cancelled) {
+          setOperatorContext(context);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOperatorContext(fallbackOperatorContext(props.user));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [props.user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -511,7 +581,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
       const response = await fetch("/api/voice/tts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: "aquatrace", text })
+        body: JSON.stringify({ tenantId: operatorContext.tenantId, text })
       });
       if (!response.ok) {
         throw new Error("TTS unavailable");
@@ -592,7 +662,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
       const response = await fetch("/api/nexi/message", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${idToken}` },
-        body: JSON.stringify({ tenantId: "aquatrace", conversationId, message: text })
+        body: JSON.stringify({ tenantId: operatorContext.tenantId, conversationId, message: text })
       });
       const body = await response.json() as NexiResponse;
       const assistantText = body.ok ? body.answer ?? "I do not have an answer yet." : body.error ?? "Nexi could not answer that.";
@@ -695,7 +765,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
           <button type="submit" disabled={working || !draft.trim()}>Send</button>
         </form>
       </section>
-      <SchedulePanel />
+      <SchedulePanel tenantId={operatorContext.tenantId} />
       </div>
       {activeMedia ? (
         <div className="lightbox" role="dialog" aria-modal="true" aria-label={activeMedia.label} onClick={() => setActiveMedia(null)}>

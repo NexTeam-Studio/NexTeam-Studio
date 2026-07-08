@@ -1,0 +1,84 @@
+{
+  "ok": true,
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "4af13ec7bcfca519d3f2728f13643e6948c6e866",
+  "tenantId": "aquatrace",
+  "createdAt": "2026-07-08T05:02:31.944Z",
+  "checks": {
+    "version": {
+      "status": 200,
+      "body": {
+        "sha": "4af13ec7bcfca519d3f2728f13643e6948c6e866",
+        "builtAt": "2026-07-08T05:02:31.907Z"
+      }
+    },
+    "health": {
+      "status": 200,
+      "body": {
+        "ok": true,
+        "checkedAt": "2026-07-08T05:02:33.031Z",
+        "rails": {
+          "jobber": {
+            "ok": true,
+            "configured": true,
+            "provider": "jobber",
+            "op": "graphql_read",
+            "latencyMs": 615,
+            "detail": "Jobber GraphQL read succeeded."
+          },
+          "companycam": {
+            "ok": true,
+            "configured": true,
+            "provider": "companycam",
+            "op": "projects_read",
+            "latencyMs": 354,
+            "detail": "CompanyCam projects read succeeded."
+          },
+          "anthropic": {
+            "ok": true,
+            "configured": true,
+            "provider": "anthropic",
+            "op": "configured_no_spend",
+            "latencyMs": 0,
+            "detail": "Configured; live message call skipped by no-spend overnight limit."
+          }
+        }
+      }
+    },
+    "tts": {
+      "status": 200,
+      "ok": true,
+      "provider": "elevenlabs",
+      "voiceIdPresent": true,
+      "characterCount": 61,
+      "audioBytesHeader": 54378,
+      "estimatedCostUsd": 0.0183,
+      "audioBytesActual": 54378,
+      "contentType": "audio/mpeg"
+    },
+    "usageLog": {
+      "found": true,
+      "id": "7csdGF4Sy4ASH9WYOgGg",
+      "tenantId": "aquatrace",
+      "provider": "elevenlabs",
+      "model": "eleven_multilingual_v2",
+      "routeActionName": "/api/voice/tts",
+      "taskType": "voice_tts",
+      "usage": {
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "cacheCreationInputTokens": 0,
+        "cacheReadInputTokens": 0,
+        "totalTokens": 0,
+        "characters": 61,
+        "audioBytes": 54378
+      },
+      "estimatedCostUsd": 0.0183,
+      "ok": true,
+      "errorSummary": "",
+      "createdAt": "2026-07-08T05:02:34.668Z"
+    }
+  },
+  "completedAt": "2026-07-08T05:02:35.608Z",
+  "redaction": "No API keys, tokens, passwords, audio content, or email bodies are recorded. Receipt stores only endpoint metadata and usageLog cost fields."
+}

@@ -645,6 +645,11 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
       ? [entity, "paid payment receipt invoice zero balance"].filter(Boolean).join(" ")
       : userText;
   }
+  if (toolName === "clientLookup" && typeof record.q !== "string") {
+    record.q = looksLikeClientListQuestion(lowerUserText)
+      ? ""
+      : entityQueryFromText(userText) || bareEntityFromText(userText) || entityQueryFromMessages(messages) || "";
+  }
   if (toolName === "summarizeInbox" && !record.maxResults) {
     record.maxResults = 10;
   }
@@ -729,6 +734,19 @@ function looksLikeReportMeasurementQuestion(lower: string): boolean {
   return /\b(?:gallons per inch|square footage|sq ft|ft2|ftÂ²|total gallons|pool gallons|how many gallons|measurements?)\b/.test(lower);
 }
 
+function crossRailJobDetailToolsForQuestion(lower: string): string[] {
+  if (looksLikeReportMeasurementQuestion(lower)) {
+    return ["getJobDetail", "getDocuments", "lookupSiteJobBlueprintField"];
+  }
+  if (looksLikeTechnicianQuestion(lower)) {
+    return ["getJobDetail", "getDocuments", "getPhotos"];
+  }
+  if (looksLikeIssueQuestion(lower) || looksLikeJobDetailQuestion(lower)) {
+    return ["getJobDetail", "getDocuments"];
+  }
+  return [];
+}
+
 function looksLikeCorrectionFollowUp(lower: string): boolean {
   return /\b(?:where\s+is\s+the\s+answer|what\s+is\s+the\s+answer|correct\s+answer|i\s+corrected\s+you|you\s+should\s+have\s+(?:replied|answered)|find\s+it\s+then)\b/.test(lower)
     || (/\b(?:incorrect|wrong|correction|corrected)\b/.test(lower) && /\bcompany\s*cam\b/.test(lower));
@@ -751,6 +769,17 @@ function looksLikeEmailDraftAction(lower: string): boolean {
   return /\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/.test(lower)
     || /\b(?:send|draft|compose|write)\s+(?:me\s+)?(?:an?\s+)?email\s+(?:at|to)\s+[\w.+-]+@[\w.-]+\.\w+\b/.test(lower)
     || /\bemail\s+[\w.+-]+@[\w.-]+\.\w+\s+(?:saying|that|to say)\b/.test(lower);
+}
+
+function looksLikeReportPdfEmailRequest(lower: string): boolean {
+  const searchingExistingMail =
+    /\b(?:did\s+i\s+send|check\s+(?:email|gmail|mail)|look\s+(?:in|through)\s+(?:email|gmail|mail|inbox)|mail\s*box|mailbox|inbox|receipt\s+in\s+(?:the\s+)?mail|report\s+(?:was\s+)?sent)\b/.test(lower);
+  if (searchingExistingMail) {
+    return false;
+  }
+
+  return /\b(?:email|send|draft|forward)\s+(?:me\s+|to\s+me\s+|[\w.+-]+@[\w.-]+\.\w+\s+)?(?:the\s+)?(?:report|reports|pdf|pdfs)\b/.test(lower)
+    || /\b(?:report|reports|pdf|pdfs)\b.*\b(?:email|send|draft|forward)\s+(?:it|them|to|me)\b/.test(lower);
 }
 
 function looksLikeEvaporationRunQuestion(lower: string): boolean {
@@ -784,6 +813,10 @@ function looksLikePipelineQuestion(lower: string): boolean {
 
 function looksLikeDistanceQuestion(lower: string): boolean {
   return /\b(?:how\s+far|distance|miles?|drive\s+time|travel\s+time|from\s+(?:here|my house|the shop))\b/.test(lower);
+}
+
+function looksLikeClientListQuestion(lower: string): boolean {
+  return /\b(?:client\s+list|list\s+(?:the\s+)?clients|show\s+me\s+(?:the\s+)?clients|show\s+me\s+a\s+client\s+list|how\s+many\s+clients|client\s+count|all\s+clients)\b/.test(lower);
 }
 
 function looksLikeMapAction(lower: string): boolean {
@@ -820,6 +853,17 @@ function capabilityGapForRequest(messages: GatewayMessage[], toolsByName: Map<st
   if (looksLikeRevenueQuestion(lower) && !toolsByName.has("revenueSummary")) {
     return {
       answer: "I can't total revenue from chat yet because the revenue summary tool is not wired to Nexi. I logged it as capability_not_available.",
+      failureReason: "capability_not_available"
+    };
+  }
+  if (
+    looksLikeReportPdfEmailRequest(lower)
+    && !toolsByName.has("draftReportEmail")
+    && !toolsByName.has("draftReportDelivery")
+    && !toolsByName.has("sendReportPdf")
+  ) {
+    return {
+      answer: "I can't attach and email report PDFs from chat yet. I logged it as capability_not_available.",
       failureReason: "capability_not_available"
     };
   }
@@ -1001,19 +1045,17 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
     return uniqueToolNames(["getPipeline"], toolsByName);
   }
   if (bareEntityFromText(userText) && recentUserTextMatches(messages, looksLikeReportMeasurementQuestion)) {
-    return uniqueToolNames(["getDocuments", "lookupSiteJobBlueprintField"], toolsByName);
-  }
-  if (lower.includes("gallon") && toolsByName.has("lookupSiteJobBlueprintField")) {
-    return uniqueToolNames(["getDocuments", "lookupSiteJobBlueprintField"], toolsByName);
+    return uniqueToolNames(crossRailJobDetailToolsForQuestion(previousUserText(messages).toLowerCase()), toolsByName);
   }
   if (looksLikeEmailSearchQuestion(lower) && toolsByName.has("searchEmail")) {
     return ["searchEmail"];
   }
-  if (looksLikeTechnicianQuestion(lower)) {
-    return uniqueToolNames(["getJobDetail", "getDocuments", "getPhotos"], toolsByName);
+  if (looksLikeClientListQuestion(lower)) {
+    return uniqueToolNames(["clientLookup"], toolsByName);
   }
-  if (looksLikeIssueQuestion(lower) || looksLikeJobDetailQuestion(lower)) {
-    return uniqueToolNames(["getJobDetail", "getDocuments"], toolsByName);
+  const crossRailTools = crossRailJobDetailToolsForQuestion(lower);
+  if (crossRailTools.length > 0) {
+    return uniqueToolNames(crossRailTools, toolsByName);
   }
   if ((lower.includes("photo") || lower.includes("picture") || lower.includes("image")) && toolsByName.has("getPhotos")) {
     return ["getPhotos"];
@@ -1291,7 +1333,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
       role: "user",
       content: [
         ...deterministicRuns.flatMap((run) => [`Verified ${run.name} result:`, toolResultContent(run.result)]),
-        "Answer the original user request using only these checked records. For job issue, technician, completion-time, service-time, and report/checklist questions, compare Jobber and CompanyCam before answering; do not treat Jobber's missing completion/status field as proof that no CompanyCam report answer exists. For payment, paid/unpaid, invoice, balance, and receipt questions, compare Jobber, native invoices, and email receipts before answering; do not treat lead status as proof of unpaid. Say clearly when one system has no matching data. Keep record labels attached in the API response."
+        "Answer the original user request using only these checked records. For job issue, technician, measurement, total-gallons, completion-time, service-time, and report/checklist questions, compare Jobber and CompanyCam before answering; do not treat Jobber's missing completion/status/measurement field as proof that no CompanyCam report answer exists. For payment, paid/unpaid, invoice, balance, and receipt questions, compare Jobber, native invoices, and email receipts before answering; do not treat lead status as proof of unpaid. Say clearly when one system has no matching data. Keep record labels attached in the API response."
       ].join("\n")
     });
   }

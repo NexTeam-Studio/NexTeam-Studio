@@ -28,7 +28,8 @@ export type PlatformModule =
   | "comms"
   | "voice"
   | "platform"
-  | "evaporation";
+  | "evaporation"
+  | "sites";
 
 export type ArtifactKind =
   | "email"

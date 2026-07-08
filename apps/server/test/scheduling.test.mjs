@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import express from "express";
 import {
   ApprovalQueueService,
   InMemoryApprovalQueueRepository
@@ -7,6 +8,7 @@ import {
 import { createSchedulingNexiTools } from "../dist/scheduling/nexiTools.js";
 import { queueScheduleNotification } from "../dist/scheduling/notifications.js";
 import { InMemorySchedulingRepository } from "../dist/scheduling/repository.js";
+import { registerSchedulingRoutes } from "../dist/scheduling/routes.js";
 import { detectConflicts, suggestSlots } from "../dist/scheduling/schedulingEngine.js";
 
 function tenant() {
@@ -170,6 +172,64 @@ test("whatsMyDay reads native visits for the requested technician", async () => 
 
   assert.deepEqual(output.result.visits.map((item) => item.id), ["visit_logan"]);
   assert.equal(output.sources[0].rail, "native");
+});
+
+test("calendar board overlays Jobber visits as read-only schedule cards", async () => {
+  const repository = new InMemorySchedulingRepository();
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  await repository.saveVisit(visit({
+    id: "native_visit",
+    jobId: "native_job",
+    title: "Native booked visit",
+    start: "2026-07-08T09:00:00.000Z",
+    end: "2026-07-08T11:00:00.000Z",
+    assignedTo: ["logan"],
+    location: { label: "Fair Play" }
+  }));
+
+  const app = express();
+  app.use(express.json());
+  registerSchedulingRoutes(app, {
+    repository,
+    approvalQueue,
+    jobber: {
+      isConfigured: () => true,
+      async getJobs(range) {
+        assert.equal(range.from, "2026-07-08T00:00:00.000Z");
+        assert.equal(range.to, "2026-07-09T00:00:00.000Z");
+        return [{
+          id: "jobber_real_tomorrow",
+          tenantId: "aquatrace",
+          clientId: "client_rachel",
+          status: "scheduled",
+          title: "Rachel Payne - Swimming Pool Leak Detection Service",
+          startAt: "2026-07-08T13:00:00.000Z",
+          endAt: "2026-07-08T15:00:00.000Z",
+          lineItems: [],
+          totals: { subtotal: 0, tax: 0, total: 0 },
+          externalIds: { jobber: "jobber_real_tomorrow" }
+        }];
+      }
+    }
+  });
+
+  const server = app.listen(0);
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/scheduling/calendar?tenantId=aquatrace&from=2026-07-08T00%3A00%3A00.000Z&to=2026-07-09T00%3A00%3A00.000Z`);
+    const body = await response.json();
+
+    assert.equal(body.ok, true);
+    assert.deepEqual(body.sourceCounts, { native: 1, jobber: 1 });
+    assert.deepEqual(body.visits.map((item) => item.id), ["native_visit", "jobber_jobber_real_tomorrow"]);
+    const jobberVisit = body.visits.find((item) => item.source === "jobber");
+    assert.equal(jobberVisit.title, "Rachel Payne - Swimming Pool Leak Detection Service");
+    assert.equal(jobberVisit.readOnly, true);
+    assert.equal(jobberVisit.status, "scheduled");
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
 });
 
 test("reminder and on-my-way messages are approval queued, not sent", async () => {
