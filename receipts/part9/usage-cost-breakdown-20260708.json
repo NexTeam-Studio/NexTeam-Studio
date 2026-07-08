@@ -1,0 +1,93 @@
+{
+  "ok": true,
+  "window": {
+    "start": "2026-07-05T20:36:41.046Z",
+    "end": "2026-07-08T20:36:41.046Z"
+  },
+  "methodology": "Each usageLog row joined to nearest conversation createdAt within 5s. regression-wall-* => regression_wall_live; web-* => owner_trial_sessions; live/trial/m*/wave/probe/receipt => dev_receipt_or_repair. Usage rows do not store run IDs directly.",
+  "categoryTotals": [
+    {
+      "category": "regression_wall_live",
+      "calls": 3253,
+      "cost": 57.470684,
+      "inputTokens": 16879952,
+      "outputTokens": 451482,
+      "cacheReadTokens": 40478,
+      "cacheWriteTokens": 12388,
+      "errors": 493
+    },
+    {
+      "category": "dev_receipt_or_repair",
+      "calls": 148,
+      "cost": 3.232837,
+      "inputTokens": 911745,
+      "outputTokens": 25076,
+      "cacheReadTokens": 71367,
+      "cacheWriteTokens": 26681,
+      "errors": 36
+    },
+    {
+      "category": "voice_tts",
+      "calls": 14,
+      "cost": 0.5409,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 0,
+      "errors": 2
+    },
+    {
+      "category": "owner_trial_sessions",
+      "calls": 61,
+      "cost": 0.448086,
+      "inputTokens": 82629,
+      "outputTokens": 7328,
+      "cacheReadTokens": 63580,
+      "cacheWriteTokens": 18989,
+      "errors": 22
+    },
+    {
+      "category": "unmatched_or_system",
+      "calls": 44,
+      "cost": 0.165742,
+      "inputTokens": 19661,
+      "outputTokens": 3442,
+      "cacheReadTokens": 35295,
+      "cacheWriteTokens": 11878,
+      "errors": 26
+    }
+  ],
+  "dailyRows": [
+    { "date": "2026-07-05", "category": "dev_receipt_or_repair", "calls": 12, "cost": 0.155282, "errors": 2 },
+    { "date": "2026-07-05", "category": "owner_trial_sessions", "calls": 6, "cost": 0.053139, "errors": 2 },
+    { "date": "2026-07-05", "category": "unmatched_or_system", "calls": 2, "cost": 0.016665, "errors": 0 },
+    { "date": "2026-07-06", "category": "dev_receipt_or_repair", "calls": 128, "cost": 2.995128, "errors": 34 },
+    { "date": "2026-07-06", "category": "owner_trial_sessions", "calls": 32, "cost": 0.234088, "errors": 11 },
+    { "date": "2026-07-06", "category": "regression_wall_live", "calls": 216, "cost": 3.317567, "errors": 21 },
+    { "date": "2026-07-06", "category": "unmatched_or_system", "calls": 12, "cost": 0.097214, "errors": 0 },
+    { "date": "2026-07-07", "category": "dev_receipt_or_repair", "calls": 4, "cost": 0.041994, "errors": 0 },
+    { "date": "2026-07-07", "category": "owner_trial_sessions", "calls": 13, "cost": 0.099062, "errors": 5 },
+    { "date": "2026-07-07", "category": "regression_wall_live", "calls": 1432, "cost": 24.171335, "errors": 218 },
+    { "date": "2026-07-07", "category": "unmatched_or_system", "calls": 13, "cost": 0.051863, "errors": 9 },
+    { "date": "2026-07-07", "category": "voice_tts", "calls": 11, "cost": 0.3567, "errors": 2 },
+    { "date": "2026-07-08", "category": "dev_receipt_or_repair", "calls": 4, "cost": 0.040433, "errors": 0 },
+    { "date": "2026-07-08", "category": "owner_trial_sessions", "calls": 10, "cost": 0.061797, "errors": 4 },
+    { "date": "2026-07-08", "category": "regression_wall_live", "calls": 1605, "cost": 29.981782, "errors": 254 },
+    { "date": "2026-07-08", "category": "unmatched_or_system", "calls": 17, "cost": 0, "errors": 17 },
+    { "date": "2026-07-08", "category": "voice_tts", "calls": 3, "cost": 0.1842, "errors": 0 }
+  ],
+  "totals": {
+    "calls": 3520,
+    "cost": 61.858249,
+    "inputTokens": 17893987,
+    "outputTokens": 487328,
+    "cacheReadTokens": 210720,
+    "cacheWriteTokens": 69936,
+    "errors": 579
+  },
+  "dailyCostAlertUsd": {
+    "stagingValue": "5",
+    "confirmedAt": "2026-07-08T21:10:00.000Z"
+  },
+  "unmatchedUsageRows": 48
+}

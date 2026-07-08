@@ -59,9 +59,9 @@ KNOWN VARIANTS:
 - (1) What are the total number of gallons for this pool?
 - (1) What's the total number of gallons for Deborah Justice pool?
 
-STATUS: OPEN - Part 9 closure audit queued for Class A.
+STATUS: CLOSED-PENDING-SOAK - Part 9 class closure passed live; requires next unrelated merge soak before CLOSED.
 
-CLOSURE RECEIPT: Pending `receipts/part9/class-closure-a-c-d-live-20260708.json`.
+CLOSURE RECEIPT: `receipts/part9/class-closure-a-c-d-live-20260708.json` - Class A/C/D closure suite 11/11 live on staging at SHA `9b1567c9813996495d175f5904def7226d07e5e4`.
 
 REGRESSION TEST IDS:
 
@@ -153,9 +153,9 @@ KNOWN VARIANTS:
 - (1) Send the email now
 - (1) Yes. Go ahead and send the email to me at chris@aquatraceleak.com
 
-STATUS: OPEN - Part 9 closure audit queued for Class C.
+STATUS: CLOSED-PENDING-SOAK - Part 9 class closure passed live; requires next unrelated merge soak before CLOSED.
 
-CLOSURE RECEIPT: Pending `receipts/part9/class-closure-a-c-d-live-20260708.json`.
+CLOSURE RECEIPT: `receipts/part9/class-closure-a-c-d-live-20260708.json` - Class A/C/D closure suite 11/11 live on staging at SHA `9b1567c9813996495d175f5904def7226d07e5e4`.
 
 REGRESSION TEST IDS:
 
@@ -196,9 +196,9 @@ KNOWN VARIANTS:
 - (1) Email me the Deborah Justice report PDFs all of them
 - (1) You need to infer what I mean. Regardless of typos. The report should be sitting in one of the email boxes as sent and I also copy ourselves on those so we should also have a receipt in the mail
 
-STATUS: OPEN - Part 9 closure audit queued for Class D.
+STATUS: CLOSED-PENDING-SOAK - Part 9 class closure passed live; requires next unrelated merge soak before CLOSED.
 
-CLOSURE RECEIPT: Pending `receipts/part9/class-closure-a-c-d-live-20260708.json`.
+CLOSURE RECEIPT: `receipts/part9/class-closure-a-c-d-live-20260708.json` - Class A/C/D closure suite 11/11 live on staging at SHA `9b1567c9813996495d175f5904def7226d07e5e4`.
 
 REGRESSION TEST IDS:
 

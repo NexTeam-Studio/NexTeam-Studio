@@ -1,0 +1,55 @@
+{
+  "ok": true,
+  "standard": "NEXTEAM-BIBLE-PART9-CLASS-CLOSURE-STANDARD.md section 9.6",
+  "checkedAt": "2026-07-08T21:10:00.000Z",
+  "correctedBuildState": true,
+  "findings": [
+    {
+      "module": "crm",
+      "phase": "M2 native writes + quote foundation",
+      "previousStatus": "done",
+      "correctedStatus": "in_progress",
+      "reason": "createClient and draftQuote exist in code, but live Nexi registers createCrmReadTools only. Owner cannot create a client through Nexi today."
+    },
+    {
+      "module": "fielddocs",
+      "phase": "M4 upload + checklist + report foundation",
+      "previousStatus": "done",
+      "correctedStatus": "in_progress",
+      "reason": "Backend upload/report foundation exists, but owner-facing photo upload/capture is not complete until the M11 real-device path is usable."
+    },
+    {
+      "module": "fielddocs",
+      "phase": "M4 live AI caption receipt",
+      "previousStatus": "done",
+      "correctedStatus": "in_progress",
+      "reason": "Paid vision receipt exists, but owner-facing caption-on-upload cannot be considered done while photo upload/capture remains unavailable."
+    },
+    {
+      "module": "content",
+      "phase": "M5 content queue visibility",
+      "previousStatus": "opened",
+      "correctedStatus": "opened",
+      "reason": "This BUILDSTATE did not mark M5 done. Content tools exist, but a fresh owner-facing queue visibility receipt is required before a done claim."
+    },
+    {
+      "module": "campaigns",
+      "phase": "M6 Campaigns full spec",
+      "previousStatus": "done",
+      "correctedStatus": "blocked",
+      "reason": "Generation, templates, sequence queueing, compliance, and ApprovalQueue receipts exist, but full campaign execution is blocked by SPF/DKIM/DMARC, physical address, and explicit approval requirements."
+    },
+    {
+      "module": "voice",
+      "phase": "M12a voice chat foundation",
+      "previousStatus": "done",
+      "correctedStatus": "in_progress",
+      "reason": "Server/web foundation exists, but live hands-free phone/video proof remains pending."
+    }
+  ],
+  "explicitOwnerQuestions": {
+    "createClient": "not done",
+    "photoUpload": "not done",
+    "contentQueueVisibility": "not marked done; needs fresh owner-facing receipt"
+  }
+}
