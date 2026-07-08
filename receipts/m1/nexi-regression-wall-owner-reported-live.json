@@ -1,0 +1,61 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783464662956-d1b0e2cb",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "caseFilter": "20260707-owner",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260707-owner-1-total-gallons-deborah-justice-cross-rail",
+      "createdAt": "2026-07-07T23:59:00.000-04:00",
+      "expectedIntent": "report_measurement_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "**37,602 gallons** for Deborah Justice's pool (181 Isbell Road, Fair Play, SC). - Surface area: 1,002.7 sq ft - Average depth: 60 in - Gallons per inch: 626.6875 Source: Aquatrace Leak Detection Checklist, service date 07/02/2026.",
+      "latencyMs": 25939
+    },
+    {
+      "id": "20260707-owner-2-show-me-a-client-list",
+      "createdAt": "2026-07-07T23:59:01.000-04:00",
+      "expectedIntent": "crm_client_list",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "clientLookup"
+      ],
+      "answerSample": "You've got **612 clients** on file. Here's a snapshot of the list (showing the first batch): - Stayable Suites – 4073264160 - Marc Zumberg – 3522627165... wait, let me correct: 3522627165 - Mae Bryant – Nature Coast Insurance – 3522210402 -",
+      "latencyMs": 15072
+    },
+    {
+      "id": "20260707-owner-3-how-many-clients-do-we-have",
+      "createdAt": "2026-07-07T23:59:02.000-04:00",
+      "expectedIntent": "crm_client_list",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "clientLookup"
+      ],
+      "answerSample": "You've got **612 clients** on file in Jobber — a mix of homeowners, HOAs/condo associations, property managers (Bosshardt, Vesta, Paradigm, etc.), and a handful of test/system entries (Stripe test clients, Route Probe, ATM Deposit, Mobile C",
+      "latencyMs": 6054
+    },
+    {
+      "id": "20260707-owner-4-email-me-report-pdfs",
+      "createdAt": "2026-07-07T23:59:03.000-04:00",
+      "expectedIntent": "capability_gap_report_pdf_email",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't attach and email report PDFs from chat yet. I logged it as capability_not_available.",
+      "latencyMs": 2106
+    }
+  ]
+}
