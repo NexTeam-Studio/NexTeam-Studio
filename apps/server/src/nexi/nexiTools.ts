@@ -261,6 +261,18 @@ function firstBlueprintField(
   return null;
 }
 
+function firstMatchingSiteJobBlueprint(
+  blueprints: SiteJobBlueprint[],
+  request: { requestedEntity?: string | undefined; jobId?: string | undefined; sourceRef?: string | undefined }
+): SiteJobBlueprint | null {
+  for (const siteJobBlueprint of blueprints) {
+    if (blueprintMatchesRequest(siteJobBlueprint, request)) {
+      return siteJobBlueprint;
+    }
+  }
+  return null;
+}
+
 export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, siteJobBlueprintReader?: SiteJobBlueprintReader): NexiTool[] {
   return [
     {
@@ -309,7 +321,10 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
         const projects = await provider.findProjects(input.projectQuery);
         const project = projects[0];
         if (!project) {
-          return { result: { projects: [], media: [] }, sources: [] };
+          return {
+            result: { projects: [], media: [], checkedProjectQuery: input.projectQuery },
+            sources: [source("companycam", `project-search:${input.projectQuery}`, `CompanyCam project search for ${input.projectQuery}`)]
+          };
         }
         const media = await provider.getMedia(project);
         return {
@@ -348,7 +363,9 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
             suggestedSiteJobBlueprints: siteJobBlueprints
           },
           sources: [
-            ...(result.project ? [source("companycam", result.project.externalIds?.companycam ?? result.project.id, `CompanyCam project ${result.project.name}`)] : []),
+            ...(result.project
+              ? [source("companycam", result.project.externalIds?.companycam ?? result.project.id, `CompanyCam project ${result.project.name}`)]
+              : [source("companycam", `document-search:${input.projectQuery}`, `CompanyCam document search for ${input.projectQuery}`)]),
             ...companyCamDocumentSources(parsedReports.map((report) => report.document))
           ]
         };
@@ -369,17 +386,23 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
             sources: [source("native", input.sourceRef ?? "site-job-blueprint", "SiteJobBlueprint fields")]
           };
         }
-        const stored = siteJobBlueprintReader
-          ? firstBlueprintField(await siteJobBlueprintReader.loadSiteJobBlueprints(tenant.id, 10), input.field, input)
-          : null;
+        const storedSiteJobBlueprints = siteJobBlueprintReader
+          ? await siteJobBlueprintReader.loadSiteJobBlueprints(tenant.id, 10)
+          : [];
+        const stored = firstBlueprintField(storedSiteJobBlueprints, input.field, input);
+        const matchedSiteJobBlueprint = stored ? null : firstMatchingSiteJobBlueprint(storedSiteJobBlueprints, input);
         return {
           result: {
             field: input.field,
             value: stored?.value ?? null,
             requestedEntity: input.requestedEntity ?? null,
-            matchedBlueprintId: stored?.matchedId ?? null
+            matchedBlueprintId: stored?.matchedId ?? matchedSiteJobBlueprint?.id ?? null
           },
-          sources: stored ? [stored.source] : []
+          sources: stored
+            ? [stored.source]
+            : matchedSiteJobBlueprint
+              ? [source("native", matchedSiteJobBlueprint.id, `SiteJobBlueprint ${matchedSiteJobBlueprint.extractedFrom}`)]
+              : []
         };
       }
     }

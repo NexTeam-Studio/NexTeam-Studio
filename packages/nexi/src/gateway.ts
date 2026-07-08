@@ -580,6 +580,10 @@ function bareEntityFromText(text: string): string {
   return /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(trimmed) ? trimmed : "";
 }
 
+function currentEntityFromText(text: string): string {
+  return namedEntityFromText(text) || entityQueryFromText(text) || bareEntityFromText(text);
+}
+
 function namedEntityFromText(text: string): string {
   const didHaveMatch = text.match(/\b(?:did|does|do)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\s+have\b/);
   if (didHaveMatch?.[1]) {
@@ -760,12 +764,11 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   if (toolName === "getPhotos" && !record.projectQuery) {
     record.projectQuery = correctionFollowUp
       ? entityQueryFromMessages(messages, { skipLatest: true })
-      : entityQueryFromText(userText) || bareEntityFromText(userText) || photoQueryFromText(userText) || entityQueryFromMessages(messages);
+      : currentEntityFromText(userText) || photoQueryFromText(userText) || entityQueryFromMessages(messages);
   }
   if (toolName === "getDocuments") {
     if (!record.projectQuery) {
-      const currentEntity = entityQueryFromText(userText)
-        || bareEntityFromText(userText)
+      const currentEntity = currentEntityFromText(userText)
         || (/\b(?:photos?|pictures?|images?)\b/i.test(userText) ? photoQueryFromText(userText) : "");
       record.projectQuery = correctionFollowUp
         ? entityQueryFromMessages(messages, { skipLatest: true })
@@ -790,7 +793,7 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   if (toolName === "clientLookup" && typeof record.q !== "string") {
     record.q = looksLikeClientListQuestion(lowerUserText)
       ? ""
-      : entityQueryFromText(userText) || bareEntityFromText(userText) || entityQueryFromMessages(messages) || "";
+      : currentEntityFromText(userText) || entityQueryFromMessages(messages) || "";
   }
   if (toolName === "summarizeInbox" && !record.maxResults) {
     record.mailbox ??= mailboxAliasFromEmailAddress(firstEmailAddress(userText));
@@ -824,7 +827,7 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     };
   }
   if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
-    const currentEntity = entityQueryFromText(userText) || bareEntityFromText(userText);
+    const currentEntity = currentEntityFromText(userText);
     record.nameQuery = correctionFollowUp
       ? entityQueryFromMessages(messages, { skipLatest: true }) || userText
       : currentEntity || entityQueryFromMessages(messages, { skipLatest: true }) || entityQueryFromMessages(messages) || userText;
@@ -833,7 +836,7 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.field = siteJobBlueprintFieldFromText(userText);
   }
   if (toolName === "lookupSiteJobBlueprintField" && !record.requestedEntity) {
-    const requestedEntity = entityQueryFromText(userText) || bareEntityFromText(userText) || entityQueryFromMessages(messages, { skipLatest: true }) || entityQueryFromMessages(messages);
+    const requestedEntity = currentEntityFromText(userText) || entityQueryFromMessages(messages, { skipLatest: true }) || entityQueryFromMessages(messages);
     if (requestedEntity) {
       record.requestedEntity = requestedEntity;
     }
@@ -846,7 +849,7 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.waterTempF ??= parsed.waterTempF;
     record.observedLoss ??= parsed.observedLoss;
     record.windMphOverride ??= parsed.windMphOverride;
-    record.clientName ??= entityQueryFromText(userText) || entityQueryFromMessages(messages);
+    record.clientName ??= currentEntityFromText(userText) || entityQueryFromMessages(messages);
     record.address ??= jobAddressFromPriorRuns(priorRuns);
     record.zip ??= fieldValueFromPriorRuns(priorRuns, ["evapZipCode"]);
     record.surfaceAreaFt2 ??= numberValue(fieldValueFromPriorRuns(priorRuns, ["evapSurfaceAreaSqFt", "surfaceAreaSqFt", "moasureAreaSqFt"]));
