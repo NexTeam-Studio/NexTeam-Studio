@@ -246,7 +246,7 @@ KNOWN VARIANTS:
 - (module audit) `createClient` existed in `createCrmTools`, but server registered only `createCrmReadTools` into `/api/nexi/message`. Phase 0 item 2 now wires `createCrmTools`, routes create-client prompts deterministically, and queues writes through ApprovalQueue; local smoke receipt: `receipts/phase0/create-client-nexi-local-smoke-20260708.json`.
 - (module audit) M4 native upload endpoints exist, but owner-facing photo upload is not complete without the M11 real-device path.
 - (module audit) M5 content tools existed, but content queue visibility was not proven through owner-facing chat/UI after Part 9. Phase 0 item 3 now routes content queue prompts to `contentQueue`, supports approve/reject decisions, and exposes a `/web` Content Queue card; local smoke receipt: `receipts/phase0/content-queue-visibility-local-smoke-20260708.json`.
-- (module audit) M12a voice has backend/web foundation receipts, but live hands-free phone/video proof is still pending.
+- (module audit) M12a voice was left marked in progress after live staging TTS and usageLog cost receipts existed. Phase 0 item 4 corrected BUILDSTATE to done for the M12a foundation and records the status receipt at `receipts/phase0/m12a-voice-reality-gate-status-20260708.json`; M12b full-duplex/interruptible voice remains separate future scope.
 
 STATUS: OPEN - BUILDSTATE reality-gate correction in progress.
 

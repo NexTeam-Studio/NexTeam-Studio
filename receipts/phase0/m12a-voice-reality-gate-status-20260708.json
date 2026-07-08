@@ -1,0 +1,34 @@
+{
+  "receipt": "phase0-m12a-voice-reality-gate-status",
+  "capturedAt": "2026-07-08T20:00:00.000-04:00",
+  "worktree": "C:/Users/Peyto/NexTeam-Studio-worktrees/phase0-reality",
+  "branch": "build/phase0-reality-gate",
+  "phase0Item": 4,
+  "statusCorrection": "M12a was left in BUILDSTATE as in_progress even though live staging voice receipt and local voice tests exist.",
+  "existingLiveReceipt": {
+    "path": "receipts/m12a/m12a-voice-live-receipt-20260708-integrated.json",
+    "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+    "shaMatched": "4af13ec7bcfca519d3f2728f13643e6948c6e866",
+    "ttsStatus": 200,
+    "provider": "elevenlabs",
+    "audioBytes": 54378,
+    "estimatedCostUsd": 0.0183,
+    "usageLogFound": true,
+    "usageLogRoute": "/api/voice/tts",
+    "usageLogTaskType": "voice_tts",
+    "usageLogCostMatchedHeader": true
+  },
+  "webRealityPath": [
+    "apps/web/src/main.tsx exposes Enable voice, Mic dictation, and assistant TTS playback in the signed-in Job Desk.",
+    "Mic dictation writes the captured transcript into the normal Nexi message composer.",
+    "Assistant replies call /api/voice/tts only after the operator enables voice.",
+    "TTS failures are graceful and do not block normal chat."
+  ],
+  "focusedVerification": {
+    "command": "node --test apps/server/test/voice-routes.test.mjs",
+    "exitCode": 0,
+    "summary": "4 passing, 0 failing"
+  },
+  "part9RealityGate": "done for M12a foundation: server TTS route, web voice controls, live staging audio response, and usageLog cost proof are present. M12b full-duplex voice remains separate future scope.",
+  "secrets": "No secret values included."
+}
