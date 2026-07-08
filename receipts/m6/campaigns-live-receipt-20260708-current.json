@@ -1,0 +1,853 @@
+{
+  "ok": true,
+  "receiptName": "m6-campaigns-live-receipt-current",
+  "startedAt": "2026-07-08T12:31:21.684Z",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "0dbfd7aee301bc23778e3e6eb73f380126b01cdd",
+  "tenantId": "aquatrace",
+  "runId": "m6-live-1783513881683-8b023b64",
+  "checks": {
+    "versionShaMatched": true,
+    "healthGreen": true,
+    "templateSaved": true,
+    "templateListed": true,
+    "audienceConsentHonored": true,
+    "firstStepApprovalQueuedOnly": true,
+    "templateVariablesRendered": true,
+    "unsubscribeAndAddressInjected": true,
+    "trackingRecorded": true,
+    "suppressionHonored": true,
+    "transactionalApprovalOnly": true,
+    "statsIncludeTracking": true
+  },
+  "raw": {
+    "version": {
+      "sha": "0dbfd7aee301bc23778e3e6eb73f380126b01cdd",
+      "builtAt": "2026-07-08T12:31:21.738Z"
+    },
+    "health": {
+      "ok": true,
+      "checkedAt": "2026-07-08T12:31:22.690Z",
+      "rails": {
+        "jobber": {
+          "ok": true,
+          "configured": true,
+          "provider": "jobber",
+          "op": "graphql_read",
+          "latencyMs": 443,
+          "detail": "Jobber GraphQL read succeeded."
+        },
+        "companycam": {
+          "ok": true,
+          "configured": true,
+          "provider": "companycam",
+          "op": "projects_read",
+          "latencyMs": 349,
+          "detail": "CompanyCam projects read succeeded."
+        },
+        "anthropic": {
+          "ok": true,
+          "configured": true,
+          "provider": "anthropic",
+          "op": "configured_no_spend",
+          "latencyMs": 0,
+          "detail": "Configured; live message call skipped by no-spend overnight limit."
+        }
+      }
+    },
+    "savedTemplate": {
+      "ok": true,
+      "template": {
+        "id": "m6-live-1783513881683-8b023b64-template",
+        "tenantId": "aquatrace",
+        "name": "M6 Live Receipt Template",
+        "description": "Receipt-only configurable campaign template.",
+        "audience": {
+          "tenantId": "aquatrace",
+          "channel": "email",
+          "clientIds": [
+            "contact_chris_owner"
+          ],
+          "consentRequired": true,
+          "excludeSuppressed": true,
+          "maxResults": 100
+        },
+        "sequence": [
+          {
+            "id": "step_1_receipt",
+            "channel": "email",
+            "delayHours": 0,
+            "subject": "{{businessName}} receipt check for {{companyOrName}}",
+            "body": "Hi {{name}},\n\nThis is queued for {{arrivalWindow}}.\n\n{{unsubscribeLink}}",
+            "variables": {},
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          },
+          {
+            "id": "step_2_receipt",
+            "channel": "email",
+            "delayHours": 72,
+            "subject": "Follow-up for {{companyOrName}}",
+            "body": "Hi {{name}},\n\nThis follow-up should be suppressed after unsubscribe.\n\n{{unsubscribeLink}}",
+            "variables": {},
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          }
+        ],
+        "variables": [
+          {
+            "key": "arrivalWindow",
+            "label": "Arrival window",
+            "required": true,
+            "defaultValue": "tomorrow"
+          }
+        ],
+        "complianceNotes": [
+          "Receipt template; outbound execution remains approval-gated."
+        ]
+      }
+    },
+    "templates": {
+      "ok": true,
+      "templates": [
+        {
+          "id": "vgb-hotel-gm-outreach",
+          "tenantId": "aquatrace",
+          "name": "VGB Hotel GM Outreach",
+          "description": "Approval-gated starter sequence for commercial pool operators who may need VGB drain-cover help.",
+          "audience": {
+            "tenantId": "aquatrace",
+            "channel": "email",
+            "tagsAny": [
+              "vgb",
+              "commercial",
+              "hotel"
+            ],
+            "consentRequired": true,
+            "excludeSuppressed": true,
+            "maxResults": 100
+          },
+          "sequence": [
+            {
+              "id": "step_1_intro",
+              "channel": "email",
+              "delayHours": 0,
+              "subject": "Quick VGB safety check for {{companyOrName}}",
+              "body": "Hi {{name}},\n\nAquatrace helps commercial pool operators confirm whether their drain covers and documentation are ready before inspection season. If you want a quick review, reply here and we can point you in the right direction.\n\n{{unsubscribeLink}}",
+              "variables": {},
+              "stopOnReply": true,
+              "stopOnUnsubscribe": true
+            },
+            {
+              "id": "step_2_followup",
+              "channel": "email",
+              "delayHours": 72,
+              "subject": "Following up on VGB drain-cover readiness",
+              "body": "Hi {{name}},\n\nJust closing the loop. If VGB documentation is already handled, no action needed. If not, Aquatrace can help verify the pool and map the next steps.\n\n{{unsubscribeLink}}",
+              "variables": {},
+              "stopOnReply": true,
+              "stopOnUnsubscribe": true
+            }
+          ],
+          "variables": [
+            {
+              "key": "companyOrName",
+              "label": "Company or contact name",
+              "description": "Defaults to company name when present, otherwise the contact name.",
+              "required": true
+            },
+            {
+              "key": "businessName",
+              "label": "Tenant business name",
+              "required": true
+            }
+          ],
+          "complianceNotes": [
+            "Existing-contact or explicit opt-in only.",
+            "One-click unsubscribe must be present before queueing.",
+            "Bulk/list execution is blocked until SPF, DKIM, and DMARC are confirmed."
+          ]
+        },
+        {
+          "id": "m6-live-1783513881683-8b023b64-template",
+          "tenantId": "aquatrace",
+          "name": "M6 Live Receipt Template",
+          "description": "Receipt-only configurable campaign template.",
+          "audience": {
+            "tenantId": "aquatrace",
+            "channel": "email",
+            "clientIds": [
+              "contact_chris_owner"
+            ],
+            "consentRequired": true,
+            "excludeSuppressed": true,
+            "maxResults": 100
+          },
+          "sequence": [
+            {
+              "id": "step_1_receipt",
+              "channel": "email",
+              "delayHours": 0,
+              "subject": "{{businessName}} receipt check for {{companyOrName}}",
+              "body": "Hi {{name}},\n\nThis is queued for {{arrivalWindow}}.\n\n{{unsubscribeLink}}",
+              "variables": {},
+              "stopOnReply": true,
+              "stopOnUnsubscribe": true
+            },
+            {
+              "id": "step_2_receipt",
+              "channel": "email",
+              "delayHours": 72,
+              "subject": "Follow-up for {{companyOrName}}",
+              "body": "Hi {{name}},\n\nThis follow-up should be suppressed after unsubscribe.\n\n{{unsubscribeLink}}",
+              "variables": {},
+              "stopOnReply": true,
+              "stopOnUnsubscribe": true
+            }
+          ],
+          "variables": [
+            {
+              "key": "arrivalWindow",
+              "label": "Arrival window",
+              "required": true,
+              "defaultValue": "tomorrow"
+            }
+          ],
+          "complianceNotes": [
+            "Receipt template; outbound execution remains approval-gated."
+          ]
+        }
+      ]
+    },
+    "audience": {
+      "ok": true,
+      "filter": {
+        "tenantId": "aquatrace",
+        "channel": "email",
+        "clientIds": [
+          "contact_chris_owner",
+          "contact_no_email_consent"
+        ],
+        "consentRequired": true,
+        "excludeSuppressed": true,
+        "maxResults": 5
+      },
+      "selected": [
+        {
+          "id": "contact_chris_owner",
+          "tenantId": "aquatrace",
+          "name": "Chris Owner Test",
+          "company": "Aquatrace",
+          "emails": [
+            "[email:21a5bf16996e3d78]"
+          ],
+          "phones": [],
+          "tags": [
+            "vgb",
+            "commercial",
+            "hotel",
+            "test"
+          ],
+          "consent": {
+            "email": true,
+            "sms": false
+          }
+        }
+      ],
+      "excluded": [
+        {
+          "contactId": "contact_no_email_consent",
+          "reason": "missing_email_consent"
+        }
+      ]
+    },
+    "run": {
+      "ok": true,
+      "campaign": {
+        "id": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+        "tenantId": "aquatrace",
+        "name": "M6 Live Receipt Template",
+        "templateId": "m6-live-1783513881683-8b023b64-template",
+        "audience": {
+          "tenantId": "aquatrace",
+          "channel": "email",
+          "clientIds": [
+            "contact_chris_owner"
+          ],
+          "consentRequired": true,
+          "excludeSuppressed": true,
+          "maxResults": 100
+        },
+        "sequence": [
+          {
+            "id": "step_1_receipt",
+            "channel": "email",
+            "delayHours": 0,
+            "subject": "{{businessName}} receipt check for {{companyOrName}}",
+            "body": "Hi {{name}},\n\nThis is queued for {{arrivalWindow}}.\n\n{{unsubscribeLink}}",
+            "variables": {},
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          },
+          {
+            "id": "step_2_receipt",
+            "channel": "email",
+            "delayHours": 72,
+            "subject": "Follow-up for {{companyOrName}}",
+            "body": "Hi {{name}},\n\nThis follow-up should be suppressed after unsubscribe.\n\n{{unsubscribeLink}}",
+            "variables": {},
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          }
+        ],
+        "variables": {
+          "arrivalWindow": "Thursday morning"
+        },
+        "status": "approval_queued",
+        "createdAt": "2026-07-08T12:31:23.200Z",
+        "updatedAt": "2026-07-08T12:31:23.200Z"
+      },
+      "template": {
+        "id": "m6-live-1783513881683-8b023b64-template",
+        "tenantId": "aquatrace",
+        "name": "M6 Live Receipt Template",
+        "description": "Receipt-only configurable campaign template.",
+        "audience": {
+          "tenantId": "aquatrace",
+          "channel": "email",
+          "clientIds": [
+            "contact_chris_owner"
+          ],
+          "consentRequired": true,
+          "excludeSuppressed": true,
+          "maxResults": 100
+        },
+        "sequence": [
+          {
+            "id": "step_1_receipt",
+            "channel": "email",
+            "delayHours": 0,
+            "subject": "{{businessName}} receipt check for {{companyOrName}}",
+            "body": "Hi {{name}},\n\nThis is queued for {{arrivalWindow}}.\n\n{{unsubscribeLink}}",
+            "variables": {},
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          },
+          {
+            "id": "step_2_receipt",
+            "channel": "email",
+            "delayHours": 72,
+            "subject": "Follow-up for {{companyOrName}}",
+            "body": "Hi {{name}},\n\nThis follow-up should be suppressed after unsubscribe.\n\n{{unsubscribeLink}}",
+            "variables": {},
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          }
+        ],
+        "variables": [
+          {
+            "key": "arrivalWindow",
+            "label": "Arrival window",
+            "required": true,
+            "defaultValue": "tomorrow"
+          }
+        ],
+        "complianceNotes": [
+          "Receipt template; outbound execution remains approval-gated."
+        ]
+      },
+      "audience": {
+        "selected": [
+          {
+            "id": "contact_chris_owner",
+            "tenantId": "aquatrace",
+            "name": "Chris Owner Test",
+            "company": "Aquatrace",
+            "emails": [
+              "[email:21a5bf16996e3d78]"
+            ],
+            "phones": [],
+            "tags": [
+              "vgb",
+              "commercial",
+              "hotel",
+              "test"
+            ],
+            "consent": {
+              "email": true,
+              "sms": false
+            }
+          }
+        ],
+        "excluded": []
+      },
+      "plannedSends": [
+        {
+          "id": "send_camp_0b25867e-e113-4c04-838e-4965e329f52b_contact_chris_owner_step_1_receipt",
+          "contactId": "contact_chris_owner",
+          "stepId": "step_1_receipt",
+          "channel": "email",
+          "sendAt": "2026-07-08T12:31:23.201Z",
+          "stopOnReply": true,
+          "stopOnUnsubscribe": true
+        }
+      ],
+      "queuedApprovals": [
+        {
+          "id": "appr_b1c769ca-2dc5-40a2-b165-9f7c6ed07cc9",
+          "tenantId": "aquatrace",
+          "kind": "email",
+          "preview": {
+            "title": "EMAIL campaign step for Aquatrace",
+            "body": "Subject: Aquatrace receipt check for Aquatrace\n\nHi Chris Owner Test,\n\nThis is queued for Thursday morning.\n\nhttps://nexteam-studio-staging.up.railway.app/api/campaigns/unsubscribe?tenantId=aquatrace&campaignId=camp_0b25867e-e113-4c04-838e-4965e329f52b&contactId=contact_chris_owner&channel=email\n\nUnsubscribe: https://nexteam-studio-staging.up.railway.app/api/campaigns/unsubscribe?tenantId=aquatrace&campaignId=camp_0b25867e-e113-4c04-838e-4965e329f52b&contactId=contact_chris_owner&channel=email\n\nMailing address: [Physical mailing address required before list sends]"
+          },
+          "execute": {
+            "service": "campaigns",
+            "op": "bulkExecutionBlocked",
+            "args": {
+              "campaignId": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+              "stepId": "step_1_receipt",
+              "contactId": "contact_chris_owner",
+              "executionBlocked": true,
+              "outbound": {
+                "tenantId": "aquatrace",
+                "mailbox": "nexi",
+                "to": [
+                  "[email:21a5bf16996e3d78]"
+                ],
+                "subject": "Aquatrace receipt check for Aquatrace",
+                "bodyText": "Hi Chris Owner Test,\n\nThis is queued for Thursday morning.\n\nhttps://nexteam-studio-staging.up.railway.app/api/campaigns/unsubscribe?tenantId=aquatrace&campaignId=camp_0b25867e-e113-4c04-838e-4965e329f52b&contactId=contact_chris_owner&channel=email\n\nUnsubscribe: https://nexteam-studio-staging.up.railway.app/api/campaigns/unsubscribe?tenantId=aquatrace&campaignId=camp_0b25867e-e113-4c04-838e-4965e329f52b&contactId=contact_chris_owner&channel=email\n\nMailing address: [Physical mailing address required before list sends]"
+              },
+              "actorId": "internal:H7ht0iJdWqhQjPaKozon5ndmonJ2"
+            }
+          },
+          "status": "pending",
+          "createdBy": "user"
+        }
+      ],
+      "suppressed": [],
+      "boundary": {
+        "approvalQueueAllowed": true,
+        "executionBlocked": true,
+        "reason": "Bulk/list email execution is blocked: SPF, DKIM, and DMARC are not confirmed; a tenant physical mailing address is not configured."
+      },
+      "machineState": "approvalQueued",
+      "sendsAreApprovalQueuedOnly": true
+    },
+    "tracking": {
+      "open": {
+        "ok": true,
+        "event": {
+          "id": "camptrk_1a397876-bcc4-42f3-9f22-01939c5eed6b",
+          "tenantId": "aquatrace",
+          "campaignId": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+          "contactId": "contact_chris_owner",
+          "channel": "email",
+          "type": "open",
+          "stepId": "step_1_receipt",
+          "createdAt": "2026-07-08T12:31:23.332Z",
+          "metadata": {}
+        }
+      },
+      "click": {
+        "ok": true,
+        "event": {
+          "id": "camptrk_1863e8ad-ec46-4106-9e22-08362f404367",
+          "tenantId": "aquatrace",
+          "campaignId": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+          "contactId": "contact_chris_owner",
+          "channel": "email",
+          "type": "click",
+          "stepId": "step_1_receipt",
+          "url": "https://aquatraceleak.com/",
+          "createdAt": "2026-07-08T12:31:23.460Z",
+          "metadata": {}
+        }
+      },
+      "unsubscribe": {
+        "ok": true,
+        "suppression": {
+          "id": "supp_05d7eef6-105f-4e04-b0b7-cbe7ecbfded2",
+          "tenantId": "aquatrace",
+          "contactId": "contact_chris_owner",
+          "channel": "email",
+          "reason": "unsubscribed",
+          "createdAt": "2026-07-08T12:31:23.585Z",
+          "source": "campaign:camp_0b25867e-e113-4c04-838e-4965e329f52b"
+        },
+        "tracking": {
+          "id": "camptrk_8296a688-1dde-494a-bbac-86d3b25e9183",
+          "tenantId": "aquatrace",
+          "campaignId": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+          "contactId": "contact_chris_owner",
+          "channel": "email",
+          "type": "unsubscribe",
+          "createdAt": "2026-07-08T12:31:23.585Z",
+          "metadata": {
+            "suppressionId": "supp_05d7eef6-105f-4e04-b0b7-cbe7ecbfded2",
+            "reason": "unsubscribed"
+          }
+        },
+        "message": "You are unsubscribed from this campaign channel."
+      }
+    },
+    "secondStep": {
+      "ok": true,
+      "campaign": {
+        "id": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+        "tenantId": "aquatrace",
+        "name": "M6 Live Receipt Template",
+        "templateId": "m6-live-1783513881683-8b023b64-template",
+        "audience": {
+          "tenantId": "aquatrace",
+          "channel": "email",
+          "clientIds": [
+            "contact_chris_owner"
+          ],
+          "consentRequired": true,
+          "excludeSuppressed": true,
+          "maxResults": 100
+        },
+        "sequence": [
+          {
+            "id": "step_1_receipt",
+            "channel": "email",
+            "delayHours": 0,
+            "subject": "{{businessName}} receipt check for {{companyOrName}}",
+            "body": "Hi {{name}},\n\nThis is queued for {{arrivalWindow}}.\n\n{{unsubscribeLink}}",
+            "variables": {},
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          },
+          {
+            "id": "step_2_receipt",
+            "channel": "email",
+            "delayHours": 72,
+            "subject": "Follow-up for {{companyOrName}}",
+            "body": "Hi {{name}},\n\nThis follow-up should be suppressed after unsubscribe.\n\n{{unsubscribeLink}}",
+            "variables": {},
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          }
+        ],
+        "variables": {
+          "arrivalWindow": "Thursday morning"
+        },
+        "status": "approval_queued",
+        "createdAt": "2026-07-08T12:31:23.200Z",
+        "updatedAt": "2026-07-08T12:31:23.200Z"
+      },
+      "template": {
+        "id": "m6-live-1783513881683-8b023b64-template",
+        "tenantId": "aquatrace",
+        "name": "M6 Live Receipt Template",
+        "description": "Receipt-only configurable campaign template.",
+        "audience": {
+          "tenantId": "aquatrace",
+          "channel": "email",
+          "clientIds": [
+            "contact_chris_owner"
+          ],
+          "consentRequired": true,
+          "excludeSuppressed": true,
+          "maxResults": 100
+        },
+        "sequence": [
+          {
+            "id": "step_1_receipt",
+            "channel": "email",
+            "delayHours": 0,
+            "subject": "{{businessName}} receipt check for {{companyOrName}}",
+            "body": "Hi {{name}},\n\nThis is queued for {{arrivalWindow}}.\n\n{{unsubscribeLink}}",
+            "variables": {},
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          },
+          {
+            "id": "step_2_receipt",
+            "channel": "email",
+            "delayHours": 72,
+            "subject": "Follow-up for {{companyOrName}}",
+            "body": "Hi {{name}},\n\nThis follow-up should be suppressed after unsubscribe.\n\n{{unsubscribeLink}}",
+            "variables": {},
+            "stopOnReply": true,
+            "stopOnUnsubscribe": true
+          }
+        ],
+        "variables": [
+          {
+            "key": "arrivalWindow",
+            "label": "Arrival window",
+            "required": true,
+            "defaultValue": "tomorrow"
+          }
+        ],
+        "complianceNotes": [
+          "Receipt template; outbound execution remains approval-gated."
+        ]
+      },
+      "audience": {
+        "selected": [
+          {
+            "id": "contact_chris_owner",
+            "tenantId": "aquatrace",
+            "name": "Chris Owner Test",
+            "company": "Aquatrace",
+            "emails": [
+              "[email:21a5bf16996e3d78]"
+            ],
+            "phones": [],
+            "tags": [
+              "vgb",
+              "commercial",
+              "hotel",
+              "test"
+            ],
+            "consent": {
+              "email": true,
+              "sms": false
+            }
+          }
+        ],
+        "excluded": []
+      },
+      "plannedSends": [
+        {
+          "id": "send_camp_0b25867e-e113-4c04-838e-4965e329f52b_contact_chris_owner_step_2_receipt",
+          "contactId": "contact_chris_owner",
+          "stepId": "step_2_receipt",
+          "channel": "email",
+          "sendAt": "2026-07-11T12:31:23.724Z",
+          "stopOnReply": true,
+          "stopOnUnsubscribe": true
+        }
+      ],
+      "queuedApprovals": [],
+      "suppressed": [
+        {
+          "contactId": "contact_chris_owner",
+          "stepId": "step_2_receipt",
+          "reason": "suppressed"
+        }
+      ],
+      "boundary": {
+        "approvalQueueAllowed": true,
+        "executionBlocked": true,
+        "reason": "Bulk/list email execution is blocked: SPF, DKIM, and DMARC are not confirmed; a tenant physical mailing address is not configured."
+      },
+      "machineState": "suppressed",
+      "sendsAreApprovalQueuedOnly": true
+    },
+    "transactional": {
+      "reportDelivery": {
+        "ok": true,
+        "approval": {
+          "id": "appr_490b155b-e52b-4d90-a6c6-3112b2ebef03",
+          "tenantId": "aquatrace",
+          "kind": "email",
+          "preview": {
+            "title": "Report delivery: M6 receipt report",
+            "body": "Subject: M6 receipt report\n\nYour Aquatrace report is ready for review.\n\nReport: reports/m6-receipt.pdf"
+          },
+          "execute": {
+            "service": "campaigns",
+            "op": "transactionalApprovalRequired",
+            "args": {
+              "actorId": "internal:H7ht0iJdWqhQjPaKozon5ndmonJ2",
+              "outbound": {
+                "tenantId": "aquatrace",
+                "to": [
+                  "[email:21a5bf16996e3d78]"
+                ],
+                "subject": "M6 receipt report",
+                "bodyText": "Your Aquatrace report is ready for review.\n\nReport: reports/m6-receipt.pdf"
+              }
+            }
+          },
+          "status": "pending",
+          "createdBy": "user"
+        },
+        "sendsAreApprovalQueuedOnly": true
+      },
+      "reviewRequest": {
+        "ok": true,
+        "approval": {
+          "id": "appr_6713f64a-6689-4182-a96f-f7d1d2b290bb",
+          "tenantId": "aquatrace",
+          "kind": "email",
+          "preview": {
+            "title": "Review request queued for Receipt Client",
+            "body": "Subject: Thank you from Aquatrace\n\nThanks again for trusting Aquatrace. If the service helped, a short review would mean a lot. This is queued with a 2-day delay after invoice inv_m6_receipt."
+          },
+          "execute": {
+            "service": "campaigns",
+            "op": "transactionalApprovalRequiredAfterDelay",
+            "args": {
+              "actorId": "internal:H7ht0iJdWqhQjPaKozon5ndmonJ2",
+              "delayHours": 48,
+              "invoiceId": "inv_m6_receipt",
+              "outbound": {
+                "tenantId": "aquatrace",
+                "to": [
+                  "[email:21a5bf16996e3d78]"
+                ],
+                "subject": "Thank you from Aquatrace",
+                "bodyText": "Thanks again for trusting Aquatrace. If the service helped, a short review would mean a lot."
+              }
+            }
+          },
+          "status": "pending",
+          "createdBy": "user"
+        },
+        "delayHours": 48,
+        "sendsAreApprovalQueuedOnly": true
+      }
+    },
+    "stats": {
+      "ok": true,
+      "stats": {
+        "campaigns": [
+          {
+            "id": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+            "tenantId": "aquatrace",
+            "name": "M6 Live Receipt Template",
+            "templateId": "m6-live-1783513881683-8b023b64-template",
+            "audience": {
+              "tenantId": "aquatrace",
+              "channel": "email",
+              "clientIds": [
+                "contact_chris_owner"
+              ],
+              "consentRequired": true,
+              "excludeSuppressed": true,
+              "maxResults": 100
+            },
+            "sequence": [
+              {
+                "id": "step_1_receipt",
+                "channel": "email",
+                "delayHours": 0,
+                "subject": "{{businessName}} receipt check for {{companyOrName}}",
+                "body": "Hi {{name}},\n\nThis is queued for {{arrivalWindow}}.\n\n{{unsubscribeLink}}",
+                "variables": {},
+                "stopOnReply": true,
+                "stopOnUnsubscribe": true
+              },
+              {
+                "id": "step_2_receipt",
+                "channel": "email",
+                "delayHours": 72,
+                "subject": "Follow-up for {{companyOrName}}",
+                "body": "Hi {{name}},\n\nThis follow-up should be suppressed after unsubscribe.\n\n{{unsubscribeLink}}",
+                "variables": {},
+                "stopOnReply": true,
+                "stopOnUnsubscribe": true
+              }
+            ],
+            "variables": {
+              "arrivalWindow": "Thursday morning"
+            },
+            "status": "approval_queued",
+            "createdAt": "2026-07-08T12:31:23.200Z",
+            "updatedAt": "2026-07-08T12:31:23.200Z"
+          }
+        ],
+        "suppressions": [
+          {
+            "id": "supp_05d7eef6-105f-4e04-b0b7-cbe7ecbfded2",
+            "tenantId": "aquatrace",
+            "contactId": "contact_chris_owner",
+            "channel": "email",
+            "reason": "unsubscribed",
+            "createdAt": "2026-07-08T12:31:23.585Z",
+            "source": "campaign:camp_0b25867e-e113-4c04-838e-4965e329f52b"
+          }
+        ],
+        "tracking": [
+          {
+            "id": "camptrk_8ca96685-c71a-4a16-8df9-cdc6d331e4bb",
+            "tenantId": "aquatrace",
+            "campaignId": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+            "contactId": "contact_chris_owner",
+            "channel": "email",
+            "type": "queued",
+            "stepId": "step_1_receipt",
+            "createdAt": "2026-07-08T12:31:23.203Z",
+            "metadata": {
+              "approvalId": "appr_b1c769ca-2dc5-40a2-b165-9f7c6ed07cc9",
+              "sendAt": "2026-07-08T12:31:23.201Z",
+              "executionBlocked": true
+            }
+          },
+          {
+            "id": "camptrk_1a397876-bcc4-42f3-9f22-01939c5eed6b",
+            "tenantId": "aquatrace",
+            "campaignId": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+            "contactId": "contact_chris_owner",
+            "channel": "email",
+            "type": "open",
+            "stepId": "step_1_receipt",
+            "createdAt": "2026-07-08T12:31:23.332Z",
+            "metadata": {}
+          },
+          {
+            "id": "camptrk_1863e8ad-ec46-4106-9e22-08362f404367",
+            "tenantId": "aquatrace",
+            "campaignId": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+            "contactId": "contact_chris_owner",
+            "channel": "email",
+            "type": "click",
+            "stepId": "step_1_receipt",
+            "url": "https://aquatraceleak.com/",
+            "createdAt": "2026-07-08T12:31:23.460Z",
+            "metadata": {}
+          },
+          {
+            "id": "camptrk_8296a688-1dde-494a-bbac-86d3b25e9183",
+            "tenantId": "aquatrace",
+            "campaignId": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+            "contactId": "contact_chris_owner",
+            "channel": "email",
+            "type": "unsubscribe",
+            "createdAt": "2026-07-08T12:31:23.585Z",
+            "metadata": {
+              "suppressionId": "supp_05d7eef6-105f-4e04-b0b7-cbe7ecbfded2",
+              "reason": "unsubscribed"
+            }
+          },
+          {
+            "id": "camptrk_33cd8294-3d02-4416-9404-835fd87ae7fa",
+            "tenantId": "aquatrace",
+            "campaignId": "camp_0b25867e-e113-4c04-838e-4965e329f52b",
+            "contactId": "contact_chris_owner",
+            "channel": "email",
+            "type": "suppressed",
+            "stepId": "step_2_receipt",
+            "createdAt": "2026-07-08T12:31:23.724Z",
+            "metadata": {
+              "reason": "suppressed"
+            }
+          }
+        ],
+        "totals": {
+          "queued": 1,
+          "open": 1,
+          "click": 1,
+          "unsubscribe": 1,
+          "suppressed": 1
+        }
+      }
+    }
+  },
+  "finishedAt": "2026-07-08T12:31:24.375Z",
+  "operator": {
+    "mode": "custom-token",
+    "email": "owner@aquatrace.com",
+    "uidPresent": true
+  },
+  "boundaries": {
+    "outboundExecuted": false,
+    "approvalQueueOnly": true,
+    "bulkListExecutionBlockedUntilDnsAndPhysicalAddress": true
+  }
+}

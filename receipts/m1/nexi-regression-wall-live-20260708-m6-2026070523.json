@@ -1,0 +1,72 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783517980083-1ae23834",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 5,
+  "passed": 5,
+  "failed": 0,
+  "caseFilter": "2026070523",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705232426-3-what-was-the-service-ime-competion-for-deborah-justice",
+      "createdAt": "2026-07-05T23:24:26.556Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Service completed at 3:10pm, Thursday July 2nd, 2026 — per the leak detection checklist report (Chris & Logan on site). Jobber's job record doesn't have a completion time logged, but the CompanyCam checklist confirms it.",
+      "latencyMs": 24745
+    },
+    {
+      "id": "20260705232454-4-yes-there-is-incorrect-here-service-comletion-is-in-company-cam-reports",
+      "createdAt": "2026-07-05T23:24:54.702Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1004
+    },
+    {
+      "id": "20260705232530-5-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
+      "createdAt": "2026-07-05T23:25:30.373Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Service completion for Deborah Justice: 3:10pm, Thursday July 2nd, 2026, per the CompanyCam leak detection checklist (Chris & Logan on site, dated 07-02-2026). Jobber's job record has no completion time field logged — that's expected since ",
+      "latencyMs": 4839
+    },
+    {
+      "id": "20260705232559-6-using-company-cam-find-the-completion-time-for-deboarh-justice",
+      "createdAt": "2026-07-05T23:25:59.324Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I don't have that written down. Both checks came back empty — the job lookup failed before returning any data, and CompanyCam has no documents or reports tied to Deborah Justice's job right now. I can't confirm a completion time until one o",
+      "latencyMs": 25826
+    },
+    {
+      "id": "20260705232613-7-correct",
+      "createdAt": "2026-07-05T23:26:13.337Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1023
+    }
+  ]
+}

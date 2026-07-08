@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783517951620-1fd9fe88",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 2,
+  "passed": 2,
+  "failed": 0,
+  "caseFilter": "2026070522",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260705225853-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
+      "createdAt": "2026-07-05T22:58:53.094Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft queued for your approval — it'll go to chris1bata@gmail.com once you confirm. One thing: the draft body right now just repeats your note (\"bryson city s on checdule for tomorrow\") — I haven't pulled the actual Bryson City job details ",
+      "latencyMs": 7473
+    },
+    {
+      "id": "20260705225921-2-whats-important-from-chris-aquatraceleak-com",
+      "createdAt": "2026-07-05T22:59:21.456Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "One item worth your attention: **High priority:** - Chris Sears - Aquatrace Anderson County Commercial Pool Research (RESET Pass) - looks like internal research notes on a commercial pool prospect in Anderson County, no clear ask beyond rev",
+      "latencyMs": 4353
+    }
+  ]
+}

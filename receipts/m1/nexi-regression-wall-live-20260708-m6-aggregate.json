@@ -1,0 +1,125 @@
+{
+  "ok": true,
+  "receiptName": "nexi-regression-wall-live-20260708-m6-aggregate",
+  "createdAt": "2026-07-08T13:57:18.899Z",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "deploySha": "0dbfd7aee301bc23778e3e6eb73f380126b01cdd",
+  "total": 174,
+  "passed": 174,
+  "failed": 0,
+  "failures": [],
+  "chunks": [
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070417.json",
+      "total": 32,
+      "passed": 32,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070501.json",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070502.json",
+      "total": 17,
+      "passed": 17,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070514.json",
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070515.json",
+      "total": 21,
+      "passed": 21,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070516.json",
+      "total": 9,
+      "passed": 9,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070519.json",
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070520.json",
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070521.json",
+      "total": 14,
+      "passed": 14,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070522.json",
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070523.json",
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070602.json",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070603.json",
+      "total": 16,
+      "passed": 16,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070612.json",
+      "total": 16,
+      "passed": 16,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-2026070620.json",
+      "total": 15,
+      "passed": 15,
+      "failed": 0,
+      "ok": true
+    },
+    {
+      "file": "receipts/m1/nexi-regression-wall-live-20260708-m6-20260707-owner.json",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,210 @@
+{
+  "ok": true,
+  "runId": "regression-wall-1783518402784-4b088c88",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 16,
+  "passed": 16,
+  "failed": 0,
+  "caseFilter": "2026070612",
+  "limit": null,
+  "results": [
+    {
+      "id": "20260706121714-1-did-i-send-the-report-more-medallion-pool-company-last-week",
+      "createdAt": "2026-07-06T12:17:14.782Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 2206
+    },
+    {
+      "id": "20260706121750-2-there-is-a-report-for-medallion-pool-company-last-week-in-company-camp-but-i-nee",
+      "createdAt": "2026-07-06T12:17:50.545Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 1494
+    },
+    {
+      "id": "20260706121819-3-you-need-to-infer-what-i-mean-regardless-of-typos-the-report-should-be-sitting-i",
+      "createdAt": "2026-07-06T12:18:19.313Z",
+      "expectedIntent": "payment_status_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule",
+        "getJobDetail",
+        "invoiceStatus",
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 56412
+    },
+    {
+      "id": "20260706121846-4-check-email-for-a-report-sent-to-medallion-pool-company-last-week",
+      "createdAt": "2026-07-06T12:18:46.422Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 1152
+    },
+    {
+      "id": "20260706121905-5-aquatraceleak-gmail-com",
+      "createdAt": "2026-07-06T12:19:05.002Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 1209
+    },
+    {
+      "id": "20260706122032-6-do-you-see-any-emails-for-medallion-pool-company",
+      "createdAt": "2026-07-06T12:20:32.005Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "Found 2 emails to Medallion Pool Company, but neither is the report — they're W-9/COI paperwork: - **Jun 2, 9:53am** - to Melody Eppler (melody@medallionpool.com) - \"Re: W9 COI\" - sent W-9 form - **Jun 2, 9:52am** - to Jared B Marcengill (j",
+      "latencyMs": 6484
+    },
+    {
+      "id": "20260706122140-7-check-the-email-inbox-and-see-if-they-were-four-was-sent-to-oleta-falls-communit",
+      "createdAt": "2026-07-06T12:21:40.740Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "Same 2 emails as before, both from June 2 — no mention of Oleta Falls Community in the subject or sender/recipient info I have: - **Jun 2, 9:53am** - \"Re: W9 COI\" - sent to Melody Eppler - **Jun 2, 9:52am** - \"Re: W9 COI\" - sent to Jared B ",
+      "latencyMs": 4339
+    },
+    {
+      "id": "20260706122253-8-what-s-on-schedule-for-today",
+      "createdAt": "2026-07-06T12:22:53.363Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on today's schedule: - **Clarion Hotel - Commercial Main Drain Survey** for ASP of Asheville — all day, 234 Hendersonville Road, Asheville - Status: lead, quoted at $750",
+      "latencyMs": 23695
+    },
+    {
+      "id": "20260706122545-9-what-s-on-schedule-for-today",
+      "createdAt": "2026-07-06T12:25:45.151Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on today's schedule (7/8): - **Clarion Hotel - Commercial Main Drain Survey** for ASP of Asheville — all day, 234 Hendersonville Road, Asheville - Status: lead, quoted at $750",
+      "latencyMs": 32715
+    },
+    {
+      "id": "20260706122834-10-show-me-pictures-from-deborah-justice",
+      "createdAt": "2026-07-06T12:28:34.383Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
+      "latencyMs": 4190
+    },
+    {
+      "id": "20260706122902-11-deborah-justice-is-in-company-cam-and-you-have-shown-me-the-pictures-before",
+      "createdAt": "2026-07-06T12:29:02.029Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
+      "latencyMs": 3034
+    },
+    {
+      "id": "20260706122934-12-what-is-the-square-footage-of-the-deborah-justice-pool-and-how-many-gallons-per-",
+      "createdAt": "2026-07-06T12:29:34.183Z",
+      "expectedIntent": "report_measurement_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "Deborah Justice pool — from the leak detection checklist (7/2/26): - **Surface area:** 1,002.7 sq ft - **Average depth:** 60 in - **Gallons per inch:** 626.6875 - **Total pool volume:** 37,602 gallons",
+      "latencyMs": 32477
+    },
+    {
+      "id": "20260706123034-13-gallons-per-inch-and-square-footage-are-both-available-in-the-same-report-in-the",
+      "createdAt": "2026-07-06T12:30:34.313Z",
+      "expectedIntent": "report_measurement_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
+      "latencyMs": 34497
+    },
+    {
+      "id": "20260706123058-14-deborah-justice",
+      "createdAt": "2026-07-06T12:30:58.375Z",
+      "expectedIntent": "report_measurement_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
+      "latencyMs": 6417
+    },
+    {
+      "id": "20260706123130-15-how-many-miles-are-we-away-from-today-s-pool",
+      "createdAt": "2026-07-06T12:31:30.012Z",
+      "expectedIntent": "capability_gap_distance_or_maps",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't measure drive distance in chat yet because the distance tool is not wired to Nexi. I logged it as capability_not_available.",
+      "latencyMs": 1231
+    },
+    {
+      "id": "20260706123148-16-open-denver-justice-pool-address-in-google-maps",
+      "createdAt": "2026-07-06T12:31:48.481Z",
+      "expectedIntent": "capability_gap_distance_or_maps",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't open Google Maps from here yet. I can give you the address, but the map-opening tool is not wired to Nexi.",
+      "latencyMs": 1056
+    }
+  ]
+}
