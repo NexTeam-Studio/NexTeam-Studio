@@ -432,6 +432,30 @@ function extractPoolSpaCounts(text: string): {
     }
   }
 
+  const overviewMatch = text.match(/Pool\/Spa Overview/i);
+  const overviewStart = overviewMatch?.index ?? -1;
+  const scopedText = overviewStart >= 0 ? text.slice(overviewStart + (overviewMatch?.[0].length ?? 0)) : text;
+  const sectionPattern = /\b(Pool|Spa|Catch Basin)\b([\s\S]*?)(?=\b(?:Pool|Spa|Catch Basin|Measurements|Filtration Overview|Testing Procedures|Results)\b|$)/gi;
+  const keyForSection = (section: string, key: string): string => {
+    const prefix = section.toLowerCase() === "catch basin"
+      ? "catchBasin"
+      : section.toLowerCase();
+    return `${prefix}${key[0]?.toUpperCase() ?? ""}${key.slice(1)}`;
+  };
+  for (const match of scopedText.matchAll(sectionPattern)) {
+    const section = match[1];
+    const body = match[2] ?? "";
+    if (!section || body.length < 4) {
+      continue;
+    }
+    for (const [key, pattern] of labels) {
+      const value = parseNumber(firstCapture(body, pattern));
+      if (value !== null) {
+        counts[keyForSection(section, key)] = value;
+      }
+    }
+  }
+
   const legacyMatches = Array.from(text.matchAll(/(\d+)\s+(wall returns?|floor returns?|main drains?|cleaner ports?|skimmers?|lights?|equalizers?|fill ports?|skim-rail gutters?)/gi));
   for (const match of legacyMatches) {
     const value = parseNumber(match[1]);
@@ -695,6 +719,11 @@ function flattenVisitFields(input: {
     }
     if (Object.keys(job.poolSpaCounts).length > 0) {
       fields.poolSpaCountsJson = JSON.stringify(job.poolSpaCounts);
+      for (const [key, value] of Object.entries(job.poolSpaCounts)) {
+        if (typeof value === "number" || typeof value === "string") {
+          fields[key] = value;
+        }
+      }
     }
     if (Object.keys(job.legacyParsedCounts).length > 0) {
       fields.legacyParsedCountsJson = JSON.stringify(job.legacyParsedCounts);

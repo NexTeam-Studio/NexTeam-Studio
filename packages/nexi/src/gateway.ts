@@ -545,10 +545,11 @@ function photoQueryFromText(text: string): string {
 function entityQueryFromText(text: string): string {
   const normalized = text.replace(/[?.!]+$/g, "").trim();
   const matches = [...normalized.matchAll(
-    /\b(?:for|of|at)\s+(.+?)(?=\s+(?:in|from|on|with|report|pool|job|photos?|pictures?|images?|results?|gallons?|total)\b|[?.!]|$)/gi
+    /\b(?:for|of|at|on)\s+(.+?)(?=\s+(?:in|from|on|with|report|pool|job|photos?|pictures?|images?|results?|gallons?|total)\b|[?.!]|$)/gi
   )];
   const candidate = matches.at(-1)?.[1] ?? "";
   return candidate
+    .replace(/'s\b/gi, "")
     .replace(/\b(?:the|a|an)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -560,11 +561,15 @@ function entityQueryFromMessages(messages: GatewayMessage[], options: { skipLate
     if (typeof message.content !== "string") {
       continue;
     }
-    const entity = entityQueryFromText(message.content)
-      || (/\b(?:photos?|pictures?|images?)\b/i.test(message.content) ? photoQueryFromText(message.content) : "")
-      || namedEntityFromText(message.content);
-    if (entity && !looksLikeGenericEntityCandidate(entity)) {
-      return entity;
+    const candidates = [
+      entityQueryFromText(message.content),
+      /\b(?:photos?|pictures?|images?)\b/i.test(message.content) ? photoQueryFromText(message.content) : "",
+      namedEntityFromText(message.content)
+    ];
+    for (const entity of candidates) {
+      if (entity && !looksLikeGenericEntityCandidate(entity)) {
+        return entity;
+      }
     }
   }
   return "";
@@ -576,15 +581,149 @@ function bareEntityFromText(text: string): string {
 }
 
 function namedEntityFromText(text: string): string {
+  const didHaveMatch = text.match(/\b(?:did|does|do)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\s+have\b/);
+  if (didHaveMatch?.[1]) {
+    return didHaveMatch[1].trim();
+  }
   const match = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\s+(?:is|was|has|on|at|[-—])/);
   return match?.[1]?.trim() ?? "";
 }
 
 function looksLikeGenericEntityCandidate(entity: string): boolean {
+  if (/\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow|january|february|march|april|may|june|july|august|september|october|november|december)\b/i.test(entity.trim())) {
+    return true;
+  }
   return /^(?:companycam|company cam|jobber|reports?|documents?|checklists?|photos?|pictures?|images?|answer|correct answer)$/i.test(entity.trim());
 }
 
-function normalizeToolInput(toolName: string, input: unknown, messages: GatewayMessage[], tenant?: Tenant | undefined): unknown {
+function objectRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function numberValue(value: unknown): number | undefined {
+  const parsed = typeof value === "number" ? value : Number(String(value ?? "").replace(/,/g, ""));
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function stringValue(value: unknown): string | undefined {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text || undefined;
+}
+
+function fieldRecordsFromToolResult(result: unknown): Array<Record<string, unknown>> {
+  const record = objectRecord(result);
+  if (!record) {
+    return [];
+  }
+  const fields: Array<Record<string, unknown>> = [];
+  const directFields = objectRecord(record.fields);
+  if (directFields) {
+    fields.push(directFields);
+  }
+  for (const report of Array.isArray(record.reports) ? record.reports : []) {
+    const reportFields = objectRecord(objectRecord(report)?.fields);
+    if (reportFields) {
+      fields.push(reportFields);
+    }
+  }
+  for (const suggestedSiteJobBlueprint of Array.isArray(record.suggestedSiteJobBlueprints) ? record.suggestedSiteJobBlueprints : []) {
+    const siteJobBlueprintFields = objectRecord(objectRecord(suggestedSiteJobBlueprint)?.fields);
+    if (siteJobBlueprintFields) {
+      fields.push(siteJobBlueprintFields);
+    }
+  }
+  return fields;
+}
+
+function fieldValueFromPriorRuns(priorRuns: ToolRunTrace[], names: string[]): unknown {
+  for (const run of [...priorRuns].reverse()) {
+    for (const fields of fieldRecordsFromToolResult(run.result)) {
+      for (const name of names) {
+        if (fields[name] !== undefined) {
+          return fields[name];
+        }
+      }
+      const poolSpaCounts = stringValue(fields.poolSpaCountsJson);
+      if (poolSpaCounts) {
+        try {
+          const parsed = objectRecord(JSON.parse(poolSpaCounts));
+          for (const name of names) {
+            if (parsed?.[name] !== undefined) {
+              return parsed[name];
+            }
+          }
+        } catch {
+          // Ignore old malformed extraction blobs; the caller will use another field.
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
+function jobAddressFromPriorRuns(priorRuns: ToolRunTrace[]): string | undefined {
+  const reportAddress = stringValue(fieldValueFromPriorRuns(priorRuns, ["projectAddress", "address"]));
+  if (reportAddress) {
+    return reportAddress;
+  }
+  for (const run of [...priorRuns].reverse()) {
+    const job = objectRecord(objectRecord(run.result)?.job);
+    const direct = stringValue(job?.address) ?? stringValue(job?.streetAddress) ?? stringValue(job?.serviceAddress);
+    if (direct) {
+      return direct;
+    }
+    const address = objectRecord(job?.address);
+    if (address) {
+      const joined = [
+        address.street1,
+        address.city,
+        address.province,
+        address.state,
+        address.postalCode,
+        address.zip
+      ].map(stringValue).filter(Boolean).join(", ");
+      if (joined) {
+        return joined;
+      }
+    }
+  }
+  return undefined;
+}
+
+function siteJobBlueprintFieldFromText(text: string): string | undefined {
+  const lower = text.toLowerCase();
+  if (/\bspa\b/.test(lower) && /\bmain\s+drains?\b/.test(lower)) return "spaMainDrains";
+  if (/\bcatch\s+basin\b/.test(lower) && /\bmain\s+drains?\b/.test(lower)) return "catchBasinMainDrains";
+  if (/\bpool\b/.test(lower) && /\bmain\s+drains?\b/.test(lower)) return "poolMainDrains";
+  if (/\bmain\s+drains?\b/.test(lower)) return "poolMainDrains";
+  if (/\bspa\b/.test(lower) && /\bskimmers?\b/.test(lower)) return "spaSkimmers";
+  if (/\bpool\b/.test(lower) && /\bskimmers?\b/.test(lower)) return "poolSkimmers";
+  if (/\breturns?\b/.test(lower) && /\bspa\b/.test(lower)) return lower.includes("floor") ? "spaFloorReturns" : "spaWallReturns";
+  if (/\breturns?\b/.test(lower) && /\bpool\b/.test(lower)) return lower.includes("floor") ? "poolFloorReturns" : "poolWallReturns";
+  if (/\bgallons?\b/.test(lower)) return "poolGallons";
+  if (/\bsq(?:uare)?\s*ft|square footage|surface area|ft2|ft²/.test(lower)) return "surfaceAreaSqFt";
+  return undefined;
+}
+
+function weatherLocationFromText(text: string): string | undefined {
+  const match = text.match(/\b(?:current\s+)?(?:weather|temp|temperature)\s+(?:right\s+now\s+)?(?:in|at|for)\s+(.+?)(?:[?.!]|$)/i);
+  const location = match?.[1]?.replace(/\bcurrent\b/gi, "").trim();
+  if (!location) {
+    return undefined;
+  }
+  if (/^fair\s+play$/i.test(location)) {
+    return "Fair Play, SC";
+  }
+  return location;
+}
+
+function hasCompleteEvaporationInput(input: Record<string, unknown>): boolean {
+  return typeof input.address === "string"
+    && numberValue(input.surfaceAreaFt2) !== undefined
+    && numberValue(input.waterTempF) !== undefined;
+}
+
+function normalizeToolInput(toolName: string, input: unknown, messages: GatewayMessage[], tenant?: Tenant | undefined, priorRuns: ToolRunTrace[] = []): unknown {
   const record = input && typeof input === "object" && !Array.isArray(input) ? { ...input as Record<string, unknown> } : {};
   const userText = latestUserText(messages);
   const lowerUserText = userText.toLowerCase();
@@ -625,9 +764,12 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   }
   if (toolName === "getDocuments") {
     if (!record.projectQuery) {
+      const currentEntity = entityQueryFromText(userText)
+        || bareEntityFromText(userText)
+        || (/\b(?:photos?|pictures?|images?)\b/i.test(userText) ? photoQueryFromText(userText) : "");
       record.projectQuery = correctionFollowUp
         ? entityQueryFromMessages(messages, { skipLatest: true })
-        : entityQueryFromText(userText) || bareEntityFromText(userText) || photoQueryFromText(userText) || entityQueryFromMessages(messages);
+        : currentEntity || entityQueryFromMessages(messages, { skipLatest: true }) || entityQueryFromMessages(messages);
     }
     if (!record.question) {
       record.question = userText;
@@ -651,11 +793,25 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
       : entityQueryFromText(userText) || bareEntityFromText(userText) || entityQueryFromMessages(messages) || "";
   }
   if (toolName === "summarizeInbox" && !record.maxResults) {
+    record.mailbox ??= mailboxAliasFromEmailAddress(firstEmailAddress(userText));
+    if (/\bunread\b/i.test(userText)) {
+      record.keywords ??= "is:unread -in:spam -in:trash -category:promotions -category:social";
+    }
     record.maxResults = 10;
   }
   if (toolName === "triageInbox") {
+    record.mailbox ??= mailboxAliasFromEmailAddress(firstEmailAddress(userText));
     record.date ??= new Date().toISOString();
+    if (/\bunread\b/i.test(userText)) {
+      record.keywords ??= "is:unread -in:spam -in:trash -category:promotions -category:social";
+    }
     record.maxResults ??= 25;
+  }
+  if (toolName === "getCurrentTime") {
+    record.timezone ??= tenant?.timezone;
+  }
+  if (toolName === "getCurrentWeather" && !record.location) {
+    record.location = weatherLocationFromText(userText) || entityQueryFromText(userText) || "Fair Play, SC";
   }
   if (toolName === "draftCampaign") {
     record.templateId ??= "vgb-hotel-gm-outreach";
@@ -668,15 +824,16 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     };
   }
   if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
+    const currentEntity = entityQueryFromText(userText) || bareEntityFromText(userText);
     record.nameQuery = correctionFollowUp
       ? entityQueryFromMessages(messages, { skipLatest: true }) || userText
-      : entityQueryFromText(userText) || bareEntityFromText(userText) || entityQueryFromMessages(messages) || userText;
+      : currentEntity || entityQueryFromMessages(messages, { skipLatest: true }) || entityQueryFromMessages(messages) || userText;
   }
-  if (toolName === "lookupSiteJobBlueprintField" && !record.field && /gallon/i.test(userText)) {
-    record.field = "poolGallons";
+  if (toolName === "lookupSiteJobBlueprintField" && !record.field) {
+    record.field = siteJobBlueprintFieldFromText(userText);
   }
   if (toolName === "lookupSiteJobBlueprintField" && !record.requestedEntity) {
-    const requestedEntity = entityQueryFromText(userText) || bareEntityFromText(userText);
+    const requestedEntity = entityQueryFromText(userText) || bareEntityFromText(userText) || entityQueryFromMessages(messages, { skipLatest: true }) || entityQueryFromMessages(messages);
     if (requestedEntity) {
       record.requestedEntity = requestedEntity;
     }
@@ -689,6 +846,17 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.waterTempF ??= parsed.waterTempF;
     record.observedLoss ??= parsed.observedLoss;
     record.windMphOverride ??= parsed.windMphOverride;
+    record.clientName ??= entityQueryFromText(userText) || entityQueryFromMessages(messages);
+    record.address ??= jobAddressFromPriorRuns(priorRuns);
+    record.zip ??= fieldValueFromPriorRuns(priorRuns, ["evapZipCode"]);
+    record.surfaceAreaFt2 ??= numberValue(fieldValueFromPriorRuns(priorRuns, ["evapSurfaceAreaSqFt", "surfaceAreaSqFt", "moasureAreaSqFt"]));
+    record.waterTempF ??= numberValue(fieldValueFromPriorRuns(priorRuns, ["evapWaterTempF", "waterTempF"]));
+    if (!record.observedLoss) {
+      const observed = numberValue(fieldValueFromPriorRuns(priorRuns, ["observedDailyLossInchesPerDay", "reportedDailyLossInchesPerDay"]));
+      if (observed !== undefined) {
+        record.observedLoss = { inches: observed, observationDays: 1 };
+      }
+    }
   }
   return record;
 }
@@ -727,15 +895,20 @@ function looksLikeTechnicianQuestion(lower: string): boolean {
 }
 
 function looksLikeJobDetailQuestion(lower: string): boolean {
-  return /\b(?:address|completion|competion|completed|complete|service\s+(?:time|date|completion|competion|[a-z]+\s+(?:completion|competion))|arrival|arrived|onsite|on-site|water\s+temp|air\s+temp|daily\s+loss|bucket|measurements?|main\s+drains?|skimmers?|returns?|lights?|filtration|testing\s+procedures?)\b/.test(lower);
+  return /\b(?:address|completion|competion|completed|complete|close\s+out|closed?\s+out|service\s+(?:time|date|completion|competion|[a-z]+\s+(?:completion|competion))|arrival|arrived|onsite|on-site|water\s+temp|air\s+temp|daily\s+loss|bucket|measurements?|main\s+drains?|skimmers?|returns?|lights?|filtration|testing\s+procedures?)\b/.test(lower);
 }
 
 function looksLikeReportMeasurementQuestion(lower: string): boolean {
   return /\b(?:gallons per inch|square footage|sq ft|ft2|ftÂ²|total gallons|pool gallons|how many gallons|measurements?)\b/.test(lower);
 }
 
+function looksLikeSectionCountQuestion(lower: string): boolean {
+  return /\b(?:main\s+drains?|skimmers?|wall\s+returns?|floor\s+returns?|cleaner\s+ports?|lights?)\b/.test(lower)
+    && /\b(?:pool|spa|catch\s+basin|how many|counts?)\b/.test(lower);
+}
+
 function crossRailJobDetailToolsForQuestion(lower: string): string[] {
-  if (looksLikeReportMeasurementQuestion(lower)) {
+  if (looksLikeReportMeasurementQuestion(lower) || looksLikeSectionCountQuestion(lower)) {
     return ["getJobDetail", "getDocuments", "lookupSiteJobBlueprintField"];
   }
   if (looksLikeTechnicianQuestion(lower)) {
@@ -754,7 +927,7 @@ function looksLikeCorrectionFollowUp(lower: string): boolean {
 
 function looksLikeInboxSummaryQuestion(lower: string): boolean {
   return /\b(?:emails?|mail|inbox)\b/.test(lower)
-    && /\b(?:came in|received|today|this morning|this afternoon|summarize|summary|what(?:'s| is) in)\b/.test(lower);
+    && /\b(?:came in|received|today|this morning|this afternoon|summarize|summary|what(?:'s| is) in|check\s+(?:my\s+|the\s+)?(?:inbox|mailbox)|unread)\b/.test(lower);
 }
 
 function looksLikeEmailSearchQuestion(lower: string): boolean {
@@ -783,7 +956,7 @@ function looksLikeReportPdfEmailRequest(lower: string): boolean {
 }
 
 function looksLikeEvaporationRunQuestion(lower: string): boolean {
-  return /\b(?:run|calculate|check|make|create)\b.*\b(?:evap|evaporation|bucket\s+test|water\s+loss)\b/.test(lower)
+  return /\b(?:run|calculate|check|make|create|use)\b.*\b(?:evap|evaporation|bucket\s+test|water\s+loss)\b/.test(lower)
     || /\b(?:evap|evaporation)\s+(?:calculator|report|pdf)\b/.test(lower);
 }
 
@@ -796,7 +969,7 @@ function looksLikeCampaignQueueQuestion(lower: string): boolean {
 }
 
 function looksLikeInboxTriageQuestion(lower: string): boolean {
-  return /\b(?:needs? my attention|what needs attention|triage|urgent|important)\b/.test(lower);
+  return /\b(?:needs? my attention|what needs attention|triage|urgent|important|order\s+unread|sort\s+unread|rank\s+unread)\b/.test(lower);
 }
 
 function looksLikePaymentStatusQuestion(lower: string): boolean {
@@ -817,6 +990,15 @@ function looksLikeDistanceQuestion(lower: string): boolean {
 
 function looksLikeClientListQuestion(lower: string): boolean {
   return /\b(?:client\s+list|list\s+(?:the\s+)?clients|show\s+me\s+(?:the\s+)?clients|show\s+me\s+a\s+client\s+list|how\s+many\s+clients|client\s+count|all\s+clients)\b/.test(lower);
+}
+
+function looksLikeCurrentTimeQuestion(lower: string): boolean {
+  return /\b(?:what\s+time\s+is\s+it|current\s+time|what(?:'s| is)\s+the\s+time|today'?s?\s+date|what(?:'s| is)\s+today'?s?\s+date)\b/.test(lower);
+}
+
+function looksLikeCurrentWeatherQuestion(lower: string): boolean {
+  return /\b(?:current\s+)?(?:weather|temp|temperature)\s+(?:right\s+now\s+)?(?:in|at|for)\b/.test(lower)
+    || /\bhow\s+(?:hot|cold)\s+is\s+it\s+(?:in|at|for)\b/.test(lower);
 }
 
 function looksLikeMapAction(lower: string): boolean {
@@ -879,9 +1061,19 @@ function directNoToolResponseForRequest(messages: GatewayMessage[]): { answer: s
   if (!promptIsMetaOrFeedback(userText)) {
     return null;
   }
-  if (/\bwhat\s+sources?\s+do\s+you\s+use\b|\bwhat\s+(?:tools?|rails?|systems?)\s+do\s+you\s+use\b|\bwhat\s+can\s+you\s+(?:access|see|check|do)\b/i.test(userText)) {
+  if (/\bwhat\s+commands?\s+can\s+i\s+use\b|\bwhat\s+sources?\s+do\s+you\s+use\b|\bwhat\s+(?:tools?|rails?|systems?)\s+do\s+you\s+use\b|\bwhat\s+can\s+you\s+(?:access|see|check|do)\b/i.test(userText)) {
     return {
-      answer: "I can check Aquatrace work records, schedules, job reports, photos, saved site notes, invoices, and connected email when those are wired for this tenant."
+      answer: "You can ask me about today's schedule, work records, job details, CompanyCam reports and photos, client lists, invoices, inbox summaries, important unread email, draft emails for your approval, evaporation reports, content drafts, and website updates. If something is not live yet, I'll say that plainly instead of acting like the information is missing."
+    };
+  }
+  if (/\bwhy\s+did\s+(?:that|this|it)\s+fail\b/i.test(userText)) {
+    return {
+      answer: "That failed because I either checked the wrong place or the ability is not live yet. I wrote the miss down so we can fix the path instead of making you repeat it."
+    };
+  }
+  if (/\bhow\s+do\s+i\s+upload\s+(?:photos?|pictures?|images?|videos?)\b/i.test(userText)) {
+    return {
+      answer: "For now, use CompanyCam for job photos and videos. I can read and summarize those here. Native NexTeam phone uploads are part of the mobile field app work, and once that is live you'll be able to capture on the job and sync automatically."
     };
   }
   return {
@@ -1018,7 +1210,16 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
     return ["draftEmail"];
   }
   if (looksLikeEvaporationRunQuestion(lower) && toolsByName.has("runEvaporation")) {
-    return ["runEvaporation"];
+    const parsed = evaporationInputFromText(userText);
+    return hasCompleteEvaporationInput(parsed)
+      ? ["runEvaporation"]
+      : uniqueToolNames(["getJobDetail", "getDocuments", "runEvaporation"], toolsByName);
+  }
+  if (looksLikeCurrentTimeQuestion(lower) && toolsByName.has("getCurrentTime")) {
+    return ["getCurrentTime"];
+  }
+  if (looksLikeCurrentWeatherQuestion(lower) && toolsByName.has("getCurrentWeather")) {
+    return ["getCurrentWeather"];
   }
   if (looksLikeCampaignDraftAction(lower) && toolsByName.has("draftCampaign")) {
     return ["draftCampaign"];
@@ -1026,11 +1227,11 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   if (looksLikeCampaignQueueQuestion(lower) && toolsByName.has("campaignQueue")) {
     return ["campaignQueue"];
   }
-  if (looksLikeInboxSummaryQuestion(lower) && toolsByName.has("summarizeInbox")) {
-    return ["summarizeInbox"];
-  }
   if (looksLikeInboxTriageQuestion(lower) && toolsByName.has("triageInbox")) {
     return ["triageInbox"];
+  }
+  if (looksLikeInboxSummaryQuestion(lower) && toolsByName.has("summarizeInbox")) {
+    return ["summarizeInbox"];
   }
   if (firstEmailAddress(userText) && recentUserTextMatches(messages, looksLikeEmailSearchQuestion) && toolsByName.has("searchEmail")) {
     return ["searchEmail"];
@@ -1103,6 +1304,8 @@ function hasFreshLookupTarget(text: string, timeZone?: string): boolean {
     || entityQueryFromText(text)
     || hasExplicitPhotoTarget(text)
     || looksLikeEvaporationRunQuestion(text.toLowerCase())
+    || looksLikeCurrentTimeQuestion(text.toLowerCase())
+    || looksLikeCurrentWeatherQuestion(text.toLowerCase())
   );
 }
 
@@ -1133,7 +1336,7 @@ async function runDeterministicTools(input: {
       continue;
     }
     try {
-      const args = tool.inputSchema.parse(normalizeToolInput(tool.name, {}, input.messages, input.tenant));
+      const args = tool.inputSchema.parse(normalizeToolInput(tool.name, {}, input.messages, input.tenant, runs));
       const result = await tool.handler(input.tenant, args);
       runs.push({ name: tool.name, result: result.result, sources: result.sources });
     } catch {
@@ -1413,7 +1616,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         continue;
       }
       try {
-        const args = tool.inputSchema.parse(normalizeToolInput(toolUse.name, toolUse.input, messages, request.tenant));
+        const args = tool.inputSchema.parse(normalizeToolInput(toolUse.name, toolUse.input, messages, request.tenant, toolRuns));
         const result = await tool.handler(request.tenant, args);
         sources = [...sources, ...result.sources];
         toolRuns.push({ name: tool.name, result: result.result, sources: result.sources });

@@ -7,6 +7,7 @@ import { extractAquatraceDocument, ingestAquatraceReportSet, parseLossNotation }
 import { answerNexiMessage, runExplicitLocalToolLoop } from "../dist/nexi/nexiService.js";
 import { createNexiJobDeskTools } from "../dist/nexi/nexiTools.js";
 import { FirestoreNexiRepository, MemoryNexiRepository } from "../dist/nexi/nexiRepository.js";
+import { createContextNexiTools } from "../dist/context/nexiTools.js";
 import { MemoryUsageLogWriter } from "../dist/usageLog.js";
 import { enforceSources, promptIsActionRequest, promptIsMetaOrFeedback, runNexiToolLoop } from "@nexteam/nexi";
 
@@ -58,6 +59,25 @@ test("source check does not block email action commands or honest tool failures"
   assert.equal(failure.ok, true);
   const noSource = enforceSources("I don't have that written down anywhere yet. I wrote it down so we can fill the gap.", [], "What did the Semrush site audit say?");
   assert.equal(noSource.ok, true);
+});
+
+test("Nexi meta/help turns answer without source stonewalls", async () => {
+  for (const message of ["what commands can I use", "why did that fail", "how do I upload photos"]) {
+    const result = await runNexiToolLoop({
+      tenant: tenant(),
+      system: "Use tools.",
+      messages: [{ role: "user", content: message }],
+      tools: [],
+      routeActionName: "/api/nexi/message",
+      taskType: "job_desk_answer",
+      env: { ANTHROPIC_API_KEY: "test-key" },
+      fetchFn: async () => {
+        throw new Error("meta/help turns should not call Anthropic");
+      }
+    });
+    assert.doesNotMatch(result.answer, /verified source|written down anywhere|matching email/i);
+    assert.equal(result.toolRuns.length, 0);
+  }
 });
 
 test("Nexi tool loop preloads obvious tools and records cache metrics", async () => {
@@ -514,6 +534,99 @@ test("Nexi Anthropic gateway treats mailbox address follow-ups as email search c
   }]);
   assert.equal(result.toolRuns[0].name, "searchEmail");
   assert.equal(result.sources[0].ref, "email:aquatraceleak:msg_1");
+});
+
+test("Nexi routes broad inbox commands to summary and triage instead of email search", async () => {
+  const toolCalls = [];
+  const base = {
+    tenant: tenant(),
+    system: "Use tools.",
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I checked the inbox." }],
+      usage: { input_tokens: 5, output_tokens: 5 }
+    }), { status: 200 })
+  };
+  const summarizeInbox = {
+    name: "summarizeInbox",
+    description: "Summarize inbox.",
+    inputSchema: z.object({ mailbox: z.string().optional(), keywords: z.string().optional(), maxResults: z.number().optional() }),
+    handler: async (_tenant, args) => {
+      toolCalls.push(["summarizeInbox", args]);
+      return {
+        result: { count: 0, items: [] },
+        sources: [{ rail: "native", ref: "email-summary:test", label: "Email summary test" }]
+      };
+    }
+  };
+  const triageInbox = {
+    name: "triageInbox",
+    description: "Triage inbox.",
+    inputSchema: z.object({ mailbox: z.string().optional(), date: z.string().optional(), keywords: z.string().optional(), maxResults: z.number().optional() }),
+    handler: async (_tenant, args) => {
+      toolCalls.push(["triageInbox", args]);
+      return {
+        result: { items: [] },
+        sources: [{ rail: "native", ref: "email-triage:test", label: "Email triage test" }]
+      };
+    }
+  };
+  const searchEmail = {
+    name: "searchEmail",
+    description: "Search email.",
+    inputSchema: z.object({ keywords: z.string().optional() }),
+    handler: async () => {
+      throw new Error("generic inbox commands should not search email");
+    }
+  };
+
+  await runNexiToolLoop({ ...base, messages: [{ role: "user", content: "check inbox" }], tools: [summarizeInbox, triageInbox, searchEmail] });
+  await runNexiToolLoop({ ...base, messages: [{ role: "user", content: "summarize inbox" }], tools: [summarizeInbox, triageInbox, searchEmail] });
+  await runNexiToolLoop({ ...base, messages: [{ role: "user", content: "order unread" }], tools: [summarizeInbox, triageInbox, searchEmail] });
+
+  assert.deepEqual(toolCalls.map((entry) => entry[0]), ["summarizeInbox", "summarizeInbox", "triageInbox"]);
+  assert.match(toolCalls[2][1].keywords, /is:unread/);
+});
+
+test("Nexi routes basic clock and weather questions to native context tools", async () => {
+  const calls = [];
+  const tools = createContextNexiTools({
+    now: () => new Date("2026-07-08T16:30:00.000Z"),
+    weatherProvider: {
+      async getWeather(input) {
+        calls.push(["weather", input]);
+        return {
+          current: {
+            city: "Fair Play",
+            airTempF: 91,
+            relativeHumidityPct: 55,
+            windMph: 4,
+            fetchedAt: "2026-07-08T16:30:00.000Z"
+          },
+          forecast: []
+        };
+      }
+    }
+  });
+  const base = {
+    tenant: tenant(),
+    system: "Use tools.",
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I checked it." }],
+      usage: { input_tokens: 5, output_tokens: 5 }
+    }), { status: 200 })
+  };
+  const time = await runNexiToolLoop({ ...base, messages: [{ role: "user", content: "what time is it" }] });
+  const weather = await runNexiToolLoop({ ...base, messages: [{ role: "user", content: "current temp in Fair Play" }] });
+  assert.equal(time.toolRuns[0].name, "getCurrentTime");
+  assert.equal(weather.toolRuns[0].name, "getCurrentWeather");
+  assert.deepEqual(calls[0], ["weather", { address: "Fair Play, SC" }]);
 });
 
 test("Nexi Anthropic gateway sanitizes deterministic email tool failures", async () => {
@@ -1390,6 +1503,145 @@ test("Nexi total-gallons job questions run Jobber and CompanyCam before blueprin
   assert.equal(toolCalls[2][1].requestedEntity, "Deborah Justice");
 });
 
+test("Nexi under-specified evaporation commands read job/report context before running calculator", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "use the evaporation calculator on Deborah Justice's pool" }],
+    tools: [
+      {
+        name: "getJobDetail",
+        description: "Read Jobber job.",
+        inputSchema: z.object({ nameQuery: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getJobDetail", args]);
+          return {
+            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", address: "181 Isbell Road, Fair Play, SC 29643" } },
+            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
+          };
+        }
+      },
+      {
+        name: "getDocuments",
+        description: "Read CompanyCam docs.",
+        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getDocuments", args]);
+          return {
+            result: {
+              reports: [{
+                fields: {
+                  projectAddress: "181 Isbell Road, Fair Play, SC 29643",
+                  evapSurfaceAreaSqFt: 1002.7,
+                  evapWaterTempF: 82,
+                  observedDailyLossInchesPerDay: 0.5
+                }
+              }]
+            },
+            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
+          };
+        }
+      },
+      {
+        name: "runEvaporation",
+        description: "Run evaporation.",
+        inputSchema: z.object({
+          clientName: z.string().optional(),
+          address: z.string(),
+          surfaceAreaFt2: z.number(),
+          waterTempF: z.number(),
+          observedLoss: z.object({ inches: z.number(), observationDays: z.number() }).optional()
+        }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["runEvaporation", args]);
+          return {
+            result: { report: { calculation: { evapInchesPerDay: 0.25, leakInchesPerDay: 0.25 } } },
+            sources: [{ rail: "native", ref: "evap_1", label: "Aquatrace evaporation report evap_1" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I ran the evaporation calculator for Deborah Justice." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail", "getDocuments", "runEvaporation"]);
+  assert.equal(toolCalls[0][1].nameQuery, "Deborah Justice");
+  assert.equal(toolCalls[1][1].projectQuery, "Deborah Justice");
+  assert.equal(toolCalls[2][1].address, "181 Isbell Road, Fair Play, SC 29643");
+  assert.equal(toolCalls[2][1].surfaceAreaFt2, 1002.7);
+  assert.equal(toolCalls[2][1].waterTempF, 82);
+  assert.deepEqual(toolCalls[2][1].observedLoss, { inches: 0.5, observationDays: 1 });
+});
+
+test("Nexi spa-main-drain follow-ups inherit the job and request the spa field", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "How many pool main drains did Deborah Justice have?" },
+      { role: "assistant", content: "The pool section had 4 main drains." },
+      { role: "user", content: "what about the spa main drains?" }
+    ],
+    tools: [
+      {
+        name: "getJobDetail",
+        description: "Read Jobber job.",
+        inputSchema: z.object({ nameQuery: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getJobDetail", args]);
+          return {
+            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", client: { name: "Deborah Justice" } } },
+            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
+          };
+        }
+      },
+      {
+        name: "getDocuments",
+        description: "Read CompanyCam docs.",
+        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getDocuments", args]);
+          return {
+            result: { reports: [{ fields: { poolMainDrains: 4, spaMainDrains: 2 } }] },
+            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
+          };
+        }
+      },
+      {
+        name: "lookupSiteJobBlueprintField",
+        description: "Read field.",
+        inputSchema: z.object({ field: z.string(), requestedEntity: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["lookupSiteJobBlueprintField", args]);
+          return {
+            result: { field: args.field, value: 2 },
+            sources: [{ rail: "native", ref: "blueprint_1", label: "SiteJobBlueprint Deborah Justice" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "The spa section lists 2 main drains." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail", "getDocuments", "lookupSiteJobBlueprintField"]);
+  assert.equal(toolCalls[0][1].nameQuery, "Deborah Justice");
+  assert.equal(toolCalls[1][1].projectQuery, "Deborah Justice");
+  assert.equal(toolCalls[2][1].field, "spaMainDrains");
+  assert.equal(toolCalls[2][1].requestedEntity, "Deborah Justice");
+});
+
 test("Nexi bare entity follow-ups inherit report measurement rails", async () => {
   const toolCalls = [];
   const result = await runNexiToolLoop({
@@ -2012,6 +2264,41 @@ Estimated Approximate Total Gallons
   const tool = createNexiJobDeskTools({}, repository).find((candidate) => candidate.name === "lookupSiteJobBlueprintField");
   const match = await tool.handler(tenant(), { field: "poolGallons", requestedEntity: "Deborah Justice" });
   assert.equal(match.result.value, 32500);
+});
+
+test("CompanyCam report extraction keeps pool, spa, and basin count sections separate", async () => {
+  const fields = extractCompanyCamReportFields(`
+Swimming Pool Leak Detection Details /Results
+Pool/Spa Overview
+Pool How many skimmers 2 How many wall returns 13 How many floor returns 0 How many main drains 4 How many lights 2 How many cleaner ports 5
+Spa How many skimmers 0 How many wall returns 6 How many floor returns 0 How many main drains 2 How many lights 1 How many cleaner ports 0
+Catch Basin How many skimmers 0 How many wall returns 1 How many floor returns 0 How many main drains 1 How many lights 0 How many cleaner ports 0
+Measurements Square Footage (Surface Area) 1002.7ftÂ² Estimated Average Depth (Inches) 60in Estimated Approximate Total Gallons 37,602 Gallons
+`);
+  assert.equal(fields.poolMainDrains, 4);
+  assert.equal(fields.spaMainDrains, 2);
+  assert.equal(fields.catchBasinMainDrains, 1);
+  assert.match(fields.poolSpaCountsJson, /"spaMainDrains":2/);
+});
+
+test("SiteJobBlueprint field lookup reads section-scoped counts from old JSON fields", async () => {
+  const repository = new MemoryNexiRepository();
+  await repository.saveSiteJobBlueprint({
+    id: "site_job_deborah_justice",
+    tenantId: "aquatrace",
+    kind: "site_blueprint",
+    fields: {
+      projectName: "Deborah Justice",
+      poolSpaCountsJson: JSON.stringify({ poolMainDrains: 4, spaMainDrains: 2 })
+    },
+    extractedFrom: "companycam-doc:18218446",
+    extractedAt: new Date().toISOString()
+  });
+  const tool = createNexiJobDeskTools({}, repository).find((candidate) => candidate.name === "lookupSiteJobBlueprintField");
+  assert.ok(tool);
+  const result = await tool.handler(tenant(), { field: "spaMainDrains", requestedEntity: "Deborah Justice" });
+  assert.equal(result.result.value, 2);
+  assert.equal(result.sources.length, 1);
 });
 
 test("SiteJobBlueprint field lookup rejects mismatched requested entity", async () => {

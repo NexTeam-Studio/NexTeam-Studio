@@ -47,6 +47,7 @@ const summarizeInboxInputSchema = z.object({
 const triageInboxInputSchema = z.object({
   mailbox: z.string().optional(),
   date: z.string().optional(),
+  keywords: z.string().optional(),
   maxResults: z.number().int().min(1).max(25).optional()
 });
 
@@ -72,6 +73,14 @@ function emailSource(message: EmailMessageSummary): Source {
     rail: "email",
     ref: `email:${message.mailbox}:${message.id}`,
     label: `Email ${message.mailbox} ${message.id}`
+  };
+}
+
+function summarySource(kind: string, date: string): Source {
+  return {
+    rail: "native",
+    ref: `email-${kind}:${date}`,
+    label: `Email ${kind} ${date}`
   };
 }
 
@@ -447,7 +456,7 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
       handler: async (tenant: Tenant, args: unknown) => {
         assertCommsTenant(rail, tenant, "summarizeInbox");
         const input = summarizeInboxInputSchema.parse(args);
-        const window = inboxWindow(input.date);
+        const dateWindow = inboxWindow(input.date);
         const adapters = readAdapters(rail, input.mailbox);
         if (adapters.length === 0) {
           throw new RailError(`No read-only email mailbox is configured. Available mailboxes: ${mailboxList(rail).join(", ") || "none"}.`, { provider: "gmail", op: "summarizeInbox", status: 503 });
@@ -455,8 +464,8 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
         const grouped = await Promise.all(adapters.map(async (adapter) => ({
           mailbox: adapter.mailbox,
           messages: await adapter.searchEmail({
-            after: window.after,
-            before: window.before,
+            after: dateWindow.after,
+            before: dateWindow.before,
             keywords: input.keywords,
             maxResults: input.maxResults ?? 10
           })
@@ -465,14 +474,14 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
         const items = summaryItems(messages);
         return {
           result: {
-            date: window.after.slice(0, 10),
+            date: dateWindow.after.slice(0, 10),
             count: messages.length,
             mailboxes: grouped.map((group) => ({ mailbox: group.mailbox, count: group.messages.length })),
             formatRule: "Lead with sender, subject, and one-line ask. Use minimal IDs and cite sources only as email:<mailbox>:<messageId>.",
             items,
             messages
           },
-          sources: messages.map(emailSource)
+          sources: messages.length > 0 ? messages.map(emailSource) : [summarySource("summary", dateWindow.after.slice(0, 10))]
         };
       }
     },
@@ -483,7 +492,7 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
       handler: async (tenant: Tenant, args: unknown) => {
         assertCommsTenant(rail, tenant, "triageInbox");
         const input = triageInboxInputSchema.parse(args);
-        const window = inboxWindow(input.date);
+        const dateWindow = inboxWindow(input.date);
         const adapters = readAdapters(rail, input.mailbox);
         if (adapters.length === 0) {
           throw new RailError(`No read-only email mailbox is configured. Available mailboxes: ${mailboxList(rail).join(", ") || "none"}.`, { provider: "gmail", op: "triageInbox", status: 503 });
@@ -491,9 +500,9 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
         const grouped = await Promise.all(adapters.map(async (adapter) => ({
           mailbox: adapter.mailbox,
           messages: await adapter.searchEmail({
-            after: window.after,
-            before: window.before,
-            keywords: "-in:spam -in:trash -category:promotions -category:social",
+            after: dateWindow.after,
+            before: dateWindow.before,
+            keywords: input.keywords ?? "-in:spam -in:trash -category:promotions -category:social",
             maxResults: input.maxResults ?? 25
           })
         })));
@@ -502,7 +511,7 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
         const sourceMessages = triage.items.map((item) => messages.find((message) => message.id === item.messageId && message.mailbox === item.mailbox)).filter((message): message is EmailMessageSummary => !!message);
         return {
           result: {
-            date: window.after.slice(0, 10),
+            date: dateWindow.after.slice(0, 10),
             scannedCount: messages.length,
             excludedNoiseCount: triage.excludedNoiseCount,
             mailboxes: grouped.map((group) => ({ mailbox: group.mailbox, count: group.messages.length })),
@@ -510,7 +519,7 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
             groupedByPriority: groupByPriority(triage.items),
             items: triage.items
           },
-          sources: sourceMessages.map(emailSource)
+          sources: sourceMessages.length > 0 ? sourceMessages.map(emailSource) : [summarySource("triage", dateWindow.after.slice(0, 10))]
         };
       }
     },

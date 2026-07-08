@@ -222,6 +222,24 @@ function inlineFieldMatchesRequest(input: z.infer<typeof lookupSiteJobBlueprintF
   return true;
 }
 
+function fieldValue(fields: Record<string, string | number>, field: string): string | number | undefined {
+  const direct = fields[field];
+  if (direct !== undefined) {
+    return direct;
+  }
+  const pooled = fields.poolSpaCountsJson;
+  if (typeof pooled !== "string") {
+    return undefined;
+  }
+  try {
+    const parsed = JSON.parse(pooled) as Record<string, unknown>;
+    const value = parsed[field];
+    return typeof value === "string" || typeof value === "number" ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function firstBlueprintField(
   blueprints: SiteJobBlueprint[],
   field: string,
@@ -231,7 +249,7 @@ function firstBlueprintField(
     if (!blueprintMatchesRequest(siteJobBlueprint, request)) {
       continue;
     }
-    const value = siteJobBlueprint.fields[field];
+    const value = fieldValue(siteJobBlueprint.fields, field);
     if (value !== undefined) {
       return {
         value,
@@ -344,7 +362,7 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
       handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
         const input = lookupSiteJobBlueprintFieldInputSchema.parse(args);
         const fields = input.fields ?? {};
-        const inlineValue = fields[input.field];
+        const inlineValue = fieldValue(fields, input.field);
         if (inlineValue !== undefined && inlineFieldMatchesRequest(input)) {
           return {
             result: { field: input.field, value: inlineValue, requestedEntity: input.requestedEntity ?? null },

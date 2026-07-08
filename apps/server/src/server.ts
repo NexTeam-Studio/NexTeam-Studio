@@ -25,6 +25,7 @@ import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
 import { CommsApprovalExecutor } from "./comms/approvalExecutor.js";
 import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
 import { createCommsNexiTools } from "./comms/nexiTools.js";
+import { createContextNexiTools } from "./context/nexiTools.js";
 import { createContentNexiTools } from "./content/nexiTools.js";
 import { InMemoryContentRepository } from "./content/repository.js";
 import { registerContentRoutes } from "./content/routes.js";
@@ -84,6 +85,7 @@ app.use("/api/nexi", createNexiRouter(process.env, {
   },
   filterTools: (tenant, tools) => enforceToolEntitlements(tenant, tools).tools,
   extraTools: [
+    ...createContextNexiTools({ env: process.env }),
     ...createCrmReadTools(nativeCrmProvider),
     ...createCommsNexiTools(commsRail, approvalQueue),
     ...createContentNexiTools({ repository: contentRepository, approvalQueue }),

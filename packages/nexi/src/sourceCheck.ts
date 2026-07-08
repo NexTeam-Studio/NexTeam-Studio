@@ -18,10 +18,13 @@ const FACTUAL_RAIL_WORDS = [
 
 const META_PROMPT_PATTERNS = [
   /\breply\s+with\s+exactly\b/i,
+  /\bwhat\s+commands?\s+can\s+i\s+use\b/i,
   /\bwhat\s+sources?\s+do\s+you\s+use\b/i,
   /\bwhat\s+(?:tools?|rails?|systems?)\s+do\s+you\s+use\b/i,
   /\bhow\s+do\s+you\s+(?:get|pull|verify|use)\s+(?:data|sources?|information)\b/i,
-  /\bwhat\s+can\s+you\s+(?:access|see|check|do)\b/i
+  /\bwhat\s+can\s+you\s+(?:access|see|check|do)\b/i,
+  /\bwhy\s+did\s+(?:that|this|it)\s+fail\b/i,
+  /\bhow\s+do\s+i\s+upload\s+(?:photos?|pictures?|images?|videos?)\b/i
 ];
 
 const FEEDBACK_PROMPT_PATTERNS = [
@@ -36,7 +39,8 @@ const FEEDBACK_PROMPT_PATTERNS = [
 const ACTION_PROMPT_PATTERNS = [
   /\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/i,
   /\b(?:send|draft|compose|write)\s+(?:me\s+)?(?:an?\s+)?email\s+(?:at|to)\s+[\w.+-]+@[\w.-]+\.\w+\b/i,
-  /\bemail\s+[\w.+-]+@[\w.-]+\.\w+\s+(?:saying|that|to say)\b/i
+  /\bemail\s+[\w.+-]+@[\w.-]+\.\w+\s+(?:saying|that|to say)\b/i,
+  /\buse\s+(?:the\s+)?(?:evap|evaporation)\s+calculator\b/i
 ];
 
 const HONEST_FAILURE_PATTERNS = [
