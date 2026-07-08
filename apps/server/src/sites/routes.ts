@@ -6,6 +6,7 @@ import {
   type ApprovalQueueService,
   type EventBus
 } from "@nexteam/core";
+import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
 import { generatePoolLeakSite } from "./generator.js";
 import { leadSubmissionSchema } from "./schemas.js";
 import type { SitesRepository } from "./repository.js";
@@ -49,14 +50,18 @@ export function registerSitesRoutes(app: Express, deps: SitesRouteDeps): void {
 
   app.post("/api/sites/:slug/generate", async (req: Request, res: Response) => {
     try {
-      const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : defaultTenantId(env);
+      const requestedTenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : defaultTenantId(env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId,
+        op: "siteGenerate"
+      });
       const site = generatePoolLeakSite({
         ...(req.body && typeof req.body === "object" ? (req.body as Record<string, unknown>) : {}),
-        tenantId,
+        tenantId: access.tenantId,
         slug: req.params.slug
       });
       const approval = await deps.approvalQueue.create({
-        tenantId,
+        tenantId: access.tenantId,
         kind: "site_publish",
         preview: {
           title: `Prepare ${site.title} website for custom domain`,
@@ -70,10 +75,11 @@ export function registerSitesRoutes(app: Express, deps: SitesRouteDeps): void {
             slug: site.slug,
             internalUrl: site.internalUrl,
             customDomainRequiresCloudflare: true,
-            noExternalPublish: true
+            noExternalPublish: true,
+            actorId: actorIdForAccess(access)
           }
         },
-        createdBy: "system"
+        createdBy: "user"
       });
       const saved = await deps.repository.saveSite({ ...site, approvalId: approval.id });
       res.status(201).json({ ok: true, site: saved, approval, customDomainDeferred: true });
@@ -84,8 +90,12 @@ export function registerSitesRoutes(app: Express, deps: SitesRouteDeps): void {
 
   app.get("/api/sites/:slug/model", async (req: Request, res: Response) => {
     try {
-      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
-      const site = await deps.repository.getSiteBySlug(tenantId, String(req.params.slug ?? ""));
+      const requestedTenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId,
+        op: "siteModel"
+      });
+      const site = await deps.repository.getSiteBySlug(access.tenantId, String(req.params.slug ?? ""));
       if (!site) {
         throw new RailError("Site was not found.", { provider: "native", op: "getSite", status: 404 });
       }
@@ -175,8 +185,12 @@ export function registerSitesRoutes(app: Express, deps: SitesRouteDeps): void {
 
   app.get("/api/sites/:slug/leads", async (req: Request, res: Response) => {
     try {
-      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
-      const leads = await deps.repository.listLeads(tenantId, String(req.params.slug ?? ""));
+      const requestedTenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId,
+        op: "siteLeads"
+      });
+      const leads = await deps.repository.listLeads(access.tenantId, String(req.params.slug ?? ""));
       res.json({ ok: true, leads });
     } catch (error) {
       sendRouteError(res, error);
