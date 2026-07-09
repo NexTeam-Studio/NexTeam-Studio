@@ -1,0 +1,112 @@
+﻿{
+  "ok": true,
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "conversationId": "m10-demo-pool-co-1783617535738",
+  "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56",
+  "turns": [
+    {
+      "message": "Onboard Demo Pool Co as a new tenant.",
+      "answer": "Started the intake for Demo Pool Co. - **Business:** Demo Pool Co - **Timezone:** America/New_York - **Industry pack:** pool_leak - **Plan:** suite - **Status:** interviewing (nothing provisioned yet — needs your approval before anything goes live) Next thing I need from you: **what services should Nexi know how to talk about for this business?**",
+      "toolRuns": [
+        {
+          "name": "startIntake",
+          "sourceRefs": [
+            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          ],
+          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+        }
+      ]
+    },
+    {
+      "message": "For intake_016b277e-4293-4fa7-81cc-24a8f6a1be56, services are leak detection, weekly pool maintenance, and equipment repair.",
+      "answer": "I saved that onboarding answer. Next: What cities or service areas should this tenant cover first?",
+      "toolRuns": [
+        {
+          "name": "answerIntake",
+          "sourceRefs": [
+            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          ],
+          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+        }
+      ]
+    },
+    {
+      "message": "For intake_016b277e-4293-4fa7-81cc-24a8f6a1be56, service area is Wake County, Durham County, and Chapel Hill.",
+      "answer": "I saved that onboarding answer. Next: What pricing rules or quoting notes should Nexi remember?",
+      "toolRuns": [
+        {
+          "name": "answerIntake",
+          "sourceRefs": [
+            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          ],
+          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+        }
+      ]
+    },
+    {
+      "message": "For intake_016b277e-4293-4fa7-81cc-24a8f6a1be56, pricing notes are estimates require owner confirmation before quoting.",
+      "answer": "I saved that onboarding answer. Next: How should Nexi sound for this business?",
+      "toolRuns": [
+        {
+          "name": "answerIntake",
+          "sourceRefs": [
+            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          ],
+          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+        }
+      ]
+    },
+    {
+      "message": "For intake_016b277e-4293-4fa7-81cc-24a8f6a1be56, brand voice should be plain spoken, reliable, and calm.",
+      "answer": "I saved that onboarding answer. Next: Which current apps should Nexi replace now, replace later, or keep working beside?",
+      "toolRuns": [
+        {
+          "name": "answerIntake",
+          "sourceRefs": [
+            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          ],
+          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+        }
+      ]
+    },
+    {
+      "message": "For intake_016b277e-4293-4fa7-81cc-24a8f6a1be56, app stack is Jobber keep working beside, QuickBooks replace later, Google Calendar keep working beside.",
+      "answer": "I saved that onboarding answer. Next: I have enough to draft the tenant plan. Say finalize intake when you want it parked for approval.",
+      "toolRuns": [
+        {
+          "name": "answerIntake",
+          "sourceRefs": [
+            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          ],
+          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+        }
+      ]
+    },
+    {
+      "message": "Finalize intake intake_016b277e-4293-4fa7-81cc-24a8f6a1be56.",
+      "answer": "Demo Pool Co's intake is finalized and parked for your approval — nothing is live yet. - **Status:** approval_queued (approval ID: appr_3c2f3893-93ae-4c3d-8d26-99aa6621bc83) - **Services:** leak detection, weekly pool maintenance, equipment repair - **Service area:** Wake County, Durham County, Chapel Hill - **Pricing:** estimates require owner confirmation before quoting - **Brand voice:** plain spoken, reliable, calm - **App stack:** Jobber, QuickBooks, and Google Calendar all set to coexist f",
+      "toolRuns": [
+        {
+          "name": "finalizeIntake",
+          "sourceRefs": [
+            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56",
+            "appr_3c2f3893-93ae-4c3d-8d26-99aa6621bc83"
+          ],
+          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56",
+          "approvalId": "appr_3c2f3893-93ae-4c3d-8d26-99aa6621bc83"
+        }
+      ]
+    }
+  ],
+  "tenantProvisioningApprovals": [
+    {
+      "id": "appr_3c2f3893-93ae-4c3d-8d26-99aa6621bc83",
+      "kind": "tenant_provisioning",
+      "status": "pending",
+      "title": "Provision tenant: Demo Pool Co",
+      "service": "intake",
+      "op": "provisionTenant",
+      "externalProvisioningDeferred": true
+    }
+  ]
+}
