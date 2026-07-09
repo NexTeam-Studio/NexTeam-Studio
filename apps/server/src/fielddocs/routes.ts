@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { InMemoryEventBus, RailError, type EventBus } from "@nexteam/core";
+import { requireTenantRole } from "../auth/accessContext.js";
 import { getAdminDb } from "../firebase.js";
 import { createLeakDetectionChecklist } from "./checklists.js";
 import { FirestoreMediaRepository, MemoryMediaRepository, type MediaRepository } from "./mediaRepository.js";
@@ -9,6 +10,13 @@ import { searchMediaWithVisionFallback } from "./photoSearch.js";
 import { createFieldReportRecord, renderFieldReportPdf } from "./reportService.js";
 import { createNativeMediaFromUpload, uploadMediaInputSchema } from "./uploadService.js";
 import { maybeRunVision } from "./visionPipeline.js";
+import {
+  AQUATRACE_VISION_TAG_TAXONOMY,
+  applyVisionSurveyCorrection,
+  runVisionSurveyBatch,
+  visionSurveyBatchInputSchema,
+  visionSurveyCorrectionInputSchema
+} from "./visionSurvey.js";
 
 const uploadSessionInputSchema = z.object({
   tenantId: z.string().min(1).optional(),
@@ -123,6 +131,49 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
       const input = searchQuerySchema.parse(req.query);
       const hits = await searchMediaWithVisionFallback(await repository().listMedia(input.tenantId), input.q, input.limit ?? 10, env);
       res.json({ ok: true, hits });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/fielddocs/vision-survey/taxonomy", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: tenantId,
+        op: "fielddocsVisionTaxonomy"
+      });
+      res.json({ ok: true, tenantId: access.tenantId, taxonomy: AQUATRACE_VISION_TAG_TAXONOMY });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/fielddocs/vision-survey/batches", async (req: Request, res: Response) => {
+    try {
+      const input = visionSurveyBatchInputSchema.parse(req.body ?? {});
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: tenantId,
+        op: "fielddocsVisionSurveyBatch"
+      });
+      const result = await runVisionSurveyBatch(repository(), access.tenantId, { ...input, tenantId: access.tenantId });
+      res.status(result.status === "blocked_budget" ? 409 : 201).json({ ok: result.status !== "blocked_budget", ...result });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/fielddocs/vision-survey/corrections", async (req: Request, res: Response) => {
+    try {
+      const input = visionSurveyCorrectionInputSchema.parse(req.body ?? {});
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: tenantId,
+        op: "fielddocsVisionSurveyCorrection"
+      });
+      const media = await applyVisionSurveyCorrection(repository(), access.tenantId, { ...input, tenantId: access.tenantId });
+      res.json({ ok: true, media });
     } catch (error) {
       sendRouteError(res, error);
     }
