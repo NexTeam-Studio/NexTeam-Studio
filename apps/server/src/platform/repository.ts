@@ -35,6 +35,7 @@ function defaultApproval(): Tenant["approval"] {
     invoice: { autoApprove: false, cleanStreak: 0 },
     site_publish: { autoApprove: false, cleanStreak: 0 },
     gbp_profile_update: { autoApprove: false, cleanStreak: 0 },
+    seo_fix: { autoApprove: false, cleanStreak: 0 },
     review_reply: { autoApprove: false, cleanStreak: 0 }
   };
 }

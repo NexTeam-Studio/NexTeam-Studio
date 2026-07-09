@@ -45,6 +45,9 @@ import { EnvGbpReviewProvider } from "./reputation/gbpProvider.js";
 import { createReputationNexiTools } from "./reputation/nexiTools.js";
 import { FirestoreReputationRepository, InMemoryReputationRepository } from "./reputation/repository.js";
 import { registerReputationRoutes } from "./reputation/routes.js";
+import { createSeoNexiTools } from "./seo/nexiTools.js";
+import { FirestoreSeoRepository, InMemorySeoRepository } from "./seo/repository.js";
+import { registerSeoRoutes } from "./seo/routes.js";
 import { enforceToolEntitlements } from "./platform/entitlements.js";
 import { MemoryStorageWriter } from "./platform/backup.js";
 import { FirebaseStorageWriter } from "./platform/storage.js";
@@ -96,6 +99,7 @@ const selfRepairService = new SelfRepairService({
   env: process.env
 });
 const reputationRepository = adminDb ? new FirestoreReputationRepository(adminDb) : new InMemoryReputationRepository();
+const seoRepository = adminDb ? new FirestoreSeoRepository(adminDb) : new InMemorySeoRepository();
 
 app.use(express.json({
   limit: "1mb",
@@ -149,6 +153,12 @@ app.use("/api/nexi", createNexiRouter(process.env, {
       gbpProvider: gbpReviewProvider,
       eventBus,
       actorId: actorIdForAccess(access)
+    })).concat(createSeoNexiTools({
+      repository: seoRepository,
+      sitesRepository,
+      approvalQueue,
+      access,
+      env: process.env
     }));
   }
 }));
@@ -265,6 +275,8 @@ registerEvaporationRoutes(app, { repository: evaporationRepository, env: process
 registerMobileRoutes(app, { repository: mobileRepository, approvalQueue, env: process.env });
 registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
 registerSitesRoutes(app, { repository: sitesRepository, approvalQueue, eventBus, env: process.env });
+registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });
+registerSeoRoutes(app, { repository: seoRepository, sitesRepository, approvalQueue, env: process.env });
 registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });
 app.use(express.static(webDistDir));
 

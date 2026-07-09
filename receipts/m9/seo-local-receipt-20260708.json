@@ -1,0 +1,101 @@
+{
+  "module": "M9 SEO",
+  "worktree": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\seo",
+  "branch": "build/seo",
+  "base": "build/phase0-reality-gate",
+  "status": "blocked_live_receipt",
+  "implemented": [
+    "Platform module and entitlement gates for seo",
+    "M8 LocalBusiness and Service JSON-LD injected by default in generated sites",
+    "DataForSEO rank snapshot adapter with explicit unconfigured blocker behavior",
+    "On-page audit engine for generated site title, meta description, JSON-LD, and lead form wiring",
+    "ApprovalQueue-gated seo_fix artifacts with noExternalPublish=true",
+    "Keyword-gap article brief generation parked as article ApprovalQueue artifacts",
+    "SEO queue route and Nexi tool",
+    "Monthly plain-English SEO report PDF generation",
+    "Nexi deterministic routing for rankSnapshot, auditSiteSeo, seoQueue, draftSeoArticleBrief, and seoReport"
+  ],
+  "local_receipts": {
+    "install": {
+      "command": "npm ci",
+      "result": "passed",
+      "notes": [
+        "Installed real local node_modules in the seo worktree.",
+        "npm warned that this desktop is Node v24.14.0 while the repo target is Node 20.x.",
+        "npm audit reported existing dependency noise: 29 vulnerabilities. No force fix was run."
+      ]
+    },
+    "build": {
+      "command": "npm run build",
+      "result": "passed"
+    },
+    "focused_tests": {
+      "command": "node --test apps/server/test/seo.test.mjs apps/server/test/sites-runtime.test.mjs",
+      "result": "10/10 passed"
+    },
+    "targeted_tests": {
+      "command": "node --test apps/server/test/seo.test.mjs apps/server/test/sites-runtime.test.mjs apps/server/test/content-engine.test.mjs apps/server/test/platform.test.mjs apps/server/test/nexi-job-desk.test.mjs",
+      "result": "86/86 passed"
+    },
+    "full_tests": {
+      "command": "npm run test",
+      "result": "161/161 passed",
+      "note": "The printed tenancy failure is the planted fixture test proving the scanner catches an unscoped query."
+    },
+    "typecheck": {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    "lint": {
+      "command": "npm run lint",
+      "result": "passed"
+    },
+    "tenancy": {
+      "command": "npm run check:tenancy",
+      "result": "passed",
+      "filesChecked": 111
+    },
+    "secrets": {
+      "command": "npm run check:secrets",
+      "result": "passed",
+      "trackedNonDocFilesChecked": 796
+    },
+    "secret_history": {
+      "command": "npm run check:secret-history",
+      "result": "passed",
+      "reachableCommitsChecked": 287,
+      "reachableObjectsChecked": 4330
+    },
+    "provider_imports": {
+      "command": "npm run check:provider-imports",
+      "result": "passed",
+      "filesChecked": 137
+    },
+    "blueprints": {
+      "command": "npm run check:blueprints",
+      "result": "passed",
+      "filesChecked": 111
+    }
+  },
+  "blockers": [
+    {
+      "scope": "Live rank snapshot receipt",
+      "exactBlocker": "DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD are not configured/available for staging in this worktree context.",
+      "safeBehavior": "rankSnapshot returns configured=false with blocker text instead of fake ranks."
+    },
+    {
+      "scope": "Google Rich Results receipt",
+      "exactBlocker": "Requires owner/browser screenshot against the staged M8 page after deployment.",
+      "safeBehavior": "Local test proves JSON-LD is injected; live screenshot is not claimed."
+    },
+    {
+      "scope": "Merge-gate live proof",
+      "exactBlocker": "This receipt is local only. Staging deploy, /api/version SHA-match, and live Nexi wall must run before any M9 merge gate."
+    }
+  ],
+  "outboundBoundaries": [
+    "No publishing was attempted.",
+    "SEO fixes are parked in ApprovalQueue with noExternalPublish=true.",
+    "Keyword-gap article briefs are parked as approval artifacts and do not publish."
+  ]
+}

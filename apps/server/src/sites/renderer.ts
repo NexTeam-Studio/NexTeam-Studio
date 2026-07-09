@@ -151,6 +151,45 @@ function renderLeadForm(block: Extract<SiteBlock, { type: "lead_form" }>) {
     </section>`;
 }
 
+function textFromBlocks(site: Omit<GeneratedSite, "html">): {
+  services: Extract<SiteBlock, { type: "services" }>["services"];
+  areas: string[];
+  center: string;
+} {
+  const services = site.blocks.find((block): block is Extract<SiteBlock, { type: "services" }> => block.type === "services")?.services ?? [];
+  const serviceArea = site.blocks.find((block): block is Extract<SiteBlock, { type: "service_area_map" }> => block.type === "service_area_map");
+  return {
+    services,
+    areas: serviceArea?.areas ?? [],
+    center: serviceArea?.center ?? ""
+  };
+}
+
+function jsonLdScript(site: Omit<GeneratedSite, "html">): string {
+  const extracted = textFromBlocks(site);
+  const localBusiness = {
+    "@type": "LocalBusiness",
+    "@id": `${site.internalUrl}#business`,
+    name: site.title,
+    url: site.internalUrl,
+    areaServed: extracted.areas.map((area) => ({ "@type": "City", name: area })),
+    address: extracted.center ? { "@type": "PostalAddress", addressLocality: extracted.center } : undefined
+  };
+  const services = extracted.services.map((service) => ({
+    "@type": "Service",
+    "@id": `${site.internalUrl}#service-${service.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`,
+    name: service.name,
+    description: service.description,
+    provider: { "@id": `${site.internalUrl}#business` },
+    areaServed: extracted.areas
+  }));
+  const graph = {
+    "@context": "https://schema.org",
+    "@graph": [localBusiness, ...services]
+  };
+  return JSON.stringify(graph).replace(/</g, "\\u003c");
+}
+
 function renderBlock(block: SiteBlock) {
   switch (block.type) {
     case "hero":
@@ -180,6 +219,7 @@ export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(site.title)}</title>
     <meta name="description" content="Swimming pool leak detection, pressure testing, dye testing, and field documentation." />
+    <script type="application/ld+json">${jsonLdScript(site)}</script>
     <style>
       :root {
         --ink: #14231f;

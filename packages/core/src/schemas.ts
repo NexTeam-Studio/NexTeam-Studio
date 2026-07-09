@@ -33,6 +33,7 @@ export const artifactKindSchema = z.enum([
   "invoice",
   "site_publish",
   "gbp_profile_update",
+  "seo_fix",
   "review_reply"
 ]);
 
@@ -71,6 +72,7 @@ export const platformModuleSchema = z.enum([
   "voice",
   "platform",
   "evaporation",
+  "seo",
   "sites"
 ]);
 

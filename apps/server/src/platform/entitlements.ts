@@ -39,7 +39,12 @@ const TOOL_MODULES: Record<string, PlatformModule> = {
   bookVisit: "scheduling",
   moveVisit: "scheduling",
   whatsMyDay: "scheduling",
-  runEvaporation: "evaporation"
+  runEvaporation: "evaporation",
+  rankSnapshot: "seo",
+  auditSiteSeo: "seo",
+  seoQueue: "seo",
+  draftSeoArticleBrief: "seo",
+  seoReport: "seo"
 };
 
 export interface EntitlementResult {
