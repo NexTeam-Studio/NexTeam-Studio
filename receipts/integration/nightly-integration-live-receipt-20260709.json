@@ -1,0 +1,153 @@
+{
+  "generatedAt": "2026-07-09T06:47:45.011Z",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "3bb3d5b0ca56de3d9b94bb82941a3169d9c60c01",
+  "checks": {
+    "auth": {
+      "mode": "custom-token",
+      "identity": {
+        "uid": "H7ht0iJdWqhQjPaKozon5ndmonJ2",
+        "email": "owner@aquatrace.com",
+        "role": "OWNER",
+        "tenantId": "aquatrace"
+      }
+    },
+    "version": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "sha": "3bb3d5b0ca56de3d9b94bb82941a3169d9c60c01",
+        "builtAt": "2026-07-09T06:47:44.943Z"
+      }
+    },
+    "health": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true
+      }
+    },
+    "distancePrompt": {
+      "ok": false,
+      "status": 400,
+      "body": {
+        "answer": null,
+        "sources": [],
+        "toolRuns": []
+      },
+      "error": {
+        "ok": false,
+        "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+      }
+    },
+    "selfRepairUsageBefore": {
+      "ok": true,
+      "status": 200,
+      "summary": {
+        "usageRecordCount": 0,
+        "selfRepairUsageCount": 0,
+        "newest": null
+      },
+      "error": null
+    },
+    "selfRepairRun": {
+      "ok": true,
+      "status": 201,
+      "body": {
+        "id": "aquatrace_2026-07-08",
+        "tenantId": "aquatrace",
+        "date": "2026-07-08",
+        "checked": {
+          "conversations": 1767,
+          "failureLog": 423,
+          "usageLog": 1669,
+          "approvalQueue": 0,
+          "healthHistory": 0,
+          "wallStatus": 0
+        },
+        "found": 53,
+        "autoRepaired": 53,
+        "analysisMode": "deterministic-local",
+        "findingClasses": [],
+        "safeRepairTypes": [
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate",
+          "wall_entry_candidate"
+        ],
+        "fixBriefClasses": [],
+        "morningReportApprovalIdPresent": true
+      },
+      "error": null
+    },
+    "selfRepairUsageAfter": {
+      "ok": true,
+      "status": 200,
+      "summary": {
+        "usageRecordCount": 0,
+        "selfRepairUsageCount": 0,
+        "newest": null
+      },
+      "error": null
+    }
+  },
+  "ok": false,
+  "failure": {
+    "sawDistanceTool": false,
+    "sawGoogleMaps": false,
+    "beforeCount": 0,
+    "afterCount": 0,
+    "versionMatches": true,
+    "healthOk": true,
+    "selfRepairMode": "deterministic-local"
+  }
+}
