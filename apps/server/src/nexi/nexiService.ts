@@ -88,6 +88,11 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
     const subject = bodyText.split(/[.!?]\s/)[0]?.trim().replace(/[.!?]+$/g, "").slice(0, 72) || "Aquatrace follow-up";
     return tool && recipient ? { tool, args: { to: [recipient], subject, bodyText } } : null;
   }
+  if (/\b(?:how\s+far|distance|miles?|drive\s+time|travel\s+time)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "getDistance");
+    const destination = distanceDestinationFromText(message);
+    return tool && destination ? { tool, args: { destination } } : null;
+  }
   if (/\b(?:run|calculate|check|make|create)\b.*\b(?:evap|evaporation|bucket\s+test|water\s+loss)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "runEvaporation");
     const address = message.match(/\b(?:for|at)\s+(.+?)(?=\s+(?:with|using|surface\s+area|pool\s+area|water\s+temp|water\s+temperature|observed\s+loss|daily\s+loss|loss)\b|[?.!]|$)/i)?.[1]?.trim();
@@ -138,6 +143,13 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
   return detailTool ? { tool: detailTool, args: { nameQuery: message } } : null;
 }
 
+function distanceDestinationFromText(text: string): string | undefined {
+  const match = text.match(
+    /\b(?:how\s+far(?:\s+is)?|distance\s+(?:to|for)|drive\s+time\s+(?:to|for)|travel\s+time\s+(?:to|for)|miles?\s+(?:to|from))\s+(.+?)(?=\s+from\s+(?:my\s+house|the\s+shop|here|102\s+kate|aquatrace)|[?.!]|$)/i
+  )?.[1]?.trim();
+  return match?.replace(/^is\s+/i, "").trim();
+}
+
 function entityQueryFromText(text: string): string {
   const normalized = text.replace(/[?.!]+$/g, "").trim();
   const matches = [...normalized.matchAll(
@@ -174,6 +186,15 @@ function summarizeResult(toolName: string, result: unknown): string {
   if (toolName === "customizeOperatorUi" && result && typeof result === "object") {
     const theme = (result as { theme?: { name?: unknown; density?: unknown } }).theme;
     return `I updated the Job Desk look${theme?.name ? ` to ${String(theme.name)}` : ""}. Refresh the screen if you do not see it right away.`;
+  }
+  if (toolName === "getDistance" && result && typeof result === "object") {
+    const distance = result as { destination?: unknown; driveMinutes?: unknown; distanceMiles?: unknown; distanceText?: unknown };
+    const milesText = typeof distance.distanceMiles === "number"
+      ? `${distance.distanceMiles} miles`
+      : typeof distance.distanceText === "string"
+        ? distance.distanceText
+        : "";
+    return `Drive time to ${String(distance.destination ?? "that place")} is about ${String(distance.driveMinutes ?? "unknown")} minutes${milesText ? ` (${milesText})` : ""}.`;
   }
   return "I found a sourced record for that question.";
 }

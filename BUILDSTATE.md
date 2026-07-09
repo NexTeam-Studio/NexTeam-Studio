@@ -38,6 +38,7 @@
 | voice | M12a Voice worktree | done | Voice foundation is integrated into the main Job Desk path. |
 | voice | M12a voice chat foundation | done | Part 9 status correction: server-side `/api/voice/tts`, web mic dictation, opt-in TTS playback, live staging ElevenLabs audio, and usageLog cost proof are present. Receipts: `receipts/m12a/verify.txt`, `receipts/m12a/staging-env-presence.json`, `receipts/m12a/m12a-voice-live-receipt-20260708-integrated.json`, and `receipts/phase0/m12a-voice-reality-gate-status-20260708.json`. M12b full-duplex/interruptible voice remains separate future scope. |
 | platform | M13 Platform worktree | opened | `build/platform` from main after M2/M4 merge; receipts pending. |
+| context | Phase C Distance tool | in_progress | `getDistance` context tool, Google Maps-backed drive-time provider, 102 Kate Lane home-base fallback, deterministic Nexi routing, and local regression tests are built. Receipt: `receipts/phase-c/distance-tool-local-receipt-20260708.json`. Remaining Part 9 gate: deploy staging, live Google Maps-backed prompt, and wall before merge. |
 
 ## Part 9 User-Facing Reality Gate Audit - 2026-07-08
 

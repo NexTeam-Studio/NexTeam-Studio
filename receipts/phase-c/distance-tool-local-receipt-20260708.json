@@ -1,0 +1,72 @@
+{
+  "module": "Phase C Distance Tool",
+  "date": "2026-07-08",
+  "branch": "build/distance",
+  "status": "local_foundation_in_progress",
+  "scopeCompleted": [
+    "Added getDistance context tool to Nexi registry",
+    "Google Maps Distance Matrix provider returns drive minutes and distance miles when GOOGLE_MAPS_API_KEY is configured",
+    "Local heuristic fallback exists for non-live tests only",
+    "Default tenant home base resolves from AQUATRACE_HOME_BASE_ADDRESS, TENANT_HOME_BASE_ADDRESS, M6_PHYSICAL_ADDRESS, or the Aquatrace 102 Kate Lane fallback",
+    "Nexi deterministic gateway routes distance questions to getDistance when the tool is present",
+    "Client/job-name distance prompts run job detail lookup first, then measure the returned service address",
+    "The old capability_not_available behavior remains only when getDistance is not registered"
+  ],
+  "hardBoundaries": {
+    "outboundSends": "none",
+    "productionDeploy": false,
+    "secretValuesLogged": false,
+    "liveGoogleMapsReceipt": "pending_staging"
+  },
+  "localVerification": [
+    {
+      "command": "npm install",
+      "result": "passed; real local node_modules installed; Node 24 warning and existing audit warnings recorded; no force fix"
+    },
+    {
+      "command": "npm run build",
+      "result": "passed"
+    },
+    {
+      "command": "node --test apps/server/test/nexi-job-desk.test.mjs",
+      "result": "66/66 passed"
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "npm run lint",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test",
+      "result": "157/157 passed"
+    },
+    {
+      "command": "npm run check:tenancy",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check:provider-imports",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check:blueprints",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check:secrets",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check:secret-history",
+      "result": "passed; 294 reachable commits and 4506 reachable objects checked"
+    }
+  ],
+  "part9RealityGateRemaining": [
+    "Deploy a reconciled branch to staging",
+    "Run a live Nexi prompt such as 'how far is Forrest Ferguson from my house' and verify Google Maps-backed drive time from the 102 Kate Lane home base",
+    "Run the smoke/full wall tier required for the merge gate"
+  ]
+}
