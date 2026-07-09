@@ -1,0 +1,40 @@
+{
+  "module": "fielddocs",
+  "phase": "M4 CompanyCam vision survey MVP local foundation",
+  "status": "in_progress",
+  "codeBranch": "build/vision-survey",
+  "scopeCompleted": [
+    "AccessContext-gated owner/admin routes for taxonomy, batch review, and corrections",
+    "Structured Aquatrace leak-detection photo taxonomy",
+    "Batch review result with component, surface, condition, leak relevance, report usefulness, evidence tier, confidence, and reason",
+    "Cost estimator and hard block before any batch exceeds the configured cap",
+    "INSUFFICIENT handling with end-of-day style human prompt text",
+    "Human correction loop that stores human-confirmed tags on media docs"
+  ],
+  "hardRails": {
+    "companyCamWrites": false,
+    "outboundSends": false,
+    "providerUrlsExposedToClient": false,
+    "paidVisionExecuted": false,
+    "spendCapUsd": 5,
+    "secretValuesInReceipt": false
+  },
+  "part9RealityGate": {
+    "passes": false,
+    "reason": "The local foundation is built and tested, but the owner-selected real CompanyCam folder batch has not yet been reviewed live and audited."
+  },
+  "verification": {
+    "npmInstall": "passed; real local node_modules installed, Node 24 warned against target Node 20, existing audit output reported 29 vulnerabilities and no force-fix was run",
+    "build": "passed",
+    "typecheck": "passed",
+    "targetedTests": "passed: node --test apps/server/test/fielddocs-vision-survey.test.mjs, 5/5",
+    "fullUnitSuite": "passed: npm run test, 160/160",
+    "lint": "passed",
+    "tenancy": "passed: standalone check:tenancy; the unit-suite tenancy failure text is the intentional planted-fixture catch",
+    "secretScan": "passed",
+    "providerImports": "passed",
+    "blueprints": "passed",
+    "secretHistory": "passed: 291 reachable commits, 4450 reachable objects checked"
+  },
+  "blockerForDone": "Owner must select a real CompanyCam folder batch, then the batch must be run on staging with auditable tags and owner review."
+}
