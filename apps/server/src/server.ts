@@ -11,7 +11,7 @@ import {
   approvalItemSchema,
   logger
 } from "@nexteam/core";
-import { CompanyCamAdapter } from "@nexteam/providers";
+import { CompanyCamAdapter, JobberAdapter } from "@nexteam/providers";
 import { getBuildInfo } from "./buildInfo.js";
 import { createNexiRouter } from "./nexi/nexiRoutes.js";
 import { buildHealth } from "./health.js";
@@ -31,7 +31,7 @@ import { createContentNexiTools } from "./content/nexiTools.js";
 import { InMemoryContentRepository } from "./content/repository.js";
 import { registerContentRoutes } from "./content/routes.js";
 import { CrmApprovalExecutor } from "./crm/approvalExecutor.js";
-import { createCrmTools } from "./crm/nexiTools.js";
+import { createCrmToolsWithOptions } from "./crm/nexiTools.js";
 import { FirestoreNativeCrmRepository } from "./crm/nativeRepository.js";
 import { createEvaporationNexiTools } from "./evaporation/nexiTools.js";
 import { MemoryEvaporationRepository } from "./evaporation/repository.js";
@@ -79,6 +79,7 @@ const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
 const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();
 const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TENANT_ID || "aquatrace");
+const jobberCrmProvider = JobberAdapter.fromEnv(process.env, process.env.TENANT_ID || "aquatrace");
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 const intakeRepository = adminDb ? new FirestoreIntakeRepository(adminDb) : new InMemoryIntakeRepository();
@@ -131,7 +132,7 @@ app.use("/api/nexi", createNexiRouter(process.env, {
   filterTools: (tenant, tools) => enforceToolEntitlements(tenant, tools).tools,
   extraTools: [
     ...createContextNexiTools({ env: process.env }),
-    ...createCrmTools(nativeCrmProvider, approvalQueue),
+    ...createCrmToolsWithOptions(nativeCrmProvider, approvalQueue, { fallbackClientProvider: jobberCrmProvider }),
     ...createCommsNexiTools(commsRail, approvalQueue),
     ...createContentNexiTools({ repository: contentRepository, approvalQueue }),
     ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env }),

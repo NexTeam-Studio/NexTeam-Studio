@@ -235,5 +235,40 @@ export const nexiOwnerReportedRegressionSessions = [
         assertions: ["usesRequiredRails", "noNoSourceStonewall", "noRawToolError"]
       }
     ]
+  },
+  {
+    conversationId: "owner-reported-2026-07-09-class-h-client-identity",
+    cases: [
+      {
+        id: "20260709-owner-class-h-client-lookup-kristi-king",
+        createdAt: "2026-07-09T18:00:00.000-04:00",
+        originalConversationId: "owner-reported",
+        question: "Look up client Kristi King",
+        expectedIntent: "client_identity_lookup_live_jobber_fallback",
+        requiredTools: ["clientLookup"],
+        forbiddenTools: ["searchEmail", "getSchedule"],
+        assertions: ["usesRequiredRails", "noNoSourceStonewall", "noRawToolError"]
+      },
+      {
+        id: "20260709-owner-class-h-job-lookup-kristi-king",
+        createdAt: "2026-07-09T18:00:01.000-04:00",
+        originalConversationId: "owner-reported",
+        question: "What job do we have for Kristi King?",
+        expectedIntent: "job_identity_lookup_live_jobber",
+        requiredTools: ["getJobDetail"],
+        forbiddenTools: ["searchEmail", "getSchedule"],
+        assertions: ["usesRequiredRails", "noNoSourceStonewall", "noRawToolError"]
+      },
+      {
+        id: "20260709-owner-class-h-client-lookup-christy-staudt",
+        createdAt: "2026-07-09T18:00:02.000-04:00",
+        originalConversationId: "owner-reported",
+        question: "Look up client Christy Staudt",
+        expectedIntent: "client_identity_lookup_live_jobber_fallback_other_client",
+        requiredTools: ["clientLookup"],
+        forbiddenTools: ["searchEmail", "getSchedule"],
+        assertions: ["usesRequiredRails", "noNoSourceStonewall", "noRawToolError"]
+      }
+    ]
   }
 ];

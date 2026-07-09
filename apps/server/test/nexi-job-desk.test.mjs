@@ -1063,6 +1063,96 @@ test("Nexi broad client list and count prompts route to CRM clientLookup", async
   }
 });
 
+test("Nexi named client lookup preserves the requested client name instead of broad-listing", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "Look up client Kristi King" }],
+    tools: [
+      {
+        name: "clientLookup",
+        description: "Read native CRM clients.",
+        inputSchema: z.object({ q: z.string().default("") }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(args);
+          return {
+            result: { clients: [{ id: "client_kristi", name: "Kristi King" }], nativeCount: 0, jobberFallbackCount: 1, fallbackUsed: true },
+            sources: [
+              { rail: "native", ref: "clients", label: "Native CRM clients" },
+              { rail: "jobber", ref: "jobber-clients", label: "Live Jobber client search fallback" }
+            ]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I found Kristi King in Jobber." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["clientLookup"]);
+  assert.equal(toolCalls[0].q, "Kristi King");
+  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
+});
+
+test("Nexi named job lookup routes to Jobber detail instead of the schedule board", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What job do we have for Kristi King?" }],
+    tools: [
+      {
+        name: "getSchedule",
+        description: "Read schedule.",
+        inputSchema: z.object({ from: z.string().optional(), to: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getSchedule", args]);
+          return {
+            result: { jobs: [] },
+            sources: [{ rail: "jobber", ref: "schedule", label: "Jobber schedule" }]
+          };
+        }
+      },
+      {
+        name: "getJobDetail",
+        description: "Read job detail.",
+        inputSchema: z.object({ nameQuery: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getJobDetail", args]);
+          return {
+            result: {
+              job: {
+                id: "job_kristi",
+                title: "Swimming Pool Leak Detection Service and Vinyl Liner Repair",
+                status: "archived",
+                clientName: "Kristi King"
+              }
+            },
+            sources: [{ rail: "jobber", ref: "job_kristi", label: "Jobber job Kristi King" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I found Kristi King's Jobber job." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail"]);
+  assert.deepEqual(toolCalls, [["getJobDetail", { nameQuery: "Kristi King" }]]);
+  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
+});
+
 test("Nexi create-client prompts route to approval-gated CRM createClient", async () => {
   const toolCalls = [];
   const result = await runNexiToolLoop({

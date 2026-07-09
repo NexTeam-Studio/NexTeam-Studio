@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   RailError,
   type ApprovalQueueService,
+  type Client,
   type CRMProvider,
   type Invoice,
   type Job,
@@ -39,8 +40,12 @@ interface QuoteMutableProvider extends CRMProvider {
   updateQuote?: (id: string, patch: Partial<Quote>) => Promise<Quote>;
 }
 
-function source(ref: string, label: string): Source {
-  return { rail: "native", ref, label };
+export interface CrmReadToolOptions {
+  fallbackClientProvider?: Pick<CRMProvider, "getClients"> | undefined;
+}
+
+function source(ref: string, label: string, rail: Source["rail"] = "native"): Source {
+  return { rail, ref, label };
 }
 
 function defaultRange(): { from: string; to: string } {
@@ -63,6 +68,34 @@ function groupJobs(jobs: Job[]): Record<Job["status"], number> {
 }
 
 export function createCrmReadTools(provider: CRMProvider): NexiTool[] {
+  return createCrmReadToolsWithOptions(provider);
+}
+
+function normalized(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function exactOrStrongClientMatch(clients: Client[], query: string): boolean {
+  const needle = normalized(query);
+  return !needle || clients.some((client) => {
+    const values = [client.name, client.company ?? "", ...client.emails, ...client.phones].map(normalized).filter(Boolean);
+    return values.some((value) => value === needle || value.includes(needle));
+  });
+}
+
+function dedupeClients(clients: Client[]): Client[] {
+  const seen = new Set<string>();
+  return clients.filter((client) => {
+    const key = client.externalIds?.jobber ? `jobber:${client.externalIds.jobber}` : `native:${client.id}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+export function createCrmReadToolsWithOptions(provider: CRMProvider, options: CrmReadToolOptions = {}): NexiTool[] {
   const readable = provider as InvoiceReadableProvider;
   return [
     {
@@ -71,10 +104,24 @@ export function createCrmReadTools(provider: CRMProvider): NexiTool[] {
       inputSchema: clientLookupInputSchema,
       handler: async (_tenant: Tenant, args: unknown) => {
         const input = clientLookupInputSchema.parse(args);
-        const clients = await provider.getClients(input.q);
+        const query = input.q.trim();
+        const nativeClients = await provider.getClients(query);
+        let jobberClients: Client[] = [];
+        if (query && options.fallbackClientProvider && !exactOrStrongClientMatch(nativeClients, query)) {
+          jobberClients = await options.fallbackClientProvider.getClients(query);
+        }
+        const clients = dedupeClients([...nativeClients, ...jobberClients]);
         return {
-          result: { clients },
-          sources: [source("clients", "Native CRM clients")]
+          result: {
+            clients,
+            nativeCount: nativeClients.length,
+            jobberFallbackCount: jobberClients.length,
+            fallbackUsed: jobberClients.length > 0
+          },
+          sources: [
+            source("clients", "Native CRM clients"),
+            ...(jobberClients.length ? [source("jobber-clients", "Live Jobber client search fallback", "jobber")] : [])
+          ]
         };
       }
     },
@@ -117,8 +164,12 @@ export function createCrmReadTools(provider: CRMProvider): NexiTool[] {
 }
 
 export function createCrmTools(provider: CRMProvider, approvalQueue: ApprovalQueueService): NexiTool[] {
+  return createCrmToolsWithOptions(provider, approvalQueue);
+}
+
+export function createCrmToolsWithOptions(provider: CRMProvider, approvalQueue: ApprovalQueueService, options: CrmReadToolOptions = {}): NexiTool[] {
   return [
-    ...createCrmReadTools(provider),
+    ...createCrmReadToolsWithOptions(provider, options),
     {
       name: "createClient",
       description: "Create a native CRM client. This writes only to the native client collection for the current tenant.",

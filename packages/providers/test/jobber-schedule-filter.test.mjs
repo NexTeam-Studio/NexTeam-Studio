@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { filterJobsByScheduleRange } from "../dist/jobber/JobberAdapter.js";
+import { JobberAdapter, filterJobsByScheduleRange } from "../dist/jobber/JobberAdapter.js";
 
 const jobs = [
   {
@@ -50,4 +50,43 @@ test("Jobber full-archive import ranges preserve undated records", () => {
     to: "2100-01-01T00:00:00.000Z"
   });
   assert.deepEqual(filtered.map((job) => job.id), ["job_monday", "job_tuesday", "job_undated"]);
+});
+
+test("Jobber client lookup paginates beyond the old 25-page ceiling", async () => {
+  const adapter = new JobberAdapter({
+    tenantId: "aquatrace",
+    accessToken: "test-access-token",
+    clientId: undefined,
+    clientSecret: undefined,
+    refreshToken: undefined,
+    accessTokenExpiresAt: Date.now() + 60_000,
+    graphqlVersion: undefined,
+    maxPages: 30
+  });
+  adapter.graphql = async (_query, variables) => {
+    const page = variables.after ? Number(String(variables.after).replace("page-", "")) + 1 : 1;
+    const isTargetPage = page === 26;
+    return {
+      data: {
+        clients: {
+          nodes: [{
+            id: `client_${page}`,
+            name: isTargetPage ? "Kristi King" : `Client ${page}`,
+            firstName: isTargetPage ? "Kristi" : "Client",
+            lastName: isTargetPage ? "King" : String(page),
+            companyName: ""
+          }],
+          pageInfo: {
+            hasNextPage: page < 26,
+            endCursor: `page-${page}`
+          }
+        }
+      }
+    };
+  };
+
+  const matches = await adapter.getClients("Kristi King");
+
+  assert.equal(matches.length, 1);
+  assert.equal(matches[0].name, "Kristi King");
 });

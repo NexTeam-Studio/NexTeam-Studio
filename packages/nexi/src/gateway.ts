@@ -584,6 +584,34 @@ function currentEntityFromText(text: string): string {
   return namedEntityFromText(text) || entityQueryFromText(text) || bareEntityFromText(text);
 }
 
+function clientLookupQueryFromText(text: string): string {
+  const normalized = text.replace(/[?.!]+$/g, "").trim();
+  const lookupMatch = normalized.match(/\b(?:look\s+up|lookup|find|show|check|get|pull)\s+(?:the\s+)?(?:client|customer)\s+(.+)$/i);
+  const clientFirstMatch = normalized.match(/\b(?:client|customer)\s+(.+)$/i);
+  const possessiveMatch = normalized.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})'?\s+(?:client|customer|job|jobs)\b/);
+  const candidate = lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
+  return candidate
+    .replace(/\b(?:in|from|on|with)\s+(?:jobber|crm|native|the\s+crm).*$/i, "")
+    .replace(/\b(?:record|profile|file|account|jobs?)\b$/i, "")
+    .replace(/\b(?:the|a|an)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function jobLookupQueryFromText(text: string): string {
+  const normalized = text.replace(/[?.!]+$/g, "").trim();
+  const whatHaveMatch = normalized.match(/\bwhat\s+(?:job|jobs|work|service)\s+(?:do|does)\s+(?:we|i)\s+have\s+(?:for|with)\s+(.+)$/i);
+  const lookupMatch = normalized.match(/\b(?:look\s+up|lookup|find|show|check|get|pull)\s+(?:the\s+)?(?:job|jobs|work|service)\s+(?:for\s+)?(.+)$/i);
+  const jobForMatch = normalized.match(/\b(?:job|jobs|work|service)\s+(?:record|profile|file|detail|details)?\s*(?:for|with)\s+(.+)$/i);
+  const candidate = whatHaveMatch?.[1] ?? lookupMatch?.[1] ?? jobForMatch?.[1] ?? "";
+  return candidate
+    .replace(/\b(?:in|from|on|with)\s+(?:jobber|crm|native|the\s+crm).*$/i, "")
+    .replace(/\b(?:job|jobs|record|profile|file|detail|details)\b$/i, "")
+    .replace(/\b(?:the|a|an)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function namedEntityFromText(text: string): string {
   const didHaveMatch = text.match(/\b(?:did|does|do)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\s+have\b/);
   if (didHaveMatch?.[1]) {
@@ -848,10 +876,10 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
       ? [entity, "paid payment receipt invoice zero balance"].filter(Boolean).join(" ")
       : userText;
   }
-  if (toolName === "clientLookup" && typeof record.q !== "string") {
+  if (toolName === "clientLookup" && (typeof record.q !== "string" || (!record.q.trim() && !looksLikeClientListQuestion(lowerUserText)))) {
     record.q = looksLikeClientListQuestion(lowerUserText)
       ? ""
-      : currentEntityFromText(userText) || entityQueryFromMessages(messages) || "";
+      : clientLookupQueryFromText(userText) || entityQueryFromMessages(messages) || "";
   }
   if (toolName === "summarizeInbox" && !record.maxResults) {
     record.mailbox ??= mailboxAliasFromEmailAddress(firstEmailAddress(userText));
@@ -928,7 +956,7 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.periodEnd ??= dateRangeFromSeoReportText(userText)?.periodEnd;
   }
   if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
-    const currentEntity = currentEntityFromText(userText);
+    const currentEntity = jobLookupQueryFromText(userText) || currentEntityFromText(userText);
     record.nameQuery = correctionFollowUp
       ? entityQueryFromMessages(messages, { skipLatest: true }) || userText
       : currentEntity || entityQueryFromMessages(messages, { skipLatest: true }) || entityQueryFromMessages(messages) || userText;
@@ -1173,6 +1201,17 @@ function looksLikeScheduleRelativeDistanceQuestion(lower: string): boolean {
 
 function looksLikeClientListQuestion(lower: string): boolean {
   return /\b(?:client\s+list|list\s+(?:the\s+)?clients|show\s+me\s+(?:the\s+)?clients|show\s+me\s+a\s+client\s+list|how\s+many\s+clients|client\s+count|all\s+clients)\b/.test(lower);
+}
+
+function looksLikeNamedClientLookupQuestion(lower: string): boolean {
+  return /\b(?:look\s+up|lookup|find|show|check|get|pull)\s+(?:the\s+)?(?:client|customer)\s+/.test(lower)
+    || /\b(?:client|customer)\s+(?:record|profile|file|account)\s+(?:for\s+)?/.test(lower);
+}
+
+function looksLikeNamedJobLookupQuestion(lower: string): boolean {
+  return /\bwhat\s+(?:job|jobs|work|service)\s+(?:do|does)\s+(?:we|i)\s+have\s+(?:for|with)\s+[a-z][a-z'-]+(?:\s+[a-z][a-z'-]+)+\b/.test(lower)
+    || /\b(?:look\s+up|lookup|find|show|check|get|pull)\s+(?:the\s+)?(?:job|jobs|work|service)\s+(?:for\s+)?[a-z][a-z'-]+(?:\s+[a-z][a-z'-]+)+\b/.test(lower)
+    || /\b(?:job|jobs|work|service)\s+(?:record|profile|file|detail|details)?\s*(?:for|with)\s+[a-z][a-z'-]+(?:\s+[a-z][a-z'-]+)+\b/.test(lower);
 }
 
 function looksLikeCurrentTimeQuestion(lower: string): boolean {
@@ -1811,8 +1850,11 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   if (looksLikeEmailSearchQuestion(lower) && toolsByName.has("searchEmail")) {
     return ["searchEmail"];
   }
-  if (looksLikeClientListQuestion(lower)) {
+  if (looksLikeClientListQuestion(lower) || looksLikeNamedClientLookupQuestion(lower)) {
     return uniqueToolNames(["clientLookup"], toolsByName);
+  }
+  if (looksLikeNamedJobLookupQuestion(lower)) {
+    return uniqueToolNames(["getJobDetail"], toolsByName);
   }
   const crossRailTools = crossRailJobDetailToolsForQuestion(lower);
   if (crossRailTools.length > 0) {

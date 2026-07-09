@@ -11,6 +11,7 @@ import { asArray, asRecord, numberValue, railFetchJson, text } from "../railFetc
 const JOBBER_GRAPHQL_ENDPOINT = "https://api.getjobber.com/api/graphql";
 const JOBBER_OAUTH_TOKEN_ENDPOINT = "https://api.getjobber.com/api/oauth/token";
 const DEFAULT_JOBBER_GRAPHQL_VERSION = "2026-03-10";
+const DEFAULT_JOBBER_MAX_PAGES = 100;
 
 const JOBS_QUERY = `
   query NexTeamJobs($first: Int!, $after: String) {
@@ -78,6 +79,7 @@ export interface JobberAdapterConfig {
   accessToken: string | undefined;
   accessTokenExpiresAt: number | undefined;
   graphqlVersion: string | undefined;
+  maxPages?: number | undefined;
 }
 
 interface JobberTokenState {
@@ -263,6 +265,7 @@ export function filterJobsByScheduleRange<T extends Pick<Job, "startAt" | "endAt
 export class JobberAdapter implements CRMProvider {
   private tokenState: JobberTokenState;
   private readonly graphqlVersion: string;
+  private readonly maxPages: number;
 
   constructor(private readonly config: JobberAdapterConfig) {
     this.tokenState = {
@@ -271,6 +274,9 @@ export class JobberAdapter implements CRMProvider {
       accessTokenExpiresAt: config.accessTokenExpiresAt ?? 0
     };
     this.graphqlVersion = config.graphqlVersion ?? DEFAULT_JOBBER_GRAPHQL_VERSION;
+    this.maxPages = Number.isFinite(config.maxPages) && Number(config.maxPages) > 0
+      ? Number(config.maxPages)
+      : DEFAULT_JOBBER_MAX_PAGES;
   }
 
   static fromEnv(env: NodeJS.ProcessEnv, tenantId = env.TENANT_ID || "aquatrace"): JobberAdapter {
@@ -281,7 +287,8 @@ export class JobberAdapter implements CRMProvider {
       refreshToken: env.JOBBER_REFRESH_TOKEN,
       accessToken: env.JOBBER_ACCESS_TOKEN || env.JOBBER_API_TOKEN,
       accessTokenExpiresAt: Number(env.JOBBER_ACCESS_TOKEN_EXPIRES_AT || env.JOBBER_EXPIRES_AT || 0),
-      graphqlVersion: env.JOBBER_GRAPHQL_VERSION
+      graphqlVersion: env.JOBBER_GRAPHQL_VERSION,
+      maxPages: Number(env.JOBBER_MAX_PAGES || DEFAULT_JOBBER_MAX_PAGES)
     });
   }
 
@@ -342,7 +349,7 @@ export class JobberAdapter implements CRMProvider {
       jobs.push(...connection.nodes.map((node) => mapJob(node, this.config.tenantId)));
       after = connection.hasNextPage ? connection.endCursor : null;
       pages += 1;
-    } while (after && pages < 25);
+    } while (after && pages < this.maxPages);
     return jobs;
   }
 
@@ -356,7 +363,7 @@ export class JobberAdapter implements CRMProvider {
       clients.push(...mapClients(connection.nodes, this.config.tenantId));
       after = connection.hasNextPage ? connection.endCursor : null;
       pages += 1;
-    } while (after && pages < 25);
+    } while (after && pages < this.maxPages);
     return clients;
   }
 

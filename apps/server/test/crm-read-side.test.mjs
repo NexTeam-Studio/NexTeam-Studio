@@ -6,7 +6,7 @@ import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { CrmApprovalExecutor } from "../dist/crm/approvalExecutor.js";
 import { buildQuoteDraft } from "../dist/crm/quoteBuilder.js";
 import { renderInvoicePdf, renderQuotePdf } from "../dist/crm/quotePdf.js";
-import { createCrmReadTools, createCrmTools } from "../dist/crm/nexiTools.js";
+import { createCrmReadTools, createCrmReadToolsWithOptions, createCrmTools } from "../dist/crm/nexiTools.js";
 import { hashPortalToken } from "../dist/crm/routes.js";
 import { createStripeCheckoutSession, verifyStripeWebhookEvent } from "../dist/crm/stripe.js";
 
@@ -144,6 +144,35 @@ test("CRM read nexi-tools expose pipeline and client lookup", async () => {
   const pipeline = await getPipeline.handler(tenant, {});
   assert.equal(clients.sources[0].rail, "native");
   assert.equal(pipeline.result.counts.lead, 1);
+});
+
+test("CRM clientLookup falls back to live Jobber when native CRM has no matching client", async () => {
+  const adapter = NativeAdapter.fromRecords("aquatrace", { clients: [client], properties: [property], jobs: [job] });
+  const fallbackClient = {
+    id: "jobber_client_kristi",
+    tenantId: "aquatrace",
+    name: "Kristi King",
+    emails: [],
+    phones: [],
+    tags: [],
+    consent: { email: false, sms: false },
+    externalIds: { jobber: "jobber_client_kristi" }
+  };
+  const tools = createCrmReadToolsWithOptions(adapter, {
+    fallbackClientProvider: {
+      getClients: async (q) => q === "Kristi King" ? [fallbackClient] : []
+    }
+  });
+  const clientLookup = tools.find((tool) => tool.name === "clientLookup");
+  assert.ok(clientLookup);
+
+  const result = await clientLookup.handler(tenant, { q: "Kristi King" });
+
+  assert.equal(result.result.nativeCount, 0);
+  assert.equal(result.result.jobberFallbackCount, 1);
+  assert.equal(result.result.fallbackUsed, true);
+  assert.equal(result.result.clients[0].name, "Kristi King");
+  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
 });
 
 test("CRM write nexi-tools create clients, draft quotes through ApprovalQueue, and read invoices", async () => {

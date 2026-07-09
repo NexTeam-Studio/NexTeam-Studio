@@ -368,3 +368,30 @@ REGRESSION TEST IDS:
 
 - All cases with `noNoSourceStonewall`
 - Future Class G tone/format suite to replace broad prompt-only checks
+
+## CLASS H - CLIENT IDENTITY RESOLUTION FAILURE
+
+DEFINITION: A real Jobber client or job cannot be found by Nexi, even though the business record exists.
+
+ROOT CAUSE: This is a bundled symptom with distinct causes that must stay separate:
+
+- H1 - Jobber lookup erroring: live Jobber client/job detail scans stopped after the old 25-page ceiling, so records beyond roughly the first 625 clients/jobs were reported as missing or surfaced as tool failures.
+- H2 - Native CRM staleness: native CRM client search reflects an earlier partial/imported dataset and does not automatically contain every current Jobber client.
+- H3 - Identity intent routing: named job questions like "What job do we have for Kristi King?" could fall into the schedule-board route because the broad schedule detector matched "job" before a named job-detail policy ran.
+
+KNOWN VARIANTS:
+
+- (1) Look up client Christy King / Kristy King / Kristi King
+- (1) What job do we have for Kristi King?
+- (1) show me a client that exists in Jobber but not native CRM
+- (1) today's blank calendar board suspicion after Jobber lookup errors
+
+STATUS: OPEN - root cause identified; adapter pagination, native-to-Jobber fallback, and deterministic named-job routing are being verified.
+
+CLOSURE RECEIPT: Pending live staging receipt.
+
+REGRESSION TEST IDS:
+
+- `20260709-owner-class-h-client-lookup-kristi-king`
+- `20260709-owner-class-h-job-lookup-kristi-king`
+- `20260709-owner-class-h-client-lookup-christy-staudt`
