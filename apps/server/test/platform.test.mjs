@@ -5,6 +5,12 @@ import express from "express";
 import { enforceToolEntitlements, toolEntitlementMatrix } from "../dist/platform/entitlements.js";
 import { MemoryStorageWriter, runTenantBackup } from "../dist/platform/backup.js";
 import { createStripeTestSubscription } from "../dist/platform/billing.js";
+import {
+  createJobAccessLink,
+  customClaimsForTenantUser,
+  upsertTenantUser,
+  verifyJobAccessToken
+} from "../dist/platform/accessManagement.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository, defaultTenant, subscriptionFromStripe } from "../dist/platform/repository.js";
 import { registerPlatformRoutes } from "../dist/platform/routes.js";
 
@@ -140,6 +146,76 @@ test("platform repository summarizes cost, records backup, and exports per tenan
   assert.equal(exported.collections.tenants[0].id, "second-test");
 });
 
+test("tenant users seed Aquatrace roles and produce Firebase custom claims", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("aquatrace", "suite")]);
+  const users = await repository.listTenantUsers("aquatrace");
+  assert.equal(users.find((user) => user.id === "tenant_user_chris")?.role, "OWNER");
+  assert.equal(users.find((user) => user.id === "tech_catherine")?.role, "TECHNICIAN");
+  assert.equal(users.find((user) => user.id === "tech_logan")?.role, "TECHNICIAN");
+
+  const office = await upsertTenantUser(repository, {
+    tenantId: "aquatrace",
+    id: "office_catherine",
+    authUid: "uid_catherine",
+    email: "catherine@example.test",
+    displayName: "Catherine Office",
+    role: "OFFICE_ADMIN",
+    now: "2026-07-08T12:00:00.000Z"
+  });
+  assert.deepEqual(customClaimsForTenantUser(office), {
+    tenantId: "aquatrace",
+    tenantRole: "OFFICE_ADMIN",
+    tenantUserId: "office_catherine",
+    roles: ["office_admin"]
+  });
+});
+
+test("job access links verify only one linked job and fail closed after revoke", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("aquatrace", "suite")]);
+  const created = await createJobAccessLink(repository, {
+    tenantId: "aquatrace",
+    jobId: "job_deborah_justice",
+    propertyId: "property_isbell_road",
+    externalName: "Subcontractor",
+    externalEmail: "sub@example.test",
+    expiresAt: "2026-07-10T12:00:00.000Z",
+    createdBy: "internal:tenant_user_chris",
+    now: "2026-07-08T12:00:00.000Z",
+    token: "test-token-that-stays-in-memory-only"
+  });
+
+  assert.notEqual(created.link.tokenHash, created.oneTimeToken);
+  const access = await verifyJobAccessToken(repository, {
+    tenantId: "aquatrace",
+    linkId: created.link.id,
+    token: created.oneTimeToken,
+    now: "2026-07-08T12:01:00.000Z"
+  });
+  assert.equal(access.accessKind, "job_link");
+  assert.equal(access.jobId, "job_deborah_justice");
+  assert.deepEqual(access.scopes, ["job.read", "checklist.write", "media.upload", "notes.write"]);
+
+  await assert.rejects(
+    () => verifyJobAccessToken(repository, {
+      tenantId: "aquatrace",
+      linkId: created.link.id,
+      token: "wrong-token-that-stays-in-memory-only",
+      now: "2026-07-08T12:01:00.000Z"
+    }),
+    /not valid/
+  );
+  await repository.revokeJobAccessLink("aquatrace", created.link.id, "2026-07-08T12:02:00.000Z");
+  await assert.rejects(
+    () => verifyJobAccessToken(repository, {
+      tenantId: "aquatrace",
+      linkId: created.link.id,
+      token: created.oneTimeToken,
+      now: "2026-07-08T12:03:00.000Z"
+    }),
+    /revoked/
+  );
+});
+
 test("platform billing refuses live Stripe keys and supports fake test-mode receipt runs", async () => {
   await assert.rejects(
     () => createStripeTestSubscription({ env: { STRIPE_SECRET_KEY: "sk_live_forbidden" }, tenantId: "second-test", plan: "nexi" }),
@@ -192,6 +268,90 @@ test("platform routes expose tenants, test subscription, backup, and export", as
     const exported = await fetch(`${base}/api/platform/tenants/second-test/export`).then((response) => response.json());
     assert.equal(exported.ok, true);
     assert.equal(exported.export.tenantId, "second-test");
+  } finally {
+    server.close();
+  }
+});
+
+test("platform routes manage tenant users and job links without leaking token hashes by default", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("aquatrace", "suite")]);
+  const storage = new MemoryStorageWriter();
+  const app = express();
+  app.use(express.json());
+  registerPlatformRoutes(app, {
+    repository,
+    storage,
+    env: { NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+  const server = app.listen(0);
+  try {
+    const { port } = server.address();
+    const base = `http://127.0.0.1:${port}`;
+    const users = await fetch(`${base}/api/platform/tenants/aquatrace/users`).then((response) => response.json());
+    assert.equal(users.ok, true);
+    assert.equal(users.users.some((user) => user.id === "tenant_user_chris" && user.role === "OWNER"), true);
+
+    const createdUser = await fetch(`${base}/api/platform/tenants/aquatrace/users`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: "office_admin_1", displayName: "Office Admin", email: "office@example.test", role: "OFFICE_ADMIN" })
+    }).then((response) => response.json());
+    assert.equal(createdUser.ok, true);
+    assert.equal(createdUser.claimsPreview.tenantRole, "OFFICE_ADMIN");
+
+    const claims = await fetch(`${base}/api/platform/tenants/aquatrace/users/office_admin_1/custom-claims`, {
+      method: "POST"
+    }).then((response) => response.json());
+    assert.equal(claims.ok, true);
+    assert.equal(claims.applied, false);
+    assert.equal(claims.claimsPreview.tenantUserId, "office_admin_1");
+
+    const link = await fetch(`${base}/api/platform/tenants/aquatrace/job-access-links`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jobId: "job_deborah_justice",
+        propertyId: "property_isbell_road",
+        externalName: "Subcontractor",
+        externalEmail: "sub@example.test",
+        expiresAt: "2026-07-10T12:00:00.000Z"
+      })
+    }).then((response) => response.json());
+    assert.equal(link.ok, true);
+    assert.equal(link.oneTimeToken, undefined);
+    assert.equal(link.link.tokenHash, "[stored hash]");
+
+    const linkWithToken = await fetch(`${base}/api/platform/tenants/aquatrace/job-access-links`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jobId: "job_deborah_justice",
+        externalName: "Subcontractor",
+        expiresAt: "2026-07-10T12:00:00.000Z",
+        returnToken: true
+      })
+    }).then((response) => response.json());
+    assert.equal(linkWithToken.ok, true);
+    assert.equal(typeof linkWithToken.oneTimeToken, "string");
+
+    const verified = await fetch(`${base}/api/platform/job-access-links/verify`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace", linkId: linkWithToken.link.id, token: linkWithToken.oneTimeToken })
+    }).then((response) => response.json());
+    assert.equal(verified.ok, true);
+    assert.equal(verified.access.accessKind, "job_link");
+    assert.equal(verified.access.jobId, "job_deborah_justice");
+
+    const listedLinks = await fetch(`${base}/api/platform/tenants/aquatrace/job-access-links`).then((response) => response.json());
+    assert.equal(listedLinks.ok, true);
+    assert.equal(listedLinks.links.every((entry) => entry.tokenHash === "[stored hash]"), true);
+
+    const revoked = await fetch(`${base}/api/platform/tenants/aquatrace/job-access-links/${linkWithToken.link.id}/revoke`, {
+      method: "POST"
+    }).then((response) => response.json());
+    assert.equal(revoked.ok, true);
+    assert.equal(revoked.link.tokenHash, "[stored hash]");
   } finally {
     server.close();
   }

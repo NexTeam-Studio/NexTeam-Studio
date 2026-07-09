@@ -18,6 +18,8 @@ export type MediaAdapterKind = "companycam" | "native";
 export type EmailAdapterKind = "gmail_relay" | "sendgrid";
 export type SmsAdapterKind = "twilio";
 export type TenantPlan = "nexi" | "marketing" | "suite";
+export type TenantUserRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
+export type JobAccessScope = "job.read" | "checklist.write" | "media.upload" | "notes.write";
 export type PlatformModule =
   | "nexi"
   | "crm"
@@ -79,6 +81,33 @@ export interface TenantSubscription {
   stripeSubscriptionId?: string | undefined;
   currentPeriodEnd?: string | undefined;
   updatedAt: string;
+}
+
+export interface TenantUser {
+  id: ID;
+  tenantId: ID;
+  authUid?: string | undefined;
+  email?: string | undefined;
+  displayName: string;
+  role: TenantUserRole;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JobAccessLink {
+  id: ID;
+  tenantId: ID;
+  jobId: ID;
+  propertyId?: ID | undefined;
+  externalName: string;
+  externalEmail?: string | undefined;
+  tokenHash: string;
+  scopes: JobAccessScope[];
+  expiresAt: string;
+  revokedAt?: string | undefined;
+  createdAt: string;
+  createdBy: ID;
 }
 
 export interface TenantAdapterStatus {
