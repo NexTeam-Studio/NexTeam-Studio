@@ -1,0 +1,75 @@
+{
+  "module": "nightly-integration",
+  "branch": "build/nightly-integration-20260709",
+  "date": "2026-07-09",
+  "status": "local_verified",
+  "mergedInputs": [
+    {
+      "branch": "build/distance",
+      "commit": "8b2e927",
+      "scope": "Phase C getDistance context tool and Nexi routing"
+    },
+    {
+      "branch": "build/self-repair",
+      "commit": "0b01d80",
+      "scope": "M13 self-repair Anthropic analysis rail"
+    }
+  ],
+  "verification": [
+    {
+      "command": "npm install",
+      "result": "passed; real node_modules installed; Node 24 warning and existing audit warnings recorded; no forced audit fix"
+    },
+    {
+      "command": "npm run build",
+      "result": "passed"
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "node --test apps/server/test/nexi-job-desk.test.mjs apps/server/test/self-repair.test.mjs",
+      "result": "passed 71/71 after compile completed"
+    },
+    {
+      "command": "npm run test",
+      "result": "passed 162/162"
+    },
+    {
+      "command": "npm run lint",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check:tenancy",
+      "result": "passed; 109 files checked"
+    },
+    {
+      "command": "npm run check:provider-imports",
+      "result": "passed; 135 files checked"
+    },
+    {
+      "command": "npm run check:blueprints",
+      "result": "passed; 109 files checked"
+    },
+    {
+      "command": "npm run check:secrets",
+      "result": "passed; 797 tracked non-doc files checked"
+    },
+    {
+      "command": "npm run check:secret-history",
+      "result": "passed; 298 reachable commits and 4555 reachable objects checked"
+    }
+  ],
+  "remainingPart9Gates": [
+    "Deploy this integration branch to Railway staging",
+    "Live Nexi distance prompt backed by Google Maps from the 102 Kate Lane home base",
+    "Live self-repair run against real Aquatrace tenant data with Anthropic usageLog proof",
+    "Full live regression wall at merge gate"
+  ],
+  "hardLimits": {
+    "productionDeploy": false,
+    "outboundSends": "none",
+    "secretValuesLogged": false
+  }
+}
