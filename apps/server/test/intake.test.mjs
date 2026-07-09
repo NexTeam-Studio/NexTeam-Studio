@@ -11,6 +11,7 @@ import { createIntakeNexiTools } from "../dist/intake/nexiTools.js";
 import { InMemoryIntakeRepository } from "../dist/intake/repository.js";
 import { registerIntakeRoutes } from "../dist/intake/routes.js";
 import { IntakeService } from "../dist/intake/service.js";
+import { runExplicitLocalToolLoop } from "../dist/nexi/nexiService.js";
 import { InMemoryPlatformRepository } from "../dist/platform/repository.js";
 
 async function withServer(app, run) {
@@ -167,4 +168,50 @@ test("M10 Nexi tools start intake and finalize to ApprovalQueue with actor attri
 
   const pending = await approvalQueue.listPending("aquatrace");
   assert.equal(pending[0].execute.args.actorId, "internal:owner_chris");
+});
+
+test("M10 chat router sends onboarding language to intake tools instead of job lookup", async () => {
+  const { service, approvalQueue } = makeService();
+  const tools = createIntakeNexiTools({
+    service,
+    approvalQueue,
+    access: {
+      tenantId: "aquatrace",
+      tenantUserId: "owner_chris",
+      role: "OWNER",
+      accessKind: "internal"
+    }
+  });
+
+  const started = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "test",
+    messages: [{ role: "user", content: "Onboard Demo Pool Co as a new tenant" }],
+    tools,
+    cachedToolRuns: [],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer"
+  });
+  assert.equal(started.toolRuns[0].name, "startIntake");
+  assert.match(started.answer, /started the onboarding interview/i);
+  const sessionId = started.toolRuns[0].result.session.id;
+
+  await service.answer({ sessionId, field: "services", value: "Leak detection" }, "aquatrace");
+  await service.answer({ sessionId, field: "serviceArea", value: "Fair Play" }, "aquatrace");
+  await service.answer({ sessionId, field: "pricingNotes", value: "Owner approves quotes." }, "aquatrace");
+  await service.answer({ sessionId, field: "brandVoice", value: "Plain and practical." }, "aquatrace");
+  await service.answer({ sessionId, field: "appStack", value: "Jobber, CompanyCam" }, "aquatrace");
+
+  const finalized = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "test",
+    messages: [{ role: "user", content: `Finalize intake ${sessionId} and park the tenant plan for approval` }],
+    tools,
+    cachedToolRuns: [],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer"
+  });
+  assert.equal(finalized.toolRuns[0].name, "finalizeIntake");
+  assert.match(finalized.answer, /approval queue/i);
+  assert.equal(finalized.toolRuns[0].result.approvalQueuedOnly, true);
 });

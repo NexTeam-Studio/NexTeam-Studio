@@ -9,7 +9,8 @@
     "ApprovalQueue artifact kind: tenant_provisioning",
     "Native-only provisioning executor for approved tenant drafts",
     "Provisioning plan includes tenant, NexiBlueprint, site draft seed, calendar seed, templates, OAuth instructions, app-stack decisions, and safeguards",
-    "Gateway routes tenant onboarding prompts to startIntake instead of createClient or email search"
+    "Explicit chat router routes tenant onboarding prompts to startIntake instead of createClient, email search, or job lookup",
+    "Explicit chat router routes finalize-intake prompts to ApprovalQueue tenant provisioning when a session id is present"
   ],
   "hardBoundaries": {
     "externalOauth": "deferred_owner_action_only",
@@ -29,7 +30,7 @@
     },
     {
       "command": "node --test apps/server/test/intake.test.mjs",
-      "result": "4/4 passed"
+      "result": "5/5 passed"
     },
     {
       "command": "node --test apps/server/test/nexi-job-desk.test.mjs",
@@ -41,7 +42,7 @@
     },
     {
       "command": "npm run test",
-      "result": "160/160 passed"
+      "result": "161/161 passed"
     },
     {
       "command": "npm run check:tenancy",
@@ -61,7 +62,7 @@
     },
     {
       "command": "npm run check:secret-history",
-      "result": "passed before final receipt text update; 289 reachable commits / 4390 reachable objects checked"
+      "result": "passed; 293 reachable commits / 4492 reachable objects checked"
     }
   ],
   "part9RealityGateRemaining": [
