@@ -721,6 +721,28 @@ function weatherLocationFromText(text: string): string | undefined {
   return location;
 }
 
+function looksLikeStreetAddress(text: string): boolean {
+  return /^\s*\d{1,6}\s+[a-z0-9 .'-]+(?:road|rd|street|st|lane|ln|drive|dr|avenue|ave|court|ct|circle|cir|way|trail|trl|highway|hwy)\b/i.test(text);
+}
+
+function distanceDestinationFromText(text: string): string | undefined {
+  const direct = text.match(
+    /\b(?:how\s+far(?:\s+is)?|distance\s+(?:to|for)|drive\s+time\s+(?:to|for)|travel\s+time\s+(?:to|for)|miles?\s+(?:to|from))\s+(.+?)(?=\s+from\s+(?:my\s+house|the\s+shop|here|102\s+kate|aquatrace)|[?.!]|$)/i
+  )?.[1]?.trim();
+  if (direct) {
+    return direct.replace(/^is\s+/i, "").trim();
+  }
+  return looksLikeStreetAddress(text) ? text.trim() : undefined;
+}
+
+function distanceOriginFromText(text: string): string | undefined {
+  const match = text.match(/\bfrom\s+(.+?)(?:[?.!]|$)/i)?.[1]?.trim();
+  if (!match || /^(?:my\s+house|the\s+shop|here|aquatrace)$/i.test(match)) {
+    return undefined;
+  }
+  return match;
+}
+
 function hasCompleteEvaporationInput(input: Record<string, unknown>): boolean {
   return typeof input.address === "string"
     && numberValue(input.surfaceAreaFt2) !== undefined
@@ -829,6 +851,14 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   }
   if (toolName === "getCurrentWeather" && !record.location) {
     record.location = weatherLocationFromText(userText) || entityQueryFromText(userText) || "Fair Play, SC";
+  }
+  if (toolName === "getDistance") {
+    const directDestination = distanceDestinationFromText(userText);
+    const priorAddress = jobAddressFromPriorRuns(priorRuns);
+    record.destination ??= directDestination && looksLikeStreetAddress(directDestination)
+      ? directDestination
+      : priorAddress ?? directDestination ?? entityQueryFromText(userText) ?? entityQueryFromMessages(messages);
+    record.origin ??= distanceOriginFromText(userText);
   }
   if (toolName === "draftCampaign") {
     record.templateId ??= "vgb-hotel-gm-outreach";
@@ -1311,6 +1341,7 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   const userText = latestUserText(messages);
   const lower = userText.toLowerCase();
   const emailRef = emailRefFromText(userText);
+  const distanceFollowUp = looksLikeAddressOnlyFollowUp(userText) && recentUserTextMatches(messages, looksLikeDistanceQuestion);
   if (emailRef?.attachmentId && toolsByName.has("getEmailAttachment")) {
     return ["getEmailAttachment"];
   }
@@ -1328,6 +1359,12 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
     return hasCompleteEvaporationInput(parsed)
       ? ["runEvaporation"]
       : uniqueToolNames(["getJobDetail", "getDocuments", "runEvaporation"], toolsByName);
+  }
+  if ((looksLikeDistanceQuestion(lower) || distanceFollowUp) && toolsByName.has("getDistance")) {
+    const destination = distanceDestinationFromText(userText);
+    return destination && looksLikeStreetAddress(destination)
+      ? ["getDistance"]
+      : uniqueToolNames(["getJobDetail", "getDistance"], toolsByName);
   }
   if (looksLikeCurrentTimeQuestion(lower) && toolsByName.has("getCurrentTime")) {
     return ["getCurrentTime"];
@@ -1427,6 +1464,7 @@ function hasFreshLookupTarget(text: string, timeZone?: string): boolean {
     || entityQueryFromText(text)
     || hasExplicitPhotoTarget(text)
     || looksLikeEvaporationRunQuestion(text.toLowerCase())
+    || looksLikeDistanceQuestion(text.toLowerCase())
     || looksLikeCurrentTimeQuestion(text.toLowerCase())
     || looksLikeCurrentWeatherQuestion(text.toLowerCase())
   );

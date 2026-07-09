@@ -855,6 +855,112 @@ test("Nexi distance prompts return capability gaps instead of missing-data failu
   assert.deepEqual(result.toolRuns, []);
 });
 
+test("Nexi distance prompts run the native distance tool when wired", async () => {
+  const calls = [];
+  const tools = createContextNexiTools({
+    env: { AQUATRACE_HOME_BASE_ADDRESS: "102 Kate Lane, Bryson City, NC 28713" },
+    distanceProvider: {
+      async getDistance(input) {
+        calls.push(input);
+        return {
+          origin: input.origin,
+          destination: input.destination,
+          driveMinutes: 42,
+          distanceMiles: 36.5,
+          provider: "google_maps"
+        };
+      }
+    }
+  });
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "how far is 123 Main Road from my house?" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      const body = JSON.parse(init.body);
+      assert.match(body.messages.at(-1).content, /Verified getDistance result/);
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "I checked the drive. It is about 42 minutes." }],
+        usage: { input_tokens: 5, output_tokens: 5 }
+      }), { status: 200 });
+    }
+  });
+  assert.equal(result.toolRuns[0].name, "getDistance");
+  assert.deepEqual(calls[0], {
+    origin: "102 Kate Lane, Bryson City, NC 28713",
+    destination: "123 Main Road"
+  });
+  assert.equal(result.sources[0].rail, "native");
+});
+
+test("Nexi distance prompts use job detail addresses before measuring", async () => {
+  const calls = [];
+  const tools = [
+    {
+      name: "getJobDetail",
+      description: "Read job detail.",
+      inputSchema: z.object({ nameQuery: z.string().optional() }),
+      handler: async (_tenant, args) => {
+        calls.push(["job", args]);
+        return {
+          result: {
+            job: {
+              id: "job_forrest",
+              title: "Forrest Ferguson",
+              address: {
+                street1: "987 Lake View Road",
+                city: "Fair Play",
+                province: "SC",
+                postalCode: "29643"
+              }
+            }
+          },
+          sources: [{ rail: "jobber", ref: "job_forrest", label: "Jobber job Forrest Ferguson" }]
+        };
+      }
+    },
+    ...createContextNexiTools({
+      env: { AQUATRACE_HOME_BASE_ADDRESS: "102 Kate Lane, Bryson City, NC 28713" },
+      distanceProvider: {
+        async getDistance(input) {
+          calls.push(["distance", input]);
+          return {
+            origin: input.origin,
+            destination: input.destination,
+            driveMinutes: 28,
+            distanceText: "21.2 mi",
+            provider: "google_maps"
+          };
+        }
+      }
+    })
+  ];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "how far is Forrest Ferguson from the shop?" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I checked the job and the drive time." }],
+      usage: { input_tokens: 5, output_tokens: 5 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail", "getDistance"]);
+  assert.deepEqual(calls[1], ["distance", {
+    origin: "102 Kate Lane, Bryson City, NC 28713",
+    destination: "987 Lake View Road, Fair Play, SC, 29643"
+  }]);
+  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
+  assert.equal(result.sources.some((source) => source.ref === "google-maps-distance"), true);
+});
+
 test("Nexi report-PDF email requests return capability gaps instead of email search misses", async () => {
   const result = await runNexiToolLoop({
     tenant: tenant(),
