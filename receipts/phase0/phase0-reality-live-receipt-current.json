@@ -1,0 +1,665 @@
+{
+  "ok": true,
+  "receiptName": "phase0-reality-live-receipt-current",
+  "startedAt": "2026-07-09T00:25:48.439Z",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "66b77dfee23621071f77ad357a936f7155229b15",
+  "tenantId": "aquatrace",
+  "runId": "phase0-1783556748439-dc618248",
+  "checks": {
+    "versionShaMatched": true,
+    "healthGreen": true,
+    "createClientChatRouted": true,
+    "createClientApprovalVisible": true,
+    "createClientExecuted": true,
+    "contentDraftsQueued": true,
+    "contentQueueChatVisible": true,
+    "contentApproveChatWorks": true,
+    "contentRejectRouteWorks": true,
+    "contentQueueFinalStates": true
+  },
+  "raw": {
+    "version": {
+      "sha": "66b77dfee23621071f77ad357a936f7155229b15",
+      "builtAt": "2026-07-09T00:25:48.407Z"
+    },
+    "health": {
+      "ok": true,
+      "checkedAt": "2026-07-09T00:25:49.421Z",
+      "rails": {
+        "jobber": {
+          "ok": true,
+          "configured": true,
+          "provider": "jobber",
+          "op": "graphql_read",
+          "latencyMs": 641,
+          "detail": "Jobber GraphQL read succeeded."
+        },
+        "companycam": {
+          "ok": true,
+          "configured": true,
+          "provider": "companycam",
+          "op": "projects_read",
+          "latencyMs": 222,
+          "detail": "CompanyCam projects read succeeded."
+        },
+        "anthropic": {
+          "ok": true,
+          "configured": true,
+          "provider": "anthropic",
+          "op": "configured_no_spend",
+          "latencyMs": 0,
+          "detail": "Configured; live message call skipped by no-spend overnight limit."
+        }
+      }
+    },
+    "createClientTurn": {
+      "answer": "Queued for approval — new client draft created:\n\n- **Name:** Phase 0 Receipt Client phase0-1783556748439-dc618248\n- **Address note:** 123 Receipt Lane, Fair Play, SC\n- **Email/text consent:** not on file\n\nThis needs approval before it's added to the system.",
+      "toolRuns": [
+        {
+          "name": "createClient",
+          "result": {
+            "approval": {
+              "id": "appr_75808c3e-a9cf-477d-9a2c-3ccc44717f07",
+              "tenantId": "aquatrace",
+              "kind": "client",
+              "preview": {
+                "title": "Create client: Phase 0 Receipt Client phase0-1783556748439-dc618248",
+                "body": "Name: Phase 0 Receipt Client phase0-1783556748439-dc618248\nAddress note: 123 Receipt Lane, Fair Play, SC\nEmail OK: no\nText OK: no"
+              },
+              "execute": {
+                "service": "crm",
+                "op": "createClient",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "client": {
+                    "tenantId": "aquatrace",
+                    "name": "Phase 0 Receipt Client phase0-1783556748439-dc618248",
+                    "emails": [],
+                    "phones": [],
+                    "consent": {
+                      "email": false,
+                      "sms": false
+                    }
+                  },
+                  "addressNote": "123 Receipt Lane, Fair Play, SC"
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "pendingClient": {
+              "tenantId": "aquatrace",
+              "name": "Phase 0 Receipt Client phase0-1783556748439-dc618248",
+              "emails": [],
+              "phones": [],
+              "consent": {
+                "email": false,
+                "sms": false
+              }
+            },
+            "addressNote": "123 Receipt Lane, Fair Play, SC",
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_75808c3e-a9cf-477d-9a2c-3ccc44717f07",
+              "label": "ApprovalQueue client create appr_75808c3e-a9cf-477d-9a2c-3ccc44717f07"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_75808c3e-a9cf-477d-9a2c-3ccc44717f07",
+          "label": "ApprovalQueue client create appr_75808c3e-a9cf-477d-9a2c-3ccc44717f07"
+        }
+      ]
+    },
+    "pendingApprovalsAfterCreateClient": {
+      "count": 1,
+      "matching": [
+        {
+          "id": "appr_75808c3e-a9cf-477d-9a2c-3ccc44717f07",
+          "tenantId": "aquatrace",
+          "kind": "client",
+          "preview": {
+            "title": "Create client: Phase 0 Receipt Client phase0-1783556748439-dc618248",
+            "body": "Name: Phase 0 Receipt Client phase0-1783556748439-dc618248\nAddress note: 123 Receipt Lane, Fair Play, SC\nEmail OK: no\nText OK: no"
+          },
+          "execute": {
+            "service": "crm",
+            "op": "createClient",
+            "args": {
+              "tenantId": "aquatrace",
+              "client": {
+                "tenantId": "aquatrace",
+                "name": "Phase 0 Receipt Client phase0-1783556748439-dc618248",
+                "emails": [],
+                "phones": [],
+                "consent": {
+                  "email": false,
+                  "sms": false
+                }
+              },
+              "addressNote": "123 Receipt Lane, Fair Play, SC"
+            }
+          },
+          "status": "pending",
+          "createdBy": "nexi"
+        }
+      ]
+    },
+    "createClientApprovalFlow": {
+      "approvedClient": {
+        "ok": true,
+        "item": {
+          "id": "appr_75808c3e-a9cf-477d-9a2c-3ccc44717f07",
+          "tenantId": "aquatrace",
+          "kind": "client",
+          "preview": {
+            "title": "Create client: Phase 0 Receipt Client phase0-1783556748439-dc618248",
+            "body": "Name: Phase 0 Receipt Client phase0-1783556748439-dc618248\nAddress note: 123 Receipt Lane, Fair Play, SC\nEmail OK: no\nText OK: no"
+          },
+          "execute": {
+            "service": "crm",
+            "op": "createClient",
+            "args": {
+              "tenantId": "aquatrace",
+              "client": {
+                "tenantId": "aquatrace",
+                "name": "Phase 0 Receipt Client phase0-1783556748439-dc618248",
+                "emails": [],
+                "phones": [],
+                "consent": {
+                  "email": false,
+                  "sms": false
+                }
+              },
+              "addressNote": "123 Receipt Lane, Fair Play, SC"
+            }
+          },
+          "status": "approved",
+          "createdBy": "nexi",
+          "decidedAt": "2026-07-09T00:25:53.187Z"
+        }
+      },
+      "executedClient": {
+        "ok": true,
+        "item": {
+          "id": "appr_75808c3e-a9cf-477d-9a2c-3ccc44717f07",
+          "tenantId": "aquatrace",
+          "kind": "client",
+          "preview": {
+            "title": "Create client: Phase 0 Receipt Client phase0-1783556748439-dc618248",
+            "body": "Name: Phase 0 Receipt Client phase0-1783556748439-dc618248\nAddress note: 123 Receipt Lane, Fair Play, SC\nEmail OK: no\nText OK: no"
+          },
+          "execute": {
+            "service": "crm",
+            "op": "createClient",
+            "args": {
+              "tenantId": "aquatrace",
+              "client": {
+                "tenantId": "aquatrace",
+                "name": "Phase 0 Receipt Client phase0-1783556748439-dc618248",
+                "emails": [],
+                "phones": [],
+                "consent": {
+                  "email": false,
+                  "sms": false
+                }
+              },
+              "addressNote": "123 Receipt Lane, Fair Play, SC"
+            }
+          },
+          "status": "executed",
+          "createdBy": "nexi",
+          "decidedAt": "2026-07-09T00:25:53.187Z"
+        },
+        "result": {
+          "client": {
+            "id": "client_888ece3b-4b72-4d0f-ae43-a51770349c06",
+            "tenantId": "aquatrace",
+            "name": "Phase 0 Receipt Client phase0-1783556748439-dc618248",
+            "emails": [],
+            "phones": [],
+            "tags": [],
+            "consent": {
+              "email": false,
+              "sms": false
+            }
+          },
+          "addressNote": "123 Receipt Lane, Fair Play, SC"
+        }
+      }
+    },
+    "draftSeed": {
+      "ok": true,
+      "drafts": [
+        {
+          "id": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+          "tenantId": "aquatrace",
+          "kind": "gbp_post",
+          "title": "Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC",
+          "body": "Aquatrace Swimming Pool Leak Detection completed a pool leak detection visit in Fair Play, SC.\n\nMain drain cover documentation completed.\n\nField photos are attached for owner review (1 media item).\n\nIf your pool is losing more water than evaporation explains, schedule a professional leak detection.",
+          "mediaRefs": [
+            "phase0-1783556748439-dc618248-media"
+          ],
+          "jobId": "phase0-1783556748439-dc618248-job",
+          "status": "approval_pending",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "phase0-1783556748439-dc618248-job",
+              "label": "Native completed job Receipt leak detection closeout"
+            },
+            {
+              "rail": "native",
+              "ref": "phase0-1783556748439-dc618248-media",
+              "label": "Native content media phase0-1783556748439-dc618248-media"
+            }
+          ],
+          "createdAt": "2026-07-09T00:25:53.631Z",
+          "approvalId": "appr_1b4dcf67-f379-4671-8f2c-ebd415771a4f"
+        },
+        {
+          "id": "content_article_30c904d3-0314-42cd-a5b1-36e69696311e",
+          "tenantId": "aquatrace",
+          "kind": "article",
+          "title": "How pool leak detection works in Fair Play, SC",
+          "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace Swimming Pool Leak Detection uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nMain drain cover documentation completed.\n\nFor pool owners in Fair Play and Lake Hartwell, the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+          "mediaRefs": [
+            "phase0-1783556748439-dc618248-media"
+          ],
+          "jobId": "phase0-1783556748439-dc618248-job",
+          "status": "approval_pending",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "phase0-1783556748439-dc618248-job",
+              "label": "Native completed job Receipt leak detection closeout"
+            },
+            {
+              "rail": "native",
+              "ref": "phase0-1783556748439-dc618248-media",
+              "label": "Native content media phase0-1783556748439-dc618248-media"
+            }
+          ],
+          "createdAt": "2026-07-09T00:25:53.631Z",
+          "approvalId": "appr_8f862ca1-c8b7-49a3-99bc-e6af05f0b3a1"
+        }
+      ],
+      "publishingDeferred": true
+    },
+    "contentQueueTurn": {
+      "answer": "2 drafts waiting on approval, both from the Fair Play leak detection job:\n\n- **GBP post** – \"Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC\" — covers the visit, main drain cover documentation, and references 1 field photo.\n- **Article** – \"How pool leak detection works in Fair Play, SC\" — explains the inspection process using that same job as the example.\n\nBoth are tied to the same job and photo, and publishing is currently deferred until approved.",
+      "toolRuns": [
+        {
+          "name": "contentQueue",
+          "result": {
+            "drafts": [
+              {
+                "id": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+                "tenantId": "aquatrace",
+                "kind": "gbp_post",
+                "title": "Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC",
+                "body": "Aquatrace Swimming Pool Leak Detection completed a pool leak detection visit in Fair Play, SC.\n\nMain drain cover documentation completed.\n\nField photos are attached for owner review (1 media item).\n\nIf your pool is losing more water than evaporation explains, schedule a professional leak detection.",
+                "mediaRefs": [
+                  "phase0-1783556748439-dc618248-media"
+                ],
+                "jobId": "phase0-1783556748439-dc618248-job",
+                "status": "approval_pending",
+                "sources": [
+                  {
+                    "rail": "native",
+                    "ref": "phase0-1783556748439-dc618248-job",
+                    "label": "Native completed job Receipt leak detection closeout"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "phase0-1783556748439-dc618248-media",
+                    "label": "Native content media phase0-1783556748439-dc618248-media"
+                  }
+                ],
+                "createdAt": "2026-07-09T00:25:53.631Z",
+                "approvalId": "appr_1b4dcf67-f379-4671-8f2c-ebd415771a4f"
+              },
+              {
+                "id": "content_article_30c904d3-0314-42cd-a5b1-36e69696311e",
+                "tenantId": "aquatrace",
+                "kind": "article",
+                "title": "How pool leak detection works in Fair Play, SC",
+                "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace Swimming Pool Leak Detection uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nMain drain cover documentation completed.\n\nFor pool owners in Fair Play and Lake Hartwell, the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+                "mediaRefs": [
+                  "phase0-1783556748439-dc618248-media"
+                ],
+                "jobId": "phase0-1783556748439-dc618248-job",
+                "status": "approval_pending",
+                "sources": [
+                  {
+                    "rail": "native",
+                    "ref": "phase0-1783556748439-dc618248-job",
+                    "label": "Native completed job Receipt leak detection closeout"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "phase0-1783556748439-dc618248-media",
+                    "label": "Native content media phase0-1783556748439-dc618248-media"
+                  }
+                ],
+                "createdAt": "2026-07-09T00:25:53.631Z",
+                "approvalId": "appr_8f862ca1-c8b7-49a3-99bc-e6af05f0b3a1"
+              }
+            ],
+            "publishingDeferred": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+              "label": "Native content draft Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC"
+            },
+            {
+              "rail": "native",
+              "ref": "content_article_30c904d3-0314-42cd-a5b1-36e69696311e",
+              "label": "Native content draft How pool leak detection works in Fair Play, SC"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+          "label": "Native content draft Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC"
+        },
+        {
+          "rail": "native",
+          "ref": "content_article_30c904d3-0314-42cd-a5b1-36e69696311e",
+          "label": "Native content draft How pool leak detection works in Fair Play, SC"
+        }
+      ]
+    },
+    "contentApproveTurn": {
+      "answer": "Approved — the GBP post is set to publish.\n\n- **Status:** publish_ready\n- **Note:** actual posting is on hold until Google Business Profile credentials are connected (publishing deferred)\n\nThe article draft is still sitting at approval_pending if you want that one moved too.",
+      "toolRuns": [
+        {
+          "name": "contentQueue",
+          "result": {
+            "drafts": [
+              {
+                "id": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+                "tenantId": "aquatrace",
+                "kind": "gbp_post",
+                "title": "Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC",
+                "body": "Aquatrace Swimming Pool Leak Detection completed a pool leak detection visit in Fair Play, SC.\n\nMain drain cover documentation completed.\n\nField photos are attached for owner review (1 media item).\n\nIf your pool is losing more water than evaporation explains, schedule a professional leak detection.",
+                "mediaRefs": [
+                  "phase0-1783556748439-dc618248-media"
+                ],
+                "jobId": "phase0-1783556748439-dc618248-job",
+                "status": "approval_pending",
+                "sources": [
+                  {
+                    "rail": "native",
+                    "ref": "phase0-1783556748439-dc618248-job",
+                    "label": "Native completed job Receipt leak detection closeout"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "phase0-1783556748439-dc618248-media",
+                    "label": "Native content media phase0-1783556748439-dc618248-media"
+                  }
+                ],
+                "createdAt": "2026-07-09T00:25:53.631Z",
+                "approvalId": "appr_1b4dcf67-f379-4671-8f2c-ebd415771a4f"
+              },
+              {
+                "id": "content_article_30c904d3-0314-42cd-a5b1-36e69696311e",
+                "tenantId": "aquatrace",
+                "kind": "article",
+                "title": "How pool leak detection works in Fair Play, SC",
+                "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace Swimming Pool Leak Detection uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nMain drain cover documentation completed.\n\nFor pool owners in Fair Play and Lake Hartwell, the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+                "mediaRefs": [
+                  "phase0-1783556748439-dc618248-media"
+                ],
+                "jobId": "phase0-1783556748439-dc618248-job",
+                "status": "approval_pending",
+                "sources": [
+                  {
+                    "rail": "native",
+                    "ref": "phase0-1783556748439-dc618248-job",
+                    "label": "Native completed job Receipt leak detection closeout"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "phase0-1783556748439-dc618248-media",
+                    "label": "Native content media phase0-1783556748439-dc618248-media"
+                  }
+                ],
+                "createdAt": "2026-07-09T00:25:53.631Z",
+                "approvalId": "appr_8f862ca1-c8b7-49a3-99bc-e6af05f0b3a1"
+              }
+            ],
+            "publishingDeferred": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+              "label": "Native content draft Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC"
+            },
+            {
+              "rail": "native",
+              "ref": "content_article_30c904d3-0314-42cd-a5b1-36e69696311e",
+              "label": "Native content draft How pool leak detection works in Fair Play, SC"
+            }
+          ]
+        },
+        {
+          "name": "approve",
+          "result": {
+            "draft": {
+              "id": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+              "tenantId": "aquatrace",
+              "kind": "gbp_post",
+              "title": "Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC",
+              "body": "Aquatrace Swimming Pool Leak Detection completed a pool leak detection visit in Fair Play, SC.\n\nMain drain cover documentation completed.\n\nField photos are attached for owner review (1 media item).\n\nIf your pool is losing more water than evaporation explains, schedule a professional leak detection.",
+              "mediaRefs": [
+                "phase0-1783556748439-dc618248-media"
+              ],
+              "jobId": "phase0-1783556748439-dc618248-job",
+              "status": "publish_ready",
+              "sources": [
+                {
+                  "rail": "native",
+                  "ref": "phase0-1783556748439-dc618248-job",
+                  "label": "Native completed job Receipt leak detection closeout"
+                },
+                {
+                  "rail": "native",
+                  "ref": "phase0-1783556748439-dc618248-media",
+                  "label": "Native content media phase0-1783556748439-dc618248-media"
+                }
+              ],
+              "createdAt": "2026-07-09T00:25:53.631Z",
+              "approvalId": "appr_1b4dcf67-f379-4671-8f2c-ebd415771a4f"
+            },
+            "approval": {
+              "id": "appr_1b4dcf67-f379-4671-8f2c-ebd415771a4f",
+              "tenantId": "aquatrace",
+              "kind": "gbp_post",
+              "preview": {
+                "title": "Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC",
+                "body": "Aquatrace Swimming Pool Leak Detection completed a pool leak detection visit in Fair Play, SC.\n\nMain drain cover documentation completed.\n\nField photos are attached for owner review (1 media item).\n\nIf your pool is losing more water than evaporation explains, schedule a professional leak detection.",
+                "mediaRefs": [
+                  "phase0-1783556748439-dc618248-media"
+                ]
+              },
+              "execute": {
+                "service": "content",
+                "op": "publishGbpPost",
+                "args": {
+                  "draftId": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+                  "tenantId": "aquatrace",
+                  "publishingDeferredUntilCredentials": true
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-09T00:25:58.002Z"
+            },
+            "publishingDeferred": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+              "label": "Native content draft Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+          "label": "Native content draft Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC"
+        },
+        {
+          "rail": "native",
+          "ref": "content_article_30c904d3-0314-42cd-a5b1-36e69696311e",
+          "label": "Native content draft How pool leak detection works in Fair Play, SC"
+        },
+        {
+          "rail": "native",
+          "ref": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+          "label": "Native content draft Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC"
+        }
+      ]
+    },
+    "contentRejectRoute": {
+      "ok": true,
+      "draft": {
+        "id": "content_article_30c904d3-0314-42cd-a5b1-36e69696311e",
+        "tenantId": "aquatrace",
+        "kind": "article",
+        "title": "How pool leak detection works in Fair Play, SC",
+        "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace Swimming Pool Leak Detection uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nMain drain cover documentation completed.\n\nFor pool owners in Fair Play and Lake Hartwell, the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+        "mediaRefs": [
+          "phase0-1783556748439-dc618248-media"
+        ],
+        "jobId": "phase0-1783556748439-dc618248-job",
+        "status": "rejected",
+        "sources": [
+          {
+            "rail": "native",
+            "ref": "phase0-1783556748439-dc618248-job",
+            "label": "Native completed job Receipt leak detection closeout"
+          },
+          {
+            "rail": "native",
+            "ref": "phase0-1783556748439-dc618248-media",
+            "label": "Native content media phase0-1783556748439-dc618248-media"
+          }
+        ],
+        "createdAt": "2026-07-09T00:25:53.631Z",
+        "approvalId": "appr_8f862ca1-c8b7-49a3-99bc-e6af05f0b3a1"
+      },
+      "approval": {
+        "id": "appr_8f862ca1-c8b7-49a3-99bc-e6af05f0b3a1",
+        "tenantId": "aquatrace",
+        "kind": "article",
+        "preview": {
+          "title": "How pool leak detection works in Fair Play, SC",
+          "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace Swimming Pool Leak Detection uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nMain drain cover documentation completed.\n\nFor pool owners in Fair Play and Lake Hartwell, the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+          "mediaRefs": [
+            "phase0-1783556748439-dc618248-media"
+          ]
+        },
+        "execute": {
+          "service": "content",
+          "op": "publishSeoArticle",
+          "args": {
+            "draftId": "content_article_30c904d3-0314-42cd-a5b1-36e69696311e",
+            "tenantId": "aquatrace",
+            "publishingDeferredUntilCredentials": true
+          }
+        },
+        "status": "rejected",
+        "createdBy": "nexi",
+        "decidedAt": "2026-07-09T00:26:00.433Z"
+      },
+      "publishingDeferred": true
+    },
+    "finalContentQueue": {
+      "ok": true,
+      "drafts": [
+        {
+          "id": "content_gbp_post_fc6cba41-b267-4ba2-91a0-0a267730d9f6",
+          "tenantId": "aquatrace",
+          "kind": "gbp_post",
+          "title": "Aquatrace Swimming Pool Leak Detection: completed leak detection in Fair Play, SC",
+          "body": "Aquatrace Swimming Pool Leak Detection completed a pool leak detection visit in Fair Play, SC.\n\nMain drain cover documentation completed.\n\nField photos are attached for owner review (1 media item).\n\nIf your pool is losing more water than evaporation explains, schedule a professional leak detection.",
+          "mediaRefs": [
+            "phase0-1783556748439-dc618248-media"
+          ],
+          "jobId": "phase0-1783556748439-dc618248-job",
+          "status": "publish_ready",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "phase0-1783556748439-dc618248-job",
+              "label": "Native completed job Receipt leak detection closeout"
+            },
+            {
+              "rail": "native",
+              "ref": "phase0-1783556748439-dc618248-media",
+              "label": "Native content media phase0-1783556748439-dc618248-media"
+            }
+          ],
+          "createdAt": "2026-07-09T00:25:53.631Z",
+          "approvalId": "appr_1b4dcf67-f379-4671-8f2c-ebd415771a4f"
+        },
+        {
+          "id": "content_article_30c904d3-0314-42cd-a5b1-36e69696311e",
+          "tenantId": "aquatrace",
+          "kind": "article",
+          "title": "How pool leak detection works in Fair Play, SC",
+          "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace Swimming Pool Leak Detection uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nMain drain cover documentation completed.\n\nFor pool owners in Fair Play and Lake Hartwell, the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+          "mediaRefs": [
+            "phase0-1783556748439-dc618248-media"
+          ],
+          "jobId": "phase0-1783556748439-dc618248-job",
+          "status": "rejected",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "phase0-1783556748439-dc618248-job",
+              "label": "Native completed job Receipt leak detection closeout"
+            },
+            {
+              "rail": "native",
+              "ref": "phase0-1783556748439-dc618248-media",
+              "label": "Native content media phase0-1783556748439-dc618248-media"
+            }
+          ],
+          "createdAt": "2026-07-09T00:25:53.631Z",
+          "approvalId": "appr_8f862ca1-c8b7-49a3-99bc-e6af05f0b3a1"
+        }
+      ]
+    }
+  },
+  "finishedAt": "2026-07-09T00:26:00.926Z",
+  "operator": {
+    "mode": "custom-token",
+    "email": "owner@aquatrace.com",
+    "uidPresent": true
+  },
+  "boundaries": {
+    "outboundExecuted": false,
+    "contentPublishingDeferred": true,
+    "clientWriteApprovalQueueExecutedOnlyAfterApproval": true
+  }
+}

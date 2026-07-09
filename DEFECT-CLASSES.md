@@ -243,13 +243,13 @@ KNOWN VARIANTS:
 - (3) how do I upload photos
 - (3) Run the evap for 100 Main Street, Bryson City, NC 28713 with surface area 500 square feet, water temperature 82 degrees, and observed daily loss 1.5 inches.
 - (3) use the evaporation calculator on Deborah Justice's pool
-- (module audit) `createClient` existed in `createCrmTools`, but server registered only `createCrmReadTools` into `/api/nexi/message`. Phase 0 item 2 now wires `createCrmTools`, routes create-client prompts deterministically, and queues writes through ApprovalQueue; local smoke receipt: `receipts/phase0/create-client-nexi-local-smoke-20260708.json`.
+- (module audit) `createClient` existed in `createCrmTools`, but server registered only `createCrmReadTools` into `/api/nexi/message`. Phase 0 item 2 now wires `createCrmTools`, routes create-client prompts deterministically, queues writes through ApprovalQueue, and proves live staging approval/execute to native CRM; receipts: `receipts/phase0/create-client-nexi-local-smoke-20260708.json`, `receipts/phase0/phase0-reality-live-receipt-current.json`.
 - (module audit) M4 native upload endpoints exist, but owner-facing photo upload is not complete without the M11 real-device path.
-- (module audit) M5 content tools existed, but content queue visibility was not proven through owner-facing chat/UI after Part 9. Phase 0 item 3 now routes content queue prompts to `contentQueue`, supports approve/reject decisions, and exposes a `/web` Content Queue card; local smoke receipt: `receipts/phase0/content-queue-visibility-local-smoke-20260708.json`.
+- (module audit) M5 content tools existed, but content queue visibility was not proven through owner-facing chat/UI after Part 9. Phase 0 item 3 now routes content queue prompts to `contentQueue`, supports approve/reject decisions, exposes a `/web` Content Queue card, and proves live staging show/approve/reject states; receipts: `receipts/phase0/content-queue-visibility-local-smoke-20260708.json`, `receipts/phase0/phase0-reality-live-receipt-current.json`.
 - (module audit) M12a voice was left marked in progress after live staging TTS and usageLog cost receipts existed. Phase 0 item 4 corrected BUILDSTATE to done for the M12a foundation and records the status receipt at `receipts/phase0/m12a-voice-reality-gate-status-20260708.json`; M12b full-duplex/interruptible voice remains separate future scope.
 - (module audit) M6 Campaigns was marked blocked even though generation, templates, sequencing, compliance injection, suppression, tracking, transactional queueing, and ApprovalQueue-only behavior were live-receipted. Phase 0 item 5 separates the completed build-to-approval module from the parked external bulk-send boundary; receipt: `receipts/phase0/m6-campaigns-blocker-resolution-20260708.json`.
 
-STATUS: OPEN - BUILDSTATE reality-gate correction in progress.
+STATUS: OPEN - createClient, content queue, M12a voice, M6 campaigns, and Item 7 evap reality gaps are corrected; M4/M11 owner-facing photo upload remains open until the real-device path is proven.
 
 CLOSURE RECEIPT: Pending user-facing module re-audit.
 
