@@ -270,8 +270,7 @@ test("Nexi Anthropic gateway preloads email source refs with getEmailMessage", a
   assert.equal(result.sources[0].ref, "email:chris:msg_1");
 });
 
-test("Nexi Anthropic gateway preloads draftEmail for send-email action commands", async () => {
-  const calls = [];
+test("Nexi Anthropic gateway answers draftEmail action commands from the approval result", async () => {
   const toolCalls = [];
   const result = await runNexiToolLoop({
     tenant: tenant(),
@@ -299,12 +298,8 @@ test("Nexi Anthropic gateway preloads draftEmail for send-email action commands"
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
     env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "I drafted the email and parked it for approval." }],
-        usage: { input_tokens: 10, output_tokens: 6 }
-      }), { status: 200 });
+    fetchFn: async () => {
+      throw new Error("draftEmail direct answers should not call the model");
     }
   });
   assert.deepEqual(toolCalls, [{
@@ -312,11 +307,9 @@ test("Nexi Anthropic gateway preloads draftEmail for send-email action commands"
     subject: "I can confirm Thursday",
     bodyText: "I can confirm Thursday."
   }]);
-  assert.match(calls[0].messages.at(-1).content, /Verified draftEmail result/);
-  assert.deepEqual(calls[0].tools, []);
   assert.equal(result.toolRuns[0].name, "draftEmail");
   assert.equal(result.sources[0].ref, "approval_1");
-  assert.equal(result.answer, "I drafted the email and parked it for approval.");
+  assert.equal(result.answer, "I drafted that email and put it in the approval queue (approval_1). It has not been sent.");
 });
 
 test("Nexi Anthropic gateway preloads draftEmail for send-me-at action commands", async () => {
@@ -347,10 +340,9 @@ test("Nexi Anthropic gateway preloads draftEmail for send-me-at action commands"
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
     env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I drafted the email and parked it for approval." }],
-      usage: { input_tokens: 10, output_tokens: 6 }
-    }), { status: 200 })
+    fetchFn: async () => {
+      throw new Error("draftEmail direct answers should not call the model");
+    }
   });
   assert.deepEqual(toolCalls, [{
     to: ["owner@example.test"],
@@ -359,7 +351,7 @@ test("Nexi Anthropic gateway preloads draftEmail for send-me-at action commands"
   }]);
   assert.equal(result.toolRuns[0].name, "draftEmail");
   assert.equal(result.sources[0].ref, "approval_1");
-  assert.equal(result.answer, "I drafted the email and parked it for approval.");
+  assert.equal(result.answer, "I drafted that email and put it in the approval queue (approval_1). It has not been sent.");
 });
 
 test("Nexi Anthropic gateway preloads runEvaporation for evap report requests", async () => {
@@ -880,13 +872,8 @@ test("Nexi distance prompts run the native distance tool when wired", async () =
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
     env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      const body = JSON.parse(init.body);
-      assert.match(body.messages.at(-1).content, /Verified getDistance result/);
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "I checked the drive. It is about 42 minutes." }],
-        usage: { input_tokens: 5, output_tokens: 5 }
-      }), { status: 200 });
+    fetchFn: async () => {
+      throw new Error("getDistance direct answers should not call the model");
     }
   });
   assert.equal(result.toolRuns[0].name, "getDistance");
@@ -895,6 +882,8 @@ test("Nexi distance prompts run the native distance tool when wired", async () =
     destination: "123 Main Road"
   });
   assert.equal(result.sources[0].rail, "native");
+  assert.match(result.answer, /about 42 minutes/);
+  assert.match(result.answer, /36\.5 miles/);
 });
 
 test("Nexi distance prompts use job detail addresses before measuring", async () => {
@@ -947,10 +936,9 @@ test("Nexi distance prompts use job detail addresses before measuring", async ()
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
     env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I checked the job and the drive time." }],
-      usage: { input_tokens: 5, output_tokens: 5 }
-    }), { status: 200 })
+    fetchFn: async () => {
+      throw new Error("getDistance direct answers should not call the model");
+    }
   });
   assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail", "getDistance"]);
   assert.deepEqual(calls[1], ["distance", {
@@ -959,6 +947,8 @@ test("Nexi distance prompts use job detail addresses before measuring", async ()
   }]);
   assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
   assert.equal(result.sources.some((source) => source.ref === "google-maps-distance"), true);
+  assert.match(result.answer, /about 28 minutes/);
+  assert.match(result.answer, /21\.2 mi/);
 });
 
 test("Nexi report-PDF email requests return capability gaps instead of email search misses", async () => {

@@ -1044,6 +1044,9 @@ function looksLikeEmailDraftAction(lower: string): boolean {
 }
 
 function looksLikeReportPdfEmailRequest(lower: string): boolean {
+  if (looksLikeEmailDraftAction(lower)) {
+    return false;
+  }
   const searchingExistingMail =
     /\b(?:did\s+i\s+send|check\s+(?:email|gmail|mail)|look\s+(?:in|through)\s+(?:email|gmail|mail|inbox)|mail\s*box|mailbox|inbox|receipt\s+in\s+(?:the\s+)?mail|report\s+(?:was\s+)?sent)\b/.test(lower);
   if (searchingExistingMail) {
@@ -1897,6 +1900,36 @@ function emailNoSourceFallback(toolRuns: ToolLoopResponse["toolRuns"]): { answer
   };
 }
 
+function distanceAnswer(result: unknown): string {
+  const distance = result && typeof result === "object" ? result as Record<string, unknown> : {};
+  const miles =
+    typeof distance.distanceMiles === "number"
+      ? `${distance.distanceMiles} miles`
+      : typeof distance.distanceText === "string"
+        ? distance.distanceText
+        : "";
+  return `Drive time to ${String(distance.destination ?? "that place")} is about ${String(distance.driveMinutes ?? "unknown")} minutes${miles ? ` (${miles})` : ""}.`;
+}
+
+function draftEmailAnswer(result: unknown): string {
+  const record = result && typeof result === "object" ? result as Record<string, unknown> : {};
+  const approval = record.approval && typeof record.approval === "object" ? record.approval as Record<string, unknown> : {};
+  return `I drafted that email and put it in the approval queue${typeof approval.id === "string" ? ` (${approval.id})` : ""}. It has not been sent.`;
+}
+
+function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns: ToolRunTrace[]): string | undefined {
+  const lower = latestUserText(messages).toLowerCase();
+  const distanceRun = [...toolRuns].reverse().find((run) => run.name === "getDistance" && run.sources.length > 0);
+  if (distanceRun && looksLikeDistanceQuestion(lower)) {
+    return distanceAnswer(distanceRun.result);
+  }
+  const draftRun = [...toolRuns].reverse().find((run) => run.name === "draftEmail" && run.sources.length > 0);
+  if (draftRun && looksLikeEmailDraftAction(lower)) {
+    return draftEmailAnswer(draftRun.result);
+  }
+  return undefined;
+}
+
 function stripUnrequestedNextSteps(answer: string): string {
   const lines = answer.split(/\r?\n/);
   const cleaned: string[] = [];
@@ -2029,6 +2062,25 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         usage: totalUsage,
         raw: { iterations: rawIterations },
         failureReason: emailFallback.failureReason,
+        toolRuns
+      };
+    }
+    const directDeterministicAnswer = directAnswerFromDeterministicRuns(request.messages, deterministicRuns);
+    if (directDeterministicAnswer) {
+      await writeUsageRecord({
+        tenantId: request.tenant.id,
+        routeActionName: request.routeActionName,
+        taskType: request.taskType,
+        usage: emptyUsage(),
+        ok: true,
+        errorSummary: "",
+        usageLog: request.usageLog
+      });
+      return {
+        answer: directDeterministicAnswer,
+        sources,
+        usage: totalUsage,
+        raw: { deterministicDirectAnswer: true },
         toolRuns
       };
     }
