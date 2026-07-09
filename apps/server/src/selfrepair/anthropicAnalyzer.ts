@@ -172,6 +172,18 @@ function extractJson(raw: string): unknown {
   }
 }
 
+function parseProviderAnalysis(text: string): z.infer<typeof anthropicAnalysisSchema> {
+  try {
+    return anthropicAnalysisSchema.parse(extractJson(text));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown Anthropic parse error.";
+    return {
+      findings: [],
+      watchItems: [`Anthropic self-repair response could not be parsed; deterministic findings were preserved. ${message}`]
+    };
+  }
+}
+
 function findingKey(finding: Pick<SelfRepairFinding, "classId" | "reproPhrasings">): string {
   const phrase = finding.reproPhrasings[0] ?? "";
   return `${finding.classId}:${phrase.toLowerCase().replace(/\s+/g, " ").slice(0, 120)}`;
@@ -281,7 +293,7 @@ export class AnthropicSelfRepairAnalyzer implements SelfRepairAnalyzer {
     if (!response.ok) {
       return deterministic;
     }
-    const parsed = anthropicAnalysisSchema.parse(extractJson(textFromPayload(payload)));
+    const parsed = parseProviderAnalysis(textFromPayload(payload));
     return mergeAnalysis(input, deterministic, parsed);
   }
 }

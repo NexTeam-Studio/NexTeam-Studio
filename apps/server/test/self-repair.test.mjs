@@ -193,6 +193,46 @@ test("anthropic self-repair analyzer merges provider findings and writes usageLo
   assert.equal(usageRecords[0].estimatedCostUsd > 0, true);
 });
 
+test("anthropic self-repair analyzer preserves deterministic findings when provider JSON is malformed", async () => {
+  const usageRecords = [];
+  const fetchFn = async () => new Response(JSON.stringify({
+    content: [
+      {
+        type: "text",
+        text: '{"findings":[{"classId":"A_SINGLE_RAIL_CONCLUSION" "priority":"P1"}]}'
+      }
+    ],
+    usage: {
+      input_tokens: 25,
+      output_tokens: 10,
+      cache_creation_input_tokens: 0,
+      cache_read_input_tokens: 0
+    }
+  }), { status: 200, headers: { "content-type": "application/json" } });
+  const analyzer = new AnthropicSelfRepairAnalyzer({
+    env: { ANTHROPIC_API_KEY: "placeholder", ANTHROPIC_MODEL: "claude-sonnet-4-5" },
+    fetchFn,
+    usageLog: { write: async (record) => usageRecords.push(record) }
+  });
+
+  const analysis = await analyzer.analyze({
+    tenantId: "aquatrace",
+    date,
+    exportData: exportData(),
+    recentLogs: []
+  });
+
+  assert.equal(analysis.analysisMode, "anthropic-gateway");
+  assert.deepEqual(analysis.findings.map((finding) => finding.classId), [
+    "C_INTENT_MISROUTING",
+    "C_INTENT_MISROUTING",
+    "A_SINGLE_RAIL_CONCLUSION"
+  ]);
+  assert.equal(analysis.watchItems.some((item) => item.includes("could not be parsed")), true);
+  assert.equal(usageRecords.length, 1);
+  assert.equal(usageRecords[0].ok, true);
+});
+
 test("self-repair recurrence escalates repeated findings in later runs", async () => {
   const { service } = serviceParts();
   await service.run({ tenantId: "aquatrace", date });
