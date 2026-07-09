@@ -1,112 +1,113 @@
-﻿{
+{
   "ok": true,
   "baseUrl": "https://nexteam-studio-staging.up.railway.app",
-  "conversationId": "m10-demo-pool-co-1783617535738",
-  "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56",
+  "deployedSha": "15eb4b9388f67d08a546e146e0631f67c05305ac",
+  "conversationId": "m10-demo-pool-co-1783620841070",
+  "sessionId": "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff",
   "turns": [
     {
       "message": "Onboard Demo Pool Co as a new tenant.",
-      "answer": "Started the intake for Demo Pool Co. - **Business:** Demo Pool Co - **Timezone:** America/New_York - **Industry pack:** pool_leak - **Plan:** suite - **Status:** interviewing (nothing provisioned yet — needs your approval before anything goes live) Next thing I need from you: **what services should Nexi know how to talk about for this business?**",
+      "answer": "Started the intake for Demo Pool Co — here's where we stand:\n\n- **Business:** Demo Pool Co\n- **Timezone:** America/New_York\n- **Industry pack:** pool leak\n- **Plan:** suite\n- **App stack:** none captured yet\n\n**Next question:** What services should Nexi know how to talk about for this business?\n\nOnce we've got that and your current app-stack choices, I'll queue the provisioning for your approval — nothing gets set up until you sign off.",
       "toolRuns": [
         {
           "name": "startIntake",
           "sourceRefs": [
-            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+            "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
           ],
-          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          "sessionId": "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
         }
       ]
     },
     {
-      "message": "For intake_016b277e-4293-4fa7-81cc-24a8f6a1be56, services are leak detection, weekly pool maintenance, and equipment repair.",
+      "message": "For intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff, services are leak detection, weekly pool maintenance, and equipment repair.",
       "answer": "I saved that onboarding answer. Next: What cities or service areas should this tenant cover first?",
       "toolRuns": [
         {
           "name": "answerIntake",
           "sourceRefs": [
-            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+            "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
           ],
-          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          "sessionId": "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
         }
       ]
     },
     {
-      "message": "For intake_016b277e-4293-4fa7-81cc-24a8f6a1be56, service area is Wake County, Durham County, and Chapel Hill.",
+      "message": "For intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff, service area is Wake County, Durham County, and Chapel Hill.",
       "answer": "I saved that onboarding answer. Next: What pricing rules or quoting notes should Nexi remember?",
       "toolRuns": [
         {
           "name": "answerIntake",
           "sourceRefs": [
-            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+            "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
           ],
-          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          "sessionId": "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
         }
       ]
     },
     {
-      "message": "For intake_016b277e-4293-4fa7-81cc-24a8f6a1be56, pricing notes are estimates require owner confirmation before quoting.",
+      "message": "For intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff, pricing notes are estimates require owner confirmation before quoting.",
       "answer": "I saved that onboarding answer. Next: How should Nexi sound for this business?",
       "toolRuns": [
         {
           "name": "answerIntake",
           "sourceRefs": [
-            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+            "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
           ],
-          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          "sessionId": "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
         }
       ]
     },
     {
-      "message": "For intake_016b277e-4293-4fa7-81cc-24a8f6a1be56, brand voice should be plain spoken, reliable, and calm.",
+      "message": "For intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff, brand voice should be plain spoken, reliable, and calm.",
       "answer": "I saved that onboarding answer. Next: Which current apps should Nexi replace now, replace later, or keep working beside?",
       "toolRuns": [
         {
           "name": "answerIntake",
           "sourceRefs": [
-            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+            "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
           ],
-          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          "sessionId": "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
         }
       ]
     },
     {
-      "message": "For intake_016b277e-4293-4fa7-81cc-24a8f6a1be56, app stack is Jobber keep working beside, QuickBooks replace later, Google Calendar keep working beside.",
+      "message": "For intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff, app stack is Jobber keep working beside, QuickBooks replace later, Google Calendar keep working beside.",
       "answer": "I saved that onboarding answer. Next: I have enough to draft the tenant plan. Say finalize intake when you want it parked for approval.",
       "toolRuns": [
         {
           "name": "answerIntake",
           "sourceRefs": [
-            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+            "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
           ],
-          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56"
+          "sessionId": "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff"
         }
       ]
     },
     {
-      "message": "Finalize intake intake_016b277e-4293-4fa7-81cc-24a8f6a1be56.",
-      "answer": "Demo Pool Co's intake is finalized and parked for your approval — nothing is live yet. - **Status:** approval_queued (approval ID: appr_3c2f3893-93ae-4c3d-8d26-99aa6621bc83) - **Services:** leak detection, weekly pool maintenance, equipment repair - **Service area:** Wake County, Durham County, Chapel Hill - **Pricing:** estimates require owner confirmation before quoting - **Brand voice:** plain spoken, reliable, calm - **App stack:** Jobber, QuickBooks, and Google Calendar all set to coexist f",
+      "message": "Finalize intake intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff.",
+      "answer": "Demo Pool Co's tenant plan is built and queued for your approval — nothing goes live until you sign off.\n\n**Plan summary:**\n- **Services:** leak detection, weekly pool maintenance, equipment repair\n- **Service area:** Wake County, Durham County, Chapel Hill\n- **Pricing note:** estimates require owner confirmation before quoting\n- **Brand voice:** plain spoken, reliable, calm\n- **App stack:** Jobber and Google Calendar stay in coexist mode; QuickBooks flagged for a later replace\n- **Timezone / plan:** America/New_York, Suite\n\n**Still pending owner action:**\n- Gmail connection for tenant email — needs your Google consent\n- Calendar sync is deferred unless you want external calendar integration\n- Site draft is built (hero, services, service area, lead form) but publishing, domain, and SSL are untouched until you approve\n\n**Approval ID:** appr_dc5d6d14-52eb-468d-a1bb-8c9bb658f0f5 — waiting in your queue now.",
       "toolRuns": [
         {
           "name": "finalizeIntake",
           "sourceRefs": [
-            "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56",
-            "appr_3c2f3893-93ae-4c3d-8d26-99aa6621bc83"
+            "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff",
+            "appr_dc5d6d14-52eb-468d-a1bb-8c9bb658f0f5"
           ],
-          "sessionId": "intake_016b277e-4293-4fa7-81cc-24a8f6a1be56",
-          "approvalId": "appr_3c2f3893-93ae-4c3d-8d26-99aa6621bc83"
+          "sessionId": "intake_95f0dfbb-ba7c-4b77-841e-93d71fca69ff",
+          "approvalId": "appr_dc5d6d14-52eb-468d-a1bb-8c9bb658f0f5"
         }
       ]
     }
   ],
   "tenantProvisioningApprovals": [
     {
-      "id": "appr_3c2f3893-93ae-4c3d-8d26-99aa6621bc83",
+      "id": "appr_dc5d6d14-52eb-468d-a1bb-8c9bb658f0f5",
       "kind": "tenant_provisioning",
       "status": "pending",
-      "title": "Provision tenant: Demo Pool Co",
       "service": "intake",
       "op": "provisionTenant",
       "externalProvisioningDeferred": true
     }
-  ]
+  ],
+  "finishedAt": "2026-07-09T18:14:19.198Z"
 }
