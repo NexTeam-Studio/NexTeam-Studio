@@ -30,6 +30,7 @@ function defaultApproval(): Tenant["approval"] {
     quote: { autoApprove: false, cleanStreak: 0 },
     invoice: { autoApprove: false, cleanStreak: 0 },
     site_publish: { autoApprove: false, cleanStreak: 0 },
+    seo_fix: { autoApprove: false, cleanStreak: 0 },
     review_reply: { autoApprove: false, cleanStreak: 0 }
   };
 }

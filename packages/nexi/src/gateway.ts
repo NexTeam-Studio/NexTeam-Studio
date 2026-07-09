@@ -840,6 +840,27 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
       maxResults: 2
     };
   }
+  if (toolName === "rankSnapshot") {
+    record.keywords ??= seoKeywordsFromText(userText);
+    record.targetDomain ??= seoTargetDomainFromText(userText);
+  }
+  if (toolName === "auditSiteSeo") {
+    record.slug ??= seoSiteSlugFromText(userText);
+    if (/\b(?:fix|repair|queue|approve|approval)\b/i.test(userText)) {
+      record.queueFix ??= true;
+    }
+    record.issueCode ??= seoIssueCodeFromText(userText);
+  }
+  if (toolName === "draftSeoArticleBrief") {
+    const parsed = seoBriefInputFromText(userText);
+    record.keyword ??= parsed.keyword;
+    record.geo ??= parsed.geo;
+    record.competitorUrl ??= parsed.competitorUrl;
+  }
+  if (toolName === "seoReport") {
+    record.periodStart ??= dateRangeFromSeoReportText(userText)?.periodStart;
+    record.periodEnd ??= dateRangeFromSeoReportText(userText)?.periodEnd;
+  }
   if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
     const currentEntity = currentEntityFromText(userText);
     record.nameQuery = correctionFollowUp
@@ -994,6 +1015,30 @@ function looksLikeContentQueueQuestion(lower: string): boolean {
     || /\bshow\s+me\s+(?:the\s+)?content\s+queue\b/.test(lower);
 }
 
+function looksLikeSeoRankQuestion(lower: string): boolean {
+  return /\b(?:seo|rank|ranking|rankings|keyword|keywords|search)\b/.test(lower)
+    && /\b(?:where\s+do\s+we\s+rank|rank\s+snapshot|rank\s+tracking|track|position|positions|ranking|rankings)\b/.test(lower);
+}
+
+function looksLikeSeoAuditQuestion(lower: string): boolean {
+  return /\b(?:seo|search|on-page|schema|json-ld|meta|title)\b/.test(lower)
+    && /\b(?:audit|check|scan|fix|repair)\b/.test(lower)
+    && /\b(?:site|website|page|aquatrace)\b/.test(lower);
+}
+
+function looksLikeSeoQueueQuestion(lower: string): boolean {
+  return /\bseo\b/.test(lower) && /\b(?:queue|queued|pending|fixes|briefs|reports|status)\b/.test(lower);
+}
+
+function looksLikeSeoBriefQuestion(lower: string): boolean {
+  return /\b(?:keyword\s+gap|seo\s+brief|article\s+brief|search\s+brief)\b/.test(lower)
+    || (/\bseo\b/.test(lower) && /\b(?:draft|make|create)\b/.test(lower) && /\b(?:article|brief)\b/.test(lower));
+}
+
+function looksLikeSeoReportQuestion(lower: string): boolean {
+  return /\bseo\b/.test(lower) && /\b(?:monthly\s+report|report|pdf|summary)\b/.test(lower);
+}
+
 function looksLikeContentApproveAction(lower: string): boolean {
   return /\bapprove\b.*\b(?:content|post|gbp|social|article|draft|queue|content_[a-z_]+_[a-f0-9-]{8,})\b/.test(lower);
 }
@@ -1037,6 +1082,90 @@ function looksLikeCurrentTimeQuestion(lower: string): boolean {
 function looksLikeCurrentWeatherQuestion(lower: string): boolean {
   return /\b(?:current\s+)?(?:weather|temp|temperature)\s+(?:right\s+now\s+)?(?:in|at|for)\b/.test(lower)
     || /\bhow\s+(?:hot|cold)\s+is\s+it\s+(?:in|at|for)\b/.test(lower);
+}
+
+function seoTargetDomainFromText(text: string): string | undefined {
+  return text.match(/\b(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+\.[a-z]{2,})(?:\/\S*)?\b/i)?.[1];
+}
+
+function seoSiteSlugFromText(text: string): string {
+  const slug = text.match(/\bsite\s+([a-z0-9-]+)\b/i)?.[1]
+    ?? text.match(/\bwebsite\s+([a-z0-9-]+)\b/i)?.[1];
+  return slug?.toLowerCase() ?? "aquatrace";
+}
+
+function cleanSeoKeyword(value: string): string {
+  return value
+    .replace(/\b(?:seo|rank|ranking|rankings|keyword|keywords|snapshot|tracking|track|where|do|we|for|near|around|in|site|website)\b/gi, " ")
+    .replace(/[?.!,]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function seoGeoFromText(text: string): string {
+  const match = text.match(/\b(?:in|near|around|for)\s+([a-z][a-z .'-]+(?:,\s*(?:sc|nc|ga|tn))?)(?=\s+(?:for|with|on|site|website|keyword|keywords|rank|ranking)\b|[?.!]|$)/i);
+  const geo = match?.[1]?.replace(/\s+/g, " ").trim();
+  return geo || "Fair Play, SC";
+}
+
+function seoKeywordsFromText(text: string): Array<{ keyword: string; geo: string; device: "desktop" }> {
+  if (/\b(?:10|ten)\s+(?:real\s+)?(?:aquatrace\s+)?keywords\b/i.test(text)) {
+    return [
+      "pool leak detection",
+      "swimming pool leak detection",
+      "pool leak repair",
+      "pool pressure testing",
+      "pool dye testing",
+      "spa leak detection",
+      "commercial pool leak detection",
+      "pool losing water",
+      "bucket test pool",
+      "pool leak detection near me"
+    ].map((keyword) => ({ keyword, geo: seoGeoFromText(text), device: "desktop" as const }));
+  }
+  const quoted = [...text.matchAll(/"([^"]+)"/g)].map((match) => match[1]).filter((value): value is string => Boolean(value));
+  const geo = seoGeoFromText(text);
+  if (quoted.length > 0) {
+    return quoted.map((keyword) => ({ keyword, geo, device: "desktop" as const }));
+  }
+  const raw = text.match(/\b(?:rank|ranking|rankings|track|tracking|keyword|keywords)\s+(?:for\s+)?(.+?)(?=\s+(?:in|near|around)\b|[?.!]|$)/i)?.[1]
+    ?? text.match(/\bwhere\s+do\s+we\s+rank\s+(?:for\s+)?(.+?)(?=\s+(?:in|near|around)\b|[?.!]|$)/i)?.[1]
+    ?? "pool leak detection";
+  return [{ keyword: cleanSeoKeyword(raw) || "pool leak detection", geo, device: "desktop" }];
+}
+
+function seoIssueCodeFromText(text: string): string | undefined {
+  const lower = text.toLowerCase();
+  if (/\bjson-?ld|schema|localbusiness\b/.test(lower)) {
+    return "missing_localbusiness_json_ld";
+  }
+  if (/\bmeta|description\b/.test(lower)) {
+    return "missing_or_weak_meta_description";
+  }
+  if (/\btitle\b/.test(lower)) {
+    return "title_length";
+  }
+  return undefined;
+}
+
+function seoBriefInputFromText(text: string): { keyword: string; geo: string; competitorUrl?: string | undefined } {
+  const keyword = cleanSeoKeyword(
+    text.match(/\b(?:brief|article)\s+(?:for|about)\s+(.+?)(?=\s+(?:in|near|around)\b|[?.!]|$)/i)?.[1]
+      ?? text.match(/\bkeyword\s+gap\s+(?:for\s+)?(.+?)(?=\s+(?:in|near|around)\b|[?.!]|$)/i)?.[1]
+      ?? "pool leak detection"
+  ) || "pool leak detection";
+  const competitorUrl = text.match(/\bhttps?:\/\/\S+/i)?.[0];
+  return { keyword, geo: seoGeoFromText(text), competitorUrl };
+}
+
+function dateRangeFromSeoReportText(text: string): { periodStart: string; periodEnd: string } | null {
+  if (!/\blast\s+30\s+days\b|\bmonthly\b/i.test(text)) {
+    return null;
+  }
+  const end = new Date();
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - 30);
+  return { periodStart: start.toISOString(), periodEnd: end.toISOString() };
 }
 
 function looksLikeMapAction(lower: string): boolean {
@@ -1350,6 +1479,21 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   if (looksLikeCampaignQueueQuestion(lower) && toolsByName.has("campaignQueue")) {
     return ["campaignQueue"];
   }
+  if (looksLikeSeoRankQuestion(lower) && toolsByName.has("rankSnapshot")) {
+    return ["rankSnapshot"];
+  }
+  if (looksLikeSeoAuditQuestion(lower) && toolsByName.has("auditSiteSeo")) {
+    return ["auditSiteSeo"];
+  }
+  if (looksLikeSeoQueueQuestion(lower) && toolsByName.has("seoQueue")) {
+    return ["seoQueue"];
+  }
+  if (looksLikeSeoBriefQuestion(lower) && toolsByName.has("draftSeoArticleBrief")) {
+    return ["draftSeoArticleBrief"];
+  }
+  if (looksLikeSeoReportQuestion(lower) && toolsByName.has("seoReport")) {
+    return ["seoReport"];
+  }
   if (looksLikeInboxTriageQuestion(lower) && toolsByName.has("triageInbox")) {
     return ["triageInbox"];
   }
@@ -1429,6 +1573,11 @@ function hasFreshLookupTarget(text: string, timeZone?: string): boolean {
     || looksLikeEvaporationRunQuestion(text.toLowerCase())
     || looksLikeCurrentTimeQuestion(text.toLowerCase())
     || looksLikeCurrentWeatherQuestion(text.toLowerCase())
+    || looksLikeSeoRankQuestion(text.toLowerCase())
+    || looksLikeSeoAuditQuestion(text.toLowerCase())
+    || looksLikeSeoQueueQuestion(text.toLowerCase())
+    || looksLikeSeoBriefQuestion(text.toLowerCase())
+    || looksLikeSeoReportQuestion(text.toLowerCase())
   );
 }
 

@@ -29,6 +29,7 @@ export type PlatformModule =
   | "voice"
   | "platform"
   | "evaporation"
+  | "seo"
   | "sites";
 
 export type ArtifactKind =
@@ -41,6 +42,7 @@ export type ArtifactKind =
   | "quote"
   | "invoice"
   | "site_publish"
+  | "seo_fix"
   | "review_reply";
 
 export interface Tenant {

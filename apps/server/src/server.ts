@@ -41,6 +41,9 @@ import { registerMobileRoutes } from "./mobile/routes.js";
 import { createSchedulingNexiTools } from "./scheduling/nexiTools.js";
 import { InMemorySchedulingRepository } from "./scheduling/repository.js";
 import { registerSchedulingRoutes } from "./scheduling/routes.js";
+import { createSeoNexiTools } from "./seo/nexiTools.js";
+import { FirestoreSeoRepository, InMemorySeoRepository } from "./seo/repository.js";
+import { registerSeoRoutes } from "./seo/routes.js";
 import { enforceToolEntitlements } from "./platform/entitlements.js";
 import { MemoryStorageWriter } from "./platform/backup.js";
 import { FirebaseStorageWriter } from "./platform/storage.js";
@@ -77,6 +80,7 @@ const mobileRepository = new InMemoryMobileRepository();
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 const sitesRepository = adminDb ? new FirestoreSitesRepository(adminDb) : new InMemorySitesRepository();
+const seoRepository = adminDb ? new FirestoreSeoRepository(adminDb) : new InMemorySeoRepository();
 
 app.use(express.json({
   limit: "1mb",
@@ -124,6 +128,12 @@ app.use("/api/nexi", createNexiRouter(process.env, {
     }).concat(createSitesNexiTools({
       repository: sitesRepository,
       access
+    })).concat(createSeoNexiTools({
+      repository: seoRepository,
+      sitesRepository,
+      approvalQueue,
+      access,
+      env: process.env
     }));
   }
 }));
@@ -239,6 +249,7 @@ registerEvaporationRoutes(app, { repository: evaporationRepository, env: process
 registerMobileRoutes(app, { repository: mobileRepository, approvalQueue, env: process.env });
 registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
 registerSitesRoutes(app, { repository: sitesRepository, approvalQueue, eventBus, env: process.env });
+registerSeoRoutes(app, { repository: seoRepository, sitesRepository, approvalQueue, env: process.env });
 app.use(express.static(webDistDir));
 
 app.get("/", (_req: Request, res: Response) => {

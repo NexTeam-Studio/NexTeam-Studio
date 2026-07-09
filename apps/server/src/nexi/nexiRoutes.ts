@@ -12,7 +12,7 @@ const memoryRepository = new MemoryNexiRepository();
 const memoryUsageLog = new MemoryUsageLogWriter();
 
 function defaultApproval(): Tenant["approval"] {
-  const kinds: ArtifactKind[] = ["client", "email", "sms", "gbp_post", "social_post", "article", "quote", "invoice", "site_publish", "review_reply"];
+  const kinds: ArtifactKind[] = ["client", "email", "sms", "gbp_post", "social_post", "article", "quote", "invoice", "site_publish", "seo_fix", "review_reply"];
   return Object.fromEntries(kinds.map((kind) => [kind, { autoApprove: false, cleanStreak: 0 }])) as Tenant["approval"];
 }
 
