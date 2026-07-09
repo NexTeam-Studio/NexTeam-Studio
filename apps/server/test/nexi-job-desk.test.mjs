@@ -1089,15 +1089,15 @@ test("Nexi named client lookup preserves the requested client name instead of br
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
     env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I found Kristi King in Jobber." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
+    fetchFn: async () => {
+      throw new Error("named client lookup should answer directly from checked records");
+    }
   });
 
   assert.deepEqual(result.toolRuns.map((run) => run.name), ["clientLookup"]);
   assert.equal(toolCalls[0].q, "Kristi King");
   assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
+  assert.equal(result.answer, "I found Kristi King in Jobber.");
 });
 
 test("Nexi named job lookup routes to Jobber detail instead of the schedule board", async () => {

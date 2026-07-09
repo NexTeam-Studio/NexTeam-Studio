@@ -247,6 +247,7 @@ export const nexiOwnerReportedRegressionSessions = [
         expectedIntent: "client_identity_lookup_live_jobber_fallback",
         requiredTools: ["clientLookup"],
         forbiddenTools: ["searchEmail", "getSchedule"],
+        expectedAnswerIncludes: ["Kristi King"],
         assertions: ["usesRequiredRails", "noNoSourceStonewall", "noRawToolError"]
       },
       {
@@ -257,16 +258,19 @@ export const nexiOwnerReportedRegressionSessions = [
         expectedIntent: "job_identity_lookup_live_jobber",
         requiredTools: ["getJobDetail"],
         forbiddenTools: ["searchEmail", "getSchedule"],
+        expectedAnswerIncludes: ["Kristi King", "Swimming Pool Leak Detection"],
         assertions: ["usesRequiredRails", "noNoSourceStonewall", "noRawToolError"]
       },
       {
-        id: "20260709-owner-class-h-client-lookup-christy-staudt",
+        id: "20260709-owner-class-h-client-lookup-valley-view-condominiums",
         createdAt: "2026-07-09T18:00:02.000-04:00",
         originalConversationId: "owner-reported",
-        question: "Look up client Christy Staudt",
+        question: "Look up client Valley View Condominiums",
         expectedIntent: "client_identity_lookup_live_jobber_fallback_other_client",
         requiredTools: ["clientLookup"],
         forbiddenTools: ["searchEmail", "getSchedule"],
+        expectedAnswerIncludes: ["Valley View Condominiums"],
+        forbiddenAnswerIncludes: ["Kristi King"],
         assertions: ["usesRequiredRails", "noNoSourceStonewall", "noRawToolError"]
       }
     ]

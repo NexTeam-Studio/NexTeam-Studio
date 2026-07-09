@@ -2023,6 +2023,42 @@ function intakeAnswerSavedAnswer(result: unknown): string {
   return `I saved that onboarding answer. Next: ${nextQuestion}`;
 }
 
+function normalizeIdentityText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function clientLookupAnswer(latestText: string, result: unknown): string | undefined {
+  const record = objectRecord(result);
+  const rawClients = Array.isArray(record?.clients) ? record.clients : [];
+  const requested = clientLookupQueryFromText(latestText);
+  const requestedNormalized = normalizeIdentityText(requested);
+  const clients = rawClients
+    .map((client) => objectRecord(client))
+    .filter((client): client is Record<string, unknown> => Boolean(client))
+    .map((client) => ({
+      name: stringValue(client.name) ?? "",
+      company: stringValue(client.company) ?? ""
+    }))
+    .filter((client) => client.name || client.company);
+  const matches = requestedNormalized
+    ? clients.filter((client) => {
+        const values = [client.name, client.company].map(normalizeIdentityText).filter(Boolean);
+        return values.some((value) => value === requestedNormalized || value.includes(requestedNormalized));
+      })
+    : clients;
+  const names = [...new Set(matches.map((client) => client.name || client.company).filter(Boolean))];
+  if (names.length === 0) {
+    return requested
+      ? `I checked the client list and Jobber, but I did not find ${requested}.`
+      : "I checked the client list and Jobber, but I did not find a matching client.";
+  }
+  const foundIn = record?.fallbackUsed || Number(record?.jobberFallbackCount ?? 0) > 0 ? "Jobber" : "the client list";
+  if (names.length === 1) {
+    return `I found ${names[0]} in ${foundIn}.`;
+  }
+  return `I found ${names.length} matching clients in ${foundIn}: ${names.slice(0, 5).join(", ")}${names.length > 5 ? ", and more" : ""}.`;
+}
+
 function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns: ToolRunTrace[]): string | undefined {
   const latestText = latestUserText(messages);
   const lower = latestText.toLowerCase();
@@ -2038,6 +2074,10 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
   const intakeAnswerRun = [...toolRuns].reverse().find((run) => run.name === "answerIntake" && run.sources.length > 0);
   if (intakeAnswerRun && looksLikeAnswerIntakeAction(latestText)) {
     return intakeAnswerSavedAnswer(intakeAnswerRun.result);
+  }
+  const clientLookupRun = [...toolRuns].reverse().find((run) => run.name === "clientLookup" && run.sources.length > 0);
+  if (clientLookupRun && looksLikeNamedClientLookupQuestion(lower) && !looksLikeClientListQuestion(lower)) {
+    return clientLookupAnswer(latestText, clientLookupRun.result);
   }
   return undefined;
 }

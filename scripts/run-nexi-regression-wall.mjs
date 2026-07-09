@@ -115,6 +115,20 @@ function runAssertions(testCase, result) {
   if (testCase.assertions.includes("capabilitiesList") && !/(schedule|job details|reports?|photos?|client lists?|inbox|draft emails?|evaporation)/i.test(answer)) {
     failures.push("capabilities answer did not list usable Nexi abilities");
   }
+  if (Array.isArray(testCase.expectedAnswerIncludes)) {
+    for (const expectedText of testCase.expectedAnswerIncludes) {
+      if (typeof expectedText === "string" && expectedText && !lower.includes(expectedText.toLowerCase())) {
+        failures.push(`answer did not include expected text: ${expectedText}`);
+      }
+    }
+  }
+  if (Array.isArray(testCase.forbiddenAnswerIncludes)) {
+    for (const forbiddenText of testCase.forbiddenAnswerIncludes) {
+      if (typeof forbiddenText === "string" && forbiddenText && lower.includes(forbiddenText.toLowerCase())) {
+        failures.push(`answer included forbidden text: ${forbiddenText}`);
+      }
+    }
+  }
   if (testCase.assertions.includes("noSingleRailPaymentConclusion")) {
     if (!names.includes("invoiceStatus") || !names.includes("searchEmail")) {
       failures.push("payment answer did not exhaust invoice and email rails");
