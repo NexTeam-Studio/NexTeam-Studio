@@ -10,7 +10,10 @@ import {
 } from "./support/liveProofHelpers.mjs";
 
 const baseUrl = (process.env.NEXI_BASE_URL || resolveBaseUrl()).replace(/\/$/, "");
-const expectedSha = process.env.EXPECTED_GIT_SHA || process.env.EXPECTED_SHA || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+const expectedSha = process.env.EXPECTED_GIT_SHA
+  || process.env.EXPECTED_SHA
+  || process.env.NEXTEAM_DEPLOY_SHA
+  || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 const tenantId = process.env.TENANT_ID || "aquatrace";
 const receiptPath = process.env.PHASE0_REALITY_RECEIPT || "receipts/phase0/phase0-reality-live-receipt-current.json";
 const runId = `phase0-${Date.now()}-${randomUUID().slice(0, 8)}`;
