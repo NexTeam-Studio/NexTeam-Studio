@@ -247,6 +247,7 @@ KNOWN VARIANTS:
 - (module audit) M4 native upload endpoints exist, but owner-facing photo upload is not complete without the M11 real-device path.
 - (module audit) M5 content tools existed, but content queue visibility was not proven through owner-facing chat/UI after Part 9. Phase 0 item 3 now routes content queue prompts to `contentQueue`, supports approve/reject decisions, and exposes a `/web` Content Queue card; local smoke receipt: `receipts/phase0/content-queue-visibility-local-smoke-20260708.json`.
 - (module audit) M12a voice was left marked in progress after live staging TTS and usageLog cost receipts existed. Phase 0 item 4 corrected BUILDSTATE to done for the M12a foundation and records the status receipt at `receipts/phase0/m12a-voice-reality-gate-status-20260708.json`; M12b full-duplex/interruptible voice remains separate future scope.
+- (module audit) M6 Campaigns was marked blocked even though generation, templates, sequencing, compliance injection, suppression, tracking, transactional queueing, and ApprovalQueue-only behavior were live-receipted. Phase 0 item 5 separates the completed build-to-approval module from the parked external bulk-send boundary; receipt: `receipts/phase0/m6-campaigns-blocker-resolution-20260708.json`.
 
 STATUS: OPEN - BUILDSTATE reality-gate correction in progress.
 

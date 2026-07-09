@@ -1,0 +1,50 @@
+{
+  "receipt": "phase0-m6-campaigns-blocker-resolution",
+  "capturedAt": "2026-07-08T20:05:00.000-04:00",
+  "worktree": "C:/Users/Peyto/NexTeam-Studio-worktrees/phase0-reality",
+  "branch": "build/phase0-reality-gate",
+  "phase0Item": 5,
+  "exactBlocker": "BUILDSTATE marked M6 Campaigns as blocked because actual bulk/list email execution is gated by SPF/DKIM/DMARC confirmation, tenant physical mailing address, and explicit owner approval. That is an external send boundary, not a missing campaign-build capability.",
+  "resolution": "M6 module status is separated from outbound execution. Campaign generation, audience query, XState sequencing, compliance injection, suppression, tracking, templates, transactional queueing, AccessContext gates, and ApprovalQueue-only behavior are treated as the build scope. Actual bulk/list execution remains parked until the external send boundary is cleared.",
+  "existingLiveReceipt": {
+    "path": "receipts/m6/campaigns-live-receipt-20260708-current.json",
+    "shaMatched": "0dbfd7aee301bc23778e3e6eb73f380126b01cdd",
+    "checks": {
+      "templateSaved": true,
+      "templateListed": true,
+      "audienceConsentHonored": true,
+      "firstStepApprovalQueuedOnly": true,
+      "templateVariablesRendered": true,
+      "unsubscribeAndAddressInjected": true,
+      "trackingRecorded": true,
+      "suppressionHonored": true,
+      "transactionalApprovalOnly": true,
+      "statsIncludeTracking": true
+    },
+    "outboundExecuted": false,
+    "approvalQueueOnly": true
+  },
+  "focusedVerification": {
+    "command": "node --test apps/server/test/campaigns.test.mjs",
+    "exitCode": 0,
+    "summary": "10 passing, 0 failing"
+  },
+  "dnsRecon": {
+    "source": "Resolve-DnsName TXT aquatraceleak.com, _dmarc.aquatraceleak.com, google._domainkey.aquatraceleak.com",
+    "publicRecordsObserved": {
+      "spf": "present: v=spf1 include:_spf.google.com ~all",
+      "dmarc": "present: p=none with Cloudflare rua",
+      "googleDkim": "present"
+    },
+    "reasonExecutionStillBlocked": "Public DNS presence is not enough to enable sends. M6 requires intentional staging env confirmation and physical mailing address configuration before any executor may consider list execution."
+  },
+  "fixPathBeforeBulkExecution": [
+    "Set M6_SPF_CONFIRMED=true only after owner confirms SPF record is correct for the sending domain.",
+    "Set M6_DKIM_CONFIRMED=true only after owner confirms Google Workspace DKIM is active for the sending domain.",
+    "Set M6_DMARC_CONFIRMED=true only after owner confirms DMARC policy/reporting is acceptable.",
+    "Set M6_PHYSICAL_ADDRESS or TENANT_PHYSICAL_ADDRESS to the legal mailing address required in list email footers.",
+    "Keep all sends ApprovalQueue-gated and require explicit owner approval before any executor sends."
+  ],
+  "part9RealityGate": "M6 build-to-approval is done; bulk/list execution remains a parked outbound boundary, not a code blocker.",
+  "secrets": "No secret values included."
+}
