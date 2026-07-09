@@ -1,0 +1,96 @@
+{
+  "module": "M13 Platform",
+  "item": "Self-diagnosis and repair rail local foundation",
+  "branch": "build/self-repair",
+  "status": "in_progress_local_foundation",
+  "createdAt": "2026-07-08T23:30:00-04:00",
+  "summary": {
+    "built": [
+      "Tenant-scoped selfRepairLog repository with Firestore and memory implementations",
+      "Deterministic failure-class analyzer for trial regression classes A, C, D, and E",
+      "Safe-repair allowlist logging for failureLog gap-label corrections and wall-entry candidates",
+      "Fix-brief generation with suspected file hints and required regression-wall receipt text",
+      "Morning report generation queued as ApprovalQueue email artifact with execute.service=selfRepair and noOutboundSend=true",
+      "Owner/admin-only run and log endpoints under /api/self-repair"
+    ],
+    "hardBoundaries": [
+      "No code edits are performed by the self-repair rail",
+      "No SOUL/schema/deploy changes are performed by the self-repair rail",
+      "No outbound email send executor is bound for selfRepair morning reports",
+      "All data reads go through tenant-scoped PlatformRepository.exportTenantData",
+      "Route access requires OWNER or OFFICE_ADMIN AccessContext"
+    ],
+    "detectedTrialPatternsInTests": [
+      "P1-W email rail down phrasing routes to C_INTENT_MISROUTING",
+      "P1-X evaporation tool unreachable from chat routes to C_INTENT_MISROUTING",
+      "P1-Y spa main drain follow-up routes to A_SINGLE_RAIL_CONCLUSION",
+      "Report-PDF attachment gap is logged as a safe gap_label_correction to capability_not_available"
+    ],
+    "notDoneYet": [
+      "Live staging run against a real day's Aquatrace conversations",
+      "Anthropic gateway analysis pass with usageLog cost entry",
+      "Railway cron scheduling at 20:00 tenant-local",
+      "Owner-visible emailed morning report receipt after approval",
+      "Full live wall after deployment"
+    ]
+  },
+  "files": [
+    "apps/server/src/selfrepair/analyzer.ts",
+    "apps/server/src/selfrepair/repository.ts",
+    "apps/server/src/selfrepair/routes.ts",
+    "apps/server/src/selfrepair/schemas.ts",
+    "apps/server/src/selfrepair/service.ts",
+    "apps/server/src/selfrepair/README.md",
+    "apps/server/src/server.ts",
+    "apps/server/test/self-repair.test.mjs",
+    "apps/server/README.md"
+  ],
+  "verification": [
+    {
+      "command": "npm run build",
+      "result": "passed"
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "node --test apps/server/test/self-repair.test.mjs",
+      "result": "passed 4/4"
+    },
+    {
+      "command": "npm run test",
+      "result": "passed 159/159"
+    },
+    {
+      "command": "npm run lint",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check:tenancy",
+      "result": "passed, 108 files checked"
+    },
+    {
+      "command": "npm run check:secrets",
+      "result": "passed, 794 tracked non-doc files checked"
+    },
+    {
+      "command": "npm run check:provider-imports",
+      "result": "passed, 134 files checked"
+    },
+    {
+      "command": "npm run check:blueprints",
+      "result": "passed, 108 files checked"
+    },
+    {
+      "command": "npm run check:secret-history",
+      "result": "passed, 290 reachable commits and 4429 reachable objects checked"
+    }
+  ],
+  "security": {
+    "secretValuesStored": false,
+    "outboundSendsAttempted": false,
+    "approvalQueueOnly": true,
+    "tenantScopedBy": "PlatformRepository.exportTenantData plus AccessContext route gates"
+  }
+}
