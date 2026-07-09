@@ -1,8 +1,10 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
-import { RailError, type Tenant, type TenantAdapterStatus, type TenantPlan } from "@nexteam/core";
+import { RailError, type JobAccessScope, type Tenant, type TenantAdapterStatus, type TenantPlan } from "@nexteam/core";
 import type { DecodedIdToken } from "firebase-admin/auth";
+import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
 import { getAdminAuth } from "../firebase.js";
+import { createJobAccessLink, customClaimsForTenantUser, upsertTenantUser, verifyJobAccessToken } from "./accessManagement.js";
 import { runTenantBackup, type StorageWriter } from "./backup.js";
 import { createStripeTestSubscription } from "./billing.js";
 import { toolEntitlementMatrix } from "./entitlements.js";
@@ -32,6 +34,31 @@ const tenantBodySchema = z.object({
 const subscribeBodySchema = z.object({
   plan: z.enum(["nexi", "marketing", "suite"]),
   email: z.string().email().optional()
+});
+
+const tenantUserBodySchema = z.object({
+  id: z.string().min(1).optional(),
+  authUid: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  displayName: z.string().min(1),
+  role: z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]),
+  active: z.boolean().optional()
+});
+
+const jobAccessLinkBodySchema = z.object({
+  jobId: z.string().min(1),
+  propertyId: z.string().min(1).optional(),
+  externalName: z.string().min(1),
+  externalEmail: z.string().email().optional(),
+  scopes: z.array(z.enum(["job.read", "checklist.write", "media.upload", "notes.write"])).optional(),
+  expiresAt: z.string().min(1),
+  returnToken: z.boolean().default(false)
+});
+
+const verifyJobAccessLinkSchema = z.object({
+  tenantId: z.string().min(1),
+  linkId: z.string().min(1),
+  token: z.string().min(16)
 });
 
 export interface PlatformRouteDeps {
@@ -172,6 +199,147 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         timezone: input.timezone ?? baseTenant.timezone
       });
       res.status(201).json({ ok: true, tenant });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/tenants/:tenantId/users", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      if (!tenantId) {
+        throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantUsers", status: 400 });
+      }
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "tenantUsers" });
+      res.json({ ok: true, tenantId, users: await deps.repository.listTenantUsers(tenantId) });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/tenants/:tenantId/users", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      if (!tenantId) {
+        throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantUserUpsert", status: 400 });
+      }
+      await requireTenantRole(req, env, ["OWNER"], { requestedTenantId: tenantId, op: "tenantUserUpsert" });
+      const input = tenantUserBodySchema.parse(req.body ?? {});
+      const user = await upsertTenantUser(deps.repository, { ...input, tenantId });
+      res.status(201).json({ ok: true, user, claimsPreview: customClaimsForTenantUser(user) });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/tenants/:tenantId/users/:userId/custom-claims", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      const userId = req.params.userId;
+      if (!tenantId || !userId) {
+        throw new RailError("Tenant id and user id are required.", { provider: "platform", op: "tenantUserClaims", status: 400 });
+      }
+      await requireTenantRole(req, env, ["OWNER"], { requestedTenantId: tenantId, op: "tenantUserClaims" });
+      const user = await deps.repository.getTenantUser(tenantId, userId);
+      if (!user) {
+        throw new RailError("Tenant user was not found.", { provider: "platform", op: "tenantUserClaims", status: 404 });
+      }
+      const claims = customClaimsForTenantUser(user);
+      const auth = getAdminAuth(env);
+      const canApply = Boolean(auth && user.authUid && env.NEXI_FIREBASE_AUTH_REQUIRED !== "false");
+      if (canApply && auth && user.authUid) {
+        await auth.setCustomUserClaims(user.authUid, claims);
+      }
+      res.json({ ok: true, userId: user.id, applied: canApply, claimsPreview: claims });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/tenants/:tenantId/job-access-links", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      if (!tenantId) {
+        throw new RailError("Tenant id is required.", { provider: "platform", op: "jobAccessLinks", status: 400 });
+      }
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "jobAccessLinks" });
+      const jobId = typeof req.query.jobId === "string" ? req.query.jobId : undefined;
+      const links = await deps.repository.listJobAccessLinks(tenantId, jobId);
+      res.json({ ok: true, tenantId, links: links.map((link) => ({ ...link, tokenHash: "[stored hash]" })) });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/tenants/:tenantId/job-access-links", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      if (!tenantId) {
+        throw new RailError("Tenant id is required.", { provider: "platform", op: "jobAccessLinkCreate", status: 400 });
+      }
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: tenantId,
+        op: "jobAccessLinkCreate"
+      });
+      const input = jobAccessLinkBodySchema.parse(req.body ?? {});
+      const created = await createJobAccessLink(deps.repository, {
+        tenantId,
+        jobId: input.jobId,
+        propertyId: input.propertyId,
+        externalName: input.externalName,
+        externalEmail: input.externalEmail,
+        scopes: input.scopes as JobAccessScope[] | undefined,
+        expiresAt: input.expiresAt,
+        createdBy: actorIdForAccess(access)
+      });
+      res.status(201).json({
+        ok: true,
+        link: { ...created.link, tokenHash: "[stored hash]" },
+        tokenFingerprint: created.tokenFingerprint,
+        oneTimeToken: input.returnToken ? created.oneTimeToken : undefined,
+        warning: input.returnToken
+          ? "The one-time token is shown only because returnToken=true; do not put it in receipts or logs."
+          : "One-time token withheld from response to avoid credential leakage."
+      });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/tenants/:tenantId/job-access-links/:linkId/revoke", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      const linkId = req.params.linkId;
+      if (!tenantId || !linkId) {
+        throw new RailError("Tenant id and link id are required.", { provider: "platform", op: "jobAccessLinkRevoke", status: 400 });
+      }
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "jobAccessLinkRevoke" });
+      const link = await deps.repository.revokeJobAccessLink(tenantId, linkId, new Date().toISOString());
+      if (!link) {
+        throw new RailError("That job link was not found.", { provider: "platform", op: "jobAccessLinkRevoke", status: 404 });
+      }
+      res.json({ ok: true, link: { ...link, tokenHash: "[stored hash]" } });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/job-access-links/verify", async (req: Request, res: Response) => {
+    try {
+      const input = verifyJobAccessLinkSchema.parse(req.body ?? {});
+      const access = await verifyJobAccessToken(deps.repository, input);
+      res.json({
+        ok: true,
+        access: {
+          tenantId: access.tenantId,
+          accessKind: access.accessKind,
+          tenantUserId: access.tenantUserId,
+          jobAccessLinkId: access.jobAccessLinkId,
+          jobId: access.jobId,
+          propertyId: access.propertyId,
+          scopes: access.scopes
+        }
+      });
     } catch (error) {
       sendRouteError(res, error);
     }

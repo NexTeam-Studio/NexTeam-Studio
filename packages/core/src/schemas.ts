@@ -90,6 +90,37 @@ export const tenantSubscriptionSchema = z.object({
   updatedAt: z.string()
 });
 
+export const tenantUserRoleSchema = z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]);
+
+export const tenantUserSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  authUid: z.string().optional(),
+  email: z.string().email().optional(),
+  displayName: z.string().min(1),
+  role: tenantUserRoleSchema,
+  active: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+export const jobAccessScopeSchema = z.enum(["job.read", "checklist.write", "media.upload", "notes.write"]);
+
+export const jobAccessLinkSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  jobId: idSchema,
+  propertyId: idSchema.optional(),
+  externalName: z.string().min(1),
+  externalEmail: z.string().email().optional(),
+  tokenHash: z.string().min(16),
+  scopes: z.array(jobAccessScopeSchema).min(1),
+  expiresAt: z.string(),
+  revokedAt: z.string().optional(),
+  createdAt: z.string(),
+  createdBy: idSchema
+});
+
 export const tenantAdapterStatusSchema = z.object({
   tenantId: idSchema,
   adapter: z.enum(["crm", "media", "email", "sms", "maps", "llm", "voice"]),

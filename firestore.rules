@@ -5,13 +5,122 @@ service cloud.firestore {
     function isChrisAdmin() {
       return request.auth != null
         && (
-          request.auth.token.email == "chris1bata@gmail.com"
-          || request.auth.token.roles.hasAny(["platform_operator"])
-          || request.auth.token.platform_operator == true
+          ("email" in request.auth.token && request.auth.token.email == "chris1bata@gmail.com")
+          || ("role" in request.auth.token && request.auth.token.role == "platform_operator")
+          || ("roles" in request.auth.token && request.auth.token.roles.hasAny(["platform_operator"]))
+          || ("platform_operator" in request.auth.token && request.auth.token.platform_operator == true)
         );
     }
 
     match /admin/{document=**} {
+      allow read, write: if isChrisAdmin();
+    }
+
+    function sameTenant(tenantId) {
+      return request.auth != null
+        && request.auth.token.tenantId == tenantId;
+    }
+
+    function tenantRole() {
+      return request.auth.token.tenantRole;
+    }
+
+    function isTenantOwner(tenantId) {
+      return sameTenant(tenantId) && tenantRole() == "OWNER";
+    }
+
+    function isTenantOfficeOrOwner(tenantId) {
+      return sameTenant(tenantId) && tenantRole() in ["OWNER", "OFFICE_ADMIN"];
+    }
+
+    function validTenantRoot(tenantId) {
+      return request.resource.data.tenantId == tenantId
+        && request.resource.data.brandName is string
+        && request.resource.data.avatarName is string;
+    }
+
+    function validIntakePacket(tenantId) {
+      return request.resource.data.tenantId == tenantId
+        && request.resource.data.documentType == "tenant-intake-packet"
+        && request.resource.data.packetId is string
+        && request.resource.data.intake is map
+        && request.resource.data.meta is map;
+    }
+
+    function validTenantConfig(tenantId) {
+      return request.resource.data.tenantId == tenantId
+        && request.resource.data.documentType == "tenant-client-config"
+        && request.resource.data.profile is map
+        && request.resource.data.branding is map
+        && request.resource.data.businessRules is map
+        && request.resource.data.channels is map
+        && request.resource.data.workflow is map
+        && request.resource.data.dashboard is map
+        && request.resource.data.meta is map;
+    }
+
+    function validRuntimeSummary(tenantId) {
+      return request.resource.data.tenantId == tenantId
+        && request.resource.data.documentType == "tenant-runtime-summary"
+        && request.resource.data.brandName is string
+        && request.resource.data.publicAgentName is string
+        && request.resource.data.workflow is map
+        && request.resource.data.connectivity is map
+        && request.resource.data.dashboard is map
+        && request.resource.data.updatedAt is string;
+    }
+
+    function validSubagent() {
+      return request.resource.data.keys().hasAll(["id", "name", "role", "enabled"])
+        && request.resource.data.id is string
+        && request.resource.data.name is string
+        && request.resource.data.role is string
+        && request.resource.data.enabled is bool;
+    }
+
+    match /tenants/{tenantId} {
+      allow read: if isChrisAdmin() || sameTenant(tenantId);
+      allow create, update: if isChrisAdmin() || (sameTenant(tenantId) && validTenantRoot(tenantId));
+
+      match /intakePackets/{packetId} {
+        allow read: if isChrisAdmin() || sameTenant(tenantId);
+        allow create, update: if isChrisAdmin() || (sameTenant(tenantId) && validIntakePacket(tenantId));
+      }
+
+      match /config/{configId} {
+        allow read: if isChrisAdmin() || sameTenant(tenantId);
+        allow create, update: if isChrisAdmin() || (sameTenant(tenantId) && validTenantConfig(tenantId));
+      }
+
+      match /runtimeSummary/{summaryId} {
+        allow read: if isChrisAdmin() || sameTenant(tenantId);
+        allow create, update: if isChrisAdmin() || (sameTenant(tenantId) && validRuntimeSummary(tenantId));
+      }
+
+      match /subagents/{subagentId} {
+        allow read: if isChrisAdmin() || sameTenant(tenantId);
+        allow create, update: if isChrisAdmin() || (sameTenant(tenantId) && validSubagent());
+      }
+    }
+
+    match /tenantUsers/{userId} {
+      allow read: if isChrisAdmin()
+        || (
+          request.auth != null
+          && sameTenant(resource.data.tenantId)
+          && (
+            request.auth.token.tenantUserId == userId
+            || tenantRole() in ["OWNER", "OFFICE_ADMIN"]
+          )
+        );
+      allow write: if isChrisAdmin()
+        || (
+          request.auth != null
+          && isTenantOwner(request.resource.data.tenantId)
+        );
+    }
+
+    match /jobAccessLinks/{linkId} {
       allow read, write: if isChrisAdmin();
     }
 

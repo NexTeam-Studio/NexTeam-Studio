@@ -12,6 +12,9 @@ export interface AccessContext {
   role: TenantRole;
   accessKind: AccessKind;
   jobAccessLinkId?: string | undefined;
+  jobId?: string | undefined;
+  propertyId?: string | undefined;
+  scopes?: string[] | undefined;
   email?: string | undefined;
 }
 
@@ -121,6 +124,9 @@ export async function requireAccessContext(
     role: normalizeRole(decoded, env),
     accessKind: accessKind(decoded),
     ...(claimString(decoded, "jobAccessLinkId") ? { jobAccessLinkId: claimString(decoded, "jobAccessLinkId") } : {}),
+    ...(claimString(decoded, "jobId") ? { jobId: claimString(decoded, "jobId") } : {}),
+    ...(claimString(decoded, "propertyId") ? { propertyId: claimString(decoded, "propertyId") } : {}),
+    ...(Array.isArray((decoded as unknown as Record<string, unknown>).scopes) ? { scopes: (decoded as unknown as Record<string, unknown>).scopes as string[] } : {}),
     ...(decoded.email ? { email: decoded.email } : {})
   };
 }

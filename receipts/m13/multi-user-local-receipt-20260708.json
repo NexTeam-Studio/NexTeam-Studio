@@ -1,0 +1,46 @@
+{
+  "module": "platform",
+  "phase": "M13 multi-user access extension local foundation",
+  "status": "in_progress",
+  "codeBranch": "build/multi-user",
+  "scopeCompleted": [
+    "Core TenantUser and JobAccessLink contracts with zod schemas",
+    "Aquatrace seed users: Chris OWNER, Catherine TECHNICIAN, Logan TECHNICIAN",
+    "Platform repository methods for tenantUsers and jobAccessLinks in memory and Firestore",
+    "Firebase custom-claim payload builder for tenantId, tenantRole, tenantUserId, and roles",
+    "Owner/admin tenant user list/upsert/custom-claims routes",
+    "Owner/admin job-access-link create/list/revoke routes with token hash redaction",
+    "Public job-access-link verification route returning a job-scoped AccessContext shape",
+    "AccessContext extension for jobId, propertyId, and scopes",
+    "Firestore rules shape for tenantUsers and server-only jobAccessLinks"
+  ],
+  "hardRails": {
+    "technicianCampaignAccess": "blocked by existing AccessContext role gates",
+    "jobLinkCampaignAccess": "blocked by existing AccessContext role gates",
+    "mobileAssignedOnly": "preserved by existing M11 access checks",
+    "siteAdminOwnerOfficeOnly": "preserved by existing M8 route gates",
+    "rawMagicLinkTokensInDurableRecords": false,
+    "rawMagicLinkTokensInReceipt": false,
+    "outboundSends": false,
+    "productionDeploy": false
+  },
+  "verification": {
+    "npmInstall": "passed; real local node_modules installed, Node 24 warned against target Node 20, existing audit output reported 29 vulnerabilities and no force-fix was run",
+    "build": "passed",
+    "typecheck": "passed",
+    "targetedPlatformTests": "passed: node --test apps/server/test/platform.test.mjs, 10/10",
+    "fullUnitSuite": "passed: npm run test, 158/158",
+    "lint": "passed",
+    "tenancy": "passed",
+    "providerImports": "passed",
+    "blueprints": "passed",
+    "secretScan": "passed",
+    "secretHistory": "passed: 292 reachable commits, 4467 reachable objects checked",
+    "firestoreRulesEmulator": "passed: npm run test:firestore-rules:emulator, 16/16"
+  },
+  "part9RealityGate": {
+    "passes": false,
+    "reason": "Local foundation is built, but staging custom-claim application and live owner/technician/job-link proof have not run yet."
+  },
+  "blockerForDone": "Deploy to staging, apply real Firebase custom claims for the Aquatrace users, prove owner/admin/technician/job-link behavior live, and run the appropriate live wall before merge."
+}

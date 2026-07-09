@@ -1,11 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import {
+  jobAccessLinkSchema,
   platformBackupRecordSchema,
   tenantAdapterStatusSchema,
   tenantSchema,
   tenantSubscriptionSchema,
+  tenantUserSchema,
   usageLogRecordSchema,
+  type JobAccessLink,
   type PlatformBackupRecord,
   type Tenant,
   type TenantAdapterStatus,
@@ -13,6 +16,7 @@ import {
   type TenantDataExport,
   type TenantPlan,
   type TenantSubscription,
+  type TenantUser,
   type UsageLogRecord
 } from "@nexteam/core";
 import { PLATFORM_PLANS } from "./plans.js";
@@ -63,6 +67,12 @@ export interface PlatformRepository {
   listTenants(): Promise<Tenant[]>;
   getTenant(tenantId: string): Promise<Tenant | null>;
   upsertTenant(tenant: Tenant): Promise<Tenant>;
+  listTenantUsers(tenantId: string): Promise<TenantUser[]>;
+  getTenantUser(tenantId: string, id: string): Promise<TenantUser | null>;
+  upsertTenantUser(user: TenantUser): Promise<TenantUser>;
+  listJobAccessLinks(tenantId: string, jobId?: string | undefined): Promise<JobAccessLink[]>;
+  saveJobAccessLink(link: JobAccessLink): Promise<JobAccessLink>;
+  revokeJobAccessLink(tenantId: string, id: string, revokedAt: string): Promise<JobAccessLink | null>;
   getSubscription(tenantId: string): Promise<TenantSubscription | null>;
   saveSubscription(subscription: TenantSubscription): Promise<TenantSubscription>;
   listAdapterStatuses(tenantId: string): Promise<TenantAdapterStatus[]>;
@@ -71,6 +81,43 @@ export interface PlatformRepository {
   exportTenantData(tenantId: string): Promise<TenantDataExport>;
   recordBackup(record: PlatformBackupRecord): Promise<PlatformBackupRecord>;
   listBackups(tenantId: string): Promise<PlatformBackupRecord[]>;
+}
+
+export function defaultTenantUsers(tenantId = DEFAULT_TENANT_ID): TenantUser[] {
+  const createdAt = "2026-07-08T00:00:00.000Z";
+  if (tenantId !== DEFAULT_TENANT_ID) {
+    return [];
+  }
+  return [
+    {
+      id: "tenant_user_chris",
+      tenantId,
+      email: "chris@aquatraceleak.com",
+      displayName: "Chris",
+      role: "OWNER",
+      active: true,
+      createdAt,
+      updatedAt: createdAt
+    },
+    {
+      id: "tech_catherine",
+      tenantId,
+      displayName: "Catherine",
+      role: "TECHNICIAN",
+      active: true,
+      createdAt,
+      updatedAt: createdAt
+    },
+    {
+      id: "tech_logan",
+      tenantId,
+      displayName: "Logan",
+      role: "TECHNICIAN",
+      active: true,
+      createdAt,
+      updatedAt: createdAt
+    }
+  ];
 }
 
 function starterSubscription(tenant: Tenant): TenantSubscription {
@@ -85,6 +132,8 @@ function starterSubscription(tenant: Tenant): TenantSubscription {
 
 export class InMemoryPlatformRepository implements PlatformRepository {
   private readonly tenants = new Map<string, Tenant>();
+  private readonly tenantUsers = new Map<string, TenantUser[]>();
+  private readonly jobAccessLinks = new Map<string, JobAccessLink[]>();
   private readonly subscriptions = new Map<string, TenantSubscription>();
   private readonly statuses = new Map<string, TenantAdapterStatus[]>();
   private readonly usage = new Map<string, UsageLogRecord[]>();
@@ -94,6 +143,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     for (const tenant of seed) {
       this.tenants.set(tenant.id, tenantSchema.parse(tenant) as Tenant);
       this.subscriptions.set(tenant.id, starterSubscription(tenant));
+      this.tenantUsers.set(tenant.id, defaultTenantUsers(tenant.id).map((user) => tenantUserSchema.parse(user) as TenantUser));
     }
   }
 
@@ -111,7 +161,47 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     if (!this.subscriptions.has(parsed.id)) {
       this.subscriptions.set(parsed.id, starterSubscription(parsed));
     }
+    if (!this.tenantUsers.has(parsed.id)) {
+      this.tenantUsers.set(parsed.id, defaultTenantUsers(parsed.id).map((user) => tenantUserSchema.parse(user) as TenantUser));
+    }
     return parsed;
+  }
+
+  async listTenantUsers(tenantId: string): Promise<TenantUser[]> {
+    return this.tenantUsers.get(tenantId) ?? [];
+  }
+
+  async getTenantUser(tenantId: string, id: string): Promise<TenantUser | null> {
+    return (this.tenantUsers.get(tenantId) ?? []).find((user) => user.id === id) ?? null;
+  }
+
+  async upsertTenantUser(user: TenantUser): Promise<TenantUser> {
+    const parsed = tenantUserSchema.parse(user) as TenantUser;
+    const current = (this.tenantUsers.get(parsed.tenantId) ?? []).filter((entry) => entry.id !== parsed.id);
+    current.push(parsed);
+    this.tenantUsers.set(parsed.tenantId, current);
+    return parsed;
+  }
+
+  async listJobAccessLinks(tenantId: string, jobId?: string | undefined): Promise<JobAccessLink[]> {
+    return (this.jobAccessLinks.get(tenantId) ?? [])
+      .filter((link) => !jobId || link.jobId === jobId);
+  }
+
+  async saveJobAccessLink(link: JobAccessLink): Promise<JobAccessLink> {
+    const parsed = jobAccessLinkSchema.parse(link) as JobAccessLink;
+    const current = (this.jobAccessLinks.get(parsed.tenantId) ?? []).filter((entry) => entry.id !== parsed.id);
+    current.push(parsed);
+    this.jobAccessLinks.set(parsed.tenantId, current);
+    return parsed;
+  }
+
+  async revokeJobAccessLink(tenantId: string, id: string, revokedAt: string): Promise<JobAccessLink | null> {
+    const existing = (this.jobAccessLinks.get(tenantId) ?? []).find((entry) => entry.id === id);
+    if (!existing) {
+      return null;
+    }
+    return this.saveJobAccessLink({ ...existing, revokedAt });
   }
 
   async getSubscription(tenantId: string): Promise<TenantSubscription | null> {
@@ -163,6 +253,8 @@ export class InMemoryPlatformRepository implements PlatformRepository {
       exportedAt: now(),
       collections: {
         tenants: [...(this.tenants.has(tenantId) ? [this.tenants.get(tenantId)] : [])],
+        tenantUsers: this.tenantUsers.get(tenantId) ?? [],
+        jobAccessLinks: this.jobAccessLinks.get(tenantId) ?? [],
         tenantSubscriptions: [...(this.subscriptions.has(tenantId) ? [this.subscriptions.get(tenantId)] : [])],
         tenantAdapterStatuses: this.statuses.get(tenantId) ?? [],
         usageLog: this.usage.get(tenantId) ?? [],
@@ -228,6 +320,54 @@ export class FirestorePlatformRepository implements PlatformRepository {
     return parsed;
   }
 
+  async listTenantUsers(tenantId: string): Promise<TenantUser[]> {
+    const snapshot = await this.db.collection("tenantUsers").where("tenantId", "==", tenantId).get();
+    const users = snapshot.docs.map((doc) => tenantUserSchema.parse(doc.data()) as TenantUser);
+    return users.length > 0 ? users : defaultTenantUsers(tenantId);
+  }
+
+  async getTenantUser(tenantId: string, id: string): Promise<TenantUser | null> {
+    const snapshot = await this.db.collection("tenantUsers").doc(id).get();
+    if (!snapshot.exists) {
+      return defaultTenantUsers(tenantId).find((user) => user.id === id) ?? null;
+    }
+    const parsed = tenantUserSchema.parse(snapshot.data()) as TenantUser;
+    return parsed.tenantId === tenantId ? parsed : null;
+  }
+
+  async upsertTenantUser(user: TenantUser): Promise<TenantUser> {
+    const parsed = tenantUserSchema.parse(user) as TenantUser;
+    await this.db.collection("tenantUsers").doc(parsed.id).set(docData(parsed), { merge: true });
+    return parsed;
+  }
+
+  async listJobAccessLinks(tenantId: string, jobId?: string | undefined): Promise<JobAccessLink[]> {
+    let query = this.db.collection("jobAccessLinks").where("tenantId", "==", tenantId);
+    if (jobId) {
+      query = query.where("jobId", "==", jobId);
+    }
+    const snapshot = await query.get();
+    return snapshot.docs.map((doc) => jobAccessLinkSchema.parse(doc.data()) as JobAccessLink);
+  }
+
+  async saveJobAccessLink(link: JobAccessLink): Promise<JobAccessLink> {
+    const parsed = jobAccessLinkSchema.parse(link) as JobAccessLink;
+    await this.db.collection("jobAccessLinks").doc(parsed.id).set(docData(parsed), { merge: true });
+    return parsed;
+  }
+
+  async revokeJobAccessLink(tenantId: string, id: string, revokedAt: string): Promise<JobAccessLink | null> {
+    const existing = await this.db.collection("jobAccessLinks").doc(id).get();
+    if (!existing.exists) {
+      return null;
+    }
+    const parsed = jobAccessLinkSchema.parse(existing.data()) as JobAccessLink;
+    if (parsed.tenantId !== tenantId) {
+      return null;
+    }
+    return this.saveJobAccessLink({ ...parsed, revokedAt });
+  }
+
   async getSubscription(tenantId: string): Promise<TenantSubscription | null> {
     const snapshot = await this.db.collection("tenantSubscriptions").where("tenantId", "==", tenantId).get();
     const data = snapshot.docs[0]?.data();
@@ -274,7 +414,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
   }
 
   async exportTenantData(tenantId: string): Promise<TenantDataExport> {
-    const collections = ["tenants", "tenantSubscriptions", "tenantAdapterStatuses", "clients", "properties", "jobs", "quotes", "invoices", "media", "siteJobBlueprints", "conversations", "failureLog", "usageLog", "platformBackups"];
+    const collections = ["tenants", "tenantUsers", "jobAccessLinks", "tenantSubscriptions", "tenantAdapterStatuses", "clients", "properties", "jobs", "quotes", "invoices", "media", "siteJobBlueprints", "conversations", "failureLog", "usageLog", "platformBackups"];
     const entries = await Promise.all(collections.map(async (collectionName) => {
       const snapshot = await this.db.collection(collectionName).where("tenantId", "==", tenantId).get();
       return [collectionName, snapshot.docs.map((doc) => firestoreDoc(doc.data()))] as const;
