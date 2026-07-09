@@ -9,6 +9,8 @@ param(
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "SafeOutput.ps1")
+
 function Convert-SecureStringToPlainText {
   param([Parameter(Mandatory = $true)][securestring]$SecureString)
 
@@ -32,26 +34,6 @@ function Get-RailwayTokenFromVault {
   $encrypted = Get-Content -LiteralPath $Path -Raw
   $secure = ConvertTo-SecureString -String $encrypted
   Convert-SecureStringToPlainText -SecureString $secure
-}
-
-function Redact-SecretOutput {
-  param(
-    [Parameter(Mandatory = $true)][string]$Text,
-    [Parameter(Mandatory = $true)][string]$Secret
-  )
-
-  $redacted = $Text.Replace($Secret, "[REDACTED_RAILWAY_TOKEN]")
-  $redacted = $redacted -replace '(?i)(Project-Access-Token\s*[:=]\s*)\S+', '$1[REDACTED]'
-  $redacted = $redacted -replace '(?i)(Authorization\s*:\s*Bearer\s+)\S+', '$1[REDACTED]'
-  $redacted = $redacted -replace '(?i)((?:RAILWAY_TOKEN|RAILWAY_API_TOKEN)\s*[:=]\s*)\S+', '$1[REDACTED]'
-  $redacted = $redacted -replace '(?i)(sk-ant-api03-[A-Za-z0-9_\-]+)', '[REDACTED_ANTHROPIC_KEY]'
-  $redacted = $redacted -replace '(?i)(sk_(?:live|test|[A-Za-z0-9])[A-Za-z0-9_\-]+)', '[REDACTED_SECRET_KEY]'
-  $redacted = $redacted -replace '(?i)(whsec_[A-Za-z0-9_\-]+)', '[REDACTED_WEBHOOK_SECRET]'
-  $redacted = $redacted -replace '(?i)(AIza[A-Za-z0-9_\-]+)', '[REDACTED_GOOGLE_API_KEY]'
-  $redacted = $redacted -replace '(?i)(GOCSPX-[A-Za-z0-9_\-]+)', '[REDACTED_GOOGLE_CLIENT_SECRET]'
-  $redacted = $redacted -replace '(?i)(1//[A-Za-z0-9_\-]+)', '[REDACTED_GOOGLE_REFRESH_TOKEN]'
-  $redacted = $redacted -replace '(?i)\b[a-f0-9]{32}\b', '[REDACTED_HEX_SECRET]'
-  $redacted
 }
 
 if (-not $RailwayArgs -or $RailwayArgs.Count -eq 0) {
@@ -80,13 +62,10 @@ try {
   }
 
   foreach ($item in $output) {
-    $text = ($item | Out-String).TrimEnd()
-    if ($text.Length -gt 0) {
-      Write-Output (Redact-SecretOutput -Text $text -Secret $token)
-    }
+    Write-SafeOutput -InputObject $item -KnownSecrets @($token)
   }
 } catch {
-  $message = Redact-SecretOutput -Text $_.Exception.Message -Secret $token
+  $message = Redact-SecretOutput -Text $_.Exception.Message -KnownSecrets @($token)
   Write-Error $message
   $exitCode = 1
 } finally {
