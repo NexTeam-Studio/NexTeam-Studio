@@ -378,17 +378,18 @@ ROOT CAUSE: This is a bundled symptom with distinct causes that must stay separa
 - H1 - Jobber lookup erroring: live Jobber client/job detail scans stopped after the old 25-page ceiling, so records beyond roughly the first 625 clients/jobs were reported as missing or surfaced as tool failures.
 - H2 - Native CRM staleness: native CRM client search reflects an earlier partial/imported dataset and does not automatically contain every current Jobber client.
 - H3 - Identity intent routing: named job questions like "What job do we have for Kristi King?" could fall into the schedule-board route because the broad schedule detector matched "job" before a named job-detail policy ran.
+- H4 - Cached identity reuse: a named client lookup could reuse the previous `clientLookup` result for a different client in the same conversation instead of forcing a fresh lookup for the newly requested name.
 
 KNOWN VARIANTS:
 
 - (1) Look up client Christy King / Kristy King / Kristi King
 - (1) What job do we have for Kristi King?
 - (1) show me a client that exists in Jobber but not native CRM
-- (1) today's blank calendar board suspicion after Jobber lookup errors
+- (1) today's blank calendar board suspicion after Jobber lookup errors - verified as real no-visit result for 2026-07-09, not the same failure.
 
-STATUS: OPEN - root cause identified; adapter pagination, native-to-Jobber fallback, and deterministic named-job routing are being verified.
+STATUS: CLOSED - live staging receipt passed 3/3 at deploy SHA `0b21547b2db82fad4f063e75a0ac6fcc0982caf4`.
 
-CLOSURE RECEIPT: Pending live staging receipt.
+CLOSURE RECEIPT: `receipts/class-h/class-h-live-wall-20260709.json`
 
 REGRESSION TEST IDS:
 

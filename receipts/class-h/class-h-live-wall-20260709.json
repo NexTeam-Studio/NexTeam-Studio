@@ -1,0 +1,52 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783633231752-b6b58930",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 3,
+  "passed": 3,
+  "failed": 0,
+  "caseFilter": "class-h",
+  "limit": null,
+  "offset": null,
+  "results": [
+    {
+      "id": "20260709-owner-class-h-client-lookup-kristi-king",
+      "createdAt": "2026-07-09T18:00:00.000-04:00",
+      "expectedIntent": "client_identity_lookup_live_jobber_fallback",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "clientLookup"
+      ],
+      "answerSample": "I found Kristi King in Jobber.",
+      "latencyMs": 40708
+    },
+    {
+      "id": "20260709-owner-class-h-job-lookup-kristi-king",
+      "createdAt": "2026-07-09T18:00:01.000-04:00",
+      "expectedIntent": "job_identity_lookup_live_jobber",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail"
+      ],
+      "answerSample": "Here's what's on file for Kristi King: - **Job:** Swimming Pool Leak Detection Service and Vinyl Liner Repair - **Status:** Lead (not yet approved/scheduled as active work) - **Total:** [redacted] - **Site:** [redacted]",
+      "redacted": true,
+      "latencyMs": 125519
+    },
+    {
+      "id": "20260709-owner-class-h-client-lookup-valley-view-condominiums",
+      "createdAt": "2026-07-09T18:00:02.000-04:00",
+      "expectedIntent": "client_identity_lookup_live_jobber_fallback_other_client",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "clientLookup"
+      ],
+      "answerSample": "I found Valley View Condominiums in Jobber.",
+      "latencyMs": 20984
+    }
+  ]
+}
