@@ -227,6 +227,16 @@ input {
   line-height: 1.36;
 }
 
+.review-state {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #26352c !important;
+  background: rgba(49, 95, 88, 0.12);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
 .content-draft-head {
   display: flex;
   justify-content: space-between;

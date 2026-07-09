@@ -1,0 +1,44 @@
+{
+  "module": "M7 Reputation",
+  "date": "2026-07-08",
+  "status": "blocked_for_live_gbp_receipt",
+  "implemented": [
+    "tenant-scoped reputationReviews and reputationProfiles repositories",
+    "GBP review provider boundary with explicit not-configured blocker",
+    "review.received event emission on imported GBP reviews",
+    "ApprovalQueue-only review reply drafts",
+    "M6 campaign-rail review request drafts with 48-hour delay metadata",
+    "ApprovalQueue-only GBP profile sync drafts",
+    "Nexi tools: pollGbpReviews, reputationQueue, draftReviewReply, draftReviewRequest, draftGbpProfileSync",
+    "Job Desk review queue side panel",
+    "public review widget feed for M8 websites",
+    "marketing/suite entitlement registration for reputation tools"
+  ],
+  "hardBoundaries": [
+    "no live GBP publishing",
+    "no direct review-request email send",
+    "all outbound review replies, review requests, and profile updates remain approval-gated"
+  ],
+  "verification": {
+    "npmRunBuild": "passed",
+    "focusedM7Tests": "4/4 passed",
+    "targetedAdjacentTests": "94/94 passed",
+    "rootTypecheck": "passed",
+    "rootTest": "159/159 passed",
+    "lint": "passed",
+    "tenancy": "passed",
+    "secrets": "passed",
+    "providerImports": "passed",
+    "blueprints": "passed",
+    "secretHistory": "passed after extended timeout; 286 reachable commits and 4288 reachable objects checked"
+  },
+  "liveReceiptBlocker": {
+    "blocker": "GBP OAuth credentials and location identifiers are not configured in staging.",
+    "neededFromOwner": [
+      "GBP OAuth consent for the Aquatrace Business Profile account",
+      "GBP account id",
+      "GBP location id"
+    ],
+    "receiptStillNeeded": "real GBP review fetched, AI-drafted reply in ApprovalQueue, owner-approved reply visible live on GBP screenshot"
+  }
+}

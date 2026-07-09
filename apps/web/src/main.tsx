@@ -71,6 +71,31 @@ interface ContentQueueResponse {
   error?: string;
 }
 
+interface ReputationReview {
+  id: string;
+  authorName: string;
+  rating: number;
+  comment: string;
+  reviewedAt: string;
+  replyStatus: "none" | "drafted" | "approved" | "published_deferred";
+}
+
+interface ReputationProfile {
+  id: string;
+  locationId: string;
+  status: "draft" | "approval_pending" | "publish_ready" | "published_deferred";
+}
+
+interface ReputationQueueResponse {
+  ok: boolean;
+  reviews?: ReputationReview[];
+  profiles?: ReputationProfile[];
+  pendingReplies?: ReputationReview[];
+  error?: string;
+  blocker?: string;
+  imported?: ReputationReview[];
+}
+
 interface PlatformPlan {
   id: "nexi" | "marketing" | "suite";
   name: string;
@@ -425,6 +450,128 @@ function ContentQueuePanel(props: { tenantId: string }): React.ReactElement {
               <button type="button" disabled={workingId === draft.id} onClick={() => void decide(draft.id, "approve")}>Approve</button>
               <button className="secondary" type="button" disabled={workingId === draft.id} onClick={() => void decide(draft.id, "reject")}>Reject</button>
             </div>
+          </article>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function ReputationPanel(props: { tenantId: string; user: User }): React.ReactElement {
+  const [reviews, setReviews] = useState<ReputationReview[]>([]);
+  const [profiles, setProfiles] = useState<ReputationProfile[]>([]);
+  const [status, setStatus] = useState("Loading review queue...");
+  const [working, setWorking] = useState("");
+
+  async function headers(): Promise<HeadersInit> {
+    const token = await props.user.getIdToken();
+    return { authorization: `Bearer ${token}`, "content-type": "application/json" };
+  }
+
+  async function refresh(): Promise<void> {
+    setStatus("Loading review queue...");
+    try {
+      const body = await fetch(`/api/reputation/queue?tenantId=${encodeURIComponent(props.tenantId)}`, {
+        headers: await headers()
+      }).then((response) => response.json() as Promise<ReputationQueueResponse>);
+      if (!body.ok) {
+        setReviews([]);
+        setProfiles([]);
+        setStatus(body.error ?? "Review queue unavailable.");
+        return;
+      }
+      setReviews(body.reviews ?? []);
+      setProfiles(body.profiles ?? []);
+      setStatus((body.reviews ?? []).length ? "Review replies stay parked until you approve them." : "No reviews are waiting right now.");
+    } catch {
+      setReviews([]);
+      setProfiles([]);
+      setStatus("Review queue API unreachable.");
+    }
+  }
+
+  async function pollReviews(): Promise<void> {
+    setWorking("poll");
+    setStatus("Checking Google reviews...");
+    try {
+      const body = await fetch("/api/reputation/gbp/poll", {
+        method: "POST",
+        headers: await headers(),
+        body: JSON.stringify({ tenantId: props.tenantId })
+      }).then((response) => response.json() as Promise<ReputationQueueResponse>);
+      if (!body.ok) {
+        setStatus(body.error ?? "Review check failed.");
+        return;
+      }
+      const count = body.imported?.length ?? 0;
+      setStatus(count ? `Imported ${count} review${count === 1 ? "" : "s"}.` : body.blocker ?? "No new reviews found.");
+      await refresh();
+    } catch {
+      setStatus("Review check request failed.");
+    } finally {
+      setWorking("");
+    }
+  }
+
+  async function draftReply(reviewId: string): Promise<void> {
+    setWorking(reviewId);
+    setStatus("Drafting reply...");
+    try {
+      const body = await fetch(`/api/reputation/reviews/${encodeURIComponent(reviewId)}/reply/draft`, {
+        method: "POST",
+        headers: await headers(),
+        body: JSON.stringify({ tenantId: props.tenantId })
+      }).then((response) => response.json() as Promise<{ ok: boolean; error?: string }>);
+      setStatus(body.ok ? "Reply drafted and parked for approval." : body.error ?? "Reply draft failed.");
+      await refresh();
+    } catch {
+      setStatus("Reply draft request failed.");
+    } finally {
+      setWorking("");
+    }
+  }
+
+  useEffect(() => {
+    void refresh();
+  }, [props.tenantId, props.user]);
+
+  return (
+    <aside className="content-card reputation-card">
+      <div className="schedule-heading">
+        <div>
+          <p className="eyebrow">M7 Reputation</p>
+          <h2>Reviews</h2>
+        </div>
+        <button className="refresh-button" type="button" disabled={working === "poll"} onClick={() => void pollReviews()}>
+          Check reviews
+        </button>
+      </div>
+      <p className="schedule-status">{status}</p>
+      <div className="content-list">
+        {reviews.map((review) => (
+          <article className="content-draft" key={review.id}>
+            <div className="content-draft-head">
+              <span>{review.rating}/5 stars</span>
+              <span>{new Date(review.reviewedAt).toLocaleDateString()}</span>
+            </div>
+            <h3>{review.authorName}</h3>
+            <p>{review.comment || "No public review text."}</p>
+            <p className="review-state">Reply: {review.replyStatus.replace("_", " ")}</p>
+            <div className="content-actions">
+              <button type="button" disabled={working === review.id || review.replyStatus === "drafted"} onClick={() => void draftReply(review.id)}>
+                Draft reply
+              </button>
+            </div>
+          </article>
+        ))}
+        {profiles.map((profile) => (
+          <article className="content-draft" key={profile.id}>
+            <div className="content-draft-head">
+              <span>Profile update</span>
+              <span>{profile.status.replace("_", " ")}</span>
+            </div>
+            <h3>{profile.locationId}</h3>
+            <p>Google Business Profile changes are approval-gated before publishing.</p>
           </article>
         ))}
       </div>
@@ -917,6 +1064,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
       <div className="side-panels">
         <SchedulePanel tenantId={operatorContext.tenantId} />
         <ContentQueuePanel tenantId={operatorContext.tenantId} />
+        <ReputationPanel tenantId={operatorContext.tenantId} user={props.user} />
       </div>
       </div>
       {activeMedia ? (
