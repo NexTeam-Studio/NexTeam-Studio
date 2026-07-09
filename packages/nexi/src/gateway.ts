@@ -1439,11 +1439,11 @@ function intakeStartInputFromText(text: string): { businessName?: string | undef
 }
 
 function intakeAnswerFieldFromText(lower: string): string | undefined {
-  if (/\b(?:services?|offerings?|work\s+types?)\b/.test(lower)) {
-    return "services";
-  }
   if (/\b(?:service\s+areas?|cities|counties|territor(?:y|ies)|coverage\s+area)\b/.test(lower)) {
     return "serviceArea";
+  }
+  if (/\b(?:services?|offerings?|work\s+types?)\b/.test(lower)) {
+    return "services";
   }
   if (/\b(?:pricing|price|estimate|quote|quoting|rate|rates)\b/.test(lower)) {
     return "pricingNotes";

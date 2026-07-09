@@ -245,6 +245,23 @@ test("M10 gateway saves intake answer turns with deterministic answerIntake args
 
   assert.deepEqual(result.toolRuns.map((run) => run.name), ["answerIntake"]);
   assert.match(result.answer, /saved that onboarding answer/i);
-  const saved = await service.getSession("aquatrace", session.id);
-  assert.equal(saved?.answers.services, "leak detection, weekly pool maintenance, and equipment repair");
+  const afterServices = await service.getSession("aquatrace", session.id);
+  assert.equal(afterServices?.answers.services, "leak detection, weekly pool maintenance, and equipment repair");
+
+  const areaResult = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "test",
+    messages: [{ role: "user", content: `For ${session.id}, service area is Wake County, Durham County, and Chapel Hill.` }],
+    tools,
+    cachedToolRuns: [{ name: "answerIntake", result: { session: afterServices }, sources: [{ rail: "native", ref: session.id, label: "Tenant intake Demo Pool Co" }] }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    fetchFn: async () => {
+      throw new Error("deterministic intake answers should not call the model");
+    }
+  });
+  assert.deepEqual(areaResult.toolRuns.map((run) => run.name), ["answerIntake"]);
+  const afterArea = await service.getSession("aquatrace", session.id);
+  assert.equal(afterArea?.answers.services, "leak detection, weekly pool maintenance, and equipment repair");
+  assert.equal(afterArea?.answers.serviceArea, "Wake County, Durham County, and Chapel Hill");
 });
