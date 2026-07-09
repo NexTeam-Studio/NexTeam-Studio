@@ -7,7 +7,7 @@ import {
   resolveBaseUrl,
 } from "./support/liveProofHelpers.mjs";
 
-const expectedSha = process.env.EXPECTED_DEPLOY_SHA || "4893039992e8bddc010de6b52aa091a1d0cdfccf";
+const expectedSha = process.env.EXPECTED_DEPLOY_SHA || process.env.NEXTEAM_DEPLOY_SHA || "";
 const distancePrompt =
   process.env.NIGHTLY_INTEGRATION_DISTANCE_PROMPT ||
   "how far is 181 Isbell Road, Fair Play, SC from my house";
