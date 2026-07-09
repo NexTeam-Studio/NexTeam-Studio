@@ -44,6 +44,11 @@ function Redact-SecretOutput {
   $redacted = $redacted -replace '(?i)(Project-Access-Token\s*[:=]\s*)\S+', '$1[REDACTED]'
   $redacted = $redacted -replace '(?i)(Authorization\s*:\s*Bearer\s+)\S+', '$1[REDACTED]'
   $redacted = $redacted -replace '(?i)((?:RAILWAY_TOKEN|RAILWAY_API_TOKEN)\s*[:=]\s*)\S+', '$1[REDACTED]'
+  $redacted = $redacted -replace '(?i)(sk-ant-api03-[A-Za-z0-9_\-]+)', '[REDACTED_ANTHROPIC_KEY]'
+  $redacted = $redacted -replace '(?i)(sk_(?:live|test|[A-Za-z0-9])[A-Za-z0-9_\-]+)', '[REDACTED_SECRET_KEY]'
+  $redacted = $redacted -replace '(?i)(whsec_[A-Za-z0-9_\-]+)', '[REDACTED_WEBHOOK_SECRET]'
+  $redacted = $redacted -replace '(?i)((?:API_KEY|APP_PASSWORD|CLIENT_SECRET|PASSWORD|REFRESH_TOKEN|SECRET|TOKEN)[A-Z0-9_]*\s*(?:│|\|)\s*)[^│|\r\n]+', '$1[REDACTED]'
+  $redacted = $redacted -replace '(?i)([A-Z0-9_]*(?:ANTHROPIC|ELEVENLABS|OPENWEATHER|STRIPE|GOOGLE_MAPS)[A-Z0-9_]*\s*(?:│|\|)\s*)[^│|\r\n]+', '$1[REDACTED]'
   $redacted
 }
 
