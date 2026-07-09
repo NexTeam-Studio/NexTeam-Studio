@@ -1,5 +1,6 @@
 import type { ApprovalQueueService, TenantDataExport } from "@nexteam/core";
-import { DeterministicSelfRepairAnalyzer } from "./analyzer.js";
+import { AnthropicSelfRepairAnalyzer, type SelfRepairUsageLogWriter } from "./anthropicAnalyzer.js";
+import { DeterministicSelfRepairAnalyzer, type SelfRepairAnalyzer } from "./analyzer.js";
 import type { SelfRepairRepository } from "./repository.js";
 import {
   selfRepairLogSchema,
@@ -16,6 +17,8 @@ export interface SelfRepairServiceDeps {
   dataReader: SelfRepairDataReader;
   repository: SelfRepairRepository;
   approvalQueue: ApprovalQueueService;
+  analyzer?: SelfRepairAnalyzer | undefined;
+  usageLog?: SelfRepairUsageLogWriter | undefined;
   env?: NodeJS.ProcessEnv | undefined;
 }
 
@@ -93,11 +96,20 @@ function buildMorningReport(log: Omit<SelfRepairLog, "morningReport">): string {
 }
 
 export class SelfRepairService {
-  private readonly analyzer = new DeterministicSelfRepairAnalyzer();
+  private readonly analyzer: SelfRepairAnalyzer;
   private readonly env: NodeJS.ProcessEnv;
 
   constructor(private readonly deps: SelfRepairServiceDeps) {
     this.env = deps.env ?? process.env;
+    this.analyzer = deps.analyzer ?? (
+      this.env.ANTHROPIC_API_KEY && this.env.SELF_REPAIR_ANALYSIS_MODE !== "deterministic"
+        ? new AnthropicSelfRepairAnalyzer({
+          env: this.env,
+          usageLog: deps.usageLog,
+          fallback: new DeterministicSelfRepairAnalyzer()
+        })
+        : new DeterministicSelfRepairAnalyzer()
+    );
   }
 
   async run(inputValue: unknown): Promise<SelfRepairLog> {
@@ -105,7 +117,7 @@ export class SelfRepairService {
     const date = input.date ?? today();
     const exportData = await this.deps.dataReader.exportTenantData(input.tenantId);
     const recentLogs = await this.deps.repository.listRecentLogs(input.tenantId, 7);
-    const analysis = this.analyzer.analyze({
+    const analysis = await this.analyzer.analyze({
       tenantId: input.tenantId,
       date,
       exportData,
@@ -138,7 +150,7 @@ export class SelfRepairService {
       findings: analysis.findings,
       safeRepairs: analysis.safeRepairs,
       fixBriefs: analysis.fixBriefs,
-      analysisMode: "deterministic-local" as const,
+      analysisMode: analysis.analysisMode,
       createdAt: now()
     };
     const morningReport = buildMorningReport(baseLog);

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import { ApprovalQueueService, InMemoryApprovalQueueRepository } from "@nexteam/core";
+import { AnthropicSelfRepairAnalyzer } from "../dist/selfrepair/anthropicAnalyzer.js";
 import { DeterministicSelfRepairAnalyzer } from "../dist/selfrepair/analyzer.js";
 import { InMemorySelfRepairRepository } from "../dist/selfrepair/repository.js";
 import { registerSelfRepairRoutes } from "../dist/selfrepair/routes.js";
@@ -136,6 +137,60 @@ test("self-repair service stores log and queues a morning report approval withou
   assert.equal(pending[0].execute.service, "selfRepair");
   assert.equal(pending[0].execute.op, "sendMorningReport");
   assert.equal(pending[0].execute.args.noOutboundSend, true);
+});
+
+test("anthropic self-repair analyzer merges provider findings and writes usageLog cost", async () => {
+  const usageRecords = [];
+  const fetchFn = async () => new Response(JSON.stringify({
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify({
+          findings: [
+            {
+              classId: "G_USER_FACING_REALITY_GAP",
+              priority: "P2",
+              title: "User-facing receipt says done but owner path is not visible",
+              evidenceRefs: ["conversation:conv_ok"],
+              reproPhrasings: ["show me where I upload a photo"],
+              suspectedFiles: ["apps/web/src/App.tsx"],
+              notes: "Provider-added finding from compact daily context."
+            }
+          ],
+          watchItems: ["Review user-facing status wording against Part 9."]
+        })
+      }
+    ],
+    usage: {
+      input_tokens: 100,
+      output_tokens: 50,
+      cache_creation_input_tokens: 0,
+      cache_read_input_tokens: 0
+    }
+  }), { status: 200, headers: { "content-type": "application/json" } });
+  const analyzer = new AnthropicSelfRepairAnalyzer({
+    env: { ANTHROPIC_API_KEY: "placeholder", ANTHROPIC_MODEL: "claude-sonnet-4-5" },
+    fetchFn,
+    usageLog: { write: async (record) => usageRecords.push(record) }
+  });
+
+  const analysis = await analyzer.analyze({
+    tenantId: "aquatrace",
+    date,
+    exportData: exportData(),
+    recentLogs: []
+  });
+
+  assert.equal(analysis.analysisMode, "anthropic-gateway");
+  assert.equal(analysis.findings.some((finding) => finding.classId === "G_USER_FACING_REALITY_GAP"), true);
+  assert.equal(analysis.safeRepairs.some((repair) => repair.id.startsWith("repair_llm_wall_")), true);
+  assert.equal(analysis.fixBriefs.some((brief) => brief.id.startsWith("fix_brief_llm_")), true);
+  assert.equal(usageRecords.length, 1);
+  assert.equal(usageRecords[0].provider, "anthropic");
+  assert.equal(usageRecords[0].taskType, "self_repair_analysis");
+  assert.equal(usageRecords[0].ok, true);
+  assert.equal(usageRecords[0].usage.totalTokens, 150);
+  assert.equal(usageRecords[0].estimatedCostUsd > 0, true);
 });
 
 test("self-repair recurrence escalates repeated findings in later runs", async () => {

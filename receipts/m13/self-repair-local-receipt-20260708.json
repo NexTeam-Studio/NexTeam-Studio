@@ -8,6 +8,7 @@
     "built": [
       "Tenant-scoped selfRepairLog repository with Firestore and memory implementations",
       "Deterministic failure-class analyzer for trial regression classes A, C, D, and E",
+      "Anthropic review analyzer that runs after deterministic checks, merges provider-added findings/watch items, and writes self_repair_analysis usageLog records",
       "Safe-repair allowlist logging for failureLog gap-label corrections and wall-entry candidates",
       "Fix-brief generation with suspected file hints and required regression-wall receipt text",
       "Morning report generation queued as ApprovalQueue email artifact with execute.service=selfRepair and noOutboundSend=true",
@@ -28,7 +29,7 @@
     ],
     "notDoneYet": [
       "Live staging run against a real day's Aquatrace conversations",
-      "Anthropic gateway analysis pass with usageLog cost entry",
+      "Live staging Anthropic gateway analysis pass with Firestore usageLog cost proof",
       "Railway cron scheduling at 20:00 tenant-local",
       "Owner-visible emailed morning report receipt after approval",
       "Full live wall after deployment"
@@ -36,6 +37,7 @@
   },
   "files": [
     "apps/server/src/selfrepair/analyzer.ts",
+    "apps/server/src/selfrepair/anthropicAnalyzer.ts",
     "apps/server/src/selfrepair/repository.ts",
     "apps/server/src/selfrepair/routes.ts",
     "apps/server/src/selfrepair/schemas.ts",
@@ -56,11 +58,11 @@
     },
     {
       "command": "node --test apps/server/test/self-repair.test.mjs",
-      "result": "passed 4/4"
+      "result": "passed 5/5, including stubbed Anthropic merge and usageLog cost proof"
     },
     {
       "command": "npm run test",
-      "result": "passed 159/159"
+      "result": "passed 160/160"
     },
     {
       "command": "npm run lint",
@@ -68,23 +70,23 @@
     },
     {
       "command": "npm run check:tenancy",
-      "result": "passed, 108 files checked"
+      "result": "passed, 109 files checked"
     },
     {
       "command": "npm run check:secrets",
-      "result": "passed, 794 tracked non-doc files checked"
+      "result": "passed, 795 tracked non-doc files checked"
     },
     {
       "command": "npm run check:provider-imports",
-      "result": "passed, 134 files checked"
+      "result": "passed, 135 files checked"
     },
     {
       "command": "npm run check:blueprints",
-      "result": "passed, 108 files checked"
+      "result": "passed, 109 files checked"
     },
     {
       "command": "npm run check:secret-history",
-      "result": "passed, 290 reachable commits and 4429 reachable objects checked"
+      "result": "passed, 295 reachable commits and 4527 reachable objects checked"
     }
   ],
   "security": {

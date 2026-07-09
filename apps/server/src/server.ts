@@ -52,6 +52,7 @@ import { createSitesNexiTools } from "./sites/nexiTools.js";
 import { FirestoreSelfRepairRepository, InMemorySelfRepairRepository } from "./selfrepair/repository.js";
 import { registerSelfRepairRoutes } from "./selfrepair/routes.js";
 import { SelfRepairService } from "./selfrepair/service.js";
+import { FirestoreUsageLogWriter, MemoryUsageLogWriter } from "./usageLog.js";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { createVoiceRouter } from "./voice/routes.js";
 
@@ -81,10 +82,12 @@ const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : 
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 const sitesRepository = adminDb ? new FirestoreSitesRepository(adminDb) : new InMemorySitesRepository();
 const selfRepairRepository = adminDb ? new FirestoreSelfRepairRepository(adminDb) : new InMemorySelfRepairRepository();
+const selfRepairUsageLog = adminDb ? new FirestoreUsageLogWriter(adminDb) : new MemoryUsageLogWriter();
 const selfRepairService = new SelfRepairService({
   dataReader: platformRepository,
   repository: selfRepairRepository,
   approvalQueue,
+  usageLog: selfRepairUsageLog,
   env: process.env
 });
 

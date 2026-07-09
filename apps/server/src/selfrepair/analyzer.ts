@@ -26,6 +26,7 @@ export interface SelfRepairAnalysis {
   safeRepairs: SelfRepairSafeRepair[];
   fixBriefs: SelfRepairFixBrief[];
   watchItems: string[];
+  analysisMode: "deterministic-local" | "anthropic-gateway";
 }
 
 export interface SelfRepairAnalyzeInput {
@@ -33,6 +34,10 @@ export interface SelfRepairAnalyzeInput {
   date: string;
   exportData: TenantDataExport;
   recentLogs: Array<{ findings: SelfRepairFinding[] }>;
+}
+
+export interface SelfRepairAnalyzer {
+  analyze(input: SelfRepairAnalyzeInput): SelfRepairAnalysis | Promise<SelfRepairAnalysis>;
 }
 
 function text(value: unknown): string {
@@ -213,7 +218,7 @@ function fixBriefFromFinding(finding: SelfRepairFinding, index: number): SelfRep
   };
 }
 
-export class DeterministicSelfRepairAnalyzer {
+export class DeterministicSelfRepairAnalyzer implements SelfRepairAnalyzer {
   analyze(input: SelfRepairAnalyzeInput): SelfRepairAnalysis {
     const conversations = recordsForDate(collection<ConversationLike>(input.exportData, "conversations"), input.date);
     const failures = recordsForDate(collection<FailureLike>(input.exportData, "failureLog"), input.date);
@@ -235,6 +240,6 @@ export class DeterministicSelfRepairAnalyzer {
     const watchItems = findings
       .filter((finding) => finding.recurrenceCount > 1)
       .map((finding) => `${finding.classId} recurrence: ${finding.title}`);
-    return { findings, safeRepairs, fixBriefs, watchItems };
+    return { findings, safeRepairs, fixBriefs, watchItems, analysisMode: "deterministic-local" };
   }
 }
