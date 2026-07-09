@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 import { versionResponseSchema } from "@nexteam/core";
 
 function readGitSha(): string {
-  const envSha = process.env.NEXTEAM_DEPLOY_SHA || process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA;
-  if (envSha?.trim()) {
-    return envSha.trim();
+  const explicitSha = process.env.NEXTEAM_DEPLOY_SHA;
+  if (explicitSha?.trim()) {
+    return explicitSha.trim();
   }
   try {
     const stampedSha = readFileSync(".nexteam-build-sha", "utf8").trim();
@@ -14,6 +14,10 @@ function readGitSha(): string {
     }
   } catch {
     // Local Railway uploads do not expose .git; a generated stamp restores the proof chain.
+  }
+  const envSha = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA;
+  if (envSha?.trim()) {
+    return envSha.trim();
   }
   try {
     return execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
