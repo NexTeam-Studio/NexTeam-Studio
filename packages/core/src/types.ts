@@ -33,6 +33,7 @@ export type PlatformModule =
 
 export type ArtifactKind =
   | "client"
+  | "tenant_provisioning"
   | "email"
   | "sms"
   | "gbp_post"

@@ -741,6 +741,19 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.phones ??= parsed.phones;
     record.consent ??= parsed.consent;
   }
+  if (toolName === "startIntake") {
+    const parsed = intakeStartInputFromText(userText);
+    record.businessName ??= parsed.businessName;
+    record.targetTenantId ??= parsed.targetTenantId;
+    record.industryPack ??= parsed.industryPack;
+    record.plan ??= parsed.plan;
+  }
+  if (toolName === "finalizeIntake") {
+    record.sessionId ??= intakeSessionIdFromText(userText) ?? intakeSessionIdFromPriorRuns(priorRuns);
+  }
+  if (toolName === "intakeStatus") {
+    record.sessionId ??= intakeSessionIdFromText(userText) ?? intakeSessionIdFromPriorRuns(priorRuns);
+  }
   if (toolName === "draftEmail") {
     const parsed = draftEmailInputFromText(userText);
     if (typeof record.to === "string") {
@@ -1153,6 +1166,76 @@ function looksLikeCreateClientAction(lower: string): boolean {
     || /\b(?:new\s+client|client\s+create)\b/.test(lower);
 }
 
+function looksLikeStartIntakeAction(lower: string): boolean {
+  return /\b(?:onboard|intake|set\s+up|create|start)\b.{0,60}\b(?:tenant|company|business|demo\s+pool\s+co|pool\s+co)\b/.test(lower)
+    || /\b(?:new\s+tenant|tenant\s+intake|demo\s+pool\s+co)\b/.test(lower);
+}
+
+function looksLikeFinalizeIntakeAction(lower: string): boolean {
+  return /\b(?:finalize|finish|queue|approve|park)\b.{0,50}\b(?:intake|tenant\s+plan|onboarding\s+plan|onboarding)\b/.test(lower)
+    || /\b(?:create|queue)\b.{0,50}\b(?:tenant\s+provisioning|provisioning\s+approval)\b/.test(lower);
+}
+
+function looksLikeIntakeStatusQuestion(lower: string): boolean {
+  return /\b(?:intake|onboarding|tenant\s+plan)\b.*\b(?:status|queue|queued|where|show|list)\b/.test(lower)
+    || /\bshow\s+me\s+(?:the\s+)?intake\b/.test(lower);
+}
+
+function intakeBusinessNameFromText(text: string): string | undefined {
+  const match = text.match(/\b(?:onboard|intake|set\s+up|create|start)\s+(?:a\s+)?(?:new\s+)?(?:tenant|company|business)?\s*(?:called|named)?\s*([^,.!?]+?)(?=\s+(?:as|for|with|that|who|which)\b|[,!.?]|$)/i)
+    ?? text.match(/\b(?:tenant|company|business)\s+(?:called|named)\s+([^,.!?]+)(?:[,!.?]|$)/i);
+  const value = match?.[1]?.replace(/\b(?:tenant|company|business)\b/gi, " ").replace(/\s+/g, " ").trim();
+  return value || (/demo\s+pool\s+co/i.test(text) ? "Demo Pool Co" : undefined);
+}
+
+function intakeTargetTenantIdFromBusinessName(name: string | undefined): string | undefined {
+  return name?.toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+}
+
+function intakeStartInputFromText(text: string): { businessName?: string | undefined; targetTenantId?: string | undefined; industryPack: string; plan: string } {
+  const businessName = intakeBusinessNameFromText(text);
+  const lower = text.toLowerCase();
+  const industryPack = /\b(?:pool|leak|aquatrace)\b/.test(lower)
+    ? "pool_leak"
+    : /\b(?:hvac|heating|air\s+conditioning)\b/.test(lower)
+      ? "hvac"
+      : /\bplumb(?:er|ing)?\b/.test(lower)
+        ? "plumbing"
+        : "pool_leak";
+  return {
+    businessName,
+    targetTenantId: intakeTargetTenantIdFromBusinessName(businessName),
+    industryPack,
+    plan: "suite"
+  };
+}
+
+function intakeSessionIdFromText(text: string): string | undefined {
+  return text.match(/\bintake_[a-f0-9-]{8,}\b/i)?.[0];
+}
+
+function intakeSessionIdFromPriorRuns(priorRuns: ToolRunTrace[]): string | undefined {
+  for (const run of [...priorRuns].reverse()) {
+    const result = run.result;
+    if (!result || typeof result !== "object") {
+      continue;
+    }
+    const record = result as Record<string, unknown>;
+    const session = record.session;
+    if (session && typeof session === "object") {
+      const id = (session as Record<string, unknown>).id;
+      if (typeof id === "string" && id.startsWith("intake_")) {
+        return id;
+      }
+    }
+  }
+  return undefined;
+}
+
 function createClientNameFromText(text: string): string {
   const match = text.match(/\b(?:add|create|set\s+up|make)\s+(?:a\s+)?(?:new\s+)?client\s*,?\s*(?:named\s+|called\s+)?(.+?)(?=,|\s+(?:at|address|email|e-mail|phone|number|with)\b|[?.!]|$)/i)
     ?? text.match(/\bclient\s+(?:named\s+|called\s+)?(.+?)(?=,|\s+(?:at|address|email|e-mail|phone|number|with)\b|[?.!]|$)/i);
@@ -1319,6 +1402,15 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikeCreateClientAction(lower) && toolsByName.has("createClient")) {
     return ["createClient"];
+  }
+  if (looksLikeFinalizeIntakeAction(lower) && toolsByName.has("finalizeIntake")) {
+    return ["finalizeIntake"];
+  }
+  if (looksLikeIntakeStatusQuestion(lower) && toolsByName.has("intakeStatus")) {
+    return ["intakeStatus"];
+  }
+  if (looksLikeStartIntakeAction(lower) && toolsByName.has("startIntake")) {
+    return ["startIntake"];
   }
   if (looksLikeEmailDraftAction(lower) && firstEmailAddress(userText) && toolsByName.has("draftEmail")) {
     return ["draftEmail"];

@@ -22,6 +22,7 @@ const DEFAULT_TENANT_ID = "aquatrace";
 function defaultApproval(): Tenant["approval"] {
   return {
     client: { autoApprove: false, cleanStreak: 0 },
+    tenant_provisioning: { autoApprove: false, cleanStreak: 0 },
     email: { autoApprove: false, cleanStreak: 0 },
     sms: { autoApprove: false, cleanStreak: 0 },
     gbp_post: { autoApprove: false, cleanStreak: 0 },
