@@ -1901,19 +1901,24 @@ function hasExplicitPhotoTarget(text: string): boolean {
 }
 
 function hasFreshLookupTarget(text: string, timeZone?: string): boolean {
+  const lower = text.toLowerCase();
   return Boolean(
     scheduleWindowFromText(text, timeZone)
     || entityQueryFromText(text)
+    || clientLookupQueryFromText(text)
+    || jobLookupQueryFromText(text)
+    || looksLikeNamedClientLookupQuestion(lower)
+    || looksLikeNamedJobLookupQuestion(lower)
     || hasExplicitPhotoTarget(text)
-    || looksLikeEvaporationRunQuestion(text.toLowerCase())
-    || looksLikeDistanceQuestion(text.toLowerCase())
-    || looksLikeCurrentTimeQuestion(text.toLowerCase())
-    || looksLikeCurrentWeatherQuestion(text.toLowerCase())
-    || looksLikeSeoRankQuestion(text.toLowerCase())
-    || looksLikeSeoAuditQuestion(text.toLowerCase())
-    || looksLikeSeoQueueQuestion(text.toLowerCase())
-    || looksLikeSeoBriefQuestion(text.toLowerCase())
-    || looksLikeSeoReportQuestion(text.toLowerCase())
+    || looksLikeEvaporationRunQuestion(lower)
+    || looksLikeDistanceQuestion(lower)
+    || looksLikeCurrentTimeQuestion(lower)
+    || looksLikeCurrentWeatherQuestion(lower)
+    || looksLikeSeoRankQuestion(lower)
+    || looksLikeSeoAuditQuestion(lower)
+    || looksLikeSeoQueueQuestion(lower)
+    || looksLikeSeoBriefQuestion(lower)
+    || looksLikeSeoReportQuestion(lower)
   );
 }
 

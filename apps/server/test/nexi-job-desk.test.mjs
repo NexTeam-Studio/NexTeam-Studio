@@ -1100,6 +1100,44 @@ test("Nexi named client lookup preserves the requested client name instead of br
   assert.equal(result.answer, "I found Kristi King in Jobber.");
 });
 
+test("Nexi named client lookup never reuses a cached different client", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "Look up client Valley View Condominiums" }],
+    cachedToolRuns: [{
+      name: "clientLookup",
+      result: { clients: [{ id: "client_kristi", name: "Kristi King" }], nativeCount: 0, jobberFallbackCount: 1, fallbackUsed: true },
+      sources: [{ rail: "jobber", ref: "jobber-clients", label: "Live Jobber client search fallback" }]
+    }],
+    tools: [
+      {
+        name: "clientLookup",
+        description: "Read native CRM clients.",
+        inputSchema: z.object({ q: z.string().default("") }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(args);
+          return {
+            result: { clients: [{ id: "client_valley", name: "Valley View Condominiums" }], nativeCount: 0, jobberFallbackCount: 1, fallbackUsed: true },
+            sources: [{ rail: "jobber", ref: "jobber-clients", label: "Live Jobber client search fallback" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("named client lookup should answer directly from fresh checked records");
+    }
+  });
+
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["clientLookup"]);
+  assert.equal(toolCalls[0].q, "Valley View Condominiums");
+  assert.equal(result.answer, "I found Valley View Condominiums in Jobber.");
+});
+
 test("Nexi named job lookup routes to Jobber detail instead of the schedule board", async () => {
   const toolCalls = [];
   const result = await runNexiToolLoop({

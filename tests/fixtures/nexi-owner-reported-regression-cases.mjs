@@ -247,7 +247,7 @@ export const nexiOwnerReportedRegressionSessions = [
         expectedIntent: "client_identity_lookup_live_jobber_fallback",
         requiredTools: ["clientLookup"],
         forbiddenTools: ["searchEmail", "getSchedule"],
-        expectedAnswerIncludes: ["Kristi King"],
+        expectedAnswerIncludes: ["I found", "Kristi King"],
         assertions: ["usesRequiredRails", "noNoSourceStonewall", "noRawToolError"]
       },
       {
@@ -269,7 +269,7 @@ export const nexiOwnerReportedRegressionSessions = [
         expectedIntent: "client_identity_lookup_live_jobber_fallback_other_client",
         requiredTools: ["clientLookup"],
         forbiddenTools: ["searchEmail", "getSchedule"],
-        expectedAnswerIncludes: ["Valley View Condominiums"],
+        expectedAnswerIncludes: ["I found", "Valley View Condominiums"],
         forbiddenAnswerIncludes: ["Kristi King"],
         assertions: ["usesRequiredRails", "noNoSourceStonewall", "noRawToolError"]
       }
