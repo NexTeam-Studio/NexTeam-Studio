@@ -5,6 +5,13 @@ import type { UsageLogWriter } from "@nexteam/nexi";
 import { getAdminDb } from "../firebase.js";
 import { FirestoreUsageLogWriter, MemoryUsageLogWriter } from "../usageLog.js";
 import { buildElevenLabsUsageLogRecord, synthesizeElevenLabsSpeech } from "./elevenLabs.js";
+import {
+  FIRST_AUDIO_TARGET_MS,
+  VoiceSessionStore,
+  interruptVoiceSessionSchema,
+  recordVoiceTurnSchema,
+  startVoiceSessionSchema
+} from "./fullDuplex.js";
 
 const ttsRequestSchema = z.object({
   text: z.string().min(1).max(1000),
@@ -13,6 +20,7 @@ const ttsRequestSchema = z.object({
 });
 
 const memoryUsageLog = new MemoryUsageLogWriter();
+const memoryVoiceSessions = new VoiceSessionStore();
 
 function sendVoiceError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
@@ -31,10 +39,71 @@ function usageLogWriter(env: NodeJS.ProcessEnv): FirestoreUsageLogWriter | Memor
 
 export interface VoiceRouterDeps {
   usageLog?: UsageLogWriter | undefined;
+  sessions?: VoiceSessionStore | undefined;
 }
 
 export function createVoiceRouter(env: NodeJS.ProcessEnv = process.env, fetchImpl: typeof fetch = fetch, deps: VoiceRouterDeps = {}): Router {
   const router = Router();
+  const sessions = deps.sessions ?? memoryVoiceSessions;
+
+  router.post("/session/start", (req: Request, res: Response) => {
+    try {
+      const input = startVoiceSessionSchema.parse(req.body);
+      res.status(201).json({ ok: true, session: sessions.start(input) });
+    } catch (error) {
+      sendVoiceError(res, error);
+    }
+  });
+
+  router.get("/session/:id", (req: Request, res: Response) => {
+    try {
+      const sessionId = req.params.id;
+      if (!sessionId) {
+        throw new RailError("Voice session id is required.", { provider: "elevenlabs", op: "voiceSession", status: 400 });
+      }
+      res.json({ ok: true, session: sessions.get(sessionId) });
+    } catch (error) {
+      sendVoiceError(res, error);
+    }
+  });
+
+  router.post("/session/:id/turn", (req: Request, res: Response) => {
+    try {
+      const sessionId = req.params.id;
+      if (!sessionId) {
+        throw new RailError("Voice session id is required.", { provider: "elevenlabs", op: "voiceTurn", status: 400 });
+      }
+      const input = recordVoiceTurnSchema.parse(req.body);
+      res.json({ ok: true, session: sessions.recordTurn(sessionId, input) });
+    } catch (error) {
+      sendVoiceError(res, error);
+    }
+  });
+
+  router.post("/session/:id/interrupt", (req: Request, res: Response) => {
+    try {
+      const sessionId = req.params.id;
+      if (!sessionId) {
+        throw new RailError("Voice session id is required.", { provider: "elevenlabs", op: "voiceInterrupt", status: 400 });
+      }
+      interruptVoiceSessionSchema.parse(req.body ?? {});
+      res.json({ ok: true, session: sessions.interrupt(sessionId) });
+    } catch (error) {
+      sendVoiceError(res, error);
+    }
+  });
+
+  router.post("/session/:id/listen", (req: Request, res: Response) => {
+    try {
+      const sessionId = req.params.id;
+      if (!sessionId) {
+        throw new RailError("Voice session id is required.", { provider: "elevenlabs", op: "voiceListen", status: 400 });
+      }
+      res.json({ ok: true, session: sessions.listen(sessionId) });
+    } catch (error) {
+      sendVoiceError(res, error);
+    }
+  });
 
   router.post("/tts", async (req: Request, res: Response) => {
     let input: z.infer<typeof ttsRequestSchema> | null = null;
@@ -59,6 +128,8 @@ export function createVoiceRouter(env: NodeJS.ProcessEnv = process.env, fetchImp
       res.setHeader("x-voice-character-count", String(result.characterCount));
       res.setHeader("x-voice-audio-bytes", String(result.audioBytes));
       res.setHeader("x-voice-estimated-cost-usd", String(result.estimatedCostUsd));
+      res.setHeader("x-voice-first-audio-target-ms", String(FIRST_AUDIO_TARGET_MS));
+      res.setHeader("x-voice-streaming-mode", "interruptible_turn_audio");
       res.send(result.audio);
     } catch (error) {
       if (input) {

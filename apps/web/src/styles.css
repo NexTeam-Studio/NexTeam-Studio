@@ -429,6 +429,7 @@ h1 {
 .voice-strip {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 10px 16px;
   border-top: 1px solid rgba(38, 53, 44, 0.08);
@@ -461,6 +462,35 @@ h1 {
 .voice-note {
   margin-left: auto;
   color: rgba(82, 96, 85, 0.72);
+}
+
+.latency-chip,
+.interim-text {
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: rgba(49, 95, 88, 0.1);
+  color: #315f58;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.interim-text {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgba(214, 162, 60, 0.15);
+  color: #7c5312;
+}
+
+.voice-action {
+  margin-left: auto;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: #fff8ea;
+  background: #e75f48;
+  font-weight: 850;
 }
 
 .composer {

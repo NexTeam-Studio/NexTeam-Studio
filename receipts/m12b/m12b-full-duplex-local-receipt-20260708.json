@@ -1,0 +1,78 @@
+{
+  "module": "M12b Voice",
+  "phase": "full-duplex local foundation",
+  "status": "in_progress",
+  "date": "2026-07-08",
+  "worktree": "build/voice",
+  "base": "build/phase0-reality-gate",
+  "implemented": [
+    "POST /api/voice/session/start creates an interruptible voice session",
+    "POST /api/voice/session/:id/turn records first-audio latency, character count, audio bytes, and estimated cost metadata",
+    "POST /api/voice/session/:id/interrupt records operator interruption state",
+    "POST /api/voice/session/:id/listen returns the session to listening state",
+    "TTS responses expose x-voice-first-audio-target-ms=1200 and x-voice-streaming-mode=interruptible_turn_audio",
+    "Job Desk has hands-free mode, live interim transcript display, mic-to-send behavior, Stop Nexi interruption, and first-audio timing display",
+    "Avatar slot remains provider_agnostic pending owner HeyGen/D-ID decision"
+  ],
+  "verification": [
+    {
+      "command": "npm install",
+      "result": "passed; refreshed missing @nexteam/mobile workspace link after Phase 0 fast-forward; no forced audit fix"
+    },
+    {
+      "command": "npm run build",
+      "result": "passed"
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "node --test apps/server/test/voice-routes.test.mjs",
+      "result": "5/5 passing"
+    },
+    {
+      "command": "npm run lint",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test",
+      "result": "156/156 passing"
+    },
+    {
+      "command": "npm run check:tenancy",
+      "result": "passed; 104 files checked"
+    },
+    {
+      "command": "npm run check:secrets",
+      "result": "passed; 788 tracked non-doc files checked"
+    },
+    {
+      "command": "npm run check:secret-history",
+      "result": "passed; 288 reachable commits and 4370 reachable objects checked"
+    },
+    {
+      "command": "npm run check:provider-imports",
+      "result": "passed; 129 files checked"
+    },
+    {
+      "command": "npm run check:blueprints",
+      "result": "passed; 104 files checked"
+    }
+  ],
+  "part9RealityGate": {
+    "status": "not_done_yet",
+    "remaining": [
+      "Deploy to staging from a merge-gated commit",
+      "Run a real browser hands-free Q&A session with mic input and TTS output",
+      "Capture the Bible-required hands-free video",
+      "Post a usageLog entry from that session showing ElevenLabs cost",
+      "Confirm live regression wall remains green after deploy"
+    ]
+  },
+  "hardLimits": {
+    "outboundSends": "none",
+    "secretsPrinted": "none",
+    "productionDeploy": "none"
+  }
+}
