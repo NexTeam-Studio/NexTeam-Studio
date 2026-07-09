@@ -1,0 +1,29 @@
+{
+  "ok": false,
+  "type": "live_regression_wall_blocker",
+  "checkedAt": "2026-07-09T08:33:00Z",
+  "stagingUrl": "https://nexteam-studio-staging.up.railway.app",
+  "deployedCodeSha": "103fdba85a95e67312b98268cf0633c3f009c32b",
+  "version": {
+    "sha": "103fdba85a95e67312b98268cf0633c3f009c32b",
+    "matchesDeployedCodeSha": true
+  },
+  "health": {
+    "ok": true,
+    "jobber": true,
+    "companycam": true,
+    "anthropicConfiguredNoSpend": true
+  },
+  "wallProbe": {
+    "runner": "scripts/run-nexi-regression-wall.mjs",
+    "environment": "Railway staging via DPAPI token wrapper",
+    "offset": 0,
+    "limit": 5,
+    "total": 5,
+    "passed": 0,
+    "failed": 5,
+    "failureClass": "provider_billing_blocker",
+    "message": "Nexi message failed (400): Anthropic credit balance is too low to access the Anthropic API."
+  },
+  "receiptBoundary": "No full-wall pass claimed. Full live wall remains blocked until the Anthropic account/key backing staging has usable credits."
+}
