@@ -27,6 +27,7 @@ export type PlatformModule =
   | "scheduling"
   | "content"
   | "campaigns"
+  | "reputation"
   | "comms"
   | "voice"
   | "platform"
@@ -43,6 +44,7 @@ export type ArtifactKind =
   | "quote"
   | "invoice"
   | "site_publish"
+  | "gbp_profile_update"
   | "review_reply";
 
 export interface Tenant {

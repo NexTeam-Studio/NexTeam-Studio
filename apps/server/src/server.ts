@@ -41,6 +41,10 @@ import { registerMobileRoutes } from "./mobile/routes.js";
 import { createSchedulingNexiTools } from "./scheduling/nexiTools.js";
 import { InMemorySchedulingRepository } from "./scheduling/repository.js";
 import { registerSchedulingRoutes } from "./scheduling/routes.js";
+import { EnvGbpReviewProvider } from "./reputation/gbpProvider.js";
+import { createReputationNexiTools } from "./reputation/nexiTools.js";
+import { FirestoreReputationRepository, InMemoryReputationRepository } from "./reputation/repository.js";
+import { registerReputationRoutes } from "./reputation/routes.js";
 import { enforceToolEntitlements } from "./platform/entitlements.js";
 import { MemoryStorageWriter } from "./platform/backup.js";
 import { FirebaseStorageWriter } from "./platform/storage.js";
@@ -61,6 +65,7 @@ const commsRail = createCommsRailFromEnv(process.env);
 const contentRepository = new InMemoryContentRepository();
 const schedulingRepository = new InMemorySchedulingRepository();
 const campaignRepository = new InMemoryCampaignRepository(process.env.TENANT_ID || "aquatrace");
+const gbpReviewProvider = new EnvGbpReviewProvider(process.env);
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
@@ -90,6 +95,7 @@ const selfRepairService = new SelfRepairService({
   usageLog: selfRepairUsageLog,
   env: process.env
 });
+const reputationRepository = adminDb ? new FirestoreReputationRepository(adminDb) : new InMemoryReputationRepository();
 
 app.use(express.json({
   limit: "1mb",
@@ -137,6 +143,12 @@ app.use("/api/nexi", createNexiRouter(process.env, {
     }).concat(createSitesNexiTools({
       repository: sitesRepository,
       access
+    })).concat(createReputationNexiTools({
+      repository: reputationRepository,
+      approvalQueue,
+      gbpProvider: gbpReviewProvider,
+      eventBus,
+      actorId: actorIdForAccess(access)
     }));
   }
 }));
@@ -247,6 +259,7 @@ registerCrmRoutes(app, { approvalQueue, eventBus });
 registerFieldDocsRoutes(app, { eventBus });
 registerContentRoutes(app, { repository: contentRepository, approvalQueue, eventBus, env: process.env });
 registerCampaignRoutes(app, { repository: campaignRepository, approvalQueue, env: process.env });
+registerReputationRoutes(app, { repository: reputationRepository, approvalQueue, eventBus, gbpProvider: gbpReviewProvider, env: process.env });
 registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env });
 registerEvaporationRoutes(app, { repository: evaporationRepository, env: process.env });
 registerMobileRoutes(app, { repository: mobileRepository, approvalQueue, env: process.env });

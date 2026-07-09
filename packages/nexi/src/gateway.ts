@@ -870,6 +870,20 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
       maxResults: 2
     };
   }
+  if (toolName === "draftReviewReply") {
+    record.reviewId ??= reputationReviewIdFromText(userText) ?? reputationReviewIdFromPriorRuns(priorRuns);
+  }
+  if (toolName === "draftReviewRequest") {
+    const recipient = firstEmailAddress(userText);
+    if (recipient) {
+      record.to ??= recipient;
+    }
+    record.invoiceId ??= invoiceIdFromText(userText) ?? "manual-review-request";
+    record.clientName ??= reviewRequestClientFromText(userText) || entityQueryFromText(userText) || "client";
+  }
+  if (toolName === "draftGbpProfileSync") {
+    record.locationId ??= "aquatrace-primary";
+  }
   if (toolName === "getJobDetail" && !record.nameQuery && !record.id) {
     const currentEntity = currentEntityFromText(userText);
     record.nameQuery = correctionFollowUp
@@ -1016,6 +1030,31 @@ function looksLikeCampaignQueueQuestion(lower: string): boolean {
   return /\b(?:campaign|sequence|newsletter|outreach)\b.*\b(?:queue|queued|status|stats|tracking|opens?|clicks?|unsubscribe|suppression)\b/.test(lower);
 }
 
+function looksLikeReviewRequestAction(lower: string): boolean {
+  return /\b(?:send|draft|queue|create|schedule|ask)\b.*\b(?:review\s+request|ask\s+for\s+a\s+review|request\s+a\s+review)\b/.test(lower)
+    || /\breview\s+request\b.*\b(?:client|invoice|email|queue|send|draft)\b/.test(lower);
+}
+
+function looksLikeReviewReplyAction(lower: string): boolean {
+  return !looksLikeReviewRequestAction(lower)
+    && /\b(?:reply|respond|answer|draft)\b.*\b(?:review|google\s+review|gbp|google\s+business)\b/.test(lower);
+}
+
+function looksLikeGbpProfileSyncAction(lower: string): boolean {
+  return /\b(?:draft|queue|sync|update|change)\b.*\b(?:gbp|google\s+business|business\s+profile)\b.*\b(?:profile|hours|services?|q\s*&\s*a|q&a|questions?)\b/.test(lower)
+    || /\b(?:gbp|google\s+business|business\s+profile)\b.*\b(?:profile|hours|services?|q\s*&\s*a|q&a|questions?)\b.*\b(?:draft|queue|sync|update|change)\b/.test(lower);
+}
+
+function looksLikeGbpReviewPollQuestion(lower: string): boolean {
+  return /\b(?:check|pull|fetch|import|sync|look\s+for)\b.*\b(?:reviews?|google\s+reviews?|gbp\s+reviews?)\b/.test(lower)
+    || /\b(?:any|new|latest|recent)\s+(?:google\s+|gbp\s+)?reviews?\b/.test(lower);
+}
+
+function looksLikeReputationQueueQuestion(lower: string): boolean {
+  const reputationCue = /\b(?:reputation|reviews?|google\s+reviews?|gbp\s+reviews?|review\s+replies?|ratings?)\b/.test(lower);
+  return reputationCue && /\b(?:queue|queued|pending|waiting|approve|approval|status|show|list|drafts?)\b/.test(lower);
+}
+
 function looksLikeContentQueueQuestion(lower: string): boolean {
   if (/\b(?:campaign|sequence|newsletter|outreach)\b/.test(lower)) {
     return false;
@@ -1137,7 +1176,7 @@ function directNoToolResponseForRequest(messages: GatewayMessage[]): { answer: s
   }
   if (/\bwhat\s+commands?\s+can\s+i\s+use\b|\bwhat\s+sources?\s+do\s+you\s+use\b|\bwhat\s+(?:tools?|rails?|systems?)\s+do\s+you\s+use\b|\bwhat\s+can\s+you\s+(?:access|see|check|do|help\s+me\s+do)\b/i.test(userText)) {
     return {
-      answer: "You can ask me about today's schedule, work records, job details, CompanyCam reports and photos, client lists, invoices, inbox summaries, important unread email, draft emails for your approval, evaporation reports, content drafts, and website updates. If something is not live yet, I'll say that plainly instead of acting like the information is missing."
+      answer: "You can ask me about today's schedule, work records, job details, CompanyCam reports and photos, client lists, invoices, inbox summaries, important unread email, draft emails for your approval, evaporation reports, content drafts, review replies, review requests, Google Business Profile updates, and website updates. If something is not live yet, I'll say that plainly instead of acting like the information is missing."
     };
   }
   if (/\bwhy\s+did\s+(?:that|this|it)\s+fail\b/i.test(userText)) {
@@ -1270,6 +1309,44 @@ function contentDraftIdFromPriorRuns(priorRuns: ToolRunTrace[]): string | undefi
   return undefined;
 }
 
+function reputationReviewIdFromText(text: string): string | undefined {
+  return text.match(/\bgbp_review_[a-z0-9_-]+\b/i)?.[0];
+}
+
+function reputationReviewIdFromPriorRuns(priorRuns: ToolRunTrace[]): string | undefined {
+  for (const run of [...priorRuns].reverse()) {
+    if (!["reputationQueue", "pollGbpReviews", "draftReviewReply"].includes(run.name)) {
+      continue;
+    }
+    const result = run.result && typeof run.result === "object" ? run.result as Record<string, unknown> : {};
+    const candidates = [
+      Array.isArray(result.reviews) ? result.reviews : [],
+      Array.isArray(result.imported) ? result.imported : [],
+      Array.isArray(result.pendingReplies) ? result.pendingReplies : []
+    ].flat();
+    for (const review of candidates) {
+      if (!review || typeof review !== "object") {
+        continue;
+      }
+      const record = review as Record<string, unknown>;
+      if (typeof record.id === "string") {
+        return record.id;
+      }
+    }
+  }
+  return undefined;
+}
+
+function invoiceIdFromText(text: string): string | undefined {
+  return text.match(/\b(?:invoice|inv)\s*(?:id|number|#|:|-)?\s*([a-z0-9_-]{3,})\b/i)?.[1];
+}
+
+function reviewRequestClientFromText(text: string): string | undefined {
+  const match = text.match(/\b(?:review\s+request|ask\s+for\s+a\s+review|request\s+a\s+review)\s+(?:for|to)?\s*(.+?)(?=\s+(?:at|to|invoice|inv|after)\b|[?.!]|$)/i)
+    ?? text.match(/\bfor\s+(.+?)(?=\s+(?:at|to|invoice|inv|after)\b|[?.!]|$)/i);
+  return match?.[1]?.replace(/\b(?:the|client)\b/gi, " ").replace(/\s+/g, " ").trim() || undefined;
+}
+
 function numberFromMatch(text: string, pattern: RegExp): number | undefined {
   const value = text.match(pattern)?.[1];
   if (!value) {
@@ -1350,6 +1427,21 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikeCreateClientAction(lower) && toolsByName.has("createClient")) {
     return ["createClient"];
+  }
+  if (looksLikeReviewRequestAction(lower) && toolsByName.has("draftReviewRequest")) {
+    return ["draftReviewRequest"];
+  }
+  if (looksLikeReviewReplyAction(lower) && toolsByName.has("draftReviewReply")) {
+    return uniqueToolNames(["reputationQueue", "draftReviewReply"], toolsByName);
+  }
+  if (looksLikeGbpProfileSyncAction(lower) && toolsByName.has("draftGbpProfileSync")) {
+    return ["draftGbpProfileSync"];
+  }
+  if (looksLikeGbpReviewPollQuestion(lower) && toolsByName.has("pollGbpReviews")) {
+    return ["pollGbpReviews"];
+  }
+  if (looksLikeReputationQueueQuestion(lower) && toolsByName.has("reputationQueue")) {
+    return ["reputationQueue"];
   }
   if (looksLikeEmailDraftAction(lower) && firstEmailAddress(userText) && toolsByName.has("draftEmail")) {
     return ["draftEmail"];

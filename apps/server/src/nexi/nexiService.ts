@@ -81,7 +81,7 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
     const tool = tools.find((candidate) => candidate.name === "getEmailMessage");
     return tool ? { tool, args: { mailbox: emailMessageRef[1], messageId: emailMessageRef[2] } } : null;
   }
-  if (/\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/i.test(lower)) {
+  if (/\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/i.test(lower) && !/\b(?:review\s+request|ask\s+for\s+a\s+review|request\s+a\s+review)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "draftEmail");
     const recipient = message.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
     const bodyText = message.match(/\b(?:saying|that says|to say|with message|message)\b\s*:?\s*([\s\S]+)$/i)?.[1]?.trim() || "Please see the note from Aquatrace.";
@@ -92,6 +92,29 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
     const tool = tools.find((candidate) => candidate.name === "getDistance");
     const destination = distanceDestinationFromText(message);
     return tool && destination ? { tool, args: { destination } } : null;
+  }
+  if (/\b(?:send|draft|queue|create|schedule|ask)\b.*\b(?:review\s+request|ask\s+for\s+a\s+review|request\s+a\s+review)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "draftReviewRequest");
+    const recipient = message.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
+    const clientName = entityQueryFromText(message) || "client";
+    return tool && recipient ? { tool, args: { to: recipient, invoiceId: "manual-review-request", clientName } } : null;
+  }
+  if (/\b(?:reply|respond|answer|draft)\b.*\b(?:review|google\s+review|gbp|google\s+business)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "draftReviewReply");
+    const reviewId = message.match(/\bgbp_review_[a-z0-9_-]+\b/i)?.[0];
+    return tool ? { tool, args: reviewId ? { reviewId } : {} } : null;
+  }
+  if (/\b(?:draft|queue|sync|update|change)\b.*\b(?:gbp|google\s+business|business\s+profile)\b.*\b(?:profile|hours|services?|q\s*&\s*a|q&a|questions?)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "draftGbpProfileSync");
+    return tool ? { tool, args: { locationId: "aquatrace-primary" } } : null;
+  }
+  if (/\b(?:reviews?|reputation|google\s+reviews?|gbp\s+reviews?)\b/i.test(lower)) {
+    const pollTool = tools.find((candidate) => candidate.name === "pollGbpReviews");
+    const queueTool = tools.find((candidate) => candidate.name === "reputationQueue");
+    if (/\b(?:check|pull|fetch|import|sync|new|latest|recent)\b/i.test(lower) && pollTool) {
+      return { tool: pollTool, args: {} };
+    }
+    return queueTool ? { tool: queueTool, args: {} } : null;
   }
   if (/\b(?:run|calculate|check|make|create)\b.*\b(?:evap|evaporation|bucket\s+test|water\s+loss)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "runEvaporation");
@@ -195,6 +218,30 @@ function summarizeResult(toolName: string, result: unknown): string {
         ? distance.distanceText
         : "";
     return `Drive time to ${String(distance.destination ?? "that place")} is about ${String(distance.driveMinutes ?? "unknown")} minutes${milesText ? ` (${milesText})` : ""}.`;
+  }
+  if (toolName === "pollGbpReviews" && result && typeof result === "object") {
+    const imported = Array.isArray((result as { imported?: unknown[] }).imported) ? (result as { imported: unknown[] }).imported : [];
+    const blocker = (result as { blocker?: unknown }).blocker;
+    return imported.length
+      ? `I found ${imported.length} Google review${imported.length === 1 ? "" : "s"} and saved them to the review queue.`
+      : `I could not pull live Google reviews yet${typeof blocker === "string" ? `: ${blocker}` : "."}`;
+  }
+  if (toolName === "reputationQueue" && result && typeof result === "object") {
+    const reviews = Array.isArray((result as { reviews?: unknown[] }).reviews) ? (result as { reviews: unknown[] }).reviews : [];
+    const pendingReplies = Array.isArray((result as { pendingReplies?: unknown[] }).pendingReplies) ? (result as { pendingReplies: unknown[] }).pendingReplies : [];
+    return `The reputation queue has ${reviews.length} review${reviews.length === 1 ? "" : "s"} and ${pendingReplies.length} drafted repl${pendingReplies.length === 1 ? "y" : "ies"} waiting.`;
+  }
+  if (toolName === "draftReviewReply" && result && typeof result === "object") {
+    const approval = (result as { approval?: { id?: unknown } }).approval;
+    return `I drafted the review reply and parked it for approval${approval?.id ? ` (${String(approval.id)})` : ""}. Nothing posted live.`;
+  }
+  if (toolName === "draftReviewRequest" && result && typeof result === "object") {
+    const approval = (result as { approval?: { id?: unknown } }).approval;
+    return `I queued the review request for approval${approval?.id ? ` (${String(approval.id)})` : ""}. Nothing sends until it is approved.`;
+  }
+  if (toolName === "draftGbpProfileSync" && result && typeof result === "object") {
+    const approval = (result as { approval?: { id?: unknown } }).approval;
+    return `I drafted the Google Business Profile update and parked it for approval${approval?.id ? ` (${String(approval.id)})` : ""}.`;
   }
   return "I found a sourced record for that question.";
 }
