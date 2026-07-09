@@ -275,7 +275,7 @@ test("Nexi Anthropic gateway answers draftEmail action commands from the approva
   const result = await runNexiToolLoop({
     tenant: tenant(),
     system: "Use tools.",
-    messages: [{ role: "user", content: "Send an email to owner@example.test saying I can confirm Thursday." }],
+    messages: [{ role: "user", content: "Please draft an email to nexi@aquatraceleak.com saying the report is ready for review." }],
     tools: [{
       name: "searchEmail",
       description: "Search email.",
@@ -303,9 +303,9 @@ test("Nexi Anthropic gateway answers draftEmail action commands from the approva
     }
   });
   assert.deepEqual(toolCalls, [{
-    to: ["owner@example.test"],
-    subject: "I can confirm Thursday",
-    bodyText: "I can confirm Thursday."
+    to: ["nexi@aquatraceleak.com"],
+    subject: "the report is ready for review",
+    bodyText: "the report is ready for review."
   }]);
   assert.equal(result.toolRuns[0].name, "draftEmail");
   assert.equal(result.sources[0].ref, "approval_1");

@@ -1077,6 +1077,7 @@ function looksLikeReviewRequestAction(lower: string): boolean {
 
 function looksLikeReviewReplyAction(lower: string): boolean {
   return !looksLikeReviewRequestAction(lower)
+    && !looksLikeEmailDraftAction(lower)
     && /\b(?:reply|respond|answer|draft)\b.*\b(?:review|google\s+review|gbp|google\s+business)\b/.test(lower);
 }
 
@@ -1660,6 +1661,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   if (looksLikeStartIntakeAction(lower) && toolsByName.has("startIntake")) {
     return ["startIntake"];
   }
+  if (looksLikeEmailDraftAction(lower) && firstEmailAddress(userText) && toolsByName.has("draftEmail")) {
+    return ["draftEmail"];
+  }
   if (looksLikeReviewRequestAction(lower) && toolsByName.has("draftReviewRequest")) {
     return ["draftReviewRequest"];
   }
@@ -1674,9 +1678,6 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikeReputationQueueQuestion(lower) && toolsByName.has("reputationQueue")) {
     return ["reputationQueue"];
-  }
-  if (looksLikeEmailDraftAction(lower) && firstEmailAddress(userText) && toolsByName.has("draftEmail")) {
-    return ["draftEmail"];
   }
   if (looksLikeEvaporationRunQuestion(lower) && toolsByName.has("runEvaporation")) {
     const parsed = evaporationInputFromText(userText);
