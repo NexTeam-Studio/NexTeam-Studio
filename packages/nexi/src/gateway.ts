@@ -773,6 +773,12 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.industryPack ??= parsed.industryPack;
     record.plan ??= parsed.plan;
   }
+  if (toolName === "answerIntake") {
+    const parsed = answerIntakeInputFromText(userText, priorRuns);
+    record.sessionId ??= parsed.sessionId;
+    record.field ??= parsed.field;
+    record.value ??= parsed.value;
+  }
   if (toolName === "finalizeIntake") {
     record.sessionId ??= intakeSessionIdFromText(userText) ?? intakeSessionIdFromPriorRuns(priorRuns);
   }
@@ -1391,6 +1397,14 @@ function looksLikeIntakeStatusQuestion(lower: string): boolean {
     || /\bshow\s+me\s+(?:the\s+)?intake\b/.test(lower);
 }
 
+function looksLikeAnswerIntakeAction(text: string): boolean {
+  const lower = text.toLowerCase();
+  return !!intakeSessionIdFromText(text)
+    && !!intakeAnswerFieldFromText(lower)
+    && !looksLikeFinalizeIntakeAction(lower)
+    && !looksLikeIntakeStatusQuestion(lower);
+}
+
 function intakeBusinessNameFromText(text: string): string | undefined {
   const match = text.match(/\b(?:onboard|intake|set\s+up|create|start)\s+(?:a\s+)?(?:new\s+)?(?:tenant|company|business)?\s*(?:called|named)?\s*([^,.!?]+?)(?=\s+(?:as|for|with|that|who|which)\b|[,!.?]|$)/i)
     ?? text.match(/\b(?:tenant|company|business)\s+(?:called|named)\s+([^,.!?]+)(?:[,!.?]|$)/i);
@@ -1421,6 +1435,46 @@ function intakeStartInputFromText(text: string): { businessName?: string | undef
     targetTenantId: intakeTargetTenantIdFromBusinessName(businessName),
     industryPack,
     plan: "suite"
+  };
+}
+
+function intakeAnswerFieldFromText(lower: string): string | undefined {
+  if (/\b(?:services?|offerings?|work\s+types?)\b/.test(lower)) {
+    return "services";
+  }
+  if (/\b(?:service\s+areas?|cities|counties|territor(?:y|ies)|coverage\s+area)\b/.test(lower)) {
+    return "serviceArea";
+  }
+  if (/\b(?:pricing|price|estimate|quote|quoting|rate|rates)\b/.test(lower)) {
+    return "pricingNotes";
+  }
+  if (/\b(?:brand\s+voice|voice|tone|sound|personality)\b/.test(lower)) {
+    return "brandVoice";
+  }
+  if (/\b(?:app\s+stack|current\s+apps?|tools?|software|jobber|quickbooks|calendar|companycam)\b/.test(lower)) {
+    return "appStack";
+  }
+  if (/\b(?:plan|subscription)\b/.test(lower)) {
+    return "plan";
+  }
+  if (/\b(?:business\s+name|company\s+name)\b/.test(lower)) {
+    return "businessName";
+  }
+  return undefined;
+}
+
+function intakeAnswerValueFromText(text: string): unknown {
+  const value = text.match(/\b(?:are|is|should\s+be|should\s+sound|should\s+cover|includes?|include|=|:)\s+([\s\S]+)$/i)?.[1]
+    ?? text.replace(/\bfor\s+intake_[a-f0-9-]{8,}\b[:,]?\s*/i, "");
+  return value.trim().replace(/[.!?]+$/g, "");
+}
+
+function answerIntakeInputFromText(text: string, priorRuns: ToolRunTrace[] = []): { sessionId?: string | undefined; field?: string | undefined; value?: unknown } {
+  const lower = text.toLowerCase();
+  return {
+    sessionId: intakeSessionIdFromText(text) ?? intakeSessionIdFromPriorRuns(priorRuns),
+    field: intakeAnswerFieldFromText(lower),
+    value: intakeAnswerValueFromText(text)
   };
 }
 
@@ -1660,6 +1714,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikeStartIntakeAction(lower) && toolsByName.has("startIntake")) {
     return ["startIntake"];
+  }
+  if (looksLikeAnswerIntakeAction(userText) && toolsByName.has("answerIntake")) {
+    return ["answerIntake"];
   }
   if (looksLikeEmailDraftAction(lower) && firstEmailAddress(userText) && toolsByName.has("draftEmail")) {
     return ["draftEmail"];
@@ -1918,6 +1975,12 @@ function draftEmailAnswer(result: unknown): string {
   return `I drafted that email and put it in the approval queue${typeof approval.id === "string" ? ` (${approval.id})` : ""}. It has not been sent.`;
 }
 
+function intakeAnswerSavedAnswer(result: unknown): string {
+  const record = result && typeof result === "object" ? result as Record<string, unknown> : {};
+  const nextQuestion = typeof record.nextQuestion === "string" ? record.nextQuestion : "keep going when you are ready.";
+  return `I saved that onboarding answer. Next: ${nextQuestion}`;
+}
+
 function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns: ToolRunTrace[]): string | undefined {
   const lower = latestUserText(messages).toLowerCase();
   const distanceRun = [...toolRuns].reverse().find((run) => run.name === "getDistance" && run.sources.length > 0);
@@ -1927,6 +1990,10 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
   const draftRun = [...toolRuns].reverse().find((run) => run.name === "draftEmail" && run.sources.length > 0);
   if (draftRun && looksLikeEmailDraftAction(lower)) {
     return draftEmailAnswer(draftRun.result);
+  }
+  const intakeAnswerRun = [...toolRuns].reverse().find((run) => run.name === "answerIntake" && run.sources.length > 0);
+  if (intakeAnswerRun && looksLikeAnswerIntakeAction(latestUserText(messages))) {
+    return intakeAnswerSavedAnswer(intakeAnswerRun.result);
   }
   return undefined;
 }

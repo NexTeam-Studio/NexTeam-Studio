@@ -13,6 +13,7 @@ import { registerIntakeRoutes } from "../dist/intake/routes.js";
 import { IntakeService } from "../dist/intake/service.js";
 import { runExplicitLocalToolLoop } from "../dist/nexi/nexiService.js";
 import { InMemoryPlatformRepository } from "../dist/platform/repository.js";
+import { runNexiToolLoop } from "@nexteam/nexi";
 
 async function withServer(app, run) {
   const server = app.listen(0);
@@ -214,4 +215,36 @@ test("M10 chat router sends onboarding language to intake tools instead of job l
   assert.equal(finalized.toolRuns[0].name, "finalizeIntake");
   assert.match(finalized.answer, /approval queue/i);
   assert.equal(finalized.toolRuns[0].result.approvalQueuedOnly, true);
+});
+
+test("M10 gateway saves intake answer turns with deterministic answerIntake args", async () => {
+  const { service, approvalQueue } = makeService();
+  const tools = createIntakeNexiTools({
+    service,
+    approvalQueue,
+    access: {
+      tenantId: "aquatrace",
+      tenantUserId: "owner_chris",
+      role: "OWNER",
+      accessKind: "internal"
+    }
+  });
+  const session = await service.start({ businessName: "Demo Pool Co" }, "aquatrace");
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "test",
+    messages: [{ role: "user", content: `For ${session.id}, services are leak detection, weekly pool maintenance, and equipment repair.` }],
+    tools,
+    cachedToolRuns: [{ name: "startIntake", result: { session }, sources: [{ rail: "native", ref: session.id, label: "Tenant intake Demo Pool Co" }] }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    fetchFn: async () => {
+      throw new Error("deterministic intake answers should not call the model");
+    }
+  });
+
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["answerIntake"]);
+  assert.match(result.answer, /saved that onboarding answer/i);
+  const saved = await service.getSession("aquatrace", session.id);
+  assert.equal(saved?.answers.services, "leak detection, weekly pool maintenance, and equipment repair");
 });
