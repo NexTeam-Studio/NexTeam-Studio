@@ -49,6 +49,10 @@ import { loadTenantFromPlatform, registerPlatformRoutes } from "./platform/route
 import { FirestoreSitesRepository, InMemorySitesRepository } from "./sites/repository.js";
 import { registerSitesRoutes } from "./sites/routes.js";
 import { createSitesNexiTools } from "./sites/nexiTools.js";
+import { FirestoreSelfRepairRepository, InMemorySelfRepairRepository } from "./selfrepair/repository.js";
+import { registerSelfRepairRoutes } from "./selfrepair/routes.js";
+import { SelfRepairService } from "./selfrepair/service.js";
+import { FirestoreUsageLogWriter, MemoryUsageLogWriter } from "./usageLog.js";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { createVoiceRouter } from "./voice/routes.js";
 
@@ -77,6 +81,15 @@ const mobileRepository = new InMemoryMobileRepository();
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 const sitesRepository = adminDb ? new FirestoreSitesRepository(adminDb) : new InMemorySitesRepository();
+const selfRepairRepository = adminDb ? new FirestoreSelfRepairRepository(adminDb) : new InMemorySelfRepairRepository();
+const selfRepairUsageLog = adminDb ? new FirestoreUsageLogWriter(adminDb) : new MemoryUsageLogWriter();
+const selfRepairService = new SelfRepairService({
+  dataReader: platformRepository,
+  repository: selfRepairRepository,
+  approvalQueue,
+  usageLog: selfRepairUsageLog,
+  env: process.env
+});
 
 app.use(express.json({
   limit: "1mb",
@@ -239,6 +252,7 @@ registerEvaporationRoutes(app, { repository: evaporationRepository, env: process
 registerMobileRoutes(app, { repository: mobileRepository, approvalQueue, env: process.env });
 registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
 registerSitesRoutes(app, { repository: sitesRepository, approvalQueue, eventBus, env: process.env });
+registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });
 app.use(express.static(webDistDir));
 
 app.get("/", (_req: Request, res: Response) => {
