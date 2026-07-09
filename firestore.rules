@@ -5,7 +5,7 @@ service cloud.firestore {
     function isChrisAdmin() {
       return request.auth != null
         && (
-          ("email" in request.auth.token && request.auth.token.email == "chris1bata@gmail.com")
+          request.auth.uid == "USX9Lc0M6mdRU7QxrMNjJhiV2p42"
           || ("role" in request.auth.token && request.auth.token.role == "platform_operator")
           || ("roles" in request.auth.token && request.auth.token.roles.hasAny(["platform_operator"]))
           || ("platform_operator" in request.auth.token && request.auth.token.platform_operator == true)

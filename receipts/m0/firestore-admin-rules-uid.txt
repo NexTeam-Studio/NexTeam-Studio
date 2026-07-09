@@ -1,0 +1,10 @@
+Firestore admin rules UID receipt
+
+Confirmed admin identity:
+- email: chris@aquatraceleak.com
+- uid: USX9Lc0M6mdRU7QxrMNjJhiV2p42
+
+Rule wired:
+- firestore.rules isChrisAdmin() allows admin document access when request.auth.uid == "USX9Lc0M6mdRU7QxrMNjJhiV2p42".
+
+Admin rules remain deny-all for non-admin document paths.
