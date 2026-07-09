@@ -7,10 +7,10 @@ export const classDCapabilityGapSessions = [
         createdAt: "2026-07-08T20:47:00.000Z",
         originalConversationId: "part9-class-closure",
         question: "How far is today's pool from my house?",
-        expectedIntent: "capability_gap_distance_or_maps",
-        requiredTools: [],
+        expectedIntent: "distance_lookup",
+        requiredTools: ["getSchedule", "getDistance"],
         forbiddenTools: ["searchEmail"],
-        assertions: ["capabilityGap", "noNoSourceStonewall", "noRawToolError"]
+        assertions: ["usesRequiredRails", "noNoSourceStonewall", "noRawToolError", "noJan2024"]
       },
       {
         id: "part9-class-D-report-pdf-email-attachment-gap",

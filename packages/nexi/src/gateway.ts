@@ -726,6 +726,9 @@ function looksLikeStreetAddress(text: string): boolean {
 }
 
 function distanceDestinationFromText(text: string): string | undefined {
+  if (/\b(?:today'?s?\s+pool|today'?s?\s+job|today'?s?\s+visit|current\s+job|current\s+pool|that\s+pool|that\s+job|it)\b/i.test(text)) {
+    return undefined;
+  }
   const direct = text.match(
     /\b(?:how\s+far(?:\s+is)?|distance\s+(?:to|for)|drive\s+time\s+(?:to|for)|travel\s+time\s+(?:to|for)|miles?\s+(?:to|from))\s+(.+?)(?=\s+from\s+(?:my\s+house|the\s+shop|here|102\s+kate|aquatrace)|[?.!]|$)/i
   )?.[1]?.trim();
@@ -1151,6 +1154,11 @@ function looksLikePipelineQuestion(lower: string): boolean {
 
 function looksLikeDistanceQuestion(lower: string): boolean {
   return /\b(?:how\s+far|distance|miles?|drive\s+time|travel\s+time|from\s+(?:here|my house|the shop))\b/.test(lower);
+}
+
+function looksLikeScheduleRelativeDistanceQuestion(lower: string): boolean {
+  return looksLikeDistanceQuestion(lower)
+    && /\b(?:today'?s?\s+(?:pool|job|visit)|tomorrow'?s?\s+(?:pool|job|visit)|current\s+(?:pool|job|visit))\b/.test(lower);
 }
 
 function looksLikeClientListQuestion(lower: string): boolean {
@@ -1675,6 +1683,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if ((looksLikeDistanceQuestion(lower) || distanceFollowUp) && toolsByName.has("getDistance")) {
     const destination = distanceDestinationFromText(userText);
+    if (looksLikeScheduleRelativeDistanceQuestion(lower)) {
+      return uniqueToolNames(["getSchedule", "getDistance"], toolsByName);
+    }
     return destination && looksLikeStreetAddress(destination)
       ? ["getDistance"]
       : uniqueToolNames(["getJobDetail", "getDistance"], toolsByName);

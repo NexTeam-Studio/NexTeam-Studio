@@ -2787,15 +2787,19 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T12:31:30.012Z",
         "originalConversationId": "web-3e22bec7-ef7c-4827-94b3-dcb5115277df",
         "question": "How many miles are we away from today's pool?",
-        "expectedIntent": "capability_gap_distance_or_maps",
-        "requiredTools": [],
+        "expectedIntent": "distance_lookup",
+        "requiredTools": [
+          "getSchedule",
+          "getDistance"
+        ],
         "forbiddenTools": [
-          "getJobDetail",
           "searchEmail"
         ],
         "assertions": [
-          "capabilityGap",
-          "noNoSourceStonewall"
+          "usesRequiredRails",
+          "noNoSourceStonewall",
+          "noRawToolError",
+          "noJan2024"
         ]
       },
       {
@@ -2803,10 +2807,9 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T12:31:48.481Z",
         "originalConversationId": "web-3e22bec7-ef7c-4827-94b3-dcb5115277df",
         "question": "Open Denver Justice pool address in Google maps",
-        "expectedIntent": "capability_gap_distance_or_maps",
+        "expectedIntent": "capability_gap_open_map",
         "requiredTools": [],
         "forbiddenTools": [
-          "getJobDetail",
           "searchEmail"
         ],
         "assertions": [
@@ -2947,15 +2950,18 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T20:30:49.540Z",
         "originalConversationId": "web-7e2524c5-9aca-4df2-936c-bdee3f70702b",
         "question": "how far is deborah justice from here",
-        "expectedIntent": "capability_gap_distance_or_maps",
-        "requiredTools": [],
-        "forbiddenTools": [
+        "expectedIntent": "distance_lookup",
+        "requiredTools": [
           "getJobDetail",
+          "getDistance"
+        ],
+        "forbiddenTools": [
           "searchEmail"
         ],
         "assertions": [
-          "capabilityGap",
-          "noNoSourceStonewall"
+          "usesRequiredRails",
+          "noNoSourceStonewall",
+          "noRawToolError"
         ]
       },
       {
@@ -2977,10 +2983,9 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T20:31:21.686Z",
         "originalConversationId": "web-7e2524c5-9aca-4df2-936c-bdee3f70702b",
         "question": "open it in google maps",
-        "expectedIntent": "capability_gap_distance_or_maps",
+        "expectedIntent": "capability_gap_open_map",
         "requiredTools": [],
         "forbiddenTools": [
-          "getJobDetail",
           "searchEmail"
         ],
         "assertions": [
@@ -2993,15 +2998,17 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T20:31:33.417Z",
         "originalConversationId": "web-7e2524c5-9aca-4df2-936c-bdee3f70702b",
         "question": "how far is it from my house",
-        "expectedIntent": "capability_gap_distance_or_maps",
-        "requiredTools": [],
+        "expectedIntent": "distance_lookup",
+        "requiredTools": [
+          "getDistance"
+        ],
         "forbiddenTools": [
-          "getJobDetail",
           "searchEmail"
         ],
         "assertions": [
-          "capabilityGap",
-          "noNoSourceStonewall"
+          "usesRequiredRails",
+          "noNoSourceStonewall",
+          "noRawToolError"
         ]
       },
       {
@@ -3009,15 +3016,17 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-06T20:31:44.890Z",
         "originalConversationId": "web-7e2524c5-9aca-4df2-936c-bdee3f70702b",
         "question": "102 kate lane fair play sc",
-        "expectedIntent": "capability_gap_distance_or_maps",
-        "requiredTools": [],
+        "expectedIntent": "distance_lookup",
+        "requiredTools": [
+          "getDistance"
+        ],
         "forbiddenTools": [
-          "getJobDetail",
           "searchEmail"
         ],
         "assertions": [
-          "capabilityGap",
-          "noNoSourceStonewall"
+          "usesRequiredRails",
+          "noNoSourceStonewall",
+          "noRawToolError"
         ]
       }
     ]

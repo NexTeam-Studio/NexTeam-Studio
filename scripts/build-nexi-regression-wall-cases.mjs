@@ -65,13 +65,21 @@ function classify(question, previousPolicy) {
       assertions: ["noNoSourceStonewall"]
     };
   }
-  if (/\b(?:how\s+far|distance|miles?|drive\s+time|travel\s+time|google\s+maps|open .*maps|from my house|from here)\b/.test(lower)
+  if (/\b(?:open|launch)\b.*\b(?:google\s+maps|maps?)\b/.test(lower)) {
+    return {
+      expectedIntent: "capability_gap_open_map",
+      requiredTools: [],
+      forbiddenTools: ["searchEmail"],
+      assertions: ["capabilityGap", "noNoSourceStonewall"]
+    };
+  }
+  if (/\b(?:how\s+far|distance|miles?|drive\s+time|travel\s+time|from my house|from here)\b/.test(lower)
     || /^\s*\d{1,6}\s+.+\b(?:road|rd|street|st|lane|ln|drive|dr|court|ct)\b/i.test(question)) {
     return {
-      expectedIntent: "capability_gap_distance_or_maps",
-      requiredTools: [],
-      forbiddenTools: ["getJobDetail", "searchEmail"],
-      assertions: ["capabilityGap", "noNoSourceStonewall"]
+      expectedIntent: "distance_lookup",
+      requiredTools: /\btoday'?s?\s+(?:pool|job|visit)\b/.test(lower) ? ["getSchedule", "getDistance"] : ["getDistance"],
+      forbiddenTools: ["searchEmail"],
+      assertions: ["usesRequiredRails", "noNoSourceStonewall", "noRawToolError", "noJan2024"]
     };
   }
   if (/\b(?:ytd|year to date|revenue|gross|sales)\b/.test(lower)) {
