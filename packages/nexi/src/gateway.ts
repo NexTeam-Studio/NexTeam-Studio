@@ -1982,9 +1982,11 @@ function intakeAnswerSavedAnswer(result: unknown): string {
 }
 
 function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns: ToolRunTrace[]): string | undefined {
-  const lower = latestUserText(messages).toLowerCase();
+  const latestText = latestUserText(messages);
+  const lower = latestText.toLowerCase();
+  const distanceFollowUp = looksLikeAddressOnlyFollowUp(latestText) && recentUserTextMatches(messages, looksLikeDistanceQuestion);
   const distanceRun = [...toolRuns].reverse().find((run) => run.name === "getDistance" && run.sources.length > 0);
-  if (distanceRun && looksLikeDistanceQuestion(lower)) {
+  if (distanceRun && (looksLikeDistanceQuestion(lower) || distanceFollowUp)) {
     return distanceAnswer(distanceRun.result);
   }
   const draftRun = [...toolRuns].reverse().find((run) => run.name === "draftEmail" && run.sources.length > 0);
@@ -1992,7 +1994,7 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
     return draftEmailAnswer(draftRun.result);
   }
   const intakeAnswerRun = [...toolRuns].reverse().find((run) => run.name === "answerIntake" && run.sources.length > 0);
-  if (intakeAnswerRun && looksLikeAnswerIntakeAction(latestUserText(messages))) {
+  if (intakeAnswerRun && looksLikeAnswerIntakeAction(latestText)) {
     return intakeAnswerSavedAnswer(intakeAnswerRun.result);
   }
   return undefined;
