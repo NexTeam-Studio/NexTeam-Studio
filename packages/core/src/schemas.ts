@@ -24,6 +24,7 @@ export const addressSchema = z.object({
 
 export const artifactKindSchema = z.enum([
   "client",
+  "tenant_provisioning",
   "email",
   "sms",
   "gbp_post",

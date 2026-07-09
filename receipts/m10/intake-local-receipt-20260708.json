@@ -1,0 +1,74 @@
+{
+  "module": "M10 Intake",
+  "date": "2026-07-08",
+  "status": "local_foundation_in_progress",
+  "branch": "build/intake",
+  "scopeCompleted": [
+    "XState intake interview phases",
+    "Nexi chat tools: startIntake, answerIntake, intakeStatus, finalizeIntake",
+    "ApprovalQueue artifact kind: tenant_provisioning",
+    "Native-only provisioning executor for approved tenant drafts",
+    "Provisioning plan includes tenant, NexiBlueprint, site draft seed, calendar seed, templates, OAuth instructions, app-stack decisions, and safeguards",
+    "Explicit chat router routes tenant onboarding prompts to startIntake instead of createClient, email search, or job lookup",
+    "Explicit chat router routes finalize-intake prompts to ApprovalQueue tenant provisioning when a session id is present"
+  ],
+  "hardBoundaries": {
+    "externalOauth": "deferred_owner_action_only",
+    "outboundSends": "none",
+    "publishing": "none",
+    "customDomains": "deferred",
+    "nativeWritesBeforeApproval": false
+  },
+  "localVerification": [
+    {
+      "command": "npm run build",
+      "result": "passed"
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "node --test apps/server/test/intake.test.mjs",
+      "result": "5/5 passed"
+    },
+    {
+      "command": "node --test apps/server/test/nexi-job-desk.test.mjs",
+      "result": "65/65 passed"
+    },
+    {
+      "command": "npm run lint",
+      "result": "passed"
+    },
+    {
+      "command": "npm run test",
+      "result": "161/161 passed"
+    },
+    {
+      "command": "npm run check:tenancy",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check:secrets",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check:provider-imports",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check:blueprints",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check:secret-history",
+      "result": "passed; 293 reachable commits / 4492 reachable objects checked"
+    }
+  ],
+  "part9RealityGateRemaining": [
+    "Deploy build/intake or reconciled integration branch to staging",
+    "Record owner-visible live transcript/screen recording: 'Demo Pool Co' onboarded by talking to Nexi",
+    "Execute the queued tenant_provisioning approval against staging native records",
+    "Run live regression wall before any merge gate"
+  ]
+}

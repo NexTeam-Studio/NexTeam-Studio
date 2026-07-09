@@ -62,6 +62,7 @@ function buildNexiSystemPrompt(tenant: Tenant): string {
     "For email summaries and triage, group by priority when available and format each item as sender - subject - one-line ask. Leave internal IDs out unless the owner asks. Sign-in tests and account welcomes are not client inquiries.",
     "Talk like a sharp, reliable employee for trade owners and field workers. Avoid user-facing jargon such as API, endpoint, tool call, source, query, rail, and schema.",
     "For action requests like drafting or sending email, use the approval-gated draft tool and do not require factual sources before acknowledging the queued draft.",
+    "For tenant onboarding requests, run the intake interview, capture current app-stack choices, and queue provisioning for owner approval only. Never claim external accounts, publishing, emails, or domains are set up.",
     "Keep phone answers short, direct, and operational. Ask at most one clarifying question."
   ].join("\n");
 }
@@ -92,6 +93,20 @@ function chooseTool(message: string, tools: NexiTool[]): { tool: NexiTool; args:
     const tool = tools.find((candidate) => candidate.name === "getDistance");
     const destination = distanceDestinationFromText(message);
     return tool && destination ? { tool, args: { destination } } : null;
+  }
+  const intakeSessionId = message.match(/\bintake_[a-z0-9-]+\b/i)?.[0];
+  if (/\b(?:finalize|finish|park|queue)\b.*\b(?:intake|tenant\s+plan|onboarding)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "finalizeIntake");
+    return tool && intakeSessionId ? { tool, args: { sessionId: intakeSessionId } } : null;
+  }
+  if (/\b(?:intake|tenant\s+onboarding|onboarding)\b.*\b(?:status|sessions?|where|show|list)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "intakeStatus");
+    return tool ? { tool, args: intakeSessionId ? { sessionId: intakeSessionId } : {} } : null;
+  }
+  if (/\b(?:onboard|start\s+(?:an?\s+)?intake|tenant\s+intake|set\s+up\s+(?:a\s+)?(?:new\s+)?tenant|create\s+(?:a\s+)?(?:new\s+)?tenant)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "startIntake");
+    const businessName = intakeBusinessNameFromText(message);
+    return tool ? { tool, args: businessName ? { businessName } : {} } : null;
   }
   if (/\b(?:send|draft|queue|create|schedule|ask)\b.*\b(?:review\s+request|ask\s+for\s+a\s+review|request\s+a\s+review)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "draftReviewRequest");
@@ -173,6 +188,14 @@ function distanceDestinationFromText(text: string): string | undefined {
   return match?.replace(/^is\s+/i, "").trim();
 }
 
+function intakeBusinessNameFromText(text: string): string | undefined {
+  const direct = text.match(
+    /\b(?:onboard|start\s+(?:an?\s+)?intake\s+for|tenant\s+intake\s+for|set\s+up\s+(?:a\s+)?(?:new\s+)?tenant\s+for|create\s+(?:a\s+)?(?:new\s+)?tenant\s+for)\s+(.+?)(?=\s+(?:as|with|that|and|then)\b|[?.!]|$)/i
+  )?.[1]?.trim();
+  const fallback = text.match(/\b(?:business|company)\s+(?:called|named)\s+(.+?)(?=\s+(?:as|with|that|and|then)\b|[?.!]|$)/i)?.[1]?.trim();
+  return (direct || fallback)?.replace(/^["']|["']$/g, "");
+}
+
 function entityQueryFromText(text: string): string {
   const normalized = text.replace(/[?.!]+$/g, "").trim();
   const matches = [...normalized.matchAll(
@@ -242,6 +265,22 @@ function summarizeResult(toolName: string, result: unknown): string {
   if (toolName === "draftGbpProfileSync" && result && typeof result === "object") {
     const approval = (result as { approval?: { id?: unknown } }).approval;
     return `I drafted the Google Business Profile update and parked it for approval${approval?.id ? ` (${String(approval.id)})` : ""}.`;
+  }
+  if (toolName === "startIntake" && result && typeof result === "object") {
+    const session = (result as { session?: { targetTenantId?: unknown; nextQuestion?: unknown } }).session;
+    return `I started the onboarding interview${session?.targetTenantId ? ` for ${String(session.targetTenantId)}` : ""}. Next: ${String(session?.nextQuestion ?? "tell me about the business.")}`;
+  }
+  if (toolName === "answerIntake" && result && typeof result === "object") {
+    const nextQuestion = (result as { nextQuestion?: unknown }).nextQuestion;
+    return `I saved that onboarding answer. Next: ${String(nextQuestion ?? "keep going when you are ready.")}`;
+  }
+  if (toolName === "intakeStatus" && result && typeof result === "object") {
+    const sessions = Array.isArray((result as { sessions?: unknown[] }).sessions) ? (result as { sessions: unknown[] }).sessions : [];
+    return `I found ${sessions.length} onboarding session${sessions.length === 1 ? "" : "s"}.`;
+  }
+  if (toolName === "finalizeIntake" && result && typeof result === "object") {
+    const approvalId = (result as { approvalId?: unknown }).approvalId;
+    return `I parked the tenant plan in the approval queue${approvalId ? ` as ${String(approvalId)}` : ""}. Nothing external was created.`;
   }
   return "I found a sourced record for that question.";
 }

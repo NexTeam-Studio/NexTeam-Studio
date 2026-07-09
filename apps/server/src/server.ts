@@ -36,6 +36,11 @@ import { FirestoreNativeCrmRepository } from "./crm/nativeRepository.js";
 import { createEvaporationNexiTools } from "./evaporation/nexiTools.js";
 import { MemoryEvaporationRepository } from "./evaporation/repository.js";
 import { registerEvaporationRoutes } from "./evaporation/routes.js";
+import { IntakeApprovalExecutor } from "./intake/approvalExecutor.js";
+import { createIntakeNexiTools } from "./intake/nexiTools.js";
+import { FirestoreIntakeRepository, InMemoryIntakeRepository } from "./intake/repository.js";
+import { registerIntakeRoutes } from "./intake/routes.js";
+import { IntakeService } from "./intake/service.js";
 import { InMemoryMobileRepository } from "./mobile/repository.js";
 import { registerMobileRoutes } from "./mobile/routes.js";
 import { createSchedulingNexiTools } from "./scheduling/nexiTools.js";
@@ -74,6 +79,10 @@ const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
 const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();
 const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TENANT_ID || "aquatrace");
+const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
+const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
+const intakeRepository = adminDb ? new FirestoreIntakeRepository(adminDb) : new InMemoryIntakeRepository();
+const intakeService = new IntakeService(intakeRepository, platformRepository);
 const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CompositeApprovalExecutor([
   {
     canExecute: (item) => item.execute.service === "comms" && item.execute.op === "sendEmail",
@@ -82,12 +91,14 @@ const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueReposito
   {
     canExecute: (item) => item.execute.service === "crm" && item.execute.op === "createClient",
     executor: new CrmApprovalExecutor(nativeCrmProvider)
+  },
+  {
+    canExecute: (item) => item.execute.service === "intake" && item.execute.op === "provisionTenant",
+    executor: new IntakeApprovalExecutor(intakeService)
   }
 ]));
 const evaporationRepository = new MemoryEvaporationRepository();
 const mobileRepository = new InMemoryMobileRepository();
-const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
-const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 const sitesRepository = adminDb ? new FirestoreSitesRepository(adminDb) : new InMemorySitesRepository();
 const selfRepairRepository = adminDb ? new FirestoreSelfRepairRepository(adminDb) : new InMemorySelfRepairRepository();
 const selfRepairUsageLog = adminDb ? new FirestoreUsageLogWriter(adminDb) : new MemoryUsageLogWriter();
@@ -159,6 +170,10 @@ app.use("/api/nexi", createNexiRouter(process.env, {
       approvalQueue,
       access,
       env: process.env
+    })).concat(createIntakeNexiTools({
+      service: intakeService,
+      approvalQueue,
+      access
     }));
   }
 }));
@@ -272,6 +287,7 @@ registerCampaignRoutes(app, { repository: campaignRepository, approvalQueue, env
 registerReputationRoutes(app, { repository: reputationRepository, approvalQueue, eventBus, gbpProvider: gbpReviewProvider, env: process.env });
 registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env });
 registerEvaporationRoutes(app, { repository: evaporationRepository, env: process.env });
+registerIntakeRoutes(app, { service: intakeService, approvalQueue, env: process.env });
 registerMobileRoutes(app, { repository: mobileRepository, approvalQueue, env: process.env });
 registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
 registerSitesRoutes(app, { repository: sitesRepository, approvalQueue, eventBus, env: process.env });

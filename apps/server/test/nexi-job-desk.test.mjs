@@ -1124,6 +1124,72 @@ test("Nexi create-client prompts route to approval-gated CRM createClient", asyn
   assert.equal(result.sources.some((source) => source.ref === "approval_client_1"), true);
 });
 
+test("Nexi tenant intake prompts route to startIntake instead of search or createClient", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "onboard Demo Pool Co as a new tenant" }],
+    tools: [
+      {
+        name: "startIntake",
+        description: "Start tenant onboarding.",
+        inputSchema: z.object({
+          businessName: z.string().optional(),
+          targetTenantId: z.string().optional(),
+          industryPack: z.enum(["pool_leak", "hvac", "plumbing"]).default("pool_leak"),
+          plan: z.enum(["nexi", "marketing", "suite"]).default("suite"),
+          timezone: z.string().default("America/New_York")
+        }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(args);
+          return {
+            result: {
+              session: {
+                id: "intake_demo_pool",
+                targetTenantId: "demo-pool-co",
+                status: "interviewing",
+                nextQuestion: "What services should Nexi know?"
+              },
+              approvalRequiredBeforeProvisioning: true
+            },
+            sources: [{ rail: "native", ref: "intake_demo_pool", label: "Tenant intake demo-pool-co" }]
+          };
+        }
+      },
+      {
+        name: "createClient",
+        description: "Create a client.",
+        inputSchema: z.object({ name: z.string() }),
+        handler: async () => {
+          throw new Error("createClient should not run for tenant intake prompts");
+        }
+      },
+      {
+        name: "searchEmail",
+        description: "Search email.",
+        inputSchema: z.object({ keywords: z.string().optional() }),
+        handler: async () => {
+          throw new Error("searchEmail should not run for tenant intake prompts");
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I started the Demo Pool Co intake." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["startIntake"]);
+  assert.equal(toolCalls[0].businessName, "Demo Pool Co");
+  assert.equal(toolCalls[0].targetTenantId, "demo-pool-co");
+  assert.equal(toolCalls[0].industryPack, "pool_leak");
+  assert.equal(result.sources.some((source) => source.ref === "intake_demo_pool"), true);
+});
+
 test("Nexi content queue prompts route to content queue approve and reject tools", async () => {
   const calls = [];
   const pendingDraft = {

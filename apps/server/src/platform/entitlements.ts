@@ -44,7 +44,11 @@ const TOOL_MODULES: Record<string, PlatformModule> = {
   auditSiteSeo: "seo",
   seoQueue: "seo",
   draftSeoArticleBrief: "seo",
-  seoReport: "seo"
+  seoReport: "seo",
+  startIntake: "platform",
+  answerIntake: "platform",
+  intakeStatus: "platform",
+  finalizeIntake: "platform"
 };
 
 export interface EntitlementResult {
