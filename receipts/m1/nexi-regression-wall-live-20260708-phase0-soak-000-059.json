@@ -1,0 +1,750 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783559718640-3b6428e7",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 60,
+  "passed": 60,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 60,
+  "offset": null,
+  "results": [
+    {
+      "id": "20260704172042-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:20:42.712Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField came back with no value for poolGallons — no matching Camp Mikell blueprint found. - getJobDetail failed to complete its check, so I couldn't cross-reference job data. - getDocum",
+      "latencyMs": 57424
+    },
+    {
+      "id": "20260704172049-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:20:49.617Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. The pool gallons lookup for Camp Mikell came back empty (no matched blueprint), the job detail check failed to complete, and there are no documents or reports on file for that site either.",
+      "latencyMs": 49257
+    },
+    {
+      "id": "20260704172534-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:25:34.406Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on today's schedule (all day, 7/8/2026): - **Clarion Hotel – Commercial Main Drain Survey** for ASP of Asheville (client status: lead) - Property: 234 Hendersonville Road, Asheville, NC 28803 - Total: $812.50 - Contact: 828-551-5511",
+      "latencyMs": 41995
+    },
+    {
+      "id": "20260704172544-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:25:44.767Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 CompanyCam photos for Deborah Justice (181 Isbell Road, Fair Play, SC). **Source: CompanyCam** - Photo IDs: 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 3338748995, 3338749169, 3338749380, 333",
+      "latencyMs": 4960
+    },
+    {
+      "id": "20260704172547-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:25:47.688Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - **lookupSiteJobBlueprintField**: no poolGallons value found (no matching blueprint) - **getDocuments**: no Camp Mikell blueprint or documents on file - **getJobDetail**: check failed, so I couldn't cross-ve",
+      "latencyMs": 58767
+    },
+    {
+      "id": "20260704172554-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:25:54.012Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - The Camp Mikell blueprint lookup for poolGallons came back empty (no matched blueprint, no value). - The related job detail check also failed to return data, and no documents/reports turned up for this site",
+      "latencyMs": 51583
+    },
+    {
+      "id": "20260704172947-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:29:47.787Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on today's schedule (all day): - **Clarion Hotel – Commercial Main Drain Survey** for ASP of Asheville, 234 Hendersonville Road, Asheville, NC — status: lead Source: Jobber (getSchedule)",
+      "latencyMs": 64974
+    },
+    {
+      "id": "20260704173045-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:30:45.190Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on today's schedule (2026-07-08, all day): - **Clarion Hotel - Commercial Main Drain Survey** — client: ASP of Asheville, 234 Hendersonville Road, Asheville, NC 28803. Status: lead. Total: $812.50. Source: Jobber (getSchedule).",
+      "latencyMs": 38865
+    },
+    {
+      "id": "20260704173052-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:30:52.873Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 CompanyCam photos for the Deborah Justice job (181 Isbell Road, Fair Play, SC). **CompanyCam IDs:** 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 3338748995, 3338749169, 3338749380, 3338749547,",
+      "latencyMs": 4388
+    },
+    {
+      "id": "20260704173057-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:30:57.286Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField for poolGallons came back with no value and no matched blueprint for Camp Mikell. - getJobDetail failed to complete the check, and getDocuments found no matching project, documen",
+      "latencyMs": 49742
+    },
+    {
+      "id": "20260704173102-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:31:02.700Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField: no value for poolGallons, and no blueprint matched for Camp Mikell. - getJobDetail: check didn't complete. - getDocuments: no matching project, documents, reports, or suggested ",
+      "latencyMs": 34380
+    },
+    {
+      "id": "20260704173548-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:35:48.602Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on today's schedule (2026-07-08, all day): - **Clarion Hotel - Commercial Main Drain Survey** — ASP of Asheville, 234 Hendersonville Road, Asheville, NC. Status: lead. Total: $812.50. Source: Jobber (getSchedule)",
+      "latencyMs": 35116
+    },
+    {
+      "id": "20260704173555-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:35:55.752Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos for Deborah Justice — 181 Isbell Road, Fair Play, SC 29643. - CompanyCam IDs: 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 3338748995, 3338749169, 3338749380, 3338749547, 3338749691, 33",
+      "latencyMs": 5023
+    },
+    {
+      "id": "20260704173600-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:36:00.708Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - **lookupSiteJobBlueprintField** returned no value for poolGallons on Camp Mikell (no matching blueprint found). - **getJobDetail** failed to complete the check. - **getDocuments** found no project, document",
+      "latencyMs": 31048
+    },
+    {
+      "id": "20260704173606-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:36:06.992Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - **lookupSiteJobBlueprintField** – no value for poolGallons; no matching blueprint found for Camp Mikell. - **getDocuments** – no project, documents, reports, or suggested blueprints on file for Camp Mikell.",
+      "latencyMs": 37148
+    },
+    {
+      "id": "20260704174049-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:40:49.119Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the schedule today (2026-07-08): - **Clarion Hotel - Commercial Main Drain Survey** — ASP of Asheville, 234 Hendersonville Road, Asheville, NC. All-day job, status: lead. Total $812.50. Source: Jobber (getSchedule)",
+      "latencyMs": 32923
+    },
+    {
+      "id": "20260704174053-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:40:53.215Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 CompanyCam photos for Deborah Justice, 181 Isbell Road, Fair Play, SC. **Source: CompanyCam, project ID 107503799** Photo IDs: - 3338800086 - 3338756524 - 3338754200 - 3338751881 - 3338681696 - 3338748643 - 3338748847 - 3338748995 ",
+      "latencyMs": 5632
+    },
+    {
+      "id": "20260704174056-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:40:56.525Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField came back with no value for poolGallons, and no blueprint match was found for Camp Mikell. - getJobDetail failed to complete the check, so I couldn't cross-reference job data eit",
+      "latencyMs": 32062
+    },
+    {
+      "id": "20260704174059-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:40:59.515Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField: no value for poolGallons, no matching blueprint found for Camp Mikell. - getJobDetail: check failed to complete, so job records couldn't be cross-referenced. - getDocuments: no ",
+      "latencyMs": 35442
+    },
+    {
+      "id": "20260704174524-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:45:24.849Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on today's schedule (7/8, all day): - **Clarion Hotel - Commercial Main Drain Survey** — ASP of Asheville, 234 Hendersonville Road, Asheville, NC — status: lead, total: $812.50 Source: Jobber",
+      "latencyMs": 34574
+    },
+    {
+      "id": "20260704174530-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:45:30.588Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos for Deborah Justice's job. - **Job:** Deborah Justice — 181 Isbell Road, Fair Play, SC 29643 - **Photo count:** 25 - **Source:** CompanyCam (project ID 107503799) None of the photos have tags attached.",
+      "latencyMs": 4982
+    },
+    {
+      "id": "20260704174533-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:45:33.784Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - The pool gallons lookup for the Camp Mikell SiteJobBlueprint came back with no value and no matched blueprint. - The job detail check failed before returning any data. - No documents or suggested blueprints",
+      "latencyMs": 31491
+    },
+    {
+      "id": "20260704174536-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:45:36.844Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - Blueprint lookup (poolGallons): no value returned, no matching blueprint found. - Job detail check: failed before returning data. - Documents/reports search: no documents, reports, or suggested blueprints f",
+      "latencyMs": 35051
+    },
+    {
+      "id": "20260704174553-1-reply-with-exactly-readiness-check",
+      "createdAt": "2026-07-04T17:45:53.922Z",
+      "expectedIntent": "meta_echo",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "readiness check.",
+      "latencyMs": 1702
+    },
+    {
+      "id": "20260704174559-2-reply-with-exactly-readiness-check",
+      "createdAt": "2026-07-04T17:45:59.565Z",
+      "expectedIntent": "meta_echo",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "readiness check.",
+      "latencyMs": 1682
+    },
+    {
+      "id": "20260704175316-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:53:16.006Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on today's schedule (2026-07-08, all day): - **Clarion Hotel - Commercial Main Drain Survey** — client ASP of Asheville, 234 Hendersonville Road, Asheville, NC. Status: lead. Total: $812.50. Source: Jobber (getSchedule).",
+      "latencyMs": 30583
+    },
+    {
+      "id": "20260704175322-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:53:22.864Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 CompanyCam photos for Deborah Justice (181 Isbell Road, Fair Play, SC). **Source: CompanyCam** - Photo IDs: 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 3338748995, 3338749169, 3338749380, 333",
+      "latencyMs": 5721
+    },
+    {
+      "id": "20260704175325-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:53:25.888Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField returned no matched blueprint and no value for poolGallons at Camp Mikell. - getJobDetail failed to complete the check on the Jobber side. - getDocuments found no linked document",
+      "latencyMs": 32082
+    },
+    {
+      "id": "20260704175328-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:53:28.972Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField: no matched blueprint, poolGallons came back empty. - getJobDetail: check failed to complete on the Jobber side. - getDocuments: no linked documents, reports, or suggested bluepr",
+      "latencyMs": 34702
+    },
+    {
+      "id": "20260704175331-1-reply-with-exactly-readiness-check",
+      "createdAt": "2026-07-04T17:53:31.466Z",
+      "expectedIntent": "meta_echo",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "readiness check.",
+      "latencyMs": 1640
+    },
+    {
+      "id": "20260704175335-2-reply-with-exactly-readiness-check",
+      "createdAt": "2026-07-04T17:53:35.850Z",
+      "expectedIntent": "meta_echo",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "readiness check.",
+      "latencyMs": 1660
+    },
+    {
+      "id": "20260704175418-1-find-companycam-photos-for-deborah-justice",
+      "createdAt": "2026-07-04T17:54:18.266Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on the Deborah Justice job at 181 Isbell Road, Fair Play, SC. That's the full batch logged in CompanyCam for this project — no descriptions or tags attached to them, just the raw photo set.",
+      "latencyMs": 4795
+    },
+    {
+      "id": "20260705015415-1-what-s-on-schedule-for-monday",
+      "createdAt": "2026-07-05T01:54:15.668Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "Nothing on the books for Monday — schedule's clear.",
+      "latencyMs": 25211
+    },
+    {
+      "id": "20260705015758-2-a-lot-of-information-here-mich-of-these-are-unscheduled-or-late-jobs-there-is-a-",
+      "createdAt": "2026-07-05T01:57:58.518Z",
+      "expectedIntent": "pipeline_status",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPipeline"
+      ],
+      "answerSample": "I don't have date info tied to these records — this pipeline data shows 5 jobs marked \"scheduled\" but doesn't include the actual appointment dates/times needed to confirm which one lands on Monday, July 6. Here are the 5 scheduled jobs on f",
+      "latencyMs": 12153
+    },
+    {
+      "id": "20260705015834-3-what-is-our-current-ytd-revenue",
+      "createdAt": "2026-07-05T01:58:34.059Z",
+      "expectedIntent": "capability_gap_revenue",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't total revenue from chat yet because the revenue summary tool is not wired to Nexi. I logged it as capability_not_available.",
+      "latencyMs": 1661
+    },
+    {
+      "id": "20260705015924-4-who-owes-us-money",
+      "createdAt": "2026-07-05T01:59:24.594Z",
+      "expectedIntent": "capability_gap_ar_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't give a reliable who-owes-us-money list from chat yet because the accounts-receivable summary tool is not wired to Nexi. I logged it as capability_not_available.",
+      "latencyMs": 1651
+    },
+    {
+      "id": "20260705020136-5-show-me-deborah-justice-pool-photos",
+      "createdAt": "2026-07-05T02:01:36.601Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "No photos found for Deborah Justice's pool — nothing matching that search under her name or project.",
+      "latencyMs": 3014
+    },
+    {
+      "id": "20260705020209-6-what-sources-do-you-use",
+      "createdAt": "2026-07-05T02:02:09.845Z",
+      "expectedIntent": "meta_capability",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You can ask me about today's schedule, work records, job details, CompanyCam reports and photos, client lists, invoices, inbox summaries, important unread email, draft emails for your approval, evaporation reports, content drafts, and websi",
+      "latencyMs": 1357
+    },
+    {
+      "id": "20260705020327-7-what-was-the-issue-at-camp-mikell",
+      "createdAt": "2026-07-05T02:03:27.449Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Camp Mikell had multiple leak sources found during the June 5, 2026 leak detection inspection (Chris & Catherine, techs): **Major water loss areas:** - ~1,700 gallons/day from the backwash line - ~2,000 gallons/day at main drain #3 - Defect",
+      "latencyMs": 27230
+    },
+    {
+      "id": "20260705020702-8-you-re-incorrect-this-would-have-been-referenced-in-companycan",
+      "createdAt": "2026-07-05T02:07:02.865Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1370
+    },
+    {
+      "id": "20260705020810-9-somewhat-correct-there-is-a-report-in-company-cam-that-specifies-the-resukts",
+      "createdAt": "2026-07-05T02:08:10.868Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1401
+    },
+    {
+      "id": "20260705020837-10-the-photos-in-that-reply-show-thumbnails-but-are-t-clickable-or-savable",
+      "createdAt": "2026-07-05T02:08:37.056Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1313
+    },
+    {
+      "id": "20260705020910-11-what-were-the-pool-leak-detection-results-for-deborah-justice-in-company-cam-rep",
+      "createdAt": "2026-07-05T02:09:10.686Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "**Deborah Justice — 181 Isbell Road, Fair Play, SC** Leak detection completed 07/02/2026, 3:10pm, by Chris Sears & Logan. (Jobber has this as a lead-status job with no line items; the details below are from the CompanyCam checklist report.)",
+      "latencyMs": 34133
+    },
+    {
+      "id": "20260705021006-12-findings-are-in-the-report-what-are-the-total-gallons-of-deborah-justice",
+      "createdAt": "2026-07-05T02:10:06.484Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "**Deborah Justice — total pool gallons: 37,602 gallons** That's from the CompanyCam leak detection checklist (07-02-2026), calculated from: - Surface area: 1,002.7 sq ft - Average depth: 60\" - Gallons per inch: 626.6875 Jobber has no measur",
+      "latencyMs": 28701
+    },
+    {
+      "id": "20260705021035-13-same-report-shows-results-of-leak-detection-what-are-they",
+      "createdAt": "2026-07-05T02:10:35.915Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I don't have a leak detection report on file for this one. Here's what's showing up: - **Jobber:** Job is at lead status for \"Swimming Pool Leak Detection Service\" at 290 River Oaks Drive, Hartwell, GA — client is Forrest Ferguson, not Debo",
+      "latencyMs": 35259
+    },
+    {
+      "id": "20260705021112-14-who-are-the-technicians-for-deborah-justice",
+      "createdAt": "2026-07-05T02:11:12.781Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "getPhotos"
+      ],
+      "answerSample": "**Deborah Justice — technicians: Chris (Sears) and Logan** Per the CompanyCam leak detection checklist (07-02-2026, completed 3:10pm Thursday July 2nd). Jobber has this job at lead status with no technician assigned, so this comes only from",
+      "latencyMs": 37848
+    },
+    {
+      "id": "20260705021149-15-wrong-answer",
+      "createdAt": "2026-07-05T02:11:49.039Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1534
+    },
+    {
+      "id": "20260705024248-1-findings-are-in-the-report-what-are-the-total-gallons-of-deborah-justice",
+      "createdAt": "2026-07-05T02:42:48.510Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "Deborah Justice's pool holds **37,602 gallons** (based on surface area of 1,002.7 sq ft, average depth of 60 in.), per the CompanyCam leak detection checklist. Jobber's job record doesn't track this measurement.",
+      "latencyMs": 33917
+    },
+    {
+      "id": "20260705024300-2-what-sources-do-you-use",
+      "createdAt": "2026-07-05T02:43:00.828Z",
+      "expectedIntent": "meta_capability",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You can ask me about today's schedule, work records, job details, CompanyCam reports and photos, client lists, invoices, inbox summaries, important unread email, draft emails for your approval, evaporation reports, content drafts, and websi",
+      "latencyMs": 898
+    },
+    {
+      "id": "20260705024302-3-wrong-answer-that-was-a-live-receipt-correction-and-should-be-logged",
+      "createdAt": "2026-07-05T02:43:02.191Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 1103
+    },
+    {
+      "id": "20260705024409-1-findings-are-in-the-report-what-are-the-total-gallons-of-deborah-justice",
+      "createdAt": "2026-07-05T02:44:09.167Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "Deborah Justice's pool holds **37,602 gallons** total (from the CompanyCam leak detection report/checklist dated 07/02/2026). - Surface area: 1,002.7 sq ft - Average depth: 60 in - Gallons per inch: 626.6875 Jobber has no pool volume/measur",
+      "latencyMs": 33323
+    },
+    {
+      "id": "20260705024410-2-wrong-answer-that-was-a-live-receipt-correction-and-should-be-logged",
+      "createdAt": "2026-07-05T02:44:10.672Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 910
+    },
+    {
+      "id": "20260705024415-1-what-sources-do-you-use",
+      "createdAt": "2026-07-05T02:44:15.790Z",
+      "expectedIntent": "meta_capability",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You can ask me about today's schedule, work records, job details, CompanyCam reports and photos, client lists, invoices, inbox summaries, important unread email, draft emails for your approval, evaporation reports, content drafts, and websi",
+      "latencyMs": 851
+    },
+    {
+      "id": "20260705144853-1-what-were-the-pool-leak-detection-results-for-deborah-justice-in-companycam-repo",
+      "createdAt": "2026-07-05T14:48:53.350Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "**Deborah Justice – 181 Isbell Road, Fair Play, SC** (service date 7/2/2026, techs Chris & Logan, completed 3:10pm) **Leak found — active water loss:** - Deep end skimmer throat: small water loss at missing grout - Spa water line: several g",
+      "latencyMs": 36993
+    },
+    {
+      "id": "20260705144901-2-what-are-the-total-gallons-of-deborah-justice",
+      "createdAt": "2026-07-05T14:49:01.802Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "**37,602 gallons** — 181 Isbell Road, Fair Play, SC From the CompanyCam leak detection checklist: 1,002.7 sq ft surface area × 60\" average depth (626.6875 gallons per inch). Jobber's job record has no measurement fields logged (lead status,",
+      "latencyMs": 31994
+    },
+    {
+      "id": "20260705150543-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T15:05:43.830Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on Monday, July 6, 2026: - **Swimming Pool Leak Detection** (lead status) - Rachel Payne, 400 Jacobs Road, Bryson City, NC - all day, $770 quoted",
+      "latencyMs": 33433
+    },
+    {
+      "id": "20260705151207-1-what-s-on-schedule-for-tomorrow",
+      "createdAt": "2026-07-05T15:12:07.936Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "Nothing on the books for tomorrow — the schedule is clear, no jobs listed.",
+      "latencyMs": 33188
+    },
+    {
+      "id": "20260705151314-2-who-is-assigned-to-it",
+      "createdAt": "2026-07-05T15:13:14.062Z",
+      "expectedIntent": "general_job_fact",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "getPhotos"
+      ],
+      "answerSample": "Since there's nothing on tomorrow's schedule, there's no job to assign anyone to — the job lookup itself also failed to return data, and the document/photo records show no matching project activity either. No assignment info exists to repor",
+      "latencyMs": 37575
+    },
+    {
+      "id": "20260705151417-3-no-what-is-the-eta-for-the-job",
+      "createdAt": "2026-07-05T15:14:17.306Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "Nothing scheduled for tomorrow (7/9) — the calendar's clear, so there's no ETA to give since there's no job on the books.",
+      "latencyMs": 2395
+    },
+    {
+      "id": "20260705151821-4-what-was-the-issue-at-camp-mikell",
+      "createdAt": "2026-07-05T15:18:21.050Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "**Camp Mikell (Alex Mastej, 237 Camp Mikell Court, Toccoa)** — leak detection checklist from 6/5/2026, techs Chris & Catherine: - **Backwash line:** ~1,700 gal/day water loss - **Main drain #3:** ~2,000 gal/day water loss, plus a defect und",
+      "latencyMs": 39885
+    }
+  ]
+}

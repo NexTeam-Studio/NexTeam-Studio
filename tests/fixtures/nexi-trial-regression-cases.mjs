@@ -665,16 +665,14 @@ export const nexiTrialRegressionSessions = [
         "createdAt": "2026-07-05T01:59:24.594Z",
         "originalConversationId": "web-1b5e0de1-3464-446b-aefb-4d922a107718",
         "question": "Who owes us money",
-        "expectedIntent": "payment_status_cross_rail",
-        "requiredTools": [
-          "getSchedule",
-          "getJobDetail",
-          "invoiceStatus",
+        "expectedIntent": "capability_gap_ar_summary",
+        "requiredTools": [],
+        "forbiddenTools": [
           "searchEmail"
         ],
-        "forbiddenTools": [],
         "assertions": [
-          "noSingleRailPaymentConclusion",
+          "capabilityGap",
+          "noNoSourceStonewall",
           "noJan2024"
         ]
       },

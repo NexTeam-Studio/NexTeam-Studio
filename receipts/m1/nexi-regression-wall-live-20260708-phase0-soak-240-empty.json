@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783563050627-5a9fbee4",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 0,
+  "passed": 0,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 60,
+  "offset": 240,
+  "results": []
+}

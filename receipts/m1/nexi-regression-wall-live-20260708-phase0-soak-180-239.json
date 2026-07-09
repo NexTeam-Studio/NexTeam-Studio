@@ -1,0 +1,245 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783562811048-4736b23b",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 20,
+  "passed": 20,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 60,
+  "offset": 180,
+  "results": [
+    {
+      "id": "20260708-owner-p2z-what-time-is-it",
+      "createdAt": "2026-07-08T23:58:06.000-04:00",
+      "expectedIntent": "current_time",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getCurrentTime"
+      ],
+      "answerSample": "It's 10:06 PM EDT, Wednesday, July 8, 2026.",
+      "latencyMs": 2966
+    },
+    {
+      "id": "20260708-owner-p2z-current-temp-fair-play",
+      "createdAt": "2026-07-08T23:58:07.000-04:00",
+      "expectedIntent": "current_weather",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getCurrentWeather"
+      ],
+      "answerSample": "I couldn't pull the current temperature for Fair Play — the weather check failed on my end, and I've logged it so it gets fixed. I don't have another source for weather data to fall back on.",
+      "latencyMs": 2434
+    },
+    {
+      "id": "20260708-owner-p2aa-what-commands-can-i-use",
+      "createdAt": "2026-07-08T23:58:08.000-04:00",
+      "expectedIntent": "meta_capabilities",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You can ask me about today's schedule, work records, job details, CompanyCam reports and photos, client lists, invoices, inbox summaries, important unread email, draft emails for your approval, evaporation reports, content drafts, and websi",
+      "latencyMs": 998
+    },
+    {
+      "id": "20260708-owner-p2aa-why-did-that-fail",
+      "createdAt": "2026-07-08T23:58:09.000-04:00",
+      "expectedIntent": "meta_failure_explanation",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "That failed because I either checked the wrong place or the ability is not live yet. I wrote the miss down so we can fix the path instead of making you repeat it.",
+      "latencyMs": 877
+    },
+    {
+      "id": "20260708-owner-p2aa-how-do-i-upload-photos",
+      "createdAt": "2026-07-08T23:58:10.000-04:00",
+      "expectedIntent": "meta_photo_upload_help",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "For now, use CompanyCam for job photos and videos. I can read and summarize those here. Native NexTeam phone uploads are part of the mobile field app work, and once that is live you'll be able to capture on the job and sync automatically.",
+      "latencyMs": 884
+    },
+    {
+      "id": "20260708-owner-good-ytd-revenue-honest-gap",
+      "createdAt": "2026-07-08T23:58:11.000-04:00",
+      "expectedIntent": "capability_gap_revenue",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't total revenue from chat yet because the revenue summary tool is not wired to Nexi. I logged it as capability_not_available.",
+      "latencyMs": 1029
+    },
+    {
+      "id": "20260708-owner-good-close-out-mismatch-caution",
+      "createdAt": "2026-07-08T23:58:12.000-04:00",
+      "expectedIntent": "approval_caution_no_unsafe_write",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I couldn't pull up the Deborah Justice job — the Jobber lookup failed on our end, and the CompanyCam side only has an unrelated project on file (ASP of Asheville, 234 Hendersonville Road) with no documents or reports attached to it. I don't",
+      "latencyMs": 21373
+    },
+    {
+      "id": "20260708-owner-good-denver-deborah-clarification",
+      "createdAt": "2026-07-08T23:58:13.000-04:00",
+      "expectedIntent": "companycam_photo_lookup_or_clarification",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "No photos on file for Denver Justice — CompanyCam has no matching project or media under that name.",
+      "latencyMs": 2365
+    },
+    {
+      "id": "20260708-owner-good-fourteen-vs-four-glitch-catch",
+      "createdAt": "2026-07-08T23:58:14.000-04:00",
+      "expectedIntent": "section_scoped_report_measurement_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "Report says 14 main drains. The checklist data field lists 14 main drains (with also 11 skimmers, 12 wall returns, 4 floor returns, 15 lights). There's a conflicting note buried in the legacy free-text notes (\"3 main drain\"), but that's a s",
+      "latencyMs": 35896
+    },
+    {
+      "id": "part9-class-A-valley-view-findings-different-client",
+      "createdAt": "2026-07-08T20:45:00.000Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I don't have that written down. - The job lookup for Valley View Condominiums failed to return any data (system error, not a \"no leak found\" result). - The document/report check for that project came back empty — no reports or documents on ",
+      "latencyMs": 32356
+    },
+    {
+      "id": "part9-class-A-rachel-payne-findings-different-phrasing",
+      "createdAt": "2026-07-08T20:45:01.000Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Here's what the leak inspection turned up at Rachel Payne's pool (400 Jacobs Road, Bryson City, NC — vinyl liner, 18,500 gallons, 58\" avg depth), from the 7/6/26 report by tech Chris: **The issue:** The pool is a Buster Crabbe vinyl liner w",
+      "latencyMs": 41243
+    },
+    {
+      "id": "part9-class-A-forrest-ferguson-issue-different-client",
+      "createdAt": "2026-07-08T20:45:02.000Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I don't have a written-up issue for Forrest Ferguson's job. - Jobber shows this as a lead (not yet completed/serviced) for a Swimming Pool Leak Detection Service at 290 River Oaks Drive, Hartwell, GA — no notes or line items entered. - Comp",
+      "latencyMs": 31870
+    },
+    {
+      "id": "part9-class-A-deborah-justice-measurement-section-scope",
+      "createdAt": "2026-07-08T20:45:03.000Z",
+      "expectedIntent": "section_scoped_report_measurement_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - Job details lookup failed before returning data (system error on Jobber's side). - CompanyCam has no documents or reports on file for Deborah Justice. - The site blueprint field for spa main drains came bac",
+      "latencyMs": 32655
+    },
+    {
+      "id": "part9-class-C-draft-email-action-not-search",
+      "createdAt": "2026-07-08T20:46:00.000Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft queued for approval, sent to nexi@aquatraceleak.com. - Subject: \"the report is ready for review\" - Body: \"the report is ready for review.\"",
+      "latencyMs": 3002
+    },
+    {
+      "id": "part9-class-C-inbox-summary-not-search-misroute",
+      "createdAt": "2026-07-08T20:46:01.000Z",
+      "expectedIntent": "email_inbox_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "Nothing urgent — 4 new messages today, none client-related. - LinkedIn - Galaxy Control Systems posted - just a feed notification - Sierra Clearance Event - Summer Clearance sale - promo - LinkedIn - You have 1 new invitation - connection r",
+      "latencyMs": 3984
+    },
+    {
+      "id": "part9-class-C-correction-not-fact-lookup",
+      "createdAt": "2026-07-08T20:46:02.000Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 929
+    },
+    {
+      "id": "part9-class-C-capabilities-meta-not-stonewall",
+      "createdAt": "2026-07-08T20:46:03.000Z",
+      "expectedIntent": "meta_capabilities",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You can ask me about today's schedule, work records, job details, CompanyCam reports and photos, client lists, invoices, inbox summaries, important unread email, draft emails for your approval, evaporation reports, content drafts, and websi",
+      "latencyMs": 878
+    },
+    {
+      "id": "part9-class-D-distance-tool-gap-plain-language",
+      "createdAt": "2026-07-08T20:47:00.000Z",
+      "expectedIntent": "capability_gap_distance_or_maps",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't measure drive distance in chat yet because the distance tool is not wired to Nexi. I logged it as capability_not_available.",
+      "latencyMs": 1077
+    },
+    {
+      "id": "part9-class-D-report-pdf-email-attachment-gap",
+      "createdAt": "2026-07-08T20:47:01.000Z",
+      "expectedIntent": "capability_gap_report_pdf_email",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't attach and email report PDFs from chat yet. I logged it as capability_not_available.",
+      "latencyMs": 1042
+    },
+    {
+      "id": "part9-class-D-ar-summary-gap-not-empty-data",
+      "createdAt": "2026-07-08T20:47:02.000Z",
+      "expectedIntent": "capability_gap_ar_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't give a reliable who-owes-us-money list from chat yet because the accounts-receivable summary tool is not wired to Nexi. I logged it as capability_not_available.",
+      "latencyMs": 1034
+    }
+  ]
+}

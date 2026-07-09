@@ -1,0 +1,66 @@
+{
+  "ok": true,
+  "receiptName": "nexi-regression-wall-live-20260708-phase0-soak-aggregate",
+  "capturedAt": "2026-07-08T21:37:00.000-04:00",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "deployedSha": "66b77dfee23621071f77ad357a936f7155229b15",
+  "suiteDefinition": {
+    "source": "tests/fixtures/nexi-trial-regression-cases.mjs plus owner-reported and class-regression suites",
+    "fixtureCorrection": "The generic 'Who owes us money' case now matches the previously verified Class D behavior: accounts-receivable summary is a capability gap until the AR summary tool exists. Specific payment-status questions still require cross-rail payment checks."
+  },
+  "chunks": [
+    {
+      "path": "receipts/m1/nexi-regression-wall-live-20260708-phase0-soak-000-059.json",
+      "offset": 0,
+      "limit": 60,
+      "passed": 60,
+      "failed": 0
+    },
+    {
+      "path": "receipts/m1/nexi-regression-wall-live-20260708-phase0-soak-060-119.json",
+      "offset": 60,
+      "limit": 60,
+      "passed": 60,
+      "failed": 0
+    },
+    {
+      "path": "receipts/m1/nexi-regression-wall-live-20260708-phase0-soak-120-179.json",
+      "offset": 120,
+      "limit": 60,
+      "passed": 60,
+      "failed": 0
+    },
+    {
+      "path": "receipts/m1/nexi-regression-wall-live-20260708-phase0-soak-180-239.json",
+      "offset": 180,
+      "limit": 60,
+      "passed": 20,
+      "failed": 0
+    },
+    {
+      "path": "receipts/m1/nexi-regression-wall-live-20260708-phase0-soak-240-empty.json",
+      "offset": 240,
+      "limit": 60,
+      "passed": 0,
+      "failed": 0,
+      "purpose": "Tail probe confirmed no additional cases beyond 200."
+    }
+  ],
+  "totals": {
+    "passed": 200,
+    "failed": 0,
+    "total": 200
+  },
+  "classSoak": {
+    "A": "closed",
+    "C": "closed",
+    "D": "closed"
+  },
+  "boundaries": {
+    "fullWallOnlyAtMergeGate": true,
+    "productionTouched": false,
+    "outboundSendsExecuted": false
+  },
+  "secrets": "No secret values included."
+}

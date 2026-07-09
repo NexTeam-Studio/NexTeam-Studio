@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783559697167-62671e12",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 1,
+  "passed": 1,
+  "failed": 0,
+  "caseFilter": "who-owes-us-money",
+  "limit": null,
+  "offset": null,
+  "results": [
+    {
+      "id": "20260705015924-4-who-owes-us-money",
+      "createdAt": "2026-07-05T01:59:24.594Z",
+      "expectedIntent": "capability_gap_ar_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "I can't give a reliable who-owes-us-money list from chat yet because the accounts-receivable summary tool is not wired to Nexi. I logged it as capability_not_available.",
+      "latencyMs": 1481
+    }
+  ]
+}

@@ -1,0 +1,734 @@
+{
+  "ok": true,
+  "complete": true,
+  "runId": "regression-wall-1783561130652-f53055ac",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 60,
+  "passed": 60,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": 60,
+  "offset": 60,
+  "results": [
+    {
+      "id": "20260705151859-5-what-was-the-issue-at-forrest-gerguson",
+      "createdAt": "2026-07-05T15:18:59.474Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I don't have the actual issue/diagnosis written down for Forrest Ferguson. Here's what I could check: - **Jobber job details**: lookup failed on that side, so no job notes came through. - **CompanyCam documents**: only a Moasure Export (mea",
+      "latencyMs": 23844
+    },
+    {
+      "id": "20260705152536-6-ok-all-of-these-were-reasonably-correct-but-the-format-should-only-be-inclusive-",
+      "createdAt": "2026-07-05T15:25:36.518Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 903
+    },
+    {
+      "id": "20260705152621-7-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T15:26:21.399Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "**Deborah Justice – 181 Isbell Road, Fair Play, SC** 25 photos on file in CompanyCam, no descriptions or tags attached to any of them.",
+      "latencyMs": 4148
+    },
+    {
+      "id": "20260705152707-8-what-is-on-schedule-for-next-week",
+      "createdAt": "2026-07-05T15:27:07.156Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "**Week of July 8, 2026** — one job on the books: - **Clarion Hotel – Commercial Main Drain Survey** (lead status) ASP of Asheville — 234 Hendersonville Road, Asheville, NC All day, July 8 Quoted: $812.50",
+      "latencyMs": 26833
+    },
+    {
+      "id": "20260705152825-9-i-asked-that-and-now-you-are-wasting-api-tokens-because-you-should-already-inger",
+      "createdAt": "2026-07-05T15:28:25.589Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1230
+    },
+    {
+      "id": "20260705152856-10-what-is-approved-but-not-scheduled-yet",
+      "createdAt": "2026-07-05T15:28:56.873Z",
+      "expectedIntent": "pipeline_status",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPipeline"
+      ],
+      "answerSample": "No jobs match that right now. Pipeline status breakdown: **620 leads**, **5 scheduled**, and **0** in quoted/approved status. Since nothing is sitting in \"quoted\" (approved), there's nothing approved-but-unscheduled to show.",
+      "latencyMs": 8846
+    },
+    {
+      "id": "20260705151240-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T15:12:40.261Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the books for Monday, July 6: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC. Scheduled all day. Status: lead ($770 quoted, not yet invoiced/paid).",
+      "latencyMs": 24953
+    },
+    {
+      "id": "20260705152401-1-what-was-the-issue-at-deborah-justice",
+      "createdAt": "2026-07-05T15:24:01.391Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Leak detection found several active water-loss spots plus some cosmetic issues at Deborah Justice's pool (181 Isbell Road, Fair Play, SC — serviced 7/2/26 by Chris & Logan): **Active water loss:** - Deep end skimmer throat – small water los",
+      "latencyMs": 41381
+    },
+    {
+      "id": "20260705152435-1-who-was-the-technician-for-deborah-justice",
+      "createdAt": "2026-07-05T15:24:35.035Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "getPhotos"
+      ],
+      "answerSample": "Chris and Logan were on the leak detection job for Deborah Justice (July 2, 2026, per the report checklist).",
+      "latencyMs": 31552
+    },
+    {
+      "id": "20260705152441-1-show-me-photos-for-deborah-justice",
+      "createdAt": "2026-07-05T15:24:41.023Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on file for Deborah Justice's job at 181 Isbell Road, Fair Play, SC. They're stored in CompanyCam but not tagged with descriptions, so I can't tell you what's in each shot without pulling them up directly.",
+      "latencyMs": 4206
+    },
+    {
+      "id": "20260705152555-1-what-was-the-issue-at-deborah-justice",
+      "createdAt": "2026-07-05T15:25:55.824Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Found the leak detection report from the July 2 service at Deborah Justice's (181 Isbell Road, Fair Play, SC). Techs on site: Chris and Logan. **Confirmed active water loss:** - Deep end skimmer throat – missing grout, small water loss - Sp",
+      "latencyMs": 32797
+    },
+    {
+      "id": "20260705152637-1-who-was-the-technician-for-deborah-justice",
+      "createdAt": "2026-07-05T15:26:37.006Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "getPhotos"
+      ],
+      "answerSample": "Chris and Logan handled the leak detection service for Deborah Justice (181 Isbell Road, Fair Play, SC), completed 7/2/2026.",
+      "latencyMs": 32866
+    },
+    {
+      "id": "20260705152641-1-show-me-photos-for-deborah-justice",
+      "createdAt": "2026-07-05T15:26:41.641Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on the Deborah Justice job (181 Isbell Road, Fair Play, SC). They're all logged in CompanyCam, no captions or tags attached to any of them.",
+      "latencyMs": 3855
+    },
+    {
+      "id": "20260705155819-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T15:58:19.918Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on the **Deborah Justice** job (181 Isbell Road, Fair Play, SC) in CompanyCam. None have tags or descriptions attached — just raw photo captures logged against this job. If you want, I can pull specific ones up by ID or you ",
+      "latencyMs": 3955
+    },
+    {
+      "id": "20260705155841-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T15:58:41.718Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the books for Monday, July 6: - **Swimming Pool Leak Detection** — Rachel Payne, 400 Jacobs Road, Bryson City, NC. All-day, status: lead, total $770.",
+      "latencyMs": 23763
+    },
+    {
+      "id": "20260705155845-2-what-s-the-eta",
+      "createdAt": "2026-07-05T15:58:45.724Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific ETA or time window is set — it's scheduled as an all-day appointment for July 6, 2026, with no start time listed.",
+      "latencyMs": 2179
+    },
+    {
+      "id": "20260705160350-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T16:03:50.029Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "**Deborah Justice** – 181 Isbell Road, Fair Play, SC 29643 25 photos on file in CompanyCam. No AI tags/descriptions attached to any of them yet, so I can't tell you what's pictured in each — just that they exist for this job.",
+      "latencyMs": 4339
+    },
+    {
+      "id": "20260705160410-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T16:04:10.013Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the books for Monday, July 6, 2026: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC 28713 (all day) — status: lead, quoted total $770",
+      "latencyMs": 28375
+    },
+    {
+      "id": "20260705160414-2-what-s-the-eta",
+      "createdAt": "2026-07-05T16:04:14.736Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific time is set — it's scheduled as an all-day job on July 6, 2026, no set arrival time noted.",
+      "latencyMs": 2514
+    },
+    {
+      "id": "20260705160517-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T16:05:17.847Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "**25 photos** on file for Deborah Justice — 181 Isbell Road, Fair Play, SC. None have descriptions or tags attached, just CompanyCam image IDs.",
+      "latencyMs": 4418
+    },
+    {
+      "id": "20260705160542-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T16:05:42.810Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on the books for Monday, July 6: - **Rachel Payne – Swimming Pool Leak Detection** (lead status) 400 Jacobs Road, Bryson City, NC — all day Estimated total: $770",
+      "latencyMs": 27958
+    },
+    {
+      "id": "20260705160553-2-what-s-the-eta",
+      "createdAt": "2026-07-05T16:05:53.521Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific time listed — it's scheduled as an all-day job on Monday, July 6, with no set arrival window.",
+      "latencyMs": 2441
+    },
+    {
+      "id": "20260705161046-1-show-me-the-deborah-justice-photos",
+      "createdAt": "2026-07-05T16:10:46.130Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "**Deborah Justice** – 181 Isbell Road, Fair Play, SC 29643 25 photos on file in CompanyCam. None have tags or descriptions attached yet. Photo IDs: 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 33387489",
+      "latencyMs": 5540
+    },
+    {
+      "id": "20260705161106-1-what-s-on-monday-july-6-2026",
+      "createdAt": "2026-07-05T16:11:06.914Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "One job on Monday, July 6, 2026: - **Swimming Pool Leak Detection** (lead status) - Rachel Payne, 400 Jacobs Road, Bryson City, NC — scheduled all day, quoted at $770",
+      "latencyMs": 26793
+    },
+    {
+      "id": "20260705161111-2-what-s-the-eta",
+      "createdAt": "2026-07-05T16:11:11.049Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No specific ETA or arrival time is written down for that job — it's scheduled as an all-day appointment on July 6, 2026, not tied to a set time window.",
+      "latencyMs": 2395
+    },
+    {
+      "id": "20260705191129-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:11:29.680Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "Only 2 emails came in today, and neither is a client inquiry: - **Sierra Clearance Event** - \"Save even more with Summer Clearance\" - promo email, no action needed - **LinkedIn** - \"You have 1 new invitation\" - social notification, no actio",
+      "latencyMs": 3336
+    },
+    {
+      "id": "20260705191708-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:17:08.856Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "Only 2 emails came in today, both in Chris's inbox — no client inquiries. - Sierra Clearance Event - Save even more with Summer Clearance - promo email, no action needed - LinkedIn - You have 1 new invitation - social notification, no actio",
+      "latencyMs": 4049
+    },
+    {
+      "id": "20260705192403-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:24:03.330Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "Only 2 emails came in today, and neither is a client inquiry: - **Sierra Clearance Event** - Save even more with Summer Clearance - promo email, no action needed - **LinkedIn** - You have 1 new invitation - social notification, no action ne",
+      "latencyMs": 3258
+    },
+    {
+      "id": "20260705193434-1-read-email-chris-19f3354877e85a73-and-tell-me-whether-it-has-attachments-do-not-",
+      "createdAt": "2026-07-05T19:34:34.724Z",
+      "expectedIntent": "email_direct_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getEmailMessage"
+      ],
+      "answerSample": "No attachments on that email.",
+      "latencyMs": 4113
+    },
+    {
+      "id": "20260705194001-1-read-email-chris-19f3354877e85a73-and-tell-me-whether-it-has-attachments-do-not-",
+      "createdAt": "2026-07-05T19:40:01.336Z",
+      "expectedIntent": "email_direct_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getEmailMessage"
+      ],
+      "answerSample": "No attachments on that email.",
+      "latencyMs": 2309
+    },
+    {
+      "id": "20260705194113-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T19:41:13.562Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "Only 2 emails came in today, both to Chris's inbox — nothing client-related. - Sierra Clearance Event - \"Save even more with Summer Clearance\" - promo, no action needed - LinkedIn - \"You have 1 new invitation\" - just a connection notificati",
+      "latencyMs": 3141
+    },
+    {
+      "id": "20260705200500-1-what-needs-my-attention",
+      "createdAt": "2026-07-05T20:05:00.984Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "Nothing needs your attention right now. Inbox is clear across all three mailboxes (chris, aquatraceleak, nexi) — no new messages today.",
+      "latencyMs": 2598
+    },
+    {
+      "id": "20260705202457-1-what-emails-came-in-today",
+      "createdAt": "2026-07-05T20:24:57.631Z",
+      "expectedIntent": "email_summary",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "summarizeInbox"
+      ],
+      "answerSample": "Just 2 emails today, both non-client noise: - **Sierra Clearance Event** – Summer Clearance promo – no action needed - **LinkedIn** – \"You have 1 new invitation\" – notification, no action needed Nothing from clients or job-related inquiries",
+      "latencyMs": 3287
+    },
+    {
+      "id": "20260705202705-2-great-detail-organization-and-format-sucks",
+      "createdAt": "2026-07-05T20:27:05.145Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 825
+    },
+    {
+      "id": "20260705202722-3-what-needs-my-attention",
+      "createdAt": "2026-07-05T20:27:22.262Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "Nothing needs your attention right now — inbox is clear across all three mailboxes (chris, aquatraceleak, nexi), no items pending.",
+      "latencyMs": 2499
+    },
+    {
+      "id": "20260705202845-4-emails-pulled-but-no-information-specific-we-need-to-figure-out-how-to-roagaize-",
+      "createdAt": "2026-07-05T20:28:45.075Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 830
+    },
+    {
+      "id": "20260705202927-5-that-was-an-email-in-the-inbox",
+      "createdAt": "2026-07-05T20:29:27.537Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "Today (Jul 9), only one email came in: - **Sierra Clearance Event** – \"Save even more with Summer Clearance\" – promo, no action needed That's it — no client or job-related messages today.",
+      "latencyMs": 6644
+    },
+    {
+      "id": "20260705203001-6-send-me-an-email-to-chris1bata-gmail-com-bryson-city-job-is-confirmed-for-tomorr",
+      "createdAt": "2026-07-05T20:30:01.072Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft queued for approval, but the content doesn't match what you asked for — it's a generic placeholder (\"Please see the note from Aquatrace\") instead of confirming the Bryson City job for tomorrow.",
+      "latencyMs": 3500
+    },
+    {
+      "id": "20260705210628-1-what-did-the-semrush-site-audit-say",
+      "createdAt": "2026-07-05T21:06:28.010Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 1218
+    },
+    {
+      "id": "20260705210631-2-send-an-email-to-nexi-aquatraceleak-com-saying-i-received-the-audit-and-will-rev",
+      "createdAt": "2026-07-05T21:06:31.948Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft queued for approval, pending send to nexi@aquatraceleak.com. - **Subject:** I received the audit and will review it today - **Body:** \"I received the audit and will review it today.\" Just need your go-ahead to send it.",
+      "latencyMs": 2409
+    },
+    {
+      "id": "20260705210636-3-formatting-feedback-attention-items-must-lead-with-sender-subject-and-one-line-a",
+      "createdAt": "2026-07-05T21:06:36.919Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 864
+    },
+    {
+      "id": "20260705210638-4-that-was-incorrect-this-feedback-should-be-logged-as-a-correction",
+      "createdAt": "2026-07-05T21:06:38.365Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 890
+    },
+    {
+      "id": "20260705211359-1-what-did-the-semrush-site-audit-say",
+      "createdAt": "2026-07-05T21:13:59.229Z",
+      "expectedIntent": "email_search_or_read",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 1339
+    },
+    {
+      "id": "20260705211403-2-send-an-email-to-nexi-aquatraceleak-com-saying-i-received-the-audit-and-will-rev",
+      "createdAt": "2026-07-05T21:14:03.812Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft queued for approval, not sent yet. - To: nexi@aquatraceleak.com - Subject: I received the audit and will review it today - Body: \"I received the audit and will review it today.\" Say the word and I'll send it.",
+      "latencyMs": 2397
+    },
+    {
+      "id": "20260705211407-3-formatting-feedback-attention-items-must-lead-with-sender-subject-and-one-line-a",
+      "createdAt": "2026-07-05T21:14:07.953Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 783
+    },
+    {
+      "id": "20260705211409-4-that-was-incorrect-this-feedback-should-be-logged-as-a-correction",
+      "createdAt": "2026-07-05T21:14:09.333Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 817
+    },
+    {
+      "id": "20260705215015-1-what-were-the-leak-detection-findings-for-valley-view-condominiums-from-the-comp",
+      "createdAt": "2026-07-05T21:50:15.832Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Leak detection checklist from CompanyCam (completed 6/16/2026, techs Chris & Logan) found: - **Deep end skimmer throat** – significant water loss; grout missing where tile meets the PVC skimmer body. Needs sealant to resolve. - **Shallow en",
+      "latencyMs": 26460
+    },
+    {
+      "id": "20260705215044-1-what-were-the-leak-detection-findings-for-l3-campus-statehouse-arena-from-the-co",
+      "createdAt": "2026-07-05T21:50:44.244Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "I don't have that written down. The job lookup failed on my end, and no CompanyCam documents or reports came back for L3 Campus Statehouse Arena.",
+      "latencyMs": 28372
+    },
+    {
+      "id": "20260705215138-1-what-were-the-leak-detection-findings-for-valley-view-condominiums-from-the-comp",
+      "createdAt": "2026-07-05T21:51:38.907Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Here's what techs Chris and Logan found during the June 16, 2026 leak detection (completed 11:00am): **Water loss found:** - **Deep end skimmer throat** — significant water loss; missing grout where tile meets the PVC skimmer body. Needs se",
+      "latencyMs": 44189
+    },
+    {
+      "id": "20260705215212-1-what-were-the-leak-detection-findings-for-camp-mikell-from-the-companycam-report",
+      "createdAt": "2026-07-05T21:52:12.979Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Here's what the leak detection checklist found at Camp Mikell (service date 6/5/2026, techs Chris & Catherine, pool holds ~101,000 gallons at 56\" avg depth): **Water loss identified:** - ~1,700 gal/day at the backwash line - ~2,000 gal/day ",
+      "latencyMs": 35358
+    },
+    {
+      "id": "20260705215312-1-what-were-the-leak-detection-findings-for-valley-view-condominiums-from-the-comp",
+      "createdAt": "2026-07-05T21:53:12.578Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Leak detection checklist from CompanyCam (service date 6/16/2026, techs Chris & Logan): - **Deep end skimmer throat** – significant water loss; missing grout where tile meets the PVC skimmer body. Needs sealant to resolve. - **Shallow end &",
+      "latencyMs": 36158
+    },
+    {
+      "id": "20260705215347-1-what-were-the-leak-detection-findings-for-camp-mikell-from-the-companycam-report",
+      "createdAt": "2026-07-05T21:53:47.803Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Leak detection checklist for Camp Mikell (237 Camp Mikell Court), performed 6/5/2026 by Chris & Catherine — pool holds ~101,000 gallons, avg depth 56\": **Water loss found:** - ~1,700 gal/day at the backwash line - ~2,000 gal/day at main dra",
+      "latencyMs": 34068
+    },
+    {
+      "id": "20260705225853-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
+      "createdAt": "2026-07-05T22:58:53.094Z",
+      "expectedIntent": "email_draft_action",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "draftEmail"
+      ],
+      "answerSample": "Draft queued for approval. - **To:** chris1bata@gmail.com - **Subject:** bryson city s on checdule for tomorrow - **Status:** pending your approval before it sends One flag: the draft just repeats your message as-is — I haven't pulled up Br",
+      "latencyMs": 9477
+    },
+    {
+      "id": "20260705225921-2-whats-important-from-chris-aquatraceleak-com",
+      "createdAt": "2026-07-05T22:59:21.456Z",
+      "expectedIntent": "email_triage",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "triageInbox"
+      ],
+      "answerSample": "Nothing important sitting there — the inbox scan for chris@aquatraceleak.com came back empty for today, no messages found at all.",
+      "latencyMs": 2635
+    },
+    {
+      "id": "20260705232426-3-what-was-the-service-ime-competion-for-deborah-justice",
+      "createdAt": "2026-07-05T23:24:26.556Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Deborah Justice's leak detection service completed at **3:10pm, Thursday July 2nd, 2026** (per the CompanyCam checklist report). Techs on site were Chris and Logan.",
+      "latencyMs": 22678
+    },
+    {
+      "id": "20260705232454-4-yes-there-is-incorrect-here-service-comletion-is-in-company-cam-reports",
+      "createdAt": "2026-07-05T23:24:54.702Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
+      "latencyMs": 973
+    },
+    {
+      "id": "20260705232530-5-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
+      "createdAt": "2026-07-05T23:25:30.373Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Confirmed — service completion for Deborah Justice was **3:10pm, Thursday July 2nd, 2026**, per the CompanyCam checklist report (\"Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf\"). Jobber's job record has ",
+      "latencyMs": 3684
+    },
+    {
+      "id": "20260705232559-6-using-company-cam-find-the-completion-time-for-deboarh-justice",
+      "createdAt": "2026-07-05T23:25:59.324Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments"
+      ],
+      "answerSample": "Both checks came back empty this time — the job lookup failed to return data, and the CompanyCam documents/reports search found nothing for Deborah Justice. I don't have the completion time written down right now. That's different from my e",
+      "latencyMs": 29897
+    },
+    {
+      "id": "20260705232613-7-correct",
+      "createdAt": "2026-07-05T23:26:13.337Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
+      "latencyMs": 1035
+    },
+    {
+      "id": "20260706202435-8-did-todays-pool-pay",
+      "createdAt": "2026-07-06T20:24:35.401Z",
+      "expectedIntent": "payment_status_cross_rail",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule",
+        "getJobDetail",
+        "invoiceStatus",
+        "searchEmail"
+      ],
+      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
+      "latencyMs": 66667
+    }
+  ]
+}
