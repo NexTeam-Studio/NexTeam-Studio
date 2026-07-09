@@ -27,8 +27,23 @@ function Redact-SecretOutput {
   $redacted = $redacted -replace '(?i)(AIza[A-Za-z0-9_\-]+)', '[REDACTED_GOOGLE_API_KEY]'
   $redacted = $redacted -replace '(?i)(GOCSPX-[A-Za-z0-9_\-]+)', '[REDACTED_GOOGLE_CLIENT_SECRET]'
   $redacted = $redacted -replace '(?i)(1//[A-Za-z0-9_\-]+)', '[REDACTED_GOOGLE_REFRESH_TOKEN]'
+  $redacted = $redacted -replace "(?i)(`"?$secretNamePattern`"?\s*[:=]\s*`")[^`"]+", '$1[REDACTED]'
+
+  $safeShaPlaceholders = @{}
+  $safeShaPattern = '(?i)((?:"?(?:deployedSha|commitSha|commit_sha|gitSha|GIT_SHA|EXPECTED_GIT_SHA|NEXTEAM_DEPLOY_SHA)"?\s*[:=]\s*"?))([a-f0-9]{40})("?)'
+  $redacted = [regex]::Replace($redacted, $safeShaPattern, {
+    param($match)
+    $placeholder = "__SAFE_GIT_SHA_$($safeShaPlaceholders.Count)__"
+    $safeShaPlaceholders[$placeholder] = $match.Groups[2].Value
+    "$($match.Groups[1].Value)$placeholder$($match.Groups[3].Value)"
+  })
+
   $redacted = $redacted -replace '(?i)\b[a-f0-9]{32,}\b', '[REDACTED_HEX_SECRET]'
   $redacted = $redacted -replace "(?i)($secretNamePattern\s*[:=]\s*)[^\s,;]+", '$1[REDACTED]'
+
+  foreach ($placeholder in $safeShaPlaceholders.Keys) {
+    $redacted = $redacted.Replace($placeholder, $safeShaPlaceholders[$placeholder])
+  }
 
   $box = [char]0x2502
   $lines = $redacted -split "(`r`n|`n|`r)"
