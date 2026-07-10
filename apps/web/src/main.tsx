@@ -266,8 +266,13 @@ function fallbackOperatorContext(user: User): OperatorContext {
 async function loadOperatorContext(user: User): Promise<OperatorContext> {
   const token = await user.getIdTokenResult();
   const claims = token.claims as Record<string, unknown>;
+  const claimedTenantId = claimString(claims, "tenantId") ?? claimString(claims, "tenant_id");
+  // This Job Desk build is the Aquatrace operator surface. Platform-level Firebase
+  // claims can be "nexteam-studio"; do not let that silently move Aquatrace tools
+  // onto the wrong tenant until a real tenant switcher exists.
+  const tenantId = claimedTenantId && claimedTenantId !== "nexteam-studio" ? claimedTenantId : DEFAULT_TENANT_ID;
   return {
-    tenantId: claimString(claims, "tenantId") ?? claimString(claims, "tenant_id") ?? DEFAULT_TENANT_ID,
+    tenantId,
     tenantUserId: claimString(claims, "tenantUserId") ?? user.uid,
     role: claimRole(claims)
   };

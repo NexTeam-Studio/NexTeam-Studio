@@ -2144,12 +2144,47 @@ function toolResultContent(result: unknown): string {
 
 function safeToolErrorResult(toolName: string, error?: unknown): Record<string, string | number> {
   const maybeRail = error && typeof error === "object" ? error as { provider?: unknown; op?: unknown; status?: unknown } : {};
+  const diagnostic = diagnosticForToolFailure(toolName, error);
   return {
     error: `${toolName} failed safely before returning checked data.`,
     userMessage: "I couldn't finish that check. I wrote it down so we can fix it.",
+    diagnosticCategory: diagnostic.diagnosticCategory,
+    diagnosticSummary: diagnostic.diagnosticSummary,
     ...(typeof maybeRail.provider === "string" ? { provider: maybeRail.provider } : {}),
     ...(typeof maybeRail.op === "string" ? { op: maybeRail.op } : {}),
     ...(typeof maybeRail.status === "number" ? { status: maybeRail.status } : {})
+  };
+}
+
+function diagnosticForToolFailure(toolName: string, error?: unknown): { diagnosticCategory: string; diagnosticSummary: string } {
+  const maybeRail = error && typeof error === "object" ? error as { status?: unknown } : {};
+  if (toolName === "draftReportEmail") {
+    if (maybeRail.status === 403) {
+      return {
+        diagnosticCategory: "tenant_context_mismatch",
+        diagnosticSummary: "I got to the email-draft step, but this request is attached to the wrong Aquatrace workspace. Most likely break point: workspace sign-in, not Gmail."
+      };
+    }
+    if (maybeRail.status === 503) {
+      return {
+        diagnosticCategory: "send_mailbox_not_configured",
+        diagnosticSummary: "I got to the email-draft step, but the dedicated Nexi send mailbox was not available. Most likely break point: Gmail send setup."
+      };
+    }
+    if (maybeRail.status === 400) {
+      return {
+        diagnosticCategory: "missing_report_email_input",
+        diagnosticSummary: "I got to the email-draft step, but I was missing a required recipient or report detail. Most likely break point: request parsing."
+      };
+    }
+    return {
+      diagnosticCategory: "report_email_draft_failed",
+      diagnosticSummary: "I got to the email-draft step, but the draft stopped before it reached approvals. Most likely break point: report lookup, PDF build, or approval details."
+    };
+  }
+  return {
+    diagnosticCategory: "tool_failed",
+    diagnosticSummary: "The tool failed before returning checked data."
   };
 }
 
@@ -2202,7 +2237,10 @@ function draftReportEmailFailureAnswer(result: unknown): string | null {
   if (typeof record.error !== "string") {
     return null;
   }
-  return "I couldn't create that report email draft yet. I wrote it down so we can fix the email attachment path instead of guessing.";
+  const diagnostic = typeof record.diagnosticSummary === "string" && record.diagnosticSummary.trim()
+    ? ` ${record.diagnosticSummary.trim()}`
+    : "";
+  return `I couldn't create that report email draft yet.${diagnostic} I wrote it down so we can fix the email attachment path instead of guessing.`;
 }
 
 function queueFreeformContentAnswer(result: unknown): string {

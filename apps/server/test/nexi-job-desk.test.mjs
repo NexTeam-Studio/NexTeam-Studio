@@ -498,7 +498,9 @@ test("Nexi report PDF email action failures do not source-stonewall", async () =
     }
   });
   assert.equal(result.toolRuns[0].name, "draftReportEmail");
+  assert.equal(result.toolRuns[0].result.diagnosticCategory, "report_email_draft_failed");
   assert.match(result.answer, /couldn't create that report email draft yet/i);
+  assert.match(result.answer, /Most likely break point: report lookup, PDF build, or approval details/i);
   assert.doesNotMatch(result.answer, /written down anywhere|verified source|matching email/i);
 });
 
