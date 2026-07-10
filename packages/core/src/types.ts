@@ -70,6 +70,35 @@ export interface Tenant {
   plan: TenantPlan;
 }
 
+export interface TenantBranding {
+  tenantId: ID;
+  displayName: string;
+  logo?: {
+    storageRef?: string | undefined;
+    mediaId?: ID | undefined;
+    url?: string | undefined;
+    mimeType?: "image/png" | "image/jpeg" | "image/webp" | undefined;
+    alt?: string | undefined;
+    updatedAt?: string | undefined;
+  } | undefined;
+  colors: {
+    primary?: string | undefined;
+    secondary?: string | undefined;
+    accent?: string | undefined;
+    accentText?: string | undefined;
+    background?: string | undefined;
+    surface?: string | undefined;
+    text?: string | undefined;
+    mutedText?: string | undefined;
+    userBubble?: string | undefined;
+    assistantBubble?: string | undefined;
+  };
+  fontFamily?: string | undefined;
+  source: "default" | "manual" | "extracted";
+  updatedBy: ID;
+  updatedAt: string;
+}
+
 export interface PlatformPlan {
   id: TenantPlan;
   name: string;

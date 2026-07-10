@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { approvalItemSchema, conversationRecordSchema, jobSchema, mediaSchema, nexiBlueprintSchema, siteJobBlueprintSchema } from "../dist/index.js";
+import { approvalItemSchema, conversationRecordSchema, jobSchema, mediaSchema, nexiBlueprintSchema, siteJobBlueprintSchema, tenantBrandingSchema } from "../dist/index.js";
 
 test("Media schema rejects exposed third-party URL fields", () => {
   const parsed = mediaSchema.parse({
@@ -96,4 +96,23 @@ test("Source schema accepts email rail refs", () => {
     createdAt: "2026-07-05T16:00:00.000Z"
   });
   assert.equal(conversation.sources[0].ref, "email:ops:msg_1");
+});
+
+test("Tenant branding schema stores logo fallback metadata and actor attribution", () => {
+  const branding = tenantBrandingSchema.parse({
+    tenantId: "aquatrace",
+    displayName: "Aquatrace",
+    colors: {
+      primary: "#26352c",
+      accent: "#e4bf73",
+      surface: "#fff8ea"
+    },
+    fontFamily: "Georgia, serif",
+    source: "manual",
+    updatedBy: "internal:tenant_user_chris",
+    updatedAt: "2026-07-10T12:00:00.000Z"
+  });
+  assert.equal(branding.displayName, "Aquatrace");
+  assert.equal(branding.fontFamily, "Georgia, serif");
+  assert.equal(branding.updatedBy, "internal:tenant_user_chris");
 });

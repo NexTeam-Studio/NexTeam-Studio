@@ -11,7 +11,7 @@ import {
   upsertTenantUser,
   verifyJobAccessToken
 } from "../dist/platform/accessManagement.js";
-import { FirestorePlatformRepository, InMemoryPlatformRepository, defaultTenant, subscriptionFromStripe } from "../dist/platform/repository.js";
+import { FirestorePlatformRepository, InMemoryPlatformRepository, defaultTenant, defaultTenantBranding, subscriptionFromStripe } from "../dist/platform/repository.js";
 import { registerPlatformRoutes } from "../dist/platform/routes.js";
 
 function tool(name) {
@@ -144,6 +144,27 @@ test("platform repository summarizes cost, records backup, and exports per tenan
   const exported = await repository.exportTenantData("second-test");
   assert.equal(exported.collections.usageLog.length, 1);
   assert.equal(exported.collections.tenants[0].id, "second-test");
+  assert.equal(exported.collections.tenantBranding[0].displayName, "second-test");
+});
+
+test("platform repository stores tenant branding with text fallback and actor attribution", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("aquatrace", "suite")]);
+  const fallback = await repository.getTenantBranding("aquatrace");
+  assert.equal(fallback.displayName, "Aquatrace");
+  assert.equal(fallback.logo, undefined);
+  assert.equal(fallback.updatedBy, "system");
+
+  const updated = await repository.saveTenantBranding({
+    ...defaultTenantBranding("aquatrace"),
+    colors: { primary: "#111111", accent: "#eeeeee" },
+    fontFamily: "Georgia, serif",
+    source: "manual",
+    updatedBy: "internal:tenant_user_chris",
+    updatedAt: "2026-07-10T13:00:00.000Z"
+  });
+  assert.equal(updated.colors.primary, "#111111");
+  assert.equal(updated.fontFamily, "Georgia, serif");
+  assert.equal(updated.updatedBy, "internal:tenant_user_chris");
 });
 
 test("tenant users seed Aquatrace roles and produce Firebase custom claims", async () => {
@@ -257,6 +278,20 @@ test("platform routes expose tenants, test subscription, backup, and export", as
     assert.equal(tenants.ok, true);
     assert.equal(tenants.tenants.some((row) => row.tenant.id === "second-test" && row.subscription.status === "active"), true);
 
+    const branding = await fetch(`${base}/api/platform/tenants/second-test/branding`).then((response) => response.json());
+    assert.equal(branding.ok, true);
+    assert.equal(branding.branding.displayName, "second-test");
+
+    const updatedBranding = await fetch(`${base}/api/platform/tenants/second-test/branding`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ displayName: "Second Test Pools", colors: { primary: "#123456" }, fontFamily: "Georgia, serif" })
+    }).then((response) => response.json());
+    assert.equal(updatedBranding.ok, true);
+    assert.equal(updatedBranding.branding.displayName, "Second Test Pools");
+    assert.equal(updatedBranding.branding.colors.primary, "#123456");
+    assert.equal(updatedBranding.branding.updatedBy, "internal:local-owner");
+
     const backup = await fetch(`${base}/api/platform/tenants/second-test/backups/run`, { method: "POST" }).then((response) => response.json());
     assert.equal(backup.ok, true);
     assert.match(backup.backup.storageRef, /^backups\/second-test\//);
@@ -314,7 +349,7 @@ test("platform routes manage tenant users and job links without leaking token ha
         propertyId: "property_isbell_road",
         externalName: "Subcontractor",
         externalEmail: "sub@example.test",
-        expiresAt: "2026-07-10T12:00:00.000Z"
+        expiresAt: "2026-07-20T12:00:00.000Z"
       })
     }).then((response) => response.json());
     assert.equal(link.ok, true);
@@ -327,7 +362,7 @@ test("platform routes manage tenant users and job links without leaking token ha
       body: JSON.stringify({
         jobId: "job_deborah_justice",
         externalName: "Subcontractor",
-        expiresAt: "2026-07-10T12:00:00.000Z",
+        expiresAt: "2026-07-20T12:00:00.000Z",
         returnToken: true
       })
     }).then((response) => response.json());

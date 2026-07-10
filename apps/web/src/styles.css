@@ -26,6 +26,7 @@ input {
 
 .ops-shell {
   place-items: stretch;
+  font-family: var(--jobdesk-font-family, "Fraunces", "Iowan Old Style", Georgia, serif);
 }
 
 .ops-shell.density-compact .thread {
@@ -301,9 +302,39 @@ input {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 18px;
   padding: 24px 24px 18px;
   background: var(--jobdesk-header-background, #26352c);
   color: #fff7e7;
+}
+
+.brand-stack {
+  min-width: 0;
+}
+
+.tenant-wordmark {
+  width: fit-content;
+  max-width: 240px;
+  margin: 0 0 8px;
+  overflow: hidden;
+  color: var(--jobdesk-accent, #e4bf73);
+  font-size: clamp(0.95rem, 4vw, 1.2rem);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.tenant-logo {
+  display: block;
+  width: auto;
+  max-width: 210px;
+  max-height: 54px;
+  margin: 0 0 8px;
+  object-fit: contain;
 }
 
 .top-actions {

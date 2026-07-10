@@ -228,6 +228,41 @@ interface OperatorUiThemeResponse {
   error?: string;
 }
 
+interface TenantBranding {
+  tenantId: string;
+  displayName: string;
+  logo?: {
+    storageRef?: string;
+    mediaId?: string;
+    url?: string;
+    mimeType?: "image/png" | "image/jpeg" | "image/webp";
+    alt?: string;
+    updatedAt?: string;
+  };
+  colors: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+    accentText?: string;
+    background?: string;
+    surface?: string;
+    text?: string;
+    mutedText?: string;
+    userBubble?: string;
+    assistantBubble?: string;
+  };
+  fontFamily?: string;
+  source: "default" | "manual" | "extracted";
+  updatedBy: string;
+  updatedAt: string;
+}
+
+interface TenantBrandingResponse {
+  ok: boolean;
+  branding?: TenantBranding;
+  error?: string;
+}
+
 interface VoiceSession {
   id: string;
   tenantId: string;
@@ -367,6 +402,25 @@ function sourceIsPhoto(source: Source): boolean {
 
 function mediaDownloadName(source: Source): string {
   return `${source.rail}-${source.ref.replace(/[^a-z0-9_-]/gi, "_")}.jpg`;
+}
+
+function tenantLogoSrc(branding: TenantBranding | null, tenantId: string): string | null {
+  if (branding?.logo?.url) {
+    return branding.logo.url;
+  }
+  if (branding?.logo?.mediaId) {
+    return `/api/media/${encodeURIComponent(branding.logo.mediaId)}?tenantId=${encodeURIComponent(tenantId)}`;
+  }
+  return null;
+}
+
+function TenantBrandMark(props: { branding: TenantBranding | null; tenantId: string }): React.ReactElement {
+  const displayName = props.branding?.displayName ?? (props.tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : props.tenantId);
+  const logoSrc = tenantLogoSrc(props.branding, props.tenantId);
+  if (logoSrc) {
+    return <img alt={props.branding?.logo?.alt ?? `${displayName} logo`} className="tenant-logo" src={logoSrc} />;
+  }
+  return <div className="tenant-wordmark" aria-label={`${displayName} logo placeholder`}>{displayName}</div>;
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -1009,6 +1063,7 @@ function PlatformConsole(props: { auth: Auth; user: User }): React.ReactElement 
 function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
   const [operatorTheme, setOperatorTheme] = useState<OperatorUiTheme | null>(null);
+  const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -1083,6 +1138,28 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
       .catch(() => {
         if (!cancelled) {
           setOperatorTheme(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [operatorContext.tenantId, props.user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    props.user.getIdToken()
+      .then((idToken) => fetch(`/api/platform/tenants/${encodeURIComponent(operatorContext.tenantId)}/branding`, {
+        headers: { authorization: `Bearer ${idToken}` }
+      }))
+      .then((response) => response.json() as Promise<TenantBrandingResponse>)
+      .then((body) => {
+        if (!cancelled && body.ok && body.branding) {
+          setTenantBranding(body.branding);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTenantBranding(null);
         }
       });
     return () => {
@@ -1436,24 +1513,28 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
     }
   }
 
-  const themeStyle = operatorTheme ? {
-    "--jobdesk-shell-background": operatorTheme.colors.shellBackground,
-    "--jobdesk-panel-background": operatorTheme.colors.panelBackground,
-    "--jobdesk-header-background": operatorTheme.colors.headerBackground,
-    "--jobdesk-accent": operatorTheme.colors.accent,
-    "--jobdesk-accent-text": operatorTheme.colors.accentText,
-    "--jobdesk-user-bubble": operatorTheme.colors.userBubble,
-    "--jobdesk-assistant-bubble": operatorTheme.colors.assistantBubble,
-    "--jobdesk-text": operatorTheme.colors.text
-  } as React.CSSProperties : undefined;
+  const brandColors = tenantBranding?.colors;
+  const themeStyle = {
+    "--jobdesk-shell-background": operatorTheme?.colors.shellBackground ?? brandColors?.background,
+    "--jobdesk-panel-background": operatorTheme?.colors.panelBackground ?? brandColors?.surface,
+    "--jobdesk-header-background": operatorTheme?.colors.headerBackground ?? brandColors?.primary,
+    "--jobdesk-accent": operatorTheme?.colors.accent ?? brandColors?.accent,
+    "--jobdesk-accent-text": operatorTheme?.colors.accentText ?? brandColors?.accentText,
+    "--jobdesk-user-bubble": operatorTheme?.colors.userBubble ?? brandColors?.userBubble,
+    "--jobdesk-assistant-bubble": operatorTheme?.colors.assistantBubble ?? brandColors?.assistantBubble,
+    "--jobdesk-text": operatorTheme?.colors.text ?? brandColors?.text,
+    "--jobdesk-muted-text": brandColors?.mutedText,
+    "--jobdesk-font-family": tenantBranding?.fontFamily
+  } as React.CSSProperties;
 
   return (
     <main className={`shell ops-shell density-${operatorTheme?.density ?? "comfortable"}`} style={themeStyle}>
       <div className="ops-grid">
       <section className="phone">
         <header className="topbar">
-          <div>
-            <p className="eyebrow">Aquatrace ops</p>
+          <div className="brand-stack">
+            <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} />
+            <p className="eyebrow">Ops</p>
             <h1>Nexi Job Desk</h1>
             <p className="signed-in">{props.user.email ?? "Firebase operator"}</p>
           </div>

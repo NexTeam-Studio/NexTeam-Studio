@@ -9,7 +9,7 @@ import { runTenantBackup, type StorageWriter } from "./backup.js";
 import { createStripeTestSubscription } from "./billing.js";
 import { toolEntitlementMatrix } from "./entitlements.js";
 import { modulesForPlan, PLATFORM_PLANS } from "./plans.js";
-import { defaultTenant, planCatalog, subscriptionFromStripe, type PlatformRepository } from "./repository.js";
+import { defaultTenant, defaultTenantBranding, planCatalog, subscriptionFromStripe, type PlatformRepository } from "./repository.js";
 
 const tenantBodySchema = z.object({
   id: z.string().min(1),
@@ -34,6 +34,33 @@ const tenantBodySchema = z.object({
 const subscribeBodySchema = z.object({
   plan: z.enum(["nexi", "marketing", "suite"]),
   email: z.string().email().optional()
+});
+
+const hexColorSchema = z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+
+const tenantBrandingBodySchema = z.object({
+  displayName: z.string().min(1).optional(),
+  logo: z.object({
+    storageRef: z.string().min(1).optional(),
+    mediaId: z.string().min(1).optional(),
+    url: z.string().url().optional(),
+    mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]).optional(),
+    alt: z.string().min(1).optional()
+  }).optional(),
+  colors: z.object({
+    primary: hexColorSchema.optional(),
+    secondary: hexColorSchema.optional(),
+    accent: hexColorSchema.optional(),
+    accentText: hexColorSchema.optional(),
+    background: hexColorSchema.optional(),
+    surface: hexColorSchema.optional(),
+    text: hexColorSchema.optional(),
+    mutedText: hexColorSchema.optional(),
+    userBubble: hexColorSchema.optional(),
+    assistantBubble: hexColorSchema.optional()
+  }).optional(),
+  fontFamily: z.string().min(1).optional(),
+  source: z.enum(["manual", "extracted"]).default("manual")
 });
 
 const tenantUserBodySchema = z.object({
@@ -199,6 +226,47 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         timezone: input.timezone ?? baseTenant.timezone
       });
       res.status(201).json({ ok: true, tenant });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/tenants/:tenantId/branding", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      if (!tenantId) {
+        throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantBranding", status: 400 });
+      }
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "tenantBranding" });
+      const tenant = await loadTenantFromPlatform(deps.repository, tenantId, env);
+      const branding = await deps.repository.getTenantBranding(tenantId) ?? defaultTenantBranding(tenant);
+      res.json({ ok: true, tenantId, branding });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/tenants/:tenantId/branding", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      if (!tenantId) {
+        throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantBrandingUpdate", status: 400 });
+      }
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "tenantBrandingUpdate" });
+      const input = tenantBrandingBodySchema.parse(req.body ?? {});
+      const tenant = await loadTenantFromPlatform(deps.repository, tenantId, env);
+      const current = await deps.repository.getTenantBranding(tenantId) ?? defaultTenantBranding(tenant);
+      const branding = await deps.repository.saveTenantBranding({
+        ...current,
+        displayName: input.displayName ?? current.displayName,
+        logo: input.logo ? { ...input.logo, updatedAt: new Date().toISOString() } : current.logo,
+        colors: { ...current.colors, ...(input.colors ?? {}) },
+        fontFamily: input.fontFamily ?? current.fontFamily,
+        source: input.source,
+        updatedBy: actorIdForAccess(access),
+        updatedAt: new Date().toISOString()
+      });
+      res.json({ ok: true, tenantId, branding });
     } catch (error) {
       sendRouteError(res, error);
     }

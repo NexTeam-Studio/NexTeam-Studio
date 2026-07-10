@@ -3,6 +3,7 @@ import type { Firestore } from "firebase-admin/firestore";
 import {
   jobAccessLinkSchema,
   platformBackupRecordSchema,
+  tenantBrandingSchema,
   tenantAdapterStatusSchema,
   tenantSchema,
   tenantSubscriptionSchema,
@@ -12,6 +13,7 @@ import {
   type PlatformBackupRecord,
   type Tenant,
   type TenantAdapterStatus,
+  type TenantBranding,
   type TenantCostSummary,
   type TenantDataExport,
   type TenantPlan,
@@ -54,6 +56,54 @@ export function defaultTenant(tenantId = DEFAULT_TENANT_ID, plan: TenantPlan = "
   };
 }
 
+export function defaultTenantBranding(tenant: Tenant | string = defaultTenant()): TenantBranding {
+  const tenantId = typeof tenant === "string" ? tenant : tenant.id;
+  const displayName = typeof tenant === "string" ? (tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : tenantId) : tenant.name;
+  const updatedAt = "2026-07-10T00:00:00.000Z";
+  if (tenantId === DEFAULT_TENANT_ID) {
+    return {
+      tenantId,
+      displayName: "Aquatrace",
+      colors: {
+        primary: "#26352c",
+        secondary: "#315f58",
+        accent: "#e4bf73",
+        accentText: "#26352c",
+        background: "#dfe8d8",
+        surface: "#fff8ea",
+        text: "#26352c",
+        mutedText: "#6d7b6f",
+        userBubble: "#315f58",
+        assistantBubble: "#fff8ea"
+      },
+      fontFamily: "Georgia, 'Times New Roman', serif",
+      source: "default",
+      updatedBy: "system",
+      updatedAt
+    };
+  }
+  return {
+    tenantId,
+    displayName,
+    colors: {
+      primary: "#26352c",
+      secondary: "#315f58",
+      accent: "#e4bf73",
+      accentText: "#26352c",
+      background: "#dfe8d8",
+      surface: "#fff8ea",
+      text: "#26352c",
+      mutedText: "#6d7b6f",
+      userBubble: "#315f58",
+      assistantBubble: "#fff8ea"
+    },
+    fontFamily: "Georgia, 'Times New Roman', serif",
+    source: "default",
+    updatedBy: "system",
+    updatedAt
+  };
+}
+
 function firestoreDoc<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
@@ -70,6 +120,8 @@ export interface PlatformRepository {
   listTenants(): Promise<Tenant[]>;
   getTenant(tenantId: string): Promise<Tenant | null>;
   upsertTenant(tenant: Tenant): Promise<Tenant>;
+  getTenantBranding(tenantId: string): Promise<TenantBranding | null>;
+  saveTenantBranding(branding: TenantBranding): Promise<TenantBranding>;
   listTenantUsers(tenantId: string): Promise<TenantUser[]>;
   getTenantUser(tenantId: string, id: string): Promise<TenantUser | null>;
   upsertTenantUser(user: TenantUser): Promise<TenantUser>;
@@ -135,6 +187,7 @@ function starterSubscription(tenant: Tenant): TenantSubscription {
 
 export class InMemoryPlatformRepository implements PlatformRepository {
   private readonly tenants = new Map<string, Tenant>();
+  private readonly tenantBranding = new Map<string, TenantBranding>();
   private readonly tenantUsers = new Map<string, TenantUser[]>();
   private readonly jobAccessLinks = new Map<string, JobAccessLink[]>();
   private readonly subscriptions = new Map<string, TenantSubscription>();
@@ -145,6 +198,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   constructor(seed: Tenant[] = [defaultTenant()]) {
     for (const tenant of seed) {
       this.tenants.set(tenant.id, tenantSchema.parse(tenant) as Tenant);
+      this.tenantBranding.set(tenant.id, defaultTenantBranding(tenant));
       this.subscriptions.set(tenant.id, starterSubscription(tenant));
       this.tenantUsers.set(tenant.id, defaultTenantUsers(tenant.id).map((user) => tenantUserSchema.parse(user) as TenantUser));
     }
@@ -167,6 +221,19 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     if (!this.tenantUsers.has(parsed.id)) {
       this.tenantUsers.set(parsed.id, defaultTenantUsers(parsed.id).map((user) => tenantUserSchema.parse(user) as TenantUser));
     }
+    if (!this.tenantBranding.has(parsed.id)) {
+      this.tenantBranding.set(parsed.id, defaultTenantBranding(parsed));
+    }
+    return parsed;
+  }
+
+  async getTenantBranding(tenantId: string): Promise<TenantBranding | null> {
+    return this.tenantBranding.get(tenantId) ?? null;
+  }
+
+  async saveTenantBranding(branding: TenantBranding): Promise<TenantBranding> {
+    const parsed = tenantBrandingSchema.parse(branding) as TenantBranding;
+    this.tenantBranding.set(parsed.tenantId, parsed);
     return parsed;
   }
 
@@ -259,6 +326,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
         tenantUsers: this.tenantUsers.get(tenantId) ?? [],
         jobAccessLinks: this.jobAccessLinks.get(tenantId) ?? [],
         tenantSubscriptions: [...(this.subscriptions.has(tenantId) ? [this.subscriptions.get(tenantId)] : [])],
+        tenantBranding: [...(this.tenantBranding.has(tenantId) ? [this.tenantBranding.get(tenantId)] : [])],
         tenantAdapterStatuses: this.statuses.get(tenantId) ?? [],
         usageLog: this.usage.get(tenantId) ?? [],
         platformBackups: this.backups.get(tenantId) ?? []
@@ -320,6 +388,24 @@ export class FirestorePlatformRepository implements PlatformRepository {
   async upsertTenant(tenant: Tenant): Promise<Tenant> {
     const parsed = tenantSchema.parse(tenant) as Tenant;
     await this.db.collection("tenants").doc(parsed.id).set({ ...docData(parsed), tenantId: parsed.id }, { merge: true });
+    return parsed;
+  }
+
+  async getTenantBranding(tenantId: string): Promise<TenantBranding | null> {
+    const direct = await this.db.collection("tenantBranding").doc(tenantId).get();
+    if (direct.exists) {
+      const parsed = tenantBrandingSchema.safeParse(direct.data());
+      if (parsed.success) {
+        return parsed.data as TenantBranding;
+      }
+    }
+    const tenant = await this.getTenant(tenantId);
+    return tenant ? defaultTenantBranding(tenant) : null;
+  }
+
+  async saveTenantBranding(branding: TenantBranding): Promise<TenantBranding> {
+    const parsed = tenantBrandingSchema.parse(branding) as TenantBranding;
+    await this.db.collection("tenantBranding").doc(parsed.tenantId).set(docData(parsed), { merge: true });
     return parsed;
   }
 
@@ -417,7 +503,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
   }
 
   async exportTenantData(tenantId: string): Promise<TenantDataExport> {
-    const collections = ["tenants", "tenantUsers", "jobAccessLinks", "tenantSubscriptions", "tenantAdapterStatuses", "clients", "properties", "jobs", "quotes", "invoices", "media", "siteJobBlueprints", "conversations", "failureLog", "usageLog", "platformBackups"];
+    const collections = ["tenants", "tenantBranding", "tenantUsers", "jobAccessLinks", "tenantSubscriptions", "tenantAdapterStatuses", "clients", "properties", "jobs", "quotes", "invoices", "media", "siteJobBlueprints", "conversations", "failureLog", "usageLog", "platformBackups"];
     const entries = await Promise.all(collections.map(async (collectionName) => {
       const snapshot = await this.db.collection(collectionName).where("tenantId", "==", tenantId).get();
       return [collectionName, snapshot.docs.map((doc) => firestoreDoc(doc.data()))] as const;

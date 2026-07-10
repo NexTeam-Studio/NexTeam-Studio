@@ -61,6 +61,37 @@ export const tenantSchema = z.object({
   plan: z.enum(["nexi", "marketing", "suite"])
 });
 
+const hexColorSchema = z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+
+export const tenantBrandingSchema = z.object({
+  tenantId: idSchema,
+  displayName: z.string().min(1),
+  logo: z.object({
+    storageRef: z.string().min(1).optional(),
+    mediaId: idSchema.optional(),
+    url: z.string().url().optional(),
+    mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]).optional(),
+    alt: z.string().min(1).optional(),
+    updatedAt: z.string().min(1).optional()
+  }).optional(),
+  colors: z.object({
+    primary: hexColorSchema.optional(),
+    secondary: hexColorSchema.optional(),
+    accent: hexColorSchema.optional(),
+    accentText: hexColorSchema.optional(),
+    background: hexColorSchema.optional(),
+    surface: hexColorSchema.optional(),
+    text: hexColorSchema.optional(),
+    mutedText: hexColorSchema.optional(),
+    userBubble: hexColorSchema.optional(),
+    assistantBubble: hexColorSchema.optional()
+  }),
+  fontFamily: z.string().min(1).optional(),
+  source: z.enum(["default", "manual", "extracted"]),
+  updatedBy: idSchema,
+  updatedAt: z.string().min(1)
+});
+
 export const platformModuleSchema = z.enum([
   "nexi",
   "crm",
@@ -441,6 +472,7 @@ export const healthResponseSchema = z.object({
 });
 
 export type TenantDoc = z.infer<typeof tenantSchema>;
+export type TenantBrandingDoc = z.infer<typeof tenantBrandingSchema>;
 export type PlatformPlanDoc = z.infer<typeof platformPlanSchema>;
 export type TenantSubscriptionDoc = z.infer<typeof tenantSubscriptionSchema>;
 export type TenantAdapterStatusDoc = z.infer<typeof tenantAdapterStatusSchema>;
