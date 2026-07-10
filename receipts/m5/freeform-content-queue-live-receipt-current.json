@@ -1,0 +1,126 @@
+{
+  "ok": true,
+  "receiptName": "freeform-content-queue-live-receipt-current",
+  "startedAt": "2026-07-10T01:54:53.982Z",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "expectedSha": "5cb23ac2ab40afc1d7f7e7be4b8ef703a7e42c11",
+  "tenantId": "aquatrace",
+  "runId": "freeform-content-1783648493981-8333a8fd",
+  "checks": {
+    "versionShaMatched": true,
+    "healthGreen": true,
+    "articleWrittenInChat": true,
+    "saveRoutedToFreeformTool": true,
+    "savedDraftApprovalPending": true,
+    "saveAnswerIsPlainConfirmation": true,
+    "queueVisible": true
+  },
+  "raw": {
+    "version": {
+      "sha": "5cb23ac2ab40afc1d7f7e7be4b8ef703a7e42c11",
+      "builtAt": "2026-07-10T01:54:53.803Z"
+    },
+    "health": {
+      "ok": true,
+      "rails": {
+        "jobber": {
+          "ok": true,
+          "message": ""
+        },
+        "companycam": {
+          "ok": true,
+          "message": ""
+        },
+        "anthropic": {
+          "ok": true,
+          "message": ""
+        }
+      }
+    },
+    "writeTurn": {
+      "prompt": "write me an article for pool owners based on this real Aquatrace job scenario: a homeowner had unexplained daily water loss, Aquatrace checked the pool, pressure testing pointed to a leaking return line, and the article should explain why pressure testing matters without naming the customer",
+      "answer": "# Why Is My Pool Losing Water? What Pressure Testing Reveals\n\nIf you've noticed your pool water level dropping faster than evaporation could explain, you're not alone — and it's worth taking seriously before it turns into a bigger repair.\n\n## The Scenario\n\nA pool owner reached out about steady, unexplained water loss. Nothing was visibly wrong — no cracks, no wet spots, no obvious signs of trouble. The pool just kept losing water, day after day.\n\nOur team came out to investigate. Rather than guessing or starting with a slab-cracking search, we ran a pressure test on the plumbing lines. That test pointed us straight to a leaking return line — the pipe that carries filtered water back into the pool.\n\n## Why Pressure Testing Comes First\n\nA lot of water loss gets blamed on evaporation, splash-out, or a cracked pool shell. But plumbing leaks are one of the most common — and most overlooked — causes. Here's why testing the lines matters:\n\n- **It isolates the problem fast.** Pressure testing tells us whether the leak is in the plumbing (skimmer, main drain, return lines) or somewhere else, like the pool structure or equipment pad.\n- **It prevents unnecessary digging or repairs.** Without a pressure test, it's tempting to guess — and guessing can mean cutting into decking or replacing equipment that was never the problem.\n- **It catches leaks you can't see.** Return line leaks are often underground or behind the pool wall. There's no visible sign until the water bill or level drop gives it away.\n- **It saves water and money.** A slow, steady leak adds up. Left unaddressed, it can also erode soil around the pool structure, leading to bigger structural issues over time.\n\n## How It Works\n\nWe pressurize each line individually and monitor for pressure drop. A line that won't hold pressure has a break, crack, or failed fitting somewhere along its run. Once we know which line is compromised, we can pinpoint the repair — instead of tearing up your whole yard to find it.\n\n## When to Call\n\nIf you're topping off your pool more than about an inch a week (beyond normal evaporation for your climate), it's worth having the lines checked. Catching a return line leak early usually means a straightforward repair — waiting on it can mean bigger excavation and higher costs down the road.\n\n*Noticing unexplained water loss in your own pool? A pressure test is the fastest way to get a real answer instead of a guess.*",
+      "toolRuns": [],
+      "sources": []
+    },
+    "saveTurn": {
+      "prompt": "save this to the content queue",
+      "answer": "I saved \"Why Is My Pool Losing Water? What Pressure Testing Reveals\" to the content queue (appr_8645cdab-836b-46e9-8d44-a5845f043970). It is ready for review and has not been published.",
+      "toolRuns": [
+        {
+          "name": "queueFreeformContent",
+          "result": {
+            "draft": {
+              "id": "content_article_f588a4bb-b339-416a-834d-854399474a5e",
+              "tenantId": "aquatrace",
+              "kind": "article",
+              "title": "Why Is My Pool Losing Water? What Pressure Testing Reveals",
+              "body": "# Why Is My Pool Losing Water? What Pressure Testing Reveals\n\nIf you've noticed your pool water level dropping faster than evaporation could explain, you're not alone — and it's worth taking seriously before it turns into a bigger repair.\n\n## The Scenario\n\nA pool owner reached out about steady, unexplained water loss. Nothing was visibly wrong — no cracks, no wet spots, no obvious signs of trouble. The pool just kept losing water, day after day.\n\nOur team came out to investigate. Rather than guessing or starting with a slab-cracking search, we ran a pressure test on the plumbing lines. That test pointed us straight to a leaking return line — the pipe that carries filtered water back into the pool.\n\n## Why Pressure Testing Comes First\n\nA lot of water loss gets blamed on evaporation, splash-out, or a cracked pool shell. But plumbing leaks are one of the most common — and most overlooked — causes. Here's why testing the lines matters:\n\n- **It isolates the problem fast.** Pressure testing tells us whether the leak is in the plumbing (skimmer, main drain, return lines) or somewhere else, like the pool structure or equipment pad.\n- **It prevents unnecessary digging or repairs.** Without a pressure test, it's tempting to guess — and guessing can mean cutting into decking or replacing equipment that was never the problem.\n- **It catches leaks you can't see.** Return line leaks are often underground or behind the pool wall. There's no visible sign until the water bill or level drop gives it away.\n- **It saves water and money.** A slow, steady leak adds up. Left unaddressed, it can also erode soil around the pool structure, leading to bigger structural issues over time.\n\n## How It Works\n\nWe pressurize each line individually and monitor for pressure drop. A line that won't hold pressure has a break, crack, or failed fitting somewhere along its run. Once we know which line is compromised, we can pinpoint the repair — instead of tearing up your whole yard to find it.\n\n## When to Call\n\nIf you're topping off your pool more than about an inch a week (beyond normal evaporation for your climate), it's worth having the lines checked. Catching a return line leak early usually means a straightforward repair — waiting on it can mean bigger excavation and higher costs down the road.\n\n*Noticing unexplained water loss in your own pool? A pressure test is the fastest way to get a real answer instead of a guess.*",
+              "mediaRefs": [],
+              "status": "approval_pending",
+              "sources": [
+                {
+                  "rail": "native",
+                  "ref": "content_article_f588a4bb-b339-416a-834d-854399474a5e",
+                  "label": "Nexi freeform article draft"
+                }
+              ],
+              "createdAt": "2026-07-10T01:55:11.721Z",
+              "approvalId": "appr_8645cdab-836b-46e9-8d44-a5845f043970"
+            },
+            "publishingDeferred": true,
+            "savedToContentQueue": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "content_article_f588a4bb-b339-416a-834d-854399474a5e",
+              "label": "Native content draft Why Is My Pool Losing Water? What Pressure Testing Reveals"
+            },
+            {
+              "rail": "native",
+              "ref": "content_article_f588a4bb-b339-416a-834d-854399474a5e",
+              "label": "Nexi freeform article draft"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "content_article_f588a4bb-b339-416a-834d-854399474a5e",
+          "label": "Native content draft Why Is My Pool Losing Water? What Pressure Testing Reveals"
+        },
+        {
+          "rail": "native",
+          "ref": "content_article_f588a4bb-b339-416a-834d-854399474a5e",
+          "label": "Nexi freeform article draft"
+        }
+      ]
+    },
+    "queueProof": {
+      "count": 1,
+      "savedDraft": {
+        "id": "content_article_f588a4bb-b339-416a-834d-854399474a5e",
+        "kind": "article",
+        "title": "Why Is My Pool Losing Water? What Pressure Testing Reveals",
+        "status": "approval_pending",
+        "approvalId": "appr_8645cdab-836b-46e9-8d44-a5845f043970",
+        "bodySha256_16": "58611c0cf7a75cb9",
+        "bodyCharCount": 2429,
+        "publishingDeferred": true
+      }
+    }
+  },
+  "finishedAt": "2026-07-10T01:55:13.151Z",
+  "operator": {
+    "mode": "custom-token",
+    "emailPresent": true,
+    "uidPresent": true
+  },
+  "boundaries": {
+    "outboundExecuted": false,
+    "wordpressPublishExecuted": false,
+    "contentPublishingDeferred": true
+  }
+}
