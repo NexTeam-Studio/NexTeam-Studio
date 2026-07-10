@@ -72,6 +72,21 @@ test("dedicated Nexi send mailbox can opt into read tools without making legacy 
   assert.equal(rail.sendAdapter?.mailbox, "nexi");
 });
 
+test("dedicated Nexi send mailbox accepts legacy GMAIL_NEXI env names", () => {
+  const rail = createCommsRailFromEnv({
+    TENANT_ID: "aquatrace",
+    GMAIL_OAUTH_CLIENT_ID: "client-id",
+    GMAIL_OAUTH_CLIENT_SECRET: "client-secret",
+    GMAIL_NEXI_EMAIL: "nexi@example.test",
+    GMAIL_NEXI_ALIAS: "nexi",
+    GMAIL_NEXI_REFRESH_TOKEN: "nexi-refresh",
+    GMAIL_NEXI_READ_ENABLED: "true"
+  });
+  assert.equal(rail.tenantId, "aquatrace");
+  assert.equal(rail.readAdapters.has("nexi"), true);
+  assert.equal(rail.sendAdapter?.mailbox, "nexi");
+});
+
 test("Comms Nexi searchEmail returns email source refs", async () => {
   const readAdapter = {
     mailbox: "ops",

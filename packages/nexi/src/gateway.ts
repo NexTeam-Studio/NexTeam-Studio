@@ -2185,6 +2185,14 @@ function draftReportEmailAnswer(result: unknown): string {
   return `I drafted the report email${filename} and put it in the approval queue${typeof approval.id === "string" ? ` (${approval.id})` : ""}. It has not been sent.`;
 }
 
+function draftReportEmailFailureAnswer(result: unknown): string | null {
+  const record = result && typeof result === "object" ? result as Record<string, unknown> : {};
+  if (typeof record.error !== "string") {
+    return null;
+  }
+  return "I couldn't create that report email draft yet. I wrote it down so we can fix the email attachment path instead of guessing.";
+}
+
 function queueFreeformContentAnswer(result: unknown): string {
   const record = objectRecord(result);
   const draft = objectRecord(record?.draft);
@@ -2247,9 +2255,10 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
   if (draftRun && looksLikeEmailDraftAction(lower)) {
     return draftEmailAnswer(draftRun.result);
   }
-  const reportEmailRun = [...toolRuns].reverse().find((run) => run.name === "draftReportEmail" && run.sources.length > 0);
+  const reportEmailRun = [...toolRuns].reverse().find((run) => run.name === "draftReportEmail");
   if (reportEmailRun && looksLikeReportPdfEmailRequest(lower)) {
-    return draftReportEmailAnswer(reportEmailRun.result);
+    const failureAnswer = draftReportEmailFailureAnswer(reportEmailRun.result);
+    return failureAnswer ?? draftReportEmailAnswer(reportEmailRun.result);
   }
   const freeformContentRun = [...toolRuns].reverse().find((run) => run.name === "queueFreeformContent" && run.sources.length > 0);
   if (freeformContentRun && looksLikeFreeformContentSaveAction(lower)) {

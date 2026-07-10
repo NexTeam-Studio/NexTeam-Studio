@@ -34,6 +34,16 @@ function configFromEnv(env: NodeJS.ProcessEnv, prefix: string, fallbackAlias: st
   };
 }
 
+function configFromAnyEnv(env: NodeJS.ProcessEnv, prefixes: string[], fallbackAlias: string, tenantId: string): GmailMailboxConfig | null {
+  for (const prefix of prefixes) {
+    const config = configFromEnv(env, prefix, fallbackAlias, tenantId);
+    if (config) {
+      return config;
+    }
+  }
+  return null;
+}
+
 export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
   const tenantId = value(env, "TENANT_ID") || "aquatrace";
   const readAdapters = new Map<string, EmailReadProvider>();
@@ -46,8 +56,11 @@ export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
       readAdapters.set(config.mailbox, new GmailReadOnlyAdapter(config));
     }
   }
-  const sendConfig = configFromEnv(env, "GMAIL_SEND_MAILBOX", "NEXI_SEND", tenantId);
-  if (sendConfig && value(env, "GMAIL_SEND_MAILBOX_READ_ENABLED").toLowerCase() === "true") {
+  const sendConfig = configFromAnyEnv(env, ["GMAIL_SEND_MAILBOX", "GMAIL_NEXI"], "NEXI_SEND", tenantId);
+  if (sendConfig && (
+    value(env, "GMAIL_SEND_MAILBOX_READ_ENABLED").toLowerCase() === "true"
+    || value(env, "GMAIL_NEXI_READ_ENABLED").toLowerCase() === "true"
+  )) {
     readAdapters.set(sendConfig.mailbox, new GmailReadOnlyAdapter(sendConfig));
   }
   return {
