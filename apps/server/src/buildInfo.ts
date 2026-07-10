@@ -4,6 +4,14 @@ import { versionResponseSchema } from "@nexteam/core";
 
 function readGitSha(): string {
   try {
+    const plainStamp = readFileSync("nexteam-build-sha.txt", "utf8").trim();
+    if (plainStamp) {
+      return plainStamp;
+    }
+  } catch {
+    // Railway's archive path can drop hidden files; keep a non-hidden stamp too.
+  }
+  try {
     const stampedSha = readFileSync(".nexteam-build-sha", "utf8").trim();
     if (stampedSha) {
       return stampedSha;
