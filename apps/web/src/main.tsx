@@ -304,7 +304,7 @@ function sourceThumb(source: Source): React.ReactElement | null {
   if (source.rail !== "companycam" || !source.label.toLowerCase().includes("photo")) {
     return null;
   }
-  return <img className="thumb" src={mediaUrl(source)} alt={source.label} loading="lazy" />;
+  return <img className="photo-tile-image" src={mediaUrl(source)} alt={source.label} loading="lazy" />;
 }
 
 function mediaUrl(source: Source): string {
@@ -317,6 +317,10 @@ function mediaDownloadUrl(source: Source): string {
 
 function sourceIsPhoto(source: Source): boolean {
   return source.rail === "companycam" && source.label.toLowerCase().includes("photo");
+}
+
+function mediaDownloadName(source: Source): string {
+  return `companycam-${source.ref.replace(/[^a-z0-9_-]/gi, "_")}.jpg`;
 }
 
 function dayRange(day: string, view: "day" | "week" | "map"): { from: string; to: string } {
@@ -1199,35 +1203,46 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
         </header>
 
         <div className="thread" aria-live="polite">
-          {messages.map((message) => (
+          {messages.map((message) => {
+            const photoSources = message.sources.filter(sourceIsPhoto);
+            const textSources = message.sources.filter((source) => !sourceIsPhoto(source));
+            return (
             <article className={`bubble ${message.role}`} key={message.id}>
               <p>{message.text}</p>
-              {message.sources.length > 0 ? (
-                <div className="sources">
-                  {message.sources.map((source) => (
-                    <span className={`source ${sourceIsPhoto(source) ? "source-photo" : ""}`} key={`${source.rail}:${source.ref}`}>
-                      {sourceIsPhoto(source) ? (
-                        <button
-                          aria-label={`Open full-size ${source.label}`}
-                          className="thumb-button"
-                          type="button"
-                          onClick={() => setActiveMedia(source)}
-                        >
-                          {sourceThumb(source)}
-                        </button>
-                      ) : null}
-                      <span>{source.label}</span>
-                      {sourceIsPhoto(source) ? (
-                        <a className="save-link" href={mediaDownloadUrl(source)} download={`companycam-${source.ref}.jpg`}>
+              {photoSources.length > 0 ? (
+                <div className="photo-strip" aria-label="Photos from this answer">
+                  {photoSources.map((source) => (
+                    <figure className="photo-tile" key={`${source.rail}:${source.ref}`}>
+                      <button
+                        aria-label={`Open full-size ${source.label}`}
+                        className="photo-open"
+                        type="button"
+                        onClick={() => setActiveMedia(source)}
+                      >
+                        {sourceThumb(source)}
+                      </button>
+                      <figcaption className="photo-caption">
+                        <span>{source.label}</span>
+                        <a href={mediaDownloadUrl(source)} download={mediaDownloadName(source)}>
                           Save
                         </a>
-                      ) : null}
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              ) : null}
+              {textSources.length > 0 ? (
+                <div className="sources">
+                  {textSources.map((source) => (
+                    <span className="source" key={`${source.rail}:${source.ref}`}>
+                      <span>{source.label}</span>
                     </span>
                   ))}
                 </div>
               ) : null}
             </article>
-          ))}
+          );
+          })}
           {working ? <div className="typing">Nexi is checking...</div> : null}
         </div>
 
@@ -1280,7 +1295,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
           <div className="lightbox-card" onClick={(event) => event.stopPropagation()}>
             <img src={mediaUrl(activeMedia)} alt={activeMedia.label} />
             <div className="lightbox-actions">
-              <a href={mediaDownloadUrl(activeMedia)} download={`companycam-${activeMedia.ref}.jpg`}>
+              <a href={mediaDownloadUrl(activeMedia)} download={mediaDownloadName(activeMedia)}>
                 Save full-size
               </a>
               <button type="button" onClick={() => setActiveMedia(null)}>Close</button>
