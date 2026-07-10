@@ -1242,6 +1242,51 @@ test("Nexi create-client prompts route to approval-gated CRM createClient", asyn
   assert.equal(result.sources.some((source) => source.ref === "approval_client_1"), true);
 });
 
+test("Nexi create-client parser splits bare name and street address from original regression phrasing", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "add a new client logan sears 6020 forest drive seneca sc 29672" }],
+    tools: [
+      {
+        name: "createClient",
+        description: "Queue native CRM client creation for approval.",
+        inputSchema: z.object({
+          name: z.string(),
+          address: z.string().optional(),
+          emails: z.array(z.string()).default([]),
+          phones: z.array(z.string()).default([]),
+          consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
+        }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(args);
+          return {
+            result: { approval: { id: "approval_client_logan", status: "pending", kind: "client" }, writesAreApprovalQueuedOnly: true },
+            sources: [{ rail: "native", ref: "approval_client_logan", label: "ApprovalQueue client create approval_client_logan" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I parked Logan Sears as a new client for approval." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["createClient"]);
+  assert.equal(toolCalls[0].name, "logan sears");
+  assert.equal(toolCalls[0].address, "6020 forest drive seneca sc 29672");
+  assert.deepEqual(toolCalls[0].emails, []);
+  assert.deepEqual(toolCalls[0].phones, []);
+  assert.equal(toolCalls[0].consent.email, false);
+  assert.equal(toolCalls[0].consent.sms, false);
+  assert.equal(result.sources.some((source) => source.ref === "approval_client_logan"), true);
+});
+
 test("Nexi tenant intake prompts route to startIntake instead of search or createClient", async () => {
   const toolCalls = [];
   const result = await runNexiToolLoop({

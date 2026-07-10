@@ -6,6 +6,8 @@ import { detectConflicts, driveTimeProviderFromEnv, suggestSlots, type Scheduled
 import type { SchedulingRepository } from "./repository.js";
 import { queueScheduleNotification } from "./notifications.js";
 
+const DEFAULT_JOBBER_OVERLAY_TIMEOUT_MS = 8_000;
+
 const locationSchema = z.object({
   label: z.string(),
   address: z.object({
@@ -98,6 +100,19 @@ function addDefaultEnd(start: string): string {
   return date.toISOString();
 }
 
+function overlayTimeoutMs(env: NodeJS.ProcessEnv): number {
+  const configured = Number(env.SCHEDULE_JOBBER_OVERLAY_TIMEOUT_MS);
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_JOBBER_OVERLAY_TIMEOUT_MS;
+}
+
+function timeoutWarning(ms: number): Promise<{ visits: ScheduledVisit[]; warning: string }> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ visits: [], warning: `Jobber overlay skipped after ${ms}ms so the calendar could stay responsive.` });
+    }, ms);
+  });
+}
+
 export function jobberVisitFromJob(job: Job): ScheduledVisit | null {
   if (!job.startAt) {
     return null;
@@ -131,7 +146,15 @@ async function listJobberOverlayVisits(input: {
     return { visits: [] };
   }
   try {
-    const jobs = await reader.getJobs({ from: input.range.from, to: input.range.to });
+    const timeoutMs = overlayTimeoutMs(input.env);
+    const jobsResult = await Promise.race([
+      reader.getJobs({ from: input.range.from, to: input.range.to }).then((jobs) => ({ jobs })),
+      timeoutWarning(timeoutMs)
+    ]);
+    if ("warning" in jobsResult) {
+      return jobsResult;
+    }
+    const jobs = jobsResult.jobs;
     return { visits: jobs.map(jobberVisitFromJob).filter((visit): visit is ScheduledVisit => Boolean(visit)) };
   } catch (error) {
     return { visits: [], warning: error instanceof Error ? error.message : "Jobber overlay unavailable." };

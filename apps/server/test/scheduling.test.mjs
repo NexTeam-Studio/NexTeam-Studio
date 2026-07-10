@@ -232,6 +232,50 @@ test("calendar board overlays Jobber visits as read-only schedule cards", async 
   }
 });
 
+test("calendar board returns native visits when Jobber overlay is slow", async () => {
+  const repository = new InMemorySchedulingRepository();
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  await repository.saveVisit(visit({
+    id: "native_only",
+    jobId: "native_job",
+    title: "Native booked visit",
+    start: "2026-07-08T09:00:00.000Z",
+    end: "2026-07-08T11:00:00.000Z",
+    assignedTo: ["logan"],
+    location: { label: "Fair Play" }
+  }));
+
+  const app = express();
+  app.use(express.json());
+  registerSchedulingRoutes(app, {
+    repository,
+    approvalQueue,
+    env: { SCHEDULE_JOBBER_OVERLAY_TIMEOUT_MS: "20" },
+    jobber: {
+      isConfigured: () => true,
+      async getJobs() {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        return [];
+      }
+    }
+  });
+
+  const server = app.listen(0);
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/scheduling/calendar?tenantId=aquatrace&from=2026-07-08T00%3A00%3A00.000Z&to=2026-07-09T00%3A00%3A00.000Z`);
+    const body = await response.json();
+
+    assert.equal(body.ok, true);
+    assert.deepEqual(body.sourceCounts, { native: 1, jobber: 0 });
+    assert.equal(body.visits[0].id, "native_only");
+    assert.match(body.warnings[0], /Jobber overlay skipped after 20ms/);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
+});
+
 test("reminder and on-my-way messages are approval queued, not sent", async () => {
   const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
   const scheduledVisit = visit({

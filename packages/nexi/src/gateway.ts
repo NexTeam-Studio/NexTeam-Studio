@@ -1539,10 +1539,32 @@ function intakeSessionIdFromPriorRuns(priorRuns: ToolRunTrace[]): string | undef
   return undefined;
 }
 
+function createClientAddressMatchFromText(text: string): { address: string; index: number } | undefined {
+  const markerMatch = text.match(/\b(?:address\s*(?:is|=|:)?|at)\s+(.+?)(?=,\s*(?:email|e-mail|phone|number|with)\b|\s+(?:email|e-mail|phone|number)\b|[?.!]|$)/i);
+  if (markerMatch?.[1]) {
+    return { address: markerMatch[1].replace(/\s+/g, " ").trim(), index: markerMatch.index ?? -1 };
+  }
+  const streetMatch = text.match(/\b\d{1,6}\s+[A-Za-z0-9.' -]+?\s+(?:road|rd|drive|dr|lane|ln|street|st|avenue|ave|court|ct|trail|trl|way|circle|cir|boulevard|blvd|highway|hwy|place|pl|parkway|pkwy)\b(?:\s+[A-Za-z.'-]+){0,4}(?:\s+\d{5}(?:-\d{4})?)?/i);
+  if (!streetMatch?.[0]) {
+    return undefined;
+  }
+  return { address: streetMatch[0].replace(/\s+/g, " ").trim(), index: streetMatch.index ?? -1 };
+}
+
 function createClientNameFromText(text: string): string {
   const match = text.match(/\b(?:add|create|set\s+up|make)\s+(?:a\s+)?(?:new\s+)?client\s*,?\s*(?:named\s+|called\s+)?(.+?)(?=,|\s+(?:at|address|email|e-mail|phone|number|with)\b|[?.!]|$)/i)
     ?? text.match(/\bclient\s+(?:named\s+|called\s+)?(.+?)(?=,|\s+(?:at|address|email|e-mail|phone|number|with)\b|[?.!]|$)/i);
-  const name = (match?.[1] ?? "")
+  const address = createClientAddressMatchFromText(text)?.address;
+  let candidate = (match?.[1] ?? "")
+    .replace(firstEmailAddress(text) ?? "", " ")
+    .replace(firstPhoneNumber(text) ?? "", " ");
+  if (address) {
+    const addressStart = candidate.toLowerCase().indexOf(address.toLowerCase());
+    if (addressStart >= 0) {
+      candidate = candidate.slice(0, addressStart);
+    }
+  }
+  const name = candidate
     .replace(/\b(?:named|called)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -1550,9 +1572,7 @@ function createClientNameFromText(text: string): string {
 }
 
 function createClientAddressFromText(text: string): string | undefined {
-  const match = text.match(/\b(?:address\s*(?:is|=|:)?|at)\s+(.+?)(?=,\s*(?:email|e-mail|phone|number|with)\b|\s+(?:email|e-mail|phone|number)\b|[?.!]|$)/i);
-  const address = match?.[1]?.replace(/\s+/g, " ").trim();
-  return address || undefined;
+  return createClientAddressMatchFromText(text)?.address;
 }
 
 function createClientInputFromText(text: string): { name: string; address?: string | undefined; emails: string[]; phones: string[]; consent: { email: boolean; sms: boolean } } {

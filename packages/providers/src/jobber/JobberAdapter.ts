@@ -12,6 +12,7 @@ const JOBBER_GRAPHQL_ENDPOINT = "https://api.getjobber.com/api/graphql";
 const JOBBER_OAUTH_TOKEN_ENDPOINT = "https://api.getjobber.com/api/oauth/token";
 const DEFAULT_JOBBER_GRAPHQL_VERSION = "2026-03-10";
 const DEFAULT_JOBBER_MAX_PAGES = 100;
+const JOBBER_CONNECTION_PAGE_SIZE = 100;
 
 const JOBS_QUERY = `
   query NexTeamJobs($first: Int!, $after: String) {
@@ -344,7 +345,7 @@ export class JobberAdapter implements CRMProvider {
     let after: string | null = null;
     let pages = 0;
     do {
-      const payload = await this.graphql(JOBS_QUERY, { first: 25, after });
+      const payload = await this.graphql(JOBS_QUERY, { first: JOBBER_CONNECTION_PAGE_SIZE, after });
       const connection = readConnection(payload, "jobs");
       jobs.push(...connection.nodes.map((node) => mapJob(node, this.config.tenantId)));
       after = connection.hasNextPage ? connection.endCursor : null;
@@ -358,7 +359,7 @@ export class JobberAdapter implements CRMProvider {
     let after: string | null = null;
     let pages = 0;
     do {
-      const payload = await this.graphql(CLIENTS_QUERY, { first: 25, after });
+      const payload = await this.graphql(CLIENTS_QUERY, { first: JOBBER_CONNECTION_PAGE_SIZE, after });
       const connection = readConnection(payload, "clients");
       clients.push(...mapClients(connection.nodes, this.config.tenantId));
       after = connection.hasNextPage ? connection.endCursor : null;

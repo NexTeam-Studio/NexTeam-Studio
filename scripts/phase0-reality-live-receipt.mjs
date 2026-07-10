@@ -96,20 +96,25 @@ try {
   assert(receipt.checks.healthGreen, "health was not green");
 
   const conversationId = `${runId}-owner-path`;
-  const clientName = `Phase 0 Receipt Client ${runId}`;
-  const clientAddress = "123 Receipt Lane, Fair Play, SC";
+  const clientName = "logan sears";
+  const clientAddress = "6020 forest drive seneca sc 29672";
+  const createClientPrompt = "add a new client logan sears 6020 forest drive seneca sc 29672";
   const createClientTurn = await nexi(
     idToken,
-    `add a new client ${clientName} at ${clientAddress}`,
+    createClientPrompt,
     conversationId
   );
   receipt.raw.createClientTurn = redact({
+    prompt: createClientPrompt,
     answer: createClientTurn.answer,
     toolRuns: createClientTurn.toolRuns,
     sources: createClientTurn.sources
   });
   const createRun = createClientTurn.toolRuns?.find((run) => run.name === "createClient");
   const createApprovalId = createRun?.result?.approval?.id;
+  receipt.checks.createClientParsedCleanly = createRun?.result?.pendingClient?.name === clientName
+    && createRun?.result?.addressNote === clientAddress;
+  assert(receipt.checks.createClientParsedCleanly, "createClient parser did not split the original name/address regression phrase cleanly");
   receipt.checks.createClientChatRouted = Boolean(createRun && createApprovalId && createRun.result?.writesAreApprovalQueuedOnly === true);
   assert(receipt.checks.createClientChatRouted, "Nexi did not route create-client prompt to approval-gated createClient");
 
@@ -123,6 +128,8 @@ try {
     && item.kind === "client"
     && item.execute?.service === "crm"
     && item.execute?.op === "createClient"
+    && item.execute?.args?.client?.name === clientName
+    && item.execute?.args?.addressNote === clientAddress
   );
   assert(receipt.checks.createClientApprovalVisible, "createClient ApprovalQueue item was not visible");
 
@@ -131,7 +138,8 @@ try {
   receipt.raw.createClientApprovalFlow = redact({ approvedClient, executedClient });
   receipt.checks.createClientExecuted = executedClient.item?.status === "executed"
     && executedClient.result?.client?.name === clientName
-    && executedClient.result?.client?.tenantId === tenantId;
+    && executedClient.result?.client?.tenantId === tenantId
+    && executedClient.result?.addressNote === clientAddress;
   assert(receipt.checks.createClientExecuted, "approved createClient item did not execute to a native client");
 
   const draftSeed = await request(`/api/content/jobs/${encodeURIComponent(`${runId}-job`)}/draft`, {
