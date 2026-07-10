@@ -2107,10 +2107,10 @@ async function runDeterministicTools(input: {
       const args = tool.inputSchema.parse(normalizeToolInput(tool.name, {}, input.messages, input.tenant, runs));
       const result = await tool.handler(input.tenant, args);
       runs.push({ name: tool.name, result: result.result, sources: result.sources });
-    } catch {
+    } catch (error) {
       runs.push({
         name: tool.name,
-        result: safeToolErrorResult(tool.name),
+        result: safeToolErrorResult(tool.name, error),
         sources: []
       });
     }
@@ -2134,10 +2134,14 @@ function toolResultContent(result: unknown): string {
   }
 }
 
-function safeToolErrorResult(toolName: string): Record<string, string> {
+function safeToolErrorResult(toolName: string, error?: unknown): Record<string, string | number> {
+  const maybeRail = error && typeof error === "object" ? error as { provider?: unknown; op?: unknown; status?: unknown } : {};
   return {
     error: `${toolName} failed safely before returning checked data.`,
-    userMessage: "I couldn't finish that check. I wrote it down so we can fix it."
+    userMessage: "I couldn't finish that check. I wrote it down so we can fix it.",
+    ...(typeof maybeRail.provider === "string" ? { provider: maybeRail.provider } : {}),
+    ...(typeof maybeRail.op === "string" ? { op: maybeRail.op } : {}),
+    ...(typeof maybeRail.status === "number" ? { status: maybeRail.status } : {})
   };
 }
 
@@ -2528,8 +2532,8 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
           tool_use_id: toolUse.id,
           content: toolResultContent(result.result)
         });
-      } catch {
-        const safeResult = safeToolErrorResult(tool.name);
+      } catch (error) {
+        const safeResult = safeToolErrorResult(tool.name, error);
         toolRuns.push({ name: tool.name, result: safeResult, sources: [] });
         toolResults.push({
           type: "tool_result",
