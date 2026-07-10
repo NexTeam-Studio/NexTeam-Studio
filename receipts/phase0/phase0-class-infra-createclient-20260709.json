@@ -1,0 +1,70 @@
+{
+  "ok": true,
+  "receiptName": "phase0-class-infra-createclient-20260709",
+  "completedAt": "2026-07-09T20:33:41.9120110-04:00",
+  "stagingBaseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "deployedSha": "75d254203eb988433a112bdfb815e9071bc04ffb",
+  "codeCommits": [
+    "f69d3aa8f9f2deefc46a973bbb742ef0fb0fd1a2",
+    "75d254203eb988433a112bdfb815e9071bc04ffb"
+  ],
+  "receiptCommits": [
+    "f4978a1",
+    "dc53c24"
+  ],
+  "checks": {
+    "versionShaMatched": true,
+    "healthGreen": true,
+    "phase0RealityReceipt": {
+      "path": "receipts/phase0/phase0-reality-live-receipt-current.json",
+      "ok": true,
+      "proved": [
+        "exact original createClient phrasing routed to createClient",
+        "name and address parsed into separate fields",
+        "ApprovalQueue item visible",
+        "client write executed only after approval",
+        "content queue still visible and approvable"
+      ]
+    },
+    "classHReceipt": {
+      "path": "receipts/class-h/class-h-live-wall-20260709.json",
+      "ok": true,
+      "passed": "3/3",
+      "proved": [
+        "Kristi King client lookup uses live Jobber fallback",
+        "Kristi King job lookup reaches Jobber job detail",
+        "second real client lookup uses live Jobber fallback"
+      ]
+    },
+    "calendarInfraLiveCheck": {
+      "path": "/api/scheduling/calendar",
+      "dateWindow": "2026-07-09T00:00:00.000-04:00/2026-07-10T00:00:00.000-04:00",
+      "ok": true,
+      "elapsedMs": 8404,
+      "sourceCounts": {
+        "native": 0,
+        "jobber": 0
+      },
+      "warnings": [
+        "Jobber overlay skipped after 8000ms so the calendar could stay responsive."
+      ]
+    },
+    "localVerification": {
+      "builds": [
+        "@nexteam/providers",
+        "@nexteam/server",
+        "@nexteam/nexi"
+      ],
+      "tests": [
+        "scheduling/jobber targeted tests: 10/10",
+        "nexi job desk targeted tests: 71/71"
+      ],
+      "secretScan": "passed"
+    }
+  },
+  "boundaries": {
+    "outboundExecuted": false,
+    "productionTouched": false,
+    "secretsInReceipt": false
+  }
+}
