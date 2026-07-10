@@ -687,6 +687,17 @@ function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElement {
   );
 }
 
+function reputationUserMessage(error?: string): string {
+  const message = error ?? "";
+  if (/not allowed for this tenant|missing a tenant|missing a tenant role|role cannot perform|sign in is required/i.test(message)) {
+    return "Reviews are not connected for this sign-in yet. I need this user set up as an Aquatrace owner or office admin, then your Google Business Profile connected, before I can pull reviews.";
+  }
+  if (/GBP OAuth|location identifiers|not configured|credential/i.test(message)) {
+    return "Google reviews are not connected yet. Once your Google Business Profile is connected, this panel will show reviews and draft replies for approval.";
+  }
+  return message || "Review queue unavailable.";
+}
+
 function ReputationPanel(props: { tenantId: string; user: User }): React.ReactElement {
   const [reviews, setReviews] = useState<ReputationReview[]>([]);
   const [profiles, setProfiles] = useState<ReputationProfile[]>([]);
@@ -707,7 +718,7 @@ function ReputationPanel(props: { tenantId: string; user: User }): React.ReactEl
       if (!body.ok) {
         setReviews([]);
         setProfiles([]);
-        setStatus(body.error ?? "Review queue unavailable.");
+        setStatus(reputationUserMessage(body.error));
         return;
       }
       setReviews(body.reviews ?? []);
@@ -730,7 +741,7 @@ function ReputationPanel(props: { tenantId: string; user: User }): React.ReactEl
         body: JSON.stringify({ tenantId: props.tenantId })
       }).then((response) => response.json() as Promise<ReputationQueueResponse>);
       if (!body.ok) {
-        setStatus(body.error ?? "Review check failed.");
+        setStatus(reputationUserMessage(body.error));
         return;
       }
       const count = body.imported?.length ?? 0;
