@@ -278,6 +278,10 @@ test("platform routes expose tenants, test subscription, backup, and export", as
     assert.equal(tenants.ok, true);
     assert.equal(tenants.tenants.some((row) => row.tenant.id === "second-test" && row.subscription.status === "active"), true);
 
+    const publicBranding = await fetch(`${base}/api/public/tenant-branding?tenantId=second-test`).then((response) => response.json());
+    assert.equal(publicBranding.ok, true);
+    assert.equal(publicBranding.branding.displayName, "second-test");
+
     const branding = await fetch(`${base}/api/platform/tenants/second-test/branding`).then((response) => response.json());
     assert.equal(branding.ok, true);
     assert.equal(branding.branding.displayName, "second-test");

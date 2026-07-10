@@ -1147,10 +1147,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
 
   useEffect(() => {
     let cancelled = false;
-    props.user.getIdToken()
-      .then((idToken) => fetch(`/api/platform/tenants/${encodeURIComponent(operatorContext.tenantId)}/branding`, {
-        headers: { authorization: `Bearer ${idToken}` }
-      }))
+    fetch(`/api/public/tenant-branding?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
       .then((response) => response.json() as Promise<TenantBrandingResponse>)
       .then((body) => {
         if (!cancelled && body.ok && body.branding) {

@@ -231,6 +231,19 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
     }
   });
 
+  app.get("/api/public/tenant-branding", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
+        ? req.query.tenantId.trim()
+        : env.TENANT_ID || "aquatrace";
+      const tenant = await loadTenantFromPlatform(deps.repository, tenantId, env);
+      const branding = await deps.repository.getTenantBranding(tenantId) ?? defaultTenantBranding(tenant);
+      res.json({ ok: true, tenantId, branding });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.get("/api/platform/tenants/:tenantId/branding", async (req: Request, res: Response) => {
     try {
       const tenantId = req.params.tenantId;
