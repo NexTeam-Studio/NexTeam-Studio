@@ -23,7 +23,7 @@ import { registerCampaignRoutes } from "./campaigns/routes.js";
 import { registerCrmRoutes } from "./crm/routes.js";
 import { getAdminDb, getAdminStorageBucket } from "./firebase.js";
 import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
-import { FirestoreMediaRepository } from "./fielddocs/mediaRepository.js";
+import { FirestoreMediaRepository, MemoryMediaRepository, type MediaRepository } from "./fielddocs/mediaRepository.js";
 import { CommsApprovalExecutor } from "./comms/approvalExecutor.js";
 import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
 import { createCommsNexiTools } from "./comms/nexiTools.js";
@@ -78,6 +78,8 @@ const gbpReviewProvider = new EnvGbpReviewProvider(process.env);
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
+const fallbackMediaRepository = new MemoryMediaRepository();
+const mediaRepository: MediaRepository = adminDb ? new FirestoreMediaRepository(adminDb) : fallbackMediaRepository;
 const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();
 const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TENANT_ID || "aquatrace");
 const jobberCrmProvider = JobberAdapter.fromEnv(process.env, process.env.TENANT_ID || "aquatrace");
@@ -115,7 +117,7 @@ const reputationRepository = adminDb ? new FirestoreReputationRepository(adminDb
 const seoRepository = adminDb ? new FirestoreSeoRepository(adminDb) : new InMemorySeoRepository();
 
 app.use(express.json({
-  limit: "1mb",
+  limit: "25mb",
   verify: (req, _res, buf) => {
     const request = req as Request & { rawBody?: Buffer };
     if (request.originalUrl === "/api/stripe/webhook") {
@@ -233,11 +235,7 @@ function nativeMediaContentType(type: string): string {
 
 async function trySendNativeMedia(req: Request, res: Response, mediaId: string): Promise<boolean> {
   const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : process.env.TENANT_ID || "aquatrace";
-  const db = getAdminDb(process.env);
-  if (!db) {
-    return false;
-  }
-  const media = await new FirestoreMediaRepository(db).getMedia(tenantId, mediaId);
+  const media = await mediaRepository.getMedia(tenantId, mediaId);
   if (!media) {
     return false;
   }
@@ -336,7 +334,7 @@ app.post("/api/approval-queue/:id/execute", async (req: Request, res: Response) 
 });
 
 registerCrmRoutes(app, { approvalQueue, eventBus });
-registerFieldDocsRoutes(app, { eventBus });
+registerFieldDocsRoutes(app, { eventBus, repository: mediaRepository });
 registerContentRoutes(app, { repository: contentRepository, approvalQueue, eventBus, env: process.env });
 registerCampaignRoutes(app, { repository: campaignRepository, approvalQueue, env: process.env });
 registerReputationRoutes(app, { repository: reputationRepository, approvalQueue, eventBus, gbpProvider: gbpReviewProvider, env: process.env });
