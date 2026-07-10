@@ -31,7 +31,10 @@ Scope:
 - Web/PWA first-paint fallbacks now use Aquatrace dark/cyan/surface colors.
 - Job Desk now ignores stale system-written operator themes so tenantBranding wins unless a human-customized operator theme exists.
 - Text fallback no longer renders the separate "Ops" eyebrow as part of the mark; it renders a single Aquatrace cyan wordmark until a logo is uploaded.
-- No logo file was added; text fallback remains active until owner supplies logo.
+- Aquatrace banner logo was uploaded to tenant-scoped Firebase Storage and attached to tenantBranding/aquatrace.
+- Logo media id: media_b05b9411-7ada-49c6-bfc5-f82c45400d8a.
+- Logo storage ref: gs://nexteam-studio.firebasestorage.app/tenants/aquatrace/media/media_b05b9411-7ada-49c6-bfc5-f82c45400d8a/aquatrace-banner-logo.png.
+- Public media route serves the logo through /api/media/media_b05b9411-7ada-49c6-bfc5-f82c45400d8a?tenantId=aquatrace.
 
 Verification:
 - node --test apps/server/test/platform.test.mjs apps/server/test/sites-runtime.test.mjs: PASS, 15/15
@@ -39,3 +42,4 @@ Verification:
 - npm run build: PASS
 - npm run check:secrets: PASS
 - Local web fallback screenshot rendered successfully, but full Job Desk header was not reachable in web-only dev because Firebase runtime config was absent in the local web process.
+- Live public tenant branding includes logo.mediaId and the logo media route returns Content-Type image/png.
