@@ -1,6 +1,7 @@
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 
 function parseServiceAccount(raw: string): Record<string, unknown> {
   const parsed = JSON.parse(raw) as unknown;
@@ -44,5 +45,23 @@ export function getAdminAuth(env: NodeJS.ProcessEnv = process.env): Auth | null 
     });
   }
   return getAuth();
+}
+
+export function getAdminStorageBucket(env: NodeJS.ProcessEnv = process.env): ReturnType<ReturnType<typeof getStorage>["bucket"]> | null {
+  const raw = env.FIREBASE_SERVICE_ACCOUNT?.trim();
+  const projectId = env.FIREBASE_ADMIN_PROJECT_ID?.trim();
+  const clientEmail = env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim();
+  const privateKey = env.FIREBASE_ADMIN_PRIVATE_KEY?.trim().replace(/\\n/g, "\n");
+  const storageBucket = env.FIREBASE_STORAGE_BUCKET?.trim() || env.VITE_FIREBASE_STORAGE_BUCKET?.trim();
+  if (!storageBucket || (!raw && (!projectId || !clientEmail || !privateKey))) {
+    return null;
+  }
+  if (getApps().length === 0) {
+    initializeApp({
+      credential: cert(raw ? parseServiceAccount(raw) : { projectId, clientEmail, privateKey }),
+      storageBucket
+    });
+  }
+  return getStorage().bucket(storageBucket);
 }
 

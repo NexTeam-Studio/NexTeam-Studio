@@ -21,8 +21,9 @@ import { createCampaignNexiTools } from "./campaigns/nexiTools.js";
 import { InMemoryCampaignRepository } from "./campaigns/repository.js";
 import { registerCampaignRoutes } from "./campaigns/routes.js";
 import { registerCrmRoutes } from "./crm/routes.js";
-import { getAdminDb } from "./firebase.js";
+import { getAdminDb, getAdminStorageBucket } from "./firebase.js";
 import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
+import { FirestoreMediaRepository } from "./fielddocs/mediaRepository.js";
 import { CommsApprovalExecutor } from "./comms/approvalExecutor.js";
 import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
 import { createCommsNexiTools } from "./comms/nexiTools.js";
@@ -215,11 +216,64 @@ app.get("/api/public/runtime-config", (_req: Request, res: Response) => {
   });
 });
 
+function parseStorageRef(storageRef: string): { bucketName: string; objectPath: string } | null {
+  const match = storageRef.match(/^gs:\/\/([^/]+)\/(.+)$/);
+  return match?.[1] && match[2] ? { bucketName: match[1], objectPath: match[2] } : null;
+}
+
+function nativeMediaContentType(type: string): string {
+  if (type === "video") {
+    return "video/mp4";
+  }
+  if (type === "pdf") {
+    return "application/pdf";
+  }
+  return "image/jpeg";
+}
+
+async function trySendNativeMedia(req: Request, res: Response, mediaId: string): Promise<boolean> {
+  const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : process.env.TENANT_ID || "aquatrace";
+  const db = getAdminDb(process.env);
+  if (!db) {
+    return false;
+  }
+  const media = await new FirestoreMediaRepository(db).getMedia(tenantId, mediaId);
+  if (!media) {
+    return false;
+  }
+  const storageRef = parseStorageRef(media.storageRef);
+  if (!storageRef) {
+    return false;
+  }
+  const bucket = getAdminStorageBucket(process.env);
+  if (!bucket) {
+    throw new RailError("Firebase Storage is not configured for native media reads.", { provider: "firebase", op: "mediaFetch", status: 503 });
+  }
+  if (bucket.name !== storageRef.bucketName) {
+    throw new RailError("Native media is stored in a different Firebase bucket.", { provider: "firebase", op: "mediaFetch", status: 409 });
+  }
+  const file = bucket.file(storageRef.objectPath);
+  const [exists] = await file.exists();
+  if (!exists) {
+    throw new RailError("Native media file was not found in Storage.", { provider: "firebase", op: "mediaFetch", status: 404 });
+  }
+  const [metadata] = await file.getMetadata();
+  res.setHeader("content-type", String(metadata.contentType ?? nativeMediaContentType(media.type)));
+  if (req.query.download === "1") {
+    res.setHeader("content-disposition", `attachment; filename="${path.posix.basename(storageRef.objectPath).replace(/"/g, "")}"`);
+  }
+  file.createReadStream().pipe(res);
+  return true;
+}
+
 app.get("/api/media/:id", async (req: Request, res: Response) => {
   try {
     const mediaId = req.params.id;
     if (!mediaId) {
       throw new RailError("Media id is required.", { provider: "companycam", op: "fetchBinary", status: 400 });
+    }
+    if (await trySendNativeMedia(req, res, mediaId)) {
+      return;
     }
     const companyCam = CompanyCamAdapter.fromEnv(process.env);
     const binary = await companyCam.fetchBinary(mediaId);

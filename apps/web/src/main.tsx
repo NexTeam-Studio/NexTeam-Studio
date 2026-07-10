@@ -24,6 +24,16 @@ interface NexiResponse {
   error?: string;
 }
 
+interface UploadMediaResponse {
+  ok: boolean;
+  media?: {
+    id: string;
+    type: "photo" | "video" | "pdf";
+    jobId?: string;
+  };
+  error?: string;
+}
+
 interface ScheduledVisit {
   id: string;
   jobId: string;
@@ -300,27 +310,44 @@ async function loadFirebaseAuth(): Promise<Auth | null> {
   return runtime.ok && runtime.firebaseConfigured ? createFirebaseAuth(runtime.firebase) : null;
 }
 
-function sourceThumb(source: Source): React.ReactElement | null {
-  if (source.rail !== "companycam" || !source.label.toLowerCase().includes("photo")) {
+function sourceThumb(source: Source, tenantId?: string): React.ReactElement | null {
+  if (!sourceIsPhoto(source)) {
     return null;
   }
-  return <img className="photo-tile-image" src={mediaUrl(source)} alt={source.label} loading="lazy" />;
+  return <img className="photo-tile-image" src={mediaUrl(source, tenantId)} alt={source.label} loading="lazy" />;
 }
 
-function mediaUrl(source: Source): string {
-  return `/api/media/${encodeURIComponent(source.ref)}`;
+function mediaUrl(source: Source, tenantId?: string): string {
+  const base = `/api/media/${encodeURIComponent(source.ref)}`;
+  return source.rail === "native" && tenantId ? `${base}?tenantId=${encodeURIComponent(tenantId)}` : base;
 }
 
-function mediaDownloadUrl(source: Source): string {
-  return `${mediaUrl(source)}?download=1`;
+function mediaDownloadUrl(source: Source, tenantId?: string): string {
+  const url = mediaUrl(source, tenantId);
+  return `${url}${url.includes("?") ? "&" : "?"}download=1`;
 }
 
 function sourceIsPhoto(source: Source): boolean {
-  return source.rail === "companycam" && source.label.toLowerCase().includes("photo");
+  const label = source.label.toLowerCase();
+  return (source.rail === "companycam" && label.includes("photo"))
+    || (source.rail === "native" && /\b(photo|media|before|after|upload)/.test(label));
 }
 
 function mediaDownloadName(source: Source): string {
-  return `companycam-${source.ref.replace(/[^a-z0-9_-]/gi, "_")}.jpg`;
+  return `${source.rail}-${source.ref.replace(/[^a-z0-9_-]/gi, "_")}.jpg`;
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      const encoded = result.includes(",") ? result.slice(result.indexOf(",") + 1) : result;
+      resolve(encoded);
+    };
+    reader.onerror = () => reject(new Error("File read failed"));
+    reader.readAsDataURL(file);
+  });
 }
 
 function dayRange(day: string, view: "day" | "week" | "map"): { from: string; to: string } {
@@ -829,6 +856,9 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   const [interimTranscript, setInterimTranscript] = useState("");
   const [voiceSessionId, setVoiceSessionId] = useState<string | null>(null);
   const [lastVoiceLatencyMs, setLastVoiceLatencyMs] = useState<number | null>(null);
+  const [uploadTarget, setUploadTarget] = useState("");
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [uploading, setUploading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
   const ttsAbortRef = useRef<AbortController | null>(null);
@@ -1164,6 +1194,74 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
     await sendTextMessage(draft);
   }
 
+  async function uploadJobDeskFile(event: React.ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = "";
+    if (!file || uploading) {
+      return;
+    }
+    const linkTarget = uploadTarget.trim().slice(0, 120);
+    setUploading(true);
+    setUploadStatus(`Uploading ${file.name}...`);
+    setMessages((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        role: "user",
+        text: `Upload ${file.name}${linkTarget ? ` for ${linkTarget}` : ""}`,
+        sources: []
+      }
+    ]);
+    try {
+      const fileBase64 = await fileToBase64(file);
+      const mime = file.type || "application/octet-stream";
+      const isImage = mime.startsWith("image/");
+      const response = await fetch("/api/fielddocs/uploads", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          ...(linkTarget ? { jobId: linkTarget } : {}),
+          filename: file.name,
+          mime,
+          fileBase64,
+          tags: ["job-desk-upload", ...(linkTarget ? [`linked:${linkTarget}`] : [])],
+          ...(isImage ? { imageBase64: fileBase64, imageMime: mime } : {})
+        })
+      });
+      const body = await response.json() as UploadMediaResponse;
+      if (!response.ok || !body.ok || !body.media) {
+        throw new Error(body.error ?? "Upload failed");
+      }
+      const mediaSource: Source = {
+        rail: "native",
+        ref: body.media.id,
+        label: `Uploaded ${body.media.type} ${file.name}`
+      };
+      const assistantText = linkTarget
+        ? `Uploaded ${file.name} and linked it to ${linkTarget}.`
+        : `Uploaded ${file.name} to the Job Desk media file.`;
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          text: assistantText,
+          sources: [mediaSource]
+        }
+      ]);
+      setUploadStatus("Upload saved.");
+      void speakAssistant(assistantText);
+    } catch {
+      const failure = "I couldn't upload that file yet. I wrote it down so we can fix the upload path instead of losing it.";
+      setMessages((current) => [...current, { id: crypto.randomUUID(), role: "assistant", text: failure, sources: [] }]);
+      setUploadStatus("Upload failed.");
+      void speakAssistant(failure);
+    } finally {
+      setUploading(false);
+    }
+  }
+
   const themeStyle = operatorTheme ? {
     "--jobdesk-shell-background": operatorTheme.colors.shellBackground,
     "--jobdesk-panel-background": operatorTheme.colors.panelBackground,
@@ -1257,6 +1355,27 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
             </button>
           ) : null}
           {!speechSupported ? <span className="voice-note">Speech input unsupported in this browser</span> : null}
+        </div>
+
+        <div className="upload-strip" aria-live="polite">
+          <label className={`upload-button ${uploading ? "disabled" : ""}`}>
+            <span>{uploading ? "Uploading..." : "Attach photo"}</span>
+            <input
+              accept="image/*,video/*,application/pdf"
+              disabled={uploading}
+              type="file"
+              onChange={(event) => void uploadJobDeskFile(event)}
+            />
+          </label>
+          <input
+            aria-label="Optional job or client link for upload"
+            className="upload-target"
+            disabled={uploading}
+            placeholder="Job/client link"
+            value={uploadTarget}
+            onChange={(event) => setUploadTarget(event.target.value)}
+          />
+          {uploadStatus ? <span className="upload-status">{uploadStatus}</span> : null}
         </div>
 
         <form className="composer" onSubmit={sendMessage}>

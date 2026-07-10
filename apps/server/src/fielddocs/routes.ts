@@ -8,7 +8,7 @@ import { createLeakDetectionChecklist } from "./checklists.js";
 import { FirestoreMediaRepository, MemoryMediaRepository, type MediaRepository } from "./mediaRepository.js";
 import { searchMediaWithVisionFallback } from "./photoSearch.js";
 import { createFieldReportRecord, renderFieldReportPdf } from "./reportService.js";
-import { createNativeMediaFromUpload, uploadMediaInputSchema } from "./uploadService.js";
+import { createNativeMediaFromUpload, storeUploadedMediaBytes, uploadMediaInputSchema } from "./uploadService.js";
 import { maybeRunVision } from "./visionPipeline.js";
 import {
   AQUATRACE_VISION_TAG_TAXONOMY,
@@ -113,7 +113,14 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
       const image = imageInput.imageBase64 && imageInput.imageMime
         ? { base64: imageInput.imageBase64, mime: imageInput.imageMime }
         : undefined;
-      const vision = await maybeRunVision(initial, env, image);
+      const stored = await storeUploadedMediaBytes({
+        media: initial,
+        filename: input.filename,
+        mime: input.mime,
+        fileBase64: input.fileBase64,
+        env
+      });
+      const vision = await maybeRunVision(stored, env, image);
       const saved = await repository().saveMedia(vision.media);
       await eventBus.emit({
         tenantId: saved.tenantId,
