@@ -2108,9 +2108,17 @@ async function runDeterministicTools(input: {
       const result = await tool.handler(input.tenant, args);
       runs.push({ name: tool.name, result: result.result, sources: result.sources });
     } catch (error) {
+      const safeError = safeToolErrorResult(tool.name, error);
+      console.warn(JSON.stringify({
+        event: "nexi_deterministic_tool_failure",
+        toolName: tool.name,
+        provider: safeError.provider ?? "unknown",
+        op: safeError.op ?? "unknown",
+        status: safeError.status ?? "unknown"
+      }));
       runs.push({
         name: tool.name,
-        result: safeToolErrorResult(tool.name, error),
+        result: safeError,
         sources: []
       });
     }
