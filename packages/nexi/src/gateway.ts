@@ -1162,6 +1162,10 @@ function looksLikeFreeformContentSaveAction(lower: string): boolean {
     || /\b(?:save|queue|put|park)\s+(?:this|that|it)\s+(?:to|in|as)\s+(?:the\s+)?(?:content\s+queue|content\s+draft|draft\s+queue)\b/.test(lower);
 }
 
+function looksLikeFreeformContentDraftAction(lower: string): boolean {
+  return /\b(?:write|draft|compose|create)\s+(?:me\s+)?(?:an?\s+)?(?:article|post|gbp\s+post|social\s+post|content)\b/.test(lower);
+}
+
 function looksLikeSeoRankQuestion(lower: string): boolean {
   return /\b(?:seo|rank|ranking|rankings|keyword|keywords|search)\b/.test(lower)
     && /\b(?:where\s+do\s+we\s+rank|rank\s+snapshot|rank\s+tracking|track|position|positions|ranking|rankings)\b/.test(lower);
@@ -1831,6 +1835,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   const lower = userText.toLowerCase();
   const emailRef = emailRefFromText(userText);
   const distanceFollowUp = looksLikeAddressOnlyFollowUp(userText) && recentUserTextMatches(messages, looksLikeDistanceQuestion);
+  if (looksLikeFreeformContentDraftAction(lower)) {
+    return [];
+  }
   if (emailRef?.attachmentId && toolsByName.has("getEmailAttachment")) {
     return ["getEmailAttachment"];
   }
@@ -2309,6 +2316,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
     cachedToolRuns: request.cachedToolRuns
   });
   const deterministicRuns = reusableRuns.length > 0 ? reusableRuns : await runDeterministicTools({ tenant: request.tenant, messages, toolsByName });
+  const suppressToolsForFreeformDraft = looksLikeFreeformContentDraftAction(latestUserText(request.messages).toLowerCase());
   if (deterministicRuns.length > 0) {
     sources = [...sources, ...deterministicRuns.flatMap((run) => run.sources)];
     toolRuns.push(...deterministicRuns);
@@ -2373,7 +2381,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         fetchFn: request.fetchFn,
         system: request.system,
         messages,
-        tools: deterministicRuns.length > 0 ? [] : toolDefinitions,
+        tools: deterministicRuns.length > 0 || suppressToolsForFreeformDraft ? [] : toolDefinitions,
         maxTokens: request.maxTokens
       });
     } catch (error) {

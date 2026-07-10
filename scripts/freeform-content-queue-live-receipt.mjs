@@ -10,10 +10,8 @@ import {
 } from "./support/liveProofHelpers.mjs";
 
 const baseUrl = (process.env.NEXI_BASE_URL || resolveBaseUrl()).replace(/\/$/, "");
-const expectedSha = process.env.EXPECTED_GIT_SHA
-  || process.env.EXPECTED_SHA
-  || process.env.NEXTEAM_DEPLOY_SHA
-  || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+const localHeadSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+const expectedSha = process.env.RECEIPT_EXPECTED_GIT_SHA || localHeadSha;
 const tenantId = process.env.TENANT_ID || "aquatrace";
 const receiptPath = process.env.FREEFORM_CONTENT_RECEIPT || "receipts/m5/freeform-content-queue-live-receipt-current.json";
 const runId = `freeform-content-${Date.now()}-${randomUUID().slice(0, 8)}`;
@@ -98,7 +96,7 @@ try {
   assert(receipt.checks.healthGreen, "health was not green");
 
   const conversationId = `${runId}-owner-content`;
-  const writePrompt = "write me an article about a real job scenario where pressure testing found a return line leak";
+  const writePrompt = "write me an article for pool owners based on this real Aquatrace job scenario: a homeowner had unexplained daily water loss, Aquatrace checked the pool, pressure testing pointed to a leaking return line, and the article should explain why pressure testing matters without naming the customer";
   const writeTurn = await nexi(idToken, writePrompt, conversationId);
   receipt.raw.writeTurn = {
     prompt: writePrompt,
@@ -108,7 +106,7 @@ try {
   };
   receipt.checks.articleWrittenInChat = typeof writeTurn.answer === "string"
     && writeTurn.answer.length > 300
-    && !/written down anywhere|verified source|matching email/i.test(writeTurn.answer);
+    && !/I don't have|I can't write|came back empty|no project|no documents|no reports|written down anywhere|verified source|matching email/i.test(writeTurn.answer);
   assert(receipt.checks.articleWrittenInChat, "Nexi did not produce usable article text in chat");
 
   const savePrompt = "save this to the content queue";

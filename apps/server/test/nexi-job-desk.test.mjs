@@ -1466,6 +1466,54 @@ test("Nexi content queue prompts route to content queue approve and reject tools
   assert.equal(calls.some(([name, args]) => name === "rejectContentDraft" && args.draftId === pendingDraft.id), true);
 });
 
+test("Nexi writes owner-supplied freeform content without forcing job rail lookups", async () => {
+  const tools = [
+    {
+      name: "getJobDetail",
+      description: "Get job detail.",
+      inputSchema: z.object({ q: z.string().optional() }),
+      handler: async () => {
+        throw new Error("owner-supplied writing prompts should not call Jobber");
+      }
+    },
+    {
+      name: "getDocuments",
+      description: "Get documents.",
+      inputSchema: z.object({ projectQuery: z.string().optional(), question: z.string().optional() }),
+      handler: async () => {
+        throw new Error("owner-supplied writing prompts should not call CompanyCam");
+      }
+    }
+  ];
+
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools when needed.",
+    messages: [{
+      role: "user",
+      content: "write me an article for pool owners based on this real Aquatrace job scenario: pressure testing pointed to a leaking return line, but do not name the customer"
+    }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      const body = JSON.parse(init.body);
+      assert.deepEqual(body.tools, []);
+      return new Response(JSON.stringify({
+        content: [{
+          type: "text",
+          text: "# Why Pressure Testing Matters\n\nA hidden return line leak can keep costing a pool owner water until the line is tested under pressure."
+        }],
+        usage: { input_tokens: 12, output_tokens: 18, cache_read_input_tokens: 20 }
+      }), { status: 200 });
+    }
+  });
+
+  assert.deepEqual(result.toolRuns, []);
+  assert.match(result.answer, /Pressure Testing Matters/);
+});
+
 test("Nexi saves chat-authored freeform content into the content queue", async () => {
   const calls = [];
   const tools = [
