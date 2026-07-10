@@ -68,6 +68,7 @@ input {
 }
 
 .schedule-card,
+.approval-card,
 .content-card {
   padding: 24px;
   overflow: auto;
@@ -81,6 +82,10 @@ input {
 
 .schedule-card {
   min-height: min(520px, calc(100vh - 36px));
+}
+
+.approval-card {
+  min-height: 0;
 }
 
 .schedule-heading {
@@ -225,6 +230,27 @@ input {
 .content-draft p {
   color: #526055;
   line-height: 1.36;
+}
+
+.approval-item p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.approval-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.approval-attachments span {
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: #26352c;
+  background: rgba(228, 191, 115, 0.28);
+  font-size: 0.78rem;
 }
 
 .review-state {

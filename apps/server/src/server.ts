@@ -17,6 +17,7 @@ import { createNexiRouter } from "./nexi/nexiRoutes.js";
 import { buildHealth } from "./health.js";
 import { actorIdForAccess, requireTenantRole } from "./auth/accessContext.js";
 import { CompositeApprovalExecutor } from "./approval/compositeExecutor.js";
+import { FirestoreApprovalQueueRepository } from "./approval/firestoreRepository.js";
 import { createCampaignNexiTools } from "./campaigns/nexiTools.js";
 import { InMemoryCampaignRepository } from "./campaigns/repository.js";
 import { registerCampaignRoutes } from "./campaigns/routes.js";
@@ -87,7 +88,8 @@ const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : 
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 const intakeRepository = adminDb ? new FirestoreIntakeRepository(adminDb) : new InMemoryIntakeRepository();
 const intakeService = new IntakeService(intakeRepository, platformRepository);
-const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CompositeApprovalExecutor([
+const approvalQueueRepository = adminDb ? new FirestoreApprovalQueueRepository(adminDb) : new InMemoryApprovalQueueRepository();
+const approvalQueue = new ApprovalQueueService(approvalQueueRepository, new CompositeApprovalExecutor([
   {
     canExecute: (item) => item.execute.service === "comms" && item.execute.op === "sendEmail",
     executor: new CommsApprovalExecutor(commsRail)
@@ -314,6 +316,19 @@ app.post("/api/approval-queue/:id/approve", async (req: Request, res: Response) 
       throw new RailError("Approval id is required.", { provider: "approval", op: "approve", status: 400 });
     }
     const item = await approvalQueue.approve(approvalId);
+    res.json({ ok: true, item });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+app.post("/api/approval-queue/:id/reject", async (req: Request, res: Response) => {
+  try {
+    const approvalId = req.params.id;
+    if (!approvalId) {
+      throw new RailError("Approval id is required.", { provider: "approval", op: "reject", status: 400 });
+    }
+    const item = await approvalQueue.reject(approvalId);
     res.json({ ok: true, item });
   } catch (error) {
     sendError(res, error);

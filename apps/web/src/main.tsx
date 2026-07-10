@@ -81,6 +81,38 @@ interface ContentQueueResponse {
   error?: string;
 }
 
+interface ApprovalQueueItem {
+  id: string;
+  tenantId: string;
+  kind: string;
+  preview: {
+    title: string;
+    body: string;
+    mediaRefs?: string[];
+  };
+  execute: {
+    service: string;
+    op: string;
+    args?: unknown;
+  };
+  status: "pending" | "approved" | "rejected" | "executed" | "failed";
+  createdBy: "nexi" | "system" | "user";
+  decidedAt?: string;
+}
+
+interface ApprovalQueueResponse {
+  ok: boolean;
+  items?: ApprovalQueueItem[];
+  error?: string;
+}
+
+interface ApprovalActionResponse {
+  ok: boolean;
+  item?: ApprovalQueueItem;
+  result?: unknown;
+  error?: string;
+}
+
 interface ReputationReview {
   id: string;
   authorName: string;
@@ -516,6 +548,137 @@ function ContentQueuePanel(props: { tenantId: string }): React.ReactElement {
             <div className="content-actions">
               <button type="button" disabled={workingId === draft.id} onClick={() => void decide(draft.id, "approve")}>Approve</button>
               <button className="secondary" type="button" disabled={workingId === draft.id} onClick={() => void decide(draft.id, "reject")}>Reject</button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function canExecuteApproval(item: ApprovalQueueItem): boolean {
+  return (item.execute.service === "comms" && item.execute.op === "sendEmail")
+    || (item.execute.service === "crm" && item.execute.op === "createClient")
+    || (item.execute.service === "intake" && item.execute.op === "provisionTenant");
+}
+
+function approvalPrimaryLabel(item: ApprovalQueueItem): string {
+  if (item.execute.service === "comms" && item.execute.op === "sendEmail") {
+    return "Approve & send";
+  }
+  if (item.execute.service === "crm" && item.execute.op === "createClient") {
+    return "Approve & create";
+  }
+  if (item.execute.service === "intake" && item.execute.op === "provisionTenant") {
+    return "Approve & provision";
+  }
+  return "Approve";
+}
+
+function approvalKindLabel(item: ApprovalQueueItem): string {
+  return item.kind.replaceAll("_", " ");
+}
+
+function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElement {
+  const [items, setItems] = useState<ApprovalQueueItem[]>([]);
+  const [status, setStatus] = useState("Loading approvals...");
+  const [workingId, setWorkingId] = useState("");
+
+  async function refresh(): Promise<void> {
+    setStatus("Loading approvals...");
+    try {
+      const body = await fetch(`/api/approval-queue?tenantId=${encodeURIComponent(props.tenantId)}`)
+        .then((response) => response.json() as Promise<ApprovalQueueResponse>);
+      if (!body.ok) {
+        setItems([]);
+        setStatus(body.error ?? "Approval queue unavailable.");
+        return;
+      }
+      const pending = body.items ?? [];
+      setItems(pending);
+      setStatus(pending.length ? `${pending.length} approval${pending.length === 1 ? "" : "s"} waiting.` : "No approvals are waiting right now.");
+    } catch {
+      setItems([]);
+      setStatus("Approval queue API unreachable.");
+    }
+  }
+
+  async function approve(item: ApprovalQueueItem): Promise<void> {
+    setWorkingId(item.id);
+    setStatus(canExecuteApproval(item) ? "Approving and running..." : "Approving...");
+    try {
+      const approved = await fetch(`/api/approval-queue/${encodeURIComponent(item.id)}/approve`, {
+        method: "POST"
+      }).then((response) => response.json() as Promise<ApprovalActionResponse>);
+      if (!approved.ok) {
+        setStatus(approved.error ?? "Approval failed.");
+        return;
+      }
+      if (canExecuteApproval(item)) {
+        const executed = await fetch(`/api/approval-queue/${encodeURIComponent(item.id)}/execute`, {
+          method: "POST"
+        }).then((response) => response.json() as Promise<ApprovalActionResponse>);
+        setStatus(executed.ok ? "Approved and completed." : executed.error ?? "Approved, but running it failed.");
+      } else {
+        setStatus("Approved.");
+      }
+      await refresh();
+    } catch {
+      setStatus("Approval request failed.");
+    } finally {
+      setWorkingId("");
+    }
+  }
+
+  async function reject(item: ApprovalQueueItem): Promise<void> {
+    setWorkingId(item.id);
+    setStatus("Rejecting...");
+    try {
+      const body = await fetch(`/api/approval-queue/${encodeURIComponent(item.id)}/reject`, {
+        method: "POST"
+      }).then((response) => response.json() as Promise<ApprovalActionResponse>);
+      setStatus(body.ok ? "Rejected." : body.error ?? "Reject failed.");
+      await refresh();
+    } catch {
+      setStatus("Reject request failed.");
+    } finally {
+      setWorkingId("");
+    }
+  }
+
+  useEffect(() => {
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 15000);
+    return () => window.clearInterval(timer);
+  }, [props.tenantId]);
+
+  return (
+    <aside className="approval-card">
+      <div className="schedule-heading">
+        <div>
+          <p className="eyebrow">ApprovalQueue</p>
+          <h2>Approvals</h2>
+        </div>
+        <button className="refresh-button" type="button" onClick={() => void refresh()}>Refresh</button>
+      </div>
+      <p className="schedule-status">{status}</p>
+      <div className="content-list">
+        {items.map((item) => (
+          <article className="content-draft approval-item" key={item.id}>
+            <div className="content-draft-head">
+              <span>{approvalKindLabel(item)}</span>
+              <span>{item.createdBy}</span>
+            </div>
+            <h3>{item.preview.title}</h3>
+            <p>{item.preview.body.split(/\n+/).filter(Boolean).slice(0, 3).join(" ")}</p>
+            {item.preview.mediaRefs?.length ? (
+              <div className="approval-attachments">
+                {item.preview.mediaRefs.map((ref) => <span key={ref}>{ref}</span>)}
+              </div>
+            ) : null}
+            <div className="content-actions">
+              <button type="button" disabled={workingId === item.id} onClick={() => void approve(item)}>{approvalPrimaryLabel(item)}</button>
+              <button className="secondary" type="button" disabled={workingId === item.id} onClick={() => void reject(item)}>Reject</button>
             </div>
           </article>
         ))}
@@ -1405,6 +1568,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
       </section>
       <div className="side-panels">
         <SchedulePanel tenantId={operatorContext.tenantId} />
+        <ApprovalQueuePanel tenantId={operatorContext.tenantId} />
         <ContentQueuePanel tenantId={operatorContext.tenantId} />
         <ReputationPanel tenantId={operatorContext.tenantId} user={props.user} />
       </div>
