@@ -452,6 +452,42 @@ test("draftEmail applies branded template and preserves attachments for approval
   assert.equal(approval.execute.args.outbound.attachments[0].contentBase64, attachmentBase64);
 });
 
+test("draftReportEmail generates a report PDF attachment and parks it in ApprovalQueue", async () => {
+  const rail = {
+    tenantId: "aquatrace",
+    readAdapters: new Map(),
+    operatorEmail: "owner@example.test",
+    sendAdapter: {
+      mailbox: "nexi",
+      async sendEmail() {
+        throw new Error("report email must not send before approval");
+      }
+    }
+  };
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CommsApprovalExecutor(rail));
+  const tool = createCommsNexiTools(rail, approvalQueue).find((candidate) => candidate.name === "draftReportEmail");
+  assert.ok(tool);
+
+  const result = await tool.handler(tenant(), {
+    clientName: "Deborah Justice",
+    reportTitle: "Deborah Justice leak detection report",
+    findings: ["Completion time: 3:10 PM.", "Technicians: Chris and Logan."]
+  });
+
+  const approval = await approvalQueue.listPending("aquatrace").then((items) => items[0]);
+  assert.ok(approval);
+  assert.equal(result.result.approval.id, approval.id);
+  assert.equal(result.result.approval.execute, undefined);
+  assert.deepEqual(approval.preview.mediaRefs, ["attachment:deborah-justice-aquatrace-report.pdf"]);
+  assert.equal(approval.execute.service, "comms");
+  assert.equal(approval.execute.op, "sendEmail");
+  assert.deepEqual(approval.execute.args.outbound.to, ["owner@example.test"]);
+  assert.equal(approval.execute.args.outbound.attachments[0].filename, "deborah-justice-aquatrace-report.pdf");
+  assert.equal(Buffer.from(approval.execute.args.outbound.attachments[0].contentBase64, "base64").subarray(0, 5).toString("utf8"), "%PDF-");
+  assert.equal(result.result.attachment.contentBase64, undefined);
+  assert.equal(result.result.sendsAreApprovalQueuedOnly, true);
+});
+
 test("CommsApprovalExecutor sends only approved dedicated-mailbox artifacts", async () => {
   const sentMessages = [];
   const rail = {

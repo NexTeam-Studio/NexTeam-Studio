@@ -1,7 +1,9 @@
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import {
   RailError,
   type ApprovalQueueService,
+  type ApprovalItem,
   type EmailMessageSummary,
   type EmailReadProvider,
   type NexiTool,
@@ -10,6 +12,7 @@ import {
   type Tenant
 } from "@nexteam/core";
 import type { CommsRail } from "./gmailRegistry.js";
+import { renderFieldReportPdf } from "../fielddocs/reportService.js";
 
 const searchEmailInputSchema = z.object({
   mailbox: z.string().optional(),
@@ -64,6 +67,15 @@ const draftEmailInputSchema = z.object({
   subject: z.string().min(1),
   bodyText: z.string().min(1),
   attachments: z.array(draftEmailAttachmentSchema).max(10).optional()
+});
+
+const draftReportEmailInputSchema = z.object({
+  to: z.array(z.string().email()).optional(),
+  clientName: z.string().min(1).max(160),
+  jobId: z.string().min(1).max(160).optional(),
+  reportTitle: z.string().min(1).max(180).optional(),
+  bodyText: z.string().min(1).max(4000).optional(),
+  findings: z.array(z.string().min(1).max(400)).max(20).optional()
 });
 
 const AQUATRACE_SIGNATURE = "Nexi\nAquatrace Swimming Pool Leak Detection";
@@ -221,6 +233,81 @@ function attachmentMediaRefs(attachments: OutboundEmailAttachment[] | undefined)
     return undefined;
   }
   return attachments.map((attachment) => `attachment:${attachment.filename}`);
+}
+
+function safeAttachmentName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "aquatrace-report";
+}
+
+function hashBase64(value: string): string {
+  return createHash("sha256").update(value).digest("hex").slice(0, 16);
+}
+
+function approvalSummary(approval: ApprovalItem): Pick<ApprovalItem, "id" | "tenantId" | "kind" | "preview" | "status" | "createdBy"> {
+  return {
+    id: approval.id,
+    tenantId: approval.tenantId,
+    kind: approval.kind,
+    preview: approval.preview,
+    status: approval.status,
+    createdBy: approval.createdBy
+  };
+}
+
+async function queueEmailApproval(input: {
+  tenant: Tenant;
+  rail: CommsRail;
+  approvalQueue: ApprovalQueueService;
+  to: string[];
+  cc?: string[] | undefined;
+  bcc?: string[] | undefined;
+  subject: string;
+  bodyText: string;
+  attachments?: OutboundEmailAttachment[] | undefined;
+  createdBy?: ApprovalItem["createdBy"] | undefined;
+}): Promise<ApprovalItem> {
+  if (!input.rail.sendAdapter) {
+    throw new RailError("The dedicated Nexi send mailbox is not configured.", { provider: "gmail", op: "draftEmail", status: 503 });
+  }
+  const subject = cleanSubject(input.subject);
+  const body = brandedEmailBody(input.bodyText);
+  const attachments = input.attachments?.map((attachment) => ({
+    filename: attachment.filename,
+    mime: attachment.mime,
+    contentBase64: attachment.contentBase64
+  }));
+  return input.approvalQueue.create({
+    tenantId: input.tenant.id,
+    kind: "email",
+    preview: {
+      title: subject,
+      body: body.bodyText,
+      mediaRefs: attachmentMediaRefs(attachments)
+    },
+    execute: {
+      service: "comms",
+      op: "sendEmail",
+      args: {
+        mailbox: input.rail.sendAdapter.mailbox,
+        outbound: {
+          tenantId: input.tenant.id,
+          mailbox: input.rail.sendAdapter.mailbox,
+          to: input.to,
+          ...(input.cc ? { cc: input.cc } : {}),
+          ...(input.bcc ? { bcc: input.bcc } : {}),
+          subject,
+          bodyText: body.bodyText,
+          bodyHtml: body.bodyHtml,
+          ...(attachments?.length ? { attachments } : {})
+        }
+      }
+    },
+    createdBy: input.createdBy ?? "nexi"
+  });
 }
 
 function messageText(message: EmailMessageSummary): string {
@@ -530,47 +617,85 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
       handler: async (tenant: Tenant, args: unknown) => {
         assertCommsTenant(rail, tenant, "draftEmail");
         const input = draftEmailInputSchema.parse(args);
-        if (!rail.sendAdapter) {
-          throw new RailError("The dedicated Nexi send mailbox is not configured.", { provider: "gmail", op: "draftEmail", status: 503 });
-        }
-        const subject = cleanSubject(input.subject);
-        const body = brandedEmailBody(input.bodyText);
         const attachments = input.attachments?.map((attachment) => ({
           filename: attachment.filename,
           mime: attachment.mime,
           contentBase64: attachment.contentBase64
         }));
-        const approval = await approvalQueue.create({
-          tenantId: tenant.id,
-          kind: "email",
-          preview: {
-            title: subject,
-            body: body.bodyText,
-            mediaRefs: attachmentMediaRefs(attachments)
-          },
-          execute: {
-            service: "comms",
-            op: "sendEmail",
-            args: {
-              mailbox: rail.sendAdapter.mailbox,
-              outbound: {
-                tenantId: tenant.id,
-                mailbox: rail.sendAdapter.mailbox,
-                to: input.to,
-                ...(input.cc ? { cc: input.cc } : {}),
-                ...(input.bcc ? { bcc: input.bcc } : {}),
-                subject,
-                bodyText: body.bodyText,
-                bodyHtml: body.bodyHtml,
-                ...(attachments?.length ? { attachments } : {})
-              }
-            }
-          },
-          createdBy: "nexi"
+        const approval = await queueEmailApproval({
+          tenant,
+          rail,
+          approvalQueue,
+          to: input.to,
+          cc: input.cc,
+          bcc: input.bcc,
+          subject: input.subject,
+          bodyText: input.bodyText,
+          attachments
         });
         return {
           result: { approval },
           sources: [{ rail: "native", ref: approval.id, label: `ApprovalQueue email draft ${approval.id}` }]
+        };
+      }
+    },
+    {
+      name: "draftReportEmail",
+      description: "Generate an Aquatrace field report PDF and attach it to an approval-gated email draft. This never sends directly.",
+      inputSchema: draftReportEmailInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        assertCommsTenant(rail, tenant, "draftReportEmail");
+        const input = draftReportEmailInputSchema.parse(args);
+        const to = input.to?.length ? input.to : rail.operatorEmail ? [rail.operatorEmail] : [];
+        if (to.length === 0) {
+          throw new RailError("I need an email address for that report draft.", { provider: "gmail", op: "draftReportEmail", status: 400 });
+        }
+        const title = input.reportTitle ?? `${input.clientName} Aquatrace Report`;
+        const findings = input.findings?.length
+          ? input.findings
+          : [
+              `Report prepared for ${input.clientName}.`,
+              "Generated from Aquatrace field documentation for owner-approved delivery."
+            ];
+        const pdf = renderFieldReportPdf({
+          tenantId: tenant.id,
+          jobId: input.jobId ?? safeAttachmentName(input.clientName),
+          title,
+          findings,
+          media: []
+        });
+        const filename = `${safeAttachmentName(input.clientName)}-aquatrace-report.pdf`;
+        const attachment: OutboundEmailAttachment = {
+          filename,
+          mime: "application/pdf",
+          contentBase64: pdf.toString("base64")
+        };
+        const bodyText = input.bodyText
+          ?? `Attached is the Aquatrace report PDF for ${input.clientName}.\n\nPlease review it and let us know if you have any questions.`;
+        const approval = await queueEmailApproval({
+          tenant,
+          rail,
+          approvalQueue,
+          to,
+          subject: `${input.clientName} Aquatrace report`,
+          bodyText,
+          attachments: [attachment]
+        });
+        return {
+          result: {
+            approval: approvalSummary(approval),
+            attachment: {
+              filename,
+              mime: attachment.mime,
+              byteSize: pdf.byteLength,
+              contentBase64Sha256_16: hashBase64(attachment.contentBase64)
+            },
+            sendsAreApprovalQueuedOnly: true
+          },
+          sources: [
+            { rail: "native", ref: approval.id, label: `ApprovalQueue report email ${approval.id}` },
+            { rail: "native", ref: filename, label: `Generated report attachment ${filename}` }
+          ]
         };
       }
     }

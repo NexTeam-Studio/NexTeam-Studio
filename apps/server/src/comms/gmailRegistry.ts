@@ -5,6 +5,7 @@ export interface CommsRail {
   tenantId: string;
   readAdapters: Map<string, EmailReadProvider>;
   sendAdapter: EmailSendProvider | null;
+  operatorEmail?: string | undefined;
 }
 
 function envKey(value: string): string {
@@ -52,6 +53,7 @@ export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
   return {
     tenantId,
     readAdapters,
-    sendAdapter: sendConfig ? new GmailSendAdapter(sendConfig) : null
+    sendAdapter: sendConfig ? new GmailSendAdapter(sendConfig) : null,
+    operatorEmail: value(env, "NEXI_OPERATOR_EMAIL") || value(env, "OPERATOR_EMAIL") || undefined
   };
 }
