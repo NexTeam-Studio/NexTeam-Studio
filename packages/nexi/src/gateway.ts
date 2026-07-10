@@ -516,6 +516,15 @@ function previousUserText(messages: GatewayMessage[]): string {
   return typeof previous?.content === "string" ? previous.content : "";
 }
 
+function latestAssistantText(messages: GatewayMessage[]): string {
+  for (const message of [...messages].reverse()) {
+    if (message.role === "assistant" && typeof message.content === "string") {
+      return message.content.trim();
+    }
+  }
+  return "";
+}
+
 function scheduleWindowFromConversation(messages: GatewayMessage[], timeZone?: string): { from: string; to: string } | null {
   for (const text of [...textMessages(messages)].reverse()) {
     const window = scheduleWindowFromText(text, timeZone);
@@ -834,6 +843,13 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   if (toolName === "rejectContentDraft") {
     record.draftId ??= contentDraftIdFromText(userText) ?? contentDraftIdFromPriorRuns(priorRuns);
   }
+  if (toolName === "queueFreeformContent") {
+    const parsed = freeformContentInputFromConversation(messages);
+    record.kind ??= parsed.kind;
+    record.title ??= parsed.title;
+    record.body ??= parsed.body;
+    record.sourcePrompt ??= parsed.sourcePrompt;
+  }
   if (toolName === "getEmailAttachment" && emailRef?.attachmentId) {
     return { ...record, mailbox: emailRef.mailbox, messageId: emailRef.messageId, attachmentId: emailRef.attachmentId };
   }
@@ -1136,6 +1152,14 @@ function looksLikeContentQueueQuestion(lower: string): boolean {
   }
   return /\b(?:content|post|posts|gbp|social|article|articles|draft|drafts)\b.*\b(?:queue|queued|pending|waiting|approve|approval|ready)\b/.test(lower)
     || /\bshow\s+me\s+(?:the\s+)?content\s+queue\b/.test(lower);
+}
+
+function looksLikeFreeformContentSaveAction(lower: string): boolean {
+  if (/\b(?:show|list|what'?s|whats|read|open)\b.*\bcontent\s+queue\b/.test(lower)) {
+    return false;
+  }
+  return /\b(?:save|queue|add|put|park)\b.*\b(?:this|that|it|article|post|draft|content)\b.*\b(?:content\s+queue|content\s+draft|draft\s+queue|queue)\b/.test(lower)
+    || /\b(?:save|queue|put|park)\s+(?:this|that|it)\s+(?:to|in|as)\s+(?:the\s+)?(?:content\s+queue|content\s+draft|draft\s+queue)\b/.test(lower);
 }
 
 function looksLikeSeoRankQuestion(lower: string): boolean {
@@ -1622,17 +1646,68 @@ function draftEmailInputFromText(text: string): { to: string[]; subject: string;
   };
 }
 
+function cleanContentTitle(line: string): string {
+  return line
+    .replace(/^#{1,6}\s*/, "")
+    .replace(/^\*\*(.+)\*\*$/, "$1")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+}
+
+function titleFromDraftBody(body: string): string {
+  const heading = body.match(/^\s*#{1,6}\s+(.+)$/m)?.[1];
+  if (heading) {
+    return cleanContentTitle(heading).slice(0, 120) || "Nexi content draft";
+  }
+  const firstUsefulLine = body
+    .split(/\r?\n/)
+    .map((line) => cleanContentTitle(line))
+    .find((line) => line.length >= 8);
+  return (firstUsefulLine ?? "Nexi content draft").slice(0, 120);
+}
+
+function freeformContentKindFromText(text: string, body: string): "gbp_post" | "social_post" | "article" {
+  const lower = `${text}\n${body}`.toLowerCase();
+  if (/\b(?:gbp|google\s+business|business\s+profile)\b/.test(lower)) {
+    return "gbp_post";
+  }
+  if (/\b(?:social|facebook|instagram|post)\b/.test(lower) && !/\barticle\b/.test(lower)) {
+    return "social_post";
+  }
+  return "article";
+}
+
+function freeformContentInputFromConversation(messages: GatewayMessage[]): {
+  kind: "gbp_post" | "social_post" | "article";
+  title: string;
+  body: string;
+  sourcePrompt: string;
+} {
+  const body = latestAssistantText(messages) || "Nexi content draft";
+  const latestText = latestUserText(messages);
+  return {
+    kind: freeformContentKindFromText(latestText, body),
+    title: titleFromDraftBody(body),
+    body,
+    sourcePrompt: previousUserText(messages) || latestText
+  };
+}
+
 function contentDraftIdFromText(text: string): string | undefined {
   return text.match(/\bcontent_[a-z_]+_[a-f0-9-]{8,}\b/i)?.[0];
 }
 
 function contentDraftIdFromPriorRuns(priorRuns: ToolRunTrace[]): string | undefined {
   for (const run of [...priorRuns].reverse()) {
-    if (run.name !== "contentQueue" && run.name !== "draftPostFromJob") {
+    if (run.name !== "contentQueue" && run.name !== "draftPostFromJob" && run.name !== "queueFreeformContent") {
       continue;
     }
     const result = run.result && typeof run.result === "object" ? run.result as Record<string, unknown> : {};
-    const drafts = Array.isArray(result.drafts) ? result.drafts : [];
+    const drafts = Array.isArray(result.drafts)
+      ? result.drafts
+      : result.draft && typeof result.draft === "object"
+        ? [result.draft]
+        : [];
     for (const draft of drafts) {
       if (!draft || typeof draft !== "object") {
         continue;
@@ -1821,6 +1896,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   }
   if (looksLikeContentRejectAction(lower) && toolsByName.has("rejectContentDraft")) {
     return uniqueToolNames(["contentQueue", "rejectContentDraft"], toolsByName);
+  }
+  if (looksLikeFreeformContentSaveAction(lower) && latestAssistantText(messages) && toolsByName.has("queueFreeformContent")) {
+    return ["queueFreeformContent"];
   }
   if (looksLikeContentQueueQuestion(lower) && toolsByName.has("contentQueue")) {
     return ["contentQueue"];
@@ -2042,6 +2120,14 @@ function draftEmailAnswer(result: unknown): string {
   return `I drafted that email and put it in the approval queue${typeof approval.id === "string" ? ` (${approval.id})` : ""}. It has not been sent.`;
 }
 
+function queueFreeformContentAnswer(result: unknown): string {
+  const record = objectRecord(result);
+  const draft = objectRecord(record?.draft);
+  const title = stringValue(draft?.title) ?? "that draft";
+  const approvalId = stringValue(draft?.approvalId);
+  return `I saved "${title}" to the content queue${approvalId ? ` (${approvalId})` : ""}. It is ready for review and has not been published.`;
+}
+
 function intakeAnswerSavedAnswer(result: unknown): string {
   const record = result && typeof result === "object" ? result as Record<string, unknown> : {};
   const nextQuestion = typeof record.nextQuestion === "string" ? record.nextQuestion : "keep going when you are ready.";
@@ -2095,6 +2181,10 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
   const draftRun = [...toolRuns].reverse().find((run) => run.name === "draftEmail" && run.sources.length > 0);
   if (draftRun && looksLikeEmailDraftAction(lower)) {
     return draftEmailAnswer(draftRun.result);
+  }
+  const freeformContentRun = [...toolRuns].reverse().find((run) => run.name === "queueFreeformContent" && run.sources.length > 0);
+  if (freeformContentRun && looksLikeFreeformContentSaveAction(lower)) {
+    return queueFreeformContentAnswer(freeformContentRun.result);
   }
   const intakeAnswerRun = [...toolRuns].reverse().find((run) => run.name === "answerIntake" && run.sources.length > 0);
   if (intakeAnswerRun && looksLikeAnswerIntakeAction(latestText)) {

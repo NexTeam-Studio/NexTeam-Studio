@@ -21,6 +21,12 @@ export interface DraftContentForJobInput {
   now?: string | undefined;
 }
 
+export interface QueueContentDraftForApprovalInput {
+  draft: ContentDraft;
+  repository: ContentRepository;
+  approvalQueue: ApprovalQueueService;
+}
+
 function approvalOp(kind: ContentDraftKind): string {
   if (kind === "gbp_post") {
     return "publishGbpPost";
@@ -29,6 +35,33 @@ function approvalOp(kind: ContentDraftKind): string {
     return "publishSocialPost";
   }
   return "publishSeoArticle";
+}
+
+export async function queueContentDraftForApproval(input: QueueContentDraftForApprovalInput): Promise<ContentDraft> {
+  const approval = await input.approvalQueue.create({
+    tenantId: input.draft.tenantId,
+    kind: input.draft.kind,
+    preview: {
+      title: input.draft.title,
+      body: input.draft.body,
+      mediaRefs: input.draft.mediaRefs
+    },
+    execute: {
+      service: "content",
+      op: approvalOp(input.draft.kind),
+      args: {
+        draftId: input.draft.id,
+        tenantId: input.draft.tenantId,
+        publishingDeferredUntilCredentials: true
+      }
+    },
+    createdBy: "nexi"
+  });
+  return input.repository.saveDraft({
+    ...input.draft,
+    status: "approval_pending",
+    approvalId: approval.id
+  });
 }
 
 export async function draftContentForJob(input: DraftContentForJobInput): Promise<ContentDraft[]> {
@@ -42,29 +75,10 @@ export async function draftContentForJob(input: DraftContentForJobInput): Promis
   });
   const savedDrafts: ContentDraft[] = [];
   for (const draft of drafts) {
-    const approval = await input.approvalQueue.create({
-      tenantId: draft.tenantId,
-      kind: draft.kind,
-      preview: {
-        title: draft.title,
-        body: draft.body,
-        mediaRefs: draft.mediaRefs
-      },
-      execute: {
-        service: "content",
-        op: approvalOp(draft.kind),
-        args: {
-          draftId: draft.id,
-          tenantId: draft.tenantId,
-          publishingDeferredUntilCredentials: true
-        }
-      },
-      createdBy: "nexi"
-    });
-    savedDrafts.push(await input.repository.saveDraft({
-      ...draft,
-      status: "approval_pending",
-      approvalId: approval.id
+    savedDrafts.push(await queueContentDraftForApproval({
+      draft,
+      repository: input.repository,
+      approvalQueue: input.approvalQueue
     }));
   }
   await input.repository.saveCalendarItems(planContentCalendar({

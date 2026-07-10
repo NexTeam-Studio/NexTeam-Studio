@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { type ApprovalQueueService, type NexiTool, type Source } from "@nexteam/core";
-import { summarizeContentStats, type ContentDraftKind } from "./contentEngine.js";
+import { summarizeContentStats, type ContentDraft, type ContentDraftKind } from "./contentEngine.js";
 import type { ContentRepository } from "./repository.js";
-import { draftContentForJob } from "./workflow.js";
+import { draftContentForJob, queueContentDraftForApproval } from "./workflow.js";
 
 const contentKindSchema = z.enum(["gbp_post", "social_post", "article"]);
 
@@ -39,6 +39,15 @@ const contentQueueSchema = z.object({
   tenantId: z.string().optional()
 });
 
+const queueFreeformContentSchema = z.object({
+  kind: contentKindSchema.default("article"),
+  title: z.string().min(1),
+  body: z.string().min(1),
+  jobId: z.string().optional(),
+  clientName: z.string().optional(),
+  sourcePrompt: z.string().optional()
+});
+
 const approveSchema = z.object({
   tenantId: z.string().optional(),
   draftId: z.string().min(1)
@@ -55,6 +64,36 @@ const contentStatsSchema = z.object({
 
 function source(ref: string, label: string): Source {
   return { rail: "native", ref, label };
+}
+
+function freeformDraft(input: {
+  tenantId: string;
+  kind: ContentDraftKind;
+  title: string;
+  body: string;
+  jobId?: string | undefined;
+  clientName?: string | undefined;
+  sourcePrompt?: string | undefined;
+}): ContentDraft {
+  const draftId = `content_${input.kind}_${crypto.randomUUID()}`;
+  const sources = [
+    source(draftId, `Nexi freeform ${input.kind.replace("_", " ")} draft`)
+  ];
+  if (input.jobId) {
+    sources.push(source(input.jobId, `Native job reference ${input.jobId}`));
+  }
+  return {
+    id: draftId,
+    tenantId: input.tenantId,
+    kind: input.kind,
+    title: input.title,
+    body: input.body,
+    mediaRefs: [],
+    jobId: input.jobId,
+    status: "draft",
+    sources,
+    createdAt: new Date().toISOString()
+  };
 }
 
 export function createContentNexiTools(input: {
@@ -79,6 +118,40 @@ export function createContentNexiTools(input: {
         return {
           result: { drafts, publishingDeferred: true },
           sources: drafts.flatMap((draft) => [source(draft.id, `Native content draft ${draft.title}`), ...draft.sources])
+        };
+      }
+    },
+    {
+      name: "queueFreeformContent",
+      description: "Save owner-requested content written in chat as a real content draft queued for approval. Does not publish.",
+      inputSchema: queueFreeformContentSchema,
+      handler: async (tenant, args) => {
+        const parsed = queueFreeformContentSchema.parse(args);
+        const draft = await queueContentDraftForApproval({
+          draft: freeformDraft({
+            tenantId: tenant.id,
+            kind: parsed.kind as ContentDraftKind,
+            title: parsed.title,
+            body: parsed.body,
+            jobId: parsed.jobId,
+            clientName: parsed.clientName,
+            sourcePrompt: parsed.sourcePrompt
+          }),
+          repository: input.repository,
+          approvalQueue: input.approvalQueue
+        });
+        await input.repository.saveCalendarItems([{
+          id: `cal_${draft.kind}_${draft.id}`,
+          tenantId: draft.tenantId,
+          kind: draft.kind,
+          title: draft.title,
+          scheduledFor: draft.createdAt,
+          cadenceReason: "Owner asked Nexi to save this freeform content draft.",
+          draftId: draft.id
+        }]);
+        return {
+          result: { draft, publishingDeferred: true, savedToContentQueue: true },
+          sources: [source(draft.id, `Native content draft ${draft.title}`), ...draft.sources]
         };
       }
     },

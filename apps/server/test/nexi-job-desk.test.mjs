@@ -53,8 +53,11 @@ test("source check does not block meta or feedback turns", () => {
 test("source check does not block email action commands or honest tool failures", () => {
   assert.equal(promptIsActionRequest("Send an email to owner@example.test saying I will call Thursday."), true);
   assert.equal(promptIsActionRequest("send me an email at owner@example.test, tell me Bryson City is on schedule for tomorrow"), true);
+  assert.equal(promptIsActionRequest("write me an article about a return line leak"), true);
   const action = enforceSources("I drafted the email and parked it for approval.", [], "Send an email to owner@example.test saying I will call Thursday.");
   assert.equal(action.ok, true);
+  const contentAction = enforceSources("Here is an article about what a pool owner should watch for.", [], "write me an article about a return line leak");
+  assert.equal(contentAction.ok, true);
   const failure = enforceSources("I couldn't open that email yet. I wrote it down so we can fix it.", [], "What did the Semrush site audit say?");
   assert.equal(failure.ok, true);
   const noSource = enforceSources("I don't have that written down anywhere yet. I wrote it down so we can fill the gap.", [], "What did the Semrush site audit say?");
@@ -1461,6 +1464,83 @@ test("Nexi content queue prompts route to content queue approve and reject tools
   });
   assert.deepEqual(rejectResult.toolRuns.map((run) => run.name), ["contentQueue", "rejectContentDraft"]);
   assert.equal(calls.some(([name, args]) => name === "rejectContentDraft" && args.draftId === pendingDraft.id), true);
+});
+
+test("Nexi saves chat-authored freeform content into the content queue", async () => {
+  const calls = [];
+  const tools = [
+    {
+      name: "queueFreeformContent",
+      description: "Save freeform content.",
+      inputSchema: z.object({
+        kind: z.enum(["gbp_post", "social_post", "article"]),
+        title: z.string(),
+        body: z.string(),
+        sourcePrompt: z.string().optional()
+      }),
+      handler: async (_tenant, args) => {
+        calls.push(args);
+        return {
+          result: {
+            draft: {
+              id: "content_article_12345678-abcd-4abc-8abc-123456789abc",
+              kind: args.kind,
+              title: args.title,
+              body: args.body,
+              status: "approval_pending",
+              approvalId: "appr_freeform_1"
+            },
+            savedToContentQueue: true,
+            publishingDeferred: true
+          },
+          sources: [{ rail: "native", ref: "content_article_12345678-abcd-4abc-8abc-123456789abc", label: `Native content draft ${args.title}` }]
+        };
+      }
+    },
+    {
+      name: "contentQueue",
+      description: "List content drafts.",
+      inputSchema: z.object({}),
+      handler: async () => {
+        throw new Error("save-this prompts should create a draft, not only list the queue");
+      }
+    },
+    {
+      name: "searchEmail",
+      description: "Search email.",
+      inputSchema: z.object({ keywords: z.string().optional() }),
+      handler: async () => {
+        throw new Error("freeform content save prompts should not search email");
+      }
+    }
+  ];
+
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "write me an article about a return line leak" },
+      {
+        role: "assistant",
+        content: "# What a Return Line Leak Looks Like\n\nA return line leak can hide until pressure testing proves the line is losing water."
+      },
+      { role: "user", content: "save this to the content queue" }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("saving chat-authored content should not need a model call");
+    }
+  });
+
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["queueFreeformContent"]);
+  assert.equal(calls[0].kind, "article");
+  assert.equal(calls[0].title, "What a Return Line Leak Looks Like");
+  assert.match(calls[0].body, /pressure testing proves/);
+  assert.match(result.answer, /saved "What a Return Line Leak Looks Like" to the content queue/i);
+  assert.match(result.answer, /not been published/i);
 });
 
 test("Nexi address-only follow-ups preserve the prior distance capability intent", async () => {

@@ -20,6 +20,7 @@ const TOOL_MODULES: Record<string, PlatformModule> = {
   triageInbox: "comms",
   draftEmail: "comms",
   draftPostFromJob: "content",
+  queueFreeformContent: "content",
   contentQueue: "content",
   approve: "content",
   rejectContentDraft: "content",

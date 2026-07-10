@@ -119,6 +119,7 @@ test("Nexi content tools draft, list, approve, reject, and summarize without exe
   const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
   const tools = createContentNexiTools({ repository, approvalQueue });
   const draftPostFromJob = tools.find((tool) => tool.name === "draftPostFromJob");
+  const queueFreeformContent = tools.find((tool) => tool.name === "queueFreeformContent");
   const contentQueue = tools.find((tool) => tool.name === "contentQueue");
   const approve = tools.find((tool) => tool.name === "approve");
   const rejectContentDraft = tools.find((tool) => tool.name === "rejectContentDraft");
@@ -129,12 +130,22 @@ test("Nexi content tools draft, list, approve, reject, and summarize without exe
     media,
     requestedKinds: ["article", "social_post"]
   });
+  const freeformOutput = await queueFreeformContent.handler(tenant(), {
+    kind: "article",
+    title: "What a return-line leak looks like",
+    body: "# What a return-line leak looks like\n\nA return-line leak can hide until pressure testing proves it.",
+    sourcePrompt: "write me an article about a return-line leak"
+  });
   const draftId = draftOutput.result.drafts[0].id;
   const rejectDraftId = draftOutput.result.drafts[1].id;
   assert.equal(draftOutput.result.publishingDeferred, true);
+  assert.equal(freeformOutput.result.savedToContentQueue, true);
+  assert.equal(freeformOutput.result.draft.status, "approval_pending");
+  assert.match(freeformOutput.result.draft.approvalId, /^appr_/);
 
   const queueOutput = await contentQueue.handler(tenant(), {});
-  assert.equal(queueOutput.result.drafts.length, 2);
+  assert.equal(queueOutput.result.drafts.length, 3);
+  assert.equal(queueOutput.result.drafts.some((draft) => draft.id === freeformOutput.result.draft.id), true);
   assert.equal(queueOutput.sources[0].rail, "native");
 
   const approveOutput = await approve.handler(tenant(), { draftId });
