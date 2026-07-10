@@ -1,0 +1,41 @@
+Aquatrace tenant branding palette receipt
+Date: 2026-07-10
+
+Source screenshots:
+- C:\Users\Peyto\AppData\Local\Temp\codex-clipboard-5d08e60f-afba-4523-ae3e-9e56159276b8.png
+- C:\Users\Peyto\AppData\Local\Temp\codex-clipboard-d47b1035-c91b-4e7a-a6ea-b99f85f1deaf.png
+
+Dominant extracted anchors:
+- Bright site cyan: #00ffff
+- Dark site/header charcoal: #181c1c / sampled near #202020
+- Card overlay teal: #106060
+- Service-section gray: #585858
+- Readable dashboard surface: #f8fffc
+- Readable shell background: #dde7df
+
+Implemented palette:
+- primary: #181c1c
+- secondary: #585858
+- accent: #00ffff
+- accentText: #101010
+- background: #dde7df
+- surface: #f8fffc
+- text: #151817
+- mutedText: #586466
+- userBubble: #106060
+- assistantBubble: #f8fffc
+
+Scope:
+- Aquatrace tenantBranding default now uses screenshot-extracted colors and text fallback.
+- Aquatrace Job Desk operator theme preset now matches the same palette.
+- Web/PWA first-paint fallbacks now use Aquatrace dark/cyan/surface colors.
+- Job Desk now ignores stale system-written operator themes so tenantBranding wins unless a human-customized operator theme exists.
+- Text fallback no longer renders the separate "Ops" eyebrow as part of the mark; it renders a single Aquatrace cyan wordmark until a logo is uploaded.
+- No logo file was added; text fallback remains active until owner supplies logo.
+
+Verification:
+- node --test apps/server/test/platform.test.mjs apps/server/test/sites-runtime.test.mjs: PASS, 15/15
+- npm run typecheck: PASS
+- npm run build: PASS
+- npm run check:secrets: PASS
+- Local web fallback screenshot rendered successfully, but full Job Desk header was not reachable in web-only dev because Firebase runtime config was absent in the local web process.

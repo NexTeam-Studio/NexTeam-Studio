@@ -3,6 +3,6 @@
   "short_name": "Nexi",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ede2cf",
-  "theme_color": "#26352c"
+  "background_color": "#dde7df",
+  "theme_color": "#181c1c"
 }

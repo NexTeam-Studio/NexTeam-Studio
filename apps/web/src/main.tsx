@@ -219,6 +219,7 @@ interface OperatorUiTheme {
     text?: string;
   };
   density: "comfortable" | "compact";
+  updatedBy?: string;
   updatedAt: string;
 }
 
@@ -421,6 +422,10 @@ function TenantBrandMark(props: { branding: TenantBranding | null; tenantId: str
     return <img alt={props.branding?.logo?.alt ?? `${displayName} logo`} className="tenant-logo" src={logoSrc} />;
   }
   return <div className="tenant-wordmark" aria-label={`${displayName} logo placeholder`}>{displayName}</div>;
+}
+
+function isOwnerCustomizedOperatorTheme(theme: OperatorUiTheme | null): theme is OperatorUiTheme {
+  return Boolean(theme && theme.updatedBy && theme.updatedBy !== "system");
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -1511,27 +1516,27 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
   }
 
   const brandColors = tenantBranding?.colors;
+  const customOperatorTheme = isOwnerCustomizedOperatorTheme(operatorTheme) ? operatorTheme : null;
   const themeStyle = {
-    "--jobdesk-shell-background": operatorTheme?.colors.shellBackground ?? brandColors?.background,
-    "--jobdesk-panel-background": operatorTheme?.colors.panelBackground ?? brandColors?.surface,
-    "--jobdesk-header-background": operatorTheme?.colors.headerBackground ?? brandColors?.primary,
-    "--jobdesk-accent": operatorTheme?.colors.accent ?? brandColors?.accent,
-    "--jobdesk-accent-text": operatorTheme?.colors.accentText ?? brandColors?.accentText,
-    "--jobdesk-user-bubble": operatorTheme?.colors.userBubble ?? brandColors?.userBubble,
-    "--jobdesk-assistant-bubble": operatorTheme?.colors.assistantBubble ?? brandColors?.assistantBubble,
-    "--jobdesk-text": operatorTheme?.colors.text ?? brandColors?.text,
+    "--jobdesk-shell-background": customOperatorTheme?.colors.shellBackground ?? brandColors?.background,
+    "--jobdesk-panel-background": customOperatorTheme?.colors.panelBackground ?? brandColors?.surface,
+    "--jobdesk-header-background": customOperatorTheme?.colors.headerBackground ?? brandColors?.primary,
+    "--jobdesk-accent": customOperatorTheme?.colors.accent ?? brandColors?.accent,
+    "--jobdesk-accent-text": customOperatorTheme?.colors.accentText ?? brandColors?.accentText,
+    "--jobdesk-user-bubble": customOperatorTheme?.colors.userBubble ?? brandColors?.userBubble,
+    "--jobdesk-assistant-bubble": customOperatorTheme?.colors.assistantBubble ?? brandColors?.assistantBubble,
+    "--jobdesk-text": customOperatorTheme?.colors.text ?? brandColors?.text,
     "--jobdesk-muted-text": brandColors?.mutedText,
     "--jobdesk-font-family": tenantBranding?.fontFamily
   } as React.CSSProperties;
 
   return (
-    <main className={`shell ops-shell density-${operatorTheme?.density ?? "comfortable"}`} style={themeStyle}>
+    <main className={`shell ops-shell density-${customOperatorTheme?.density ?? "comfortable"}`} style={themeStyle}>
       <div className="ops-grid">
       <section className="phone">
         <header className="topbar">
           <div className="brand-stack">
             <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} />
-            <p className="eyebrow">Ops</p>
             <h1>Nexi Job Desk</h1>
             <p className="signed-in">{props.user.email ?? "Firebase operator"}</p>
           </div>

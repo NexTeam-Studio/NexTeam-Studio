@@ -1,6 +1,6 @@
 :root {
-  color: #1f211c;
-  background: #ede2cf;
+  color: #151817;
+  background: #dde7df;
   font-family: "Fraunces", "Iowan Old Style", Georgia, serif;
 }
 
@@ -20,8 +20,8 @@ input {
   place-items: center;
   padding: 18px;
   background: var(--jobdesk-shell-background,
-    radial-gradient(circle at 20% 10%, rgba(77, 130, 104, 0.28), transparent 28%),
-    linear-gradient(145deg, #f6eedf 0%, #d3e4d5 48%, #e1c092 100%));
+    radial-gradient(circle at 20% 10%, rgba(0, 255, 255, 0.24), transparent 28%),
+    linear-gradient(145deg, #dde7df 0%, #f8fffc 48%, #b6c7c1 100%));
 }
 
 .ops-shell {
@@ -62,10 +62,10 @@ input {
   display: grid;
   grid-template-rows: auto 1fr auto;
   overflow: hidden;
-  border: 1px solid rgba(31, 33, 28, 0.16);
+  border: 1px solid rgba(21, 24, 23, 0.16);
   border-radius: 34px;
-  background: var(--jobdesk-panel-background, rgba(255, 250, 240, 0.9));
-  box-shadow: 0 28px 90px rgba(48, 44, 32, 0.28);
+  background: var(--jobdesk-panel-background, rgba(248, 255, 252, 0.9));
+  box-shadow: 0 28px 90px rgba(16, 24, 24, 0.28);
 }
 
 .schedule-card,
@@ -73,12 +73,12 @@ input {
 .content-card {
   padding: 24px;
   overflow: auto;
-  border: 1px solid rgba(31, 33, 28, 0.16);
+  border: 1px solid rgba(21, 24, 23, 0.16);
   border-radius: 34px;
   background:
-    linear-gradient(180deg, rgba(255, 250, 240, 0.94), rgba(250, 239, 218, 0.88)),
-    radial-gradient(circle at 100% 0%, rgba(49, 95, 88, 0.16), transparent 34%);
-  box-shadow: 0 28px 90px rgba(48, 44, 32, 0.2);
+    linear-gradient(180deg, rgba(248, 255, 252, 0.94), rgba(221, 231, 223, 0.88)),
+    radial-gradient(circle at 100% 0%, rgba(0, 255, 255, 0.14), transparent 34%);
+  box-shadow: 0 28px 90px rgba(16, 24, 24, 0.2);
 }
 
 .schedule-card {
@@ -98,26 +98,26 @@ input {
 
 .schedule-heading h2 {
   margin: 0;
-  color: #26352c;
+  color: #151817;
   font-size: clamp(1.8rem, 5vw, 3rem);
   line-height: 0.92;
 }
 
 .schedule-heading input {
   min-width: 150px;
-  border: 1px solid rgba(38, 53, 44, 0.18);
+  border: 1px solid rgba(21, 24, 23, 0.18);
   border-radius: 999px;
   padding: 11px 13px;
-  background: #fffdf7;
-  color: #26352c;
+  background: #f8fffc;
+  color: #151817;
 }
 
 .refresh-button {
-  border: 1px solid rgba(49, 95, 88, 0.24);
+  border: 1px solid rgba(16, 96, 96, 0.24);
   border-radius: 999px;
   padding: 10px 14px;
-  color: #315f58;
-  background: rgba(255, 253, 247, 0.72);
+  color: #106060;
+  background: rgba(248, 255, 252, 0.72);
 }
 
 .view-tabs {
@@ -128,17 +128,17 @@ input {
 }
 
 .view-tabs button {
-  border: 1px solid rgba(49, 95, 88, 0.24);
+  border: 1px solid rgba(16, 96, 96, 0.24);
   border-radius: 999px;
   padding: 10px 14px;
-  color: #315f58;
-  background: rgba(255, 253, 247, 0.72);
+  color: #106060;
+  background: rgba(248, 255, 252, 0.72);
   text-transform: capitalize;
 }
 
 .view-tabs button.active {
-  color: #fff8ea;
-  background: #315f58;
+  color: #f8fffc;
+  background: #106060;
 }
 
 .schedule-status {
@@ -159,9 +159,9 @@ input {
   display: grid;
   gap: 10px;
   padding: 16px;
-  border: 1px solid rgba(38, 53, 44, 0.11);
+  border: 1px solid rgba(21, 24, 23, 0.11);
   border-radius: 24px;
-  background: rgba(255, 253, 247, 0.86);
+  background: rgba(248, 255, 252, 0.86);
 }
 
 .visit-card h3,
@@ -170,7 +170,7 @@ input {
 }
 
 .visit-card h3 {
-  color: #26352c;
+  color: #151817;
   font-size: 1.16rem;
 }
 
@@ -181,7 +181,7 @@ input {
 
 .visit-time {
   margin-bottom: 6px !important;
-  color: #b06b34 !important;
+  color: #106060 !important;
   font-size: 0.82rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -191,14 +191,14 @@ input {
   width: fit-content;
   border-radius: 999px;
   padding: 6px 10px;
-  color: #26352c;
-  background: rgba(228, 191, 115, 0.3);
+  color: #101010;
+  background: rgba(0, 255, 255, 0.24);
   font-size: 0.78rem;
   text-transform: uppercase;
 }
 
 .map-line {
-  border-top: 1px solid rgba(38, 53, 44, 0.1);
+  border-top: 1px solid rgba(21, 24, 23, 0.1);
   padding-top: 10px;
   font-size: 0.88rem;
 }
@@ -213,9 +213,9 @@ input {
   display: grid;
   gap: 10px;
   padding: 16px;
-  border: 1px solid rgba(38, 53, 44, 0.11);
+  border: 1px solid rgba(21, 24, 23, 0.11);
   border-radius: 24px;
-  background: rgba(255, 253, 247, 0.86);
+  background: rgba(248, 255, 252, 0.86);
 }
 
 .content-draft h3,
@@ -224,7 +224,7 @@ input {
 }
 
 .content-draft h3 {
-  color: #26352c;
+  color: #151817;
   font-size: 1.08rem;
 }
 
@@ -249,8 +249,8 @@ input {
 .approval-attachments span {
   border-radius: 999px;
   padding: 7px 10px;
-  color: #26352c;
-  background: rgba(228, 191, 115, 0.28);
+  color: #101010;
+  background: rgba(0, 255, 255, 0.2);
   font-size: 0.78rem;
 }
 
@@ -258,8 +258,8 @@ input {
   width: fit-content;
   border-radius: 999px;
   padding: 6px 10px;
-  color: #26352c !important;
-  background: rgba(49, 95, 88, 0.12);
+  color: #151817 !important;
+  background: rgba(16, 96, 96, 0.12);
   font-size: 0.82rem;
   font-weight: 850;
 }
@@ -268,7 +268,7 @@ input {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  color: #b06b34;
+  color: #106060;
   font-size: 0.76rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -284,14 +284,14 @@ input {
   border: 0;
   border-radius: 999px;
   padding: 10px 13px;
-  color: #fff8ea;
-  background: #315f58;
+  color: #f8fffc;
+  background: #106060;
   font-weight: 850;
 }
 
 .content-actions button.secondary {
-  color: #26352c;
-  background: rgba(228, 191, 115, 0.4);
+  color: #101010;
+  background: rgba(0, 255, 255, 0.22);
 }
 
 .content-actions button:disabled {
@@ -304,8 +304,8 @@ input {
   justify-content: space-between;
   gap: 18px;
   padding: 24px 24px 18px;
-  background: var(--jobdesk-header-background, #26352c);
-  color: #fff7e7;
+  background: var(--jobdesk-header-background, #181c1c);
+  color: #f8fffc;
 }
 
 .brand-stack {
@@ -314,18 +314,20 @@ input {
 
 .tenant-wordmark {
   width: fit-content;
-  max-width: 240px;
-  margin: 0 0 8px;
+  max-width: min(280px, 100%);
+  margin: 0 0 10px;
   overflow: hidden;
-  color: var(--jobdesk-accent, #e4bf73);
-  font-size: clamp(0.95rem, 4vw, 1.2rem);
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  line-height: 1;
+  color: var(--jobdesk-accent, #00ffff);
+  font-size: clamp(1.15rem, 5vw, 1.7rem);
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  line-height: 0.95;
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+  text-shadow:
+    0 0 12px rgba(0, 255, 255, 0.3),
+    1px 1px 0 rgba(0, 0, 0, 0.65);
 }
 
 .tenant-logo {
@@ -345,34 +347,34 @@ input {
 
 .signed-in {
   margin: 8px 0 0;
-  color: rgba(255, 247, 231, 0.72);
+  color: rgba(248, 255, 252, 0.72);
   font-size: 0.82rem;
 }
 
 .sign-out {
-  border: 1px solid rgba(255, 247, 231, 0.32);
+  border: 1px solid rgba(248, 255, 252, 0.32);
   border-radius: 999px;
   padding: 7px 10px;
-  color: #fff7e7;
+  color: #f8fffc;
   background: rgba(255, 255, 255, 0.08);
 }
 
 .voice-toggle {
-  border: 1px solid rgba(228, 191, 115, 0.5);
+  border: 1px solid rgba(0, 255, 255, 0.5);
   border-radius: 999px;
   padding: 7px 10px;
-  color: var(--jobdesk-accent-text, #26352c);
-  background: var(--jobdesk-accent, #e4bf73);
+  color: var(--jobdesk-accent-text, #101010);
+  background: var(--jobdesk-accent, #00ffff);
 }
 
 .voice-toggle.on {
-  color: #fff7e7;
-  background: rgba(77, 130, 104, 0.9);
+  color: #f8fffc;
+  background: rgba(16, 96, 96, 0.9);
 }
 
 .eyebrow {
   margin: 0 0 4px;
-  color: #e4bf73;
+  color: #00ffff;
   font-size: 0.75rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -425,16 +427,16 @@ h1 {
 
 .bubble.user {
   align-self: end;
-  color: var(--jobdesk-accent-text, #fff8ea);
-  background: var(--jobdesk-user-bubble, #315f58);
+  color: var(--jobdesk-accent-text, #f8fffc);
+  background: var(--jobdesk-user-bubble, #106060);
   border-bottom-right-radius: 6px;
 }
 
 .bubble.assistant {
   align-self: start;
-  color: var(--jobdesk-text, #26352c);
-  background: var(--jobdesk-assistant-bubble, #fff8ea);
-  border: 1px solid rgba(38, 53, 44, 0.12);
+  color: var(--jobdesk-text, #151817);
+  background: var(--jobdesk-assistant-bubble, #f8fffc);
+  border: 1px solid rgba(21, 24, 23, 0.12);
   border-bottom-left-radius: 6px;
 }
 
@@ -454,10 +456,10 @@ h1 {
   overflow: hidden;
   width: min(100%, 292px);
   margin: 0;
-  border: 1px solid rgba(49, 95, 88, 0.18);
+  border: 1px solid rgba(16, 96, 96, 0.18);
   border-radius: 22px;
-  background: #f8edd5;
-  box-shadow: 0 12px 28px rgba(38, 53, 44, 0.14);
+  background: #e9f5f0;
+  box-shadow: 0 12px 28px rgba(21, 24, 23, 0.14);
 }
 
 .photo-open {
@@ -483,7 +485,7 @@ h1 {
   gap: 10px;
   justify-content: space-between;
   padding: 9px 11px;
-  color: #26352c;
+  color: #151817;
   font-size: 0.78rem;
   line-height: 1.25;
 }
@@ -498,8 +500,8 @@ h1 {
   flex: 0 0 auto;
   border-radius: 999px;
   padding: 6px 10px;
-  background: rgba(49, 95, 88, 0.12);
-  color: #315f58;
+  background: rgba(16, 96, 96, 0.12);
+  color: #106060;
   font-size: 0.76rem;
   font-weight: 850;
   text-decoration: none;
@@ -511,8 +513,8 @@ h1 {
   gap: 8px;
   padding: 7px 9px;
   border-radius: 999px;
-  background: rgba(228, 191, 115, 0.25);
-  color: #26352c;
+  background: rgba(0, 255, 255, 0.16);
+  color: #151817;
   font-size: 0.82rem;
 }
 
@@ -528,8 +530,8 @@ h1 {
   flex-wrap: wrap;
   gap: 8px;
   padding: 10px 16px;
-  border-top: 1px solid rgba(38, 53, 44, 0.08);
-  background: rgba(255, 248, 234, 0.7);
+  border-top: 1px solid rgba(21, 24, 23, 0.08);
+  background: rgba(248, 255, 252, 0.72);
   color: #526055;
   font-size: 0.82rem;
 }
@@ -538,7 +540,7 @@ h1 {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: rgba(38, 53, 44, 0.25);
+  background: rgba(21, 24, 23, 0.25);
 }
 
 .voice-dot.ready {
@@ -564,8 +566,8 @@ h1 {
 .interim-text {
   border-radius: 999px;
   padding: 5px 9px;
-  background: rgba(49, 95, 88, 0.1);
-  color: #315f58;
+  background: rgba(16, 96, 96, 0.1);
+  color: #106060;
   font-size: 0.76rem;
   font-weight: 800;
 }
@@ -584,7 +586,7 @@ h1 {
   border: 0;
   border-radius: 999px;
   padding: 7px 10px;
-  color: #fff8ea;
+  color: #f8fffc;
   background: #e75f48;
   font-weight: 850;
 }
@@ -595,8 +597,8 @@ h1 {
   gap: 8px;
   align-items: center;
   padding: 10px 16px;
-  border-top: 1px solid rgba(38, 53, 44, 0.08);
-  background: rgba(255, 248, 234, 0.86);
+  border-top: 1px solid rgba(21, 24, 23, 0.08);
+  background: rgba(248, 255, 252, 0.86);
 }
 
 .upload-button {
@@ -604,11 +606,11 @@ h1 {
   align-items: center;
   justify-content: center;
   min-height: 40px;
-  border: 1px solid rgba(38, 53, 44, 0.18);
+  border: 1px solid rgba(21, 24, 23, 0.18);
   border-radius: 999px;
   padding: 0 14px;
-  color: #fff8ea;
-  background: #315f58;
+  color: #f8fffc;
+  background: #106060;
   font-size: 0.86rem;
   font-weight: 850;
   cursor: pointer;
@@ -625,11 +627,11 @@ h1 {
 
 .upload-target {
   min-width: 0;
-  border: 1px solid rgba(38, 53, 44, 0.2);
+  border: 1px solid rgba(21, 24, 23, 0.2);
   border-radius: 999px;
   padding: 10px 12px;
-  color: #26352c;
-  background: #fffdf7;
+  color: #151817;
+  background: #f8fffc;
   font-family: inherit;
 }
 
@@ -644,34 +646,34 @@ h1 {
   grid-template-columns: auto 1fr auto;
   gap: 10px;
   padding: 14px;
-  background: rgba(38, 53, 44, 0.08);
+  background: rgba(21, 24, 23, 0.08);
 }
 
 .composer input {
   min-width: 0;
-  border: 1px solid rgba(38, 53, 44, 0.18);
+  border: 1px solid rgba(21, 24, 23, 0.18);
   border-radius: 999px;
   padding: 14px 16px;
-  background: #fffdf7;
-  color: #26352c;
+  background: #f8fffc;
+  color: #151817;
 }
 
 .composer button {
   border: 0;
   border-radius: 999px;
   padding: 0 18px;
-  color: var(--jobdesk-accent-text, #fff8ea);
-  background: var(--jobdesk-accent, #b06b34);
+  color: var(--jobdesk-accent-text, #101010);
+  background: var(--jobdesk-accent, #00ffff);
 }
 
 .composer .mic {
   padding: 0 14px;
-  color: var(--jobdesk-accent-text, #26352c);
-  background: var(--jobdesk-accent, #e4bf73);
+  color: var(--jobdesk-accent-text, #101010);
+  background: var(--jobdesk-accent, #00ffff);
 }
 
 .composer .mic.active {
-  color: #fff8ea;
+  color: #f8fffc;
   background: #e75f48;
 }
 
@@ -684,14 +686,14 @@ h1 {
   display: grid;
   gap: 16px;
   padding: 30px;
-  border: 1px solid rgba(31, 33, 28, 0.16);
+  border: 1px solid rgba(21, 24, 23, 0.16);
   border-radius: 34px;
-  background: rgba(255, 250, 240, 0.92);
-  box-shadow: 0 28px 90px rgba(48, 44, 32, 0.28);
+  background: rgba(248, 255, 252, 0.92);
+  box-shadow: 0 28px 90px rgba(16, 24, 24, 0.28);
 }
 
 .auth-card h1 {
-  color: #26352c;
+  color: #151817;
 }
 
 .auth-card p {
@@ -708,24 +710,24 @@ h1 {
 .auth-form label {
   display: grid;
   gap: 7px;
-  color: #26352c;
+  color: #151817;
   font-size: 0.92rem;
 }
 
 .auth-form input {
-  border: 1px solid rgba(38, 53, 44, 0.18);
+  border: 1px solid rgba(21, 24, 23, 0.18);
   border-radius: 18px;
   padding: 14px 16px;
-  background: #fffdf7;
-  color: #26352c;
+  background: #f8fffc;
+  color: #151817;
 }
 
 .auth-form button {
   border: 0;
   border-radius: 999px;
   padding: 14px 18px;
-  color: #fff8ea;
-  background: #315f58;
+  color: #101010;
+  background: #00ffff;
 }
 
 .auth-form button:disabled {
@@ -756,7 +758,7 @@ h1 {
   gap: 12px;
   padding: 12px;
   border-radius: 26px;
-  background: #fff8ea;
+  background: #f8fffc;
   box-shadow: 0 28px 90px rgba(0, 0, 0, 0.34);
 }
 
@@ -765,7 +767,7 @@ h1 {
   max-height: min(72vh, 740px);
   object-fit: contain;
   border-radius: 18px;
-  background: #1f211c;
+  background: #151817;
 }
 
 .lightbox-actions {
@@ -779,13 +781,14 @@ h1 {
   border: 0;
   border-radius: 999px;
   padding: 12px 16px;
-  color: var(--jobdesk-accent-text, #fff8ea);
-  background: var(--jobdesk-user-bubble, #315f58);
+  color: var(--jobdesk-accent-text, #f8fffc);
+  background: var(--jobdesk-user-bubble, #106060);
   text-decoration: none;
 }
 
 .lightbox-actions button {
-  background: #b06b34;
+  color: #101010;
+  background: #00ffff;
 }
 
 .platform-shell {
@@ -800,11 +803,11 @@ h1 {
   gap: 18px;
   padding: 32px;
   border-radius: 34px;
-  color: #fff8ea;
+  color: #f8fffc;
   background:
-    radial-gradient(circle at top left, rgba(250, 190, 77, 0.2), transparent 34rem),
-    linear-gradient(135deg, #1f3d3a 0%, #315f58 55%, #fff8ea 55%, #f3dfc2 100%);
-  box-shadow: 0 28px 90px rgba(48, 44, 32, 0.2);
+    radial-gradient(circle at top left, rgba(0, 255, 255, 0.2), transparent 34rem),
+    linear-gradient(135deg, #181c1c 0%, #106060 55%, #f8fffc 55%, #dde7df 100%);
+  box-shadow: 0 28px 90px rgba(16, 24, 24, 0.2);
 }
 
 .platform-hero h1 {
@@ -822,21 +825,21 @@ h1 {
 .plan-card,
 .tenant-row {
   padding: 20px;
-  border: 1px solid rgba(38, 53, 44, 0.12);
+  border: 1px solid rgba(21, 24, 23, 0.12);
   border-radius: 28px;
-  background: rgba(255, 250, 240, 0.94);
-  box-shadow: 0 18px 54px rgba(48, 44, 32, 0.12);
+  background: rgba(248, 255, 252, 0.94);
+  box-shadow: 0 18px 54px rgba(16, 24, 24, 0.12);
 }
 
 .plan-card h2,
 .tenant-row h2 {
   margin: 4px 0;
-  color: #26352c;
+  color: #151817;
 }
 
 .plan-price {
   margin: 0;
-  color: #315f58;
+  color: #106060;
   font-size: 1.35rem;
   font-weight: 900;
 }
@@ -893,8 +896,8 @@ h1 {
   border: 0;
   border-radius: 999px;
   padding: 12px 16px;
-  color: #fff8ea;
-  background: #315f58;
+  color: #f8fffc;
+  background: #106060;
   font-weight: 850;
   text-align: center;
   text-decoration: none;

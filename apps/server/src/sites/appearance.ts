@@ -7,14 +7,14 @@ import {
 
 const palettes: Record<NonNullable<OperatorUiThemeInput["preset"]>, Required<OperatorUiThemeInput["colors"]>> = {
   aquatrace: {
-    shellBackground: "#ede2cf",
-    panelBackground: "#fffaf0",
-    headerBackground: "#26352c",
-    accent: "#b06b34",
-    accentText: "#fff8ea",
-    userBubble: "#315f58",
-    assistantBubble: "#fff8ea",
-    text: "#26352c"
+    shellBackground: "#dde7df",
+    panelBackground: "#f8fffc",
+    headerBackground: "#181c1c",
+    accent: "#00ffff",
+    accentText: "#101010",
+    userBubble: "#106060",
+    assistantBubble: "#f8fffc",
+    text: "#151817"
   },
   deep_water: {
     shellBackground: "#dceff1",

@@ -65,19 +65,19 @@ export function defaultTenantBranding(tenant: Tenant | string = defaultTenant())
       tenantId,
       displayName: "Aquatrace",
       colors: {
-        primary: "#26352c",
-        secondary: "#315f58",
-        accent: "#e4bf73",
-        accentText: "#26352c",
-        background: "#dfe8d8",
-        surface: "#fff8ea",
-        text: "#26352c",
-        mutedText: "#6d7b6f",
-        userBubble: "#315f58",
-        assistantBubble: "#fff8ea"
+        primary: "#181c1c",
+        secondary: "#585858",
+        accent: "#00ffff",
+        accentText: "#101010",
+        background: "#dde7df",
+        surface: "#f8fffc",
+        text: "#151817",
+        mutedText: "#586466",
+        userBubble: "#106060",
+        assistantBubble: "#f8fffc"
       },
       fontFamily: "Georgia, 'Times New Roman', serif",
-      source: "default",
+      source: "extracted",
       updatedBy: "system",
       updatedAt
     };
