@@ -76,7 +76,7 @@ export function defaultTenantBranding(tenant: Tenant | string = defaultTenant())
         userBubble: "#106060",
         assistantBubble: "#f8fffc"
       },
-      fontFamily: "Georgia, 'Times New Roman', serif",
+      fontFamily: "Montserrat, Aptos, Segoe UI, Helvetica Neue, sans-serif",
       source: "extracted",
       updatedBy: "system",
       updatedAt
@@ -97,7 +97,7 @@ export function defaultTenantBranding(tenant: Tenant | string = defaultTenant())
       userBubble: "#315f58",
       assistantBubble: "#fff8ea"
     },
-    fontFamily: "Georgia, 'Times New Roman', serif",
+    fontFamily: "Montserrat, Aptos, Segoe UI, Helvetica Neue, sans-serif",
     source: "default",
     updatedBy: "system",
     updatedAt

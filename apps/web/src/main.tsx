@@ -525,6 +525,8 @@ const buildTimeFirebaseConfig: FirebasePublicConfig = {
 
 const DEFAULT_TENANT_ID = "aquatrace";
 const AQUATRACE_LOGO_FALLBACK = "/tenants/aquatrace/aquatrace-banner-logo.png";
+const NEXTEAM_ICON_SRC = "/assets/brand/nexteam-icon.png";
+const NEXTEAM_WORDMARK_SRC = "/assets/brand/nexteam-wordmark.png";
 
 function claimString(claims: Record<string, unknown>, key: string): string | undefined {
   const value = claims[key];
@@ -631,6 +633,15 @@ function TenantBrandMark(props: { branding: TenantBranding | null; tenantId: str
     return <img alt={props.branding?.logo?.alt ?? `${displayName} logo`} className="tenant-logo" src={logoSrc} />;
   }
   return <div className="tenant-wordmark" aria-label={`${displayName} logo placeholder`}>{displayName}</div>;
+}
+
+function NexTeamLockup(props: { className?: string; compact?: boolean }): React.ReactElement {
+  return (
+    <div className={`nexteam-lockup ${props.compact ? "compact" : ""} ${props.className ?? ""}`.trim()} aria-label="NexTeam Studio">
+      <img className="nexteam-lockup-icon" src={NEXTEAM_ICON_SRC} alt="" aria-hidden="true" />
+      {!props.compact ? <img className="nexteam-lockup-wordmark" src={NEXTEAM_WORDMARK_SRC} alt="NexTeam Studio" /> : null}
+    </div>
+  );
 }
 
 function isOwnerCustomizedOperatorTheme(theme: OperatorUiTheme | null): theme is OperatorUiTheme {
@@ -1364,14 +1375,15 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
     const phone = contact?.phones?.find((entry) => entry.receivesMessages) ?? contact?.phones?.[0];
     return phone?.receivesMessages && phone.smsCapability === "mobile";
   }).length;
-  const colors = tenantBranding?.colors;
   const style = {
-    "--nexops-brand-primary": colors?.primary ?? "#071817",
-    "--nexops-brand-accent": colors?.accent ?? "#00f0f0",
-    "--nexops-brand-background": colors?.background ?? "#f6f8f5",
-    "--nexops-brand-surface": colors?.surface ?? "#ffffff",
-    "--nexops-brand-text": colors?.text ?? "#082131",
-    "--nexops-font-family": tenantBranding?.fontFamily ?? "Aptos, Segoe UI, Helvetica Neue, sans-serif"
+    "--nexops-brand-primary": "#0c1118",
+    "--nexops-brand-accent": "#A8E600",
+    "--nexops-brand-gradient": "linear-gradient(135deg, #D4FF20 0%, #25D238 100%)",
+    "--nexops-brand-background": "#f5f7f1",
+    "--nexops-brand-surface": "#ffffff",
+    "--nexops-brand-text": "#101822",
+    "--nexops-brand-muted": "#68717c",
+    "--nexops-font-family": "Montserrat, Aptos, Segoe UI, Helvetica Neue, sans-serif"
   } as React.CSSProperties;
 
   const moduleTitle = NEXOPS_MODULES.find((module) => module.id === activeModule)?.label ?? "NexOps";
@@ -1789,12 +1801,22 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
     return (
       <div className="nexops-drawer-backdrop" role="presentation">
         <form className="nexops-drawer nexops-client-form" onSubmit={(event) => void createClientFromForm(event)}>
-          <div className="nexops-drawer-heading">
-            <div>
+          <div className="nexops-drawer-heading nexops-client-form-hero">
+            <div className="nexops-client-form-hero-copy">
+              <NexTeamLockup className="nexops-client-form-brand" />
               <p className="eyebrow">NexOps CRM</p>
-              <h2>New Client</h2>
+              <h2>New client</h2>
+              <p>Capture the parent relationship first, then add service sites, local property contacts, and communication rules without mixing billing or field access.</p>
             </div>
-            <button type="button" onClick={() => setShowCreateClient(false)}>Close</button>
+            <div className="nexops-client-form-hero-actions">
+              <span>Proof screen: final NexTeam design system</span>
+              <button type="button" onClick={() => setShowCreateClient(false)}>Close</button>
+            </div>
+            <ul className="nexops-form-principles" aria-label="Client setup rules">
+              <li>Parent client owns billing</li>
+              <li>Company display is optional</li>
+              <li>Texts stay one-way unless upgraded</li>
+            </ul>
           </div>
           <section className="nexops-form-section">
             <div className="nexops-section-copy">
@@ -1970,8 +1992,9 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
     <main className="nexops-app" style={style}>
       <aside className="nexops-app-sidebar" aria-label="NexOps navigation">
         <div className="nexops-app-logo">
-          <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} />
+          <NexTeamLockup className="nexops-sidebar-lockup" />
           <span>NexOps</span>
+          <small>{tenantName}</small>
         </div>
         <button className="nexops-create-button" type="button" onClick={() => setShowCreateClient(true)}>Create</button>
         <nav className="nexops-nav">
@@ -2162,14 +2185,15 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
     void refreshTemplates();
   }, [operatorContext.tenantId]);
 
-  const colors = tenantBranding?.colors;
   const style = {
-    "--nexops-brand-primary": colors?.primary ?? "#071817",
-    "--nexops-brand-accent": colors?.accent ?? "#00f0f0",
-    "--nexops-brand-background": colors?.background ?? "#f6f8f5",
-    "--nexops-brand-surface": colors?.surface ?? "#ffffff",
-    "--nexops-brand-text": colors?.text ?? "#082131",
-    "--nexops-font-family": tenantBranding?.fontFamily ?? "Aptos, Segoe UI, Helvetica Neue, sans-serif"
+    "--nexops-brand-primary": "#0c1118",
+    "--nexops-brand-accent": "#A8E600",
+    "--nexops-brand-gradient": "linear-gradient(135deg, #D4FF20 0%, #25D238 100%)",
+    "--nexops-brand-background": "#f5f7f1",
+    "--nexops-brand-surface": "#ffffff",
+    "--nexops-brand-text": "#101822",
+    "--nexops-brand-muted": "#68717c",
+    "--nexops-font-family": "Montserrat, Aptos, Segoe UI, Helvetica Neue, sans-serif"
   } as React.CSSProperties;
   const template = templates[0];
   const propertyItems = template?.items.filter((item) => item.memory === "property") ?? [];
@@ -2315,8 +2339,9 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
     <main className="nexops-app nexshot-app" style={style}>
       <aside className="nexops-app-sidebar" aria-label="NexShot navigation">
         <div className="nexops-app-logo">
-          <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} />
+          <NexTeamLockup className="nexops-sidebar-lockup" />
           <span>NexShot</span>
+          <small>{tenantBranding?.displayName ?? (operatorContext.tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : operatorContext.tenantId)}</small>
         </div>
         <button className="nexops-create-button" type="button" onClick={() => void createChecklist()}>Start Checklist</button>
         <nav className="nexops-nav">

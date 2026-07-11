@@ -2,6 +2,34 @@
 
 Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this file on each meaningful build pass, test pass, receipt, or owner decision so the next session can catch up without reconstructing context from chat.
 
+## 2026-07-11 - NexTeam brand assets and New Client proof screen
+
+### Owner Decisions Applied
+- Final NexTeam design system supersedes the prior NexOps/Aquatrace-heavy visual direction.
+- Primary product palette is the NexTeam lime-to-green gradient: `#D4FF20` to `#25D238`.
+- Flat green fallback is `#A8E600`.
+- Support colors are deep navy/charcoal, white, and silver/light gray.
+- Montserrat is the site-wide product font.
+- NexOps/NexShot should feel like NexTeam products, not Jobber clones and not Aquatrace-branded dashboards.
+- The New Client modal is the proof-of-concept screen before the system rolls out broadly.
+
+### Brand Assets Saved
+- Source `C:\Users\Peyto\Downloads\ChatGPT Image Jul 11, 2026, 01_00_36 PM (1).png` saved as `public/assets/brand/nexteam-icon.png`.
+- Source `C:\Users\Peyto\Downloads\ChatGPT Image Jul 11, 2026, 01_00_36 PM (2).png` saved as `public/assets/brand/nexteam-lockup-horizontal.png`.
+- Source `C:\Users\Peyto\Downloads\ChatGPT Image Jul 11, 2026, 01_00_36 PM (3).png` saved as `public/assets/brand/nexteam-wordmark.png`.
+- Canonical icon decision: use the standalone icon file `nexteam-icon.png` as the single canonical icon shape for app icon, favicon, sidebar mark, and all composed UI lockups. The horizontal lockup remains saved as a brand asset, but product UI composes the canonical icon plus wordmark to avoid two slightly different icon crops.
+
+### Built This Pass
+- Added reusable NexTeam lockup rendering from the canonical icon and wordmark assets.
+- Rebuilt the NexOps New Client modal header as the proof screen for the final NexTeam design system.
+- Added NexTeam product CSS tokens and Montserrat import.
+- Updated NexOps and NexShot product chrome to use NexTeam-owned palette/font tokens rather than tenant colors.
+- Updated NexOps and NexShot sidebars to show the NexTeam lockup plus module name.
+- Updated default tenant branding font fallback to Montserrat so new tenant-facing surfaces do not revert to serif typography.
+
+### Reality Gate Status
+- This is not a full site-wide rollout yet. It is the requested proof screen for owner approval before applying the system across NexOps and NexShot.
+
 ## 2026-07-11 - NexOps New Client form polish
 
 ### Owner Decisions Applied

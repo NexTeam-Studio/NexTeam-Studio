@@ -1,7 +1,17 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap");
+
 :root {
+  --nexteam-charcoal: #0c1118;
+  --nexteam-charcoal-2: #151b24;
+  --nexteam-lime: #d4ff20;
+  --nexteam-green: #25d238;
+  --nexteam-flat-green: #a8e600;
+  --nexteam-silver: #c8ced6;
+  --nexteam-soft-bg: #f5f7f1;
+  --nexteam-gradient: linear-gradient(135deg, var(--nexteam-lime) 0%, var(--nexteam-green) 100%);
   color: #151817;
   background: #dde7df;
-  font-family: "Aptos", "Segoe UI", "Helvetica Neue", sans-serif;
+  font-family: "Montserrat", "Aptos", "Segoe UI", "Helvetica Neue", sans-serif;
 }
 
 body {
@@ -26,7 +36,7 @@ input {
 
 .ops-shell {
   place-items: stretch;
-  font-family: var(--jobdesk-font-family, "Aptos", "Segoe UI", "Helvetica Neue", sans-serif);
+  font-family: var(--jobdesk-font-family, "Montserrat", "Aptos", "Segoe UI", "Helvetica Neue", sans-serif);
 }
 
 .ops-shell.density-compact .thread {
@@ -372,10 +382,10 @@ input {
 .nexops-app {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 188px minmax(0, 1fr);
+  grid-template-columns: 212px minmax(0, 1fr);
   color: var(--nexops-brand-text, #082131);
   background: var(--nexops-brand-background, #f6f8f5);
-  font-family: var(--nexops-font-family, "Aptos", "Segoe UI", "Helvetica Neue", sans-serif);
+  font-family: var(--nexops-font-family, "Montserrat", "Aptos", "Segoe UI", "Helvetica Neue", sans-serif);
 }
 
 .nexops-app button,
@@ -391,18 +401,59 @@ input {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   box-sizing: border-box;
-  padding: 18px 12px;
-  border-right: 1px solid rgba(8, 33, 49, 0.12);
-  background: #e9e6de;
+  padding: 22px 14px;
+  border-right: 1px solid rgba(212, 255, 32, 0.16);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(212, 255, 32, 0.14), transparent 32%),
+    linear-gradient(180deg, #101722 0%, #090d13 100%);
+  box-shadow: 18px 0 52px rgba(12, 17, 24, 0.18);
 }
 
 .nexops-app-logo {
   display: grid;
   gap: 8px;
-  padding: 4px 8px 14px;
-  color: var(--nexops-brand-primary, #071817);
+  padding: 4px 8px 16px;
+  color: #fff;
+}
+
+.nexteam-lockup {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.nexteam-lockup.compact {
+  justify-content: center;
+}
+
+.nexteam-lockup-icon {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgba(37, 210, 56, 0.22));
+}
+
+.nexteam-lockup-wordmark {
+  width: min(210px, 72vw);
+  max-height: 58px;
+  object-fit: contain;
+}
+
+.nexops-sidebar-lockup {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nexops-sidebar-lockup .nexteam-lockup-icon {
+  width: 38px;
+  height: 38px;
+}
+
+.nexops-sidebar-lockup .nexteam-lockup-wordmark {
+  width: 145px;
 }
 
 .nexops-app-logo .tenant-logo {
@@ -419,22 +470,29 @@ input {
 }
 
 .nexops-app-logo span {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
+}
+
+.nexops-app-logo small {
+  color: var(--nexteam-silver);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .nexops-create-button,
 .nexops-client-actions button,
 .nexops-web-tools button {
   border: 0;
-  border-radius: 9px;
+  border-radius: 999px;
   padding: 12px 15px;
-  color: #fff;
-  background: #147a26;
+  color: #08100c;
+  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
   font-weight: 900;
   cursor: pointer;
+  box-shadow: 0 14px 28px rgba(37, 210, 56, 0.22);
 }
 
 .nexops-create-button {
@@ -451,9 +509,9 @@ input {
 .nexops-nav a,
 .nexops-nav button {
   border: 0;
-  border-radius: 8px;
-  padding: 10px 12px;
-  color: #072231;
+  border-radius: 14px;
+  padding: 11px 12px;
+  color: rgba(255, 255, 255, 0.78);
   background: transparent;
   font-weight: 850;
   font-size: 0.95rem;
@@ -466,7 +524,9 @@ input {
 .nexops-nav a.active,
 .nexops-nav button:hover,
 .nexops-nav button.active {
-  background: rgba(8, 33, 49, 0.08);
+  color: #08100c;
+  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
+  box-shadow: 0 10px 24px rgba(37, 210, 56, 0.18);
 }
 
 .nexops-dashboard,
@@ -500,13 +560,14 @@ input {
 .nexops-drawer-actions button,
 .nexops-module-card a {
   border: 0;
-  border-radius: 9px;
+  border-radius: 999px;
   padding: 12px 15px;
-  color: #fff;
-  background: #147a26;
+  color: #08100c;
+  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
   font-weight: 900;
   text-decoration: none;
   cursor: pointer;
+  box-shadow: 0 14px 28px rgba(37, 210, 56, 0.18);
 }
 
 .nexops-workflow-strip {
@@ -702,23 +763,28 @@ input {
   z-index: 30;
   display: grid;
   place-items: stretch;
-  background: rgba(8, 33, 49, 0.22);
-  backdrop-filter: blur(3px);
+  background:
+    radial-gradient(circle at 14% 8%, rgba(212, 255, 32, 0.22), transparent 28%),
+    rgba(12, 17, 24, 0.72);
+  backdrop-filter: blur(8px);
 }
 
 .nexops-drawer {
   width: min(1120px, calc(100% - 48px));
-  height: 100%;
+  height: min(100%, 980px);
   box-sizing: border-box;
   display: grid;
   grid-template-rows: auto auto auto auto;
   align-content: start;
-  gap: 28px;
+  gap: 30px;
   justify-self: center;
-  padding: 36px 44px 104px;
+  margin: 22px 0;
+  padding: 0 0 104px;
   overflow: auto;
-  background: #fff;
-  box-shadow: 0 24px 84px rgba(8, 33, 49, 0.18);
+  border: 1px solid rgba(212, 255, 32, 0.28);
+  border-radius: 30px;
+  background: #f7f9f4;
+  box-shadow: 0 32px 110px rgba(0, 0, 0, 0.34);
 }
 
 .nexops-drawer-heading,
@@ -729,30 +795,136 @@ input {
   gap: 14px;
 }
 
-.nexops-drawer-heading h2 {
-  margin: 0;
-  color: #082131;
-  font-size: clamp(2rem, 4vw, 2.65rem);
-  font-weight: 850;
-  letter-spacing: -0.03em;
+.nexops-client-form-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22px;
+  padding: 30px 34px 28px;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(circle at 82% 16%, rgba(212, 255, 32, 0.26), transparent 24%),
+    linear-gradient(135deg, #151b24 0%, #0a0f16 56%, #172214 100%);
 }
 
-.nexops-drawer-heading button,
+.nexops-client-form-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 28px 0;
+  height: 4px;
+  border-radius: 999px 999px 0 0;
+  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
+}
+
+.nexops-client-form-hero-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-client-form-brand {
+  margin-bottom: 6px;
+}
+
+.nexops-client-form-brand .nexteam-lockup-icon {
+  width: 50px;
+  height: 50px;
+}
+
+.nexops-client-form-brand .nexteam-lockup-wordmark {
+  width: 250px;
+}
+
+.nexops-client-form-hero .eyebrow {
+  color: var(--nexteam-flat-green);
+  letter-spacing: 0.18em;
+}
+
+.nexops-client-form-hero-copy > p:last-child {
+  max-width: 720px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.5;
+}
+
+.nexops-client-form-hero-actions {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: end;
+  align-content: start;
+  gap: 12px;
+}
+
+.nexops-client-form-hero-actions span {
+  max-width: 220px;
+  color: var(--nexteam-silver);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.nexops-form-principles {
+  position: relative;
+  z-index: 1;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nexops-form-principles li {
+  border: 1px solid rgba(212, 255, 32, 0.2);
+  border-radius: 999px;
+  padding: 9px 13px;
+  color: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.nexops-drawer-heading h2 {
+  margin: 0;
+  color: inherit;
+  font-size: clamp(2.6rem, 6vw, 4.8rem);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 0.9;
+}
+
+.nexops-client-form-hero-actions button {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
 .nexops-drawer-actions button:nth-child(2) {
-  color: #082131;
-  background: #edf2ef;
+  border: 1px solid rgba(16, 24, 34, 0.12);
+  color: #101822;
+  background: #fff;
+  box-shadow: none;
 }
 
 .nexops-client-form {
-  color: #082131;
+  color: #101822;
 }
 
 .nexops-form-section {
   display: grid;
-  grid-template-columns: minmax(190px, 0.34fr) minmax(0, 0.66fr);
-  gap: 42px;
-  padding-bottom: 38px;
-  border-bottom: 1px solid rgba(8, 33, 49, 0.14);
+  grid-template-columns: minmax(220px, 0.32fr) minmax(0, 0.68fr);
+  gap: 36px;
+  margin: 0 34px;
+  padding: 26px;
+  border: 1px solid rgba(16, 24, 34, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 60px rgba(16, 24, 34, 0.08);
 }
 
 .nexops-section-copy {
@@ -765,31 +937,36 @@ input {
 .nexops-section-fields h4,
 .nexops-subsection h4 {
   margin: 0;
-  color: #082131;
+  color: #101822;
   font-size: 1.15rem;
-  font-weight: 850;
+  font-weight: 900;
   letter-spacing: -0.01em;
 }
 
 .nexops-section-copy p,
 .nexops-extra-panel p {
   margin: 0;
-  color: #315064;
+  color: var(--nexops-brand-muted, #68717c);
   font-size: 0.92rem;
-  line-height: 1.28;
+  line-height: 1.42;
 }
 
 .nexops-section-copy button,
 .nexops-extra-panel button,
 .nexops-link-button {
   width: max-content;
-  border: 1px solid rgba(8, 33, 49, 0.16);
-  border-radius: 9px;
+  border: 1px solid rgba(16, 24, 34, 0.12);
+  border-radius: 999px;
   padding: 10px 16px;
-  color: #147a26;
+  color: #101822;
   background: #fff;
   font-weight: 850;
   cursor: pointer;
+}
+
+.nexops-link-button {
+  color: #08100c;
+  background: rgba(168, 230, 0, 0.16);
 }
 
 .nexops-section-fields,
@@ -818,11 +995,11 @@ input {
   align-content: center;
   gap: 4px;
   margin: 0;
-  border: 1px solid #d3dde2;
-  border-radius: 10px;
-  padding: 9px 14px;
-  color: #315064;
-  background: #fff;
+  border: 1px solid rgba(16, 24, 34, 0.12);
+  border-radius: 16px;
+  padding: 10px 15px;
+  color: var(--nexops-brand-muted, #68717c);
+  background: linear-gradient(180deg, #fff, #fbfcf8);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -834,17 +1011,17 @@ input {
 
 .nexops-field-row .nexops-field:first-child {
   margin-left: 0;
-  border-top-left-radius: 10px;
-  border-bottom-left-radius: 10px;
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
 }
 
 .nexops-field-row .nexops-field:last-child {
-  border-top-right-radius: 10px;
-  border-bottom-right-radius: 10px;
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
 }
 
 .nexops-field span {
-  color: #315064;
+  color: var(--nexops-brand-muted, #68717c);
 }
 
 .nexops-field input,
@@ -852,15 +1029,15 @@ input {
   min-width: 0;
   border: 0;
   outline: 0;
-  color: #082131;
+  color: #101822;
   background: transparent;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 650;
 }
 
 .nexops-field:focus-within {
-  border-color: #147a26;
-  box-shadow: 0 0 0 3px rgba(20, 122, 38, 0.12);
+  border-color: var(--nexteam-flat-green);
+  box-shadow: 0 0 0 4px rgba(168, 230, 0, 0.18);
 }
 
 .nexops-toggle-row {
@@ -873,33 +1050,34 @@ input {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #082131;
+  color: #101822;
   font-weight: 650;
 }
 
 .nexops-check-field.inline {
   min-height: 58px;
   padding: 0 14px;
-  border: 1px solid #d3dde2;
-  border-radius: 10px;
+  border: 1px solid rgba(16, 24, 34, 0.12);
+  border-radius: 16px;
   background: #fff;
 }
 
 .nexops-check-field input {
   width: 18px;
   height: 18px;
-  accent-color: #248222;
+  accent-color: var(--nexteam-flat-green);
 }
 
 .nexops-form-note {
   margin: 0;
-  color: #526675;
+  color: var(--nexops-brand-muted, #68717c);
 }
 
 .nexops-extra-panel {
   overflow: hidden;
-  border-radius: 10px;
-  background: #f6f5f1;
+  border: 1px solid rgba(16, 24, 34, 0.08);
+  border-radius: 18px;
+  background: #f3f6ef;
 }
 
 .nexops-extra-panel summary {
@@ -908,8 +1086,8 @@ input {
   justify-content: space-between;
   gap: 12px;
   padding: 17px 18px;
-  color: #082131;
-  font-weight: 850;
+  color: #101822;
+  font-weight: 900;
   cursor: pointer;
   list-style: none;
 }
@@ -920,7 +1098,7 @@ input {
 
 .nexops-extra-panel summary::after {
   content: "v";
-  color: #147a26;
+  color: var(--nexteam-green);
   font-weight: 950;
 }
 
@@ -942,10 +1120,10 @@ input {
 .nexops-drawer-actions {
   position: sticky;
   bottom: -104px;
-  margin: 12px -44px -104px;
-  padding: 20px 44px;
-  border-top: 1px solid rgba(8, 33, 49, 0.12);
-  background: rgba(255, 255, 255, 0.94);
+  margin: 12px 0 -104px;
+  padding: 20px 34px;
+  border-top: 1px solid rgba(16, 24, 34, 0.1);
+  background: rgba(247, 249, 244, 0.94);
   backdrop-filter: blur(12px);
 }
 
@@ -2206,9 +2384,34 @@ h1 {
 
   .nexops-drawer {
     width: min(calc(100vw - 24px), 720px);
+    height: calc(100vh - 24px);
     max-height: calc(100vh - 24px);
-    padding: 24px 18px 96px;
+    margin: 12px 0;
+    padding: 0 0 96px;
     overflow: auto;
+  }
+
+  .nexops-client-form-hero {
+    grid-template-columns: 1fr;
+    padding: 24px 20px;
+  }
+
+  .nexops-client-form-hero-actions {
+    justify-items: start;
+  }
+
+  .nexops-client-form-hero-actions span {
+    max-width: none;
+    text-align: left;
+  }
+
+  .nexops-client-form-brand {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nexops-client-form-brand .nexteam-lockup-wordmark {
+    width: 200px;
   }
 
   .nexops-form-section,
@@ -2218,16 +2421,23 @@ h1 {
     grid-template-columns: 1fr;
   }
 
+  .nexops-form-section {
+    margin: 0 14px;
+    padding: 18px;
+  }
+
   .nexops-field-row .nexops-field,
   .nexops-field-row .nexops-field:first-child,
   .nexops-field-row .nexops-field:last-child {
     margin-left: 0;
-    border-radius: 10px;
+    border-radius: 16px;
   }
 
   .nexops-drawer-actions {
-    margin: 12px -18px -96px;
-    padding: 18px;
+    margin: 12px 0 -96px;
+    padding: 16px 14px;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .ops-grid {
