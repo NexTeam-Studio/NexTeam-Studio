@@ -48,3 +48,31 @@ Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this 
 - Run real Jobber sync with read-only provider access and confirm expected Aquatrace client counts.
 - Continue NexOps pieces 3.3-3.6: quote builder, approval-to-scheduling, NexPortal, and visit closeout.
 - Continue NexShot pieces: real upload/capture flow, inline photo viewer, report PDF polish, and checklist-to-report handoff.
+
+## 2026-07-10 - Phase 1 staging receipt pass
+
+### Deploy Receipt
+- Deployed commit `f2aef5d5f650a2c7a0be2892e5ae8b8878e58734` to Railway staging.
+- `/api/version` matched `f2aef5d5f650a2c7a0be2892e5ae8b8878e58734`.
+- `/api/health` was green for Jobber, CompanyCam, Comms, and Anthropic configured/no-spend health.
+- Receipt: `receipts/phase1/staging-version-health-nexops-nexshot-20260710.json`.
+
+### NexOps Live Data Receipt
+- `/api/crm/clients?tenantId=aquatrace` returned `1,327` real Aquatrace client records with Jobber external IDs.
+- This proves the deployed read surface is populated with real native CRM/Jobber-backed data, not the earlier placeholder record.
+- Receipt: `receipts/phase1/nexops-live-clients-20260710.json`.
+
+### ASP Of Asheville Hierarchy Receipt
+- ASP of Asheville was found in the live client list.
+- `/api/crm/properties?tenantId=aquatrace` and `/api/crm/jobs?tenantId=aquatrace` showed `41` ASP properties and `34` ASP jobs.
+- Hierarchy confirmed from live records.
+- Receipt: `receipts/phase1/nexops-asp-hierarchy-20260710.json`.
+
+### NexShot Report Receipt
+- Created a live NexShot checklist/report record using Deborah Justice CompanyCam checklist-derived data.
+- Generated a real PDF from the staging report route: `%PDF-1.4`, `3,665` bytes, saved at `receipts/phase1/nexshot-deborah-justice-report-20260710.pdf`.
+- Receipt: `receipts/phase1/nexshot-report-live-20260710.json`.
+
+### Open Blockers
+- Authenticated `/nexops` screenshot is blocked from this runner because staging does not expose an operator password to automation. The unauthenticated screenshot correctly shows the Firebase sign-in wall, saved at `receipts/phase1/nexops-clients-staging-screenshot-20260710.png`. API receipts prove the data; owner/browser or a dedicated service-account browser-auth path is needed for the signed-in UI screenshot.
+- Full live regression wall is not complete. Local run failed before reaching Nexi because the proof runner lacked `VITE_FIREBASE_API_KEY`. Railway-env run reached staging and passed the first `32/32` cases with `0` failures, but did not complete before the 30-minute tool limit. Orphaned wall processes were stopped to avoid continued spend. Partial receipt: `receipts/phase1/nexi-regression-wall-live-20260710.json`.

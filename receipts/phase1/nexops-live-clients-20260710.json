@@ -1,0 +1,275 @@
+﻿{
+    "capturedAt":  "2026-07-11T02:30:05.3209746Z",
+    "baseUrl":  "https://nexteam-studio-staging.up.railway.app",
+    "tenantId":  "aquatrace",
+    "endpoint":  "/api/crm/clients?tenantId=aquatrace",
+    "ok":  true,
+    "rawContentLength":  371755,
+    "clientCount":  1327,
+    "sampleFirst30":  [
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDAyMzQ2Nw==",
+                              "name":  "Stayable Suites",
+                              "company":  "Stayable Suites",
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDAyMzQ2Nw=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDM5MzgzNg==",
+                              "name":  "Marc Zumberg",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDM5MzgzNg=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDMwNDY1NA==",
+                              "name":  "Mae Bryant",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  2,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDMwNDY1NA=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDMwNDg5Ng==",
+                              "name":  "Kenneth Thomas",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDMwNDg5Ng=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDMwNDgyOA==",
+                              "name":  "H.B. Long",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDMwNDgyOA=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDUyNzg2OQ==",
+                              "name":  "Greg Payne",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDUyNzg2OQ=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDUyNzgyNQ==",
+                              "name":  "Rebecca Hedges",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDUyNzgyNQ=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDUyNzk4OA==",
+                              "name":  "Sherwin Shilati",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDUyNzk4OA=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDY0NDM0Nw==",
+                              "name":  "Joseph Whitten",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDY0NDM0Nw=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDY0NDY1Mw==",
+                              "name":  "Theresa Sanders",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDY0NDY1Mw=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDYwODU1OA==",
+                              "name":  "Jody Harris",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDYwODU1OA=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDc0OTQwNQ==",
+                              "name":  "Jordan Glen School",
+                              "company":  "Jordan Glen School",
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDc0OTQwNQ=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDc1MzU5Mg==",
+                              "name":  "Daniel Duran",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDc1MzU5Mg=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDc1MzYyNg==",
+                              "name":  "Inspire Communities",
+                              "company":  "Inspire Communities",
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDc1MzYyNg=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDk0MDE5OA==",
+                              "name":  "Oasis Pools",
+                              "company":  "Oasis Pools",
+                              "emailCount":  1,
+                              "phoneCount":  3,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDk0MDE5OA=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDk0ODc4Ng==",
+                              "name":  "Nate Stoltzfus",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDk0ODc4Ng=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDk0OTAxNw==",
+                              "name":  "Scott Fitzgerald",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDk0OTAxNw=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDk0OTE3MQ==",
+                              "name":  "Amy Peeples",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDk0OTE3MQ=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDk3NTQxNw==",
+                              "name":  "Vicki Benson",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MDk3NTQxNw=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTA0ODA2OQ==",
+                              "name":  "Kelly Duncan",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTA0ODA2OQ=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTA1MDU2MQ==",
+                              "name":  "Sherry Coffey",
+                              "company":  null,
+                              "emailCount":  0,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTA1MDU2MQ=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTE2NDI5NA==",
+                              "name":  "Roy Stancell",
+                              "company":  null,
+                              "emailCount":  0,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTE2NDI5NA=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTM5Mjk2OA==",
+                              "name":  "The Forest at Biltmore Park",
+                              "company":  "The Forest at Biltmore Park",
+                              "emailCount":  1,
+                              "phoneCount":  2,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTM5Mjk2OA=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTM5Mjk5NA==",
+                              "name":  "Rick Johns",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTM5Mjk5NA=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTM5MjkzOQ==",
+                              "name":  "Rene Whaley",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTM5MjkzOQ=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTM5MzAxNA==",
+                              "name":  "Gary Kanter",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTM5MzAxNA=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTQ2Mjg3Ng==",
+                              "name":  "Geoff and Karen Levy",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTQ2Mjg3Ng=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTY3NDczNw==",
+                              "name":  "Doug Livoni",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTY3NDczNw=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTYwMTY2Mg==",
+                              "name":  "Mike Jones",
+                              "company":  null,
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTYwMTY2Mg=="
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTc2NDAyMg==",
+                              "name":  "Brookfall Associates",
+                              "company":  "Brookfall Associates",
+                              "emailCount":  1,
+                              "phoneCount":  1,
+                              "externalJobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC80MTc2NDAyMg=="
+                          }
+                      ],
+    "aspOfAsheville":  {
+                           "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                           "tenantId":  "aquatrace",
+                           "name":  "ASP of Asheville",
+                           "company":  "ASP of Asheville",
+                           "emails":  [
+                                          "aspofasheville@gmail.com"
+                                      ],
+                           "phones":  [
+                                          "8285515511",
+                                          "8287726469"
+                                      ],
+                           "tags":  [
+
+                                    ],
+                           "consent":  {
+                                           "email":  false,
+                                           "sms":  false
+                                       },
+                           "externalIds":  {
+                                               "jobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg=="
+                                           }
+                       },
+    "note":  "Live staging native CRM client read; contains real Jobber-backed Aquatrace client data."
+}

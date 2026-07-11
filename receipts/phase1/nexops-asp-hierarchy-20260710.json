@@ -1,0 +1,1157 @@
+﻿{
+    "capturedAt":  "2026-07-11T02:30:53.6965841Z",
+    "baseUrl":  "https://nexteam-studio-staging.up.railway.app",
+    "tenantId":  "aquatrace",
+    "aspClient":  {
+                      "id":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                      "tenantId":  "aquatrace",
+                      "name":  "ASP of Asheville",
+                      "company":  "ASP of Asheville",
+                      "emails":  [
+                                     "aspofasheville@gmail.com"
+                                 ],
+                      "phones":  [
+                                     "8285515511",
+                                     "8287726469"
+                                 ],
+                      "tags":  [
+
+                               ],
+                      "consent":  {
+                                      "email":  false,
+                                      "sms":  false
+                                  },
+                      "externalIds":  {
+                                          "jobber":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg=="
+                                      }
+                  },
+    "totalProperties":  706,
+    "totalJobs":  625,
+    "aspPropertyCount":  41,
+    "aspProperties":  [
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMDQxNg==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "4900 Idle Hour Drive",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28728",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMDQxNg=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMTE3NQ==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "3 Reynolds Mountain Boulevard",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28804",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMTE3NQ=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMTI5Nw==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "240 Marathon Lane",
+                                              "city":  "Candler",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28715",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMTI5Nw=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMTQ1Nw==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "100 Southway Garden Road",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28704",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMTQ1Nw=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMTQyNA==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "1 Pebble Creek Drive",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMTQyNA=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NjE5OTA0NQ==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "9 Brian Boulevard",
+                                              "city":  "Buncombe County",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28704",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NjE5OTA0NQ=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NjE5OTQ1OQ==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "186 Hendersonville Road",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NjE5OTQ1OQ=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzE3NzYyOQ==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "60 Fallen Spruce Drive",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28806",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0NzE3NzYyOQ=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MjE2MTg0MA==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "234 Hendersonville Road",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE1MjE2MTg0MA=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzExMDUwMTE4MA==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "90 Vintage Road",
+                                              "city":  "Candler",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28715",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzExMDUwMTE4MA=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzExMDUwMTE5Mg==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "118 Sleepy Hollow Lane",
+                                              "city":  "Swannanoa",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28778",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzExMDUwMTE5Mg=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzExMDUwMTIyOQ==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "199 Tunnel Road",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28805",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzExMDUwMTIyOQ=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzcyMzIxNTMx",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "12 Glenn Willow Drive",
+                                              "street2":  "Suite 55",
+                                              "city":  "Arden",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28704",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzcyMzIxNTMx"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4MTkw",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "204 Hendersonville Road",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4MTkw"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4MjM5",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "42 Tunnel Road",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28805",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4MjM5"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4Mjcy",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "43 Town Square Boulevard",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4Mjcy"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4MzA1",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "184 Tunnel Road",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28805",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4MzA1"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4MzU1",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "115 Hendersonville Road",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4MzU1"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg4MTkwMzg3",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "235 Skytop Farm Lane",
+                                              "city":  "Hendersonville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28791",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg4MTkwMzg3"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg4MTkwNTcw",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "1067 Columbine Road",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg4MTkwNTcw"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg4MTkwNjY4",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "647 Town Mountain Road",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28804",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg4MTkwNjY4"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg4MTkwODc1",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "100 Cimarron Drive",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg4MTkwODc1"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg4NzU0MDY5",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "117 Hendersonville Road",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg4NzU0MDY5"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzgwMTM2NzQx",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "617 Upper Sondley Drive",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28805",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzgwMTM2NzQx"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTE3NjIy",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "200 Kensington Place",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTE3NjIy"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTE3NzEw",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "89 Rose Creek Road",
+                                              "city":  "Leicester",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28748",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTE3NzEw"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMjIx",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "110 Heywood Road",
+                                              "city":  "Arden",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28704",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMjIx"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMjU1",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "305 Piney Mountain Drive",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28805",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMjU1"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMjkw",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "81 Mountain Meadow Circle",
+                                              "city":  "Weaverville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28787",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMjkw"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMzE4",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "36 Pink Fox Cove Road",
+                                              "city":  "Weaverville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28787",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMzE4"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMzQz",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "4 Endless View Drive",
+                                              "city":  "Weaverville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28787",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMzQz"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMzU5",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "135 Israel Road",
+                                              "city":  "Leicester",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28748",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTkwMzU5"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwOTUzMzM5",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "61 Foxberry Drive",
+                                              "city":  "Arden",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28704",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwOTUzMzM5"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxMzU1NjMz",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "746 Streamside Drive",
+                                              "city":  "Arden",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28704",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxMzU1NjMz"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxMzU2OTAz",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "59 Running Creek Trail",
+                                              "city":  "Arden",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28704",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxMzU2OTAz"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxNDAwMjg1",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "100 Clubwood Court",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxNDAwMjg1"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxNDAwMzM3",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "38 Cedarwood Valley",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28803",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxNDAwMzM3"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxNDAwMzY1",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "32 Maple Ridge Lane",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28806",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxNDAwMzY1"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkyMzExOTc2",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "113 Willow Lake Drive",
+                                              "city":  "Asheville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28805",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkyMzExOTc2"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkyMzEyMDM4",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "104 Cumberland Drive",
+                                              "city":  "Hendersonville",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28792",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkyMzEyMDM4"
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkzNjg3MjMx",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "address":  {
+                                              "street1":  "353 Mountain Laurel Drive",
+                                              "city":  "Franklin",
+                                              "province":  "North Carolina",
+                                              "postalCode":  "28734",
+                                              "country":  "United States"
+                                          },
+                              "assets":  [
+
+                                         ],
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkzNjg3MjMx"
+                                              }
+                          }
+                      ],
+    "aspJobCount":  34,
+    "aspJobsSample":  [
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi84OTU4Mjg0NQ==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxNDAwMjg1",
+                              "status":  "lead",
+                              "title":  "ASP Asheville - Swimming Pool Main Drain Cover Replacement",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  1250,
+                                             "tax":  0,
+                                             "total":  1250
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi84OTU4Mjg0NQ=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi84OTU4Mjg5OQ==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxNDAwMzM3",
+                              "status":  "lead",
+                              "title":  "ASP Asheville - Swimming Pool Main Drain Cover Replacement",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  875,
+                                             "tax":  0,
+                                             "total":  875
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi84OTU4Mjg5OQ=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi84OTU4Mjk1NA==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxNDAwMzY1",
+                              "status":  "lead",
+                              "title":  "ASP Asheville - Swimming Pool Main Drain Cover Replacement",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  500,
+                                             "tax":  0,
+                                             "total":  500
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi84OTU4Mjk1NA=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi85MDUzNDQyNg==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkwMTE3NzEw",
+                              "status":  "lead",
+                              "title":  "ASP Asheville - Swimming Pool Main Drain Cover Replacement",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  500,
+                                             "tax":  0,
+                                             "total":  500
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi85MDUzNDQyNg=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi85MDUzNTA4Mw==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkyMzExOTc2",
+                              "status":  "lead",
+                              "title":  "ASP Asheville - Swimming Pool Main Drain Cover Replacement",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  500,
+                                             "tax":  0,
+                                             "total":  500
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi85MDUzNTA4Mw=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi85MDUzNTIxNw==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkyMzEyMDM4",
+                              "status":  "lead",
+                              "title":  "ASP Asheville - Swimming Pool Main Drain Cover Replacement",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  500,
+                                             "tax":  0,
+                                             "total":  500
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi85MDUzNTIxNw=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi85MjEyNzkzNg==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkzNjg3MjMx",
+                              "status":  "lead",
+                              "title":  "Job Z2lkOi8vSm9iYmVyL0pvYi85MjEyNzkzNg==",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  735,
+                                             "tax":  0,
+                                             "total":  735
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi85MjEyNzkzNg=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi85NTI0NzkzNw==",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4Mjcy",
+                              "status":  "lead",
+                              "title":  "ASP - Commercial Main Drain Replacement",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  1062.5,
+                                             "tax":  0,
+                                             "total":  1062.5
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi85NTI0NzkzNw=="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY0OTI=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzExMDUwMTIyOQ==",
+                              "status":  "lead",
+                              "title":  "Commercial Main Drain Measurements \u0026 Cover Replacements",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  125,
+                                             "tax":  0,
+                                             "total":  125
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY0OTI="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY1MzE=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzExMDUwMTE4MA==",
+                              "status":  "scheduled",
+                              "title":  "Commercial Main Drain Measurements \u0026 Cover Replacements",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  125,
+                                             "tax":  0,
+                                             "total":  125
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY1MzE="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY1NzM=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzExMDUwMTE5Mg==",
+                              "status":  "lead",
+                              "title":  "Commercial Main Drain Measurements \u0026 Cover Replacements",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  125,
+                                             "tax":  0,
+                                             "total":  125
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY1NzM="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY2Mzc=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzkxMzU2OTAz",
+                              "status":  "scheduled",
+                              "title":  "Commercial Main Drain Measurements \u0026 Cover Replacements",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  125,
+                                             "tax":  0,
+                                             "total":  125
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY2Mzc="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY2OTA=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzExMDUwMTIyOQ==",
+                              "status":  "lead",
+                              "title":  "Commercial Main Drain Measurements \u0026 Cover Replacements",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  125,
+                                             "tax":  0,
+                                             "total":  125
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY2OTA="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY4MTc=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4MTkw",
+                              "status":  "scheduled",
+                              "title":  "Swimming Pool / Spa Leak Detection Service",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  1500,
+                                             "tax":  0,
+                                             "total":  1500
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xMDkzNjY4MTc="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xMTE5Mzk4Mzk=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzcyMzIxNTMx",
+                              "status":  "lead",
+                              "title":  "Commercial Main Drain Cover Replacement and Measurements",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  3000,
+                                             "tax":  0,
+                                             "total":  3000
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xMTE5Mzk4Mzk="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xMTIwMjEwNDY=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzcyMzIxNTMx",
+                              "status":  "lead",
+                              "title":  "ASP Asheville - Swimming Pool Main Drain Cover Replacement",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  1250,
+                                             "tax":  0,
+                                             "total":  1250
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xMTIwMjEwNDY="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xMTIwNjgxNTA=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzcyMzIxNTMx",
+                              "status":  "lead",
+                              "title":  "ASP Asheville Commercial Main Drain Covers",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  875,
+                                             "tax":  0,
+                                             "total":  875
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xMTIwNjgxNTA="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xNDA1Njk0NDg=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMTE3NQ==",
+                              "status":  "lead",
+                              "title":  "Days Inn - Commercial Main Drain Survey",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  750,
+                                             "tax":  0,
+                                             "total":  750
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xNDA1Njk0NDg="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xNDA1Njk2MzY=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5LzE0MjIyMTI5Nw==",
+                              "status":  "lead",
+                              "title":  "Holbrook Village - Commercial Main Drain Survey",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  687.5,
+                                             "tax":  0,
+                                             "total":  687.5
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xNDA1Njk2MzY="
+                                              }
+                          },
+                          {
+                              "id":  "Z2lkOi8vSm9iYmVyL0pvYi8xNDA1Njk3MTA=",
+                              "tenantId":  "aquatrace",
+                              "clientId":  "Z2lkOi8vSm9iYmVyL0NsaWVudC8zOTQzMTQ1Mg==",
+                              "propertyId":  "Z2lkOi8vSm9iYmVyL1Byb3BlcnR5Lzg3OTY4MzA1",
+                              "status":  "lead",
+                              "title":  "Fairfield Inn - Commercial Main Drain Survey",
+                              "lineItems":  [
+
+                                            ],
+                              "totals":  {
+                                             "subtotal":  750,
+                                             "tax":  0,
+                                             "total":  750
+                                         },
+                              "externalIds":  {
+                                                  "jobber":  "Z2lkOi8vSm9iYmVyL0pvYi8xNDA1Njk3MTA="
+                                              }
+                          }
+                      ],
+    "hierarchyConfirmed":  true,
+    "note":  "Live staging NexOps hierarchy check for ASP of Asheville using native CRM properties/jobs."
+}

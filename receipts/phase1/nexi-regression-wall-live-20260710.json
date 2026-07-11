@@ -1,0 +1,419 @@
+{
+  "ok": false,
+  "complete": false,
+  "runId": "regression-wall-1783737545711-49f10da7",
+  "baseUrl": "https://nexteam-studio-staging.up.railway.app",
+  "tenantId": "aquatrace",
+  "total": 32,
+  "passed": 32,
+  "failed": 0,
+  "caseFilter": null,
+  "limit": null,
+  "offset": null,
+  "results": [
+    {
+      "id": "20260704172042-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:20:42.712Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - **Jobber job lookup:** failed (couldn't retrieve job details for Camp Mikell) - **Documents/reports search:** no matching documents, reports, or blueprints found - **SiteJobBlueprint field lookup (poolGallo",
+      "latencyMs": 77531
+    },
+    {
+      "id": "20260704172049-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:20:49.617Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - **Jobber (getJobDetail):** lookup failed (404) — no matching job record found - **CompanyCam/Documents (getDocuments):** no project, documents, or blueprint suggestions found - **SiteJobBlueprint lookup (po",
+      "latencyMs": 88438
+    },
+    {
+      "id": "20260704172534-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:25:34.406Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No Jobber jobs on the schedule for today (America/New_York window).",
+      "latencyMs": 86133
+    },
+    {
+      "id": "20260704172544-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:25:44.767Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "25 photos found for Deborah Justice's job at 181 Isbell Road, Fair Play, SC. **Source:** CompanyCam (job/project ID 107503799) Photo IDs: - 3338800086 - 3338756524 - 3338754200 - 3338751881 - 3338681696 - 3338748643 - 3338748847 - 333874899",
+      "latencyMs": 5266
+    },
+    {
+      "id": "20260704172547-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:25:47.688Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - Jobber job lookup: failed (no matching job found) - Documents/reports check: no matching blueprint or documents found - Blueprint field lookup (poolGallons): no value on file, no matching blueprint ID None ",
+      "latencyMs": 78705
+    },
+    {
+      "id": "20260704172554-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:25:54.012Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - Job lookup (Jobber): failed to find a matching record (404) - Documents/blueprint search: no Camp Mikell blueprint found — documents, reports, and suggested blueprints all came back empty - Field lookup (po",
+      "latencyMs": 89534
+    },
+    {
+      "id": "20260704172947-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:29:47.787Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No Jobber jobs scheduled today (July 10, 2026, America/New_York window) — the schedule came back empty.",
+      "latencyMs": 89048
+    },
+    {
+      "id": "20260704173045-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:30:45.190Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "Nothing on the books for today. Jobber shows no scheduled jobs for July 10, 2026 (America/New_York).",
+      "latencyMs": 84770
+    },
+    {
+      "id": "20260704173052-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:30:52.873Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 CompanyCam photos for Deborah Justice's job at 181 Isbell Road, Fair Play, SC. **Source: CompanyCam** (job ID 107503799) Photo IDs: - 3338800086 - 3338756524 - 3338754200 - 3338751881 - 3338681696 - 3338748643 - 3338748847 - 333874",
+      "latencyMs": 5778
+    },
+    {
+      "id": "20260704173057-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:30:57.286Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have the pool gallons for Camp Mikell written down. - **Jobber (getJobDetail):** lookup failed (404) — no matching job record found. - **CompanyCam/Documents (getDocuments):** no documents, reports, or blueprints found for this site",
+      "latencyMs": 86576
+    },
+    {
+      "id": "20260704173102-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:31:02.700Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have the pool gallons for Camp Mikell written down. - **Jobber (getJobDetail):** no matching job record found (404 — lookup failed before returning data). - **CompanyCam (getDocuments):** no documents, reports, or blueprints found f",
+      "latencyMs": 85146
+    },
+    {
+      "id": "20260704173548-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:35:48.602Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "Nothing on the schedule for today. Jobber shows no jobs booked for July 10, 2026 (America/New_York).",
+      "latencyMs": 90184
+    },
+    {
+      "id": "20260704173555-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:35:55.752Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 CompanyCam photos on file for Deborah Justice's job (181 Isbell Road, Fair Play, SC). **Source:** CompanyCam project #107503799 Photo IDs on record: - 3338800086, 3338756524, 3338754200, 3338751881, 3338681696 - 3338748643, 3338748",
+      "latencyMs": 5333
+    },
+    {
+      "id": "20260704173600-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:36:00.708Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - Job lookup (Jobber): failed to find a matching record for Camp Mikell (404 — no match). - Documents/blueprint check (getDocuments): no project, documents, or blueprints found. - Blueprint field lookup (pool",
+      "latencyMs": 85168
+    },
+    {
+      "id": "20260704173606-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:36:06.992Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have a pool gallons figure for Camp Mikell written down. - Jobber (getJobDetail): no matching job found (404). - CompanyCam/documents (getDocuments): no project, documents, or blueprints found for it. - Blueprint lookup (lookupSiteJ",
+      "latencyMs": 83238
+    },
+    {
+      "id": "20260704174049-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:40:49.119Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No jobs on the schedule for today (July 10, 2026, America/New_York) — Jobber shows an empty schedule for that window.",
+      "latencyMs": 84979
+    },
+    {
+      "id": "20260704174053-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:40:53.215Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 CompanyCam photos for the Deborah Justice job at 181 Isbell Road, Fair Play, SC. **Source:** CompanyCam (project ID 107503799) Photo IDs: - 3338800086, 3338756524, 3338754200, 3338751881, 3338681696 - 3338748643, 3338748847, 333874",
+      "latencyMs": 5487
+    },
+    {
+      "id": "20260704174056-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:40:56.525Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - Jobber job lookup: failed (no record found, 404) - Documents/blueprint search: no matching blueprint found for Camp Mikell - SiteJobBlueprint field lookup: **poolGallons** came back empty (no matched bluepr",
+      "latencyMs": 84793
+    },
+    {
+      "id": "20260704174059-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:40:59.515Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - **Jobber (getJobDetail):** lookup failed, no matching job found (404) - **Documents/reports search:** no project, documents, or reports found for Camp Mikell - **SiteJobBlueprint field lookup (poolGallons):",
+      "latencyMs": 87785
+    },
+    {
+      "id": "20260704174524-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:45:24.849Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "No Jobber jobs scheduled today (July 10, 2026, America/New_York window). Jobber has no matching data for today's date — nothing on the books.",
+      "latencyMs": 85298
+    },
+    {
+      "id": "20260704174530-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:45:30.588Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 CompanyCam photos for Deborah Justice's job (181 Isbell Road, Fair Play, SC). **Photo IDs (CompanyCam):** - 3338800086 - 3338756524 - 3338754200 - 3338751881 - 3338681696 - 3338748643 - 3338748847 - 3338748995 - 3338749169 - 333874",
+      "latencyMs": 6239
+    },
+    {
+      "id": "20260704174533-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:45:33.784Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - **Jobber (getJobDetail):** lookup failed (404) — no matching job record found for Camp Mikell. - **CompanyCam/documents (getDocuments):** no project, documents, or blueprint suggestions found. - **Site job ",
+      "latencyMs": 83439
+    },
+    {
+      "id": "20260704174536-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:45:36.844Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have a pool gallons figure for Camp Mikell. - **Jobber (getJobDetail):** no matching job found (404 — not written down there) - **CompanyCam/documents (getDocuments):** no project, documents, reports, or blueprint matches found - **",
+      "latencyMs": 87972
+    },
+    {
+      "id": "20260704174553-1-reply-with-exactly-readiness-check",
+      "createdAt": "2026-07-04T17:45:53.922Z",
+      "expectedIntent": "meta_echo",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "readiness check.",
+      "latencyMs": 1269
+    },
+    {
+      "id": "20260704174559-2-reply-with-exactly-readiness-check",
+      "createdAt": "2026-07-04T17:45:59.565Z",
+      "expectedIntent": "meta_echo",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "readiness check.",
+      "latencyMs": 1260
+    },
+    {
+      "id": "20260704175316-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
+      "createdAt": "2026-07-04T17:53:16.006Z",
+      "expectedIntent": "schedule_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getSchedule"
+      ],
+      "answerSample": "Nothing on the schedule today. - Jobber shows no jobs for 7/10/2026 (America/New_York window).",
+      "latencyMs": 82709
+    },
+    {
+      "id": "20260704175322-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
+      "createdAt": "2026-07-04T17:53:22.864Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 CompanyCam photos on file for Deborah Justice's job (181 Isbell Road, Fair Play, SC). **Photo IDs (CompanyCam):** - 3338800086, 3338756524, 3338754200, 3338751881, 3338681696 - 3338748643, 3338748847, 3338748995, 3338749169, 333874",
+      "latencyMs": 5327
+    },
+    {
+      "id": "20260704175325-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:53:25.888Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "I don't have that written down. - getJobDetail (Jobber): lookup failed (404) — no matching job found - getDocuments (CompanyCam): no documents, reports, or blueprints found for this site - lookupSiteJobBlueprintField (Blueprint lookup): poo",
+      "latencyMs": 83513
+    },
+    {
+      "id": "20260704175328-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
+      "createdAt": "2026-07-04T17:53:28.972Z",
+      "expectedIntent": "site_blueprint_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getJobDetail",
+        "getDocuments",
+        "lookupSiteJobBlueprintField"
+      ],
+      "answerSample": "Don't have that number on file for Camp Mikell. - **Jobber (getJobDetail):** no matching job found (404) - **CompanyCam (getDocuments):** no documents, reports, or suggested blueprints for this site - **Blueprint lookup (lookupSiteJobBluepr",
+      "latencyMs": 83759
+    },
+    {
+      "id": "20260704175331-1-reply-with-exactly-readiness-check",
+      "createdAt": "2026-07-04T17:53:31.466Z",
+      "expectedIntent": "meta_echo",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "readiness check.",
+      "latencyMs": 1297
+    },
+    {
+      "id": "20260704175335-2-reply-with-exactly-readiness-check",
+      "createdAt": "2026-07-04T17:53:35.850Z",
+      "expectedIntent": "meta_echo",
+      "ok": true,
+      "failures": [],
+      "tools": [],
+      "answerSample": "readiness check.",
+      "latencyMs": 874
+    },
+    {
+      "id": "20260704175418-1-find-companycam-photos-for-deborah-justice",
+      "createdAt": "2026-07-04T17:54:18.266Z",
+      "expectedIntent": "companycam_photo_lookup",
+      "ok": true,
+      "failures": [],
+      "tools": [
+        "getPhotos"
+      ],
+      "answerSample": "Found 25 photos on the Deborah Justice job (181 Isbell Road, Fair Play, SC). They're untagged (no descriptions attached), just raw shots logged in CompanyCam.",
+      "latencyMs": 4207
+    }
+  ]
+}

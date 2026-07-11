@@ -1,0 +1,48 @@
+{
+    "capturedAt":  "2026-07-11T02:22:36.7463576Z",
+    "baseUrl":  "https://nexteam-studio-staging.up.railway.app",
+    "expectedSha":  "f2aef5d5f650a2c7a0be2892e5ae8b8878e58734",
+    "version":  {
+                    "sha":  "f2aef5d5f650a2c7a0be2892e5ae8b8878e58734",
+                    "builtAt":  "2026-07-11T02:22:34.864Z"
+                },
+    "versionMatches":  true,
+    "health":  {
+                   "ok":  true,
+                   "checkedAt":  "2026-07-11T02:22:36.039Z",
+                   "rails":  {
+                                 "jobber":  {
+                                                "ok":  true,
+                                                "configured":  true,
+                                                "provider":  "jobber",
+                                                "op":  "graphql_read",
+                                                "latencyMs":  618,
+                                                "detail":  "Jobber GraphQL read succeeded."
+                                            },
+                                 "companycam":  {
+                                                    "ok":  true,
+                                                    "configured":  true,
+                                                    "provider":  "companycam",
+                                                    "op":  "projects_read",
+                                                    "latencyMs":  385,
+                                                    "detail":  "CompanyCam projects read succeeded."
+                                                },
+                                 "comms":  {
+                                               "ok":  true,
+                                               "configured":  true,
+                                               "provider":  "gmail",
+                                               "op":  "configured_no_secret_values",
+                                               "latencyMs":  0,
+                                               "detail":  "tenantId=aquatrace; readMailboxes=3; sendConfigured=true; operatorEmailConfigured=false"
+                                           },
+                                 "anthropic":  {
+                                                   "ok":  true,
+                                                   "configured":  true,
+                                                   "provider":  "anthropic",
+                                                   "op":  "configured_no_spend",
+                                                   "latencyMs":  0,
+                                                   "detail":  "Configured; live message call skipped by no-spend overnight limit."
+                                               }
+                             }
+               }
+}
