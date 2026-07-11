@@ -43,6 +43,26 @@ function matchesQuery(values: Array<string | undefined>, query: string): boolean
   return !needle || values.filter(Boolean).join(" ").toLowerCase().includes(needle);
 }
 
+function clientSearchValues(client: Client): Array<string | undefined> {
+  const contactValues = (client.contacts ?? []).flatMap((contact) => [
+    contact.personName?.firstName,
+    contact.personName?.lastName,
+    contact.company,
+    contact.role,
+    ...contact.emails.map((email) => email.value),
+    ...contact.phones.map((phone) => phone.value)
+  ]);
+  return [
+    client.name,
+    client.company,
+    client.personName?.firstName,
+    client.personName?.lastName,
+    ...client.emails,
+    ...client.phones,
+    ...contactValues
+  ];
+}
+
 function sameNativeRecord<T extends { id: string; externalIds?: { jobber?: string | undefined } | undefined }>(left: T, right: T): boolean {
   return left.id === right.id || Boolean(left.externalIds?.jobber && left.externalIds.jobber === right.externalIds?.jobber);
 }
@@ -195,7 +215,7 @@ export class NativeAdapter implements CRMProvider {
 
   async getClients(q: string): Promise<Client[]> {
     const clients = await this.repository.listClients(this.tenantId);
-    return clients.filter((client) => matchesQuery([client.name, client.company, ...client.emails, ...client.phones], q));
+    return clients.filter((client) => matchesQuery(clientSearchValues(client), q));
   }
 
   async getJobs(_range: { from: string; to: string }): Promise<Job[]> {
@@ -238,6 +258,12 @@ export class NativeAdapter implements CRMProvider {
       tenantId: d.tenantId,
       name: d.name,
       company: d.company,
+      personName: d.personName,
+      displayNamePreference: d.displayNamePreference,
+      billingAddress: d.billingAddress,
+      billingSameAsPrimaryProperty: d.billingSameAsPrimaryProperty,
+      contacts: d.contacts,
+      communicationSettings: d.communicationSettings,
       emails: d.emails,
       phones: d.phones,
       tags: [],

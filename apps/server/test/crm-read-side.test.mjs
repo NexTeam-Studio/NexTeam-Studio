@@ -1,13 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
-import { ApprovalQueueService, InMemoryApprovalQueueRepository, invoiceSchema, quoteSchema } from "@nexteam/core";
+import express from "express";
+import { ApprovalQueueService, clientSchema, InMemoryApprovalQueueRepository, invoiceSchema, quoteSchema } from "@nexteam/core";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { CrmApprovalExecutor } from "../dist/crm/approvalExecutor.js";
 import { buildQuoteDraft } from "../dist/crm/quoteBuilder.js";
 import { renderInvoicePdf, renderQuotePdf } from "../dist/crm/quotePdf.js";
 import { createCrmReadTools, createCrmReadToolsWithOptions, createCrmTools } from "../dist/crm/nexiTools.js";
-import { hashPortalToken } from "../dist/crm/routes.js";
+import { hashPortalToken, registerCrmRoutes } from "../dist/crm/routes.js";
 import { createStripeCheckoutSession, verifyStripeWebhookEvent } from "../dist/crm/stripe.js";
 
 const tenant = {
@@ -133,6 +134,66 @@ test("NativeAdapter writes native clients and approval-gated quote drafts", asyn
   assert.equal(pdf.subarray(0, 5).toString("utf8"), "%PDF-");
 });
 
+test("NexOps 3.2 client records preserve display, billing, and one-way SMS settings", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const adapter = new NativeAdapter(repository, "aquatrace");
+  const created = await adapter.createClient({
+    tenantId: "aquatrace",
+    name: "Medallion Pool Company",
+    company: "Medallion Pool Company",
+    personName: { firstName: "Dallas", lastName: "Bodkin" },
+    displayNamePreference: "company",
+    billingSameAsPrimaryProperty: false,
+    billingAddress: {
+      street1: "51 North Merrimon Avenue Suite 101",
+      city: "Woodfin",
+      province: "NC",
+      postalCode: "28804",
+      country: "US"
+    },
+    contacts: [{
+      id: "contact_dallas",
+      personName: { firstName: "Dallas", lastName: "Bodkin" },
+      role: "Billing contact",
+      billingContact: true,
+      correspondenceContact: true,
+      channelPreference: "both",
+      phones: [{
+        label: "Mobile",
+        value: "8282030625",
+        normalized: "+18282030625",
+        primary: true,
+        receivesMessages: true,
+        smsCapability: "mobile",
+        smsMode: "one_way"
+      }],
+      emails: [{
+        label: "Main",
+        value: "dallas@example.test",
+        primary: true
+      }]
+    }],
+    communicationSettings: {
+      quotesAndInvoices: "both",
+      jobReminders: "both",
+      jobClosureFollowUps: "email",
+      reviewRequests: "email",
+      smsDefaultMode: "one_way"
+    },
+    emails: ["dallas@example.test"],
+    phones: ["8282030625"],
+    consent: { email: true, sms: true }
+  });
+
+  clientSchema.parse(created);
+  assert.equal(created.displayNamePreference, "company");
+  assert.equal(created.contacts?.[0]?.channelPreference, "both");
+  assert.equal(created.contacts?.[0]?.phones?.[0]?.smsMode, "one_way");
+  assert.equal(created.billingSameAsPrimaryProperty, false);
+  assert.equal((await adapter.getClients("Dallas Bodkin")).length, 1);
+  assert.equal((await adapter.getClients("8282030625")).length, 1);
+});
+
 test("CRM read nexi-tools expose pipeline and client lookup", async () => {
   const adapter = NativeAdapter.fromRecords("aquatrace", { clients: [client], properties: [property], jobs: [job] });
   const tools = createCrmReadTools(adapter);
@@ -197,10 +258,40 @@ test("CRM write nexi-tools create clients, draft quotes through ApprovalQueue, a
 
   const queued = await createClient.handler(tenant, {
     name: "Portal Client",
+    company: "Portal Client LLC",
+    personName: { firstName: "Pat", lastName: "Portal" },
+    displayNamePreference: "person",
     address: "123 Test Lane, Fair Play, SC",
+    billingSameAsPrimaryProperty: true,
+    contacts: [{
+      personName: { firstName: "Pat", lastName: "Portal" },
+      billingContact: true,
+      correspondenceContact: true,
+      channelPreference: "both",
+      phones: [{
+        label: "Mobile",
+        value: "555-0100",
+        primary: true,
+        receivesMessages: true,
+        smsCapability: "unknown",
+        smsMode: "one_way"
+      }],
+      emails: [{
+        label: "Main",
+        value: "portal@example.test",
+        primary: true
+      }]
+    }],
+    communicationSettings: {
+      quotesAndInvoices: "both",
+      jobReminders: "sms",
+      jobClosureFollowUps: "email",
+      reviewRequests: "email",
+      smsDefaultMode: "one_way"
+    },
     emails: ["portal@example.test"],
-    phones: [],
-    consent: { email: true, sms: false }
+    phones: ["555-0100"],
+    consent: { email: true, sms: true }
   });
   assert.equal(queued.result.approval.kind, "client");
   assert.equal(queued.result.writesAreApprovalQueuedOnly, true);
@@ -208,6 +299,9 @@ test("CRM write nexi-tools create clients, draft quotes through ApprovalQueue, a
   await approvalQueue.approve(queued.result.approval.id);
   const executed = await approvalQueue.executeApproved(queued.result.approval.id);
   assert.equal(executed.result.client.tenantId, "aquatrace");
+  assert.equal(executed.result.client.displayNamePreference, "person");
+  assert.equal(executed.result.client.contacts[0].channelPreference, "both");
+  assert.equal(executed.result.client.communicationSettings.smsDefaultMode, "one_way");
   assert.equal((await adapter.getClients("Portal Client")).length, 1);
 
   const drafted = await draftQuote.handler(tenant, {
@@ -222,6 +316,81 @@ test("CRM write nexi-tools create clients, draft quotes through ApprovalQueue, a
   const status = await invoiceStatus.handler(tenant, { clientId: "client_1" });
   assert.equal(status.result.invoices[0].status, "sent");
   assert.equal(status.sources[0].rail, "native");
+});
+
+test("CRM routes read clients created by ApprovalQueue execution from the shared native repository", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const adapter = new NativeAdapter(repository, "aquatrace");
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CrmApprovalExecutor(adapter));
+  const approval = await approvalQueue.create({
+    tenantId: "aquatrace",
+    kind: "client",
+    preview: {
+      title: "Create client: Chris Sears",
+      body: "Local route/read-model regression proof."
+    },
+    execute: {
+      service: "crm",
+      op: "createClient",
+      args: {
+        tenantId: "aquatrace",
+        client: {
+          tenantId: "aquatrace",
+          name: "Chris Sears",
+          personName: { firstName: "Chris", lastName: "Sears" },
+          displayNamePreference: "person",
+          billingSameAsPrimaryProperty: true,
+          contacts: [{
+            personName: { firstName: "Chris", lastName: "Sears" },
+            correspondenceContact: true,
+            billingContact: true,
+            phones: [],
+            emails: [],
+            channelPreference: "email"
+          }],
+          communicationSettings: {
+            quotesAndInvoices: "email",
+            jobReminders: "email",
+            jobClosureFollowUps: "email",
+            reviewRequests: "email",
+            smsDefaultMode: "one_way"
+          },
+          emails: [],
+          phones: [],
+          consent: { email: false, sms: false }
+        },
+        addressNote: "102 Kate Lane, Fair Play, SC 29643"
+      }
+    },
+    createdBy: "user"
+  });
+
+  await approvalQueue.approve(approval.id);
+  await approvalQueue.executeApproved(approval.id);
+
+  const app = express();
+  app.use(express.json());
+  registerCrmRoutes(app, {
+    approvalQueue,
+    memoryRepository: repository,
+    env: { TENANT_ID: "aquatrace" }
+  });
+
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/crm/clients?tenantId=aquatrace`);
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.clients.length, 1);
+    assert.equal(body.clients[0].name, "Chris Sears");
+    assert.equal(body.clients[0].displayNamePreference, "person");
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
 });
 
 test("NativeAdapter writes invoices and renders invoice PDFs", async () => {

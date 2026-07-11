@@ -4,7 +4,7 @@ import { z } from "zod";
 import { InMemoryEventBus, RailError, type EventBus } from "@nexteam/core";
 import { requireTenantRole } from "../auth/accessContext.js";
 import { getAdminDb } from "../firebase.js";
-import { createLeakDetectionChecklist } from "./checklists.js";
+import { createLeakDetectionChecklist, leakDetectionChecklistTemplate } from "./checklists.js";
 import { FirestoreMediaRepository, MemoryMediaRepository, type MediaRepository } from "./mediaRepository.js";
 import { searchMediaWithVisionFallback } from "./photoSearch.js";
 import { createFieldReportRecord, renderFieldReportPdf } from "./reportService.js";
@@ -138,6 +138,29 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
       const input = searchQuerySchema.parse(req.query);
       const hits = await searchMediaWithVisionFallback(await repository().listMedia(input.tenantId), input.q, input.limit ?? 10, env);
       res.json({ ok: true, hits });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/fielddocs/checklists/templates", (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
+        ? req.query.tenantId
+        : defaultTenantId(env);
+      res.json({
+        ok: true,
+        tenantId,
+        templates: [{
+          id: leakDetectionChecklistTemplate.id,
+          title: leakDetectionChecklistTemplate.title,
+          sections: [...new Set(leakDetectionChecklistTemplate.items.map((item) => item.section))],
+          itemCount: leakDetectionChecklistTemplate.items.length,
+          propertyPersistentCount: leakDetectionChecklistTemplate.items.filter((item) => item.memory === "property").length,
+          visitFreshCount: leakDetectionChecklistTemplate.items.filter((item) => item.memory === "visit").length,
+          items: leakDetectionChecklistTemplate.items
+        }]
+      });
     } catch (error) {
       sendRouteError(res, error);
     }

@@ -189,11 +189,69 @@ export const tenantDataExportSchema = z.object({
   collections: z.record(z.array(z.unknown()))
 });
 
+export const contactChannelSchema = z.enum(["email", "sms", "both", "none"]);
+export const phoneLabelSchema = z.enum(["Main", "Work", "Mobile", "Home", "Fax", "Other"]);
+export const emailLabelSchema = z.enum(["Main", "Work", "Personal", "Other"]);
+export const smsCapabilitySchema = z.enum(["mobile", "landline", "fax", "invalid", "unknown"]);
+
+export const phoneContactSchema = z.object({
+  id: idSchema.optional(),
+  label: phoneLabelSchema,
+  value: z.string().min(1),
+  normalized: z.string().optional(),
+  primary: z.boolean().default(false),
+  receivesMessages: z.boolean().default(false),
+  smsCapability: smsCapabilitySchema.default("unknown"),
+  smsMode: z.enum(["one_way", "two_way"]).default("one_way")
+});
+
+export const emailContactSchema = z.object({
+  id: idSchema.optional(),
+  label: emailLabelSchema,
+  value: z.string().email(),
+  primary: z.boolean().default(false)
+});
+
+export const personNameSchema = z.object({
+  title: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional()
+});
+
+export const clientContactSchema = z.object({
+  id: idSchema.optional(),
+  personName: personNameSchema.optional(),
+  company: z.string().optional(),
+  role: z.string().optional(),
+  billingContact: z.boolean().default(false),
+  correspondenceContact: z.boolean().default(false),
+  phones: z.array(phoneContactSchema).default([]),
+  emails: z.array(emailContactSchema).default([]),
+  channelPreference: contactChannelSchema.default("email")
+});
+
+export const clientCommunicationSettingsSchema = z.object({
+  quotesAndInvoices: contactChannelSchema.default("email"),
+  jobReminders: contactChannelSchema.default("email"),
+  jobClosureFollowUps: contactChannelSchema.default("email"),
+  reviewRequests: contactChannelSchema.default("email"),
+  smsDefaultMode: z.enum(["one_way", "two_way"]).default("one_way")
+});
+
 export const clientSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
   name: z.string().min(1),
   company: z.string().optional(),
+  personName: personNameSchema.optional(),
+  displayNamePreference: z.enum(["person", "company"]).optional(),
+  primaryContactId: idSchema.optional(),
+  billingContactId: idSchema.optional(),
+  correspondenceContactId: idSchema.optional(),
+  billingAddress: addressSchema.optional(),
+  billingSameAsPrimaryProperty: z.boolean().optional(),
+  contacts: z.array(clientContactSchema).optional(),
+  communicationSettings: clientCommunicationSettingsSchema.optional(),
   emails: z.array(z.string()),
   phones: z.array(z.string()),
   tags: z.array(z.string()),
@@ -212,7 +270,16 @@ export const propertySchema = z.object({
   id: idSchema,
   tenantId: idSchema,
   clientId: idSchema,
+  parentSiteId: idSchema.optional(),
+  siteName: z.string().optional(),
+  label: z.string().optional(),
   address: addressSchema,
+  billingAddressSameAsClient: z.boolean().optional(),
+  access: z.object({
+    gateCode: z.string().optional(),
+    accessNotes: z.string().optional()
+  }).optional(),
+  contacts: z.array(clientContactSchema).optional(),
   geo: z.object({ lat: z.number(), lng: z.number() }).optional(),
   assets: z.array(assetSchema),
   externalIds: z.object({ jobber: z.string().optional() }).optional()

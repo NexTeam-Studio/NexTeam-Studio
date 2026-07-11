@@ -58,4 +58,18 @@ export class FirestoreApprovalQueueRepository implements ApprovalQueueRepository
       .get();
     return snapshot.docs.map((doc) => approvalItemSchema.parse(doc.data()) as ApprovalItem);
   }
+
+  async listByTenant(tenantId: ID): Promise<ApprovalItem[]> {
+    const snapshot = await this.db
+      .collection("approvalQueue")
+      .where("tenantId", "==", tenantId)
+      .get();
+    return snapshot.docs
+      .map((doc) => approvalItemSchema.parse(doc.data()) as ApprovalItem)
+      .sort((left, right) => {
+        const leftTs = left.decidedAt ?? "";
+        const rightTs = right.decidedAt ?? "";
+        return rightTs.localeCompare(leftTs);
+      });
+  }
 }

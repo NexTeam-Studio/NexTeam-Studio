@@ -2,15 +2,22 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import {
+  addressSchema,
+  clientCommunicationSettingsSchema,
+  clientContactSchema,
   InMemoryEventBus,
+  personNameSchema,
   RailError,
   type ApprovalQueueService,
   type Client,
   type EventBus,
   type Invoice,
+  type Job,
+  type JobDetail,
+  type Property,
   type Quote
 } from "@nexteam/core";
-import { MemoryNativeCrmRepository, NativeAdapter, type NativeCrmRepository } from "@nexteam/providers";
+import { JobberAdapter, MemoryNativeCrmRepository, NativeAdapter, type NativeCrmRepository } from "@nexteam/providers";
 import { getAdminDb } from "../firebase.js";
 import { buildQuoteDraft, draftQuoteInputSchema } from "./quoteBuilder.js";
 import { FirestoreNativeCrmRepository } from "./nativeRepository.js";
@@ -21,6 +28,12 @@ const createClientBodySchema = z.object({
   tenantId: z.string().min(1).optional(),
   name: z.string().min(1),
   company: z.string().min(1).optional(),
+  personName: personNameSchema.optional(),
+  displayNamePreference: z.enum(["person", "company"]).optional(),
+  billingAddress: addressSchema.optional(),
+  billingSameAsPrimaryProperty: z.boolean().optional(),
+  contacts: z.array(clientContactSchema).optional(),
+  communicationSettings: clientCommunicationSettingsSchema.optional(),
   emails: z.array(z.string()).default([]),
   phones: z.array(z.string()).default([]),
   consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
@@ -34,6 +47,11 @@ const signQuoteBodySchema = z.object({
 
 const createInvoiceFromQuoteBodySchema = z.object({
   tenantId: z.string().min(1).optional()
+});
+
+const jobberSyncBodySchema = z.object({
+  tenantId: z.string().min(1).optional(),
+  mode: z.enum(["dry-run", "write"]).default("dry-run")
 });
 
 export interface CrmRouteDeps {
@@ -80,14 +98,34 @@ function sendRouteError(res: Response, error: unknown): void {
   res.status(status).json({ ok: false, error: message });
 }
 
+function uniqueById<T extends { id: string }>(values: T[]): T[] {
+  const seen = new Set<string>();
+  return values.filter((value) => {
+    if (seen.has(value.id)) {
+      return false;
+    }
+    seen.add(value.id);
+    return true;
+  });
+}
+
+function jobToNativeJob(job: JobDetail): Job {
+  const { client: _client, property: _property, notes: _notes, ...nativeJob } = job;
+  return nativeJob;
+}
+
 export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {
   const env = deps.env ?? process.env;
   const fallbackRepository = deps.memoryRepository ?? new MemoryNativeCrmRepository();
   const eventBus = deps.eventBus ?? new InMemoryEventBus();
 
-  function providerForTenant(tenantId: string): NativeAdapter {
+  function repositoryForTenant(): NativeCrmRepository {
     const db = getAdminDb(env);
-    return new NativeAdapter(db ? new FirestoreNativeCrmRepository(db) : fallbackRepository, tenantId);
+    return db ? new FirestoreNativeCrmRepository(db) : fallbackRepository;
+  }
+
+  function providerForTenant(tenantId: string): NativeAdapter {
+    return new NativeAdapter(repositoryForTenant(), tenantId);
   }
 
   async function getQuoteAndClient(tenantId: string, quoteId: string): Promise<{ provider: NativeAdapter; quote: Quote; client?: Client }> {
@@ -114,6 +152,68 @@ export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {
     return client ? { provider, invoice, client } : { provider, invoice };
   }
 
+  app.get("/api/crm/clients", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
+        ? req.query.tenantId
+        : defaultTenantId(env);
+      const q = typeof req.query.q === "string" ? req.query.q : "";
+      const provider = providerForTenant(tenantId);
+      const clients = await provider.getClients(q);
+      res.json({ ok: true, clients });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/crm/properties", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
+        ? req.query.tenantId
+        : defaultTenantId(env);
+      const properties = await repositoryForTenant().listProperties(tenantId);
+      res.json({ ok: true, properties });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/crm/jobs", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
+        ? req.query.tenantId
+        : defaultTenantId(env);
+      const jobs = await repositoryForTenant().listJobs(tenantId);
+      res.json({ ok: true, jobs });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/crm/quotes", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
+        ? req.query.tenantId
+        : defaultTenantId(env);
+      const quotes = await repositoryForTenant().listQuotes(tenantId);
+      res.json({ ok: true, quotes });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/crm/invoices", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
+        ? req.query.tenantId
+        : defaultTenantId(env);
+      const invoices = await repositoryForTenant().listInvoices(tenantId);
+      res.json({ ok: true, invoices });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.post("/api/crm/clients", async (req: Request, res: Response) => {
     try {
       const input = createClientBodySchema.parse(req.body);
@@ -123,11 +223,78 @@ export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {
         tenantId,
         name: input.name,
         company: input.company,
+        personName: input.personName,
+        displayNamePreference: input.displayNamePreference,
+        billingAddress: input.billingAddress,
+        billingSameAsPrimaryProperty: input.billingSameAsPrimaryProperty,
+        contacts: input.contacts,
+        communicationSettings: input.communicationSettings,
         emails: input.emails,
         phones: input.phones,
         consent: input.consent
       });
       res.status(201).json({ ok: true, client });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/crm/jobber-sync", async (req: Request, res: Response) => {
+    try {
+      const input = jobberSyncBodySchema.parse(req.body);
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      const jobber = JobberAdapter.fromEnv(env, tenantId);
+      if (!jobber.isConfigured()) {
+        throw new RailError("Jobber is not configured for sync.", { provider: "jobber", op: "sync", status: 400 });
+      }
+
+      const clients = await jobber.getClients("");
+      const jobSummaries = await jobber.getJobs({ from: "1970-01-01T00:00:00.000Z", to: "2100-01-01T00:00:00.000Z" });
+      const jobDetails = uniqueById(jobSummaries as JobDetail[]);
+      const properties = uniqueById(jobDetails
+        .map((job) => job.property)
+        .filter((property): property is Property => Boolean(property)));
+
+      const counts = {
+        clients: clients.length,
+        properties: properties.length,
+        jobs: jobDetails.length
+      };
+      const externalIdsPreserved = {
+        clients: clients.filter((client) => Boolean(client.externalIds?.jobber)).length,
+        properties: properties.filter((property) => Boolean(property.externalIds?.jobber)).length,
+        jobs: jobDetails.filter((job) => Boolean(job.externalIds?.jobber)).length
+      };
+
+      const nativeWriteCounts = { clients: 0, properties: 0, jobs: 0 };
+      if (input.mode === "write") {
+        const repository = repositoryForTenant();
+        for (const client of clients) {
+          await repository.upsertClient(client);
+          nativeWriteCounts.clients += 1;
+        }
+        for (const property of properties) {
+          await repository.upsertProperty(property);
+          nativeWriteCounts.properties += 1;
+        }
+        for (const job of jobDetails) {
+          await repository.upsertJob(jobToNativeJob(job));
+          nativeWriteCounts.jobs += 1;
+        }
+      }
+
+      res.json({
+        ok: true,
+        mode: input.mode,
+        tenantId,
+        source: "jobber",
+        jobberWrites: false,
+        destructiveWrites: false,
+        counts,
+        externalIdsPreserved,
+        nativeWriteCounts,
+        sampledAt: new Date().toISOString()
+      });
     } catch (error) {
       sendRouteError(res, error);
     }

@@ -1661,6 +1661,63 @@ test("Nexi writes owner-supplied freeform content without forcing job rail looku
   assert.match(result.answer, /Pressure Testing Matters/);
 });
 
+test("Nexi report-based article prompts use the CompanyCam document lookup path", async () => {
+  const toolCalls = [];
+  const tools = [
+    {
+      name: "getJobDetail",
+      description: "Read job detail.",
+      inputSchema: z.object({ nameQuery: z.string().optional() }),
+      handler: async (_tenant, args) => {
+        toolCalls.push(["getJobDetail", args]);
+        return {
+          result: { job: { title: "Swimming Pool Leak Detection Service", status: "lead" } },
+          sources: [{ rail: "jobber", ref: "job_deborah", label: "Jobber job Swimming Pool Leak Detection Service" }]
+        };
+      }
+    },
+    {
+      name: "getDocuments",
+      description: "Get documents.",
+      inputSchema: z.object({ projectQuery: z.string().optional(), question: z.string().optional() }),
+      handler: async (_tenant, args) => {
+        toolCalls.push(["getDocuments", args]);
+        return {
+          result: {
+            project: { name: "Deborah Justice" },
+            documents: [{ id: "doc_justice", label: "Exported checklist 07-02-2026.pdf" }],
+            reports: [{ parsed: true, fields: { completionTime: "3:10pm", technicianNames: "Chris, Logan" }, textSnippet: "Completion time 3:10pm. Technicians Chris and Logan." }]
+          },
+          sources: [{ rail: "companycam", ref: "doc_justice", label: "CompanyCam document Exported checklist 07-02-2026.pdf" }]
+        };
+      }
+    }
+  ];
+
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools when needed.",
+    messages: [{ role: "user", content: "write me an article based on the Deborah Justice report" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      const body = JSON.parse(init.body);
+      assert.deepEqual(body.tools, []);
+      assert.match(JSON.stringify(body.messages), /Verified getDocuments result/);
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "# What a Leak Report Shows\n\nThe Deborah Justice report recorded a 3:10pm completion time with Chris and Logan on site." }],
+        usage: { input_tokens: 18, output_tokens: 20, cache_read_input_tokens: 12 }
+      }), { status: 200 });
+    }
+  });
+
+  assert.deepEqual(toolCalls.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
+  assert.equal(toolCalls[1][1].projectQuery, "Deborah Justice");
+  assert.match(result.answer, /Leak Report Shows/);
+});
+
 test("Nexi saves chat-authored freeform content into the content queue", async () => {
   const calls = [];
   const tools = [
@@ -1736,6 +1793,65 @@ test("Nexi saves chat-authored freeform content into the content queue", async (
   assert.match(calls[0].body, /pressure testing proves/);
   assert.match(result.answer, /saved "What a Return Line Leak Looks Like" to the content queue/i);
   assert.match(result.answer, /not been published/i);
+});
+
+test("Nexi freeform content save skips stale status replies and queues the latest article", async () => {
+  const calls = [];
+  const tools = [{
+    name: "queueFreeformContent",
+    description: "Save freeform content.",
+    inputSchema: z.object({
+      kind: z.enum(["gbp_post", "social_post", "article"]),
+      title: z.string(),
+      body: z.string(),
+      sourcePrompt: z.string().optional()
+    }),
+    handler: async (_tenant, args) => {
+      calls.push(args);
+      return {
+        result: {
+          draft: {
+            id: "content_article_fresh-1234-4abc-8abc-123456789abc",
+            kind: args.kind,
+            title: args.title,
+            body: args.body,
+            status: "approval_pending",
+            approvalId: "appr_fresh_article"
+          },
+          savedToContentQueue: true,
+          publishingDeferred: true
+        },
+        sources: [{ rail: "native", ref: "content_article_fresh-1234-4abc-8abc-123456789abc", label: `Native content draft ${args.title}` }]
+      };
+    }
+  }];
+
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "write me an article about Deborah Justice's leak report" },
+      {
+        role: "assistant",
+        content: "# What a Leak Report Can Teach a Pool Owner\n\nA good leak report ties measurements, photos, and technician notes into one plain-English next step for the owner."
+      },
+      { role: "user", content: "save it to the content queue" },
+      { role: "assistant", content: "I saved the wrong old note to the content queue and rejected it." },
+      { role: "user", content: "save this article to the content queue" }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("saving chat-authored content should not need a model call");
+    }
+  });
+
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["queueFreeformContent"]);
+  assert.equal(calls[0].title, "What a Leak Report Can Teach a Pool Owner");
+  assert.match(calls[0].body, /technician notes into one plain-English next step/);
+  assert.doesNotMatch(calls[0].body, /wrong old note/i);
 });
 
 test("Nexi address-only follow-ups preserve the prior distance capability intent", async () => {
@@ -1990,6 +2106,49 @@ test("Nexi exact photo prompt extracts trailing entity before photos", async () 
   assert.equal(result.sources.length, 1);
   assert.equal(result.toolRuns[0].name, "getPhotos");
   assert.equal(result.answer, "I found one Deborah Justice photo.");
+});
+
+test("Nexi getPhotos includes native Job Desk uploads when CompanyCam has no usable result", async () => {
+  const nativeReader = {
+    async listMedia() {
+      return [{
+        id: "media_uploaded_photo",
+        tenantId: "aquatrace",
+        type: "photo",
+        storageRef: "gs://bucket/tenants/aquatrace/media/media_uploaded_photo/companycam-3338756524.jpg",
+        thumbRef: "gs://bucket/tenants/aquatrace/media/media_uploaded_photo/companycam-3338756524.jpg",
+        aiTags: ["job-desk-upload"],
+        aiCaption: "Uploaded photo tagged job-desk-upload."
+      }];
+    }
+  };
+  const tool = createNexiJobDeskTools({}, undefined, nativeReader).find((candidate) => candidate.name === "getPhotos");
+  assert.ok(tool);
+  const result = await tool.handler(tenant(), { projectQuery: "the photo I just uploaded" });
+  assert.equal(result.result.nativeMedia[0].id, "media_uploaded_photo");
+  assert.equal(result.sources[0].rail, "native");
+  assert.match(result.sources[0].label, /Native photo upload/);
+});
+
+test("Nexi getDocuments includes native uploaded PDFs immediately", async () => {
+  const nativeReader = {
+    async listMedia() {
+      return [{
+        id: "media_uploaded_pdf",
+        tenantId: "aquatrace",
+        type: "pdf",
+        storageRef: "gs://bucket/tenants/aquatrace/media/media_uploaded_pdf/Para_42_section_VI_6.pdf",
+        aiTags: ["job-desk-upload"],
+        aiCaption: "Uploaded pdf tagged job-desk-upload."
+      }];
+    }
+  };
+  const tool = createNexiJobDeskTools({}, undefined, nativeReader).find((candidate) => candidate.name === "getDocuments");
+  assert.ok(tool);
+  const result = await tool.handler(tenant(), { projectQuery: "this uploaded pdf document", question: "summarize this uploaded pdf document" });
+  assert.equal(result.result.nativeDocuments[0].id, "media_uploaded_pdf");
+  assert.equal(result.sources[0].rail, "native");
+  assert.match(result.sources[0].label, /Native pdf upload/);
 });
 
 test("Nexi schedule follow-ups use prior conversation date window", async () => {
@@ -2347,6 +2506,82 @@ test("Nexi under-specified evaporation commands read job/report context before r
   assert.equal(toolCalls[2][1].address, "181 Isbell Road, Fair Play, SC 29643");
   assert.equal(toolCalls[2][1].surfaceAreaFt2, 1002.7);
   assert.equal(toolCalls[2][1].waterTempF, 82);
+  assert.deepEqual(toolCalls[2][1].observedLoss, { inches: 0.5, observationDays: 1 });
+});
+
+test("Nexi answers natural evaporation-at-client wording from report context", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "what is the evaporation at Deborah Justice right now" }],
+    tools: [
+      {
+        name: "getJobDetail",
+        description: "Read Jobber job.",
+        inputSchema: z.object({ nameQuery: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getJobDetail", args]);
+          return {
+            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", address: "181 Isbell Road, Fair Play, SC 29643" } },
+            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
+          };
+        }
+      },
+      {
+        name: "getDocuments",
+        description: "Read CompanyCam docs.",
+        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["getDocuments", args]);
+          return {
+            result: {
+              reports: [{
+                fields: {
+                  projectAddress: "181 Isbell Road, Fair Play, SC 29643",
+                  evapSurfaceAreaSqFt: 1002.7,
+                  evapWaterTempF: 87,
+                  observedDailyLossInchesPerDay: 0.5
+                }
+              }]
+            },
+            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
+          };
+        }
+      },
+      {
+        name: "runEvaporation",
+        description: "Run evaporation.",
+        inputSchema: z.object({
+          clientName: z.string().optional(),
+          address: z.string(),
+          surfaceAreaFt2: z.number(),
+          waterTempF: z.number(),
+          observedLoss: z.object({ inches: z.number(), observationDays: z.number() }).optional()
+        }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(["runEvaporation", args]);
+          return {
+            result: { report: { calculation: { evapInchesPerDay: 0.31, leakInchesPerDay: 0.19 } } },
+            sources: [{ rail: "native", ref: "evap_justice", label: "Aquatrace evaporation report evap_justice" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I ran the evaporation calculator for Deborah Justice." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail", "getDocuments", "runEvaporation"]);
+  assert.equal(toolCalls[0][1].nameQuery, "Deborah Justice");
+  assert.equal(toolCalls[1][1].projectQuery, "Deborah Justice");
+  assert.equal(toolCalls[2][1].address, "181 Isbell Road, Fair Play, SC 29643");
+  assert.equal(toolCalls[2][1].surfaceAreaFt2, 1002.7);
+  assert.equal(toolCalls[2][1].waterTempF, 87);
   assert.deepEqual(toolCalls[2][1].observedLoss, { inches: 0.5, observationDays: 1 });
 });
 

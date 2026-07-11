@@ -1,5 +1,15 @@
 import { z } from "zod";
-import { RailError, type ApprovalExecutor, type ApprovalItem, type CRMProvider, type NewClient } from "@nexteam/core";
+import {
+  addressSchema,
+  clientCommunicationSettingsSchema,
+  clientContactSchema,
+  personNameSchema,
+  RailError,
+  type ApprovalExecutor,
+  type ApprovalItem,
+  type CRMProvider,
+  type NewClient
+} from "@nexteam/core";
 
 const createClientApprovalArgsSchema = z.object({
   tenantId: z.string().min(1),
@@ -7,6 +17,12 @@ const createClientApprovalArgsSchema = z.object({
     tenantId: z.string().min(1),
     name: z.string().min(1),
     company: z.string().optional(),
+    personName: personNameSchema.optional(),
+    displayNamePreference: z.enum(["person", "company"]).optional(),
+    billingAddress: addressSchema.optional(),
+    billingSameAsPrimaryProperty: z.boolean().optional(),
+    contacts: z.array(clientContactSchema).optional(),
+    communicationSettings: clientCommunicationSettingsSchema.optional(),
     emails: z.array(z.string()),
     phones: z.array(z.string()),
     consent: z.object({ email: z.boolean(), sms: z.boolean() })

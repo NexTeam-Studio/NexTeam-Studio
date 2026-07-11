@@ -1,6 +1,10 @@
 import { z } from "zod";
 import {
+  addressSchema,
+  clientCommunicationSettingsSchema,
+  clientContactSchema,
   RailError,
+  personNameSchema,
   type ApprovalQueueService,
   type Client,
   type CRMProvider,
@@ -17,6 +21,12 @@ const clientLookupInputSchema = z.object({ q: z.string().default("") });
 const createClientInputSchema = z.object({
   name: z.string().min(1),
   company: z.string().min(1).optional(),
+  personName: personNameSchema.optional(),
+  displayNamePreference: z.enum(["person", "company"]).optional(),
+  billingAddress: addressSchema.optional(),
+  billingSameAsPrimaryProperty: z.boolean().optional(),
+  contacts: z.array(clientContactSchema).optional(),
+  communicationSettings: clientCommunicationSettingsSchema.optional(),
   address: z.string().min(1).optional(),
   emails: z.array(z.string()).default([]),
   phones: z.array(z.string()).default([]),
@@ -78,7 +88,23 @@ function normalized(value: string): string {
 function exactOrStrongClientMatch(clients: Client[], query: string): boolean {
   const needle = normalized(query);
   return !needle || clients.some((client) => {
-    const values = [client.name, client.company ?? "", ...client.emails, ...client.phones].map(normalized).filter(Boolean);
+    const contactValues = (client.contacts ?? []).flatMap((contact) => [
+      contact.personName?.firstName,
+      contact.personName?.lastName,
+      contact.company,
+      contact.role,
+      ...contact.emails.map((email) => email.value),
+      ...contact.phones.map((phone) => phone.value)
+    ]);
+    const values = [
+      client.name,
+      client.company ?? "",
+      client.personName?.firstName ?? "",
+      client.personName?.lastName ?? "",
+      ...client.emails,
+      ...client.phones,
+      ...contactValues
+    ].filter((value): value is string => Boolean(value)).map(normalized).filter(Boolean);
     return values.some((value) => value === needle || value.includes(needle));
   });
 }
@@ -183,18 +209,32 @@ export function createCrmToolsWithOptions(provider: CRMProvider, approvalQueue: 
           tenantId: tenant.id,
           name: input.name,
           ...(input.company ? { company: input.company } : {}),
+          ...(input.personName ? { personName: input.personName } : {}),
+          ...(input.displayNamePreference ? { displayNamePreference: input.displayNamePreference } : {}),
+          ...(input.billingAddress ? { billingAddress: input.billingAddress } : {}),
+          ...(input.billingSameAsPrimaryProperty !== undefined ? { billingSameAsPrimaryProperty: input.billingSameAsPrimaryProperty } : {}),
+          ...(input.contacts ? { contacts: input.contacts } : {}),
+          ...(input.communicationSettings ? { communicationSettings: input.communicationSettings } : {}),
           emails: input.emails,
           phones: input.phones,
           consent: input.consent
         };
+        const contactSummary = (client.contacts ?? []).map((contact) => {
+          const person = [contact.personName?.firstName, contact.personName?.lastName].filter(Boolean).join(" ");
+          const channels = contact.channelPreference === "both" ? "email + one-way text" : contact.channelPreference;
+          return `${person || contact.company || "Contact"}: ${channels}`;
+        });
         const body = [
           `Name: ${client.name}`,
           client.company ? `Company: ${client.company}` : "",
+          client.displayNamePreference ? `Display as: ${client.displayNamePreference === "company" ? "company name" : "first and last name"}` : "",
           client.emails.length ? `Email: ${client.emails.join(", ")}` : "",
           client.phones.length ? `Phone: ${client.phones.join(", ")}` : "",
+          contactSummary.length ? `Contacts: ${contactSummary.join("; ")}` : "",
+          client.billingSameAsPrimaryProperty === false ? "Billing address: separate address on file" : "",
           input.address ? `Address note: ${input.address}` : "",
           `Email OK: ${client.consent.email ? "yes" : "no"}`,
-          `Text OK: ${client.consent.sms ? "yes" : "no"}`
+          `Text OK: ${client.consent.sms ? "yes, one-way outbound unless upgraded" : "no"}`
         ].filter(Boolean).join("\n");
         const approval = await approvalQueue.create({
           tenantId: tenant.id,

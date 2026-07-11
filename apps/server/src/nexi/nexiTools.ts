@@ -1,4 +1,4 @@
-import type { DocRef, Job, Media, NexiTool, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
+import type { DocRef, Job, Media, NexiTool, ProjectRef, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
 import { z } from "zod";
 import { CompanyCamAdapter, JobberAdapter } from "@nexteam/providers";
 import { readCompanyCamReports, siteJobBlueprintFromCompanyCamReport } from "./reportDocuments.js";
@@ -10,6 +10,10 @@ export interface ToolRunResult {
 
 export interface SiteJobBlueprintReader {
   loadSiteJobBlueprints(tenantId: string, limit: number): Promise<SiteJobBlueprint[]>;
+}
+
+export interface NativeMediaReader {
+  listMedia(tenantId: string): Promise<Media[]>;
 }
 
 export const getScheduleInputSchema = z.object({
@@ -116,6 +120,12 @@ function companyCamPhotoSources(media: Media[]): Source[] {
     .map((item) => source("companycam", item.externalIds?.companycam ?? item.id, `CompanyCam photo ${item.id}`));
 }
 
+function nativeMediaSources(media: Media[]): Source[] {
+  return media
+    .slice(0, 6)
+    .map((item) => source("native", item.id, `Native ${item.type} upload ${item.id}`));
+}
+
 function companyCamDocumentSources(documents: DocRef[]): Source[] {
   return documents
     .slice(0, 3)
@@ -189,6 +199,36 @@ function normalizedSearchText(value: unknown): string {
 function includesAllSearchTokens(haystack: string, needle: string): boolean {
   const tokens = normalizedSearchText(needle).split(/\s+/).filter((token) => token.length > 1);
   return tokens.length > 0 && tokens.every((token) => haystack.includes(token));
+}
+
+function nativeMediaSearchText(media: Media): string {
+  return normalizedSearchText([
+    media.id,
+    media.jobId,
+    media.propertyId,
+    media.storageRef,
+    media.thumbRef,
+    media.aiCaption,
+    media.capturedBy,
+    media.externalIds?.companycam,
+    ...media.aiTags
+  ].join(" "));
+}
+
+function looksLikeRecentUploadQuery(query: string): boolean {
+  return /\b(?:just|last|recent|uploaded|upload|attached|this|that)\b/i.test(query);
+}
+
+function matchingNativeMedia(media: Media[], query: string, types: Array<Media["type"]>): Media[] {
+  const normalizedQuery = normalizedSearchText(query);
+  return media
+    .filter((item) => types.includes(item.type))
+    .filter((item) => {
+      const haystack = nativeMediaSearchText(item);
+      return includesAllSearchTokens(haystack, normalizedQuery)
+        || (looksLikeRecentUploadQuery(query) && haystack.includes("job desk upload"));
+    })
+    .slice(0, 10);
 }
 
 function blueprintMatchesRequest(
@@ -273,7 +313,11 @@ function firstMatchingSiteJobBlueprint(
   return null;
 }
 
-export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, siteJobBlueprintReader?: SiteJobBlueprintReader): NexiTool[] {
+export function createNexiJobDeskTools(
+  env: NodeJS.ProcessEnv = process.env,
+  siteJobBlueprintReader?: SiteJobBlueprintReader,
+  nativeMediaReader?: NativeMediaReader
+): NexiTool[] {
   return [
     {
       name: "getSchedule",
@@ -317,21 +361,39 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
       inputJsonSchema: getPhotosJsonSchema,
       handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
         const input = getPhotosInputSchema.parse(args);
+        const nativeMedia = nativeMediaReader
+          ? matchingNativeMedia(await nativeMediaReader.listMedia(tenant.id), input.projectQuery, ["photo", "video"])
+          : [];
         const provider = CompanyCamAdapter.fromEnv(env, tenant.id);
-        const projects = await provider.findProjects(input.projectQuery);
+        let projects: ProjectRef[];
+        try {
+          projects = await provider.findProjects(input.projectQuery);
+        } catch (error) {
+          if (nativeMedia.length > 0) {
+            return {
+              result: { projects: [], media: [], nativeMedia, checkedProjectQuery: input.projectQuery, companyCamUnavailable: true },
+              sources: nativeMediaSources(nativeMedia)
+            };
+          }
+          throw error;
+        }
         const project = projects[0];
         if (!project) {
           return {
-            result: { projects: [], media: [], checkedProjectQuery: input.projectQuery },
-            sources: [source("companycam", `project-search:${input.projectQuery}`, `CompanyCam project search for ${input.projectQuery}`)]
+            result: { projects: [], media: [], nativeMedia, checkedProjectQuery: input.projectQuery },
+            sources: [
+              source("companycam", `project-search:${input.projectQuery}`, `CompanyCam project search for ${input.projectQuery}`),
+              ...nativeMediaSources(nativeMedia)
+            ]
           };
         }
         const media = await provider.getMedia(project);
         return {
-          result: { project, media },
+          result: { project, media, nativeMedia },
           sources: [
             source("companycam", project.externalIds?.companycam ?? project.id, `CompanyCam project ${project.name}`),
-            ...companyCamPhotoSources(media)
+            ...companyCamPhotoSources(media),
+            ...nativeMediaSources(nativeMedia)
           ]
         };
       }
@@ -343,12 +405,33 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
       inputJsonSchema: getDocumentsJsonSchema,
       handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
         const input = getDocumentsInputSchema.parse(args);
-        const result = await readCompanyCamReports({
-          tenant,
-          projectQuery: input.projectQuery,
-          question: input.question,
-          env
-        });
+        const nativeDocuments = nativeMediaReader
+          ? matchingNativeMedia(await nativeMediaReader.listMedia(tenant.id), `${input.projectQuery} ${input.question ?? ""}`, ["pdf"])
+          : [];
+        let result;
+        try {
+          result = await readCompanyCamReports({
+            tenant,
+            projectQuery: input.projectQuery,
+            question: input.question,
+            env
+          });
+        } catch (error) {
+          if (nativeDocuments.length > 0) {
+            return {
+              result: {
+                project: null,
+                documents: [],
+                nativeDocuments,
+                reports: [],
+                suggestedSiteJobBlueprints: [],
+                companyCamUnavailable: true
+              },
+              sources: nativeMediaSources(nativeDocuments)
+            };
+          }
+          throw error;
+        }
         const parsedReports = result.reports.filter((report) => report.parsed);
         const siteJobBlueprints = result.project
           ? parsedReports
@@ -359,6 +442,7 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
           result: {
             project: result.project,
             documents: result.documents,
+            nativeDocuments,
             reports: result.reports,
             suggestedSiteJobBlueprints: siteJobBlueprints
           },
@@ -366,7 +450,8 @@ export function createNexiJobDeskTools(env: NodeJS.ProcessEnv = process.env, sit
             ...(result.project
               ? [source("companycam", result.project.externalIds?.companycam ?? result.project.id, `CompanyCam project ${result.project.name}`)]
               : [source("companycam", `document-search:${input.projectQuery}`, `CompanyCam document search for ${input.projectQuery}`)]),
-            ...companyCamDocumentSources(parsedReports.map((report) => report.document))
+            ...companyCamDocumentSources(parsedReports.map((report) => report.document)),
+            ...nativeMediaSources(nativeDocuments)
           ]
         };
       }

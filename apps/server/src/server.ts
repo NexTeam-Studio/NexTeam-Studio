@@ -30,7 +30,7 @@ import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
 import { createCommsNexiTools } from "./comms/nexiTools.js";
 import { createContextNexiTools } from "./context/nexiTools.js";
 import { createContentNexiTools } from "./content/nexiTools.js";
-import { InMemoryContentRepository } from "./content/repository.js";
+import { FirestoreContentRepository, InMemoryContentRepository } from "./content/repository.js";
 import { registerContentRoutes } from "./content/routes.js";
 import { CrmApprovalExecutor } from "./crm/approvalExecutor.js";
 import { createCrmToolsWithOptions } from "./crm/nexiTools.js";
@@ -72,12 +72,12 @@ import { createVoiceRouter } from "./voice/routes.js";
 
 const app = express();
 const commsRail = createCommsRailFromEnv(process.env);
-const contentRepository = new InMemoryContentRepository();
+const adminDb = getAdminDb();
+const contentRepository = adminDb ? new FirestoreContentRepository(adminDb) : new InMemoryContentRepository();
 const schedulingRepository = new InMemorySchedulingRepository();
 const campaignRepository = new InMemoryCampaignRepository(process.env.TENANT_ID || "aquatrace");
 const gbpReviewProvider = new EnvGbpReviewProvider(process.env);
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
-const adminDb = getAdminDb();
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
 const fallbackMediaRepository = new MemoryMediaRepository();
 const mediaRepository: MediaRepository = adminDb ? new FirestoreMediaRepository(adminDb) : fallbackMediaRepository;
@@ -134,6 +134,7 @@ app.use("/api/nexi", createNexiRouter(process.env, {
     const tenantId = typeof body?.tenantId === "string" && body.tenantId.trim() ? body.tenantId.trim() : process.env.TENANT_ID || "aquatrace";
     return loadTenantFromPlatform(platformRepository, tenantId, process.env);
   },
+  nativeMediaReader: mediaRepository,
   filterTools: (tenant, tools) => enforceToolEntitlements(tenant, tools).tools,
   extraTools: [
     ...createContextNexiTools({ env: process.env }),
@@ -303,7 +304,9 @@ app.post("/api/approval-queue", async (req: Request, res: Response) => {
 app.get("/api/approval-queue", async (req: Request, res: Response) => {
   try {
     const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : process.env.TENANT_ID || "aquatrace";
-    res.json({ ok: true, items: await approvalQueue.listPending(tenantId) });
+    const includeHistory = String(req.query.includeHistory ?? "").toLowerCase() === "true";
+    const items = includeHistory ? await approvalQueue.listByTenant(tenantId) : await approvalQueue.listPending(tenantId);
+    res.json({ ok: true, items });
   } catch (error) {
     sendError(res, error);
   }
@@ -348,7 +351,7 @@ app.post("/api/approval-queue/:id/execute", async (req: Request, res: Response) 
   }
 });
 
-registerCrmRoutes(app, { approvalQueue, eventBus });
+registerCrmRoutes(app, { approvalQueue, eventBus, memoryRepository: nativeCrmRepository, env: process.env });
 registerFieldDocsRoutes(app, { eventBus, repository: mediaRepository });
 registerContentRoutes(app, { repository: contentRepository, approvalQueue, eventBus, env: process.env });
 registerCampaignRoutes(app, { repository: campaignRepository, approvalQueue, env: process.env });
@@ -363,6 +366,10 @@ registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });
 registerSeoRoutes(app, { repository: seoRepository, sitesRepository, approvalQueue, env: process.env });
 registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });
 app.use(express.static(webDistDir));
+
+app.get(/^\/(?:nexops|nexshot|platform)(?:\/.*)?$/, (_req: Request, res: Response) => {
+  res.sendFile(path.join(webDistDir, "index.html"));
+});
 
 app.get("/", (_req: Request, res: Response) => {
   res.json({ ok: true, service: "nexteam-studio-server", version: getBuildInfo() });

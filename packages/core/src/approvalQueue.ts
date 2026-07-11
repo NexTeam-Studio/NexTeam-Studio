@@ -15,6 +15,7 @@ export interface ApprovalQueueRepository {
   get(id: ID): Promise<ApprovalItem | null>;
   update(id: ID, patch: Partial<ApprovalItem>): Promise<ApprovalItem>;
   listPending(tenantId: ID): Promise<ApprovalItem[]>;
+  listByTenant(tenantId: ID): Promise<ApprovalItem[]>;
 }
 
 export interface ApprovalExecutor {
@@ -45,6 +46,12 @@ export class InMemoryApprovalQueueRepository implements ApprovalQueueRepository 
 
   async listPending(tenantId: ID): Promise<ApprovalItem[]> {
     return [...this.items.values()].filter((item) => item.tenantId === tenantId && item.status === "pending");
+  }
+
+  async listByTenant(tenantId: ID): Promise<ApprovalItem[]> {
+    return [...this.items.values()]
+      .filter((item) => item.tenantId === tenantId)
+      .sort((left, right) => (right.decidedAt ?? "").localeCompare(left.decidedAt ?? ""));
   }
 }
 
@@ -106,5 +113,9 @@ export class ApprovalQueueService {
 
   listPending(tenantId: ID): Promise<ApprovalItem[]> {
     return this.repository.listPending(tenantId);
+  }
+
+  listByTenant(tenantId: ID): Promise<ApprovalItem[]> {
+    return this.repository.listByTenant(tenantId);
   }
 }

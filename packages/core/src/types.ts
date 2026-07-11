@@ -5,7 +5,7 @@ export type ID = string;
 
 export interface Address {
   street1: string;
-  street2?: string;
+  street2?: string | undefined;
   city: string;
   province: string;
   postalCode: string;
@@ -176,6 +176,55 @@ export interface TenantDataExport {
   collections: Record<string, unknown[]>;
 }
 
+export type ContactChannel = "email" | "sms" | "both" | "none";
+export type PhoneLabel = "Main" | "Work" | "Mobile" | "Home" | "Fax" | "Other";
+export type EmailLabel = "Main" | "Work" | "Personal" | "Other";
+export type SmsCapability = "mobile" | "landline" | "fax" | "invalid" | "unknown";
+
+export interface PhoneContact {
+  id?: ID | undefined;
+  label: PhoneLabel;
+  value: string;
+  normalized?: string | undefined;
+  primary: boolean;
+  receivesMessages: boolean;
+  smsCapability: SmsCapability;
+  smsMode: "one_way" | "two_way";
+}
+
+export interface EmailContact {
+  id?: ID | undefined;
+  label: EmailLabel;
+  value: string;
+  primary: boolean;
+}
+
+export interface PersonName {
+  title?: string | undefined;
+  firstName?: string | undefined;
+  lastName?: string | undefined;
+}
+
+export interface ClientContact {
+  id?: ID | undefined;
+  personName?: PersonName | undefined;
+  company?: string | undefined;
+  role?: string | undefined;
+  billingContact: boolean;
+  correspondenceContact: boolean;
+  phones: PhoneContact[];
+  emails: EmailContact[];
+  channelPreference: ContactChannel;
+}
+
+export interface ClientCommunicationSettings {
+  quotesAndInvoices: ContactChannel;
+  jobReminders: ContactChannel;
+  jobClosureFollowUps: ContactChannel;
+  reviewRequests: ContactChannel;
+  smsDefaultMode: "one_way" | "two_way";
+}
+
 export type JobStatus =
   | "lead"
   | "quoted"
@@ -190,6 +239,15 @@ export interface Client {
   tenantId: ID;
   name: string;
   company?: string | undefined;
+  personName?: PersonName | undefined;
+  displayNamePreference?: "person" | "company" | undefined;
+  primaryContactId?: ID | undefined;
+  billingContactId?: ID | undefined;
+  correspondenceContactId?: ID | undefined;
+  billingAddress?: Address | undefined;
+  billingSameAsPrimaryProperty?: boolean | undefined;
+  contacts?: ClientContact[] | undefined;
+  communicationSettings?: ClientCommunicationSettings | undefined;
   emails: string[];
   phones: string[];
   tags: string[];
@@ -208,7 +266,16 @@ export interface Property {
   id: ID;
   tenantId: ID;
   clientId: ID;
+  parentSiteId?: ID | undefined;
+  siteName?: string | undefined;
+  label?: string | undefined;
   address: Address;
+  billingAddressSameAsClient?: boolean | undefined;
+  access?: {
+    gateCode?: string | undefined;
+    accessNotes?: string | undefined;
+  } | undefined;
+  contacts?: ClientContact[] | undefined;
   geo?: { lat: number; lng: number } | undefined;
   assets: Asset[];
   externalIds?: { jobber?: string | undefined } | undefined;
@@ -295,6 +362,12 @@ export interface NewClient {
   tenantId: ID;
   name: string;
   company?: string | undefined;
+  personName?: PersonName | undefined;
+  displayNamePreference?: "person" | "company" | undefined;
+  billingAddress?: Address | undefined;
+  billingSameAsPrimaryProperty?: boolean | undefined;
+  contacts?: ClientContact[] | undefined;
+  communicationSettings?: ClientCommunicationSettings | undefined;
   emails: string[];
   phones: string[];
   consent: { email: boolean; sms: boolean };

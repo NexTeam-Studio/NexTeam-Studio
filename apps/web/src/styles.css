@@ -70,6 +70,7 @@ input {
 
 .schedule-card,
 .approval-card,
+.nexops-card,
 .content-card {
   padding: 24px;
   overflow: auto;
@@ -87,6 +88,1026 @@ input {
 
 .approval-card {
   min-height: 0;
+}
+
+.nexops-card {
+  color: #102129;
+}
+
+.nexops-crm-workspace {
+  padding: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(248, 255, 252, 0.98), rgba(233, 244, 240, 0.94)),
+    radial-gradient(circle at 100% 0%, rgba(0, 240, 240, 0.16), transparent 34%);
+}
+
+.nexops-topline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid rgba(16, 33, 41, 0.12);
+  background:
+    linear-gradient(135deg, rgba(5, 20, 24, 0.96), rgba(0, 108, 112, 0.82)),
+    radial-gradient(circle at 88% 16%, rgba(0, 255, 255, 0.36), transparent 24%);
+  color: #f7fffd;
+}
+
+.nexops-topline h2,
+.nexops-topline p {
+  margin: 0;
+}
+
+.nexops-topline h2 {
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  line-height: 0.86;
+}
+
+.nexops-topline .eyebrow {
+  color: #00f0f0;
+}
+
+.nexops-topline p:last-child {
+  margin-top: 10px;
+  color: rgba(247, 255, 253, 0.78);
+}
+
+.nexops-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 8px;
+  max-width: 280px;
+}
+
+.nexops-actions button,
+.nexops-search-row button,
+.nexops-tabs button,
+.nexops-detail-header button {
+  border: 1px solid rgba(0, 240, 240, 0.34);
+  border-radius: 999px;
+  padding: 9px 12px;
+  color: #061a1c;
+  background: #00f0f0;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.nexops-actions button:nth-child(2),
+.nexops-actions button:nth-child(3) {
+  color: #f7fffd;
+  background: rgba(247, 255, 253, 0.12);
+}
+
+.nexops-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 18px;
+  background: rgba(0, 240, 240, 0.08);
+}
+
+.nexops-metrics article {
+  border: 1px solid rgba(16, 33, 41, 0.12);
+  border-radius: 22px;
+  padding: 13px 15px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.nexops-metrics span,
+.nexops-metrics small {
+  display: block;
+  color: rgba(16, 33, 41, 0.66);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.nexops-metrics strong {
+  display: block;
+  margin: 4px 0 2px;
+  color: #001f2d;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.nexops-board {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.82fr) minmax(280px, 1.18fr);
+  gap: 14px;
+  padding: 18px;
+}
+
+.nexops-list-pane,
+.nexops-detail-pane {
+  min-height: 420px;
+  border: 1px solid rgba(16, 33, 41, 0.12);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.nexops-list-pane {
+  padding: 14px;
+}
+
+.nexops-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.nexops-search-row input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(16, 33, 41, 0.18);
+  border-radius: 18px;
+  padding: 11px 13px;
+  color: #102129;
+  background: #fafffe;
+}
+
+.nexops-search-row button,
+.nexops-tabs button,
+.nexops-detail-header button {
+  color: #0b3438;
+  background: #fafffe;
+}
+
+.nexops-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.nexops-tabs button {
+  padding: 7px 10px;
+  font-size: 0.78rem;
+}
+
+.nexops-tabs .active {
+  color: #f7fffd;
+  background: #006e70;
+}
+
+.nexops-client-list {
+  display: grid;
+  gap: 9px;
+}
+
+.nexops-client-row,
+.nexops-empty-list {
+  border: 1px solid rgba(16, 33, 41, 0.12);
+  border-radius: 20px;
+  padding: 12px;
+  background:
+    linear-gradient(180deg, #ffffff, #f2fbf8);
+}
+
+.nexops-client-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.nexops-client-row h3,
+.nexops-empty-list h3,
+.nexops-detail-header h3,
+.nexops-detail-sections h4,
+.nexops-client-row p,
+.nexops-empty-list p,
+.nexops-detail-header p,
+.nexops-detail-sections p {
+  margin: 0;
+}
+
+.nexops-client-row h3,
+.nexops-empty-list h3 {
+  color: #00283a;
+  font-size: 1rem;
+}
+
+.nexops-client-row p,
+.nexops-empty-list p {
+  margin-top: 4px;
+  color: rgba(16, 33, 41, 0.66);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.nexops-client-row span {
+  border-radius: 999px;
+  padding: 7px 9px;
+  color: #00565b;
+  background: rgba(0, 240, 240, 0.16);
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.nexops-detail-pane {
+  padding: 18px;
+}
+
+.nexops-detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(16, 33, 41, 0.12);
+}
+
+.nexops-detail-header h3 {
+  margin-top: 4px;
+  color: #001f2d;
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  line-height: 0.95;
+}
+
+.nexops-detail-header p:last-child {
+  margin-top: 8px;
+  color: rgba(16, 33, 41, 0.64);
+}
+
+.nexops-detail-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.nexops-detail-sections article {
+  min-height: 92px;
+  border: 1px solid rgba(16, 33, 41, 0.12);
+  border-radius: 20px;
+  padding: 13px;
+  background: rgba(250, 255, 254, 0.86);
+}
+
+.nexops-detail-sections h4 {
+  color: #00283a;
+  font-size: 0.92rem;
+}
+
+.nexops-detail-sections p {
+  margin-top: 8px;
+  color: rgba(16, 33, 41, 0.68);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.nexops-app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 188px minmax(0, 1fr);
+  color: var(--nexops-brand-text, #082131);
+  background: var(--nexops-brand-background, #f6f8f5);
+  font-family: var(--nexops-font-family, Inter, Avenir, Helvetica, Arial, sans-serif);
+}
+
+.nexops-app button,
+.nexops-app input {
+  font-family: inherit;
+}
+
+.nexops-app-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+  padding: 18px 12px;
+  border-right: 1px solid rgba(8, 33, 49, 0.12);
+  background: #e9e6de;
+}
+
+.nexops-app-logo {
+  display: grid;
+  gap: 8px;
+  padding: 4px 8px 14px;
+  color: var(--nexops-brand-primary, #071817);
+}
+
+.nexops-app-logo .tenant-logo {
+  max-width: 136px;
+  max-height: 54px;
+  margin: 0;
+}
+
+.nexops-app-logo .tenant-wordmark {
+  max-width: 136px;
+  margin: 0;
+  color: var(--nexops-brand-accent, #00f0f0);
+  font-size: 1.05rem;
+}
+
+.nexops-app-logo span {
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.nexops-create-button,
+.nexops-client-actions button,
+.nexops-web-tools button {
+  border: 0;
+  border-radius: 9px;
+  padding: 12px 15px;
+  color: #fff;
+  background: #147a26;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.nexops-create-button {
+  align-self: stretch;
+}
+
+.nexops-nav {
+  display: grid;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(8, 33, 49, 0.14);
+}
+
+.nexops-nav a,
+.nexops-nav button {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #072231;
+  background: transparent;
+  font-weight: 850;
+  font-size: 0.95rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nexops-nav a:hover,
+.nexops-nav a.active,
+.nexops-nav button:hover,
+.nexops-nav button.active {
+  background: rgba(8, 33, 49, 0.08);
+}
+
+.nexops-dashboard,
+.nexops-module-page {
+  display: grid;
+  gap: 22px;
+  padding: 34px 28px 48px;
+}
+
+.nexops-page-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 22px;
+}
+
+.nexops-page-heading h1 {
+  margin: 0;
+  color: #082131;
+  font-size: clamp(2rem, 5vw, 2.65rem);
+  line-height: 1;
+}
+
+.nexops-page-heading p {
+  margin: 10px 0 0;
+  color: #526675;
+}
+
+.nexops-page-heading button,
+.nexops-inline-actions button,
+.nexops-drawer-actions button,
+.nexops-module-card a {
+  border: 0;
+  border-radius: 9px;
+  padding: 12px 15px;
+  color: #fff;
+  background: #147a26;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nexops-workflow-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.nexops-workflow-strip article {
+  min-height: 136px;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  padding: 20px 24px;
+  border-top: 5px solid var(--nexops-brand-accent, #00f0f0);
+  border-right: 1px solid rgba(8, 33, 49, 0.1);
+}
+
+.nexops-workflow-strip article:nth-child(2) {
+  border-top-color: #a33c55;
+}
+
+.nexops-workflow-strip article:nth-child(3) {
+  border-top-color: #21762b;
+}
+
+.nexops-workflow-strip article:nth-child(4) {
+  border-top-color: #17689c;
+}
+
+.nexops-workflow-strip article:last-child {
+  border-right: 0;
+}
+
+.nexops-workflow-strip span {
+  color: #385161;
+  font-weight: 800;
+}
+
+.nexops-workflow-strip strong {
+  color: #082131;
+  font-size: 2.15rem;
+  line-height: 1;
+}
+
+.nexops-workflow-strip p {
+  margin: 0;
+  color: #385161;
+}
+
+.nexops-two-column {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(310px, 0.65fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.nexops-module-grid,
+.nexshot-template-grid,
+.nexshot-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.nexops-module-grid-wide {
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+}
+
+.nexops-module-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 12px;
+  padding: 20px;
+  background: var(--nexops-brand-surface, #fff);
+  box-shadow: 0 20px 60px rgba(8, 33, 49, 0.08);
+}
+
+.nexops-module-card.wide {
+  grid-column: 1 / -1;
+}
+
+.nexops-module-card h2,
+.nexops-module-card h3 {
+  margin: 0;
+  color: #082131;
+}
+
+.nexops-module-card p {
+  margin: 0;
+  color: #526675;
+  line-height: 1.45;
+}
+
+.nexops-checklist,
+.nexshot-item-list,
+.nexops-mini-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nexops-checklist li,
+.nexshot-item-list li,
+.nexops-mini-list li {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(8, 33, 49, 0.05);
+  color: #082131;
+}
+
+.nexops-mini-list li {
+  display: grid;
+  gap: 3px;
+}
+
+.nexops-record-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nexops-record-list li {
+  align-items: center;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 18px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  padding: 12px 14px;
+}
+
+.nexops-record-list strong,
+.nexops-record-list small {
+  display: block;
+}
+
+.nexops-record-list small {
+  color: rgba(8, 33, 49, 0.64);
+}
+
+.nexops-record-list mark {
+  background: rgba(0, 240, 240, 0.18);
+  border-radius: 999px;
+  color: var(--nexops-brand-primary, #071817);
+  font-weight: 800;
+  padding: 5px 10px;
+  text-transform: capitalize;
+}
+
+.nexops-record-list b {
+  color: var(--nexops-brand-primary, #071817);
+  font-size: 1rem;
+}
+
+.nexops-mini-list span,
+.nexops-module-card small {
+  color: #526675;
+  font-size: 0.85rem;
+}
+
+.nexops-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.nexops-inline-actions input {
+  min-width: 220px;
+  border: 1px solid rgba(8, 33, 49, 0.16);
+  border-radius: 11px;
+  padding: 12px 14px;
+  color: #082131;
+  background: #fff;
+}
+
+.nexops-embedded-panel {
+  padding: 28px;
+}
+
+.nexops-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  justify-items: end;
+  background: rgba(8, 33, 49, 0.28);
+  backdrop-filter: blur(6px);
+}
+
+.nexops-drawer {
+  width: min(720px, 100%);
+  height: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto auto auto auto;
+  align-content: start;
+  gap: 18px;
+  padding: 28px;
+  overflow: auto;
+  background: #fff;
+  box-shadow: -18px 0 70px rgba(8, 33, 49, 0.2);
+}
+
+.nexops-drawer-heading,
+.nexops-drawer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.nexops-drawer-heading h2 {
+  margin: 0;
+  color: #082131;
+  font-size: 2rem;
+}
+
+.nexops-drawer-heading button,
+.nexops-drawer-actions button:nth-child(2) {
+  color: #082131;
+  background: #edf2ef;
+}
+
+.nexops-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid rgba(8, 33, 49, 0.14);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.nexops-form-grid label,
+.nexops-full-label {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  color: #385161;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.nexops-form-grid input,
+.nexops-form-grid select,
+.nexops-full-label select {
+  min-width: 0;
+  border: 0;
+  color: #082131;
+  background: transparent;
+  font-size: 1rem;
+}
+
+.nexops-toggle-row {
+  display: grid;
+  gap: 10px;
+  color: #082131;
+}
+
+.nexops-form-note {
+  margin: 0;
+  color: #526675;
+}
+
+.nexshot-app .nexops-create-button,
+.nexshot-app .nexops-page-heading button,
+.nexshot-app .nexops-inline-actions button {
+  color: #081a1a;
+  background: var(--nexops-brand-accent, #00f0f0);
+}
+
+.nexshot-item-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.nexops-web-main {
+  min-width: 0;
+  background: #fff;
+}
+
+.nexops-web-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 28px;
+  border-bottom: 1px solid rgba(8, 33, 49, 0.1);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+.nexops-web-topbar p {
+  margin: 0;
+  color: #385161;
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.nexops-web-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nexops-web-tools input,
+.nexops-client-controls input {
+  min-width: 210px;
+  box-sizing: border-box;
+  border: 1px solid rgba(8, 33, 49, 0.16);
+  border-radius: 11px;
+  padding: 12px 14px;
+  color: #082131;
+  background: #f8faf8;
+}
+
+.nexops-web-tools span {
+  color: #385161;
+  font-size: 0.84rem;
+}
+
+.nexops-web-tools button {
+  color: #082131;
+  background: #edf2ef;
+}
+
+.nexops-clients-workspace {
+  padding: 34px 28px 48px;
+}
+
+.nexops-clients-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.nexops-clients-heading h1 {
+  margin: 0;
+  color: #082131;
+  font-size: clamp(2rem, 5vw, 2.65rem);
+  line-height: 1;
+}
+
+.nexops-clients-heading p {
+  margin: 10px 0 0;
+  color: #526675;
+}
+
+.nexops-client-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 8px;
+}
+
+.nexops-client-actions button:nth-child(n+2) {
+  color: #0b5f60;
+  border: 1px solid rgba(11, 95, 96, 0.18);
+  background: #fff;
+}
+
+.nexops-client-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 1110px;
+  margin-top: 26px;
+}
+
+.nexops-client-stats article {
+  min-height: 96px;
+  display: grid;
+  align-content: center;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 9px;
+  padding: 18px;
+  background: var(--nexops-brand-surface, #fff);
+}
+
+.nexops-client-stats span,
+.nexops-client-stats small {
+  color: #385161;
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.nexops-client-stats strong {
+  margin-top: 12px;
+  color: #082131;
+  font-size: 1.78rem;
+  line-height: 1;
+}
+
+.nexops-client-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 26px 0 18px;
+}
+
+.nexops-client-controls button {
+  border: 1px solid rgba(8, 33, 49, 0.14);
+  border-radius: 999px;
+  padding: 12px 16px;
+  color: #082131;
+  background: #fff;
+  font-weight: 850;
+}
+
+.nexops-client-controls button:nth-child(2) {
+  background: #dedbd2;
+}
+
+.nexops-client-controls label {
+  margin-left: auto;
+}
+
+.nexops-client-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 360px);
+  gap: 20px;
+  align-items: start;
+}
+
+.nexops-client-table-card,
+.nexops-client-detail-card {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.nexops-client-table {
+  overflow: hidden;
+}
+
+.nexops-client-table-head,
+.nexops-client-table-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.3fr) minmax(280px, 1.6fr) minmax(120px, 0.8fr) 120px 130px;
+  align-items: center;
+  gap: 18px;
+  padding: 0 16px;
+}
+
+.nexops-client-table-head {
+  min-height: 44px;
+  border-bottom: 1px solid rgba(8, 33, 49, 0.14);
+  color: #526675;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.nexops-client-table-row {
+  width: 100%;
+  min-height: 58px;
+  border: 0;
+  border-bottom: 1px solid rgba(8, 33, 49, 0.12);
+  color: #082131;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nexops-client-table-row:hover,
+.nexops-client-table-row.selected {
+  background: #edeae2;
+}
+
+.nexops-client-table-row strong,
+.nexops-client-table-row small {
+  display: block;
+}
+
+.nexops-client-table-row small {
+  margin-top: 3px;
+  color: #526675;
+  font-size: 0.78rem;
+}
+
+.nexops-client-table-row mark {
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #0f5d1b;
+  background: #e6f2e5;
+}
+
+.nexops-client-empty {
+  padding: 28px;
+  color: #526675;
+}
+
+.nexops-client-empty h2,
+.nexops-client-empty p {
+  margin: 0;
+}
+
+.nexops-client-empty p {
+  margin-top: 8px;
+}
+
+.nexops-client-detail-card {
+  position: sticky;
+  top: 86px;
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.nexops-client-detail-heading {
+  display: grid;
+  gap: 5px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(8, 33, 49, 0.12);
+}
+
+.nexops-client-detail-heading p,
+.nexops-client-detail-heading h2,
+.nexops-client-detail-heading span {
+  margin: 0;
+}
+
+.nexops-client-detail-heading p {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: #0f5d1b;
+  background: #e6f2e5;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.nexops-client-detail-heading h2 {
+  color: #082131;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.nexops-client-detail-heading span {
+  color: #697986;
+  font-size: 0.78rem;
+}
+
+.nexops-client-detail-card dl {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.nexops-client-detail-card dl div {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(8, 33, 49, 0.1);
+}
+
+.nexops-client-detail-card dt {
+  color: #526675;
+  font-weight: 800;
+}
+
+.nexops-client-detail-card dd {
+  margin: 0;
+  min-width: 0;
+  color: #082131;
+  overflow-wrap: anywhere;
+}
+
+.nexops-client-detail-card section {
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 10px;
+  padding: 14px;
+  background: #fbfcfb;
+}
+
+.nexops-client-detail-card h3,
+.nexops-client-detail-card section p {
+  margin: 0;
+}
+
+.nexops-client-detail-card h3 {
+  color: #082131;
+  font-size: 1rem;
+}
+
+.nexops-client-detail-card section p {
+  margin-top: 7px;
+  color: #526675;
+  line-height: 1.35;
 }
 
 .schedule-heading {
@@ -252,6 +1273,25 @@ input {
   color: #101010;
   background: rgba(0, 255, 255, 0.2);
   font-size: 0.78rem;
+}
+
+.approval-decided {
+  color: #69766d !important;
+  font-size: 0.78rem;
+}
+
+.queue-section-heading {
+  margin: 16px 0 8px;
+  color: #1a2a20;
+  font-size: 0.88rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.empty-state {
+  margin: 0;
+  color: #69766d;
+  font-size: 0.9rem;
 }
 
 .review-state {
@@ -923,6 +1963,81 @@ h1 {
 }
 
 @media (max-width: 880px) {
+  .nexops-app {
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-app-sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .nexops-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nexops-web-topbar,
+  .nexops-clients-heading,
+  .nexops-web-tools {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .nexops-client-stats,
+  .nexops-client-layout,
+  .nexops-workflow-strip,
+  .nexops-two-column,
+  .nexops-module-grid,
+  .nexops-module-grid-wide,
+  .nexshot-template-grid,
+  .nexshot-media-grid,
+  .nexshot-item-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-record-list li {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-workflow-strip article {
+    border-right: 0;
+    border-bottom: 1px solid rgba(8, 33, 49, 0.12);
+  }
+
+  .nexops-workflow-strip article:last-child {
+    border-bottom: 0;
+  }
+
+  .nexops-client-controls label {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .nexops-client-controls input,
+  .nexops-web-tools input {
+    width: 100%;
+  }
+
+  .nexops-client-table-card {
+    overflow-x: auto;
+  }
+
+  .nexops-client-table-head,
+  .nexops-client-table-row {
+    min-width: 920px;
+  }
+
+  .nexops-client-detail-card {
+    position: static;
+  }
+
+  .nexops-drawer {
+    width: min(100vw - 24px, 720px);
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+  }
+
   .ops-grid {
     grid-template-columns: 1fr;
   }

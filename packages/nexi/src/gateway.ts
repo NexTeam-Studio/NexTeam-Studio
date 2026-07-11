@@ -525,6 +525,27 @@ function latestAssistantText(messages: GatewayMessage[]): string {
   return "";
 }
 
+function looksLikeAssistantStatusText(text: string): boolean {
+  return /^(?:I\s+(?:saved|drafted|couldn'?t|can't|don'?t|found|checked|logged|wrote)|Good\b|Noted\b|Uploaded\b)/i.test(text.trim())
+    && text.length < 500;
+}
+
+function latestAuthoredAssistantDraftText(messages: GatewayMessage[]): string {
+  for (const message of [...messages].reverse()) {
+    if (message.role !== "assistant" || typeof message.content !== "string") {
+      continue;
+    }
+    const text = message.content.trim();
+    if (!text || looksLikeAssistantStatusText(text)) {
+      continue;
+    }
+    if (/^#{1,6}\s+\S+/m.test(text) || text.length >= 120) {
+      return text;
+    }
+  }
+  return latestAssistantText(messages);
+}
+
 function scheduleWindowFromConversation(messages: GatewayMessage[], timeZone?: string): { from: string; to: string } | null {
   for (const text of [...textMessages(messages)].reverse()) {
     const window = scheduleWindowFromText(text, timeZone);
@@ -559,6 +580,7 @@ function entityQueryFromText(text: string): string {
   const candidate = matches.at(-1)?.[1] ?? "";
   return candidate
     .replace(/'s\b/gi, "")
+    .replace(/\b(?:right\s+now|currently|now)\b.*$/i, "")
     .replace(/\b(?:the|a|an)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -642,7 +664,13 @@ function objectRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function numberValue(value: unknown): number | undefined {
-  const parsed = typeof value === "number" ? value : Number(String(value ?? "").replace(/,/g, ""));
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+  if (typeof value === "string" && !value.trim()) {
+    return undefined;
+  }
+  const parsed = typeof value === "number" ? value : Number(String(value).replace(/,/g, ""));
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
@@ -760,6 +788,12 @@ function weatherLocationFromText(text: string): string | undefined {
 
 function looksLikeStreetAddress(text: string): boolean {
   return /^\s*\d{1,6}\s+[a-z0-9 .'-]+(?:road|rd|street|st|lane|ln|drive|dr|avenue|ave|court|ct|circle|cir|way|trail|trl|highway|hwy)\b/i.test(text);
+}
+
+function looksLikeEvaporationAddress(text: string): boolean {
+  return looksLikeStreetAddress(text)
+    || /\b\d{5}(?:-\d{4})?\b/.test(text)
+    || /,\s*[A-Z]{2}\b/.test(text);
 }
 
 function distanceDestinationFromText(text: string): string | undefined {
@@ -1006,7 +1040,10 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.observedLoss ??= parsed.observedLoss;
     record.windMphOverride ??= parsed.windMphOverride;
     record.clientName ??= currentEntityFromText(userText) || entityQueryFromMessages(messages);
-    record.address ??= jobAddressFromPriorRuns(priorRuns);
+    const priorAddress = jobAddressFromPriorRuns(priorRuns);
+    if (priorAddress && (!stringValue(record.address) || !looksLikeEvaporationAddress(String(record.address)))) {
+      record.address = priorAddress;
+    }
     record.zip ??= fieldValueFromPriorRuns(priorRuns, ["evapZipCode"]);
     record.surfaceAreaFt2 ??= numberValue(fieldValueFromPriorRuns(priorRuns, ["evapSurfaceAreaSqFt", "surfaceAreaSqFt", "moasureAreaSqFt"]));
     record.waterTempF ??= numberValue(fieldValueFromPriorRuns(priorRuns, ["evapWaterTempF", "waterTempF"]));
@@ -1120,7 +1157,8 @@ function looksLikeReportPdfEmailRequest(lower: string): boolean {
 
 function looksLikeEvaporationRunQuestion(lower: string): boolean {
   return /\b(?:run|calculate|check|make|create|use)\b.*\b(?:evap|evaporation|bucket\s+test|water\s+loss)\b/.test(lower)
-    || /\b(?:evap|evaporation)\s+(?:calculator|report|pdf)\b/.test(lower);
+    || /\b(?:evap|evaporation)\s+(?:calculator|report|pdf)\b/.test(lower)
+    || /\b(?:what(?:'s|\s+is)|how\s+much\s+is|show\s+me)\s+(?:the\s+)?(?:evap|evaporation)\b/.test(lower);
 }
 
 function looksLikeCampaignDraftAction(lower: string): boolean {
@@ -1175,6 +1213,17 @@ function looksLikeFreeformContentSaveAction(lower: string): boolean {
 
 function looksLikeFreeformContentDraftAction(lower: string): boolean {
   return /\b(?:write|draft|compose|create)\s+(?:me\s+)?(?:an?\s+)?(?:article|post|gbp\s+post|social\s+post|content)\b/.test(lower);
+}
+
+function looksLikeReportBasedContentDraftAction(lower: string): boolean {
+  const ownerProvidedScenario = /\b(?:job|project|service)\s+scenario\b/.test(lower);
+  const reportArtifactCue = /\b(?:report|documents?|checklist|findings?|results?)\b/;
+  const sourceRailCue = reportArtifactCue.test(lower) || (!ownerProvidedScenario && /\b(?:job|project)\b/.test(lower));
+  return looksLikeFreeformContentDraftAction(lower)
+    && (
+      (/\b(?:based\s+on|from|using|about)\b/.test(lower) && sourceRailCue)
+      || (reportArtifactCue.test(lower) && /\b(?:article|post|content)\b/.test(lower))
+    );
 }
 
 function looksLikeSeoRankQuestion(lower: string): boolean {
@@ -1734,7 +1783,7 @@ function freeformContentInputFromConversation(messages: GatewayMessage[]): {
   body: string;
   sourcePrompt: string;
 } {
-  const body = latestAssistantText(messages) || "Nexi content draft";
+  const body = latestAuthoredAssistantDraftText(messages) || "Nexi content draft";
   const latestText = latestUserText(messages);
   return {
     kind: freeformContentKindFromText(latestText, body),
@@ -1883,6 +1932,9 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   const emailRef = emailRefFromText(userText);
   const distanceFollowUp = looksLikeAddressOnlyFollowUp(userText) && recentUserTextMatches(messages, looksLikeDistanceQuestion);
   if (looksLikeFreeformContentDraftAction(lower)) {
+    if (looksLikeReportBasedContentDraftAction(lower)) {
+      return uniqueToolNames(["getJobDetail", "getDocuments"], toolsByName);
+    }
     return [];
   }
   if (emailRef?.attachmentId && toolsByName.has("getEmailAttachment")) {
@@ -2228,8 +2280,15 @@ function draftReportEmailAnswer(result: unknown): string {
   const record = result && typeof result === "object" ? result as Record<string, unknown> : {};
   const approval = record.approval && typeof record.approval === "object" ? record.approval as Record<string, unknown> : {};
   const attachment = record.attachment && typeof record.attachment === "object" ? record.attachment as Record<string, unknown> : {};
+  const attachments = Array.isArray(record.attachments) ? record.attachments : [];
+  const attachmentNames = attachments
+    .map((item) => item && typeof item === "object" ? (item as Record<string, unknown>).filename : undefined)
+    .filter((item): item is string => typeof item === "string" && item.length > 0);
   const filename = typeof attachment.filename === "string" ? ` with ${attachment.filename} attached` : "";
-  return `I drafted the report email${filename} and put it in the approval queue${typeof approval.id === "string" ? ` (${approval.id})` : ""}. It has not been sent.`;
+  const files = attachmentNames.length
+    ? ` with ${attachmentNames.length} PDF${attachmentNames.length === 1 ? "" : "s"} attached (${attachmentNames.slice(0, 3).join(", ")}${attachmentNames.length > 3 ? ", and more" : ""})`
+    : filename;
+  return `I drafted the report email${files} and put it in the approval queue${typeof approval.id === "string" ? ` (${approval.id})` : ""}. It has not been sent.`;
 }
 
 function draftReportEmailFailureAnswer(result: unknown): string | null {

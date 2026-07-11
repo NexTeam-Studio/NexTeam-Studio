@@ -4,7 +4,7 @@ import type { DecodedIdToken } from "firebase-admin/auth";
 import { getAdminAuth, getAdminDb } from "../firebase.js";
 import { FirestoreUsageLogWriter, MemoryUsageLogWriter } from "../usageLog.js";
 import { FirestoreNexiRepository, MemoryNexiRepository, type NexiRepository } from "./nexiRepository.js";
-import { createNexiJobDeskTools } from "./nexiTools.js";
+import { createNexiJobDeskTools, type NativeMediaReader } from "./nexiTools.js";
 import { answerNexiMessage } from "./nexiService.js";
 import { ingestSiteJobBlueprint } from "./siteJobBlueprintIngest.js";
 
@@ -82,6 +82,7 @@ export interface NexiRouterDeps {
   extraToolsForRequest?: ((req: Request, tenant: Tenant) => Promise<NexiTool[]> | NexiTool[]) | undefined;
   loadTenant?: ((req: Request) => Promise<Tenant> | Tenant) | undefined;
   filterTools?: ((tenant: Tenant, tools: NexiTool[]) => NexiTool[]) | undefined;
+  nativeMediaReader?: NativeMediaReader | undefined;
 }
 
 export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: NexiRouterDeps = {}): Router {
@@ -102,7 +103,7 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: Nex
       const stores = runtimeStores(env);
       const requestTools = deps.extraToolsForRequest ? await deps.extraToolsForRequest(req, tenant) : [];
       const rawTools = [
-        ...createNexiJobDeskTools(env, stores.repository),
+        ...createNexiJobDeskTools(env, stores.repository, deps.nativeMediaReader),
         ...(deps.extraTools ?? []),
         ...requestTools
       ];

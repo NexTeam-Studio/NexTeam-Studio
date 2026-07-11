@@ -138,6 +138,205 @@ interface ReputationQueueResponse {
   imported?: ReputationReview[];
 }
 
+type ContactChannel = "email" | "sms" | "both" | "none";
+type SmsCapability = "mobile" | "landline" | "fax" | "invalid" | "unknown";
+
+interface CrmPhone {
+  label: "Main" | "Work" | "Mobile" | "Home" | "Fax" | "Other";
+  value: string;
+  primary?: boolean;
+  receivesMessages?: boolean;
+  smsCapability?: SmsCapability;
+  smsMode?: "one_way" | "two_way";
+}
+
+interface CrmEmail {
+  label: "Main" | "Work" | "Personal" | "Other";
+  value: string;
+  primary?: boolean;
+}
+
+interface CrmContact {
+  personName?: { title?: string; firstName?: string; lastName?: string };
+  company?: string;
+  role?: string;
+  billingContact?: boolean;
+  correspondenceContact?: boolean;
+  phones?: CrmPhone[];
+  emails?: CrmEmail[];
+  channelPreference?: ContactChannel;
+}
+
+interface CrmAddress {
+  street1: string;
+  street2?: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  country: string;
+}
+
+interface CrmClient {
+  id: string;
+  tenantId: string;
+  name: string;
+  company?: string;
+  personName?: { title?: string; firstName?: string; lastName?: string };
+  displayNamePreference?: "person" | "company";
+  billingAddress?: CrmAddress;
+  billingSameAsPrimaryProperty?: boolean;
+  contacts?: CrmContact[];
+  communicationSettings?: {
+    quotesAndInvoices: ContactChannel;
+    jobReminders: ContactChannel;
+    jobClosureFollowUps: ContactChannel;
+    reviewRequests: ContactChannel;
+    smsDefaultMode: "one_way" | "two_way";
+  };
+  emails: string[];
+  phones: string[];
+  tags?: string[];
+  consent: { email: boolean; sms: boolean };
+}
+
+interface CrmProperty {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  parentSiteId?: string;
+  siteName?: string;
+  label?: string;
+  address: CrmAddress;
+  billingAddressSameAsClient?: boolean;
+  access?: {
+    gateCode?: string;
+    accessNotes?: string;
+  };
+  contacts?: CrmContact[];
+  assets?: Array<{ id: string; kind: string; label: string; fields: Record<string, string | number | boolean> }>;
+  externalIds?: { jobber?: string };
+}
+
+interface CrmJob {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  propertyId?: string;
+  status: "lead" | "quoted" | "scheduled" | "in_progress" | "complete" | "invoiced" | "paid";
+  title: string;
+  startAt?: string;
+  endAt?: string;
+  lineItems?: Array<{ id: string; code: string; name: string; quantity: number; unitPrice: number; total: number }>;
+  totals?: { subtotal: number; tax: number; total: number };
+  externalIds?: { jobber?: string };
+}
+
+interface CrmQuote {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  jobId?: string;
+  status: string;
+  title: string;
+  totals: { subtotal: number; tax: number; total: number };
+}
+
+interface CrmInvoice {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  jobId?: string;
+  quoteId?: string;
+  status: string;
+  title: string;
+  totals: { subtotal: number; tax: number; total: number };
+}
+
+interface CrmClientsResponse {
+  ok: boolean;
+  clients?: CrmClient[];
+  error?: string;
+}
+
+interface CrmRecordsResponse {
+  ok: boolean;
+  properties?: CrmProperty[];
+  jobs?: CrmJob[];
+  quotes?: CrmQuote[];
+  invoices?: CrmInvoice[];
+  error?: string;
+}
+
+interface CrmClientCreateResponse {
+  ok: boolean;
+  client?: CrmClient;
+  error?: string;
+}
+
+interface JobberSyncResponse {
+  ok: boolean;
+  mode?: "dry-run" | "write";
+  counts?: { clients: number; properties: number; jobs: number };
+  externalIdsPreserved?: { clients: number; properties: number; jobs: number };
+  nativeWriteCounts?: { clients: number; properties: number; jobs: number };
+  sampledAt?: string;
+  error?: string;
+}
+
+interface FieldDocsTemplateItem {
+  label: string;
+  section: string;
+  memory: "property" | "visit";
+  required?: boolean;
+}
+
+interface FieldDocsTemplate {
+  id: string;
+  title: string;
+  sections: string[];
+  itemCount: number;
+  propertyPersistentCount: number;
+  visitFreshCount: number;
+  items: FieldDocsTemplateItem[];
+}
+
+interface FieldDocsTemplatesResponse {
+  ok: boolean;
+  templates?: FieldDocsTemplate[];
+  error?: string;
+}
+
+interface FieldDocsChecklistResponse {
+  ok: boolean;
+  checklist?: {
+    id: string;
+    title: string;
+    items: Array<{ id: string; label: string; section?: string; memory?: "property" | "visit"; status: string }>;
+  };
+  error?: string;
+}
+
+interface FieldDocsSearchResponse {
+  ok: boolean;
+  hits?: Array<{
+    id: string;
+    type: "photo" | "video" | "pdf";
+    jobId?: string;
+    storageRef: string;
+    thumbRef?: string;
+    aiTags: string[];
+    aiCaption?: string;
+  }>;
+  error?: string;
+}
+
+interface FieldDocsReportResponse {
+  ok: boolean;
+  report?: { id: string; title: string; pdfRef: string; status: string };
+  pdfUrl?: string;
+  error?: string;
+}
+
 interface PlatformPlan {
   id: "nexi" | "marketing" | "suite";
   name: string;
@@ -322,6 +521,7 @@ const buildTimeFirebaseConfig: FirebasePublicConfig = {
 };
 
 const DEFAULT_TENANT_ID = "aquatrace";
+const AQUATRACE_LOGO_FALLBACK = "/tenants/aquatrace/aquatrace-banner-logo.png";
 
 function claimString(claims: Record<string, unknown>, key: string): string | undefined {
   const value = claims[key];
@@ -397,6 +597,9 @@ function mediaDownloadUrl(source: Source, tenantId?: string): string {
 
 function sourceIsPhoto(source: Source): boolean {
   const label = source.label.toLowerCase();
+  if (/\b(pdf|document|report)\b/.test(label)) {
+    return false;
+  }
   return (source.rail === "companycam" && label.includes("photo"))
     || (source.rail === "native" && /\b(photo|media|before|after|upload)/.test(label));
 }
@@ -411,6 +614,9 @@ function tenantLogoSrc(branding: TenantBranding | null, tenantId: string): strin
   }
   if (branding?.logo?.mediaId) {
     return `/api/media/${encodeURIComponent(branding.logo.mediaId)}?tenantId=${encodeURIComponent(tenantId)}`;
+  }
+  if (tenantId === DEFAULT_TENANT_ID) {
+    return AQUATRACE_LOGO_FALLBACK;
   }
   return null;
 }
@@ -454,6 +660,1430 @@ function formatVisitTime(value: string): string {
 
 function visitStatusLabel(visit: ScheduledVisit): string {
   return visit.source === "jobber" || visit.readOnly ? "Jobber read-only" : visit.status;
+}
+
+function personDisplayName(person?: { firstName?: string; lastName?: string }): string {
+  return [person?.firstName, person?.lastName].filter(Boolean).join(" ").trim();
+}
+
+function clientDisplayName(client: CrmClient): string {
+  const personName = personDisplayName(client.personName);
+  if (client.company && client.displayNamePreference !== "person") {
+    return client.company;
+  }
+  return personName || client.name;
+}
+
+function formatAddress(address?: CrmAddress): string {
+  if (!address) {
+    return "";
+  }
+  return [
+    address.street1,
+    address.street2,
+    [address.city, address.province, address.postalCode].filter(Boolean).join(", ")
+  ].filter(Boolean).join(", ");
+}
+
+function clientPrimaryAddress(client: CrmClient): string {
+  const billingAddress = formatAddress(client.billingAddress);
+  if (billingAddress) {
+    return billingAddress;
+  }
+  return client.billingSameAsPrimaryProperty === false ? "Separate billing address" : "No address on native record yet";
+}
+
+function clientStatusLabel(client: CrmClient): string {
+  return client.tags?.some((tag) => tag.toLowerCase() === "lead") ? "Lead" : "Active";
+}
+
+function channelLabel(channel: ContactChannel | undefined): string {
+  if (channel === "both") {
+    return "Email + one-way text";
+  }
+  if (channel === "sms") {
+    return "One-way text";
+  }
+  if (channel === "none") {
+    return "Off";
+  }
+  return "Email";
+}
+
+function smsEligibilityLabel(phone: CrmPhone): string {
+  if (!phone.receivesMessages) {
+    return "Text off";
+  }
+  if (phone.smsCapability === "mobile") {
+    return phone.smsMode === "two_way" ? "Text on, two-way" : "Text on, one-way";
+  }
+  if (phone.smsCapability === "landline" || phone.smsCapability === "fax" || phone.smsCapability === "invalid") {
+    return "Needs prompt before text";
+  }
+  return "Text on, confirm mobile";
+}
+
+function contactSummary(client: CrmClient): string {
+  const primaryContact = client.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? client.contacts?.[0];
+  const name = personDisplayName(primaryContact?.personName) || primaryContact?.company || personDisplayName(client.personName);
+  const email = primaryContact?.emails?.find((entry) => entry.primary)?.value ?? primaryContact?.emails?.[0]?.value ?? client.emails[0];
+  const phone = primaryContact?.phones?.find((entry) => entry.primary)?.value ?? primaryContact?.phones?.[0]?.value ?? client.phones[0];
+  return [name, email, phone].filter(Boolean).join(" / ") || "No contact details yet";
+}
+
+function preferredChannelForClient(client: CrmClient): ContactChannel {
+  const primaryContact = client.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? client.contacts?.[0];
+  return primaryContact?.channelPreference ?? (client.consent.email && client.consent.sms ? "both" : client.consent.sms ? "sms" : "email");
+}
+
+function NexOpsCrmPanel(props: { tenantId: string }): React.ReactElement {
+  const [clients, setClients] = useState<CrmClient[]>([]);
+  const [status, setStatus] = useState("Loading NexOps clients...");
+
+  async function refresh(): Promise<void> {
+    setStatus("Loading NexOps clients...");
+    try {
+      const body = await fetch(`/api/crm/clients?tenantId=${encodeURIComponent(props.tenantId)}`)
+        .then((response) => response.json() as Promise<CrmClientsResponse>);
+      if (!body.ok) {
+        setClients([]);
+        setStatus(body.error ?? "NexOps CRM unavailable.");
+        return;
+      }
+      const nextClients = body.clients ?? [];
+      setClients(nextClients);
+      setStatus(nextClients.length ? `${nextClients.length} client${nextClients.length === 1 ? "" : "s"} visible.` : "No native NexOps clients yet.");
+    } catch {
+      setClients([]);
+      setStatus("NexOps CRM API unreachable.");
+    }
+  }
+
+  useEffect(() => {
+    void refresh();
+    const onCrmMutation = () => void refresh();
+    window.addEventListener("nexops:crm-mutated", onCrmMutation);
+    return () => window.removeEventListener("nexops:crm-mutated", onCrmMutation);
+  }, [props.tenantId]);
+
+  const richRecords = clients.filter((client) => (client.contacts?.length ?? 0) > 0 || client.displayNamePreference || client.communicationSettings);
+  const previewClients = clients.slice(0, 6);
+  const selectedClient = previewClients[0];
+  const totalContacts = clients.reduce((count, client) => count + (client.contacts?.length ?? 0), 0);
+  const textReadyCount = clients.filter((client) => {
+    const contact = client.contacts?.find((entry) => entry.correspondenceContact) ?? client.contacts?.[0];
+    const phone = contact?.phones?.find((entry) => entry.receivesMessages) ?? contact?.phones?.[0];
+    return phone?.receivesMessages && phone.smsCapability === "mobile";
+  }).length;
+
+  return (
+    <aside className="nexops-card nexops-crm-workspace">
+      <div className="nexops-topline">
+        <div>
+          <p className="eyebrow">NexOps</p>
+          <h2>Clients</h2>
+          <p>{status}</p>
+        </div>
+        <div className="nexops-actions" aria-label="Client actions">
+          <button type="button">New client</button>
+          <button type="button">CSV import</button>
+          <button type="button">Jobber sync</button>
+          <button type="button" onClick={() => void refresh()}>Refresh</button>
+        </div>
+      </div>
+
+      <div className="nexops-metrics" aria-label="Client snapshot">
+        <article>
+          <span>Clients</span>
+          <strong>{clients.length}</strong>
+          <small>{richRecords.length} NexOps-ready</small>
+        </article>
+        <article>
+          <span>Contacts</span>
+          <strong>{totalContacts}</strong>
+          <small>Parent correspondence</small>
+        </article>
+        <article>
+          <span>Text-ready</span>
+          <strong>{textReadyCount}</strong>
+          <small>One-way unless upgraded</small>
+        </article>
+      </div>
+
+      <div className="nexops-board">
+        <section className="nexops-list-pane" aria-label="Client list">
+          <div className="nexops-search-row">
+            <input aria-label="Search clients" placeholder="Search clients, sites, phone, email" />
+            <button type="button">Filter</button>
+          </div>
+          <div className="nexops-tabs" aria-label="Client filters">
+            <button type="button" className="active">All</button>
+            <button type="button">Needs review</button>
+            <button type="button">Text setup</button>
+          </div>
+          <div className="nexops-client-list">
+            {previewClients.map((client) => {
+              const primaryContact = client.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? client.contacts?.[0];
+              const primaryPhone = primaryContact?.phones?.find((phone) => phone.primary) ?? primaryContact?.phones?.[0];
+              return (
+                <article className="nexops-client-row" key={client.id}>
+                  <div>
+                    <h3>{clientDisplayName(client)}</h3>
+                    <p>{contactSummary(client)}</p>
+                  </div>
+                  <span>{primaryPhone ? smsEligibilityLabel(primaryPhone) : client.consent.sms ? "Confirm mobile" : "Email only"}</span>
+                </article>
+              );
+            })}
+            {!previewClients.length ? (
+              <article className="nexops-empty-list">
+                <h3>No native clients loaded yet</h3>
+                <p>Import by CSV for any tenant, or sync Aquatrace from Jobber read-only API when staging is ready.</p>
+              </article>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="nexops-detail-pane" aria-label="Client detail preview">
+          <div className="nexops-detail-header">
+            <div>
+              <p className="eyebrow">{selectedClient ? "Client record" : "CRM workspace"}</p>
+              <h3>{selectedClient ? clientDisplayName(selectedClient) : "Client detail will open here"}</h3>
+              <p>{selectedClient ? contactSummary(selectedClient) : "Built around parent client, sites, contacts, work, billing, and files."}</p>
+            </div>
+            <button type="button">Edit</button>
+          </div>
+
+          <div className="nexops-detail-sections">
+            <article>
+              <h4>Primary contact</h4>
+              <p>{selectedClient ? channelLabel(preferredChannelForClient(selectedClient)) : "Email, text, or both per client. SMS prompts when number type is unknown."}</p>
+            </article>
+            <article>
+              <h4>Properties & sites</h4>
+              <p>{selectedClient ? "Site hierarchy ready for parent client -> site -> address." : "Supports named site/facility plus address. Billing can stay on parent client."}</p>
+            </article>
+            <article>
+              <h4>Work overview</h4>
+              <p>Requests, quotes, jobs, invoices, and visit history will roll up here.</p>
+            </article>
+            <article>
+              <h4>Billing</h4>
+              <p>Parent billing contact by default, separate billing address when unchecked.</p>
+            </article>
+            <article>
+              <h4>Files & media</h4>
+              <p>NexShot photos, PDFs, reports, and uploads attach to client/site/job.</p>
+            </article>
+            <article>
+              <h4>Import status</h4>
+              <p>{clients.length ? `${clients.length} native records loaded.` : "CSV and Jobber API import are next receipt paths."}</p>
+            </article>
+          </div>
+        </section>
+      </div>
+    </aside>
+  );
+}
+
+type NexOpsModule = "home" | "clients" | "requests" | "quotes" | "schedule" | "jobs" | "invoices" | "payments" | "imports" | "approvals" | "settings";
+
+const NEXOPS_MODULES: Array<{ id: NexOpsModule; label: string; path: string }> = [
+  { id: "home", label: "Home", path: "/nexops" },
+  { id: "clients", label: "Clients", path: "/nexops/clients" },
+  { id: "requests", label: "Requests", path: "/nexops/requests" },
+  { id: "quotes", label: "Quotes", path: "/nexops/quotes" },
+  { id: "schedule", label: "Schedule", path: "/nexops/schedule" },
+  { id: "jobs", label: "Jobs", path: "/nexops/jobs" },
+  { id: "invoices", label: "Invoices", path: "/nexops/invoices" },
+  { id: "payments", label: "Payments", path: "/nexops/payments" },
+  { id: "imports", label: "Import & Sync", path: "/nexops/imports" },
+  { id: "approvals", label: "Approvals", path: "/nexops/approvals" },
+  { id: "settings", label: "Settings", path: "/nexops/settings" }
+];
+
+function nexOpsModuleFromPath(pathname: string): NexOpsModule {
+  const match = NEXOPS_MODULES.find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`));
+  return match?.id ?? "home";
+}
+
+function parseCsvPreview(text: string): { rows: number; columns: string[] } {
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const header = lines[0] ?? "";
+  return {
+    rows: Math.max(0, lines.length - 1),
+    columns: header ? header.split(",").map((column) => column.trim()).filter(Boolean) : []
+  };
+}
+
+function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElement {
+  const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
+  const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
+  const [clients, setClients] = useState<CrmClient[]>([]);
+  const [properties, setProperties] = useState<CrmProperty[]>([]);
+  const [jobs, setJobs] = useState<CrmJob[]>([]);
+  const [quotes, setQuotes] = useState<CrmQuote[]>([]);
+  const [invoices, setInvoices] = useState<CrmInvoice[]>([]);
+  const [status, setStatus] = useState("Loading clients...");
+  const [query, setQuery] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [activeModule, setActiveModule] = useState<NexOpsModule>(() => nexOpsModuleFromPath(window.location.pathname));
+  const [showCreateClient, setShowCreateClient] = useState(false);
+  const [createStatus, setCreateStatus] = useState("");
+  const [csvStatus, setCsvStatus] = useState("No CSV selected yet.");
+  const [jobberSyncStatus, setJobberSyncStatus] = useState("Run a dry-run first to confirm real Jobber counts before writing native NexOps records.");
+  const [newClient, setNewClient] = useState({
+    firstName: "",
+    lastName: "",
+    company: "",
+    displayNamePreference: "person" as "person" | "company",
+    phone: "",
+    phoneLabel: "Main" as CrmPhone["label"],
+    phoneReceivesMessages: false,
+    smsCapability: "unknown" as SmsCapability,
+    email: "",
+    emailLabel: "Main" as CrmEmail["label"],
+    street1: "",
+    street2: "",
+    city: "",
+    province: "",
+    postalCode: "",
+    billingSameAsPrimaryProperty: true,
+    leadSource: ""
+  });
+
+  async function refreshRelatedRecords(tenantId = operatorContext.tenantId): Promise<void> {
+    try {
+      const [propertiesBody, jobsBody, quotesBody, invoicesBody] = await Promise.all([
+        fetch(`/api/crm/properties?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>),
+        fetch(`/api/crm/jobs?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>),
+        fetch(`/api/crm/quotes?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>),
+        fetch(`/api/crm/invoices?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>)
+      ]);
+      setProperties(propertiesBody.ok ? propertiesBody.properties ?? [] : []);
+      setJobs(jobsBody.ok ? jobsBody.jobs ?? [] : []);
+      setQuotes(quotesBody.ok ? quotesBody.quotes ?? [] : []);
+      setInvoices(invoicesBody.ok ? invoicesBody.invoices ?? [] : []);
+    } catch {
+      setProperties([]);
+      setJobs([]);
+      setQuotes([]);
+      setInvoices([]);
+    }
+  }
+
+  async function refresh(): Promise<void> {
+    setStatus("Loading clients...");
+    try {
+      const body = await fetch(`/api/crm/clients?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+        .then((response) => response.json() as Promise<CrmClientsResponse>);
+      if (!body.ok) {
+        setClients([]);
+        setStatus(body.error ?? "Clients are unavailable right now.");
+        return;
+      }
+      const nextClients = body.clients ?? [];
+      setClients(nextClients);
+      await refreshRelatedRecords(operatorContext.tenantId);
+      setSelectedClientId((current) => {
+        if (current && nextClients.some((client) => client.id === current)) {
+          return current;
+        }
+        return nextClients[0]?.id ?? "";
+      });
+      setStatus(nextClients.length ? `${nextClients.length} native NexOps client${nextClients.length === 1 ? "" : "s"} loaded.` : "No native NexOps clients yet.");
+    } catch {
+      setClients([]);
+      setProperties([]);
+      setJobs([]);
+      setQuotes([]);
+      setInvoices([]);
+      setStatus("Clients API unreachable.");
+    }
+  }
+
+  function setModule(module: NexOpsModule): void {
+    const target = NEXOPS_MODULES.find((entry) => entry.id === module) ?? NEXOPS_MODULES[0];
+    setActiveModule(module);
+    window.history.pushState({}, "", target.path);
+  }
+
+  async function createClientFromForm(event: React.FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    setCreateStatus("Creating client...");
+    const personName = {
+      firstName: newClient.firstName.trim(),
+      lastName: newClient.lastName.trim()
+    };
+    const company = newClient.company.trim();
+    const displayName = company && newClient.displayNamePreference === "company"
+      ? company
+      : personDisplayName(personName) || company;
+    const phoneValue = newClient.phone.trim();
+    const emailValue = newClient.email.trim();
+    const contact: CrmContact = {
+      personName,
+      ...(company ? { company } : {}),
+      correspondenceContact: true,
+      billingContact: true,
+      phones: phoneValue ? [{
+        label: newClient.phoneLabel,
+        value: phoneValue,
+        primary: true,
+        receivesMessages: newClient.phoneReceivesMessages,
+        smsCapability: newClient.smsCapability,
+        smsMode: "one_way"
+      }] : [],
+      emails: emailValue ? [{
+        label: newClient.emailLabel,
+        value: emailValue,
+        primary: true
+      }] : [],
+      channelPreference: emailValue && newClient.phoneReceivesMessages ? "both" : newClient.phoneReceivesMessages ? "sms" : "email"
+    };
+    const billingAddress = newClient.street1.trim() ? {
+      street1: newClient.street1.trim(),
+      ...(newClient.street2.trim() ? { street2: newClient.street2.trim() } : {}),
+      city: newClient.city.trim(),
+      province: newClient.province.trim(),
+      postalCode: newClient.postalCode.trim(),
+      country: "USA"
+    } : undefined;
+    try {
+      const body = await fetch("/api/crm/clients", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          name: displayName,
+          ...(company ? { company } : {}),
+          personName,
+          displayNamePreference: company ? newClient.displayNamePreference : "person",
+          ...(billingAddress ? { billingAddress } : {}),
+          billingSameAsPrimaryProperty: newClient.billingSameAsPrimaryProperty,
+          contacts: [contact],
+          communicationSettings: {
+            quotesAndInvoices: contact.channelPreference,
+            jobReminders: contact.channelPreference,
+            jobClosureFollowUps: "email",
+            reviewRequests: contact.channelPreference,
+            smsDefaultMode: "one_way"
+          },
+          emails: emailValue ? [emailValue] : [],
+          phones: phoneValue ? [phoneValue] : [],
+          consent: { email: Boolean(emailValue), sms: newClient.phoneReceivesMessages }
+        })
+      }).then((response) => response.json() as Promise<CrmClientCreateResponse>);
+      if (!body.ok || !body.client) {
+        setCreateStatus(body.error ?? "Client could not be created.");
+        return;
+      }
+      setCreateStatus(`Created ${clientDisplayName(body.client)}.`);
+      setShowCreateClient(false);
+      setNewClient({
+        firstName: "",
+        lastName: "",
+        company: "",
+        displayNamePreference: "person",
+        phone: "",
+        phoneLabel: "Main",
+        phoneReceivesMessages: false,
+        smsCapability: "unknown",
+        email: "",
+        emailLabel: "Main",
+        street1: "",
+        street2: "",
+        city: "",
+        province: "",
+        postalCode: "",
+        billingSameAsPrimaryProperty: true,
+        leadSource: ""
+      });
+      await refresh();
+    } catch {
+      setCreateStatus("Client create request failed.");
+    }
+  }
+
+  async function runJobberSync(mode: "dry-run" | "write"): Promise<void> {
+    setJobberSyncStatus(mode === "dry-run" ? "Checking Jobber read-only counts..." : "Syncing Jobber into native NexOps records...");
+    try {
+      const body = await fetch("/api/crm/jobber-sync", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: operatorContext.tenantId, mode })
+      }).then((response) => response.json() as Promise<JobberSyncResponse>);
+      if (!body.ok) {
+        setJobberSyncStatus(body.error ?? "Jobber sync failed.");
+        return;
+      }
+      const counts = body.counts ?? { clients: 0, properties: 0, jobs: 0 };
+      const writes = body.nativeWriteCounts ?? { clients: 0, properties: 0, jobs: 0 };
+      setJobberSyncStatus(mode === "dry-run"
+        ? `Dry-run found ${counts.clients} clients, ${counts.properties} properties, and ${counts.jobs} jobs. No Jobber writes.`
+        : `Synced ${writes.clients} clients, ${writes.properties} properties, and ${writes.jobs} jobs into native NexOps. Jobber stayed read-only.`);
+      if (mode === "write") {
+        await refresh();
+        window.dispatchEvent(new Event("nexops:crm-mutated"));
+      }
+    } catch {
+      setJobberSyncStatus("Jobber sync request failed.");
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    loadOperatorContext(props.user)
+      .then((context) => {
+        if (!cancelled) {
+          setOperatorContext(context);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOperatorContext(fallbackOperatorContext(props.user));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [props.user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/public/tenant-branding?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+      .then((response) => response.json() as Promise<TenantBrandingResponse>)
+      .then((body) => {
+        if (!cancelled && body.ok && body.branding) {
+          setTenantBranding(body.branding);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTenantBranding(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [operatorContext.tenantId]);
+
+  useEffect(() => {
+    void refresh();
+    const onCrmMutation = () => void refresh();
+    window.addEventListener("nexops:crm-mutated", onCrmMutation);
+    return () => window.removeEventListener("nexops:crm-mutated", onCrmMutation);
+  }, [operatorContext.tenantId]);
+
+  useEffect(() => {
+    const onPopState = () => setActiveModule(nexOpsModuleFromPath(window.location.pathname));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const tenantName = tenantBranding?.displayName ?? (operatorContext.tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : operatorContext.tenantId);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredClients = clients.filter((client) => {
+    if (!normalizedQuery) {
+      return true;
+    }
+    return [
+      clientDisplayName(client),
+      contactSummary(client),
+      clientPrimaryAddress(client),
+      ...(client.tags ?? [])
+    ].join(" ").toLowerCase().includes(normalizedQuery);
+  });
+  const selectedClient = clients.find((client) => client.id === selectedClientId) ?? filteredClients[0];
+  const selectedContact = selectedClient?.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? selectedClient?.contacts?.[0];
+  const selectedPhone = selectedContact?.phones?.find((phone) => phone.primary) ?? selectedContact?.phones?.[0];
+  const selectedEmail = selectedContact?.emails?.find((email) => email.primary)?.value ?? selectedContact?.emails?.[0]?.value ?? selectedClient?.emails[0];
+  const selectedProperties = selectedClient ? properties.filter((property) => property.clientId === selectedClient.id) : [];
+  const selectedJobs = selectedClient ? jobs.filter((job) => job.clientId === selectedClient.id) : [];
+  const selectedQuotes = selectedClient ? quotes.filter((quote) => quote.clientId === selectedClient.id) : [];
+  const selectedInvoices = selectedClient ? invoices.filter((invoice) => invoice.clientId === selectedClient.id) : [];
+  const activeCount = clients.filter((client) => clientStatusLabel(client) === "Active").length;
+  const leadCount = clients.filter((client) => clientStatusLabel(client) === "Lead").length;
+  const textReadyCount = clients.filter((client) => {
+    const contact = client.contacts?.find((entry) => entry.correspondenceContact) ?? client.contacts?.[0];
+    const phone = contact?.phones?.find((entry) => entry.receivesMessages) ?? contact?.phones?.[0];
+    return phone?.receivesMessages && phone.smsCapability === "mobile";
+  }).length;
+  const colors = tenantBranding?.colors;
+  const style = {
+    "--nexops-brand-primary": colors?.primary ?? "#071817",
+    "--nexops-brand-accent": colors?.accent ?? "#00f0f0",
+    "--nexops-brand-background": colors?.background ?? "#f6f8f5",
+    "--nexops-brand-surface": colors?.surface ?? "#ffffff",
+    "--nexops-brand-text": colors?.text ?? "#082131",
+    "--nexops-font-family": tenantBranding?.fontFamily ?? "Inter, Avenir, Helvetica, Arial, sans-serif"
+  } as React.CSSProperties;
+
+  const moduleTitle = NEXOPS_MODULES.find((module) => module.id === activeModule)?.label ?? "NexOps";
+
+  function renderHome(): React.ReactElement {
+    return (
+      <section className="nexops-dashboard">
+        <div className="nexops-page-heading">
+          <div>
+            <h1>Today in NexOps</h1>
+            <p>One hosted business engine for clients, quotes, jobs, money, and closeout.</p>
+          </div>
+          <button type="button" onClick={() => setShowCreateClient(true)}>New Client</button>
+        </div>
+        <div className="nexops-workflow-strip">
+          {[
+            ["Requests", String(leadCount), "Lead/request intake scaffolded"],
+            ["Quotes", String(quotes.length), "Draft/send/approve rail scaffolded"],
+            ["Jobs", String(jobs.length), "Native + Jobber-imported job rollup"],
+            ["Invoices", String(invoices.length), "Stripe test rail exists"],
+            ["Approvals", "Live", "Unified queue visible"]
+          ].map(([title, value, detail]) => (
+            <article key={title}>
+              <span>{title}</span>
+              <strong>{value}</strong>
+              <p>{detail}</p>
+            </article>
+          ))}
+        </div>
+        <div className="nexops-two-column">
+          {renderClients({ compact: true })}
+          <section className="nexops-module-card">
+            <p className="eyebrow">Build map</p>
+            <h2>Phase 1 scaffold</h2>
+            <ul className="nexops-checklist">
+              <li>CRM foundation: active</li>
+              <li>CSV import: preview scaffold</li>
+              <li>Jobber sync: read-only pull into native NexOps records</li>
+              <li>Quotes/invoices/payments: backend rail present, UI scaffolded</li>
+              <li>NexPortal/closeout/reviews: ready for next build pieces</li>
+            </ul>
+          </section>
+        </div>
+      </section>
+    );
+  }
+
+  function renderClients(options?: { compact?: boolean }): React.ReactElement {
+    return (
+      <section className="nexops-clients-workspace">
+        <div className="nexops-clients-heading">
+          <div>
+            <h1>Clients</h1>
+            <p>{status}</p>
+          </div>
+          <div className="nexops-client-actions">
+            <button type="button" onClick={() => setShowCreateClient(true)}>New Client</button>
+            <button type="button" onClick={() => setModule("imports")}>Import CSV</button>
+            <button type="button" onClick={() => setModule("imports")}>Sync Jobber</button>
+            <button type="button" onClick={() => void refresh()}>Refresh</button>
+          </div>
+        </div>
+
+        <div className="nexops-client-stats" aria-label="Client metrics">
+          <article>
+            <span>Active clients</span>
+            <strong>{activeCount}</strong>
+            <small>Native NexOps</small>
+          </article>
+          <article>
+            <span>Leads</span>
+            <strong>{leadCount}</strong>
+            <small>Ready for follow-up</small>
+          </article>
+          <article>
+            <span>Text-ready</span>
+            <strong>{textReadyCount}</strong>
+            <small>Mobile confirmed</small>
+          </article>
+          <article>
+            <span>Sites</span>
+            <strong>{properties.length}</strong>
+            <small>Multi-site hierarchy</small>
+          </article>
+        </div>
+
+        <div className="nexops-client-controls">
+          <button type="button">Filter by tag +</button>
+          <button type="button">Status | Leads and Active</button>
+          <label>
+            <span className="sr-only">Search clients</span>
+            <input value={query} placeholder="Search clients..." onChange={(event) => setQuery(event.target.value)} />
+          </label>
+        </div>
+
+        <div className={options?.compact ? "nexops-client-layout compact" : "nexops-client-layout"}>
+          <section className="nexops-client-table-card" aria-label="Client list">
+            <div className="nexops-client-table">
+              <div className="nexops-client-table-head">
+                <span>Name</span>
+                <span>Address</span>
+                <span>Tags</span>
+                <span>Status</span>
+                <span>Last Activity</span>
+              </div>
+              {filteredClients.map((client) => (
+                <button
+                  className={`nexops-client-table-row ${selectedClient?.id === client.id ? "selected" : ""}`}
+                  key={client.id}
+                  type="button"
+                  onClick={() => setSelectedClientId(client.id)}
+                >
+                  <span>
+                    <strong>{clientDisplayName(client)}</strong>
+                    <small>{contactSummary(client)}</small>
+                  </span>
+                  <span>{clientPrimaryAddress(client)}</span>
+                  <span>{client.tags?.length ? client.tags.join(", ") : "No tags"}</span>
+                  <span><mark>{clientStatusLabel(client)}</mark></span>
+                  <span>Native record</span>
+                </button>
+              ))}
+              {!filteredClients.length ? (
+                <div className="nexops-client-empty">
+                  <h2>No clients match this view yet</h2>
+                  <p>Create one, import a CSV, or run the Aquatrace Jobber sync once staging is ready.</p>
+                </div>
+              ) : null}
+            </div>
+          </section>
+
+          {!options?.compact ? renderClientDetail() : null}
+        </div>
+      </section>
+    );
+  }
+
+  function renderClientDetail(): React.ReactElement {
+    return (
+      <aside className="nexops-client-detail-card" aria-label="Client detail">
+        {selectedClient ? (
+          <>
+            <div className="nexops-client-detail-heading">
+              <p>{clientStatusLabel(selectedClient)}</p>
+              <h2>{clientDisplayName(selectedClient)}</h2>
+              <span>{selectedClient.id}</span>
+            </div>
+            <dl>
+              <div>
+                <dt>Main phone</dt>
+                <dd>{selectedPhone?.value ?? selectedClient.phones[0] ?? "Not saved yet"}</dd>
+              </div>
+              <div>
+                <dt>Main email</dt>
+                <dd>{selectedEmail ?? "Not saved yet"}</dd>
+              </div>
+              <div>
+                <dt>Messages</dt>
+                <dd>{selectedPhone ? smsEligibilityLabel(selectedPhone) : "Prompt before text"}</dd>
+              </div>
+              <div>
+                <dt>Billing</dt>
+                <dd>{selectedClient.billingSameAsPrimaryProperty === false ? "Separate billing address" : "Billing stays on parent client"}</dd>
+              </div>
+            </dl>
+            <section>
+              <h3>Properties</h3>
+              {selectedProperties.length ? (
+                <ul className="nexops-mini-list">
+                  {selectedProperties.map((property) => (
+                    <li key={property.id}>
+                      <strong>{property.siteName || property.label || property.address.street1}</strong>
+                      <span>{formatAddress(property.address)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>{clientPrimaryAddress(selectedClient)}</p>
+              )}
+            </section>
+            <section>
+              <h3>Work overview</h3>
+              <p>{selectedJobs.length} jobs, {selectedQuotes.length} quotes, {selectedInvoices.length} invoices attached to this client.</p>
+              {selectedJobs.length ? (
+                <ul className="nexops-mini-list">
+                  {selectedJobs.slice(0, 4).map((job) => (
+                    <li key={job.id}>
+                      <strong>{job.title}</strong>
+                      <span>{job.status.replace("_", " ")}{job.startAt ? ` - ${new Date(job.startAt).toLocaleDateString()}` : ""}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+          </>
+        ) : (
+          <div className="nexops-client-empty">
+            <h2>Select a client</h2>
+            <p>The detail card will show contacts, billing, sites, work, and files.</p>
+          </div>
+        )}
+      </aside>
+    );
+  }
+
+  function renderLifecycle(module: NexOpsModule): React.ReactElement {
+    const money = (value?: number) => `$${(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    const clientName = (clientId: string) => clientDisplayName(clients.find((client) => client.id === clientId) ?? {
+      id: clientId,
+      tenantId: operatorContext.tenantId,
+      name: clientId,
+      emails: [],
+      phones: [],
+      consent: { email: false, sms: false }
+    });
+    const labels: Record<string, { title: string; subtitle: string; primaryAction: string; items: string[]; records: Array<{ id: string; title: string; detail: string; status: string; amount?: string }> }> = {
+      requests: {
+        title: "Requests",
+        subtitle: "Lead and client request intake",
+        primaryAction: "New request",
+        items: ["Manual request creation", "Embeddable form target", "Convert request to quote/job"],
+        records: clients
+          .filter((client) => clientStatusLabel(client).toLowerCase().includes("lead"))
+          .map((client) => ({
+            id: client.id,
+            title: clientDisplayName(client),
+            detail: clientPrimaryAddress(client) || contactSummary(client),
+            status: "Lead"
+          }))
+      },
+      quotes: {
+        title: "Quotes",
+        subtitle: "Catalog, templates, approval links, and expiry",
+        primaryAction: "Draft quote",
+        items: ["Draft quote from catalog", "Send by email/text/both through ApprovalQueue", "Client approval through NexPortal"],
+        records: quotes.map((quote) => ({
+          id: quote.id,
+          title: quote.title,
+          detail: clientName(quote.clientId),
+          status: quote.status,
+          amount: money(quote.totals.total)
+        }))
+      },
+      jobs: {
+        title: "Jobs",
+        subtitle: "Approved work, visits, closeout, and field handoff",
+        primaryAction: "New job",
+        items: ["Quote-to-job conversion", "Assigned visits", "NexShot report rollup"],
+        records: jobs.map((job) => ({
+          id: job.id,
+          title: job.title,
+          detail: `${clientName(job.clientId)}${job.startAt ? ` - ${new Date(job.startAt).toLocaleString()}` : ""}`,
+          status: job.status.replace("_", " "),
+          amount: money(job.totals?.total)
+        }))
+      },
+      invoices: {
+        title: "Invoices",
+        subtitle: "Billing, PDF invoices, checkout, and receipts",
+        primaryAction: "Create invoice",
+        items: ["Invoice from signed quote", "Stripe test checkout", "Attach NexShot report PDF on receipt"],
+        records: invoices.map((invoice) => ({
+          id: invoice.id,
+          title: invoice.title,
+          detail: clientName(invoice.clientId),
+          status: invoice.status,
+          amount: money(invoice.totals.total)
+        }))
+      },
+      payments: {
+        title: "Payments",
+        subtitle: "Payment state, deposits, balances, and methods",
+        primaryAction: "Record payment",
+        items: ["Stripe test-mode receipts", "Deposit/payment schedule scaffold", "No live charges without approval"],
+        records: invoices
+          .filter((invoice) => invoice.status === "paid" || invoice.status === "partially_paid")
+          .map((invoice) => ({
+            id: invoice.id,
+            title: invoice.title,
+            detail: clientName(invoice.clientId),
+            status: invoice.status,
+            amount: money(invoice.totals.total)
+          }))
+      }
+    };
+    const page = labels[module] ?? {
+      title: "NexOps",
+      subtitle: "Module scaffold",
+      primaryAction: "Create",
+      items: [],
+      records: []
+    };
+    return (
+      <section className="nexops-module-page">
+        <div className="nexops-page-heading">
+          <div>
+            <h1>{page.title}</h1>
+            <p>{page.subtitle}</p>
+          </div>
+          <button type="button">{page.primaryAction}</button>
+        </div>
+        <div className="nexops-module-grid nexops-module-grid-wide">
+          <article className="nexops-module-card">
+            <p className="eyebrow">Live native records</p>
+            <h2>{page.records.length} visible</h2>
+            {page.records.length ? (
+              <ul className="nexops-record-list">
+                {page.records.slice(0, 12).map((record) => (
+                  <li key={record.id}>
+                    <span>
+                      <strong>{record.title}</strong>
+                      <small>{record.detail}</small>
+                    </span>
+                    <mark>{record.status}</mark>
+                    {record.amount ? <b>{record.amount}</b> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No native {page.title.toLowerCase()} are loaded yet. Use create/import/sync, then refresh this page.</p>
+            )}
+          </article>
+          <article className="nexops-module-card">
+            <p className="eyebrow">Next build receipts</p>
+            <h2>What lands here</h2>
+            <ul className="nexops-checklist">
+              {page.items.map((item) => <li key={item}>{item}</li>)}
+            </ul>
+          </article>
+        </div>
+      </section>
+    );
+  }
+
+  function renderImports(): React.ReactElement {
+    return (
+      <section className="nexops-module-page">
+        <div className="nexops-page-heading">
+          <div>
+            <h1>Import & Sync</h1>
+            <p>CSV for every tenant. Jobber read-only sync for Aquatrace.</p>
+          </div>
+        </div>
+        <div className="nexops-module-grid">
+          <article className="nexops-module-card">
+            <p className="eyebrow">CSV import</p>
+            <h2>Preview before write</h2>
+            <p>{csvStatus}</p>
+            <input
+              aria-label="CSV import file"
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) {
+                  setCsvStatus("No CSV selected yet.");
+                  return;
+                }
+                file.text()
+                  .then((text) => {
+                    const preview = parseCsvPreview(text);
+                    setCsvStatus(`${preview.rows} row${preview.rows === 1 ? "" : "s"} detected. Columns: ${preview.columns.join(", ") || "none"}. Commit endpoint remains approval-gated.`);
+                  })
+                  .catch(() => setCsvStatus("Could not read that CSV file."));
+              }}
+            />
+          </article>
+          <article className="nexops-module-card">
+            <p className="eyebrow">Aquatrace Jobber sync</p>
+            <h2>Read-only API lane</h2>
+            <p>{jobberSyncStatus}</p>
+            <div className="nexops-inline-actions">
+              <button type="button" onClick={() => void runJobberSync("dry-run")}>Dry-run Jobber</button>
+              <button type="button" onClick={() => void runJobberSync("write")}>Sync into NexOps</button>
+            </div>
+            <small>Jobber stays read-only. Native NexOps records are upserted by Jobber external IDs.</small>
+          </article>
+        </div>
+      </section>
+    );
+  }
+
+  function renderSettings(): React.ReactElement {
+    return (
+      <section className="nexops-module-page">
+        <div className="nexops-page-heading">
+          <div>
+            <h1>Settings</h1>
+            <p>Tenant branding, users, communication defaults, and white-label provisions.</p>
+          </div>
+        </div>
+        <div className="nexops-module-grid">
+          <article className="nexops-module-card">
+            <p className="eyebrow">Tenant brand</p>
+            <h2>{tenantName}</h2>
+            <p>Logo/text fallback, colors, font family, and updatedBy live in tenant branding.</p>
+          </article>
+          <article className="nexops-module-card">
+            <p className="eyebrow">Access</p>
+            <h2>{operatorContext.role}</h2>
+            <p>OWNER and OFFICE_ADMIN see full CRM. TECHNICIAN views only assigned jobs/properties for sensitive fields.</p>
+          </article>
+        </div>
+      </section>
+    );
+  }
+
+  function renderCreateClientPanel(): React.ReactElement | null {
+    if (!showCreateClient) {
+      return null;
+    }
+    const smsPrompt = newClient.phoneReceivesMessages && newClient.smsCapability !== "mobile"
+      ? "This number has not been confirmed as mobile. NexOps will treat texts as one-way and should prompt before sending."
+      : "Texts stay one-way unless an upgraded two-way SMS tier is enabled.";
+    return (
+      <div className="nexops-drawer-backdrop" role="presentation">
+        <form className="nexops-drawer" onSubmit={(event) => void createClientFromForm(event)}>
+          <div className="nexops-drawer-heading">
+            <div>
+              <p className="eyebrow">NexOps CRM</p>
+              <h2>New Client</h2>
+            </div>
+            <button type="button" onClick={() => setShowCreateClient(false)}>Close</button>
+          </div>
+          <div className="nexops-form-grid">
+            <label>First name<input required value={newClient.firstName} onChange={(event) => setNewClient({ ...newClient, firstName: event.target.value })} /></label>
+            <label>Last name<input required value={newClient.lastName} onChange={(event) => setNewClient({ ...newClient, lastName: event.target.value })} /></label>
+            <label>Company name<input value={newClient.company} onChange={(event) => setNewClient({ ...newClient, company: event.target.value, displayNamePreference: event.target.value ? "company" : "person" })} /></label>
+            <label>Display as<select value={newClient.displayNamePreference} onChange={(event) => setNewClient({ ...newClient, displayNamePreference: event.target.value as "person" | "company" })}>
+              <option value="person">First name Last name</option>
+              <option value="company" disabled={!newClient.company}>Company name</option>
+            </select></label>
+            <label>Phone<input value={newClient.phone} onChange={(event) => setNewClient({ ...newClient, phone: event.target.value })} /></label>
+            <label>Phone label<select value={newClient.phoneLabel} onChange={(event) => setNewClient({ ...newClient, phoneLabel: event.target.value as CrmPhone["label"] })}>
+              {(["Main", "Work", "Mobile", "Home", "Fax", "Other"] as CrmPhone["label"][]).map((label) => <option key={label}>{label}</option>)}
+            </select></label>
+            <label>Email<input type="email" value={newClient.email} onChange={(event) => setNewClient({ ...newClient, email: event.target.value })} /></label>
+            <label>Email label<select value={newClient.emailLabel} onChange={(event) => setNewClient({ ...newClient, emailLabel: event.target.value as CrmEmail["label"] })}>
+              {(["Main", "Work", "Personal", "Other"] as CrmEmail["label"][]).map((label) => <option key={label}>{label}</option>)}
+            </select></label>
+            <label>Street 1<input value={newClient.street1} onChange={(event) => setNewClient({ ...newClient, street1: event.target.value })} /></label>
+            <label>Street 2<input value={newClient.street2} onChange={(event) => setNewClient({ ...newClient, street2: event.target.value })} /></label>
+            <label>City<input value={newClient.city} onChange={(event) => setNewClient({ ...newClient, city: event.target.value })} /></label>
+            <label>State<input value={newClient.province} onChange={(event) => setNewClient({ ...newClient, province: event.target.value })} /></label>
+            <label>ZIP<input value={newClient.postalCode} onChange={(event) => setNewClient({ ...newClient, postalCode: event.target.value })} /></label>
+            <label>Lead source<input value={newClient.leadSource} onChange={(event) => setNewClient({ ...newClient, leadSource: event.target.value })} /></label>
+          </div>
+          <div className="nexops-toggle-row">
+            <label><input type="checkbox" checked={newClient.billingSameAsPrimaryProperty} onChange={(event) => setNewClient({ ...newClient, billingSameAsPrimaryProperty: event.target.checked })} /> Billing address is the same as property address</label>
+            <label><input type="checkbox" checked={newClient.phoneReceivesMessages} onChange={(event) => setNewClient({ ...newClient, phoneReceivesMessages: event.target.checked })} /> Allow one-way texts to this number</label>
+          </div>
+          {newClient.phoneReceivesMessages ? (
+            <label className="nexops-full-label">SMS check<select value={newClient.smsCapability} onChange={(event) => setNewClient({ ...newClient, smsCapability: event.target.value as SmsCapability })}>
+              <option value="unknown">Unknown - prompt before sending</option>
+              <option value="mobile">Mobile - can receive texts</option>
+              <option value="landline">Landline - prompt</option>
+              <option value="fax">Fax - text off unless changed</option>
+              <option value="invalid">Invalid - text off</option>
+            </select></label>
+          ) : null}
+          <p className="nexops-form-note">{smsPrompt}</p>
+          <div className="nexops-drawer-actions">
+            <span>{createStatus}</span>
+            <button type="button" onClick={() => setShowCreateClient(false)}>Cancel</button>
+            <button type="submit">Save client</button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  function renderActiveModule(): React.ReactElement {
+    if (activeModule === "home") {
+      return renderHome();
+    }
+    if (activeModule === "clients") {
+      return renderClients();
+    }
+    if (activeModule === "schedule") {
+      return <div className="nexops-embedded-panel"><SchedulePanel tenantId={operatorContext.tenantId} /></div>;
+    }
+    if (activeModule === "imports") {
+      return renderImports();
+    }
+    if (activeModule === "approvals") {
+      return <div className="nexops-embedded-panel"><ApprovalQueuePanel tenantId={operatorContext.tenantId} /></div>;
+    }
+    if (activeModule === "settings") {
+      return renderSettings();
+    }
+    return renderLifecycle(activeModule);
+  }
+
+  return (
+    <main className="nexops-app" style={style}>
+      <aside className="nexops-app-sidebar" aria-label="NexOps navigation">
+        <div className="nexops-app-logo">
+          <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} />
+          <span>NexOps</span>
+        </div>
+        <button className="nexops-create-button" type="button" onClick={() => setShowCreateClient(true)}>Create</button>
+        <nav className="nexops-nav">
+          {NEXOPS_MODULES.map((item) => (
+            <button className={item.id === activeModule ? "active" : ""} type="button" key={item.id} onClick={() => setModule(item.id)}>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <section className="nexops-web-main">
+        <header className="nexops-web-topbar">
+          <p>{tenantName}</p>
+          <div className="nexops-web-tools">
+            <label>
+              <span className="sr-only">Global search</span>
+              <input placeholder="Search NexOps..." />
+            </label>
+            <span>{moduleTitle}</span>
+            <span>{props.user.email ?? "Operator"}</span>
+            <button type="button" onClick={() => void signOut(props.auth)}>Sign out</button>
+          </div>
+        </header>
+
+        {renderActiveModule()}
+      </section>
+      {renderCreateClientPanel()}
+    </main>
+  );
+}
+
+type NexShotModule = "overview" | "templates" | "photos" | "reports";
+
+const NEXSHOT_MODULES: Array<{ id: NexShotModule; label: string; path: string }> = [
+  { id: "overview", label: "Overview", path: "/nexshot" },
+  { id: "templates", label: "Checklist Templates", path: "/nexshot/templates" },
+  { id: "photos", label: "Photos & Media", path: "/nexshot/photos" },
+  { id: "reports", label: "Reports", path: "/nexshot/reports" }
+];
+
+function nexShotModuleFromPath(pathname: string): NexShotModule {
+  const match = NEXSHOT_MODULES.find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`));
+  return match?.id ?? "overview";
+}
+
+function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
+  const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
+  const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
+  const [activeModule, setActiveModule] = useState<NexShotModule>(() => nexShotModuleFromPath(window.location.pathname));
+  const [templates, setTemplates] = useState<FieldDocsTemplate[]>([]);
+  const [mediaHits, setMediaHits] = useState<NonNullable<FieldDocsSearchResponse["hits"]>>([]);
+  const [checklist, setChecklist] = useState<FieldDocsChecklistResponse["checklist"] | null>(null);
+  const [report, setReport] = useState<FieldDocsReportResponse["report"] | null>(null);
+  const [reportUrl, setReportUrl] = useState("");
+  const [status, setStatus] = useState("Loading NexShot...");
+  const [mediaQuery, setMediaQuery] = useState("Deborah Justice");
+  const [reportTitle, setReportTitle] = useState("Aquatrace Leak Detection Report");
+
+  useEffect(() => {
+    let cancelled = false;
+    loadOperatorContext(props.user)
+      .then((context) => {
+        if (!cancelled) setOperatorContext(context);
+      })
+      .catch(() => {
+        if (!cancelled) setOperatorContext(fallbackOperatorContext(props.user));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [props.user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/public/tenant-branding?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+      .then((response) => response.json() as Promise<TenantBrandingResponse>)
+      .then((body) => {
+        if (!cancelled && body.ok && body.branding) setTenantBranding(body.branding);
+      })
+      .catch(() => {
+        if (!cancelled) setTenantBranding(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [operatorContext.tenantId]);
+
+  useEffect(() => {
+    const onPopState = () => setActiveModule(nexShotModuleFromPath(window.location.pathname));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  async function refreshTemplates(): Promise<void> {
+    setStatus("Loading checklist templates...");
+    try {
+      const body = await fetch(`/api/fielddocs/checklists/templates?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+        .then((response) => response.json() as Promise<FieldDocsTemplatesResponse>);
+      if (!body.ok) {
+        setTemplates([]);
+        setStatus(body.error ?? "Checklist templates are unavailable.");
+        return;
+      }
+      setTemplates(body.templates ?? []);
+      setStatus(`${body.templates?.length ?? 0} checklist template${body.templates?.length === 1 ? "" : "s"} ready.`);
+    } catch {
+      setTemplates([]);
+      setStatus("Checklist template API unreachable.");
+    }
+  }
+
+  async function createChecklist(): Promise<void> {
+    setStatus("Creating leak detection checklist...");
+    try {
+      const body = await fetch("/api/fielddocs/checklists/leak-detection", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: operatorContext.tenantId, jobId: "job_demo_leak_detection" })
+      }).then((response) => response.json() as Promise<FieldDocsChecklistResponse>);
+      if (!body.ok || !body.checklist) {
+        setStatus(body.error ?? "Checklist could not be created.");
+        return;
+      }
+      setChecklist(body.checklist);
+      setStatus(`Checklist ${body.checklist.id} created with ${body.checklist.items.length} items.`);
+    } catch {
+      setStatus("Checklist create request failed.");
+    }
+  }
+
+  async function searchMedia(): Promise<void> {
+    setStatus("Searching NexShot media...");
+    try {
+      const body = await fetch(`/api/fielddocs/search?tenantId=${encodeURIComponent(operatorContext.tenantId)}&q=${encodeURIComponent(mediaQuery)}&limit=12`)
+        .then((response) => response.json() as Promise<FieldDocsSearchResponse>);
+      if (!body.ok) {
+        setMediaHits([]);
+        setStatus(body.error ?? "Media search failed.");
+        return;
+      }
+      setMediaHits(body.hits ?? []);
+      setStatus(`${body.hits?.length ?? 0} media item${body.hits?.length === 1 ? "" : "s"} found for "${mediaQuery}".`);
+    } catch {
+      setMediaHits([]);
+      setStatus("Media search API unreachable.");
+    }
+  }
+
+  async function createReport(): Promise<void> {
+    setStatus("Generating NexShot report...");
+    try {
+      const body = await fetch("/api/fielddocs/reports", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          jobId: "job_demo_leak_detection",
+          title: reportTitle,
+          findings: [
+            "Checklist-driven report generated from NexShot.",
+            "Report can attach to closeout receipts and approval-gated emails."
+          ],
+          mediaIds: mediaHits.map((hit) => hit.id),
+          checklistId: checklist?.id,
+          status: "posted"
+        })
+      }).then((response) => response.json() as Promise<FieldDocsReportResponse>);
+      if (!body.ok || !body.report) {
+        setStatus(body.error ?? "Report could not be created.");
+        return;
+      }
+      setReport(body.report);
+      setReportUrl(body.pdfUrl ?? "");
+      setStatus(`Report ${body.report.id} generated.`);
+    } catch {
+      setStatus("Report create request failed.");
+    }
+  }
+
+  function setModule(module: NexShotModule): void {
+    const target = NEXSHOT_MODULES.find((entry) => entry.id === module) ?? NEXSHOT_MODULES[0];
+    setActiveModule(module);
+    window.history.pushState({}, "", target.path);
+  }
+
+  useEffect(() => {
+    void refreshTemplates();
+  }, [operatorContext.tenantId]);
+
+  const colors = tenantBranding?.colors;
+  const style = {
+    "--nexops-brand-primary": colors?.primary ?? "#071817",
+    "--nexops-brand-accent": colors?.accent ?? "#00f0f0",
+    "--nexops-brand-background": colors?.background ?? "#f6f8f5",
+    "--nexops-brand-surface": colors?.surface ?? "#ffffff",
+    "--nexops-brand-text": colors?.text ?? "#082131",
+    "--nexops-font-family": tenantBranding?.fontFamily ?? "Inter, Avenir, Helvetica, Arial, sans-serif"
+  } as React.CSSProperties;
+  const template = templates[0];
+  const propertyItems = template?.items.filter((item) => item.memory === "property") ?? [];
+  const visitItems = template?.items.filter((item) => item.memory === "visit") ?? [];
+
+  function renderOverview(): React.ReactElement {
+    return (
+      <section className="nexops-dashboard">
+        <div className="nexops-page-heading">
+          <div>
+            <h1>NexShot Field Docs</h1>
+            <p>Checklist templates, visit media, and branded reports connected back to NexOps.</p>
+          </div>
+          <button type="button" onClick={() => void createChecklist()}>Start Checklist</button>
+        </div>
+        <div className="nexops-workflow-strip">
+          {[
+            ["Templates", String(templates.length), "Property-persistent fields marked"],
+            ["Media hits", String(mediaHits.length), "Searchable photos/PDFs"],
+            ["Checklist", checklist ? "Ready" : "Not started", "Visit-fresh execution"],
+            ["Report", report ? "Generated" : "Not generated", "PDF export + email attachment rail"]
+          ].map(([title, value, detail]) => (
+            <article key={title}>
+              <span>{title}</span>
+              <strong>{value}</strong>
+              <p>{detail}</p>
+            </article>
+          ))}
+        </div>
+        <div className="nexops-two-column">
+          {renderTemplates()}
+          {renderPhotos()}
+        </div>
+      </section>
+    );
+  }
+
+  function renderTemplates(): React.ReactElement {
+    return (
+      <section className="nexops-module-page">
+        <div className="nexops-page-heading">
+          <div>
+            <h1>Checklist Templates</h1>
+            <p>{status}</p>
+          </div>
+          <div className="nexops-inline-actions">
+            <button type="button" onClick={() => void refreshTemplates()}>Refresh</button>
+            <button type="button" onClick={() => void createChecklist()}>Create visit checklist</button>
+          </div>
+        </div>
+        <div className="nexshot-template-grid">
+          {templates.map((item) => (
+            <article className="nexops-module-card wide" key={item.id}>
+              <p className="eyebrow">Owner-editable template</p>
+              <h2>{item.title}</h2>
+              <p>{item.itemCount} fields across {item.sections.length} sections. {item.propertyPersistentCount} property-persistent, {item.visitFreshCount} visit-fresh.</p>
+              <div className="nexshot-item-columns">
+                <div>
+                  <h3>Property-persistent</h3>
+                  <ul className="nexshot-item-list">
+                    {propertyItems.slice(0, 10).map((field) => <li key={`${field.section}-${field.label}`}>{field.section}: {field.label}</li>)}
+                  </ul>
+                </div>
+                <div>
+                  <h3>Visit-fresh</h3>
+                  <ul className="nexshot-item-list">
+                    {visitItems.slice(0, 10).map((field) => <li key={`${field.section}-${field.label}`}>{field.section}: {field.label}</li>)}
+                  </ul>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  function renderPhotos(): React.ReactElement {
+    return (
+      <section className="nexops-module-page">
+        <div className="nexops-page-heading">
+          <div>
+            <h1>Photos & Media</h1>
+            <p>Search native NexShot media by client/job/visit terms.</p>
+          </div>
+          <div className="nexops-inline-actions">
+            <input value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} placeholder="Deborah Justice" />
+            <button type="button" onClick={() => void searchMedia()}>Search media</button>
+          </div>
+        </div>
+        <div className="nexshot-media-grid">
+          {mediaHits.map((hit) => (
+            <article className="nexops-module-card" key={hit.id}>
+              <p className="eyebrow">{hit.type}</p>
+              <h2>{hit.aiCaption || hit.storageRef}</h2>
+              <p>{hit.aiTags.length ? hit.aiTags.join(", ") : "No tags yet"}</p>
+              <small>{hit.jobId ? `Job ${hit.jobId}` : "Unassigned review queue"}</small>
+            </article>
+          ))}
+          {!mediaHits.length ? (
+            <article className="nexops-module-card">
+              <p className="eyebrow">Unresolved queue</p>
+              <h2>No media loaded in this view yet</h2>
+              <p>Search a real client/job after native or CompanyCam import populates the media repository.</p>
+            </article>
+          ) : null}
+        </div>
+      </section>
+    );
+  }
+
+  function renderReports(): React.ReactElement {
+    return (
+      <section className="nexops-module-page">
+        <div className="nexops-page-heading">
+          <div>
+            <h1>Reports</h1>
+            <p>Checklist to branded PDF, ready for closeout receipt attachments.</p>
+          </div>
+          <div className="nexops-inline-actions">
+            <input value={reportTitle} onChange={(event) => setReportTitle(event.target.value)} />
+            <button type="button" onClick={() => void createReport()}>Generate report</button>
+          </div>
+        </div>
+        <article className="nexops-module-card wide">
+          <p className="eyebrow">Latest report</p>
+          <h2>{report?.title ?? "No report generated in this session yet"}</h2>
+          <p>{report ? `${report.status} report ${report.id}` : "Create a checklist, search media, then generate a report."}</p>
+          {reportUrl ? <a href={reportUrl} target="_blank" rel="noreferrer">Open PDF</a> : null}
+        </article>
+      </section>
+    );
+  }
+
+  function renderActiveModule(): React.ReactElement {
+    if (activeModule === "templates") return renderTemplates();
+    if (activeModule === "photos") return renderPhotos();
+    if (activeModule === "reports") return renderReports();
+    return renderOverview();
+  }
+
+  return (
+    <main className="nexops-app nexshot-app" style={style}>
+      <aside className="nexops-app-sidebar" aria-label="NexShot navigation">
+        <div className="nexops-app-logo">
+          <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} />
+          <span>NexShot</span>
+        </div>
+        <button className="nexops-create-button" type="button" onClick={() => void createChecklist()}>Start Checklist</button>
+        <nav className="nexops-nav">
+          {NEXSHOT_MODULES.map((item) => (
+            <button className={item.id === activeModule ? "active" : ""} type="button" key={item.id} onClick={() => setModule(item.id)}>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+      <section className="nexops-web-main">
+        <header className="nexops-web-topbar">
+          <p>{tenantBranding?.displayName ?? "Aquatrace"}</p>
+          <div className="nexops-web-tools">
+            <span>{status}</span>
+            <span>{props.user.email ?? "Operator"}</span>
+            <button type="button" onClick={() => void signOut(props.auth)}>Sign out</button>
+          </div>
+        </header>
+        {renderActiveModule()}
+      </section>
+    </main>
+  );
 }
 
 function SchedulePanel(props: { tenantId: string }): React.ReactElement {
@@ -646,16 +2276,18 @@ function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElement {
   async function refresh(): Promise<void> {
     setStatus("Loading approvals...");
     try {
-      const body = await fetch(`/api/approval-queue?tenantId=${encodeURIComponent(props.tenantId)}`)
+      const body = await fetch(`/api/approval-queue?tenantId=${encodeURIComponent(props.tenantId)}&includeHistory=true`)
         .then((response) => response.json() as Promise<ApprovalQueueResponse>);
       if (!body.ok) {
         setItems([]);
         setStatus(body.error ?? "Approval queue unavailable.");
         return;
       }
-      const pending = body.items ?? [];
-      setItems(pending);
-      setStatus(pending.length ? `${pending.length} approval${pending.length === 1 ? "" : "s"} waiting.` : "No approvals are waiting right now.");
+      const nextItems = body.items ?? [];
+      const pending = nextItems.filter((item) => item.status === "pending");
+      const history = nextItems.filter((item) => item.status !== "pending");
+      setItems(nextItems);
+      setStatus(`${pending.length} pending. ${history.length} historical.`);
     } catch {
       setItems([]);
       setStatus("Approval queue API unreachable.");
@@ -678,6 +2310,9 @@ function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElement {
           method: "POST"
         }).then((response) => response.json() as Promise<ApprovalActionResponse>);
         setStatus(executed.ok ? "Approved and completed." : executed.error ?? "Approved, but running it failed.");
+        if (executed.ok && item.execute.service === "crm" && item.execute.op === "createClient") {
+          window.dispatchEvent(new CustomEvent("nexops:crm-mutated"));
+        }
       } else {
         setStatus("Approved.");
       }
@@ -711,6 +2346,35 @@ function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElement {
     return () => window.clearInterval(timer);
   }, [props.tenantId]);
 
+  const pendingItems = items.filter((item) => item.status === "pending");
+  const historicalItems = items.filter((item) => item.status !== "pending");
+
+  function renderApprovalItem(item: ApprovalQueueItem): React.ReactElement {
+    const isPending = item.status === "pending";
+    return (
+      <article className="content-draft approval-item" key={item.id}>
+        <div className="content-draft-head">
+          <span>{approvalKindLabel(item)}</span>
+          <span>{isPending ? item.createdBy : item.status}</span>
+        </div>
+        <h3>{item.preview.title}</h3>
+        <p>{item.preview.body.split(/\n+/).filter(Boolean).slice(0, 3).join(" ")}</p>
+        {item.preview.mediaRefs?.length ? (
+          <div className="approval-attachments">
+            {item.preview.mediaRefs.map((ref) => <span key={ref}>{ref}</span>)}
+          </div>
+        ) : null}
+        {item.decidedAt ? <p className="approval-decided">Decided {new Date(item.decidedAt).toLocaleString()}</p> : null}
+        {isPending ? (
+          <div className="content-actions">
+            <button type="button" disabled={workingId === item.id} onClick={() => void approve(item)}>{approvalPrimaryLabel(item)}</button>
+            <button className="secondary" type="button" disabled={workingId === item.id} onClick={() => void reject(item)}>Reject</button>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
   return (
     <aside className="approval-card">
       <div className="schedule-heading">
@@ -721,26 +2385,13 @@ function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElement {
         <button className="refresh-button" type="button" onClick={() => void refresh()}>Refresh</button>
       </div>
       <p className="schedule-status">{status}</p>
+      <h3 className="queue-section-heading">Pending</h3>
       <div className="content-list">
-        {items.map((item) => (
-          <article className="content-draft approval-item" key={item.id}>
-            <div className="content-draft-head">
-              <span>{approvalKindLabel(item)}</span>
-              <span>{item.createdBy}</span>
-            </div>
-            <h3>{item.preview.title}</h3>
-            <p>{item.preview.body.split(/\n+/).filter(Boolean).slice(0, 3).join(" ")}</p>
-            {item.preview.mediaRefs?.length ? (
-              <div className="approval-attachments">
-                {item.preview.mediaRefs.map((ref) => <span key={ref}>{ref}</span>)}
-              </div>
-            ) : null}
-            <div className="content-actions">
-              <button type="button" disabled={workingId === item.id} onClick={() => void approve(item)}>{approvalPrimaryLabel(item)}</button>
-              <button className="secondary" type="button" disabled={workingId === item.id} onClick={() => void reject(item)}>Reject</button>
-            </div>
-          </article>
-        ))}
+        {pendingItems.length ? pendingItems.map(renderApprovalItem) : <p className="empty-state">No approvals are waiting right now.</p>}
+      </div>
+      <h3 className="queue-section-heading">Approved / Rejected History</h3>
+      <div className="content-list">
+        {historicalItems.length ? historicalItems.map(renderApprovalItem) : <p className="empty-state">No approval history yet.</p>}
       </div>
     </aside>
   );
@@ -927,9 +2578,16 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
   }
 
   if (props.user) {
-    return window.location.pathname.startsWith("/platform")
-      ? <PlatformConsole auth={props.auth} user={props.user} />
-      : <Chat auth={props.auth} user={props.user} />;
+    if (window.location.pathname.startsWith("/platform")) {
+      return <PlatformConsole auth={props.auth} user={props.user} />;
+    }
+    if (window.location.pathname.startsWith("/nexshot")) {
+      return <NexShotPage auth={props.auth} user={props.user} />;
+    }
+    if (window.location.pathname.startsWith("/nexops")) {
+      return <NexOpsClientsPage auth={props.auth} user={props.user} />;
+    }
+    return <Chat auth={props.auth} user={props.user} />;
   }
 
   return (
@@ -1616,9 +3274,8 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
 
         <div className="upload-strip" aria-live="polite">
           <label className={`upload-button ${uploading ? "disabled" : ""}`}>
-            <span>{uploading ? "Uploading..." : "Attach photo"}</span>
+            <span>{uploading ? "Uploading..." : "📎 Attach file"}</span>
             <input
-              accept="image/*,video/*,application/pdf"
               disabled={uploading}
               type="file"
               onChange={(event) => void uploadJobDeskFile(event)}
@@ -1661,6 +3318,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
         </form>
       </section>
       <div className="side-panels">
+        <NexOpsCrmPanel tenantId={operatorContext.tenantId} />
         <SchedulePanel tenantId={operatorContext.tenantId} />
         <ApprovalQueuePanel tenantId={operatorContext.tenantId} />
         <ContentQueuePanel tenantId={operatorContext.tenantId} />

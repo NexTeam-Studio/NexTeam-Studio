@@ -4,15 +4,17 @@ import {
   RailError,
   type ApprovalQueueService,
   type ApprovalItem,
+  type DocRef,
   type EmailMessageSummary,
   type EmailReadProvider,
   type NexiTool,
   type OutboundEmailAttachment,
+  type ProjectRef,
   type Source,
   type Tenant
 } from "@nexteam/core";
+import { CompanyCamAdapter } from "@nexteam/providers";
 import type { CommsRail } from "./gmailRegistry.js";
-import { renderFieldReportPdf } from "../fielddocs/reportService.js";
 
 const searchEmailInputSchema = z.object({
   mailbox: z.string().optional(),
@@ -79,6 +81,12 @@ const draftReportEmailInputSchema = z.object({
 });
 
 const AQUATRACE_SIGNATURE = "Nexi\nAquatrace Swimming Pool Leak Detection";
+
+export interface ReportDocumentProvider {
+  findProjects(query: string): Promise<ProjectRef[]>;
+  getDocuments(projectRef: ProjectRef): Promise<DocRef[]>;
+  fetchProjectDocumentBinary(projectRef: ProjectRef, documentRef: DocRef): Promise<{ buffer: Buffer; mime: string; filename?: string | undefined }>;
+}
 
 function emailSource(message: EmailMessageSummary): Source {
   return {
@@ -241,6 +249,54 @@ function safeAttachmentName(value: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80) || "aquatrace-report";
+}
+
+function isPdfDocument(document: DocRef): boolean {
+  const label = document.label.toLowerCase();
+  const mime = (document.mime ?? "").toLowerCase();
+  return mime.includes("pdf") || label.endsWith(".pdf") || label.includes("checklist") || label.includes("report");
+}
+
+function companyCamDocumentSource(document: DocRef): Source {
+  return {
+    rail: "companycam",
+    ref: document.externalIds?.companycam ?? document.id,
+    label: `CompanyCam document ${document.label}`
+  };
+}
+
+async function companyCamReportAttachments(input: {
+  tenant: Tenant;
+  clientName: string;
+  provider?: ReportDocumentProvider | undefined;
+}): Promise<{ project: ProjectRef; attachments: OutboundEmailAttachment[]; sources: Source[] }> {
+  const provider = input.provider ?? CompanyCamAdapter.fromEnv(process.env, input.tenant.id);
+  const projects = await provider.findProjects(input.clientName);
+  const project = projects[0];
+  if (!project) {
+    throw new RailError(`I couldn't find a CompanyCam project for ${input.clientName}.`, { provider: "companycam", op: "draftReportEmail", status: 404 });
+  }
+  const documents = (await provider.getDocuments(project)).filter(isPdfDocument).slice(0, 10);
+  if (documents.length === 0) {
+    throw new RailError(`I couldn't find existing CompanyCam PDF reports for ${input.clientName}.`, { provider: "companycam", op: "draftReportEmail", status: 404 });
+  }
+  const attachments: OutboundEmailAttachment[] = [];
+  const sources: Source[] = [{
+    rail: "companycam",
+    ref: project.externalIds?.companycam ?? project.id,
+    label: `CompanyCam project ${project.name}`
+  }];
+  for (const document of documents) {
+    const binary = await provider.fetchProjectDocumentBinary(project, document);
+    const filename = binary.filename || document.label || `${safeAttachmentName(input.clientName)}-${document.id}.pdf`;
+    attachments.push({
+      filename: filename.toLowerCase().endsWith(".pdf") ? filename : `${filename}.pdf`,
+      mime: binary.mime || document.mime || "application/pdf",
+      contentBase64: binary.buffer.toString("base64")
+    });
+    sources.push(companyCamDocumentSource(document));
+  }
+  return { project, attachments, sources };
 }
 
 function hashBase64(value: string): string {
@@ -447,7 +503,11 @@ function triageItems(messages: EmailMessageSummary[]): { items: TriageItem[]; ex
   };
 }
 
-export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQueueService): NexiTool[] {
+export function createCommsNexiTools(
+  rail: CommsRail,
+  approvalQueue: ApprovalQueueService,
+  options: { reportDocumentProvider?: ReportDocumentProvider | undefined } = {}
+): NexiTool[] {
   return [
     {
       name: "searchEmail",
@@ -641,7 +701,7 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
     },
     {
       name: "draftReportEmail",
-      description: "Generate an Aquatrace field report PDF and attach it to an approval-gated email draft. This never sends directly.",
+      description: "Find existing Aquatrace CompanyCam report PDFs and attach them to an approval-gated email draft. This never sends directly.",
       inputSchema: draftReportEmailInputSchema,
       handler: async (tenant: Tenant, args: unknown) => {
         assertCommsTenant(rail, tenant, "draftReportEmail");
@@ -650,26 +710,11 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
         if (to.length === 0) {
           throw new RailError("I need an email address for that report draft.", { provider: "gmail", op: "draftReportEmail", status: 400 });
         }
-        const title = input.reportTitle ?? `${input.clientName} Aquatrace Report`;
-        const findings = input.findings?.length
-          ? input.findings
-          : [
-              `Report prepared for ${input.clientName}.`,
-              "Generated from Aquatrace field documentation for owner-approved delivery."
-            ];
-        const pdf = renderFieldReportPdf({
-          tenantId: tenant.id,
-          jobId: input.jobId ?? safeAttachmentName(input.clientName),
-          title,
-          findings,
-          media: []
+        const reportDocs = await companyCamReportAttachments({
+          tenant,
+          clientName: input.clientName,
+          provider: options.reportDocumentProvider
         });
-        const filename = `${safeAttachmentName(input.clientName)}-aquatrace-report.pdf`;
-        const attachment: OutboundEmailAttachment = {
-          filename,
-          mime: "application/pdf",
-          contentBase64: pdf.toString("base64")
-        };
         const bodyText = input.bodyText
           ?? `Attached is the Aquatrace report PDF for ${input.clientName}.\n\nPlease review it and let us know if you have any questions.`;
         const approval = await queueEmailApproval({
@@ -679,22 +724,22 @@ export function createCommsNexiTools(rail: CommsRail, approvalQueue: ApprovalQue
           to,
           subject: `${input.clientName} Aquatrace report`,
           bodyText,
-          attachments: [attachment]
+          attachments: reportDocs.attachments
         });
         return {
           result: {
             approval: approvalSummary(approval),
-            attachment: {
-              filename,
+            attachments: reportDocs.attachments.map((attachment) => ({
+              filename: attachment.filename,
               mime: attachment.mime,
-              byteSize: pdf.byteLength,
+              byteSize: Buffer.from(attachment.contentBase64, "base64").byteLength,
               contentBase64Sha256_16: hashBase64(attachment.contentBase64)
-            },
+            })),
             sendsAreApprovalQueuedOnly: true
           },
           sources: [
             { rail: "native", ref: approval.id, label: `ApprovalQueue report email ${approval.id}` },
-            { rail: "native", ref: filename, label: `Generated report attachment ${filename}` }
+            ...reportDocs.sources
           ]
         };
       }

@@ -468,6 +468,40 @@ test("draftEmail applies branded template and preserves attachments for approval
 });
 
 test("draftReportEmail generates a report PDF attachment and parks it in ApprovalQueue", async () => {
+  const realPdf = Buffer.from("%PDF-actual-companycam-report");
+  const reportDocumentProvider = {
+    async findProjects(query) {
+      assert.equal(query, "Deborah Justice");
+      return [{ id: "cc_project_deborah", name: "Deborah Justice", externalIds: { companycam: "18218446" } }];
+    },
+    async getDocuments() {
+      return [
+        {
+          id: "doc_checklist",
+          tenantId: "aquatrace",
+          label: "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf",
+          storageRef: "companycam://doc_checklist",
+          mime: "application/pdf",
+          externalIds: { companycam: "doc_checklist" }
+        },
+        {
+          id: "doc_report",
+          tenantId: "aquatrace",
+          label: "Deborah Justice, Fair Play, SC.pdf",
+          storageRef: "companycam://doc_report",
+          mime: "application/pdf",
+          externalIds: { companycam: "doc_report" }
+        }
+      ];
+    },
+    async fetchProjectDocumentBinary(_project, document) {
+      return {
+        buffer: realPdf,
+        mime: "application/pdf",
+        filename: document.label
+      };
+    }
+  };
   const rail = {
     tenantId: "aquatrace",
     readAdapters: new Map(),
@@ -480,7 +514,7 @@ test("draftReportEmail generates a report PDF attachment and parks it in Approva
     }
   };
   const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CommsApprovalExecutor(rail));
-  const tool = createCommsNexiTools(rail, approvalQueue).find((candidate) => candidate.name === "draftReportEmail");
+  const tool = createCommsNexiTools(rail, approvalQueue, { reportDocumentProvider }).find((candidate) => candidate.name === "draftReportEmail");
   assert.ok(tool);
 
   const result = await tool.handler(tenant(), {
@@ -493,13 +527,18 @@ test("draftReportEmail generates a report PDF attachment and parks it in Approva
   assert.ok(approval);
   assert.equal(result.result.approval.id, approval.id);
   assert.equal(result.result.approval.execute, undefined);
-  assert.deepEqual(approval.preview.mediaRefs, ["attachment:deborah-justice-aquatrace-report.pdf"]);
+  assert.deepEqual(approval.preview.mediaRefs, [
+    "attachment:Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf",
+    "attachment:Deborah Justice, Fair Play, SC.pdf"
+  ]);
   assert.equal(approval.execute.service, "comms");
   assert.equal(approval.execute.op, "sendEmail");
   assert.deepEqual(approval.execute.args.outbound.to, ["owner@example.test"]);
-  assert.equal(approval.execute.args.outbound.attachments[0].filename, "deborah-justice-aquatrace-report.pdf");
+  assert.equal(approval.execute.args.outbound.attachments.length, 2);
+  assert.equal(approval.execute.args.outbound.attachments[0].filename, "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf");
   assert.equal(Buffer.from(approval.execute.args.outbound.attachments[0].contentBase64, "base64").subarray(0, 5).toString("utf8"), "%PDF-");
-  assert.equal(result.result.attachment.contentBase64, undefined);
+  assert.equal(result.result.attachments[0].contentBase64, undefined);
+  assert.equal(result.sources.some((source) => source.rail === "companycam" && source.ref === "doc_checklist"), true);
   assert.equal(result.result.sendsAreApprovalQueuedOnly, true);
 });
 

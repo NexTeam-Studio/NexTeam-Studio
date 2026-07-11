@@ -1,8 +1,10 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import path from "node:path";
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+  const repoRoot = path.resolve(__dirname, "../..");
+  const env = loadEnv(mode, repoRoot, "");
   const anthropicKey = env.ANTHROPIC_API_KEY || "";
   const localApiProxyTarget = env.LOCAL_API_PROXY_TARGET || "http://127.0.0.1:3001";
   const localApiProxy = {
@@ -16,10 +18,7 @@ export default defineConfig(({ mode }) => {
       port: process.env.PORT || 5173,
       host: "0.0.0.0",
       proxy: {
-        "/auth/google": {
-          target: localApiProxyTarget,
-          changeOrigin: true
-        },
+        "/auth/google": localApiProxy,
         "/api/public": localApiProxy,
         "/api/crm": localApiProxy,
         "/api/scheduling": localApiProxy,
@@ -36,7 +35,7 @@ export default defineConfig(({ mode }) => {
         "/api/anthropic": {
           target: "https://api.anthropic.com",
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/anthropic/, ""),
+          rewrite: (requestPath) => requestPath.replace(/^\/api\/anthropic/, ""),
           configure: (proxy) => {
             proxy.on("proxyReq", (proxyReq) => {
               if (anthropicKey) {
@@ -49,7 +48,7 @@ export default defineConfig(({ mode }) => {
         "/elevenlabs": {
           target: "https://api.elevenlabs.io",
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/elevenlabs/, "")
+          rewrite: (requestPath) => requestPath.replace(/^\/elevenlabs/, "")
         }
       }
     },
