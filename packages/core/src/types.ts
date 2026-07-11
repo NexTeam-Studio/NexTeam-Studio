@@ -252,6 +252,7 @@ export interface Client {
   phones: string[];
   tags: string[];
   consent: { email: boolean; sms: boolean };
+  customFields?: Record<string, string | number | boolean> | undefined;
   externalIds?: { jobber?: string | undefined } | undefined;
 }
 
@@ -278,6 +279,7 @@ export interface Property {
   contacts?: ClientContact[] | undefined;
   geo?: { lat: number; lng: number } | undefined;
   assets: Asset[];
+  customFields?: Record<string, string | number | boolean> | undefined;
   externalIds?: { jobber?: string | undefined } | undefined;
 }
 
@@ -371,6 +373,7 @@ export interface NewClient {
   emails: string[];
   phones: string[];
   consent: { email: boolean; sms: boolean };
+  customFields?: Record<string, string | number | boolean> | undefined;
 }
 
 export interface QuoteDraft {

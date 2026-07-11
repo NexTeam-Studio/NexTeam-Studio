@@ -256,6 +256,7 @@ export const clientSchema = z.object({
   phones: z.array(z.string()),
   tags: z.array(z.string()),
   consent: z.object({ email: z.boolean(), sms: z.boolean() }),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
   externalIds: z.object({ jobber: z.string().optional() }).optional()
 });
 
@@ -282,6 +283,7 @@ export const propertySchema = z.object({
   contacts: z.array(clientContactSchema).optional(),
   geo: z.object({ lat: z.number(), lng: z.number() }).optional(),
   assets: z.array(assetSchema),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
   externalIds: z.object({ jobber: z.string().optional() }).optional()
 });
 

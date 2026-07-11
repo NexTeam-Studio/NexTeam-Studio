@@ -24,6 +24,21 @@ import { FirestoreNativeCrmRepository } from "./nativeRepository.js";
 import { renderInvoicePdf, renderQuotePdf, renderQuotePortalHtml } from "./quotePdf.js";
 import { createStripeCheckoutSession, verifyStripeWebhookEvent } from "./stripe.js";
 
+const customFieldValueSchema = z.union([z.string(), z.number(), z.boolean()]);
+
+const createClientPrimaryPropertySchema = z.object({
+  siteName: z.string().min(1).optional(),
+  label: z.string().min(1).optional(),
+  address: addressSchema,
+  billingAddressSameAsClient: z.boolean().optional(),
+  access: z.object({
+    gateCode: z.string().optional(),
+    accessNotes: z.string().optional()
+  }).optional(),
+  contacts: z.array(clientContactSchema).optional(),
+  customFields: z.record(customFieldValueSchema).optional()
+});
+
 const createClientBodySchema = z.object({
   tenantId: z.string().min(1).optional(),
   name: z.string().min(1),
@@ -36,7 +51,9 @@ const createClientBodySchema = z.object({
   communicationSettings: clientCommunicationSettingsSchema.optional(),
   emails: z.array(z.string()).default([]),
   phones: z.array(z.string()).default([]),
-  consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
+  consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false }),
+  customFields: z.record(customFieldValueSchema).optional(),
+  primaryProperty: createClientPrimaryPropertySchema.optional()
 });
 
 const signQuoteBodySchema = z.object({
@@ -231,9 +248,27 @@ export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {
         communicationSettings: input.communicationSettings,
         emails: input.emails,
         phones: input.phones,
-        consent: input.consent
+        consent: input.consent,
+        customFields: input.customFields
       });
-      res.status(201).json({ ok: true, client });
+      let property: Property | undefined;
+      if (input.primaryProperty) {
+        const propertyInput = input.primaryProperty;
+        property = await repositoryForTenant().upsertProperty({
+          id: `property_${randomUUID()}`,
+          tenantId,
+          clientId: client.id,
+          siteName: propertyInput.siteName,
+          label: propertyInput.label,
+          address: propertyInput.address,
+          billingAddressSameAsClient: propertyInput.billingAddressSameAsClient,
+          access: propertyInput.access,
+          contacts: propertyInput.contacts,
+          assets: [],
+          customFields: propertyInput.customFields
+        });
+      }
+      res.status(201).json({ ok: true, client, property });
     } catch (error) {
       sendRouteError(res, error);
     }

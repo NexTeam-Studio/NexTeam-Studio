@@ -267,7 +267,8 @@ export class NativeAdapter implements CRMProvider {
       emails: d.emails,
       phones: d.phones,
       tags: [],
-      consent: d.consent
+      consent: d.consent,
+      customFields: d.customFields
     };
     return this.repository.createClient(client);
   }

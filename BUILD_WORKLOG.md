@@ -2,6 +2,47 @@
 
 Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this file on each meaningful build pass, test pass, receipt, or owner decision so the next session can catch up without reconstructing context from chat.
 
+## 2026-07-11 - NexOps New Client form polish
+
+### Owner Decisions Applied
+- NexOps UI should use a non-serif font throughout.
+- NexOps business screens should feel like a clean field-service CRM, not a Nexi chat card.
+- New Client entry should use rounded text boxes for all fields, with a Jobber-like section layout.
+- Primary-contact additional fields and property additional fields must both be available in NexOps.
+- Parent client owns billing/correspondence by default; property contacts are property-scoped and do not receive parent-client correspondence unless later configured.
+
+### Built This Pass
+- Changed global app typography and NexOps typography to a sans-serif stack.
+- Reworked the NexOps New Client form into sectioned CRM layout:
+  - Primary contact details
+  - Communication
+  - Lead information
+  - Additional client details
+  - Additional contacts
+  - Property address
+  - Optional separate billing address
+  - Property details
+  - Property contacts
+- Added rounded input/select boxes for every visible entry field.
+- Added property fields matching the Jobber reference screenshots:
+  - Site name
+  - Gated Entry
+  - Gate Entry Code(s)
+  - Property Client Name
+  - Property Client Telephone Number
+  - Property Client eMail Address
+  - CompanyCam Project
+  - Property custom field name/value
+- Added client custom field name/value, payment terms, ask-for-review, role, and additional contact fields.
+- Extended native CRM schema so optional `customFields` can be saved on clients and properties.
+- Updated `/api/crm/clients` so creating a client can also create the first native property/site record from the same form submission.
+
+### Verification
+- `npm run typecheck` passed.
+- `npm run build` passed.
+- `npm run check:secrets` passed.
+- `node --test apps/server/test/crm-read-side.test.mjs` passed: 11/11.
+
 ## 2026-07-10 - NexOps + NexShot Phase 1 scaffold pass
 
 ### Source Of Truth Read

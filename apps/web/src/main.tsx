@@ -197,6 +197,7 @@ interface CrmClient {
   phones: string[];
   tags?: string[];
   consent: { email: boolean; sms: boolean };
+  customFields?: Record<string, string | number | boolean>;
 }
 
 interface CrmProperty {
@@ -214,6 +215,7 @@ interface CrmProperty {
   };
   contacts?: CrmContact[];
   assets?: Array<{ id: string; kind: string; label: string; fields: Record<string, string | number | boolean> }>;
+  customFields?: Record<string, string | number | boolean>;
   externalIds?: { jobber?: string };
 }
 
@@ -270,6 +272,7 @@ interface CrmRecordsResponse {
 interface CrmClientCreateResponse {
   ok: boolean;
   client?: CrmClient;
+  property?: CrmProperty;
   error?: string;
 }
 
@@ -933,9 +936,11 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
   const [csvStatus, setCsvStatus] = useState("No CSV selected yet.");
   const [jobberSyncStatus, setJobberSyncStatus] = useState("Run a dry-run first to confirm real Jobber counts before writing native NexOps records.");
   const [newClient, setNewClient] = useState({
+    title: "No title",
     firstName: "",
     lastName: "",
     company: "",
+    role: "",
     displayNamePreference: "person" as "person" | "company",
     phone: "",
     phoneLabel: "Main" as CrmPhone["label"],
@@ -943,13 +948,35 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
     smsCapability: "unknown" as SmsCapability,
     email: "",
     emailLabel: "Main" as CrmEmail["label"],
+    paymentTerms: "",
+    askForReview: true,
+    clientCustomFieldName: "",
+    clientCustomFieldValue: "",
+    additionalContactName: "",
+    additionalContactRole: "",
+    additionalContactPhone: "",
+    additionalContactEmail: "",
+    siteName: "",
     street1: "",
     street2: "",
     city: "",
     province: "",
     postalCode: "",
     billingSameAsPrimaryProperty: true,
-    leadSource: ""
+    billingStreet1: "",
+    billingStreet2: "",
+    billingCity: "",
+    billingProvince: "",
+    billingPostalCode: "",
+    leadSource: "",
+    propertyGatedEntry: false,
+    propertyGateCodes: "",
+    propertyClientName: "",
+    propertyClientPhone: "",
+    propertyClientEmail: "",
+    companyCamProject: "",
+    propertyCustomFieldName: "",
+    propertyCustomFieldValue: ""
   });
 
   async function refreshRelatedRecords(tenantId = operatorContext.tenantId): Promise<void> {
@@ -1012,6 +1039,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
     event.preventDefault();
     setCreateStatus("Creating client...");
     const personName = {
+      ...(newClient.title && newClient.title !== "No title" ? { title: newClient.title } : {}),
       firstName: newClient.firstName.trim(),
       lastName: newClient.lastName.trim()
     };
@@ -1019,11 +1047,16 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
     const displayName = company && newClient.displayNamePreference === "company"
       ? company
       : personDisplayName(personName) || company;
+    if (!displayName) {
+      setCreateStatus("Add a client name or company name first.");
+      return;
+    }
     const phoneValue = newClient.phone.trim();
     const emailValue = newClient.email.trim();
     const contact: CrmContact = {
       personName,
       ...(company ? { company } : {}),
+      ...(newClient.role.trim() ? { role: newClient.role.trim() } : {}),
       correspondenceContact: true,
       billingContact: true,
       phones: phoneValue ? [{
@@ -1041,7 +1074,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
       }] : [],
       channelPreference: emailValue && newClient.phoneReceivesMessages ? "both" : newClient.phoneReceivesMessages ? "sms" : "email"
     };
-    const billingAddress = newClient.street1.trim() ? {
+    const propertyAddress = newClient.street1.trim() ? {
       street1: newClient.street1.trim(),
       ...(newClient.street2.trim() ? { street2: newClient.street2.trim() } : {}),
       city: newClient.city.trim(),
@@ -1049,6 +1082,89 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
       postalCode: newClient.postalCode.trim(),
       country: "USA"
     } : undefined;
+    const separateBillingAddress = newClient.billingStreet1.trim() ? {
+      street1: newClient.billingStreet1.trim(),
+      ...(newClient.billingStreet2.trim() ? { street2: newClient.billingStreet2.trim() } : {}),
+      city: newClient.billingCity.trim(),
+      province: newClient.billingProvince.trim(),
+      postalCode: newClient.billingPostalCode.trim(),
+      country: "USA"
+    } : undefined;
+    const billingAddress = newClient.billingSameAsPrimaryProperty ? propertyAddress : separateBillingAddress;
+    const additionalContacts: CrmContact[] = [];
+    if (newClient.additionalContactName.trim() || newClient.additionalContactPhone.trim() || newClient.additionalContactEmail.trim()) {
+      additionalContacts.push({
+        ...(newClient.additionalContactName.trim() ? { company: newClient.additionalContactName.trim() } : {}),
+        role: newClient.additionalContactRole.trim() || "Additional contact",
+        correspondenceContact: false,
+        billingContact: false,
+        phones: newClient.additionalContactPhone.trim() ? [{
+          label: "Other",
+          value: newClient.additionalContactPhone.trim(),
+          primary: false,
+          receivesMessages: false,
+          smsCapability: "unknown",
+          smsMode: "one_way"
+        }] : [],
+        emails: newClient.additionalContactEmail.trim() ? [{
+          label: "Other",
+          value: newClient.additionalContactEmail.trim(),
+          primary: false
+        }] : [],
+        channelPreference: "none"
+      });
+    }
+    const clientCustomFields: Record<string, string | number | boolean> = {};
+    if (newClient.leadSource.trim()) {
+      clientCustomFields.leadSource = newClient.leadSource.trim();
+    }
+    if (newClient.paymentTerms.trim()) {
+      clientCustomFields.paymentTerms = newClient.paymentTerms.trim();
+    }
+    clientCustomFields.askForReview = newClient.askForReview;
+    if (newClient.clientCustomFieldName.trim() && newClient.clientCustomFieldValue.trim()) {
+      clientCustomFields[newClient.clientCustomFieldName.trim()] = newClient.clientCustomFieldValue.trim();
+    }
+    const propertyCustomFields: Record<string, string | number | boolean> = {};
+    propertyCustomFields.gatedEntry = newClient.propertyGatedEntry;
+    if (newClient.propertyClientName.trim()) {
+      propertyCustomFields.propertyClientName = newClient.propertyClientName.trim();
+    }
+    if (newClient.propertyClientPhone.trim()) {
+      propertyCustomFields.propertyClientPhone = newClient.propertyClientPhone.trim();
+    }
+    if (newClient.propertyClientEmail.trim()) {
+      propertyCustomFields.propertyClientEmail = newClient.propertyClientEmail.trim();
+    }
+    if (newClient.companyCamProject.trim()) {
+      propertyCustomFields.companyCamProject = newClient.companyCamProject.trim();
+    }
+    if (newClient.propertyCustomFieldName.trim() && newClient.propertyCustomFieldValue.trim()) {
+      propertyCustomFields[newClient.propertyCustomFieldName.trim()] = newClient.propertyCustomFieldValue.trim();
+    }
+    const propertyContacts: CrmContact[] = [];
+    if (newClient.propertyClientName.trim() || newClient.propertyClientPhone.trim() || newClient.propertyClientEmail.trim()) {
+      propertyContacts.push({
+        ...(newClient.propertyClientName.trim() ? { company: newClient.propertyClientName.trim() } : {}),
+        role: "Property contact",
+        correspondenceContact: false,
+        billingContact: false,
+        phones: newClient.propertyClientPhone.trim() ? [{
+          label: "Other",
+          value: newClient.propertyClientPhone.trim(),
+          primary: true,
+          receivesMessages: false,
+          smsCapability: "unknown",
+          smsMode: "one_way"
+        }] : [],
+        emails: newClient.propertyClientEmail.trim() ? [{
+          label: "Other",
+          value: newClient.propertyClientEmail.trim(),
+          primary: true
+        }] : [],
+        channelPreference: "none"
+      });
+    }
     try {
       const body = await fetch("/api/crm/clients", {
         method: "POST",
@@ -1061,7 +1177,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
           displayNamePreference: company ? newClient.displayNamePreference : "person",
           ...(billingAddress ? { billingAddress } : {}),
           billingSameAsPrimaryProperty: newClient.billingSameAsPrimaryProperty,
-          contacts: [contact],
+          contacts: [contact, ...additionalContacts],
           communicationSettings: {
             quotesAndInvoices: contact.channelPreference,
             jobReminders: contact.channelPreference,
@@ -1071,7 +1187,22 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
           },
           emails: emailValue ? [emailValue] : [],
           phones: phoneValue ? [phoneValue] : [],
-          consent: { email: Boolean(emailValue), sms: newClient.phoneReceivesMessages }
+          consent: { email: Boolean(emailValue), sms: newClient.phoneReceivesMessages },
+          customFields: clientCustomFields,
+          ...(propertyAddress ? {
+            primaryProperty: {
+              siteName: newClient.siteName.trim() || undefined,
+              label: newClient.siteName.trim() || propertyAddress.street1,
+              address: propertyAddress,
+              billingAddressSameAsClient: newClient.billingSameAsPrimaryProperty,
+              access: {
+                gateCode: newClient.propertyGateCodes.trim() || undefined,
+                accessNotes: newClient.propertyGatedEntry ? "Gated entry enabled" : undefined
+              },
+              contacts: propertyContacts,
+              customFields: propertyCustomFields
+            }
+          } : {})
         })
       }).then((response) => response.json() as Promise<CrmClientCreateResponse>);
       if (!body.ok || !body.client) {
@@ -1081,9 +1212,11 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
       setCreateStatus(`Created ${clientDisplayName(body.client)}.`);
       setShowCreateClient(false);
       setNewClient({
+        title: "No title",
         firstName: "",
         lastName: "",
         company: "",
+        role: "",
         displayNamePreference: "person",
         phone: "",
         phoneLabel: "Main",
@@ -1091,13 +1224,35 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
         smsCapability: "unknown",
         email: "",
         emailLabel: "Main",
+        paymentTerms: "",
+        askForReview: true,
+        clientCustomFieldName: "",
+        clientCustomFieldValue: "",
+        additionalContactName: "",
+        additionalContactRole: "",
+        additionalContactPhone: "",
+        additionalContactEmail: "",
+        siteName: "",
         street1: "",
         street2: "",
         city: "",
         province: "",
         postalCode: "",
         billingSameAsPrimaryProperty: true,
-        leadSource: ""
+        billingStreet1: "",
+        billingStreet2: "",
+        billingCity: "",
+        billingProvince: "",
+        billingPostalCode: "",
+        leadSource: "",
+        propertyGatedEntry: false,
+        propertyGateCodes: "",
+        propertyClientName: "",
+        propertyClientPhone: "",
+        propertyClientEmail: "",
+        companyCamProject: "",
+        propertyCustomFieldName: "",
+        propertyCustomFieldValue: ""
       });
       await refresh();
     } catch {
@@ -1216,7 +1371,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
     "--nexops-brand-background": colors?.background ?? "#f6f8f5",
     "--nexops-brand-surface": colors?.surface ?? "#ffffff",
     "--nexops-brand-text": colors?.text ?? "#082131",
-    "--nexops-font-family": tenantBranding?.fontFamily ?? "Inter, Avenir, Helvetica, Arial, sans-serif"
+    "--nexops-font-family": tenantBranding?.fontFamily ?? "Aptos, Segoe UI, Helvetica Neue, sans-serif"
   } as React.CSSProperties;
 
   const moduleTitle = NEXOPS_MODULES.find((module) => module.id === activeModule)?.label ?? "NexOps";
@@ -1633,7 +1788,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
       : "Texts stay one-way unless an upgraded two-way SMS tier is enabled.";
     return (
       <div className="nexops-drawer-backdrop" role="presentation">
-        <form className="nexops-drawer" onSubmit={(event) => void createClientFromForm(event)}>
+        <form className="nexops-drawer nexops-client-form" onSubmit={(event) => void createClientFromForm(event)}>
           <div className="nexops-drawer-heading">
             <div>
               <p className="eyebrow">NexOps CRM</p>
@@ -1641,43 +1796,144 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
             </div>
             <button type="button" onClick={() => setShowCreateClient(false)}>Close</button>
           </div>
-          <div className="nexops-form-grid">
-            <label>First name<input required value={newClient.firstName} onChange={(event) => setNewClient({ ...newClient, firstName: event.target.value })} /></label>
-            <label>Last name<input required value={newClient.lastName} onChange={(event) => setNewClient({ ...newClient, lastName: event.target.value })} /></label>
-            <label>Company name<input value={newClient.company} onChange={(event) => setNewClient({ ...newClient, company: event.target.value, displayNamePreference: event.target.value ? "company" : "person" })} /></label>
-            <label>Display as<select value={newClient.displayNamePreference} onChange={(event) => setNewClient({ ...newClient, displayNamePreference: event.target.value as "person" | "company" })}>
-              <option value="person">First name Last name</option>
-              <option value="company" disabled={!newClient.company}>Company name</option>
-            </select></label>
-            <label>Phone<input value={newClient.phone} onChange={(event) => setNewClient({ ...newClient, phone: event.target.value })} /></label>
-            <label>Phone label<select value={newClient.phoneLabel} onChange={(event) => setNewClient({ ...newClient, phoneLabel: event.target.value as CrmPhone["label"] })}>
-              {(["Main", "Work", "Mobile", "Home", "Fax", "Other"] as CrmPhone["label"][]).map((label) => <option key={label}>{label}</option>)}
-            </select></label>
-            <label>Email<input type="email" value={newClient.email} onChange={(event) => setNewClient({ ...newClient, email: event.target.value })} /></label>
-            <label>Email label<select value={newClient.emailLabel} onChange={(event) => setNewClient({ ...newClient, emailLabel: event.target.value as CrmEmail["label"] })}>
-              {(["Main", "Work", "Personal", "Other"] as CrmEmail["label"][]).map((label) => <option key={label}>{label}</option>)}
-            </select></label>
-            <label>Street 1<input value={newClient.street1} onChange={(event) => setNewClient({ ...newClient, street1: event.target.value })} /></label>
-            <label>Street 2<input value={newClient.street2} onChange={(event) => setNewClient({ ...newClient, street2: event.target.value })} /></label>
-            <label>City<input value={newClient.city} onChange={(event) => setNewClient({ ...newClient, city: event.target.value })} /></label>
-            <label>State<input value={newClient.province} onChange={(event) => setNewClient({ ...newClient, province: event.target.value })} /></label>
-            <label>ZIP<input value={newClient.postalCode} onChange={(event) => setNewClient({ ...newClient, postalCode: event.target.value })} /></label>
-            <label>Lead source<input value={newClient.leadSource} onChange={(event) => setNewClient({ ...newClient, leadSource: event.target.value })} /></label>
-          </div>
-          <div className="nexops-toggle-row">
-            <label><input type="checkbox" checked={newClient.billingSameAsPrimaryProperty} onChange={(event) => setNewClient({ ...newClient, billingSameAsPrimaryProperty: event.target.checked })} /> Billing address is the same as property address</label>
-            <label><input type="checkbox" checked={newClient.phoneReceivesMessages} onChange={(event) => setNewClient({ ...newClient, phoneReceivesMessages: event.target.checked })} /> Allow one-way texts to this number</label>
-          </div>
-          {newClient.phoneReceivesMessages ? (
-            <label className="nexops-full-label">SMS check<select value={newClient.smsCapability} onChange={(event) => setNewClient({ ...newClient, smsCapability: event.target.value as SmsCapability })}>
-              <option value="unknown">Unknown - prompt before sending</option>
-              <option value="mobile">Mobile - can receive texts</option>
-              <option value="landline">Landline - prompt</option>
-              <option value="fax">Fax - text off unless changed</option>
-              <option value="invalid">Invalid - text off</option>
-            </select></label>
-          ) : null}
-          <p className="nexops-form-note">{smsPrompt}</p>
+          <section className="nexops-form-section">
+            <div className="nexops-section-copy">
+              <h3>Primary contact details</h3>
+              <p>Use first and last name by default. If a company is added, NexOps can display the company while keeping the person on file.</p>
+            </div>
+            <div className="nexops-section-fields">
+              <div className="nexops-field-row title-row">
+                <label className="nexops-field"><span>Title</span><select value={newClient.title} onChange={(event) => setNewClient({ ...newClient, title: event.target.value })}>
+                  {["No title", "Mr.", "Mrs.", "Ms.", "Dr.", "Other"].map((label) => <option key={label}>{label}</option>)}
+                </select></label>
+                <label className="nexops-field"><span>First name</span><input value={newClient.firstName} onChange={(event) => setNewClient({ ...newClient, firstName: event.target.value })} /></label>
+                <label className="nexops-field"><span>Last name</span><input value={newClient.lastName} onChange={(event) => setNewClient({ ...newClient, lastName: event.target.value })} /></label>
+              </div>
+              <div className="nexops-field-row">
+                <label className="nexops-field"><span>Company name</span><input value={newClient.company} onChange={(event) => setNewClient({ ...newClient, company: event.target.value, displayNamePreference: event.target.value ? "company" : "person" })} /></label>
+                <label className="nexops-field"><span>Display as</span><select value={newClient.displayNamePreference} onChange={(event) => setNewClient({ ...newClient, displayNamePreference: event.target.value as "person" | "company" })}>
+                  <option value="person">First name Last name</option>
+                  <option value="company" disabled={!newClient.company}>Company name</option>
+                </select></label>
+              </div>
+              <label className="nexops-field"><span>Role</span><input value={newClient.role} onChange={(event) => setNewClient({ ...newClient, role: event.target.value })} /></label>
+              <h4>Communication</h4>
+              <div className="nexops-field-row">
+                <label className="nexops-field"><span>Phone number</span><input value={newClient.phone} onChange={(event) => setNewClient({ ...newClient, phone: event.target.value })} /></label>
+                <label className="nexops-field compact"><span>Phone label</span><select value={newClient.phoneLabel} onChange={(event) => setNewClient({ ...newClient, phoneLabel: event.target.value as CrmPhone["label"] })}>
+                  {(["Main", "Work", "Mobile", "Home", "Fax", "Other"] as CrmPhone["label"][]).map((label) => <option key={label}>{label}</option>)}
+                </select></label>
+              </div>
+              <label className="nexops-check-field"><input type="checkbox" checked={newClient.phoneReceivesMessages} onChange={(event) => setNewClient({ ...newClient, phoneReceivesMessages: event.target.checked })} /> Allow one-way texts to this number</label>
+              {newClient.phoneReceivesMessages ? (
+                <label className="nexops-field"><span>SMS check</span><select value={newClient.smsCapability} onChange={(event) => setNewClient({ ...newClient, smsCapability: event.target.value as SmsCapability })}>
+                  <option value="unknown">Unknown - prompt before sending</option>
+                  <option value="mobile">Mobile - can receive texts</option>
+                  <option value="landline">Landline - prompt</option>
+                  <option value="fax">Fax - text off unless changed</option>
+                  <option value="invalid">Invalid - text off</option>
+                </select></label>
+              ) : null}
+              <p className="nexops-form-note">{smsPrompt}</p>
+              <div className="nexops-field-row">
+                <label className="nexops-field"><span>Email</span><input type="email" value={newClient.email} onChange={(event) => setNewClient({ ...newClient, email: event.target.value })} /></label>
+                <label className="nexops-field compact"><span>Email label</span><select value={newClient.emailLabel} onChange={(event) => setNewClient({ ...newClient, emailLabel: event.target.value as CrmEmail["label"] })}>
+                  {(["Main", "Work", "Personal", "Other"] as CrmEmail["label"][]).map((label) => <option key={label}>{label}</option>)}
+                </select></label>
+              </div>
+              <button className="nexops-link-button" type="button">Communication settings</button>
+              <h4>Lead information</h4>
+              <label className="nexops-field"><span>Lead source</span><input value={newClient.leadSource} onChange={(event) => setNewClient({ ...newClient, leadSource: event.target.value })} /></label>
+              <div className="nexops-field-row">
+                <label className="nexops-field"><span>Payment terms</span><input value={newClient.paymentTerms} onChange={(event) => setNewClient({ ...newClient, paymentTerms: event.target.value })} /></label>
+                <label className="nexops-check-field inline"><input type="checkbox" checked={newClient.askForReview} onChange={(event) => setNewClient({ ...newClient, askForReview: event.target.checked })} /> Ask for a review</label>
+              </div>
+              <details className="nexops-extra-panel" open>
+                <summary>Additional client details</summary>
+                <div className="nexops-extra-panel-body">
+                  <p>Create custom fields to track additional client-level details.</p>
+                  <button type="button">Add Custom Field</button>
+                  <div className="nexops-field-row">
+                    <label className="nexops-field"><span>Custom field name</span><input value={newClient.clientCustomFieldName} onChange={(event) => setNewClient({ ...newClient, clientCustomFieldName: event.target.value })} /></label>
+                    <label className="nexops-field"><span>Custom field value</span><input value={newClient.clientCustomFieldValue} onChange={(event) => setNewClient({ ...newClient, clientCustomFieldValue: event.target.value })} /></label>
+                  </div>
+                </div>
+              </details>
+              <details className="nexops-extra-panel" open>
+                <summary>Additional contacts</summary>
+                <div className="nexops-extra-panel-body">
+                  <p>For contacts with access to all properties, like spouse/family for residential or property managers for commercial.</p>
+                  <button type="button">Add Contact</button>
+                  <div className="nexops-field-row">
+                    <label className="nexops-field"><span>Contact name</span><input value={newClient.additionalContactName} onChange={(event) => setNewClient({ ...newClient, additionalContactName: event.target.value })} /></label>
+                    <label className="nexops-field"><span>Role</span><input value={newClient.additionalContactRole} onChange={(event) => setNewClient({ ...newClient, additionalContactRole: event.target.value })} /></label>
+                  </div>
+                  <div className="nexops-field-row">
+                    <label className="nexops-field"><span>Phone</span><input value={newClient.additionalContactPhone} onChange={(event) => setNewClient({ ...newClient, additionalContactPhone: event.target.value })} /></label>
+                    <label className="nexops-field"><span>Email</span><input type="email" value={newClient.additionalContactEmail} onChange={(event) => setNewClient({ ...newClient, additionalContactEmail: event.target.value })} /></label>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </section>
+          <section className="nexops-form-section">
+            <div className="nexops-section-copy">
+              <h3>Property address</h3>
+              <p>Enter the primary service address, billing address, or site name. Multi-site clients keep billing and correspondence on the parent client.</p>
+              <button type="button">Add Another Address</button>
+            </div>
+            <div className="nexops-section-fields">
+              <label className="nexops-field"><span>Site name</span><input value={newClient.siteName} onChange={(event) => setNewClient({ ...newClient, siteName: event.target.value })} placeholder="Optional, e.g. Mulberry Farms" /></label>
+              <label className="nexops-field"><span>Street 1</span><input value={newClient.street1} onChange={(event) => setNewClient({ ...newClient, street1: event.target.value })} /></label>
+              <label className="nexops-field"><span>Street 2</span><input value={newClient.street2} onChange={(event) => setNewClient({ ...newClient, street2: event.target.value })} /></label>
+              <div className="nexops-field-row">
+                <label className="nexops-field"><span>City</span><input value={newClient.city} onChange={(event) => setNewClient({ ...newClient, city: event.target.value })} /></label>
+                <label className="nexops-field compact"><span>State</span><input value={newClient.province} onChange={(event) => setNewClient({ ...newClient, province: event.target.value })} /></label>
+              </div>
+              <div className="nexops-field-row">
+                <label className="nexops-field compact"><span>ZIP code</span><input value={newClient.postalCode} onChange={(event) => setNewClient({ ...newClient, postalCode: event.target.value })} /></label>
+                <label className="nexops-field"><span>Country</span><select value="USA" onChange={() => undefined}><option value="USA">United States</option></select></label>
+              </div>
+              <label className="nexops-field"><span>Tax rate</span><select value="none" onChange={() => undefined}><option value="none">No tax rate created</option></select></label>
+              <label className="nexops-check-field"><input type="checkbox" checked={newClient.billingSameAsPrimaryProperty} onChange={(event) => setNewClient({ ...newClient, billingSameAsPrimaryProperty: event.target.checked })} /> Billing address is the same as property address</label>
+              {!newClient.billingSameAsPrimaryProperty ? (
+                <div className="nexops-subsection">
+                  <h4>Billing address</h4>
+                  <label className="nexops-field"><span>Billing street 1</span><input value={newClient.billingStreet1} onChange={(event) => setNewClient({ ...newClient, billingStreet1: event.target.value })} /></label>
+                  <label className="nexops-field"><span>Billing street 2</span><input value={newClient.billingStreet2} onChange={(event) => setNewClient({ ...newClient, billingStreet2: event.target.value })} /></label>
+                  <div className="nexops-field-row">
+                    <label className="nexops-field"><span>Billing city</span><input value={newClient.billingCity} onChange={(event) => setNewClient({ ...newClient, billingCity: event.target.value })} /></label>
+                    <label className="nexops-field compact"><span>Billing state</span><input value={newClient.billingProvince} onChange={(event) => setNewClient({ ...newClient, billingProvince: event.target.value })} /></label>
+                  </div>
+                  <label className="nexops-field compact"><span>Billing ZIP</span><input value={newClient.billingPostalCode} onChange={(event) => setNewClient({ ...newClient, billingPostalCode: event.target.value })} /></label>
+                </div>
+              ) : null}
+              <details className="nexops-extra-panel" open>
+                <summary>Property details</summary>
+                <div className="nexops-extra-panel-body">
+                  <p>Create custom fields to track additional property details.</p>
+                  <button type="button">Add Custom Field</button>
+                  <label className="nexops-check-field inline"><input type="checkbox" checked={newClient.propertyGatedEntry} onChange={(event) => setNewClient({ ...newClient, propertyGatedEntry: event.target.checked })} /> Gated entry</label>
+                  <label className="nexops-field"><span>Gate entry code(s)</span><input value={newClient.propertyGateCodes} onChange={(event) => setNewClient({ ...newClient, propertyGateCodes: event.target.value })} /></label>
+                  <label className="nexops-field"><span>Property client name</span><input value={newClient.propertyClientName} onChange={(event) => setNewClient({ ...newClient, propertyClientName: event.target.value })} /></label>
+                  <label className="nexops-field"><span>Property client telephone number</span><input value={newClient.propertyClientPhone} onChange={(event) => setNewClient({ ...newClient, propertyClientPhone: event.target.value })} /></label>
+                  <label className="nexops-field"><span>Property client email address</span><input type="email" value={newClient.propertyClientEmail} onChange={(event) => setNewClient({ ...newClient, propertyClientEmail: event.target.value })} /></label>
+                  <label className="nexops-field"><span>CompanyCam project</span><input value={newClient.companyCamProject} onChange={(event) => setNewClient({ ...newClient, companyCamProject: event.target.value })} /></label>
+                  <div className="nexops-field-row">
+                    <label className="nexops-field"><span>Custom field name</span><input value={newClient.propertyCustomFieldName} onChange={(event) => setNewClient({ ...newClient, propertyCustomFieldName: event.target.value })} /></label>
+                    <label className="nexops-field"><span>Custom field value</span><input value={newClient.propertyCustomFieldValue} onChange={(event) => setNewClient({ ...newClient, propertyCustomFieldValue: event.target.value })} /></label>
+                  </div>
+                </div>
+              </details>
+              <details className="nexops-extra-panel" open>
+                <summary>Property contacts</summary>
+                <div className="nexops-extra-panel-body single-row">
+                  <p>For contacts with access limited to this property. These contacts do not receive parent-client correspondence by default.</p>
+                  <button type="button">Add Contact</button>
+                </div>
+              </details>
+            </div>
+          </section>
           <div className="nexops-drawer-actions">
             <span>{createStatus}</span>
             <button type="button" onClick={() => setShowCreateClient(false)}>Cancel</button>
@@ -1913,7 +2169,7 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
     "--nexops-brand-background": colors?.background ?? "#f6f8f5",
     "--nexops-brand-surface": colors?.surface ?? "#ffffff",
     "--nexops-brand-text": colors?.text ?? "#082131",
-    "--nexops-font-family": tenantBranding?.fontFamily ?? "Inter, Avenir, Helvetica, Arial, sans-serif"
+    "--nexops-font-family": tenantBranding?.fontFamily ?? "Aptos, Segoe UI, Helvetica Neue, sans-serif"
   } as React.CSSProperties;
   const template = templates[0];
   const propertyItems = template?.items.filter((item) => item.memory === "property") ?? [];
