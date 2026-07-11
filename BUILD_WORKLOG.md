@@ -14,9 +14,9 @@ Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this 
 - The New Client modal is the proof-of-concept screen before the system rolls out broadly.
 
 ### Brand Assets Saved
-- Source `C:\Users\Peyto\Downloads\ChatGPT Image Jul 11, 2026, 01_00_36 PM (1).png` saved as `public/assets/brand/nexteam-icon.png`.
-- Source `C:\Users\Peyto\Downloads\ChatGPT Image Jul 11, 2026, 01_00_36 PM (2).png` saved as `public/assets/brand/nexteam-lockup-horizontal.png`.
-- Source `C:\Users\Peyto\Downloads\ChatGPT Image Jul 11, 2026, 01_00_36 PM (3).png` saved as `public/assets/brand/nexteam-wordmark.png`.
+- Source `C:\Users\Peyto\Downloads\ChatGPT Image Jul 11, 2026, 01_00_36 PM (1).png` saved as `apps/web/public/assets/brand/nexteam-icon.png`, served at `/assets/brand/nexteam-icon.png`.
+- Source `C:\Users\Peyto\Downloads\ChatGPT Image Jul 11, 2026, 01_00_36 PM (2).png` saved as `apps/web/public/assets/brand/nexteam-lockup-horizontal.png`, served at `/assets/brand/nexteam-lockup-horizontal.png`.
+- Source `C:\Users\Peyto\Downloads\ChatGPT Image Jul 11, 2026, 01_00_36 PM (3).png` saved as `apps/web/public/assets/brand/nexteam-wordmark.png`, served at `/assets/brand/nexteam-wordmark.png`.
 - Canonical icon decision: use the standalone icon file `nexteam-icon.png` as the single canonical icon shape for app icon, favicon, sidebar mark, and all composed UI lockups. The horizontal lockup remains saved as a brand asset, but product UI composes the canonical icon plus wordmark to avoid two slightly different icon crops.
 
 ### Built This Pass
