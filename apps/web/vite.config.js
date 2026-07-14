@@ -19,19 +19,7 @@ export default defineConfig(({ mode }) => {
       host: "0.0.0.0",
       proxy: {
         "/auth/google": localApiProxy,
-        "/api/public": localApiProxy,
-        "/api/crm": localApiProxy,
-        "/api/scheduling": localApiProxy,
-        "/api/content": localApiProxy,
-        "/api/reputation": localApiProxy,
-        "/api/approvals": localApiProxy,
-        "/api/media": localApiProxy,
-        "/api/nexi": localApiProxy,
-        "/api/platform": localApiProxy,
-        "/api/voice": localApiProxy,
-        "/api/gbp": localApiProxy,
-        "/api/vgb": localApiProxy,
-        "/api/bragi": localApiProxy,
+        "/request-forms": localApiProxy,
         "/api/anthropic": {
           target: "https://api.anthropic.com",
           changeOrigin: true,
@@ -45,6 +33,7 @@ export default defineConfig(({ mode }) => {
             });
           }
         },
+        "/api": localApiProxy,
         "/elevenlabs": {
           target: "https://api.elevenlabs.io",
           changeOrigin: true,

@@ -18,9 +18,14 @@ import { buildHealth } from "./health.js";
 import { actorIdForAccess, requireTenantRole } from "./auth/accessContext.js";
 import { CompositeApprovalExecutor } from "./approval/compositeExecutor.js";
 import { FirestoreApprovalQueueRepository } from "./approval/firestoreRepository.js";
+import { createApprovalNexiTools } from "./approval/nexiTools.js";
 import { createCampaignNexiTools } from "./campaigns/nexiTools.js";
 import { InMemoryCampaignRepository } from "./campaigns/repository.js";
 import { registerCampaignRoutes } from "./campaigns/routes.js";
+import { JobLifecycleService } from "./crm/jobLifecycle.js";
+import { FirestoreJobLifecycleRepository, MemoryJobLifecycleRepository } from "./crm/jobLifecycleRepository.js";
+import { LedgerService } from "./crm/ledgerFoundation.js";
+import { FirestoreLedgerRepository, MemoryLedgerRepository } from "./crm/ledgerRepository.js";
 import { registerCrmRoutes } from "./crm/routes.js";
 import { getAdminDb, getAdminStorageBucket } from "./firebase.js";
 import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
@@ -88,6 +93,23 @@ const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : 
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 const intakeRepository = adminDb ? new FirestoreIntakeRepository(adminDb) : new InMemoryIntakeRepository();
 const intakeService = new IntakeService(intakeRepository, platformRepository);
+const jobLifecycleRepository = adminDb ? new FirestoreJobLifecycleRepository(adminDb) : new MemoryJobLifecycleRepository();
+const ledgerRepository = adminDb ? new FirestoreLedgerRepository(adminDb) : new MemoryLedgerRepository();
+const ledgerService = new LedgerService({
+  crmRepository: nativeCrmRepository,
+  ledgerRepository,
+  commsRail,
+  eventBus
+});
+const jobLifecycleService = new JobLifecycleService({
+  crmRepository: nativeCrmRepository,
+  schedulingRepository,
+  lifecycleRepository: jobLifecycleRepository,
+  platformRepository,
+  commsRail,
+  eventBus,
+  ledgerService
+});
 const approvalQueueRepository = adminDb ? new FirestoreApprovalQueueRepository(adminDb) : new InMemoryApprovalQueueRepository();
 const approvalQueue = new ApprovalQueueService(approvalQueueRepository, new CompositeApprovalExecutor([
   {
@@ -95,8 +117,18 @@ const approvalQueue = new ApprovalQueueService(approvalQueueRepository, new Comp
     executor: new CommsApprovalExecutor(commsRail)
   },
   {
-    canExecute: (item) => item.execute.service === "crm" && item.execute.op === "createClient",
-    executor: new CrmApprovalExecutor(nativeCrmProvider)
+    canExecute: (item) => item.execute.service === "crm" && [
+      "createClient",
+      "createQuote",
+      "createJob",
+      "performJobAction",
+      "performLedgerAction",
+      "composeInvoiceFromJobs",
+      "sendInvoice",
+      "recordInvoicePayment",
+      "sendReceiptReview"
+    ].includes(item.execute.op),
+    executor: new CrmApprovalExecutor(nativeCrmProvider, jobLifecycleService, ledgerService)
   },
   {
     canExecute: (item) => item.execute.service === "intake" && item.execute.op === "provisionTenant",
@@ -138,10 +170,17 @@ app.use("/api/nexi", createNexiRouter(process.env, {
   filterTools: (tenant, tools) => enforceToolEntitlements(tenant, tools).tools,
   extraTools: [
     ...createContextNexiTools({ env: process.env }),
-    ...createCrmToolsWithOptions(nativeCrmProvider, approvalQueue, { fallbackClientProvider: jobberCrmProvider }),
+    ...createCrmToolsWithOptions(nativeCrmProvider, approvalQueue, {
+      fallbackClientProvider: jobberCrmProvider,
+      requestRepository: nativeCrmRepository,
+      platformRepository,
+      commsRail,
+      jobLifecycleService,
+      ledgerService
+    }),
     ...createCommsNexiTools(commsRail, approvalQueue),
     ...createContentNexiTools({ repository: contentRepository, approvalQueue }),
-    ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env }),
+    ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env, jobLifecycleService }),
     ...createEvaporationNexiTools({ repository: evaporationRepository, env: process.env })
   ],
   extraToolsForRequest: async (req, tenant) => {
@@ -162,7 +201,15 @@ app.use("/api/nexi", createNexiRouter(process.env, {
       approvalQueue,
       env: process.env,
       actorId: actorIdForAccess(access)
-    }).concat(createSitesNexiTools({
+    }).concat(createApprovalNexiTools({
+      approvalQueue,
+      actorId: actorIdForAccess(access),
+      actorRole: access.role,
+      crmRepository: nativeCrmRepository,
+      jobLifecycleService,
+      ledgerService,
+      publicBaseUrl: process.env.PUBLIC_BASE_URL?.trim() || "http://127.0.0.1:4175"
+    })).concat(createSitesNexiTools({
       repository: sitesRepository,
       access
     })).concat(createReputationNexiTools({
@@ -217,7 +264,8 @@ app.get("/api/public/runtime-config", (_req: Request, res: Response) => {
   res.json({
     ok: true,
     firebase,
-    firebaseConfigured: Object.values(firebase).every((value) => value.length > 0)
+    firebaseConfigured: Object.values(firebase).every((value) => value.length > 0),
+    authRequired: process.env.NEXI_FIREBASE_AUTH_REQUIRED !== "false"
   });
 });
 
@@ -318,7 +366,15 @@ app.post("/api/approval-queue/:id/approve", async (req: Request, res: Response) 
     if (!approvalId) {
       throw new RailError("Approval id is required.", { provider: "approval", op: "approve", status: 400 });
     }
-    const item = await approvalQueue.approve(approvalId);
+    const pending = await approvalQueue.get(approvalId);
+    if (!pending) {
+      throw new RailError(`Approval item ${approvalId} was not found.`, { provider: "approval", op: "approve", status: 404 });
+    }
+    const access = await requireTenantRole(req, process.env, ["OWNER", "OFFICE_ADMIN"], {
+      requestedTenantId: pending.tenantId,
+      op: "approvalQueueApprove"
+    });
+    const item = await approvalQueue.approve(approvalId, actorIdForAccess(access));
     res.json({ ok: true, item });
   } catch (error) {
     sendError(res, error);
@@ -331,7 +387,15 @@ app.post("/api/approval-queue/:id/reject", async (req: Request, res: Response) =
     if (!approvalId) {
       throw new RailError("Approval id is required.", { provider: "approval", op: "reject", status: 400 });
     }
-    const item = await approvalQueue.reject(approvalId);
+    const pending = await approvalQueue.get(approvalId);
+    if (!pending) {
+      throw new RailError(`Approval item ${approvalId} was not found.`, { provider: "approval", op: "reject", status: 404 });
+    }
+    const access = await requireTenantRole(req, process.env, ["OWNER", "OFFICE_ADMIN"], {
+      requestedTenantId: pending.tenantId,
+      op: "approvalQueueReject"
+    });
+    const item = await approvalQueue.reject(approvalId, actorIdForAccess(access));
     res.json({ ok: true, item });
   } catch (error) {
     sendError(res, error);
@@ -344,24 +408,50 @@ app.post("/api/approval-queue/:id/execute", async (req: Request, res: Response) 
     if (!approvalId) {
       throw new RailError("Approval id is required.", { provider: "approval", op: "execute", status: 400 });
     }
-    const result = await approvalQueue.executeApproved(approvalId);
+    const pending = await approvalQueue.get(approvalId);
+    if (!pending) {
+      throw new RailError(`Approval item ${approvalId} was not found.`, { provider: "approval", op: "execute", status: 404 });
+    }
+    const access = await requireTenantRole(req, process.env, ["OWNER", "OFFICE_ADMIN"], {
+      requestedTenantId: pending.tenantId,
+      op: "approvalQueueExecute"
+    });
+    const result = await approvalQueue.executeApproved(approvalId, actorIdForAccess(access));
     res.json({ ok: true, ...result });
   } catch (error) {
     sendError(res, error);
   }
 });
 
-registerCrmRoutes(app, { approvalQueue, eventBus, memoryRepository: nativeCrmRepository, env: process.env });
+registerCrmRoutes(app, {
+  approvalQueue,
+  eventBus,
+  memoryRepository: nativeCrmRepository,
+  platformRepository,
+  sitesRepository,
+  commsRail,
+  jobLifecycleService,
+  ledgerService,
+  env: process.env
+});
 registerFieldDocsRoutes(app, { eventBus, repository: mediaRepository });
 registerContentRoutes(app, { repository: contentRepository, approvalQueue, eventBus, env: process.env });
 registerCampaignRoutes(app, { repository: campaignRepository, approvalQueue, env: process.env });
 registerReputationRoutes(app, { repository: reputationRepository, approvalQueue, eventBus, gbpProvider: gbpReviewProvider, env: process.env });
-registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env });
+registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env, jobLifecycleService });
 registerEvaporationRoutes(app, { repository: evaporationRepository, env: process.env });
 registerIntakeRoutes(app, { service: intakeService, approvalQueue, env: process.env });
 registerMobileRoutes(app, { repository: mobileRepository, approvalQueue, env: process.env });
 registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
-registerSitesRoutes(app, { repository: sitesRepository, approvalQueue, eventBus, env: process.env });
+registerSitesRoutes(app, {
+  repository: sitesRepository,
+  approvalQueue,
+  crmRepository: nativeCrmRepository,
+  platformRepository,
+  commsRail,
+  eventBus,
+  env: process.env
+});
 registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });
 registerSeoRoutes(app, { repository: seoRepository, sitesRepository, approvalQueue, env: process.env });
 registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });

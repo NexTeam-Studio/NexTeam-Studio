@@ -1,0 +1,477 @@
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { getPoolLeakCatalogItem } from "@nexteam/industry-packs";
+import {
+  RailError,
+  quoteApprovalRulesSchema,
+  quoteDiscountSchema,
+  paymentSchedulePlanSchema,
+  quoteSchema,
+  quoteTemplateSchema,
+  type CrmSettings,
+  type DocumentSequenceKind,
+  type IntakeSnapshot,
+  type LineItem,
+  type Quote,
+  type QuoteApprovalRules,
+  type QuoteDepositBridge,
+  type QuoteDiscount,
+  type QuoteStatus,
+  type QuoteTemplate,
+  type QuoteTotals
+} from "@nexteam/core";
+import { z } from "zod";
+import type { NativeCrmRepository } from "@nexteam/providers";
+import { reserveDocumentNumber } from "./documentNumbering.js";
+
+const EMPTY_LINE_ITEMS: LineItem[] = [];
+
+export const quoteLineItemInputSchema = z.object({
+  kind: z.enum(["catalog", "custom"]).default("catalog"),
+  catalogCode: z.string().min(1).optional(),
+  code: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  quantity: z.number().positive().default(1),
+  unitPrice: z.number().min(0).optional(),
+  clientSelectable: z.boolean().optional(),
+  defaultSelected: z.boolean().optional()
+}).superRefine((value, ctx) => {
+  if (value.kind === "catalog" && !value.catalogCode) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Catalog line items require a catalogCode.", path: ["catalogCode"] });
+  }
+  if (value.kind === "custom") {
+    if (!value.name) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Custom line items require a name.", path: ["name"] });
+    }
+    if (value.unitPrice === undefined) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Custom line items require a unitPrice.", path: ["unitPrice"] });
+    }
+  }
+});
+
+export const quoteDeliverySelectionSchema = z.object({
+  mode: z.enum(["draft", "email", "sms", "mark_sent"]).default("draft"),
+  target: z.string().optional(),
+  note: z.string().optional()
+});
+
+export const quoteComposerInputSchema = z.object({
+  tenantId: z.string().min(1),
+  clientId: z.string().min(1),
+  requestId: z.string().min(1).optional(),
+  jobId: z.string().min(1).optional(),
+  templateId: z.string().min(1).optional(),
+  title: z.string().min(1),
+  items: z.array(quoteLineItemInputSchema).default([]),
+  approvalRules: quoteApprovalRulesSchema.partial().optional(),
+  discount: quoteDiscountSchema.optional(),
+  taxRate: z.number().min(0).optional(),
+  expiresAt: z.string().min(1).optional(),
+  expiryDays: z.number().int().min(1).optional(),
+  terms: z.string().optional(),
+  paymentSchedule: paymentSchedulePlanSchema.optional(),
+  delivery: quoteDeliverySelectionSchema.optional(),
+  intake: z.custom<IntakeSnapshot>().optional()
+});
+
+export const quoteTemplateInputSchema = quoteTemplateSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  id: z.string().min(1).optional()
+});
+
+export const crmSettingsPatchSchema = z.object({
+  tenantId: z.string().min(1),
+  documentNumbering: z.object({
+    request: z.object({ prefix: z.string().optional(), separator: z.string().optional(), padWidth: z.number().int().min(1).optional() }).optional(),
+    quote: z.object({ prefix: z.string().optional(), separator: z.string().optional(), padWidth: z.number().int().min(1).optional() }).optional(),
+    job: z.object({ prefix: z.string().optional(), separator: z.string().optional(), padWidth: z.number().int().min(1).optional() }).optional(),
+    invoice: z.object({ prefix: z.string().optional(), separator: z.string().optional(), padWidth: z.number().int().min(1).optional() }).optional()
+  }).optional(),
+  quoteDefaults: z.object({
+    expiryDays: z.number().int().min(1).optional(),
+    autoSaveCardOnDeposit: z.boolean().optional(),
+    approvalRules: quoteApprovalRulesSchema.partial().optional(),
+    terms: z.string().optional()
+  }).optional(),
+  invoiceDefaults: z.object({
+    dueDays: z.number().int().min(0).optional(),
+    terms: z.string().optional(),
+    delivery: z.object({
+      emailIncludePdf: z.boolean().optional(),
+      emailIncludeSummary: z.boolean().optional(),
+      emailIncludePayLink: z.boolean().optional(),
+      smsIncludeSummary: z.boolean().optional(),
+      smsIncludePayLink: z.boolean().optional(),
+      smsIncludeHostedLink: z.boolean().optional()
+    }).optional()
+  }).optional()
+});
+
+export const quoteCreateApprovalArgsSchema = z.object({
+  tenantId: z.string().min(1),
+  quote: quoteSchema
+});
+
+export const portalQuoteApprovalInputSchema = z.object({
+  tenantId: z.string().min(1),
+  token: z.string().min(1),
+  customerName: z.string().min(1),
+  signatureMode: z.enum(["drawn", "typed"]).optional(),
+  typedName: z.string().optional(),
+  drawnDataUrl: z.string().optional(),
+  deposit: z.object({
+    cardholderName: z.string().min(1).optional(),
+    cardBrand: z.string().optional(),
+    cardLast4: z.string().regex(/^\d{4}$/).optional(),
+    cardOnFileAuthorized: z.boolean().optional()
+  }).optional()
+});
+
+export const portalQuoteChangeRequestInputSchema = z.object({
+  tenantId: z.string().min(1),
+  token: z.string().min(1),
+  customerName: z.string().optional(),
+  note: z.string().optional(),
+  lineComments: z.array(z.object({
+    lineItemId: z.string().min(1),
+    comment: z.string().min(1)
+  })).default([])
+});
+
+export const quoteRenewInputSchema = z.object({
+  tenantId: z.string().min(1),
+  expiryDays: z.number().int().min(1).optional(),
+  expiresAt: z.string().optional()
+});
+
+type QuoteComposerInput = z.infer<typeof quoteComposerInputSchema>;
+
+function now(): string {
+  return new Date().toISOString();
+}
+
+function addDays(baseIso: string, days: number): string {
+  const date = new Date(baseIso);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString();
+}
+
+function roundMoney(value: number): number {
+  return Number(value.toFixed(2));
+}
+
+function buildLineItem(input: z.infer<typeof quoteLineItemInputSchema>, index: number): LineItem {
+  if (input.kind === "catalog") {
+    const catalogCode = input.catalogCode?.trim();
+    const catalogItem = catalogCode ? getPoolLeakCatalogItem(catalogCode) : null;
+    if (!catalogItem) {
+      throw new RailError(`Catalog item ${catalogCode ?? "unknown"} was not found.`, { provider: "native", op: "buildQuoteLineItem", status: 400 });
+    }
+    const unitPrice = roundMoney(input.unitPrice ?? Math.round(catalogItem.unitPriceCents) / 100);
+    return {
+      id: input.code ? `line_${input.code.toLowerCase()}_${index + 1}` : `line_${catalogItem.code.toLowerCase()}_${index + 1}`,
+      code: catalogItem.code,
+      name: catalogItem.name,
+      description: input.description,
+      quantity: input.quantity,
+      unitPrice,
+      total: roundMoney(input.quantity * unitPrice),
+      source: "catalog",
+      catalogCode: catalogItem.code,
+      clientSelectable: input.clientSelectable,
+      defaultSelected: input.defaultSelected
+    };
+  }
+  const code = input.code?.trim() || `CUSTOM-${index + 1}`;
+  const unitPrice = roundMoney(input.unitPrice ?? 0);
+  return {
+    id: `line_${code.toLowerCase().replace(/[^a-z0-9]+/g, "_")}_${index + 1}`,
+    code,
+    name: input.name ?? "Custom line item",
+    description: input.description,
+    quantity: input.quantity,
+    unitPrice,
+    total: roundMoney(input.quantity * unitPrice),
+    source: "custom",
+    clientSelectable: input.clientSelectable,
+    defaultSelected: input.defaultSelected
+  };
+}
+
+function buildLineItems(inputs: z.infer<typeof quoteLineItemInputSchema>[]): LineItem[] {
+  return inputs.map((input, index) => buildLineItem(input, index));
+}
+
+function discountAmount(subtotal: number, discount?: QuoteDiscount | undefined): number {
+  if (!discount) {
+    return 0;
+  }
+  if (discount.kind === "percent") {
+    return roundMoney(subtotal * (discount.value / 100));
+  }
+  return roundMoney(discount.value);
+}
+
+export function calculateQuoteTotals(lineItems: LineItem[], discount?: QuoteDiscount | undefined, taxRate = 0): QuoteTotals {
+  const subtotal = roundMoney(lineItems.reduce((sum, item) => sum + item.total, 0));
+  const discountValue = Math.min(subtotal, discountAmount(subtotal, discount));
+  const taxable = Math.max(0, subtotal - discountValue);
+  const tax = roundMoney(taxable * (taxRate / 100));
+  return {
+    subtotal,
+    ...(discountValue > 0 ? { discount: discountValue } : {}),
+    tax,
+    total: roundMoney(taxable + tax),
+    ...(taxRate > 0 ? { taxRate } : {})
+  };
+}
+
+function mergedApprovalRules(base: QuoteApprovalRules, override?: {
+  requireSignature?: boolean | undefined;
+  requireDeposit?: boolean | undefined;
+  requireCardOnFile?: boolean | undefined;
+  depositKind?: QuoteApprovalRules["depositKind"] | undefined;
+  depositValue?: number | undefined;
+} | undefined): QuoteApprovalRules {
+  const sanitized = override ? {
+    ...(override.requireSignature !== undefined ? { requireSignature: override.requireSignature } : {}),
+    ...(override.requireDeposit !== undefined ? { requireDeposit: override.requireDeposit } : {}),
+    ...(override.requireCardOnFile !== undefined ? { requireCardOnFile: override.requireCardOnFile } : {}),
+    ...(override.depositKind !== undefined ? { depositKind: override.depositKind } : {}),
+    ...(override.depositValue !== undefined ? { depositValue: override.depositValue } : {})
+  } : {};
+  return {
+    ...base,
+    ...sanitized
+  };
+}
+
+function quoteDepositFromRules(totals: QuoteTotals, rules: QuoteApprovalRules): QuoteDepositBridge | undefined {
+  if (!rules.requireDeposit) {
+    return undefined;
+  }
+  const kind = rules.depositKind ?? "percent";
+  const rawAmount = kind === "percent"
+    ? totals.total * ((rules.depositValue ?? 0) / 100)
+    : (rules.depositValue ?? 0);
+  return {
+    required: true,
+    kind,
+    amount: roundMoney(rawAmount)
+  };
+}
+
+export async function ensureQuoteConfiguration(
+  repository: Pick<NativeCrmRepository, "getCrmSettings" | "saveCrmSettings" | "listQuoteTemplates" | "upsertQuoteTemplate">,
+  tenantId: string
+): Promise<{ settings: CrmSettings; templates: QuoteTemplate[] }> {
+  const settings = await repository.getCrmSettings(tenantId);
+  await repository.saveCrmSettings(settings);
+  const templates = await repository.listQuoteTemplates(tenantId);
+  for (const template of templates) {
+    await repository.upsertQuoteTemplate(template);
+  }
+  return { settings, templates };
+}
+
+function selectedTemplate(templates: QuoteTemplate[], templateId?: string | undefined): QuoteTemplate | undefined {
+  if (!templateId) {
+    return undefined;
+  }
+  return templates.find((template) => template.id === templateId);
+}
+
+function quoteTerms(settings: CrmSettings, template: QuoteTemplate | undefined, override?: string | undefined): string {
+  return override ?? template?.terms ?? settings.quoteDefaults.terms;
+}
+
+function quotePaymentSchedule(template: QuoteTemplate | undefined, override?: QuoteComposerInput["paymentSchedule"] | undefined) {
+  return override ?? template?.defaultPaymentSchedule;
+}
+
+function quoteExpiry(settings: CrmSettings, template: QuoteTemplate | undefined, input: QuoteComposerInput, timestamp: string): string {
+  if (input.expiresAt) {
+    return input.expiresAt;
+  }
+  const days = input.expiryDays ?? template?.expiryDays ?? settings.quoteDefaults.expiryDays;
+  return addDays(timestamp, days);
+}
+
+export async function materializeQuoteRecord(
+  repository: Pick<NativeCrmRepository, "getCrmSettings" | "saveCrmSettings" | "listQuoteTemplates" | "upsertQuoteTemplate" | "reserveDocumentNumber">,
+  input: QuoteComposerInput,
+  options: {
+    existingId?: string | undefined;
+    existingNumber?: string | undefined;
+    status?: QuoteStatus | undefined;
+    intake?: IntakeSnapshot | undefined;
+    version?: number | undefined;
+  } = {}
+): Promise<Quote> {
+  const timestamp = now();
+  const { settings, templates } = await ensureQuoteConfiguration(repository, input.tenantId);
+  const template = selectedTemplate(templates, input.templateId);
+  const defaultLineItems = template?.defaultLineItems ?? EMPTY_LINE_ITEMS;
+  const lineItems = buildLineItems(input.items.length ? input.items : defaultLineItems.map((item) => ({
+    kind: item.source === "custom" ? "custom" : "catalog",
+    catalogCode: item.catalogCode,
+    code: item.code,
+    name: item.name,
+    description: item.description,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    clientSelectable: item.clientSelectable,
+    defaultSelected: item.defaultSelected
+  })));
+  const approvalRules = mergedApprovalRules(template?.defaultApprovalRules ?? settings.quoteDefaults.approvalRules, input.approvalRules);
+  const totals = calculateQuoteTotals(lineItems, input.discount, input.taxRate ?? 0);
+  const number = options.existingNumber ?? await reserveDocumentNumber(repository, input.tenantId, "quote");
+  const quote: Quote = {
+    id: options.existingId ?? `quote_${randomUUID()}`,
+    tenantId: input.tenantId,
+    number,
+    clientId: input.clientId,
+    ...(input.jobId ? { jobId: input.jobId } : {}),
+    ...(input.requestId ? { requestId: input.requestId } : {}),
+    ...(input.templateId ? { templateId: input.templateId } : template?.id ? { templateId: template.id } : {}),
+    version: options.version ?? 1,
+    status: options.status ?? "draft",
+    title: input.title.trim(),
+    lineItems,
+    totals,
+    approvalRules,
+    ...(input.discount ? { discount: input.discount } : {}),
+    expiresAt: quoteExpiry(settings, template, input, timestamp),
+    ...(quoteDepositFromRules(totals, approvalRules) ? { deposit: quoteDepositFromRules(totals, approvalRules) } : {}),
+    ...(quotePaymentSchedule(template, input.paymentSchedule) ? { paymentSchedule: quotePaymentSchedule(template, input.paymentSchedule) } : {}),
+    terms: quoteTerms(settings, template, input.terms),
+    portal: {},
+    delivery: [],
+    changeRequests: [],
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    ...(options.intake ?? input.intake ? { intake: options.intake ?? input.intake } : {})
+  };
+  return quoteSchema.parse(quote) as Quote;
+}
+
+export function quotePreviewBody(quote: Quote): string {
+  const lines = quote.lineItems.map((item) => `${item.code} ${item.name} x${item.quantity}: $${item.total.toFixed(2)}`);
+  const ruleBits = [
+    quote.approvalRules.requireSignature ? "signature required" : "signature optional",
+    quote.approvalRules.requireDeposit ? `deposit required (${quote.deposit?.kind === "percent" ? `${quote.approvalRules.depositValue ?? 0}%` : `$${(quote.deposit?.amount ?? 0).toFixed(2)}`})` : "no deposit required",
+    quote.approvalRules.requireCardOnFile ? "card on file required" : "card on file optional"
+  ];
+  return [
+    quote.number ? `Quote #: ${quote.number}` : "",
+    `Title: ${quote.title}`,
+    ...lines,
+    quote.discount ? `Discount: ${quote.discount.kind === "percent" ? `${quote.discount.value}%` : `$${quote.discount.value.toFixed(2)}`}` : "",
+    quote.totals.taxRate ? `Tax rate: ${quote.totals.taxRate}%` : "",
+    `Total: $${quote.totals.total.toFixed(2)}`,
+    quote.expiresAt ? `Expires: ${quote.expiresAt}` : "",
+    `Approval rules: ${ruleBits.join(", ")}`
+  ].filter(Boolean).join("\n");
+}
+
+export function hashPortalToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export function createPortalToken(): string {
+  return randomBytes(18).toString("hex");
+}
+
+export function portalUrlForQuote(quote: Quote, token: string): string {
+  return `/portal/quotes/${encodeURIComponent(quote.id)}?tenantId=${encodeURIComponent(quote.tenantId)}&token=${encodeURIComponent(token)}`;
+}
+
+export function quoteLocked(quote: Quote): boolean {
+  return quote.status === "approved" || quote.status === "approved_internal" || quote.status === "archived";
+}
+
+export function quoteApprovalBlockedReason(quote: Quote, timestamp = now()): string | null {
+  if (quote.status === "archived") {
+    return "Archived quotes cannot be approved.";
+  }
+  if (quote.status === "expired") {
+    return "Expired quotes cannot be approved until they are renewed.";
+  }
+  if (quote.expiresAt && new Date(quote.expiresAt).getTime() < new Date(timestamp).getTime()) {
+    return "Expired quotes cannot be approved until they are renewed.";
+  }
+  if (quote.status === "approved" || quote.status === "approved_internal") {
+    return "Approved quotes are locked.";
+  }
+  if (quote.status === "declined") {
+    return "Declined quotes cannot be approved.";
+  }
+  return null;
+}
+
+export function derivedQuoteStatus(quote: Quote, timestamp = now()): QuoteStatus {
+  if (
+    quote.expiresAt
+    && ["sent", "change_requested", "pending_approval"].includes(quote.status)
+    && new Date(quote.expiresAt).getTime() < new Date(timestamp).getTime()
+  ) {
+    return "expired";
+  }
+  return quote.status;
+}
+
+export async function syncExpiredQuote(
+  repository: Pick<NativeCrmRepository, "updateQuote">,
+  quote: Quote,
+  timestamp = now()
+): Promise<Quote> {
+  const status = derivedQuoteStatus(quote, timestamp);
+  if (status === quote.status) {
+    return quote;
+  }
+  return repository.updateQuote(quote.id, { status, updatedAt: timestamp });
+}
+
+export function archiveQuoteVersion(quote: Quote, reason: "renewed" | "edited_before_send", timestamp = now()) {
+  return [
+    ...(quote.versions ?? []),
+    {
+      version: quote.version ?? 1,
+      archivedAt: timestamp,
+      reason,
+      title: quote.title,
+      lineItems: quote.lineItems,
+      totals: quote.totals,
+      status: quote.status,
+      ...(quote.expiresAt ? { expiresAt: quote.expiresAt } : {}),
+      ...(quote.terms ? { terms: quote.terms } : {}),
+      ...(quote.discount ? { discount: quote.discount } : {}),
+      approvalRules: quote.approvalRules
+    }
+  ];
+}
+
+export function quoteDeliveryMessage(quote: Quote, mode: "email" | "sms", portalUrl: string): { subject: string; bodyText: string } {
+  const number = quote.number ? ` ${quote.number}` : "";
+  const summary = `Quote${number}: ${quote.title}`;
+  if (mode === "sms") {
+    return {
+      subject: summary,
+      bodyText: `${summary}\nReview and approve here: ${portalUrl}`
+    };
+  }
+  return {
+    subject: summary,
+    bodyText: [
+      `Your ${summary.toLowerCase()} is ready to review.`,
+      `Total: $${quote.totals.total.toFixed(2)}`,
+      quote.expiresAt ? `Expires: ${quote.expiresAt}` : "",
+      `Open the quote here: ${portalUrl}`
+    ].filter(Boolean).join("\n")
+  };
+}
+
+export type QuoteCreateApprovalArgs = z.infer<typeof quoteCreateApprovalArgsSchema>;

@@ -1,21 +1,30 @@
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
 import {
   clientSchema,
+  crmSettingsSchema,
   invoiceSchema,
   jobSchema,
   propertySchema,
   quoteSchema,
+  quoteTemplateSchema,
+  requestFormSchema,
+  serviceRequestSchema,
   type Client,
+  type CrmSettings,
+  type DocumentSequenceKind,
   type Invoice,
   type Job,
   type Property,
-  type Quote
+  type Quote,
+  type QuoteTemplate,
+  type RequestForm,
+  type ServiceRequest
 } from "@nexteam/core";
 import { RailError } from "@nexteam/core";
-import type { NativeCrmRepository } from "@nexteam/providers";
+import { defaultCrmSettings, defaultQuoteTemplates, type NativeCrmRepository } from "@nexteam/providers";
 import type { ZodSchema } from "zod";
 
-type CollectionName = "clients" | "properties" | "jobs" | "quotes" | "invoices";
+type CollectionName = "clients" | "properties" | "requests" | "requestForms" | "crmSettings" | "quoteTemplates" | "jobs" | "quotes" | "invoices";
 
 function removeUndefined(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -51,6 +60,104 @@ export class FirestoreNativeCrmRepository implements NativeCrmRepository {
     return (await this.listByTenant("properties", tenantId, propertySchema)) as Property[];
   }
 
+  async listRequests(tenantId: string): Promise<ServiceRequest[]> {
+    return (await this.listByTenant("requests", tenantId, serviceRequestSchema))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt)) as ServiceRequest[];
+  }
+
+  async getRequest(tenantId: string, id: string): Promise<ServiceRequest | null> {
+    const snapshot = await this.db.collection("requests").doc(id).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+    const parsed = serviceRequestSchema.parse(snapshot.data()) as ServiceRequest;
+    return parsed.tenantId === tenantId ? parsed : null;
+  }
+
+  async createRequest(request: ServiceRequest): Promise<ServiceRequest> {
+    const parsed = serviceRequestSchema.parse(request) as ServiceRequest;
+    await this.db.collection("requests").doc(parsed.id).set(asDocumentData(parsed));
+    return parsed;
+  }
+
+  async updateRequest(id: string, patch: Partial<ServiceRequest>): Promise<ServiceRequest> {
+    const ref = this.db.collection("requests").doc(id);
+    const snapshot = await ref.get();
+    if (!snapshot.exists) {
+      throw new RailError(`Native request ${id} was not found.`, { provider: "native", op: "updateRequest", status: 404 });
+    }
+    const next = serviceRequestSchema.parse({ ...snapshot.data(), ...patch }) as ServiceRequest;
+    await ref.set(asDocumentData(next));
+    return next;
+  }
+
+  async listRequestForms(tenantId: string): Promise<RequestForm[]> {
+    return (await this.listByTenant("requestForms", tenantId, requestFormSchema))
+      .sort((left, right) => left.title.localeCompare(right.title)) as RequestForm[];
+  }
+
+  async getRequestForm(tenantId: string, id: string): Promise<RequestForm | null> {
+    const snapshot = await this.db.collection("requestForms").doc(id).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+    const parsed = requestFormSchema.parse(snapshot.data()) as RequestForm;
+    return parsed.tenantId === tenantId ? parsed : null;
+  }
+
+  async getRequestFormBySlug(tenantId: string, slug: string): Promise<RequestForm | null> {
+    const snapshot = await this.db
+      .collection("requestForms")
+      .where("tenantId", "==", tenantId)
+      .where("slug", "==", slug)
+      .limit(1)
+      .get();
+    const doc = snapshot.docs[0];
+    return doc ? (requestFormSchema.parse(doc.data()) as RequestForm) : null;
+  }
+
+  async upsertRequestForm(form: RequestForm): Promise<RequestForm> {
+    const parsed = requestFormSchema.parse(form) as RequestForm;
+    await this.db.collection("requestForms").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    return parsed;
+  }
+
+  async getCrmSettings(tenantId: string): Promise<CrmSettings> {
+    const snapshot = await this.db.collection("crmSettings").doc(tenantId).get();
+    if (!snapshot.exists) {
+      return defaultCrmSettings(tenantId);
+    }
+    const parsed = crmSettingsSchema.safeParse(snapshot.data());
+    return parsed.success ? parsed.data as CrmSettings : defaultCrmSettings(tenantId);
+  }
+
+  async saveCrmSettings(settings: CrmSettings): Promise<CrmSettings> {
+    const parsed = crmSettingsSchema.parse(settings) as CrmSettings;
+    await this.db.collection("crmSettings").doc(parsed.tenantId).set(asDocumentData(parsed), { merge: true });
+    return parsed;
+  }
+
+  async listQuoteTemplates(tenantId: string): Promise<QuoteTemplate[]> {
+    const templates = (await this.listByTenant("quoteTemplates", tenantId, quoteTemplateSchema))
+      .sort((left, right) => left.name.localeCompare(right.name)) as QuoteTemplate[];
+    return templates.length ? templates : defaultQuoteTemplates(tenantId);
+  }
+
+  async getQuoteTemplate(tenantId: string, id: string): Promise<QuoteTemplate | null> {
+    const snapshot = await this.db.collection("quoteTemplates").doc(id).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+    const parsed = quoteTemplateSchema.parse(snapshot.data()) as QuoteTemplate;
+    return parsed.tenantId === tenantId ? parsed : null;
+  }
+
+  async upsertQuoteTemplate(template: QuoteTemplate): Promise<QuoteTemplate> {
+    const parsed = quoteTemplateSchema.parse(template) as QuoteTemplate;
+    await this.db.collection("quoteTemplates").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    return parsed;
+  }
+
   async listJobs(tenantId: string): Promise<Job[]> {
     return (await this.listByTenant("jobs", tenantId, jobSchema)) as Job[];
   }
@@ -61,6 +168,15 @@ export class FirestoreNativeCrmRepository implements NativeCrmRepository {
 
   async listInvoices(tenantId: string): Promise<Invoice[]> {
     return (await this.listByTenant("invoices", tenantId, invoiceSchema)) as Invoice[];
+  }
+
+  async getQuote(tenantId: string, id: string): Promise<Quote | null> {
+    const snapshot = await this.db.collection("quotes").doc(id).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+    const parsed = quoteSchema.parse(snapshot.data()) as Quote;
+    return parsed.tenantId === tenantId ? parsed : null;
   }
 
   async createClient(client: Client): Promise<Client> {
@@ -93,7 +209,7 @@ export class FirestoreNativeCrmRepository implements NativeCrmRepository {
 
   async createInvoice(invoice: Invoice): Promise<Invoice> {
     await this.db.collection("invoices").doc(invoice.id).set(asDocumentData(invoice));
-    return invoiceSchema.parse(invoice);
+    return invoiceSchema.parse(invoice) as Invoice;
   }
 
   async updateQuote(id: string, patch: Partial<Quote>): Promise<Quote> {
@@ -127,5 +243,24 @@ export class FirestoreNativeCrmRepository implements NativeCrmRepository {
     const next = jobSchema.parse({ ...snapshot.data(), ...patch }) as Job;
     await ref.set(asDocumentData(next));
     return next;
+  }
+
+  async reserveDocumentNumber(tenantId: string, kind: DocumentSequenceKind): Promise<string> {
+    const current = await this.getCrmSettings(tenantId);
+    const rule = current.documentNumbering[kind];
+    const serial = String(rule.nextValue).padStart(rule.padWidth, "0");
+    const number = rule.prefix.trim() ? `${rule.prefix}${rule.separator}${serial}` : serial;
+    await this.saveCrmSettings({
+      ...current,
+      documentNumbering: {
+        ...current.documentNumbering,
+        [kind]: {
+          ...rule,
+          nextValue: rule.nextValue + 1
+        }
+      },
+      updatedAt: new Date().toISOString()
+    });
+    return number;
   }
 }

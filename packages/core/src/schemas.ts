@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { JobStatus } from "./types.js";
 
 const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
@@ -24,9 +25,11 @@ export const addressSchema = z.object({
 
 export const artifactKindSchema = z.enum([
   "client",
+  "job",
   "tenant_provisioning",
   "email",
   "sms",
+  "payment",
   "gbp_post",
   "social_post",
   "article",
@@ -193,6 +196,74 @@ export const contactChannelSchema = z.enum(["email", "sms", "both", "none"]);
 export const phoneLabelSchema = z.enum(["Main", "Work", "Mobile", "Home", "Fax", "Other"]);
 export const emailLabelSchema = z.enum(["Main", "Work", "Personal", "Other"]);
 export const smsCapabilitySchema = z.enum(["mobile", "landline", "fax", "invalid", "unknown"]);
+export const documentSequenceKindSchema = z.enum(["request", "quote", "job", "invoice"]);
+export const invoiceStatusSchema = z.enum(["draft", "sent", "awaiting_payment", "partial_pay", "paid", "void", "bad_debt"]);
+export const quoteStatusSchema = z.enum(["draft", "pending_approval", "sent", "change_requested", "approved", "approved_internal", "declined", "expired", "archived"]);
+export const quoteDeliveryModeSchema = z.enum(["email", "sms", "mark_sent"]);
+export const quoteSignatureModeSchema = z.enum(["drawn", "typed"]);
+export const quoteDepositKindSchema = z.enum(["amount", "percent"]);
+export const invoiceDeliveryModeSchema = z.enum(["email", "sms", "mark_sent"]);
+export const paymentScheduleTriggerSchema = z.enum(["on_approval", "on_job_close", "on_date"]);
+export const paymentScheduleAmountKindSchema = z.enum(["amount", "percent"]);
+export const receiptReviewChannelSchema = z.enum(["email", "sms"]);
+
+export const documentNumberingRuleSchema = z.object({
+  prefix: z.string(),
+  separator: z.string(),
+  padWidth: z.number().int().min(1),
+  nextValue: z.number().int().min(1)
+});
+
+export const documentNumberingSettingsSchema = z.object({
+  request: documentNumberingRuleSchema,
+  quote: documentNumberingRuleSchema,
+  job: documentNumberingRuleSchema,
+  invoice: documentNumberingRuleSchema
+});
+
+export const quoteDiscountSchema = z.object({
+  kind: z.enum(["amount", "percent"]),
+  value: z.number().min(0)
+});
+
+export const paymentScheduleMilestoneSchema = z.object({
+  id: idSchema,
+  label: z.string().min(1),
+  trigger: paymentScheduleTriggerSchema,
+  dueAt: z.string().optional(),
+  amountKind: paymentScheduleAmountKindSchema,
+  amount: z.number().min(0),
+  note: z.string().optional()
+});
+
+export const paymentSchedulePlanSchema = z.object({
+  enabled: z.boolean(),
+  milestones: z.array(paymentScheduleMilestoneSchema).default([]),
+  updatedAt: z.string().optional()
+});
+
+export const ledgerStatusEntrySchema = z.object({
+  status: z.string().min(1),
+  changedAt: z.string().min(1),
+  changedBy: idSchema.optional(),
+  note: z.string().optional()
+});
+
+export const quoteApprovalRulesSchema = z.object({
+  requireSignature: z.boolean(),
+  requireDeposit: z.boolean(),
+  requireCardOnFile: z.boolean(),
+  depositKind: quoteDepositKindSchema.optional(),
+  depositValue: z.number().min(0).optional()
+});
+
+export const quoteTotalsSchema = z.object({
+  subtotal: z.number(),
+  discount: z.number().optional(),
+  tax: z.number(),
+  total: z.number(),
+  taxRate: z.number().min(0).optional()
+});
 
 export const phoneContactSchema = z.object({
   id: idSchema.optional(),
@@ -287,16 +358,118 @@ export const propertySchema = z.object({
   externalIds: z.object({ jobber: z.string().optional() }).optional()
 });
 
+export const intakeSurfaceSchema = z.enum(["request", "quote", "job", "visit", "invoice"]);
+export const intakeFieldTypeSchema = z.enum(["text", "textarea", "email", "phone", "select", "boolean", "number"]);
+export const intakeFieldGroupSchema = z.enum(["contact", "property", "pool", "safety", "service", "notes"]);
+export const requestStatusSchema = z.enum(["new", "archived", "converted_to_quote", "converted_to_job"]);
+export const requestSourceSchema = z.enum(["website_form", "office_existing_client", "office_new_client", "legacy_lead_backfill"]);
+export const requestMatchTypeSchema = z.enum(["none", "exact_email", "exact_phone", "selected_existing_client", "selected_existing_property"]);
+
+export const intakeFieldVisibilitySchema = z.object({
+  request: z.boolean(),
+  quote: z.boolean(),
+  job: z.boolean(),
+  visit: z.boolean(),
+  invoice: z.boolean()
+});
+
+export const intakeFieldDefinitionSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  type: intakeFieldTypeSchema,
+  group: intakeFieldGroupSchema,
+  required: z.boolean().optional(),
+  options: z.array(z.string().min(1)).optional(),
+  helpText: z.string().optional(),
+  prominent: z.boolean().optional()
+});
+
+export const intakeFieldValueSchema = intakeFieldDefinitionSchema.extend({
+  value: z.union([z.string(), z.number(), z.boolean()]),
+  visibility: intakeFieldVisibilitySchema
+});
+
+export const intakeSnapshotSchema = z.object({
+  narrative: z.string().optional(),
+  fieldValues: z.array(intakeFieldValueSchema),
+  fieldIndex: z.record(z.union([z.string(), z.number(), z.boolean()]))
+});
+
+export const requestFormSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  slug: z.string().min(1),
+  title: z.string().min(1),
+  intro: z.string().optional(),
+  active: z.boolean(),
+  fieldDefinitions: z.array(intakeFieldDefinitionSchema),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1)
+});
+
+export const serviceRequestMatchSchema = z.object({
+  matchedClientId: idSchema.optional(),
+  matchedPropertyId: idSchema.optional(),
+  matchedBy: requestMatchTypeSchema,
+  matchedValue: z.string().optional(),
+  reviewRequired: z.boolean(),
+  reviewedAt: z.string().optional()
+});
+
+export const serviceRequestSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  number: z.string().min(1).optional(),
+  formId: idSchema.optional(),
+  formSlug: z.string().min(1).optional(),
+  source: requestSourceSchema,
+  status: requestStatusSchema,
+  subject: z.string().min(1),
+  clientName: z.string().min(1),
+  email: z.string().email().optional(),
+  phone: z.string().min(7).optional(),
+  propertyAddress: addressSchema.optional(),
+  narrative: z.string(),
+  consent: z.object({ email: z.boolean(), sms: z.boolean() }),
+  intake: intakeSnapshotSchema,
+  match: serviceRequestMatchSchema,
+  selectedClientId: idSchema.optional(),
+  selectedPropertyId: idSchema.optional(),
+  convertedQuoteId: idSchema.optional(),
+  convertedJobId: idSchema.optional(),
+  sourceLeadId: idSchema.optional(),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1),
+  archivedAt: z.string().optional(),
+  reopenedAt: z.string().optional(),
+  notifications: z.object({
+    adminNotifiedAt: z.string().optional(),
+    clientConfirmationAt: z.string().optional()
+  }).optional()
+});
+
 export const lineItemSchema = z.object({
   id: idSchema,
   code: z.string(),
   name: z.string(),
+  description: z.string().optional(),
   quantity: z.number(),
   unitPrice: z.number(),
-  total: z.number()
+  total: z.number(),
+  source: z.enum(["catalog", "custom"]).optional(),
+  catalogCode: z.string().optional(),
+  clientSelectable: z.boolean().optional(),
+  defaultSelected: z.boolean().optional()
 });
 
-export const jobStatusSchema = z.enum([
+const rawJobStatusSchema = z.enum([
+  "Upcoming",
+  "Today",
+  "Late",
+  "Unscheduled",
+  "Action Required",
+  "Requires Invoicing",
+  "Archived",
   "lead",
   "quoted",
   "scheduled",
@@ -306,50 +479,473 @@ export const jobStatusSchema = z.enum([
   "paid"
 ]);
 
+function normalizedStoredJobStatus(value: z.infer<typeof rawJobStatusSchema>): JobStatus {
+  switch (value) {
+    case "lead":
+    case "quoted":
+      return "Unscheduled";
+    case "scheduled":
+      return "Upcoming";
+    case "in_progress":
+      return "Today";
+    case "complete":
+      return "Action Required";
+    case "invoiced":
+    case "paid":
+      return "Archived";
+    default:
+      return value;
+  }
+}
+
+export const jobStatusSchema = rawJobStatusSchema.transform((value) => normalizedStoredJobStatus(value)) as z.ZodType<JobStatus>;
+
 export const jobSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
+  number: z.string().min(1).optional(),
   clientId: idSchema,
   propertyId: idSchema.optional(),
+  requestId: idSchema.optional(),
+  quoteId: idSchema.optional(),
   status: jobStatusSchema,
   title: z.string(),
   startAt: z.string().optional(),
   endAt: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  closedAt: z.string().optional(),
+  closedBy: idSchema.optional(),
+  archivedAt: z.string().optional(),
+  archivedBy: idSchema.optional(),
   lineItems: z.array(lineItemSchema),
-  totals: z.object({ subtotal: z.number(), tax: z.number(), total: z.number() }),
+  totals: quoteTotalsSchema,
+  paymentSchedule: paymentSchedulePlanSchema.optional(),
+  intake: intakeSnapshotSchema.optional(),
   externalIds: z.object({ jobber: z.string().optional() }).optional()
+});
+
+export const quotePortalAccessSchema = z.object({
+  tokenHash: z.string().optional(),
+  tokenIssuedAt: z.string().optional(),
+  viewedAt: z.string().optional(),
+  lastApprovalAttemptAt: z.string().optional()
+});
+
+export const quoteSignatureRecordSchema = z.object({
+  mode: quoteSignatureModeSchema,
+  typedName: z.string().optional(),
+  drawnDataUrl: z.string().optional(),
+  signedAt: z.string(),
+  ipAddress: z.string()
+});
+
+export const quoteDeliveryRecordSchema = z.object({
+  id: idSchema,
+  mode: quoteDeliveryModeSchema,
+  sentAt: z.string(),
+  target: z.string().optional(),
+  sentBy: z.string().optional(),
+  receiptId: idSchema.optional(),
+  note: z.string().optional()
+});
+
+export const quoteLineCommentSchema = z.object({
+  lineItemId: idSchema,
+  comment: z.string().min(1)
+});
+
+export const quoteChangeRequestSchema = z.object({
+  id: idSchema,
+  requestedAt: z.string(),
+  requestedBy: z.string().optional(),
+  lineComments: z.array(quoteLineCommentSchema),
+  note: z.string().optional(),
+  resolvedAt: z.string().optional()
+});
+
+export const quoteDepositBridgeSchema = z.object({
+  required: z.boolean(),
+  kind: quoteDepositKindSchema,
+  amount: z.number().min(0),
+  capturedAt: z.string().optional(),
+  cardholderName: z.string().optional(),
+  cardBrand: z.string().optional(),
+  cardLast4: z.string().optional(),
+  cardOnFileAuthorized: z.boolean().optional(),
+  autoSavedCardOnFile: z.boolean().optional()
+});
+
+export const quoteVersionSnapshotSchema = z.object({
+  version: z.number().int().min(1),
+  archivedAt: z.string(),
+  reason: z.enum(["renewed", "edited_before_send"]),
+  title: z.string(),
+  lineItems: z.array(lineItemSchema),
+  totals: quoteTotalsSchema,
+  status: quoteStatusSchema,
+  expiresAt: z.string().optional(),
+  terms: z.string().optional(),
+  discount: quoteDiscountSchema.optional(),
+  approvalRules: quoteApprovalRulesSchema
 });
 
 export const quoteSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
+  number: z.string().min(1).optional(),
   clientId: idSchema,
   jobId: idSchema.optional(),
-  status: z.enum(["draft", "pending_approval", "sent", "signed", "declined"]),
+  requestId: idSchema.optional(),
+  convertedJobId: idSchema.optional(),
+  templateId: idSchema.optional(),
+  version: z.number().int().min(1).optional(),
+  status: quoteStatusSchema,
   title: z.string(),
   lineItems: z.array(lineItemSchema),
-  totals: z.object({ subtotal: z.number(), tax: z.number(), total: z.number() }),
+  totals: quoteTotalsSchema,
+  approvalRules: quoteApprovalRulesSchema,
+  discount: quoteDiscountSchema.optional(),
+  expiresAt: z.string().optional(),
+  sentAt: z.string().optional(),
+  approvedAt: z.string().optional(),
+  approvedBy: z.string().optional(),
+  approvedByRole: z.enum(["client", "OWNER", "OFFICE_ADMIN"]).optional(),
+  archivedAt: z.string().optional(),
   approvalId: idSchema.optional(),
   pdfRef: z.string().optional(),
-  portalTokenHash: z.string().optional(),
-  signedBy: z.string().optional(),
-  signedAt: z.string().optional(),
-  signatureIp: z.string().optional(),
+  portal: quotePortalAccessSchema.optional(),
+  signature: quoteSignatureRecordSchema.optional(),
+  delivery: z.array(quoteDeliveryRecordSchema).optional(),
+  changeRequests: z.array(quoteChangeRequestSchema).optional(),
+  deposit: quoteDepositBridgeSchema.optional(),
+  paymentSchedule: paymentSchedulePlanSchema.optional(),
+  terms: z.string().optional(),
+  versions: z.array(quoteVersionSnapshotSchema).optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  intake: intakeSnapshotSchema.optional(),
   externalIds: z.object({ jobber: z.string().optional(), stripe: z.string().optional() }).optional()
+});
+
+export const quoteTemplateSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  name: z.string().min(1),
+  description: z.string().optional(),
+  titlePrefix: z.string().optional(),
+  defaultLineItems: z.array(lineItemSchema).optional(),
+  defaultApprovalRules: quoteApprovalRulesSchema,
+  defaultPaymentSchedule: paymentSchedulePlanSchema.optional(),
+  expiryDays: z.number().int().min(1).optional(),
+  terms: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+export const invoiceDeliveryPreferencesSchema = z.object({
+  emailIncludePdf: z.boolean(),
+  emailIncludeSummary: z.boolean(),
+  emailIncludePayLink: z.boolean(),
+  smsIncludeSummary: z.boolean(),
+  smsIncludePayLink: z.boolean(),
+  smsIncludeHostedLink: z.boolean()
+});
+
+export const crmSettingsSchema = z.object({
+  tenantId: idSchema,
+  documentNumbering: documentNumberingSettingsSchema,
+  quoteDefaults: z.object({
+    expiryDays: z.number().int().min(1),
+    autoSaveCardOnDeposit: z.boolean(),
+    approvalRules: quoteApprovalRulesSchema,
+    terms: z.string()
+  }),
+  invoiceDefaults: z.object({
+    dueDays: z.number().int().min(0),
+    terms: z.string(),
+    delivery: invoiceDeliveryPreferencesSchema
+  }).default({
+    dueDays: 0,
+    terms: "Payment is due as scheduled on the invoice. Reach out to the office before the due date if anything needs to be reviewed.",
+    delivery: {
+      emailIncludePdf: true,
+      emailIncludeSummary: true,
+      emailIncludePayLink: true,
+      smsIncludeSummary: true,
+      smsIncludePayLink: true,
+      smsIncludeHostedLink: true
+    }
+  }),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+const rawInvoiceStatusSchema = z.enum(["draft", "sent", "paid", "void", "overdue", "awaiting_payment", "partial_pay", "bad_debt"]);
+
+function normalizedStoredInvoiceStatus(value: z.infer<typeof rawInvoiceStatusSchema>) {
+  if (value === "overdue") {
+    return "awaiting_payment" as const;
+  }
+  return value;
+}
+
+export const paymentProviderSchema = z.enum(["stripe", "paypal", "manual", "quote_bridge"]);
+export const paymentMethodKindSchema = z.enum(["card", "ach", "cash", "check", "bank_transfer", "other", "paypal", "venmo"]);
+export const paymentStatusSchema = z.enum(["pending", "failed", "succeeded", "refunded", "partially_refunded"]);
+export const depositStatusSchema = z.enum(["available", "partially_applied", "applied", "released", "refunded"]);
+export const creditStatusSchema = z.enum(["available", "partially_applied", "applied"]);
+export const refundStatusSchema = z.enum(["pending", "succeeded", "failed"]);
+export const receiptReviewStatusSchema = z.enum(["draft", "ready_to_send", "sent"]);
+export const receiptReviewKindSchema = z.enum(["payment", "refund"]);
+export const receiptAttachmentKindSchema = z.enum(["invoice_pdf", "quote_pdf", "field_report", "photo", "job_file"]);
+
+export const savedBillingCardSchema = z.object({
+  id: idSchema,
+  label: z.string().min(1),
+  cardholderName: z.string().optional(),
+  brand: z.string().optional(),
+  last4: z.string().optional(),
+  reusable: z.boolean(),
+  source: z.enum(["quote_approval", "manual", "migration"]),
+  sourceQuoteId: idSchema.optional(),
+  externalIds: z.object({
+    stripePaymentMethodId: z.string().optional(),
+    paypalVaultTokenId: z.string().optional(),
+    localReusableToken: z.string().optional()
+  }).optional(),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1)
+});
+
+export const clientBillingProfileSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  clientId: idSchema,
+  savedCards: z.array(savedBillingCardSchema),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1)
+});
+
+export const ledgerApplicationSchema = z.object({
+  invoiceId: idSchema,
+  amount: z.number().min(0),
+  appliedAt: z.string().min(1),
+  releasedAt: z.string().optional(),
+  releasedBy: idSchema.optional(),
+  note: z.string().optional()
+});
+
+export const paymentMethodDetailsSchema = z.object({
+  checkNumber: z.string().optional(),
+  bankTransferReference: z.string().optional(),
+  otherReference: z.string().optional(),
+  payerName: z.string().optional(),
+  failureMessage: z.string().optional()
+});
+
+export const paymentSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  clientId: idSchema,
+  invoiceId: idSchema.optional(),
+  quoteId: idSchema.optional(),
+  depositId: idSchema.optional(),
+  provider: paymentProviderSchema,
+  method: paymentMethodKindSchema,
+  status: paymentStatusSchema,
+  amount: z.number().min(0),
+  appliedAmount: z.number().min(0),
+  excessCreditAmount: z.number().min(0).optional(),
+  currency: z.literal("usd"),
+  note: z.string().optional(),
+  capturedAt: z.string().optional(),
+  failedAt: z.string().optional(),
+  savedCardId: idSchema.optional(),
+  methodDetails: paymentMethodDetailsSchema.optional(),
+  cardSummary: z.object({
+    cardholderName: z.string().optional(),
+    brand: z.string().optional(),
+    last4: z.string().optional()
+  }).optional(),
+  externalIds: z.object({
+    stripeCheckoutSessionId: z.string().optional(),
+    stripePaymentIntentId: z.string().optional(),
+    paypalOrderId: z.string().optional(),
+    paypalCaptureId: z.string().optional()
+  }).optional(),
+  statusHistory: z.array(ledgerStatusEntrySchema),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1)
+});
+
+export const depositSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  clientId: idSchema,
+  paymentId: idSchema,
+  quoteId: idSchema.optional(),
+  invoiceId: idSchema.optional(),
+  source: z.enum(["quote_approval", "billing_history"]),
+  amount: z.number().min(0),
+  availableAmount: z.number().min(0),
+  status: depositStatusSchema,
+  applications: z.array(ledgerApplicationSchema),
+  statusHistory: z.array(ledgerStatusEntrySchema),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1)
+});
+
+export const creditSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  clientId: idSchema,
+  invoiceId: idSchema.optional(),
+  paymentId: idSchema.optional(),
+  depositId: idSchema.optional(),
+  source: z.enum(["overpayment", "manual_adjustment", "released_deposit"]),
+  amount: z.number().min(0),
+  availableAmount: z.number().min(0),
+  status: creditStatusSchema,
+  applications: z.array(ledgerApplicationSchema),
+  statusHistory: z.array(ledgerStatusEntrySchema),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1)
+});
+
+export const refundSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  clientId: idSchema,
+  paymentId: idSchema,
+  invoiceId: idSchema.optional(),
+  provider: paymentProviderSchema,
+  method: paymentMethodKindSchema,
+  amount: z.number().min(0),
+  reason: z.string().optional(),
+  status: refundStatusSchema,
+  externalIds: z.object({
+    stripeRefundId: z.string().optional(),
+    paypalRefundId: z.string().optional()
+  }).optional(),
+  statusHistory: z.array(ledgerStatusEntrySchema),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1)
+});
+
+export const receiptReviewAttachmentSchema = z.object({
+  id: idSchema,
+  kind: receiptAttachmentKindSchema,
+  label: z.string().min(1),
+  refId: idSchema.optional(),
+  storageRef: z.string().optional(),
+  mime: z.string().optional()
+});
+
+export const receiptReviewSendRecordSchema = z.object({
+  id: idSchema,
+  channel: receiptReviewChannelSchema,
+  target: z.string().min(1),
+  sentAt: z.string().min(1),
+  receiptId: idSchema.optional()
+});
+
+export const receiptReviewSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  clientId: idSchema,
+  kind: receiptReviewKindSchema,
+  paymentId: idSchema.optional(),
+  refundId: idSchema.optional(),
+  invoiceId: idSchema.optional(),
+  quoteId: idSchema.optional(),
+  jobId: idSchema.optional(),
+  status: receiptReviewStatusSchema,
+  attachments: z.array(receiptReviewAttachmentSchema),
+  subject: z.string().default("Your payment receipt"),
+  bodyText: z.string().default("Attached is your updated receipt and supporting files."),
+  emailRecipients: z.array(z.string().email()).default([]),
+  smsRecipients: z.array(z.string().min(1)).default([]),
+  sendChannels: z.array(receiptReviewChannelSchema).default(["email"]),
+  hostedLink: z.string().default(""),
+  statusHistory: z.array(ledgerStatusEntrySchema),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1),
+  sentAt: z.string().optional(),
+  sendHistory: z.array(receiptReviewSendRecordSchema).optional()
+});
+
+export const invoiceLedgerSummarySchema = z.object({
+  depositApplied: z.number().min(0),
+  creditApplied: z.number().min(0),
+  paymentApplied: z.number().min(0),
+  refundedAmount: z.number().min(0),
+  balanceDue: z.number().min(0),
+  overdue: z.boolean(),
+  writtenOffAmount: z.number().min(0).optional()
+});
+
+export const invoicePortalAccessSchema = z.object({
+  tokenHash: z.string().optional(),
+  tokenIssuedAt: z.string().optional(),
+  viewedAt: z.string().optional(),
+  lastPaymentAttemptAt: z.string().optional()
+});
+
+export const invoiceDeliveryRecordSchema = z.object({
+  id: idSchema,
+  mode: invoiceDeliveryModeSchema,
+  sentAt: z.string().min(1),
+  target: z.string().optional(),
+  sentBy: z.string().optional(),
+  receiptId: z.string().optional(),
+  subject: z.string().optional(),
+  note: z.string().optional(),
+  includePdf: z.boolean().optional(),
+  includeSummary: z.boolean().optional(),
+  includePayLink: z.boolean().optional(),
+  includeHostedLink: z.boolean().optional()
+});
+
+export const invoiceJobReferenceSchema = z.object({
+  jobId: idSchema,
+  number: z.string().min(1).optional(),
+  title: z.string().min(1),
+  amount: z.number().min(0)
 });
 
 export const invoiceSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
+  number: z.string().min(1).optional(),
   clientId: idSchema,
   jobId: idSchema.optional(),
+  jobIds: z.array(idSchema).optional(),
+  jobReferences: z.array(invoiceJobReferenceSchema).optional(),
   quoteId: idSchema.optional(),
-  status: z.enum(["draft", "sent", "paid", "void", "overdue"]),
+  requestId: idSchema.optional(),
+  status: rawInvoiceStatusSchema.transform((value) => normalizedStoredInvoiceStatus(value)),
   title: z.string(),
   lineItems: z.array(lineItemSchema),
-  totals: z.object({ subtotal: z.number(), tax: z.number(), total: z.number() }),
+  totals: quoteTotalsSchema,
+  discount: quoteDiscountSchema.optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  sentAt: z.string().optional(),
   dueAt: z.string().optional(),
   paidAt: z.string().optional(),
+  voidedAt: z.string().optional(),
+  voidedBy: idSchema.optional(),
+  badDebtAt: z.string().optional(),
+  badDebtBy: idSchema.optional(),
+  terms: z.string().optional(),
+  paymentSchedule: paymentSchedulePlanSchema.optional(),
+  deliveryDefaults: invoiceDeliveryPreferencesSchema.optional(),
+  portal: invoicePortalAccessSchema.optional(),
+  delivery: z.array(invoiceDeliveryRecordSchema).optional(),
+  statusHistory: z.array(ledgerStatusEntrySchema).optional(),
+  ledger: invoiceLedgerSummarySchema.optional(),
+  intake: intakeSnapshotSchema.optional(),
   externalIds: z.object({ jobber: z.string().optional(), stripe: z.string().optional() }).optional()
 });
 
@@ -357,11 +953,13 @@ export const visitSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
   jobId: idSchema,
+  requestId: idSchema.optional(),
   start: z.string(),
   end: z.string(),
   assignedTo: z.array(idSchema),
   checklistRef: idSchema.optional(),
-  outcome: z.string().optional()
+  outcome: z.string().optional(),
+  intake: intakeSnapshotSchema.optional()
 });
 
 export const mediaSchema = z.object({
@@ -413,12 +1011,26 @@ export const eventTypeSchema = z.enum([
   "client.created",
   "job.created",
   "job.completed",
+  "job.state_changed",
+  "job.closed",
+  "job.requires_invoicing_cleared",
   "visit.booked",
   "visit.completed",
+  "invoice.reminder_due",
   "media.uploaded",
   "quote.sent",
+  "quote.approved",
   "quote.signed",
+  "quote.change_requested",
+  "quote.renewed",
+  "invoice.created",
   "invoice.paid",
+  "payment.created",
+  "payment.failed",
+  "refund.created",
+  "invoice.voided",
+  "invoice.bad_debt",
+  "receipt.review_created",
   "lead.received",
   "review.received",
   "content.published"
@@ -449,7 +1061,10 @@ export const approvalItemSchema = z.object({
   }),
   status: z.enum(["pending", "approved", "rejected", "executed", "failed"]),
   createdBy: z.enum(["nexi", "system", "user"]),
-  decidedAt: z.string().optional()
+  decidedAt: z.string().optional(),
+  decidedBy: z.string().optional(),
+  executedAt: z.string().optional(),
+  executedBy: z.string().optional()
 });
 
 export const sourceSchema = z.object({
@@ -550,9 +1165,19 @@ export type PlatformBackupRecordDoc = z.infer<typeof platformBackupRecordSchema>
 export type TenantDataExportDoc = z.infer<typeof tenantDataExportSchema>;
 export type ClientDoc = z.infer<typeof clientSchema>;
 export type PropertyDoc = z.infer<typeof propertySchema>;
+export type RequestFormDoc = z.infer<typeof requestFormSchema>;
+export type ServiceRequestDoc = z.infer<typeof serviceRequestSchema>;
 export type JobDoc = z.infer<typeof jobSchema>;
 export type QuoteDoc = z.infer<typeof quoteSchema>;
+export type QuoteTemplateDoc = z.infer<typeof quoteTemplateSchema>;
+export type CrmSettingsDoc = z.infer<typeof crmSettingsSchema>;
 export type InvoiceDoc = z.infer<typeof invoiceSchema>;
+export type ClientBillingProfileDoc = z.infer<typeof clientBillingProfileSchema>;
+export type PaymentDoc = z.infer<typeof paymentSchema>;
+export type DepositDoc = z.infer<typeof depositSchema>;
+export type CreditDoc = z.infer<typeof creditSchema>;
+export type RefundDoc = z.infer<typeof refundSchema>;
+export type ReceiptReviewDoc = z.infer<typeof receiptReviewSchema>;
 export type VisitDoc = z.infer<typeof visitSchema>;
 export type MediaDoc = z.infer<typeof mediaSchema>;
 export type SiteJobBlueprintDoc = z.infer<typeof siteJobBlueprintSchema>;

@@ -1,0 +1,1476 @@
+{
+  "generatedAt": "2026-07-13T22:40:32.928Z",
+  "seededIds": {
+    "quoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+    "mainInvoiceId": "invoice_transcript_main",
+    "voidInvoiceId": "invoice_transcript_void",
+    "badDebtInvoiceId": "invoice_transcript_bad_debt",
+    "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+    "creditId": "credit_fb1d0bb2-1ffc-4a20-bc3c-04bb8c6b206e",
+    "depositId": "deposit_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6"
+  },
+  "transcript": [
+    {
+      "label": "listPayments",
+      "user": "list payments",
+      "assistant": "I found 2 payments.",
+      "toolRuns": [
+        {
+          "name": "listPayments",
+          "result": {
+            "payments": [
+              {
+                "id": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "invoiceId": "invoice_transcript_main",
+                "provider": "manual",
+                "method": "bank_transfer",
+                "status": "succeeded",
+                "amount": 325,
+                "appliedAmount": 300,
+                "excessCreditAmount": 25,
+                "currency": "usd",
+                "capturedAt": "2026-07-13T22:40:32.902Z",
+                "statusHistory": [
+                  {
+                    "status": "succeeded",
+                    "changedAt": "2026-07-13T22:40:32.902Z",
+                    "changedBy": "office_1",
+                    "note": "Payment recorded."
+                  }
+                ],
+                "createdAt": "2026-07-13T22:40:32.902Z",
+                "updatedAt": "2026-07-13T22:40:32.902Z"
+              },
+              {
+                "id": "payment_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "quoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                "provider": "quote_bridge",
+                "method": "card",
+                "status": "succeeded",
+                "amount": 100,
+                "appliedAmount": 0,
+                "currency": "usd",
+                "capturedAt": "2026-07-13T12:00:00.000Z",
+                "savedCardId": "saved_card_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                "cardSummary": {
+                  "cardholderName": "Deborah Justice",
+                  "brand": "Visa",
+                  "last4": "4242"
+                },
+                "statusHistory": [
+                  {
+                    "status": "succeeded",
+                    "changedAt": "2026-07-13T22:40:32.900Z",
+                    "note": "Migrated quote deposit bridge into payment ledger."
+                  }
+                ],
+                "createdAt": "2026-07-13T12:00:00.000Z",
+                "updatedAt": "2026-07-13T22:40:32.899Z"
+              }
+            ]
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+              "label": "Ledger payment payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d"
+            },
+            {
+              "rail": "native",
+              "ref": "payment_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+              "label": "Ledger payment payment_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "getPaymentDetail",
+      "user": "open payment payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+      "assistant": "Payment payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d is succeeded for $325 via manual.",
+      "toolRuns": [
+        {
+          "name": "getPaymentDetail",
+          "result": {
+            "payment": {
+              "id": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+              "tenantId": "aquatrace",
+              "clientId": "client_1",
+              "invoiceId": "invoice_transcript_main",
+              "provider": "manual",
+              "method": "bank_transfer",
+              "status": "succeeded",
+              "amount": 325,
+              "appliedAmount": 300,
+              "excessCreditAmount": 25,
+              "currency": "usd",
+              "capturedAt": "2026-07-13T22:40:32.902Z",
+              "statusHistory": [
+                {
+                  "status": "succeeded",
+                  "changedAt": "2026-07-13T22:40:32.902Z",
+                  "changedBy": "office_1",
+                  "note": "Payment recorded."
+                }
+              ],
+              "createdAt": "2026-07-13T22:40:32.902Z",
+              "updatedAt": "2026-07-13T22:40:32.902Z"
+            },
+            "invoice": {
+              "id": "invoice_transcript_main",
+              "tenantId": "aquatrace",
+              "clientId": "client_1",
+              "quoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+              "status": "paid",
+              "title": "Transcript main invoice",
+              "lineItems": [
+                {
+                  "id": "line_main",
+                  "source": "custom",
+                  "code": "LEAK",
+                  "name": "Leak detection",
+                  "description": "Transcript",
+                  "quantity": 1,
+                  "unitPrice": 400,
+                  "total": 400
+                }
+              ],
+              "totals": {
+                "subtotal": 400,
+                "tax": 0,
+                "total": 400
+              },
+              "createdAt": "2026-07-13T13:00:00.000Z",
+              "ledger": {
+                "depositApplied": 100,
+                "creditApplied": 0,
+                "paymentApplied": 300,
+                "refundedAmount": 0,
+                "balanceDue": 0,
+                "overdue": false
+              },
+              "statusHistory": [
+                {
+                  "status": "partial_pay",
+                  "changedAt": "2026-07-13T22:40:32.902Z",
+                  "note": "Ledger reconciliation updated invoice status."
+                },
+                {
+                  "status": "paid",
+                  "changedAt": "2026-07-13T22:40:32.910Z",
+                  "note": "Ledger reconciliation updated invoice status."
+                }
+              ],
+              "paidAt": "2026-07-13T22:40:32.910Z"
+            },
+            "refunds": [],
+            "receiptReviews": [
+              {
+                "id": "receipt_review_payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "kind": "payment",
+                "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "invoiceId": "invoice_transcript_main",
+                "status": "draft",
+                "attachments": [
+                  {
+                    "id": "att_invoice_pdf_invoice_transcript_main",
+                    "kind": "invoice_pdf",
+                    "label": "Invoice PDF",
+                    "refId": "invoice_transcript_main",
+                    "storageRef": "native://invoices/invoice_transcript_main.pdf",
+                    "mime": "application/pdf"
+                  },
+                  {
+                    "id": "att_quote_pdf_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                    "kind": "quote_pdf",
+                    "label": "Quote PDF",
+                    "refId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                    "storageRef": "native://quotes/quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6.pdf",
+                    "mime": "application/pdf"
+                  }
+                ],
+                "statusHistory": [
+                  {
+                    "status": "draft",
+                    "changedAt": "2026-07-13T22:40:32.910Z"
+                  }
+                ],
+                "createdAt": "2026-07-13T22:40:32.910Z",
+                "updatedAt": "2026-07-13T22:40:32.910Z"
+              }
+            ],
+            "billingProfile": {
+              "id": "billing_profile_client_1",
+              "tenantId": "aquatrace",
+              "clientId": "client_1",
+              "savedCards": [
+                {
+                  "id": "saved_card_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                  "label": "Visa ending 4242",
+                  "cardholderName": "Deborah Justice",
+                  "brand": "Visa",
+                  "last4": "4242",
+                  "reusable": true,
+                  "source": "quote_approval",
+                  "sourceQuoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                  "createdAt": "2026-07-13T12:00:00.000Z",
+                  "updatedAt": "2026-07-13T22:40:32.915Z"
+                }
+              ],
+              "createdAt": "2026-07-13T22:40:32.899Z",
+              "updatedAt": "2026-07-13T22:40:32.915Z"
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+              "label": "Ledger payment payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "listDeposits",
+      "user": "list deposits",
+      "assistant": "I found 1 deposit.",
+      "toolRuns": [
+        {
+          "name": "listDeposits",
+          "result": {
+            "deposits": [
+              {
+                "id": "deposit_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "paymentId": "payment_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                "quoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                "invoiceId": "invoice_transcript_main",
+                "source": "quote_approval",
+                "amount": 100,
+                "availableAmount": 0,
+                "status": "applied",
+                "applications": [
+                  {
+                    "invoiceId": "invoice_transcript_main",
+                    "amount": 100,
+                    "appliedAt": "2026-07-13T22:40:32.901Z"
+                  }
+                ],
+                "statusHistory": [
+                  {
+                    "status": "available",
+                    "changedAt": "2026-07-13T22:40:32.900Z",
+                    "note": "Migrated quote deposit bridge into deposit ledger."
+                  },
+                  {
+                    "status": "applied",
+                    "changedAt": "2026-07-13T22:40:32.902Z",
+                    "note": "Auto-applied 100.00 to invoice invoice_transcript_main."
+                  }
+                ],
+                "createdAt": "2026-07-13T12:00:00.000Z",
+                "updatedAt": "2026-07-13T22:40:32.901Z"
+              }
+            ]
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "deposit_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+              "label": "Ledger deposit deposit_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "listCredits",
+      "user": "list credits",
+      "assistant": "I found 1 credit.",
+      "toolRuns": [
+        {
+          "name": "listCredits",
+          "result": {
+            "credits": [
+              {
+                "id": "credit_fb1d0bb2-1ffc-4a20-bc3c-04bb8c6b206e",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "invoiceId": "invoice_transcript_void",
+                "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "source": "overpayment",
+                "amount": 25,
+                "availableAmount": 0,
+                "status": "applied",
+                "applications": [
+                  {
+                    "invoiceId": "invoice_transcript_void",
+                    "amount": 25,
+                    "appliedAt": "2026-07-13T22:40:32.910Z"
+                  }
+                ],
+                "statusHistory": [
+                  {
+                    "status": "available",
+                    "changedAt": "2026-07-13T22:40:32.902Z",
+                    "changedBy": "office_1",
+                    "note": "Created from invoice overpayment."
+                  },
+                  {
+                    "status": "applied",
+                    "changedAt": "2026-07-13T22:40:32.910Z",
+                    "note": "Auto-applied 25.00 to invoice invoice_transcript_void."
+                  }
+                ],
+                "createdAt": "2026-07-13T22:40:32.902Z",
+                "updatedAt": "2026-07-13T22:40:32.910Z"
+              }
+            ]
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "credit_fb1d0bb2-1ffc-4a20-bc3c-04bb8c6b206e",
+              "label": "Ledger credit credit_fb1d0bb2-1ffc-4a20-bc3c-04bb8c6b206e"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "queueLedgerAction_refund",
+      "user": "refund payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d for 40 because duplicate charge",
+      "assistant": "Billing action ready. I read the action back below before anything executes.\n\nRefund payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d\nPayment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d\nProvider: manual\nMethod: bank_transfer\nStatus: succeeded\nAmount collected: 325.00\nRefundable now: 325.00\nRefund to issue: 40.00\nInvoice: invoice_transcript_main (Transcript main invoice)\nThis will write a refund record, reopen the invoice balance if needed, and pause the refund receipt in review.\n\nApprove this? yes / no / make changes.\nApproval id: appr_b719901b-e2b5-4b7b-ab33-63037692c372",
+      "toolRuns": [
+        {
+          "name": "queueLedgerAction",
+          "result": {
+            "approval": {
+              "id": "appr_b719901b-e2b5-4b7b-ab33-63037692c372",
+              "tenantId": "aquatrace",
+              "kind": "payment",
+              "preview": {
+                "title": "Refund payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "body": "Payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d\nProvider: manual\nMethod: bank_transfer\nStatus: succeeded\nAmount collected: 325.00\nRefundable now: 325.00\nRefund to issue: 40.00\nInvoice: invoice_transcript_main (Transcript main invoice)\nThis will write a refund record, reopen the invoice balance if needed, and pause the refund receipt in review."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performLedgerAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "action": "refund_payment",
+                  "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                  "amount": 40,
+                  "reason": "duplicate charge"
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "preview": {
+              "action": "refund_payment",
+              "title": "Refund payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+              "body": "Payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d\nProvider: manual\nMethod: bank_transfer\nStatus: succeeded\nAmount collected: 325.00\nRefundable now: 325.00\nRefund to issue: 40.00\nInvoice: invoice_transcript_main (Transcript main invoice)\nThis will write a refund record, reopen the invoice balance if needed, and pause the refund receipt in review.",
+              "payment": {
+                "id": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "invoiceId": "invoice_transcript_main",
+                "provider": "manual",
+                "method": "bank_transfer",
+                "status": "succeeded",
+                "amount": 325,
+                "appliedAmount": 300,
+                "excessCreditAmount": 25,
+                "currency": "usd",
+                "capturedAt": "2026-07-13T22:40:32.902Z",
+                "statusHistory": [
+                  {
+                    "status": "succeeded",
+                    "changedAt": "2026-07-13T22:40:32.902Z",
+                    "changedBy": "office_1",
+                    "note": "Payment recorded."
+                  }
+                ],
+                "createdAt": "2026-07-13T22:40:32.902Z",
+                "updatedAt": "2026-07-13T22:40:32.902Z"
+              },
+              "invoice": {
+                "id": "invoice_transcript_main",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "quoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                "status": "paid",
+                "title": "Transcript main invoice",
+                "lineItems": [
+                  {
+                    "id": "line_main",
+                    "source": "custom",
+                    "code": "LEAK",
+                    "name": "Leak detection",
+                    "description": "Transcript",
+                    "quantity": 1,
+                    "unitPrice": 400,
+                    "total": 400
+                  }
+                ],
+                "totals": {
+                  "subtotal": 400,
+                  "tax": 0,
+                  "total": 400
+                },
+                "createdAt": "2026-07-13T13:00:00.000Z",
+                "ledger": {
+                  "depositApplied": 100,
+                  "creditApplied": 0,
+                  "paymentApplied": 300,
+                  "refundedAmount": 0,
+                  "balanceDue": 0,
+                  "overdue": false
+                },
+                "statusHistory": [
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-13T22:40:32.902Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  },
+                  {
+                    "status": "paid",
+                    "changedAt": "2026-07-13T22:40:32.910Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  }
+                ],
+                "paidAt": "2026-07-13T22:40:32.910Z"
+              },
+              "amount": 40
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_b719901b-e2b5-4b7b-ab33-63037692c372",
+              "label": "ApprovalQueue ledger action appr_b719901b-e2b5-4b7b-ab33-63037692c372"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "revisePendingLedgerActionApproval_refund",
+      "user": "make changes. refund 35 instead",
+      "assistant": "Updated billing action ready. Please check the revised action below before I run it.\n\nRefund payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d\nPayment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d\nProvider: manual\nMethod: bank_transfer\nStatus: succeeded\nAmount collected: 325.00\nRefundable now: 325.00\nRefund to issue: 35.00\nInvoice: invoice_transcript_main (Transcript main invoice)\nThis will write a refund record, reopen the invoice balance if needed, and pause the refund receipt in review.\n\nApprove this? yes / no / make changes.\nApproval id: appr_fe8f0b84-4114-4dd6-a889-b6f9a73c4b3c",
+      "toolRuns": [
+        {
+          "name": "revisePendingLedgerActionApproval",
+          "result": {
+            "approval": {
+              "id": "appr_fe8f0b84-4114-4dd6-a889-b6f9a73c4b3c",
+              "tenantId": "aquatrace",
+              "kind": "payment",
+              "preview": {
+                "title": "Refund payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "body": "Payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d\nProvider: manual\nMethod: bank_transfer\nStatus: succeeded\nAmount collected: 325.00\nRefundable now: 325.00\nRefund to issue: 35.00\nInvoice: invoice_transcript_main (Transcript main invoice)\nThis will write a refund record, reopen the invoice balance if needed, and pause the refund receipt in review."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performLedgerAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "action": "refund_payment",
+                  "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                  "amount": 35,
+                  "reason": "duplicate charge"
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "preview": {
+              "action": "refund_payment",
+              "title": "Refund payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+              "body": "Payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d\nProvider: manual\nMethod: bank_transfer\nStatus: succeeded\nAmount collected: 325.00\nRefundable now: 325.00\nRefund to issue: 35.00\nInvoice: invoice_transcript_main (Transcript main invoice)\nThis will write a refund record, reopen the invoice balance if needed, and pause the refund receipt in review.",
+              "payment": {
+                "id": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "invoiceId": "invoice_transcript_main",
+                "provider": "manual",
+                "method": "bank_transfer",
+                "status": "succeeded",
+                "amount": 325,
+                "appliedAmount": 300,
+                "excessCreditAmount": 25,
+                "currency": "usd",
+                "capturedAt": "2026-07-13T22:40:32.902Z",
+                "statusHistory": [
+                  {
+                    "status": "succeeded",
+                    "changedAt": "2026-07-13T22:40:32.902Z",
+                    "changedBy": "office_1",
+                    "note": "Payment recorded."
+                  }
+                ],
+                "createdAt": "2026-07-13T22:40:32.902Z",
+                "updatedAt": "2026-07-13T22:40:32.902Z"
+              },
+              "invoice": {
+                "id": "invoice_transcript_main",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "quoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                "status": "paid",
+                "title": "Transcript main invoice",
+                "lineItems": [
+                  {
+                    "id": "line_main",
+                    "source": "custom",
+                    "code": "LEAK",
+                    "name": "Leak detection",
+                    "description": "Transcript",
+                    "quantity": 1,
+                    "unitPrice": 400,
+                    "total": 400
+                  }
+                ],
+                "totals": {
+                  "subtotal": 400,
+                  "tax": 0,
+                  "total": 400
+                },
+                "createdAt": "2026-07-13T13:00:00.000Z",
+                "ledger": {
+                  "depositApplied": 100,
+                  "creditApplied": 0,
+                  "paymentApplied": 300,
+                  "refundedAmount": 0,
+                  "balanceDue": 0,
+                  "overdue": false
+                },
+                "statusHistory": [
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-13T22:40:32.902Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  },
+                  {
+                    "status": "paid",
+                    "changedAt": "2026-07-13T22:40:32.910Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  }
+                ],
+                "paidAt": "2026-07-13T22:40:32.910Z"
+              },
+              "amount": 35
+            },
+            "writesAreApprovalQueuedOnly": true,
+            "replacedApprovalId": "appr_b719901b-e2b5-4b7b-ab33-63037692c372"
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_fe8f0b84-4114-4dd6-a889-b6f9a73c4b3c",
+              "label": "ApprovalQueue ledger action appr_fe8f0b84-4114-4dd6-a889-b6f9a73c4b3c"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "approvePendingApproval_refund",
+      "user": "yes",
+      "assistant": "Approved and recorded refund refund_8bb755d9-3465-4c89-b1ed-502dd84c9599 with receipt review receipt_review_refund_8bb755d9-3465-4c89-b1ed-502dd84c9599 paused.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_fe8f0b84-4114-4dd6-a889-b6f9a73c4b3c",
+              "tenantId": "aquatrace",
+              "kind": "payment",
+              "preview": {
+                "title": "Refund payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "body": "Payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d\nProvider: manual\nMethod: bank_transfer\nStatus: succeeded\nAmount collected: 325.00\nRefundable now: 325.00\nRefund to issue: 35.00\nInvoice: invoice_transcript_main (Transcript main invoice)\nThis will write a refund record, reopen the invoice balance if needed, and pause the refund receipt in review."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performLedgerAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "action": "refund_payment",
+                  "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                  "amount": 35,
+                  "reason": "duplicate charge"
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-13T22:40:32.922Z",
+              "decidedBy": "office_1"
+            },
+            "executedApproval": {
+              "id": "appr_fe8f0b84-4114-4dd6-a889-b6f9a73c4b3c",
+              "tenantId": "aquatrace",
+              "kind": "payment",
+              "preview": {
+                "title": "Refund payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "body": "Payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d\nProvider: manual\nMethod: bank_transfer\nStatus: succeeded\nAmount collected: 325.00\nRefundable now: 325.00\nRefund to issue: 35.00\nInvoice: invoice_transcript_main (Transcript main invoice)\nThis will write a refund record, reopen the invoice balance if needed, and pause the refund receipt in review."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performLedgerAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "action": "refund_payment",
+                  "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                  "amount": 35,
+                  "reason": "duplicate charge"
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-13T22:40:32.922Z",
+              "decidedBy": "office_1",
+              "executedAt": "2026-07-13T22:40:32.924Z",
+              "executedBy": "office_1"
+            },
+            "execution": {
+              "preview": {
+                "action": "refund_payment",
+                "title": "Refund payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "body": "Payment: payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d\nProvider: manual\nMethod: bank_transfer\nStatus: succeeded\nAmount collected: 325.00\nRefundable now: 325.00\nRefund to issue: 35.00\nInvoice: invoice_transcript_main (Transcript main invoice)\nThis will write a refund record, reopen the invoice balance if needed, and pause the refund receipt in review.",
+                "payment": {
+                  "id": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                  "tenantId": "aquatrace",
+                  "clientId": "client_1",
+                  "invoiceId": "invoice_transcript_main",
+                  "provider": "manual",
+                  "method": "bank_transfer",
+                  "status": "succeeded",
+                  "amount": 325,
+                  "appliedAmount": 300,
+                  "excessCreditAmount": 25,
+                  "currency": "usd",
+                  "capturedAt": "2026-07-13T22:40:32.902Z",
+                  "statusHistory": [
+                    {
+                      "status": "succeeded",
+                      "changedAt": "2026-07-13T22:40:32.902Z",
+                      "changedBy": "office_1",
+                      "note": "Payment recorded."
+                    }
+                  ],
+                  "createdAt": "2026-07-13T22:40:32.902Z",
+                  "updatedAt": "2026-07-13T22:40:32.902Z"
+                },
+                "invoice": {
+                  "id": "invoice_transcript_main",
+                  "tenantId": "aquatrace",
+                  "clientId": "client_1",
+                  "quoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                  "status": "paid",
+                  "title": "Transcript main invoice",
+                  "lineItems": [
+                    {
+                      "id": "line_main",
+                      "source": "custom",
+                      "code": "LEAK",
+                      "name": "Leak detection",
+                      "description": "Transcript",
+                      "quantity": 1,
+                      "unitPrice": 400,
+                      "total": 400
+                    }
+                  ],
+                  "totals": {
+                    "subtotal": 400,
+                    "tax": 0,
+                    "total": 400
+                  },
+                  "createdAt": "2026-07-13T13:00:00.000Z",
+                  "ledger": {
+                    "depositApplied": 100,
+                    "creditApplied": 0,
+                    "paymentApplied": 300,
+                    "refundedAmount": 0,
+                    "balanceDue": 0,
+                    "overdue": false
+                  },
+                  "statusHistory": [
+                    {
+                      "status": "partial_pay",
+                      "changedAt": "2026-07-13T22:40:32.902Z",
+                      "note": "Ledger reconciliation updated invoice status."
+                    },
+                    {
+                      "status": "paid",
+                      "changedAt": "2026-07-13T22:40:32.910Z",
+                      "note": "Ledger reconciliation updated invoice status."
+                    }
+                  ],
+                  "paidAt": "2026-07-13T22:40:32.910Z"
+                },
+                "amount": 35
+              },
+              "payment": {
+                "id": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "invoiceId": "invoice_transcript_main",
+                "provider": "manual",
+                "method": "bank_transfer",
+                "status": "partially_refunded",
+                "amount": 325,
+                "appliedAmount": 300,
+                "excessCreditAmount": 25,
+                "currency": "usd",
+                "capturedAt": "2026-07-13T22:40:32.902Z",
+                "statusHistory": [
+                  {
+                    "status": "succeeded",
+                    "changedAt": "2026-07-13T22:40:32.902Z",
+                    "changedBy": "office_1",
+                    "note": "Payment recorded."
+                  },
+                  {
+                    "status": "partially_refunded",
+                    "changedAt": "2026-07-13T22:40:32.923Z",
+                    "changedBy": "office_1",
+                    "note": "Refunded 35.00."
+                  }
+                ],
+                "createdAt": "2026-07-13T22:40:32.902Z",
+                "updatedAt": "2026-07-13T22:40:32.923Z"
+              },
+              "refund": {
+                "id": "refund_8bb755d9-3465-4c89-b1ed-502dd84c9599",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "invoiceId": "invoice_transcript_main",
+                "provider": "manual",
+                "method": "bank_transfer",
+                "amount": 35,
+                "reason": "duplicate charge",
+                "status": "succeeded",
+                "statusHistory": [
+                  {
+                    "status": "succeeded",
+                    "changedAt": "2026-07-13T22:40:32.923Z",
+                    "changedBy": "office_1",
+                    "note": "Refund recorded."
+                  }
+                ],
+                "createdAt": "2026-07-13T22:40:32.923Z",
+                "updatedAt": "2026-07-13T22:40:32.923Z"
+              },
+              "invoice": {
+                "id": "invoice_transcript_main",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "quoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                "status": "partial_pay",
+                "title": "Transcript main invoice",
+                "lineItems": [
+                  {
+                    "id": "line_main",
+                    "source": "custom",
+                    "code": "LEAK",
+                    "name": "Leak detection",
+                    "description": "Transcript",
+                    "quantity": 1,
+                    "unitPrice": 400,
+                    "total": 400
+                  }
+                ],
+                "totals": {
+                  "subtotal": 400,
+                  "tax": 0,
+                  "total": 400
+                },
+                "createdAt": "2026-07-13T13:00:00.000Z",
+                "ledger": {
+                  "depositApplied": 100,
+                  "creditApplied": 0,
+                  "paymentApplied": 265,
+                  "refundedAmount": 35,
+                  "balanceDue": 35,
+                  "overdue": false
+                },
+                "statusHistory": [
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-13T22:40:32.902Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  },
+                  {
+                    "status": "paid",
+                    "changedAt": "2026-07-13T22:40:32.910Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  },
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-13T22:40:32.924Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  }
+                ],
+                "paidAt": "2026-07-13T22:40:32.910Z"
+              },
+              "receiptReview": {
+                "id": "receipt_review_refund_8bb755d9-3465-4c89-b1ed-502dd84c9599",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "kind": "refund",
+                "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "refundId": "refund_8bb755d9-3465-4c89-b1ed-502dd84c9599",
+                "invoiceId": "invoice_transcript_main",
+                "status": "draft",
+                "attachments": [
+                  {
+                    "id": "att_invoice_pdf_invoice_transcript_main",
+                    "kind": "invoice_pdf",
+                    "label": "Invoice PDF",
+                    "refId": "invoice_transcript_main",
+                    "storageRef": "native://invoices/invoice_transcript_main.pdf",
+                    "mime": "application/pdf"
+                  },
+                  {
+                    "id": "att_quote_pdf_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                    "kind": "quote_pdf",
+                    "label": "Quote PDF",
+                    "refId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+                    "storageRef": "native://quotes/quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6.pdf",
+                    "mime": "application/pdf"
+                  }
+                ],
+                "statusHistory": [
+                  {
+                    "status": "draft",
+                    "changedAt": "2026-07-13T22:40:32.924Z"
+                  }
+                ],
+                "createdAt": "2026-07-13T22:40:32.924Z",
+                "updatedAt": "2026-07-13T22:40:32.924Z"
+              }
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_fe8f0b84-4114-4dd6-a889-b6f9a73c4b3c",
+              "label": "ApprovalQueue approval appr_fe8f0b84-4114-4dd6-a889-b6f9a73c4b3c"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "listRefunds",
+      "user": "list refunds",
+      "assistant": "I found 1 refund.",
+      "toolRuns": [
+        {
+          "name": "listRefunds",
+          "result": {
+            "refunds": [
+              {
+                "id": "refund_8bb755d9-3465-4c89-b1ed-502dd84c9599",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+                "invoiceId": "invoice_transcript_main",
+                "provider": "manual",
+                "method": "bank_transfer",
+                "amount": 35,
+                "reason": "duplicate charge",
+                "status": "succeeded",
+                "statusHistory": [
+                  {
+                    "status": "succeeded",
+                    "changedAt": "2026-07-13T22:40:32.923Z",
+                    "changedBy": "office_1",
+                    "note": "Refund recorded."
+                  }
+                ],
+                "createdAt": "2026-07-13T22:40:32.923Z",
+                "updatedAt": "2026-07-13T22:40:32.923Z"
+              }
+            ]
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "refund_8bb755d9-3465-4c89-b1ed-502dd84c9599",
+              "label": "Ledger refund refund_8bb755d9-3465-4c89-b1ed-502dd84c9599"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "queueLedgerAction_void",
+      "user": "void invoice invoice_transcript_void",
+      "assistant": "Billing action ready. I read the action back below before anything executes.\n\nVoid invoice: invoice_transcript_void\nInvoice: invoice_transcript_void\nCurrent status: partial_pay\nBalance due: 55.00\nThis is only allowed when no net collected payment remains on the invoice.\nAttached deposits or credits will be released back to the client balance before the invoice is marked void.\n\nApprove this? yes / no / make changes.\nApproval id: appr_46839927-48dd-4531-97dd-ae21f5ae119a",
+      "toolRuns": [
+        {
+          "name": "queueLedgerAction",
+          "result": {
+            "approval": {
+              "id": "appr_46839927-48dd-4531-97dd-ae21f5ae119a",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Void invoice: invoice_transcript_void",
+                "body": "Invoice: invoice_transcript_void\nCurrent status: partial_pay\nBalance due: 55.00\nThis is only allowed when no net collected payment remains on the invoice.\nAttached deposits or credits will be released back to the client balance before the invoice is marked void."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performLedgerAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "action": "void_invoice",
+                  "invoiceId": "invoice_transcript_void"
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "preview": {
+              "action": "void_invoice",
+              "title": "Void invoice: invoice_transcript_void",
+              "body": "Invoice: invoice_transcript_void\nCurrent status: partial_pay\nBalance due: 55.00\nThis is only allowed when no net collected payment remains on the invoice.\nAttached deposits or credits will be released back to the client balance before the invoice is marked void.",
+              "invoice": {
+                "id": "invoice_transcript_void",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "status": "partial_pay",
+                "title": "Transcript void invoice",
+                "lineItems": [
+                  {
+                    "id": "line_void",
+                    "source": "custom",
+                    "code": "VOID",
+                    "name": "Voidable work",
+                    "description": "Transcript",
+                    "quantity": 1,
+                    "unitPrice": 80,
+                    "total": 80
+                  }
+                ],
+                "totals": {
+                  "subtotal": 80,
+                  "tax": 0,
+                  "total": 80
+                },
+                "createdAt": "2026-07-13T14:00:00.000Z",
+                "ledger": {
+                  "depositApplied": 0,
+                  "creditApplied": 25,
+                  "paymentApplied": 0,
+                  "refundedAmount": 0,
+                  "balanceDue": 55,
+                  "overdue": false
+                },
+                "statusHistory": [
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-13T22:40:32.910Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  }
+                ]
+              }
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_46839927-48dd-4531-97dd-ae21f5ae119a",
+              "label": "ApprovalQueue ledger action appr_46839927-48dd-4531-97dd-ae21f5ae119a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "approvePendingApproval_void",
+      "user": "yes",
+      "assistant": "Approved and updated invoice invoice_transcript_void.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_46839927-48dd-4531-97dd-ae21f5ae119a",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Void invoice: invoice_transcript_void",
+                "body": "Invoice: invoice_transcript_void\nCurrent status: partial_pay\nBalance due: 55.00\nThis is only allowed when no net collected payment remains on the invoice.\nAttached deposits or credits will be released back to the client balance before the invoice is marked void."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performLedgerAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "action": "void_invoice",
+                  "invoiceId": "invoice_transcript_void"
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-13T22:40:32.926Z",
+              "decidedBy": "office_1"
+            },
+            "executedApproval": {
+              "id": "appr_46839927-48dd-4531-97dd-ae21f5ae119a",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Void invoice: invoice_transcript_void",
+                "body": "Invoice: invoice_transcript_void\nCurrent status: partial_pay\nBalance due: 55.00\nThis is only allowed when no net collected payment remains on the invoice.\nAttached deposits or credits will be released back to the client balance before the invoice is marked void."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performLedgerAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "action": "void_invoice",
+                  "invoiceId": "invoice_transcript_void"
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-13T22:40:32.926Z",
+              "decidedBy": "office_1",
+              "executedAt": "2026-07-13T22:40:32.926Z",
+              "executedBy": "office_1"
+            },
+            "execution": {
+              "preview": {
+                "action": "void_invoice",
+                "title": "Void invoice: invoice_transcript_void",
+                "body": "Invoice: invoice_transcript_void\nCurrent status: partial_pay\nBalance due: 55.00\nThis is only allowed when no net collected payment remains on the invoice.\nAttached deposits or credits will be released back to the client balance before the invoice is marked void.",
+                "invoice": {
+                  "id": "invoice_transcript_void",
+                  "tenantId": "aquatrace",
+                  "clientId": "client_1",
+                  "status": "partial_pay",
+                  "title": "Transcript void invoice",
+                  "lineItems": [
+                    {
+                      "id": "line_void",
+                      "source": "custom",
+                      "code": "VOID",
+                      "name": "Voidable work",
+                      "description": "Transcript",
+                      "quantity": 1,
+                      "unitPrice": 80,
+                      "total": 80
+                    }
+                  ],
+                  "totals": {
+                    "subtotal": 80,
+                    "tax": 0,
+                    "total": 80
+                  },
+                  "createdAt": "2026-07-13T14:00:00.000Z",
+                  "ledger": {
+                    "depositApplied": 0,
+                    "creditApplied": 25,
+                    "paymentApplied": 0,
+                    "refundedAmount": 0,
+                    "balanceDue": 55,
+                    "overdue": false
+                  },
+                  "statusHistory": [
+                    {
+                      "status": "partial_pay",
+                      "changedAt": "2026-07-13T22:40:32.910Z",
+                      "note": "Ledger reconciliation updated invoice status."
+                    }
+                  ]
+                }
+              },
+              "invoice": {
+                "id": "invoice_transcript_void",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "status": "void",
+                "title": "Transcript void invoice",
+                "lineItems": [
+                  {
+                    "id": "line_void",
+                    "source": "custom",
+                    "code": "VOID",
+                    "name": "Voidable work",
+                    "description": "Transcript",
+                    "quantity": 1,
+                    "unitPrice": 80,
+                    "total": 80
+                  }
+                ],
+                "totals": {
+                  "subtotal": 80,
+                  "tax": 0,
+                  "total": 80
+                },
+                "createdAt": "2026-07-13T14:00:00.000Z",
+                "ledger": {
+                  "depositApplied": 0,
+                  "creditApplied": 25,
+                  "paymentApplied": 0,
+                  "refundedAmount": 0,
+                  "balanceDue": 0,
+                  "overdue": false
+                },
+                "statusHistory": [
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-13T22:40:32.910Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  },
+                  {
+                    "status": "void",
+                    "changedAt": "2026-07-13T22:40:32.926Z",
+                    "changedBy": "office_1",
+                    "note": "Invoice voided from ledger action."
+                  }
+                ],
+                "voidedAt": "2026-07-13T22:40:32.926Z",
+                "voidedBy": "office_1"
+              }
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_46839927-48dd-4531-97dd-ae21f5ae119a",
+              "label": "ApprovalQueue approval appr_46839927-48dd-4531-97dd-ae21f5ae119a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "queueLedgerAction_bad_debt",
+      "user": "write off invoice invoice_transcript_bad_debt because uncollectable",
+      "assistant": "Billing action ready. I read the action back below before anything executes.\n\nMark bad debt: invoice_transcript_bad_debt\nInvoice: invoice_transcript_bad_debt\nCurrent status: awaiting_payment\nBalance due to write off: 95.00\nThis keeps the invoice record but writes off the remaining balance instead of voiding it.\n\nApprove this? yes / no / make changes.\nApproval id: appr_203e691c-5139-41ad-918c-2c971b5940c2",
+      "toolRuns": [
+        {
+          "name": "queueLedgerAction",
+          "result": {
+            "approval": {
+              "id": "appr_203e691c-5139-41ad-918c-2c971b5940c2",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Mark bad debt: invoice_transcript_bad_debt",
+                "body": "Invoice: invoice_transcript_bad_debt\nCurrent status: awaiting_payment\nBalance due to write off: 95.00\nThis keeps the invoice record but writes off the remaining balance instead of voiding it."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performLedgerAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "action": "mark_bad_debt",
+                  "invoiceId": "invoice_transcript_bad_debt",
+                  "reason": "uncollectable"
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "preview": {
+              "action": "mark_bad_debt",
+              "title": "Mark bad debt: invoice_transcript_bad_debt",
+              "body": "Invoice: invoice_transcript_bad_debt\nCurrent status: awaiting_payment\nBalance due to write off: 95.00\nThis keeps the invoice record but writes off the remaining balance instead of voiding it.",
+              "invoice": {
+                "id": "invoice_transcript_bad_debt",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "status": "awaiting_payment",
+                "title": "Transcript bad debt invoice",
+                "lineItems": [
+                  {
+                    "id": "line_bad",
+                    "source": "custom",
+                    "code": "BAD",
+                    "name": "Bad debt work",
+                    "description": "Transcript",
+                    "quantity": 1,
+                    "unitPrice": 95,
+                    "total": 95
+                  }
+                ],
+                "totals": {
+                  "subtotal": 95,
+                  "tax": 0,
+                  "total": 95
+                },
+                "createdAt": "2026-07-13T15:00:00.000Z",
+                "ledger": {
+                  "depositApplied": 0,
+                  "creditApplied": 0,
+                  "paymentApplied": 0,
+                  "refundedAmount": 0,
+                  "balanceDue": 95,
+                  "overdue": false
+                }
+              }
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_203e691c-5139-41ad-918c-2c971b5940c2",
+              "label": "ApprovalQueue ledger action appr_203e691c-5139-41ad-918c-2c971b5940c2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "approvePendingApproval_bad_debt",
+      "user": "yes",
+      "assistant": "Approved and updated invoice invoice_transcript_bad_debt.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_203e691c-5139-41ad-918c-2c971b5940c2",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Mark bad debt: invoice_transcript_bad_debt",
+                "body": "Invoice: invoice_transcript_bad_debt\nCurrent status: awaiting_payment\nBalance due to write off: 95.00\nThis keeps the invoice record but writes off the remaining balance instead of voiding it."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performLedgerAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "action": "mark_bad_debt",
+                  "invoiceId": "invoice_transcript_bad_debt",
+                  "reason": "uncollectable"
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-13T22:40:32.927Z",
+              "decidedBy": "office_1"
+            },
+            "executedApproval": {
+              "id": "appr_203e691c-5139-41ad-918c-2c971b5940c2",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Mark bad debt: invoice_transcript_bad_debt",
+                "body": "Invoice: invoice_transcript_bad_debt\nCurrent status: awaiting_payment\nBalance due to write off: 95.00\nThis keeps the invoice record but writes off the remaining balance instead of voiding it."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performLedgerAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "action": "mark_bad_debt",
+                  "invoiceId": "invoice_transcript_bad_debt",
+                  "reason": "uncollectable"
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-13T22:40:32.927Z",
+              "decidedBy": "office_1",
+              "executedAt": "2026-07-13T22:40:32.928Z",
+              "executedBy": "office_1"
+            },
+            "execution": {
+              "preview": {
+                "action": "mark_bad_debt",
+                "title": "Mark bad debt: invoice_transcript_bad_debt",
+                "body": "Invoice: invoice_transcript_bad_debt\nCurrent status: awaiting_payment\nBalance due to write off: 95.00\nThis keeps the invoice record but writes off the remaining balance instead of voiding it.",
+                "invoice": {
+                  "id": "invoice_transcript_bad_debt",
+                  "tenantId": "aquatrace",
+                  "clientId": "client_1",
+                  "status": "awaiting_payment",
+                  "title": "Transcript bad debt invoice",
+                  "lineItems": [
+                    {
+                      "id": "line_bad",
+                      "source": "custom",
+                      "code": "BAD",
+                      "name": "Bad debt work",
+                      "description": "Transcript",
+                      "quantity": 1,
+                      "unitPrice": 95,
+                      "total": 95
+                    }
+                  ],
+                  "totals": {
+                    "subtotal": 95,
+                    "tax": 0,
+                    "total": 95
+                  },
+                  "createdAt": "2026-07-13T15:00:00.000Z",
+                  "ledger": {
+                    "depositApplied": 0,
+                    "creditApplied": 0,
+                    "paymentApplied": 0,
+                    "refundedAmount": 0,
+                    "balanceDue": 95,
+                    "overdue": false
+                  }
+                }
+              },
+              "invoice": {
+                "id": "invoice_transcript_bad_debt",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "status": "bad_debt",
+                "title": "Transcript bad debt invoice",
+                "lineItems": [
+                  {
+                    "id": "line_bad",
+                    "source": "custom",
+                    "code": "BAD",
+                    "name": "Bad debt work",
+                    "description": "Transcript",
+                    "quantity": 1,
+                    "unitPrice": 95,
+                    "total": 95
+                  }
+                ],
+                "totals": {
+                  "subtotal": 95,
+                  "tax": 0,
+                  "total": 95
+                },
+                "createdAt": "2026-07-13T15:00:00.000Z",
+                "ledger": {
+                  "depositApplied": 0,
+                  "creditApplied": 0,
+                  "paymentApplied": 0,
+                  "refundedAmount": 0,
+                  "balanceDue": 0,
+                  "overdue": false,
+                  "writtenOffAmount": 95
+                },
+                "statusHistory": [
+                  {
+                    "status": "bad_debt",
+                    "changedAt": "2026-07-13T22:40:32.928Z",
+                    "changedBy": "office_1",
+                    "note": "Invoice marked bad debt from ledger action."
+                  }
+                ],
+                "badDebtAt": "2026-07-13T22:40:32.928Z",
+                "badDebtBy": "office_1"
+              }
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_203e691c-5139-41ad-918c-2c971b5940c2",
+              "label": "ApprovalQueue approval appr_203e691c-5139-41ad-918c-2c971b5940c2"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "emittedEvents": [
+    {
+      "tenantId": "aquatrace",
+      "type": "payment.created",
+      "payload": {
+        "paymentId": "payment_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+        "quoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+        "clientId": "client_1",
+        "amount": 100,
+        "provider": "quote_bridge"
+      }
+    },
+    {
+      "tenantId": "aquatrace",
+      "type": "receipt.review_created",
+      "payload": {
+        "receiptReviewId": "receipt_review_payment_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+        "paymentId": "payment_quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+        "invoiceId": null,
+        "quoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6"
+      }
+    },
+    {
+      "tenantId": "aquatrace",
+      "type": "payment.created",
+      "payload": {
+        "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+        "invoiceId": "invoice_transcript_main",
+        "clientId": "client_1",
+        "amount": 325,
+        "provider": "manual"
+      }
+    },
+    {
+      "tenantId": "aquatrace",
+      "type": "invoice.paid",
+      "payload": {
+        "invoiceId": "invoice_transcript_main",
+        "clientId": "client_1",
+        "quoteId": "quote_027c39cf-0f9e-4750-acc3-fcca1ffb14f6",
+        "paidAt": "2026-07-13T22:40:32.910Z"
+      }
+    },
+    {
+      "tenantId": "aquatrace",
+      "type": "receipt.review_created",
+      "payload": {
+        "receiptReviewId": "receipt_review_payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+        "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+        "invoiceId": "invoice_transcript_main",
+        "quoteId": null
+      }
+    },
+    {
+      "tenantId": "aquatrace",
+      "type": "refund.created",
+      "payload": {
+        "refundId": "refund_8bb755d9-3465-4c89-b1ed-502dd84c9599",
+        "paymentId": "payment_e0f01453-4a3b-459f-86ed-d7f291cf2c7d",
+        "invoiceId": "invoice_transcript_main",
+        "amount": 35
+      }
+    },
+    {
+      "tenantId": "aquatrace",
+      "type": "invoice.voided",
+      "payload": {
+        "invoiceId": "invoice_transcript_void",
+        "clientId": "client_1",
+        "actorId": "office_1"
+      }
+    },
+    {
+      "tenantId": "aquatrace",
+      "type": "invoice.bad_debt",
+      "payload": {
+        "invoiceId": "invoice_transcript_bad_debt",
+        "clientId": "client_1",
+        "actorId": "office_1"
+      }
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "capturedAt": "2026-07-12T22:55:00Z",
+  "localBaseUrl": "http://127.0.0.1:4175",
+  "localApiUrl": "http://127.0.0.1:3001",
+  "conversationId": "atlas-request-foundation-proof",
+  "classDProof": {
+    "user": "delete the Atlas Approval Proof client",
+    "assistant": "I can't delete client records yet. That is a capability gap, not a missing-data issue.",
+    "toolRuns": []
+  },
+  "requiredFieldProof": {
+    "user": "create a new client Logan Sears at 6020 Frest Dr, Seneca SC 29672",
+    "assistant": "I still need telephone before I can save this client. Email is helpful, but it is not required.",
+    "toolRuns": [
+      "createClient"
+    ],
+    "officeUi": {
+      "saveDisabled": true,
+      "statusText": "Add name, address, telephone before Save becomes available."
+    }
+  },
+  "chatNativeApprovalProof": {
+    "draftTurn": {
+      "user": "create the client Logan Sears address 6020 Frest Dr Seneca SC 29672 telephone number 8645581725 and email 4lbsears@gmail.com",
+      "assistant": "Client draft ready. I read it back below exactly before anything gets created.\n\nCreate client: Logan Sears\nName: Logan Sears\nEmail: 4lbsears@gmail.com\nPhone: 8645581725\nAddress note: 6020 Frest Dr Seneca SC 29672\nEmail OK: no\nText OK: no\n\nApprove this? yes / no / make changes.\nApproval id: appr_338078f3-e36a-463b-ad3c-081059d0c6b9",
+      "toolRuns": [
+        "createClient"
+      ]
+    },
+    "approvalTurn": {
+      "user": "yes",
+      "assistant": "Approved and created Logan Sears (appr_338078f3-e36a-463b-ad3c-081059d0c6b9).",
+      "toolRuns": [
+        "approvePendingApproval"
+      ]
+    }
+  },
+  "approvalAuditProof": {
+    "id": "appr_338078f3-e36a-463b-ad3c-081059d0c6b9",
+    "status": "executed",
+    "createdBy": "nexi",
+    "decidedAt": "2026-07-12T22:51:26.338Z",
+    "decidedBy": "internal:local-owner",
+    "executedAt": "2026-07-12T22:51:26.340Z",
+    "executedBy": "internal:local-owner"
+  },
+  "cleanupProof": {
+    "remainingClients": [
+      {
+        "name": "Logan Sears",
+        "id": "client_193663f4-2655-4df3-a0b9-d811e455a5ba"
+      }
+    ],
+    "atlasApprovalProofPresent": false
+  },
+  "screenshots": [
+    "receipts/phase1/request-foundation-class-d-capability-gap-local-20260712.png",
+    "receipts/phase1/request-foundation-client-save-blocked-local-20260712.png",
+    "receipts/phase1/request-foundation-clients-clean-local-20260712.png"
+  ]
+}

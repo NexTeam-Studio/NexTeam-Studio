@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { type ApprovalQueueService, type Job, RailError } from "@nexteam/core";
 import { JobberAdapter } from "@nexteam/providers";
+import type { JobLifecycleService } from "../crm/jobLifecycle.js";
 import { detectConflicts, driveTimeProviderFromEnv, suggestSlots, type ScheduledVisit, type ScheduleLocation } from "./schedulingEngine.js";
 import type { SchedulingRepository } from "./repository.js";
 import { queueScheduleNotification } from "./notifications.js";
@@ -65,13 +66,14 @@ function visitFromInput(input: z.infer<typeof bookVisitSchema>): ScheduledVisit 
     end: input.end,
     assignedTo: input.assignedTo,
     location: input.location as ScheduleLocation,
-    status: "pending_approval"
+    status: "scheduled"
   };
 }
 
 export interface SchedulingRouteDeps {
   repository: SchedulingRepository;
   approvalQueue: ApprovalQueueService;
+  jobLifecycleService?: JobLifecycleService | undefined;
   env?: NodeJS.ProcessEnv | undefined;
   jobber?: JobberScheduleReader | null | undefined;
 }
@@ -126,7 +128,7 @@ export function jobberVisitFromJob(job: Job): ScheduledVisit | null {
     end: job.endAt && job.endAt !== job.startAt ? job.endAt : addDefaultEnd(job.startAt),
     assignedTo: [],
     location: { label: addressLabel(job) },
-    status: job.status === "complete" ? "complete" : "scheduled",
+    status: job.status === "Archived" ? "complete" : "scheduled",
     source: "jobber",
     readOnly: true
   };
@@ -214,7 +216,16 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
       const input = bookVisitSchema.parse(req.body);
       const visit = visitFromInput(input);
       const conflicts = detectConflicts(await deps.repository.listVisits(input.tenantId, { from: input.start, to: input.end }), visit);
-      const saved = await deps.repository.saveVisit(visit);
+      const saved = deps.jobLifecycleService
+        ? await deps.jobLifecycleService.scheduleVisit({
+          tenantId: input.tenantId,
+          jobId: input.jobId,
+          title: input.title,
+          start: input.start,
+          end: input.end,
+          assignedTo: input.assignedTo
+        })
+        : await deps.repository.saveVisit(visit);
       const approval = await queueScheduleNotification({
         approvalQueue: deps.approvalQueue,
         tenantId: input.tenantId,

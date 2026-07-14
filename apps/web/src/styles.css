@@ -753,6 +753,601 @@ input {
   background: #fff;
 }
 
+.nexops-inline-actions select {
+  min-width: 180px;
+  border: 1px solid rgba(8, 33, 49, 0.16);
+  border-radius: 11px;
+  padding: 12px 14px;
+  color: #082131;
+  background: #fff;
+}
+
+.nexops-request-builder-card,
+.nexops-request-library-card,
+.nexops-request-detail {
+  gap: 16px;
+}
+
+.nexops-request-builder,
+.nexops-request-library-editor {
+  display: grid;
+  gap: 14px;
+}
+
+.nexops-request-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nexops-request-toggle-row button,
+.nexops-request-library-item button,
+.nexops-request-summary-grid button {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 999px;
+  padding: 10px 13px;
+  color: #082131;
+  background: #fff;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.nexops-request-toggle-row button.active {
+  color: #08100c;
+  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
+}
+
+.nexops-request-builder-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nexops-request-form-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nexops-request-form-fields .nexops-field textarea,
+.nexops-request-form-fields .nexops-field select,
+.nexops-request-form-fields .nexops-field input,
+.nexops-request-library-editor .nexops-field textarea,
+.nexops-request-library-editor .nexops-field input,
+.nexops-request-library-editor .nexops-field select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(8, 33, 49, 0.14);
+  border-radius: 12px;
+  padding: 11px 12px;
+  color: #082131;
+  background: #fff;
+}
+
+.nexops-request-prominent {
+  border-color: rgba(37, 210, 56, 0.36);
+  background: linear-gradient(180deg, rgba(249, 255, 244, 1), rgba(240, 255, 233, 0.9));
+}
+
+.nexops-request-visibility-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.nexops-request-visibility-row label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #526675;
+  font-size: 0.72rem;
+  text-transform: capitalize;
+}
+
+.nexops-request-library-list {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-request-library-item {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 16px;
+  background: rgba(8, 33, 49, 0.03);
+}
+
+.nexops-request-library-item strong,
+.nexops-request-library-item small,
+.nexops-request-library-item a {
+  display: block;
+}
+
+.nexops-request-library-item small,
+.nexops-request-library-item a {
+  color: #526675;
+}
+
+.nexops-request-library-item a {
+  overflow-wrap: anywhere;
+}
+
+.nexops-request-library-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-request-library-editor-head h3 {
+  margin: 0;
+}
+
+.nexops-request-library-field-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nexops-request-library-field-groups section {
+  padding: 14px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 16px;
+  background: rgba(8, 33, 49, 0.03);
+}
+
+.nexops-request-library-field-groups h4 {
+  margin: 0 0 10px;
+  color: #082131;
+  text-transform: capitalize;
+}
+
+.nexops-request-library-field-list {
+  display: grid;
+  gap: 8px;
+}
+
+.nexops-request-row-button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nexops-record-list li.selected,
+.nexops-record-list li:has(.nexops-request-row-button:hover) {
+  background: rgba(8, 33, 49, 0.06);
+}
+
+.nexops-request-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nexops-request-summary-grid article {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 16px;
+  background: rgba(8, 33, 49, 0.03);
+}
+
+.nexops-request-summary-grid h3,
+.nexops-request-summary-grid p,
+.nexops-request-summary-grid small {
+  margin: 0;
+}
+
+.nexops-request-alert-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nexops-request-alert-strip span {
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #14532d;
+  background: #dcfce7;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.nexops-request-propagation-table {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 18px;
+}
+
+.nexops-request-propagation-head,
+.nexops-request-propagation-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(140px, 1fr) repeat(5, minmax(60px, 0.45fr));
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.nexops-request-propagation-head {
+  color: #526675;
+  background: rgba(8, 33, 49, 0.05);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.nexops-request-propagation-row {
+  border-top: 1px solid rgba(8, 33, 49, 0.1);
+}
+
+.nexops-request-propagation-row strong,
+.nexops-request-propagation-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nexops-request-propagation-row label {
+  display: flex;
+  justify-content: center;
+}
+
+.nexops-quote-composer-card,
+.nexops-quote-detail,
+.nexops-quote-empty {
+  gap: 16px;
+}
+
+.nexops-quote-composer-grid,
+.nexops-quote-detail-grid,
+.nexops-quote-action-stack,
+.nexops-quote-history-list {
+  display: grid;
+  gap: 14px;
+}
+
+.nexops-quote-composer-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nexops-quote-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nexops-quote-action-stack {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nexops-quote-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 18px;
+  background: rgba(8, 33, 49, 0.03);
+}
+
+.nexops-quote-panel .nexops-field textarea,
+.nexops-quote-template-editor .nexops-field textarea {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  resize: vertical;
+  color: #101822;
+  background: transparent;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.nexops-quote-section-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-quote-section-head h3 {
+  margin: 0;
+}
+
+.nexops-quote-section-head span,
+.nexops-quote-template-chip small,
+.nexops-quote-history-list small,
+.nexops-quote-summary-pills span {
+  color: #526675;
+  font-size: 0.84rem;
+}
+
+.nexops-empty-copy {
+  margin: 0;
+  color: #526675;
+}
+
+.nexops-quote-summary-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nexops-quote-summary-pills span {
+  border-radius: 999px;
+  padding: 8px 11px;
+  background: rgba(168, 230, 0, 0.14);
+}
+
+.nexops-quote-line-list,
+.nexops-quote-history-list {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-quote-line-card,
+.nexops-quote-history-list article {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.nexops-quote-history-list article p,
+.nexops-quote-history-list article strong,
+.nexops-quote-history-list article small {
+  margin: 0;
+}
+
+.nexops-quote-line-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.nexops-quote-line-footer,
+.nexops-quote-detail-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-quote-line-footer strong,
+.nexops-quote-detail-line strong {
+  color: #082131;
+}
+
+.nexops-quote-line-footer button,
+.nexops-quote-section-head button,
+.nexops-quote-detail a,
+.nexops-quote-template-chip {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 999px;
+  padding: 10px 13px;
+  color: #082131;
+  background: #fff;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.nexops-quote-template-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nexops-quote-template-chip {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.nexops-quote-template-editor {
+  display: grid;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(8, 33, 49, 0.12);
+}
+
+.nexops-payment-schedule {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 18px;
+  background: rgba(8, 33, 49, 0.03);
+}
+
+.nexops-payment-schedule-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #082131;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.nexops-payment-schedule-list {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-payment-schedule-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.nexops-payment-schedule-row label {
+  display: grid;
+  gap: 6px;
+}
+
+.nexops-payment-schedule-row label span {
+  color: #526675;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.nexops-payment-schedule-row input,
+.nexops-payment-schedule-row select {
+  width: 100%;
+  min-width: 0;
+}
+
+.nexops-payment-schedule-row button,
+.nexops-payment-schedule-add {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 999px;
+  padding: 10px 13px;
+  color: #082131;
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nexops-payment-schedule-add {
+  justify-self: start;
+}
+
+.nexops-payment-schedule-spacer {
+  min-height: 1px;
+}
+
+.nexops-billing-detail {
+  display: grid;
+  gap: 20px;
+}
+
+.nexops-invoice-inline-total {
+  color: #082131;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.nexops-recovery-box {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 16px;
+  background: rgba(168, 230, 0, 0.1);
+}
+
+.nexops-recovery-box strong,
+.nexops-recovery-box p {
+  margin: 0;
+}
+
+.nexops-quote-toggle-grid,
+.nexops-quote-numbering-grid,
+.nexops-quote-totals {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-quote-toggle-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nexops-quote-numbering-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nexops-quote-numbering-grid section {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.nexops-quote-numbering-grid h3 {
+  margin: 0;
+  color: #082131;
+  text-transform: capitalize;
+}
+
+.nexops-quote-totals {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.nexops-quote-totals article {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.nexops-quote-totals.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nexops-quote-totals span {
+  color: #526675;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.nexops-quote-totals strong {
+  color: #082131;
+  font-size: 1.15rem;
+}
+
+.nexops-quote-detail-line {
+  padding: 12px;
+  border: 1px solid rgba(8, 33, 49, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.nexops-quote-detail-line span {
+  min-width: 0;
+}
+
+.nexops-quote-detail-line small {
+  display: block;
+}
+
+.nexops-quote-detail-line mark {
+  background: rgba(0, 240, 240, 0.18);
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.nexops-quote-empty {
+  min-height: 420px;
+  align-content: center;
+  justify-items: start;
+}
+
+.nexops-quote-empty h2,
+.nexops-quote-empty p {
+  margin: 0;
+}
+
 .nexops-embedded-panel {
   padding: 28px;
 }
@@ -2339,6 +2934,10 @@ h1 {
   .nexops-two-column,
   .nexops-module-grid,
   .nexops-module-grid-wide,
+  .nexops-request-builder-grid,
+  .nexops-request-form-fields,
+  .nexops-request-library-field-groups,
+  .nexops-request-summary-grid,
   .nexshot-template-grid,
   .nexshot-media-grid,
   .nexshot-item-columns {
@@ -2347,6 +2946,20 @@ h1 {
 
   .nexops-record-list li {
     align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-request-row-button,
+  .nexops-request-propagation-head,
+  .nexops-request-propagation-row,
+  .nexops-request-visibility-row,
+  .nexops-quote-composer-grid,
+  .nexops-quote-detail-grid,
+  .nexops-quote-action-stack,
+  .nexops-quote-toggle-grid,
+  .nexops-quote-numbering-grid,
+  .nexops-quote-line-metrics,
+  .nexops-payment-schedule-row {
     grid-template-columns: 1fr;
   }
 
@@ -2376,6 +2989,18 @@ h1 {
   .nexops-client-table-head,
   .nexops-client-table-row {
     min-width: 920px;
+  }
+
+  .nexops-quote-totals,
+  .nexops-quote-totals.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nexops-quote-section-head,
+  .nexops-quote-line-footer,
+  .nexops-quote-detail-line {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .nexops-client-detail-card {
@@ -2458,5 +3083,217 @@ h1 {
   .plan-grid,
   .tenant-row {
     grid-template-columns: 1fr;
+  }
+}
+
+.nexops-jobs-layout {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  margin-bottom: 20px;
+}
+
+.nexops-jobs-form {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-jobs-form.inline {
+  grid-template-columns: minmax(180px, 1.2fr) repeat(2, minmax(160px, 1fr)) auto;
+  align-items: end;
+}
+
+.nexops-jobs-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+.nexops-jobs-form input,
+.nexops-jobs-form select {
+  border: 1px solid rgba(10, 39, 64, 0.14);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.nexops-jobs-form button,
+.nexops-jobs-actions button,
+.nexops-jobs-sublist-item button {
+  border: 1px solid rgba(10, 39, 64, 0.14);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(180, 255, 60, 0.92), rgba(89, 239, 76, 0.92));
+  color: #05253a;
+}
+
+.nexops-jobs-form button:disabled,
+.nexops-jobs-actions button:disabled,
+.nexops-jobs-sublist-item button:disabled {
+  opacity: 0.55;
+}
+
+.nexops-jobs-card-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.nexops-jobs-list,
+.nexops-jobs-sublist,
+.nexops-jobs-history {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-jobs-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 4px;
+}
+
+.nexops-jobs-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(10, 39, 64, 0.12);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text-strong);
+  font: inherit;
+  font-weight: 700;
+}
+
+.nexops-jobs-filter-pill small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  min-height: 22px;
+  border-radius: 999px;
+  background: rgba(10, 39, 64, 0.08);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.nexops-jobs-filter-pill.active {
+  border-color: rgba(28, 177, 94, 0.35);
+  background: rgba(232, 255, 237, 0.94);
+  box-shadow: 0 12px 24px rgba(28, 177, 94, 0.12);
+}
+
+.nexops-jobs-filter-pill.active small {
+  background: rgba(28, 177, 94, 0.14);
+  color: #0a5d3f;
+}
+
+.nexops-jobs-list-item,
+.nexops-jobs-sublist-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  border: 1px solid rgba(10, 39, 64, 0.1);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: rgba(245, 252, 249, 0.9);
+  text-align: left;
+}
+
+.nexops-jobs-list-item.active {
+  border-color: rgba(28, 177, 94, 0.35);
+  box-shadow: 0 14px 30px rgba(28, 177, 94, 0.12);
+}
+
+.nexops-jobs-list-item div,
+.nexops-jobs-sublist-item div,
+.nexops-jobs-history div {
+  display: grid;
+  gap: 4px;
+}
+
+.nexops-jobs-detail,
+.nexops-jobs-section {
+  display: grid;
+  gap: 16px;
+}
+
+.nexops-jobs-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.nexops-jobs-stat {
+  border: 1px solid rgba(10, 39, 64, 0.08);
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(244, 250, 248, 0.84);
+}
+
+.nexops-jobs-stat strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.nexops-jobs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nexops-job-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  background: rgba(222, 245, 233, 0.92);
+  color: #0a5d3f;
+}
+
+.nexops-job-status.status-late,
+.nexops-job-status.status-action-required,
+.nexops-job-status.status-requires-invoicing {
+  background: rgba(255, 233, 210, 0.94);
+  color: #8d3f00;
+}
+
+.nexops-job-status.status-archived,
+.nexops-job-status.status-complete {
+  background: rgba(235, 239, 244, 0.94);
+  color: #4a6272;
+}
+
+.nexops-jobs-bullets {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+@media (max-width: 1080px) {
+  .nexops-jobs-layout,
+  .nexops-jobs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-jobs-form.inline {
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-jobs-filter-row {
+    gap: 8px;
   }
 }

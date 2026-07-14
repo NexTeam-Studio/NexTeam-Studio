@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { type ApprovalQueueService, type NexiTool, type Source, type Tenant } from "@nexteam/core";
+import type { JobLifecycleService } from "../crm/jobLifecycle.js";
 import { detectConflicts, driveTimeProviderFromEnv, suggestSlots, type ScheduledVisit, type ScheduleLocation } from "./schedulingEngine.js";
 import type { SchedulingRepository } from "./repository.js";
 import { queueScheduleNotification } from "./notifications.js";
@@ -47,6 +48,9 @@ const whatsMyDayInputSchema = z.object({
   date: z.string(),
   technicianId: z.string().optional()
 });
+const completeVisitInputSchema = z.object({
+  visitId: z.string()
+});
 
 function source(ref: string, label: string): Source {
   return { rail: "native", ref, label };
@@ -69,6 +73,7 @@ function visitFromInput(tenant: Tenant, input: z.infer<typeof bookVisitInputSche
 export function createSchedulingNexiTools(input: {
   repository: SchedulingRepository;
   approvalQueue: ApprovalQueueService;
+  jobLifecycleService?: JobLifecycleService | undefined;
   env?: NodeJS.ProcessEnv | undefined;
 }): NexiTool[] {
   return [
@@ -96,7 +101,16 @@ export function createSchedulingNexiTools(input: {
         const parsed = bookVisitInputSchema.parse(args);
         const visit = visitFromInput(tenant, parsed);
         const conflicts = detectConflicts(await input.repository.listVisits(tenant.id, { from: parsed.start, to: parsed.end }), visit);
-        const saved = await input.repository.saveVisit(visit);
+        const saved = input.jobLifecycleService
+          ? await input.jobLifecycleService.scheduleVisit({
+            tenantId: tenant.id,
+            jobId: parsed.jobId,
+            title: parsed.title,
+            start: parsed.start,
+            end: parsed.end,
+            assignedTo: parsed.assignedTo
+          })
+          : await input.repository.saveVisit(visit);
         const approval = await queueScheduleNotification({
           approvalQueue: input.approvalQueue,
           tenantId: tenant.id,
@@ -117,9 +131,36 @@ export function createSchedulingNexiTools(input: {
         if (!existing) {
           return { result: { visit: null, conflicts: [] }, sources: [] };
         }
-        const moved = await input.repository.saveVisit({ ...existing, start: parsed.start, end: parsed.end });
+        const moved = input.jobLifecycleService
+          ? await input.jobLifecycleService.moveVisit({
+            tenantId: tenant.id,
+            visitId: parsed.visitId,
+            start: parsed.start,
+            end: parsed.end
+          })
+          : await input.repository.saveVisit({ ...existing, start: parsed.start, end: parsed.end });
         const conflicts = detectConflicts(await input.repository.listVisits(tenant.id, { from: parsed.start, to: parsed.end }), moved).filter((visit) => visit.id !== moved.id);
         return { result: { visit: moved, conflicts }, sources: [source(moved.id, `Native visit ${moved.title}`)] };
+      }
+    },
+    {
+      name: "completeVisit",
+      description: "Complete a native visit and trigger the admin review alert when the last scheduled visit is done.",
+      inputSchema: completeVisitInputSchema,
+      handler: async (tenant, args) => {
+        if (!input.jobLifecycleService) {
+          throw new Error("Job lifecycle tools are not wired for visit completion yet.");
+        }
+        const parsed = completeVisitInputSchema.parse(args);
+        const result = await input.jobLifecycleService.completeVisit({
+          tenantId: tenant.id,
+          visitId: parsed.visitId,
+          actorId: "nexi"
+        });
+        return {
+          result,
+          sources: [source(result.visit.id, `Native visit ${result.visit.title}`), source(result.job.id, `Native job ${result.job.title}`)]
+        };
       }
     },
     {

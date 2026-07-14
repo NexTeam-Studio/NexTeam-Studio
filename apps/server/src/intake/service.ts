@@ -25,6 +25,7 @@ import type { IntakeRepository } from "./repository.js";
 
 const ALL_APPROVAL_KINDS: ArtifactKind[] = [
   "client",
+  "job",
   "tenant_provisioning",
   "email",
   "sms",

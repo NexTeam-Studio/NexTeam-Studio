@@ -2,6 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type Auth, type User } from "firebase/auth";
+import { NexOpsInvoicesPage } from "./nexopsInvoices";
+import { NexOpsJobsPage } from "./nexopsJobs";
+import { NexOpsQuotesPage } from "./nexopsQuotes";
+import { NexOpsRequestsPage } from "./nexopsRequests";
 import "./styles.css";
 
 interface Source {
@@ -176,6 +180,26 @@ interface CrmAddress {
   country: string;
 }
 
+interface CrmIntakeFieldValue {
+  key: string;
+  label: string;
+  value: string | number | boolean;
+  prominent?: boolean;
+  visibility: {
+    request: boolean;
+    quote: boolean;
+    job: boolean;
+    visit: boolean;
+    invoice: boolean;
+  };
+}
+
+interface CrmIntakeSnapshot {
+  narrative: string;
+  fieldValues: CrmIntakeFieldValue[];
+  fieldIndex: Record<string, string | number | boolean>;
+}
+
 interface CrmClient {
   id: string;
   tenantId: string;
@@ -222,14 +246,20 @@ interface CrmProperty {
 interface CrmJob {
   id: string;
   tenantId: string;
+  number?: string;
   clientId: string;
   propertyId?: string;
-  status: "lead" | "quoted" | "scheduled" | "in_progress" | "complete" | "invoiced" | "paid";
+  requestId?: string;
+  quoteId?: string;
+  status: "Upcoming" | "Today" | "Late" | "Unscheduled" | "Action Required" | "Requires Invoicing" | "Archived";
   title: string;
   startAt?: string;
   endAt?: string;
   lineItems?: Array<{ id: string; code: string; name: string; quantity: number; unitPrice: number; total: number }>;
   totals?: { subtotal: number; tax: number; total: number };
+  intake?: CrmIntakeSnapshot;
+  createdAt?: string;
+  updatedAt?: string;
   externalIds?: { jobber?: string };
 }
 
@@ -238,9 +268,11 @@ interface CrmQuote {
   tenantId: string;
   clientId: string;
   jobId?: string;
+  requestId?: string;
   status: string;
   title: string;
   totals: { subtotal: number; tax: number; total: number };
+  intake?: CrmIntakeSnapshot;
 }
 
 interface CrmInvoice {
@@ -249,9 +281,11 @@ interface CrmInvoice {
   clientId: string;
   jobId?: string;
   quoteId?: string;
+  requestId?: string;
   status: string;
   title: string;
   totals: { subtotal: number; tax: number; total: number };
+  intake?: CrmIntakeSnapshot;
 }
 
 interface CrmClientsResponse {
@@ -397,6 +431,7 @@ interface RuntimeConfigResponse {
   ok: boolean;
   firebase: FirebasePublicConfig;
   firebaseConfigured: boolean;
+  authRequired?: boolean;
 }
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
@@ -574,13 +609,51 @@ function createFirebaseAuth(config: FirebasePublicConfig): Auth | null {
   return getAuth(app);
 }
 
-async function loadFirebaseAuth(): Promise<Auth | null> {
-  if (completeFirebaseConfig(buildTimeFirebaseConfig)) {
-    return createFirebaseAuth(buildTimeFirebaseConfig);
+function localBypassUser(): User {
+  return {
+    uid: "local-owner",
+    email: "local-owner@aquatrace.test",
+    async getIdToken() {
+      return "";
+    },
+    async getIdTokenResult() {
+      return {
+        token: "",
+        authTime: "",
+        issuedAtTime: "",
+        expirationTime: "",
+        signInProvider: "custom",
+        signInSecondFactor: null,
+        claims: {
+          tenantId: DEFAULT_TENANT_ID,
+          tenantUserId: "local-owner",
+          tenantRole: "OWNER",
+          role: "OWNER"
+        }
+      };
+    }
+  } as unknown as User;
+}
+
+async function loadAuthBootstrap(): Promise<{ auth: Auth | null; authRequired: boolean; localUser: User | null }> {
+  let runtime: RuntimeConfigResponse | null = null;
+  try {
+    const response = await fetch("/api/public/runtime-config");
+    runtime = await response.json() as RuntimeConfigResponse;
+  } catch {
+    runtime = null;
   }
-  const response = await fetch("/api/public/runtime-config");
-  const runtime = await response.json() as RuntimeConfigResponse;
-  return runtime.ok && runtime.firebaseConfigured ? createFirebaseAuth(runtime.firebase) : null;
+  const config = completeFirebaseConfig(buildTimeFirebaseConfig)
+    ? buildTimeFirebaseConfig
+    : runtime?.ok && runtime.firebaseConfigured
+      ? runtime.firebase
+      : buildTimeFirebaseConfig;
+  const authRequired = runtime?.ok ? runtime.authRequired !== false : true;
+  return {
+    auth: createFirebaseAuth(config),
+    authRequired,
+    localUser: authRequired ? null : localBypassUser()
+  };
 }
 
 function sourceThumb(source: Source, tenantId?: string): React.ReactElement | null {
@@ -709,6 +782,17 @@ function clientPrimaryAddress(client: CrmClient): string {
 
 function clientStatusLabel(client: CrmClient): string {
   return client.tags?.some((tag) => tag.toLowerCase() === "lead") ? "Lead" : "Active";
+}
+
+function intakeSurfaceSummary(intake: CrmIntakeSnapshot | undefined, surface: "quote" | "job" | "invoice"): string {
+  if (!intake) {
+    return "";
+  }
+  const summary = intake.fieldValues
+    .filter((field) => field.visibility[surface] && (field.prominent || ["pool_configuration", "pool_type", "gate_code", "water_loss_rate", "pet_name", "pet_present"].includes(field.key)))
+    .slice(0, 3)
+    .map((field) => `${field.label}: ${typeof field.value === "boolean" ? (field.value ? "Yes" : "No") : String(field.value).replaceAll("_", " ")}`);
+  return summary.join(" · ");
 }
 
 function channelLabel(channel: ContactChannel | undefined): string {
@@ -917,8 +1001,14 @@ const NEXOPS_MODULES: Array<{ id: NexOpsModule; label: string; path: string }> =
 ];
 
 function nexOpsModuleFromPath(pathname: string): NexOpsModule {
-  const match = NEXOPS_MODULES.find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`));
-  return match?.id ?? "home";
+  const exact = NEXOPS_MODULES.find((module) => pathname === module.path);
+  if (exact) {
+    return exact.id;
+  }
+  const nested = [...NEXOPS_MODULES]
+    .sort((left, right) => right.path.length - left.path.length)
+    .find((module) => pathname.startsWith(`${module.path}/`));
+  return nested?.id ?? "home";
 }
 
 function parseCsvPreview(text: string): { rows: number; columns: string[] } {
@@ -942,6 +1032,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
   const [query, setQuery] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
   const [activeModule, setActiveModule] = useState<NexOpsModule>(() => nexOpsModuleFromPath(window.location.pathname));
+  const [focusedInvoiceId, setFocusedInvoiceId] = useState("");
   const [showCreateClient, setShowCreateClient] = useState(false);
   const [createStatus, setCreateStatus] = useState("");
   const [csvStatus, setCsvStatus] = useState("No CSV selected yet.");
@@ -989,6 +1080,21 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
     propertyCustomFieldName: "",
     propertyCustomFieldValue: ""
   });
+  const draftDisplayName = [newClient.firstName.trim(), newClient.lastName.trim()].filter(Boolean).join(" ") || newClient.company.trim();
+  const newClientHasName = draftDisplayName.length > 0;
+  const newClientHasPhone = newClient.phone.trim().length > 0;
+  const newClientHasAddress = [
+    newClient.street1.trim(),
+    newClient.city.trim(),
+    newClient.province.trim(),
+    newClient.postalCode.trim()
+  ].every(Boolean);
+  const createClientMissingFields = [
+    ...(newClientHasName ? [] : ["name"]),
+    ...(newClientHasAddress ? [] : ["address"]),
+    ...(newClientHasPhone ? [] : ["telephone"])
+  ];
+  const createClientCanSave = createClientMissingFields.length === 0;
 
   async function refreshRelatedRecords(tenantId = operatorContext.tenantId): Promise<void> {
     try {
@@ -1042,12 +1148,26 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
 
   function setModule(module: NexOpsModule): void {
     const target = NEXOPS_MODULES.find((entry) => entry.id === module) ?? NEXOPS_MODULES[0];
+    if (module !== "invoices" && module !== "payments") {
+      setFocusedInvoiceId("");
+    }
     setActiveModule(module);
     window.history.pushState({}, "", target.path);
   }
 
+  function openInvoiceWorkspace(invoiceId: string): void {
+    const target = NEXOPS_MODULES.find((entry) => entry.id === "invoices");
+    setFocusedInvoiceId(invoiceId);
+    setActiveModule("invoices");
+    window.history.pushState({}, "", target?.path ?? "/nexops/invoices");
+  }
+
   async function createClientFromForm(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
+    if (!createClientCanSave) {
+      setCreateStatus(`Add ${createClientMissingFields.join(", ")} before this client can be saved. Email is recommended, but it is optional.`);
+      return;
+    }
     setCreateStatus("Creating client...");
     const personName = {
       ...(newClient.title && newClient.title !== "No title" ? { title: newClient.title } : {}),
@@ -1622,7 +1742,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
         records: quotes.map((quote) => ({
           id: quote.id,
           title: quote.title,
-          detail: clientName(quote.clientId),
+          detail: [clientName(quote.clientId), intakeSurfaceSummary(quote.intake, "quote")].filter(Boolean).join(" - "),
           status: quote.status,
           amount: money(quote.totals.total)
         }))
@@ -1635,7 +1755,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
         records: jobs.map((job) => ({
           id: job.id,
           title: job.title,
-          detail: `${clientName(job.clientId)}${job.startAt ? ` - ${new Date(job.startAt).toLocaleString()}` : ""}`,
+          detail: [clientName(job.clientId), job.startAt ? new Date(job.startAt).toLocaleString() : "", intakeSurfaceSummary(job.intake, "job")].filter(Boolean).join(" - "),
           status: job.status.replace("_", " "),
           amount: money(job.totals?.total)
         }))
@@ -1648,7 +1768,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
         records: invoices.map((invoice) => ({
           id: invoice.id,
           title: invoice.title,
-          detail: clientName(invoice.clientId),
+          detail: [clientName(invoice.clientId), intakeSurfaceSummary(invoice.intake, "invoice")].filter(Boolean).join(" - "),
           status: invoice.status,
           amount: money(invoice.totals.total)
         }))
@@ -1659,7 +1779,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
         primaryAction: "Record payment",
         items: ["Stripe test-mode receipts", "Deposit/payment schedule scaffold", "No live charges without approval"],
         records: invoices
-          .filter((invoice) => invoice.status === "paid" || invoice.status === "partially_paid")
+          .filter((invoice) => invoice.status === "paid" || invoice.status === "partial_pay")
           .map((invoice) => ({
             id: invoice.id,
             title: invoice.title,
@@ -1863,6 +1983,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
                   {(["Main", "Work", "Personal", "Other"] as CrmEmail["label"][]).map((label) => <option key={label}>{label}</option>)}
                 </select></label>
               </div>
+              <p className="nexops-form-note">Email is recommended so quotes, invoices, and follow-ups have a reliable destination, but it is not required to save the client.</p>
               <button className="nexops-link-button" type="button">Communication settings</button>
               <h4>Lead information</h4>
               <label className="nexops-field"><span>Lead source</span><input value={newClient.leadSource} onChange={(event) => setNewClient({ ...newClient, leadSource: event.target.value })} /></label>
@@ -1957,9 +2078,9 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
             </div>
           </section>
           <div className="nexops-drawer-actions">
-            <span>{createStatus}</span>
+            <span>{createStatus || (createClientCanSave ? "Name, address, and telephone are present. Email is optional." : `Add ${createClientMissingFields.join(", ")} before Save becomes available.`)}</span>
             <button type="button" onClick={() => setShowCreateClient(false)}>Cancel</button>
-            <button type="submit">Save client</button>
+            <button type="submit" disabled={!createClientCanSave}>Save client</button>
           </div>
         </form>
       </div>
@@ -1972,6 +2093,46 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
     }
     if (activeModule === "clients") {
       return renderClients();
+    }
+    if (activeModule === "requests") {
+      return (
+        <NexOpsRequestsPage
+          tenantId={operatorContext.tenantId}
+          clients={clients}
+          properties={properties}
+          onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
+        />
+      );
+    }
+    if (activeModule === "quotes") {
+      return (
+        <NexOpsQuotesPage
+          tenantId={operatorContext.tenantId}
+          clients={clients}
+          onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
+        />
+      );
+    }
+    if (activeModule === "jobs") {
+      return (
+        <NexOpsJobsPage
+          tenantId={operatorContext.tenantId}
+          clients={clients}
+          onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
+          onOpenInvoice={openInvoiceWorkspace}
+        />
+      );
+    }
+    if (activeModule === "invoices" || activeModule === "payments") {
+      return (
+        <NexOpsInvoicesPage
+          tenantId={operatorContext.tenantId}
+          clients={clients}
+          entryPoint={activeModule}
+          focusedInvoiceId={focusedInvoiceId}
+          onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
+        />
+      );
     }
     if (activeModule === "schedule") {
       return <div className="nexops-embedded-panel"><SchedulePanel tenantId={operatorContext.tenantId} /></div>;
@@ -2037,8 +2198,14 @@ const NEXSHOT_MODULES: Array<{ id: NexShotModule; label: string; path: string }>
 ];
 
 function nexShotModuleFromPath(pathname: string): NexShotModule {
-  const match = NEXSHOT_MODULES.find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`));
-  return match?.id ?? "overview";
+  const exact = NEXSHOT_MODULES.find((module) => pathname === module.path);
+  if (exact) {
+    return exact.id;
+  }
+  const nested = [...NEXSHOT_MODULES]
+    .sort((left, right) => right.path.length - left.path.length)
+    .find((module) => pathname.startsWith(`${module.path}/`));
+  return nested?.id ?? "overview";
 }
 
 function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
@@ -2549,6 +2716,10 @@ function approvalKindLabel(item: ApprovalQueueItem): string {
   return item.kind.replaceAll("_", " ");
 }
 
+function responseQueuedApproval(sources: Source[] | undefined): boolean {
+  return (sources ?? []).some((source) => source.ref.startsWith("appr_") || source.label.startsWith("ApprovalQueue "));
+}
+
 function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElement {
   const [items, setItems] = useState<ApprovalQueueItem[]>([]);
   const [status, setStatus] = useState("Loading approvals...");
@@ -2624,7 +2795,12 @@ function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElement {
   useEffect(() => {
     void refresh();
     const timer = window.setInterval(() => void refresh(), 15000);
-    return () => window.clearInterval(timer);
+    const handleQueued = () => void refresh();
+    window.addEventListener("nexops:approval-queued", handleQueued);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("nexops:approval-queued", handleQueued);
+    };
   }, [props.tenantId]);
 
   const pendingItems = items.filter((item) => item.status === "pending");
@@ -3368,6 +3544,9 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
           sources: body.sources ?? []
         }
       ]);
+      if (body.ok && responseQueuedApproval(body.sources)) {
+        window.dispatchEvent(new CustomEvent("nexops:approval-queued"));
+      }
       void speakAssistant(assistantText);
     } catch {
       const fallback = "Nexi could not reach the authenticated Job Desk API.";
@@ -3631,12 +3810,17 @@ function App(): React.ReactElement {
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     let cancelled = false;
-    loadFirebaseAuth()
-      .then((nextAuth) => {
+    loadAuthBootstrap()
+      .then(({ auth: nextAuth, authRequired, localUser }) => {
         if (cancelled) {
           return;
         }
         setAuth(nextAuth);
+        if (!authRequired && localUser) {
+          setUser(localUser);
+          setAuthReady(true);
+          return;
+        }
         if (!nextAuth) {
           setAuthReady(true);
           return;

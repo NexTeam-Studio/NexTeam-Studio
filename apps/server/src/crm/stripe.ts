@@ -20,6 +20,10 @@ interface CheckoutRequestLike {
   headers: { [key: string]: string | string[] | undefined };
 }
 
+interface StripeRequestOptions {
+  stripeAccount?: string | undefined;
+}
+
 function requireStripeTestKey(env: NodeJS.ProcessEnv): string {
   const key = env.STRIPE_SECRET_KEY?.trim();
   if (!key) {
@@ -34,13 +38,24 @@ function requireStripeTestKey(env: NodeJS.ProcessEnv): string {
   return key;
 }
 
-async function stripeFormRequest<T>(env: NodeJS.ProcessEnv, path: string, body: URLSearchParams): Promise<T> {
+function stripeConnectedAccountForTenant(env: NodeJS.ProcessEnv, tenantId: string): string | undefined {
+  const normalized = tenantId.replace(/[^a-z0-9]/gi, "_").toUpperCase();
+  const exact = env[`STRIPE_CONNECTED_ACCOUNT_${normalized}`]?.trim();
+  const fallback = env.STRIPE_CONNECTED_ACCOUNT?.trim();
+  return exact || fallback || undefined;
+}
+
+async function stripeFormRequest<T>(env: NodeJS.ProcessEnv, path: string, body: URLSearchParams, options: StripeRequestOptions = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    authorization: `Bearer ${requireStripeTestKey(env)}`,
+    "content-type": "application/x-www-form-urlencoded"
+  };
+  if (options.stripeAccount?.trim()) {
+    headers["Stripe-Account"] = options.stripeAccount.trim();
+  }
   const response = await fetch(`https://api.stripe.com/v1${path}`, {
     method: "POST",
-    headers: {
-      authorization: `Bearer ${requireStripeTestKey(env)}`,
-      "content-type": "application/x-www-form-urlencoded"
-    },
+    headers,
     body
   });
   const data = await response.json() as { error?: { message?: string } };
@@ -64,18 +79,22 @@ function originFromRequest(req: CheckoutRequestLike, env: NodeJS.ProcessEnv): st
 export async function createStripeCheckoutSession(
   env: NodeJS.ProcessEnv,
   invoice: Invoice,
-  req: CheckoutRequestLike
+  req: CheckoutRequestLike,
+  options: { portalToken?: string | undefined } = {}
 ): Promise<StripeCheckoutSession> {
-  const amountCents = Math.round(invoice.totals.total * 100);
+  const amountCents = Math.round((invoice.ledger?.balanceDue ?? invoice.totals.total) * 100);
   if (amountCents <= 0) {
     throw new RailError("Invoice total must be greater than zero for Stripe checkout.", { provider: "stripe", op: "createCheckoutSession", status: 400 });
   }
   const origin = originFromRequest(req, env);
+  const portalTokenQuery = options.portalToken
+    ? `&portalToken=${encodeURIComponent(options.portalToken)}`
+    : "";
   const body = new URLSearchParams({
     mode: "payment",
     "payment_method_types[0]": "card",
-    success_url: `${origin}/portal/invoices/${encodeURIComponent(invoice.id)}/paid?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/portal/invoices/${encodeURIComponent(invoice.id)}?tenantId=${encodeURIComponent(invoice.tenantId)}`,
+    success_url: `${origin}/portal/invoices/${encodeURIComponent(invoice.id)}/paid?tenantId=${encodeURIComponent(invoice.tenantId)}&session_id={CHECKOUT_SESSION_ID}${portalTokenQuery}`,
+    cancel_url: `${origin}/portal/invoices/${encodeURIComponent(invoice.id)}?tenantId=${encodeURIComponent(invoice.tenantId)}${options.portalToken ? `&token=${encodeURIComponent(options.portalToken)}` : ""}`,
     client_reference_id: invoice.id,
     "line_items[0][price_data][currency]": "usd",
     "line_items[0][price_data][product_data][name]": invoice.title,
@@ -87,7 +106,9 @@ export async function createStripeCheckoutSession(
   if (invoice.quoteId) {
     body.set("metadata[quoteId]", invoice.quoteId);
   }
-  return stripeFormRequest<StripeCheckoutSession>(env, "/checkout/sessions", body);
+  return stripeFormRequest<StripeCheckoutSession>(env, "/checkout/sessions", body, {
+    stripeAccount: stripeConnectedAccountForTenant(env, invoice.tenantId)
+  });
 }
 
 function parseSignatureHeader(signatureHeader: string): { timestamp: string; signatures: string[] } {

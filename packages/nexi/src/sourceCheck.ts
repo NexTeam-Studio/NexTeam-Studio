@@ -44,6 +44,13 @@ const ACTION_PROMPT_PATTERNS = [
   /\buse\s+(?:the\s+)?(?:evap|evaporation)\s+calculator\b/i
 ];
 
+const UNSUPPORTED_WRITE_PATTERNS = [
+  /\b(?:delete|remove)\b.*\b(?:client|customer)(?:\s+record)?s?\b/i,
+  /\b(?:edit|change|update)\b.*\b(?:client|customer)(?:\s+record)?s?\b/i,
+  /\b(?:delete|remove)\b.*\brequests?\b/i,
+  /\b(?:delete|remove)\b.*\b(?:quote|job|invoice|payment)s?\b/i
+];
+
 const HONEST_FAILURE_PATTERNS = [
   /\b(?:i\s+)?(?:couldn'?t|could not|can'?t|cannot|wasn'?t able to|am not able to)\s+(?:read|reach|access|verify|pull|check|search|open)\b/i,
   /\b(?:tool|email rail|gmail rail|provider)\s+(?:failed|returned an error|did not return|could not return)\b/i,
@@ -73,6 +80,14 @@ export function promptIsActionRequest(prompt: string): boolean {
   return ACTION_PROMPT_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
+function promptLooksLikeUnsupportedWrite(prompt: string): boolean {
+  const normalized = prompt.trim();
+  if (/\bupdate me on\b/i.test(normalized)) {
+    return false;
+  }
+  return UNSUPPORTED_WRITE_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
 export function answerIsHonestFailure(answer: string): boolean {
   const normalized = answer.trim();
   return HONEST_FAILURE_PATTERNS.some((pattern) => pattern.test(normalized));
@@ -86,6 +101,13 @@ export function enforceSources(answer: string, sources: Source[], userPrompt = "
     && answerMentionsFactualRailData(answer)
     && sources.length === 0
   ) {
+    if (promptLooksLikeUnsupportedWrite(userPrompt)) {
+      return {
+        ok: false,
+        answer: "I can't do that write action yet. That is a capability gap, not a missing-data issue.",
+        failureReason: "capability_not_available"
+      };
+    }
     return {
       ok: false,
       answer: "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",

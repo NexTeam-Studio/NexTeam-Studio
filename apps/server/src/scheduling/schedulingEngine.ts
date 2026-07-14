@@ -14,7 +14,9 @@ export interface ScheduleLocation {
 export interface ScheduledVisit extends Visit {
   title: string;
   location: ScheduleLocation;
-  status: "scheduled" | "pending_approval" | "complete";
+  status: "scheduled" | "pending_approval" | "complete" | "cancelled";
+  completedAt?: string | undefined;
+  completedBy?: string | undefined;
   source?: "native" | "jobber" | undefined;
   readOnly?: boolean | undefined;
 }

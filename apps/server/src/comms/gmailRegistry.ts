@@ -1,10 +1,11 @@
-import type { EmailReadProvider, EmailSendProvider } from "@nexteam/core";
+import type { EmailReadProvider, EmailSendProvider, OutboundSms, SendReceipt } from "@nexteam/core";
 import { GmailReadOnlyAdapter, GmailSendAdapter, type GmailMailboxConfig } from "@nexteam/providers";
 
 export interface CommsRail {
   tenantId: string;
   readAdapters: Map<string, EmailReadProvider>;
   sendAdapter: EmailSendProvider | null;
+  sendSms?: ((message: OutboundSms) => Promise<SendReceipt>) | undefined;
   operatorEmail?: string | undefined;
 }
 
@@ -44,6 +45,37 @@ function configFromAnyEnv(env: NodeJS.ProcessEnv, prefixes: string[], fallbackAl
   return null;
 }
 
+async function sendSmsViaTwilio(env: NodeJS.ProcessEnv, message: OutboundSms): Promise<SendReceipt> {
+  const accountSid = value(env, "TWILIO_ACCOUNT_SID");
+  const authToken = value(env, "TWILIO_AUTH_TOKEN");
+  const from = value(env, "TWILIO_FROM_NUMBER");
+  if (!accountSid || !authToken || !from) {
+    throw new Error("TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER are required for SMS delivery.");
+  }
+  const body = new URLSearchParams({
+    To: message.to,
+    From: from,
+    Body: message.body
+  });
+  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(accountSid)}/Messages.json`, {
+    method: "POST",
+    headers: {
+      authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+      "content-type": "application/x-www-form-urlencoded"
+    },
+    body
+  });
+  const payload = await response.json() as { sid?: string; message?: string };
+  if (!response.ok || !payload.sid) {
+    throw new Error(payload.message || "Twilio SMS request failed.");
+  }
+  return {
+    provider: "twilio",
+    id: payload.sid,
+    acceptedAt: new Date().toISOString()
+  };
+}
+
 export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
   const tenantId = value(env, "TENANT_ID") || "aquatrace";
   const readAdapters = new Map<string, EmailReadProvider>();
@@ -67,6 +99,9 @@ export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
     tenantId,
     readAdapters,
     sendAdapter: sendConfig ? new GmailSendAdapter(sendConfig) : null,
+    sendSms: value(env, "TWILIO_ACCOUNT_SID") && value(env, "TWILIO_AUTH_TOKEN") && value(env, "TWILIO_FROM_NUMBER")
+      ? (message) => sendSmsViaTwilio(env, message)
+      : undefined,
     operatorEmail: value(env, "NEXI_OPERATOR_EMAIL") || value(env, "OPERATOR_EMAIL") || undefined
   };
 }

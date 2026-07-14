@@ -829,6 +829,7 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
   const lowerUserText = userText.toLowerCase();
   const correctionFollowUp = looksLikeCorrectionFollowUp(lowerUserText);
   const emailRef = emailRefFromText(userText);
+  const approvalContext = approvalContextFromMessages(messages);
   if (toolName === "createClient") {
     const parsed = createClientInputFromText(userText);
     record.name ??= parsed.name;
@@ -836,6 +837,84 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.emails ??= parsed.emails;
     record.phones ??= parsed.phones;
     record.consent ??= parsed.consent;
+  }
+  if (toolName === "createQuote") {
+    const parsed = createQuoteInputFromText(userText);
+    record.clientQuery ??= parsed.clientQuery;
+    record.title ??= parsed.title;
+    record.items ??= parsed.items;
+    record.approvalRules ??= parsed.approvalRules;
+  }
+  if (toolName === "createJob") {
+    const parsed = createJobInputFromText(userText);
+    record.clientQuery ??= parsed.clientQuery;
+    record.title ??= parsed.title;
+  }
+  if (toolName === "approvePendingApproval" || toolName === "rejectPendingApproval") {
+    record.approvalId ??= approvalContext?.approvalId;
+  }
+  if (toolName === "revisePendingClientCreateApproval") {
+    record.approvalId ??= approvalContext?.approvalId;
+    record.changeRequest ??= userText;
+  }
+  if (toolName === "revisePendingQuoteCreateApproval") {
+    record.approvalId ??= approvalContext?.approvalId;
+    record.changeRequest ??= userText;
+  }
+  if (toolName === "revisePendingJobCreateApproval" || toolName === "revisePendingJobActionApproval") {
+    record.approvalId ??= approvalContext?.approvalId;
+    record.changeRequest ??= userText;
+  }
+  if (toolName === "revisePendingLedgerActionApproval") {
+    record.approvalId ??= approvalContext?.approvalId;
+    record.changeRequest ??= userText;
+  }
+  if (toolName === "listJobs" && !record.q) {
+    record.q = entityQueryFromText(userText) || "";
+  }
+  if ((toolName === "listPayments" || toolName === "listDeposits" || toolName === "listRefunds" || toolName === "listCredits") && !record.q) {
+    record.q = entityQueryFromText(userText) || "";
+  }
+  if (toolName === "getJobDetail") {
+    record.jobId ??= userText.match(/\bjob_[a-z0-9-]+\b/i)?.[0];
+    record.query ??= entityQueryFromText(userText) || userText;
+  }
+  if (toolName === "getPaymentDetail") {
+    record.paymentId ??= userText.match(/\bpayment_[a-z0-9-]+\b/i)?.[0];
+    record.query ??= entityQueryFromText(userText) || userText;
+  }
+  if (toolName === "queueJobAction") {
+    record.jobId ??= userText.match(/\bjob_[a-z0-9-]+\b/i)?.[0];
+    record.query ??= entityQueryFromText(userText) || userText;
+    record.action ??= /\bclose\s+and\s+invoice\b/i.test(userText)
+      ? "close_and_invoice"
+      : /\bdismiss\b.*\breminder\b/i.test(userText) || /\barchive\b.*\bwithout\s+invoice\b/i.test(userText)
+        ? "dismiss_invoice_reminder"
+        : /\binvoice\b/i.test(userText) && !/\bclose\b/i.test(userText)
+          ? "invoice"
+          : "close";
+  }
+  if (toolName === "queueLedgerAction") {
+    record.paymentId ??= userText.match(/\bpayment_[a-z0-9-]+\b/i)?.[0];
+    record.invoiceId ??= userText.match(/\binvoice_[a-z0-9-]+\b/i)?.[0];
+    record.query ??= entityQueryFromText(userText) || userText;
+    record.action ??= /\brefund\b/i.test(userText)
+      ? "refund_payment"
+      : /\bbad debt\b/i.test(userText) || /\bwrite\s+off\b/i.test(userText)
+        ? "mark_bad_debt"
+        : "void_invoice";
+    const amount = Number(userText.match(/\$\s*(\d+(?:\.\d{1,2})?)/)?.[1] ?? "");
+    if (Number.isFinite(amount) && amount > 0) {
+      record.amount ??= amount;
+    }
+    const reason = userText.match(/\breason\s*(?:is|=|:)\s*(.+)$/i)?.[1]?.trim()
+      ?? userText.match(/\bbecause\s+(.+)$/i)?.[1]?.trim();
+    if (reason) {
+      record.reason ??= reason;
+    }
+  }
+  if (toolName === "completeVisit") {
+    record.visitId ??= userText.match(/\bvisit_[a-z0-9-]+\b/i)?.[0];
   }
   if (toolName === "startIntake") {
     const parsed = intakeStartInputFromText(userText);
@@ -1413,6 +1492,10 @@ function recentUserTextMatches(messages: GatewayMessage[], predicate: (lower: st
 function capabilityGapForRequest(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>): { answer: string; failureReason: string } | null {
   const userText = latestUserText(messages);
   const lower = userText.toLowerCase();
+  const unsupportedWriteGap = unsupportedWriteCapabilityGap(messages, toolsByName);
+  if (unsupportedWriteGap) {
+    return unsupportedWriteGap;
+  }
   const distanceFollowUp = looksLikeAddressOnlyFollowUp(userText) && recentUserTextMatches(messages, looksLikeDistanceQuestion);
   if ((looksLikeDistanceQuestion(lower) || distanceFollowUp) && !toolsByName.has("getDistance")) {
     return {
@@ -1454,9 +1537,22 @@ function capabilityGapForRequest(messages: GatewayMessage[], toolsByName: Map<st
 
 function directNoToolResponseForRequest(messages: GatewayMessage[]): { answer: string; failureReason?: string | undefined } | null {
   const userText = latestUserText(messages);
+  const approvalContext = approvalContextFromMessages(messages);
   const exactReply = userText.match(/^\s*reply\s+with\s+exactly\s*:?\s*([\s\S]+?)\s*$/i)?.[1]?.trim();
   if (exactReply) {
     return { answer: exactReply.replace(/^["']|["']$/g, "") };
+  }
+  if (approvalContext && looksLikeApprovalChangeRequest(userText)) {
+    if (hasActionableApprovalChangeRequest(userText, approvalContext)) {
+      return null;
+    }
+    return {
+      answer: approvalContext.revisableClientCreate
+        ? `Tell me what to change, and I'll restate the client before I save anything. Approval id: ${approvalContext.approvalId}`
+        : approvalContext.revisableQuoteCreate
+          ? `Tell me what to change, and I'll restate the quote before I create anything. Approval id: ${approvalContext.approvalId}`
+          : `Tell me what to change. If that queued action supports chat revision, I'll restate it before I run anything. Approval id: ${approvalContext.approvalId}`
+    };
   }
   if (!promptIsMetaOrFeedback(userText)) {
     return null;
@@ -1499,7 +1595,7 @@ function firstEmailAddress(text: string): string | undefined {
 }
 
 function firstPhoneNumber(text: string): string | undefined {
-  const labeled = text.match(/\b(?:phone|number|cell|call|text)\s*(?:is|=|:)?\s*([+()\d][+()\d\s.-]{6,})\b/i)?.[1];
+  const labeled = text.match(/\b(?:phone|telephone|number|mobile|cell|call|text)\s*(?:is|=|:)?\s*([+()\d][+()\d\s.-]{6,})\b/i)?.[1];
   const fallback = text.match(/\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/)?.[0];
   return (labeled ?? fallback)?.replace(/[^\d+]/g, "").trim();
 }
@@ -1507,6 +1603,140 @@ function firstPhoneNumber(text: string): string | undefined {
 function looksLikeCreateClientAction(lower: string): boolean {
   return /\b(?:add|create|set\s+up|make)\b.{0,40}\b(?:new\s+)?client\b/.test(lower)
     || /\b(?:new\s+client|client\s+create)\b/.test(lower);
+}
+
+function approvalIdFromText(text: string): string | undefined {
+  return text.match(/\bappr_[a-z0-9_-]+\b/i)?.[0];
+}
+
+function looksLikeApprovalYes(text: string): boolean {
+  return /^(?:yes|yep|yeah|approve|approved|looks good|go ahead|do it|run it|ship it|send it)\b/i.test(text.trim());
+}
+
+function looksLikeApprovalNo(text: string): boolean {
+  return /^(?:no|nope|reject|decline|cancel that|don't do it|do not do it)\b/i.test(text.trim());
+}
+
+function looksLikeApprovalChangeRequest(text: string): boolean {
+  return /\b(?:make changes|change it|revise it|update it|edit it|not yet|hold on)\b/i.test(text);
+}
+
+function hasClientApprovalChangeDetails(text: string): boolean {
+  return Boolean(
+    firstEmailAddress(text)
+    || firstPhoneNumber(text)
+    || /\b(?:name|client|address|street|road|drive|lane|court|avenue|boulevard|suite|unit|apt)\b/i.test(text)
+  );
+}
+
+function hasQuoteApprovalChangeDetails(text: string): boolean {
+  return /\b(?:title|quote\s+title|terms?|expire|expiry|expiration|discount|signature|deposit|card\s+on\s+file)\b/i.test(text)
+    || /\d+\s*%/.test(text)
+    || /\$\s*\d+(?:\.\d{1,2})?/.test(text);
+}
+
+function hasLedgerApprovalChangeDetails(text: string): boolean {
+  return /\b(?:refund|void|bad debt|write\s+off|reason)\b/i.test(text)
+    || /\$\s*\d+(?:\.\d{1,2})?/.test(text);
+}
+
+function hasActionableApprovalChangeRequest(
+  text: string,
+  approvalContext: {
+    revisableClientCreate: boolean;
+    revisableQuoteCreate: boolean;
+    revisableJobCreate: boolean;
+    revisableJobAction: boolean;
+    revisableLedgerAction: boolean;
+  } | null
+): boolean {
+  if (!approvalContext) {
+    return false;
+  }
+  return (approvalContext.revisableClientCreate && hasClientApprovalChangeDetails(text))
+    || (approvalContext.revisableQuoteCreate && hasQuoteApprovalChangeDetails(text))
+    || (approvalContext.revisableJobCreate && /\b(?:change|fix|update|rename|title)\b/i.test(text))
+    || (approvalContext.revisableJobAction && /\b(?:close\s+and\s+invoice|invoice only|invoice it|close only|just close|dismiss(?: the)? reminder|archive without invoice)\b/i.test(text))
+    || (approvalContext.revisableLedgerAction && hasLedgerApprovalChangeDetails(text));
+}
+
+function approvalContextFromMessages(messages: GatewayMessage[]): {
+  approvalId: string;
+  awaitingChanges: boolean;
+  revisableClientCreate: boolean;
+  revisableQuoteCreate: boolean;
+  revisableJobCreate: boolean;
+  revisableJobAction: boolean;
+  revisableLedgerAction: boolean;
+} | null {
+  for (const message of [...messages].reverse()) {
+    if (message.role !== "assistant" || typeof message.content !== "string") {
+      continue;
+    }
+    const approvalId = approvalIdFromText(message.content);
+    if (!approvalId) {
+      continue;
+    }
+    if (/tell me what to change/i.test(message.content)) {
+      return {
+        approvalId,
+        awaitingChanges: true,
+        revisableClientCreate: /create client:/i.test(message.content),
+        revisableQuoteCreate: /create quote:/i.test(message.content),
+        revisableJobCreate: /create job:/i.test(message.content),
+        revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:/i.test(message.content),
+        revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:/i.test(message.content)
+      };
+    }
+    if (/approve this\?\s*yes\s*\/\s*no\s*\/\s*make changes/i.test(message.content)) {
+      return {
+        approvalId,
+        awaitingChanges: false,
+        revisableClientCreate: /create client:/i.test(message.content),
+        revisableQuoteCreate: /create quote:/i.test(message.content),
+        revisableJobCreate: /create job:/i.test(message.content),
+        revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:/i.test(message.content),
+        revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:/i.test(message.content)
+      };
+    }
+  }
+  return null;
+}
+
+function unsupportedWriteCapabilityGap(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>): { answer: string; failureReason: string } | null {
+  const lower = latestUserText(messages).toLowerCase();
+  if (/\bupdate me on\b/.test(lower)) {
+    return null;
+  }
+  const patterns = [
+    {
+      pattern: /\b(?:delete|remove)\b.*\b(?:client|customer)(?:\s+record)?s?\b/i,
+      toolName: "deleteClient",
+      answer: "I can't delete client records yet. That is a capability gap, not a missing-data issue."
+    },
+    {
+      pattern: /\b(?:edit|change|update)\b.*\b(?:client|customer)(?:\s+record)?s?\b/i,
+      toolName: "updateClient",
+      answer: "I can't edit saved client records from chat yet. That is a capability gap, not a missing-data issue."
+    },
+    {
+      pattern: /\b(?:edit|change|update)\b.*\b(?:phone|email|address|billing|contact)\b/i,
+      toolName: "updateClient",
+      answer: "I can't edit saved client records from chat yet. That is a capability gap, not a missing-data issue."
+    },
+    {
+      pattern: /\b(?:delete|remove)\b.*\brequests?\b/i,
+      toolName: "deleteRequest",
+      answer: "I can't delete saved requests from chat yet. That is a capability gap, not a missing-data issue."
+    },
+    {
+      pattern: /\b(?:delete|remove)\b.*\b(?:quote|job|invoice|payment)s?\b/i,
+      toolName: "deleteCrmRecord",
+      answer: "I can't delete saved work or billing records from chat yet. That is a capability gap, not a missing-data issue."
+    }
+  ] as const;
+  const match = patterns.find((entry) => entry.pattern.test(lower) && !toolsByName.has(entry.toolName));
+  return match ? { answer: match.answer, failureReason: "capability_not_available" } : null;
 }
 
 function looksLikeStartIntakeAction(lower: string): boolean {
@@ -1628,7 +1858,7 @@ function intakeSessionIdFromPriorRuns(priorRuns: ToolRunTrace[]): string | undef
 }
 
 function createClientAddressMatchFromText(text: string): { address: string; index: number } | undefined {
-  const markerMatch = text.match(/\b(?:address\s*(?:is|=|:)?|at)\s+(.+?)(?=,\s*(?:email|e-mail|phone|number|with)\b|\s+(?:email|e-mail|phone|number)\b|[?.!]|$)/i);
+  const markerMatch = text.match(/\b(?:address\s*(?:is|=|:)?|at)\s+(.+?)(?=,\s*(?:email|e-mail|phone|telephone|number|mobile|cell|text|with)\b|\s+(?:email|e-mail|phone|telephone|number|mobile|cell|text)\b|[?.!]|$)/i);
   if (markerMatch?.[1]) {
     return { address: markerMatch[1].replace(/\s+/g, " ").trim(), index: markerMatch.index ?? -1 };
   }
@@ -1676,6 +1906,61 @@ function createClientInputFromText(text: string): { name: string; address?: stri
       email: /\b(?:email\s+ok|can\s+email|email\s+consent|opt(?:ed)?\s+in\s+for\s+email)\b/.test(lower),
       sms: /\b(?:text\s+ok|sms\s+ok|can\s+text|text\s+consent|opt(?:ed)?\s+in\s+for\s+(?:sms|text))\b/.test(lower)
     }
+  };
+}
+
+function quoteClientQueryFromText(text: string): string | undefined {
+  const direct = text.match(/\bfor\s+([a-z][a-z' -]+?)(?=\s+(?:for|with|using|at|total|amount|price|called|titled|named)\b|[?.!]|$)/i)?.[1]?.trim();
+  const candidate = direct ?? "";
+  return candidate && !looksLikeGenericEntityCandidate(candidate) && !/\$\s*\d/.test(candidate) ? candidate : undefined;
+}
+
+function quoteAmountFromText(text: string): number {
+  const amount = Number(text.match(/\$\s*(\d+(?:\.\d{1,2})?)/)?.[1] ?? "0");
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function quoteLineNameFromText(text: string, clientQuery?: string): string {
+  const normalized = clientQuery
+    ? text.replace(new RegExp(`\\bfor\\s+${clientQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i"), " ")
+    : text;
+  return normalized.match(/\bfor\s+(.+?)(?=\s+\$\d|\s+at\s+\$|[?.!]|$)/i)?.[1]?.trim() || "Quoted work";
+}
+
+function createQuoteInputFromText(text: string): {
+  clientQuery?: string | undefined;
+  title: string;
+  items: Array<{ kind: string; name: string; quantity: number; unitPrice: number }>;
+  approvalRules: { requireSignature: boolean; requireDeposit: boolean; requireCardOnFile: boolean };
+} {
+  const lower = text.toLowerCase();
+  const clientQuery = quoteClientQueryFromText(text);
+  return {
+    ...(clientQuery ? { clientQuery } : {}),
+    title: clientQuery ? `${clientQuery} quote` : "Quote draft",
+    items: [{
+      kind: "custom",
+      name: quoteLineNameFromText(text, clientQuery),
+      quantity: 1,
+      unitPrice: quoteAmountFromText(text)
+    }],
+    approvalRules: {
+      requireSignature: !/\bno signature\b/i.test(lower),
+      requireDeposit: /\bdeposit\b/i.test(lower),
+      requireCardOnFile: /\bcard\s+on\s+file\b/i.test(lower)
+    }
+  };
+}
+
+function createJobInputFromText(text: string): {
+  clientQuery?: string | undefined;
+  title: string;
+} {
+  const clientQuery = quoteClientQueryFromText(text) || entityQueryFromText(text) || undefined;
+  const explicitTitle = text.match(/\b(?:called|titled|named)\s+([^.!?\n]+)$/i)?.[1]?.trim();
+  return {
+    ...(clientQuery ? { clientQuery } : {}),
+    title: explicitTitle || (clientQuery ? `${clientQuery} job` : "Job draft")
   };
 }
 
@@ -1931,6 +2216,7 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   const lower = userText.toLowerCase();
   const emailRef = emailRefFromText(userText);
   const distanceFollowUp = looksLikeAddressOnlyFollowUp(userText) && recentUserTextMatches(messages, looksLikeDistanceQuestion);
+  const approvalContext = approvalContextFromMessages(messages);
   if (looksLikeFreeformContentDraftAction(lower)) {
     if (looksLikeReportBasedContentDraftAction(lower)) {
       return uniqueToolNames(["getJobDetail", "getDocuments"], toolsByName);
@@ -1943,8 +2229,91 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   if (emailRef && toolsByName.has("getEmailMessage")) {
     return ["getEmailMessage"];
   }
+  if (approvalContext && looksLikeApprovalYes(userText) && toolsByName.has("approvePendingApproval")) {
+    return ["approvePendingApproval"];
+  }
+  if (approvalContext && looksLikeApprovalNo(userText) && toolsByName.has("rejectPendingApproval")) {
+    return ["rejectPendingApproval"];
+  }
+  if (
+    approvalContext?.revisableClientCreate
+    && toolsByName.has("revisePendingClientCreateApproval")
+    && (approvalContext.awaitingChanges || hasClientApprovalChangeDetails(userText))
+  ) {
+    return ["revisePendingClientCreateApproval"];
+  }
+  if (
+    approvalContext?.revisableQuoteCreate
+    && toolsByName.has("revisePendingQuoteCreateApproval")
+    && (approvalContext.awaitingChanges || hasQuoteApprovalChangeDetails(userText))
+  ) {
+    return ["revisePendingQuoteCreateApproval"];
+  }
+  if (
+    approvalContext?.revisableJobCreate
+    && toolsByName.has("revisePendingJobCreateApproval")
+    && (approvalContext.awaitingChanges || /\b(?:change|fix|update|rename|title)\b/i.test(userText))
+  ) {
+    return ["revisePendingJobCreateApproval"];
+  }
+  if (
+    approvalContext?.revisableJobAction
+    && toolsByName.has("revisePendingJobActionApproval")
+    && (approvalContext.awaitingChanges || /\b(?:close\s+and\s+invoice|invoice only|invoice it|close only|just close|dismiss(?: the)? reminder|archive without invoice)\b/i.test(userText))
+  ) {
+    return ["revisePendingJobActionApproval"];
+  }
+  if (
+    approvalContext?.revisableLedgerAction
+    && toolsByName.has("revisePendingLedgerActionApproval")
+    && (approvalContext.awaitingChanges || hasLedgerApprovalChangeDetails(userText))
+  ) {
+    return ["revisePendingLedgerActionApproval"];
+  }
   if (looksLikeCreateClientAction(lower) && toolsByName.has("createClient")) {
     return ["createClient"];
+  }
+  if (/\b(?:create|add|draft|new)\b.*\bquote\b/i.test(lower) && toolsByName.has("createQuote")) {
+    return ["createQuote"];
+  }
+  if (/\b(?:create|add|draft|new)\b.*\bjob\b/i.test(lower) && toolsByName.has("createJob")) {
+    return ["createJob"];
+  }
+  if (/\b(?:show|list|find|open)\b.*\bjobs?\b/i.test(lower) && toolsByName.has("listJobs")) {
+    return ["listJobs"];
+  }
+  if (/\bjob\b/i.test(lower) && /\b(?:detail|details|tell me|show me|what(?:'| i)?s|what is|open)\b/i.test(lower) && toolsByName.has("getJobDetail")) {
+    return ["getJobDetail"];
+  }
+  if (/\b(?:close|invoice|archive)\b.*\bjob\b/i.test(lower) && toolsByName.has("queueJobAction")) {
+    return ["queueJobAction"];
+  }
+  if (/\b(?:refund|void|bad debt|write\s+off)\b/i.test(lower) && toolsByName.has("queueLedgerAction")) {
+    return ["queueLedgerAction"];
+  }
+  if (/\bcomplete\b.*\bvisit\b/i.test(lower) && toolsByName.has("completeVisit")) {
+    return ["completeVisit"];
+  }
+  if (/\b(?:show|list|find|open)\b.*\bquotes?\b/i.test(lower) && toolsByName.has("listQuotes")) {
+    return ["listQuotes"];
+  }
+  if (/\bquote\b/i.test(lower) && /\b(?:detail|details|tell me|show me|what(?:'| i)?s|what is|open)\b/i.test(lower) && toolsByName.has("getQuoteDetail")) {
+    return ["getQuoteDetail"];
+  }
+  if (/\b(?:show|list|find|open)\b.*\bpayments?\b/i.test(lower) && toolsByName.has("listPayments")) {
+    return ["listPayments"];
+  }
+  if (/\bpayment\b/i.test(lower) && /\b(?:detail|details|tell me|show me|what(?:'| i)?s|what is|open)\b/i.test(lower) && toolsByName.has("getPaymentDetail")) {
+    return ["getPaymentDetail"];
+  }
+  if (/\b(?:show|list|find|open)\b.*\bdeposits?\b/i.test(lower) && toolsByName.has("listDeposits")) {
+    return ["listDeposits"];
+  }
+  if (/\b(?:show|list|find|open)\b.*\brefunds?\b/i.test(lower) && toolsByName.has("listRefunds")) {
+    return ["listRefunds"];
+  }
+  if (/\b(?:show|list|find|open)\b.*\bcredits?\b/i.test(lower) && toolsByName.has("listCredits")) {
+    return ["listCredits"];
   }
   if (looksLikeFinalizeIntakeAction(lower) && toolsByName.has("finalizeIntake")) {
     return ["finalizeIntake"];
@@ -2352,10 +2721,200 @@ function clientLookupAnswer(latestText: string, result: unknown): string | undef
   return `I found ${names.length} matching clients in ${foundIn}: ${names.slice(0, 5).join(", ")}${names.length > 5 ? ", and more" : ""}.`;
 }
 
+function approvalPromptAnswer(result: unknown, intro: string): string | undefined {
+  const record = objectRecord(result);
+  const approval = objectRecord(record?.approval);
+  const preview = objectRecord(approval?.preview);
+  const title = stringValue(preview?.title);
+  const body = stringValue(preview?.body);
+  const approvalId = stringValue(approval?.id);
+  if (!title || !body || !approvalId) {
+    return undefined;
+  }
+  return `${intro}\n\n${title}\n${body}\n\nApprove this? yes / no / make changes.\nApproval id: ${approvalId}`;
+}
+
+function approvalExecutionAnswer(result: unknown): string | undefined {
+  const record = objectRecord(result);
+  const approval = objectRecord(record?.executedApproval) ?? objectRecord(record?.approval);
+  const execution = objectRecord(record?.execution);
+  const client = objectRecord(execution?.client);
+  const quote = objectRecord(execution?.quote);
+  const job = objectRecord(execution?.job);
+  const invoice = objectRecord(execution?.invoice);
+  const payment = objectRecord(execution?.payment);
+  const refund = objectRecord(execution?.refund);
+  const receiptReview = objectRecord(execution?.receiptReview);
+  const approvalId = stringValue(approval?.id);
+  if (client?.name && typeof client.name === "string") {
+    return `Approved and created ${client.name}${approvalId ? ` (${approvalId})` : ""}.`;
+  }
+  if (quote?.title && typeof quote.title === "string") {
+    const quoteNumber = typeof quote.number === "string" && quote.number.trim() ? ` ${quote.number}` : "";
+    return `Approved and created quote${quoteNumber}: ${quote.title}${approvalId ? ` (${approvalId})` : ""}.`;
+  }
+  if (job?.title && typeof job.title === "string") {
+    const jobNumber = typeof job.number === "string" && job.number.trim() ? ` ${job.number}` : "";
+    const invoiceText = invoice?.id ? ` Invoice ${String(invoice.number ?? invoice.id)} is ready.` : "";
+    return `Approved and executed job${jobNumber}: ${job.title}${approvalId ? ` (${approvalId})` : ""}.${invoiceText}`.trim();
+  }
+  if (refund?.id) {
+    return `Approved and recorded refund ${String(refund.id)}${approvalId ? ` (${approvalId})` : ""}${receiptReview?.id ? `. Receipt review ${String(receiptReview.id)} is paused for review.` : "."}`;
+  }
+  if (invoice?.id && (payment?.id || execution?.preview)) {
+    return `Approved and updated invoice ${String(invoice.number ?? invoice.id)}${approvalId ? ` (${approvalId})` : ""}${payment?.id ? ` with payment ${String(payment.id)}` : ""}.`;
+  }
+  return approvalId ? `Approved and executed ${approvalId}.` : "Approved and executed the pending item.";
+}
+
+function approvalRejectionAnswer(result: unknown): string | undefined {
+  const record = objectRecord(result);
+  const approval = objectRecord(record?.approval);
+  const preview = objectRecord(approval?.preview);
+  const title = stringValue(preview?.title);
+  const approvalId = stringValue(approval?.id);
+  if (!approvalId) {
+    return undefined;
+  }
+  return title ? `Rejected ${title} (${approvalId}). Nothing was created.` : `Rejected ${approvalId}. Nothing was created.`;
+}
+
 function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns: ToolRunTrace[]): string | undefined {
   const latestText = latestUserText(messages);
   const lower = latestText.toLowerCase();
   const distanceFollowUp = looksLikeAddressOnlyFollowUp(latestText) && recentUserTextMatches(messages, looksLikeDistanceQuestion);
+  const createClientRun = [...toolRuns].reverse().find((run) => run.name === "createClient");
+  if (createClientRun) {
+    const record = objectRecord(createClientRun.result);
+    const clarification = stringValue(record?.needsClarification);
+    if (clarification) {
+      return clarification;
+    }
+    const prompt = approvalPromptAnswer(createClientRun.result, "Client draft ready. I read it back below exactly before anything gets created.");
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const createQuoteRun = [...toolRuns].reverse().find((run) => run.name === "createQuote");
+  if (createQuoteRun) {
+    const prompt = approvalPromptAnswer(createQuoteRun.result, "Quote draft ready. I read it back below before anything gets created.");
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const createJobRun = [...toolRuns].reverse().find((run) => run.name === "createJob");
+  if (createJobRun) {
+    const record = objectRecord(createJobRun.result);
+    const clarification = stringValue(record?.needsClarification);
+    if (clarification) {
+      return clarification;
+    }
+    const prompt = approvalPromptAnswer(createJobRun.result, "Job draft ready. I read it back below before anything gets created.");
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const reviseClientRun = [...toolRuns].reverse().find((run) => run.name === "revisePendingClientCreateApproval");
+  if (reviseClientRun) {
+    const record = objectRecord(reviseClientRun.result);
+    const clarification = stringValue(record?.needsClarification);
+    if (clarification) {
+      return clarification;
+    }
+    const prompt = approvalPromptAnswer(reviseClientRun.result, "Updated client draft ready. Please check the revised record below before I create it.");
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const reviseQuoteRun = [...toolRuns].reverse().find((run) => run.name === "revisePendingQuoteCreateApproval");
+  if (reviseQuoteRun) {
+    const record = objectRecord(reviseQuoteRun.result);
+    const clarification = stringValue(record?.needsClarification);
+    if (clarification) {
+      return clarification;
+    }
+    const prompt = approvalPromptAnswer(reviseQuoteRun.result, "Updated quote draft ready. Please check the revised quote below before I create it.");
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const reviseJobCreateRun = [...toolRuns].reverse().find((run) => run.name === "revisePendingJobCreateApproval");
+  if (reviseJobCreateRun) {
+    const record = objectRecord(reviseJobCreateRun.result);
+    const clarification = stringValue(record?.needsClarification);
+    if (clarification) {
+      return clarification;
+    }
+    const prompt = approvalPromptAnswer(reviseJobCreateRun.result, "Updated job draft ready. Please check the revised job below before I create it.");
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const queueJobActionRun = [...toolRuns].reverse().find((run) => run.name === "queueJobAction");
+  if (queueJobActionRun) {
+    const record = objectRecord(queueJobActionRun.result);
+    const clarification = stringValue(record?.needsClarification);
+    if (clarification) {
+      return clarification;
+    }
+    const prompt = approvalPromptAnswer(queueJobActionRun.result, "Job action ready. I read the action back below before anything executes.");
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const queueLedgerActionRun = [...toolRuns].reverse().find((run) => run.name === "queueLedgerAction");
+  if (queueLedgerActionRun) {
+    const record = objectRecord(queueLedgerActionRun.result);
+    const clarification = stringValue(record?.needsClarification);
+    if (clarification) {
+      return clarification;
+    }
+    const prompt = approvalPromptAnswer(queueLedgerActionRun.result, "Billing action ready. I read the action back below before anything executes.");
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const completeVisitRun = [...toolRuns].reverse().find((run) => run.name === "completeVisit");
+  if (completeVisitRun) {
+    const record = objectRecord(completeVisitRun.result);
+    const visit = objectRecord(record?.visit);
+    const job = objectRecord(record?.job);
+    if (visit || job) {
+      return `I marked ${String(visit?.title ?? "that visit")} complete. ${String(job?.title ?? "The job")} is now ${String(job?.status ?? "updated")}.`;
+    }
+  }
+  const reviseJobActionRun = [...toolRuns].reverse().find((run) => run.name === "revisePendingJobActionApproval");
+  if (reviseJobActionRun) {
+    const record = objectRecord(reviseJobActionRun.result);
+    const clarification = stringValue(record?.needsClarification);
+    if (clarification) {
+      return clarification;
+    }
+    const prompt = approvalPromptAnswer(reviseJobActionRun.result, "Updated job action ready. Please check the revised action below before I run it.");
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const reviseLedgerActionRun = [...toolRuns].reverse().find((run) => run.name === "revisePendingLedgerActionApproval");
+  if (reviseLedgerActionRun) {
+    const record = objectRecord(reviseLedgerActionRun.result);
+    const clarification = stringValue(record?.needsClarification);
+    if (clarification) {
+      return clarification;
+    }
+    const prompt = approvalPromptAnswer(reviseLedgerActionRun.result, "Updated billing action ready. Please check the revised action below before I run it.");
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const approveApprovalRun = [...toolRuns].reverse().find((run) => run.name === "approvePendingApproval");
+  if (approveApprovalRun) {
+    return approvalExecutionAnswer(approveApprovalRun.result);
+  }
+  const rejectApprovalRun = [...toolRuns].reverse().find((run) => run.name === "rejectPendingApproval");
+  if (rejectApprovalRun) {
+    return approvalRejectionAnswer(rejectApprovalRun.result);
+  }
   const distanceRun = [...toolRuns].reverse().find((run) => run.name === "getDistance" && run.sources.length > 0);
   if (distanceRun && (looksLikeDistanceQuestion(lower) || distanceFollowUp)) {
     return distanceAnswer(distanceRun.result);

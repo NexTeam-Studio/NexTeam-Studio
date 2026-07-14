@@ -1,0 +1,18 @@
+COMMAND: node --test apps/server/test/ledger-foundation.test.mjs`r`n
+? quote deposit bridge migrates into first-class payment, deposit, receipt review, and saved card records without rewriting the quote snapshot (6.3393ms)
+? invoice sync auto-applies deposits and credits, and overdue only marks awaiting-payment invoices (13.1461ms)
+? Stripe checkout uses tenant Connect headers with zero application fee and charges only the current balance due (20.5157ms)
+? payment states progress through pending, succeeded, partially_refunded, and refunded with separate refund and receipt-review records (3.5996ms)
+? invoice and refund receipt reviews carry the default invoice, quote, report, photo, and job-file attachments (1.4723ms)
+? one payment stays on one invoice and overpayment rolls forward as credit instead of splitting across invoices (0.8485ms)
+? the ledger model already accepts PayPal and Venmo slots even though the live adapter is deferred (0.4157ms)
+? draft invoices stay draft and failed payments do not settle the invoice (0.4851ms)
+? void and bad debt stay distinct, and ledger chat tools require OWNER or OFFICE_ADMIN for execution (10.4866ms)
+? tests 9
+? suites 0
+? pass 9
+? fail 0
+? cancelled 0
+? skipped 0
+? todo 0
+? duration_ms 263.7442

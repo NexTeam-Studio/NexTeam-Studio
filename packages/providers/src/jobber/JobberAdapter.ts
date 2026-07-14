@@ -103,13 +103,12 @@ export interface JobberProductOrService {
 
 function normalizeJobStatus(status: string): JobStatus {
   const lower = status.toLowerCase();
-  if (lower.includes("complete")) return "complete";
-  if (lower.includes("invoice")) return "invoiced";
-  if (lower.includes("paid")) return "paid";
-  if (lower.includes("progress")) return "in_progress";
-  if (lower.includes("schedule")) return "scheduled";
-  if (lower.includes("quote")) return "quoted";
-  return "lead";
+  if (lower.includes("invoice") || lower.includes("paid")) return "Archived";
+  if (lower.includes("complete")) return "Action Required";
+  if (lower.includes("progress")) return "Today";
+  if (lower.includes("schedule")) return "Upcoming";
+  if (lower.includes("quote") || lower.includes("lead")) return "Unscheduled";
+  return "Unscheduled";
 }
 
 function readConnection(payload: unknown, key: string): { nodes: unknown[]; hasNextPage: boolean; endCursor: string } {

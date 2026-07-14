@@ -37,9 +37,11 @@ export type PlatformModule =
 
 export type ArtifactKind =
   | "client"
+  | "job"
   | "tenant_provisioning"
   | "email"
   | "sms"
+  | "payment"
   | "gbp_post"
   | "social_post"
   | "article"
@@ -180,6 +182,83 @@ export type ContactChannel = "email" | "sms" | "both" | "none";
 export type PhoneLabel = "Main" | "Work" | "Mobile" | "Home" | "Fax" | "Other";
 export type EmailLabel = "Main" | "Work" | "Personal" | "Other";
 export type SmsCapability = "mobile" | "landline" | "fax" | "invalid" | "unknown";
+export type DocumentSequenceKind = "request" | "quote" | "job" | "invoice";
+export type InvoiceStatus = "draft" | "sent" | "awaiting_payment" | "partial_pay" | "paid" | "void" | "bad_debt";
+export type QuoteStatus =
+  | "draft"
+  | "pending_approval"
+  | "sent"
+  | "change_requested"
+  | "approved"
+  | "approved_internal"
+  | "declined"
+  | "expired"
+  | "archived";
+export type QuoteDeliveryMode = "email" | "sms" | "mark_sent";
+export type QuoteSignatureMode = "drawn" | "typed";
+export type QuoteDepositKind = "amount" | "percent";
+export type InvoiceDeliveryMode = "email" | "sms" | "mark_sent";
+export type PaymentScheduleTrigger = "on_approval" | "on_job_close" | "on_date";
+export type PaymentScheduleAmountKind = "amount" | "percent";
+export type ReceiptReviewChannel = "email" | "sms";
+
+export interface DocumentNumberingRule {
+  prefix: string;
+  separator: string;
+  padWidth: number;
+  nextValue: number;
+}
+
+export interface DocumentNumberingSettings {
+  request: DocumentNumberingRule;
+  quote: DocumentNumberingRule;
+  job: DocumentNumberingRule;
+  invoice: DocumentNumberingRule;
+}
+
+export interface QuoteDiscount {
+  kind: "amount" | "percent";
+  value: number;
+}
+
+export interface PaymentScheduleMilestone {
+  id: ID;
+  label: string;
+  trigger: PaymentScheduleTrigger;
+  dueAt?: string | undefined;
+  amountKind: PaymentScheduleAmountKind;
+  amount: number;
+  note?: string | undefined;
+}
+
+export interface PaymentSchedulePlan {
+  enabled: boolean;
+  milestones: PaymentScheduleMilestone[];
+  updatedAt?: string | undefined;
+}
+
+export interface LedgerStatusEntry<TStatus extends string = string> {
+  status: TStatus;
+  changedAt: string;
+  changedBy?: ID | undefined;
+  note?: string | undefined;
+}
+
+export interface QuoteApprovalRules {
+  requireSignature: boolean;
+  requireDeposit: boolean;
+  requireCardOnFile: boolean;
+  depositKind?: QuoteDepositKind | undefined;
+  depositValue?: number | undefined;
+}
+
+export interface QuoteTotals {
+  subtotal: number;
+  discount?: number | undefined;
+  tax: number;
+  total: number;
+  taxRate?: number | undefined;
+}
 
 export interface PhoneContact {
   id?: ID | undefined;
@@ -226,13 +305,13 @@ export interface ClientCommunicationSettings {
 }
 
 export type JobStatus =
-  | "lead"
-  | "quoted"
-  | "scheduled"
-  | "in_progress"
-  | "complete"
-  | "invoiced"
-  | "paid";
+  | "Upcoming"
+  | "Today"
+  | "Late"
+  | "Unscheduled"
+  | "Action Required"
+  | "Requires Invoicing"
+  | "Archived";
 
 export interface Client {
   id: ID;
@@ -283,26 +362,132 @@ export interface Property {
   externalIds?: { jobber?: string | undefined } | undefined;
 }
 
+export type IntakeSurface = "request" | "quote" | "job" | "visit" | "invoice";
+export type IntakeFieldType = "text" | "textarea" | "email" | "phone" | "select" | "boolean" | "number";
+export type IntakeFieldGroup = "contact" | "property" | "pool" | "safety" | "service" | "notes";
+export type RequestStatus = "new" | "archived" | "converted_to_quote" | "converted_to_job";
+export type RequestSource = "website_form" | "office_existing_client" | "office_new_client" | "legacy_lead_backfill";
+export type RequestMatchType = "none" | "exact_email" | "exact_phone" | "selected_existing_client" | "selected_existing_property";
+
+export interface IntakeFieldVisibility {
+  request: boolean;
+  quote: boolean;
+  job: boolean;
+  visit: boolean;
+  invoice: boolean;
+}
+
+export interface IntakeFieldDefinition {
+  key: string;
+  label: string;
+  type: IntakeFieldType;
+  group: IntakeFieldGroup;
+  required?: boolean | undefined;
+  options?: string[] | undefined;
+  helpText?: string | undefined;
+  prominent?: boolean | undefined;
+}
+
+export interface IntakeFieldValue extends IntakeFieldDefinition {
+  value: string | number | boolean;
+  visibility: IntakeFieldVisibility;
+}
+
+export interface IntakeSnapshot {
+  narrative?: string | undefined;
+  fieldValues: IntakeFieldValue[];
+  fieldIndex: Record<string, string | number | boolean>;
+}
+
+export interface RequestForm {
+  id: ID;
+  tenantId: ID;
+  slug: string;
+  title: string;
+  intro?: string | undefined;
+  active: boolean;
+  fieldDefinitions: IntakeFieldDefinition[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ServiceRequestMatch {
+  matchedClientId?: ID | undefined;
+  matchedPropertyId?: ID | undefined;
+  matchedBy: RequestMatchType;
+  matchedValue?: string | undefined;
+  reviewRequired: boolean;
+  reviewedAt?: string | undefined;
+}
+
+export interface ServiceRequest {
+  id: ID;
+  tenantId: ID;
+  number?: string | undefined;
+  formId?: ID | undefined;
+  formSlug?: string | undefined;
+  source: RequestSource;
+  status: RequestStatus;
+  subject: string;
+  clientName: string;
+  email?: string | undefined;
+  phone?: string | undefined;
+  propertyAddress?: Address | undefined;
+  narrative: string;
+  consent: { email: boolean; sms: boolean };
+  intake: IntakeSnapshot;
+  match: ServiceRequestMatch;
+  selectedClientId?: ID | undefined;
+  selectedPropertyId?: ID | undefined;
+  convertedQuoteId?: ID | undefined;
+  convertedJobId?: ID | undefined;
+  sourceLeadId?: ID | undefined;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt?: string | undefined;
+  reopenedAt?: string | undefined;
+  notifications?: {
+    adminNotifiedAt?: string | undefined;
+    clientConfirmationAt?: string | undefined;
+  } | undefined;
+}
+
 export interface LineItem {
   id: ID;
   code: string;
   name: string;
+  description?: string | undefined;
   quantity: number;
   unitPrice: number;
   total: number;
+  source?: "catalog" | "custom" | undefined;
+  catalogCode?: string | undefined;
+  clientSelectable?: boolean | undefined;
+  defaultSelected?: boolean | undefined;
 }
 
 export interface Job {
   id: ID;
   tenantId: ID;
+  number?: string | undefined;
   clientId: ID;
   propertyId?: ID;
+  requestId?: ID | undefined;
+  quoteId?: ID | undefined;
   status: JobStatus;
   title: string;
   startAt?: string | undefined;
   endAt?: string | undefined;
+  createdAt?: string | undefined;
+  updatedAt?: string | undefined;
+  closedAt?: string | undefined;
+  closedBy?: ID | undefined;
+  archivedAt?: string | undefined;
+  archivedBy?: ID | undefined;
   lineItems: LineItem[];
-  totals: { subtotal: number; tax: number; total: number };
+  totals: QuoteTotals;
+  paymentSchedule?: PaymentSchedulePlan | undefined;
+  intake?: IntakeSnapshot | undefined;
   externalIds?: { jobber?: string | undefined } | undefined;
 }
 
@@ -310,11 +495,13 @@ export interface Visit {
   id: ID;
   tenantId: ID;
   jobId: ID;
+  requestId?: ID | undefined;
   start: string;
   end: string;
   assignedTo: ID[];
   checklistRef?: ID | undefined;
   outcome?: string | undefined;
+  intake?: IntakeSnapshot | undefined;
 }
 
 export interface Media {
@@ -380,40 +567,418 @@ export interface QuoteDraft {
   tenantId: ID;
   clientId: ID;
   jobId?: ID | undefined;
+  requestId?: ID | undefined;
+  templateId?: ID | undefined;
   title: string;
   lineItems: LineItem[];
+  approvalRules: QuoteApprovalRules;
+  discount?: QuoteDiscount | undefined;
+  taxRate?: number | undefined;
+  expiresAt?: string | undefined;
+  terms?: string | undefined;
+}
+
+export interface QuotePortalAccess {
+  tokenHash?: string | undefined;
+  tokenIssuedAt?: string | undefined;
+  viewedAt?: string | undefined;
+  lastApprovalAttemptAt?: string | undefined;
+}
+
+export interface QuoteSignatureRecord {
+  mode: QuoteSignatureMode;
+  typedName?: string | undefined;
+  drawnDataUrl?: string | undefined;
+  signedAt: string;
+  ipAddress: string;
+}
+
+export interface QuoteDeliveryRecord {
+  id: ID;
+  mode: QuoteDeliveryMode;
+  sentAt: string;
+  target?: string | undefined;
+  sentBy?: string | undefined;
+  receiptId?: ID | undefined;
+  note?: string | undefined;
+}
+
+export interface QuoteLineComment {
+  lineItemId: ID;
+  comment: string;
+}
+
+export interface QuoteChangeRequest {
+  id: ID;
+  requestedAt: string;
+  requestedBy?: string | undefined;
+  lineComments: QuoteLineComment[];
+  note?: string | undefined;
+  resolvedAt?: string | undefined;
+}
+
+export interface QuoteDepositBridge {
+  required: boolean;
+  kind: QuoteDepositKind;
+  amount: number;
+  capturedAt?: string | undefined;
+  cardholderName?: string | undefined;
+  cardBrand?: string | undefined;
+  cardLast4?: string | undefined;
+  cardOnFileAuthorized?: boolean | undefined;
+  autoSavedCardOnFile?: boolean | undefined;
+}
+
+export interface QuoteVersionSnapshot {
+  version: number;
+  archivedAt: string;
+  reason: "renewed" | "edited_before_send";
+  title: string;
+  lineItems: LineItem[];
+  totals: QuoteTotals;
+  status: QuoteStatus;
+  expiresAt?: string | undefined;
+  terms?: string | undefined;
+  discount?: QuoteDiscount | undefined;
+  approvalRules: QuoteApprovalRules;
 }
 
 export interface Quote {
   id: ID;
   tenantId: ID;
+  number?: string | undefined;
   clientId: ID;
   jobId?: ID | undefined;
-  status: "draft" | "pending_approval" | "sent" | "signed" | "declined";
+  requestId?: ID | undefined;
+  convertedJobId?: ID | undefined;
+  templateId?: ID | undefined;
+  version?: number | undefined;
+  status: QuoteStatus;
   title: string;
   lineItems: LineItem[];
-  totals: { subtotal: number; tax: number; total: number };
+  totals: QuoteTotals;
+  approvalRules: QuoteApprovalRules;
+  discount?: QuoteDiscount | undefined;
+  expiresAt?: string | undefined;
+  sentAt?: string | undefined;
+  approvedAt?: string | undefined;
+  approvedBy?: string | undefined;
+  approvedByRole?: "client" | "OWNER" | "OFFICE_ADMIN" | undefined;
+  archivedAt?: string | undefined;
   approvalId?: ID | undefined;
   pdfRef?: string | undefined;
-  portalTokenHash?: string | undefined;
-  signedBy?: string | undefined;
-  signedAt?: string | undefined;
-  signatureIp?: string | undefined;
+  portal?: QuotePortalAccess | undefined;
+  signature?: QuoteSignatureRecord | undefined;
+  delivery?: QuoteDeliveryRecord[] | undefined;
+  changeRequests?: QuoteChangeRequest[] | undefined;
+  deposit?: QuoteDepositBridge | undefined;
+  paymentSchedule?: PaymentSchedulePlan | undefined;
+  terms?: string | undefined;
+  versions?: QuoteVersionSnapshot[] | undefined;
+  createdAt?: string | undefined;
+  updatedAt?: string | undefined;
+  intake?: IntakeSnapshot | undefined;
   externalIds?: { jobber?: string | undefined; stripe?: string | undefined } | undefined;
+}
+
+export interface QuoteTemplate {
+  id: ID;
+  tenantId: ID;
+  name: string;
+  description?: string | undefined;
+  titlePrefix?: string | undefined;
+  defaultLineItems?: LineItem[] | undefined;
+  defaultApprovalRules: QuoteApprovalRules;
+  defaultPaymentSchedule?: PaymentSchedulePlan | undefined;
+  expiryDays?: number | undefined;
+  terms?: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvoiceDeliveryPreferences {
+  emailIncludePdf: boolean;
+  emailIncludeSummary: boolean;
+  emailIncludePayLink: boolean;
+  smsIncludeSummary: boolean;
+  smsIncludePayLink: boolean;
+  smsIncludeHostedLink: boolean;
+}
+
+export interface CrmSettings {
+  tenantId: ID;
+  documentNumbering: DocumentNumberingSettings;
+  quoteDefaults: {
+    expiryDays: number;
+    autoSaveCardOnDeposit: boolean;
+    approvalRules: QuoteApprovalRules;
+    terms: string;
+  };
+  invoiceDefaults: {
+    dueDays: number;
+    terms: string;
+    delivery: InvoiceDeliveryPreferences;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PaymentProvider = "stripe" | "paypal" | "manual" | "quote_bridge";
+export type PaymentMethodKind = "card" | "ach" | "cash" | "check" | "bank_transfer" | "other" | "paypal" | "venmo";
+export type PaymentStatus = "pending" | "failed" | "succeeded" | "refunded" | "partially_refunded";
+export type DepositStatus = "available" | "partially_applied" | "applied" | "released" | "refunded";
+export type CreditStatus = "available" | "partially_applied" | "applied";
+export type RefundStatus = "pending" | "succeeded" | "failed";
+export type ReceiptReviewStatus = "draft" | "ready_to_send" | "sent";
+export type ReceiptReviewKind = "payment" | "refund";
+export type ReceiptAttachmentKind = "invoice_pdf" | "quote_pdf" | "field_report" | "photo" | "job_file";
+
+export interface SavedBillingCard {
+  id: ID;
+  label: string;
+  cardholderName?: string | undefined;
+  brand?: string | undefined;
+  last4?: string | undefined;
+  reusable: boolean;
+  source: "quote_approval" | "manual" | "migration";
+  sourceQuoteId?: ID | undefined;
+  externalIds?: {
+    stripePaymentMethodId?: string | undefined;
+    paypalVaultTokenId?: string | undefined;
+    localReusableToken?: string | undefined;
+  } | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentMethodDetails {
+  checkNumber?: string | undefined;
+  bankTransferReference?: string | undefined;
+  otherReference?: string | undefined;
+  payerName?: string | undefined;
+  failureMessage?: string | undefined;
+}
+
+export interface ClientBillingProfile {
+  id: ID;
+  tenantId: ID;
+  clientId: ID;
+  savedCards: SavedBillingCard[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LedgerApplication {
+  invoiceId: ID;
+  amount: number;
+  appliedAt: string;
+  releasedAt?: string | undefined;
+  releasedBy?: ID | undefined;
+  note?: string | undefined;
+}
+
+export interface Payment {
+  id: ID;
+  tenantId: ID;
+  clientId: ID;
+  invoiceId?: ID | undefined;
+  quoteId?: ID | undefined;
+  depositId?: ID | undefined;
+  provider: PaymentProvider;
+  method: PaymentMethodKind;
+  status: PaymentStatus;
+  amount: number;
+  appliedAmount: number;
+  excessCreditAmount?: number | undefined;
+  currency: "usd";
+  note?: string | undefined;
+  capturedAt?: string | undefined;
+  failedAt?: string | undefined;
+  savedCardId?: ID | undefined;
+  methodDetails?: PaymentMethodDetails | undefined;
+  cardSummary?: {
+    cardholderName?: string | undefined;
+    brand?: string | undefined;
+    last4?: string | undefined;
+  } | undefined;
+  externalIds?: {
+    stripeCheckoutSessionId?: string | undefined;
+    stripePaymentIntentId?: string | undefined;
+    paypalOrderId?: string | undefined;
+    paypalCaptureId?: string | undefined;
+  } | undefined;
+  statusHistory: LedgerStatusEntry<PaymentStatus>[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Deposit {
+  id: ID;
+  tenantId: ID;
+  clientId: ID;
+  paymentId: ID;
+  quoteId?: ID | undefined;
+  invoiceId?: ID | undefined;
+  source: "quote_approval" | "billing_history";
+  amount: number;
+  availableAmount: number;
+  status: DepositStatus;
+  applications: LedgerApplication[];
+  statusHistory: LedgerStatusEntry<DepositStatus>[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Credit {
+  id: ID;
+  tenantId: ID;
+  clientId: ID;
+  invoiceId?: ID | undefined;
+  paymentId?: ID | undefined;
+  depositId?: ID | undefined;
+  source: "overpayment" | "manual_adjustment" | "released_deposit";
+  amount: number;
+  availableAmount: number;
+  status: CreditStatus;
+  applications: LedgerApplication[];
+  statusHistory: LedgerStatusEntry<CreditStatus>[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Refund {
+  id: ID;
+  tenantId: ID;
+  clientId: ID;
+  paymentId: ID;
+  invoiceId?: ID | undefined;
+  provider: PaymentProvider;
+  method: PaymentMethodKind;
+  amount: number;
+  reason?: string | undefined;
+  status: RefundStatus;
+  externalIds?: {
+    stripeRefundId?: string | undefined;
+    paypalRefundId?: string | undefined;
+  } | undefined;
+  statusHistory: LedgerStatusEntry<RefundStatus>[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReceiptReviewAttachment {
+  id: ID;
+  kind: ReceiptAttachmentKind;
+  label: string;
+  refId?: ID | undefined;
+  storageRef?: string | undefined;
+  mime?: string | undefined;
+}
+
+export interface ReceiptReviewSendRecord {
+  id: ID;
+  channel: ReceiptReviewChannel;
+  target: string;
+  sentAt: string;
+  receiptId?: ID | undefined;
+}
+
+export interface ReceiptReview {
+  id: ID;
+  tenantId: ID;
+  clientId: ID;
+  kind: ReceiptReviewKind;
+  paymentId?: ID | undefined;
+  refundId?: ID | undefined;
+  invoiceId?: ID | undefined;
+  quoteId?: ID | undefined;
+  jobId?: ID | undefined;
+  status: ReceiptReviewStatus;
+  attachments: ReceiptReviewAttachment[];
+  subject: string;
+  bodyText: string;
+  emailRecipients: string[];
+  smsRecipients: string[];
+  sendChannels: ReceiptReviewChannel[];
+  hostedLink: string;
+  statusHistory: LedgerStatusEntry<ReceiptReviewStatus>[];
+  createdAt: string;
+  updatedAt: string;
+  sentAt?: string | undefined;
+  sendHistory?: ReceiptReviewSendRecord[] | undefined;
+}
+
+export interface InvoiceLedgerSummary {
+  depositApplied: number;
+  creditApplied: number;
+  paymentApplied: number;
+  refundedAmount: number;
+  balanceDue: number;
+  overdue: boolean;
+  writtenOffAmount?: number | undefined;
+}
+
+export interface InvoicePortalAccess {
+  tokenHash?: string | undefined;
+  tokenIssuedAt?: string | undefined;
+  viewedAt?: string | undefined;
+  lastPaymentAttemptAt?: string | undefined;
+}
+
+export interface InvoiceDeliveryRecord {
+  id: ID;
+  mode: InvoiceDeliveryMode;
+  sentAt: string;
+  target?: string | undefined;
+  sentBy?: string | undefined;
+  receiptId?: string | undefined;
+  subject?: string | undefined;
+  note?: string | undefined;
+  includePdf?: boolean | undefined;
+  includeSummary?: boolean | undefined;
+  includePayLink?: boolean | undefined;
+  includeHostedLink?: boolean | undefined;
+}
+
+export interface InvoiceJobReference {
+  jobId: ID;
+  number?: string | undefined;
+  title: string;
+  amount: number;
 }
 
 export interface Invoice {
   id: ID;
   tenantId: ID;
+  number?: string | undefined;
   clientId: ID;
   jobId?: ID | undefined;
+  jobIds?: ID[] | undefined;
+  jobReferences?: InvoiceJobReference[] | undefined;
   quoteId?: ID | undefined;
-  status: "draft" | "sent" | "paid" | "void" | "overdue";
+  requestId?: ID | undefined;
+  status: InvoiceStatus;
   title: string;
   lineItems: LineItem[];
-  totals: { subtotal: number; tax: number; total: number };
+  totals: QuoteTotals;
+  discount?: QuoteDiscount | undefined;
+  createdAt?: string | undefined;
+  updatedAt?: string | undefined;
+  sentAt?: string | undefined;
   dueAt?: string | undefined;
   paidAt?: string | undefined;
+  voidedAt?: string | undefined;
+  voidedBy?: ID | undefined;
+  badDebtAt?: string | undefined;
+  badDebtBy?: ID | undefined;
+  terms?: string | undefined;
+  paymentSchedule?: PaymentSchedulePlan | undefined;
+  deliveryDefaults?: InvoiceDeliveryPreferences | undefined;
+  portal?: InvoicePortalAccess | undefined;
+  delivery?: InvoiceDeliveryRecord[] | undefined;
+  statusHistory?: LedgerStatusEntry<InvoiceStatus>[] | undefined;
+  ledger?: InvoiceLedgerSummary | undefined;
+  intake?: IntakeSnapshot | undefined;
   externalIds?: { jobber?: string | undefined; stripe?: string | undefined } | undefined;
 }
 
@@ -540,7 +1105,14 @@ export interface CRMProvider {
   getJobs(range: { from: string; to: string }): Promise<Job[]>;
   getJobDetail(ref: { id?: ID; nameQuery?: string }): Promise<JobDetail>;
   createClient?(d: NewClient): Promise<Client>;
+  createJob?(job: Job): Promise<Job>;
+  getQuotes?(): Promise<Quote[]>;
+  createQuote?(quote: Quote): Promise<Quote>;
   draftQuote?(d: QuoteDraft): Promise<Quote>;
+  updateQuote?(id: ID, patch: Partial<Quote>): Promise<Quote>;
+  getInvoices?(): Promise<Invoice[]>;
+  createInvoice?(invoice: Invoice): Promise<Invoice>;
+  updateInvoice?(id: ID, patch: Partial<Invoice>): Promise<Invoice>;
   updateJobStatus?(id: ID, s: JobStatus): Promise<Job>;
 }
 
@@ -575,12 +1147,26 @@ export type EventType =
   | "client.created"
   | "job.created"
   | "job.completed"
+  | "job.state_changed"
+  | "job.closed"
+  | "job.requires_invoicing_cleared"
   | "visit.booked"
   | "visit.completed"
+  | "invoice.reminder_due"
   | "media.uploaded"
   | "quote.sent"
+  | "quote.approved"
   | "quote.signed"
+  | "quote.change_requested"
+  | "quote.renewed"
+  | "invoice.created"
   | "invoice.paid"
+  | "payment.created"
+  | "payment.failed"
+  | "refund.created"
+  | "invoice.voided"
+  | "invoice.bad_debt"
+  | "receipt.review_created"
   | "lead.received"
   | "review.received"
   | "content.published";
@@ -608,6 +1194,9 @@ export interface ApprovalItem {
   status: "pending" | "approved" | "rejected" | "executed" | "failed";
   createdBy: "nexi" | "system" | "user";
   decidedAt?: string | undefined;
+  decidedBy?: string | undefined;
+  executedAt?: string | undefined;
+  executedBy?: string | undefined;
 }
 
 export interface NexiTool {

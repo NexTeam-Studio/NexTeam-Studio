@@ -1,0 +1,2159 @@
+{
+  "generatedAt": "2026-07-14T02:25:08.561Z",
+  "tenantId": "aquatrace",
+  "seededIds": {
+    "closeJobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+    "closeInvoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+    "receiptReviewId": "receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+    "combineJobIds": [
+      "job_d24498f6-efac-44de-9e3c-37daf01a8fb8",
+      "job_04baf3a1-5a4a-4f1f-84e7-62cf591379fc"
+    ],
+    "quoteBridgeId": "quote_4414b811-8ef0-4342-a4a1-4655d00c6125"
+  },
+  "transcript": [
+    {
+      "label": "close_and_invoice_draft",
+      "messages": [
+        {
+          "role": "user",
+          "content": "close and invoice job_f89ef5fb-2f79-4a50-9d2d-85810604d579"
+        }
+      ],
+      "answer": "Job action ready. I read the action back below before anything executes.\n\nClose and invoice job: Close and invoice proof\nJob: Close and invoice proof\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step.\n\nApprove this? yes / no / make changes.\nApproval id: appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c",
+      "toolRuns": [
+        {
+          "name": "queueJobAction",
+          "result": {
+            "approval": {
+              "id": "appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c",
+              "tenantId": "aquatrace",
+              "kind": "job",
+              "preview": {
+                "title": "Close and invoice job: Close and invoice proof",
+                "body": "Job: Close and invoice proof\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performJobAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                  "action": "close_and_invoice"
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "preview": {
+              "job": {
+                "id": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                "tenantId": "aquatrace",
+                "number": "JOB-0001",
+                "clientId": "client_1",
+                "propertyId": "property_1",
+                "status": "Unscheduled",
+                "title": "Close and invoice proof",
+                "createdAt": "2026-07-14T02:25:08.527Z",
+                "updatedAt": "2026-07-14T02:25:08.527Z",
+                "lineItems": [
+                  {
+                    "id": "line_1",
+                    "code": "LEAK",
+                    "name": "Close and invoice proof",
+                    "description": "Close and invoice proof description",
+                    "quantity": 1,
+                    "unitPrice": 300,
+                    "total": 300,
+                    "source": "custom"
+                  }
+                ],
+                "totals": {
+                  "subtotal": 300,
+                  "tax": 0,
+                  "total": 300
+                },
+                "paymentSchedule": {
+                  "enabled": true,
+                  "milestones": [
+                    {
+                      "id": "milestone_close_milestone",
+                      "label": "Close milestone",
+                      "trigger": "on_job_close",
+                      "amountKind": "percent",
+                      "amount": 50,
+                      "note": "Close milestone note"
+                    }
+                  ],
+                  "updatedAt": "2026-07-13T12:00:00.000Z"
+                },
+                "client": {
+                  "id": "client_1",
+                  "tenantId": "aquatrace",
+                  "name": "Deborah Justice",
+                  "emails": [
+                    "deborah@example.test"
+                  ],
+                  "phones": [
+                    "8645551212"
+                  ],
+                  "tags": [],
+                  "consent": {
+                    "email": true,
+                    "sms": true
+                  },
+                  "communicationSettings": {
+                    "quotesAndInvoices": "both",
+                    "jobReminders": "both",
+                    "jobClosureFollowUps": "email",
+                    "reviewRequests": "email",
+                    "smsDefaultMode": "one_way"
+                  }
+                },
+                "property": {
+                  "id": "property_1",
+                  "tenantId": "aquatrace",
+                  "clientId": "client_1",
+                  "label": "Deborah Justice residence",
+                  "address": {
+                    "street1": "181 Isbell Road",
+                    "city": "Fair Play",
+                    "province": "SC",
+                    "postalCode": "29643",
+                    "country": "US"
+                  },
+                  "access": {
+                    "gateCode": "4421",
+                    "accessNotes": "Use the side gate by the equipment pad."
+                  },
+                  "assets": []
+                },
+                "visits": [],
+                "reminders": {
+                  "visit": []
+                },
+                "history": [
+                  {
+                    "id": "job_evt_88e6d63c-d441-444e-b9be-571779588075",
+                    "tenantId": "aquatrace",
+                    "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "type": "job.created",
+                    "createdAt": "2026-07-14T02:25:08.527Z",
+                    "payload": {
+                      "title": "Close and invoice proof",
+                      "createdBy": "system"
+                    }
+                  }
+                ],
+                "invoices": []
+              },
+              "action": "close_and_invoice",
+              "title": "Close and invoice job: Close and invoice proof",
+              "body": "Job: Close and invoice proof\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step."
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c",
+              "label": "ApprovalQueue job action appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c",
+          "label": "ApprovalQueue job action appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c"
+        }
+      ]
+    },
+    {
+      "label": "close_and_invoice_approved",
+      "messages": [
+        {
+          "role": "user",
+          "content": "close and invoice job_f89ef5fb-2f79-4a50-9d2d-85810604d579"
+        },
+        {
+          "role": "assistant",
+          "content": "Job action ready. I read the action back below before anything executes.\n\nClose and invoice job: Close and invoice proof\nJob: Close and invoice proof\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step.\n\nApprove this? yes / no / make changes.\nApproval id: appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "answer": "Approved and executed Close and invoice proof.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c",
+              "tenantId": "aquatrace",
+              "kind": "job",
+              "preview": {
+                "title": "Close and invoice job: Close and invoice proof",
+                "body": "Job: Close and invoice proof\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performJobAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                  "action": "close_and_invoice"
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.535Z",
+              "decidedBy": "owner_1"
+            },
+            "executedApproval": {
+              "id": "appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c",
+              "tenantId": "aquatrace",
+              "kind": "job",
+              "preview": {
+                "title": "Close and invoice job: Close and invoice proof",
+                "body": "Job: Close and invoice proof\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performJobAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                  "action": "close_and_invoice"
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.535Z",
+              "decidedBy": "owner_1",
+              "executedAt": "2026-07-14T02:25:08.545Z",
+              "executedBy": "owner_1"
+            },
+            "execution": {
+              "job": {
+                "id": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                "tenantId": "aquatrace",
+                "number": "JOB-0001",
+                "clientId": "client_1",
+                "propertyId": "property_1",
+                "status": "Archived",
+                "title": "Close and invoice proof",
+                "createdAt": "2026-07-14T02:25:08.527Z",
+                "updatedAt": "2026-07-14T02:25:08.535Z",
+                "closedAt": "2026-07-14T02:25:08.535Z",
+                "closedBy": "owner_1",
+                "lineItems": [
+                  {
+                    "id": "line_1",
+                    "code": "LEAK",
+                    "name": "Close and invoice proof",
+                    "description": "Close and invoice proof description",
+                    "quantity": 1,
+                    "unitPrice": 300,
+                    "total": 300,
+                    "source": "custom"
+                  }
+                ],
+                "totals": {
+                  "subtotal": 300,
+                  "tax": 0,
+                  "total": 300
+                },
+                "paymentSchedule": {
+                  "enabled": true,
+                  "milestones": [
+                    {
+                      "id": "milestone_close_milestone",
+                      "label": "Close milestone",
+                      "trigger": "on_job_close",
+                      "amountKind": "percent",
+                      "amount": 50,
+                      "note": "Close milestone note"
+                    }
+                  ],
+                  "updatedAt": "2026-07-13T12:00:00.000Z"
+                },
+                "client": {
+                  "id": "client_1",
+                  "tenantId": "aquatrace",
+                  "name": "Deborah Justice",
+                  "emails": [
+                    "deborah@example.test"
+                  ],
+                  "phones": [
+                    "8645551212"
+                  ],
+                  "tags": [],
+                  "consent": {
+                    "email": true,
+                    "sms": true
+                  },
+                  "communicationSettings": {
+                    "quotesAndInvoices": "both",
+                    "jobReminders": "both",
+                    "jobClosureFollowUps": "email",
+                    "reviewRequests": "email",
+                    "smsDefaultMode": "one_way"
+                  }
+                },
+                "property": {
+                  "id": "property_1",
+                  "tenantId": "aquatrace",
+                  "clientId": "client_1",
+                  "label": "Deborah Justice residence",
+                  "address": {
+                    "street1": "181 Isbell Road",
+                    "city": "Fair Play",
+                    "province": "SC",
+                    "postalCode": "29643",
+                    "country": "US"
+                  },
+                  "access": {
+                    "gateCode": "4421",
+                    "accessNotes": "Use the side gate by the equipment pad."
+                  },
+                  "assets": []
+                },
+                "visits": [],
+                "reminders": {
+                  "visit": []
+                },
+                "history": [
+                  {
+                    "id": "job_evt_88e6d63c-d441-444e-b9be-571779588075",
+                    "tenantId": "aquatrace",
+                    "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "type": "job.created",
+                    "createdAt": "2026-07-14T02:25:08.527Z",
+                    "payload": {
+                      "title": "Close and invoice proof",
+                      "createdBy": "system"
+                    }
+                  },
+                  {
+                    "id": "job_evt_61b04cee-27ae-463c-80f2-230cec126830",
+                    "tenantId": "aquatrace",
+                    "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "type": "job.closed",
+                    "createdAt": "2026-07-14T02:25:08.535Z",
+                    "payload": {
+                      "closedBy": "owner_1"
+                    }
+                  },
+                  {
+                    "id": "job_evt_cf5d96eb-fbe7-471b-8124-784a09bcb01b",
+                    "tenantId": "aquatrace",
+                    "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "type": "job.requires_invoicing_cleared",
+                    "createdAt": "2026-07-14T02:25:08.535Z",
+                    "payload": {
+                      "resolvedByAction": "invoice_created",
+                      "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b"
+                    }
+                  }
+                ],
+                "invoices": [
+                  {
+                    "id": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                    "tenantId": "aquatrace",
+                    "number": "INV-0001",
+                    "clientId": "client_1",
+                    "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "jobIds": [
+                      "job_f89ef5fb-2f79-4a50-9d2d-85810604d579"
+                    ],
+                    "jobReferences": [
+                      {
+                        "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                        "number": "JOB-0001",
+                        "title": "Close and invoice proof",
+                        "amount": 300
+                      }
+                    ],
+                    "status": "partial_pay",
+                    "title": "Invoice - Close and invoice proof",
+                    "lineItems": [
+                      {
+                        "id": "line_1",
+                        "code": "LEAK",
+                        "name": "Close and invoice proof",
+                        "description": "Close and invoice proof description",
+                        "quantity": 1,
+                        "unitPrice": 300,
+                        "total": 300,
+                        "source": "custom"
+                      }
+                    ],
+                    "totals": {
+                      "subtotal": 300,
+                      "tax": 0,
+                      "total": 300
+                    },
+                    "createdAt": "2026-07-14T02:25:08.536Z",
+                    "updatedAt": "2026-07-14T02:25:08.536Z",
+                    "dueAt": "2026-07-14T02:25:08.536Z",
+                    "terms": "Payment is due as scheduled on the invoice. Reach out to the office before the due date if anything needs to be reviewed.",
+                    "deliveryDefaults": {
+                      "emailIncludePdf": true,
+                      "emailIncludeSummary": true,
+                      "emailIncludePayLink": true,
+                      "smsIncludeSummary": true,
+                      "smsIncludePayLink": true,
+                      "smsIncludeHostedLink": true
+                    },
+                    "portal": {},
+                    "delivery": [],
+                    "paymentSchedule": {
+                      "enabled": true,
+                      "milestones": [
+                        {
+                          "id": "milestone_close_milestone",
+                          "label": "Close milestone",
+                          "trigger": "on_job_close",
+                          "amountKind": "percent",
+                          "amount": 50,
+                          "note": "Close milestone note"
+                        }
+                      ],
+                      "updatedAt": "2026-07-13T12:00:00.000Z"
+                    },
+                    "statusHistory": [
+                      {
+                        "status": "draft",
+                        "changedAt": "2026-07-14T02:25:08.536Z",
+                        "note": "Invoice draft created."
+                      },
+                      {
+                        "status": "partial_pay",
+                        "changedAt": "2026-07-14T02:25:08.537Z",
+                        "note": "Ledger reconciliation updated invoice status."
+                      }
+                    ],
+                    "ledger": {
+                      "depositApplied": 100,
+                      "creditApplied": 0,
+                      "paymentApplied": 0,
+                      "refundedAmount": 0,
+                      "balanceDue": 200,
+                      "overdue": false
+                    }
+                  }
+                ]
+              },
+              "invoice": {
+                "id": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                "tenantId": "aquatrace",
+                "number": "INV-0001",
+                "clientId": "client_1",
+                "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                "jobIds": [
+                  "job_f89ef5fb-2f79-4a50-9d2d-85810604d579"
+                ],
+                "jobReferences": [
+                  {
+                    "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "number": "JOB-0001",
+                    "title": "Close and invoice proof",
+                    "amount": 300
+                  }
+                ],
+                "status": "partial_pay",
+                "title": "Invoice - Close and invoice proof",
+                "lineItems": [
+                  {
+                    "id": "line_1",
+                    "code": "LEAK",
+                    "name": "Close and invoice proof",
+                    "description": "Close and invoice proof description",
+                    "quantity": 1,
+                    "unitPrice": 300,
+                    "total": 300,
+                    "source": "custom"
+                  }
+                ],
+                "totals": {
+                  "subtotal": 300,
+                  "tax": 0,
+                  "total": 300
+                },
+                "createdAt": "2026-07-14T02:25:08.536Z",
+                "updatedAt": "2026-07-14T02:25:08.536Z",
+                "dueAt": "2026-07-14T02:25:08.536Z",
+                "terms": "Payment is due as scheduled on the invoice. Reach out to the office before the due date if anything needs to be reviewed.",
+                "deliveryDefaults": {
+                  "emailIncludePdf": true,
+                  "emailIncludeSummary": true,
+                  "emailIncludePayLink": true,
+                  "smsIncludeSummary": true,
+                  "smsIncludePayLink": true,
+                  "smsIncludeHostedLink": true
+                },
+                "portal": {},
+                "delivery": [],
+                "paymentSchedule": {
+                  "enabled": true,
+                  "milestones": [
+                    {
+                      "id": "milestone_close_milestone",
+                      "label": "Close milestone",
+                      "trigger": "on_job_close",
+                      "amountKind": "percent",
+                      "amount": 50,
+                      "note": "Close milestone note"
+                    }
+                  ],
+                  "updatedAt": "2026-07-13T12:00:00.000Z"
+                },
+                "statusHistory": [
+                  {
+                    "status": "draft",
+                    "changedAt": "2026-07-14T02:25:08.536Z",
+                    "note": "Invoice draft created."
+                  },
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-14T02:25:08.537Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  }
+                ],
+                "ledger": {
+                  "depositApplied": 100,
+                  "creditApplied": 0,
+                  "paymentApplied": 0,
+                  "refundedAmount": 0,
+                  "balanceDue": 200,
+                  "overdue": false
+                }
+              }
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c",
+              "label": "ApprovalQueue approval appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c",
+          "label": "ApprovalQueue approval appr_e320c59f-539c-4bb2-8005-abe5ad9eaf4c"
+        }
+      ]
+    },
+    {
+      "label": "send_invoice_draft",
+      "messages": [
+        {
+          "role": "user",
+          "content": "send invoice invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b to deborah@example.test"
+        }
+      ],
+      "answer": "Invoice delivery is ready. I read the channel, target, and payload back below before I send it.\n\nSend invoice: INV-0001\nInvoice: Invoice - Close and invoice proof\nMode: EMAIL\nTarget: deborah@example.test\nBalance due: $200.00\nAttach PDF: true\nInclude summary: true\nInclude pay link: true\n\nApprove this? yes / no / make changes.\nApproval id: appr_6f2095a6-bd4c-4103-aae6-7628268b60ab",
+      "toolRuns": [
+        {
+          "name": "queueInvoiceSend",
+          "result": {
+            "approval": {
+              "id": "appr_6f2095a6-bd4c-4103-aae6-7628268b60ab",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Send invoice: INV-0001",
+                "body": "Invoice: Invoice - Close and invoice proof\nMode: EMAIL\nTarget: deborah@example.test\nBalance due: $200.00\nAttach PDF: true\nInclude summary: true\nInclude pay link: true"
+              },
+              "execute": {
+                "service": "crm",
+                "op": "sendInvoice",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                  "mode": "email",
+                  "target": "deborah@example.test",
+                  "publicBaseUrl": "http://127.0.0.1:4175"
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "preview": {
+              "title": "Send invoice: INV-0001",
+              "body": "Invoice: Invoice - Close and invoice proof\nMode: EMAIL\nTarget: deborah@example.test\nBalance due: $200.00\nAttach PDF: true\nInclude summary: true\nInclude pay link: true"
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_6f2095a6-bd4c-4103-aae6-7628268b60ab",
+              "label": "ApprovalQueue invoice send appr_6f2095a6-bd4c-4103-aae6-7628268b60ab"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_6f2095a6-bd4c-4103-aae6-7628268b60ab",
+          "label": "ApprovalQueue invoice send appr_6f2095a6-bd4c-4103-aae6-7628268b60ab"
+        }
+      ]
+    },
+    {
+      "label": "send_invoice_approved",
+      "messages": [
+        {
+          "role": "user",
+          "content": "send invoice invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b to deborah@example.test"
+        },
+        {
+          "role": "assistant",
+          "content": "Invoice delivery is ready. I read the channel, target, and payload back below before I send it.\n\nSend invoice: INV-0001\nInvoice: Invoice - Close and invoice proof\nMode: EMAIL\nTarget: deborah@example.test\nBalance due: $200.00\nAttach PDF: true\nInclude summary: true\nInclude pay link: true\n\nApprove this? yes / no / make changes.\nApproval id: appr_6f2095a6-bd4c-4103-aae6-7628268b60ab"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "answer": "Approved and updated invoice INV-0001.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_6f2095a6-bd4c-4103-aae6-7628268b60ab",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Send invoice: INV-0001",
+                "body": "Invoice: Invoice - Close and invoice proof\nMode: EMAIL\nTarget: deborah@example.test\nBalance due: $200.00\nAttach PDF: true\nInclude summary: true\nInclude pay link: true"
+              },
+              "execute": {
+                "service": "crm",
+                "op": "sendInvoice",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                  "mode": "email",
+                  "target": "deborah@example.test",
+                  "publicBaseUrl": "http://127.0.0.1:4175"
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.548Z",
+              "decidedBy": "owner_1"
+            },
+            "executedApproval": {
+              "id": "appr_6f2095a6-bd4c-4103-aae6-7628268b60ab",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Send invoice: INV-0001",
+                "body": "Invoice: Invoice - Close and invoice proof\nMode: EMAIL\nTarget: deborah@example.test\nBalance due: $200.00\nAttach PDF: true\nInclude summary: true\nInclude pay link: true"
+              },
+              "execute": {
+                "service": "crm",
+                "op": "sendInvoice",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                  "mode": "email",
+                  "target": "deborah@example.test",
+                  "publicBaseUrl": "http://127.0.0.1:4175"
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.548Z",
+              "decidedBy": "owner_1",
+              "executedAt": "2026-07-14T02:25:08.550Z",
+              "executedBy": "owner_1"
+            },
+            "execution": {
+              "invoice": {
+                "id": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                "tenantId": "aquatrace",
+                "number": "INV-0001",
+                "clientId": "client_1",
+                "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                "jobIds": [
+                  "job_f89ef5fb-2f79-4a50-9d2d-85810604d579"
+                ],
+                "jobReferences": [
+                  {
+                    "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "number": "JOB-0001",
+                    "title": "Close and invoice proof",
+                    "amount": 300
+                  }
+                ],
+                "status": "partial_pay",
+                "title": "Invoice - Close and invoice proof",
+                "lineItems": [
+                  {
+                    "id": "line_1",
+                    "code": "LEAK",
+                    "name": "Close and invoice proof",
+                    "description": "Close and invoice proof description",
+                    "quantity": 1,
+                    "unitPrice": 300,
+                    "total": 300,
+                    "source": "custom"
+                  }
+                ],
+                "totals": {
+                  "subtotal": 300,
+                  "tax": 0,
+                  "total": 300
+                },
+                "createdAt": "2026-07-14T02:25:08.536Z",
+                "updatedAt": "2026-07-14T02:25:08.549Z",
+                "dueAt": "2026-07-14T02:25:08.536Z",
+                "terms": "Payment is due as scheduled on the invoice. Reach out to the office before the due date if anything needs to be reviewed.",
+                "deliveryDefaults": {
+                  "emailIncludePdf": true,
+                  "emailIncludeSummary": true,
+                  "emailIncludePayLink": true,
+                  "smsIncludeSummary": true,
+                  "smsIncludePayLink": true,
+                  "smsIncludeHostedLink": true
+                },
+                "portal": {
+                  "tokenHash": "0ff74916a07f94ec3821daa339ceaae3e86a6bae3522756bc19aa184777b4061",
+                  "tokenIssuedAt": "2026-07-14T02:25:08.549Z"
+                },
+                "delivery": [
+                  {
+                    "id": "invoice_delivery_0c21be5a-5d65-4e6b-8c10-dc65750d4fee",
+                    "mode": "email",
+                    "sentAt": "2026-07-14T02:25:08.549Z",
+                    "target": "deborah@example.test",
+                    "sentBy": "owner_1",
+                    "subject": "Invoice INV-0001: Invoice - Close and invoice proof",
+                    "includePdf": true,
+                    "includeSummary": true,
+                    "includePayLink": true,
+                    "includeHostedLink": true,
+                    "receiptId": "email_1"
+                  }
+                ],
+                "paymentSchedule": {
+                  "enabled": true,
+                  "milestones": [
+                    {
+                      "id": "milestone_close_milestone",
+                      "label": "Close milestone",
+                      "trigger": "on_job_close",
+                      "amountKind": "percent",
+                      "amount": 50,
+                      "note": "Close milestone note"
+                    }
+                  ],
+                  "updatedAt": "2026-07-13T12:00:00.000Z"
+                },
+                "statusHistory": [
+                  {
+                    "status": "draft",
+                    "changedAt": "2026-07-14T02:25:08.536Z",
+                    "note": "Invoice draft created."
+                  },
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-14T02:25:08.537Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  },
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-14T02:25:08.550Z",
+                    "changedBy": "owner_1",
+                    "note": "Invoice delivered."
+                  }
+                ],
+                "ledger": {
+                  "depositApplied": 100,
+                  "creditApplied": 0,
+                  "paymentApplied": 0,
+                  "refundedAmount": 0,
+                  "balanceDue": 200,
+                  "overdue": false
+                },
+                "sentAt": "2026-07-14T02:25:08.549Z"
+              },
+              "portalUrl": "http://127.0.0.1:4175/portal/invoices/invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b?tenantId=aquatrace&token=c910d72024121e10ba07dc4ea0c5450a1504",
+              "delivery": {
+                "id": "invoice_delivery_0c21be5a-5d65-4e6b-8c10-dc65750d4fee",
+                "mode": "email",
+                "sentAt": "2026-07-14T02:25:08.549Z",
+                "target": "deborah@example.test",
+                "sentBy": "owner_1",
+                "subject": "Invoice INV-0001: Invoice - Close and invoice proof",
+                "includePdf": true,
+                "includeSummary": true,
+                "includePayLink": true,
+                "includeHostedLink": true,
+                "receiptId": "email_1"
+              }
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_6f2095a6-bd4c-4103-aae6-7628268b60ab",
+              "label": "ApprovalQueue approval appr_6f2095a6-bd4c-4103-aae6-7628268b60ab"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_6f2095a6-bd4c-4103-aae6-7628268b60ab",
+          "label": "ApprovalQueue approval appr_6f2095a6-bd4c-4103-aae6-7628268b60ab"
+        }
+      ]
+    },
+    {
+      "label": "partial_payment_draft",
+      "messages": [
+        {
+          "role": "user",
+          "content": "collect payment on invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b for $75"
+        }
+      ],
+      "answer": "Payment collection is ready. I read the amount, method, and card back below before I run it.\n\nCollect payment: INV-0001\nInvoice: Invoice - Close and invoice proof\nBalance due now: $200.00\nAmount to collect: $75.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis is a partial payment. The remaining balance can be sent right after collection.\n\nApprove this? yes / no / make changes.\nApproval id: appr_e40424f5-0a24-454b-a473-172e31d119e6",
+      "toolRuns": [
+        {
+          "name": "queueCollectPayment",
+          "result": {
+            "approval": {
+              "id": "appr_e40424f5-0a24-454b-a473-172e31d119e6",
+              "tenantId": "aquatrace",
+              "kind": "payment",
+              "preview": {
+                "title": "Collect payment: INV-0001",
+                "body": "Invoice: Invoice - Close and invoice proof\nBalance due now: $200.00\nAmount to collect: $75.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis is a partial payment. The remaining balance can be sent right after collection."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "recordInvoicePayment",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                  "amount": 75,
+                  "provider": "stripe",
+                  "method": "card",
+                  "savedCardId": "saved_card_quote_4414b811-8ef0-4342-a4a1-4655d00c6125",
+                  "status": "succeeded"
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "preview": {
+              "title": "Collect payment: INV-0001",
+              "body": "Invoice: Invoice - Close and invoice proof\nBalance due now: $200.00\nAmount to collect: $75.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis is a partial payment. The remaining balance can be sent right after collection."
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_e40424f5-0a24-454b-a473-172e31d119e6",
+              "label": "ApprovalQueue payment collection appr_e40424f5-0a24-454b-a473-172e31d119e6"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_e40424f5-0a24-454b-a473-172e31d119e6",
+          "label": "ApprovalQueue payment collection appr_e40424f5-0a24-454b-a473-172e31d119e6"
+        }
+      ]
+    },
+    {
+      "label": "partial_payment_approved",
+      "messages": [
+        {
+          "role": "user",
+          "content": "collect payment on invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b for $75"
+        },
+        {
+          "role": "assistant",
+          "content": "Payment collection is ready. I read the amount, method, and card back below before I run it.\n\nCollect payment: INV-0001\nInvoice: Invoice - Close and invoice proof\nBalance due now: $200.00\nAmount to collect: $75.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis is a partial payment. The remaining balance can be sent right after collection.\n\nApprove this? yes / no / make changes.\nApproval id: appr_e40424f5-0a24-454b-a473-172e31d119e6"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "answer": "Approved and recorded partial payment payment_dbf82a51-f834-478a-8377-3d40c9125479 on INV-0001. $125.00 remains, so the next step is to send the remaining balance or collect another payment now.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_e40424f5-0a24-454b-a473-172e31d119e6",
+              "tenantId": "aquatrace",
+              "kind": "payment",
+              "preview": {
+                "title": "Collect payment: INV-0001",
+                "body": "Invoice: Invoice - Close and invoice proof\nBalance due now: $200.00\nAmount to collect: $75.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis is a partial payment. The remaining balance can be sent right after collection."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "recordInvoicePayment",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                  "amount": 75,
+                  "provider": "stripe",
+                  "method": "card",
+                  "savedCardId": "saved_card_quote_4414b811-8ef0-4342-a4a1-4655d00c6125",
+                  "status": "succeeded"
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.551Z",
+              "decidedBy": "owner_1"
+            },
+            "executedApproval": {
+              "id": "appr_e40424f5-0a24-454b-a473-172e31d119e6",
+              "tenantId": "aquatrace",
+              "kind": "payment",
+              "preview": {
+                "title": "Collect payment: INV-0001",
+                "body": "Invoice: Invoice - Close and invoice proof\nBalance due now: $200.00\nAmount to collect: $75.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis is a partial payment. The remaining balance can be sent right after collection."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "recordInvoicePayment",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                  "amount": 75,
+                  "provider": "stripe",
+                  "method": "card",
+                  "savedCardId": "saved_card_quote_4414b811-8ef0-4342-a4a1-4655d00c6125",
+                  "status": "succeeded"
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.551Z",
+              "decidedBy": "owner_1",
+              "executedAt": "2026-07-14T02:25:08.553Z",
+              "executedBy": "owner_1"
+            },
+            "execution": {
+              "payment": {
+                "id": "payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                "provider": "stripe",
+                "method": "card",
+                "status": "succeeded",
+                "amount": 75,
+                "appliedAmount": 75,
+                "currency": "usd",
+                "capturedAt": "2026-07-14T02:25:08.552Z",
+                "savedCardId": "saved_card_quote_4414b811-8ef0-4342-a4a1-4655d00c6125",
+                "cardSummary": {
+                  "cardholderName": "Deborah Justice",
+                  "brand": "Visa",
+                  "last4": "4242"
+                },
+                "statusHistory": [
+                  {
+                    "status": "succeeded",
+                    "changedAt": "2026-07-14T02:25:08.552Z",
+                    "changedBy": "owner_1",
+                    "note": "Payment recorded."
+                  }
+                ],
+                "createdAt": "2026-07-14T02:25:08.552Z",
+                "updatedAt": "2026-07-14T02:25:08.552Z"
+              },
+              "invoice": {
+                "id": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                "tenantId": "aquatrace",
+                "number": "INV-0001",
+                "clientId": "client_1",
+                "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                "jobIds": [
+                  "job_f89ef5fb-2f79-4a50-9d2d-85810604d579"
+                ],
+                "jobReferences": [
+                  {
+                    "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "number": "JOB-0001",
+                    "title": "Close and invoice proof",
+                    "amount": 300
+                  }
+                ],
+                "status": "partial_pay",
+                "title": "Invoice - Close and invoice proof",
+                "lineItems": [
+                  {
+                    "id": "line_1",
+                    "code": "LEAK",
+                    "name": "Close and invoice proof",
+                    "description": "Close and invoice proof description",
+                    "quantity": 1,
+                    "unitPrice": 300,
+                    "total": 300,
+                    "source": "custom"
+                  }
+                ],
+                "totals": {
+                  "subtotal": 300,
+                  "tax": 0,
+                  "total": 300
+                },
+                "createdAt": "2026-07-14T02:25:08.536Z",
+                "updatedAt": "2026-07-14T02:25:08.549Z",
+                "dueAt": "2026-07-14T02:25:08.536Z",
+                "terms": "Payment is due as scheduled on the invoice. Reach out to the office before the due date if anything needs to be reviewed.",
+                "deliveryDefaults": {
+                  "emailIncludePdf": true,
+                  "emailIncludeSummary": true,
+                  "emailIncludePayLink": true,
+                  "smsIncludeSummary": true,
+                  "smsIncludePayLink": true,
+                  "smsIncludeHostedLink": true
+                },
+                "portal": {
+                  "tokenHash": "0ff74916a07f94ec3821daa339ceaae3e86a6bae3522756bc19aa184777b4061",
+                  "tokenIssuedAt": "2026-07-14T02:25:08.549Z"
+                },
+                "delivery": [
+                  {
+                    "id": "invoice_delivery_0c21be5a-5d65-4e6b-8c10-dc65750d4fee",
+                    "mode": "email",
+                    "sentAt": "2026-07-14T02:25:08.549Z",
+                    "target": "deborah@example.test",
+                    "sentBy": "owner_1",
+                    "subject": "Invoice INV-0001: Invoice - Close and invoice proof",
+                    "includePdf": true,
+                    "includeSummary": true,
+                    "includePayLink": true,
+                    "includeHostedLink": true,
+                    "receiptId": "email_1"
+                  }
+                ],
+                "paymentSchedule": {
+                  "enabled": true,
+                  "milestones": [
+                    {
+                      "id": "milestone_close_milestone",
+                      "label": "Close milestone",
+                      "trigger": "on_job_close",
+                      "amountKind": "percent",
+                      "amount": 50,
+                      "note": "Close milestone note"
+                    }
+                  ],
+                  "updatedAt": "2026-07-13T12:00:00.000Z"
+                },
+                "statusHistory": [
+                  {
+                    "status": "draft",
+                    "changedAt": "2026-07-14T02:25:08.536Z",
+                    "note": "Invoice draft created."
+                  },
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-14T02:25:08.537Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  },
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-14T02:25:08.550Z",
+                    "changedBy": "owner_1",
+                    "note": "Invoice delivered."
+                  }
+                ],
+                "ledger": {
+                  "depositApplied": 100,
+                  "creditApplied": 0,
+                  "paymentApplied": 75,
+                  "refundedAmount": 0,
+                  "balanceDue": 125,
+                  "overdue": false
+                },
+                "sentAt": "2026-07-14T02:25:08.549Z"
+              },
+              "receiptReview": {
+                "id": "receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "kind": "payment",
+                "paymentId": "payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                "status": "draft",
+                "attachments": [
+                  {
+                    "id": "att_invoice_pdf_invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                    "kind": "invoice_pdf",
+                    "label": "Invoice PDF",
+                    "refId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                    "storageRef": "native://invoices/invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b.pdf",
+                    "mime": "application/pdf"
+                  },
+                  {
+                    "id": "att_field_report_job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "kind": "field_report",
+                    "label": "Field report",
+                    "refId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "storageRef": "native://jobs/job_f89ef5fb-2f79-4a50-9d2d-85810604d579/field-report",
+                    "mime": "application/pdf"
+                  },
+                  {
+                    "id": "att_job_photos_job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "kind": "photo",
+                    "label": "Job photos",
+                    "refId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "storageRef": "native://jobs/job_f89ef5fb-2f79-4a50-9d2d-85810604d579/photos",
+                    "mime": "image/jpeg"
+                  },
+                  {
+                    "id": "att_job_files_job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "kind": "job_file",
+                    "label": "Other job files",
+                    "refId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "storageRef": "native://jobs/job_f89ef5fb-2f79-4a50-9d2d-85810604d579/files"
+                  }
+                ],
+                "subject": "Payment receipt - Invoice - Close and invoice proof",
+                "bodyText": "Your payment has been recorded.\nOpen the secure receipt here: /portal/invoices/invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b?tenantId=aquatrace#receipt-receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "emailRecipients": [
+                  "deborah@example.test"
+                ],
+                "smsRecipients": [
+                  "8645551212"
+                ],
+                "sendChannels": [
+                  "email"
+                ],
+                "hostedLink": "/portal/invoices/invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b?tenantId=aquatrace#receipt-receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "statusHistory": [
+                  {
+                    "status": "draft",
+                    "changedAt": "2026-07-14T02:25:08.552Z"
+                  }
+                ],
+                "createdAt": "2026-07-14T02:25:08.552Z",
+                "updatedAt": "2026-07-14T02:25:08.552Z"
+              }
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_e40424f5-0a24-454b-a473-172e31d119e6",
+              "label": "ApprovalQueue approval appr_e40424f5-0a24-454b-a473-172e31d119e6"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_e40424f5-0a24-454b-a473-172e31d119e6",
+          "label": "ApprovalQueue approval appr_e40424f5-0a24-454b-a473-172e31d119e6"
+        }
+      ]
+    },
+    {
+      "label": "failed_payment_draft",
+      "messages": [
+        {
+          "role": "user",
+          "content": "collect payment on invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b for $225 on card 4242 failed reason insufficient funds"
+        }
+      ],
+      "answer": "Payment collection is ready. I read the amount, method, and card back below before I run it.\n\nCollect payment: INV-0001\nInvoice: Invoice - Close and invoice proof\nBalance due now: $125.00\nAmount to collect: $225.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis logs a failed charge only. No money will be applied, and recovery options stay open.\n\nApprove this? yes / no / make changes.\nApproval id: appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5",
+      "toolRuns": [
+        {
+          "name": "queueCollectPayment",
+          "result": {
+            "approval": {
+              "id": "appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5",
+              "tenantId": "aquatrace",
+              "kind": "payment",
+              "preview": {
+                "title": "Collect payment: INV-0001",
+                "body": "Invoice: Invoice - Close and invoice proof\nBalance due now: $125.00\nAmount to collect: $225.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis logs a failed charge only. No money will be applied, and recovery options stay open."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "recordInvoicePayment",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                  "amount": 225,
+                  "provider": "stripe",
+                  "method": "card",
+                  "savedCardId": "saved_card_quote_4414b811-8ef0-4342-a4a1-4655d00c6125",
+                  "methodDetails": {
+                    "failureMessage": "reason insufficient funds"
+                  },
+                  "status": "failed"
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "preview": {
+              "title": "Collect payment: INV-0001",
+              "body": "Invoice: Invoice - Close and invoice proof\nBalance due now: $125.00\nAmount to collect: $225.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis logs a failed charge only. No money will be applied, and recovery options stay open."
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5",
+              "label": "ApprovalQueue payment collection appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5",
+          "label": "ApprovalQueue payment collection appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5"
+        }
+      ]
+    },
+    {
+      "label": "failed_payment_approved",
+      "messages": [
+        {
+          "role": "user",
+          "content": "collect payment on invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b for $225 on card 4242 failed reason insufficient funds"
+        },
+        {
+          "role": "assistant",
+          "content": "Payment collection is ready. I read the amount, method, and card back below before I run it.\n\nCollect payment: INV-0001\nInvoice: Invoice - Close and invoice proof\nBalance due now: $125.00\nAmount to collect: $225.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis logs a failed charge only. No money will be applied, and recovery options stay open.\n\nApprove this? yes / no / make changes.\nApproval id: appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "answer": "Approved and logged failed payment payment_cf4ef1e5-79d1-4e7e-b0a0-afe7e4e29d08 on INV-0001. Recovery is still open: retry the same card, switch saved cards, take a manual payment, or send the pay link.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5",
+              "tenantId": "aquatrace",
+              "kind": "payment",
+              "preview": {
+                "title": "Collect payment: INV-0001",
+                "body": "Invoice: Invoice - Close and invoice proof\nBalance due now: $125.00\nAmount to collect: $225.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis logs a failed charge only. No money will be applied, and recovery options stay open."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "recordInvoicePayment",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                  "amount": 225,
+                  "provider": "stripe",
+                  "method": "card",
+                  "savedCardId": "saved_card_quote_4414b811-8ef0-4342-a4a1-4655d00c6125",
+                  "methodDetails": {
+                    "failureMessage": "reason insufficient funds"
+                  },
+                  "status": "failed"
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.554Z",
+              "decidedBy": "owner_1"
+            },
+            "executedApproval": {
+              "id": "appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5",
+              "tenantId": "aquatrace",
+              "kind": "payment",
+              "preview": {
+                "title": "Collect payment: INV-0001",
+                "body": "Invoice: Invoice - Close and invoice proof\nBalance due now: $125.00\nAmount to collect: $225.00\nProvider: stripe\nMethod: card\nSaved card: Visa ending 4242\nThis logs a failed charge only. No money will be applied, and recovery options stay open."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "recordInvoicePayment",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                  "amount": 225,
+                  "provider": "stripe",
+                  "method": "card",
+                  "savedCardId": "saved_card_quote_4414b811-8ef0-4342-a4a1-4655d00c6125",
+                  "methodDetails": {
+                    "failureMessage": "reason insufficient funds"
+                  },
+                  "status": "failed"
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.554Z",
+              "decidedBy": "owner_1",
+              "executedAt": "2026-07-14T02:25:08.554Z",
+              "executedBy": "owner_1"
+            },
+            "execution": {
+              "payment": {
+                "id": "payment_cf4ef1e5-79d1-4e7e-b0a0-afe7e4e29d08",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                "provider": "stripe",
+                "method": "card",
+                "status": "failed",
+                "amount": 225,
+                "appliedAmount": 0,
+                "currency": "usd",
+                "failedAt": "2026-07-14T02:25:08.554Z",
+                "savedCardId": "saved_card_quote_4414b811-8ef0-4342-a4a1-4655d00c6125",
+                "methodDetails": {
+                  "failureMessage": "reason insufficient funds"
+                },
+                "cardSummary": {
+                  "cardholderName": "Deborah Justice",
+                  "brand": "Visa",
+                  "last4": "4242"
+                },
+                "statusHistory": [
+                  {
+                    "status": "failed",
+                    "changedAt": "2026-07-14T02:25:08.554Z",
+                    "changedBy": "owner_1",
+                    "note": "reason insufficient funds"
+                  }
+                ],
+                "createdAt": "2026-07-14T02:25:08.554Z",
+                "updatedAt": "2026-07-14T02:25:08.554Z"
+              },
+              "invoice": {
+                "id": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                "tenantId": "aquatrace",
+                "number": "INV-0001",
+                "clientId": "client_1",
+                "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                "jobIds": [
+                  "job_f89ef5fb-2f79-4a50-9d2d-85810604d579"
+                ],
+                "jobReferences": [
+                  {
+                    "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "number": "JOB-0001",
+                    "title": "Close and invoice proof",
+                    "amount": 300
+                  }
+                ],
+                "status": "partial_pay",
+                "title": "Invoice - Close and invoice proof",
+                "lineItems": [
+                  {
+                    "id": "line_1",
+                    "code": "LEAK",
+                    "name": "Close and invoice proof",
+                    "description": "Close and invoice proof description",
+                    "quantity": 1,
+                    "unitPrice": 300,
+                    "total": 300,
+                    "source": "custom"
+                  }
+                ],
+                "totals": {
+                  "subtotal": 300,
+                  "tax": 0,
+                  "total": 300
+                },
+                "createdAt": "2026-07-14T02:25:08.536Z",
+                "updatedAt": "2026-07-14T02:25:08.549Z",
+                "dueAt": "2026-07-14T02:25:08.536Z",
+                "terms": "Payment is due as scheduled on the invoice. Reach out to the office before the due date if anything needs to be reviewed.",
+                "deliveryDefaults": {
+                  "emailIncludePdf": true,
+                  "emailIncludeSummary": true,
+                  "emailIncludePayLink": true,
+                  "smsIncludeSummary": true,
+                  "smsIncludePayLink": true,
+                  "smsIncludeHostedLink": true
+                },
+                "portal": {
+                  "tokenHash": "0ff74916a07f94ec3821daa339ceaae3e86a6bae3522756bc19aa184777b4061",
+                  "tokenIssuedAt": "2026-07-14T02:25:08.549Z"
+                },
+                "delivery": [
+                  {
+                    "id": "invoice_delivery_0c21be5a-5d65-4e6b-8c10-dc65750d4fee",
+                    "mode": "email",
+                    "sentAt": "2026-07-14T02:25:08.549Z",
+                    "target": "deborah@example.test",
+                    "sentBy": "owner_1",
+                    "subject": "Invoice INV-0001: Invoice - Close and invoice proof",
+                    "includePdf": true,
+                    "includeSummary": true,
+                    "includePayLink": true,
+                    "includeHostedLink": true,
+                    "receiptId": "email_1"
+                  }
+                ],
+                "paymentSchedule": {
+                  "enabled": true,
+                  "milestones": [
+                    {
+                      "id": "milestone_close_milestone",
+                      "label": "Close milestone",
+                      "trigger": "on_job_close",
+                      "amountKind": "percent",
+                      "amount": 50,
+                      "note": "Close milestone note"
+                    }
+                  ],
+                  "updatedAt": "2026-07-13T12:00:00.000Z"
+                },
+                "statusHistory": [
+                  {
+                    "status": "draft",
+                    "changedAt": "2026-07-14T02:25:08.536Z",
+                    "note": "Invoice draft created."
+                  },
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-14T02:25:08.537Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  },
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-14T02:25:08.550Z",
+                    "changedBy": "owner_1",
+                    "note": "Invoice delivered."
+                  }
+                ],
+                "ledger": {
+                  "depositApplied": 100,
+                  "creditApplied": 0,
+                  "paymentApplied": 75,
+                  "refundedAmount": 0,
+                  "balanceDue": 125,
+                  "overdue": false
+                },
+                "sentAt": "2026-07-14T02:25:08.549Z"
+              }
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5",
+              "label": "ApprovalQueue approval appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5",
+          "label": "ApprovalQueue approval appr_9738a590-023d-4e44-b7fa-2a3eaf374bc5"
+        }
+      ]
+    },
+    {
+      "label": "receipt_review_draft",
+      "messages": [
+        {
+          "role": "user",
+          "content": "send receipt review receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479 by email and sms to deborah@example.test 8645551212"
+        }
+      ],
+      "answer": "Receipt review is ready. I read the recipients, channels, and attachments back below before I send it.\n\nSend receipt review: receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479\nChannels: email + sms\nEmail to: deborah@example.test\nText to: 8645551212\nSubject: Payment receipt - Invoice - Close and invoice proof\nAttachments: Invoice PDF, Field report, Job photos, Other job files\nSMS sends the secure hosted link instead of file attachments.\n\nApprove this? yes / no / make changes.\nApproval id: appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61",
+      "toolRuns": [
+        {
+          "name": "queueReceiptReviewSend",
+          "result": {
+            "approval": {
+              "id": "appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Send receipt review: receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "body": "Channels: email + sms\nEmail to: deborah@example.test\nText to: 8645551212\nSubject: Payment receipt - Invoice - Close and invoice proof\nAttachments: Invoice PDF, Field report, Job photos, Other job files\nSMS sends the secure hosted link instead of file attachments."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "sendReceiptReview",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "receiptReviewId": "receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                  "publicBaseUrl": "http://127.0.0.1:4175",
+                  "emailRecipients": [
+                    "deborah@example.test"
+                  ],
+                  "smsRecipients": [
+                    "8645551212"
+                  ],
+                  "sendChannels": [
+                    "email",
+                    "sms"
+                  ]
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "preview": {
+              "title": "Send receipt review: receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+              "body": "Channels: email + sms\nEmail to: deborah@example.test\nText to: 8645551212\nSubject: Payment receipt - Invoice - Close and invoice proof\nAttachments: Invoice PDF, Field report, Job photos, Other job files\nSMS sends the secure hosted link instead of file attachments."
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61",
+              "label": "ApprovalQueue receipt review appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61",
+          "label": "ApprovalQueue receipt review appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61"
+        }
+      ]
+    },
+    {
+      "label": "receipt_review_approved",
+      "messages": [
+        {
+          "role": "user",
+          "content": "send receipt review receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479 by email and sms to deborah@example.test 8645551212"
+        },
+        {
+          "role": "assistant",
+          "content": "Receipt review is ready. I read the recipients, channels, and attachments back below before I send it.\n\nSend receipt review: receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479\nChannels: email + sms\nEmail to: deborah@example.test\nText to: 8645551212\nSubject: Payment receipt - Invoice - Close and invoice proof\nAttachments: Invoice PDF, Field report, Job photos, Other job files\nSMS sends the secure hosted link instead of file attachments.\n\nApprove this? yes / no / make changes.\nApproval id: appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "answer": "Approved and sent receipt review receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479 for INV-0001.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Send receipt review: receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "body": "Channels: email + sms\nEmail to: deborah@example.test\nText to: 8645551212\nSubject: Payment receipt - Invoice - Close and invoice proof\nAttachments: Invoice PDF, Field report, Job photos, Other job files\nSMS sends the secure hosted link instead of file attachments."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "sendReceiptReview",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "receiptReviewId": "receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                  "publicBaseUrl": "http://127.0.0.1:4175",
+                  "emailRecipients": [
+                    "deborah@example.test"
+                  ],
+                  "smsRecipients": [
+                    "8645551212"
+                  ],
+                  "sendChannels": [
+                    "email",
+                    "sms"
+                  ]
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.556Z",
+              "decidedBy": "owner_1"
+            },
+            "executedApproval": {
+              "id": "appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Send receipt review: receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "body": "Channels: email + sms\nEmail to: deborah@example.test\nText to: 8645551212\nSubject: Payment receipt - Invoice - Close and invoice proof\nAttachments: Invoice PDF, Field report, Job photos, Other job files\nSMS sends the secure hosted link instead of file attachments."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "sendReceiptReview",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "receiptReviewId": "receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                  "publicBaseUrl": "http://127.0.0.1:4175",
+                  "emailRecipients": [
+                    "deborah@example.test"
+                  ],
+                  "smsRecipients": [
+                    "8645551212"
+                  ],
+                  "sendChannels": [
+                    "email",
+                    "sms"
+                  ]
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.556Z",
+              "decidedBy": "owner_1",
+              "executedAt": "2026-07-14T02:25:08.557Z",
+              "executedBy": "owner_1"
+            },
+            "execution": {
+              "receiptReview": {
+                "id": "receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "kind": "payment",
+                "paymentId": "payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "invoiceId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                "status": "sent",
+                "attachments": [
+                  {
+                    "id": "att_invoice_pdf_invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                    "kind": "invoice_pdf",
+                    "label": "Invoice PDF",
+                    "refId": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                    "storageRef": "native://invoices/invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b.pdf",
+                    "mime": "application/pdf"
+                  },
+                  {
+                    "id": "att_field_report_job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "kind": "field_report",
+                    "label": "Field report",
+                    "refId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "storageRef": "native://jobs/job_f89ef5fb-2f79-4a50-9d2d-85810604d579/field-report",
+                    "mime": "application/pdf"
+                  },
+                  {
+                    "id": "att_job_photos_job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "kind": "photo",
+                    "label": "Job photos",
+                    "refId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "storageRef": "native://jobs/job_f89ef5fb-2f79-4a50-9d2d-85810604d579/photos",
+                    "mime": "image/jpeg"
+                  },
+                  {
+                    "id": "att_job_files_job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "kind": "job_file",
+                    "label": "Other job files",
+                    "refId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "storageRef": "native://jobs/job_f89ef5fb-2f79-4a50-9d2d-85810604d579/files"
+                  }
+                ],
+                "subject": "Payment receipt - Invoice - Close and invoice proof",
+                "bodyText": "Your payment has been recorded.\nOpen the secure receipt here: /portal/invoices/invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b?tenantId=aquatrace#receipt-receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "emailRecipients": [
+                  "deborah@example.test"
+                ],
+                "smsRecipients": [
+                  "8645551212"
+                ],
+                "sendChannels": [
+                  "email",
+                  "sms"
+                ],
+                "hostedLink": "/portal/invoices/invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b?tenantId=aquatrace#receipt-receipt_review_payment_dbf82a51-f834-478a-8377-3d40c9125479",
+                "statusHistory": [
+                  {
+                    "status": "draft",
+                    "changedAt": "2026-07-14T02:25:08.552Z"
+                  },
+                  {
+                    "status": "ready_to_send",
+                    "changedAt": "2026-07-14T02:25:08.556Z",
+                    "changedBy": "owner_1",
+                    "note": "Receipt review updated."
+                  },
+                  {
+                    "status": "sent",
+                    "changedAt": "2026-07-14T02:25:08.557Z",
+                    "changedBy": "owner_1",
+                    "note": "Receipt sent."
+                  }
+                ],
+                "createdAt": "2026-07-14T02:25:08.552Z",
+                "updatedAt": "2026-07-14T02:25:08.557Z",
+                "sentAt": "2026-07-14T02:25:08.557Z",
+                "sendHistory": [
+                  {
+                    "id": "receipt_send_f125dc6f-f729-4397-8e58-fbeaff46235d",
+                    "channel": "email",
+                    "target": "deborah@example.test",
+                    "sentAt": "2026-07-14T02:25:08.557Z",
+                    "receiptId": "email_2"
+                  },
+                  {
+                    "id": "receipt_send_4b7cb43c-2002-4f75-b347-490e1b0ba6ec",
+                    "channel": "sms",
+                    "target": "8645551212",
+                    "sentAt": "2026-07-14T02:25:08.557Z"
+                  }
+                ]
+              },
+              "invoice": {
+                "id": "invoice_6b02a8c4-0770-48b6-a515-0bb2ac65f27b",
+                "tenantId": "aquatrace",
+                "number": "INV-0001",
+                "clientId": "client_1",
+                "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                "jobIds": [
+                  "job_f89ef5fb-2f79-4a50-9d2d-85810604d579"
+                ],
+                "jobReferences": [
+                  {
+                    "jobId": "job_f89ef5fb-2f79-4a50-9d2d-85810604d579",
+                    "number": "JOB-0001",
+                    "title": "Close and invoice proof",
+                    "amount": 300
+                  }
+                ],
+                "status": "partial_pay",
+                "title": "Invoice - Close and invoice proof",
+                "lineItems": [
+                  {
+                    "id": "line_1",
+                    "code": "LEAK",
+                    "name": "Close and invoice proof",
+                    "description": "Close and invoice proof description",
+                    "quantity": 1,
+                    "unitPrice": 300,
+                    "total": 300,
+                    "source": "custom"
+                  }
+                ],
+                "totals": {
+                  "subtotal": 300,
+                  "tax": 0,
+                  "total": 300
+                },
+                "createdAt": "2026-07-14T02:25:08.536Z",
+                "updatedAt": "2026-07-14T02:25:08.549Z",
+                "dueAt": "2026-07-14T02:25:08.536Z",
+                "terms": "Payment is due as scheduled on the invoice. Reach out to the office before the due date if anything needs to be reviewed.",
+                "deliveryDefaults": {
+                  "emailIncludePdf": true,
+                  "emailIncludeSummary": true,
+                  "emailIncludePayLink": true,
+                  "smsIncludeSummary": true,
+                  "smsIncludePayLink": true,
+                  "smsIncludeHostedLink": true
+                },
+                "portal": {
+                  "tokenHash": "0ff74916a07f94ec3821daa339ceaae3e86a6bae3522756bc19aa184777b4061",
+                  "tokenIssuedAt": "2026-07-14T02:25:08.549Z"
+                },
+                "delivery": [
+                  {
+                    "id": "invoice_delivery_0c21be5a-5d65-4e6b-8c10-dc65750d4fee",
+                    "mode": "email",
+                    "sentAt": "2026-07-14T02:25:08.549Z",
+                    "target": "deborah@example.test",
+                    "sentBy": "owner_1",
+                    "subject": "Invoice INV-0001: Invoice - Close and invoice proof",
+                    "includePdf": true,
+                    "includeSummary": true,
+                    "includePayLink": true,
+                    "includeHostedLink": true,
+                    "receiptId": "email_1"
+                  }
+                ],
+                "paymentSchedule": {
+                  "enabled": true,
+                  "milestones": [
+                    {
+                      "id": "milestone_close_milestone",
+                      "label": "Close milestone",
+                      "trigger": "on_job_close",
+                      "amountKind": "percent",
+                      "amount": 50,
+                      "note": "Close milestone note"
+                    }
+                  ],
+                  "updatedAt": "2026-07-13T12:00:00.000Z"
+                },
+                "statusHistory": [
+                  {
+                    "status": "draft",
+                    "changedAt": "2026-07-14T02:25:08.536Z",
+                    "note": "Invoice draft created."
+                  },
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-14T02:25:08.537Z",
+                    "note": "Ledger reconciliation updated invoice status."
+                  },
+                  {
+                    "status": "partial_pay",
+                    "changedAt": "2026-07-14T02:25:08.550Z",
+                    "changedBy": "owner_1",
+                    "note": "Invoice delivered."
+                  }
+                ],
+                "ledger": {
+                  "depositApplied": 100,
+                  "creditApplied": 0,
+                  "paymentApplied": 75,
+                  "refundedAmount": 0,
+                  "balanceDue": 125,
+                  "overdue": false
+                },
+                "sentAt": "2026-07-14T02:25:08.549Z"
+              }
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61",
+              "label": "ApprovalQueue approval appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61",
+          "label": "ApprovalQueue approval appr_9c0dd2b3-5c5d-43de-a604-1166462b2b61"
+        }
+      ]
+    },
+    {
+      "label": "combine_invoice_draft",
+      "messages": [
+        {
+          "role": "user",
+          "content": "combine jobs into one invoice job_d24498f6-efac-44de-9e3c-37daf01a8fb8 job_04baf3a1-5a4a-4f1f-84e7-62cf591379fc tax 7.5"
+        }
+      ],
+      "answer": "Combined invoice draft ready. I read the selected jobs and totals back below before I build it.\n\nCombine invoice: Invoice - 2 jobs combined\nJobs selected: 2\n- JOB-0002: Bundle north ($125.00)\n- JOB-0003: Bundle south ($175.00)\nTax rate: 7.5%\nDraft total: $322.50\nThe combined receipt will keep a per-job reference for every job covered by this invoice.\n\nApprove this? yes / no / make changes.\nApproval id: appr_51543928-85b1-4c11-ae23-cd0487d438ce",
+      "toolRuns": [
+        {
+          "name": "queueInvoiceCompose",
+          "result": {
+            "approval": {
+              "id": "appr_51543928-85b1-4c11-ae23-cd0487d438ce",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Combine invoice: Invoice - 2 jobs combined",
+                "body": "Jobs selected: 2\n- JOB-0002: Bundle north ($125.00)\n- JOB-0003: Bundle south ($175.00)\nTax rate: 7.5%\nDraft total: $322.50\nThe combined receipt will keep a per-job reference for every job covered by this invoice."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "composeInvoiceFromJobs",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "jobIds": [
+                    "job_d24498f6-efac-44de-9e3c-37daf01a8fb8",
+                    "job_04baf3a1-5a4a-4f1f-84e7-62cf591379fc"
+                  ],
+                  "taxRate": 7.5
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "preview": {
+              "title": "Combine invoice: Invoice - 2 jobs combined",
+              "body": "Jobs selected: 2\n- JOB-0002: Bundle north ($125.00)\n- JOB-0003: Bundle south ($175.00)\nTax rate: 7.5%\nDraft total: $322.50\nThe combined receipt will keep a per-job reference for every job covered by this invoice."
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_51543928-85b1-4c11-ae23-cd0487d438ce",
+              "label": "ApprovalQueue invoice compose appr_51543928-85b1-4c11-ae23-cd0487d438ce"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_51543928-85b1-4c11-ae23-cd0487d438ce",
+          "label": "ApprovalQueue invoice compose appr_51543928-85b1-4c11-ae23-cd0487d438ce"
+        }
+      ]
+    },
+    {
+      "label": "combine_invoice_approved",
+      "messages": [
+        {
+          "role": "user",
+          "content": "combine jobs into one invoice job_d24498f6-efac-44de-9e3c-37daf01a8fb8 job_04baf3a1-5a4a-4f1f-84e7-62cf591379fc tax 7.5"
+        },
+        {
+          "role": "assistant",
+          "content": "Combined invoice draft ready. I read the selected jobs and totals back below before I build it.\n\nCombine invoice: Invoice - 2 jobs combined\nJobs selected: 2\n- JOB-0002: Bundle north ($125.00)\n- JOB-0003: Bundle south ($175.00)\nTax rate: 7.5%\nDraft total: $322.50\nThe combined receipt will keep a per-job reference for every job covered by this invoice.\n\nApprove this? yes / no / make changes.\nApproval id: appr_51543928-85b1-4c11-ae23-cd0487d438ce"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "answer": "Approved and built invoice INV-0002 from 2 selected jobs.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_51543928-85b1-4c11-ae23-cd0487d438ce",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Combine invoice: Invoice - 2 jobs combined",
+                "body": "Jobs selected: 2\n- JOB-0002: Bundle north ($125.00)\n- JOB-0003: Bundle south ($175.00)\nTax rate: 7.5%\nDraft total: $322.50\nThe combined receipt will keep a per-job reference for every job covered by this invoice."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "composeInvoiceFromJobs",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "jobIds": [
+                    "job_d24498f6-efac-44de-9e3c-37daf01a8fb8",
+                    "job_04baf3a1-5a4a-4f1f-84e7-62cf591379fc"
+                  ],
+                  "taxRate": 7.5
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.559Z",
+              "decidedBy": "owner_1"
+            },
+            "executedApproval": {
+              "id": "appr_51543928-85b1-4c11-ae23-cd0487d438ce",
+              "tenantId": "aquatrace",
+              "kind": "invoice",
+              "preview": {
+                "title": "Combine invoice: Invoice - 2 jobs combined",
+                "body": "Jobs selected: 2\n- JOB-0002: Bundle north ($125.00)\n- JOB-0003: Bundle south ($175.00)\nTax rate: 7.5%\nDraft total: $322.50\nThe combined receipt will keep a per-job reference for every job covered by this invoice."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "composeInvoiceFromJobs",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "jobIds": [
+                    "job_d24498f6-efac-44de-9e3c-37daf01a8fb8",
+                    "job_04baf3a1-5a4a-4f1f-84e7-62cf591379fc"
+                  ],
+                  "taxRate": 7.5
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-14T02:25:08.559Z",
+              "decidedBy": "owner_1",
+              "executedAt": "2026-07-14T02:25:08.561Z",
+              "executedBy": "owner_1"
+            },
+            "execution": {
+              "invoice": {
+                "id": "invoice_6bf1100a-274d-4e9b-aa69-4ea5a1e0947e",
+                "tenantId": "aquatrace",
+                "number": "INV-0002",
+                "clientId": "client_1",
+                "jobId": "job_d24498f6-efac-44de-9e3c-37daf01a8fb8",
+                "jobIds": [
+                  "job_d24498f6-efac-44de-9e3c-37daf01a8fb8",
+                  "job_04baf3a1-5a4a-4f1f-84e7-62cf591379fc"
+                ],
+                "jobReferences": [
+                  {
+                    "jobId": "job_d24498f6-efac-44de-9e3c-37daf01a8fb8",
+                    "number": "JOB-0002",
+                    "title": "Bundle north",
+                    "amount": 125
+                  },
+                  {
+                    "jobId": "job_04baf3a1-5a4a-4f1f-84e7-62cf591379fc",
+                    "number": "JOB-0003",
+                    "title": "Bundle south",
+                    "amount": 175
+                  }
+                ],
+                "status": "draft",
+                "title": "Invoice - 2 jobs combined",
+                "lineItems": [
+                  {
+                    "id": "job_d24498f6-efac-44de-9e3c-37daf01a8fb8_line_1_1",
+                    "code": "LEAK",
+                    "name": "Bundle north",
+                    "description": "Bundle north: Bundle north description",
+                    "quantity": 1,
+                    "unitPrice": 125,
+                    "total": 125,
+                    "source": "custom"
+                  },
+                  {
+                    "id": "job_04baf3a1-5a4a-4f1f-84e7-62cf591379fc_line_1_1",
+                    "code": "LEAK",
+                    "name": "Bundle south",
+                    "description": "Bundle south: Bundle south description",
+                    "quantity": 1,
+                    "unitPrice": 175,
+                    "total": 175,
+                    "source": "custom"
+                  }
+                ],
+                "totals": {
+                  "subtotal": 300,
+                  "tax": 22.5,
+                  "total": 322.5,
+                  "taxRate": 7.5
+                },
+                "createdAt": "2026-07-14T02:25:08.560Z",
+                "updatedAt": "2026-07-14T02:25:08.560Z",
+                "dueAt": "2026-07-14T02:25:08.560Z",
+                "terms": "Payment is due as scheduled on the invoice. Reach out to the office before the due date if anything needs to be reviewed.",
+                "deliveryDefaults": {
+                  "emailIncludePdf": true,
+                  "emailIncludeSummary": true,
+                  "emailIncludePayLink": true,
+                  "smsIncludeSummary": true,
+                  "smsIncludePayLink": true,
+                  "smsIncludeHostedLink": true
+                },
+                "portal": {},
+                "delivery": [],
+                "statusHistory": [
+                  {
+                    "status": "draft",
+                    "changedAt": "2026-07-14T02:25:08.560Z",
+                    "note": "Invoice draft created."
+                  }
+                ],
+                "ledger": {
+                  "depositApplied": 0,
+                  "creditApplied": 0,
+                  "paymentApplied": 0,
+                  "refundedAmount": 0,
+                  "balanceDue": 322.5,
+                  "overdue": false
+                }
+              },
+              "jobs": [
+                {
+                  "id": "job_d24498f6-efac-44de-9e3c-37daf01a8fb8",
+                  "tenantId": "aquatrace",
+                  "number": "JOB-0002",
+                  "clientId": "client_1",
+                  "propertyId": "property_1",
+                  "status": "Unscheduled",
+                  "title": "Bundle north",
+                  "createdAt": "2026-07-14T02:25:08.557Z",
+                  "updatedAt": "2026-07-14T02:25:08.557Z",
+                  "lineItems": [
+                    {
+                      "id": "line_1",
+                      "code": "LEAK",
+                      "name": "Bundle north",
+                      "description": "Bundle north description",
+                      "quantity": 1,
+                      "unitPrice": 125,
+                      "total": 125,
+                      "source": "custom"
+                    }
+                  ],
+                  "totals": {
+                    "subtotal": 125,
+                    "tax": 0,
+                    "total": 125
+                  }
+                },
+                {
+                  "id": "job_04baf3a1-5a4a-4f1f-84e7-62cf591379fc",
+                  "tenantId": "aquatrace",
+                  "number": "JOB-0003",
+                  "clientId": "client_1",
+                  "propertyId": "property_1",
+                  "status": "Unscheduled",
+                  "title": "Bundle south",
+                  "createdAt": "2026-07-14T02:25:08.557Z",
+                  "updatedAt": "2026-07-14T02:25:08.557Z",
+                  "lineItems": [
+                    {
+                      "id": "line_1",
+                      "code": "LEAK",
+                      "name": "Bundle south",
+                      "description": "Bundle south description",
+                      "quantity": 1,
+                      "unitPrice": 175,
+                      "total": 175,
+                      "source": "custom"
+                    }
+                  ],
+                  "totals": {
+                    "subtotal": 175,
+                    "tax": 0,
+                    "total": 175
+                  }
+                }
+              ]
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_51543928-85b1-4c11-ae23-cd0487d438ce",
+              "label": "ApprovalQueue approval appr_51543928-85b1-4c11-ae23-cd0487d438ce"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_51543928-85b1-4c11-ae23-cd0487d438ce",
+          "label": "ApprovalQueue approval appr_51543928-85b1-4c11-ae23-cd0487d438ce"
+        }
+      ]
+    }
+  ],
+  "sentEmailCount": 2,
+  "sentSmsCount": 1
+}

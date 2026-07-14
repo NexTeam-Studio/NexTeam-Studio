@@ -1,0 +1,119 @@
+{
+  "capturedAt": "2026-07-13T02:23:08.455Z",
+  "tenantId": "aquatrace",
+  "transcript": [
+    {
+      "role": "user",
+      "content": "draft a quote for Deborah Justice for main drain documentation at $995 with signature and deposit"
+    },
+    {
+      "role": "assistant",
+      "content": "Quote draft ready. I read it back below before anything gets created.\n\nCreate quote: Deborah Justice quote\nQuote #: Q-0001\nTitle: Deborah Justice quote\nCUSTOM-1 main drain documentation x1: $995.00\nTotal: $995.00\nExpires: 2026-08-12T02:23:08.435Z\nApproval rules: signature required, deposit required (50%), card on file optional\n\nApprove this? yes / no / make changes.\nApproval id: appr_4be5be30-0e29-4459-8517-08689344e61e",
+      "toolRuns": [
+        {
+          "name": "createQuote",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_4be5be30-0e29-4459-8517-08689344e61e",
+              "label": "ApprovalQueue quote create appr_4be5be30-0e29-4459-8517-08689344e61e"
+            },
+            {
+              "rail": "native",
+              "ref": "native-quote-config",
+              "label": "Native quote templates, numbering, and totals"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "make changes. raise the deposit to 30 percent and change the title to Deborah Justice revised quote"
+    },
+    {
+      "role": "assistant",
+      "content": "Updated quote draft ready. Please check the revised quote below before I create it.\n\nCreate quote: Deborah Justice revised quote\nQuote #: Q-0001\nTitle: Deborah Justice revised quote\nCUSTOM-1 main drain documentation x1: $995.00\nTotal: $995.00\nExpires: 2026-08-12T02:23:08.435Z\nApproval rules: signature required, deposit required (30%), card on file optional\n\nApprove this? yes / no / make changes.\nApproval id: appr_5fcb03b5-bb98-4d6a-8fc6-f7f76a2ded6d",
+      "toolRuns": [
+        {
+          "name": "revisePendingQuoteCreateApproval",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_5fcb03b5-bb98-4d6a-8fc6-f7f76a2ded6d",
+              "label": "ApprovalQueue quote create appr_5fcb03b5-bb98-4d6a-8fc6-f7f76a2ded6d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "yes"
+    },
+    {
+      "role": "assistant",
+      "content": "Approved and created quote Q-0001: Deborah Justice revised quote (appr_5fcb03b5-bb98-4d6a-8fc6-f7f76a2ded6d).",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_5fcb03b5-bb98-4d6a-8fc6-f7f76a2ded6d",
+              "label": "ApprovalQueue approval appr_5fcb03b5-bb98-4d6a-8fc6-f7f76a2ded6d"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "finalQuotes": [
+    {
+      "id": "quote_83167c83-9cd1-4767-a121-c650593e1911",
+      "tenantId": "aquatrace",
+      "number": "Q-0001",
+      "clientId": "client_1",
+      "templateId": "quote_template_standard_aquatrace",
+      "version": 1,
+      "status": "draft",
+      "title": "Deborah Justice revised quote",
+      "lineItems": [
+        {
+          "id": "line_custom_1_1",
+          "code": "CUSTOM-1",
+          "name": "main drain documentation",
+          "quantity": 1,
+          "unitPrice": 995,
+          "total": 995,
+          "source": "custom"
+        }
+      ],
+      "totals": {
+        "subtotal": 995,
+        "tax": 0,
+        "total": 995
+      },
+      "approvalRules": {
+        "requireSignature": true,
+        "requireDeposit": true,
+        "requireCardOnFile": false,
+        "depositKind": "percent",
+        "depositValue": 30
+      },
+      "expiresAt": "2026-08-12T02:23:08.435Z",
+      "portal": {},
+      "delivery": [],
+      "changeRequests": [],
+      "deposit": {
+        "required": true,
+        "kind": "percent",
+        "amount": 298.5
+      },
+      "terms": "Pricing stays valid through the expiry date shown on this quote. Scheduling begins after approval and any required deposit steps are complete.",
+      "createdAt": "2026-07-13T02:23:08.445Z",
+      "updatedAt": "2026-07-13T02:23:08.445Z"
+    }
+  ],
+  "pendingApprovals": []
+}

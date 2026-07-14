@@ -47,6 +47,11 @@ export function buildQuoteDraft(input: DraftQuoteInput): QuoteDraft {
     clientId: input.clientId,
     jobId: input.jobId,
     title: input.title,
-    lineItems
+    lineItems,
+    approvalRules: {
+      requireSignature: false,
+      requireDeposit: false,
+      requireCardOnFile: false
+    }
   };
 }

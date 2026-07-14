@@ -72,6 +72,10 @@ export class ApprovalQueueService {
     private readonly executor: ApprovalExecutor = new DryRunApprovalExecutor()
   ) {}
 
+  get(id: ID): Promise<ApprovalItem | null> {
+    return this.repository.get(id);
+  }
+
   async create(input: CreateApprovalItemInput): Promise<ApprovalItem> {
     const item = approvalItemSchema.parse({
       id: `appr_${crypto.randomUUID()}`,
@@ -85,29 +89,41 @@ export class ApprovalQueueService {
     return this.repository.create(item);
   }
 
-  async approve(id: ID): Promise<ApprovalItem> {
+  async approve(id: ID, actorId?: string): Promise<ApprovalItem> {
     const item = await this.repository.get(id);
     if (!item) {
       throw new RailError(`Approval item ${id} was not found.`, { provider: "approval", op: "approve", status: 404 });
     }
-    return this.repository.update(id, { status: "approved", decidedAt: new Date().toISOString() });
+    return this.repository.update(id, {
+      status: "approved",
+      decidedAt: new Date().toISOString(),
+      ...(actorId ? { decidedBy: actorId } : {})
+    });
   }
 
-  async reject(id: ID): Promise<ApprovalItem> {
+  async reject(id: ID, actorId?: string): Promise<ApprovalItem> {
     const item = await this.repository.get(id);
     if (!item) {
       throw new RailError(`Approval item ${id} was not found.`, { provider: "approval", op: "reject", status: 404 });
     }
-    return this.repository.update(id, { status: "rejected", decidedAt: new Date().toISOString() });
+    return this.repository.update(id, {
+      status: "rejected",
+      decidedAt: new Date().toISOString(),
+      ...(actorId ? { decidedBy: actorId } : {})
+    });
   }
 
-  async executeApproved(id: ID): Promise<{ item: ApprovalItem; result: unknown }> {
+  async executeApproved(id: ID, actorId?: string): Promise<{ item: ApprovalItem; result: unknown }> {
     const item = await this.repository.get(id);
     if (!item || item.status !== "approved") {
       throw new RailError(`Approval item ${id} is not approved.`, { provider: "approval", op: "execute", status: 409 });
     }
     const result = await this.executor.execute(item);
-    const executed = await this.repository.update(id, { status: "executed" });
+    const executed = await this.repository.update(id, {
+      status: "executed",
+      executedAt: new Date().toISOString(),
+      ...(actorId ? { executedBy: actorId } : {})
+    });
     return { item: executed, result };
   }
 

@@ -6,7 +6,11 @@ import {
   type ApprovalQueueService,
   type EventBus
 } from "@nexteam/core";
+import type { NativeCrmRepository } from "@nexteam/providers";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
+import type { CommsRail } from "../comms/gmailRegistry.js";
+import type { PlatformRepository } from "../platform/repository.js";
+import { buildServiceRequest, notifyRequestCreated } from "../crm/requestFoundation.js";
 import { buildOperatorUiTheme, defaultOperatorUiTheme } from "./appearance.js";
 import { generatePoolLeakSite } from "./generator.js";
 import { leadSubmissionSchema, operatorUiThemeInputSchema } from "./schemas.js";
@@ -15,6 +19,9 @@ import type { SitesRepository } from "./repository.js";
 export interface SitesRouteDeps {
   repository: SitesRepository;
   approvalQueue: ApprovalQueueService;
+  crmRepository?: NativeCrmRepository | undefined;
+  platformRepository?: Pick<PlatformRepository, "listTenantUsers"> | undefined;
+  commsRail?: CommsRail | undefined;
   eventBus?: EventBus | undefined;
   env?: NodeJS.ProcessEnv | undefined;
 }
@@ -215,7 +222,39 @@ export function registerSitesRoutes(app: Express, deps: SitesRouteDeps): void {
         createdBy: "system"
       });
 
-      res.status(201).json({ ok: true, lead, event: "lead.received", approval, outboundQueuedOnly: true });
+      let request = null;
+      if (deps.crmRepository) {
+        const built = await buildServiceRequest(deps.crmRepository, {
+          tenantId,
+          source: "website_form",
+          formSlug: slug,
+          narrative: parsed.message,
+          consent: parsed.consent,
+          allowIncomplete: true,
+          sourceLeadId: lead.id,
+          fieldValues: [
+            { key: "client_name", value: parsed.name },
+            ...(parsed.email ? [{ key: "email", value: parsed.email }] : []),
+            ...(parsed.phone ? [{ key: "phone", value: parsed.phone }] : []),
+            ...(parsed.city ? [{ key: "property_city", value: parsed.city }] : []),
+            { key: "issue_summary", value: parsed.message }
+          ]
+        });
+        const created = await deps.crmRepository.createRequest(built);
+        const notified = await notifyRequestCreated(created, {
+          approvalQueue: deps.approvalQueue,
+          commsRail: deps.commsRail,
+          platformRepository: deps.platformRepository
+        });
+        request = notified.notifications
+          ? await deps.crmRepository.updateRequest(created.id, {
+            notifications: notified.notifications,
+            updatedAt: notified.updatedAt
+          })
+          : created;
+      }
+
+      res.status(201).json({ ok: true, lead, request, event: "lead.received", approval, outboundQueuedOnly: true });
     } catch (error) {
       sendRouteError(res, error);
     }

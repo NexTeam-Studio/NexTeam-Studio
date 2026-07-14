@@ -1,0 +1,200 @@
+COMMAND: npm run typecheck
+
+
+> typecheck
+> tsc -b
+
+
+
+COMMAND: node --test apps/server/test/ledger-foundation.test.mjs
+
+? quote deposit bridge migrates into first-class payment, deposit, receipt review, and saved card records without rewriting the quote snapshot (5.9956ms)
+? invoice sync auto-applies deposits and credits, and overdue only marks awaiting-payment invoices (13.4537ms)
+? Stripe checkout uses tenant Connect headers with zero application fee and charges only the current balance due (22.2923ms)
+? payment states progress through pending, succeeded, partially_refunded, and refunded with separate refund and receipt-review records (3.4101ms)
+? void and bad debt stay distinct, and ledger chat tools require OWNER or OFFICE_ADMIN for execution (11.3067ms)
+? tests 5
+? suites 0
+? pass 5
+? fail 0
+? cancelled 0
+? skipped 0
+? todo 0
+? duration_ms 287.8964
+
+
+COMMAND: node --test apps/server/test/crm-read-side.test.mjs
+
+? CRM quote and invoice native schemas parse (2.8443ms)
+? NativeAdapter exposes CRM read methods (1.0972ms)
+? native import upserts remain idempotent by Jobber external ids (0.6558ms)
+? NativeAdapter writes native clients and approval-gated quote drafts (1.7314ms)
+? NexOps 3.2 client records preserve display, billing, and one-way SMS settings (0.8868ms)
+? CRM read nexi-tools expose pipeline and client lookup (0.88ms)
+? CRM clientLookup falls back to live Jobber when native CRM has no matching client (0.4132ms)
+? CRM write nexi-tools create clients, queue quotes through ApprovalQueue, and read invoices (19.3289ms)
+? CRM createClient tool blocks approval when telephone is missing (1.2114ms)
+? CRM client route rejects incomplete saves before a client record is created (77.9319ms)
+? CRM routes read clients created by ApprovalQueue execution from the shared native repository (18.4506ms)
+? CRM quote routes create, send, approve, convert, invoice, and renew quotes (72.9194ms)
+? CRM quote change requests store per-line comments plus a freeform note (10.2493ms)
+? Quote materialization preserves custom lines and future client-selectable fields (0.468ms)
+? Quote terms resolve tenant default, then template override, then per-quote override (0.6639ms)
+? TECHNICIAN role is blocked from manual quote approval authority (0.4731ms)
+? NativeAdapter writes invoices and renders invoice PDFs (0.5109ms)
+? Stripe rail refuses live keys and verifies webhook signatures (1.1028ms)
+? tests 18
+? suites 0
+? pass 18
+? fail 0
+? cancelled 0
+? skipped 0
+? todo 0
+? duration_ms 1238.1582
+
+
+COMMAND: node --test apps/server/test/job-lifecycle.test.mjs
+
+? legacy job schema and in-memory native repository normalize stored jobs onto the new lifecycle rail (3.018ms)
+? request and quote conversions land as Unscheduled and invoice reminders clear only by invoice or dismissal (18.0208ms)
+? moving a visit cancels old reminder timers and creates a fresh pair for the new slot (0.8314ms)
+? due visit reminders auto-send email and sms with technician and access-note context (9.7913ms)
+? technicians can complete visits but stay blocked from office-only close and invoice authority (0.6894ms)
+? Nexi job tools create, read, revise, and execute lifecycle actions through chat-native approvals (10.9218ms)
+? tests 6
+? suites 0
+? pass 6
+? fail 0
+? cancelled 0
+? skipped 0
+? todo 0
+? duration_ms 898.1987
+
+
+COMMAND: node --test apps/server/test/nexi-job-desk.test.mjs
+
+{"event":"nexi_deterministic_tool_failure","toolName":"draftReportEmail","provider":"unknown","op":"unknown","status":"unknown"}
+{"event":"nexi_deterministic_tool_failure","toolName":"searchEmail","provider":"unknown","op":"unknown","status":"unknown"}
+? Camp Mikell fixture extracts 101000 gallons (3.7989ms)
+? source check blocks factual answers without sources (1.9023ms)
+? source check does not block meta or feedback turns (0.5171ms)
+? source check does not block email action commands or honest tool failures (0.4954ms)
+? Nexi meta/help turns answer without source stonewalls (1.3569ms)
+? Nexi tool loop preloads obvious tools and records cache metrics (51.4364ms)
+? local Nexi fallback routes email-today prompts to summarizeInbox before schedule (3.1124ms)
+? local Nexi fallback routes attention prompts to triageInbox (0.9028ms)
+? local Nexi fallback routes email source refs to getEmailMessage (0.3865ms)
+? Nexi Anthropic gateway preloads email source refs with getEmailMessage (3.6072ms)
+? Nexi Anthropic gateway answers draftEmail action commands from the approval result (1.6173ms)
+? Nexi Anthropic gateway preloads draftEmail for send-me-at action commands (1.9685ms)
+? Nexi Anthropic gateway preloads draftReportEmail for report PDF email requests (1.444ms)
+? Nexi Anthropic gateway preloads draftReportEmail for typoed report PDF email requests (0.7939ms)
+? Nexi report PDF email action failures do not source-stonewall (1.1524ms)
+? Nexi Anthropic gateway preloads runEvaporation for evap report requests (2.2514ms)
+? Nexi Anthropic gateway preloads draftCampaign for campaign action commands (1.2416ms)
+? Nexi Anthropic gateway treats mailbox address follow-ups as email search context (1.7148ms)
+? Nexi routes broad inbox commands to summary and triage instead of email search (3.058ms)
+? Nexi routes basic clock and weather questions to native context tools (3.3469ms)
+? Nexi Anthropic gateway sanitizes deterministic email tool failures (0.7688ms)
+? Nexi Anthropic gateway turns empty deterministic email searches into logged honest failures (0.4013ms)
+? Nexi Anthropic gateway preloads triageInbox for attention prompts (0.6863ms)
+? Nexi payment-status prompts exhaust schedule, Jobber, native invoice, and email rails (4.0057ms)
+? Nexi tomorrow schedule prompts reject fabricated stale tool dates (5.6466ms)
+? Nexi distance prompts return capability gaps instead of missing-data failures (0.4264ms)
+? Nexi unsupported delete-client prompts return capability gaps instead of missing-data wording (0.2557ms)
+? Nexi unsupported saved-write prompts keep capability-gap wording across client, request, and billing actions (0.3252ms)
+? Nexi distance prompts run the native distance tool when wired (1.4453ms)
+? Nexi distance prompts use job detail addresses before measuring (0.777ms)
+? Nexi report-PDF email requests return capability gaps instead of email search misses (0.2464ms)
+? Nexi existing-report email questions stay on Gmail search (1.561ms)
+? Nexi broad client list and count prompts route to CRM clientLookup (0.9183ms)
+? Nexi named client lookup preserves the requested client name instead of broad-listing (0.6255ms)
+? Nexi named client lookup never reuses a cached different client (0.3757ms)
+? Nexi named job lookup routes to Jobber detail instead of the schedule board (0.7095ms)
+? Nexi create-client prompts route to approval-gated CRM createClient (1.736ms)
+? Nexi create-client drafts block approval until name, address, and telephone are present (0.5115ms)
+? Nexi approval prompts execute create-client drafts from chat after yes (0.857ms)
+? Nexi create-quote prompts route to approval-gated CRM createQuote (1.2772ms)
+? Nexi quote approval prompts support chat-native revisions before execution (0.7519ms)
+? Nexi create-client parser splits bare name and street address from original regression phrasing (1.0738ms)
+? Nexi create-client parser keeps telephone and email out of the address note (0.6751ms)
+? Nexi tenant intake prompts route to startIntake instead of search or createClient (0.9421ms)
+? Nexi content queue prompts route to content queue approve and reject tools (1.8057ms)
+? Nexi writes owner-supplied freeform content without forcing job rail lookups (0.6984ms)
+? Nexi report-based article prompts use the CompanyCam document lookup path (0.6155ms)
+? Nexi saves chat-authored freeform content into the content queue (0.9442ms)
+? Nexi freeform content save skips stale status replies and queues the latest article (0.5515ms)
+? Nexi address-only follow-ups preserve the prior distance capability intent (0.1759ms)
+? Nexi schedule prompts parse requested calendar dates in tenant timezone (2.8574ms)
+? Nexi answers meta questions directly without exposing tools (0.2837ms)
+? Nexi exact echo turns never route to email search (0.1913ms)
+? Nexi feedback about token waste never routes to email search (0.1612ms)
+? Nexi frustrated date feedback never triggers the source stonewall (0.1501ms)
+? Nexi photo prompts extract the CompanyCam project query (0.6783ms)
+? Nexi exact photo prompt extracts trailing entity before photos (1.0343ms)
+? Nexi getPhotos includes native Job Desk uploads when CompanyCam has no usable result (0.9608ms)
+? Nexi getDocuments includes native uploaded PDFs immediately (0.4722ms)
+? Nexi schedule follow-ups use prior conversation date window (3.5776ms)
+? Nexi reuses cached deterministic tool runs for context follow-ups (1.7024ms)
+? Nexi report prompts preload CompanyCam documents with the requested entity (1.0672ms)
+? Nexi assigned follow-ups use the prior job subject and getJobDetail (0.6171ms)
+? Nexi total-gallons report questions also run SiteJobBlueprint lookup (0.9216ms)
+? Nexi total-gallons job questions run Jobber and CompanyCam before blueprint fields (0.7359ms)
+? Nexi under-specified evaporation commands read job/report context before running calculator (0.8087ms)
+? Nexi answers natural evaporation-at-client wording from report context (4.3093ms)
+? Nexi spa-main-drain follow-ups inherit the job and request the spa field (1.0164ms)
+? Nexi bare entity follow-ups inherit report measurement rails (0.6295ms)
+? Aquatrace report extraction handles locked report rules (5.5246ms)
+? Aquatrace document classifier parses standalone Moasure and evap PDFs (0.6259ms)
+? Nexi issue prompts preload both Jobber and CompanyCam rails (1.2214ms)
+? Nexi typo issue prompts still preload both Jobber and CompanyCam rails (0.5685ms)
+? Nexi completion-time prompts preload Jobber and CompanyCam report rails (0.5664ms)
+? Nexi completion-time typo prompts still preload Jobber and CompanyCam report rails (0.5981ms)
+? Nexi correction follow-ups resume CompanyCam report lookup instead of email search (0.6572ms)
+? Nexi technician prompts preload Jobber plus CompanyCam documents and photos (0.5864ms)
+? Nexi address prompts preload Jobber details instead of answering from memory (0.5205ms)
+? Nexi service persists failureLog for source-enforced failures (0.7916ms)
+? Nexi service persists tool runs for conversation reuse (0.6241ms)
+? Nexi service returns the stable conversation id, not the Firestore record id (0.4366ms)
+? CompanyCam report fields produce entity-keyed SiteJobBlueprints (1.9344ms)
+? CompanyCam report extraction keeps pool, spa, and basin count sections separate (0.5442ms)
+? SiteJobBlueprint field lookup reads section-scoped counts from old JSON fields (0.2535ms)
+? SiteJobBlueprint field lookup rejects mismatched requested entity (0.3115ms)
+? Nexi service logs user-flagged incorrect answers with correction context (0.4548ms)
+? Nexi service logs softer correction wording before the source gate can fire (0.2932ms)
+? Firestore conversation history reads are scoped to one conversation (0.2315ms)
+? tests 88
+? suites 0
+? pass 88
+? fail 0
+? cancelled 0
+? skipped 0
+? todo 0
+? duration_ms 630.5638
+
+
+COMMAND: npm run build
+
+
+> build
+> npm --workspace @nexteam/server run build && npm --workspace @nexteam/web run build
+
+
+> @nexteam/server@0.0.0 build
+> tsc -b
+
+
+> @nexteam/web@0.0.0 build
+> vite build
+
+vite v5.4.11 building for production...
+transforming...
+? 49 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.34 kB ¦ gzip:   0.24 kB
+dist/assets/index-BJbwEM8U.css   47.81 kB ¦ gzip:   9.34 kB
+dist/assets/index-BERl0oV2.js   558.10 kB ¦ gzip: 137.64 kB
+? built in 2.07s
+
+

@@ -1,0 +1,894 @@
+{
+  "createdAt": "2026-07-13T13:24:25.101Z",
+  "tenantId": "aquatrace",
+  "transcript": [
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "create a job for Deborah Justice"
+        }
+      ],
+      "answer": "Job draft ready. I read it back below before anything gets created.\n\nCreate job: Deborah Justice job\nTitle: Deborah Justice job\nClient id: client_1\nProperty id: property_1\nLine items: none yet\nLifecycle starts at Unscheduled until a visit is booked.\n\nApprove this? yes / no / make changes.\nApproval id: appr_06726856-f58d-4076-a9cc-10c61bde4e6c",
+      "toolRuns": [
+        {
+          "name": "createJob",
+          "result": {
+            "approval": {
+              "id": "appr_06726856-f58d-4076-a9cc-10c61bde4e6c",
+              "tenantId": "aquatrace",
+              "kind": "job",
+              "preview": {
+                "title": "Create job: Deborah Justice job",
+                "body": "Title: Deborah Justice job\nClient id: client_1\nProperty id: property_1\nLine items: none yet\nLifecycle starts at Unscheduled until a visit is booked."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "createJob",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "input": {
+                    "tenantId": "aquatrace",
+                    "clientId": "client_1",
+                    "propertyId": "property_1",
+                    "title": "Deborah Justice job",
+                    "lineItems": [],
+                    "createdBy": "nexi"
+                  }
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "pendingJob": {
+              "tenantId": "aquatrace",
+              "clientId": "client_1",
+              "propertyId": "property_1",
+              "title": "Deborah Justice job",
+              "lineItems": [],
+              "createdBy": "nexi",
+              "status": "pending_approval"
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_06726856-f58d-4076-a9cc-10c61bde4e6c",
+              "label": "ApprovalQueue job create appr_06726856-f58d-4076-a9cc-10c61bde4e6c"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_06726856-f58d-4076-a9cc-10c61bde4e6c",
+          "label": "ApprovalQueue job create appr_06726856-f58d-4076-a9cc-10c61bde4e6c"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "create a job for Deborah Justice"
+        },
+        {
+          "role": "assistant",
+          "content": "Job draft ready. I read it back below before anything gets created.\n\nCreate job: Deborah Justice job\nTitle: Deborah Justice job\nClient id: client_1\nProperty id: property_1\nLine items: none yet\nLifecycle starts at Unscheduled until a visit is booked.\n\nApprove this? yes / no / make changes.\nApproval id: appr_06726856-f58d-4076-a9cc-10c61bde4e6c"
+        },
+        {
+          "role": "user",
+          "content": "make changes. change the title to Leak follow-up revised"
+        }
+      ],
+      "answer": "Updated draft ready. Please check the revised record below before I run it.\n\nCreate job: Leak follow-up revised\nTitle: Leak follow-up revised\nClient id: client_1\nProperty id: property_1\nLine items: none yet\nLifecycle starts at Unscheduled until a visit is booked.\n\nApprove this? yes / no / make changes.\nApproval id: appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1",
+      "toolRuns": [
+        {
+          "name": "revisePendingJobCreateApproval",
+          "result": {
+            "approval": {
+              "id": "appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1",
+              "tenantId": "aquatrace",
+              "kind": "job",
+              "preview": {
+                "title": "Create job: Leak follow-up revised",
+                "body": "Title: Leak follow-up revised\nClient id: client_1\nProperty id: property_1\nLine items: none yet\nLifecycle starts at Unscheduled until a visit is booked."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "createJob",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "input": {
+                    "tenantId": "aquatrace",
+                    "clientId": "client_1",
+                    "propertyId": "property_1",
+                    "title": "Leak follow-up revised",
+                    "lineItems": [],
+                    "createdBy": "nexi"
+                  }
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "pendingJob": {
+              "tenantId": "aquatrace",
+              "clientId": "client_1",
+              "propertyId": "property_1",
+              "title": "Leak follow-up revised",
+              "lineItems": [],
+              "createdBy": "nexi",
+              "approvalId": "appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1",
+              "status": "pending_approval"
+            },
+            "writesAreApprovalQueuedOnly": true,
+            "replacedApprovalId": "appr_06726856-f58d-4076-a9cc-10c61bde4e6c"
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1",
+              "label": "ApprovalQueue job create appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1",
+          "label": "ApprovalQueue job create appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "create a job for Deborah Justice"
+        },
+        {
+          "role": "assistant",
+          "content": "Updated draft ready. Please check the revised record below before I run it.\n\nCreate job: Leak follow-up revised\nTitle: Leak follow-up revised\nClient id: client_1\nProperty id: property_1\nLine items: none yet\nLifecycle starts at Unscheduled until a visit is booked.\n\nApprove this? yes / no / make changes.\nApproval id: appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "answer": "Approved and executed Leak follow-up revised.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1",
+              "tenantId": "aquatrace",
+              "kind": "job",
+              "preview": {
+                "title": "Create job: Leak follow-up revised",
+                "body": "Title: Leak follow-up revised\nClient id: client_1\nProperty id: property_1\nLine items: none yet\nLifecycle starts at Unscheduled until a visit is booked."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "createJob",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "input": {
+                    "tenantId": "aquatrace",
+                    "clientId": "client_1",
+                    "propertyId": "property_1",
+                    "title": "Leak follow-up revised",
+                    "lineItems": [],
+                    "createdBy": "nexi"
+                  }
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-13T13:24:25.073Z",
+              "decidedBy": "owner_1"
+            },
+            "executedApproval": {
+              "id": "appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1",
+              "tenantId": "aquatrace",
+              "kind": "job",
+              "preview": {
+                "title": "Create job: Leak follow-up revised",
+                "body": "Title: Leak follow-up revised\nClient id: client_1\nProperty id: property_1\nLine items: none yet\nLifecycle starts at Unscheduled until a visit is booked."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "createJob",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "input": {
+                    "tenantId": "aquatrace",
+                    "clientId": "client_1",
+                    "propertyId": "property_1",
+                    "title": "Leak follow-up revised",
+                    "lineItems": [],
+                    "createdBy": "nexi"
+                  }
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-13T13:24:25.073Z",
+              "decidedBy": "owner_1",
+              "executedAt": "2026-07-13T13:24:25.074Z",
+              "executedBy": "owner_1"
+            },
+            "execution": {
+              "job": {
+                "id": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                "tenantId": "aquatrace",
+                "number": "JOB-0001",
+                "clientId": "client_1",
+                "propertyId": "property_1",
+                "status": "Unscheduled",
+                "title": "Leak follow-up revised",
+                "createdAt": "2026-07-13T13:24:25.073Z",
+                "updatedAt": "2026-07-13T13:24:25.073Z",
+                "lineItems": [],
+                "totals": {
+                  "subtotal": 0,
+                  "tax": 0,
+                  "total": 0
+                }
+              }
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1",
+              "label": "ApprovalQueue approval appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1",
+          "label": "ApprovalQueue approval appr_5836ea1e-3c64-455e-bf7a-d70b844cc1f1"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "list jobs for Deborah Justice"
+        }
+      ],
+      "answer": "I found 1 job.",
+      "toolRuns": [
+        {
+          "name": "listJobs",
+          "result": {
+            "jobs": [
+              {
+                "id": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                "tenantId": "aquatrace",
+                "number": "JOB-0001",
+                "clientId": "client_1",
+                "propertyId": "property_1",
+                "status": "Unscheduled",
+                "title": "Leak follow-up revised",
+                "createdAt": "2026-07-13T13:24:25.073Z",
+                "updatedAt": "2026-07-13T13:24:25.073Z",
+                "lineItems": [],
+                "totals": {
+                  "subtotal": 0,
+                  "tax": 0,
+                  "total": 0
+                },
+                "client": {
+                  "id": "client_1",
+                  "tenantId": "aquatrace",
+                  "name": "Deborah Justice",
+                  "emails": [
+                    "deborah@example.test"
+                  ],
+                  "phones": [
+                    "8645551212"
+                  ],
+                  "tags": [],
+                  "consent": {
+                    "email": true,
+                    "sms": true
+                  },
+                  "communicationSettings": {
+                    "quotesAndInvoices": "both",
+                    "jobReminders": "both",
+                    "jobClosureFollowUps": "email",
+                    "reviewRequests": "email",
+                    "smsDefaultMode": "one_way"
+                  }
+                },
+                "property": {
+                  "id": "property_1",
+                  "tenantId": "aquatrace",
+                  "clientId": "client_1",
+                  "label": "Deborah Justice residence",
+                  "address": {
+                    "street1": "181 Isbell Road",
+                    "city": "Fair Play",
+                    "province": "SC",
+                    "postalCode": "29643",
+                    "country": "US"
+                  },
+                  "access": {
+                    "gateCode": "4421",
+                    "accessNotes": "Use the side gate by the equipment pad."
+                  },
+                  "assets": []
+                },
+                "visitCount": 0,
+                "completedVisitCount": 0,
+                "invoiceCount": 0
+              }
+            ]
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+              "label": "Native job Leak follow-up revised"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+          "label": "Native job Leak follow-up revised"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "what is the detail for job_a4e7344d-cb5e-46f6-a286-c66c4161a853"
+        }
+      ],
+      "answer": "Leak follow-up revised is Unscheduled as JOB-0001 with 0 visits.",
+      "toolRuns": [
+        {
+          "name": "getJobDetail",
+          "result": {
+            "job": {
+              "id": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+              "tenantId": "aquatrace",
+              "number": "JOB-0001",
+              "clientId": "client_1",
+              "propertyId": "property_1",
+              "status": "Unscheduled",
+              "title": "Leak follow-up revised",
+              "createdAt": "2026-07-13T13:24:25.073Z",
+              "updatedAt": "2026-07-13T13:24:25.073Z",
+              "lineItems": [],
+              "totals": {
+                "subtotal": 0,
+                "tax": 0,
+                "total": 0
+              },
+              "client": {
+                "id": "client_1",
+                "tenantId": "aquatrace",
+                "name": "Deborah Justice",
+                "emails": [
+                  "deborah@example.test"
+                ],
+                "phones": [
+                  "8645551212"
+                ],
+                "tags": [],
+                "consent": {
+                  "email": true,
+                  "sms": true
+                },
+                "communicationSettings": {
+                  "quotesAndInvoices": "both",
+                  "jobReminders": "both",
+                  "jobClosureFollowUps": "email",
+                  "reviewRequests": "email",
+                  "smsDefaultMode": "one_way"
+                }
+              },
+              "property": {
+                "id": "property_1",
+                "tenantId": "aquatrace",
+                "clientId": "client_1",
+                "label": "Deborah Justice residence",
+                "address": {
+                  "street1": "181 Isbell Road",
+                  "city": "Fair Play",
+                  "province": "SC",
+                  "postalCode": "29643",
+                  "country": "US"
+                },
+                "access": {
+                  "gateCode": "4421",
+                  "accessNotes": "Use the side gate by the equipment pad."
+                },
+                "assets": []
+              },
+              "visits": [],
+              "reminders": {
+                "visit": []
+              },
+              "history": [
+                {
+                  "id": "job_evt_fe5035e5-de7e-47a4-98b5-2cda8adfc0f3",
+                  "tenantId": "aquatrace",
+                  "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                  "type": "job.created",
+                  "createdAt": "2026-07-13T13:24:25.073Z",
+                  "payload": {
+                    "title": "Leak follow-up revised",
+                    "createdBy": "nexi"
+                  }
+                }
+              ],
+              "invoices": []
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+              "label": "Native job Leak follow-up revised"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+          "label": "Native job Leak follow-up revised"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "close and invoice job_a4e7344d-cb5e-46f6-a286-c66c4161a853"
+        }
+      ],
+      "answer": "Job action ready. I read the action back below before anything executes.\n\nClose and invoice job: Leak follow-up revised\nJob: Leak follow-up revised\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step.\n\nApprove this? yes / no / make changes.\nApproval id: appr_cef83deb-8c3c-4fcb-9eff-a799a6875668",
+      "toolRuns": [
+        {
+          "name": "queueJobAction",
+          "result": {
+            "approval": {
+              "id": "appr_cef83deb-8c3c-4fcb-9eff-a799a6875668",
+              "tenantId": "aquatrace",
+              "kind": "job",
+              "preview": {
+                "title": "Close and invoice job: Leak follow-up revised",
+                "body": "Job: Leak follow-up revised\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performJobAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                  "action": "close_and_invoice"
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "preview": {
+              "job": {
+                "id": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                "tenantId": "aquatrace",
+                "number": "JOB-0001",
+                "clientId": "client_1",
+                "propertyId": "property_1",
+                "status": "Unscheduled",
+                "title": "Leak follow-up revised",
+                "createdAt": "2026-07-13T13:24:25.073Z",
+                "updatedAt": "2026-07-13T13:24:25.073Z",
+                "lineItems": [],
+                "totals": {
+                  "subtotal": 0,
+                  "tax": 0,
+                  "total": 0
+                },
+                "client": {
+                  "id": "client_1",
+                  "tenantId": "aquatrace",
+                  "name": "Deborah Justice",
+                  "emails": [
+                    "deborah@example.test"
+                  ],
+                  "phones": [
+                    "8645551212"
+                  ],
+                  "tags": [],
+                  "consent": {
+                    "email": true,
+                    "sms": true
+                  },
+                  "communicationSettings": {
+                    "quotesAndInvoices": "both",
+                    "jobReminders": "both",
+                    "jobClosureFollowUps": "email",
+                    "reviewRequests": "email",
+                    "smsDefaultMode": "one_way"
+                  }
+                },
+                "property": {
+                  "id": "property_1",
+                  "tenantId": "aquatrace",
+                  "clientId": "client_1",
+                  "label": "Deborah Justice residence",
+                  "address": {
+                    "street1": "181 Isbell Road",
+                    "city": "Fair Play",
+                    "province": "SC",
+                    "postalCode": "29643",
+                    "country": "US"
+                  },
+                  "access": {
+                    "gateCode": "4421",
+                    "accessNotes": "Use the side gate by the equipment pad."
+                  },
+                  "assets": []
+                },
+                "visits": [],
+                "reminders": {
+                  "visit": []
+                },
+                "history": [
+                  {
+                    "id": "job_evt_fe5035e5-de7e-47a4-98b5-2cda8adfc0f3",
+                    "tenantId": "aquatrace",
+                    "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                    "type": "job.created",
+                    "createdAt": "2026-07-13T13:24:25.073Z",
+                    "payload": {
+                      "title": "Leak follow-up revised",
+                      "createdBy": "nexi"
+                    }
+                  }
+                ],
+                "invoices": []
+              },
+              "action": "close_and_invoice",
+              "title": "Close and invoice job: Leak follow-up revised",
+              "body": "Job: Leak follow-up revised\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step."
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_cef83deb-8c3c-4fcb-9eff-a799a6875668",
+              "label": "ApprovalQueue job action appr_cef83deb-8c3c-4fcb-9eff-a799a6875668"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_cef83deb-8c3c-4fcb-9eff-a799a6875668",
+          "label": "ApprovalQueue job action appr_cef83deb-8c3c-4fcb-9eff-a799a6875668"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "close and invoice job_a4e7344d-cb5e-46f6-a286-c66c4161a853"
+        },
+        {
+          "role": "assistant",
+          "content": "Job action ready. I read the action back below before anything executes.\n\nClose and invoice job: Leak follow-up revised\nJob: Leak follow-up revised\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step.\n\nApprove this? yes / no / make changes.\nApproval id: appr_cef83deb-8c3c-4fcb-9eff-a799a6875668"
+        },
+        {
+          "role": "user",
+          "content": "yes"
+        }
+      ],
+      "answer": "Approved and executed Leak follow-up revised.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_cef83deb-8c3c-4fcb-9eff-a799a6875668",
+              "tenantId": "aquatrace",
+              "kind": "job",
+              "preview": {
+                "title": "Close and invoice job: Leak follow-up revised",
+                "body": "Job: Leak follow-up revised\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performJobAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                  "action": "close_and_invoice"
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-13T13:24:25.079Z",
+              "decidedBy": "owner_1"
+            },
+            "executedApproval": {
+              "id": "appr_cef83deb-8c3c-4fcb-9eff-a799a6875668",
+              "tenantId": "aquatrace",
+              "kind": "job",
+              "preview": {
+                "title": "Close and invoice job: Leak follow-up revised",
+                "body": "Job: Leak follow-up revised\nJob number: JOB-0001\nCurrent status: Unscheduled\nVisits: 0 total / 0 completed\nThis closes the job and creates the draft invoice in one step."
+              },
+              "execute": {
+                "service": "crm",
+                "op": "performJobAction",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                  "action": "close_and_invoice"
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-13T13:24:25.079Z",
+              "decidedBy": "owner_1",
+              "executedAt": "2026-07-13T13:24:25.100Z",
+              "executedBy": "owner_1"
+            },
+            "execution": {
+              "job": {
+                "id": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                "tenantId": "aquatrace",
+                "number": "JOB-0001",
+                "clientId": "client_1",
+                "propertyId": "property_1",
+                "status": "Archived",
+                "title": "Leak follow-up revised",
+                "createdAt": "2026-07-13T13:24:25.073Z",
+                "updatedAt": "2026-07-13T13:24:25.079Z",
+                "closedAt": "2026-07-13T13:24:25.079Z",
+                "closedBy": "owner_1",
+                "lineItems": [],
+                "totals": {
+                  "subtotal": 0,
+                  "tax": 0,
+                  "total": 0
+                },
+                "client": {
+                  "id": "client_1",
+                  "tenantId": "aquatrace",
+                  "name": "Deborah Justice",
+                  "emails": [
+                    "deborah@example.test"
+                  ],
+                  "phones": [
+                    "8645551212"
+                  ],
+                  "tags": [],
+                  "consent": {
+                    "email": true,
+                    "sms": true
+                  },
+                  "communicationSettings": {
+                    "quotesAndInvoices": "both",
+                    "jobReminders": "both",
+                    "jobClosureFollowUps": "email",
+                    "reviewRequests": "email",
+                    "smsDefaultMode": "one_way"
+                  }
+                },
+                "property": {
+                  "id": "property_1",
+                  "tenantId": "aquatrace",
+                  "clientId": "client_1",
+                  "label": "Deborah Justice residence",
+                  "address": {
+                    "street1": "181 Isbell Road",
+                    "city": "Fair Play",
+                    "province": "SC",
+                    "postalCode": "29643",
+                    "country": "US"
+                  },
+                  "access": {
+                    "gateCode": "4421",
+                    "accessNotes": "Use the side gate by the equipment pad."
+                  },
+                  "assets": []
+                },
+                "visits": [],
+                "reminders": {
+                  "visit": []
+                },
+                "history": [
+                  {
+                    "id": "job_evt_fe5035e5-de7e-47a4-98b5-2cda8adfc0f3",
+                    "tenantId": "aquatrace",
+                    "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                    "type": "job.created",
+                    "createdAt": "2026-07-13T13:24:25.073Z",
+                    "payload": {
+                      "title": "Leak follow-up revised",
+                      "createdBy": "nexi"
+                    }
+                  },
+                  {
+                    "id": "job_evt_c51bcbfc-d921-4b2d-8f68-388c8eb6cb99",
+                    "tenantId": "aquatrace",
+                    "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                    "type": "job.closed",
+                    "createdAt": "2026-07-13T13:24:25.079Z",
+                    "payload": {
+                      "closedBy": "owner_1"
+                    }
+                  },
+                  {
+                    "id": "job_evt_d53d0613-da14-42a1-b225-2400d5f43056",
+                    "tenantId": "aquatrace",
+                    "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                    "type": "job.requires_invoicing_cleared",
+                    "createdAt": "2026-07-13T13:24:25.079Z",
+                    "payload": {
+                      "resolvedByAction": "invoice_created",
+                      "invoiceId": "invoice_072ec34e-acac-45d2-b530-e7c90c6b49bf"
+                    }
+                  }
+                ],
+                "invoices": [
+                  {
+                    "id": "invoice_072ec34e-acac-45d2-b530-e7c90c6b49bf",
+                    "tenantId": "aquatrace",
+                    "number": "INV-0001",
+                    "clientId": "client_1",
+                    "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                    "status": "draft",
+                    "title": "Invoice - Leak follow-up revised",
+                    "lineItems": [],
+                    "totals": {
+                      "subtotal": 0,
+                      "tax": 0,
+                      "total": 0
+                    }
+                  }
+                ]
+              },
+              "invoice": {
+                "id": "invoice_072ec34e-acac-45d2-b530-e7c90c6b49bf",
+                "tenantId": "aquatrace",
+                "number": "INV-0001",
+                "clientId": "client_1",
+                "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+                "status": "draft",
+                "title": "Invoice - Leak follow-up revised",
+                "lineItems": [],
+                "totals": {
+                  "subtotal": 0,
+                  "tax": 0,
+                  "total": 0
+                }
+              }
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_cef83deb-8c3c-4fcb-9eff-a799a6875668",
+              "label": "ApprovalQueue approval appr_cef83deb-8c3c-4fcb-9eff-a799a6875668"
+            }
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_cef83deb-8c3c-4fcb-9eff-a799a6875668",
+          "label": "ApprovalQueue approval appr_cef83deb-8c3c-4fcb-9eff-a799a6875668"
+        }
+      ]
+    }
+  ],
+  "finalJobs": [
+    {
+      "id": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+      "tenantId": "aquatrace",
+      "number": "JOB-0001",
+      "clientId": "client_1",
+      "propertyId": "property_1",
+      "status": "Archived",
+      "title": "Leak follow-up revised",
+      "createdAt": "2026-07-13T13:24:25.073Z",
+      "updatedAt": "2026-07-13T13:24:25.079Z",
+      "closedAt": "2026-07-13T13:24:25.079Z",
+      "closedBy": "owner_1",
+      "lineItems": [],
+      "totals": {
+        "subtotal": 0,
+        "tax": 0,
+        "total": 0
+      }
+    }
+  ],
+  "finalInvoices": [
+    {
+      "id": "invoice_072ec34e-acac-45d2-b530-e7c90c6b49bf",
+      "tenantId": "aquatrace",
+      "number": "INV-0001",
+      "clientId": "client_1",
+      "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+      "status": "draft",
+      "title": "Invoice - Leak follow-up revised",
+      "lineItems": [],
+      "totals": {
+        "subtotal": 0,
+        "tax": 0,
+        "total": 0
+      }
+    }
+  ],
+  "reminderRecords": [],
+  "lifecycleEvents": [
+    {
+      "id": "job_evt_fe5035e5-de7e-47a4-98b5-2cda8adfc0f3",
+      "tenantId": "aquatrace",
+      "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+      "type": "job.created",
+      "createdAt": "2026-07-13T13:24:25.073Z",
+      "payload": {
+        "title": "Leak follow-up revised",
+        "createdBy": "nexi"
+      }
+    },
+    {
+      "id": "job_evt_c51bcbfc-d921-4b2d-8f68-388c8eb6cb99",
+      "tenantId": "aquatrace",
+      "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+      "type": "job.closed",
+      "createdAt": "2026-07-13T13:24:25.079Z",
+      "payload": {
+        "closedBy": "owner_1"
+      }
+    },
+    {
+      "id": "job_evt_d53d0613-da14-42a1-b225-2400d5f43056",
+      "tenantId": "aquatrace",
+      "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+      "type": "job.requires_invoicing_cleared",
+      "createdAt": "2026-07-13T13:24:25.079Z",
+      "payload": {
+        "resolvedByAction": "invoice_created",
+        "invoiceId": "invoice_072ec34e-acac-45d2-b530-e7c90c6b49bf"
+      }
+    },
+    {
+      "id": "job_evt_714d97f3-fdd2-4c89-a9f7-314cec131572",
+      "tenantId": "aquatrace",
+      "jobId": "job_a4e7344d-cb5e-46f6-a286-c66c4161a853",
+      "type": "job.state_changed",
+      "createdAt": "2026-07-13T13:24:25.079Z",
+      "payload": {
+        "from": "Unscheduled",
+        "to": "Archived"
+      }
+    }
+  ]
+}

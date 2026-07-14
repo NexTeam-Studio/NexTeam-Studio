@@ -18,7 +18,7 @@ function defaultTenantId(env: NodeJS.ProcessEnv): string {
 }
 
 function defaultApproval(): Tenant["approval"] {
-  const kinds: ArtifactKind[] = ["client", "email", "sms", "gbp_post", "social_post", "article", "quote", "invoice", "site_publish", "gbp_profile_update", "review_reply"];
+  const kinds: ArtifactKind[] = ["client", "job", "email", "sms", "gbp_post", "social_post", "article", "quote", "invoice", "site_publish", "gbp_profile_update", "review_reply"];
   return Object.fromEntries(kinds.map((kind) => [kind, { autoApprove: false, cleanStreak: 0 }])) as Tenant["approval"];
 }
 

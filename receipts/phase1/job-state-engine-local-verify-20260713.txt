@@ -1,0 +1,69 @@
+﻿COMMAND: npm run typecheck
+
+> typecheck
+> tsc -b
+
+
+COMMAND: node --test apps/server/test/job-lifecycle.test.mjs apps/server/test/request-foundation.test.mjs apps/server/test/crm-read-side.test.mjs
+✔ CRM quote and invoice native schemas parse (2.3872ms)
+✔ NativeAdapter exposes CRM read methods (1.1076ms)
+✔ native import upserts remain idempotent by Jobber external ids (0.6018ms)
+✔ NativeAdapter writes native clients and approval-gated quote drafts (1.5379ms)
+✔ NexOps 3.2 client records preserve display, billing, and one-way SMS settings (0.7719ms)
+✔ CRM read nexi-tools expose pipeline and client lookup (0.8681ms)
+✔ CRM clientLookup falls back to live Jobber when native CRM has no matching client (0.4245ms)
+✔ CRM write nexi-tools create clients, queue quotes through ApprovalQueue, and read invoices (9.8591ms)
+✔ CRM createClient tool blocks approval when telephone is missing (0.9126ms)
+✔ CRM client route rejects incomplete saves before a client record is created (54.4657ms)
+✔ CRM routes read clients created by ApprovalQueue execution from the shared native repository (11.3062ms)
+✔ CRM quote routes create, send, approve, convert, invoice, and renew quotes (59.9872ms)
+✔ CRM quote change requests store per-line comments plus a freeform note (8.1614ms)
+✔ Quote materialization preserves custom lines and future client-selectable fields (0.4179ms)
+✔ Quote terms resolve tenant default, then template override, then per-quote override (0.6308ms)
+✔ TECHNICIAN role is blocked from manual quote approval authority (0.4465ms)
+✔ NativeAdapter writes invoices and renders invoice PDFs (0.4807ms)
+✔ Stripe rail refuses live keys and verifies webhook signatures (0.9313ms)
+✔ legacy job schema and in-memory native repository normalize stored jobs onto the new lifecycle rail (3.8897ms)
+✔ request and quote conversions land as Unscheduled and invoice reminders clear only by invoice or dismissal (22.0217ms)
+✔ moving a visit cancels old reminder timers and creates a fresh pair for the new slot (1.1622ms)
+✔ due visit reminders auto-send email and sms with technician and access-note context (13.2223ms)
+✔ technicians can complete visits but stay blocked from office-only close and invoice authority (0.7903ms)
+✔ Nexi job tools create, read, revise, and execute lifecycle actions through chat-native approvals (14.5809ms)
+✔ request routes create, update, convert, archive, and reopen while preserving intake fields (87.7821ms)
+✔ local Nexi request tools clarify missing intake data, then create and recall real requests (11.1627ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1332.9928
+
+COMMAND: npm run build
+
+> build
+> npm --workspace @nexteam/server run build && npm --workspace @nexteam/web run build
+
+
+> @nexteam/server@0.0.0 build
+> tsc -b
+
+
+> @nexteam/web@0.0.0 build
+> vite build
+
+[36mvite v5.4.11 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 49 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.34 kB[22m[1m[22m[2m │ gzip:   0.24 kB[22m
+[2mdist/[22m[35massets/index-BJbwEM8U.css  [39m[1m[2m 47.81 kB[22m[1m[22m[2m │ gzip:   9.34 kB[22m
+[2mdist/[22m[36massets/index-uCt7SqEA.js   [39m[1m[33m558.10 kB[39m[22m[2m │ gzip: 137.64 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 2.36s[39m

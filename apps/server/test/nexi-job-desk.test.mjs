@@ -997,6 +997,58 @@ test("Nexi distance prompts return capability gaps instead of missing-data failu
   assert.deepEqual(result.toolRuns, []);
 });
 
+test("Nexi unsupported delete-client prompts return capability gaps instead of missing-data wording", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "delete the Atlas Approval Proof client" }],
+    tools: [],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("unsupported write capability gaps should not call the model");
+    }
+  });
+  assert.equal(result.failureReason, "capability_not_available");
+  assert.match(result.answer, /can't delete client records yet/i);
+  assert.doesNotMatch(result.answer, /written down anywhere/i);
+});
+
+test("Nexi unsupported saved-write prompts keep capability-gap wording across client, request, and billing actions", async () => {
+  const cases = [
+    {
+      prompt: "change Logan Sears phone number to 8645550000",
+      expected: /can't edit saved client records from chat yet/i
+    },
+    {
+      prompt: "delete request request_123",
+      expected: /can't delete saved requests from chat yet/i
+    },
+    {
+      prompt: "delete invoice inv_123",
+      expected: /can't delete saved work or billing records from chat yet/i
+    }
+  ];
+  for (const entry of cases) {
+    const result = await runNexiToolLoop({
+      tenant: tenant(),
+      system: "Use tools.",
+      messages: [{ role: "user", content: entry.prompt }],
+      tools: [],
+      routeActionName: "/api/nexi/message",
+      taskType: "job_desk_answer",
+      env: { ANTHROPIC_API_KEY: "test-key" },
+      fetchFn: async () => {
+        throw new Error("unsupported write capability gaps should not call the model");
+      }
+    });
+    assert.equal(result.failureReason, "capability_not_available");
+    assert.match(result.answer, entry.expected);
+    assert.doesNotMatch(result.answer, /written down anywhere/i);
+  }
+});
+
 test("Nexi distance prompts run the native distance tool when wired", async () => {
   const calls = [];
   const tools = createContextNexiTools({
@@ -1361,7 +1413,18 @@ test("Nexi create-client prompts route to approval-gated CRM createClient", asyn
         handler: async (_tenant, args) => {
           toolCalls.push(args);
           return {
-            result: { approval: { id: "approval_client_1", status: "pending", kind: "client" }, writesAreApprovalQueuedOnly: true },
+            result: {
+              approval: {
+                id: "appr_client_1",
+                status: "pending",
+                kind: "client",
+                preview: {
+                  title: "Create client: Lane Evans",
+                  body: "Name: Lane Evans\nEmail: lane@example.test\nPhone: 8645550100\nAddress note: 123 Main Road, Fair Play SC"
+                }
+              },
+              writesAreApprovalQueuedOnly: true
+            },
             sources: [{ rail: "native", ref: "approval_client_1", label: "ApprovalQueue client create approval_client_1" }]
           };
         }
@@ -1378,10 +1441,9 @@ test("Nexi create-client prompts route to approval-gated CRM createClient", asyn
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
     env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I parked Lane Evans as a new client for approval." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
+    fetchFn: async () => {
+      throw new Error("chat-native approval prompts should not call the model");
+    }
   });
 
   assert.deepEqual(result.toolRuns.map((run) => run.name), ["createClient"]);
@@ -1389,7 +1451,212 @@ test("Nexi create-client prompts route to approval-gated CRM createClient", asyn
   assert.equal(toolCalls[0].address, "123 Main Road, Fair Play SC");
   assert.deepEqual(toolCalls[0].emails, ["lane@example.test"]);
   assert.deepEqual(toolCalls[0].phones, ["8645550100"]);
+  assert.match(result.answer, /Client draft ready/i);
+  assert.match(result.answer, /Approve this\? yes \/ no \/ make changes\./i);
+  assert.match(result.answer, /Approval id: appr_client_1/i);
   assert.equal(result.sources.some((source) => source.ref === "approval_client_1"), true);
+});
+
+test("Nexi create-client drafts block approval until name, address, and telephone are present", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "create a new client Logan Sears at 6020 Frest Dr, Seneca SC 29672" }],
+    tools: [{
+      name: "createClient",
+      description: "Queue native CRM client creation for approval.",
+      inputSchema: z.object({
+        name: z.string(),
+        address: z.string().optional(),
+        emails: z.array(z.string()).default([]),
+        phones: z.array(z.string()).default([]),
+        consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
+      }),
+      handler: async () => ({
+        result: {
+          needsClarification: "I still need telephone before I can save this client. Email is helpful, but it is not required.",
+          missingFields: ["telephone"],
+          saveBlocked: true
+        },
+        sources: []
+      })
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("required-field clarification should not call the model");
+    }
+  });
+  assert.equal(result.toolRuns[0].name, "createClient");
+  assert.match(result.answer, /still need telephone/i);
+  assert.equal(result.sources.length, 0);
+});
+
+test("Nexi approval prompts execute create-client drafts from chat after yes", async () => {
+  const calls = [];
+  const initialAnswer = "Client draft ready. I read it back below exactly before anything gets created.\n\nCreate client: Logan Sears\nName: Logan Sears\nEmail: 4lbsears@gmail.com\nPhone: 8645581725\nAddress note: 6020 Frest Dr, Seneca SC 29672\n\nApprove this? yes / no / make changes.\nApproval id: appr_client_logan";
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "create the client Logan Sears address 6020 Frest Dr Seneca SC 29672 telephone number 8645581725 and email 4lbsears@gmail.com" },
+      { role: "assistant", content: initialAnswer },
+      { role: "user", content: "yes" }
+    ],
+    tools: [{
+      name: "approvePendingApproval",
+      description: "Approve and execute the referenced approval item directly from chat.",
+      inputSchema: z.object({ approvalId: z.string().optional() }),
+      handler: async (_tenant, args) => {
+        calls.push(args);
+        return {
+          result: {
+            approval: { id: "appr_client_logan" },
+            executedApproval: { id: "appr_client_logan", status: "executed" },
+            execution: { client: { id: "client_logan", name: "Logan Sears" } }
+          },
+          sources: [{ rail: "native", ref: "appr_client_logan", label: "ApprovalQueue approval appr_client_logan" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("approval confirmations should not call the model");
+    }
+  });
+  assert.deepEqual(calls, [{ approvalId: "appr_client_logan" }]);
+  assert.match(result.answer, /Approved and created Logan Sears/i);
+  assert.equal(result.toolRuns[0].name, "approvePendingApproval");
+});
+
+test("Nexi create-quote prompts route to approval-gated CRM createQuote", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "draft a quote for Deborah Justice for main drain documentation at $995 with signature and deposit" }],
+    tools: [{
+      name: "createQuote",
+      description: "Queue native quote creation for approval.",
+      inputSchema: z.object({
+        clientQuery: z.string().optional(),
+        title: z.string(),
+        items: z.array(z.object({
+          kind: z.string(),
+          name: z.string().optional(),
+          quantity: z.number(),
+          unitPrice: z.number()
+        })),
+        approvalRules: z.object({
+          requireSignature: z.boolean(),
+          requireDeposit: z.boolean(),
+          requireCardOnFile: z.boolean()
+        }).optional()
+      }),
+      handler: async (_tenant, args) => {
+        toolCalls.push(args);
+        return {
+          result: {
+            approval: {
+              id: "appr_quote_1",
+              status: "pending",
+              kind: "quote",
+              preview: {
+                title: "Create quote: Deborah Justice quote",
+                body: "Quote #: Q-1001\nTitle: Deborah Justice quote\nTotal: $995.00"
+              }
+            },
+            pendingQuote: {
+              id: "quote_draft_1",
+              number: "Q-1001",
+              title: "Deborah Justice quote",
+              totals: { total: 995 }
+            },
+            writesAreApprovalQueuedOnly: true
+          },
+          sources: [{ rail: "native", ref: "approval_quote_1", label: "ApprovalQueue quote create approval_quote_1" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("quote approval prompts should not call the model");
+    }
+  });
+
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["createQuote"]);
+  assert.equal(toolCalls[0].clientQuery, "Deborah Justice");
+  assert.equal(toolCalls[0].title, "Deborah Justice quote");
+  assert.equal(toolCalls[0].approvalRules.requireSignature, true);
+  assert.equal(toolCalls[0].approvalRules.requireDeposit, true);
+  assert.match(result.answer, /Quote draft ready/i);
+  assert.match(result.answer, /Approve this\? yes \/ no \/ make changes\./i);
+  assert.match(result.answer, /Approval id: appr_quote_1/i);
+});
+
+test("Nexi quote approval prompts support chat-native revisions before execution", async () => {
+  const calls = [];
+  const initialAnswer = "Quote draft ready. I read it back below exactly before anything gets created.\n\nCreate quote: Deborah Justice quote\nQuote #: Q-1001\nTitle: Deborah Justice quote\nTotal: $995.00\n\nApprove this? yes / no / make changes.\nApproval id: appr_quote_1";
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "draft a quote for Deborah Justice for main drain documentation at $995 with signature and deposit" },
+      { role: "assistant", content: initialAnswer },
+      { role: "user", content: "make changes. raise the deposit to 30 percent and change the title to Deborah Justice revised quote" }
+    ],
+    tools: [{
+      name: "revisePendingQuoteCreateApproval",
+      description: "Revise the pending quote draft directly from chat.",
+      inputSchema: z.object({ approvalId: z.string(), changeRequest: z.string() }),
+      handler: async (_tenant, args) => {
+        calls.push(args);
+        return {
+          result: {
+            approval: {
+              id: "appr_quote_2",
+              status: "pending",
+              kind: "quote",
+              preview: {
+                title: "Create quote: Deborah Justice revised quote",
+                body: "Quote #: Q-1001\nTitle: Deborah Justice revised quote\nApproval rules: signature required, deposit required (30%)\nTotal: $995.00"
+              }
+            },
+            pendingQuote: {
+              id: "quote_draft_1",
+              number: "Q-1001",
+              title: "Deborah Justice revised quote",
+              totals: { total: 995 }
+            },
+            replacedApprovalId: "appr_quote_1",
+            writesAreApprovalQueuedOnly: true
+          },
+          sources: [{ rail: "native", ref: "approval_quote_2", label: "ApprovalQueue quote create approval_quote_2" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("quote revision prompts should not call the model");
+    }
+  });
+
+  assert.deepEqual(calls, [{
+    approvalId: "appr_quote_1",
+    changeRequest: "make changes. raise the deposit to 30 percent and change the title to Deborah Justice revised quote"
+  }]);
+  assert.equal(result.toolRuns[0].name, "revisePendingQuoteCreateApproval");
+  assert.match(result.answer, /Updated quote draft ready/i);
+  assert.match(result.answer, /Deborah Justice revised quote/i);
+  assert.match(result.answer, /30%/i);
+  assert.match(result.answer, /Approval id: appr_quote_2/i);
 });
 
 test("Nexi create-client parser splits bare name and street address from original regression phrasing", async () => {
@@ -1435,6 +1702,49 @@ test("Nexi create-client parser splits bare name and street address from origina
   assert.equal(toolCalls[0].consent.email, false);
   assert.equal(toolCalls[0].consent.sms, false);
   assert.equal(result.sources.some((source) => source.ref === "approval_client_logan"), true);
+});
+
+test("Nexi create-client parser keeps telephone and email out of the address note", async () => {
+  const toolCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "create the client logan sears address 6020 frest dr seneca sc 29672 telephone number 8645581725 and email 4lbsears@gmail.com" }],
+    tools: [
+      {
+        name: "createClient",
+        description: "Queue native CRM client creation for approval.",
+        inputSchema: z.object({
+          name: z.string(),
+          address: z.string().optional(),
+          emails: z.array(z.string()).default([]),
+          phones: z.array(z.string()).default([]),
+          consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
+        }),
+        handler: async (_tenant, args) => {
+          toolCalls.push(args);
+          return {
+            result: { approval: { id: "approval_client_logan_full", status: "pending", kind: "client" }, writesAreApprovalQueuedOnly: true },
+            sources: [{ rail: "native", ref: "approval_client_logan_full", label: "ApprovalQueue client create approval_client_logan_full" }]
+          };
+        }
+      }
+    ],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => new Response(JSON.stringify({
+      content: [{ type: "text", text: "I parked Logan Sears as a new client for approval." }],
+      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
+    }), { status: 200 })
+  });
+
+  assert.deepEqual(result.toolRuns.map((run) => run.name), ["createClient"]);
+  assert.equal(toolCalls[0].name, "logan sears");
+  assert.equal(toolCalls[0].address, "6020 frest dr seneca sc 29672");
+  assert.deepEqual(toolCalls[0].phones, ["8645581725"]);
+  assert.deepEqual(toolCalls[0].emails, ["4lbsears@gmail.com"]);
+  assert.equal(result.sources.some((source) => source.ref === "approval_client_logan_full"), true);
 });
 
 test("Nexi tenant intake prompts route to startIntake instead of search or createClient", async () => {

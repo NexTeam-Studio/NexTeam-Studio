@@ -1,0 +1,237 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import express from "express";
+import { ApprovalQueueService, InMemoryApprovalQueueRepository } from "@nexteam/core";
+import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
+import { CrmApprovalExecutor } from "../dist/crm/approvalExecutor.js";
+import { createCrmToolsWithOptions } from "../dist/crm/nexiTools.js";
+import { registerCrmRoutes } from "../dist/crm/routes.js";
+import { runExplicitLocalToolLoop } from "../dist/nexi/nexiService.js";
+
+function tenant() {
+  return {
+    id: "aquatrace",
+    name: "Aquatrace",
+    industryPack: "pool_leak",
+    branding: { assistantName: "Nexi" },
+    adapters: { crm: "native", media: "companycam", email: "gmail_relay" },
+    approval: {},
+    timezone: "America/New_York",
+    plan: "suite"
+  };
+}
+
+test("request routes create, update, convert, archive, and reopen while preserving intake fields", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const adapter = new NativeAdapter(repository, "aquatrace");
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CrmApprovalExecutor(adapter));
+  const app = express();
+  app.use(express.json());
+  registerCrmRoutes(app, {
+    approvalQueue,
+    memoryRepository: repository,
+    platformRepository: {
+      listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
+    },
+    env: { TENANT_ID: "aquatrace" }
+  });
+
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const base = `http://127.0.0.1:${address.port}`;
+
+    const formsResponse = await fetch(`${base}/api/crm/request-forms?tenantId=aquatrace`);
+    const formsBody = await formsResponse.json();
+    assert.equal(formsBody.ok, true);
+    assert.equal(formsBody.forms.length >= 1, true);
+
+    const requestResponse = await fetch(`${base}/api/crm/requests`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        source: "office_new_client",
+        formId: formsBody.forms[0].id,
+        formSlug: formsBody.forms[0].slug,
+        fieldValues: [
+          { key: "client_name", value: "Logan Sears" },
+          { key: "email", value: "logan@example.test" },
+          { key: "phone", value: "8645551212" },
+          { key: "property_street1", value: "102 Kate Lane" },
+          { key: "property_city", value: "Fair Play" },
+          { key: "property_province", value: "SC" },
+          { key: "property_postal_code", value: "29643" },
+          { key: "pool_configuration", value: "pool_and_spa" },
+          { key: "gate_code", value: "4421", visibility: { invoice: false } },
+          { key: "pet_present", value: true },
+          { key: "pet_name", value: "Scout" },
+          { key: "issue_summary", value: "Water loss around the skimmer throat." }
+        ]
+      })
+    });
+    const requestBody = await requestResponse.json();
+    assert.equal(requestBody.ok, true);
+    assert.equal(requestBody.request.intake.fieldIndex.gate_code, "4421");
+    assert.equal(requestBody.request.intake.fieldValues.find((field) => field.key === "gate_code").visibility.invoice, false);
+
+    const updatedResponse = await fetch(`${base}/api/crm/requests/${requestBody.request.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        reviewedAt: "2026-07-12T12:00:00.000Z",
+        fieldPatches: [{ key: "gate_code", visibility: { quote: false } }]
+      })
+    });
+    const updatedBody = await updatedResponse.json();
+    assert.equal(updatedBody.ok, true);
+    assert.equal(updatedBody.request.reviewedAt, "2026-07-12T12:00:00.000Z");
+    assert.equal(updatedBody.request.intake.fieldValues.find((field) => field.key === "gate_code").visibility.quote, false);
+
+    const quoteResponse = await fetch(`${base}/api/crm/requests/${requestBody.request.id}/convert-to-quote`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    const quoteBody = await quoteResponse.json();
+    assert.equal(quoteBody.ok, true);
+    assert.equal(quoteBody.quote.requestId, requestBody.request.id);
+    assert.equal(quoteBody.quote.intake.fieldIndex.pool_configuration, "pool_and_spa");
+    assert.equal(quoteBody.quote.intake.fieldValues.find((field) => field.key === "gate_code").visibility.quote, false);
+
+    const archiveResponse = await fetch(`${base}/api/crm/requests/${requestBody.request.id}/archive`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    const archiveBody = await archiveResponse.json();
+    assert.equal(archiveBody.ok, true);
+    assert.equal(archiveBody.request.status, "archived");
+
+    const reopenResponse = await fetch(`${base}/api/crm/requests/${requestBody.request.id}/reopen`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    const reopenBody = await reopenResponse.json();
+    assert.equal(reopenBody.ok, true);
+    assert.equal(reopenBody.request.status, "new");
+
+    const secondRequestResponse = await fetch(`${base}/api/crm/requests`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        source: "office_new_client",
+        formId: formsBody.forms[0].id,
+        formSlug: formsBody.forms[0].slug,
+        fieldValues: [
+          { key: "client_name", value: "Catherine Sears" },
+          { key: "email", value: "catherine@example.test" },
+          { key: "phone", value: "8645559988" },
+          { key: "property_street1", value: "104 Kate Lane" },
+          { key: "property_city", value: "Fair Play" },
+          { key: "property_province", value: "SC" },
+          { key: "property_postal_code", value: "29643" },
+          { key: "pool_configuration", value: "pool_only" },
+          { key: "issue_summary", value: "Need leak detection before resurfacing." }
+        ]
+      })
+    });
+    const secondRequestBody = await secondRequestResponse.json();
+    assert.equal(secondRequestBody.ok, true);
+
+    const jobResponse = await fetch(`${base}/api/crm/requests/${secondRequestBody.request.id}/convert-to-job`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    const jobBody = await jobResponse.json();
+    assert.equal(jobBody.ok, true);
+    assert.equal(jobBody.job.requestId, secondRequestBody.request.id);
+    assert.equal(jobBody.job.intake.fieldIndex.pool_configuration, "pool_only");
+    assert.equal(jobBody.job.title, secondRequestBody.request.subject);
+    assert.equal(jobBody.job.status, "Unscheduled");
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
+});
+
+test("local Nexi request tools clarify missing intake data, then create and recall real requests", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const adapter = new NativeAdapter(repository, "aquatrace");
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CrmApprovalExecutor(adapter));
+  const tools = createCrmToolsWithOptions(adapter, approvalQueue, { requestRepository: repository });
+
+  const firstTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {}
+  });
+  assert.equal(firstTurn.toolRuns[0].name, "createRequest");
+  assert.match(firstTurn.answer, /full service address/i);
+
+  const secondTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak" },
+      { role: "assistant", content: firstTurn.answer },
+      { role: "user", content: "It's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily." }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {}
+  });
+  assert.equal(secondTurn.toolRuns[0].name, "createRequest");
+  assert.match(secondTurn.answer, /created the request/i);
+  assert.equal((await repository.listRequests("aquatrace")).length, 1);
+
+  const recallTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "is Logan Sears' pool a pool-only or pool+spa combo" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {}
+  });
+  assert.equal(recallTurn.toolRuns[0].name, "getRequestDetail");
+  assert.match(recallTurn.answer, /pool or pool plus spa: pool and spa/i);
+  assert.equal(recallTurn.sources[0].rail, "native");
+
+  const gateCodeTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "what's Logan Sears' gate code" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {}
+  });
+  assert.equal(gateCodeTurn.toolRuns[0].name, "getRequestDetail");
+  assert.match(gateCodeTurn.answer, /gate code: 4421/i);
+  assert.equal(gateCodeTurn.sources[0].rail, "native");
+
+  const listTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "list requests for Logan Sears" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {}
+  });
+  assert.equal(listTurn.toolRuns[0].name, "listRequests");
+  assert.match(listTurn.answer, /found 1 request/i);
+});

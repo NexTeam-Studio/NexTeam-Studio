@@ -1,0 +1,1161 @@
+{
+  "conversationId": "request-foundation-local-20260712",
+  "transcript": [
+    {
+      "user": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak",
+      "assistant": "I still need the full service address before I save this request.",
+      "sources": [],
+      "toolRuns": [
+        {
+          "name": "createRequest",
+          "result": {
+            "request": null,
+            "needsClarification": "I still need the full service address before I save this request.",
+            "availableFields": [
+              "client_name",
+              "email",
+              "phone",
+              "preferred_contact_method",
+              "property_street1",
+              "property_street2",
+              "property_city",
+              "property_province",
+              "property_postal_code",
+              "pool_type",
+              "pool_configuration",
+              "pool_surface",
+              "water_loss_rate",
+              "gate_code",
+              "pet_present",
+              "pet_name",
+              "issue_summary"
+            ]
+          },
+          "sources": []
+        }
+      ]
+    },
+    {
+      "user": "It's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+      "assistant": "I created the request for Logan Sears as request_3a904caf-e905-4e6e-9945-2251b42c448b.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+          "label": "Native request Logan Sears"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "createRequest",
+          "result": {
+            "request": {
+              "id": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+              "tenantId": "aquatrace",
+              "formId": "request_form_aquatrace_service_request",
+              "formSlug": "service-request",
+              "source": "office_new_client",
+              "status": "new",
+              "subject": "Logan Sears - pool and spa",
+              "clientName": "Logan Sears",
+              "email": "logan@example.test",
+              "phone": "8645551212",
+              "propertyAddress": {
+                "street1": "102 Kate Lane",
+                "city": "Fair Play",
+                "province": "SC",
+                "postalCode": "29643",
+                "country": "US"
+              },
+              "narrative": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+              "consent": {
+                "email": true,
+                "sms": false
+              },
+              "intake": {
+                "narrative": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+                "fieldValues": [
+                  {
+                    "key": "client_name",
+                    "label": "Client name",
+                    "type": "text",
+                    "group": "contact",
+                    "required": true,
+                    "value": "Logan Sears",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "email",
+                    "group": "contact",
+                    "value": "logan@example.test",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "phone",
+                    "label": "Phone",
+                    "type": "phone",
+                    "group": "contact",
+                    "value": "8645551212",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_street1",
+                    "label": "Street address",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "102 Kate Lane",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_city",
+                    "label": "City",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "Fair Play",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_province",
+                    "label": "State",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "SC",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_postal_code",
+                    "label": "ZIP code",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "29643",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "pool_configuration",
+                    "label": "Pool or pool plus spa",
+                    "type": "select",
+                    "group": "pool",
+                    "required": true,
+                    "options": [
+                      "pool_only",
+                      "pool_and_spa",
+                      "spa_only"
+                    ],
+                    "value": "pool_and_spa",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "gate_code",
+                    "label": "Gate code",
+                    "type": "text",
+                    "group": "safety",
+                    "helpText": "Field crews need this before arrival.",
+                    "value": "4421",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "pet_present",
+                    "label": "Pets on property",
+                    "type": "boolean",
+                    "group": "safety",
+                    "prominent": true,
+                    "helpText": "Prominent safety flag for field access.",
+                    "value": true,
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "pet_name",
+                    "label": "Pet name",
+                    "type": "text",
+                    "group": "safety",
+                    "prominent": true,
+                    "value": "Scout",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "water_loss_rate",
+                    "label": "Water loss per day",
+                    "type": "text",
+                    "group": "pool",
+                    "helpText": "Store the client-reported loss rate exactly as given.",
+                    "value": "2 inches",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "issue_summary",
+                    "label": "What is going on",
+                    "type": "textarea",
+                    "group": "notes",
+                    "required": true,
+                    "helpText": "Original request narrative travels forward to quote, job, visit, and invoice.",
+                    "value": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  }
+                ],
+                "fieldIndex": {
+                  "client_name": "Logan Sears",
+                  "email": "logan@example.test",
+                  "phone": "8645551212",
+                  "property_street1": "102 Kate Lane",
+                  "property_city": "Fair Play",
+                  "property_province": "SC",
+                  "property_postal_code": "29643",
+                  "pool_configuration": "pool_and_spa",
+                  "gate_code": "4421",
+                  "pet_present": true,
+                  "pet_name": "Scout",
+                  "water_loss_rate": "2 inches",
+                  "issue_summary": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily."
+                }
+              },
+              "match": {
+                "matchedBy": "none",
+                "reviewRequired": true
+              },
+              "createdAt": "2026-07-12T21:19:28.935Z",
+              "updatedAt": "2026-07-12T21:19:28.935Z"
+            },
+            "needsClarification": null
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+              "label": "Native request Logan Sears"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "is Logan Sears' pool a pool-only or pool+spa combo",
+      "assistant": "Pool or pool plus spa: pool and spa.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+          "label": "Native request Logan Sears"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "getRequestDetail",
+          "result": {
+            "request": {
+              "id": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+              "tenantId": "aquatrace",
+              "formId": "request_form_aquatrace_service_request",
+              "formSlug": "service-request",
+              "source": "office_new_client",
+              "status": "new",
+              "subject": "Logan Sears - pool and spa",
+              "clientName": "Logan Sears",
+              "email": "logan@example.test",
+              "phone": "8645551212",
+              "propertyAddress": {
+                "street1": "102 Kate Lane",
+                "city": "Fair Play",
+                "province": "SC",
+                "postalCode": "29643",
+                "country": "US"
+              },
+              "narrative": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+              "consent": {
+                "email": true,
+                "sms": false
+              },
+              "intake": {
+                "narrative": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+                "fieldValues": [
+                  {
+                    "key": "client_name",
+                    "label": "Client name",
+                    "type": "text",
+                    "group": "contact",
+                    "required": true,
+                    "value": "Logan Sears",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "email",
+                    "group": "contact",
+                    "value": "logan@example.test",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "phone",
+                    "label": "Phone",
+                    "type": "phone",
+                    "group": "contact",
+                    "value": "8645551212",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_street1",
+                    "label": "Street address",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "102 Kate Lane",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_city",
+                    "label": "City",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "Fair Play",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_province",
+                    "label": "State",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "SC",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_postal_code",
+                    "label": "ZIP code",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "29643",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "pool_configuration",
+                    "label": "Pool or pool plus spa",
+                    "type": "select",
+                    "group": "pool",
+                    "required": true,
+                    "options": [
+                      "pool_only",
+                      "pool_and_spa",
+                      "spa_only"
+                    ],
+                    "value": "pool_and_spa",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "gate_code",
+                    "label": "Gate code",
+                    "type": "text",
+                    "group": "safety",
+                    "helpText": "Field crews need this before arrival.",
+                    "value": "4421",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "pet_present",
+                    "label": "Pets on property",
+                    "type": "boolean",
+                    "group": "safety",
+                    "prominent": true,
+                    "helpText": "Prominent safety flag for field access.",
+                    "value": true,
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "pet_name",
+                    "label": "Pet name",
+                    "type": "text",
+                    "group": "safety",
+                    "prominent": true,
+                    "value": "Scout",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "water_loss_rate",
+                    "label": "Water loss per day",
+                    "type": "text",
+                    "group": "pool",
+                    "helpText": "Store the client-reported loss rate exactly as given.",
+                    "value": "2 inches",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "issue_summary",
+                    "label": "What is going on",
+                    "type": "textarea",
+                    "group": "notes",
+                    "required": true,
+                    "helpText": "Original request narrative travels forward to quote, job, visit, and invoice.",
+                    "value": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  }
+                ],
+                "fieldIndex": {
+                  "client_name": "Logan Sears",
+                  "email": "logan@example.test",
+                  "phone": "8645551212",
+                  "property_street1": "102 Kate Lane",
+                  "property_city": "Fair Play",
+                  "property_province": "SC",
+                  "property_postal_code": "29643",
+                  "pool_configuration": "pool_and_spa",
+                  "gate_code": "4421",
+                  "pet_present": true,
+                  "pet_name": "Scout",
+                  "water_loss_rate": "2 inches",
+                  "issue_summary": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily."
+                }
+              },
+              "match": {
+                "matchedBy": "none",
+                "reviewRequired": true
+              },
+              "createdAt": "2026-07-12T21:19:28.935Z",
+              "updatedAt": "2026-07-12T21:19:28.935Z"
+            },
+            "fieldKey": "pool_configuration",
+            "fieldLabel": "Pool or pool plus spa",
+            "value": "pool_and_spa",
+            "missing": false
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+              "label": "Native request Logan Sears"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "what's Logan Sears' gate code",
+      "assistant": "Gate code: 4421.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+          "label": "Native request Logan Sears"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "getRequestDetail",
+          "result": {
+            "request": {
+              "id": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+              "tenantId": "aquatrace",
+              "formId": "request_form_aquatrace_service_request",
+              "formSlug": "service-request",
+              "source": "office_new_client",
+              "status": "new",
+              "subject": "Logan Sears - pool and spa",
+              "clientName": "Logan Sears",
+              "email": "logan@example.test",
+              "phone": "8645551212",
+              "propertyAddress": {
+                "street1": "102 Kate Lane",
+                "city": "Fair Play",
+                "province": "SC",
+                "postalCode": "29643",
+                "country": "US"
+              },
+              "narrative": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+              "consent": {
+                "email": true,
+                "sms": false
+              },
+              "intake": {
+                "narrative": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+                "fieldValues": [
+                  {
+                    "key": "client_name",
+                    "label": "Client name",
+                    "type": "text",
+                    "group": "contact",
+                    "required": true,
+                    "value": "Logan Sears",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "email",
+                    "label": "Email",
+                    "type": "email",
+                    "group": "contact",
+                    "value": "logan@example.test",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "phone",
+                    "label": "Phone",
+                    "type": "phone",
+                    "group": "contact",
+                    "value": "8645551212",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_street1",
+                    "label": "Street address",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "102 Kate Lane",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_city",
+                    "label": "City",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "Fair Play",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_province",
+                    "label": "State",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "SC",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "property_postal_code",
+                    "label": "ZIP code",
+                    "type": "text",
+                    "group": "property",
+                    "required": true,
+                    "value": "29643",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "pool_configuration",
+                    "label": "Pool or pool plus spa",
+                    "type": "select",
+                    "group": "pool",
+                    "required": true,
+                    "options": [
+                      "pool_only",
+                      "pool_and_spa",
+                      "spa_only"
+                    ],
+                    "value": "pool_and_spa",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "gate_code",
+                    "label": "Gate code",
+                    "type": "text",
+                    "group": "safety",
+                    "helpText": "Field crews need this before arrival.",
+                    "value": "4421",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "pet_present",
+                    "label": "Pets on property",
+                    "type": "boolean",
+                    "group": "safety",
+                    "prominent": true,
+                    "helpText": "Prominent safety flag for field access.",
+                    "value": true,
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "pet_name",
+                    "label": "Pet name",
+                    "type": "text",
+                    "group": "safety",
+                    "prominent": true,
+                    "value": "Scout",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "water_loss_rate",
+                    "label": "Water loss per day",
+                    "type": "text",
+                    "group": "pool",
+                    "helpText": "Store the client-reported loss rate exactly as given.",
+                    "value": "2 inches",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  },
+                  {
+                    "key": "issue_summary",
+                    "label": "What is going on",
+                    "type": "textarea",
+                    "group": "notes",
+                    "required": true,
+                    "helpText": "Original request narrative travels forward to quote, job, visit, and invoice.",
+                    "value": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+                    "visibility": {
+                      "request": true,
+                      "quote": true,
+                      "job": true,
+                      "visit": true,
+                      "invoice": true
+                    }
+                  }
+                ],
+                "fieldIndex": {
+                  "client_name": "Logan Sears",
+                  "email": "logan@example.test",
+                  "phone": "8645551212",
+                  "property_street1": "102 Kate Lane",
+                  "property_city": "Fair Play",
+                  "property_province": "SC",
+                  "property_postal_code": "29643",
+                  "pool_configuration": "pool_and_spa",
+                  "gate_code": "4421",
+                  "pet_present": true,
+                  "pet_name": "Scout",
+                  "water_loss_rate": "2 inches",
+                  "issue_summary": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily."
+                }
+              },
+              "match": {
+                "matchedBy": "none",
+                "reviewRequired": true
+              },
+              "createdAt": "2026-07-12T21:19:28.935Z",
+              "updatedAt": "2026-07-12T21:19:28.935Z"
+            },
+            "fieldKey": "gate_code",
+            "fieldLabel": "Gate code",
+            "value": "4421",
+            "missing": false
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+              "label": "Native request Logan Sears"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "list requests for Logan Sears",
+      "assistant": "I found 1 request.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+          "label": "Native request Logan Sears"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "listRequests",
+          "result": {
+            "requests": [
+              {
+                "id": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+                "clientName": "Logan Sears",
+                "subject": "Logan Sears - pool and spa",
+                "status": "new",
+                "createdAt": "2026-07-12T21:19:28.935Z",
+                "poolConfiguration": "pool_and_spa",
+                "waterLossRate": "2 inches"
+              }
+            ]
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+              "label": "Native request Logan Sears"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "savedRequests": [
+    {
+      "id": "request_3a904caf-e905-4e6e-9945-2251b42c448b",
+      "tenantId": "aquatrace",
+      "formId": "request_form_aquatrace_service_request",
+      "formSlug": "service-request",
+      "source": "office_new_client",
+      "status": "new",
+      "subject": "Logan Sears - pool and spa",
+      "clientName": "Logan Sears",
+      "email": "logan@example.test",
+      "phone": "8645551212",
+      "propertyAddress": {
+        "street1": "102 Kate Lane",
+        "city": "Fair Play",
+        "province": "SC",
+        "postalCode": "29643",
+        "country": "US"
+      },
+      "narrative": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+      "consent": {
+        "email": true,
+        "sms": false
+      },
+      "intake": {
+        "narrative": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+        "fieldValues": [
+          {
+            "key": "client_name",
+            "label": "Client name",
+            "type": "text",
+            "group": "contact",
+            "required": true,
+            "value": "Logan Sears",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "email",
+            "label": "Email",
+            "type": "email",
+            "group": "contact",
+            "value": "logan@example.test",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "phone",
+            "label": "Phone",
+            "type": "phone",
+            "group": "contact",
+            "value": "8645551212",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "property_street1",
+            "label": "Street address",
+            "type": "text",
+            "group": "property",
+            "required": true,
+            "value": "102 Kate Lane",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "property_city",
+            "label": "City",
+            "type": "text",
+            "group": "property",
+            "required": true,
+            "value": "Fair Play",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "property_province",
+            "label": "State",
+            "type": "text",
+            "group": "property",
+            "required": true,
+            "value": "SC",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "property_postal_code",
+            "label": "ZIP code",
+            "type": "text",
+            "group": "property",
+            "required": true,
+            "value": "29643",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "pool_configuration",
+            "label": "Pool or pool plus spa",
+            "type": "select",
+            "group": "pool",
+            "required": true,
+            "options": [
+              "pool_only",
+              "pool_and_spa",
+              "spa_only"
+            ],
+            "value": "pool_and_spa",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "gate_code",
+            "label": "Gate code",
+            "type": "text",
+            "group": "safety",
+            "helpText": "Field crews need this before arrival.",
+            "value": "4421",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "pet_present",
+            "label": "Pets on property",
+            "type": "boolean",
+            "group": "safety",
+            "prominent": true,
+            "helpText": "Prominent safety flag for field access.",
+            "value": true,
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "pet_name",
+            "label": "Pet name",
+            "type": "text",
+            "group": "safety",
+            "prominent": true,
+            "value": "Scout",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "water_loss_rate",
+            "label": "Water loss per day",
+            "type": "text",
+            "group": "pool",
+            "helpText": "Store the client-reported loss rate exactly as given.",
+            "value": "2 inches",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          },
+          {
+            "key": "issue_summary",
+            "label": "What is going on",
+            "type": "textarea",
+            "group": "notes",
+            "required": true,
+            "helpText": "Original request narrative travels forward to quote, job, visit, and invoice.",
+            "value": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily.",
+            "visibility": {
+              "request": true,
+              "quote": true,
+              "job": true,
+              "visit": true,
+              "invoice": true
+            }
+          }
+        ],
+        "fieldIndex": {
+          "client_name": "Logan Sears",
+          "email": "logan@example.test",
+          "phone": "8645551212",
+          "property_street1": "102 Kate Lane",
+          "property_city": "Fair Play",
+          "property_province": "SC",
+          "property_postal_code": "29643",
+          "pool_configuration": "pool_and_spa",
+          "gate_code": "4421",
+          "pet_present": true,
+          "pet_name": "Scout",
+          "water_loss_rate": "2 inches",
+          "issue_summary": "create a request for Logan Sears, phone 864-555-1212, email logan@example.test, gate code 4421, pet named Scout, skimmer leak\nIt's at 102 Kate Lane, Fair Play, SC 29643 and it's a pool and spa combo losing 2 inches daily."
+        }
+      },
+      "match": {
+        "matchedBy": "none",
+        "reviewRequired": true
+      },
+      "createdAt": "2026-07-12T21:19:28.935Z",
+      "updatedAt": "2026-07-12T21:19:28.935Z"
+    }
+  ]
+}
