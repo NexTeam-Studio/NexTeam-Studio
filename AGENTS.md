@@ -24,7 +24,7 @@ Hard rule: completely isolated from Aquatrace — no shared anything, ever.
 - Before building any Phase 1 business-engine or field-documentation work, read both master specs:
   - `docs/specs/phase1/NEXTEAM-PHASE1-MASTER-SPEC.md`
   - `docs/specs/phase1/NEXTEAM-FIELDDOCS-MASTER-SPEC.md`
-- Locked product names: NexOps = business engine, NexShot = field documentation, NexPortal = client hub, NexReach = marketing/reputation/campaign engine, Nexi = assistant, NexTeam = platform/company.
+- Locked product names: NexOps = business engine, NexCam = field documentation, NexPortal = client hub, NexReach = marketing/reputation/campaign engine, Nexi = assistant, NexTeam = platform/company.
 - `SOUL.md` defines stable identity and boundaries.
 - `MEMORY.md` defines current operating truth and can change as reality changes.
 - Reusable agent templates must stay white-label ready and must not hardcode client-specific facts.

@@ -362,6 +362,144 @@ function formatTimestamp(value?: string): string {
   return value ? new Date(value).toLocaleString() : "Not set";
 }
 
+function deriveInvoiceDimensions(invoice: InvoiceRecord): {
+  lifecycle: "draft" | "open" | "void" | "written_off";
+  delivery: "not_sent" | "sent" | "delivered";
+  balance: "unpaid" | "partially_paid" | "paid" | "credit_balance";
+  due: "not_due" | "due_today" | "overdue";
+  customerView: "not_viewed" | "viewed";
+} {
+  const lifecycle = invoice.status === "draft"
+    ? "draft"
+    : invoice.status === "void"
+      ? "void"
+      : invoice.status === "bad_debt"
+        ? "written_off"
+        : "open";
+  const delivery = invoice.delivery?.length ? "delivered" : invoice.status === "draft" ? "not_sent" : "sent";
+  const balance = (invoice.ledger?.balanceDue ?? invoice.totals.total) < 0
+    ? "credit_balance"
+    : invoice.status === "paid"
+      ? "paid"
+      : invoice.status === "partial_pay"
+        ? "partially_paid"
+        : "unpaid";
+  const dueDate = invoice.dueAt ? new Date(invoice.dueAt) : null;
+  const today = new Date();
+  const sameDay = dueDate
+    ? dueDate.getFullYear() === today.getFullYear() && dueDate.getMonth() === today.getMonth() && dueDate.getDate() === today.getDate()
+    : false;
+  const due = invoice.ledger?.overdue ? "overdue" : sameDay ? "due_today" : "not_due";
+  const customerView = invoice.delivery?.length || invoice.paidAt ? "viewed" : "not_viewed";
+  return { lifecycle, delivery, balance, due, customerView };
+}
+
+function paymentScheduleRailCopy(schedule?: PaymentScheduleRecord): string {
+  if (!schedule?.enabled) {
+    return "No active payment schedule.";
+  }
+  return `${schedule.milestones.length} milestone${schedule.milestones.length === 1 ? "" : "s"} on the active billing rail.`;
+}
+
+function closeoutPackageCopy(input: {
+  invoice: InvoiceRecord;
+  receiptReviews: ReceiptReviewRecord[];
+}): { stage: string; detail: string } {
+  const sentReceipt = input.receiptReviews.find((review) => review.status === "sent");
+  const draftReceipt = input.receiptReviews.find((review) => review.status !== "sent");
+  if (sentReceipt) {
+    return {
+      stage: "Package delivered",
+      detail: "Receipt is sent. This invoice can now sit in the finalized customer package."
+    };
+  }
+  if (draftReceipt) {
+    return {
+      stage: "Receipt review waiting",
+      detail: "Money is recorded, but customer delivery is still paused at receipt review."
+    };
+  }
+  if (input.invoice.status === "paid") {
+    return {
+      stage: "Awaiting receipt review",
+      detail: "Invoice is paid, but the reviewed receipt package has not been finalized yet."
+    };
+  }
+  return {
+    stage: "Billing still open",
+    detail: "The invoice can go out now, but the receipt stays separate until payment succeeds."
+  };
+}
+
+export function invoiceWorkspaceRail(input: {
+  invoice: InvoiceRecord;
+  payments: PaymentRecord[];
+  receiptReviews: ReceiptReviewRecord[];
+}): {
+  stage: string;
+  detail: string;
+  dominantAction: "send-invoice" | "collect-payment" | "send-receipt" | "none";
+  dominantLabel?: string;
+} {
+  const draftReceipt = input.receiptReviews.find((review) => review.status !== "sent");
+  const failedPayment = input.payments.find((payment) => payment.status === "failed");
+  const balanceDue = input.invoice.ledger?.balanceDue ?? input.invoice.totals.total;
+
+  if (draftReceipt && input.invoice.status === "paid") {
+    return {
+      stage: "Receipt review waiting",
+      detail: "Money is in, but customer delivery is paused until the reviewed receipt package is sent.",
+      dominantAction: "send-receipt",
+      dominantLabel: "Send receipt"
+    };
+  }
+  if (failedPayment && balanceDue > 0) {
+    return {
+      stage: "Payment recovery",
+      detail: "A payment attempt failed and the balance is still open. Recover it before the closeout package can finish.",
+      dominantAction: "collect-payment",
+      dominantLabel: "Recover payment"
+    };
+  }
+  if (input.invoice.status === "draft") {
+    return {
+      stage: "Finalize and send",
+      detail: "The invoice is still editable. Lock the draft, then send it to start the money rail.",
+      dominantAction: "send-invoice",
+      dominantLabel: "Send invoice"
+    };
+  }
+  if ((input.invoice.status === "sent" || input.invoice.status === "awaiting_payment" || input.invoice.status === "partial_pay") && balanceDue > 0) {
+    return {
+      stage: input.invoice.status === "partial_pay" ? "Collect remaining balance" : "Collect payment",
+      detail: input.invoice.status === "partial_pay"
+        ? `A partial payment is already applied. ${money(balanceDue)} still needs to be collected.`
+        : "The invoice is out with an open balance. Take payment or send the hosted checkout path.",
+      dominantAction: "collect-payment",
+      dominantLabel: input.invoice.status === "partial_pay" ? "Collect remaining" : "Collect payment"
+    };
+  }
+  if (input.invoice.status === "paid") {
+    return {
+      stage: "Paid and packaged",
+      detail: "Payment is settled and the receipt package is already sent. This invoice is finished.",
+      dominantAction: "none"
+    };
+  }
+  if (input.invoice.status === "void" || input.invoice.status === "bad_debt") {
+    return {
+      stage: "Ledger closed",
+      detail: "This invoice is no longer collectible on the active rail.",
+      dominantAction: "none"
+    };
+  }
+  return {
+    stage: "Invoice rail ready",
+    detail: "Review the billing record and choose the next step from the rail below.",
+    dominantAction: "none"
+  };
+}
+
 function splitRecipients(value: string): string[] {
   return value
     .split(/[\n,;]/)
@@ -525,6 +663,16 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
   const selectedPayment = detail?.payments?.find((payment) => payment.id === refundDraft.paymentId)
     ?? detail?.payments?.find((payment) => payment.status === "succeeded");
   const totalsPreview = invoiceDraft ? invoiceTotalsPreview(invoiceDraft) : null;
+  const invoiceDimensions = detail?.invoice ? deriveInvoiceDimensions(detail.invoice) : null;
+  const packagePreview = detail?.invoice ? closeoutPackageCopy({
+    invoice: detail.invoice,
+    receiptReviews: detail.receiptReviews ?? []
+  }) : null;
+  const workspaceRail = detail?.invoice ? invoiceWorkspaceRail({
+    invoice: detail.invoice,
+    payments: detail.payments ?? [],
+    receiptReviews: detail.receiptReviews ?? []
+  }) : null;
 
   async function loadWorkspace(preferredInvoiceId?: string): Promise<void> {
     try {
@@ -972,6 +1120,8 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
     awaiting: invoices.filter((invoice) => invoice.status === "awaiting_payment" || invoice.status === "sent").length,
     partial: invoices.filter((invoice) => invoice.status === "partial_pay").length,
     paid: invoices.filter((invoice) => invoice.status === "paid").length,
+    receiptWaiting: detail?.receiptReviews?.filter((review) => review.status !== "sent").length ?? 0,
+    failedPayments: detail?.payments?.filter((payment) => payment.status === "failed").length ?? 0,
     refunds: refunds.length,
     credits: credits.filter((credit) => credit.availableAmount > 0).length
   };
@@ -994,6 +1144,8 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
         <article><span>Awaiting</span><strong>{counts.awaiting}</strong><p>Sent or outstanding balances.</p></article>
         <article><span>Partial</span><strong>{counts.partial}</strong><p>Prompt the remaining balance immediately.</p></article>
         <article><span>Paid</span><strong>{counts.paid}</strong><p>Receipt review should be waiting next.</p></article>
+        <article><span>Receipt waiting</span><strong>{counts.receiptWaiting}</strong><p>Paid or refunded, but still paused for review.</p></article>
+        <article><span>Failed attempts</span><strong>{counts.failedPayments}</strong><p>Recovery work still needs an office move.</p></article>
         <article><span>Refunds</span><strong>{counts.refunds}</strong><p>Tracked separately from void and bad debt.</p></article>
         <article><span>Credits</span><strong>{counts.credits}</strong><p>Available client balance still on hand.</p></article>
       </div>
@@ -1110,12 +1262,88 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
             </div>
             <p>{detailStatus}</p>
 
+            {workspaceRail ? (
+              <section className="nexops-quote-panel">
+                <div className="nexops-quote-section-head">
+                  <h3>Next billing move</h3>
+                  <span>{workspaceRail.stage}</span>
+                </div>
+                <p>{workspaceRail.detail}</p>
+                <div className="nexops-inline-actions">
+                  {workspaceRail.dominantAction === "send-invoice" ? (
+                    <button type="button" onClick={() => void sendInvoice()} disabled={Boolean(busy)}>
+                      {workspaceRail.dominantLabel}
+                    </button>
+                  ) : null}
+                  {workspaceRail.dominantAction === "collect-payment" ? (
+                    <button type="button" onClick={() => void collectPayment()} disabled={Boolean(busy)}>
+                      {workspaceRail.dominantLabel}
+                    </button>
+                  ) : null}
+                  {workspaceRail.dominantAction === "send-receipt" ? (
+                    <button type="button" onClick={() => void sendReceiptReview()} disabled={Boolean(busy) || !selectedReview}>
+                      {workspaceRail.dominantLabel}
+                    </button>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
+
             <div className="nexops-request-summary-grid">
               <article><h3>Client</h3><p>{clientDisplayName(selectedClient)}</p><small>{selectedClient?.emails[0] ?? "No email"} | {selectedClient?.phones[0] ?? "No phone"}</small></article>
               <article><h3>Balance due</h3><p>{money(detail.invoice.ledger?.balanceDue ?? detail.invoice.totals.total)}</p><small>Paid applied {money(detail.invoice.ledger?.paymentApplied)}</small></article>
               <article><h3>Due</h3><p>{detail.invoice.dueAt ? new Date(detail.invoice.dueAt).toLocaleDateString() : "Immediate"}</p><small>Updated {formatTimestamp(detail.invoice.updatedAt)}</small></article>
               <article><h3>Receipt review</h3><p>{detail.receiptReviews?.length ?? 0}</p><small>{selectedReview ? `Latest ${selectedReview.status}` : "Created after payment/refund"}</small></article>
             </div>
+
+            {invoiceDimensions ? (
+              <section className="nexops-quote-panel">
+                <div className="nexops-quote-section-head">
+                  <h3>Invoice dimensions</h3>
+                  <span>Derived rail, never a single flattened status.</span>
+                </div>
+                <div className="nexops-request-summary-grid">
+                  <article><h3>Lifecycle</h3><p>{invoiceDimensions.lifecycle.replaceAll("_", " ")}</p><small>Open, draft, void, or written off.</small></article>
+                  <article><h3>Delivery</h3><p>{invoiceDimensions.delivery.replaceAll("_", " ")}</p><small>From send and delivery history.</small></article>
+                  <article><h3>Balance</h3><p>{invoiceDimensions.balance.replaceAll("_", " ")}</p><small>Derived from ledger balance.</small></article>
+                  <article><h3>Due</h3><p>{invoiceDimensions.due.replaceAll("_", " ")}</p><small>Overdue lives separately from money state.</small></article>
+                  <article><h3>Customer view</h3><p>{invoiceDimensions.customerView.replaceAll("_", " ")}</p><small>Current record infers this from delivery and payment activity.</small></article>
+                  <article><h3>Payment schedule</h3><p>{detail.invoice.paymentSchedule?.enabled ? "Active" : "None"}</p><small>{paymentScheduleRailCopy(detail.invoice.paymentSchedule)}</small></article>
+                </div>
+              </section>
+            ) : null}
+
+            {packagePreview ? (
+              <section className="nexops-quote-panel">
+                <div className="nexops-quote-section-head">
+                  <h3>Customer document package</h3>
+                  <span>{packagePreview.stage}</span>
+                </div>
+                <div className="nexops-mini-list">
+                  <div className="nexops-quote-detail-line">
+                    <span>
+                      <strong>Closeout package state</strong>
+                      <small>{packagePreview.detail}</small>
+                    </span>
+                    <mark>{detail.invoice.jobReferences?.length ?? 0} jobs</mark>
+                  </div>
+                  <div className="nexops-quote-detail-line">
+                    <span>
+                      <strong>Invoice artifact</strong>
+                      <small>{detail.invoice.number ?? detail.invoice.id}</small>
+                    </span>
+                    <mark>{detail.invoice.status.replaceAll("_", " ")}</mark>
+                  </div>
+                  <div className="nexops-quote-detail-line">
+                    <span>
+                      <strong>Receipt artifact</strong>
+                      <small>{selectedReview ? `Latest review ${selectedReview.status}` : "No receipt review yet"}</small>
+                    </span>
+                    <mark>{selectedReview?.attachments.length ?? 0} files</mark>
+                  </div>
+                </div>
+              </section>
+            ) : null}
 
             {detail.invoice.jobReferences?.length ? (
               <section className="nexops-quote-panel">

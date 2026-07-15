@@ -10,7 +10,7 @@ Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this 
 - Flat green fallback is `#A8E600`.
 - Support colors are deep navy/charcoal, white, and silver/light gray.
 - Montserrat is the site-wide product font.
-- NexOps/NexShot should feel like NexTeam products, not Jobber clones and not Aquatrace-branded dashboards.
+- NexOps/NexCam should feel like NexTeam products, not Jobber clones and not Aquatrace-branded dashboards.
 - The New Client modal is the proof-of-concept screen before the system rolls out broadly.
 
 ### Brand Assets Saved
@@ -23,12 +23,12 @@ Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this 
 - Added reusable NexTeam lockup rendering from the canonical icon and wordmark assets.
 - Rebuilt the NexOps New Client modal header as the proof screen for the final NexTeam design system.
 - Added NexTeam product CSS tokens and Montserrat import.
-- Updated NexOps and NexShot product chrome to use NexTeam-owned palette/font tokens rather than tenant colors.
-- Updated NexOps and NexShot sidebars to show the NexTeam lockup plus module name.
+- Updated NexOps and NexCam product chrome to use NexTeam-owned palette/font tokens rather than tenant colors.
+- Updated NexOps and NexCam sidebars to show the NexTeam lockup plus module name.
 - Updated default tenant branding font fallback to Montserrat so new tenant-facing surfaces do not revert to serif typography.
 
 ### Reality Gate Status
-- This is not a full site-wide rollout yet. It is the requested proof screen for owner approval before applying the system across NexOps and NexShot.
+- This is not a full site-wide rollout yet. It is the requested proof screen for owner approval before applying the system across NexOps and NexCam.
 
 ## 2026-07-11 - NexOps New Client form polish
 
@@ -71,16 +71,16 @@ Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this 
 - `npm run check:secrets` passed.
 - `node --test apps/server/test/crm-read-side.test.mjs` passed: 11/11.
 
-## 2026-07-10 - NexOps + NexShot Phase 1 scaffold pass
+## 2026-07-10 - NexOps + NexCam Phase 1 scaffold pass
 
 ### Source Of Truth Read
 - `docs/specs/phase1/NEXTEAM-PHASE1-MASTER-SPEC.md`
 - `docs/specs/phase1/NEXTEAM-FIELDDOCS-MASTER-SPEC.md`
-- Latest owner order: complete NexOps + NexShot Phase 1, start by closing the real-data sync gap.
+- Latest owner order: complete NexOps + NexCam Phase 1, start by closing the real-data sync gap.
 
 ### Owner Decisions Applied
 - NexOps is the Jobber-style business engine: CRM, quoting, scheduling, invoicing, payments, portal, visit closeout.
-- NexShot is the CompanyCam-style field documentation module: checklist templates, photos, reports.
+- NexCam is the CompanyCam-style field documentation module: checklist templates, photos, reports.
 - Client display rule: first-name/last-name by default; when company name exists, default display to company while preserving the person fields and allowing a display toggle.
 - Multi-site rule: parent client owns billing/correspondence; properties/sites can have local contacts, but correspondence defaults to the parent client unless explicitly changed.
 - Communication rule: email and SMS are independent toggles. SMS starts as one-way outbound unless the tenant upgrades to two-way.
@@ -92,10 +92,10 @@ Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this 
 - Jobber read-only sync control in the NexOps UI: dry-run first, then write native NexOps records without writing back to Jobber.
 - CRM read routes for clients/properties/jobs/quotes/invoices feeding the NexOps UI from the shared native CRM repository.
 - ApprovalQueue create-client execution path verified to write to the same native CRM repository read by the NexOps client card.
-- Standalone NexShot web surface at `/nexshot` with overview, checklist templates, media search, and report generation panels.
-- NexShot leak-detection checklist template shaped around Aquatrace visit data, report needs, and property/visit memory.
-- NexShot report creation UI wired to the existing FieldDocs report endpoint.
-- Mobile/responsive layout rules for the new NexOps/NexShot grids.
+- Standalone NexCam web surface at `/nexcam` with overview, checklist templates, media search, and report generation panels.
+- NexCam leak-detection checklist template shaped around Aquatrace visit data, report needs, and property/visit memory.
+- NexCam report creation UI wired to the existing FieldDocs report endpoint.
+- Mobile/responsive layout rules for the new NexOps/NexCam grids.
 - NexOps lifecycle modules now show native records where available instead of placeholder-only panels:
   requests from lead clients, quotes, jobs, invoices, and paid invoice/payment records.
 
@@ -110,13 +110,13 @@ Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this 
 ### Reality Gate Status
 - Not complete to final Phase 1 definition yet because this pass has not been deployed to staging and has not produced live owner-facing receipts.
 - Next required receipt: run NexOps Jobber dry-run/write against staging and confirm real Aquatrace client rows populate in `/nexops/clients`.
-- Next required receipt: open `/nexshot`, create or view a checklist/report path, and confirm the result is visible/retrievable from the UI.
+- Next required receipt: open `/nexcam`, create or view a checklist/report path, and confirm the result is visible/retrievable from the UI.
 
 ### Next Work
 - Deploy current branch to staging after final local verification.
 - Run real Jobber sync with read-only provider access and confirm expected Aquatrace client counts.
 - Continue NexOps pieces 3.3-3.6: quote builder, approval-to-scheduling, NexPortal, and visit closeout.
-- Continue NexShot pieces: real upload/capture flow, inline photo viewer, report PDF polish, and checklist-to-report handoff.
+- Continue NexCam pieces: real upload/capture flow, inline photo viewer, report PDF polish, and checklist-to-report handoff.
 
 ## 2026-07-10 - Phase 1 staging receipt pass
 
@@ -124,7 +124,7 @@ Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this 
 - Deployed commit `f2aef5d5f650a2c7a0be2892e5ae8b8878e58734` to Railway staging.
 - `/api/version` matched `f2aef5d5f650a2c7a0be2892e5ae8b8878e58734`.
 - `/api/health` was green for Jobber, CompanyCam, Comms, and Anthropic configured/no-spend health.
-- Receipt: `receipts/phase1/staging-version-health-nexops-nexshot-20260710.json`.
+- Receipt: `receipts/phase1/staging-version-health-nexops-nexcam-20260710.json`.
 
 ### NexOps Live Data Receipt
 - `/api/crm/clients?tenantId=aquatrace` returned `1,327` real Aquatrace client records with Jobber external IDs.
@@ -137,10 +137,10 @@ Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this 
 - Hierarchy confirmed from live records.
 - Receipt: `receipts/phase1/nexops-asp-hierarchy-20260710.json`.
 
-### NexShot Report Receipt
-- Created a live NexShot checklist/report record using Deborah Justice CompanyCam checklist-derived data.
-- Generated a real PDF from the staging report route: `%PDF-1.4`, `3,665` bytes, saved at `receipts/phase1/nexshot-deborah-justice-report-20260710.pdf`.
-- Receipt: `receipts/phase1/nexshot-report-live-20260710.json`.
+### NexCam Report Receipt
+- Created a live NexCam checklist/report record using Deborah Justice CompanyCam checklist-derived data.
+- Generated a real PDF from the staging report route: `%PDF-1.4`, `3,665` bytes, saved at `receipts/phase1/nexcam-deborah-justice-report-20260710.pdf`.
+- Receipt: `receipts/phase1/nexcam-report-live-20260710.json`.
 
 ### Open Blockers
 - Authenticated `/nexops` screenshot is blocked from this runner because staging does not expose an operator password to automation. The unauthenticated screenshot correctly shows the Firebase sign-in wall, saved at `receipts/phase1/nexops-clients-staging-screenshot-20260710.png`. API receipts prove the data; owner/browser or a dedicated service-account browser-auth path is needed for the signed-in UI screenshot.

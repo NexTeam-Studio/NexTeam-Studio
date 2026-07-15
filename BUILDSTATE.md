@@ -62,6 +62,11 @@
 - No NexOps build piece is `DONE` until its corresponding `docs/internal/nexops/*.md` file is created or updated to match what was actually built right now, including current statuses, transitions, triggers, and cascades. This is part of definition-of-done with the same weight as the Part 9 reality gate and receipt requirements.
 - No NexOps build piece is `DONE` until Nexi can read and write that piece's object domain through real `nexiTools` definitions, with a live local conversational receipt proving the tool path instead of only a UI/API smoke.
 - After Phase 1 piece 5 (`Close / Invoice / Collect Payment / Receipt Review`) is complete, do not start piece 6 until Chris has done a full end-to-end walkthrough review from request through payment and receipt as a real user would. That checkpoint must include a screen-recorded walkthrough of one complete job lifecycle, not just screenshots, so design and flow issues get caught before later pieces build on top of the foundation.
+- Local verification workflow note: on the current Windows ChatGPT/Codex desktop build, the in-app browser has shown unstable browser-session routing (`No ChatGPT browser route is available for browser session ...`) and repeated renderer noise while local NexOps pages are open. For local verification, prefer direct HTTP checks plus the user's normal external browser instead of the Codex in-app browser unless a task explicitly requires that surface.
+
+## NexOps Open Verification Queue
+
+- D1 atomic quote approval/deposit remains an explicit open verification item on the queue: the lifecycle command map proves the policy contract, but the real quote/payment execution path still needs a dedicated execution-suite test proving a failed deposit leaves the quote in `sent`, creates no `QuoteAcceptance`, and forces a fresh client approval on retry. Treat this as a next-pass quote/payment runtime verification task before D1 is considered fully field-proven.
 ## Part 9 User-Facing Reality Gate Audit - 2026-07-08
 
 - `createClient`: DONE. Phase 0 live receipt proves Nexi chat queues the new client, ApprovalQueue shows the client item, approval marks it approved, and execute writes the native client.

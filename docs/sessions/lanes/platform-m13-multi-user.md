@@ -9,7 +9,7 @@ This lane owns the multi-user per tenant model: internal OWNER/OFFICE_ADMIN/TECH
 ## Always Read First
 
 - `docs/specs/phase1/NEXTEAM-PHASE1-MASTER-SPEC.md` because NexOps, NexPortal, and NexReach actions must be role-aware.
-- `docs/specs/phase1/NEXTEAM-FIELDDOCS-MASTER-SPEC.md` because NexShot technician and subcontractor access must be job/visit scoped.
+- `docs/specs/phase1/NEXTEAM-FIELDDOCS-MASTER-SPEC.md` because NexCam technician and subcontractor access must be job/visit scoped.
 
 ## Allowed Touches
 

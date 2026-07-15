@@ -460,6 +460,15 @@ test("saved-card reuse defaults to the newest card, supports alternate selection
     totals: totals(300)
   });
   const synced = await fixture.ledgerService.syncInvoiceAfterCreate(invoice);
+  const detailAfterSync = await fixture.ledgerService.getInvoiceDetail("aquatrace", synced.id);
+  assert.equal(
+    detailAfterSync.billingProfile?.savedCards.find((card) => card.id === "saved_card_newer")?.updatedAt,
+    "2026-07-14T09:00:00.000Z"
+  );
+  assert.equal(
+    detailAfterSync.billingProfile?.savedCards.find((card) => card.id === profile.savedCards[0].id)?.updatedAt,
+    "2026-07-13T12:00:00.000Z"
+  );
 
   const queueLatest = await runLocalToolTurn(fixture, [{ role: "user", content: `collect payment on ${synced.id} for $100` }]);
   assert.equal(queueLatest.toolRuns[0].name, "queueCollectPayment");

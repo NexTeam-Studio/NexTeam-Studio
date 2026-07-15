@@ -8,21 +8,22 @@ const rules = readFileSync(rulesPath, "utf8");
 
 test("firestore rules use tenant-scoped auth instead of tenant allow-lists for tenant foundation collections", () => {
   assert.doesNotMatch(rules, /return tenantId in \[/);
-  assert.match(rules, /function canAccessTenant\(tenantId\)/);
+  assert.match(rules, /function sameTenant\(tenantId\)/);
   assert.match(rules, /request\.auth\.token\.tenantId == tenantId/);
 });
 
 test("firestore rules include dedicated paths for intake, config, runtime summary, and subagents", () => {
-  assert.match(rules, /match \/tenants\/\{tenantId\}\/intakePackets\/\{packetId\}/);
-  assert.match(rules, /match \/tenants\/\{tenantId\}\/config\/\{configId\}/);
-  assert.match(rules, /match \/tenants\/\{tenantId\}\/runtimeSummary\/\{summaryId\}/);
-  assert.match(rules, /match \/tenants\/\{tenantId\}\/subagents\/\{subagentId\}/);
+  assert.match(rules, /match \/tenants\/\{tenantId\}/);
+  assert.match(rules, /match \/intakePackets\/\{packetId\}/);
+  assert.match(rules, /match \/config\/\{configId\}/);
+  assert.match(rules, /match \/runtimeSummary\/\{summaryId\}/);
+  assert.match(rules, /match \/subagents\/\{subagentId\}/);
 });
 
 test("firestore rules gate agentSessions to the signed-in owner or a platform operator", () => {
   assert.match(rules, /match \/agentSessions\/\{sessionId\}/);
   assert.match(rules, /allow read: if isPlatformOperator\(\) \|\| isAgentSessionOwner\(resource\.data\)/);
-  assert.match(rules, /function canWriteOwnAgentSession\(data\)/);
+  assert.match(rules, /function canWriteOwnAgentSession\(data, sessionId\)/);
   assert.match(rules, /data\.ownerUid == request\.auth\.uid/);
 });
 

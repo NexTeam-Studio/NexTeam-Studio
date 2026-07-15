@@ -457,7 +457,7 @@ registerSeoRoutes(app, { repository: seoRepository, sitesRepository, approvalQue
 registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });
 app.use(express.static(webDistDir));
 
-app.get(/^\/(?:nexops|nexshot|platform)(?:\/.*)?$/, (_req: Request, res: Response) => {
+app.get(/^\/(?:nexops|nexcam|platform)(?:\/.*)?$/, (_req: Request, res: Response) => {
   res.sendFile(path.join(webDistDir, "index.html"));
 });
 

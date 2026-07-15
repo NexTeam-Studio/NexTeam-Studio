@@ -2,7 +2,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isChrisAdmin() {
+    function isPlatformOperator() {
       return request.auth != null
         && (
           request.auth.uid == "USX9Lc0M6mdRU7QxrMNjJhiV2p42"
@@ -12,12 +12,18 @@ service cloud.firestore {
         );
     }
 
+    function isPublicSession() {
+      return request.auth != null
+        && ("publicSession" in request.auth.token && request.auth.token.publicSession == true);
+    }
+
     match /admin/{document=**} {
-      allow read, write: if isChrisAdmin();
+      allow read, write: if isPlatformOperator();
     }
 
     function sameTenant(tenantId) {
       return request.auth != null
+        && !isPublicSession()
         && request.auth.token.tenantId == tenantId;
     }
 
@@ -78,33 +84,67 @@ service cloud.firestore {
         && request.resource.data.enabled is bool;
     }
 
+    function validAgentSession(data, sessionId) {
+      return data.keys().hasAll(["tenantId", "agentId", "sessionId", "ownerUid", "stage", "status", "missingFields"])
+        && data.tenantId is string
+        && data.agentId is string
+        && data.sessionId == sessionId
+        && data.ownerUid is string
+        && data.stage is string
+        && data.status in ["in_progress", "completed"]
+        && data.missingFields is list;
+    }
+
+    function isAgentSessionOwner(data) {
+      return request.auth != null
+        && data.ownerUid == request.auth.uid
+        && data.tenantId == request.auth.token.tenantId;
+    }
+
+    function canWriteOwnAgentSession(data, sessionId) {
+      return isAgentSessionOwner(data)
+        && validAgentSession(data, sessionId);
+    }
+
+    match /agentSessions/{sessionId} {
+      allow read: if isPlatformOperator() || isAgentSessionOwner(resource.data);
+      allow create: if isPlatformOperator() || canWriteOwnAgentSession(request.resource.data, sessionId);
+      allow update: if isPlatformOperator()
+        || (
+          isAgentSessionOwner(resource.data)
+          && canWriteOwnAgentSession(request.resource.data, sessionId)
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.tenantId == resource.data.tenantId
+        );
+    }
+
     match /tenants/{tenantId} {
-      allow read: if isChrisAdmin() || sameTenant(tenantId);
-      allow create, update: if isChrisAdmin() || (sameTenant(tenantId) && validTenantRoot(tenantId));
+      allow read: if isPlatformOperator() || sameTenant(tenantId);
+      allow create, update: if isPlatformOperator() || (sameTenant(tenantId) && validTenantRoot(tenantId));
 
       match /intakePackets/{packetId} {
-        allow read: if isChrisAdmin() || sameTenant(tenantId);
-        allow create, update: if isChrisAdmin() || (sameTenant(tenantId) && validIntakePacket(tenantId));
+        allow read: if isPlatformOperator() || sameTenant(tenantId);
+        allow create, update: if isPlatformOperator() || (sameTenant(tenantId) && validIntakePacket(tenantId));
       }
 
       match /config/{configId} {
-        allow read: if isChrisAdmin() || sameTenant(tenantId);
-        allow create, update: if isChrisAdmin() || (sameTenant(tenantId) && validTenantConfig(tenantId));
+        allow read: if isPlatformOperator() || sameTenant(tenantId);
+        allow create, update: if isPlatformOperator() || (sameTenant(tenantId) && validTenantConfig(tenantId));
       }
 
       match /runtimeSummary/{summaryId} {
-        allow read: if isChrisAdmin() || sameTenant(tenantId);
-        allow create, update: if isChrisAdmin() || (sameTenant(tenantId) && validRuntimeSummary(tenantId));
+        allow read: if isPlatformOperator() || sameTenant(tenantId);
+        allow create, update: if isPlatformOperator() || (sameTenant(tenantId) && validRuntimeSummary(tenantId));
       }
 
       match /subagents/{subagentId} {
-        allow read: if isChrisAdmin() || sameTenant(tenantId);
-        allow create, update: if isChrisAdmin() || (sameTenant(tenantId) && validSubagent());
+        allow read: if isPlatformOperator() || sameTenant(tenantId);
+        allow create, update: if isPlatformOperator() || (sameTenant(tenantId) && validSubagent());
       }
     }
 
     match /tenantUsers/{userId} {
-      allow read: if isChrisAdmin()
+      allow read: if isPlatformOperator()
         || (
           request.auth != null
           && sameTenant(resource.data.tenantId)
@@ -113,7 +153,7 @@ service cloud.firestore {
             || tenantRole() in ["OWNER", "OFFICE_ADMIN"]
           )
         );
-      allow write: if isChrisAdmin()
+      allow write: if isPlatformOperator()
         || (
           request.auth != null
           && isTenantOwner(request.resource.data.tenantId)
@@ -121,7 +161,7 @@ service cloud.firestore {
     }
 
     match /jobAccessLinks/{linkId} {
-      allow read, write: if isChrisAdmin();
+      allow read, write: if isPlatformOperator();
     }
 
     match /{document=**} {

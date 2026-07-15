@@ -25,7 +25,7 @@ This file captures the research packet relayed from Nova in response to the firs
 - Requested Jobber screenshots were not found in available email/project records and must be captured directly from Jobber.
 - Historical decisions were not found for display-name defaults, property labels, billing inheritance, phone/email labels, gate-code placement, gate-code visibility, or whether contractor relationships need one or two nested levels.
 
-## NexShot 3.3 Checklist Templates
+## NexCam 3.3 Checklist Templates
 
 ### Confirmed Asset
 
@@ -43,7 +43,7 @@ This file captures the research packet relayed from Nova in response to the firs
 - This persistent-vs-fresh split is an inference and requires Chris approval.
 - CompanyCam checklist editor/template screenshots were not found and must be captured directly from CompanyCam.
 
-## NexShot 3.1 Photo Organization
+## NexCam 3.1 Photo Organization
 
 ### Confirmed Seed Records
 
@@ -66,6 +66,6 @@ This file captures the research packet relayed from Nova in response to the firs
 
 - Chris must provide direct decisions for NexOps 3.2.
 - Chris must provide or waive the requested Jobber screenshots.
-- Chris must approve the inferred NexShot persistent-vs-fresh field split.
-- Chris must provide direct decisions for NexShot photo visibility, visit naming, CompanyCam coexistence, and unresolved-photo handling.
+- Chris must approve the inferred NexCam persistent-vs-fresh field split.
+- Chris must provide direct decisions for NexCam photo visibility, visit naming, CompanyCam coexistence, and unresolved-photo handling.
 - Chris must provide or waive the requested CompanyCam screenshots.

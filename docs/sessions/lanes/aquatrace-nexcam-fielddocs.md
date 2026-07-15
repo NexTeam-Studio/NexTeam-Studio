@@ -1,10 +1,10 @@
-# Aquatrace NexShot Field Docs Lane
+# Aquatrace NexCam Field Docs Lane
 
 Last updated: 2026-07-10 by build/nightly-integration-20260709
 
 ## Scope
 
-This lane owns Aquatrace NexShot field documentation: photos/media, timestamps/GPS, visit-based photo organization, checklist templates, property-persistent checklist variables, completion reports, PDF generation, and report/photo visibility through other lanes.
+This lane owns Aquatrace NexCam field documentation: photos/media, timestamps/GPS, visit-based photo organization, checklist templates, property-persistent checklist variables, completion reports, PDF generation, and report/photo visibility through other lanes.
 
 ## Always Read First
 
@@ -13,9 +13,9 @@ This lane owns Aquatrace NexShot field documentation: photos/media, timestamps/G
 
 ## Allowed Touches
 
-- M4/NexShot contracts, schemas, media, checklist, report, and PDF-generation code.
-- NexShot UI surfaces for photo/checklist/report work.
-- Read-only integration points that expose NexShot media in NexOps/NexPortal screens.
+- M4/NexCam contracts, schemas, media, checklist, report, and PDF-generation code.
+- NexCam UI surfaces for photo/checklist/report work.
+- Read-only integration points that expose NexCam media in NexOps/NexPortal screens.
 - Receipts for checklist, photo organization, report generation, and upload/retrieval flows.
 
 ## Do Not Touch
@@ -27,7 +27,7 @@ This lane owns Aquatrace NexShot field documentation: photos/media, timestamps/G
 
 ## Current State
 
-NexShot pieces 1 and 2 can prepare in parallel with NexOps 3.2, but build still waits on ask-list answers. The existing extraction schema and CompanyCam import path are useful inputs, not permission to skip the template/photo-organization decisions.
+NexCam pieces 1 and 2 can prepare in parallel with NexOps 3.2, but build still waits on ask-list answers. The existing extraction schema and CompanyCam import path are useful inputs, not permission to skip the template/photo-organization decisions.
 
 Nova's 2026-07-10 research packet confirmed the Rachel Payne completed checklist as a strong seed asset and identified repeat-client/photo-organization candidates, but it did not locate CompanyCam screenshots or historical product decisions. The proposed property-persistent vs visit-fresh field split is an inference that requires Chris approval before implementation.
 

@@ -396,3 +396,43 @@ REGRESSION TEST IDS:
 - `20260709-owner-class-h-client-lookup-kristi-king`
 - `20260709-owner-class-h-job-lookup-kristi-king`
 - `20260709-owner-class-h-client-lookup-valley-view-condominiums`
+
+## CLASS I - SECURITY PROOF DRIFT
+
+DEFINITION: Security-sensitive docs or receipts claim a lane is proven even though the cited verification path is stale, red, or no longer matches the runtime shape.
+
+ROOT CAUSE: Static proof tests and handoff docs were not rerun and reconciled after rules/runtime refactors. Regex-style rule checks drifted away from the current nested rules structure, while docs continued citing them as live proof. In this variant, a real live lane (`agentSessions`) also lost explicit rule coverage while browser code still depended on it.
+
+KNOWN VARIANTS:
+
+- (repo audit 2026-07-14, resolved restored) `src/features/tenancy/services/firestoreRulesTenantIsolation.test.mjs` was red `4/4` while `docs/internal/NEXTEAM_CANONICAL_HANDOFF.md:131` still claimed `BUILT+PROVEN`.
+- (repo audit 2026-07-14, resolved restored) The first two failing assertions expected `function canAccessTenant(tenantId)` and inline `match /tenants/{tenantId}/...` paths, while current `firestore.rules` had already moved to `sameTenant(tenantId)` plus nested `match /tenants/{tenantId} { ... }`.
+- (repo audit 2026-07-14, resolved restored) The same static suite expected `agentSessions` and `isPublicSession()` rule coverage that was missing from `firestore.rules`, even though browser code still referenced `agentSessions`.
+
+STATUS: RESOLVED - RESTORED. `agentSessions` was confirmed as a live intentional lane (`/agent-architect` and `/admin/sessions`), Firestore rules were restored instead of the lane being removed, static proof was updated, and runtime emulator proof now covers owner-scoped `agentSessions`, platform-operator oversight, and public-session exclusion from tenant foundation documents.
+
+CLOSURE RECEIPT: `src/features/tenancy/services/firestoreRulesTenantIsolation.test.mjs` green `4/4` plus `src/features/tenancy/services/firestoreTenantRuntimeEmulator.test.mjs` green `21/21` on `2026-07-14`.
+
+REGRESSION TEST IDS:
+
+- `src/features/tenancy/services/firestoreRulesTenantIsolation.test.mjs`
+- `src/features/tenancy/services/firestoreTenantRuntimeEmulator.test.mjs`
+- Both static-rules proof and behavior-based emulator proof are now required together for any future tenant-isolation receipt.
+
+## CLASS J - TIME-FREEZE TEST HARNESS DRIFT
+
+DEFINITION: A test attempts to freeze time or environment in one way, but the code under test reads a different clock/source, creating a false red that looks like product failure.
+
+ROOT CAUSE: Legacy tests monkeypatch `Date.now` while the runtime path uses `new Date()` directly, so the intended frozen instant never reaches the schedule/window logic.
+
+KNOWN VARIANTS:
+
+- (repo audit 2026-07-14) `src/server/jobberService.test.mjs` fails in `jobber service answers a schedule question through the refresh-token lane` with `0 !== 1` because the test freezes `Date.now`, but `answerScheduleQuestion()` calls `resolveScheduleWindow(question)` and `resolveScheduleWindow()` defaults `now = new Date()`.
+
+STATUS: OPEN - unrelated to tenant isolation, but newly surfaced during the same verification pass and now explicitly tracked.
+
+CLOSURE RECEIPT: Pending targeted Jobber schedule-lane test audit.
+
+REGRESSION TEST IDS:
+
+- `src/server/jobberService.test.mjs` refresh-token schedule case

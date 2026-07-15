@@ -18,7 +18,7 @@ NexOps is not the Nexi Job Desk.
 - NexOps: full business web app and later mobile app for office/owner/tech operations.
 - Nexi: assistant/chat layer that can read and operate NexOps through tools and approval gates.
 - NexPortal: client-facing hub for quote approval, invoices, payments, reports, and work history.
-- NexShot: field documentation rail for photos, checklists, reports, PDFs.
+- NexCam: field documentation rail for photos, checklists, reports, PDFs.
 - NexReach: marketing/content/campaign/reputation engine.
 
 The Job Desk may show quick NexOps summary cards, but the canonical NexOps UI lives on its own route such as `/nexops/clients`. It must not be framed as a phone-shaped Nexi chat surface.
@@ -474,7 +474,7 @@ Security:
 Closeout path:
 
 1. Visit complete.
-2. NexShot checklist/report finalized.
+2. NexCam checklist/report finalized.
 3. PDF report generated.
 4. Job marked complete after appropriate checks.
 5. Invoice/payment flow starts.

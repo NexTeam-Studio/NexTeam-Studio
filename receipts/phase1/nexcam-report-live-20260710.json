@@ -1,11 +1,11 @@
-﻿{
+{
     "capturedAt":  "2026-07-11T02:33:16.0083611Z",
     "baseUrl":  "https://nexteam-studio-staging.up.railway.app",
     "tenantId":  "aquatrace",
     "checklistId":  "checklist_111fcdbe-e676-4dea-85ea-3d68fbef0b44",
     "reportId":  "report_d362ab7e-b3f2-469a-9a8c-13c7cd59b859",
     "pdfUrl":  "/api/fielddocs/reports/report_d362ab7e-b3f2-469a-9a8c-13c7cd59b859/pdf?tenantId=aquatrace",
-    "pdfPath":  "receipts/phase1/nexshot-deborah-justice-report-20260710.pdf",
+    "pdfPath":  "receipts/phase1/nexcam-deborah-justice-report-20260710.pdf",
     "pdfByteLength":  3665,
     "pdfHeader":  "%PDF-1.4",
     "sourceData":  "Deborah Justice CompanyCam checklist doc 18218446 / Exported checklist 07-02-2026",

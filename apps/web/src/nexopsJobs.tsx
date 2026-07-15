@@ -159,6 +159,78 @@ function formatMoney(value?: number): string {
   return typeof value === "number" ? `$${value.toFixed(2)}` : "$0.00";
 }
 
+function deriveWorkPackageStatus(detail: JobSummary | JobDetail): "draft" | "awaiting_authorization" | "authorized" | "in_progress" | "work_complete" | "closed" {
+  switch (detail.status) {
+    case "Archived":
+      return "closed";
+    case "Action Required":
+    case "Requires Invoicing":
+      return "work_complete";
+    case "Unscheduled":
+      return detail.quoteId ? "authorized" : "awaiting_authorization";
+    case "Upcoming":
+    case "Today":
+    case "Late":
+    default:
+      return "in_progress";
+  }
+}
+
+function deriveWorkPackageAction(detail: JobDetail): string {
+  if (detail.reminders.invoice) {
+    return "Invoice or dismiss reminder";
+  }
+  if (detail.reminders.actionAlert) {
+    return "Review closeout";
+  }
+  if (!detail.visits.length) {
+    return "Schedule first visit";
+  }
+  if (detail.visits.some((visit) => visit.status !== "complete")) {
+    return "Finish field work";
+  }
+  return "Review package";
+}
+
+function deriveVisitNextStep(visit: VisitRecord): string {
+  if (visit.status === "complete") {
+    return "Completed";
+  }
+  if (visit.status === "canceled") {
+    return "Canceled";
+  }
+  if (visit.status === "scheduled") {
+    return "Start travel when the crew heads out";
+  }
+  return "Continue field work";
+}
+
+function deriveDocumentPackagePreview(detail: JobDetail): { stage: string; note: string } {
+  const hasPaidInvoice = detail.invoices.some((invoice) => invoice.status === "paid");
+  if (hasPaidInvoice) {
+    return {
+      stage: "Ready to finalize",
+      note: "Approved report, paid invoice, and receipt should bundle into the immutable customer package."
+    };
+  }
+  if (detail.invoices.length) {
+    return {
+      stage: "Waiting on payment",
+      note: "Report + invoice can go out first, but the receipt stays separate until money settles."
+    };
+  }
+  if (detail.reminders.actionAlert) {
+    return {
+      stage: "Awaiting office review",
+      note: "Technician completion is in; owner or office-admin still decides the closeout path."
+    };
+  }
+  return {
+    stage: "No package yet",
+    note: "A customer package appears only after closeout reaches its approved send path."
+  };
+}
+
 export function NexOpsJobsPage(props: {
   tenantId: string;
   clients: ClientOption[];
@@ -536,6 +608,31 @@ export function NexOpsJobsPage(props: {
                 <div className="nexops-jobs-stat"><strong>Total</strong><span>{formatMoney(detail.totals?.total)}</span></div>
               </div>
 
+              <div className="nexops-jobs-section">
+                <div className="nexops-jobs-card-heading">
+                  <h3>WorkPackage rail</h3>
+                  <span>Derived from quote, visits, reminders, and billing state.</span>
+                </div>
+                <div className="nexops-jobs-grid">
+                  <div className="nexops-jobs-stat">
+                    <strong>Current status</strong>
+                    <span>{deriveWorkPackageStatus(detail).replaceAll("_", " ")}</span>
+                  </div>
+                  <div className="nexops-jobs-stat">
+                    <strong>Source quote</strong>
+                    <span>{detail.quote?.number ?? detail.quote?.id ?? "No quote attached"}</span>
+                  </div>
+                  <div className="nexops-jobs-stat">
+                    <strong>Billing rail</strong>
+                    <span>{detail.paymentSchedule?.enabled ? `${detail.paymentSchedule.milestones.length} milestones active` : "Full-balance rail"}</span>
+                  </div>
+                  <div className="nexops-jobs-stat">
+                    <strong>Dominant action</strong>
+                    <span>{deriveWorkPackageAction(detail)}</span>
+                  </div>
+                </div>
+              </div>
+
               <div className="nexops-jobs-actions">
                 <button type="button" disabled={actionBusy !== null} onClick={() => void performAction("close")}>Close</button>
                 <button type="button" disabled={actionBusy !== null} onClick={() => void performAction("invoice")}>Invoice</button>
@@ -576,6 +673,7 @@ export function NexOpsJobsPage(props: {
                       <div>
                         <strong>{visit.title}</strong>
                         <span>{formatDateTime(visit.start)} to {formatDateTime(visit.end)}</span>
+                        <small>{deriveVisitNextStep(visit)}</small>
                       </div>
                       <div>
                         <span className={`nexops-job-status status-${visit.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{visit.status}</span>
@@ -594,6 +692,18 @@ export function NexOpsJobsPage(props: {
                   <li>{detail.reminders.invoice ? `Invoice reminder due ${formatDateTime(detail.reminders.invoice.dueAt)}.` : "No invoice reminder pending."}</li>
                   <li>{detail.reminders.actionAlert?.note ?? "No office review alert pending."}</li>
                   <li>{detail.reminders.visit.length ? `${detail.reminders.visit.length} visit reminder records queued.` : "No visit reminder records pending."}</li>
+                </ul>
+              </div>
+
+              <div className="nexops-jobs-section">
+                <div className="nexops-jobs-card-heading">
+                  <h3>Customer package preview</h3>
+                  <span>{deriveDocumentPackagePreview(detail).stage}</span>
+                </div>
+                <ul className="nexops-jobs-bullets">
+                  <li>{deriveDocumentPackagePreview(detail).note}</li>
+                  <li>{detail.invoices.length ? `${detail.invoices.length} invoice record${detail.invoices.length === 1 ? "" : "s"} currently linked.` : "No invoice linked yet."}</li>
+                  <li>{detail.paymentSchedule?.enabled ? "Payment schedule stays attached to the same work rail." : "No active payment schedule on this job."}</li>
                 </ul>
               </div>
 

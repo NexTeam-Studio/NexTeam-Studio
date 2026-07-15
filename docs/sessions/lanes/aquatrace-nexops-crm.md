@@ -16,12 +16,12 @@ This lane owns the Aquatrace NexOps business-engine CRM foundation: client recor
 
 - M2 CRM contracts, schemas, repositories, imports, and Nexi tools.
 - NexOps client/property UI surfaces.
-- Read-only calls to NexShot media/report interfaces for client record display.
+- Read-only calls to NexCam media/report interfaces for client record display.
 - `BUILDSTATE.md`, `DECISIONS.md`, receipts, and this lane file when verified state changes.
 
 ## Do Not Touch
 
-- Do not edit NexShot media/checklist/report logic from this lane.
+- Do not edit NexCam media/checklist/report logic from this lane.
 - Do not edit M3 scheduling behavior beyond reading client/property identifiers.
 - Do not assume a client has only one property, one contact, one phone, or one email.
 - Do not build piece 3.2 until Chris answers the Section 5 ask list.

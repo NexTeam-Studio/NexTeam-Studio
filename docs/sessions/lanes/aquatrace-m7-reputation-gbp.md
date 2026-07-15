@@ -9,7 +9,7 @@ This lane owns Aquatrace's Google Business Profile and NexReach reputation work:
 ## Always Read First
 
 - `docs/specs/phase1/NEXTEAM-PHASE1-MASTER-SPEC.md` for NexReach naming, review follow-up dependency, ApprovalQueue boundary, and lifecycle context.
-- `docs/specs/phase1/NEXTEAM-FIELDDOCS-MASTER-SPEC.md` when review requests depend on NexShot closeouts, reports, or job photos.
+- `docs/specs/phase1/NEXTEAM-FIELDDOCS-MASTER-SPEC.md` when review requests depend on NexCam closeouts, reports, or job photos.
 
 ## Allowed Touches
 

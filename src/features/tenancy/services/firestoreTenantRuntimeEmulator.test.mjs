@@ -122,6 +122,15 @@ if (!SHOULD_RUN) {
       .firestore();
   }
 
+  function publicSessionDb(uid, tenantId) {
+    return testEnv
+      .authenticatedContext(uid, {
+        tenantId,
+        publicSession: true,
+      })
+      .firestore();
+  }
+
   async function seedTenantData(tenantId) {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();
@@ -130,6 +139,42 @@ if (!SHOULD_RUN) {
       await setDoc(doc(db, `tenants/${tenantId}/config/current`), buildConfig(tenantId));
       await setDoc(doc(db, `tenants/${tenantId}/runtimeSummary/current`), buildRuntimeSummary(tenantId));
       await setDoc(doc(db, `tenants/${tenantId}/subagents/writer`), buildSubagentDoc("writer"));
+    });
+  }
+
+  function buildAgentSessionDoc({
+    tenantId,
+    sessionId = "sess-1",
+    ownerUid = "public-owner",
+    status = "in_progress",
+    stage = "collecting",
+  }) {
+    return {
+      tenantId,
+      agentId: "agent_architect",
+      sessionId,
+      ownerUid,
+      stage,
+      status,
+      missingFields: [],
+      businessName: `${tenantId} Pools`,
+    };
+  }
+
+  async function seedAgentSession({
+    tenantId = "acme-pools",
+    sessionId = "sess-1",
+    ownerUid = "public-owner",
+    status = "in_progress",
+  } = {}) {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, `agentSessions/${sessionId}`), buildAgentSessionDoc({
+        tenantId,
+        sessionId,
+        ownerUid,
+        status,
+      }));
     });
   }
 
@@ -232,6 +277,18 @@ if (!SHOULD_RUN) {
     await assertFails(setDoc(ref, buildTenantRootDoc("other-tenant")));
   });
 
+  test("public session claims cannot read or write tenant foundation documents", async () => {
+    await seedTenantData("acme-pools");
+    const db = publicSessionDb("public-owner", "acme-pools");
+    const tenantRootRef = doc(db, "tenants/acme-pools");
+    const configRef = doc(db, "tenants/acme-pools/config/current");
+
+    await assertFails(getDoc(tenantRootRef));
+    await assertFails(setDoc(tenantRootRef, buildTenantRootDoc("acme-pools")));
+    await assertFails(getDoc(configRef));
+    await assertFails(setDoc(configRef, buildConfig("acme-pools")));
+  });
+
   for (const collectionCase of buildCollectionCases("acme-pools")) {
     test(`tenant can read and write its own ${collectionCase.label} document at runtime`, async () => {
       const db = authenticatedDb("acme-pools");
@@ -274,6 +331,89 @@ if (!SHOULD_RUN) {
     const snapshot = await assertSucceeds(getDoc(configRef));
     assert.equal(snapshot.data().documentType, CLIENT_CONFIG_DOCUMENT_TYPE);
     assert.equal(snapshot.data().meta.status, "active");
+  });
+
+  test("agent session owner can create read and update their own session at runtime", async () => {
+    const db = publicSessionDb("public-owner", "acme-pools");
+    const ref = doc(db, "agentSessions/sess-1");
+    const created = buildAgentSessionDoc({
+      tenantId: "acme-pools",
+      sessionId: "sess-1",
+      ownerUid: "public-owner",
+    });
+
+    await assertSucceeds(setDoc(ref, created));
+    let snapshot = await assertSucceeds(getDoc(ref));
+    assert.equal(snapshot.exists(), true);
+    assert.equal(snapshot.data().ownerUid, "public-owner");
+
+    const completed = buildAgentSessionDoc({
+      tenantId: "acme-pools",
+      sessionId: "sess-1",
+      ownerUid: "public-owner",
+      status: "completed",
+      stage: "confirmed",
+    });
+    await assertSucceeds(setDoc(ref, completed, { merge: true }));
+    snapshot = await assertSucceeds(getDoc(ref));
+    assert.equal(snapshot.data().status, "completed");
+  });
+
+  test("agent session owner cannot spoof another owner or another tenant on write", async () => {
+    const db = publicSessionDb("public-owner", "acme-pools");
+    const wrongOwnerRef = doc(db, "agentSessions/sess-owner-mismatch");
+    const wrongTenantRef = doc(db, "agentSessions/sess-tenant-mismatch");
+
+    await assertFails(setDoc(wrongOwnerRef, buildAgentSessionDoc({
+      tenantId: "acme-pools",
+      sessionId: "sess-owner-mismatch",
+      ownerUid: "someone-else",
+    })));
+    await assertFails(setDoc(wrongTenantRef, buildAgentSessionDoc({
+      tenantId: "other-tenant",
+      sessionId: "sess-tenant-mismatch",
+      ownerUid: "public-owner",
+    })));
+  });
+
+  test("non-owner cannot read or overwrite another user's agent session at runtime", async () => {
+    await seedAgentSession({
+      tenantId: "acme-pools",
+      sessionId: "sess-shared",
+      ownerUid: "public-owner",
+    });
+    const db = publicSessionDb("different-user", "acme-pools");
+    const ref = doc(db, "agentSessions/sess-shared");
+
+    await assertFails(getDoc(ref));
+    await assertFails(setDoc(ref, buildAgentSessionDoc({
+      tenantId: "acme-pools",
+      sessionId: "sess-shared",
+      ownerUid: "different-user",
+    }), { merge: true }));
+  });
+
+  test("platform operator can read and update any agent session at runtime", async () => {
+    await seedAgentSession({
+      tenantId: "acme-pools",
+      sessionId: "sess-operator",
+      ownerUid: "public-owner",
+    });
+    const db = platformDb();
+    const ref = doc(db, "agentSessions/sess-operator");
+    const operatorView = buildAgentSessionDoc({
+      tenantId: "acme-pools",
+      sessionId: "sess-operator",
+      ownerUid: "public-owner",
+      status: "completed",
+      stage: "operator-reviewed",
+    });
+
+    await assertSucceeds(getDoc(ref));
+    await assertSucceeds(setDoc(ref, operatorView, { merge: true }));
+    const snapshot = await assertSucceeds(getDoc(ref));
+    assert.equal(snapshot.data().status, "completed");
+    assert.equal(snapshot.data().stage, "operator-reviewed");
   });
 
   test("runtime fixture builders use the expected tenant foundation document types", () => {

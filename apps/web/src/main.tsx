@@ -1,12 +1,16 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type Auth, type User } from "firebase/auth";
-import { NexOpsInvoicesPage } from "./nexopsInvoices";
-import { NexOpsJobsPage } from "./nexopsJobs";
-import { NexOpsQuotesPage } from "./nexopsQuotes";
-import { NexOpsRequestsPage } from "./nexopsRequests";
+import { buildNexopsHomeState } from "./nexopsHomeState";
+import { NexopsHomeShell, NexopsHomeZoneCard } from "./nexopsUiKit";
 import "./styles.css";
+
+const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("./nexopsInvoices")).NexOpsInvoicesPage }));
+const NexOpsJobsPage = React.lazy(async () => ({ default: (await import("./nexopsJobs")).NexOpsJobsPage }));
+const NexOpsPatternLibraryPage = React.lazy(async () => ({ default: (await import("./nexopsPatternLibrary")).NexOpsPatternLibraryPage }));
+const NexOpsQuotesPage = React.lazy(async () => ({ default: (await import("./nexopsQuotes")).NexOpsQuotesPage }));
+const NexOpsRequestsPage = React.lazy(async () => ({ default: (await import("./nexopsRequests")).NexOpsRequestsPage }));
 
 interface Source {
   rail: "jobber" | "companycam" | "native" | "gsc" | "gbp" | "email";
@@ -288,6 +292,22 @@ interface CrmInvoice {
   intake?: CrmIntakeSnapshot;
 }
 
+interface CrmRequestSummary {
+  id: string;
+  status: "new" | "archived" | "converted_to_quote" | "converted_to_job";
+  reviewedAt?: string;
+}
+
+interface CrmPaymentSummary {
+  id: string;
+  status: "pending" | "failed" | "succeeded" | "refunded" | "partially_refunded";
+}
+
+interface CrmReceiptReviewSummary {
+  id: string;
+  status: "draft" | "ready_to_send" | "sent";
+}
+
 interface CrmClientsResponse {
   ok: boolean;
   clients?: CrmClient[];
@@ -300,6 +320,24 @@ interface CrmRecordsResponse {
   jobs?: CrmJob[];
   quotes?: CrmQuote[];
   invoices?: CrmInvoice[];
+  error?: string;
+}
+
+interface CrmRequestsResponse {
+  ok: boolean;
+  requests?: CrmRequestSummary[];
+  error?: string;
+}
+
+interface CrmPaymentsResponse {
+  ok: boolean;
+  payments?: CrmPaymentSummary[];
+  error?: string;
+}
+
+interface CrmReceiptReviewsResponse {
+  ok: boolean;
+  receiptReviews?: CrmReceiptReviewSummary[];
   error?: string;
 }
 
@@ -635,6 +673,14 @@ function localBypassUser(): User {
   } as unknown as User;
 }
 
+async function signOutOperator(auth: Auth | null): Promise<void> {
+  if (auth) {
+    await signOut(auth);
+    return;
+  }
+  window.location.reload();
+}
+
 async function loadAuthBootstrap(): Promise<{ auth: Auth | null; authRequired: boolean; localUser: User | null }> {
   let runtime: RuntimeConfigResponse | null = null;
   try {
@@ -829,6 +875,12 @@ function contactSummary(client: CrmClient): string {
   return [name, email, phone].filter(Boolean).join(" / ") || "No contact details yet";
 }
 
+function clientHasTextReadyContact(client: CrmClient): boolean {
+  const contact = client.contacts?.find((entry) => entry.correspondenceContact) ?? client.contacts?.[0];
+  const phone = contact?.phones?.find((entry) => entry.receivesMessages) ?? contact?.phones?.[0];
+  return Boolean(phone?.receivesMessages && phone.smsCapability === "mobile");
+}
+
 function preferredChannelForClient(client: CrmClient): ContactChannel {
   const primaryContact = client.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? client.contacts?.[0];
   return primaryContact?.channelPreference ?? (client.consent.email && client.consent.sms ? "both" : client.consent.sms ? "sms" : "email");
@@ -971,7 +1023,7 @@ function NexOpsCrmPanel(props: { tenantId: string }): React.ReactElement {
             </article>
             <article>
               <h4>Files & media</h4>
-              <p>NexShot photos, PDFs, reports, and uploads attach to client/site/job.</p>
+              <p>NexCam photos, PDFs, reports, and uploads attach to client/site/job.</p>
             </article>
             <article>
               <h4>Import status</h4>
@@ -984,9 +1036,9 @@ function NexOpsCrmPanel(props: { tenantId: string }): React.ReactElement {
   );
 }
 
-type NexOpsModule = "home" | "clients" | "requests" | "quotes" | "schedule" | "jobs" | "invoices" | "payments" | "imports" | "approvals" | "settings";
+type NexOpsModule = "home" | "clients" | "requests" | "quotes" | "schedule" | "jobs" | "invoices" | "payments" | "imports" | "approvals" | "settings" | "patterns";
 
-const NEXOPS_MODULES: Array<{ id: NexOpsModule; label: string; path: string }> = [
+const NEXOPS_MODULES: Array<{ id: NexOpsModule; label: string; path: string; hidden?: boolean }> = [
   { id: "home", label: "Home", path: "/nexops" },
   { id: "clients", label: "Clients", path: "/nexops/clients" },
   { id: "requests", label: "Requests", path: "/nexops/requests" },
@@ -997,7 +1049,8 @@ const NEXOPS_MODULES: Array<{ id: NexOpsModule; label: string; path: string }> =
   { id: "payments", label: "Payments", path: "/nexops/payments" },
   { id: "imports", label: "Import & Sync", path: "/nexops/imports" },
   { id: "approvals", label: "Approvals", path: "/nexops/approvals" },
-  { id: "settings", label: "Settings", path: "/nexops/settings" }
+  { id: "settings", label: "Settings", path: "/nexops/settings" },
+  { id: "patterns", label: "Patterns", path: "/nexops/patterns", hidden: true }
 ];
 
 function nexOpsModuleFromPath(pathname: string): NexOpsModule {
@@ -1020,7 +1073,7 @@ function parseCsvPreview(text: string): { rows: number; columns: string[] } {
   };
 }
 
-function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElement {
+function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.ReactElement {
   const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
   const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
   const [clients, setClients] = useState<CrmClient[]>([]);
@@ -1028,6 +1081,9 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
   const [jobs, setJobs] = useState<CrmJob[]>([]);
   const [quotes, setQuotes] = useState<CrmQuote[]>([]);
   const [invoices, setInvoices] = useState<CrmInvoice[]>([]);
+  const [requests, setRequests] = useState<CrmRequestSummary[]>([]);
+  const [payments, setPayments] = useState<CrmPaymentSummary[]>([]);
+  const [receiptReviews, setReceiptReviews] = useState<CrmReceiptReviewSummary[]>([]);
   const [status, setStatus] = useState("Loading clients...");
   const [query, setQuery] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
@@ -1098,21 +1154,30 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
 
   async function refreshRelatedRecords(tenantId = operatorContext.tenantId): Promise<void> {
     try {
-      const [propertiesBody, jobsBody, quotesBody, invoicesBody] = await Promise.all([
+      const [propertiesBody, jobsBody, quotesBody, invoicesBody, requestsBody, paymentsBody, receiptReviewsBody] = await Promise.all([
         fetch(`/api/crm/properties?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>),
         fetch(`/api/crm/jobs?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>),
         fetch(`/api/crm/quotes?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>),
-        fetch(`/api/crm/invoices?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>)
+        fetch(`/api/crm/invoices?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>),
+        fetch(`/api/crm/requests?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRequestsResponse>),
+        fetch(`/api/crm/payments?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmPaymentsResponse>),
+        fetch(`/api/crm/receipt-reviews?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmReceiptReviewsResponse>)
       ]);
       setProperties(propertiesBody.ok ? propertiesBody.properties ?? [] : []);
       setJobs(jobsBody.ok ? jobsBody.jobs ?? [] : []);
       setQuotes(quotesBody.ok ? quotesBody.quotes ?? [] : []);
       setInvoices(invoicesBody.ok ? invoicesBody.invoices ?? [] : []);
+      setRequests(requestsBody.ok ? requestsBody.requests ?? [] : []);
+      setPayments(paymentsBody.ok ? paymentsBody.payments ?? [] : []);
+      setReceiptReviews(receiptReviewsBody.ok ? receiptReviewsBody.receiptReviews ?? [] : []);
     } catch {
       setProperties([]);
       setJobs([]);
       setQuotes([]);
       setInvoices([]);
+      setRequests([]);
+      setPayments([]);
+      setReceiptReviews([]);
     }
   }
 
@@ -1142,6 +1207,9 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
       setJobs([]);
       setQuotes([]);
       setInvoices([]);
+      setRequests([]);
+      setPayments([]);
+      setReceiptReviews([]);
       setStatus("Clients API unreachable.");
     }
   }
@@ -1490,11 +1558,19 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
   const selectedInvoices = selectedClient ? invoices.filter((invoice) => invoice.clientId === selectedClient.id) : [];
   const activeCount = clients.filter((client) => clientStatusLabel(client) === "Active").length;
   const leadCount = clients.filter((client) => clientStatusLabel(client) === "Lead").length;
-  const textReadyCount = clients.filter((client) => {
-    const contact = client.contacts?.find((entry) => entry.correspondenceContact) ?? client.contacts?.[0];
-    const phone = contact?.phones?.find((entry) => entry.receivesMessages) ?? contact?.phones?.[0];
-    return phone?.receivesMessages && phone.smsCapability === "mobile";
-  }).length;
+  const textReadyCount = clients.filter((client) => clientHasTextReadyContact(client)).length;
+  const homeState = buildNexopsHomeState({
+    clients: clients.map((client) => ({
+      statusLabel: clientStatusLabel(client),
+      textReady: clientHasTextReadyContact(client)
+    })),
+    requests,
+    quotes,
+    jobs,
+    invoices,
+    payments,
+    receiptReviews
+  });
   const style = {
     "--nexops-brand-primary": "#0c1118",
     "--nexops-brand-accent": "#A8E600",
@@ -1518,33 +1594,62 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
           </div>
           <button type="button" onClick={() => setShowCreateClient(true)}>New Client</button>
         </div>
-        <div className="nexops-workflow-strip">
-          {[
-            ["Requests", String(leadCount), "Lead/request intake scaffolded"],
-            ["Quotes", String(quotes.length), "Draft/send/approve rail scaffolded"],
-            ["Jobs", String(jobs.length), "Native + Jobber-imported job rollup"],
-            ["Invoices", String(invoices.length), "Stripe test rail exists"],
-            ["Approvals", "Live", "Unified queue visible"]
-          ].map(([title, value, detail]) => (
-            <article key={title}>
-              <span>{title}</span>
-              <strong>{value}</strong>
-              <p>{detail}</p>
-            </article>
-          ))}
-        </div>
+        <NexopsHomeShell
+          now={(
+            <NexopsHomeZoneCard
+              title={homeState.now.title}
+              summary={homeState.now.summary}
+              dominantLabel={homeState.now.dominantLabel}
+              tone={homeState.now.tone}
+              onAction={() => setModule(homeState.now.target)}
+            />
+          )}
+          needsAttention={(
+            <NexopsHomeZoneCard
+              title={homeState.needsAttention.title}
+              summary={homeState.needsAttention.summary}
+              dominantLabel={homeState.needsAttention.dominantLabel}
+              tone={homeState.needsAttention.tone}
+              onAction={() => setModule(homeState.needsAttention.target)}
+            />
+          )}
+          upcoming={(
+            <NexopsHomeZoneCard
+              title={homeState.upcoming.title}
+              summary={homeState.upcoming.summary}
+              dominantLabel={homeState.upcoming.dominantLabel}
+              tone={homeState.upcoming.tone}
+              onAction={() => setModule(homeState.upcoming.target)}
+            />
+          )}
+          businessOverview={(
+            <div className="nexops-home-overview-stack">
+              {homeState.metrics.map((metric) => (
+                <article key={metric.title} className="nexops-home-mini-metric">
+                  <span>{metric.title}</span>
+                  <strong>{metric.value}</strong>
+                  <p>{metric.detail}</p>
+                </article>
+              ))}
+            </div>
+          )}
+        />
         <div className="nexops-two-column">
           {renderClients({ compact: true })}
           <section className="nexops-module-card">
-            <p className="eyebrow">Build map</p>
-            <h2>Phase 1 scaffold</h2>
-            <ul className="nexops-checklist">
-              <li>CRM foundation: active</li>
-              <li>CSV import: preview scaffold</li>
-              <li>Jobber sync: read-only pull into native NexOps records</li>
-              <li>Quotes/invoices/payments: backend rail present, UI scaffolded</li>
-              <li>NexPortal/closeout/reviews: ready for next build pieces</li>
-            </ul>
+            <p className="eyebrow">Operations queue</p>
+            <h2>What still needs a move</h2>
+            <div className="nexops-mini-list">
+              {homeState.operations.map((item) => (
+                <button className="nexops-request-row-button" type="button" key={item.label} onClick={() => setModule(item.target)}>
+                  <span>
+                    <strong>{item.label}</strong>
+                    <small>{item.detail}</small>
+                  </span>
+                  <mark>{item.count}</mark>
+                </button>
+              ))}
+            </div>
           </section>
         </div>
       </section>
@@ -1751,7 +1856,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
         title: "Jobs",
         subtitle: "Approved work, visits, closeout, and field handoff",
         primaryAction: "New job",
-        items: ["Quote-to-job conversion", "Assigned visits", "NexShot report rollup"],
+        items: ["Quote-to-job conversion", "Assigned visits", "NexCam report rollup"],
         records: jobs.map((job) => ({
           id: job.id,
           title: job.title,
@@ -1764,7 +1869,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
         title: "Invoices",
         subtitle: "Billing, PDF invoices, checkout, and receipts",
         primaryAction: "Create invoice",
-        items: ["Invoice from signed quote", "Stripe test checkout", "Attach NexShot report PDF on receipt"],
+        items: ["Invoice from signed quote", "Stripe test checkout", "Attach NexCam report PDF on receipt"],
         records: invoices.map((invoice) => ({
           id: invoice.id,
           title: invoice.title,
@@ -2146,6 +2251,9 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
     if (activeModule === "settings") {
       return renderSettings();
     }
+    if (activeModule === "patterns") {
+      return <NexOpsPatternLibraryPage />;
+    }
     return renderLifecycle(activeModule);
   }
 
@@ -2159,7 +2267,7 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
         </div>
         <button className="nexops-create-button" type="button" onClick={() => setShowCreateClient(true)}>Create</button>
         <nav className="nexops-nav">
-          {NEXOPS_MODULES.map((item) => (
+          {NEXOPS_MODULES.filter((item) => !item.hidden).map((item) => (
             <button className={item.id === activeModule ? "active" : ""} type="button" key={item.id} onClick={() => setModule(item.id)}>
               {item.label}
             </button>
@@ -2177,47 +2285,49 @@ function NexOpsClientsPage(props: { auth: Auth; user: User }): React.ReactElemen
             </label>
             <span>{moduleTitle}</span>
             <span>{props.user.email ?? "Operator"}</span>
-            <button type="button" onClick={() => void signOut(props.auth)}>Sign out</button>
+            <button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
           </div>
         </header>
 
-        {renderActiveModule()}
+        <Suspense fallback={<div className="nexops-embedded-panel"><section className="nexops-module-card"><p className="eyebrow">Loading</p><h2>Opening this workspace</h2><p>Pulling the next screen into the shell now.</p></section></div>}>
+          {renderActiveModule()}
+        </Suspense>
       </section>
       {renderCreateClientPanel()}
     </main>
   );
 }
 
-type NexShotModule = "overview" | "templates" | "photos" | "reports";
+type NexCamModule = "overview" | "templates" | "photos" | "reports";
 
-const NEXSHOT_MODULES: Array<{ id: NexShotModule; label: string; path: string }> = [
-  { id: "overview", label: "Overview", path: "/nexshot" },
-  { id: "templates", label: "Checklist Templates", path: "/nexshot/templates" },
-  { id: "photos", label: "Photos & Media", path: "/nexshot/photos" },
-  { id: "reports", label: "Reports", path: "/nexshot/reports" }
+const NEXCAM_MODULES: Array<{ id: NexCamModule; label: string; path: string }> = [
+  { id: "overview", label: "Overview", path: "/nexcam" },
+  { id: "templates", label: "Checklist Templates", path: "/nexcam/templates" },
+  { id: "photos", label: "Photos & Media", path: "/nexcam/photos" },
+  { id: "reports", label: "Reports", path: "/nexcam/reports" }
 ];
 
-function nexShotModuleFromPath(pathname: string): NexShotModule {
-  const exact = NEXSHOT_MODULES.find((module) => pathname === module.path);
+function nexCamModuleFromPath(pathname: string): NexCamModule {
+  const exact = NEXCAM_MODULES.find((module) => pathname === module.path);
   if (exact) {
     return exact.id;
   }
-  const nested = [...NEXSHOT_MODULES]
+  const nested = [...NEXCAM_MODULES]
     .sort((left, right) => right.path.length - left.path.length)
     .find((module) => pathname.startsWith(`${module.path}/`));
   return nested?.id ?? "overview";
 }
 
-function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
+function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElement {
   const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
   const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
-  const [activeModule, setActiveModule] = useState<NexShotModule>(() => nexShotModuleFromPath(window.location.pathname));
+  const [activeModule, setActiveModule] = useState<NexCamModule>(() => nexCamModuleFromPath(window.location.pathname));
   const [templates, setTemplates] = useState<FieldDocsTemplate[]>([]);
   const [mediaHits, setMediaHits] = useState<NonNullable<FieldDocsSearchResponse["hits"]>>([]);
   const [checklist, setChecklist] = useState<FieldDocsChecklistResponse["checklist"] | null>(null);
   const [report, setReport] = useState<FieldDocsReportResponse["report"] | null>(null);
   const [reportUrl, setReportUrl] = useState("");
-  const [status, setStatus] = useState("Loading NexShot...");
+  const [status, setStatus] = useState("Loading NexCam...");
   const [mediaQuery, setMediaQuery] = useState("Deborah Justice");
   const [reportTitle, setReportTitle] = useState("Aquatrace Leak Detection Report");
 
@@ -2251,7 +2361,7 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
   }, [operatorContext.tenantId]);
 
   useEffect(() => {
-    const onPopState = () => setActiveModule(nexShotModuleFromPath(window.location.pathname));
+    const onPopState = () => setActiveModule(nexCamModuleFromPath(window.location.pathname));
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
@@ -2294,7 +2404,7 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
   }
 
   async function searchMedia(): Promise<void> {
-    setStatus("Searching NexShot media...");
+    setStatus("Searching NexCam media...");
     try {
       const body = await fetch(`/api/fielddocs/search?tenantId=${encodeURIComponent(operatorContext.tenantId)}&q=${encodeURIComponent(mediaQuery)}&limit=12`)
         .then((response) => response.json() as Promise<FieldDocsSearchResponse>);
@@ -2312,7 +2422,7 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
   }
 
   async function createReport(): Promise<void> {
-    setStatus("Generating NexShot report...");
+    setStatus("Generating NexCam report...");
     try {
       const body = await fetch("/api/fielddocs/reports", {
         method: "POST",
@@ -2322,7 +2432,7 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
           jobId: "job_demo_leak_detection",
           title: reportTitle,
           findings: [
-            "Checklist-driven report generated from NexShot.",
+            "Checklist-driven report generated from NexCam.",
             "Report can attach to closeout receipts and approval-gated emails."
           ],
           mediaIds: mediaHits.map((hit) => hit.id),
@@ -2342,8 +2452,8 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
     }
   }
 
-  function setModule(module: NexShotModule): void {
-    const target = NEXSHOT_MODULES.find((entry) => entry.id === module) ?? NEXSHOT_MODULES[0];
+  function setModule(module: NexCamModule): void {
+    const target = NEXCAM_MODULES.find((entry) => entry.id === module) ?? NEXCAM_MODULES[0];
     setActiveModule(module);
     window.history.pushState({}, "", target.path);
   }
@@ -2371,7 +2481,7 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
       <section className="nexops-dashboard">
         <div className="nexops-page-heading">
           <div>
-            <h1>NexShot Field Docs</h1>
+            <h1>NexCam Field Docs</h1>
             <p>Checklist templates, visit media, and branded reports connected back to NexOps.</p>
           </div>
           <button type="button" onClick={() => void createChecklist()}>Start Checklist</button>
@@ -2411,22 +2521,22 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
             <button type="button" onClick={() => void createChecklist()}>Create visit checklist</button>
           </div>
         </div>
-        <div className="nexshot-template-grid">
+        <div className="nexcam-template-grid">
           {templates.map((item) => (
             <article className="nexops-module-card wide" key={item.id}>
               <p className="eyebrow">Owner-editable template</p>
               <h2>{item.title}</h2>
               <p>{item.itemCount} fields across {item.sections.length} sections. {item.propertyPersistentCount} property-persistent, {item.visitFreshCount} visit-fresh.</p>
-              <div className="nexshot-item-columns">
+              <div className="nexcam-item-columns">
                 <div>
                   <h3>Property-persistent</h3>
-                  <ul className="nexshot-item-list">
+                  <ul className="nexcam-item-list">
                     {propertyItems.slice(0, 10).map((field) => <li key={`${field.section}-${field.label}`}>{field.section}: {field.label}</li>)}
                   </ul>
                 </div>
                 <div>
                   <h3>Visit-fresh</h3>
-                  <ul className="nexshot-item-list">
+                  <ul className="nexcam-item-list">
                     {visitItems.slice(0, 10).map((field) => <li key={`${field.section}-${field.label}`}>{field.section}: {field.label}</li>)}
                   </ul>
                 </div>
@@ -2444,14 +2554,14 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
         <div className="nexops-page-heading">
           <div>
             <h1>Photos & Media</h1>
-            <p>Search native NexShot media by client/job/visit terms.</p>
+            <p>Search native NexCam media by client/job/visit terms.</p>
           </div>
           <div className="nexops-inline-actions">
             <input value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} placeholder="Deborah Justice" />
             <button type="button" onClick={() => void searchMedia()}>Search media</button>
           </div>
         </div>
-        <div className="nexshot-media-grid">
+        <div className="nexcam-media-grid">
           {mediaHits.map((hit) => (
             <article className="nexops-module-card" key={hit.id}>
               <p className="eyebrow">{hit.type}</p>
@@ -2503,16 +2613,16 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
   }
 
   return (
-    <main className="nexops-app nexshot-app" style={style}>
-      <aside className="nexops-app-sidebar" aria-label="NexShot navigation">
+    <main className="nexops-app nexcam-app" style={style}>
+      <aside className="nexops-app-sidebar" aria-label="NexCam navigation">
         <div className="nexops-app-logo">
           <NexTeamLockup className="nexops-sidebar-lockup" />
-          <span>NexShot</span>
+          <span>NexCam</span>
           <small>{tenantBranding?.displayName ?? (operatorContext.tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : operatorContext.tenantId)}</small>
         </div>
         <button className="nexops-create-button" type="button" onClick={() => void createChecklist()}>Start Checklist</button>
         <nav className="nexops-nav">
-          {NEXSHOT_MODULES.map((item) => (
+          {NEXCAM_MODULES.map((item) => (
             <button className={item.id === activeModule ? "active" : ""} type="button" key={item.id} onClick={() => setModule(item.id)}>
               {item.label}
             </button>
@@ -2525,7 +2635,7 @@ function NexShotPage(props: { auth: Auth; user: User }): React.ReactElement {
           <div className="nexops-web-tools">
             <span>{status}</span>
             <span>{props.user.email ?? "Operator"}</span>
-            <button type="button" onClick={() => void signOut(props.auth)}>Sign out</button>
+            <button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
           </div>
         </header>
         {renderActiveModule()}
@@ -3022,6 +3132,19 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
     );
   }
 
+  if (props.user) {
+    if (window.location.pathname.startsWith("/platform")) {
+      return <PlatformConsole auth={props.auth} user={props.user} />;
+    }
+    if (window.location.pathname.startsWith("/nexcam")) {
+      return <NexCamPage auth={props.auth} user={props.user} />;
+    }
+    if (window.location.pathname.startsWith("/nexops")) {
+      return <NexOpsClientsPage auth={props.auth} user={props.user} />;
+    }
+    return <Chat auth={props.auth} user={props.user} />;
+  }
+
   if (!props.auth) {
     return (
       <main className="shell">
@@ -3032,19 +3155,6 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
         </section>
       </main>
     );
-  }
-
-  if (props.user) {
-    if (window.location.pathname.startsWith("/platform")) {
-      return <PlatformConsole auth={props.auth} user={props.user} />;
-    }
-    if (window.location.pathname.startsWith("/nexshot")) {
-      return <NexShotPage auth={props.auth} user={props.user} />;
-    }
-    if (window.location.pathname.startsWith("/nexops")) {
-      return <NexOpsClientsPage auth={props.auth} user={props.user} />;
-    }
-    return <Chat auth={props.auth} user={props.user} />;
   }
 
   return (
@@ -3072,7 +3182,7 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
   );
 }
 
-function PlatformConsole(props: { auth: Auth; user: User }): React.ReactElement {
+function PlatformConsole(props: { auth: Auth | null; user: User }): React.ReactElement {
   const [rows, setRows] = useState<PlatformTenantRow[]>([]);
   const [plans, setPlans] = useState<PlatformPlan[]>([]);
   const [status, setStatus] = useState("Loading platform console...");
@@ -3136,7 +3246,7 @@ function PlatformConsole(props: { auth: Auth; user: User }): React.ReactElement 
           <h1>Tenant Command Center</h1>
           <p className="signed-in">{props.user.email ?? "Platform operator"}</p>
         </div>
-        <button className="sign-out" type="button" onClick={() => void signOut(props.auth)}>Sign out</button>
+        <button className="sign-out" type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
       </section>
 
       <section className="plan-grid">
@@ -3180,7 +3290,7 @@ function PlatformConsole(props: { auth: Auth; user: User }): React.ReactElement 
   );
 }
 
-function Chat(props: { auth: Auth; user: User }): React.ReactElement {
+function Chat(props: { auth: Auth | null; user: User }): React.ReactElement {
   const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
   const [operatorTheme, setOperatorTheme] = useState<OperatorUiTheme | null>(null);
   const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
@@ -3671,7 +3781,7 @@ function Chat(props: { auth: Auth; user: User }): React.ReactElement {
             >
               {handsFree ? "Hands-free on" : "Hands-free"}
             </button>
-            <button className="sign-out" type="button" onClick={() => void signOut(props.auth)}>Sign out</button>
+            <button className="sign-out" type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
           </div>
         </header>
 

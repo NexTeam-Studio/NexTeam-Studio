@@ -222,6 +222,78 @@ function requestFieldText(value: string | number | boolean): string {
   return String(value);
 }
 
+export function requestNeedsReview(request: ServiceRequestRecord): boolean {
+  return request.status === "new" && !request.reviewedAt;
+}
+
+export function requestReadyToConvert(request: ServiceRequestRecord): boolean {
+  return request.status === "new" && Boolean(request.reviewedAt);
+}
+
+export function summarizeRequestQueue(requests: ServiceRequestRecord[]): {
+  unreviewed: number;
+  readyToConvert: number;
+  converted: number;
+  archived: number;
+} {
+  return {
+    unreviewed: requests.filter((request) => requestNeedsReview(request)).length,
+    readyToConvert: requests.filter((request) => requestReadyToConvert(request)).length,
+    converted: requests.filter((request) => request.status === "converted_to_quote" || request.status === "converted_to_job").length,
+    archived: requests.filter((request) => request.status === "archived").length
+  };
+}
+
+export function requestDominantAction(request: ServiceRequestRecord): {
+  stage: string;
+  detail: string;
+  dominantAction: "mark-reviewed" | "convert-to-quote" | "reopen" | "none";
+  dominantLabel?: string;
+  secondaryAction?: "convert-to-job";
+  secondaryLabel?: string;
+} {
+  if (request.status === "archived") {
+    return {
+      stage: "Archived",
+      detail: "This intake is off the active queue. Reopen it if the office needs to bring it back into circulation.",
+      dominantAction: "reopen",
+      dominantLabel: "Reopen request"
+    };
+  }
+  if (request.status === "converted_to_quote") {
+    return {
+      stage: "Quote created",
+      detail: `Quote ${request.convertedQuoteId ?? "record"} now carries this intake forward. Keep the request as the read-only intake source.`,
+      dominantAction: "none"
+    };
+  }
+  if (request.status === "converted_to_job") {
+    return {
+      stage: "Job created",
+      detail: `Job ${request.convertedJobId ?? "record"} now owns dispatch and reminder work. Keep the request as the original intake snapshot.`,
+      dominantAction: "none"
+    };
+  }
+  if (!request.reviewedAt) {
+    return {
+      stage: request.match.reviewRequired ? "Review required" : "Mark reviewed",
+      detail: request.match.reviewRequired
+        ? "Confirm the exact-match result first, then mark the intake reviewed before converting it downstream."
+        : "This intake is ready for an office review pass. Mark it reviewed before you convert it to a quote or job.",
+      dominantAction: "mark-reviewed",
+      dominantLabel: "Mark reviewed"
+    };
+  }
+  return {
+    stage: "Ready to convert",
+    detail: "Choose a quote when the office needs approval and money flow, or go straight to a job when the work can dispatch immediately.",
+    dominantAction: "convert-to-quote",
+    dominantLabel: "Convert to quote",
+    secondaryAction: "convert-to-job",
+    secondaryLabel: "Convert to job"
+  };
+}
+
 function requestMatchLabel(match: RequestMatch, clients: ClientOption[], properties: PropertyOption[]): string {
   if (match.matchedBy === "none") {
     return "No exact email or phone match. Manual review stays required.";
@@ -327,6 +399,8 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
     () => requests.find((request) => request.id === selectedRequestId) ?? filteredRequests[0] ?? null,
     [filteredRequests, requests, selectedRequestId]
   );
+  const queueSummary = useMemo(() => summarizeRequestQueue(requests), [requests]);
+  const selectedRequestAction = selectedRequest ? requestDominantAction(selectedRequest) : null;
 
   const fieldGroups = useMemo(() => {
     const groups = new Map<IntakeFieldGroup, RequestFieldDefinition[]>();
@@ -847,6 +921,28 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
               </select>
             </div>
           </div>
+          <div className="nexops-request-summary-grid">
+            <article>
+              <h3>Unreviewed</h3>
+              <p>{queueSummary.unreviewed}</p>
+              <small>Needs the office review pass first.</small>
+            </article>
+            <article>
+              <h3>Ready to convert</h3>
+              <p>{queueSummary.readyToConvert}</p>
+              <small>Reviewed intakes ready for quote or job creation.</small>
+            </article>
+            <article>
+              <h3>Converted</h3>
+              <p>{queueSummary.converted}</p>
+              <small>Already pushed downstream to the live rail.</small>
+            </article>
+            <article>
+              <h3>Archived</h3>
+              <p>{queueSummary.archived}</p>
+              <small>Held off the active queue until reopened.</small>
+            </article>
+          </div>
           <ul className="nexops-record-list">
             {filteredRequests.map((request) => (
               <li className={request.id === selectedRequest?.id ? "selected" : ""} key={request.id}>
@@ -883,6 +979,38 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                   <button type="button" disabled={Boolean(actionBusy) || selectedRequest.status !== "new"} onClick={() => void runRequestAction(selectedRequest.id, "convert-to-job")}>Convert to job</button>
                 </div>
               </div>
+
+              {selectedRequestAction ? (
+                <section className="nexops-quote-panel">
+                  <div className="nexops-quote-section-head">
+                    <h3>Next office move</h3>
+                    <span>{selectedRequestAction.stage}</span>
+                  </div>
+                  <p>{selectedRequestAction.detail}</p>
+                  <div className="nexops-inline-actions">
+                    {selectedRequestAction.dominantAction === "mark-reviewed" ? (
+                      <button type="button" disabled={Boolean(actionBusy)} onClick={() => void markReviewed(selectedRequest.id)}>
+                        {selectedRequestAction.dominantLabel}
+                      </button>
+                    ) : null}
+                    {selectedRequestAction.dominantAction === "convert-to-quote" ? (
+                      <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "convert-to-quote")}>
+                        {selectedRequestAction.dominantLabel}
+                      </button>
+                    ) : null}
+                    {selectedRequestAction.dominantAction === "reopen" ? (
+                      <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "reopen")}>
+                        {selectedRequestAction.dominantLabel}
+                      </button>
+                    ) : null}
+                    {selectedRequestAction.secondaryAction === "convert-to-job" ? (
+                      <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "convert-to-job")}>
+                        {selectedRequestAction.secondaryLabel}
+                      </button>
+                    ) : null}
+                  </div>
+                </section>
+              ) : null}
 
               <div className="nexops-request-summary-grid">
                 <article>

@@ -17,7 +17,7 @@ NEXTEAM
       nexi-routing
       nexops-crm
       scheduling
-      nexshot-field-docs
+      nexcam-field-docs
       comms-campaigns
       nexreach-content-marketing
       reputation-gbp
@@ -41,7 +41,7 @@ Examples:
 
 - `NEXTEAM / Aquatrace / M7 Reputation GBP / OAuth production recon`
 - `NEXTEAM / Platform / M13 Multi-user / role-gate design`
-- `NEXTEAM / Aquatrace / NexShot Field Docs / report attachment pipeline`
+- `NEXTEAM / Aquatrace / NexCam Field Docs / report attachment pipeline`
 
 ## Always-Read Master Specs
 
@@ -49,12 +49,12 @@ Before building, changing, or claiming done on any Phase 1 product lane, open th
 
 - `docs/specs/phase1/NEXTEAM-PHASE1-MASTER-SPEC.md` - NexOps business engine, NexPortal, lifecycle lane order, and mandatory ask-list protocol.
 - `docs/specs/phase1/NEXOPS-BUILD-BLUEPRINT.md` - canonical NexOps build blueprint for CRM, intake, quoting, scheduling, client hub, billing, imports, permissions, and receipts.
-- `docs/specs/phase1/NEXTEAM-FIELDDOCS-MASTER-SPEC.md` - NexShot field documentation, checklist templates, photo organization, and reports.
+- `docs/specs/phase1/NEXTEAM-FIELDDOCS-MASTER-SPEC.md` - NexCam field documentation, checklist templates, photo organization, and reports.
 
 Locked naming:
 
 - NexOps = business engine: CRM, quoting, scheduling, invoicing, payments.
-- NexShot = field documentation: photos, checklists, reports.
+- NexCam = field documentation: photos, checklists, reports.
 - NexPortal = client-facing hub.
 - NexReach = marketing engine: content, campaigns, reputation.
 - Nexi = assistant; NexTeam = company/platform.
@@ -93,7 +93,7 @@ Primary files and docs future contributors should open first.
 | Lane | File | Owner Scope |
 |---|---|---|
 | NexOps CRM foundation | `docs/sessions/lanes/aquatrace-nexops-crm.md` | Aquatrace business-engine client records, multi-site hierarchy, and history foundation. |
-| NexShot Field Docs | `docs/sessions/lanes/aquatrace-nexshot-fielddocs.md` | Aquatrace photo organization, checklist templates, reports, and field-documentation receipts. |
+| NexCam Field Docs | `docs/sessions/lanes/aquatrace-nexcam-fielddocs.md` | Aquatrace photo organization, checklist templates, reports, and field-documentation receipts. |
 | GBP/M7 investigation | `docs/sessions/lanes/aquatrace-m7-reputation-gbp.md` | Aquatrace Google Business Profile OAuth/reputation rail, approval-only replies, and GBP blockers. |
 | Multi-user design | `docs/sessions/lanes/platform-m13-multi-user.md` | Tenant internal roles, subcontractor links, AccessContext, and role-aware module surfaces. |
 

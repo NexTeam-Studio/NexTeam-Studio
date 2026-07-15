@@ -1,6 +1,6 @@
 # NexOps Quotes
 
-Last updated: 2026-07-13
+Last updated: 2026-07-14
 Build piece: Quote lifecycle foundation + payment-schedule carry-forward
 
 ## Statuses
@@ -283,6 +283,7 @@ Build piece: Quote lifecycle foundation + payment-schedule carry-forward
 
 ## Current deliberate limits
 
+- D1's atomic approval contract is currently proven in the lifecycle map / policy layer, but NOT YET proven end-to-end on the real quote payment execution path. Add an execution-suite test that proves a failed deposit attempt leaves the quote in `sent`, creates no `QuoteAcceptance`, and requires the client to re-approve on retry before D1 is treated as fully field-verified.
 - Client decline is not fully wired yet as a first-class route, even though `declined` exists in the model.
 - Portal approval now syncs the minimal deposit/card bridge into formal ledger objects, but the quote still keeps the historical bridge snapshot instead of mutating old approvals in place.
 - One quote converts to one job only in this piece.

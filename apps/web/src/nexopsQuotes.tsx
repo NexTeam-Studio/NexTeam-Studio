@@ -7,6 +7,14 @@ import {
   type PaymentScheduleDraft,
   type PaymentScheduleRecord
 } from "./nexopsPaymentSchedule";
+import {
+  NexopsActionButton,
+  NexopsActionRail,
+  NexopsBanner,
+  NexopsProgressStrip,
+  NexopsSectionCard,
+  NexopsStatusPill
+} from "./nexopsUiKit";
 
 type QuoteStatus =
   | "draft"
@@ -23,6 +31,8 @@ type DeliveryMode = "draft" | "email" | "sms" | "mark_sent";
 type DiscountKind = "amount" | "percent";
 type DepositKind = "amount" | "percent";
 type DocumentKind = "request" | "quote" | "job" | "invoice";
+type QuoteUiTone = "dominant" | "secondary" | "quiet" | "danger" | "success" | "warning" | "blocked";
+type QuoteSurfaceAction = "send" | "manual-approve" | "renew" | "convert-to-job" | "invoice" | "copy-portal" | "edit" | "none";
 
 interface ClientOption {
   id: string;
@@ -334,6 +344,294 @@ function quoteStatusLabel(status: QuoteStatus): string {
   return status.replaceAll("_", " ");
 }
 
+export function quoteStatusTone(status: QuoteStatus): QuoteUiTone {
+  switch (status) {
+    case "approved":
+    case "approved_internal":
+      return "success";
+    case "change_requested":
+    case "pending_approval":
+      return "warning";
+    case "expired":
+      return "blocked";
+    case "declined":
+      return "danger";
+    case "sent":
+      return "secondary";
+    case "archived":
+      return "quiet";
+    case "draft":
+    default:
+      return "quiet";
+  }
+}
+
+export function quoteApprovalBlockedReason(quote: QuoteRecord, timestamp = new Date().toISOString()): string | null {
+  if (quote.status === "archived") {
+    return "Archived quotes cannot be approved.";
+  }
+  if (quote.status === "expired") {
+    return "Expired quotes cannot be approved until they are renewed.";
+  }
+  if (quote.expiresAt && new Date(quote.expiresAt).getTime() < new Date(timestamp).getTime()) {
+    return "Expired quotes cannot be approved until they are renewed.";
+  }
+  if (quote.status === "approved" || quote.status === "approved_internal") {
+    return "Approved quotes are locked.";
+  }
+  if (quote.status === "declined") {
+    return "Declined quotes cannot be approved.";
+  }
+  return null;
+}
+
+export function quoteLifecyclePercent(status: QuoteStatus): number {
+  switch (status) {
+    case "draft":
+      return 20;
+    case "pending_approval":
+      return 35;
+    case "sent":
+      return 58;
+    case "change_requested":
+      return 46;
+    case "approved":
+    case "approved_internal":
+      return 84;
+    case "expired":
+      return 58;
+    case "declined":
+      return 42;
+    case "archived":
+      return 100;
+    default:
+      return 0;
+  }
+}
+
+export function quoteLifecycleNarrative(quote: QuoteRecord): string {
+  switch (quote.status) {
+    case "draft":
+      return "Still in office build mode. The client has not received an approval path yet.";
+    case "pending_approval":
+      return "Nexi has staged the quote in chat, but the real write is still waiting on explicit yes/no approval.";
+    case "sent":
+      return "The client-facing approval path is live. Signature, deposit, and card rules still enforce on the server.";
+    case "change_requested":
+      return "The client asked for revisions. Staff needs to update the quote and resend a fresh approval path.";
+    case "approved":
+      return "The client cleared the commercial gate. This quote is now immutable and ready for downstream work.";
+    case "approved_internal":
+      return "Office staff approved on the client's behalf. The quote is locked and can move into work or billing.";
+    case "declined":
+      return "The quote is no longer moving forward commercially, but it stays visible for history.";
+    case "expired":
+      return "The client can still view the quote, but approval is hard-blocked until staff renews it.";
+    case "archived":
+      return "This quote version is retained only for audit history and is no longer actionable.";
+    default:
+      return "Quote lifecycle state is available.";
+  }
+}
+
+export function quoteCanEdit(quote: QuoteRecord): boolean {
+  return !["approved", "approved_internal", "archived", "declined", "expired"].includes(quote.status)
+    && !quoteApprovalBlockedReason(quote);
+}
+
+export function quoteSendBlockedReason(quote: QuoteRecord): string | null {
+  if (quote.status === "approved" || quote.status === "approved_internal") {
+    return "Approved quotes are locked and no longer need a fresh send step.";
+  }
+  if (quote.status === "expired") {
+    return "Expired quotes must be renewed before they can be sent again.";
+  }
+  if (quote.status === "declined") {
+    return "Declined quotes stay visible for history but are not deliverable.";
+  }
+  if (quote.status === "archived") {
+    return "Archived quote versions are history only and cannot be sent.";
+  }
+  return null;
+}
+
+export function quoteCanSend(quote: QuoteRecord): boolean {
+  return !quoteSendBlockedReason(quote);
+}
+
+export function quoteManualApproveBlockedReason(quote: QuoteRecord): string | null {
+  return quoteApprovalBlockedReason(quote);
+}
+
+export function quoteCanManualApprove(quote: QuoteRecord): boolean {
+  return !quoteManualApproveBlockedReason(quote);
+}
+
+export function quoteRenewBlockedReason(quote: QuoteRecord): string | null {
+  return quoteCanRenew(quote) ? null : "Only expired quotes can be renewed.";
+}
+
+export function quoteCanRenew(quote: QuoteRecord): boolean {
+  return quote.status === "expired"
+    || Boolean(quote.expiresAt && new Date(quote.expiresAt).getTime() < Date.now());
+}
+
+export function quoteConvertToJobBlockedReason(quote: QuoteRecord): string | null {
+  if (!["approved", "approved_internal"].includes(quote.status)) {
+    return "Only approved quotes can convert into jobs.";
+  }
+  if (quote.convertedJobId) {
+    return `This quote already converted into job ${quote.convertedJobId}.`;
+  }
+  return null;
+}
+
+export function quoteCanConvertToJob(quote: QuoteRecord): boolean {
+  return !quoteConvertToJobBlockedReason(quote);
+}
+
+export function quoteInvoiceBlockedReason(quote: QuoteRecord): string | null {
+  if (!["approved", "approved_internal"].includes(quote.status)) {
+    return "Quote must be approved before an invoice is created.";
+  }
+  return null;
+}
+
+export function quoteCanCreateInvoice(quote: QuoteRecord): boolean {
+  return !quoteInvoiceBlockedReason(quote);
+}
+
+function quoteDepositRequirementAmount(quote: QuoteRecord): number {
+  if (!quote.approvalRules.requireDeposit) {
+    return 0;
+  }
+  if (typeof quote.deposit?.amount === "number") {
+    return roundMoney(quote.deposit.amount);
+  }
+  const depositValue = quote.approvalRules.depositValue ?? 0;
+  return quote.approvalRules.depositKind === "percent"
+    ? roundMoney(quote.totals.total * (depositValue / 100))
+    : roundMoney(depositValue);
+}
+
+export function quotePaymentScheduleHeadline(schedule: PaymentScheduleRecord | undefined): string {
+  if (!schedule?.enabled || !schedule.milestones.length) {
+    return "No staged milestones. Billing can happen later from the invoice side.";
+  }
+  return `${schedule.milestones.length} milestone${schedule.milestones.length === 1 ? "" : "s"} already staged from the quote rail.`;
+}
+
+export function quotePaymentScheduleLine(milestone: PaymentScheduleRecord["milestones"][number], total: number): string {
+  const amount = milestone.amountKind === "percent"
+    ? `${milestone.amount}% (${money(roundMoney(total * (milestone.amount / 100)))})`
+    : money(milestone.amount);
+  const trigger = milestone.trigger === "on_approval"
+    ? "on approval"
+    : milestone.trigger === "on_job_close"
+      ? "on job close"
+      : milestone.dueAt
+        ? `on ${new Date(milestone.dueAt).toLocaleDateString()}`
+        : "on a scheduled date";
+  return `${amount} ${trigger}`;
+}
+
+export function quoteApprovalSummaryLabel(quote: QuoteRecord): string {
+  if (quote.approvedByRole === "client") {
+    return "Client accepted";
+  }
+  if (quote.approvedByRole === "OWNER" || quote.approvedByRole === "OFFICE_ADMIN") {
+    return "Approved internally";
+  }
+  if (quote.status === "change_requested") {
+    return "Revision requested";
+  }
+  if (quote.status === "expired") {
+    return "Renewal needed";
+  }
+  if (quote.status === "sent") {
+    return "Client action pending";
+  }
+  return "Not approved yet";
+}
+
+export function quoteDominantAction(quote: QuoteRecord): {
+  action: QuoteSurfaceAction;
+  label: string;
+  hint: string;
+  tone: QuoteUiTone;
+} {
+  if (quoteCanRenew(quote)) {
+    return {
+      action: "renew",
+      label: "Renew quote",
+      hint: "Rotate the client link and reset the expiry window before approval can continue.",
+      tone: "warning"
+    };
+  }
+  if (quote.status === "approved" || quote.status === "approved_internal") {
+    if (!quote.convertedJobId) {
+      return {
+        action: "convert-to-job",
+        label: "Convert to job",
+        hint: "Take the approved quote snapshot into work exactly once.",
+        tone: "dominant"
+      };
+    }
+    return {
+      action: "invoice",
+      label: "Create invoice",
+      hint: "The job link already exists. Billing can start here or later from job closeout.",
+      tone: "secondary"
+    };
+  }
+  if (quote.status === "change_requested") {
+    return {
+      action: "edit",
+      label: "Edit and resend",
+      hint: "Rework the line items or terms, then send a fresh approval path.",
+      tone: "warning"
+    };
+  }
+  if (quote.status === "sent") {
+    return {
+      action: "send",
+      label: "Resend quote",
+      hint: "Share the approval path again without changing the quote payload.",
+      tone: "secondary"
+    };
+  }
+  if (quote.status === "declined") {
+    return {
+      action: "none",
+      label: "History only",
+      hint: "Declined quotes stay readable but do not move forward.",
+      tone: "blocked"
+    };
+  }
+  if (quote.status === "archived") {
+    return {
+      action: "none",
+      label: "Archived",
+      hint: "This version is preserved for audit history only.",
+      tone: "quiet"
+    };
+  }
+  if (quote.status === "pending_approval") {
+    return {
+      action: "none",
+      label: "Waiting on chat approval",
+      hint: "The record is still parked behind ApprovalQueue and has not executed yet.",
+      tone: "warning"
+    };
+  }
+  return {
+    action: "send",
+    label: "Send quote",
+    hint: "Open the client approval path once the office draft is ready.",
+    tone: "dominant"
+  };
+}
+
 function catalogItem(code: string) {
   return VISIBLE_CATALOG.find((item) => item.code === code);
 }
@@ -632,6 +930,14 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const composerClient = props.clients.find((client) => client.id === composer.clientId);
   const selectedTemplate = templates.find((template) => template.id === composer.templateId);
   const draftTotals = calculateDraftTotals(composer.items, composer.discountKind, composer.discountValue, composer.taxRate);
+  const selectedQuoteBlockedReason = selectedQuote ? quoteApprovalBlockedReason(selectedQuote) : null;
+  const selectedQuoteDominantAction = selectedQuote ? quoteDominantAction(selectedQuote) : null;
+  const selectedQuoteCanEdit = selectedQuote ? quoteCanEdit(selectedQuote) : false;
+  const selectedQuoteCanSend = selectedQuote ? quoteCanSend(selectedQuote) : false;
+  const selectedQuoteCanManualApprove = selectedQuote ? quoteCanManualApprove(selectedQuote) : false;
+  const selectedQuoteCanRenew = selectedQuote ? quoteCanRenew(selectedQuote) : false;
+  const selectedQuoteCanConvertToJob = selectedQuote ? quoteCanConvertToJob(selectedQuote) : false;
+  const selectedQuoteCanCreateInvoice = selectedQuote ? quoteCanCreateInvoice(selectedQuote) : false;
 
   async function refresh(): Promise<void> {
     try {
@@ -968,6 +1274,38 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
       setStatusMessage("Portal link copied.");
     } catch {
       setStatusMessage("Clipboard blocked here. Copy the link manually.");
+    }
+  }
+
+  function runSurfaceAction(action: QuoteSurfaceAction): void {
+    if (!selectedQuote) {
+      return;
+    }
+    switch (action) {
+      case "send":
+        void runQuoteAction("send");
+        return;
+      case "manual-approve":
+        void runQuoteAction("manual-approve");
+        return;
+      case "renew":
+        void runQuoteAction("renew");
+        return;
+      case "convert-to-job":
+        void runQuoteAction("convert-to-job");
+        return;
+      case "invoice":
+        void runQuoteAction("invoice");
+        return;
+      case "copy-portal":
+        void copyPortalLink();
+        return;
+      case "edit":
+        setComposer(composerFromQuote(selectedQuote, selectedClient));
+        return;
+      case "none":
+      default:
+        return;
     }
   }
 
@@ -1502,7 +1840,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                   <p>{selectedQuote.title}</p>
                 </div>
                 <div className="nexops-inline-actions">
-                  <button type="button" onClick={() => setComposer(composerFromQuote(selectedQuote, selectedClient))} disabled={Boolean(busy) || ["approved", "approved_internal", "archived"].includes(selectedQuote.status)}>Edit in composer</button>
+                  <button type="button" onClick={() => setComposer(composerFromQuote(selectedQuote, selectedClient))} disabled={Boolean(busy) || !selectedQuoteCanEdit}>Edit in composer</button>
                   <a href={`/api/crm/quotes/${encodeURIComponent(selectedQuote.id)}/pdf?tenantId=${encodeURIComponent(props.tenantId)}`} rel="noreferrer" target="_blank">Open PDF</a>
                   <button type="button" onClick={() => void copyPortalLink()} disabled={Boolean(busy)}>Copy portal link</button>
                 </div>
@@ -1517,7 +1855,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                 <article>
                   <h3>Status</h3>
                   <p>{quoteStatusLabel(selectedQuote.status)}</p>
-                  <small>Approved: {formatTimestamp(selectedQuote.approvedAt)}</small>
+                  <small>{quoteApprovalSummaryLabel(selectedQuote)} | Approved: {formatTimestamp(selectedQuote.approvedAt)}</small>
                 </article>
                 <article>
                   <h3>Expiry</h3>
@@ -1529,6 +1867,70 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                   <p>{approvalSummary(selectedQuote.approvalRules)}</p>
                   <small>{selectedQuote.approvedBy ? `Approved by ${selectedQuote.approvedBy}` : "No approval yet"}</small>
                 </article>
+              </div>
+
+              <div className="nexops-quote-detail-grid">
+                <NexopsSectionCard
+                  eyebrow="Commercial state"
+                  title={quoteStatusLabel(selectedQuote.status)}
+                  detail={quoteLifecycleNarrative(selectedQuote)}
+                  actions={<NexopsStatusPill label={quoteApprovalSummaryLabel(selectedQuote)} tone={quoteStatusTone(selectedQuote.status)} />}
+                >
+                  <NexopsProgressStrip
+                    label="Quote lifecycle rail"
+                    detail={selectedQuote.convertedJobId ? "Commercial approval is complete and the work snapshot already exists." : "The commercial state drives whether this quote can still be edited, approved, renewed, or converted."}
+                    percent={quoteLifecyclePercent(selectedQuote.status)}
+                  />
+                  <div className="nexops-kit-pill-row">
+                    <NexopsStatusPill label={selectedQuote.approvalRules.requireSignature ? "Signature gate on" : "Signature optional"} tone={selectedQuote.approvalRules.requireSignature ? "secondary" : "quiet"} />
+                    <NexopsStatusPill label={selectedQuote.approvalRules.requireDeposit ? "Deposit gate on" : "No deposit gate"} tone={selectedQuote.approvalRules.requireDeposit ? "warning" : "quiet"} />
+                    <NexopsStatusPill label={selectedQuote.approvalRules.requireCardOnFile ? "Card-on-file on" : "Card optional"} tone={selectedQuote.approvalRules.requireCardOnFile ? "secondary" : "quiet"} />
+                    <NexopsStatusPill label={selectedQuote.paymentSchedule?.enabled ? "Milestones staged" : "Single-stage billing"} tone={selectedQuote.paymentSchedule?.enabled ? "secondary" : "quiet"} />
+                    <NexopsStatusPill label={selectedQuote.convertedJobId ? "Job snapshot exists" : "No job snapshot yet"} tone={selectedQuote.convertedJobId ? "success" : "quiet"} />
+                  </div>
+                  {selectedQuoteBlockedReason ? (
+                    <NexopsBanner
+                      tone={selectedQuote.status === "expired" ? "warning" : "blocked"}
+                      title={selectedQuote.status === "expired" ? "Renewal required" : "Approval blocked"}
+                      detail={selectedQuoteBlockedReason}
+                    />
+                  ) : null}
+                </NexopsSectionCard>
+
+                {selectedQuoteDominantAction ? (
+                  <NexopsSectionCard
+                    eyebrow="Dominant action"
+                    title={selectedQuoteDominantAction.label}
+                    detail={selectedQuoteDominantAction.hint}
+                  >
+                    <NexopsActionRail
+                      dominant={(
+                        <NexopsActionButton
+                          label={selectedQuoteDominantAction.label}
+                          hint={selectedQuoteDominantAction.hint}
+                          tone={selectedQuoteDominantAction.tone}
+                          disabled={Boolean(busy) || selectedQuoteDominantAction.action === "none"}
+                          onClick={() => runSurfaceAction(selectedQuoteDominantAction.action)}
+                        />
+                      )}
+                      secondary={(
+                        <>
+                          <NexopsActionButton label="Send" tone="secondary" disabled={Boolean(busy) || !selectedQuoteCanSend} onClick={() => runSurfaceAction("send")} />
+                          <NexopsActionButton label="Manual approve" tone="secondary" disabled={Boolean(busy) || !selectedQuoteCanManualApprove} onClick={() => runSurfaceAction("manual-approve")} />
+                          <NexopsActionButton label="Convert to job" tone="secondary" disabled={Boolean(busy) || !selectedQuoteCanConvertToJob} onClick={() => runSurfaceAction("convert-to-job")} />
+                          <NexopsActionButton label="Create invoice" tone="secondary" disabled={Boolean(busy) || !selectedQuoteCanCreateInvoice} onClick={() => runSurfaceAction("invoice")} />
+                        </>
+                      )}
+                      utility={(
+                        <>
+                          <NexopsActionButton label="Edit" tone="quiet" disabled={Boolean(busy) || !selectedQuoteCanEdit} onClick={() => runSurfaceAction("edit")} />
+                          <NexopsActionButton label="Renew" tone="warning" disabled={Boolean(busy) || !selectedQuoteCanRenew} onClick={() => runSurfaceAction("renew")} />
+                          <NexopsActionButton label="Copy link" tone="quiet" disabled={Boolean(busy)} onClick={() => runSurfaceAction("copy-portal")} />
+                        </>
+                      )}
+                    />
+                  </NexopsSectionCard>
+                ) : null}
               </div>
 
               <div className="nexops-quote-detail-grid">
@@ -1577,6 +1979,74 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                 </section>
               </div>
 
+              <div className="nexops-quote-detail-grid">
+                <NexopsSectionCard
+                  eyebrow="Approval proof"
+                  title="What the record proves"
+                  detail="Client-side evidence and ledger bridge data stay on the quote after approval."
+                >
+                  <ul className="nexops-mini-list">
+                    <li>
+                      <strong>Signature</strong>
+                      <span>
+                        {selectedQuote.signature
+                          ? `${selectedQuote.signature.mode === "drawn" ? "Drawn" : "Typed"} signature captured ${formatTimestamp(selectedQuote.signature.signedAt)}`
+                          : selectedQuote.approvalRules.requireSignature
+                            ? "Required before client approval, but no captured signature is on this record yet."
+                            : "No signature gate on this quote."}
+                      </span>
+                    </li>
+                    <li>
+                      <strong>Deposit</strong>
+                      <span>
+                        {selectedQuote.approvalRules.requireDeposit
+                          ? selectedQuote.deposit?.capturedAt
+                            ? `${money(quoteDepositRequirementAmount(selectedQuote))} captured ${formatTimestamp(selectedQuote.deposit.capturedAt)}`
+                            : `${money(quoteDepositRequirementAmount(selectedQuote))} must clear before client approval completes.`
+                          : "No deposit requirement on this quote."}
+                      </span>
+                    </li>
+                    <li>
+                      <strong>Card on file</strong>
+                      <span>
+                        {selectedQuote.approvalRules.requireCardOnFile
+                          ? selectedQuote.deposit?.cardOnFileAuthorized
+                            ? `${selectedQuote.deposit.autoSavedCardOnFile ? "Authorized and auto-saved" : "Authorized"}${selectedQuote.deposit.cardBrand || selectedQuote.deposit.cardLast4 ? ` (${[selectedQuote.deposit.cardBrand, selectedQuote.deposit.cardLast4 && `•••• ${selectedQuote.deposit.cardLast4}`].filter(Boolean).join(" ")})` : ""}`
+                            : "Required before client approval, but no authorization is stored yet."
+                          : "Card-on-file is optional for this quote."}
+                      </span>
+                    </li>
+                    <li>
+                      <strong>Approval path</strong>
+                      <span>{selectedQuote.approvedBy ? `${quoteApprovalSummaryLabel(selectedQuote)} by ${selectedQuote.approvedBy}` : "Still waiting on explicit client or staff approval."}</span>
+                    </li>
+                  </ul>
+                </NexopsSectionCard>
+
+                <NexopsSectionCard
+                  eyebrow="Billing rail"
+                  title="Payment schedule"
+                  detail={quotePaymentScheduleHeadline(selectedQuote.paymentSchedule)}
+                >
+                  {selectedQuote.paymentSchedule?.enabled && selectedQuote.paymentSchedule.milestones.length ? (
+                    <ul className="nexops-mini-list">
+                      {selectedQuote.paymentSchedule.milestones.map((milestone) => (
+                        <li key={milestone.id}>
+                          <strong>{milestone.label}</strong>
+                          <span>{quotePaymentScheduleLine(milestone, selectedQuote.totals.total)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <NexopsBanner
+                      tone="quiet"
+                      title="Single-stage billing"
+                      detail="No milestone schedule is stored on this quote yet, so billing can stay on the later invoice/closeout rail."
+                    />
+                  )}
+                </NexopsSectionCard>
+              </div>
+
               <div className="nexops-quote-action-stack">
                 <section className="nexops-quote-panel">
                   <div className="nexops-quote-section-head">
@@ -1602,20 +2072,27 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                     <input value={sendDraft.note} onChange={(event) => setSendDraft((current) => ({ ...current, note: event.target.value }))} />
                   </label>
                   <div className="nexops-inline-actions">
-                    <button type="button" onClick={() => void runQuoteAction("send")} disabled={Boolean(busy)}>{busy === "send" ? "Sending..." : "Send quote"}</button>
+                    <button type="button" onClick={() => void runQuoteAction("send")} disabled={Boolean(busy) || !selectedQuoteCanSend}>{busy === "send" ? "Sending..." : "Send quote"}</button>
                     {portalLinks[selectedQuote.id] ? <small>{portalLinks[selectedQuote.id]}</small> : <small>Live portal link appears here after send or renew.</small>}
                   </div>
+                  {!selectedQuoteCanSend && quoteSendBlockedReason(selectedQuote) ? <p className="nexops-quote-blocked-note">{quoteSendBlockedReason(selectedQuote)}</p> : null}
                 </section>
 
                 <section className="nexops-quote-panel">
                   <div className="nexops-quote-section-head">
-                    <h3>Next actions</h3>
+                    <h3>Manual overrides and downstream</h3>
                     <span>Internal approval can bypass client-side gates. Client approval keeps signature and payment checks live.</span>
                   </div>
                   <div className="nexops-inline-actions">
-                    <button type="button" onClick={() => void runQuoteAction("manual-approve")} disabled={Boolean(busy)}>Manual approve</button>
-                    <button type="button" onClick={() => void runQuoteAction("convert-to-job")} disabled={Boolean(busy)}>Convert to job</button>
-                    <button type="button" onClick={() => void runQuoteAction("invoice")} disabled={Boolean(busy)}>Create invoice</button>
+                    <button type="button" onClick={() => void runQuoteAction("manual-approve")} disabled={Boolean(busy) || !selectedQuoteCanManualApprove}>Manual approve</button>
+                    <button type="button" onClick={() => void runQuoteAction("convert-to-job")} disabled={Boolean(busy) || !selectedQuoteCanConvertToJob}>{selectedQuote.convertedJobId ? "Job already created" : "Convert to job"}</button>
+                    <button type="button" onClick={() => void runQuoteAction("invoice")} disabled={Boolean(busy) || !selectedQuoteCanCreateInvoice}>Create invoice</button>
+                  </div>
+                  <div className="nexops-quote-blocked-list">
+                    {!selectedQuoteCanManualApprove && quoteManualApproveBlockedReason(selectedQuote) ? <p className="nexops-quote-blocked-note">{quoteManualApproveBlockedReason(selectedQuote)}</p> : null}
+                    {!selectedQuoteCanConvertToJob && quoteConvertToJobBlockedReason(selectedQuote) ? <p className="nexops-quote-blocked-note">{quoteConvertToJobBlockedReason(selectedQuote)}</p> : null}
+                    {!selectedQuoteCanCreateInvoice && quoteInvoiceBlockedReason(selectedQuote) ? <p className="nexops-quote-blocked-note">{quoteInvoiceBlockedReason(selectedQuote)}</p> : null}
+                    {!selectedQuoteCanRenew && quoteRenewBlockedReason(selectedQuote) ? <p className="nexops-quote-blocked-note">{quoteRenewBlockedReason(selectedQuote)}</p> : null}
                   </div>
                   <div className="nexops-request-builder-grid">
                     <label className="nexops-field">
@@ -1624,9 +2101,23 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                     </label>
                     <label className="nexops-field">
                       <span>Renew action</span>
-                      <button type="button" onClick={() => void runQuoteAction("renew")} disabled={Boolean(busy)}>{busy === "renew" ? "Renewing..." : "Renew expired quote"}</button>
+                      <button type="button" onClick={() => void runQuoteAction("renew")} disabled={Boolean(busy) || !selectedQuoteCanRenew}>{busy === "renew" ? "Renewing..." : "Renew expired quote"}</button>
                     </label>
                   </div>
+                  <ul className="nexops-mini-list">
+                    <li>
+                      <strong>Request link</strong>
+                      <span>{selectedQuote.requestId ? `Connected to request ${selectedQuote.requestId}` : "This quote was not created from a tracked request."}</span>
+                    </li>
+                    <li>
+                      <strong>Job link</strong>
+                      <span>{selectedQuote.convertedJobId ? `Converted once into job ${selectedQuote.convertedJobId}` : "No job snapshot has been created from this quote yet."}</span>
+                    </li>
+                    <li>
+                      <strong>Portal delivery</strong>
+                      <span>{selectedQuote.delivery?.length ? `${selectedQuote.delivery.length} delivery event${selectedQuote.delivery.length === 1 ? "" : "s"} recorded.` : "No delivery history recorded yet."}</span>
+                    </li>
+                  </ul>
                 </section>
               </div>
 

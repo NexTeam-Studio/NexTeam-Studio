@@ -15,10 +15,11 @@ Hard rule: no secrets, tokens, API keys, refresh tokens, passwords, connection s
 - Local Job Desk: `http://localhost:4174`
 - Local `/api/public/runtime-config` checked clean with Firebase web config present after restarting the local server with Firebase-only env values loaded from the main repo `.env`.
 - This is local only, not staging-deployed.
+- Local verification note for Claude/Nova: avoid the Codex in-app browser for routine localhost verification on the current Windows ChatGPT/Codex build. It has shown unstable internal browser-session routing and can fail independently of the app under test. Prefer direct HTTP checks plus the user's normal external browser unless the prompt explicitly requires the in-app browser.
 
 ## Owner Decisions Captured Today
 
-- Branding family locked: NexOps business engine, NexShot field docs, NexPortal client hub, NexReach marketing, Nexi assistant, NexTeam company/platform.
+- Branding family locked: NexOps business engine, NexCam field docs, NexPortal client hub, NexReach marketing, Nexi assistant, NexTeam company/platform.
 - Handoff workflow: this file is the daily Claude/Nova upload file and should be updated after every meaningful pass, owner input, receipt, blocker, and decision. It must never contain secret values.
 - NexOps 3.2 display rule: no company means display `First Last`; company present means default display company; entry person can toggle display back to `First Last` while preserving company field.
 - NexOps 3.2 site label rule: `Site Name - Street Address` when a site name exists; street address only when no site name exists; site name can be added later.

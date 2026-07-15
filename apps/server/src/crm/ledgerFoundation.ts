@@ -378,8 +378,12 @@ export class LedgerService {
       || (card.last4 === deposit.cardLast4 && card.brand === deposit.cardBrand && card.cardholderName === deposit.cardholderName)
     );
     const timestamp = now();
-    const savedCard = existing ?? {
-      id: `saved_card_${quote.id}`,
+    const nextExternalIds = {
+      ...(existing?.externalIds ?? {}),
+      localReusableToken: existing?.externalIds?.localReusableToken ?? `local_card_${quote.id}`
+    };
+    const nextSavedCardBase = {
+      id: existing?.id ?? `saved_card_${quote.id}`,
       label: savedCardLabel(deposit.cardBrand, deposit.cardLast4),
       ...(deposit.cardholderName ? { cardholderName: deposit.cardholderName } : {}),
       ...(deposit.cardBrand ? { brand: deposit.cardBrand } : {}),
@@ -387,17 +391,30 @@ export class LedgerService {
       reusable: true,
       source: "quote_approval" as const,
       sourceQuoteId: quote.id,
-      externalIds: {
-        localReusableToken: `local_card_${quote.id}`
-      },
-      createdAt: deposit.capturedAt ?? timestamp,
-      updatedAt: timestamp
+      externalIds: nextExternalIds,
+      createdAt: existing?.createdAt ?? deposit.capturedAt ?? timestamp
+    };
+    const savedCardChanged = !existing
+      || existing.label !== nextSavedCardBase.label
+      || existing.cardholderName !== nextSavedCardBase.cardholderName
+      || existing.brand !== nextSavedCardBase.brand
+      || existing.last4 !== nextSavedCardBase.last4
+      || existing.source !== nextSavedCardBase.source
+      || existing.sourceQuoteId !== nextSavedCardBase.sourceQuoteId
+      || existing.externalIds?.stripePaymentMethodId !== nextSavedCardBase.externalIds?.stripePaymentMethodId
+      || existing.externalIds?.paypalVaultTokenId !== nextSavedCardBase.externalIds?.paypalVaultTokenId
+      || existing.externalIds?.localReusableToken !== nextSavedCardBase.externalIds?.localReusableToken;
+    const savedCard = {
+      ...nextSavedCardBase,
+      updatedAt: existing
+        ? (savedCardChanged ? timestamp : existing.updatedAt)
+        : (deposit.capturedAt ?? timestamp)
     };
     const nextProfile: ClientBillingProfile = {
       ...profile,
       savedCards: [
         ...profile.savedCards.filter((card) => card.id !== savedCard.id),
-        { ...savedCard, updatedAt: timestamp }
+        savedCard
       ],
       updatedAt: timestamp
     };
