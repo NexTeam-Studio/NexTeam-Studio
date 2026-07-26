@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-07-18T03:40:19.347Z",
+  "transcript": [
+    {
+      "prompt": "search photos for skimmer",
+      "answer": "I found 2 NexCam photo hits. First match: Before repair skimmer photo..",
+      "toolRuns": [
+        {
+          "name": "photoSearch"
+        }
+      ]
+    },
+    {
+      "prompt": "what was the pool total gallons last time at property_1",
+      "answer": "I found 1 completed checklist history entry. Latest saved value: 18500.",
+      "toolRuns": [
+        {
+          "name": "getPropertyHistory"
+        }
+      ]
+    },
+    {
+      "prompt": "generate a visit report for job_1 visit_1",
+      "answer": "I generated the NexCam visit report Visit report visit_1.\n/api/fielddocs/reports/report_118b106b-fe6b-495a-896b-114c44efde73/pdf?tenantId=aquatrace",
+      "toolRuns": [
+        {
+          "name": "generateVisitReport"
+        }
+      ]
+    }
+  ]
+}

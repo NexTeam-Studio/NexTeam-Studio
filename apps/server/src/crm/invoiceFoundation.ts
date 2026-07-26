@@ -225,6 +225,66 @@ export function buildInvoiceDraftFromQuote(input: {
   };
 }
 
+export function buildQuickPaymentRequestInvoice(input: {
+  tenantId: string;
+  clientId: string;
+  settings: CrmSettings;
+  number: string;
+  title: string;
+  amount: number;
+  memo?: string | undefined;
+  jobId?: string | undefined;
+  requestId?: string | undefined;
+}): Invoice {
+  const timestamp = now();
+  const lineItems: LineItem[] = [{
+    id: `line_${randomUUID()}`,
+    code: "quick-request",
+    name: input.title.trim(),
+    ...(input.memo?.trim() ? { description: input.memo.trim() } : {}),
+    quantity: 1,
+    unitPrice: roundMoney(input.amount),
+    total: roundMoney(input.amount)
+  }];
+  const totals = calculateInvoiceTotals(lineItems, undefined, 0);
+  return {
+    id: `invoice_${randomUUID()}`,
+    tenantId: input.tenantId,
+    number: input.number,
+    clientId: input.clientId,
+    ...(input.jobId ? {
+      jobId: input.jobId,
+      jobIds: [input.jobId],
+      jobReferences: [{ jobId: input.jobId, title: input.title.trim(), amount: totals.total }]
+    } : {}),
+    ...(input.requestId ? { requestId: input.requestId } : {}),
+    status: "draft",
+    title: input.title.trim(),
+    lineItems,
+    totals,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    dueAt: invoiceDueAt(input.settings, timestamp),
+    terms: input.settings.invoiceDefaults.terms,
+    deliveryDefaults: deliveryDefaultsForInvoice(input.settings),
+    portal: {},
+    delivery: [],
+    statusHistory: [{
+      status: "draft",
+      changedAt: timestamp,
+      note: "Quick payment request draft created."
+    }],
+    ledger: {
+      depositApplied: 0,
+      creditApplied: 0,
+      paymentApplied: 0,
+      refundedAmount: 0,
+      balanceDue: totals.total,
+      overdue: false
+    }
+  };
+}
+
 export function invoiceDeliveryMessage(input: {
   invoice: Invoice;
   mode: Extract<InvoiceDeliveryMode, "email" | "sms">;

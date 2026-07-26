@@ -16,7 +16,7 @@ Per the GC Hierarchy already established: **one code area owns one job. No lane 
 |---|---|---|
 | M2 CRM | client records, multi-site hierarchy, intake, products/services catalog, quotes, invoices, payments | â€” |
 | M3 Scheduling | calendar, visits, booking flow, confirmations/reminders | M2 clients/quotes |
-| M4 Field Docs | checklists, completion reports, PDFs, photos/media | M2 jobs, M3 visits |
+| M4 NexCam / NexDocs | checklists, completion reports, PDFs, photos/media, freeform client document library | M2 jobs, M3 visits |
 | M6 Comms | email/SMS rails, templates, sequences | M2 contacts, M4 reports |
 | M7 Reputation | review requests + follow-up sequences, GBP | M6 send rails, M4 closeouts |
 | M5 Content | articles, social drafts, content queue | M4 job data/photos |

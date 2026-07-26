@@ -17,10 +17,10 @@ const skimmerPhoto = mediaSchema.parse({
   tenantId: "aquatrace",
   jobId: "justice-2026-07-02",
   type: "photo",
-  storageRef: "companycam://recent-residential/deborah-justice/skimmer-dye.jpg",
+  storageRef: "legacy-import://recent-residential/deborah-justice/skimmer-dye.jpg",
   aiTags: ["skimmer", "dye test", "pool"],
   aiCaption: "Skimmer throat dye test shows water movement.",
-  externalIds: { companycam: "cc_justice_skimmer" }
+  externalIds: { legacyMedia: "cc_justice_skimmer" }
 });
 
 const unknownPhoto = mediaSchema.parse({
@@ -28,9 +28,9 @@ const unknownPhoto = mediaSchema.parse({
   tenantId: "aquatrace",
   jobId: "justice-2026-07-02",
   type: "photo",
-  storageRef: "companycam://recent-residential/deborah-justice/IMG_4892.jpg",
+  storageRef: "legacy-import://recent-residential/deborah-justice/IMG_4892.jpg",
   aiTags: [],
-  externalIds: { companycam: "cc_justice_unknown" }
+  externalIds: { legacyMedia: "cc_justice_unknown" }
 });
 
 const otherTenantPhoto = mediaSchema.parse({
@@ -38,7 +38,7 @@ const otherTenantPhoto = mediaSchema.parse({
   tenantId: "other-tenant",
   jobId: "justice-2026-07-02",
   type: "photo",
-  storageRef: "companycam://recent-residential/deborah-justice/leak.jpg",
+  storageRef: "legacy-import://recent-residential/deborah-justice/leak.jpg",
   aiTags: ["skimmer"],
   aiCaption: "Should never be visible to aquatrace."
 });

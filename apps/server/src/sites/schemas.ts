@@ -114,7 +114,8 @@ export const siteLeadSchema = z.object({
   message: z.string().min(1),
   consent: z.object({
     email: z.boolean(),
-    sms: z.boolean()
+    sms: z.boolean(),
+    marketing: z.boolean().default(false)
   }),
   source: z.literal("m8_site_form"),
   status: z.enum(["new", "reviewed"]),
@@ -187,8 +188,9 @@ export const leadSubmissionSchema = z.object({
   message: z.string().min(1),
   consent: z.object({
     email: z.boolean().default(true),
-    sms: z.boolean().default(false)
-  }).default({ email: true, sms: false })
+    sms: z.boolean().default(false),
+    marketing: z.boolean().default(false)
+  }).default({ email: true, sms: false, marketing: false })
 }).refine((input) => input.email || input.phone, {
   message: "Lead must include an email or phone number."
 });

@@ -43,11 +43,13 @@ function normalizeLeadBody(body: unknown): unknown {
   const record = body as Record<string, unknown>;
   const consentEmail = record["consent.email"];
   const consentSms = record["consent.sms"];
+  const consentMarketing = record["consent.marketing"];
   return {
     ...record,
     consent: {
       email: consentEmail === undefined ? true : String(consentEmail) === "true",
-      sms: consentSms === undefined ? false : String(consentSms) === "true"
+      sms: consentSms === undefined ? false : String(consentSms) === "true",
+      marketing: consentMarketing === undefined ? false : String(consentMarketing) === "true"
     }
   };
 }

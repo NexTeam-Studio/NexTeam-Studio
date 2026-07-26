@@ -14,6 +14,24 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) {
+              return undefined;
+            }
+            if (id.includes("/@firebase/") || id.includes("/firebase/")) {
+              return "vendor-firebase";
+            }
+            if (id.includes("/react/") || id.includes("/react-dom/") || id.includes("/scheduler/")) {
+              return "vendor-react";
+            }
+            return undefined;
+          }
+        }
+      }
+    },
     server: {
       port: process.env.PORT || 5173,
       host: "0.0.0.0",

@@ -12,9 +12,6 @@ function galleryImageSrc(item: Extract<SiteBlock, { type: "gallery" }>["items"][
   if (item.thumbRef.startsWith("/api/media/")) {
     return item.thumbRef;
   }
-  if (item.thumbRef.startsWith("companycam:")) {
-    return `/api/media/${encodeURIComponent(item.thumbRef.replace(/^companycam:/, ""))}`;
-  }
   if (/^\d{6,}$/.test(item.mediaId)) {
     return `/api/media/${encodeURIComponent(item.mediaId)}`;
   }

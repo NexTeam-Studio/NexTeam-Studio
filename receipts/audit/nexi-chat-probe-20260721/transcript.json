@@ -1,0 +1,22 @@
+[
+  {
+    "prompt": "List the CRM clients in Aquatrace right now.",
+    "answer": "Nexi Job Desk is ready. Ask about schedule, job details, photos, or the Camp Mikell SiteJobBlueprint."
+  },
+  {
+    "prompt": "What jobs are on the Aquatrace Today rail right now?",
+    "answer": "tools: Tool names must be unique."
+  },
+  {
+    "prompt": "What is scheduled today in Aquatrace?",
+    "answer": "One job on today's rail: - **Swimming Pool Leak Detection Service** – 102 Kate Lane, arrival window 9:00 AM–11:23 PM, unassigned (no tech or team on it yet).\n\nNative schedule workspace\nScheduled visit Swimming Pool Leak Detection Service"
+  },
+  {
+    "prompt": "What is the main email on the Aquatrace Swimming Pool Leak Detection client record?",
+    "answer": "tools: Tool names must be unique."
+  },
+  {
+    "prompt": "What payment schedule is on job JOB-0001?",
+    "answer": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.\n\nNative schedule workspace\nScheduled visit Swimming Pool Leak Detection Service\nNative job Swimming Pool Leak Detection Service\nNative CRM invoices"
+  }
+]

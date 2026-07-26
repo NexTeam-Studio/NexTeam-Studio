@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-07-18T03:39:54.092Z",
+  "tenantId": "aquatrace",
+  "firstChecklistId": "checklist_66144f32-455e-48a5-9a26-2a4ac36b394c",
+  "completedChecklistId": "checklist_66144f32-455e-48a5-9a26-2a4ac36b394c",
+  "secondChecklistId": "checklist_bf414514-6d05-4d32-a075-1b00c8b023d8",
+  "otherPropertyChecklistId": "checklist_9abda65e-6625-417c-b48e-913bc8135c77",
+  "propertyFieldEvidence": {
+    "firstVisit": {
+      "gateCodeNote": "Gate code 1542 and keypad by the pump room.",
+      "siteType": [
+        "Residential",
+        "Inground"
+      ],
+      "poolGallons": 18500
+    },
+    "secondVisitPrefillSameProperty": {
+      "gateCodeNote": "Gate code 1542 and keypad by the pump room.",
+      "siteType": [
+        "Residential",
+        "Inground"
+      ],
+      "poolGallons": 18500
+    },
+    "thirdVisitOtherPropertyStaysBlank": {
+      "gateCodeNote": null,
+      "siteType": [],
+      "poolGallons": null
+    }
+  },
+  "visitFieldEvidence": {
+    "secondVisitSameProperty": {
+      "summaryNote": null,
+      "resultStatus": "pending",
+      "resultNote": null
+    }
+  },
+  "historyIds": [
+    "checklist_66144f32-455e-48a5-9a26-2a4ac36b394c"
+  ]
+}

@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import type { Request } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { RailError } from "@nexteam/core";
@@ -22,6 +23,94 @@ export interface AccessContextOptions {
   requestedTenantId?: string | undefined;
   op?: string | undefined;
 }
+
+export interface LocalDevAccessProfile {
+  tenantUserId: string;
+  role: TenantRole;
+  email: string;
+  displayName: string;
+}
+
+export interface LocalDevWebProfileSummary {
+  id: string;
+  tenantId: string;
+  tenantUserId: string;
+  role: TenantRole;
+  email: string;
+  displayName: string;
+  label: string;
+}
+
+interface LocalDevWebCredentialProfile {
+  id: keyof typeof LOCAL_DEV_ACCESS_PROFILES;
+  label: string;
+  passwordEnv: string;
+  defaultPassword: string;
+}
+
+interface LocalDevSessionPayload {
+  kind: "local-dev-session";
+  tenantId: string;
+  profileId: keyof typeof LOCAL_DEV_ACCESS_PROFILES;
+  tenantUserId: string;
+  role: TenantRole;
+  email: string;
+  issuedAt: number;
+  expiresAt: number;
+}
+
+export const LOCAL_DEV_PROFILE_HEADER = "x-nexteam-local-profile";
+
+export const LOCAL_DEV_ACCESS_PROFILES = {
+  "local-owner": {
+    tenantUserId: "tenant_user_chris",
+    role: "OWNER" as const,
+    email: "chris@aquatraceleak.com",
+    displayName: "Chris"
+  },
+  "office_catherine": {
+    tenantUserId: "office_catherine",
+    role: "OFFICE_ADMIN" as const,
+    email: "catherine@local.dev",
+    displayName: "Catherine"
+  },
+  "tech_chris": {
+    tenantUserId: "tech_chris",
+    role: "TECHNICIAN" as const,
+    email: "chris-tech@local.dev",
+    displayName: "Chris"
+  },
+  "tech_logan": {
+    tenantUserId: "tech_logan",
+    role: "TECHNICIAN" as const,
+    email: "logan@aquatraceleak.com",
+    displayName: "Logan"
+  }
+} satisfies Record<string, LocalDevAccessProfile>;
+
+const LOCAL_DEV_WEB_CREDENTIAL_PROFILES = [
+  {
+    id: "local-owner",
+    label: "Chris - Owner",
+    passwordEnv: "LOCAL_DEV_OWNER_PASSWORD",
+    defaultPassword: "ChrisOwner!2026"
+  },
+  {
+    id: "office_catherine",
+    label: "Catherine - Office Admin",
+    passwordEnv: "LOCAL_DEV_OFFICE_PASSWORD",
+    defaultPassword: "CatherineOffice!2026"
+  },
+  {
+    id: "tech_logan",
+    label: "Logan - Technician",
+    passwordEnv: "LOCAL_DEV_TECH_PASSWORD",
+    defaultPassword: "LoganTech!2026"
+  }
+] satisfies readonly LocalDevWebCredentialProfile[];
+
+const LOCAL_DEV_SESSION_PREFIX = "localdev";
+const LOCAL_DEV_SESSION_LIFETIME_SECONDS = 60 * 60 * 12;
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {
   return env.TENANT_ID || "aquatrace";
@@ -84,6 +173,211 @@ function bearerToken(req: Request): string | null {
   return match?.[1] ?? null;
 }
 
+function localDevAccessContext(req: Request, tenantId: string, op = "accessContext"): AccessContext | null {
+  const profileId = req.header(LOCAL_DEV_PROFILE_HEADER)?.trim() ?? "";
+  if (!profileId) {
+    return null;
+  }
+  const profile = LOCAL_DEV_ACCESS_PROFILES[profileId as keyof typeof LOCAL_DEV_ACCESS_PROFILES];
+  if (!profile) {
+    throw new RailError("That local mobile profile is not recognized.", {
+      provider: "firebase",
+      op,
+      status: 400
+    });
+  }
+  return {
+    tenantId,
+    tenantUserId: profile.tenantUserId,
+    role: profile.role,
+    accessKind: "internal",
+    email: profile.email
+  };
+}
+
+function localDevAuthSecret(env: NodeJS.ProcessEnv): string {
+  return env.NEXI_LOCAL_AUTH_SECRET?.trim() || "nexteam-local-auth-dev-secret";
+}
+
+function base64urlJson(value: unknown): string {
+  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
+}
+
+function parseBase64urlJson<T>(value: string): T | null {
+  try {
+    return JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as T;
+  } catch {
+    return null;
+  }
+}
+
+function signLocalDevPayload(payloadPart: string, env: NodeJS.ProcessEnv): string {
+  return crypto
+    .createHmac("sha256", localDevAuthSecret(env))
+    .update(payloadPart)
+    .digest("base64url");
+}
+
+function constantTimeEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left, "utf8");
+  const rightBuffer = Buffer.from(right, "utf8");
+  return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function localDevProfileSummary(
+  profile: LocalDevWebCredentialProfile,
+  tenantId: string
+): LocalDevWebProfileSummary {
+  const accessProfile = LOCAL_DEV_ACCESS_PROFILES[profile.id];
+  return {
+    id: profile.id,
+    tenantId,
+    tenantUserId: accessProfile.tenantUserId,
+    role: accessProfile.role,
+    email: accessProfile.email,
+    displayName: accessProfile.displayName,
+    label: profile.label
+  };
+}
+
+function encodeLocalDevSession(
+  payload: LocalDevSessionPayload,
+  env: NodeJS.ProcessEnv
+): string {
+  const payloadPart = base64urlJson(payload);
+  const signature = signLocalDevPayload(payloadPart, env);
+  return `${LOCAL_DEV_SESSION_PREFIX}.${payloadPart}.${signature}`;
+}
+
+export function listLocalDevWebProfiles(
+  tenantId = defaultTenantId(process.env)
+): LocalDevWebProfileSummary[] {
+  return LOCAL_DEV_WEB_CREDENTIAL_PROFILES.map((profile) => localDevProfileSummary(profile, tenantId));
+}
+
+export function createLocalDevSession(
+  email: string,
+  password: string | undefined,
+  tenantId: string,
+  env: NodeJS.ProcessEnv
+): { token: string; profile: LocalDevWebProfileSummary } {
+  const normalizedEmail = email.trim().toLowerCase();
+  const matchedProfile = LOCAL_DEV_WEB_CREDENTIAL_PROFILES.find((profile) => {
+    const accessProfile = LOCAL_DEV_ACCESS_PROFILES[profile.id];
+    return accessProfile.email.toLowerCase() === normalizedEmail;
+  });
+  void password;
+  void env;
+  if (!matchedProfile) {
+    throw new RailError("That email is not allowed for local sign-in.", {
+      provider: "native",
+      op: "localAuthSignIn",
+      status: 401
+    });
+  }
+  const summary = localDevProfileSummary(matchedProfile, tenantId);
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const payload: LocalDevSessionPayload = {
+    kind: "local-dev-session",
+    tenantId,
+    profileId: matchedProfile.id,
+    tenantUserId: summary.tenantUserId,
+    role: summary.role,
+    email: summary.email,
+    issuedAt,
+    expiresAt: issuedAt + LOCAL_DEV_SESSION_LIFETIME_SECONDS
+  };
+  return {
+    token: encodeLocalDevSession(payload, env),
+    profile: summary
+  };
+}
+
+export function readLocalDevSession(
+  token: string,
+  tenantId: string,
+  env: NodeJS.ProcessEnv,
+  op = "accessContext"
+): { access: AccessContext; profile: LocalDevWebProfileSummary } | null {
+  if (!token.startsWith(`${LOCAL_DEV_SESSION_PREFIX}.`)) {
+    return null;
+  }
+  const parts = token.split(".");
+  if (parts.length !== 3) {
+    throw new RailError("That local session is malformed. Sign in again.", {
+      provider: "native",
+      op,
+      status: 401
+    });
+  }
+  const payloadPart = parts[1];
+  const signature = parts[2];
+  if (!payloadPart || !signature) {
+    throw new RailError("That local session is malformed. Sign in again.", {
+      provider: "native",
+      op,
+      status: 401
+    });
+  }
+  const expectedSignature = signLocalDevPayload(payloadPart, env);
+  if (!constantTimeEqual(signature, expectedSignature)) {
+    throw new RailError("That local session is no longer valid. Sign in again.", {
+      provider: "native",
+      op,
+      status: 401
+    });
+  }
+  const payload = parseBase64urlJson<LocalDevSessionPayload>(payloadPart);
+  if (!payload || payload.kind !== "local-dev-session") {
+    throw new RailError("That local session is malformed. Sign in again.", {
+      provider: "native",
+      op,
+      status: 401
+    });
+  }
+  if (payload.expiresAt <= Math.floor(Date.now() / 1000)) {
+    throw new RailError("Your local sign-in expired. Sign in again.", {
+      provider: "native",
+      op,
+      status: 401
+    });
+  }
+  if (payload.tenantId !== tenantId) {
+    throw new RailError("Your sign-in is not allowed for this tenant.", {
+      provider: "native",
+      op,
+      status: 403
+    });
+  }
+  const accessProfile = LOCAL_DEV_ACCESS_PROFILES[payload.profileId];
+  if (!accessProfile) {
+    throw new RailError("That local session profile is no longer available.", {
+      provider: "native",
+      op,
+      status: 401
+    });
+  }
+  return {
+    access: {
+      tenantId,
+      tenantUserId: accessProfile.tenantUserId,
+      role: accessProfile.role,
+      accessKind: "internal",
+      email: accessProfile.email
+    },
+    profile: localDevProfileSummary(
+      LOCAL_DEV_WEB_CREDENTIAL_PROFILES.find((profile) => profile.id === payload.profileId)
+        ?? {
+          id: payload.profileId,
+          label: accessProfile.displayName,
+          passwordEnv: "LOCAL_DEV_UNUSED_PASSWORD",
+          defaultPassword: ""
+        },
+      tenantId
+    )
+  };
+}
+
 export function actorIdForAccess(access: AccessContext): string {
   return `${access.accessKind}:${access.tenantUserId}`;
 }
@@ -94,16 +388,25 @@ export async function requireAccessContext(
   options: AccessContextOptions = {}
 ): Promise<AccessContext> {
   const tenantId = requestedTenant(options, env);
+  const token = bearerToken(req);
+  if (token) {
+    const localSession = readLocalDevSession(token, tenantId, env, options.op ?? "accessContext");
+    if (localSession) {
+      return localSession.access;
+    }
+  }
+
   if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") {
-    return { tenantId, tenantUserId: "local-owner", role: "OWNER", accessKind: "internal" };
+    return localDevAccessContext(req, tenantId, options.op ?? "accessContext")
+      ?? { tenantId, tenantUserId: "tenant_user_chris", role: "OWNER", accessKind: "internal" };
   }
 
   const auth = getAdminAuth(env);
   if (!auth) {
-    return { tenantId, tenantUserId: "local-owner", role: "OWNER", accessKind: "internal" };
+    return localDevAccessContext(req, tenantId, options.op ?? "accessContext")
+      ?? { tenantId, tenantUserId: "tenant_user_chris", role: "OWNER", accessKind: "internal" };
   }
 
-  const token = bearerToken(req);
   if (!token) {
     throw new RailError("Sign in is required.", { provider: "firebase", op: options.op ?? "accessContext", status: 401 });
   }
@@ -147,3 +450,4 @@ export function assertAccessRole(access: AccessContext, allowedRoles: TenantRole
   }
   return access;
 }
+

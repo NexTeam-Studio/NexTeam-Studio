@@ -1,0 +1,57 @@
+[
+  {
+    "role": "user",
+    "content": "find the pool permit for Deborah Justice"
+  },
+  {
+    "role": "assistant",
+    "content": "I found 2 document hits. First match: Existing permit on Client.",
+    "tools": [
+      "searchDocuments"
+    ]
+  },
+  {
+    "role": "user",
+    "content": "create a folder called Permit packet for Deborah Justice"
+  },
+  {
+    "role": "assistant",
+    "content": "Folder draft ready. I read the NexDocs folder plan back below before I create it.\n\nCreate folder: Permit packet\nClient: Deborah Justice\nFolder: Permit packet\nStructure: Flat per-client folder\nPortal impact: No change until files are added\n\nApprove this? yes / no.\nApproval id: appr_47abdc8f-b57e-423b-9086-34cb3e39e442",
+    "tools": [
+      "createFolder"
+    ]
+  },
+  {
+    "role": "user",
+    "content": "yes"
+  },
+  {
+    "role": "assistant",
+    "content": "Approved and created the Permit packet folder.",
+    "tools": [
+      "approvePendingApproval"
+    ]
+  },
+  {
+    "role": "user",
+    "content": "upload permit.pdf into Permit packet folder for Deborah Justice label permit packet text Pool permit for Deborah Justice with service address"
+  },
+  {
+    "role": "assistant",
+    "content": "Document upload draft ready. I read the file, folder, and portal visibility back below before I upload it.\n\nUpload document: permit packet\nClient: Deborah Justice\nLabel: permit packet\nFile: permit.pdf\nType: application/pdf\nFolder: Permit packet\nPortal visibility: Visible by default\nSource: Staff upload via Nexi\n\nApprove this? yes / no.\nApproval id: appr_1cc1b4e7-c0c8-4b42-9deb-30d622730833",
+    "tools": [
+      "uploadDocumentToFolder"
+    ]
+  },
+  {
+    "role": "user",
+    "content": "yes"
+  },
+  {
+    "role": "assistant",
+    "content": "Approved and uploaded permit packet into NexDocs.",
+    "tools": [
+      "approvePendingApproval"
+    ]
+  }
+]

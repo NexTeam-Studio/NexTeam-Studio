@@ -1,12 +1,27 @@
 import type { ID } from "@nexteam/core";
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
-import type { ContentCalendarItem, ContentDraft, ContentPerformanceSnapshot } from "./contentEngine.js";
+import type {
+  ContentCalendarItem,
+  ContentDraft,
+  ContentEligibilityRecord,
+  ContentPerformanceSnapshot,
+  ContentSettings,
+  ContentShowcase
+} from "./contentEngine.js";
 
 export interface ContentRepository {
   saveDraft(draft: ContentDraft): Promise<ContentDraft>;
   updateDraft(tenantId: ID, draftId: ID, patch: Partial<ContentDraft>): Promise<ContentDraft | null>;
   getDraft(tenantId: ID, draftId: ID): Promise<ContentDraft | null>;
   listDrafts(tenantId: ID): Promise<ContentDraft[]>;
+  saveEligibility(record: ContentEligibilityRecord): Promise<ContentEligibilityRecord>;
+  getEligibilityByJob(tenantId: ID, jobId: ID): Promise<ContentEligibilityRecord | null>;
+  listEligibility(tenantId: ID): Promise<ContentEligibilityRecord[]>;
+  saveSettings(settings: ContentSettings): Promise<ContentSettings>;
+  getSettings(tenantId: ID): Promise<ContentSettings | null>;
+  saveShowcase(showcase: ContentShowcase): Promise<ContentShowcase>;
+  getShowcase(tenantId: ID, showcaseId: ID): Promise<ContentShowcase | null>;
+  listShowcases(tenantId: ID): Promise<ContentShowcase[]>;
   saveCalendarItems(items: ContentCalendarItem[]): Promise<ContentCalendarItem[]>;
   listCalendar(tenantId: ID): Promise<ContentCalendarItem[]>;
   savePerformance(snapshot: ContentPerformanceSnapshot): Promise<ContentPerformanceSnapshot>;
@@ -15,6 +30,9 @@ export interface ContentRepository {
 
 export class InMemoryContentRepository implements ContentRepository {
   private readonly drafts = new Map<ID, ContentDraft>();
+  private readonly eligibility = new Map<ID, ContentEligibilityRecord>();
+  private readonly settings = new Map<ID, ContentSettings>();
+  private readonly showcases = new Map<ID, ContentShowcase>();
   private readonly calendar = new Map<ID, ContentCalendarItem>();
   private readonly performance = new Map<ID, ContentPerformanceSnapshot>();
 
@@ -42,6 +60,46 @@ export class InMemoryContentRepository implements ContentRepository {
     return [...this.drafts.values()]
       .filter((draft) => draft.tenantId === tenantId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async saveEligibility(record: ContentEligibilityRecord): Promise<ContentEligibilityRecord> {
+    this.eligibility.set(record.id, record);
+    return record;
+  }
+
+  async getEligibilityByJob(tenantId: ID, jobId: ID): Promise<ContentEligibilityRecord | null> {
+    return [...this.eligibility.values()].find((record) => record.tenantId === tenantId && record.jobId === jobId) ?? null;
+  }
+
+  async listEligibility(tenantId: ID): Promise<ContentEligibilityRecord[]> {
+    return [...this.eligibility.values()]
+      .filter((record) => record.tenantId === tenantId)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  }
+
+  async saveSettings(settings: ContentSettings): Promise<ContentSettings> {
+    this.settings.set(settings.tenantId, settings);
+    return settings;
+  }
+
+  async getSettings(tenantId: ID): Promise<ContentSettings | null> {
+    return this.settings.get(tenantId) ?? null;
+  }
+
+  async saveShowcase(showcase: ContentShowcase): Promise<ContentShowcase> {
+    this.showcases.set(showcase.id, showcase);
+    return showcase;
+  }
+
+  async getShowcase(tenantId: ID, showcaseId: ID): Promise<ContentShowcase | null> {
+    const showcase = this.showcases.get(showcaseId);
+    return showcase?.tenantId === tenantId ? showcase : null;
+  }
+
+  async listShowcases(tenantId: ID): Promise<ContentShowcase[]> {
+    return [...this.showcases.values()]
+      .filter((showcase) => showcase.tenantId === tenantId)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
   }
 
   async saveCalendarItems(items: ContentCalendarItem[]): Promise<ContentCalendarItem[]> {
@@ -91,6 +149,18 @@ function asContentDraft(value: DocumentData): ContentDraft {
   return value as ContentDraft;
 }
 
+function asContentEligibilityRecord(value: DocumentData): ContentEligibilityRecord {
+  return value as ContentEligibilityRecord;
+}
+
+function asContentSettings(value: DocumentData): ContentSettings {
+  return value as ContentSettings;
+}
+
+function asContentShowcase(value: DocumentData): ContentShowcase {
+  return value as ContentShowcase;
+}
+
 function asContentCalendarItem(value: DocumentData): ContentCalendarItem {
   return value as ContentCalendarItem;
 }
@@ -131,6 +201,59 @@ export class FirestoreContentRepository implements ContentRepository {
     return snapshot.docs
       .map((doc) => asContentDraft(doc.data()))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async saveEligibility(record: ContentEligibilityRecord): Promise<ContentEligibilityRecord> {
+    await this.db.collection("contentEligibility").doc(record.id).set(asDocumentData(record));
+    return record;
+  }
+
+  async getEligibilityByJob(tenantId: ID, jobId: ID): Promise<ContentEligibilityRecord | null> {
+    const snapshot = await this.db.collection("contentEligibility")
+      .where("tenantId", "==", tenantId)
+      .where("jobId", "==", jobId)
+      .limit(1)
+      .get();
+    const doc = snapshot.docs[0];
+    return doc ? asContentEligibilityRecord(doc.data()) : null;
+  }
+
+  async listEligibility(tenantId: ID): Promise<ContentEligibilityRecord[]> {
+    const snapshot = await this.db.collection("contentEligibility").where("tenantId", "==", tenantId).get();
+    return snapshot.docs
+      .map((doc) => asContentEligibilityRecord(doc.data()))
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  }
+
+  async saveSettings(settings: ContentSettings): Promise<ContentSettings> {
+    await this.db.collection("contentSettings").doc(settings.tenantId).set(asDocumentData(settings));
+    return settings;
+  }
+
+  async getSettings(tenantId: ID): Promise<ContentSettings | null> {
+    const snapshot = await this.db.collection("contentSettings").doc(String(tenantId)).get();
+    return snapshot.exists ? asContentSettings(snapshot.data() ?? {}) : null;
+  }
+
+  async saveShowcase(showcase: ContentShowcase): Promise<ContentShowcase> {
+    await this.db.collection("contentShowcases").doc(showcase.id).set(asDocumentData(showcase));
+    return showcase;
+  }
+
+  async getShowcase(tenantId: ID, showcaseId: ID): Promise<ContentShowcase | null> {
+    const snapshot = await this.db.collection("contentShowcases").doc(showcaseId).get();
+    if (!snapshot.exists) {
+      return null;
+    }
+    const showcase = asContentShowcase(snapshot.data() ?? {});
+    return showcase.tenantId === tenantId ? showcase : null;
+  }
+
+  async listShowcases(tenantId: ID): Promise<ContentShowcase[]> {
+    const snapshot = await this.db.collection("contentShowcases").where("tenantId", "==", tenantId).get();
+    return snapshot.docs
+      .map((doc) => asContentShowcase(doc.data()))
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
   }
 
   async saveCalendarItems(items: ContentCalendarItem[]): Promise<ContentCalendarItem[]> {

@@ -33,6 +33,7 @@ function defaultApproval(): Tenant["approval"] {
     email: { autoApprove: false, cleanStreak: 0 },
     sms: { autoApprove: false, cleanStreak: 0 },
     payment: { autoApprove: false, cleanStreak: 0 },
+    document: { autoApprove: false, cleanStreak: 0 },
     gbp_post: { autoApprove: false, cleanStreak: 0 },
     social_post: { autoApprove: false, cleanStreak: 0 },
     article: { autoApprove: false, cleanStreak: 0 },
@@ -51,7 +52,7 @@ export function defaultTenant(tenantId = DEFAULT_TENANT_ID, plan: TenantPlan = "
     name: tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : tenantId,
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
-    adapters: { crm: "native", media: "companycam", email: "gmail_relay" },
+    adapters: { crm: "native", media: "native", email: "gmail_relay" },
     approval: defaultApproval(),
     timezone: "America/New_York",
     plan
@@ -150,6 +151,14 @@ export function defaultTenantUsers(tenantId = DEFAULT_TENANT_ID): TenantUser[] {
       id: "tenant_user_chris",
       tenantId,
       email: "chris@aquatraceleak.com",
+      phones: ["8648737082"],
+      address: {
+        street1: "102 Kate Lane",
+        city: "Fair Play",
+        province: "SC",
+        postalCode: "29643",
+        country: "US"
+      },
       displayName: "Chris",
       role: "OWNER",
       active: true,
@@ -157,10 +166,19 @@ export function defaultTenantUsers(tenantId = DEFAULT_TENANT_ID): TenantUser[] {
       updatedAt: createdAt
     },
     {
-      id: "tech_catherine",
+      id: "office_catherine",
       tenantId,
+      email: "catherine@local.dev",
+      phones: ["8646171838"],
+      address: {
+        street1: "102 Kate Lane",
+        city: "Fair Play",
+        province: "SC",
+        postalCode: "29643",
+        country: "US"
+      },
       displayName: "Catherine",
-      role: "TECHNICIAN",
+      role: "OFFICE_ADMIN",
       active: true,
       createdAt,
       updatedAt: createdAt
@@ -168,6 +186,15 @@ export function defaultTenantUsers(tenantId = DEFAULT_TENANT_ID): TenantUser[] {
     {
       id: "tech_logan",
       tenantId,
+      email: "logan@aquatraceleak.com",
+      phones: ["8645581725"],
+      address: {
+        street1: "6020 Frest Dr",
+        city: "Seneca",
+        province: "SC",
+        postalCode: "29672",
+        country: "US"
+      },
       displayName: "Logan",
       role: "TECHNICIAN",
       active: true,

@@ -1,7 +1,5 @@
-import type { DocRef, Job, Media, NexiTool, ProjectRef, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
+import type { NexiTool, SiteJobBlueprint, Source, Tenant } from "@nexteam/core";
 import { z } from "zod";
-import { CompanyCamAdapter, JobberAdapter } from "@nexteam/providers";
-import { readCompanyCamReports, siteJobBlueprintFromCompanyCamReport } from "./reportDocuments.js";
 
 export interface ToolRunResult {
   result: unknown;
@@ -12,29 +10,6 @@ export interface SiteJobBlueprintReader {
   loadSiteJobBlueprints(tenantId: string, limit: number): Promise<SiteJobBlueprint[]>;
 }
 
-export interface NativeMediaReader {
-  listMedia(tenantId: string): Promise<Media[]>;
-}
-
-export const getScheduleInputSchema = z.object({
-  from: z.string(),
-  to: z.string()
-});
-
-export const getJobDetailInputSchema = z.object({
-  id: z.string().optional(),
-  nameQuery: z.string().optional()
-});
-
-export const getPhotosInputSchema = z.object({
-  projectQuery: z.string()
-});
-
-export const getDocumentsInputSchema = z.object({
-  projectQuery: z.string(),
-  question: z.string().optional()
-});
-
 export const lookupSiteJobBlueprintFieldInputSchema = z.object({
   field: z.string(),
   fields: z.record(z.union([z.string(), z.number()])).optional(),
@@ -42,50 +17,6 @@ export const lookupSiteJobBlueprintFieldInputSchema = z.object({
   jobId: z.string().optional(),
   sourceRef: z.string().optional()
 });
-
-const getScheduleJsonSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    from: { type: "string", description: "Inclusive ISO timestamp for the schedule window start." },
-    to: { type: "string", description: "Exclusive ISO timestamp for the schedule window end." }
-  },
-  required: ["from", "to"]
-};
-
-const getJobDetailJsonSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    id: { type: "string", description: "Exact Jobber job id when known." },
-    nameQuery: { type: "string", description: "Customer, project, or job name to search for." }
-  }
-};
-
-const getPhotosJsonSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    projectQuery: { type: "string", description: "CompanyCam project or customer name to search for, for example Deborah Justice." }
-  },
-  required: ["projectQuery"]
-};
-
-const getDocumentsJsonSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    projectQuery: {
-      type: "string",
-      description: "CompanyCam project or customer name to search for, for example Deborah Justice."
-    },
-    question: {
-      type: "string",
-      description: "Original user question so the report reader can prioritize findings, gallons, or checklist documents."
-    }
-  },
-  required: ["projectQuery"]
-};
 
 const lookupSiteJobBlueprintFieldJsonSchema = {
   type: "object",
@@ -114,81 +45,6 @@ function source(rail: Source["rail"], ref: string, label: string): Source {
   return { rail, ref, label };
 }
 
-function companyCamPhotoSources(media: Media[]): Source[] {
-  return media
-    .slice(0, 3)
-    .map((item) => source("companycam", item.externalIds?.companycam ?? item.id, `CompanyCam photo ${item.id}`));
-}
-
-function nativeMediaSources(media: Media[]): Source[] {
-  return media
-    .slice(0, 6)
-    .map((item) => source("native", item.id, `Native ${item.type} upload ${item.id}`));
-}
-
-function companyCamDocumentSources(documents: DocRef[]): Source[] {
-  return documents
-    .slice(0, 3)
-    .map((item) => source("companycam", item.externalIds?.companycam ?? item.id, `CompanyCam document ${item.label}`));
-}
-
-function safeTimeZone(timeZone: string): string {
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone }).format(new Date());
-    return timeZone;
-  } catch {
-    return "America/New_York";
-  }
-}
-
-function localDateTimeParts(iso: string | undefined, timeZone: string): { date: string; time: string } | null {
-  const parsed = Date.parse(iso ?? "");
-  if (!Number.isFinite(parsed)) {
-    return null;
-  }
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: safeTimeZone(timeZone),
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  }).formatToParts(new Date(parsed));
-  const readPart = (type: Intl.DateTimeFormatPartTypes): string => parts.find((part) => part.type === type)?.value ?? "";
-  const year = readPart("year");
-  const month = readPart("month");
-  const day = readPart("day");
-  const hour = readPart("hour");
-  const minute = readPart("minute");
-  const dayPeriod = readPart("dayPeriod").toUpperCase();
-  if (!year || !month || !day || !hour || !minute || !dayPeriod) {
-    return null;
-  }
-  return { date: `${year}-${month}-${day}`, time: `${hour}:${minute} ${dayPeriod}` };
-}
-
-function localSchedule(job: Job, timeZone: string): { date: string; localSummary: string; allDay: boolean } | undefined {
-  const start = localDateTimeParts(job.startAt, timeZone);
-  if (!start) {
-    return undefined;
-  }
-  const end = localDateTimeParts(job.endAt, timeZone);
-  const allDay = start.time === "12:00 AM" && end?.date === start.date && end.time.startsWith("11:59");
-  return {
-    date: start.date,
-    localSummary: allDay ? `${start.date} all day` : `${start.date} ${start.time}${end ? `-${end.time}` : ""}`,
-    allDay
-  };
-}
-
-function withLocalSchedule(jobs: Job[], timeZone: string): Array<Job & { schedule?: { date: string; localSummary: string; allDay: boolean } }> {
-  return jobs.map((job) => {
-    const schedule = localSchedule(job, timeZone);
-    return schedule ? { ...job, schedule } : job;
-  });
-}
-
 function normalizedSearchText(value: unknown): string {
   return String(value ?? "")
     .toLowerCase()
@@ -199,36 +55,6 @@ function normalizedSearchText(value: unknown): string {
 function includesAllSearchTokens(haystack: string, needle: string): boolean {
   const tokens = normalizedSearchText(needle).split(/\s+/).filter((token) => token.length > 1);
   return tokens.length > 0 && tokens.every((token) => haystack.includes(token));
-}
-
-function nativeMediaSearchText(media: Media): string {
-  return normalizedSearchText([
-    media.id,
-    media.jobId,
-    media.propertyId,
-    media.storageRef,
-    media.thumbRef,
-    media.aiCaption,
-    media.capturedBy,
-    media.externalIds?.companycam,
-    ...media.aiTags
-  ].join(" "));
-}
-
-function looksLikeRecentUploadQuery(query: string): boolean {
-  return /\b(?:just|last|recent|uploaded|upload|attached|this|that)\b/i.test(query);
-}
-
-function matchingNativeMedia(media: Media[], query: string, types: Array<Media["type"]>): Media[] {
-  const normalizedQuery = normalizedSearchText(query);
-  return media
-    .filter((item) => types.includes(item.type))
-    .filter((item) => {
-      const haystack = nativeMediaSearchText(item);
-      return includesAllSearchTokens(haystack, normalizedQuery)
-        || (looksLikeRecentUploadQuery(query) && haystack.includes("job desk upload"));
-    })
-    .slice(0, 10);
 }
 
 function blueprintMatchesRequest(
@@ -313,155 +139,14 @@ function firstMatchingSiteJobBlueprint(
   return null;
 }
 
-export function createNexiJobDeskTools(
-  env: NodeJS.ProcessEnv = process.env,
-  siteJobBlueprintReader?: SiteJobBlueprintReader,
-  nativeMediaReader?: NativeMediaReader
-): NexiTool[] {
+export function createNexiLookupTools(siteJobBlueprintReader?: SiteJobBlueprintReader): NexiTool[] {
   return [
-    {
-      name: "getSchedule",
-      description: "Read Jobber schedule items for a date range.",
-      inputSchema: getScheduleInputSchema,
-      inputJsonSchema: getScheduleJsonSchema,
-      handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
-        const input = getScheduleInputSchema.parse(args);
-        const jobs = await JobberAdapter.fromEnv(env, tenant.id).getJobs({ from: input.from, to: input.to });
-        return {
-          result: { window: { from: input.from, to: input.to, timezone: tenant.timezone }, jobs: withLocalSchedule(jobs, tenant.timezone) },
-          sources: [source("jobber", "jobs", "Jobber jobs GraphQL read")]
-        };
-      }
-    },
-    {
-      name: "getJobDetail",
-      description: "Read a Jobber job detail by id or fuzzy name query.",
-      inputSchema: getJobDetailInputSchema,
-      inputJsonSchema: getJobDetailJsonSchema,
-      handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
-        const input = getJobDetailInputSchema.parse(args);
-        const ref: { id?: string; nameQuery?: string } = {};
-        if (input.id) {
-          ref.id = input.id;
-        }
-        if (input.nameQuery) {
-          ref.nameQuery = input.nameQuery;
-        }
-        const job = await JobberAdapter.fromEnv(env, tenant.id).getJobDetail(ref);
-        return {
-          result: { job },
-          sources: [source("jobber", job.externalIds?.jobber ?? job.id, `Jobber job ${job.title}`)]
-        };
-      }
-    },
-    {
-      name: "getPhotos",
-      description: "Read CompanyCam project photos through the media provider.",
-      inputSchema: getPhotosInputSchema,
-      inputJsonSchema: getPhotosJsonSchema,
-      handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
-        const input = getPhotosInputSchema.parse(args);
-        const nativeMedia = nativeMediaReader
-          ? matchingNativeMedia(await nativeMediaReader.listMedia(tenant.id), input.projectQuery, ["photo", "video"])
-          : [];
-        const provider = CompanyCamAdapter.fromEnv(env, tenant.id);
-        let projects: ProjectRef[];
-        try {
-          projects = await provider.findProjects(input.projectQuery);
-        } catch (error) {
-          if (nativeMedia.length > 0) {
-            return {
-              result: { projects: [], media: [], nativeMedia, checkedProjectQuery: input.projectQuery, companyCamUnavailable: true },
-              sources: nativeMediaSources(nativeMedia)
-            };
-          }
-          throw error;
-        }
-        const project = projects[0];
-        if (!project) {
-          return {
-            result: { projects: [], media: [], nativeMedia, checkedProjectQuery: input.projectQuery },
-            sources: [
-              source("companycam", `project-search:${input.projectQuery}`, `CompanyCam project search for ${input.projectQuery}`),
-              ...nativeMediaSources(nativeMedia)
-            ]
-          };
-        }
-        const media = await provider.getMedia(project);
-        return {
-          result: { project, media, nativeMedia },
-          sources: [
-            source("companycam", project.externalIds?.companycam ?? project.id, `CompanyCam project ${project.name}`),
-            ...companyCamPhotoSources(media),
-            ...nativeMediaSources(nativeMedia)
-          ]
-        };
-      }
-    },
-    {
-      name: "getDocuments",
-      description: "Read CompanyCam project documents/reports and extract leak-detection report fields such as findings and pool gallons.",
-      inputSchema: getDocumentsInputSchema,
-      inputJsonSchema: getDocumentsJsonSchema,
-      handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
-        const input = getDocumentsInputSchema.parse(args);
-        const nativeDocuments = nativeMediaReader
-          ? matchingNativeMedia(await nativeMediaReader.listMedia(tenant.id), `${input.projectQuery} ${input.question ?? ""}`, ["pdf"])
-          : [];
-        let result;
-        try {
-          result = await readCompanyCamReports({
-            tenant,
-            projectQuery: input.projectQuery,
-            question: input.question,
-            env
-          });
-        } catch (error) {
-          if (nativeDocuments.length > 0) {
-            return {
-              result: {
-                project: null,
-                documents: [],
-                nativeDocuments,
-                reports: [],
-                suggestedSiteJobBlueprints: [],
-                companyCamUnavailable: true
-              },
-              sources: nativeMediaSources(nativeDocuments)
-            };
-          }
-          throw error;
-        }
-        const parsedReports = result.reports.filter((report) => report.parsed);
-        const siteJobBlueprints = result.project
-          ? parsedReports
-            .filter((report) => Object.keys(report.fields).length > 0)
-            .map((report) => siteJobBlueprintFromCompanyCamReport({ tenantId: tenant.id, project: result.project as NonNullable<typeof result.project>, report }))
-          : [];
-        return {
-          result: {
-            project: result.project,
-            documents: result.documents,
-            nativeDocuments,
-            reports: result.reports,
-            suggestedSiteJobBlueprints: siteJobBlueprints
-          },
-          sources: [
-            ...(result.project
-              ? [source("companycam", result.project.externalIds?.companycam ?? result.project.id, `CompanyCam project ${result.project.name}`)]
-              : [source("companycam", `document-search:${input.projectQuery}`, `CompanyCam document search for ${input.projectQuery}`)]),
-            ...companyCamDocumentSources(parsedReports.map((report) => report.document)),
-            ...nativeMediaSources(nativeDocuments)
-          ]
-        };
-      }
-    },
     {
       name: "lookupSiteJobBlueprintField",
       description: "Read a field from a SiteJobBlueprint extraction result.",
       inputSchema: lookupSiteJobBlueprintFieldInputSchema,
       inputJsonSchema: lookupSiteJobBlueprintFieldJsonSchema,
-      handler: async (tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
+      handler: async (_tenant: Tenant, args: unknown): Promise<ToolRunResult> => {
         const input = lookupSiteJobBlueprintFieldInputSchema.parse(args);
         const fields = input.fields ?? {};
         const inlineValue = fieldValue(fields, input.field);
@@ -472,7 +157,7 @@ export function createNexiJobDeskTools(
           };
         }
         const storedSiteJobBlueprints = siteJobBlueprintReader
-          ? await siteJobBlueprintReader.loadSiteJobBlueprints(tenant.id, 10)
+          ? await siteJobBlueprintReader.loadSiteJobBlueprints(_tenant.id, 10)
           : [];
         const stored = firstBlueprintField(storedSiteJobBlueprints, input.field, input);
         const matchedSiteJobBlueprint = stored ? null : firstMatchingSiteJobBlueprint(storedSiteJobBlueprints, input);
@@ -493,3 +178,5 @@ export function createNexiJobDeskTools(
     }
   ];
 }
+
+export const createNexiJobDeskTools = createNexiLookupTools;

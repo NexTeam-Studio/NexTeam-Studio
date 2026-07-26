@@ -60,6 +60,38 @@ export class FirestoreNativeCrmRepository implements NativeCrmRepository {
     return (await this.listByTenant("properties", tenantId, propertySchema)) as Property[];
   }
 
+  async deleteClient(tenantId: string, clientId: string): Promise<void> {
+    const ref = this.db.collection("clients").doc(clientId);
+    const snapshot = await ref.get();
+    if (!snapshot.exists) {
+      return;
+    }
+    const parsed = clientSchema.parse(snapshot.data()) as Client;
+    if (parsed.tenantId !== tenantId) {
+      throw new RailError(`Client ${clientId} was not found for tenant ${tenantId}.`, { provider: "native", op: "deleteClient", status: 404 });
+    }
+    await ref.delete();
+  }
+
+  async deletePropertiesForClient(tenantId: string, clientId: string): Promise<string[]> {
+    const snapshot = await this.db
+      .collection("properties")
+      .where("tenantId", "==", tenantId)
+      .where("clientId", "==", clientId)
+      .get();
+    if (snapshot.empty) {
+      return [];
+    }
+    const batch = this.db.batch();
+    const deletedIds: string[] = [];
+    for (const doc of snapshot.docs) {
+      deletedIds.push(doc.id);
+      batch.delete(doc.ref);
+    }
+    await batch.commit();
+    return deletedIds;
+  }
+
   async listRequests(tenantId: string): Promise<ServiceRequest[]> {
     return (await this.listByTenant("requests", tenantId, serviceRequestSchema))
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt)) as ServiceRequest[];
@@ -186,13 +218,13 @@ export class FirestoreNativeCrmRepository implements NativeCrmRepository {
 
   async upsertClient(client: Client): Promise<Client> {
     const parsed = clientSchema.parse(client) as Client;
-    await this.db.collection("clients").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await this.db.collection("clients").doc(parsed.id).set(asDocumentData(parsed), { merge: false });
     return parsed;
   }
 
   async upsertProperty(property: Property): Promise<Property> {
     const parsed = propertySchema.parse(property) as Property;
-    await this.db.collection("properties").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await this.db.collection("properties").doc(parsed.id).set(asDocumentData(parsed), { merge: false });
     return parsed;
   }
 

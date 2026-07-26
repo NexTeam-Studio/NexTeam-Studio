@@ -20,7 +20,7 @@ function tenant() {
     name: "Aquatrace",
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
-    adapters: { crm: "native", media: "companycam", email: "gmail_relay", sms: "twilio" },
+    adapters: { crm: "native", media: "native", email: "gmail_relay", sms: "twilio" },
     approval: {},
     timezone: "America/New_York",
     plan: "suite"

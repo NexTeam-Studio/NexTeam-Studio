@@ -1,0 +1,110 @@
+{
+  "baseUrl": "http://127.0.0.1:4175/nexops/jobs",
+  "initialState": {
+    "fabClass": "nexops-mobile-create-fab pulse",
+    "fabText": "+Create",
+    "headerCreateExists": false,
+    "desktopCreateText": "Create"
+  },
+  "sameMenuOpen": true,
+  "outsideDismissClosed": true,
+  "escapeDismissClosed": true,
+  "selectRoutedToClient": "http://127.0.0.1:4175/nexops/clients/new",
+  "collapsedOnDown": "nexops-mobile-create-fab collapsed",
+  "expandedOnUp": "nexops-mobile-create-fab",
+  "pulseOnFresh": "nexops-mobile-create-fab pulse",
+  "pulseOnReload": "nexops-mobile-create-fab",
+  "overlapChecks": [
+    {
+      "width": 320,
+      "metrics": {
+        "fabRect": {
+          "left": 193.296875,
+          "top": 768,
+          "right": 306,
+          "bottom": 828,
+          "width": 112.703125,
+          "height": 60
+        },
+        "headerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 320,
+          "bottom": 98.5,
+          "width": 320,
+          "height": 98.5
+        },
+        "overlapsHeader": false,
+        "withinViewport": true,
+        "viewport": {
+          "width": 320,
+          "height": 844
+        }
+      }
+    },
+    {
+      "width": 390,
+      "metrics": {
+        "fabRect": {
+          "left": 263.296875,
+          "top": 768,
+          "right": 376,
+          "bottom": 828,
+          "width": 112.703125,
+          "height": 60
+        },
+        "headerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 390,
+          "bottom": 98.5,
+          "width": 390,
+          "height": 98.5
+        },
+        "overlapsHeader": false,
+        "withinViewport": true,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        }
+      }
+    },
+    {
+      "width": 430,
+      "metrics": {
+        "fabRect": {
+          "left": 303.296875,
+          "top": 768,
+          "right": 416,
+          "bottom": 828,
+          "width": 112.703125,
+          "height": 60
+        },
+        "headerRect": {
+          "left": 0,
+          "top": 0,
+          "right": 430,
+          "bottom": 98.5,
+          "width": 430,
+          "height": 98.5
+        },
+        "overlapsHeader": false,
+        "withinViewport": true,
+        "viewport": {
+          "width": 430,
+          "height": 844
+        }
+      }
+    }
+  ],
+  "desktopState": {
+    "desktopCreateText": "Create",
+    "fabDisplay": "none",
+    "fabVisibility": "visible"
+  },
+  "screenshots": [
+    "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\nightly-integration-20260709\\receipts\\audit\\mobile-create-fab-20260721\\mobile-fab-closed.png",
+    "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\nightly-integration-20260709\\receipts\\audit\\mobile-create-fab-20260721\\mobile-fab-menu-open.png",
+    "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\nightly-integration-20260709\\receipts\\audit\\mobile-create-fab-20260721\\desktop-create-pill.png"
+  ]
+}

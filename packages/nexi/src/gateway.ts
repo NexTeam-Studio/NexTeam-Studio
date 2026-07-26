@@ -1,5 +1,6 @@
 import type { NexiTool, Source, Tenant, UsageLogRecord } from "@nexteam/core";
 import { RailError } from "@nexteam/core";
+import { z } from "zod";
 import { enforceSources, promptIsMetaOrFeedback } from "./sourceCheck.js";
 
 export const NEXI_ANTHROPIC_MODEL = "claude-sonnet-5";
@@ -57,6 +58,11 @@ export interface ToolLoopRequest {
   system: string;
   messages: GatewayMessage[];
   tools: NexiTool[];
+  actorDisplayName?: string | undefined;
+  requestorEmail?: string | undefined;
+  requestorPhones?: string[] | undefined;
+  requestorOrigin?: string | undefined;
+  pendingApproval?: PendingApprovalContext | null | undefined;
   cachedToolRuns?: ToolRunTrace[] | undefined;
   maxTokens?: number;
   routeActionName: string;
@@ -73,9 +79,40 @@ export interface ToolRunTrace {
   result: unknown;
 }
 
+export interface PendingApprovalContext {
+  approvalId: string;
+  awaitingChanges: boolean;
+  revisableClientCreate: boolean;
+  revisableQuoteCreate: boolean;
+  revisableJobCreate: boolean;
+  revisableJobAction: boolean;
+  revisableJobVisitSeries: boolean;
+  revisableVisitShift: boolean;
+  revisableLedgerAction: boolean;
+  revisableInvoiceCompose: boolean;
+  revisableInvoiceSend: boolean;
+  revisableCollectPayment: boolean;
+  revisableReceiptReview: boolean;
+  revisableContentDraft: boolean;
+}
+
 export interface ToolLoopResponse extends GatewayResponse {
   toolRuns: ToolRunTrace[];
+  pendingApproval?: PendingApprovalContext | null;
 }
+
+const createClientExtractionSchema = z.object({
+  name: z.string().trim().default(""),
+  address: z.string().trim().optional(),
+  emails: z.array(z.string().trim()).default([]),
+  phones: z.array(z.string().trim()).default([]),
+  consent: z.object({
+    email: z.boolean().default(false),
+    sms: z.boolean().default(false)
+  }).default({ email: false, sms: false })
+});
+
+export type CreateClientExtraction = z.infer<typeof createClientExtractionSchema>;
 
 interface AnthropicTextBlock {
   type: "text";
@@ -580,6 +617,8 @@ function entityQueryFromText(text: string): string {
   const candidate = matches.at(-1)?.[1] ?? "";
   return candidate
     .replace(/'s\b/gi, "")
+    .replace(/\b(?:is|was|has)\b.*$/i, "")
+    .replace(/^(?:file|record|profile|account)\s+for\s+/i, "")
     .replace(/\b(?:right\s+now|currently|now)\b.*$/i, "")
     .replace(/\b(?:the|a|an)\b/gi, " ")
     .replace(/\s+/g, " ")
@@ -619,14 +658,40 @@ function clientLookupQueryFromText(text: string): string {
   const normalized = text.replace(/[?.!]+$/g, "").trim();
   const lookupMatch = normalized.match(/\b(?:look\s+up|lookup|find|show|check|get|pull)\s+(?:the\s+)?(?:client|customer)\s+(.+)$/i);
   const clientFirstMatch = normalized.match(/\b(?:client|customer)\s+(.+)$/i);
+  const whatIsFieldMatch = normalized.match(/\bwhat\s+is\s+(.+?)\s+(?:phone(?:\s+number)?|telephone|mobile|cell|call|text|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway|zip|postal|e-?mail(?:\s+address)?)\b/i);
   const possessiveMatch = normalized.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})'?\s+(?:client|customer|job|jobs)\b/);
-  const candidate = lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
+  const candidate = lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? whatIsFieldMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
   return candidate
+    .replace(/\b([A-Za-z][A-Za-z' -]*)'s\b/g, "$1")
     .replace(/\b(?:in|from|on|with)\s+(?:jobber|crm|native|the\s+crm).*$/i, "")
     .replace(/\b(?:record|profile|file|account|jobs?)\b$/i, "")
     .replace(/\b(?:the|a|an)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function preferConversationClientEntity(candidate: string, messages: GatewayMessage[]): string {
+  const cleaned = candidate.trim();
+  if (!cleaned) {
+    return "";
+  }
+  const priorEntity = entityQueryFromMessages(messages, { skipLatest: true }) || entityQueryFromMessages(messages);
+  if (!priorEntity) {
+    return cleaned;
+  }
+  if (/^(?:he|him|his|she|her|hers|they|them|their|theirs)$/i.test(cleaned)) {
+    return priorEntity;
+  }
+  const candidateTokens = normalizeIdentityText(cleaned).split(" ").filter(Boolean);
+  const priorTokens = normalizeIdentityText(priorEntity).split(" ").filter(Boolean);
+  if (
+    candidateTokens.length === 1
+    && priorTokens.length > 1
+    && priorTokens[0] === candidateTokens[0]
+  ) {
+    return priorEntity;
+  }
+  return cleaned;
 }
 
 function jobLookupQueryFromText(text: string): string {
@@ -648,7 +713,7 @@ function namedEntityFromText(text: string): string {
   if (didHaveMatch?.[1]) {
     return didHaveMatch[1].trim();
   }
-  const match = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\s+(?:is|was|has|on|at|[-—])/);
+  const match = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\s+(?:is|was|has|on|at|[-â€”])/);
   return match?.[1]?.trim() ?? "";
 }
 
@@ -770,7 +835,7 @@ function siteJobBlueprintFieldFromText(text: string): string | undefined {
   if (/\breturns?\b/.test(lower) && /\bspa\b/.test(lower)) return lower.includes("floor") ? "spaFloorReturns" : "spaWallReturns";
   if (/\breturns?\b/.test(lower) && /\bpool\b/.test(lower)) return lower.includes("floor") ? "poolFloorReturns" : "poolWallReturns";
   if (/\bgallons?\b/.test(lower)) return "poolGallons";
-  if (/\bsq(?:uare)?\s*ft|square footage|surface area|ft2|ft²/.test(lower)) return "surfaceAreaSqFt";
+  if (/\bsq(?:uare)?\s*ft|square footage|surface area|ft2|ftÂ²/.test(lower)) return "surfaceAreaSqFt";
   return undefined;
 }
 
@@ -817,21 +882,64 @@ function distanceOriginFromText(text: string): string | undefined {
   return match;
 }
 
+function messageTargetsRequestor(text: string): boolean {
+  return /\b(?:to|for|send|share|email|mail|text|sms|call|draft|compose|write)\s+me\b/i.test(text)
+    || /\bto\s+my\s+(?:email|mail|phone|cell|mobile|text|sms)\b/i.test(text)
+    || /\b(?:my\s+(?:house|home)|from\s+here|from\s+me)\b/i.test(text);
+}
+
+function requestorEmailForText(text: string, requestorEmail?: string): string | undefined {
+  return firstEmailAddress(text) ?? (requestorEmail && messageTargetsRequestor(text) ? requestorEmail : undefined);
+}
+
+function requestorPhoneForText(text: string, requestorPhones?: string[]): string | undefined {
+  const explicitPhone = firstPhoneNumber(text);
+  if (explicitPhone) {
+    return explicitPhone;
+  }
+  if (!messageTargetsRequestor(text)) {
+    return undefined;
+  }
+  return requestorPhones?.map((value) => value.replace(/[^\d+]/g, "").trim()).find(Boolean);
+}
+
+function requestorOriginForText(text: string, requestorOrigin?: string): string | undefined {
+  if (!requestorOrigin) {
+    return undefined;
+  }
+  return /\b(?:from\s+here|from\s+my\s+(?:house|home)|from\s+me)\b/i.test(text)
+    ? requestorOrigin
+    : undefined;
+}
+
 function hasCompleteEvaporationInput(input: Record<string, unknown>): boolean {
   return typeof input.address === "string"
     && numberValue(input.surfaceAreaFt2) !== undefined
     && numberValue(input.waterTempF) !== undefined;
 }
 
-function normalizeToolInput(toolName: string, input: unknown, messages: GatewayMessage[], tenant?: Tenant | undefined, priorRuns: ToolRunTrace[] = []): unknown {
+async function normalizeToolInput(
+  toolName: string,
+  input: unknown,
+  messages: GatewayMessage[],
+  tenant?: Tenant | undefined,
+  priorRuns: ToolRunTrace[] = [],
+  pendingApprovalInput?: PendingApprovalContext | null,
+  requestorContext?: Pick<ToolLoopRequest, "requestorEmail" | "requestorPhones" | "requestorOrigin">,
+  options?: { env?: NodeJS.ProcessEnv | undefined; fetchFn?: typeof fetch | undefined }
+): Promise<unknown> {
   const record = input && typeof input === "object" && !Array.isArray(input) ? { ...input as Record<string, unknown> } : {};
   const userText = latestUserText(messages);
   const lowerUserText = userText.toLowerCase();
   const correctionFollowUp = looksLikeCorrectionFollowUp(lowerUserText);
   const emailRef = emailRefFromText(userText);
-  const approvalContext = approvalContextFromMessages(messages);
+  const approvalContext = pendingApprovalInput ?? approvalContextFromMessages(messages);
   if (toolName === "createClient") {
-    const parsed = createClientInputFromText(userText);
+    const parsed = await extractCreateClientInput({
+      text: userText,
+      env: options?.env,
+      fetchFn: options?.fetchFn
+    });
     record.name ??= parsed.name;
     record.address ??= parsed.address;
     record.emails ??= parsed.emails;
@@ -936,7 +1044,7 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.sessionId ??= intakeSessionIdFromText(userText) ?? intakeSessionIdFromPriorRuns(priorRuns);
   }
   if (toolName === "draftEmail") {
-    const parsed = draftEmailInputFromText(userText);
+    const parsed = draftEmailInputFromText(userText, requestorContext?.requestorEmail);
     if (typeof record.to === "string") {
       record.to = [record.to];
     }
@@ -1017,9 +1125,11 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
       : userText;
   }
   if (toolName === "clientLookup" && (typeof record.q !== "string" || (!record.q.trim() && !looksLikeClientListQuestion(lowerUserText)))) {
+    const conversationQuery = entityQueryFromMessages(messages);
+    const parsedQuery = clientLookupQueryFromText(userText) || conversationQuery || "";
     record.q = looksLikeClientListQuestion(lowerUserText)
       ? ""
-      : clientLookupQueryFromText(userText) || entityQueryFromMessages(messages) || "";
+      : preferConversationClientEntity(parsedQuery, messages);
   }
   if (toolName === "summarizeInbox" && !record.maxResults) {
     record.mailbox ??= mailboxAliasFromEmailAddress(firstEmailAddress(userText));
@@ -1048,7 +1158,30 @@ function normalizeToolInput(toolName: string, input: unknown, messages: GatewayM
     record.destination ??= directDestination && looksLikeStreetAddress(directDestination)
       ? directDestination
       : priorAddress ?? directDestination ?? entityQueryFromText(userText) ?? entityQueryFromMessages(messages);
-    record.origin ??= distanceOriginFromText(userText);
+    record.origin ??= distanceOriginFromText(userText) ?? requestorOriginForText(userText, requestorContext?.requestorOrigin);
+  }
+  if (toolName === "sendStatement" && !record.target) {
+    record.target = requestorEmailForText(userText, requestorContext?.requestorEmail)
+      ?? requestorPhoneForText(userText, requestorContext?.requestorPhones);
+  }
+  if (toolName === "queueInvoiceSend" && !record.target) {
+    record.target = String(record.mode ?? "") === "sms"
+      ? requestorPhoneForText(userText, requestorContext?.requestorPhones)
+      : requestorEmailForText(userText, requestorContext?.requestorEmail);
+  }
+  if (toolName === "queueReceiptReviewSend") {
+    if (!Array.isArray(record.emailRecipients)) {
+      const email = requestorEmailForText(userText, requestorContext?.requestorEmail);
+      if (email) {
+        record.emailRecipients = [email];
+      }
+    }
+    if (!Array.isArray(record.smsRecipients)) {
+      const phone = requestorPhoneForText(userText, requestorContext?.requestorPhones);
+      if (phone) {
+        record.smsRecipients = [phone];
+      }
+    }
   }
   if (toolName === "draftCampaign") {
     record.templateId ??= "vgb-hotel-gm-outreach";
@@ -1175,7 +1308,7 @@ function looksLikeJobDetailQuestion(lower: string): boolean {
 }
 
 function looksLikeReportMeasurementQuestion(lower: string): boolean {
-  return /\b(?:gallons per inch|square footage|sq ft|ft2|ftÂ²|total gallons|pool gallons|how many gallons|measurements?)\b/.test(lower);
+  return /\b(?:gallons per inch|square footage|sq ft|ft2|ftÃ‚Â²|total gallons|pool gallons|how many gallons|measurements?)\b/.test(lower);
 }
 
 function looksLikeSectionCountQuestion(lower: string): boolean {
@@ -1218,6 +1351,22 @@ function looksLikeEmailDraftAction(lower: string): boolean {
   return /\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/.test(lower)
     || /\b(?:send|draft|compose|write)\s+(?:me\s+)?(?:an?\s+)?email\s+(?:at|to)\s+[\w.+-]+@[\w.-]+\.\w+\b/.test(lower)
     || /\bemail\s+[\w.+-]+@[\w.-]+\.\w+\s+(?:saying|that|to say)\b/.test(lower);
+}
+
+function recentConversationMentionsContactCard(messages: GatewayMessage[]): boolean {
+  return textMessages(messages)
+    .slice(-6)
+    .some((text) => /\b(?:contact\s+(?:card|info|information)|full\s+contact\s+card|client\s+details?)\b/i.test(text));
+}
+
+function looksLikeContactCardDeliveryRequest(lower: string, messages: GatewayMessage[]): boolean {
+  const explicitRequest = /\b(?:email|text|send)\s+me\b/.test(lower)
+    && /\b(?:contact\s+(?:card|info|information)|full\s+contact\s+card|client\s+details?)\b/.test(lower);
+  const contextualFollowUp = /\b(?:email|text|send)\b/.test(lower)
+    && /\b(?:it|that|them)\b/.test(lower)
+    && /\b(?:me|instead)\b/.test(lower)
+    && recentConversationMentionsContactCard(messages);
+  return explicitRequest || contextualFollowUp;
 }
 
 function looksLikeReportPdfEmailRequest(lower: string): boolean {
@@ -1372,7 +1521,16 @@ function looksLikeClientListQuestion(lower: string): boolean {
 
 function looksLikeNamedClientLookupQuestion(lower: string): boolean {
   return /\b(?:look\s+up|lookup|find|show|check|get|pull)\s+(?:the\s+)?(?:client|customer)\s+/.test(lower)
-    || /\b(?:client|customer)\s+(?:record|profile|file|account)\s+(?:for\s+)?/.test(lower);
+    || /\b(?:client|customer)\s+(?:record|profile|file|account)\s+(?:for\s+)?/.test(lower)
+    || /\bwhat(?:'s| is)\s+(?:the\s+)?(?:phone(?:\s+number)?|telephone|mobile|cell|address|e-?mail(?:\s+address)?)\s+(?:on\s+file\s+)?(?:for\s+)?[a-z][a-z'-]+(?:\s+[a-z][a-z'-]+)+\b/.test(lower)
+    || /\b(?:phone(?:\s+number)?|telephone|mobile|cell|address|e-?mail(?:\s+address)?)\s+(?:for|on\s+file\s+for)\s+[a-z][a-z'-]+(?:\s+[a-z][a-z'-]+)+\b/.test(lower);
+}
+
+function looksLikeEmailLookupQuestion(lower: string): boolean {
+  return /\b(?:email|e-mail)\b/.test(lower)
+    && /\b(?:what(?:'s| is)|for|on\s+file|get|show|find|lookup|look\s+up|pull)\b/.test(lower)
+    && !/\b(?:draft|compose|write|send)\b.*\bemail\b/.test(lower)
+    && !/\b(?:inbox|gmail|mailbox|reply|replied|responded|sent)\b/.test(lower);
 }
 
 function looksLikeNamedJobLookupQuestion(lower: string): boolean {
@@ -1535,9 +1693,110 @@ function capabilityGapForRequest(messages: GatewayMessage[], toolsByName: Map<st
   return null;
 }
 
-function directNoToolResponseForRequest(messages: GatewayMessage[]): { answer: string; failureReason?: string | undefined } | null {
+function emptyPendingApprovalContext(approvalId: string, awaitingChanges = false): PendingApprovalContext {
+  return {
+    approvalId,
+    awaitingChanges,
+    revisableClientCreate: false,
+    revisableQuoteCreate: false,
+    revisableJobCreate: false,
+    revisableJobAction: false,
+    revisableJobVisitSeries: false,
+    revisableVisitShift: false,
+    revisableLedgerAction: false,
+    revisableInvoiceCompose: false,
+    revisableInvoiceSend: false,
+    revisableCollectPayment: false,
+    revisableReceiptReview: false,
+    revisableContentDraft: false
+  };
+}
+
+function pendingApprovalFlagsForToolName(toolName: string): Partial<PendingApprovalContext> {
+  switch (toolName) {
+    case "createClient":
+    case "revisePendingClientCreateApproval":
+      return { revisableClientCreate: true };
+    case "createQuote":
+    case "revisePendingQuoteCreateApproval":
+      return { revisableQuoteCreate: true };
+    case "createJob":
+    case "revisePendingJobCreateApproval":
+      return { revisableJobCreate: true };
+    case "queueJobAction":
+    case "revisePendingJobActionApproval":
+      return { revisableJobAction: true };
+    case "scheduleJobVisits":
+    case "scheduleUnscheduledJob":
+    case "revisePendingJobVisitSeriesApproval":
+      return { revisableJobVisitSeries: true };
+    case "shiftJobVisitSeries":
+    case "revisePendingVisitShiftApproval":
+      return { revisableVisitShift: true };
+    case "queueLedgerAction":
+    case "revisePendingLedgerActionApproval":
+      return { revisableLedgerAction: true };
+    case "queueInvoiceCompose":
+    case "revisePendingInvoiceComposeApproval":
+      return { revisableInvoiceCompose: true };
+    case "queueInvoiceSend":
+    case "revisePendingInvoiceSendApproval":
+      return { revisableInvoiceSend: true };
+    case "queueCollectPayment":
+    case "revisePendingCollectPaymentApproval":
+      return { revisableCollectPayment: true };
+    case "queueReceiptReviewSend":
+    case "revisePendingReceiptReviewApproval":
+      return { revisableReceiptReview: true };
+    case "approveDraft":
+    case "revisePendingDraftApproval":
+      return { revisableContentDraft: true };
+    default:
+      return {};
+  }
+}
+
+function approvalIdFromResult(result: unknown): string | undefined {
+  const record = objectRecord(result);
+  const approval = objectRecord(record?.approval);
+  return stringValue(approval?.id) ?? undefined;
+}
+
+function pendingApprovalFromToolRun(toolRun: ToolRunTrace, awaitingChanges = false): PendingApprovalContext | null {
+  const approvalId = approvalIdFromResult(toolRun.result);
+  if (!approvalId) {
+    return null;
+  }
+  return {
+    ...emptyPendingApprovalContext(approvalId, awaitingChanges),
+    ...pendingApprovalFlagsForToolName(toolRun.name)
+  };
+}
+
+function approvalResolvedByToolRuns(toolRuns: ToolRunTrace[]): boolean {
+  return toolRuns.some((run) => run.name === "approvePendingApproval" || run.name === "rejectPendingApproval");
+}
+
+function pendingApprovalFromToolRuns(toolRuns: ToolRunTrace[], fallback?: PendingApprovalContext | null): PendingApprovalContext | null {
+  if (approvalResolvedByToolRuns(toolRuns)) {
+    return null;
+  }
+  for (const toolRun of [...toolRuns].reverse()) {
+    const pending = pendingApprovalFromToolRun(toolRun);
+    if (pending) {
+      return pending;
+    }
+  }
+  return fallback ?? null;
+}
+
+function directNoToolResponseForRequest(
+  messages: GatewayMessage[],
+  pendingApprovalInput?: PendingApprovalContext | null
+): { answer: string; failureReason?: string | undefined; pendingApproval?: PendingApprovalContext | null } | null {
   const userText = latestUserText(messages);
-  const approvalContext = approvalContextFromMessages(messages);
+  const lower = userText.toLowerCase();
+  const approvalContext = pendingApprovalInput ?? approvalContextFromMessages(messages);
   const exactReply = userText.match(/^\s*reply\s+with\s+exactly\s*:?\s*([\s\S]+?)\s*$/i)?.[1]?.trim();
   if (exactReply) {
     return { answer: exactReply.replace(/^["']|["']$/g, "") };
@@ -1548,10 +1807,16 @@ function directNoToolResponseForRequest(messages: GatewayMessage[]): { answer: s
     }
     return {
       answer: approvalContext.revisableClientCreate
-        ? `Tell me what to change, and I'll restate the client before I save anything. Approval id: ${approvalContext.approvalId}`
+        ? "Tell me what to change, and I'll restate the client before I save anything."
         : approvalContext.revisableQuoteCreate
-          ? `Tell me what to change, and I'll restate the quote before I create anything. Approval id: ${approvalContext.approvalId}`
-          : `Tell me what to change. If that queued action supports chat revision, I'll restate it before I run anything. Approval id: ${approvalContext.approvalId}`
+          ? "Tell me what to change, and I'll restate the quote before I create anything."
+          : "Tell me what to change. If that queued action supports chat revision, I'll restate it before I run anything.",
+      pendingApproval: { ...approvalContext, awaitingChanges: true }
+    };
+  }
+  if (looksLikeContactCardDeliveryRequest(lower, messages)) {
+    return {
+      answer: "I can't send a client's full contact card from chat yet. That delivery flow is still waiting on tenant user-seat profiles, so I don't want to fake it as a data problem."
     };
   }
   if (!promptIsMetaOrFeedback(userText)) {
@@ -1559,7 +1824,7 @@ function directNoToolResponseForRequest(messages: GatewayMessage[]): { answer: s
   }
   if (/\bwhat\s+commands?\s+can\s+i\s+use\b|\bwhat\s+sources?\s+do\s+you\s+use\b|\bwhat\s+(?:tools?|rails?|systems?)\s+do\s+you\s+use\b|\bwhat\s+can\s+you\s+(?:access|see|check|do|help\s+me\s+do)\b/i.test(userText)) {
     return {
-      answer: "You can ask me about today's schedule, work records, job details, CompanyCam reports and photos, client lists, invoices, inbox summaries, important unread email, draft emails for your approval, evaporation reports, content drafts, review replies, review requests, Google Business Profile updates, and website updates. If something is not live yet, I'll say that plainly instead of acting like the information is missing."
+      answer: "You can ask me about today's schedule, work records, job details, field reports and photos, client lists, invoices, inbox summaries, important unread email, draft emails for your approval, evaporation reports, content drafts, review replies, review requests, Google Business Profile updates, and website updates. If something is not live yet, I'll say that plainly instead of acting like the information is missing."
     };
   }
   if (/\bwhy\s+did\s+(?:that|this|it)\s+fail\b/i.test(userText)) {
@@ -1569,7 +1834,7 @@ function directNoToolResponseForRequest(messages: GatewayMessage[]): { answer: s
   }
   if (/\bhow\s+do\s+i\s+upload\s+(?:photos?|pictures?|images?|videos?)\b/i.test(userText)) {
     return {
-      answer: "For now, use CompanyCam for job photos and videos. I can read and summarize those here. Native NexTeam phone uploads are part of the mobile field app work, and once that is live you'll be able to capture on the job and sync automatically."
+      answer: "For now, use the field capture lane for job photos and videos. I can read and summarize those here. Native phone uploads are part of the mobile field app work, and once that is live you'll be able to capture on the job and sync automatically."
     };
   }
   return {
@@ -1590,8 +1855,70 @@ function emailRefFromText(text: string): { mailbox: string; messageId: string; a
   };
 }
 
+function labeledEmailAddress(text: string): string | undefined {
+  const candidate = text.match(/\b(?:email|e-mail)(?:\s+address)?\s*(?:is|=|:)?\s+([A-Za-z0-9@._%+\- ]+)/i)?.[1];
+  if (!candidate) {
+    return undefined;
+  }
+  const trimmed = candidate
+    .split(/[?!,]/)[0]
+    ?.replace(/\b(?:to|at|for)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const tokens = trimmed.split(" ");
+  const atIndex = tokens.findIndex((token) => token.includes("@"));
+  if (atIndex === -1) {
+    return undefined;
+  }
+  const firstStart = Math.max(0, atIndex - 2);
+  for (let start = firstStart; start <= atIndex; start += 1) {
+    const combined = tokens.slice(start, atIndex + 1).join("");
+    const matched = combined.match(/^[\w.+-]+@[\w.-]+\.\w+$/i)?.[0];
+    if (matched) {
+      return matched;
+    }
+  }
+  return tokens[atIndex]?.match(/[\w.+-]+@[\w.-]+\.\w+/i)?.[0];
+}
+
+function adjacentTokenEmailAddress(text: string): string | undefined {
+  const tokens = text
+    .replace(/[<>"'`()[\],!?;:]+/g, " ")
+    .split(/\s+/)
+    .map((token) => token.replace(/^[^\w.+-]+|[^\w.+-@]+$/g, ""))
+    .filter(Boolean);
+  let best: string | undefined;
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index] ?? "";
+    if (!token.includes("@")) {
+      continue;
+    }
+    for (let start = Math.max(0, index - 2); start <= index; start += 1) {
+      const prefix = tokens.slice(start, index);
+      if (prefix.some((part) => /^(?:to|at|for|is|my|me|email|e-mail)$/i.test(part) || /^\d{5,}$/.test(part))) {
+        continue;
+      }
+      const combined = tokens.slice(start, index + 1).join("");
+      const matched = combined.match(/^[\w.+-]+@[\w.-]+\.\w+$/i)?.[0];
+      if (matched && (!best || matched.length > best.length)) {
+        best = matched;
+      }
+    }
+    const direct = token.match(/^[\w.+-]+@[\w.-]+\.\w+$/i)?.[0];
+    if (direct && (!best || direct.length > best.length)) {
+      best = direct;
+    }
+  }
+  return best;
+}
+
 function firstEmailAddress(text: string): string | undefined {
-  return text.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
+  return labeledEmailAddress(text)
+    ?? adjacentTokenEmailAddress(text)
+    ?? text.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
 }
 
 function firstPhoneNumber(text: string): string | undefined {
@@ -1660,15 +1987,35 @@ function hasActionableApprovalChangeRequest(
     || (approvalContext.revisableLedgerAction && hasLedgerApprovalChangeDetails(text));
 }
 
-function approvalContextFromMessages(messages: GatewayMessage[]): {
-  approvalId: string;
-  awaitingChanges: boolean;
-  revisableClientCreate: boolean;
-  revisableQuoteCreate: boolean;
-  revisableJobCreate: boolean;
-  revisableJobAction: boolean;
-  revisableLedgerAction: boolean;
-} | null {
+function looksLikeSavedClientEditRequest(text: string, messages: GatewayMessage[]): boolean {
+  const lower = text.toLowerCase();
+  if (looksLikeCreateClientAction(lower)) {
+    return false;
+  }
+  if (!/\b(?:add|edit|change|update|fix|correct|replace)\b/.test(lower)) {
+    return false;
+  }
+  if (/\b(?:job|quote|invoice|payment|request|visit)\b/.test(lower)) {
+    return false;
+  }
+  if (!/\b(?:name|phone|telephone|mobile|email|e-mail|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway|zip|postal|city|state|billing|contact)\b/.test(lower)) {
+    return false;
+  }
+  const namedPossessiveClient = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})'s\b/)?.[1]?.trim() ?? "";
+  const referencedClient = namedPossessiveClient
+    || clientLookupQueryFromText(text)
+    || currentEntityFromText(text)
+    || clientLookupQueryFromText(previousUserText(messages))
+    || entityQueryFromMessages(messages, { skipLatest: true })
+    || entityQueryFromMessages(messages);
+  return /\b(?:client|customer|record|profile|details?)\b/.test(lower)
+    || Boolean(namedPossessiveClient)
+    || Boolean(clientLookupQueryFromText(text))
+    || Boolean(currentEntityFromText(text))
+    || (/\b(?:this|that|it|he|him|his|she|her|hers|they|them|their|theirs)\b/.test(lower) && Boolean(referencedClient));
+}
+
+function approvalContextFromMessages(messages: GatewayMessage[]): PendingApprovalContext | null {
   for (const message of [...messages].reverse()) {
     if (message.role !== "assistant" || typeof message.content !== "string") {
       continue;
@@ -1679,8 +2026,7 @@ function approvalContextFromMessages(messages: GatewayMessage[]): {
     }
     if (/tell me what to change/i.test(message.content)) {
       return {
-        approvalId,
-        awaitingChanges: true,
+        ...emptyPendingApprovalContext(approvalId, true),
         revisableClientCreate: /create client:/i.test(message.content),
         revisableQuoteCreate: /create quote:/i.test(message.content),
         revisableJobCreate: /create job:/i.test(message.content),
@@ -1690,8 +2036,7 @@ function approvalContextFromMessages(messages: GatewayMessage[]): {
     }
     if (/approve this\?\s*yes\s*\/\s*no\s*\/\s*make changes/i.test(message.content)) {
       return {
-        approvalId,
-        awaitingChanges: false,
+        ...emptyPendingApprovalContext(approvalId, false),
         revisableClientCreate: /create client:/i.test(message.content),
         revisableQuoteCreate: /create quote:/i.test(message.content),
         revisableJobCreate: /create job:/i.test(message.content),
@@ -1704,6 +2049,13 @@ function approvalContextFromMessages(messages: GatewayMessage[]): {
 }
 
 function unsupportedWriteCapabilityGap(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>): { answer: string; failureReason: string } | null {
+  const userText = latestUserText(messages);
+  if (!toolsByName.has("updateClient") && looksLikeSavedClientEditRequest(userText, messages)) {
+    return {
+      answer: "I can't edit saved client records from chat yet. That is a capability gap, not a missing-data issue.",
+      failureReason: "capability_not_available"
+    };
+  }
   const lower = latestUserText(messages).toLowerCase();
   if (/\bupdate me on\b/.test(lower)) {
     return null;
@@ -1866,11 +2218,18 @@ function createClientAddressMatchFromText(text: string): { address: string; inde
   if (!streetMatch?.[0]) {
     return undefined;
   }
-  return { address: streetMatch[0].replace(/\s+/g, " ").trim(), index: streetMatch.index ?? -1 };
+  const tail = text.slice(streetMatch.index ?? 0)
+    .replace(/\b(?:email|e-mail|phone|telephone|number|mobile|cell|text)\b[\s\S]*$/i, " ")
+    .replace(/\b[\w.+-]+@[\w.-]+\.\w+\b[\s\S]*$/i, " ")
+    .replace(/\s+(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}(?:[\s\S]*)$/i, " ")
+    .replace(/[,. ]+$/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return { address: tail, index: streetMatch.index ?? -1 };
 }
 
 function createClientNameFromText(text: string): string {
-  const match = text.match(/\b(?:add|create|set\s+up|make)\s+(?:a\s+)?(?:new\s+)?client\s*,?\s*(?:named\s+|called\s+)?(.+?)(?=,|\s+(?:at|address|email|e-mail|phone|number|with)\b|[?.!]|$)/i)
+  const match = text.match(/\b(?:add|create|set\s+up|make)\s+(?:a\s+)?(?:new\s+)?client\b(?:\s+to\s+(?:the\s+)?system\b)?\s*,?\s*(?:named\s+|called\s+)?(.+?)(?=,|\s+(?:at|address|email|e-mail|phone|number|with)\b|[?.!]|$)/i)
     ?? text.match(/\bclient\s+(?:named\s+|called\s+)?(.+?)(?=,|\s+(?:at|address|email|e-mail|phone|number|with)\b|[?.!]|$)/i);
   const address = createClientAddressMatchFromText(text)?.address;
   let candidate = (match?.[1] ?? "")
@@ -1883,10 +2242,13 @@ function createClientNameFromText(text: string): string {
     }
   }
   const name = candidate
+    .replace(/^(?:to|into)\s+(?:the\s+)?system\b/gi, " ")
+    .replace(/^(?:the\s+)?system\b/gi, " ")
     .replace(/\b(?:named|called)\b/gi, " ")
+    .replace(/\b\d{1,6}\s+[\s\S]*$/i, " ")
     .replace(/\s+/g, " ")
     .trim();
-  return name || text.replace(/[?.!]+$/g, "").trim();
+  return cleanClientPreviewName(name) ?? "";
 }
 
 function createClientAddressFromText(text: string): string | undefined {
@@ -1907,6 +2269,128 @@ function createClientInputFromText(text: string): { name: string; address?: stri
       sms: /\b(?:text\s+ok|sms\s+ok|can\s+text|text\s+consent|opt(?:ed)?\s+in\s+for\s+(?:sms|text))\b/.test(lower)
     }
   };
+}
+
+function mergeCreateClientInput(primary: CreateClientExtraction, fallback: CreateClientExtraction): CreateClientExtraction {
+  const mergedEmails = mergeCreateClientEmails(primary.emails, fallback.emails);
+  return {
+    name: cleanClientPreviewName(primary.name) ?? cleanClientPreviewName(fallback.name) ?? "",
+    address: primary.address?.trim() || fallback.address,
+    emails: mergedEmails.length > 0 ? mergedEmails : fallback.emails,
+    phones: primary.phones.length > 0 ? [...new Set(primary.phones.filter(Boolean))] : fallback.phones,
+    consent: {
+      email: primary.consent.email ?? fallback.consent.email,
+      sms: primary.consent.sms ?? fallback.consent.sms
+    }
+  };
+}
+
+function emailLooksContaminatedByPhoneDigits(candidate: string, shorterVariant: string): boolean {
+  const [candidateLocal = "", candidateDomain = ""] = candidate.toLowerCase().split("@");
+  const [shorterLocal = "", shorterDomain = ""] = shorterVariant.toLowerCase().split("@");
+  if (!candidateLocal || !shorterLocal || candidateDomain !== shorterDomain) {
+    return false;
+  }
+  if (!candidateLocal.endsWith(shorterLocal) || candidateLocal === shorterLocal) {
+    return false;
+  }
+  const leakedPrefix = candidateLocal.slice(0, candidateLocal.length - shorterLocal.length);
+  return /\d{5,}/.test(leakedPrefix);
+}
+
+function mergeCreateClientEmails(primary: string[], fallback: string[]): string[] {
+  const merged: string[] = [];
+  for (const raw of [...primary, ...fallback]) {
+    const candidate = raw.trim().match(/^[\w.+-]+@[\w.-]+\.\w+$/i)?.[0];
+    if (!candidate) {
+      continue;
+    }
+    const normalized = candidate.toLowerCase();
+    const existingIndex = merged.findIndex((value) => {
+      const [existingLocal = "", existingDomain = ""] = value.toLowerCase().split("@");
+      const [nextLocal = "", nextDomain = ""] = normalized.split("@");
+      return existingDomain === nextDomain
+        && (existingLocal === nextLocal || existingLocal.endsWith(nextLocal) || nextLocal.endsWith(existingLocal));
+    });
+    if (existingIndex >= 0) {
+      const existingValue = merged[existingIndex];
+      if (existingValue && emailLooksContaminatedByPhoneDigits(existingValue, candidate)) {
+        merged[existingIndex] = candidate;
+      } else if (existingValue && candidate.length > existingValue.length && !emailLooksContaminatedByPhoneDigits(candidate, existingValue)) {
+        merged[existingIndex] = candidate;
+      }
+      continue;
+    }
+    if (!merged.some((value) => value.toLowerCase() === normalized)) {
+      merged.push(candidate);
+    }
+  }
+  return merged;
+}
+
+function createClientExtractionToolDefinition(): GatewayToolDefinition {
+  return {
+    name: "submit_create_client_extraction",
+    description: "Return the parsed client-create fields from the operator request.",
+    input_schema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        name: { type: "string" },
+        address: { type: "string" },
+        emails: { type: "array", items: { type: "string" } },
+        phones: { type: "array", items: { type: "string" } },
+        consent: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            email: { type: "boolean" },
+            sms: { type: "boolean" }
+          }
+        }
+      },
+      required: ["name", "emails", "phones", "consent"]
+    }
+  };
+}
+
+export async function extractCreateClientInput(input: {
+  text: string;
+  env?: NodeJS.ProcessEnv | undefined;
+  fetchFn?: typeof fetch | undefined;
+}): Promise<CreateClientExtraction> {
+  const fallback = createClientExtractionSchema.parse(createClientInputFromText(input.text));
+  const apiKey = (input.env ?? process.env).ANTHROPIC_API_KEY?.trim();
+  if (!apiKey) {
+    return fallback;
+  }
+
+  try {
+    const extractionCall = await sendAnthropicRequest({
+      env: input.env,
+      fetchFn: input.fetchFn,
+      system: [
+        "You extract structured client-create details from one operator message.",
+        "Always call the submit_create_client_extraction tool exactly once.",
+        "Ignore command scaffolding such as add/create/new client, to system, set up, or make client.",
+        "Preserve the full client name, full email address, full phone number, and the complete service address exactly as stated.",
+        "Do not invent or infer missing data. If a field is absent, leave it blank or empty.",
+        "Return opt-in booleans only when the operator explicitly granted them."
+      ].join(" "),
+      messages: [{ role: "user", content: input.text }],
+      tools: [createClientExtractionToolDefinition()],
+      maxTokens: 300
+    });
+    const extractionUse = toolUsesFromContent(extractionCall.content)
+      .find((block) => block.name === "submit_create_client_extraction");
+    if (!extractionUse?.input) {
+      return fallback;
+    }
+    const parsed = createClientExtractionSchema.parse(extractionUse.input);
+    return mergeCreateClientInput(parsed, fallback);
+  } catch {
+    return fallback;
+  }
 }
 
 function quoteClientQueryFromText(text: string): string | undefined {
@@ -1985,8 +2469,8 @@ function draftSubjectFromBody(bodyText: string): string {
   return compact.length >= 8 ? compact : "Aquatrace follow-up";
 }
 
-function draftEmailInputFromText(text: string): { to: string[]; subject: string; bodyText: string } {
-  const to = firstEmailAddress(text);
+function draftEmailInputFromText(text: string, requestorEmail?: string): { to: string[]; subject: string; bodyText: string } {
+  const to = requestorEmailForText(text, requestorEmail);
   const bodyText = draftBodyFromText(text);
   return {
     to: to ? [to] : [],
@@ -2211,12 +2695,18 @@ function evaporationInputFromText(text: string): Record<string, unknown> {
   return parsed;
 }
 
-function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<string, NexiTool>, tenant?: Tenant | undefined): string[] {
+function deterministicToolNames(
+  messages: GatewayMessage[],
+  toolsByName: Map<string, NexiTool>,
+  tenant?: Tenant | undefined,
+  pendingApprovalInput?: PendingApprovalContext | null,
+  requestorContext?: Pick<ToolLoopRequest, "requestorEmail" | "requestorPhones" | "requestorOrigin">
+): string[] {
   const userText = latestUserText(messages);
   const lower = userText.toLowerCase();
   const emailRef = emailRefFromText(userText);
   const distanceFollowUp = looksLikeAddressOnlyFollowUp(userText) && recentUserTextMatches(messages, looksLikeDistanceQuestion);
-  const approvalContext = approvalContextFromMessages(messages);
+  const approvalContext = pendingApprovalInput ?? approvalContextFromMessages(messages);
   if (looksLikeFreeformContentDraftAction(lower)) {
     if (looksLikeReportBasedContentDraftAction(lower)) {
       return uniqueToolNames(["getJobDetail", "getDocuments"], toolsByName);
@@ -2330,7 +2820,7 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   if (looksLikeReportPdfEmailRequest(lower) && toolsByName.has("draftReportEmail")) {
     return ["draftReportEmail"];
   }
-  if (looksLikeEmailDraftAction(lower) && firstEmailAddress(userText) && toolsByName.has("draftEmail")) {
+  if (looksLikeEmailDraftAction(lower) && requestorEmailForText(userText, requestorContext?.requestorEmail) && toolsByName.has("draftEmail")) {
     return ["draftEmail"];
   }
   if (looksLikeReviewRequestAction(lower) && toolsByName.has("draftReviewRequest")) {
@@ -2423,10 +2913,22 @@ function deterministicToolNames(messages: GatewayMessage[], toolsByName: Map<str
   if (bareEntityFromText(userText) && recentUserTextMatches(messages, looksLikeReportMeasurementQuestion)) {
     return uniqueToolNames(crossRailJobDetailToolsForQuestion(previousUserText(messages).toLowerCase()), toolsByName);
   }
+  if (
+    looksLikeEmailLookupQuestion(lower)
+    && Boolean(clientLookupQueryFromText(userText) || entityQueryFromMessages(messages))
+    && toolsByName.has("clientLookup")
+  ) {
+    return uniqueToolNames(["clientLookup"], toolsByName);
+  }
   if (looksLikeEmailSearchQuestion(lower) && toolsByName.has("searchEmail")) {
     return ["searchEmail"];
   }
-  if (looksLikeClientListQuestion(lower) || looksLikeNamedClientLookupQuestion(lower)) {
+  if (
+    looksLikeClientListQuestion(lower)
+    || looksLikeNamedClientLookupQuestion(lower)
+    || ((looksLikePhoneLookupQuestion(lower) || looksLikeAddressLookupQuestion(lower) || looksLikeEmailLookupQuestion(lower))
+      && Boolean(clientLookupQueryFromText(userText) || entityQueryFromMessages(messages)))
+  ) {
     return uniqueToolNames(["clientLookup"], toolsByName);
   }
   if (looksLikeNamedJobLookupQuestion(lower)) {
@@ -2503,8 +3005,10 @@ function reusableCachedToolRuns(input: {
   toolsByName: Map<string, NexiTool>;
   tenant: Tenant;
   cachedToolRuns?: ToolRunTrace[] | undefined;
+  pendingApproval?: PendingApprovalContext | null | undefined;
+  requestorContext?: Pick<ToolLoopRequest, "requestorEmail" | "requestorPhones" | "requestorOrigin"> | undefined;
 }): ToolRunTrace[] {
-  const requested = deterministicToolNames(input.messages, input.toolsByName, input.tenant);
+  const requested = deterministicToolNames(input.messages, input.toolsByName, input.tenant, input.pendingApproval, input.requestorContext);
   if (requested.length === 0 || hasFreshLookupTarget(latestUserText(input.messages), input.tenant.timezone)) {
     return [];
   }
@@ -2516,8 +3020,12 @@ async function runDeterministicTools(input: {
   tenant: Tenant;
   messages: GatewayMessage[];
   toolsByName: Map<string, NexiTool>;
+  pendingApproval?: PendingApprovalContext | null | undefined;
+  requestorContext?: Pick<ToolLoopRequest, "requestorEmail" | "requestorPhones" | "requestorOrigin"> | undefined;
+  env?: NodeJS.ProcessEnv | undefined;
+  fetchFn?: typeof fetch | undefined;
 }): Promise<ToolRunTrace[]> {
-  const toolNames = deterministicToolNames(input.messages, input.toolsByName, input.tenant);
+  const toolNames = deterministicToolNames(input.messages, input.toolsByName, input.tenant, input.pendingApproval, input.requestorContext);
   const runs: ToolRunTrace[] = [];
   for (const toolName of toolNames) {
     const tool = input.toolsByName.get(toolName);
@@ -2525,7 +3033,21 @@ async function runDeterministicTools(input: {
       continue;
     }
     try {
-      const args = tool.inputSchema.parse(normalizeToolInput(tool.name, {}, input.messages, input.tenant, runs));
+      const args = tool.inputSchema.parse(
+        await normalizeToolInput(
+          tool.name,
+          {},
+          input.messages,
+          input.tenant,
+          runs,
+          input.pendingApproval,
+          input.requestorContext,
+          {
+            env: input.env,
+            fetchFn: input.fetchFn
+          }
+        )
+      );
       const result = await tool.handler(input.tenant, args);
       runs.push({ name: tool.name, result: result.result, sources: result.sources });
     } catch (error) {
@@ -2686,18 +3208,111 @@ function intakeAnswerSavedAnswer(result: unknown): string {
 }
 
 function normalizeIdentityText(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return value
+    .toLowerCase()
+    .replace(/\b([a-z0-9]+)'s\b/g, "$1")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
-function clientLookupAnswer(latestText: string, result: unknown): string | undefined {
+function looksLikePhoneLookupQuestion(lower: string): boolean {
+  return /\b(?:phone|telephone|mobile|cell|call|text)\b/.test(lower);
+}
+
+function looksLikeAddressLookupQuestion(lower: string): boolean {
+  return /\b(?:address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway|zip|postal)\b/.test(lower)
+    && !/\b(?:email|e-mail)\s+address\b/.test(lower);
+}
+
+function looksLikeClientEmailFieldQuestion(lower: string): boolean {
+  return looksLikeEmailLookupQuestion(lower);
+}
+
+function arrayRecord(value: unknown): Array<Record<string, unknown>> {
+  return Array.isArray(value)
+    ? value.map((entry) => objectRecord(entry)).filter((entry): entry is Record<string, unknown> => Boolean(entry))
+    : [];
+}
+
+function joinAddressParts(value: unknown): string | undefined {
+  const record = objectRecord(value);
+  if (!record) {
+    return undefined;
+  }
+  const joined = [
+    record.street1,
+    record.street2,
+    record.city,
+    record.province,
+    record.state,
+    record.postalCode,
+    record.zip
+  ].map(stringValue).filter(Boolean).join(", ").replace(/\s+,/g, ",").trim();
+  return joined || undefined;
+}
+
+function clientPhoneFromRecord(record: Record<string, unknown>): string | undefined {
+  const topLevel = Array.isArray(record.phones) ? record.phones.map(stringValue).filter(Boolean) : [];
+  if (topLevel.length > 0) {
+    return topLevel[0];
+  }
+  for (const contact of arrayRecord(record.contacts)) {
+    const nested = Array.isArray(contact.phones)
+      ? contact.phones
+        .map((phone) => objectRecord(phone))
+        .map((phone) => stringValue(phone?.value))
+        .filter(Boolean)
+      : [];
+    if (nested.length > 0) {
+      return nested[0];
+    }
+  }
+  return undefined;
+}
+
+function clientEmailFromRecord(record: Record<string, unknown>): string | undefined {
+  const topLevel = Array.isArray(record.emails) ? record.emails.map(stringValue).filter(Boolean) : [];
+  if (topLevel.length > 0) {
+    return topLevel[0];
+  }
+  for (const contact of arrayRecord(record.contacts)) {
+    const nested = Array.isArray(contact.emails)
+      ? contact.emails
+        .map((email) => objectRecord(email))
+        .map((email) => stringValue(email?.value))
+        .filter(Boolean)
+      : [];
+    if (nested.length > 0) {
+      return nested[0];
+    }
+  }
+  return undefined;
+}
+
+function clientAddressFromRecord(record: Record<string, unknown>): string | undefined {
+  for (const property of arrayRecord(record.relatedProperties)) {
+    const joined = joinAddressParts(property.address);
+    if (joined) {
+      return joined;
+    }
+  }
+  return joinAddressParts(record.billingAddress);
+}
+
+function clientLookupAnswer(latestText: string, messages: GatewayMessage[], result: unknown): string | undefined {
   const record = objectRecord(result);
   const rawClients = Array.isArray(record?.clients) ? record.clients : [];
-  const requested = clientLookupQueryFromText(latestText);
+  const requested = preferConversationClientEntity(clientLookupQueryFromText(latestText), messages);
   const requestedNormalized = normalizeIdentityText(requested);
+  const lower = latestText.toLowerCase();
+  const phoneQuestion = looksLikePhoneLookupQuestion(lower);
+  const addressQuestion = looksLikeAddressLookupQuestion(lower);
+  const emailQuestion = looksLikeClientEmailFieldQuestion(lower);
   const clients = rawClients
     .map((client) => objectRecord(client))
     .filter((client): client is Record<string, unknown> => Boolean(client))
     .map((client) => ({
+      raw: client,
       name: stringValue(client.name) ?? "",
       company: stringValue(client.company) ?? ""
     }))
@@ -2711,27 +3326,150 @@ function clientLookupAnswer(latestText: string, result: unknown): string | undef
   const names = [...new Set(matches.map((client) => client.name || client.company).filter(Boolean))];
   if (names.length === 0) {
     return requested
-      ? `I checked the client list and Jobber, but I did not find ${requested}.`
-      : "I checked the client list and Jobber, but I did not find a matching client.";
+      ? `I checked the native client list, but I did not find ${requested}.`
+      : "I checked the native client list, but I did not find a matching client.";
   }
-  const foundIn = record?.fallbackUsed || Number(record?.jobberFallbackCount ?? 0) > 0 ? "Jobber" : "the client list";
+  const foundIn = "the native client list";
+  if ((phoneQuestion || addressQuestion || emailQuestion) && matches.length === 1) {
+    const match = matches[0]!;
+    if (phoneQuestion) {
+      const phone = clientPhoneFromRecord(match.raw);
+      return phone
+        ? `The phone number on file for ${match.name || match.company} is ${phone}.\n\nWould you like me to call now?`
+        : `I found ${match.name || match.company}, but there is no phone number on file yet.`;
+    }
+    if (addressQuestion) {
+      const address = clientAddressFromRecord(match.raw);
+      return address
+        ? `The address on file for ${match.name || match.company} is ${address}.\n\nWould you like directions or should I open it in Maps?`
+        : `I found ${match.name || match.company}, but there is no address on file yet.`;
+    }
+    if (emailQuestion) {
+      const email = clientEmailFromRecord(match.raw);
+      return email
+        ? `The email on file for ${match.name || match.company} is ${email}.`
+        : `I found ${match.name || match.company}, but there is no email on file yet.`;
+    }
+  }
+  if ((phoneQuestion || addressQuestion || emailQuestion) && matches.length > 1) {
+    return `I found ${matches.length} matching clients for ${requested || "that lookup"}. Give me the exact client name so I can pull the right ${phoneQuestion ? "phone number" : addressQuestion ? "address" : "email address"}.`;
+  }
   if (names.length === 1) {
     return `I found ${names[0]} in ${foundIn}.`;
   }
   return `I found ${names.length} matching clients in ${foundIn}: ${names.slice(0, 5).join(", ")}${names.length > 5 ? ", and more" : ""}.`;
 }
 
-function approvalPromptAnswer(result: unknown, intro: string): string | undefined {
+function approvalDisplayName(actorDisplayName?: string | null): string {
+  return actorDisplayName?.trim() || "Operator";
+}
+
+function approvalRequestSummary(title: string): string {
+  const [action, subject] = title.split(":");
+  if (!action || !subject) {
+    return title.trim();
+  }
+  return `${action.trim().toLowerCase()} for ${subject.trim()}`;
+}
+
+function previewFieldValue(body: string, label: string): string | undefined {
+  return body
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.toLowerCase().startsWith(`${label.toLowerCase()}:`))
+    ?.split(":")
+    .slice(1)
+    .join(":")
+    .trim();
+}
+
+function formatConfirmationPhone(phone: string | undefined): string | undefined {
+  if (!phone) {
+    return undefined;
+  }
+  const digits = phone.replace(/[^\d]/g, "");
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return phone.trim();
+}
+
+function cleanClientPreviewName(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const cleaned = trimmed.replace(/^[.\s,:;-]+|[.\s,:;-]+$/g, "").replace(/\s+/g, " ").trim();
+  return /[a-z0-9]/i.test(cleaned) ? cleaned : undefined;
+}
+
+function missingClientNamePrompt(): string {
+  return "I still need the client's full name before I can queue this. What should I save as the client name?";
+}
+
+function normalizedApprovalTitle(title: string | undefined): string | undefined {
+  const trimmed = title?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const [action, ...subjectParts] = trimmed.split(":");
+  const cleanedAction = action?.trim();
+  const cleanedSubject = cleanClientPreviewName(subjectParts.join(":"));
+  if (cleanedAction && cleanedSubject) {
+    return `${cleanedAction}: ${cleanedSubject}`;
+  }
+  if (cleanedAction && subjectParts.length > 0) {
+    return cleanedAction;
+  }
+  return cleanClientPreviewName(trimmed);
+}
+
+function clientApprovalPromptAnswer(title: string, body: string): string {
+  const fallbackName = cleanClientPreviewName(title.split(":").slice(1).join(":"));
+  const name = cleanClientPreviewName(previewFieldValue(body, "Name")) ?? fallbackName;
+  if (!name) {
+    return missingClientNamePrompt();
+  }
+  const street = previewFieldValue(body, "Address");
+  const city = previewFieldValue(body, "City");
+  const state = previewFieldValue(body, "State");
+  const zip = previewFieldValue(body, "ZIP");
+  const addressLine = [street, city, [state, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  const phone = formatConfirmationPhone(previewFieldValue(body, "Phone"));
+  const email = previewFieldValue(body, "Email");
+  return [
+    name,
+    addressLine,
+    phone,
+    email && !/not provided/i.test(email) ? email : "Email not provided",
+    "",
+    "Do the Client Details look correct?"
+  ].filter((line, index, lines) => line || index >= lines.length - 2).join("\n");
+}
+
+function approvalPromptAnswer(
+  result: unknown,
+  actorDisplayName?: string | null,
+  options: { allowChanges?: boolean } = {}
+): string | undefined {
   const record = objectRecord(result);
   const approval = objectRecord(record?.approval);
   const preview = objectRecord(approval?.preview);
   const title = stringValue(preview?.title);
   const body = stringValue(preview?.body);
-  const approvalId = stringValue(approval?.id);
-  if (!title || !body || !approvalId) {
+  if (!title || !body) {
     return undefined;
   }
-  return `${intro}\n\n${title}\n${body}\n\nApprove this? yes / no / make changes.\nApproval id: ${approvalId}`;
+  if (/^(?:create|revise) client:/i.test(title)) {
+    return clientApprovalPromptAnswer(title, body);
+  }
+  const approvalLine = options.allowChanges === false
+    ? "Is this correct?\nReply yes / no."
+    : "Is this correct?\nReply yes / no / make changes.";
+  return `Here is your request, ${approvalDisplayName(actorDisplayName)}.\n\nYou requested ${approvalRequestSummary(title)} with the following details:\n${body}\n\n${approvalLine}`;
 }
 
 function approvalExecutionAnswer(result: unknown): string | undefined {
@@ -2745,41 +3483,42 @@ function approvalExecutionAnswer(result: unknown): string | undefined {
   const payment = objectRecord(execution?.payment);
   const refund = objectRecord(execution?.refund);
   const receiptReview = objectRecord(execution?.receiptReview);
-  const approvalId = stringValue(approval?.id);
   if (client?.name && typeof client.name === "string") {
-    return `Approved and created ${client.name}${approvalId ? ` (${approvalId})` : ""}.`;
+    return `Approved and created ${client.name}.`;
   }
   if (quote?.title && typeof quote.title === "string") {
     const quoteNumber = typeof quote.number === "string" && quote.number.trim() ? ` ${quote.number}` : "";
-    return `Approved and created quote${quoteNumber}: ${quote.title}${approvalId ? ` (${approvalId})` : ""}.`;
+    return `Approved and created quote${quoteNumber}: ${quote.title}.`;
   }
   if (job?.title && typeof job.title === "string") {
     const jobNumber = typeof job.number === "string" && job.number.trim() ? ` ${job.number}` : "";
     const invoiceText = invoice?.id ? ` Invoice ${String(invoice.number ?? invoice.id)} is ready.` : "";
-    return `Approved and executed job${jobNumber}: ${job.title}${approvalId ? ` (${approvalId})` : ""}.${invoiceText}`.trim();
+    return `Approved and executed job${jobNumber}: ${job.title}.${invoiceText}`.trim();
   }
   if (refund?.id) {
-    return `Approved and recorded refund ${String(refund.id)}${approvalId ? ` (${approvalId})` : ""}${receiptReview?.id ? `. Receipt review ${String(receiptReview.id)} is paused for review.` : "."}`;
+    return `Approved and recorded refund ${String(refund.id)}${receiptReview?.id ? `. Receipt review ${String(receiptReview.id)} is paused for review.` : "."}`;
   }
   if (invoice?.id && (payment?.id || execution?.preview)) {
-    return `Approved and updated invoice ${String(invoice.number ?? invoice.id)}${approvalId ? ` (${approvalId})` : ""}${payment?.id ? ` with payment ${String(payment.id)}` : ""}.`;
+    return `Approved and updated invoice ${String(invoice.number ?? invoice.id)}${payment?.id ? ` with payment ${String(payment.id)}` : ""}.`;
   }
-  return approvalId ? `Approved and executed ${approvalId}.` : "Approved and executed the pending item.";
+  return "Approved and executed the pending item.";
 }
 
 function approvalRejectionAnswer(result: unknown): string | undefined {
   const record = objectRecord(result);
   const approval = objectRecord(record?.approval);
   const preview = objectRecord(approval?.preview);
-  const title = stringValue(preview?.title);
-  const approvalId = stringValue(approval?.id);
-  if (!approvalId) {
-    return undefined;
-  }
-  return title ? `Rejected ${title} (${approvalId}). Nothing was created.` : `Rejected ${approvalId}. Nothing was created.`;
+  const title = normalizedApprovalTitle(stringValue(preview?.title));
+  return title
+    ? `Rejected ${title}. Nothing was created.`
+    : "Rejected the pending item. Nothing was created.";
 }
 
-function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns: ToolRunTrace[]): string | undefined {
+function directAnswerFromDeterministicRuns(
+  messages: GatewayMessage[],
+  toolRuns: ToolRunTrace[],
+  actorDisplayName?: string | null
+): string | undefined {
   const latestText = latestUserText(messages);
   const lower = latestText.toLowerCase();
   const distanceFollowUp = looksLikeAddressOnlyFollowUp(latestText) && recentUserTextMatches(messages, looksLikeDistanceQuestion);
@@ -2790,14 +3529,14 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
     if (clarification) {
       return clarification;
     }
-    const prompt = approvalPromptAnswer(createClientRun.result, "Client draft ready. I read it back below exactly before anything gets created.");
+    const prompt = approvalPromptAnswer(createClientRun.result, actorDisplayName);
     if (prompt) {
       return prompt;
     }
   }
   const createQuoteRun = [...toolRuns].reverse().find((run) => run.name === "createQuote");
   if (createQuoteRun) {
-    const prompt = approvalPromptAnswer(createQuoteRun.result, "Quote draft ready. I read it back below before anything gets created.");
+    const prompt = approvalPromptAnswer(createQuoteRun.result, actorDisplayName);
     if (prompt) {
       return prompt;
     }
@@ -2809,7 +3548,7 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
     if (clarification) {
       return clarification;
     }
-    const prompt = approvalPromptAnswer(createJobRun.result, "Job draft ready. I read it back below before anything gets created.");
+    const prompt = approvalPromptAnswer(createJobRun.result, actorDisplayName);
     if (prompt) {
       return prompt;
     }
@@ -2821,7 +3560,7 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
     if (clarification) {
       return clarification;
     }
-    const prompt = approvalPromptAnswer(reviseClientRun.result, "Updated client draft ready. Please check the revised record below before I create it.");
+    const prompt = approvalPromptAnswer(reviseClientRun.result, actorDisplayName);
     if (prompt) {
       return prompt;
     }
@@ -2833,7 +3572,7 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
     if (clarification) {
       return clarification;
     }
-    const prompt = approvalPromptAnswer(reviseQuoteRun.result, "Updated quote draft ready. Please check the revised quote below before I create it.");
+    const prompt = approvalPromptAnswer(reviseQuoteRun.result, actorDisplayName);
     if (prompt) {
       return prompt;
     }
@@ -2845,7 +3584,7 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
     if (clarification) {
       return clarification;
     }
-    const prompt = approvalPromptAnswer(reviseJobCreateRun.result, "Updated job draft ready. Please check the revised job below before I create it.");
+    const prompt = approvalPromptAnswer(reviseJobCreateRun.result, actorDisplayName);
     if (prompt) {
       return prompt;
     }
@@ -2857,7 +3596,7 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
     if (clarification) {
       return clarification;
     }
-    const prompt = approvalPromptAnswer(queueJobActionRun.result, "Job action ready. I read the action back below before anything executes.");
+    const prompt = approvalPromptAnswer(queueJobActionRun.result, actorDisplayName);
     if (prompt) {
       return prompt;
     }
@@ -2869,7 +3608,7 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
     if (clarification) {
       return clarification;
     }
-    const prompt = approvalPromptAnswer(queueLedgerActionRun.result, "Billing action ready. I read the action back below before anything executes.");
+    const prompt = approvalPromptAnswer(queueLedgerActionRun.result, actorDisplayName);
     if (prompt) {
       return prompt;
     }
@@ -2890,7 +3629,7 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
     if (clarification) {
       return clarification;
     }
-    const prompt = approvalPromptAnswer(reviseJobActionRun.result, "Updated job action ready. Please check the revised action below before I run it.");
+    const prompt = approvalPromptAnswer(reviseJobActionRun.result, actorDisplayName);
     if (prompt) {
       return prompt;
     }
@@ -2902,7 +3641,7 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
     if (clarification) {
       return clarification;
     }
-    const prompt = approvalPromptAnswer(reviseLedgerActionRun.result, "Updated billing action ready. Please check the revised action below before I run it.");
+    const prompt = approvalPromptAnswer(reviseLedgerActionRun.result, actorDisplayName);
     if (prompt) {
       return prompt;
     }
@@ -2937,8 +3676,12 @@ function directAnswerFromDeterministicRuns(messages: GatewayMessage[], toolRuns:
     return intakeAnswerSavedAnswer(intakeAnswerRun.result);
   }
   const clientLookupRun = [...toolRuns].reverse().find((run) => run.name === "clientLookup" && run.sources.length > 0);
-  if (clientLookupRun && looksLikeNamedClientLookupQuestion(lower) && !looksLikeClientListQuestion(lower)) {
-    return clientLookupAnswer(latestText, clientLookupRun.result);
+  if (
+    clientLookupRun
+    && !looksLikeClientListQuestion(lower)
+    && (looksLikeNamedClientLookupQuestion(lower) || looksLikePhoneLookupQuestion(lower) || looksLikeAddressLookupQuestion(lower) || looksLikeClientEmailFieldQuestion(lower))
+  ) {
+    return clientLookupAnswer(latestText, messages, clientLookupRun.result);
   }
   return undefined;
 }
@@ -3003,7 +3746,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
   const messages: GatewayMessage[] = [...request.messages];
   const toolsByName = new Map(request.tools.map((tool) => [tool.name, tool]));
   const toolDefinitions = request.tools.map(toolDefinition);
-  const directResponse = directNoToolResponseForRequest(messages);
+  const directResponse = directNoToolResponseForRequest(messages, request.pendingApproval);
   if (directResponse) {
     await writeUsageRecord({
       tenantId: request.tenant.id,
@@ -3020,7 +3763,8 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
       usage: emptyUsage(),
       raw: { directNoToolResponse: true },
       failureReason: directResponse.failureReason,
-      toolRuns: []
+      toolRuns: [],
+      pendingApproval: directResponse.pendingApproval ?? request.pendingApproval ?? null
     };
   }
   const capabilityGap = capabilityGapForRequest(messages, toolsByName);
@@ -3040,7 +3784,8 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
       usage: emptyUsage(),
       raw: { capabilityGap: true },
       failureReason: capabilityGap.failureReason,
-      toolRuns: []
+      toolRuns: [],
+      pendingApproval: request.pendingApproval ?? null
     };
   }
   let sources: Source[] = [];
@@ -3052,9 +3797,29 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
     tenant: request.tenant,
     messages,
     toolsByName,
-    cachedToolRuns: request.cachedToolRuns
+    cachedToolRuns: request.cachedToolRuns,
+    pendingApproval: request.pendingApproval,
+    requestorContext: {
+      requestorEmail: request.requestorEmail,
+      requestorPhones: request.requestorPhones,
+      requestorOrigin: request.requestorOrigin
+    }
   });
-  const deterministicRuns = reusableRuns.length > 0 ? reusableRuns : await runDeterministicTools({ tenant: request.tenant, messages, toolsByName });
+  const deterministicRuns = reusableRuns.length > 0
+    ? reusableRuns
+    : await runDeterministicTools({
+        tenant: request.tenant,
+        messages,
+        toolsByName,
+        pendingApproval: request.pendingApproval,
+        requestorContext: {
+          requestorEmail: request.requestorEmail,
+          requestorPhones: request.requestorPhones,
+          requestorOrigin: request.requestorOrigin
+        },
+        env: request.env,
+        fetchFn: request.fetchFn
+      });
   const suppressToolsForFreeformDraft = looksLikeFreeformContentDraftAction(latestUserText(request.messages).toLowerCase());
   if (deterministicRuns.length > 0) {
     sources = [...sources, ...deterministicRuns.flatMap((run) => run.sources)];
@@ -3076,10 +3841,15 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         usage: totalUsage,
         raw: { iterations: rawIterations },
         failureReason: emailFallback.failureReason,
-        toolRuns
+        toolRuns,
+        pendingApproval: pendingApprovalFromToolRuns(toolRuns, request.pendingApproval)
       };
     }
-    const directDeterministicAnswer = directAnswerFromDeterministicRuns(request.messages, deterministicRuns);
+    const directDeterministicAnswer = directAnswerFromDeterministicRuns(
+      request.messages,
+      deterministicRuns,
+      request.actorDisplayName
+    );
     if (directDeterministicAnswer) {
       await writeUsageRecord({
         tenantId: request.tenant.id,
@@ -3095,7 +3865,8 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         sources,
         usage: totalUsage,
         raw: { deterministicDirectAnswer: true },
-        toolRuns
+        toolRuns,
+        pendingApproval: pendingApprovalFromToolRuns(toolRuns, request.pendingApproval)
       };
     }
     const toolNames = deterministicRuns.map((run) => run.name).join(", ");
@@ -3107,7 +3878,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
       role: "user",
       content: [
         ...deterministicRuns.flatMap((run) => [`Verified ${run.name} result:`, toolResultContent(run.result)]),
-        "Answer the original user request using only these checked records. For job issue, technician, measurement, total-gallons, completion-time, service-time, and report/checklist questions, compare Jobber and CompanyCam before answering; do not treat Jobber's missing completion/status/measurement field as proof that no CompanyCam report answer exists. For payment, paid/unpaid, invoice, balance, and receipt questions, compare Jobber, native invoices, and email receipts before answering; do not treat lead status as proof of unpaid. Say clearly when one system has no matching data. Keep record labels attached in the API response."
+        "Answer the original user request using only these checked records. For job issue, technician, measurement, total-gallons, completion-time, service-time, and report/checklist questions, compare every verified work-record source before answering; do not treat one source missing a field as proof that no work-record answer exists. For payment, paid/unpaid, invoice, balance, and receipt questions, compare the verified billing records before answering; do not treat lead status as proof of unpaid. Say clearly when the checked records have no matching data. Keep record labels attached in the API response."
       ].join("\n")
     });
   }
@@ -3158,7 +3929,8 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         usage: totalUsage,
         raw: { iterations: rawIterations },
         failureReason: sourceCheck.failureReason,
-        toolRuns
+        toolRuns,
+        pendingApproval: pendingApprovalFromToolRuns(toolRuns, request.pendingApproval)
       };
     }
 
@@ -3187,7 +3959,25 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         continue;
       }
       try {
-        const args = tool.inputSchema.parse(normalizeToolInput(toolUse.name, toolUse.input, messages, request.tenant, toolRuns));
+        const args = tool.inputSchema.parse(
+          await normalizeToolInput(
+            toolUse.name,
+            toolUse.input,
+            messages,
+            request.tenant,
+            toolRuns,
+            request.pendingApproval,
+            {
+              requestorEmail: request.requestorEmail,
+              requestorPhones: request.requestorPhones,
+              requestorOrigin: request.requestorOrigin
+            },
+            {
+              env: request.env,
+              fetchFn: request.fetchFn
+            }
+          )
+        );
         const result = await tool.handler(request.tenant, args);
         sources = [...sources, ...result.sources];
         toolRuns.push({ name: tool.name, result: result.result, sources: result.sources });
@@ -3218,6 +4008,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
     usage: totalUsage,
     raw: { iterations: rawIterations },
     failureReason: "tool_iteration_limit_exceeded",
-    toolRuns
+    toolRuns,
+    pendingApproval: pendingApprovalFromToolRuns(toolRuns, request.pendingApproval)
   };
 }

@@ -28,7 +28,7 @@ function tenantFrom(tenantId: string, env: NodeJS.ProcessEnv): Tenant {
     name: tenantId === "aquatrace" ? "Aquatrace" : tenantId,
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
-    adapters: { crm: "native", media: "companycam", email: "gmail_relay" },
+    adapters: { crm: "native", media: "native", email: "gmail_relay" },
     approval: defaultApproval(),
     timezone: env.TENANT_TIMEZONE || "America/New_York",
     plan: "suite"

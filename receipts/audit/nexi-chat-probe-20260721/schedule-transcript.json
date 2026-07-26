@@ -1,0 +1,26 @@
+[
+  {
+    "prompt": "What is scheduled today in Aquatrace?",
+    "answer": "Nexi Job Desk is ready. Ask about schedule, job details, photos, or the Camp Mikell SiteJobBlueprint."
+  },
+  {
+    "prompt": "What is the address for the job scheduled today in Aquatrace?",
+    "answer": "tools: Tool names must be unique."
+  },
+  {
+    "prompt": "Is the job scheduled today assigned to a technician yet?",
+    "answer": "I couldn't pull up today's job details — that check failed on my end and I've logged it. Can you give me the customer name or job number so I can try looking it up that way?"
+  },
+  {
+    "prompt": "Do we have any invoices linked to the job scheduled today in Aquatrace?",
+    "answer": "I still can't pull up that job record — the lookup failed again and I've got it logged. I don't have technician assignment info written down for today's job right now. Can you give me the customer name or job number so I can try a direct lookup?"
+  },
+  {
+    "prompt": "What is on Monday's schedule for Aquatrace?",
+    "answer": "I don't have invoice data connected here — the schedule record for today's job (Swimming Pool Leak Detection Service at 102 Kate Lane) doesn't include billing info. To confirm invoice status I'd need to check Jobber, native invoices, and email receipts, and none of those are showing anything for this job right now. I can't confirm paid, unpaid, or invoiced status either way based on what's available.\n\nNative schedule workspace\nScheduled visit Swimming Pool Leak Detection Service"
+  },
+  {
+    "prompt": "Do we have any photos on the job scheduled today in Aquatrace?",
+    "answer": "Nothing on the books for Monday. No visits or unscheduled jobs are showing for that day in Jobber.\n\nNative schedule workspace"
+  }
+]

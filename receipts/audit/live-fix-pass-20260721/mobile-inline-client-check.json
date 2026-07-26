@@ -1,0 +1,36 @@
+{
+  "clientName": "Atlas Mobile Fix 1784604348965",
+  "jobsHasReadyMessage": false,
+  "jobsHasClientName": true,
+  "inlineFormStillVisible": false,
+  "clientsContainsName": true,
+  "apiCount": 1,
+  "apiContainsName": true,
+  "apiResponse": {
+    "ok": true,
+    "clients": [
+      {
+        "id": "client_d2f516f0-e5c7-4c37-8503-ee214835d183",
+        "tenantId": "aquatrace",
+        "name": "Atlas Mobile Fix 1784604348965",
+        "personName": {
+          "firstName": "Atlas",
+          "lastName": "Mobile Fix 1784604348965"
+        },
+        "displayNamePreference": "person",
+        "emails": [
+          "atlas.mobile.fix@example.com"
+        ],
+        "phones": [
+          "8645551212"
+        ],
+        "tags": [],
+        "consent": {
+          "email": false,
+          "sms": false,
+          "marketing": false
+        }
+      }
+    ]
+  }
+}

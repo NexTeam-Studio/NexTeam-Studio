@@ -18,17 +18,19 @@ import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../comms/gmailRegistry.js";
 import type { PlatformRepository } from "../platform/repository.js";
 import type { SiteLead } from "../sites/schemas.js";
+import { requestTemplateVariables, resolveTemplateMessage } from "./communicationTemplates.js";
 import { materializeQuoteRecord } from "./quoteFoundation.js";
 
 export interface RequestAutomationDeps {
   approvalQueue?: ApprovalQueueService | undefined;
   commsRail?: CommsRail | undefined;
   platformRepository?: Pick<PlatformRepository, "listTenantUsers"> | undefined;
+  crmRepository?: Pick<NativeCrmRepository, "getCrmSettings"> | undefined;
 }
 
 export interface RequestFieldPatch {
   key: string;
-  value?: string | number | boolean | undefined;
+  value?: string | number | boolean | string[] | undefined;
   visibility?: Partial<IntakeFieldValue["visibility"]> | undefined;
 }
 
@@ -41,11 +43,11 @@ export interface RequestBuildInput {
   narrative?: string | undefined;
   selectedClientId?: string | undefined;
   selectedPropertyId?: string | undefined;
-  consent?: { email?: boolean | undefined; sms?: boolean | undefined } | undefined;
+  consent?: { email?: boolean | undefined; sms?: boolean | undefined; marketing?: boolean | undefined } | undefined;
   allowIncomplete?: boolean | undefined;
   fieldValues: Array<{
     key: string;
-    value: string | number | boolean;
+    value: string | number | boolean | string[];
     visibility?: Partial<IntakeFieldValue["visibility"]> | undefined;
   }>;
   sourceLeadId?: string | undefined;
@@ -71,40 +73,65 @@ export const REQUEST_FIELD_CATALOG: IntakeFieldDefinition[] = [
     options: ["email", "phone", "text"],
     helpText: "Lets the office reply the way the client expects."
   },
+  {
+    key: "marketing_consent",
+    label: "Okay to use this job in marketing",
+    type: "boolean",
+    group: "contact",
+    helpText: "Leave this off unless the client explicitly says their job photos and results can appear in public marketing."
+  },
   { key: "property_street1", label: "Street address", type: "text", group: "property", required: true },
   { key: "property_street2", label: "Address line 2", type: "text", group: "property" },
   { key: "property_city", label: "City", type: "text", group: "property", required: true },
   { key: "property_province", label: "State", type: "text", group: "property", required: true },
   { key: "property_postal_code", label: "ZIP code", type: "text", group: "property", required: true },
+  { key: "site_contact_name", label: "Site contact name", type: "text", group: "property", helpText: "Use this when the on-site contact differs from the billing client." },
+  { key: "site_contact_phone", label: "Site contact phone", type: "phone", group: "property" },
+  { key: "site_contact_email", label: "Site contact email", type: "email", group: "property" },
   {
-    key: "pool_type",
-    label: "Pool type",
+    key: "pool_installation_type",
+    label: "Pool style",
     type: "select",
     group: "pool",
-    options: ["residential", "commercial", "custom", "vinyl", "fiberglass", "gunite_plaster", "other"],
-    helpText: "Keep the trade-specific pool context queryable from the start."
+    options: ["inground", "above_ground"]
+  },
+  {
+    key: "pool_type",
+    label: "Pool use",
+    type: "select",
+    group: "pool",
+    options: ["residential", "commercial"],
+    helpText: "Commercial examples: Community Pool, Public Pool, HOA, Apartment, Condo, Hotel."
+  },
+  {
+    key: "pool_commercial_subtype",
+    label: "Commercial subtype",
+    type: "select",
+    group: "pool",
+    options: ["community_pool", "public_pool", "hoa", "apartment", "condo", "hotel", "other"]
   },
   {
     key: "pool_configuration",
-    label: "Pool or pool plus spa",
+    label: "Spa integration",
     type: "select",
     group: "pool",
     required: true,
     options: ["pool_only", "pool_and_spa", "spa_only"]
   },
   {
-    key: "pool_surface",
-    label: "Pool surface",
+    key: "pool_construction_type",
+    label: "Pool construction type",
     type: "select",
     group: "pool",
-    options: ["plaster", "pebble", "vinyl", "fiberglass", "tile", "other"]
+    options: ["vinyl_liner", "gunite", "fiberglass", "concrete", "plaster", "pebble", "tile", "other"]
   },
   {
     key: "water_loss_rate",
-    label: "Water loss per day",
-    type: "text",
+    label: "Approximate daily water loss",
+    type: "select",
     group: "pool",
-    helpText: "Store the client-reported loss rate exactly as given."
+    options: ["less_than_1_inch", "1_to_2_inches", "2_to_4_inches", "more_than_4_inches", "unknown"],
+    helpText: "Store the customer's estimate as a structured field from first intake."
   },
   {
     key: "gate_code",
@@ -129,12 +156,54 @@ export const REQUEST_FIELD_CATALOG: IntakeFieldDefinition[] = [
     prominent: true
   },
   {
+    key: "job_title",
+    label: "Job title",
+    type: "text",
+    group: "service",
+    helpText: "Defaults to a practical service name such as Swimming Pool Leak Detection."
+  },
+  {
+    key: "salesperson_user_id",
+    label: "Salesperson / rep",
+    type: "text",
+    group: "service",
+    helpText: "Office attribution only. The quote view can switch this to an internal-user picker."
+  },
+  {
+    key: "referral_source",
+    label: "How did you hear about us?",
+    type: "text",
+    group: "service",
+    helpText: "This is the same underlying value later surfaced as Referred By on the quote rail."
+  },
+  {
+    key: "promo_code",
+    label: "Promo code",
+    type: "text",
+    group: "service"
+  },
+  {
     key: "issue_summary",
-    label: "What is going on",
+    label: "Primary issue",
     type: "textarea",
     group: "notes",
     required: true,
     helpText: "Original request narrative travels forward to quote, job, visit, and invoice."
+  },
+  {
+    key: "additional_information",
+    label: "Additional information",
+    type: "textarea",
+    group: "notes",
+    helpText: "Long-form diagnostic notes stay intact instead of being squeezed into a short summary field."
+  },
+  {
+    key: "request_images",
+    label: "Request images",
+    type: "multi_image",
+    group: "notes",
+    maxItems: 10,
+    helpText: "Upload up to 10 intake photos so the office sees the same evidence before the first callback."
   }
 ];
 
@@ -176,19 +245,30 @@ export function defaultRequestForms(tenantId: string): RequestForm[] {
         "email",
         "phone",
         "preferred_contact_method",
+        "marketing_consent",
         "property_street1",
         "property_street2",
         "property_city",
         "property_province",
         "property_postal_code",
+        "site_contact_name",
+        "site_contact_phone",
+        "site_contact_email",
+        "pool_installation_type",
         "pool_type",
+        "pool_commercial_subtype",
         "pool_configuration",
-        "pool_surface",
+        "pool_construction_type",
         "water_loss_rate",
         "gate_code",
         "pet_present",
         "pet_name",
-        "issue_summary"
+        "job_title",
+        "referral_source",
+        "promo_code",
+        "issue_summary",
+        "additional_information",
+        "request_images"
       ]),
       createdAt,
       updatedAt: createdAt
@@ -227,7 +307,10 @@ function normalizePhone(value?: string | undefined): string {
   return value?.replace(/\D+/g, "") ?? "";
 }
 
-function displayValue(value: string | number | boolean): string {
+function displayValue(value: string | number | boolean | string[]): string {
+  if (Array.isArray(value)) {
+    return value.join(", ");
+  }
   return typeof value === "boolean" ? (value ? "yes" : "no") : String(value);
 }
 
@@ -235,9 +318,35 @@ function fieldVisibility(patch?: Partial<IntakeFieldValue["visibility"]> | undef
   return { ...FULL_VISIBILITY, ...(patch ?? {}) };
 }
 
-function coerceValue(field: IntakeFieldDefinition, raw: unknown): string | number | boolean | null {
+function coerceValue(field: IntakeFieldDefinition, raw: unknown): string | number | boolean | string[] | null {
   if (raw === undefined || raw === null) {
     return null;
+  }
+  if (field.type === "multi_image") {
+    const values = Array.isArray(raw)
+      ? raw
+      : typeof raw === "string"
+        ? (() => {
+          const trimmed = raw.trim();
+          if (!trimmed) {
+            return [];
+          }
+          if (trimmed.startsWith("[")) {
+            try {
+              const parsed = JSON.parse(trimmed) as unknown;
+              return Array.isArray(parsed) ? parsed : [trimmed];
+            } catch {
+              return [trimmed];
+            }
+          }
+          return [trimmed];
+        })()
+        : [raw];
+    const normalized = values
+      .map((value) => String(value).trim())
+      .filter(Boolean)
+      .slice(0, field.maxItems ?? 10);
+    return normalized.length ? normalized : null;
   }
   if (field.type === "boolean") {
     if (typeof raw === "boolean") {
@@ -267,6 +376,11 @@ function valueAsBoolean(fieldIndex: IntakeSnapshot["fieldIndex"], key: string): 
   return fieldIndex[key] === true;
 }
 
+function valueAsStringArray(fieldIndex: IntakeSnapshot["fieldIndex"], key: string): string[] {
+  const value = fieldIndex[key];
+  return Array.isArray(value) ? value.map((entry) => String(entry).trim()).filter(Boolean) : [];
+}
+
 function propertyAddressFromFields(fieldIndex: IntakeSnapshot["fieldIndex"]): Address | undefined {
   const street1 = valueAsString(fieldIndex, "property_street1");
   const city = valueAsString(fieldIndex, "property_city");
@@ -291,6 +405,10 @@ function requestSubject(input: RequestBuildInput, fieldIndex: IntakeSnapshot["fi
   if (explicit) {
     return explicit;
   }
+  const jobTitle = valueAsString(fieldIndex, "job_title");
+  if (jobTitle) {
+    return jobTitle;
+  }
   const clientName = valueAsString(fieldIndex, "client_name");
   const pool = valueAsString(fieldIndex, "pool_configuration");
   return clientName && pool ? `${clientName} - ${pool.replaceAll("_", " ")}` : clientName ? `${clientName} request` : "Service request";
@@ -301,7 +419,10 @@ function requestNarrative(input: RequestBuildInput, fieldIndex: IntakeSnapshot["
   if (explicit) {
     return explicit;
   }
-  return valueAsString(fieldIndex, "issue_summary");
+  return [
+    valueAsString(fieldIndex, "issue_summary"),
+    valueAsString(fieldIndex, "additional_information")
+  ].filter(Boolean).join("\n\n");
 }
 
 function clientSearchValues(client: Client): { emails: string[]; phones: string[] } {
@@ -441,7 +562,8 @@ export async function buildServiceRequest(repository: NativeCrmRepository, input
     narrative,
     consent: {
       email: input.consent?.email ?? true,
-      sms: input.consent?.sms ?? false
+      sms: input.consent?.sms ?? false,
+      marketing: input.consent?.marketing ?? valueAsBoolean(fieldIndex, "marketing_consent")
     },
     intake: {
       narrative,
@@ -471,6 +593,56 @@ function mergeFieldValues(existing: IntakeFieldValue[], patches: RequestFieldPat
     });
   }
   return [...byKey.values()];
+}
+
+function mergeUniqueStringValues(existing: string[], incoming: string[]): string[] {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  [...existing, ...incoming]
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .forEach((value) => {
+      if (seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+      merged.push(value);
+    });
+  return merged;
+}
+
+function upsertRequestImageFieldValues(request: ServiceRequest, mediaIds: string[]): ServiceRequest {
+  if (!mediaIds.length) {
+    return request;
+  }
+  const mergedIds = mergeUniqueStringValues(valueAsStringArray(request.intake.fieldIndex, "request_images"), mediaIds);
+  const fieldDefinition = REQUEST_FIELD_MAP.get("request_images");
+  if (!fieldDefinition) {
+    return request;
+  }
+  const existingField = request.intake.fieldValues.find((field) => field.key === "request_images");
+  const fieldValues = existingField
+    ? request.intake.fieldValues.map((field) => field.key === "request_images" ? { ...field, value: mergedIds } : field)
+    : [
+        ...request.intake.fieldValues,
+        {
+          ...fieldDefinition,
+          value: mergedIds,
+          visibility: FULL_VISIBILITY
+        }
+      ];
+  const fieldIndex = buildFieldIndex(fieldValues);
+  const narrative = valueAsString(fieldIndex, "issue_summary") || request.narrative;
+  return {
+    ...request,
+    intake: {
+      narrative,
+      fieldValues,
+      fieldIndex
+    },
+    narrative,
+    updatedAt: now()
+  };
 }
 
 export function updateServiceRequestShape(
@@ -547,9 +719,76 @@ function propertyCustomFieldIndex(request: ServiceRequest): Record<string, strin
     "property_city",
     "property_province",
     "property_postal_code",
-    "issue_summary"
+    "site_contact_name",
+    "site_contact_phone",
+    "site_contact_email",
+    "job_title",
+    "salesperson_user_id",
+    "referral_source",
+    "promo_code",
+    "request_images",
+    "issue_summary",
+    "additional_information"
   ]);
-  return Object.fromEntries(Object.entries(request.intake.fieldIndex).filter(([key]) => !ignored.has(key)));
+  return Object.fromEntries(
+    Object.entries(request.intake.fieldIndex)
+      .filter(([key, value]) => !ignored.has(key) && !Array.isArray(value))
+      .map(([key, value]) => [key, value as string | number | boolean])
+  );
+}
+
+function clientCustomFieldIndex(request: ServiceRequest): Record<string, string | number | boolean> {
+  const next: Record<string, string | number | boolean> = {
+    requestSource: request.source
+  };
+  const referralSource = valueAsString(request.intake.fieldIndex, "referral_source");
+  const promoCode = valueAsString(request.intake.fieldIndex, "promo_code");
+  if (referralSource) {
+    next.referralSource = referralSource;
+  }
+  if (promoCode) {
+    next.promoCode = promoCode;
+  }
+  return next;
+}
+
+function propertyContactsFromRequest(
+  request: ServiceRequest,
+  options: { mirrorPrimaryIfBlank: boolean }
+): NonNullable<Property["contacts"]> | undefined {
+  const name = valueAsString(request.intake.fieldIndex, "site_contact_name");
+  const phone = valueAsString(request.intake.fieldIndex, "site_contact_phone");
+  const email = valueAsString(request.intake.fieldIndex, "site_contact_email");
+  const fallbackName = options.mirrorPrimaryIfBlank ? valueAsString(request.intake.fieldIndex, "client_name") : "";
+  const fallbackPhone = options.mirrorPrimaryIfBlank ? valueAsString(request.intake.fieldIndex, "phone") : "";
+  const fallbackEmail = options.mirrorPrimaryIfBlank ? valueAsString(request.intake.fieldIndex, "email") : "";
+  const finalName = name || fallbackName;
+  const finalPhone = phone || fallbackPhone;
+  const finalEmail = email || fallbackEmail;
+  if (!finalName && !finalPhone && !finalEmail) {
+    return undefined;
+  }
+  const [firstName, ...lastNameParts] = finalName.split(/\s+/).filter(Boolean);
+  return [{
+    id: `property_contact_${randomUUID()}`,
+    personName: finalName ? {
+      ...(firstName ? { firstName } : {}),
+      ...(lastNameParts.length ? { lastName: lastNameParts.join(" ") } : {})
+    } : undefined,
+    role: "Site contact",
+    billingContact: false,
+    correspondenceContact: false,
+    phones: finalPhone ? [{
+      value: finalPhone,
+      label: "Main",
+      primary: true,
+      receivesMessages: false,
+      smsCapability: "unknown",
+      smsMode: "one_way"
+    }] : [],
+    emails: finalEmail ? [{ value: finalEmail, label: "Main", primary: true }] : [],
+    channelPreference: finalPhone && finalEmail ? "both" : finalPhone ? "sms" : "email"
+  }];
 }
 
 async function materializeRequestClient(repository: NativeCrmRepository, request: ServiceRequest): Promise<{ client: Client; property?: Property | undefined }> {
@@ -557,7 +796,22 @@ async function materializeRequestClient(repository: NativeCrmRepository, request
   if (existingClient) {
     const existingProperty = await resolveExistingProperty(repository, request, existingClient.id);
     if (existingProperty) {
-      return { client: existingClient, property: existingProperty };
+      const contacts = propertyContactsFromRequest(request, { mirrorPrimaryIfBlank: false });
+      const gateCode = valueAsString(request.intake.fieldIndex, "gate_code");
+      const nextProperty = contacts || gateCode || Object.keys(propertyCustomFieldIndex(request)).length
+        ? await repository.upsertProperty({
+          ...existingProperty,
+          access: gateCode
+            ? { ...(existingProperty.access ?? {}), gateCode }
+            : existingProperty.access,
+          contacts: contacts ?? existingProperty.contacts,
+          customFields: {
+            ...(existingProperty.customFields ?? {}),
+            ...propertyCustomFieldIndex(request)
+          }
+        })
+        : existingProperty;
+      return { client: existingClient, property: nextProperty };
     }
     if (request.propertyAddress) {
       const property = await repository.upsertProperty({
@@ -568,6 +822,7 @@ async function materializeRequestClient(repository: NativeCrmRepository, request
         access: valueAsString(request.intake.fieldIndex, "gate_code")
           ? { gateCode: valueAsString(request.intake.fieldIndex, "gate_code") }
           : undefined,
+        contacts: propertyContactsFromRequest(request, { mirrorPrimaryIfBlank: false }),
         assets: [],
         customFields: propertyCustomFieldIndex(request)
       });
@@ -584,9 +839,7 @@ async function materializeRequestClient(repository: NativeCrmRepository, request
     phones: request.phone ? [request.phone] : [],
     tags: ["request"],
     consent: request.consent,
-    customFields: {
-      requestSource: request.source
-    }
+    customFields: clientCustomFieldIndex(request)
   });
 
   if (!request.propertyAddress) {
@@ -601,19 +854,48 @@ async function materializeRequestClient(repository: NativeCrmRepository, request
     access: valueAsString(request.intake.fieldIndex, "gate_code")
       ? { gateCode: valueAsString(request.intake.fieldIndex, "gate_code") }
       : undefined,
+    contacts: propertyContactsFromRequest(request, { mirrorPrimaryIfBlank: true }),
     assets: [],
     customFields: propertyCustomFieldIndex(request)
   });
   return { client, property };
 }
 
+export async function materializeRequestCaptureContext(
+  repository: NativeCrmRepository,
+  request: ServiceRequest,
+  mediaIds: string[]
+): Promise<{ request: ServiceRequest; client: Client; property?: Property | undefined }> {
+  const requestWithMedia = upsertRequestImageFieldValues(request, mediaIds);
+  const materialized = await materializeRequestClient(repository, requestWithMedia);
+  const persisted = await repository.updateRequest(request.id, {
+    intake: requestWithMedia.intake,
+    narrative: requestWithMedia.narrative,
+    clientName: requestWithMedia.clientName,
+    email: requestWithMedia.email,
+    phone: requestWithMedia.phone,
+    propertyAddress: requestWithMedia.propertyAddress,
+    selectedClientId: materialized.client.id,
+    selectedPropertyId: materialized.property?.id,
+    updatedAt: now()
+  });
+  return {
+    request: persisted,
+    client: materialized.client,
+    property: materialized.property
+  };
+}
+
 export async function convertRequestToQuote(repository: NativeCrmRepository, request: ServiceRequest): Promise<{ quote: Quote; request: ServiceRequest; property?: Property | undefined }> {
   const materialized = await materializeRequestClient(repository, request);
+  const jobTitle = valueAsString(request.intake.fieldIndex, "job_title") || request.subject;
+  const salespersonUserId = valueAsString(request.intake.fieldIndex, "salesperson_user_id") || undefined;
   const draft = await materializeQuoteRecord(repository, {
     tenantId: request.tenantId,
     clientId: materialized.client.id,
     requestId: request.id,
-    title: `${request.subject} quote`,
+    title: jobTitle,
+    ...(salespersonUserId ? { salespersonUserId } : {}),
     items: [],
     intake: request.intake
   });
@@ -631,6 +913,7 @@ export async function convertRequestToQuote(repository: NativeCrmRepository, req
 export async function convertRequestToJob(repository: NativeCrmRepository, request: ServiceRequest): Promise<{ job: NonNullable<Awaited<ReturnType<NativeCrmRepository["upsertJob"]>>>; request: ServiceRequest; property?: Property | undefined }> {
   const materialized = await materializeRequestClient(repository, request);
   const timestamp = now();
+  const jobTitle = valueAsString(request.intake.fieldIndex, "job_title") || request.subject;
   const job = await repository.upsertJob({
     id: `job_${randomUUID()}`,
     tenantId: request.tenantId,
@@ -639,7 +922,7 @@ export async function convertRequestToJob(repository: NativeCrmRepository, reque
     ...(materialized.property ? { propertyId: materialized.property.id } : {}),
     requestId: request.id,
     status: "Unscheduled",
-    title: request.subject,
+    title: jobTitle,
     lineItems: [],
     totals: { subtotal: 0, tax: 0, total: 0 },
     intake: request.intake,
@@ -710,6 +993,8 @@ export async function notifyRequestCreated(
   request: ServiceRequest,
   automation: RequestAutomationDeps
 ): Promise<ServiceRequest> {
+  const settings = automation.crmRepository ? await automation.crmRepository.getCrmSettings(request.tenantId) : undefined;
+  const requestVariables = requestTemplateVariables(request);
   const users = automation.platformRepository ? await automation.platformRepository.listTenantUsers(request.tenantId) : [];
   const adminRecipients = notificationRecipients(users, automation.commsRail?.operatorEmail);
   const matchLabel = request.match.matchedBy === "none"
@@ -728,18 +1013,28 @@ export async function notifyRequestCreated(
       matchLabel
     ].filter(Boolean).join("\n")
   });
+  const requestConfirmation = resolveTemplateMessage({
+    settings,
+    category: "request_confirmation",
+    channel: "email",
+    fallbackSubject: "We received your request",
+    fallbackBodyText: [
+      "We received your request and the office is reviewing it now.",
+      "",
+      `Request for: ${request.clientName}`,
+      `Summary: ${request.narrative || "Service request received."}`
+    ].join("\n"),
+    variables: requestVariables
+  });
   const clientSend = request.email
-    ? await queueEmail({
-      tenantId: request.tenantId,
-      to: [request.email],
-      subject: `We received your request`,
-      bodyText: [
-        `We received your request and the office is reviewing it now.`,
-        "",
-        `Request for: ${request.clientName}`,
-        `Summary: ${request.narrative || "Service request received."}`
-      ].join("\n")
-    })
+    ? requestConfirmation.enabled
+      ? await queueEmail({
+        tenantId: request.tenantId,
+        to: [request.email],
+        subject: requestConfirmation.subject,
+        bodyText: requestConfirmation.bodyText
+      })
+      : {}
     : {};
   if (!adminSend.sentAt && !clientSend.sentAt) {
     return request;
@@ -821,6 +1116,10 @@ function fieldInput(field: IntakeFieldDefinition): string {
   if (field.type === "boolean") {
     return `<label class="request-form-check${field.prominent ? " prominent" : ""}"><input type="checkbox" name="${name}" value="true" /><span>${label}</span>${help}</label>`;
   }
+  if (field.type === "multi_image") {
+    const maxItems = field.maxItems ?? 10;
+    return `<label class="request-form-field request-form-upload${field.prominent ? " prominent" : ""}" data-upload-field="${name}" data-max-items="${maxItems}"><span>${label}${field.required ? " *" : ""}</span><input type="file" accept="image/*" multiple data-upload-input /><input type="hidden" name="${name}" value="[]" /><small data-upload-status>0 of ${maxItems} uploaded</small><div class="request-form-upload-list" data-upload-list></div>${help}</label>`;
+  }
   const type = field.type === "email" || field.type === "number" ? field.type : "text";
   return `<label class="request-form-field${field.prominent ? " prominent" : ""}"><span>${label}${field.required ? " *" : ""}</span><input type="${type}" name="${name}"${field.required ? " required" : ""} />${help}</label>`;
 }
@@ -857,6 +1156,8 @@ export function renderPublicRequestForm(form: RequestForm): string {
       }
       .request-form-check { grid-template-columns: auto 1fr; align-items: start; }
       .request-form-check small { grid-column: 2; }
+      .request-form-upload-list { display: grid; gap: 6px; }
+      .request-form-upload-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(12, 17, 24, 0.06); font-size: 0.92rem; }
       button {
         border: 0;
         border-radius: 999px;
@@ -876,12 +1177,90 @@ export function renderPublicRequestForm(form: RequestForm): string {
         <p>Request intake</p>
         <h1>${htmlEscape(form.title)}</h1>
         <p>${htmlEscape(form.intro ?? "Send the office the job details the first time so nothing gets dropped on transfer.")}</p>
-        <form method="post" action="${requestFormSubmitPath(form)}">
+        <form method="post" action="${requestFormSubmitPath(form)}" data-tenant-id="${htmlEscape(form.tenantId)}">
           ${inputs}
           <button type="submit">Send request</button>
         </form>
       </section>
     </main>
+    <script>
+      const form = document.querySelector("form[data-tenant-id]");
+      if (form) {
+        const toBase64 = (file) => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = String(reader.result || "");
+            const parts = result.split(",", 2);
+            resolve(parts.length === 2 ? parts[1] : result);
+          };
+          reader.onerror = () => reject(reader.error || new Error("File read failed."));
+          reader.readAsDataURL(file);
+        });
+        const updateUploadList = (field, count) => {
+          const status = field.querySelector("[data-upload-status]");
+          if (status) {
+            status.textContent = count + " of " + field.dataset.maxItems + " uploaded";
+          }
+          const list = field.querySelector("[data-upload-list]");
+          if (!list) {
+            return;
+          }
+          list.innerHTML = "";
+          for (let index = 0; index < count; index += 1) {
+            const pill = document.createElement("div");
+            pill.className = "request-form-upload-pill";
+            pill.textContent = "Image " + (index + 1) + " queued";
+            list.appendChild(pill);
+          }
+        };
+        form.querySelectorAll("[data-upload-field]").forEach((field) => {
+          const input = field.querySelector("[data-upload-input]");
+          const hidden = field.querySelector('input[type="hidden"]');
+          if (!input || !hidden) {
+            return;
+          }
+          updateUploadList(field, 0);
+          input.addEventListener("change", async () => {
+            const files = Array.from(input.files || []);
+            const maxItems = Number(field.dataset.maxItems || 10);
+            let uploaded = [];
+            try {
+              uploaded = JSON.parse(hidden.value || "[]");
+            } catch {
+              uploaded = [];
+            }
+            const remaining = Math.max(0, maxItems - uploaded.length);
+            const nextFiles = files.slice(0, remaining);
+            for (const file of nextFiles) {
+              const status = field.querySelector("[data-upload-status]");
+              if (status) {
+                status.textContent = "Uploading " + (uploaded.length + 1) + " of " + maxItems + "...";
+              }
+              const fileBase64 = await toBase64(file);
+              const response = await fetch("/api/fielddocs/uploads", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                  tenantId: form.dataset.tenantId,
+                  filename: file.name,
+                  mime: file.type || "image/jpeg",
+                  fileBase64,
+                  tags: ["request-intake"]
+                })
+              });
+              const body = await response.json();
+              if (!body.ok || !body.media || !body.media.id) {
+                throw new Error(body.error || "Image upload failed.");
+              }
+              uploaded.push(body.media.id);
+              hidden.value = JSON.stringify(uploaded);
+              updateUploadList(field, uploaded.length);
+            }
+            input.value = "";
+          });
+        });
+      }
+    </script>
   </body>
 </html>`;
 }

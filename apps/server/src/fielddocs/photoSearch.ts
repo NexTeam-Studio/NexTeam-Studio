@@ -16,14 +16,19 @@ function tokens(text: string): string[] {
 }
 
 function haystack(media: Media): string[] {
+  const externalIds = Object.values(media.externalIds ?? {});
+  const comments = (media.comments ?? []).map((entry) => entry.text);
   return [
     media.id,
     media.jobId,
+    media.visitId,
     media.propertyId,
     media.storageRef,
     media.aiCaption,
-    media.externalIds?.companycam,
-    ...media.aiTags
+    ...externalIds,
+    ...media.aiTags,
+    ...(media.manualTags ?? []),
+    ...comments
   ].filter((value): value is string => Boolean(value));
 }
 

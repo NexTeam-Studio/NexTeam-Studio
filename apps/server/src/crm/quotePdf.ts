@@ -1,4 +1,4 @@
-import type { Client, Invoice, Quote } from "@nexteam/core";
+import type { Client, Invoice, Quote, ReceiptReview } from "@nexteam/core";
 
 function escapePdfText(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
@@ -15,6 +15,88 @@ function escapeHtml(value: string): string {
 
 function money(value: number): string {
   return `$${value.toFixed(2)}`;
+}
+
+export interface PortalNavLink {
+  href: string;
+  label: string;
+  active?: boolean | undefined;
+}
+
+export interface PortalChromeOptions {
+  badge?: string | undefined;
+  title?: string | undefined;
+  subtitle?: string | undefined;
+  backHref?: string | undefined;
+  backLabel?: string | undefined;
+  navLinks?: PortalNavLink[] | undefined;
+  statusMessage?: string | undefined;
+}
+
+export interface InvoicePortalRenderOptions {
+  chrome?: PortalChromeOptions | undefined;
+  checkoutBasePath?: string | undefined;
+  tippingEnabled?: boolean | undefined;
+  paymentRecorded?: boolean | undefined;
+  tipPresets?: number[] | undefined;
+}
+
+export interface QuotePortalRenderOptions {
+  approvalBlockedReason?: string | null;
+  pdfPath?: string | null;
+  receiptReviews?: ReceiptReview[] | undefined;
+  approvalPath?: string | undefined;
+  changeRequestPath?: string | undefined;
+  chrome?: PortalChromeOptions | undefined;
+}
+
+const NEXPORTAL_LOGO_SRC = "/assets/brand/nexportal-logo.png";
+
+function renderPortalChrome(chrome?: PortalChromeOptions | undefined): string {
+  if (!chrome) {
+    return "";
+  }
+  const links = (chrome.navLinks ?? [])
+    .map((link) => `<a class="${link.active ? "active" : ""}" href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`)
+    .join("");
+  return `<section class="portal-chrome">
+    <div class="portal-chrome-head">
+      <div class="portal-chrome-lockup">
+        <img class="portal-chrome-product-mark" src="${NEXPORTAL_LOGO_SRC}" alt="NexPortal" />
+        <div>
+        ${chrome.badge ? `<p class="portal-chrome-badge">${escapeHtml(chrome.badge)}</p>` : ""}
+        ${chrome.title ? `<h2>${escapeHtml(chrome.title)}</h2>` : ""}
+        ${chrome.subtitle ? `<p class="portal-chrome-copy">${escapeHtml(chrome.subtitle)}</p>` : ""}
+        </div>
+      </div>
+      ${chrome.backHref ? `<a class="portal-chrome-back" href="${escapeHtml(chrome.backHref)}">${escapeHtml(chrome.backLabel ?? "Back")}</a>` : ""}
+    </div>
+    ${links ? `<nav class="portal-chrome-nav" aria-label="Portal navigation">${links}</nav>` : ""}
+    ${chrome.statusMessage ? `<p class="portal-chrome-status">${escapeHtml(chrome.statusMessage)}</p>` : ""}
+  </section>`;
+}
+
+function portalChromeStyles(): string {
+  return `
+    .portal-chrome { border: 1px solid rgba(16,32,39,.12); border-radius: 24px; background: rgba(255,255,255,.96); padding: 18px 20px; display: grid; gap: 14px; }
+    .portal-chrome-head { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
+    .portal-chrome-lockup { display: inline-flex; align-items: center; gap: 14px; }
+    .portal-chrome-product-mark { width: 136px; max-height: 38px; object-fit: contain; }
+    .portal-chrome-badge { margin: 0 0 6px; color: #0b5860; font-size: .82rem; letter-spacing: .18em; text-transform: uppercase; }
+    .portal-chrome-head h2 { margin: 0; font-size: 1.35rem; }
+    .portal-chrome-copy { margin: 6px 0 0; color: #56747c; }
+    .portal-chrome-back { align-self: center; text-decoration: none; border-radius: 999px; padding: 10px 14px; color: #0b5860; border: 1px solid rgba(7,120,118,.18); background: #eff8f8; font-weight: 700; }
+    .portal-chrome-nav { display: flex; flex-wrap: wrap; gap: 10px; }
+    .portal-chrome-nav a { text-decoration: none; color: #0b5860; border: 1px solid rgba(7,120,118,.18); background: #fff; border-radius: 999px; padding: 10px 14px; font-weight: 600; }
+    .portal-chrome-nav a.active { background: #09d9e7; color: #072d34; border-color: transparent; }
+    .portal-chrome-status { margin: 0; padding: 12px 14px; border-radius: 16px; background: rgba(9,217,231,.12); color: #0b5860; }
+    .success-banner { border: 1px solid rgba(20,198,144,.24); background: rgba(20,198,144,.1); color: #0b6b52; border-radius: 20px; padding: 16px 18px; }
+    .pay-form { display: grid; gap: 14px; margin-top: 18px; }
+    .tip-presets { display: flex; flex-wrap: wrap; gap: 10px; }
+    .tip-preset { border: 1px solid rgba(16,32,39,.14); border-radius: 999px; background: #fff; color: #15333a; padding: 8px 12px; font-weight: 600; cursor: pointer; }
+    .tip-preset.active { background: rgba(9,217,231,.14); border-color: rgba(9,217,231,.28); color: #072d34; }
+    .fine-print { margin: 0; color: #56747c; font-size: .92rem; }
+  `;
 }
 
 export function renderQuotePdf(quote: Quote, client?: Client): Buffer {
@@ -120,7 +202,8 @@ export function renderInvoicePdf(invoice: Invoice, client?: Client): Buffer {
 export function renderInvoicePortalHtml(
   invoice: Invoice,
   token: string,
-  client?: Client
+  client?: Client,
+  options: InvoicePortalRenderOptions = {}
 ): string {
   const rows = invoice.lineItems.map((item) =>
     `<tr>
@@ -148,7 +231,18 @@ export function renderInvoicePortalHtml(
     `<span>${escapeHtml(invoice.status.replace(/_/g, " "))}</span>`,
     invoice.dueAt ? `<span>Due ${escapeHtml(new Date(invoice.dueAt).toLocaleDateString())}</span>` : ""
   ].filter(Boolean).join("");
-  const payPath = `/api/portal/invoices/${encodeURIComponent(invoice.id)}/checkout?tenantId=${encodeURIComponent(invoice.tenantId)}&token=${encodeURIComponent(token)}`;
+  const checkoutBasePath = options.checkoutBasePath
+    ?? `/api/portal/invoices/${encodeURIComponent(invoice.id)}/checkout?tenantId=${encodeURIComponent(invoice.tenantId)}&token=${encodeURIComponent(token)}`;
+  const payPath = checkoutBasePath.includes("?")
+    ? checkoutBasePath
+    : `${checkoutBasePath}?tenantId=${encodeURIComponent(invoice.tenantId)}`;
+  const tippingEnabled = options.tippingEnabled ?? false;
+  const tipPresets = [...new Set((options.tipPresets?.length ? options.tipPresets : [15, 20, 25]).filter((value) => value >= 0))];
+  const chrome = renderPortalChrome(options.chrome);
+  const paidBanner = options.paymentRecorded
+    ? `<div class="success-banner"><strong>Payment recorded.</strong> The balance rail updated and the receipt path can continue from here.</div>`
+    : "";
+  const payLabel = invoice.status === "paid" ? "Payment recorded" : "Balance due";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -162,6 +256,7 @@ export function renderInvoicePortalHtml(
     main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
     .shell { background: rgba(255,255,255,.9); border: 1px solid rgba(16,32,39,.1); border-radius: 28px; overflow: hidden; box-shadow: 0 24px 72px rgba(16,32,39,.12); }
     .hero { padding: 28px; background: linear-gradient(135deg, rgba(7,120,118,.98), rgba(27,164,132,.88)); color: white; }
+    .hero-brand { display: block; width: 148px; max-height: 42px; margin-bottom: 14px; object-fit: contain; }
     .hero h1 { margin: 0 0 8px; font-size: clamp(2rem, 4vw, 3rem); }
     .hero p { margin: 0; max-width: 52rem; line-height: 1.5; }
     .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
@@ -181,6 +276,7 @@ export function renderInvoicePortalHtml(
     a.button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 999px; padding: 12px 18px; background: #09d9e7; color: #072d34; font-weight: 700; }
     a.button.secondary { background: #eff8f8; color: #0b5860; border: 1px solid rgba(7,120,118,.22); }
     ul { margin: 0; padding-left: 18px; }
+    ${portalChromeStyles()}
     @media (max-width: 760px) {
       .summary { grid-template-columns: 1fr; }
       .hero { padding: 24px 20px; }
@@ -190,14 +286,17 @@ export function renderInvoicePortalHtml(
 </head>
 <body>
   <main>
+    ${chrome}
     <div class="shell">
       <section class="hero">
+        <img class="hero-brand" src="${NEXPORTAL_LOGO_SRC}" alt="NexPortal" />
         <p>NexPortal invoice</p>
         <h1>${escapeHtml(invoice.title)}</h1>
         <p>Review the invoice summary and use the payment options below. Email delivery includes the PDF; text delivery points back to this secure page.</p>
         <div class="chips">${statusChips}</div>
       </section>
       <section class="content">
+        ${paidBanner}
         <div class="summary">
           <section class="panel">
             <h2>Invoice summary</h2>
@@ -210,7 +309,7 @@ export function renderInvoicePortalHtml(
             </table>
           </section>
           <section class="panel">
-            <h2>Balance due</h2>
+            <h2>${payLabel}</h2>
             <div class="totals">
               <div class="totals-row"><span>Subtotal</span><span>${money(invoice.totals.subtotal)}</span></div>
               ${invoice.totals.discount ? `<div class="totals-row"><span>Discount</span><span>${money(invoice.totals.discount)}</span></div>` : ""}
@@ -218,27 +317,105 @@ export function renderInvoicePortalHtml(
               <div class="totals-row"><strong>Total</strong><strong>${money(invoice.totals.total)}</strong></div>
               <div class="totals-row"><strong>Balance</strong><strong>${money(invoice.ledger?.balanceDue ?? invoice.totals.total)}</strong></div>
             </div>
-            <div class="actions">
-              <a class="button" href="${payPath}&provider=stripe&method=card">Pay by card</a>
-              <a class="button secondary" href="${payPath}&provider=paypal&method=paypal">Pay with PayPal</a>
-              <a class="button secondary" href="${payPath}&provider=paypal&method=venmo">Pay with Venmo</a>
-            </div>
+            ${invoice.status === "paid" ? `<p class="fine-print">This invoice is already settled. Statements and receipt documents remain available in the portal.</p>` : `
+            <form class="pay-form">
+              ${tippingEnabled ? `
+              <div>
+                <h3>Tip the crew</h3>
+                <p class="fine-print">Tips stay separate from the invoice balance and show distinctly on the receipt.</p>
+                <div class="tip-presets">
+                  <button type="button" class="tip-preset active" data-tip-value="0">No tip</button>
+                  ${tipPresets.map((value) => `<button type="button" class="tip-preset" data-tip-value="${value}">${value}% tip</button>`).join("")}
+                  <button type="button" class="tip-preset" data-tip-value="custom">Custom tip</button>
+                </div>
+                <label style="margin-top:12px;">Custom tip amount
+                  <input id="tip-amount" type="number" min="0" step="0.01" value="0" inputmode="decimal" />
+                </label>
+              </div>` : ""}
+              <div class="actions">
+                <a class="button" id="pay-card" href="${payPath}&provider=stripe&method=card">Pay by card</a>
+                <a class="button secondary" id="pay-paypal" href="${payPath}&provider=paypal&method=paypal">Pay with PayPal</a>
+                <a class="button secondary" id="pay-venmo" href="${payPath}&provider=paypal&method=venmo">Pay with Venmo</a>
+              </div>
+            </form>`}
           </section>
         </div>
         ${scheduleRows ? `<section class="panel"><h3>Payment schedule</h3><ul>${scheduleRows}</ul></section>` : ""}
         ${invoice.terms ? `<section class="panel"><h3>Terms</h3><p>${escapeHtml(invoice.terms).replace(/\n/g, "<br/>")}</p></section>` : ""}
       </section>
     </div>
+    ${tippingEnabled && invoice.status !== "paid" ? `<script>
+      const tipInput = document.getElementById("tip-amount");
+      const presetButtons = Array.from(document.querySelectorAll(".tip-preset"));
+      const payLinks = ["pay-card", "pay-paypal", "pay-venmo"].map((id) => document.getElementById(id)).filter(Boolean);
+      function currentTip() {
+        const value = Number(tipInput?.value ?? "0");
+        return Number.isFinite(value) && value > 0 ? value.toFixed(2) : "";
+      }
+      function updateLinks() {
+        const tip = currentTip();
+        payLinks.forEach((link) => {
+          const href = new URL(link.getAttribute("href"), window.location.origin);
+          if (tip) {
+            href.searchParams.set("tipAmount", tip);
+          } else {
+            href.searchParams.delete("tipAmount");
+          }
+          link.setAttribute("href", href.pathname + href.search);
+        });
+      }
+      presetButtons.forEach((button) => button.addEventListener("click", () => {
+        presetButtons.forEach((entry) => entry.classList.remove("active"));
+        button.classList.add("active");
+        const raw = button.dataset.tipValue || "0";
+        if (tipInput) {
+          const balance = ${JSON.stringify(Number((invoice.ledger?.balanceDue ?? invoice.totals.total).toFixed(2)))};
+          if (raw === "custom") {
+            tipInput.focus();
+          } else if (raw === "0") {
+            tipInput.value = "0";
+          } else {
+            tipInput.value = (balance * Number(raw) / 100).toFixed(2);
+          }
+        }
+        updateLinks();
+      }));
+      tipInput?.addEventListener("input", () => {
+        presetButtons.forEach((entry) => entry.classList.remove("active"));
+        document.querySelector('.tip-preset[data-tip-value="custom"]')?.classList.add("active");
+        updateLinks();
+      });
+      updateLinks();
+    </script>` : ""}
   </main>
 </body>
 </html>`;
+}
+
+function portalStatusLabel(value: string): string {
+  return value
+    .split("_")
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+}
+
+function portalDateLabel(value?: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  return new Date(value).toLocaleString();
+}
+
+function quoteSentAtValue(quote: Quote): string | undefined {
+  return quote.sentAt ?? quote.delivery?.[0]?.sentAt;
 }
 
 export function renderQuotePortalHtml(
   quote: Quote,
   token: string,
   client?: Client,
-  options: { approvalBlockedReason?: string | null } = {}
+  options: QuotePortalRenderOptions = {}
 ): string {
   const rows = quote.lineItems.map((item) =>
     `<tr>
@@ -256,6 +433,9 @@ export function renderQuotePortalHtml(
   const signatureRequired = quote.approvalRules.requireSignature;
   const depositRequired = quote.approvalRules.requireDeposit;
   const cardRequired = quote.approvalRules.requireCardOnFile;
+  const isProofState = quote.status === "approved" || quote.status === "approved_internal";
+  const sentAtLabel = portalDateLabel(quoteSentAtValue(quote));
+  const approvedAtLabel = portalDateLabel(quote.approvedAt);
   const depositLabel = quote.deposit
     ? quote.deposit.kind === "percent"
       ? `${quote.approvalRules.depositValue ?? 0}% deposit`
@@ -264,104 +444,101 @@ export function renderQuotePortalHtml(
   const terms = quote.terms ? `<section class="panel"><h3>Terms</h3><p>${escapeHtml(quote.terms).replace(/\n/g, "<br/>")}</p></section>` : "";
   const statusChips = [
     quote.number ? `<span>Quote ${escapeHtml(quote.number)}</span>` : "",
-    `<span>${escapeHtml(quote.status.replace(/_/g, " "))}</span>`,
-    quote.expiresAt ? `<span>Expires ${escapeHtml(new Date(quote.expiresAt).toLocaleDateString())}</span>` : ""
+    `<span>${escapeHtml(portalStatusLabel(quote.status))}</span>`,
+    sentAtLabel ? `<span>Sent ${escapeHtml(sentAtLabel)}</span>` : "",
+    approvedAtLabel ? `<span>Approved ${escapeHtml(approvedAtLabel)}</span>` : "",
+    !isProofState && quote.expiresAt ? `<span>Expires ${escapeHtml(new Date(quote.expiresAt).toLocaleDateString())}</span>` : ""
   ].filter(Boolean).join("");
-  const disabledAttr = blockedReason ? "disabled" : "";
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(quote.title)}</title>
-  <style>
-    :root { color-scheme: light; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Montserrat, Arial, sans-serif; color: #102027; background: linear-gradient(180deg, #eef9f7 0%, #f8fbf7 100%); }
-    main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
-    .shell { background: rgba(255,255,255,.9); border: 1px solid rgba(16,32,39,.1); border-radius: 28px; overflow: hidden; box-shadow: 0 24px 72px rgba(16,32,39,.12); }
-    .hero { padding: 28px; background: linear-gradient(135deg, rgba(7,120,118,.98), rgba(27,164,132,.88)); color: white; }
-    .hero h1 { margin: 0 0 8px; font-size: clamp(2rem, 4vw, 3rem); }
-    .hero p { margin: 0; max-width: 52rem; line-height: 1.5; }
-    .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-    .chips span { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 8px 14px; font-size: .9rem; }
-    .content { display: grid; gap: 20px; padding: 24px; }
-    .summary { display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; }
-    .panel { border: 1px solid rgba(16,32,39,.12); border-radius: 24px; background: #fff; padding: 20px; }
-    .panel h2, .panel h3 { margin: 0 0 12px; }
-    .muted { color: #56747c; font-size: .94rem; }
-    .description { color: #39545b; font-size: .92rem; margin-top: 4px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    th, td { border-bottom: 1px solid rgba(16,32,39,.08); padding: 12px 10px; text-align: left; vertical-align: top; }
-    .totals { display: grid; gap: 10px; }
-    .totals-row { display: flex; justify-content: space-between; gap: 12px; }
-    .totals-row strong { font-size: 1.1rem; }
-    .rule-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-    .rule-list li { padding: 12px 14px; border-radius: 16px; background: rgba(20, 198, 144, .1); }
-    label { display: grid; gap: 8px; font-weight: 600; }
-    input, textarea, button { font: inherit; }
-    input, textarea { width: 100%; border: 1px solid rgba(16,32,39,.16); border-radius: 14px; padding: 12px 14px; background: #fff; }
-    textarea { min-height: 96px; resize: vertical; }
-    button { border: 0; border-radius: 999px; padding: 12px 18px; background: #09d9e7; color: #072d34; font-weight: 700; cursor: pointer; }
-    button.secondary { background: #eff8f8; color: #0b5860; border: 1px solid rgba(7,120,118,.22); }
-    button.ghost { background: transparent; border: 1px solid rgba(16,32,39,.16); color: #15333a; }
-    button[disabled] { opacity: .55; cursor: not-allowed; }
-    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
-    .signature-shell { display: grid; gap: 12px; }
-    .signature-tabs { display: inline-flex; gap: 8px; flex-wrap: wrap; }
-    .signature-tab { border: 1px solid rgba(16,32,39,.14); border-radius: 999px; padding: 8px 14px; cursor: pointer; }
-    .signature-tab input { display: none; }
-    .signature-tab.active { background: rgba(20, 198, 144, .14); border-color: rgba(20, 198, 144, .28); }
-    .signature-canvas { width: 100%; height: 180px; border: 1px dashed rgba(16,32,39,.22); border-radius: 18px; background: linear-gradient(180deg, #fefefe, #f4fbfb); touch-action: none; }
-    .response { margin-top: 14px; font-size: .94rem; color: #15515b; }
-    .blocked { border-color: rgba(173, 54, 54, .2); background: #fff4f1; color: #70231a; }
-    @media (max-width: 760px) {
-      .summary { grid-template-columns: 1fr; }
-      .hero { padding: 24px 20px; }
-      .content { padding: 20px; }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <div class="shell">
-      <section class="hero">
-        <p>NexPortal quote review</p>
-        <h1>${escapeHtml(quote.title)}</h1>
-        <p>Review the scope, totals, and approval requirements below. Once you approve, this quote locks and the office can convert it into work.</p>
-        <div class="chips">${statusChips}</div>
-      </section>
-      <section class="content">
-        ${blockedReason ? `<div class="panel blocked"><strong>This quote cannot be approved right now.</strong><p>${escapeHtml(blockedReason)}</p></div>` : ""}
-        <div class="summary">
-          <section class="panel">
-            <h2>${escapeHtml(client?.name ?? quote.clientId)}</h2>
-            <p class="muted">Quote review for ${escapeHtml(client?.company ?? client?.name ?? "your service request")}.</p>
-            <table>
-              <thead>
-                <tr><th>Item</th><th>Qty</th><th>Unit</th><th>Total</th></tr>
-              </thead>
-              <tbody>${rows}</tbody>
-            </table>
-          </section>
-          <section class="panel">
-            <h2>Summary</h2>
-            <div class="totals">
-              <div class="totals-row"><span>Subtotal</span><span>${money(quote.totals.subtotal)}</span></div>
-              ${quote.totals.discount ? `<div class="totals-row"><span>Discount</span><span>-${money(quote.totals.discount)}</span></div>` : ""}
-              <div class="totals-row"><span>Tax</span><span>${money(quote.totals.tax)}</span></div>
-              <div class="totals-row"><strong>Total</strong><strong>${money(quote.totals.total)}</strong></div>
-            </div>
-            <h3 style="margin-top:18px;">Approval rules</h3>
-            <ul class="rule-list">
-              <li>${signatureRequired ? "Signature is required before this quote can be approved." : "Signature is optional for this quote."}</li>
-              <li>${depositRequired ? `${escapeHtml(depositLabel)} is required before approval.` : "No deposit is required at approval time."}</li>
-              <li>${cardRequired ? "Card-on-file authorization is required before approval." : "Card-on-file authorization is optional."}</li>
-            </ul>
-          </section>
+  const disabledAttr = blockedReason || isProofState ? "disabled" : "";
+  const pdfPath = options.pdfPath ?? null;
+  const approvalPath = options.approvalPath ?? `/api/portal/quotes/${encodeURIComponent(quote.id)}/approve`;
+  const changeRequestPath = options.changeRequestPath ?? `/api/portal/quotes/${encodeURIComponent(quote.id)}/change-request`;
+  const chrome = renderPortalChrome(options.chrome);
+  const receiptReviews = [...(options.receiptReviews ?? [])]
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  const proofItems = [
+    sentAtLabel ? `<li><strong>Sent:</strong> ${escapeHtml(sentAtLabel)}</li>` : "",
+    approvedAtLabel ? `<li><strong>Approved:</strong> ${escapeHtml(approvedAtLabel)}</li>` : "",
+    quote.approvedBy ? `<li><strong>Approved by:</strong> ${escapeHtml(quote.approvedBy)}${quote.approvedByRole ? ` (${escapeHtml(portalStatusLabel(quote.approvedByRole))})` : ""}</li>` : "",
+    quote.signature?.signedAt ? `<li><strong>Signature captured:</strong> ${escapeHtml(portalDateLabel(quote.signature.signedAt) ?? quote.signature.signedAt)}</li>` : "",
+    quote.signature?.typedName ? `<li><strong>Typed signature:</strong> ${escapeHtml(quote.signature.typedName)}</li>` : "",
+    quote.deposit?.required && quote.deposit.capturedAt
+      ? `<li><strong>${escapeHtml(depositLabel)} received:</strong> ${escapeHtml(portalDateLabel(quote.deposit.capturedAt) ?? quote.deposit.capturedAt)}</li>`
+      : "",
+    quote.deposit?.cardLast4
+      ? `<li><strong>Card used:</strong> ${escapeHtml(quote.deposit.cardBrand ?? "Card")} ending in ${escapeHtml(quote.deposit.cardLast4)}</li>`
+      : "",
+    quote.deposit?.cardOnFileAuthorized
+      ? `<li><strong>Saved card:</strong> Authorized for future billing on approved work.</li>`
+      : ""
+  ].filter(Boolean).join("");
+  const signaturePreview = quote.signature?.mode === "drawn" && quote.signature.drawnDataUrl
+    ? `<div class="signature-proof"><p class="muted">Drawn signature on file</p><img class="signature-preview" src="${quote.signature.drawnDataUrl}" alt="Customer signature" /></div>`
+    : "";
+  const receiptHistoryItems = receiptReviews.length
+    ? receiptReviews.map((review) => {
+      const sentHistory = (review.sendHistory ?? [])
+        .map((entry) => `${portalStatusLabel(entry.channel)} to ${entry.target} on ${portalDateLabel(entry.sentAt) ?? entry.sentAt}`)
+        .join(" | ");
+      const channels = review.sendChannels.length
+        ? review.sendChannels.map((channel) => portalStatusLabel(channel)).join(", ")
+        : "Email";
+      const attachments = review.attachments.length
+        ? review.attachments.map((attachment) => escapeHtml(attachment.label)).join(", ")
+        : "No attachments";
+      return `<article class="history-item" id="receipt-${escapeHtml(review.id)}">
+        <div class="history-head">
+          <strong>${escapeHtml(review.subject)}</strong>
+          <span>${escapeHtml(portalStatusLabel(review.status))}</span>
         </div>
-        ${terms}
-        <section class="panel">
+        <p class="muted">${escapeHtml(review.bodyText)}</p>
+        <ul class="history-meta">
+          <li><strong>Channels:</strong> ${escapeHtml(channels)}</li>
+          <li><strong>Attachments:</strong> ${attachments}</li>
+          <li><strong>Updated:</strong> ${escapeHtml(portalDateLabel(review.updatedAt) ?? review.updatedAt)}</li>
+          ${sentHistory ? `<li><strong>Send history:</strong> ${escapeHtml(sentHistory)}</li>` : ""}
+        </ul>
+      </article>`;
+    }).join("")
+    : `<p class="muted">No receipt records have been written for this approval yet.</p>`;
+  const proofPanel = isProofState
+    ? `<section class="panel">
+        <h2>Approved summary</h2>
+        <p class="muted">${quote.approvedByRole === "client" ? "Customer approval is locked in and the office can move this into work." : "Office approval is locked in for execution."}</p>
+        <div class="totals">
+          <div class="totals-row"><span>Subtotal</span><span>${money(quote.totals.subtotal)}</span></div>
+          ${quote.totals.discount ? `<div class="totals-row"><span>Discount</span><span>-${money(quote.totals.discount)}</span></div>` : ""}
+          <div class="totals-row"><span>Tax</span><span>${money(quote.totals.tax)}</span></div>
+          <div class="totals-row"><strong>Total</strong><strong>${money(quote.totals.total)}</strong></div>
+        </div>
+        <ul class="detail-list">${proofItems || "<li><strong>Status:</strong> Approval proof is on file.</li>"}</ul>
+        ${signaturePreview}
+        <div class="actions">
+          ${pdfPath ? `<a class="button secondary" href="${escapeHtml(pdfPath)}">Download PDF</a>` : ""}
+        </div>
+      </section>`
+    : `<section class="panel">
+        <h2>Summary</h2>
+        <div class="totals">
+          <div class="totals-row"><span>Subtotal</span><span>${money(quote.totals.subtotal)}</span></div>
+          ${quote.totals.discount ? `<div class="totals-row"><span>Discount</span><span>-${money(quote.totals.discount)}</span></div>` : ""}
+          <div class="totals-row"><span>Tax</span><span>${money(quote.totals.tax)}</span></div>
+          <div class="totals-row"><strong>Total</strong><strong>${money(quote.totals.total)}</strong></div>
+        </div>
+        <h3 style="margin-top:18px;">Approval rules</h3>
+        <ul class="rule-list">
+          <li>${signatureRequired ? "Signature is required before this quote can be approved." : "Signature is optional for this quote."}</li>
+          <li>${depositRequired ? `${escapeHtml(depositLabel)} is required before approval.` : "No deposit is required at approval time."}</li>
+          <li>${cardRequired ? "Card-on-file authorization is required before approval." : "Card-on-file authorization is optional."}</li>
+        </ul>
+      </section>`;
+  const proofHistory = isProofState
+    ? `<details class="details" ${receiptReviews.length ? "" : ""}>
+        <summary>Receipt history</summary>
+        <div class="details-body">${receiptHistoryItems}</div>
+      </details>`
+    : "";
+  const reviewPanels = isProofState ? "" : `<section class="panel">
           <h2>Approve quote</h2>
           <p class="muted">Approve only if the scope and price look right. If anything needs adjusting, use the change request section instead.</p>
           <form id="approve-form">
@@ -433,9 +610,8 @@ export function renderQuotePortalHtml(
             </div>
             <div id="change-response" class="response"></div>
           </form>
-        </section>
-      </section>
-    </div>
+        </section>`;
+  const interactionScript = isProofState ? "" : `
     <script>
       const approveForm = document.getElementById("approve-form");
       const changeForm = document.getElementById("change-form");
@@ -519,7 +695,7 @@ export function renderQuotePortalHtml(
             cardOnFileAuthorized: formData.get("cardOnFileAuthorized") === "on"
           }
         };
-        const response = await fetch("/api/portal/quotes/${encodeURIComponent(quote.id)}/approve", {
+        const response = await fetch(${JSON.stringify(approvalPath)}, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(payload)
@@ -544,7 +720,7 @@ export function renderQuotePortalHtml(
           note: formData.get("note"),
           lineComments
         };
-        const response = await fetch("/api/portal/quotes/${encodeURIComponent(quote.id)}/change-request", {
+        const response = await fetch(${JSON.stringify(changeRequestPath)}, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(payload)
@@ -553,7 +729,107 @@ export function renderQuotePortalHtml(
         changeResponse.textContent = body.ok ? "Change request sent back to the office." : (body.error || "Change request failed.");
       });
       selectSignatureMode("drawn");
-    </script>
+    </script>`;
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(quote.title)}</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Montserrat, Arial, sans-serif; color: #102027; background: linear-gradient(180deg, #eef9f7 0%, #f8fbf7 100%); }
+    main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+    .shell { background: rgba(255,255,255,.9); border: 1px solid rgba(16,32,39,.1); border-radius: 28px; overflow: hidden; box-shadow: 0 24px 72px rgba(16,32,39,.12); }
+    .hero { padding: 28px; background: linear-gradient(135deg, rgba(7,120,118,.98), rgba(27,164,132,.88)); color: white; }
+    .hero-brand { display: block; width: 148px; max-height: 42px; margin-bottom: 14px; object-fit: contain; }
+    .hero h1 { margin: 0 0 8px; font-size: clamp(2rem, 4vw, 3rem); }
+    .hero p { margin: 0; max-width: 52rem; line-height: 1.5; }
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .chips span { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 8px 14px; font-size: .9rem; }
+    .content { display: grid; gap: 20px; padding: 24px; }
+    .summary { display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; }
+    .panel { border: 1px solid rgba(16,32,39,.12); border-radius: 24px; background: #fff; padding: 20px; }
+    .panel h2, .panel h3 { margin: 0 0 12px; }
+    .muted { color: #56747c; font-size: .94rem; }
+    .description { color: #39545b; font-size: .92rem; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border-bottom: 1px solid rgba(16,32,39,.08); padding: 12px 10px; text-align: left; vertical-align: top; }
+    .totals { display: grid; gap: 10px; }
+    .totals-row { display: flex; justify-content: space-between; gap: 12px; }
+    .totals-row strong { font-size: 1.1rem; }
+    .rule-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .rule-list li { padding: 12px 14px; border-radius: 16px; background: rgba(20, 198, 144, .1); }
+    label { display: grid; gap: 8px; font-weight: 600; }
+    input, textarea, button { font: inherit; }
+    input, textarea { width: 100%; border: 1px solid rgba(16,32,39,.16); border-radius: 14px; padding: 12px 14px; background: #fff; }
+    textarea { min-height: 96px; resize: vertical; }
+    button { border: 0; border-radius: 999px; padding: 12px 18px; background: #09d9e7; color: #072d34; font-weight: 700; cursor: pointer; }
+    button.secondary { background: #eff8f8; color: #0b5860; border: 1px solid rgba(7,120,118,.22); }
+    a.button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 999px; padding: 12px 18px; background: #09d9e7; color: #072d34; font-weight: 700; }
+    a.button.secondary { background: #eff8f8; color: #0b5860; border: 1px solid rgba(7,120,118,.22); }
+    button.ghost { background: transparent; border: 1px solid rgba(16,32,39,.16); color: #15333a; }
+    button[disabled] { opacity: .55; cursor: not-allowed; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .signature-shell { display: grid; gap: 12px; }
+    .signature-tabs { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+    .signature-tab { border: 1px solid rgba(16,32,39,.14); border-radius: 999px; padding: 8px 14px; cursor: pointer; }
+    .signature-tab input { display: none; }
+    .signature-tab.active { background: rgba(20, 198, 144, .14); border-color: rgba(20, 198, 144, .28); }
+    .signature-canvas { width: 100%; height: 180px; border: 1px dashed rgba(16,32,39,.22); border-radius: 18px; background: linear-gradient(180deg, #fefefe, #f4fbfb); touch-action: none; }
+    .response { margin-top: 14px; font-size: .94rem; color: #15515b; }
+    .blocked { border-color: rgba(173, 54, 54, .2); background: #fff4f1; color: #70231a; }
+    .detail-list, .history-meta { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
+    .signature-proof { margin-top: 16px; }
+    .signature-preview { width: 100%; max-width: 360px; border-radius: 18px; border: 1px solid rgba(16,32,39,.12); background: #f8fbf7; }
+    .details { border: 1px solid rgba(16,32,39,.1); border-radius: 20px; background: rgba(255,255,255,.92); padding: 18px 20px; }
+    .details summary { cursor: pointer; font-weight: 700; }
+    .details-body { display: grid; gap: 14px; margin-top: 14px; }
+    .history-item { border: 1px solid rgba(16,32,39,.08); border-radius: 18px; padding: 14px 16px; background: #f8fbf7; }
+    .history-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+    ${portalChromeStyles()}
+    @media (max-width: 760px) {
+      .summary { grid-template-columns: 1fr; }
+      .hero { padding: 24px 20px; }
+      .content { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    ${chrome}
+    <div class="shell">
+      <section class="hero">
+        <img class="hero-brand" src="${NEXPORTAL_LOGO_SRC}" alt="NexPortal" />
+        <p>${isProofState ? "NexPortal quote proof" : "NexPortal quote review"}</p>
+        <h1>${escapeHtml(quote.title)}</h1>
+        <p>${isProofState
+    ? "This quote is approved and locked. Review the signed proof, payment evidence, and PDF below."
+    : "Review the scope, totals, and approval requirements below. Once you approve, this quote locks and the office can convert it into work."}</p>
+        <div class="chips">${statusChips}</div>
+      </section>
+      <section class="content">
+        ${!isProofState && blockedReason ? `<div class="panel blocked"><strong>This quote cannot be approved right now.</strong><p>${escapeHtml(blockedReason)}</p></div>` : ""}
+        <div class="summary">
+          <section class="panel">
+            <h2>${escapeHtml(client?.name ?? quote.clientId)}</h2>
+            <p class="muted">Quote review for ${escapeHtml(client?.company ?? client?.name ?? "your service request")}.</p>
+            <table>
+              <thead>
+                <tr><th>Item</th><th>Qty</th><th>Unit</th><th>Total</th></tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </section>
+          ${proofPanel}
+        </div>
+        ${terms}
+        ${proofHistory}
+        ${reviewPanels}
+      </section>
+    </div>
+    ${interactionScript}
   </main>
 </body>
 </html>`;

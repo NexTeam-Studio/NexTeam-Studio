@@ -68,6 +68,19 @@ Build piece: Canonical source foundation (Track 2)
   - `media.capture`
 - No pricing or financial permissions.
 
+## Unified operator identity
+
+- Internal operator modules (`NexOps`, `Nexi`, `NexCam`, `NexDocs`, `NexReach`) reuse the same signed-in operator seat and the same internal session token.
+- Activity in those modules attributes back to the same `tenantUserId` and role for that seat.
+- `NexPortal` is different today: it stays on its own client-facing portal session rail and is not part of the shared operator login.
+
+## Personal-context defaults
+
+- "Email me" and "text me" requests resolve to the currently logged-in operator's own stored email or phone, never another seat's data.
+- Personal direction prompts such as "from here", "from my house", or "from me" prefer live device geolocation when the browser grants it.
+- If live geolocation is unavailable, those personal prompts fall back to the logged-in operator's own profile address.
+- Non-personal dispatch prompts such as "from the shop" stay on the tenant home-base rule.
+
 ## Portal authorization profile
 
 ### `portal_customer_resource_access`

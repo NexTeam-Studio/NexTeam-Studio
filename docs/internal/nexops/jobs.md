@@ -1,7 +1,7 @@
 # NexOps Jobs
 
-Last updated: 2026-07-13  
-Build piece: Reminder-driven job-state engine + close/invoice/payment flow
+Last updated: 2026-07-16  
+Build piece: Reminder-driven job-state engine + close/invoice/payment flow + scheduling/home/activity
 
 ## Statuses
 
@@ -20,6 +20,7 @@ Build piece: Reminder-driven job-state engine + close/invoice/payment flow
 ### `Unscheduled`
 - No active visits remain and no action alert or invoice reminder is active.
 - New manually created jobs land here until a visit is booked.
+- Approved quote conversions also land here until the office places at least one visit on the board.
 
 ### `Action Required`
 - Used when the last scheduled visit is completed and office review is still pending.
@@ -27,7 +28,7 @@ Build piece: Reminder-driven job-state engine + close/invoice/payment flow
 
 ### `Requires Invoicing`
 - Used when the invoice-reminder rail is active.
-- For Piece 5 this now includes the recurring close-without-invoice nag that starts immediately, then re-fires every day at 9:00 AM until resolved or dismissed.
+- This includes the recurring close-without-invoice nag that starts immediately, then re-fires every day at 9:00 AM until resolved or dismissed.
 
 ### `Archived`
 - Closed/archive-end state when no active invoice reminder remains.
@@ -42,12 +43,39 @@ Build piece: Reminder-driven job-state engine + close/invoice/payment flow
 - New jobs are written with line items, totals, optional request/quote links, optional intake, and optional payment schedule.
 - The derived status becomes `Unscheduled` until visits exist.
 
-### `Unscheduled|Upcoming|Today|Late` -> rescheduled visit-derived state
+### `Unscheduled|Upcoming|Today|Late` -> visit-derived schedule state
 - Triggered by:
   - `POST /api/crm/jobs/:id/visits`
+  - `POST /api/crm/jobs/:id/visits/batch`
   - `POST /api/crm/jobs/visits/:id/move`
+  - Nexi `scheduleJobVisits`
+  - Nexi `scheduleUnscheduledJob`
 - Booking or moving a visit regenerates the visit-reminder set for that visit.
 - The job state then derives again from the active visit window.
+
+### multi-visit one-off planning -> visit-derived schedule state
+- Triggered by:
+  - `POST /api/crm/jobs/:id/visits/batch`
+  - Nexi `scheduleJobVisits` approval execution
+- A single one-off job can now carry many visits in one create flow.
+- Each visit stores its own:
+  - date
+  - start/end time
+  - arrival window
+  - assigned team
+  - per-visit details
+- The job itself stays one job record; only the visit rail multiplies.
+
+### visit shift cascade -> rescheduled visit-derived state
+- Triggered by:
+  - `POST /api/crm/jobs/visits/:id/move` with `shiftRemaining=true`
+  - Nexi `shiftJobVisitSeries` approval execution
+- Moving one anchored visit can shift all remaining visits on the same job by the same offset.
+- The offset can be applied from:
+  - the schedule UI reschedule panel
+  - drag/drop confirmation on desktop schedule grids
+  - Nexi conversational scheduling
+- This reuses the same lifecycle mechanic instead of creating separate series-only records.
 
 ### final visit completion -> `Action Required`
 - Triggered by `POST /api/crm/jobs/visits/:id/complete`.
@@ -58,8 +86,8 @@ Build piece: Reminder-driven job-state engine + close/invoice/payment flow
 
 ### `Action Required` -> `Requires Invoicing`
 - Triggered by `close` when staff closes the job without creating an invoice.
-- Piece 5 extends the reminder model here:
-  - first reminder fires immediately at close
+- The reminder model here is:
+  - immediate first fire at close
   - recurrence becomes `daily_9am`
   - `nextDueAt` advances to the next 9:00 AM tick
 
@@ -96,6 +124,7 @@ Build piece: Reminder-driven job-state engine + close/invoice/payment flow
 
 ### Visit scheduling routes
 - `POST /api/crm/jobs/:id/visits`
+- `POST /api/crm/jobs/:id/visits/batch`
 - `POST /api/crm/jobs/visits/:id/move`
 - `POST /api/crm/jobs/visits/:id/complete`
 
@@ -108,11 +137,27 @@ Build piece: Reminder-driven job-state engine + close/invoice/payment flow
   - `close_and_invoice`
   - `dismiss_invoice_reminder`
 
+### Schedule workspace and queue consumers
+- `GET /api/crm/schedule/workspace`
+- `GET /api/crm/home`
+- `GET /api/crm/activity`
+- `GET /api/crm/notifications`
+- `POST /api/crm/notifications/read`
+- `POST /api/crm/notifications/read-all`
+
 ### Nexi tools
 - `createJob`
 - `listJobs`
 - `getJobDetail`
 - `queueJobAction`
+- `scheduleJobVisits`
+- `shiftJobVisitSeries`
+- `scheduleUnscheduledJob`
+- `getSchedule`
+- `listVisits`
+- `getHomeQueues`
+- `getActivityFeed`
+- `listRecentActivity`
 - `revisePendingJobCreateApproval`
 - `revisePendingJobActionApproval`
 - `approvePendingApproval`
@@ -126,6 +171,7 @@ Build piece: Reminder-driven job-state engine + close/invoice/payment flow
   - `OWNER`
   - `OFFICE_ADMIN`
 - TECHNICIAN cannot close a job, create an invoice, or dismiss the invoice reminder.
+- TECHNICIAN schedule/home/activity views are scoped to assigned work only.
 
 ## Cascades
 
@@ -149,6 +195,7 @@ Build piece: Reminder-driven job-state engine + close/invoice/payment flow
   - hour-before SMS reminder
 - Rescheduling regenerates the reminder set.
 - Completing the visit cancels any still-pending reminders for that visit.
+- Multi-visit one-off jobs use the same reminder rail per visit; there is no sequence-specific reminder system.
 
 ### Office review alert
 - Completing the last scheduled visit creates a `close_or_invoice_review` alert.
@@ -158,7 +205,6 @@ Build piece: Reminder-driven job-state engine + close/invoice/payment flow
   - Close and Invoice
 
 ### Close-without-invoice recurrence
-- Piece 5 deliberately extends the earlier one-time invoice reminder shape.
 - Current behavior is a repeating nag object:
   - immediate first fire at close time
   - daily recurrence at 9:00 AM
@@ -174,13 +220,25 @@ Build piece: Reminder-driven job-state engine + close/invoice/payment flow
   - `intake` when present
   - `paymentSchedule` when present
 
-### Job payment schedules
-- Jobs now support an editable `paymentSchedule`.
-- Manual job create and job update can both carry this plan.
-- When a single job is invoiced, its payment schedule follows onto the invoice draft automatically.
+### Scheduling workspace
+- The Schedule module reads jobs through a real workspace model:
+  - `visits`
+  - `unscheduledJobs`
+  - `teamMembers`
+- OWNER/OFFICE_ADMIN see the full tenant board and the unscheduled rail.
+- TECHNICIAN sees only assigned visits and never sees the unscheduled office rail.
+
+### Home and activity consumers
+- Job state now feeds three downstream operational surfaces:
+  - Home queues
+  - Activity feed
+  - Notification center
+- `Action Required` and `Requires Invoicing` are rendered from live lifecycle state, not copied into a second dashboard-only status store.
 
 ## Current deliberate limits
 
 - Recurring invoice reminders are modeled only for the close-without-invoice path right now.
-- Recurring-job support is still not a separate scheduling domain; Piece 3/5 cover one-off and multi-visit jobs, not a recurring service contract engine.
+- Recurring-job support is still not a separate scheduling domain; current coverage is one-off and multi-visit jobs, not a recurring service contract engine.
 - `invoice` creates the draft invoice and clears the reminder/alert path, but detailed collection and receipt behavior lives in the invoice/payment domains documented separately.
+- One-off multi-visit jobs do not yet run bulk conflict detection or capacity blocking during the whole series create. That was deliberately deferred on 2026-07-16 rather than silently guessed.
+- Multi-visit sequence templates tied to quote templates are also deferred; visit reuse is manual for now.

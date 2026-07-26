@@ -1,0 +1,9 @@
+{
+  "seededClient": {
+    "clientId": "client_70174d41-ea4c-4f49-82d7-30c99141d281",
+    "created": false
+  },
+  "jobTileUrl": "http://127.0.0.1:4175/nexops/jobs",
+  "signedOutUrl": "http://127.0.0.1:4175/nexops/sign-in",
+  "backAfterSignOutUrl": "http://127.0.0.1:4175/nexops/clients/client_70174d41-ea4c-4f49-82d7-30c99141d281"
+}

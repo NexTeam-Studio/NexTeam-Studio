@@ -1,9 +1,9 @@
 {
   "segment": "quote-to-job",
   "record": true,
-  "createdAt": "2026-07-14T20:54:20.557Z",
-  "baseWeb": "http://127.0.0.1:4275",
-  "baseApi": "http://127.0.0.1:3201",
+  "createdAt": "2026-07-15T02:33:29.271Z",
+  "baseWeb": "http://127.0.0.1:4276",
+  "baseApi": "http://127.0.0.1:3202",
   "markers": [
     {
       "atSeconds": 0.7,
@@ -12,49 +12,49 @@
       "note": ""
     },
     {
-      "atSeconds": 2.2,
+      "atSeconds": 2.1,
       "label": "Drawn signature and deposit/card details entered",
       "piece": "Piece 2 § approval",
       "note": ""
     },
     {
-      "atSeconds": 3.5,
+      "atSeconds": 3.4,
       "label": "Client approval completed",
       "piece": "Piece 2 § approval",
       "note": "Q-0001"
     },
     {
-      "atSeconds": 6.4,
+      "atSeconds": 6.1,
       "label": "Approved quote visible in NexOps",
       "piece": "Piece 2 § status",
       "note": ""
     },
     {
-      "atSeconds": 7.4,
+      "atSeconds": 7.1,
       "label": "Quote converted to job",
       "piece": "Pieces 2-3 handoff",
       "note": "JOB-0001"
     },
     {
-      "atSeconds": 9.1,
+      "atSeconds": 8.8,
       "label": "Job landed as Unscheduled",
       "piece": "Piece 3 § status",
       "note": ""
     },
     {
-      "atSeconds": 10.8,
+      "atSeconds": 10.3,
       "label": "Visit scheduled",
       "piece": "Piece 3 § scheduling",
       "note": ""
     },
     {
-      "atSeconds": 11.8,
+      "atSeconds": 11.3,
       "label": "Reminder records visible",
       "piece": "Piece 3 § reminders",
       "note": "Current UI shows queued reminder records, not the full email/SMS body text."
     },
     {
-      "atSeconds": 13.7,
+      "atSeconds": 13.2,
       "label": "Visit completed and admin review alert fired",
       "piece": "Piece 3 § close/invoice gate",
       "note": "Last scheduled visit completed. Owner or office admin must close, invoice, or both."

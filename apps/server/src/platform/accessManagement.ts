@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypt
 import {
   jobAccessLinkSchema,
   tenantUserSchema,
+  type Address,
   type JobAccessLink,
   type JobAccessScope,
   type TenantUser,
@@ -18,6 +19,8 @@ export interface TenantUserInput {
   id?: string | undefined;
   authUid?: string | undefined;
   email?: string | undefined;
+  phones?: string[] | undefined;
+  address?: Address | undefined;
   displayName: string;
   role: TenantUserRole;
   active?: boolean | undefined;
@@ -68,6 +71,8 @@ export function buildTenantUser(input: TenantUserInput): TenantUser {
     tenantId: input.tenantId,
     authUid: input.authUid,
     email: input.email,
+    phones: input.phones,
+    address: input.address,
     displayName: input.displayName,
     role: input.role,
     active: input.active ?? true,

@@ -33,8 +33,17 @@ export class InMemoryEventBus implements EventBus {
     this.handlers.set(type, handlers);
   }
 
-  listEvents(): BusEvent[] {
-    return [...this.events];
+  async listEvents(input: {
+    tenantId?: ID | undefined;
+    limit?: number | undefined;
+    types?: EventType[] | undefined;
+  } = {}): Promise<BusEvent[]> {
+    const typeSet = input.types?.length ? new Set(input.types) : null;
+    const filtered = this.events
+      .filter((event) => !input.tenantId || event.tenantId === input.tenantId)
+      .filter((event) => !typeSet || typeSet.has(event.type))
+      .sort((left, right) => right.ts.localeCompare(left.ts));
+    return input.limit ? filtered.slice(0, input.limit) : filtered;
   }
 }
 
@@ -73,5 +82,33 @@ export class FirestoreEventBus implements EventBus {
         });
       }
     });
+  }
+
+  async listEvents(input: {
+    tenantId?: ID | undefined;
+    limit?: number | undefined;
+    types?: EventType[] | undefined;
+  } = {}): Promise<BusEvent[]> {
+    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = this.db.collection("events");
+    if (input.tenantId) {
+      query = query.where("tenantId", "==", input.tenantId);
+    }
+    if (input.types?.length === 1) {
+      query = query.where("type", "==", input.types[0]);
+    }
+    query = query.orderBy("ts", "desc");
+    if (input.limit && input.limit > 0) {
+      query = query.limit(input.limit);
+    }
+    const snapshot = await query.get();
+    const parsed = snapshot.docs
+      .map((doc) => busEventSchema.safeParse(doc.data()))
+      .filter((result): result is { success: true; data: BusEvent } => result.success)
+      .map((result) => result.data);
+    if (!input.types?.length || input.types.length === 1) {
+      return parsed;
+    }
+    const typeSet = new Set(input.types);
+    return parsed.filter((event) => typeSet.has(event.type));
   }
 }

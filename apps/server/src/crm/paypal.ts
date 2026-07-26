@@ -89,14 +89,26 @@ export async function createPaypalCheckoutOrder(input: {
   req: CheckoutRequestLike;
   method: PaypalFundingMethod;
   portalToken?: string | undefined;
+  tipAmount?: number | undefined;
+  amountOverride?: number | undefined;
+  returnPath?: string | undefined;
+  cancelPath?: string | undefined;
 }): Promise<{ order: PaypalOrderResponse; approveUrl: string | null }> {
   const accessToken = await paypalAccessToken(input.env, input.invoice.tenantId);
   const origin = originFromRequest(input.req, input.env);
-  const amount = (input.invoice.ledger?.balanceDue ?? input.invoice.totals.total).toFixed(2);
+  const tipAmount = Math.max(input.tipAmount ?? 0, 0);
+  const amount = (input.amountOverride ?? ((input.invoice.ledger?.balanceDue ?? input.invoice.totals.total) + tipAmount)).toFixed(2);
   const portalTokenQuery = input.portalToken ? `&portalToken=${encodeURIComponent(input.portalToken)}` : "";
+  const tipQuery = tipAmount > 0 ? `&tipAmount=${encodeURIComponent(tipAmount.toFixed(2))}` : "";
+  const returnUrl = input.returnPath
+    ? `${origin}${input.returnPath.startsWith("/") ? input.returnPath : `/${input.returnPath}`}`
+    : `${origin}/portal/invoices/${encodeURIComponent(input.invoice.id)}/paypal-return?tenantId=${encodeURIComponent(input.invoice.tenantId)}&method=${encodeURIComponent(input.method)}${portalTokenQuery}${tipQuery}`;
+  const cancelUrl = input.cancelPath
+    ? `${origin}${input.cancelPath.startsWith("/") ? input.cancelPath : `/${input.cancelPath}`}`
+    : `${origin}/portal/invoices/${encodeURIComponent(input.invoice.id)}?tenantId=${encodeURIComponent(input.invoice.tenantId)}${input.portalToken ? `&token=${encodeURIComponent(input.portalToken)}` : ""}`;
   const experienceContext = {
-    return_url: `${origin}/portal/invoices/${encodeURIComponent(input.invoice.id)}/paypal-return?tenantId=${encodeURIComponent(input.invoice.tenantId)}&method=${encodeURIComponent(input.method)}${portalTokenQuery}`,
-    cancel_url: `${origin}/portal/invoices/${encodeURIComponent(input.invoice.id)}?tenantId=${encodeURIComponent(input.invoice.tenantId)}${input.portalToken ? `&token=${encodeURIComponent(input.portalToken)}` : ""}`,
+    return_url: returnUrl,
+    cancel_url: cancelUrl,
     shipping_preference: "NO_SHIPPING",
     user_action: "PAY_NOW"
   };
@@ -121,7 +133,12 @@ export async function createPaypalCheckoutOrder(input: {
         amount: {
           currency_code: "USD",
           value: amount
-        }
+        },
+        ...(tipAmount > 0
+          ? {
+              soft_descriptor: `TIP ${tipAmount.toFixed(2)}`
+            }
+          : {})
       }]
     })
   });

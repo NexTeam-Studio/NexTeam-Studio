@@ -4,10 +4,13 @@ import { ApprovalQueueService, InMemoryApprovalQueueRepository } from "@nexteam/
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { createApprovalNexiTools } from "../dist/approval/nexiTools.js";
 import { CrmApprovalExecutor } from "../dist/crm/approvalExecutor.js";
+import { invoiceTemplateVariables, resolveTemplateMessage } from "../dist/crm/communicationTemplates.js";
 import { JobLifecycleService } from "../dist/crm/jobLifecycle.js";
 import { MemoryJobLifecycleRepository } from "../dist/crm/jobLifecycleRepository.js";
 import { LedgerService } from "../dist/crm/ledgerFoundation.js";
 import { MemoryLedgerRepository } from "../dist/crm/ledgerRepository.js";
+import { MemoryMediaRepository } from "../dist/fielddocs/mediaRepository.js";
+import { createFieldReportRecord } from "../dist/fielddocs/reportService.js";
 import { createPaypalCheckoutOrder, capturePaypalCheckoutOrder } from "../dist/crm/paypal.js";
 import { materializeQuoteRecord } from "../dist/crm/quoteFoundation.js";
 import { runExplicitLocalToolLoop } from "../dist/nexi/nexiService.js";
@@ -19,7 +22,7 @@ function tenant() {
     name: "Aquatrace",
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
-    adapters: { crm: "native", media: "companycam", email: "gmail_relay" },
+    adapters: { crm: "native", media: "native", email: "gmail_relay" },
     approval: {},
     timezone: "America/New_York",
     plan: "suite"
@@ -107,6 +110,7 @@ function makeFixture(records = {}) {
   const schedulingRepository = new InMemorySchedulingRepository();
   const lifecycleRepository = new MemoryJobLifecycleRepository();
   const ledgerRepository = new MemoryLedgerRepository();
+  const fieldDocsRepository = records.fieldDocsRepository ?? new MemoryMediaRepository();
   const sentEmails = [];
   const sentSms = [];
   const emittedEvents = [];
@@ -142,6 +146,7 @@ function makeFixture(records = {}) {
   const ledgerService = new LedgerService({
     crmRepository: repository,
     ledgerRepository,
+    fieldDocsRepository,
     commsRail,
     eventBus
   });
@@ -173,6 +178,7 @@ function makeFixture(records = {}) {
     schedulingRepository,
     lifecycleRepository,
     ledgerRepository,
+    fieldDocsRepository,
     ledgerService,
     jobLifecycleService,
     provider,
@@ -427,6 +433,48 @@ test("invoice delivery honors global defaults first, then per-invoice overrides 
   assert.match(fixture.sentSms[0].body, /Receipt and files:/i);
 });
 
+test("default invoice delivery templates keep labeled pay-link and hosted-link content at the shared template layer", async () => {
+  const fixture = makeFixture();
+  const settings = await fixture.repository.getCrmSettings("aquatrace");
+  const invoice = await createInvoice(fixture, {
+    id: "invoice_template_contract",
+    status: "draft",
+    title: "Template contract invoice",
+    totals: totals(240)
+  });
+  const variables = invoiceTemplateVariables({
+    invoice,
+    client: clientRecord(),
+    portalUrl: "http://127.0.0.1:4175/nexportal/invoices/invoice_template_contract",
+    includePayLink: true,
+    includeHostedLink: true,
+    includeSummaryLine: true
+  });
+
+  const emailMessage = resolveTemplateMessage({
+    settings,
+    category: "invoice_send",
+    channel: "email",
+    fallbackSubject: "",
+    fallbackBodyText: "",
+    variables
+  });
+  const smsMessage = resolveTemplateMessage({
+    settings,
+    category: "invoice_send",
+    channel: "sms",
+    fallbackSubject: "",
+    fallbackBodyText: "",
+    variables
+  });
+
+  assert.match(emailMessage.bodyText, /Pay here: http:\/\/127\.0\.0\.1:4175\/nexportal\/invoices\/invoice_template_contract/i);
+  assert.match(emailMessage.bodyText, /Receipt and files: http:\/\/127\.0\.0\.1:4175\/nexportal\/invoices\/invoice_template_contract#receipt/i);
+  assert.match(emailMessage.bodyText, /Summary total:/i);
+  assert.match(smsMessage.bodyText, /Pay here: http:\/\/127\.0\.0\.1:4175\/nexportal\/invoices\/invoice_template_contract/i);
+  assert.match(smsMessage.bodyText, /Receipt and files: http:\/\/127\.0\.0\.1:4175\/nexportal\/invoices\/invoice_template_contract#receipt/i);
+});
+
 test("saved-card reuse defaults to the newest card, supports alternate selection, and keeps manual/failed branches distinct", async () => {
   const fixture = makeFixture();
   const approvedQuote = await createApprovedDepositQuote(fixture);
@@ -562,6 +610,63 @@ test("receipt review sends email attachments and an SMS hosted link from the sam
   assert.match(fixture.sentEmails[0].bodyText, /Secure receipt link:/i);
   assert.equal(fixture.sentSms.length, 1);
   assert.match(fixture.sentSms[0].body, /Secure receipt link:/i);
+});
+
+test("receipt review sends a real field report PDF attachment when NexCam already generated one for the job", async () => {
+  const fieldDocsRepository = new MemoryMediaRepository([], [], [
+    createFieldReportRecord({
+      tenantId: "aquatrace",
+      jobId: "job_receipt_report",
+      propertyId: "property_1",
+      visitId: "visit_receipt_report",
+      title: "Leak detection field report",
+      findings: ["Skimmer throat leak confirmed."],
+      mediaIds: [],
+      status: "posted"
+    })
+  ]);
+  const fixture = makeFixture({ fieldDocsRepository });
+  const invoice = await createInvoice(fixture, {
+    id: "invoice_receipt_report",
+    status: "awaiting_payment",
+    jobId: "job_receipt_report",
+    title: "Receipt send invoice with field report",
+    totals: totals(140)
+  });
+  await fixture.ledgerService.syncInvoiceAfterCreate(invoice);
+
+  const paid = await fixture.ledgerService.recordInvoicePayment({
+    tenantId: "aquatrace",
+    invoiceId: invoice.id,
+    amount: 140,
+    provider: "manual",
+    method: "cash",
+    actorId: "owner_1",
+    note: "Paid in the office."
+  });
+
+  const review = paid.receiptReview;
+  const fieldReportAttachment = review.attachments.find((attachment) => attachment.kind === "field_report");
+  assert.ok(fieldReportAttachment);
+
+  await fixture.ledgerService.sendReceiptReview({
+    tenantId: "aquatrace",
+    receiptReviewId: review.id,
+    actorId: "owner_1",
+    publicBaseUrl: "http://127.0.0.1:4175",
+    sendChannels: ["email"],
+    emailRecipients: ["billing@example.test"],
+    subject: "Receipt with field report",
+    bodyText: "The final report is attached.",
+    attachmentIds: [fieldReportAttachment.id]
+  });
+
+  assert.equal(fixture.sentEmails.length, 1);
+  assert.equal(fixture.sentEmails[0].attachments.length, 1);
+  assert.equal(fixture.sentEmails[0].attachments[0].filename, "field-report.pdf");
+  assert.equal(fixture.sentEmails[0].attachments[0].mime, "application/pdf");
+  const decoded = Buffer.from(fixture.sentEmails[0].attachments[0].contentBase64, "base64");
+  assert.equal(decoded.subarray(0, 5).toString("utf8"), "%PDF-");
 });
 
 test("PayPal and Venmo checkout helpers create sandbox orders and capture completed payments", async (t) => {

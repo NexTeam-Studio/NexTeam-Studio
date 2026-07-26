@@ -1,0 +1,773 @@
+{
+  "generatedAt": "2026-07-16T01:54:00.633Z",
+  "tenantId": "aquatrace",
+  "transcript": [
+    {
+      "user": "Show me the office team so I can pick a salesperson for the next quote.",
+      "assistant": "Found 1 office admin. Use Catherine (office_1) as the salesperson id.",
+      "toolRuns": [
+        {
+          "name": "listTeamMembers",
+          "result": {
+            "users": [
+              {
+                "id": "office_1",
+                "tenantId": "aquatrace",
+                "displayName": "Catherine",
+                "role": "OFFICE_ADMIN",
+                "active": true,
+                "email": "office@example.test"
+              }
+            ]
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "office_1",
+              "label": "Tenant user Catherine"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "List the quote templates available for Aquatrace.",
+      "assistant": "I found 3 quote templates. The first template is Commercial / VGB documentation (quote_template_commercial_aquatrace).",
+      "toolRuns": [
+        {
+          "name": "listQuoteTemplates",
+          "result": {
+            "templates": [
+              {
+                "id": "quote_template_commercial_aquatrace",
+                "tenantId": "aquatrace",
+                "name": "Commercial / VGB documentation",
+                "description": "Starter commercial documentation template using the seeded VGB catalog.",
+                "titlePrefix": "Commercial Documentation Quote",
+                "defaultLineItems": [
+                  {
+                    "id": "line_template_commercial_1",
+                    "code": "VGB-001",
+                    "name": "VGB-001 - Main Drain Cover Field Documentation — Zone 1",
+                    "description": "Seeded from the tenant catalog so the office can swap zones or add-ons before send.",
+                    "quantity": 1,
+                    "unitPrice": 950,
+                    "total": 950,
+                    "source": "catalog",
+                    "catalogCode": "VGB-001",
+                    "clientSelectable": false,
+                    "defaultSelected": true
+                  }
+                ],
+                "defaultApprovalRules": {
+                  "requireSignature": true,
+                  "requireDeposit": true,
+                  "requireCardOnFile": true,
+                  "depositKind": "percent",
+                  "depositValue": 50
+                },
+                "expiryDays": 30,
+                "terms": "Pricing stays valid through the expiry date shown on this quote. Scheduling begins after approval and any required deposit steps are complete.",
+                "createdAt": "2026-07-12T00:00:00.000Z",
+                "updatedAt": "2026-07-12T00:00:00.000Z"
+              },
+              {
+                "id": "quote_template_repair_aquatrace",
+                "tenantId": "aquatrace",
+                "name": "General repair",
+                "description": "Starter template for repair proposals with tenant-managed pricing.",
+                "titlePrefix": "Repair Quote",
+                "defaultLineItems": [
+                  {
+                    "id": "line_template_repair_1",
+                    "code": "AQ-GENERAL-REPAIR",
+                    "name": "General Pool Repair",
+                    "description": "Starter repair line. Price intentionally left at 0 until tenant pricing is confirmed.",
+                    "quantity": 1,
+                    "unitPrice": 0,
+                    "total": 0,
+                    "source": "catalog",
+                    "catalogCode": "AQ-GENERAL-REPAIR",
+                    "clientSelectable": false,
+                    "defaultSelected": true
+                  }
+                ],
+                "defaultApprovalRules": {
+                  "requireSignature": true,
+                  "requireDeposit": true,
+                  "requireCardOnFile": true,
+                  "depositKind": "percent",
+                  "depositValue": 50
+                },
+                "expiryDays": 30,
+                "terms": "Pricing stays valid through the expiry date shown on this quote. Scheduling begins after approval and any required deposit steps are complete.",
+                "createdAt": "2026-07-12T00:00:00.000Z",
+                "updatedAt": "2026-07-12T00:00:00.000Z"
+              },
+              {
+                "id": "quote_template_standard_aquatrace",
+                "tenantId": "aquatrace",
+                "name": "Standard leak detection",
+                "description": "Aquatrace starter template for standard leak-detection quoting. Pricing stays editable until tenant confirmation.",
+                "titlePrefix": "Leak Detection Quote",
+                "defaultLineItems": [
+                  {
+                    "id": "line_template_leak_detection_1",
+                    "code": "AQ-LEAK-DETECT",
+                    "name": "Swimming Pool Leak Detection",
+                    "description": "Default service shell. Price intentionally left at 0 until tenant pricing is confirmed.",
+                    "quantity": 1,
+                    "unitPrice": 0,
+                    "total": 0,
+                    "source": "catalog",
+                    "catalogCode": "AQ-LEAK-DETECT",
+                    "clientSelectable": false,
+                    "defaultSelected": true
+                  }
+                ],
+                "defaultApprovalRules": {
+                  "requireSignature": true,
+                  "requireDeposit": true,
+                  "requireCardOnFile": true,
+                  "depositKind": "percent",
+                  "depositValue": 50
+                },
+                "expiryDays": 30,
+                "terms": "Pricing stays valid through the expiry date shown on this quote. Scheduling begins after approval and any required deposit steps are complete.",
+                "createdAt": "2026-07-12T00:00:00.000Z",
+                "updatedAt": "2026-07-12T00:00:00.000Z"
+              }
+            ]
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "quote_template_commercial_aquatrace",
+              "label": "Quote template Commercial / VGB documentation"
+            },
+            {
+              "rail": "native",
+              "ref": "quote_template_repair_aquatrace",
+              "label": "Quote template General repair"
+            },
+            {
+              "rail": "native",
+              "ref": "quote_template_standard_aquatrace",
+              "label": "Quote template Standard leak detection"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Look up the existing catalog item VGB-002.",
+      "assistant": "Catalog lookup found VGB-002 VGB-002 - Main Drain Cover Field Documentation — Zone 2 at $1150.00.",
+      "toolRuns": [
+        {
+          "name": "listCatalogItems",
+          "result": {
+            "items": [
+              {
+                "id": "catalog_aquatrace_vgb_002",
+                "tenantId": "aquatrace",
+                "code": "VGB-002",
+                "name": "VGB-002 - Main Drain Cover Field Documentation — Zone 2",
+                "description": "VGB Service Line — Main Drain Cover Field Documentation\nZone 2 — 51 to 150 Miles from Fair Play, SC\n\nThis service is performed by a minimum two-person certified dive team. All Aquatrace LLC dive team personnel are certified divers regardless of their assigned project role. The pool stays full and operational — no draining required.\n\nIncluded in Base Rate:\n- Up to 4 drain covers documented\n- Up to 3 hours on-site\n- Underwater photography of each drain cover: condition, grate, body, label, and sump\n- Direct sump depth measurement taken at operating depth\n- Cover identification: make, model, listing number, and any visible expiration or service-life markings\n- Visible condition assessment per drain cover: Good / Monitor / Licensed Contractor Review Recommended\n- Documentation gap identification\n- Above-water photography of pool deck, drain approach, and relevant equipment\n- Written Field Documentation Report delivered as PDF within 5 business days of visit\n- High-resolution photo archive via shared link\n\nTravel included within Zone 2. Overnight lodging and per diem apply when same-day return is not practical: see VGB-060 and VGB-061.\n\nAdditional drains beyond 4: see VGB-010.\nAdditional on-site time beyond 3 hours: see VGB-011 — billed at $250.00/hr (2-person team rate).\nCold water surcharges apply when water temperature is at or below 60°F: see VGB-020 and VGB-021.\nRescheduling within 72 hours of scheduled visit: see VGB-040.\n\nThis service is governed by the Aquatrace LLC VGB Service Line Contract and Disclaimer and the Aquatrace LLC standard Terms and Conditions, both incorporated into this quote by reference. This service is field documentation only. The Field Documentation Report does not constitute a determination of regulatory compliance, code conformance, or fitness for operation. Aquatrace LLC is not a licensed pool contractor, code official, engineer, or legal or insurance advisor. All findings are provided for informational purposes only.",
+                "price": 1150,
+                "tag": "SERVICE",
+                "taxable": true,
+                "visible": true,
+                "source": "seed",
+                "createdAt": "2026-07-12T00:00:00.000Z",
+                "updatedAt": "2026-07-12T00:00:00.000Z"
+              },
+              {
+                "id": "catalog_aquatrace_vgb_010",
+                "tenantId": "aquatrace",
+                "code": "VGB-010",
+                "name": "VGB-010 - Additional Drain Cover — Per Drain",
+                "description": "VGB Service Line — Additional Drain Cover Documentation\n\nAdditional drain cover documentation beyond the 4 covers included in the applicable base site rate (VGB-001, VGB-002, or VGB-003).\n\nEach additional drain cover receives the same full documentation scope as covers included in the base rate:\n- Underwater photography: condition, grate, body, label, and sump\n- Direct sump depth measurement at operating depth\n- Cover identification: make, model, listing number, and visible service-life markings\n- Visible condition assessment: Good / Monitor / Licensed Contractor Review Recommended\n- Documentation gap notation\n\nBilled per drain cover beyond the base inclusion of 4.\n\nAll standard VGB Service Line terms and conditions apply.",
+                "price": 100,
+                "tag": "SERVICE",
+                "taxable": true,
+                "visible": true,
+                "source": "seed",
+                "createdAt": "2026-07-12T00:00:00.000Z",
+                "updatedAt": "2026-07-12T00:00:00.000Z"
+              },
+              {
+                "id": "catalog_aquatrace_vgb_070",
+                "tenantId": "aquatrace",
+                "code": "VGB-070",
+                "name": "VGB-070 - Portfolio Discount — 10% — 3 to 4 Sites",
+                "description": "VGB Service Line — Portfolio Discount\n3 to 4 Sites Booked Together — 10% Off Base Site Rate Per Site\n\nPortfolio discount of 10% applied to the base site rate per site when 3 or 4 sites are booked and scheduled together in a single booking agreement.\n\nDiscount applies to base site rate only (VGB-001, VGB-002, or VGB-003 as applicable).\nAdd-on services including VGB-010, VGB-011, VGB-020, VGB-021, VGB-022, and all other line items are billed at standard rates.\n\nAll sites must be confirmed and scheduled together at time of agreement. Portfolio discount is not retroactive to prior individual bookings and is not available for sites booked separately over time.\n\nAll standard VGB Service Line terms and conditions apply.",
+                "price": 0,
+                "tag": "SERVICE",
+                "taxable": true,
+                "visible": true,
+                "source": "seed",
+                "createdAt": "2026-07-12T00:00:00.000Z",
+                "updatedAt": "2026-07-12T00:00:00.000Z"
+              },
+              {
+                "id": "catalog_aquatrace_vgb_071",
+                "tenantId": "aquatrace",
+                "code": "VGB-071",
+                "name": "VGB-071 - Portfolio Discount — 15% — 5 to 9 Sites",
+                "description": "VGB Service Line — Portfolio Discount\n5 to 9 Sites Booked Together — 15% Off Base Site Rate Per Site\n\nPortfolio discount of 15% applied to the base site rate per site when 5 to 9 sites are booked and scheduled together in a single booking agreement.\n\nDiscount applies to base site rate only (VGB-001, VGB-002, or VGB-003 as applicable).\nAdd-on services including VGB-010, VGB-011, VGB-020, VGB-021, VGB-022, and all other line items are billed at standard rates.\n\nAll sites must be confirmed and scheduled together at time of agreement. Portfolio discount is not retroactive to prior individual bookings and is not available for sites booked separately over time.\n\nAll standard VGB Service Line terms and conditions apply.",
+                "price": 0,
+                "tag": "SERVICE",
+                "taxable": true,
+                "visible": true,
+                "source": "seed",
+                "createdAt": "2026-07-12T00:00:00.000Z",
+                "updatedAt": "2026-07-12T00:00:00.000Z"
+              },
+              {
+                "id": "catalog_aquatrace_vgb_072",
+                "tenantId": "aquatrace",
+                "code": "VGB-072",
+                "name": "VGB-072 - Portfolio Discount — 20% — 10 or More Sites",
+                "description": "VGB Service Line — Portfolio Discount\n10 or More Sites Booked Together — 20% Off Base Site Rate Per Site\n\nPortfolio discount of 20% applied to the base site rate per site when 10 or more sites are booked and scheduled together in a single booking agreement.\n\nDiscount applies to base site rate only (VGB-001, VGB-002, or VGB-003 as applicable).\nAdd-on services including VGB-010, VGB-011, VGB-020, VGB-021, VGB-022, and all other line items are billed at standard rates.\n\nAll sites must be confirmed and scheduled together at time of agreement. Custom scheduling and route planning provided for bookings of 10 or more sites. Contact Aquatrace LLC directly to discuss multi-site route logistics.\n\nPortfolio discount is not retroactive to prior individual bookings and is not available for sites booked separately over time.\n\nAll standard VGB Service Line terms and conditions apply.",
+                "price": 0,
+                "tag": "SERVICE",
+                "taxable": true,
+                "visible": true,
+                "source": "seed",
+                "createdAt": "2026-07-12T00:00:00.000Z",
+                "updatedAt": "2026-07-12T00:00:00.000Z"
+              }
+            ]
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "catalog_aquatrace_vgb_002",
+              "label": "Catalog item VGB-002 - Main Drain Cover Field Documentation — Zone 2"
+            },
+            {
+              "rail": "native",
+              "ref": "catalog_aquatrace_vgb_010",
+              "label": "Catalog item VGB-010 - Additional Drain Cover — Per Drain"
+            },
+            {
+              "rail": "native",
+              "ref": "catalog_aquatrace_vgb_070",
+              "label": "Catalog item VGB-070 - Portfolio Discount — 10% — 3 to 4 Sites"
+            },
+            {
+              "rail": "native",
+              "ref": "catalog_aquatrace_vgb_071",
+              "label": "Catalog item VGB-071 - Portfolio Discount — 15% — 5 to 9 Sites"
+            },
+            {
+              "rail": "native",
+              "ref": "catalog_aquatrace_vgb_072",
+              "label": "Catalog item VGB-072 - Portfolio Discount — 20% — 10 or More Sites"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Save a new Products & Services item called Pool Patch Kit for $125 as a Product.",
+      "assistant": "Saved catalog item POO-PAT-KIT Pool Patch Kit. Created: true.",
+      "toolRuns": [
+        {
+          "name": "saveCatalogItem",
+          "result": {
+            "item": {
+              "id": "catalog_poo_pat_kit",
+              "tenantId": "aquatrace",
+              "code": "POO-PAT-KIT",
+              "name": "Pool Patch Kit",
+              "description": "Shared patch kit stocked on leak visits.",
+              "price": 125,
+              "tag": "Product",
+              "taxable": true,
+              "visible": true,
+              "source": "tenant",
+              "createdAt": "2026-07-16T01:54:00.626Z",
+              "updatedAt": "2026-07-16T01:54:00.626Z"
+            },
+            "catalogCount": 30,
+            "created": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "catalog_poo_pat_kit",
+              "label": "Catalog item Pool Patch Kit"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Show me the quote-send communication template.",
+      "assistant": "Template Quote send / resend is loaded. Current subject: Your quote from {{TENANT_NAME}}.",
+      "toolRuns": [
+        {
+          "name": "listCommunicationTemplates",
+          "result": {
+            "templates": [
+              {
+                "id": "comms_quote_send_aquatrace",
+                "tenantId": "aquatrace",
+                "category": "quote_send",
+                "label": "Quote send / resend",
+                "description": "Used when the office sends or resends a quote.",
+                "emailEnabled": true,
+                "smsEnabled": true,
+                "emailSubject": "Your quote from {{TENANT_NAME}}",
+                "emailBody": "Hi {{CLIENT_NAME}},\n\nYour quote {{QUOTE_NUMBER}} is ready to review.\n\n{{PORTAL_URL}}\n\n{{TENANT_NAME}}",
+                "smsBody": "{{TENANT_NAME}}: your quote {{QUOTE_NUMBER}} is ready to review. {{PORTAL_URL}}",
+                "createdAt": "2026-07-12T00:00:00.000Z",
+                "updatedAt": "2026-07-12T00:00:00.000Z"
+              }
+            ]
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "comms_quote_send_aquatrace",
+              "label": "Communication template Quote send / resend"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Update the quote-send template subject and turn on text for it.",
+      "assistant": "Saved communication template quote_send. SMS enabled: true.",
+      "toolRuns": [
+        {
+          "name": "saveCommunicationTemplate",
+          "result": {
+            "template": {
+              "id": "comms_quote_send_aquatrace",
+              "tenantId": "aquatrace",
+              "category": "quote_send",
+              "label": "Quote send",
+              "description": "Client-facing quote delivery message.",
+              "emailEnabled": true,
+              "smsEnabled": true,
+              "emailSubject": "Updated quote subject",
+              "emailBody": "Hello {{CLIENT_NAME}}, your quote is ready.",
+              "smsBody": "Quote ready for {{CLIENT_NAME}}.",
+              "createdAt": "2026-07-12T00:00:00.000Z",
+              "updatedAt": "2026-07-16T01:54:00.626Z"
+            },
+            "templateCount": 8,
+            "created": false
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "comms_quote_send_aquatrace",
+              "label": "Communication template Quote send"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Draft a quote for Deborah Justice using the first quote template and assign Catherine as the salesperson.",
+      "assistant": "Quote draft ready with template quote_template_commercial_aquatrace and salesperson office_1. Approval id: appr_62457237-fac6-49d3-9ea9-0a1c6c6c2a74",
+      "toolRuns": [
+        {
+          "name": "createQuote",
+          "result": {
+            "approval": {
+              "id": "appr_62457237-fac6-49d3-9ea9-0a1c6c6c2a74",
+              "tenantId": "aquatrace",
+              "kind": "quote",
+              "preview": {
+                "title": "Create quote: Approval-gated VGB quote",
+                "body": "Quote #: Q-0001\nTitle: Approval-gated VGB quote\nPOO-PAT-KIT Pool Patch Kit x1: $125.00\nTotal: $125.00\nExpires: 2026-08-15T01:54:00.627Z\nApproval rules: signature required, no deposit required, card on file optional"
+              },
+              "execute": {
+                "service": "crm",
+                "op": "createQuote",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "quote": {
+                    "id": "quote_63d6b2d2-07fa-4853-aae3-259a1b377398",
+                    "tenantId": "aquatrace",
+                    "number": "Q-0001",
+                    "clientId": "client_1",
+                    "templateId": "quote_template_commercial_aquatrace",
+                    "salespersonUserId": "office_1",
+                    "version": 1,
+                    "status": "draft",
+                    "title": "Approval-gated VGB quote",
+                    "lineItems": [
+                      {
+                        "id": "line_poo-pat-kit_1",
+                        "code": "POO-PAT-KIT",
+                        "name": "Pool Patch Kit",
+                        "description": "Shared patch kit stocked on leak visits.",
+                        "quantity": 1,
+                        "unitPrice": 125,
+                        "total": 125,
+                        "source": "catalog",
+                        "catalogCode": "POO-PAT-KIT"
+                      }
+                    ],
+                    "totals": {
+                      "subtotal": 125,
+                      "tax": 0,
+                      "total": 125
+                    },
+                    "approvalRules": {
+                      "requireSignature": true,
+                      "requireDeposit": false,
+                      "requireCardOnFile": false,
+                      "depositKind": "percent",
+                      "depositValue": 50
+                    },
+                    "expiresAt": "2026-08-15T01:54:00.627Z",
+                    "portal": {},
+                    "delivery": [],
+                    "changeRequests": [],
+                    "terms": "Pricing stays valid through the expiry date shown on this quote. Scheduling begins after approval and any required deposit steps are complete.",
+                    "createdAt": "2026-07-16T01:54:00.627Z",
+                    "updatedAt": "2026-07-16T01:54:00.627Z"
+                  }
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            },
+            "pendingQuote": {
+              "id": "quote_63d6b2d2-07fa-4853-aae3-259a1b377398",
+              "tenantId": "aquatrace",
+              "number": "Q-0001",
+              "clientId": "client_1",
+              "templateId": "quote_template_commercial_aquatrace",
+              "salespersonUserId": "office_1",
+              "version": 1,
+              "status": "pending_approval",
+              "title": "Approval-gated VGB quote",
+              "lineItems": [
+                {
+                  "id": "line_poo-pat-kit_1",
+                  "code": "POO-PAT-KIT",
+                  "name": "Pool Patch Kit",
+                  "description": "Shared patch kit stocked on leak visits.",
+                  "quantity": 1,
+                  "unitPrice": 125,
+                  "total": 125,
+                  "source": "catalog",
+                  "catalogCode": "POO-PAT-KIT"
+                }
+              ],
+              "totals": {
+                "subtotal": 125,
+                "tax": 0,
+                "total": 125
+              },
+              "approvalRules": {
+                "requireSignature": true,
+                "requireDeposit": false,
+                "requireCardOnFile": false,
+                "depositKind": "percent",
+                "depositValue": 50
+              },
+              "expiresAt": "2026-08-15T01:54:00.627Z",
+              "portal": {},
+              "delivery": [],
+              "changeRequests": [],
+              "terms": "Pricing stays valid through the expiry date shown on this quote. Scheduling begins after approval and any required deposit steps are complete.",
+              "createdAt": "2026-07-16T01:54:00.627Z",
+              "updatedAt": "2026-07-16T01:54:00.627Z",
+              "approvalId": "appr_62457237-fac6-49d3-9ea9-0a1c6c6c2a74"
+            },
+            "writesAreApprovalQueuedOnly": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_62457237-fac6-49d3-9ea9-0a1c6c6c2a74",
+              "label": "ApprovalQueue quote create appr_62457237-fac6-49d3-9ea9-0a1c6c6c2a74"
+            },
+            {
+              "rail": "native",
+              "ref": "native-quote-config",
+              "label": "Native quote templates, numbering, and totals"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "yes",
+      "assistant": "Approved and executed appr_62457237-fac6-49d3-9ea9-0a1c6c6c2a74. Status is now executed.",
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_62457237-fac6-49d3-9ea9-0a1c6c6c2a74",
+              "tenantId": "aquatrace",
+              "kind": "quote",
+              "preview": {
+                "title": "Create quote: Approval-gated VGB quote",
+                "body": "Quote #: Q-0001\nTitle: Approval-gated VGB quote\nPOO-PAT-KIT Pool Patch Kit x1: $125.00\nTotal: $125.00\nExpires: 2026-08-15T01:54:00.627Z\nApproval rules: signature required, no deposit required, card on file optional"
+              },
+              "execute": {
+                "service": "crm",
+                "op": "createQuote",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "quote": {
+                    "id": "quote_63d6b2d2-07fa-4853-aae3-259a1b377398",
+                    "tenantId": "aquatrace",
+                    "number": "Q-0001",
+                    "clientId": "client_1",
+                    "templateId": "quote_template_commercial_aquatrace",
+                    "salespersonUserId": "office_1",
+                    "version": 1,
+                    "status": "draft",
+                    "title": "Approval-gated VGB quote",
+                    "lineItems": [
+                      {
+                        "id": "line_poo-pat-kit_1",
+                        "code": "POO-PAT-KIT",
+                        "name": "Pool Patch Kit",
+                        "description": "Shared patch kit stocked on leak visits.",
+                        "quantity": 1,
+                        "unitPrice": 125,
+                        "total": 125,
+                        "source": "catalog",
+                        "catalogCode": "POO-PAT-KIT"
+                      }
+                    ],
+                    "totals": {
+                      "subtotal": 125,
+                      "tax": 0,
+                      "total": 125
+                    },
+                    "approvalRules": {
+                      "requireSignature": true,
+                      "requireDeposit": false,
+                      "requireCardOnFile": false,
+                      "depositKind": "percent",
+                      "depositValue": 50
+                    },
+                    "expiresAt": "2026-08-15T01:54:00.627Z",
+                    "portal": {},
+                    "delivery": [],
+                    "changeRequests": [],
+                    "terms": "Pricing stays valid through the expiry date shown on this quote. Scheduling begins after approval and any required deposit steps are complete.",
+                    "createdAt": "2026-07-16T01:54:00.627Z",
+                    "updatedAt": "2026-07-16T01:54:00.627Z"
+                  }
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-16T01:54:00.631Z",
+              "decidedBy": "owner_1"
+            },
+            "executedApproval": {
+              "id": "appr_62457237-fac6-49d3-9ea9-0a1c6c6c2a74",
+              "tenantId": "aquatrace",
+              "kind": "quote",
+              "preview": {
+                "title": "Create quote: Approval-gated VGB quote",
+                "body": "Quote #: Q-0001\nTitle: Approval-gated VGB quote\nPOO-PAT-KIT Pool Patch Kit x1: $125.00\nTotal: $125.00\nExpires: 2026-08-15T01:54:00.627Z\nApproval rules: signature required, no deposit required, card on file optional"
+              },
+              "execute": {
+                "service": "crm",
+                "op": "createQuote",
+                "args": {
+                  "tenantId": "aquatrace",
+                  "quote": {
+                    "id": "quote_63d6b2d2-07fa-4853-aae3-259a1b377398",
+                    "tenantId": "aquatrace",
+                    "number": "Q-0001",
+                    "clientId": "client_1",
+                    "templateId": "quote_template_commercial_aquatrace",
+                    "salespersonUserId": "office_1",
+                    "version": 1,
+                    "status": "draft",
+                    "title": "Approval-gated VGB quote",
+                    "lineItems": [
+                      {
+                        "id": "line_poo-pat-kit_1",
+                        "code": "POO-PAT-KIT",
+                        "name": "Pool Patch Kit",
+                        "description": "Shared patch kit stocked on leak visits.",
+                        "quantity": 1,
+                        "unitPrice": 125,
+                        "total": 125,
+                        "source": "catalog",
+                        "catalogCode": "POO-PAT-KIT"
+                      }
+                    ],
+                    "totals": {
+                      "subtotal": 125,
+                      "tax": 0,
+                      "total": 125
+                    },
+                    "approvalRules": {
+                      "requireSignature": true,
+                      "requireDeposit": false,
+                      "requireCardOnFile": false,
+                      "depositKind": "percent",
+                      "depositValue": 50
+                    },
+                    "expiresAt": "2026-08-15T01:54:00.627Z",
+                    "portal": {},
+                    "delivery": [],
+                    "changeRequests": [],
+                    "terms": "Pricing stays valid through the expiry date shown on this quote. Scheduling begins after approval and any required deposit steps are complete.",
+                    "createdAt": "2026-07-16T01:54:00.627Z",
+                    "updatedAt": "2026-07-16T01:54:00.627Z"
+                  }
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-16T01:54:00.631Z",
+              "decidedBy": "owner_1",
+              "executedAt": "2026-07-16T01:54:00.632Z",
+              "executedBy": "owner_1"
+            },
+            "execution": {
+              "quote": {
+                "id": "quote_63d6b2d2-07fa-4853-aae3-259a1b377398",
+                "tenantId": "aquatrace",
+                "number": "Q-0001",
+                "clientId": "client_1",
+                "templateId": "quote_template_commercial_aquatrace",
+                "salespersonUserId": "office_1",
+                "version": 1,
+                "status": "draft",
+                "title": "Approval-gated VGB quote",
+                "lineItems": [
+                  {
+                    "id": "line_poo-pat-kit_1",
+                    "code": "POO-PAT-KIT",
+                    "name": "Pool Patch Kit",
+                    "description": "Shared patch kit stocked on leak visits.",
+                    "quantity": 1,
+                    "unitPrice": 125,
+                    "total": 125,
+                    "source": "catalog",
+                    "catalogCode": "POO-PAT-KIT"
+                  }
+                ],
+                "totals": {
+                  "subtotal": 125,
+                  "tax": 0,
+                  "total": 125
+                },
+                "approvalRules": {
+                  "requireSignature": true,
+                  "requireDeposit": false,
+                  "requireCardOnFile": false,
+                  "depositKind": "percent",
+                  "depositValue": 50
+                },
+                "expiresAt": "2026-08-15T01:54:00.627Z",
+                "portal": {},
+                "delivery": [],
+                "changeRequests": [],
+                "terms": "Pricing stays valid through the expiry date shown on this quote. Scheduling begins after approval and any required deposit steps are complete.",
+                "createdAt": "2026-07-16T01:54:00.627Z",
+                "updatedAt": "2026-07-16T01:54:00.627Z"
+              }
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_62457237-fac6-49d3-9ea9-0a1c6c6c2a74",
+              "label": "ApprovalQueue approval appr_62457237-fac6-49d3-9ea9-0a1c6c6c2a74"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "Open the new quote detail and confirm the template and salesperson were saved.",
+      "assistant": "Quote Q-0001 saved template quote_template_commercial_aquatrace and salesperson office_1.",
+      "toolRuns": [
+        {
+          "name": "getQuoteDetail",
+          "result": {
+            "quote": {
+              "id": "quote_63d6b2d2-07fa-4853-aae3-259a1b377398",
+              "tenantId": "aquatrace",
+              "number": "Q-0001",
+              "clientId": "client_1",
+              "templateId": "quote_template_commercial_aquatrace",
+              "salespersonUserId": "office_1",
+              "version": 1,
+              "status": "draft",
+              "title": "Approval-gated VGB quote",
+              "lineItems": [
+                {
+                  "id": "line_poo-pat-kit_1",
+                  "code": "POO-PAT-KIT",
+                  "name": "Pool Patch Kit",
+                  "description": "Shared patch kit stocked on leak visits.",
+                  "quantity": 1,
+                  "unitPrice": 125,
+                  "total": 125,
+                  "source": "catalog",
+                  "catalogCode": "POO-PAT-KIT"
+                }
+              ],
+              "totals": {
+                "subtotal": 125,
+                "tax": 0,
+                "total": 125
+              },
+              "approvalRules": {
+                "requireSignature": true,
+                "requireDeposit": false,
+                "requireCardOnFile": false,
+                "depositKind": "percent",
+                "depositValue": 50
+              },
+              "expiresAt": "2026-08-15T01:54:00.627Z",
+              "portal": {},
+              "delivery": [],
+              "changeRequests": [],
+              "terms": "Pricing stays valid through the expiry date shown on this quote. Scheduling begins after approval and any required deposit steps are complete.",
+              "createdAt": "2026-07-16T01:54:00.627Z",
+              "updatedAt": "2026-07-16T01:54:00.627Z"
+            },
+            "client": {
+              "id": "client_1",
+              "name": "Deborah Justice",
+              "emails": [
+                "deborah@example.test"
+              ],
+              "phones": [
+                "8645551212"
+              ]
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "quote_63d6b2d2-07fa-4853-aae3-259a1b377398",
+              "label": "Native quote Approval-gated VGB quote"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "finalQuote": {
+    "id": "quote_63d6b2d2-07fa-4853-aae3-259a1b377398",
+    "number": "Q-0001",
+    "templateId": "quote_template_commercial_aquatrace",
+    "salespersonUserId": "office_1",
+    "title": "Approval-gated VGB quote"
+  }
+}

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
-import { RailError, type EventType } from "@nexteam/core";
+import { RailError, eventTypeSchema, type EventType } from "@nexteam/core";
 import { z } from "zod";
 
 export type InvoiceReminderStatus = "pending" | "resolved" | "dismissed";
@@ -104,27 +104,7 @@ const lifecycleEventSchema = z.object({
   id: z.string().min(1),
   tenantId: z.string().min(1),
   jobId: z.string().min(1),
-  type: z.enum([
-    "client.created",
-    "job.created",
-    "job.completed",
-    "job.state_changed",
-    "job.closed",
-    "job.requires_invoicing_cleared",
-    "visit.booked",
-    "visit.completed",
-    "invoice.reminder_due",
-    "media.uploaded",
-    "quote.sent",
-    "quote.approved",
-    "quote.signed",
-    "quote.change_requested",
-    "quote.renewed",
-    "invoice.paid",
-    "lead.received",
-    "review.received",
-    "content.published"
-  ]),
+  type: eventTypeSchema,
   createdAt: z.string().min(1),
   payload: z.record(z.unknown())
 });

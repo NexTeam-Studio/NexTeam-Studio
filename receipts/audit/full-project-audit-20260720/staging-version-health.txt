@@ -1,0 +1,4 @@
+VERSION
+{"sha":"710ea325287405610527c2941ff2f8766767ee66","builtAt":"2026-07-20T21:43:39.177Z"}
+HEALTH
+{"ok":true,"checkedAt":"2026-07-20T21:43:40.129Z","rails":{"jobber":{"ok":true,"configured":true,"provider":"jobber","op":"graphql_read","latencyMs":396,"detail":"Jobber GraphQL read succeeded."},"companycam":{"ok":true,"configured":true,"provider":"companycam","op":"projects_read","latencyMs":407,"detail":"CompanyCam projects read succeeded."},"comms":{"ok":true,"configured":true,"provider":"gmail","op":"configured_no_secret_values","latencyMs":0,"detail":"tenantId=aquatrace; readMailboxes=3; sendConfigured=true; operatorEmailConfigured=false"},"anthropic":{"ok":true,"configured":true,"provider":"anthropic","op":"configured_no_spend","latencyMs":0,"detail":"Configured; live message call skipped by no-spend overnight limit."}}}

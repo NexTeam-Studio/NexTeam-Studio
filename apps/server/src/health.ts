@@ -1,5 +1,4 @@
 import { healthResponseSchema, type RailError } from "@nexteam/core";
-import { CompanyCamAdapter, JobberAdapter } from "@nexteam/providers";
 import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
 
 interface HealthRail {
@@ -40,13 +39,9 @@ async function timeRail(provider: string, op: string, configured: boolean, run: 
 }
 
 export async function buildHealth(env: NodeJS.ProcessEnv = process.env): Promise<unknown> {
-  const jobber = JobberAdapter.fromEnv(env);
-  const companyCam = CompanyCamAdapter.fromEnv(env);
   const comms = createCommsRailFromEnv(env);
   const rails: Record<string, HealthRail> = {};
 
-  rails.jobber = await timeRail("jobber", "graphql_read", jobber.isConfigured(), () => jobber.health());
-  rails.companycam = await timeRail("companycam", "projects_read", companyCam.isConfigured(), () => companyCam.health());
   rails.comms = {
     ok: comms.readAdapters.size > 0 || Boolean(comms.sendAdapter),
     configured: comms.readAdapters.size > 0 || Boolean(comms.sendAdapter),

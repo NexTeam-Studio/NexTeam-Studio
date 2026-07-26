@@ -37,6 +37,7 @@ export type PlatformModule =
 
 export type ArtifactKind =
   | "client"
+  | "document"
   | "job"
   | "tenant_provisioning"
   | "email"
@@ -124,6 +125,8 @@ export interface TenantUser {
   tenantId: ID;
   authUid?: string | undefined;
   email?: string | undefined;
+  phones?: string[] | undefined;
+  address?: Address | undefined;
   displayName: string;
   role: TenantUserRole;
   active: boolean;
@@ -179,6 +182,7 @@ export interface TenantDataExport {
 }
 
 export type ContactChannel = "email" | "sms" | "both" | "none";
+export type ReviewSequenceChannel = "email" | "sms" | "both";
 export type PhoneLabel = "Main" | "Work" | "Mobile" | "Home" | "Fax" | "Other";
 export type EmailLabel = "Main" | "Work" | "Personal" | "Other";
 export type SmsCapability = "mobile" | "landline" | "fax" | "invalid" | "unknown";
@@ -201,6 +205,7 @@ export type InvoiceDeliveryMode = "email" | "sms" | "mark_sent";
 export type PaymentScheduleTrigger = "on_approval" | "on_job_close" | "on_date";
 export type PaymentScheduleAmountKind = "amount" | "percent";
 export type ReceiptReviewChannel = "email" | "sms";
+export type SignedDocumentKind = "completion_signoff" | "waiver" | "change_order" | "custom";
 
 export interface DocumentNumberingRule {
   prefix: string;
@@ -330,9 +335,11 @@ export interface Client {
   emails: string[];
   phones: string[];
   tags: string[];
-  consent: { email: boolean; sms: boolean };
+  consent: { email: boolean; sms: boolean; marketing?: boolean | undefined };
   customFields?: Record<string, string | number | boolean> | undefined;
   externalIds?: { jobber?: string | undefined } | undefined;
+  archivedAt?: string | undefined;
+  archivedBy?: ID | undefined;
 }
 
 export interface Asset {
@@ -340,6 +347,32 @@ export interface Asset {
   kind: string;
   label: string;
   fields: Record<string, string | number | boolean>;
+}
+
+export type FieldDocsChecklistFieldType =
+  | "multi_select"
+  | "count"
+  | "measurement"
+  | "pass_fail"
+  | "free_text"
+  | "photo_attachment";
+export type FieldDocsChecklistFieldMemory = "property" | "visit";
+export type FieldDocsChecklistPassFailStatus = "pending" | "pass" | "fail" | "not_applicable";
+
+export interface FieldDocsPersistentChecklistValue {
+  templateId: ID;
+  fieldId: ID;
+  label: string;
+  type: FieldDocsChecklistFieldType;
+  status?: FieldDocsChecklistPassFailStatus | undefined;
+  note?: string | undefined;
+  numberValue?: number | undefined;
+  multiValue?: string[] | undefined;
+  mediaIds?: string[] | undefined;
+  unit?: string | undefined;
+  updatedAt: string;
+  sourceChecklistId: ID;
+  sourceVisitId?: ID | undefined;
 }
 
 export interface Property {
@@ -359,11 +392,14 @@ export interface Property {
   geo?: { lat: number; lng: number } | undefined;
   assets: Asset[];
   customFields?: Record<string, string | number | boolean> | undefined;
+  fieldDocs?: {
+    persistentChecklistValues?: Record<string, FieldDocsPersistentChecklistValue> | undefined;
+  } | undefined;
   externalIds?: { jobber?: string | undefined } | undefined;
 }
 
 export type IntakeSurface = "request" | "quote" | "job" | "visit" | "invoice";
-export type IntakeFieldType = "text" | "textarea" | "email" | "phone" | "select" | "boolean" | "number";
+export type IntakeFieldType = "text" | "textarea" | "email" | "phone" | "select" | "boolean" | "number" | "multi_image";
 export type IntakeFieldGroup = "contact" | "property" | "pool" | "safety" | "service" | "notes";
 export type RequestStatus = "new" | "archived" | "converted_to_quote" | "converted_to_job";
 export type RequestSource = "website_form" | "office_existing_client" | "office_new_client" | "legacy_lead_backfill";
@@ -386,17 +422,18 @@ export interface IntakeFieldDefinition {
   options?: string[] | undefined;
   helpText?: string | undefined;
   prominent?: boolean | undefined;
+  maxItems?: number | undefined;
 }
 
 export interface IntakeFieldValue extends IntakeFieldDefinition {
-  value: string | number | boolean;
+  value: string | number | boolean | string[];
   visibility: IntakeFieldVisibility;
 }
 
 export interface IntakeSnapshot {
   narrative?: string | undefined;
   fieldValues: IntakeFieldValue[];
-  fieldIndex: Record<string, string | number | boolean>;
+  fieldIndex: Record<string, string | number | boolean | string[]>;
 }
 
 export interface RequestForm {
@@ -434,7 +471,7 @@ export interface ServiceRequest {
   phone?: string | undefined;
   propertyAddress?: Address | undefined;
   narrative: string;
-  consent: { email: boolean; sms: boolean };
+  consent: { email: boolean; sms: boolean; marketing?: boolean | undefined };
   intake: IntakeSnapshot;
   match: ServiceRequestMatch;
   selectedClientId?: ID | undefined;
@@ -488,6 +525,9 @@ export interface Job {
   totals: QuoteTotals;
   paymentSchedule?: PaymentSchedulePlan | undefined;
   intake?: IntakeSnapshot | undefined;
+  clientVisibility?: {
+    hideFieldDocsFromPortal?: boolean | undefined;
+  } | undefined;
   externalIds?: { jobber?: string | undefined } | undefined;
 }
 
@@ -507,17 +547,108 @@ export interface Visit {
 export interface Media {
   id: ID;
   tenantId: ID;
+  clientId?: ID | undefined;
   jobId?: ID | undefined;
+  visitId?: ID | undefined;
   propertyId?: ID | undefined;
-  type: "photo" | "video" | "pdf";
+  captureBatchId?: ID | undefined;
+  type: "photo" | "video" | "audio" | "pdf";
   storageRef: string;
   thumbRef?: string | undefined;
   exif?: { gps?: { lat: number; lng: number } | undefined; ts?: string | undefined } | undefined;
   aiTags: string[];
+  manualTags?: string[] | undefined;
   aiCaption?: string | undefined;
+  comments?: Array<{
+    id: ID;
+    text: string;
+    createdAt: string;
+    author?: string | undefined;
+  }> | undefined;
+  annotations?: Array<{
+    id: ID;
+    kind: "path";
+    color?: string | undefined;
+    createdAt: string;
+    points: Array<{ x: number; y: number }>;
+  }> | undefined;
   capturedBy?: string | undefined;
+  hiddenFromClient?: boolean | undefined;
+  trashedAt?: string | undefined;
+  trashedBy?: string | undefined;
+  purgeAfter?: string | undefined;
   externalIds?: { companycam?: string | undefined } | undefined;
   sourceUrlNeverExposed?: never;
+}
+
+export interface NexDocsFolder {
+  id: ID;
+  tenantId: ID;
+  clientId: ID;
+  label: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: ID | undefined;
+}
+
+export type NexDocsDocumentKind =
+  | "uploaded_file"
+  | "quote_pdf"
+  | "invoice_pdf"
+  | "receipt"
+  | "statement"
+  | "field_report"
+  | "photo"
+  | "signed_document";
+
+export type NexDocsDocumentSource = "staff_upload" | "client_upload" | "generated";
+
+export interface NexDocsDocument {
+  id: ID;
+  tenantId: ID;
+  clientId: ID;
+  folderId?: ID | undefined;
+  propertyId?: ID | undefined;
+  jobId?: ID | undefined;
+  visitId?: ID | undefined;
+  quoteId?: ID | undefined;
+  invoiceId?: ID | undefined;
+  receiptReviewId?: ID | undefined;
+  signedDocumentId?: ID | undefined;
+  kind: NexDocsDocumentKind;
+  source: NexDocsDocumentSource;
+  label: string;
+  fileName: string;
+  mimeType: string;
+  storageRef: string;
+  sizeBytes?: number | undefined;
+  searchText?: string | undefined;
+  hiddenFromClient?: boolean | undefined;
+  uploadedBy?: ID | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CaptureBatchStatus = "draft" | "unassigned" | "assigned";
+export type CaptureBatchAssignmentMode = "existing_client" | "request" | "decide_later";
+
+export interface CaptureBatch {
+  id: ID;
+  tenantId: ID;
+  status: CaptureBatchStatus;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: ID | undefined;
+  mediaIds: ID[];
+  latestCapturedAt?: string | undefined;
+  originGps?: { lat: number; lng: number } | undefined;
+  latestGps?: { lat: number; lng: number } | undefined;
+  assignedClientId?: ID | undefined;
+  assignedJobId?: ID | undefined;
+  assignedVisitId?: ID | undefined;
+  assignedRequestId?: ID | undefined;
+  assignmentMode?: CaptureBatchAssignmentMode | undefined;
+  assignedAt?: string | undefined;
 }
 
 export interface ServiceDef {
@@ -559,7 +690,7 @@ export interface NewClient {
   communicationSettings?: ClientCommunicationSettings | undefined;
   emails: string[];
   phones: string[];
-  consent: { email: boolean; sms: boolean };
+  consent: { email: boolean; sms: boolean; marketing?: boolean | undefined };
   customFields?: Record<string, string | number | boolean> | undefined;
 }
 
@@ -569,6 +700,7 @@ export interface QuoteDraft {
   jobId?: ID | undefined;
   requestId?: ID | undefined;
   templateId?: ID | undefined;
+  salespersonUserId?: ID | undefined;
   title: string;
   lineItems: LineItem[];
   approvalRules: QuoteApprovalRules;
@@ -593,6 +725,24 @@ export interface QuoteSignatureRecord {
   ipAddress: string;
 }
 
+export interface SignedDocumentRecord {
+  id: ID;
+  tenantId: ID;
+  clientId: ID;
+  jobId?: ID | undefined;
+  propertyId?: ID | undefined;
+  visitId?: ID | undefined;
+  kind: SignedDocumentKind;
+  title: string;
+  bodyText: string;
+  status: "pending_signature" | "signed";
+  signature?: QuoteSignatureRecord | undefined;
+  createdBy?: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+  signedAt?: string | undefined;
+}
+
 export interface QuoteDeliveryRecord {
   id: ID;
   mode: QuoteDeliveryMode;
@@ -600,6 +750,7 @@ export interface QuoteDeliveryRecord {
   target?: string | undefined;
   sentBy?: string | undefined;
   receiptId?: ID | undefined;
+  subject?: string | undefined;
   note?: string | undefined;
 }
 
@@ -652,6 +803,7 @@ export interface Quote {
   requestId?: ID | undefined;
   convertedJobId?: ID | undefined;
   templateId?: ID | undefined;
+  salespersonUserId?: ID | undefined;
   version?: number | undefined;
   status: QuoteStatus;
   title: string;
@@ -696,6 +848,44 @@ export interface QuoteTemplate {
   updatedAt: string;
 }
 
+export interface ProductServiceCatalogItem {
+  id: ID;
+  tenantId: ID;
+  code: string;
+  name: string;
+  description?: string | undefined;
+  price: number;
+  tag: string;
+  taxable: boolean;
+  visible: boolean;
+  source: "seed" | "tenant";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommunicationTemplateRecord {
+  id: ID;
+  tenantId: ID;
+  category: string;
+  label: string;
+  description?: string | undefined;
+  emailEnabled: boolean;
+  smsEnabled: boolean;
+  emailSubject?: string | undefined;
+  emailBody?: string | undefined;
+  smsBody?: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewSequenceStepSetting {
+  id: ID;
+  label: string;
+  offsetDays: number;
+  channels: ReviewSequenceChannel;
+  templateCategory: "review_request_initial" | "review_request_nudge";
+}
+
 export interface InvoiceDeliveryPreferences {
   emailIncludePdf: boolean;
   emailIncludeSummary: boolean;
@@ -718,7 +908,18 @@ export interface CrmSettings {
     dueDays: number;
     terms: string;
     delivery: InvoiceDeliveryPreferences;
+    tippingEnabled: boolean;
   };
+  portalDefaults: {
+    keepBusinessAddressPrivate: boolean;
+    hubSessionReverifyDays: number;
+  };
+  reviewDefaults: {
+    enabled: boolean;
+    steps: ReviewSequenceStepSetting[];
+  };
+  catalogItems: ProductServiceCatalogItem[];
+  communicationTemplates: CommunicationTemplateRecord[];
   createdAt: string;
   updatedAt: string;
 }
@@ -731,7 +932,7 @@ export type CreditStatus = "available" | "partially_applied" | "applied";
 export type RefundStatus = "pending" | "succeeded" | "failed";
 export type ReceiptReviewStatus = "draft" | "ready_to_send" | "sent";
 export type ReceiptReviewKind = "payment" | "refund";
-export type ReceiptAttachmentKind = "invoice_pdf" | "quote_pdf" | "field_report" | "photo" | "job_file";
+export type ReceiptAttachmentKind = "invoice_pdf" | "quote_pdf" | "field_report" | "photo" | "job_file" | "signed_document";
 
 export interface SavedBillingCard {
   id: ID;
@@ -757,6 +958,10 @@ export interface PaymentMethodDetails {
   otherReference?: string | undefined;
   payerName?: string | undefined;
   failureMessage?: string | undefined;
+  collectionChannel?: "hosted_link" | "saved_card" | "manual_entry" | "tap_to_pay" | "quick_request" | undefined;
+  deviceLabel?: string | undefined;
+  devicePlatform?: string | undefined;
+  requestMemo?: string | undefined;
 }
 
 export interface ClientBillingProfile {
@@ -790,6 +995,7 @@ export interface Payment {
   amount: number;
   appliedAmount: number;
   excessCreditAmount?: number | undefined;
+  tipAmount?: number | undefined;
   currency: "usd";
   note?: string | undefined;
   capturedAt?: string | undefined;
@@ -1105,6 +1311,7 @@ export interface CRMProvider {
   getJobs(range: { from: string; to: string }): Promise<Job[]>;
   getJobDetail(ref: { id?: ID; nameQuery?: string }): Promise<JobDetail>;
   createClient?(d: NewClient): Promise<Client>;
+  upsertProperty?(property: Property): Promise<Property>;
   createJob?(job: Job): Promise<Job>;
   getQuotes?(): Promise<Quote[]>;
   createQuote?(quote: Quote): Promise<Quote>;
@@ -1145,21 +1352,32 @@ export interface EmailSendProvider {
 
 export type EventType =
   | "client.created"
+  | "request.created"
+  | "request.converted_to_quote"
+  | "request.converted_to_job"
   | "job.created"
   | "job.completed"
   | "job.state_changed"
   | "job.closed"
   | "job.requires_invoicing_cleared"
   | "visit.booked"
+  | "visit.confirmed"
+  | "visit.booking_confirmation_sent"
   | "visit.completed"
   | "invoice.reminder_due"
   | "media.uploaded"
+  | "checklist.completed"
+  | "quote.created"
   | "quote.sent"
+  | "quote.viewed"
+  | "quote.deposit_paid"
   | "quote.approved"
   | "quote.signed"
   | "quote.change_requested"
   | "quote.renewed"
+  | "quote.converted_to_job"
   | "invoice.created"
+  | "invoice.sent"
   | "invoice.paid"
   | "payment.created"
   | "payment.failed"
@@ -1167,6 +1385,15 @@ export type EventType =
   | "invoice.voided"
   | "invoice.bad_debt"
   | "receipt.review_created"
+  | "signed_document.created"
+  | "signed_document.signed"
+  | "portal.link_sent"
+  | "portal.session_started"
+  | "statement.sent"
+  | "review.sequence_started"
+  | "review.sequence_step_sent"
+  | "review.sequence_stopped"
+  | "review.marked"
   | "lead.received"
   | "review.received"
   | "content.published";
@@ -1183,6 +1410,11 @@ export interface BusEvent {
 export interface EventBus {
   emit(e: Omit<BusEvent, "id" | "ts" | "processedBy">): Promise<void>;
   subscribe(type: EventType, handlerName: string, h: (e: BusEvent) => Promise<void>): void;
+  listEvents(input?: {
+    tenantId?: ID | undefined;
+    limit?: number | undefined;
+    types?: EventType[] | undefined;
+  }): Promise<BusEvent[]>;
 }
 
 export interface ApprovalItem {
@@ -1242,7 +1474,7 @@ export interface FailureLogRecord {
 
 export interface UsageLogRecord {
   tenantId: ID;
-  provider: "anthropic" | "elevenlabs";
+  provider: "anthropic" | "elevenlabs" | "openai";
   model: string;
   routeActionName: string;
   taskType: string;

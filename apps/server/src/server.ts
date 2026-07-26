@@ -1,4 +1,3 @@
-import { Readable } from "node:stream";
 import express, { type Request, type Response } from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,11 +10,16 @@ import {
   approvalItemSchema,
   logger
 } from "@nexteam/core";
-import { CompanyCamAdapter, JobberAdapter } from "@nexteam/providers";
 import { getBuildInfo } from "./buildInfo.js";
 import { createNexiRouter } from "./nexi/nexiRoutes.js";
 import { buildHealth } from "./health.js";
-import { actorIdForAccess, requireTenantRole } from "./auth/accessContext.js";
+import {
+  actorIdForAccess,
+  createLocalDevSession,
+  listLocalDevWebProfiles,
+  readLocalDevSession,
+  requireTenantRole
+} from "./auth/accessContext.js";
 import { CompositeApprovalExecutor } from "./approval/compositeExecutor.js";
 import { FirestoreApprovalQueueRepository } from "./approval/firestoreRepository.js";
 import { createApprovalNexiTools } from "./approval/nexiTools.js";
@@ -25,16 +29,29 @@ import { registerCampaignRoutes } from "./campaigns/routes.js";
 import { JobLifecycleService } from "./crm/jobLifecycle.js";
 import { FirestoreJobLifecycleRepository, MemoryJobLifecycleRepository } from "./crm/jobLifecycleRepository.js";
 import { LedgerService } from "./crm/ledgerFoundation.js";
+import { FirestoreNotificationStateRepository, InMemoryNotificationStateRepository } from "./crm/notificationStateRepository.js";
 import { FirestoreLedgerRepository, MemoryLedgerRepository } from "./crm/ledgerRepository.js";
+import { OperationsHubService } from "./crm/operationsHub.js";
+import { FirestorePortalHubRepository, InMemoryPortalHubRepository } from "./crm/portalHubRepository.js";
+import { PortalHubService } from "./crm/portalHubService.js";
+import { FirestoreReviewSequenceRepository, InMemoryReviewSequenceRepository } from "./crm/reviewSequenceRepository.js";
+import { ReviewSequenceService } from "./crm/reviewSequenceService.js";
 import { registerCrmRoutes } from "./crm/routes.js";
 import { getAdminDb, getAdminStorageBucket } from "./firebase.js";
+import { FieldDocsApprovalExecutor } from "./fielddocs/approvalExecutor.js";
+import { FieldDocsService } from "./fielddocs/fieldDocsService.js";
+import { NexDocsService } from "./fielddocs/nexDocsService.js";
 import { registerFieldDocsRoutes } from "./fielddocs/routes.js";
 import { FirestoreMediaRepository, MemoryMediaRepository, type MediaRepository } from "./fielddocs/mediaRepository.js";
+import { createFieldDocsTools } from "./fielddocs/nexiTools.js";
 import { CommsApprovalExecutor } from "./comms/approvalExecutor.js";
 import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
 import { createCommsNexiTools } from "./comms/nexiTools.js";
 import { createContextNexiTools } from "./context/nexiTools.js";
+import { ContentApprovalExecutor } from "./content/approvalExecutor.js";
 import { createContentNexiTools } from "./content/nexiTools.js";
+import { registerNexReachRoutes } from "./content/nexreachRoutes.js";
+import { NexReachService } from "./content/nexreachService.js";
 import { FirestoreContentRepository, InMemoryContentRepository } from "./content/repository.js";
 import { registerContentRoutes } from "./content/routes.js";
 import { CrmApprovalExecutor } from "./crm/approvalExecutor.js";
@@ -51,7 +68,7 @@ import { IntakeService } from "./intake/service.js";
 import { InMemoryMobileRepository } from "./mobile/repository.js";
 import { registerMobileRoutes } from "./mobile/routes.js";
 import { createSchedulingNexiTools } from "./scheduling/nexiTools.js";
-import { InMemorySchedulingRepository } from "./scheduling/repository.js";
+import { FirestoreSchedulingRepository, InMemorySchedulingRepository } from "./scheduling/repository.js";
 import { registerSchedulingRoutes } from "./scheduling/routes.js";
 import { EnvGbpReviewProvider } from "./reputation/gbpProvider.js";
 import { createReputationNexiTools } from "./reputation/nexiTools.js";
@@ -78,8 +95,9 @@ import { createVoiceRouter } from "./voice/routes.js";
 const app = express();
 const commsRail = createCommsRailFromEnv(process.env);
 const adminDb = getAdminDb();
+const fieldDocsUsageLog = adminDb ? new FirestoreUsageLogWriter(adminDb) : new MemoryUsageLogWriter();
 const contentRepository = adminDb ? new FirestoreContentRepository(adminDb) : new InMemoryContentRepository();
-const schedulingRepository = new InMemorySchedulingRepository();
+const schedulingRepository = adminDb ? new FirestoreSchedulingRepository(adminDb) : new InMemorySchedulingRepository();
 const campaignRepository = new InMemoryCampaignRepository(process.env.TENANT_ID || "aquatrace");
 const gbpReviewProvider = new EnvGbpReviewProvider(process.env);
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
@@ -87,19 +105,38 @@ const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus
 const fallbackMediaRepository = new MemoryMediaRepository();
 const mediaRepository: MediaRepository = adminDb ? new FirestoreMediaRepository(adminDb) : fallbackMediaRepository;
 const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();
+const fieldDocsService = new FieldDocsService({ mediaRepository, crmRepository: nativeCrmRepository });
 const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TENANT_ID || "aquatrace");
-const jobberCrmProvider = JobberAdapter.fromEnv(process.env, process.env.TENANT_ID || "aquatrace");
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 const intakeRepository = adminDb ? new FirestoreIntakeRepository(adminDb) : new InMemoryIntakeRepository();
 const intakeService = new IntakeService(intakeRepository, platformRepository);
 const jobLifecycleRepository = adminDb ? new FirestoreJobLifecycleRepository(adminDb) : new MemoryJobLifecycleRepository();
+const notificationStateRepository = adminDb ? new FirestoreNotificationStateRepository(adminDb) : new InMemoryNotificationStateRepository();
 const ledgerRepository = adminDb ? new FirestoreLedgerRepository(adminDb) : new MemoryLedgerRepository();
+const portalHubRepository = adminDb ? new FirestorePortalHubRepository(adminDb) : new InMemoryPortalHubRepository();
+const reviewSequenceRepository = adminDb ? new FirestoreReviewSequenceRepository(adminDb) : new InMemoryReviewSequenceRepository();
+const reviewSequenceService = new ReviewSequenceService({
+  crmRepository: nativeCrmRepository,
+  ledgerRepository,
+  repository: reviewSequenceRepository,
+  eventBus,
+  commsRail,
+  publicBaseUrl: process.env.PUBLIC_BASE_URL?.trim() || "http://127.0.0.1:4175"
+});
 const ledgerService = new LedgerService({
   crmRepository: nativeCrmRepository,
   ledgerRepository,
+  fieldDocsRepository: mediaRepository,
   commsRail,
-  eventBus
+  eventBus,
+  reviewSequenceService
+});
+const nexDocsService = new NexDocsService({
+  mediaRepository,
+  crmRepository: nativeCrmRepository,
+  ledgerService,
+  usageLog: fieldDocsUsageLog
 });
 const jobLifecycleService = new JobLifecycleService({
   crmRepository: nativeCrmRepository,
@@ -110,6 +147,28 @@ const jobLifecycleService = new JobLifecycleService({
   eventBus,
   ledgerService
 });
+const portalHubService = new PortalHubService({
+  crmRepository: nativeCrmRepository,
+  ledgerRepository,
+  schedulingRepository,
+  repository: portalHubRepository,
+  fieldDocsRepository: mediaRepository,
+  eventBus,
+  platformRepository,
+  commsRail,
+  publicBaseUrl: process.env.PUBLIC_BASE_URL?.trim() || "http://127.0.0.1:4175"
+});
+const operationsHubService = new OperationsHubService({
+  crmRepository: nativeCrmRepository,
+  schedulingRepository,
+  lifecycleRepository: jobLifecycleRepository,
+  jobLifecycleService,
+  eventBus,
+  notificationStateRepository,
+  mediaRepository,
+  platformRepository
+});
+let nexReachService!: NexReachService;
 const approvalQueueRepository = adminDb ? new FirestoreApprovalQueueRepository(adminDb) : new InMemoryApprovalQueueRepository();
 const approvalQueue = new ApprovalQueueService(approvalQueueRepository, new CompositeApprovalExecutor([
   {
@@ -117,11 +176,28 @@ const approvalQueue = new ApprovalQueueService(approvalQueueRepository, new Comp
     executor: new CommsApprovalExecutor(commsRail)
   },
   {
+    canExecute: (item) => item.execute.service === "fielddocs" && [
+      "createNexDocsFolder",
+      "uploadNexDocsDocument"
+    ].includes(item.execute.op),
+    executor: new FieldDocsApprovalExecutor(nexDocsService, process.env)
+  },
+  {
+    canExecute: (item) => item.execute.service === "content" && [
+      "publishGbpPost",
+      "publishSocialPost",
+      "publishSeoArticle"
+    ].includes(item.execute.op),
+    executor: new ContentApprovalExecutor(() => nexReachService)
+  },
+  {
     canExecute: (item) => item.execute.service === "crm" && [
       "createClient",
       "createQuote",
       "createJob",
       "performJobAction",
+      "scheduleJobVisitSeries",
+      "moveJobVisitSeries",
       "performLedgerAction",
       "composeInvoiceFromJobs",
       "sendInvoice",
@@ -149,9 +225,17 @@ const selfRepairService = new SelfRepairService({
 });
 const reputationRepository = adminDb ? new FirestoreReputationRepository(adminDb) : new InMemoryReputationRepository();
 const seoRepository = adminDb ? new FirestoreSeoRepository(adminDb) : new InMemorySeoRepository();
+nexReachService = new NexReachService({
+  repository: contentRepository,
+  crmRepository: nativeCrmRepository,
+  mediaRepository,
+  platformRepository,
+  reputationRepository,
+  approvalQueue
+});
 
 app.use(express.json({
-  limit: "25mb",
+  limit: "150mb",
   verify: (req, _res, buf) => {
     const request = req as Request & { rawBody?: Buffer };
     if (request.originalUrl === "/api/stripe/webhook") {
@@ -160,48 +244,86 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+
+async function resolveNexiOperatorAccess(req: Request, tenantId: string) {
+  return await requireTenantRole(req, process.env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+    requestedTenantId: tenantId,
+    op: "nexiOperatorContext"
+  });
+}
+
 app.use("/api/nexi", createNexiRouter(process.env, {
   loadTenant: async (req) => {
     const body = req.body as { tenantId?: unknown };
     const tenantId = typeof body?.tenantId === "string" && body.tenantId.trim() ? body.tenantId.trim() : process.env.TENANT_ID || "aquatrace";
     return loadTenantFromPlatform(platformRepository, tenantId, process.env);
   },
-  nativeMediaReader: mediaRepository,
+  loadRequestorContext: async (req, tenant) => {
+    try {
+      const access = await resolveNexiOperatorAccess(req, tenant.id);
+      const tenantUsers = await platformRepository.listTenantUsers(tenant.id);
+      const tenantUser = tenantUsers.find((entry) => entry.id === access.tenantUserId)
+        ?? tenantUsers.find((entry) => entry.email?.toLowerCase() === access.email?.toLowerCase());
+      return {
+        tenantUserId: access.tenantUserId,
+        displayName: tenantUser?.displayName ?? access.email ?? access.tenantUserId,
+        email: tenantUser?.email ?? access.email,
+        phones: tenantUser?.phones,
+        address: tenantUser?.address
+      };
+    } catch (error) {
+      if (error instanceof RailError && (error.status === 401 || error.status === 403)) {
+        return null;
+      }
+      throw error;
+    }
+  },
   filterTools: (tenant, tools) => enforceToolEntitlements(tenant, tools).tools,
   extraTools: [
-    ...createContextNexiTools({ env: process.env }),
     ...createCrmToolsWithOptions(nativeCrmProvider, approvalQueue, {
-      fallbackClientProvider: jobberCrmProvider,
       requestRepository: nativeCrmRepository,
       platformRepository,
       commsRail,
       jobLifecycleService,
-      ledgerService
+      ledgerService,
+      operationsHubService,
+      portalHubService,
+      reviewSequenceService
     }),
     ...createCommsNexiTools(commsRail, approvalQueue),
-    ...createContentNexiTools({ repository: contentRepository, approvalQueue }),
     ...createSchedulingNexiTools({ repository: schedulingRepository, approvalQueue, env: process.env, jobLifecycleService }),
     ...createEvaporationNexiTools({ repository: evaporationRepository, env: process.env })
   ],
   extraToolsForRequest: async (req, tenant) => {
     let access;
     try {
-      access = await requireTenantRole(req, process.env, ["OWNER", "OFFICE_ADMIN"], {
-        requestedTenantId: tenant.id,
-        op: "campaignToolRegistry"
-      });
+      access = await resolveNexiOperatorAccess(req, tenant.id);
     } catch (error) {
       if (error instanceof RailError && (error.status === 401 || error.status === 403)) {
         return [];
       }
       throw error;
     }
-    return createCampaignNexiTools({
+    const contextTools = createContextNexiTools({ env: process.env });
+    const fieldDocsTools = createFieldDocsTools({
+      mediaRepository,
+      crmRepository: nativeCrmRepository,
+      fieldDocsService,
+      nexDocsService,
+      approvalQueue,
+      viewerRole: access.role,
+      viewerUserId: access.tenantUserId,
+      env: process.env
+    });
+    if (access.role === "TECHNICIAN") {
+      return contextTools.concat(fieldDocsTools);
+    }
+    return contextTools.concat(fieldDocsTools).concat(createCampaignNexiTools({
       repository: campaignRepository,
       approvalQueue,
       env: process.env,
       actorId: actorIdForAccess(access)
-    }).concat(createApprovalNexiTools({
+    })).concat(createApprovalNexiTools({
       approvalQueue,
       actorId: actorIdForAccess(access),
       actorRole: access.role,
@@ -228,6 +350,10 @@ app.use("/api/nexi", createNexiRouter(process.env, {
       service: intakeService,
       approvalQueue,
       access
+    })).concat(createContentNexiTools({
+      service: nexReachService,
+      actorRole: access.role,
+      actorId: actorIdForAccess(access)
     }));
   }
 }));
@@ -252,6 +378,52 @@ app.get("/api/health", async (_req: Request, res: Response) => {
   }
 });
 
+app.post("/api/public/local-auth/sign-in", (req: Request, res: Response) => {
+  try {
+    const body = req.body as { email?: unknown; password?: unknown; tenantId?: unknown };
+    const email = typeof body.email === "string" ? body.email.trim() : "";
+    const password = typeof body.password === "string" ? body.password : "";
+    const tenantId = typeof body.tenantId === "string" && body.tenantId.trim() ? body.tenantId.trim() : process.env.TENANT_ID || "aquatrace";
+    if (!email) {
+      throw new RailError("Email is required.", {
+        provider: "native",
+        op: "localAuthSignIn",
+        status: 400
+      });
+    }
+    const session = createLocalDevSession(email, password, tenantId, process.env);
+    res.json({ ok: true, token: session.token, profile: session.profile });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
+app.get("/api/public/local-auth/session", (req: Request, res: Response) => {
+  try {
+    const header = req.header("authorization") ?? "";
+    const token = header.match(/^Bearer\s+(.+)$/i)?.[1] ?? "";
+    if (!token) {
+      throw new RailError("Sign in is required.", {
+        provider: "native",
+        op: "localAuthSession",
+        status: 401
+      });
+    }
+    const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim() ? req.query.tenantId.trim() : process.env.TENANT_ID || "aquatrace";
+    const session = readLocalDevSession(token, tenantId, process.env, "localAuthSession");
+    if (!session) {
+      throw new RailError("That session is not a local sign-in.", {
+        provider: "native",
+        op: "localAuthSession",
+        status: 401
+      });
+    }
+    res.json({ ok: true, token, profile: session.profile });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
 app.get("/api/public/runtime-config", (_req: Request, res: Response) => {
   const firebase = {
     apiKey: process.env.VITE_FIREBASE_API_KEY || "",
@@ -265,7 +437,9 @@ app.get("/api/public/runtime-config", (_req: Request, res: Response) => {
     ok: true,
     firebase,
     firebaseConfigured: Object.values(firebase).every((value) => value.length > 0),
-    authRequired: process.env.NEXI_FIREBASE_AUTH_REQUIRED !== "false"
+    authRequired: process.env.NEXI_FIREBASE_AUTH_REQUIRED !== "false",
+    localAuthEnabled: process.env.NEXI_FIREBASE_AUTH_REQUIRED === "false",
+    localProfiles: listLocalDevWebProfiles(process.env.TENANT_ID || "aquatrace")
   });
 });
 
@@ -277,6 +451,9 @@ function parseStorageRef(storageRef: string): { bucketName: string; objectPath: 
 function nativeMediaContentType(type: string): string {
   if (type === "video") {
     return "video/mp4";
+  }
+  if (type === "audio") {
+    return "audio/m4a";
   }
   if (type === "pdf") {
     return "application/pdf";
@@ -319,22 +496,12 @@ app.get("/api/media/:id", async (req: Request, res: Response) => {
   try {
     const mediaId = req.params.id;
     if (!mediaId) {
-      throw new RailError("Media id is required.", { provider: "companycam", op: "fetchBinary", status: 400 });
+      throw new RailError("Media id is required.", { provider: "native", op: "fetchBinary", status: 400 });
     }
     if (await trySendNativeMedia(req, res, mediaId)) {
       return;
     }
-    const companyCam = CompanyCamAdapter.fromEnv(process.env);
-    const binary = await companyCam.fetchBinary(mediaId);
-    res.setHeader("content-type", binary.mime);
-    if (req.query.download === "1") {
-      res.setHeader("content-disposition", `attachment; filename="companycam-${mediaId.replace(/[^a-z0-9_-]/gi, "_")}.jpg"`);
-    }
-    if (binary.stream instanceof Readable) {
-      binary.stream.pipe(res);
-      return;
-    }
-    Readable.from(binary.stream as AsyncIterable<Uint8Array>).pipe(res);
+    throw new RailError("Native media file was not found.", { provider: "native", op: "fetchBinary", status: 404 });
   } catch (error) {
     sendError(res, error);
   }
@@ -432,16 +599,38 @@ registerCrmRoutes(app, {
   commsRail,
   jobLifecycleService,
   ledgerService,
+  portalHubService,
+  reviewSequenceService,
+  nexReachService,
+  operationsHubService,
   env: process.env
 });
-registerFieldDocsRoutes(app, { eventBus, repository: mediaRepository });
+registerFieldDocsRoutes(app, {
+  eventBus,
+  repository: mediaRepository,
+  crmRepository: nativeCrmRepository,
+  ledgerService,
+  usageLog: fieldDocsUsageLog
+});
 registerContentRoutes(app, { repository: contentRepository, approvalQueue, eventBus, env: process.env });
+registerNexReachRoutes(app, { service: nexReachService, eventBus, env: process.env });
 registerCampaignRoutes(app, { repository: campaignRepository, approvalQueue, env: process.env });
 registerReputationRoutes(app, { repository: reputationRepository, approvalQueue, eventBus, gbpProvider: gbpReviewProvider, env: process.env });
 registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env, jobLifecycleService });
 registerEvaporationRoutes(app, { repository: evaporationRepository, env: process.env });
 registerIntakeRoutes(app, { service: intakeService, approvalQueue, env: process.env });
-registerMobileRoutes(app, { repository: mobileRepository, approvalQueue, env: process.env });
+registerMobileRoutes(app, {
+  repository: mobileRepository,
+  approvalQueue,
+  crmRepository: nativeCrmRepository,
+  schedulingRepository,
+  mediaRepository,
+  fieldDocsService,
+  ledgerService,
+  platformRepository,
+  usageLog: fieldDocsUsageLog,
+  env: process.env
+});
 registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
 registerSitesRoutes(app, {
   repository: sitesRepository,
@@ -457,7 +646,7 @@ registerSeoRoutes(app, { repository: seoRepository, sitesRepository, approvalQue
 registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });
 app.use(express.static(webDistDir));
 
-app.get(/^\/(?:nexops|nexcam|platform)(?:\/.*)?$/, (_req: Request, res: Response) => {
+app.get(/^\/(?:nexops|nexcam|nexreach|platform)(?:\/.*)?$/, (_req: Request, res: Response) => {
   res.sendFile(path.join(webDistDir, "index.html"));
 });
 

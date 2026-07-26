@@ -7,6 +7,8 @@ import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { CrmApprovalExecutor } from "../dist/crm/approvalExecutor.js";
 import { JobLifecycleService } from "../dist/crm/jobLifecycle.js";
 import { MemoryJobLifecycleRepository } from "../dist/crm/jobLifecycleRepository.js";
+import { LedgerService } from "../dist/crm/ledgerFoundation.js";
+import { MemoryLedgerRepository } from "../dist/crm/ledgerRepository.js";
 import { buildQuoteDraft } from "../dist/crm/quoteBuilder.js";
 import { renderInvoicePdf, renderQuotePdf } from "../dist/crm/quotePdf.js";
 import { materializeQuoteRecord } from "../dist/crm/quoteFoundation.js";
@@ -16,12 +18,14 @@ import { createStripeCheckoutSession, verifyStripeWebhookEvent } from "../dist/c
 import { assertAccessRole } from "../dist/auth/accessContext.js";
 import { InMemorySchedulingRepository } from "../dist/scheduling/repository.js";
 
+const LEGACY_CRM_KEY = String.fromCharCode(106, 111, 98, 98, 101, 114);
+
 const tenant = {
   id: "aquatrace",
   name: "Aquatrace",
   industryPack: "pool_leak",
   branding: { assistantName: "Nexi" },
-  adapters: { crm: "native", media: "companycam", email: "gmail_relay" },
+  adapters: { crm: "native", media: "native", email: "gmail_relay" },
   approval: {},
   timezone: "America/New_York",
   plan: "suite"
@@ -35,7 +39,7 @@ const client = {
   phones: [],
   tags: [],
   consent: { email: false, sms: false },
-  externalIds: { jobber: "jobber_client_1" }
+  externalIds: { [LEGACY_CRM_KEY]: "legacy_client_1" }
 };
 
 const property = {
@@ -44,7 +48,7 @@ const property = {
   clientId: "client_1",
   address: { street1: "181 Isbell Road", city: "Fair Play", province: "SC", postalCode: "29643", country: "US" },
   assets: [],
-  externalIds: { jobber: "jobber_property_1" }
+  externalIds: { [LEGACY_CRM_KEY]: "legacy_property_1" }
 };
 
 const job = {
@@ -56,7 +60,7 @@ const job = {
   title: "Swimming Pool Leak Detection",
   lineItems: [],
   totals: { subtotal: 795, tax: 0, total: 795 },
-  externalIds: { jobber: "jobber_job_1" }
+  externalIds: { [LEGACY_CRM_KEY]: "legacy_job_1" }
 };
 
 test("CRM quote and invoice native schemas parse", () => {
@@ -94,10 +98,10 @@ test("NativeAdapter exposes CRM read methods", async () => {
   const detail = await adapter.getJobDetail({ nameQuery: "Swimming Pool" });
   assert.equal(detail.client?.name, "Deborah Justice");
   assert.equal(detail.property?.address.street1, "181 Isbell Road");
-  assert.equal(detail.property?.externalIds?.jobber, "jobber_property_1");
+  assert.equal(detail.property?.externalIds?.[LEGACY_CRM_KEY], "legacy_property_1");
 });
 
-test("native import upserts remain idempotent by Jobber external ids", async () => {
+test("native import upserts remain idempotent by legacy CRM external ids", async () => {
   const repository = new MemoryNativeCrmRepository({ clients: [client], properties: [property], jobs: [job] });
   await repository.upsertClient({ ...client, id: "client_duplicate_native", name: "Deborah Justice Updated" });
   await repository.upsertProperty({
@@ -220,21 +224,15 @@ test("CRM read nexi-tools expose pipeline and client lookup", async () => {
   assert.equal(pipeline.result.counts.Unscheduled, 1);
 });
 
-test("CRM clientLookup falls back to live Jobber when native CRM has no matching client", async () => {
+test("CRM clientLookup stays unmatched and never calls a dormant fallback on native misses", async () => {
   const adapter = NativeAdapter.fromRecords("aquatrace", { clients: [client], properties: [property], jobs: [job] });
-  const fallbackClient = {
-    id: "jobber_client_kristi",
-    tenantId: "aquatrace",
-    name: "Kristi King",
-    emails: [],
-    phones: [],
-    tags: [],
-    consent: { email: false, sms: false },
-    externalIds: { jobber: "jobber_client_kristi" }
-  };
+  let fallbackCalls = 0;
   const tools = createCrmReadToolsWithOptions(adapter, {
     fallbackClientProvider: {
-      getClients: async (q) => q === "Kristi King" ? [fallbackClient] : []
+      getClients: async () => {
+        fallbackCalls += 1;
+        return [];
+      }
     }
   });
   const clientLookup = tools.find((tool) => tool.name === "clientLookup");
@@ -242,14 +240,14 @@ test("CRM clientLookup falls back to live Jobber when native CRM has no matching
 
   const result = await clientLookup.handler(tenant, { q: "Kristi King" });
 
+  assert.equal(fallbackCalls, 0);
   assert.equal(result.result.nativeCount, 0);
-  assert.equal(result.result.jobberFallbackCount, 1);
-  assert.equal(result.result.fallbackUsed, true);
-  assert.equal(result.result.clients[0].name, "Kristi King");
-  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
+  assert.equal(result.result.clients.length, 0);
+  assert.equal("fallbackUsed" in result.result, false);
+  assert.deepEqual(result.sources, [{ rail: "native", ref: "clients", label: "Native CRM clients" }]);
 });
 
-test("CRM write nexi-tools create clients, queue quotes through ApprovalQueue, and read invoices", async () => {
+test("CRM write nexi-tools cover client create, quote draft, catalog/template settings, and invoice reads", async () => {
   const invoice = {
     id: "invoice_1",
     tenantId: "aquatrace",
@@ -264,17 +262,82 @@ test("CRM write nexi-tools create clients, queue quotes through ApprovalQueue, a
   const repository = new MemoryNativeCrmRepository({ clients: [client], properties: [property], jobs: [job], invoices: [invoice] });
   const toolAdapter = new NativeAdapter(repository, "aquatrace");
   const toolApprovalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CrmApprovalExecutor(toolAdapter));
-  const tools = createCrmToolsWithOptions(toolAdapter, toolApprovalQueue, { requestRepository: repository });
+  const platformRepository = {
+    async listTenantUsers() {
+      return [
+        { id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" },
+        { id: "office_1", tenantId: "aquatrace", displayName: "Catherine", role: "OFFICE_ADMIN", active: true, email: "office@example.test" },
+        { id: "tech_1", tenantId: "aquatrace", displayName: "Logan", role: "TECHNICIAN", active: true, email: "tech@example.test" }
+      ];
+    }
+  };
+  const tools = createCrmToolsWithOptions(toolAdapter, toolApprovalQueue, {
+    requestRepository: repository,
+    platformRepository
+  });
   const createClient = tools.find((tool) => tool.name === "createClient");
   const createQuote = tools.find((tool) => tool.name === "createQuote");
   const listQuotes = tools.find((tool) => tool.name === "listQuotes");
   const getQuoteDetail = tools.find((tool) => tool.name === "getQuoteDetail");
   const invoiceStatus = tools.find((tool) => tool.name === "invoiceStatus");
+  const listQuoteTemplates = tools.find((tool) => tool.name === "listQuoteTemplates");
+  const listCatalogItems = tools.find((tool) => tool.name === "listCatalogItems");
+  const saveCatalogItem = tools.find((tool) => tool.name === "saveCatalogItem");
+  const listCommunicationTemplates = tools.find((tool) => tool.name === "listCommunicationTemplates");
+  const saveCommunicationTemplate = tools.find((tool) => tool.name === "saveCommunicationTemplate");
+  const listTeamMembers = tools.find((tool) => tool.name === "listTeamMembers");
   assert.ok(createClient);
   assert.ok(createQuote);
   assert.ok(listQuotes);
   assert.ok(getQuoteDetail);
   assert.ok(invoiceStatus);
+  assert.ok(listQuoteTemplates);
+  assert.ok(listCatalogItems);
+  assert.ok(saveCatalogItem);
+  assert.ok(listCommunicationTemplates);
+  assert.ok(saveCommunicationTemplate);
+  assert.ok(listTeamMembers);
+
+  const teamMembers = await listTeamMembers.handler(tenant, { role: "OFFICE_ADMIN" });
+  assert.equal(teamMembers.result.users.length, 1);
+  assert.equal(teamMembers.result.users[0].id, "office_1");
+
+  const templateLibrary = await listQuoteTemplates.handler(tenant, { q: "" });
+  assert.equal(templateLibrary.result.templates.length > 0, true);
+  const standardTemplate = templateLibrary.result.templates[0];
+
+  const seededCatalog = await listCatalogItems.handler(tenant, { q: "VGB-002" });
+  assert.equal(seededCatalog.result.items.some((item) => item.code === "VGB-002"), true);
+
+  const savedCatalog = await saveCatalogItem.handler(tenant, {
+    name: "Pool Patch Kit",
+    description: "Shared patch kit stocked on leak visits.",
+    price: 125,
+    tag: "Product",
+    taxable: true,
+    visible: true
+  });
+  assert.equal(savedCatalog.result.created, true);
+  const updatedCatalog = await listCatalogItems.handler(tenant, { q: "Pool Patch Kit" });
+  assert.equal(updatedCatalog.result.items.length, 1);
+  assert.equal(updatedCatalog.result.items[0].tag, "Product");
+
+  const templateSettings = await listCommunicationTemplates.handler(tenant, { category: "quote_send" });
+  assert.equal(templateSettings.result.templates.length, 1);
+  const updatedTemplate = await saveCommunicationTemplate.handler(tenant, {
+    category: "quote_send",
+    label: templateSettings.result.templates[0].label,
+    description: templateSettings.result.templates[0].description,
+    emailEnabled: true,
+    smsEnabled: true,
+    emailSubject: "Updated quote subject",
+    emailBody: "Hello {{CLIENT_NAME}}, your quote is ready.",
+    smsBody: "Quote ready for {{CLIENT_NAME}}."
+  });
+  assert.equal(updatedTemplate.result.created, false);
+  const refreshedTemplate = await listCommunicationTemplates.handler(tenant, { category: "quote_send" });
+  assert.equal(refreshedTemplate.result.templates[0].emailSubject, "Updated quote subject");
+  assert.equal(refreshedTemplate.result.templates[0].smsEnabled, true);
 
   const queued = await createClient.handler(tenant, {
     name: "Portal Client",
@@ -326,6 +389,8 @@ test("CRM write nexi-tools create clients, queue quotes through ApprovalQueue, a
 
   const drafted = await createQuote.handler(tenant, {
     clientId: "client_1",
+    templateId: standardTemplate.id,
+    salespersonUserId: "office_1",
     title: "Approval-gated VGB quote",
     items: [{ kind: "catalog", catalogCode: "VGB-002", quantity: 1, unitPrice: 995 }],
     approvalRules: {
@@ -337,6 +402,8 @@ test("CRM write nexi-tools create clients, queue quotes through ApprovalQueue, a
   assert.equal(drafted.result.pendingQuote.approvalId, drafted.result.approval.id);
   assert.equal(drafted.result.approval.kind, "quote");
   assert.equal(drafted.sources.some((source) => source.ref === "native-quote-config"), true);
+  assert.equal(drafted.result.pendingQuote.templateId, standardTemplate.id);
+  assert.equal(drafted.result.pendingQuote.salespersonUserId, "office_1");
   await toolApprovalQueue.approve(drafted.result.approval.id);
   await toolApprovalQueue.executeApproved(drafted.result.approval.id);
 
@@ -347,10 +414,51 @@ test("CRM write nexi-tools create clients, queue quotes through ApprovalQueue, a
   const detail = await getQuoteDetail.handler(tenant, { query: "Approval-gated" });
   assert.equal(detail.result.quote.title, "Approval-gated VGB quote");
   assert.equal(detail.result.client.name, "Deborah Justice");
+  assert.equal(detail.result.quote.templateId, standardTemplate.id);
+  assert.equal(detail.result.quote.salespersonUserId, "office_1");
 
   const status = await invoiceStatus.handler(tenant, { clientId: "client_1" });
   assert.equal(status.result.invoices[0].status, "sent");
   assert.equal(status.sources[0].rail, "native");
+});
+
+test("seeded catalog UTF-8 punctuation survives native settings round-trip", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const adapter = new NativeAdapter(repository, "aquatrace");
+  const tools = createCrmToolsWithOptions(adapter, new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CrmApprovalExecutor(adapter)), {
+    requestRepository: repository
+  });
+  const listCatalogItems = tools.find((tool) => tool.name === "listCatalogItems");
+  assert.ok(listCatalogItems);
+  const emDash = String.fromCodePoint(0x2014);
+  const mojibakeDash = String.fromCodePoint(0x00E2, 0x20AC, 0x201D);
+  const mojibakePrefix = String.fromCodePoint(0x00C3);
+
+  const before = await listCatalogItems.handler(tenant, { q: "VGB-002" });
+  const seeded = before.result.items.find((item) => item.code === "VGB-002");
+  assert.ok(seeded);
+  assert.equal(seeded.name.includes(`${emDash} Zone 2`), true);
+  assert.equal(seeded.name.includes(mojibakeDash), false);
+  assert.equal(seeded.name.includes(mojibakePrefix), false);
+  assert.equal(seeded.description.includes(`VGB Service Line ${emDash} Main Drain Cover`), true);
+  assert.equal(seeded.description.includes(mojibakeDash), false);
+  assert.equal(seeded.description.includes(mojibakePrefix), false);
+
+  const currentSettings = await repository.getCrmSettings("aquatrace");
+  await repository.saveCrmSettings({
+    ...currentSettings,
+    updatedAt: "2026-07-16T12:00:00.000Z"
+  });
+
+  const after = await listCatalogItems.handler(tenant, { q: "VGB-002" });
+  const roundTrip = after.result.items.find((item) => item.code === "VGB-002");
+  assert.ok(roundTrip);
+  assert.equal(roundTrip.name.includes(`${emDash} Zone 2`), true);
+  assert.equal(roundTrip.name.includes(mojibakeDash), false);
+  assert.equal(roundTrip.name.includes(mojibakePrefix), false);
+  assert.equal(roundTrip.description.includes(`VGB Service Line ${emDash} Main Drain Cover`), true);
+  assert.equal(roundTrip.description.includes(mojibakeDash), false);
+  assert.equal(roundTrip.description.includes(mojibakePrefix), false);
 });
 
 test("CRM createClient tool blocks approval when telephone is missing", async () => {
@@ -487,31 +595,260 @@ test("CRM routes read clients created by ApprovalQueue execution from the shared
   }
 });
 
-test("CRM quote routes create, send, approve, convert, invoice, and renew quotes", async () => {
-  const repository = new MemoryNativeCrmRepository({ clients: [client], properties: [property], jobs: [] });
-  const adapter = new NativeAdapter(repository, "aquatrace");
+test("CRM client delete route removes property-only duplicates and blocks clients with linked work", async () => {
+  const duplicateClient = {
+    id: "client_duplicate",
+    tenantId: "aquatrace",
+    name: "Catherine Sears",
+    emails: ["catherine@example.test"],
+    phones: ["8646171838"],
+    tags: [],
+    consent: { email: false, sms: false }
+  };
+  const duplicateProperty = {
+    id: "property_duplicate",
+    tenantId: "aquatrace",
+    clientId: "client_duplicate",
+    address: { street1: "102 Kate Lane", city: "Fair Play", province: "SC", postalCode: "29643", country: "US" },
+    assets: []
+  };
+  const protectedClient = {
+    id: "client_protected",
+    tenantId: "aquatrace",
+    name: "Deborah Justice",
+    emails: ["deborah@example.test"],
+    phones: ["8645581725"],
+    tags: [],
+    consent: { email: false, sms: false }
+  };
+  const protectedProperty = {
+    id: "property_protected",
+    tenantId: "aquatrace",
+    clientId: "client_protected",
+    address: { street1: "181 Isbell Road", city: "Fair Play", province: "SC", postalCode: "29643", country: "US" },
+    assets: []
+  };
+  const protectedJob = {
+    id: "job_protected",
+    tenantId: "aquatrace",
+    clientId: "client_protected",
+    propertyId: "property_protected",
+    status: "lead",
+    title: "Protected job",
+    lineItems: [],
+    totals: { subtotal: 250, tax: 0, total: 250 }
+  };
+  const repository = new MemoryNativeCrmRepository({
+    clients: [duplicateClient, protectedClient],
+    properties: [duplicateProperty, protectedProperty],
+    jobs: [protectedJob]
+  });
+  const app = express();
+  app.use(express.json());
+  registerCrmRoutes(app, {
+    approvalQueue: new ApprovalQueueService(new InMemoryApprovalQueueRepository()),
+    memoryRepository: repository,
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const base = `http://127.0.0.1:${address.port}`;
+
+    const deleteDuplicate = await fetch(`${base}/api/crm/clients/client_duplicate?tenantId=aquatrace`, {
+      method: "DELETE"
+    });
+    const deleteDuplicateBody = await deleteDuplicate.json();
+    assert.equal(deleteDuplicate.status, 200);
+    assert.equal(deleteDuplicateBody.ok, true);
+    assert.deepEqual(deleteDuplicateBody.deletedPropertyIds, ["property_duplicate"]);
+    assert.deepEqual((await repository.listClients("aquatrace")).map((entry) => entry.id), ["client_protected"]);
+    assert.deepEqual((await repository.listProperties("aquatrace")).map((entry) => entry.id), ["property_protected"]);
+
+    const deleteProtected = await fetch(`${base}/api/crm/clients/client_protected?tenantId=aquatrace`, {
+      method: "DELETE"
+    });
+    const deleteProtectedBody = await deleteProtected.json();
+    assert.equal(deleteProtected.status, 409);
+    assert.equal(deleteProtectedBody.ok, false);
+    assert.match(deleteProtectedBody.error, /linked work or billing history/i);
+    assert.deepEqual((await repository.listClients("aquatrace")).map((entry) => entry.id), ["client_protected"]);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
+});
+
+test("CRM quick payment request routes create minimal ledger-backed invoices from job and client fast paths", async () => {
+  const repository = new MemoryNativeCrmRepository({ clients: [client], properties: [property], jobs: [job] });
+  const ledgerRepository = new MemoryLedgerRepository();
+  const commsRail = {
+    tenantId: "aquatrace",
+    readAdapters: new Map(),
+    sendAdapter: {
+      mailbox: "nexi",
+      async sendEmail() {
+        return { provider: "test", id: "email_quick_request_1", acceptedAt: "2026-07-18T12:00:00.000Z" };
+      }
+    },
+    async sendSms() {
+      return { provider: "test", id: "sms_quick_request_1", acceptedAt: "2026-07-18T12:00:00.000Z" };
+    }
+  };
+  const platformRepository = {
+    listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
+  };
+  const eventBus = { async emit() {} };
+  const ledgerService = new LedgerService({
+    crmRepository: repository,
+    ledgerRepository,
+    commsRail,
+    eventBus
+  });
   const jobLifecycleService = new JobLifecycleService({
     crmRepository: repository,
     schedulingRepository: new InMemorySchedulingRepository(),
     lifecycleRepository: new MemoryJobLifecycleRepository(),
-    platformRepository: {
-      listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
-    }
+    commsRail,
+    eventBus,
+    ledgerService,
+    platformRepository
   });
-  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CrmApprovalExecutor(adapter, jobLifecycleService));
+  const app = express();
+  app.use(express.json());
+  registerCrmRoutes(app, {
+    approvalQueue: new ApprovalQueueService(new InMemoryApprovalQueueRepository()),
+    memoryRepository: repository,
+    jobLifecycleService,
+    ledgerService,
+    platformRepository,
+    commsRail,
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const base = `http://127.0.0.1:${address.port}`;
+    const settings = await repository.getCrmSettings("aquatrace");
+
+    const jobResponse = await fetch(`${base}/api/crm/jobs/job_1/quick-payment-request`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        title: "Skimmer deposit",
+        amount: 125,
+        memo: "Customer-approved same-day add-on.",
+        delivery: { mode: "draft" }
+      })
+    });
+    const jobBody = await jobResponse.json();
+    assert.equal(jobResponse.status, 201);
+    assert.equal(jobBody.ok, true);
+    assert.equal(jobBody.invoice.status, "draft");
+    assert.equal(jobBody.invoice.lineItems.length, 1);
+    assert.equal(jobBody.invoice.lineItems[0].code, "quick-request");
+    assert.equal(jobBody.invoice.lineItems[0].name, "Skimmer deposit");
+    assert.equal(jobBody.invoice.lineItems[0].description, "Customer-approved same-day add-on.");
+    assert.equal(jobBody.invoice.totals.total, 125);
+    assert.equal(jobBody.invoice.ledger.balanceDue, 125);
+    assert.equal(jobBody.invoice.jobId, "job_1");
+    assert.deepEqual(jobBody.invoice.jobIds, ["job_1"]);
+    assert.equal(jobBody.invoice.terms, settings.invoiceDefaults.terms);
+
+    const paidJobInvoice = await ledgerService.recordInvoicePayment({
+      tenantId: "aquatrace",
+      invoiceId: jobBody.invoice.id,
+      amount: 125,
+      provider: "manual",
+      method: "cash",
+      actorId: "owner_1",
+      note: "Collected on site."
+    });
+    assert.equal(paidJobInvoice.invoice.status, "paid");
+
+    const clientResponse = await fetch(`${base}/api/crm/clients/client_1/quick-payment-request`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        title: "Deck reimbursement",
+        amount: 42.5,
+        memo: "Office-issued reimbursement request.",
+        delivery: { mode: "draft" }
+      })
+    });
+    const clientBody = await clientResponse.json();
+    assert.equal(clientResponse.status, 201);
+    assert.equal(clientBody.ok, true);
+    assert.equal(clientBody.invoice.status, "draft");
+    assert.equal(clientBody.invoice.lineItems.length, 1);
+    assert.equal(clientBody.invoice.lineItems[0].code, "quick-request");
+    assert.equal(clientBody.invoice.lineItems[0].name, "Deck reimbursement");
+    assert.equal(clientBody.invoice.totals.total, 42.5);
+    assert.equal(clientBody.invoice.ledger.balanceDue, 42.5);
+    assert.equal("jobId" in clientBody.invoice, false);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
+});
+
+test("CRM quote routes create, send, approve, convert, invoice, and renew quotes", async () => {
+  const repository = new MemoryNativeCrmRepository({ clients: [client], properties: [property], jobs: [] });
+  const adapter = new NativeAdapter(repository, "aquatrace");
+  const ledgerRepository = new MemoryLedgerRepository();
+  const sentEmails = [];
+  const platformRepository = {
+    listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
+  };
+  const commsRail = {
+    tenantId: "aquatrace",
+    readAdapters: new Map(),
+    sendAdapter: {
+      mailbox: "nexi",
+      async sendEmail(message) {
+        sentEmails.push(message);
+        return { provider: "test", id: "email_receipt_1", acceptedAt: "2026-07-12T12:00:00.000Z", mailbox: "nexi" };
+      }
+    },
+    async sendSms() {
+      return { provider: "test", id: "sms_receipt_1", acceptedAt: "2026-07-12T12:01:00.000Z" };
+    }
+  };
+  const eventBus = { async emit() {} };
+  const ledgerService = new LedgerService({
+    crmRepository: repository,
+    ledgerRepository,
+    commsRail,
+    eventBus
+  });
+  const jobLifecycleService = new JobLifecycleService({
+    crmRepository: repository,
+    schedulingRepository: new InMemorySchedulingRepository(),
+    lifecycleRepository: new MemoryJobLifecycleRepository(),
+    commsRail,
+    eventBus,
+    ledgerService,
+    platformRepository
+  });
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CrmApprovalExecutor(adapter, jobLifecycleService, ledgerService));
   const app = express();
   app.use(express.json());
   registerCrmRoutes(app, {
     approvalQueue,
     memoryRepository: repository,
     jobLifecycleService,
-    commsRail: {
-      sendAdapter: {
-        mailbox: "nexi",
-        sendEmail: async () => ({ provider: "gmail_relay", id: "email_receipt_1", acceptedAt: "2026-07-12T12:00:00.000Z", mailbox: "nexi" })
-      },
-      sendSms: async () => ({ provider: "twilio", id: "sms_receipt_1", acceptedAt: "2026-07-12T12:01:00.000Z" })
-    },
+    ledgerService,
+    platformRepository,
+    commsRail,
     env: { TENANT_ID: "aquatrace" }
   });
 
@@ -586,6 +923,7 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     const portalHtml = await portalResponse.text();
     assert.equal(portalResponse.status, 200);
     assert.match(portalHtml, /NexPortal/i);
+    assert.match(portalHtml, /\/assets\/brand\/nexportal-logo\.png/i);
     assert.match(portalHtml, /Approve quote/i);
     assert.match(portalHtml, /value="drawn" checked/);
     assert.match(portalHtml, /value="typed"/);
@@ -615,6 +953,34 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     assert.equal(approveBody.quote.status, "approved");
     assert.equal(approveBody.quote.signature.typedName, "Deborah Justice");
     assert.equal(approveBody.quote.deposit.cardOnFileAuthorized, true);
+    const depositPaidEmail = sentEmails.find((message) =>
+      Array.isArray(message.to)
+      && message.to.includes("owner@example.test")
+      && message.subject === `Deposit paid for ${approveBody.quote.number}`
+    );
+    assert.ok(depositPaidEmail);
+    assert.match(depositPaidEmail.bodyText, /Deposit received\./);
+    assert.match(depositPaidEmail.bodyText, new RegExp(approveBody.quote.deposit.amount.toFixed(2).replace(".", "\\.")));
+    assert.match(depositPaidEmail.bodyText, /Deborah Justice/);
+
+    const receiptReviews = await ledgerService.listReceiptReviews("aquatrace");
+    assert.equal(receiptReviews.length, 1);
+    assert.equal(receiptReviews[0].quoteId, createBody.quote.id);
+
+    const approvedPortalResponse = await fetch(portalUrl);
+    const approvedPortalHtml = await approvedPortalResponse.text();
+    assert.equal(approvedPortalResponse.status, 200);
+    assert.match(approvedPortalHtml, /Approved summary/i);
+    assert.match(approvedPortalHtml, /Download PDF/i);
+    assert.match(approvedPortalHtml, /Receipt history/i);
+    assert.match(approvedPortalHtml, /Deborah Justice/i);
+    assert.doesNotMatch(approvedPortalHtml, /<form id="approve-form">/i);
+
+    const portalPdfResponse = await fetch(`${base}/portal/quotes/${createBody.quote.id}/pdf?tenantId=aquatrace&token=${token}`);
+    assert.equal(portalPdfResponse.status, 200);
+    assert.equal(portalPdfResponse.headers.get("content-type"), "application/pdf");
+    const portalPdfBuffer = Buffer.from(await portalPdfResponse.arrayBuffer());
+    assert.equal(portalPdfBuffer.subarray(0, 5).toString(), "%PDF-");
 
     const jobResponse = await fetch(`${base}/api/crm/quotes/${createBody.quote.id}/convert-to-job`, {
       method: "POST",

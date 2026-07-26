@@ -155,7 +155,11 @@ async function runAnthropicVision(media: Media, image: VisionImageInput, env: No
 }
 
 export function visionPipelineEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.FIELD_DOCS_VISION_ENABLED === "true";
+  const flag = env.FIELD_DOCS_VISION_ENABLED?.trim().toLowerCase();
+  if (flag === "false") {
+    return false;
+  }
+  return Boolean(env.ANTHROPIC_API_KEY?.trim()) || flag === "true";
 }
 
 export async function maybeRunVision(
@@ -165,7 +169,7 @@ export async function maybeRunVision(
   fetchImpl: VisionFetch = fetch
 ): Promise<VisionPipelineResult> {
   if (!visionPipelineEnabled(env)) {
-    return { enabled: false, media, reason: "FIELD_DOCS_VISION_ENABLED is not true." };
+    return { enabled: false, media, reason: "Anthropic vision is unavailable because no approved credentials are configured." };
   }
   if (image) {
     return runAnthropicVision(media, image, env, fetchImpl);

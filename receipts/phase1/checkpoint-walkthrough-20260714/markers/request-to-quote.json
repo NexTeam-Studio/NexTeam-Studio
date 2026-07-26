@@ -1,78 +1,78 @@
 {
   "segment": "request-to-quote",
   "record": true,
-  "createdAt": "2026-07-14T20:54:02.749Z",
-  "baseWeb": "http://127.0.0.1:4275",
-  "baseApi": "http://127.0.0.1:3201",
+  "createdAt": "2026-07-15T02:33:02.206Z",
+  "baseWeb": "http://127.0.0.1:4276",
+  "baseApi": "http://127.0.0.1:3202",
   "markers": [
     {
-      "atSeconds": 0.9,
+      "atSeconds": 0.6,
       "label": "Public intake form loaded",
       "piece": "Piece 1 § intake",
       "note": ""
     },
     {
-      "atSeconds": 2.3,
+      "atSeconds": 1.9,
       "label": "Request fields filled",
       "piece": "Piece 1 § intake",
       "note": "Gate code, pet flag, and pool fields included."
     },
     {
-      "atSeconds": 3.2,
+      "atSeconds": 2.8,
       "label": "Request submitted",
       "piece": "Piece 1 § intake",
       "note": ""
     },
     {
-      "atSeconds": 5.4,
+      "atSeconds": 5,
       "label": "Request detail opened",
       "piece": "Piece 1 § review",
       "note": ""
     },
     {
-      "atSeconds": 6.5,
+      "atSeconds": 6,
       "label": "Match review marked complete",
       "piece": "Piece 1 § review",
       "note": ""
     },
     {
-      "atSeconds": 7.4,
+      "atSeconds": 6.9,
       "label": "Downstream propagation shown",
       "piece": "Piece 1 § propagation",
       "note": "Gate code row visible across request/quote/job/visit/invoice."
     },
     {
-      "atSeconds": 9.1,
+      "atSeconds": 8.5,
       "label": "Request converted to quote",
       "piece": "Pieces 1-2 handoff",
       "note": "Q-0001"
     },
     {
-      "atSeconds": 11,
+      "atSeconds": 10.5,
       "label": "Quote composer opened",
       "piece": "Piece 2 § composer",
       "note": ""
     },
     {
-      "atSeconds": 12,
+      "atSeconds": 11.5,
       "label": "Custom line item added",
       "piece": "Piece 2 § line items",
       "note": ""
     },
     {
-      "atSeconds": 12.3,
+      "atSeconds": 11.7,
       "label": "Approval rules, discount, tax, and terms set",
       "piece": "Piece 2 § rules",
       "note": ""
     },
     {
-      "atSeconds": 14.1,
+      "atSeconds": 13.4,
       "label": "Quote saved",
       "piece": "Piece 2 § save",
       "note": ""
     },
     {
-      "atSeconds": 15.5,
+      "atSeconds": 14.8,
       "label": "Quote marked sent and portal link generated",
       "piece": "Piece 2 § send",
       "note": "Q-0001"

@@ -1,60 +1,60 @@
 {
   "segment": "job-to-payment",
   "record": true,
-  "createdAt": "2026-07-14T20:54:41.132Z",
-  "baseWeb": "http://127.0.0.1:4275",
-  "baseApi": "http://127.0.0.1:3201",
+  "createdAt": "2026-07-15T02:34:00.935Z",
+  "baseWeb": "http://127.0.0.1:4276",
+  "baseApi": "http://127.0.0.1:3202",
   "markers": [
     {
-      "atSeconds": 1.1,
+      "atSeconds": 1,
       "label": "Job reopened for closeout",
       "piece": "Piece 5 § job close",
       "note": ""
     },
     {
-      "atSeconds": 2.1,
+      "atSeconds": 1.9,
       "label": "Close and Invoice created draft invoice",
       "piece": "Piece 5 § close/invoice",
       "note": "INV-0001"
     },
     {
-      "atSeconds": 4,
+      "atSeconds": 3.8,
       "label": "Invoice detail opened",
       "piece": "Piece 5 § invoice draft",
       "note": ""
     },
     {
-      "atSeconds": 4.9,
+      "atSeconds": 4.7,
       "label": "Rough edge: invoice draft editor locked",
       "piece": "Piece 5 Â§ invoice draft",
       "note": "Deposit carryover moved the invoice out of draft immediately, so the pre-send edit step is unavailable in the current build."
     },
     {
-      "atSeconds": 6.8,
+      "atSeconds": 6.4,
       "label": "Invoice sent via mark-sent path",
       "piece": "Piece 5 § send",
       "note": "Local comms rail is unconfigured, so this segment uses the built-in mark-sent delivery mode."
     },
     {
-      "atSeconds": 8.4,
+      "atSeconds": 8,
       "label": "Saved card reused for invoice payment",
       "piece": "Pieces 4-5 ledger rail",
       "note": "INV-0001"
     },
     {
-      "atSeconds": 12.8,
+      "atSeconds": 12.1,
       "label": "Rough edge: receipt review blocked locally",
       "piece": "Piece 5 Â§ receipt review",
       "note": "Receipt review stayed ready_to_send because local email/SMS delivery is not configured on this machine."
     },
     {
-      "atSeconds": 13.9,
+      "atSeconds": 13.1,
       "label": "Payments workspace shows the paid invoice",
       "piece": "Piece 4-5 payment history",
       "note": ""
     },
     {
-      "atSeconds": 15.8,
+      "atSeconds": 14.9,
       "label": "Client rollup reflects quote, job, and invoice linkage",
       "piece": "Piece 1-5 rollup",
       "note": "Current client surface shows work counts and links, not a richer billing ledger timeline yet."

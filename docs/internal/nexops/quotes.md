@@ -1,6 +1,6 @@
 # NexOps Quotes
 
-Last updated: 2026-07-14
+Last updated: 2026-07-18
 Build piece: Quote lifecycle foundation + payment-schedule carry-forward
 
 ## Statuses
@@ -153,6 +153,7 @@ Build piece: Quote lifecycle foundation + payment-schedule carry-forward
 ### Client delivery and portal
 - `POST /api/crm/quotes/:id/send`
 - `GET /portal/quotes/:id`
+- `GET /portal/quotes/:id/pdf`
 - Delivery modes built now:
   - email
   - sms
@@ -160,11 +161,17 @@ Build piece: Quote lifecycle foundation + payment-schedule carry-forward
 - Local verification for `email` and `sms` used adapter-backed delivery receipts.
 - A real third-party live send check is still required before the first real client-facing quote send goes out, so Gmail/Twilio production delivery cannot be treated as field-proven yet.
 - Portal surface built now:
-  - thin NexPortal-branded quote view
+  - thin NexPortal-branded pre-approval review view
   - drawn signature default
   - typed signature fallback
   - line-by-line change comments
   - freeform change note
+  - token-safe PDF download path
+  - post-approval proof view that replaces the approval form with:
+    - sent and approved timestamps
+    - signature evidence
+    - deposit/card-on-file evidence
+    - collapsed receipt-review history sourced from ledger records
 
 ### Manual office approval
 - `POST /api/crm/quotes/:id/manual-approve`
@@ -183,10 +190,13 @@ Build piece: Quote lifecycle foundation + payment-schedule carry-forward
 - `createQuote`
 - `listQuotes`
 - `getQuoteDetail`
+- `listQuoteTemplates`
+- `listTeamMembers`
 - `revisePendingQuoteCreateApproval`
 - `approvePendingApproval`
 - Current conversation behavior:
   - Nexi drafts a quote, reads it back in chat, and waits for explicit yes/no/make-changes
+  - Nexi can read template ids before drafting and read tenant users before setting `salespersonUserId`
   - the real quote write stays behind ApprovalQueue until approval
   - quote revisions from chat replace the pending approval item and restate the revised quote before execution
 
@@ -225,6 +235,7 @@ Build piece: Quote lifecycle foundation + payment-schedule carry-forward
   - `approvedBy`
   - `approvedByRole = "OWNER"` or `"OFFICE_ADMIN"`
 - Both approval paths lock the quote against future edits.
+- Portal re-open after approval now renders proof state instead of a disabled approval form.
 
 ### Renewal and version history
 - Renewal keeps the same quote id and number.
@@ -261,6 +272,7 @@ Build piece: Quote lifecycle foundation + payment-schedule carry-forward
   - `requestId` when present
   - `intake` when present
 - Quote-level discount is already baked into the stored quote totals and therefore carries forward automatically.
+- Quote PDFs now surface through NexDocs `officeRecords` in NexOps and NexPortal, replacing the older split document surface from C5.
 
 ### Historical deposit/card bridge snapshot
 - The approved quote still preserves the original `quote.deposit` snapshot for audit history:
@@ -283,6 +295,7 @@ Build piece: Quote lifecycle foundation + payment-schedule carry-forward
 
 ## Current deliberate limits
 
+- 2026-07-18: Removed the V2 `CompanyCam Project` carry-through from quote overview/intake propagation so native quote surfaces no longer reference external media-project linkage.
 - D1's atomic approval contract is currently proven in the lifecycle map / policy layer, but NOT YET proven end-to-end on the real quote payment execution path. Add an execution-suite test that proves a failed deposit attempt leaves the quote in `sent`, creates no `QuoteAcceptance`, and requires the client to re-approve on retry before D1 is treated as fully field-verified.
 - Client decline is not fully wired yet as a first-class route, even though `declined` exists in the model.
 - Portal approval now syncs the minimal deposit/card bridge into formal ledger objects, but the quote still keeps the historical bridge snapshot instead of mutating old approvals in place.

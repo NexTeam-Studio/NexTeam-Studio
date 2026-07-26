@@ -2,18 +2,91 @@ import React, { Suspense, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type Auth, type User } from "firebase/auth";
-import { buildNexopsHomeState } from "./nexopsHomeState";
-import { NexopsHomeShell, NexopsHomeZoneCard } from "./nexopsUiKit";
 import "./styles.css";
+import { NexiIdentityMark, PlatformMark, ProductInlineLabel, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "./productBranding";
+import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./nexopsHeader";
+import { NexDocsClientWorkspace } from "./nexopsNexDocs";
+import {
+  buildClientProfilePath,
+  buildNewClientPath,
+  buildModulePath,
+  buildWorkspaceSwitchPath,
+  CLIENT_PROFILE_TABS,
+  createMenuPresentation,
+  isDismissKey,
+  NEXOPS_MOBILE_NAV_GROUPS,
+  NEXOPS_MODULES,
+  NEXTEAM_WORKSPACE_OPTIONS,
+  nexOpsModuleFromPath,
+  parseClientProfilePath,
+  parseNexOpsLocation,
+  type ClientProfileTab,
+  type NexOpsCreateOption,
+  type NexOpsModule
+} from "./nexopsShell";
+import {
+  buildLeadSourceOptions,
+  CLIENT_CUSTOM_FIELD_RESERVED_LABELS,
+  CLIENT_PROFILE_MOBILE_BUCKET_LABELS,
+  customFieldRecordToDraftRows,
+  createCustomFieldDraftRow,
+  customFieldDraftRowsToRecord,
+  draftNameFieldsFromClientRecord,
+  mobileBucketForClientTab,
+  mobileTabsForBucket,
+  PROPERTY_CUSTOM_FIELD_RESERVED_LABELS,
+  primaryClientPhoneValue,
+  type ClientProfileMobileBucket,
+  type CustomFieldDraftRow,
+  validateCustomFieldDraftRows,
+  visibleCustomFields
+} from "./nexopsClientsMobile";
+import {
+  getMobileCreateFabScrollIntent,
+  mobileFabShouldHideOverlays,
+  mobileFabVisibleForViewport,
+  NEXOPS_MOBILE_CREATE_FAB_IDLE_MS,
+  NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY,
+  NEXOPS_SHARED_CREATE_MENU_ID,
+  NexOpsMobileCreateFab,
+  shouldPulseMobileCreateFab
+} from "./nexopsMobileCreateFab";
+import {
+  nexiActiveApprovalPrompt,
+  nexiConversationOffer,
+  nexiConversationOfferReplyAction,
+  NEXI_FRIENDLY_FAILURE_MESSAGE,
+  formatNexiOperatorDisplayName,
+  nexiIsApprovalPrompt,
+  nexiAddressActionValue,
+  nexiMapsHref,
+  nexiPhoneActionValue,
+  nexiShouldHideRenderedSource,
+  NexiStandaloneLayout,
+  nexiStoredSessionKey,
+  parseNexiStoredSession,
+  sanitizeNexiRenderedText,
+  stringifyNexiStoredSession,
+  type NexiStandalonePendingApproval
+} from "./nexiStandalone";
+import { resolveRequestorOriginForNexiMessage } from "./nexiRequestContext";
 
+const NexOpsHomePage = React.lazy(async () => ({ default: (await import("./nexopsHome")).NexOpsHomePage }));
 const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("./nexopsInvoices")).NexOpsInvoicesPage }));
 const NexOpsJobsPage = React.lazy(async () => ({ default: (await import("./nexopsJobs")).NexOpsJobsPage }));
 const NexOpsPatternLibraryPage = React.lazy(async () => ({ default: (await import("./nexopsPatternLibrary")).NexOpsPatternLibraryPage }));
 const NexOpsQuotesPage = React.lazy(async () => ({ default: (await import("./nexopsQuotes")).NexOpsQuotesPage }));
 const NexOpsRequestsPage = React.lazy(async () => ({ default: (await import("./nexopsRequests")).NexOpsRequestsPage }));
+const NexOpsSchedulePage = React.lazy(async () => ({ default: (await import("./nexopsSchedule")).NexOpsSchedulePage }));
+const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("./nexopsSettings")).NexOpsSettingsPage }));
+const NexOpsCaptureWorkspace = React.lazy(async () => ({ default: (await import("./nexopsDeferredUi")).NexOpsCaptureWorkspace }));
+const NexOpsCreateMenu = React.lazy(async () => ({ default: (await import("./nexopsDeferredUi")).NexOpsCreateMenu }));
+const NexOpsCreateClientPanel = React.lazy(async () => ({ default: (await import("./nexopsDeferredUi")).NexOpsCreateClientPanel }));
+const NexOpsNotificationPanel = React.lazy(async () => ({ default: (await import("./nexopsDeferredUi")).NexOpsNotificationPanel }));
+const NexReachPage = React.lazy(async () => ({ default: (await import("./nexreach")).NexReachPage }));
 
 interface Source {
-  rail: "jobber" | "companycam" | "native" | "gsc" | "gbp" | "email";
+  rail: string;
   ref: string;
   label: string;
 }
@@ -23,22 +96,66 @@ interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   sources: Source[];
+  pendingApproval?: NexiStandalonePendingApproval | null;
 }
 
 interface NexiResponse {
   ok: boolean;
   answer?: string;
   sources?: Source[];
+  conversationId?: string;
+  pendingApproval?: NexiStandalonePendingApproval | null;
   error?: string;
+}
+
+interface NexiHistoryResponse {
+  ok: boolean;
+  conversationId?: string;
+  pendingApproval?: NexiStandalonePendingApproval | null;
+  messages?: ChatMessage[];
+  error?: string;
+}
+
+interface FieldDocsMediaCommentRecord {
+  id: string;
+  text: string;
+  createdAt: string;
+  author?: string;
+}
+
+interface FieldDocsMediaAnnotationRecord {
+  id: string;
+  kind: "path";
+  color?: string;
+  createdAt: string;
+  points: Array<{ x: number; y: number }>;
+}
+
+interface FieldDocsMediaRecord {
+  id: string;
+  type: "photo" | "video" | "pdf";
+  clientId?: string;
+  jobId?: string;
+  visitId?: string;
+  propertyId?: string;
+  captureBatchId?: string;
+  storageRef?: string;
+  thumbRef?: string;
+  aiTags?: string[];
+  manualTags?: string[];
+  aiCaption?: string;
+  exif?: { gps?: { lat: number; lng: number }; ts?: string };
+  comments?: FieldDocsMediaCommentRecord[];
+  annotations?: FieldDocsMediaAnnotationRecord[];
+  capturedBy?: string;
+  hiddenFromClient?: boolean;
+  trashedAt?: string;
+  purgeAfter?: string;
 }
 
 interface UploadMediaResponse {
   ok: boolean;
-  media?: {
-    id: string;
-    type: "photo" | "video" | "pdf";
-    jobId?: string;
-  };
+  media?: FieldDocsMediaRecord;
   error?: string;
 }
 
@@ -50,7 +167,7 @@ interface ScheduledVisit {
   end: string;
   assignedTo: string[];
   status: string;
-  source?: "native" | "jobber";
+  source?: string;
   readOnly?: boolean;
   location?: {
     label: string;
@@ -68,7 +185,7 @@ interface ScheduledVisit {
 interface CalendarResponse {
   ok: boolean;
   visits?: ScheduledVisit[];
-  sourceCounts?: { native: number; jobber: number };
+  sourceCounts?: { native: number };
   warnings?: string[];
   error?: string;
 }
@@ -164,6 +281,22 @@ interface CrmEmail {
   primary?: boolean;
 }
 
+interface ClientPhoneDraft {
+  id: string;
+  label: CrmPhone["label"];
+  value: string;
+  receivesMessages: boolean;
+  smsCapability: SmsCapability;
+}
+
+interface ClientEmailDraft {
+  id: string;
+  label: CrmEmail["label"];
+  value: string;
+}
+
+type ClientFormMode = "create" | "edit";
+
 interface CrmContact {
   personName?: { title?: string; firstName?: string; lastName?: string };
   company?: string;
@@ -224,7 +357,7 @@ interface CrmClient {
   emails: string[];
   phones: string[];
   tags?: string[];
-  consent: { email: boolean; sms: boolean };
+  consent: { email: boolean; sms: boolean; marketing?: boolean };
   customFields?: Record<string, string | number | boolean>;
 }
 
@@ -244,7 +377,7 @@ interface CrmProperty {
   contacts?: CrmContact[];
   assets?: Array<{ id: string; kind: string; label: string; fields: Record<string, string | number | boolean> }>;
   customFields?: Record<string, string | number | boolean>;
-  externalIds?: { jobber?: string };
+  externalIds?: Record<string, string>;
 }
 
 interface CrmJob {
@@ -264,7 +397,7 @@ interface CrmJob {
   intake?: CrmIntakeSnapshot;
   createdAt?: string;
   updatedAt?: string;
-  externalIds?: { jobber?: string };
+  externalIds?: Record<string, string>;
 }
 
 interface CrmQuote {
@@ -273,10 +406,15 @@ interface CrmQuote {
   clientId: string;
   jobId?: string;
   requestId?: string;
+  number?: string;
   status: string;
   title: string;
   totals: { subtotal: number; tax: number; total: number };
   intake?: CrmIntakeSnapshot;
+  convertedJobId?: string;
+  expiresAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface CrmInvoice {
@@ -286,26 +424,86 @@ interface CrmInvoice {
   jobId?: string;
   quoteId?: string;
   requestId?: string;
+  number?: string;
   status: string;
   title: string;
   totals: { subtotal: number; tax: number; total: number };
   intake?: CrmIntakeSnapshot;
+  dueAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface CrmRequestSummary {
   id: string;
   status: "new" | "archived" | "converted_to_quote" | "converted_to_job";
+  subject?: string;
+  clientName?: string;
+  selectedClientId?: string;
+  convertedQuoteId?: string;
+  convertedJobId?: string;
+  createdAt?: string;
   reviewedAt?: string;
 }
 
 interface CrmPaymentSummary {
   id: string;
+  clientId?: string;
+  invoiceId?: string;
   status: "pending" | "failed" | "succeeded" | "refunded" | "partially_refunded";
+  provider?: string;
+  method?: string;
+  amount?: number;
+  createdAt?: string;
 }
 
 interface CrmReceiptReviewSummary {
   id: string;
+  clientId?: string;
+  invoiceId?: string;
   status: "draft" | "ready_to_send" | "sent";
+  subject?: string;
+  updatedAt?: string;
+}
+
+interface ClientPortalActivityEntry {
+  id: string;
+  occurredAt: string;
+  title: string;
+  detail: string;
+  objectType: "quote" | "invoice" | "visit" | "statement" | "payment" | "portal";
+  objectId?: string;
+}
+
+interface ReviewSequenceStepRecord {
+  id: string;
+  label: string;
+  offsetDays: number;
+  channels: "email" | "sms" | "both";
+  templateCategory: "review_request_initial" | "review_request_nudge";
+  dueAt: string;
+  status: "pending" | "sent" | "stopped";
+  sentAt?: string;
+}
+
+interface ReviewSequenceRecord {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  jobId: string;
+  invoiceId?: string;
+  source: "automatic" | "manual";
+  providerState: "manual_only" | "gbp_pending";
+  status: "active" | "stopped" | "completed";
+  activeStepId?: string;
+  nextSendAt?: string;
+  stopReason?: "reviewed" | "opt_out" | "exhausted" | "manual";
+  reviewedAt?: string;
+  optOutAt?: string;
+  stoppedAt?: string;
+  steps: ReviewSequenceStepRecord[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface CrmClientsResponse {
@@ -341,6 +539,27 @@ interface CrmReceiptReviewsResponse {
   error?: string;
 }
 
+interface ClientPortalActivityResponse {
+  ok: boolean;
+  activity?: ClientPortalActivityEntry[];
+  error?: string;
+}
+
+interface ReviewSequenceStatusResponse {
+  ok: boolean;
+  sequences?: ReviewSequenceRecord[];
+  activeCount?: number;
+  error?: string;
+}
+
+interface SendPortalLinkResponse {
+  ok: boolean;
+  portalLink?: string;
+  target?: string;
+  delivery?: "email" | "sms" | "direct";
+  error?: string;
+}
+
 interface CrmClientCreateResponse {
   ok: boolean;
   client?: CrmClient;
@@ -348,31 +567,40 @@ interface CrmClientCreateResponse {
   error?: string;
 }
 
-interface JobberSyncResponse {
-  ok: boolean;
-  mode?: "dry-run" | "write";
-  counts?: { clients: number; properties: number; jobs: number };
-  externalIdsPreserved?: { clients: number; properties: number; jobs: number };
-  nativeWriteCounts?: { clients: number; properties: number; jobs: number };
-  sampledAt?: string;
-  error?: string;
-}
-
-interface FieldDocsTemplateItem {
+interface FieldDocsTemplateField {
+  id: string;
   label: string;
   section: string;
+  type: "multi_select" | "count" | "measurement" | "pass_fail" | "free_text" | "photo_attachment";
   memory: "property" | "visit";
-  required?: boolean;
+  required: boolean;
+  photoRequiredDefault?: boolean;
+  helpText?: string;
+  options?: string[];
+  unit?: string;
+}
+
+interface FieldDocsTemplateSection {
+  id: string;
+  title: string;
+  allowNa: boolean;
 }
 
 interface FieldDocsTemplate {
   id: string;
+  slug: string;
   title: string;
-  sections: string[];
+  description?: string;
+  active: boolean;
+  version: number;
+  appliesTo: "job" | "visit" | "job_or_visit";
+  system?: boolean;
+  sections: FieldDocsTemplateSection[];
   itemCount: number;
   propertyPersistentCount: number;
   visitFreshCount: number;
-  items: FieldDocsTemplateItem[];
+  fieldTypes?: string[];
+  fields: FieldDocsTemplateField[];
 }
 
 interface FieldDocsTemplatesResponse {
@@ -386,31 +614,241 @@ interface FieldDocsChecklistResponse {
   checklist?: {
     id: string;
     title: string;
-    items: Array<{ id: string; label: string; section?: string; memory?: "property" | "visit"; status: string }>;
+    templateId: string;
+    propertyId?: string;
+    jobId?: string;
+    visitId?: string;
+    status: "draft" | "completed";
+    sectionStates: Array<{
+      section: string;
+      status: "active" | "not_applicable";
+      updatedAt: string;
+      updatedBy?: string;
+    }>;
+    fields: Array<{
+      fieldId: string;
+      label: string;
+      section: string;
+      type: "multi_select" | "count" | "measurement" | "pass_fail" | "free_text" | "photo_attachment";
+      memory: "property" | "visit";
+      required: boolean;
+      photoRequired?: boolean;
+      status: "pending" | "pass" | "fail" | "not_applicable";
+      note?: string;
+      numberValue?: number;
+      multiValue?: string[];
+      mediaIds?: string[];
+      unit?: string;
+      options?: string[];
+    }>;
   };
+  error?: string;
+}
+
+interface FieldDocsChecklistListResponse {
+  ok: boolean;
+  checklists?: NonNullable<FieldDocsChecklistResponse["checklist"]>[];
   error?: string;
 }
 
 interface FieldDocsSearchResponse {
   ok: boolean;
-  hits?: Array<{
-    id: string;
-    type: "photo" | "video" | "pdf";
-    jobId?: string;
-    storageRef: string;
-    thumbRef?: string;
-    aiTags: string[];
-    aiCaption?: string;
+  hits?: Array<FieldDocsMediaRecord & {
+    score?: number;
+    matched?: string[];
   }>;
   error?: string;
 }
 
+interface FieldDocsMediaListResponse {
+  ok: boolean;
+  media?: NonNullable<FieldDocsSearchResponse["hits"]>;
+  error?: string;
+}
+
+interface CaptureBatchRecord {
+  id: string;
+  tenantId: string;
+  status: "draft" | "unassigned" | "assigned";
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  mediaIds: string[];
+  latestCapturedAt?: string;
+  originGps?: { lat: number; lng: number };
+  latestGps?: { lat: number; lng: number };
+  assignedClientId?: string;
+  assignedJobId?: string;
+  assignedVisitId?: string;
+  assignedRequestId?: string;
+  assignmentMode?: "existing_client" | "request" | "decide_later";
+  assignedAt?: string;
+  media: FieldDocsMediaRecord[];
+}
+
+interface CaptureBatchListResponse {
+  ok: boolean;
+  batches?: CaptureBatchRecord[];
+  error?: string;
+}
+
+interface CaptureBatchMutationResponse {
+  ok: boolean;
+  batch?: CaptureBatchRecord;
+  media?: FieldDocsMediaRecord[];
+  requestId?: string;
+  clientId?: string;
+  error?: string;
+}
+
+interface CaptureClientTargetJob {
+  id: string;
+  number?: string;
+  title: string;
+  status: string;
+  propertyId?: string;
+}
+
+interface CaptureClientTargetVisit {
+  id: string;
+  jobId: string;
+  title: string;
+  status: string;
+  start: string;
+  end: string;
+}
+
+interface CaptureClientTargetsResponse {
+  ok: boolean;
+  jobs?: CaptureClientTargetJob[];
+  visits?: CaptureClientTargetVisit[];
+  error?: string;
+}
+
+type CaptureWorkspaceView = "session" | "unassigned";
+type CaptureSessionMode = "fresh" | "choose" | "new-client" | "existing-client" | "continued" | "unassigned";
+type CaptureSessionOrigin = "new" | "reopened";
+
+interface CaptureRequestIntent {
+  batchId: string;
+  mediaIds: string[];
+}
+
 interface FieldDocsReportResponse {
   ok: boolean;
-  report?: { id: string; title: string; pdfRef: string; status: string };
+  report?: {
+    id: string;
+    title: string;
+    pdfRef: string;
+    status: string;
+    jobId: string;
+    propertyId?: string;
+    visitId?: string;
+    kind?: "field_report" | "ai_recap";
+    templateId?: string;
+    snippetIds?: string[];
+    watermarkEnabled?: boolean;
+    createdAt?: string;
+    postedAt?: string;
+  };
   pdfUrl?: string;
   error?: string;
 }
+
+interface FieldDocsReportsListResponse {
+  ok: boolean;
+  reports?: NonNullable<FieldDocsReportResponse["report"]>[];
+  error?: string;
+}
+
+interface FieldDocsPropertyHistoryResponse {
+  ok: boolean;
+  history?: NonNullable<FieldDocsChecklistListResponse["checklists"]>;
+  error?: string;
+}
+
+interface FieldReportTemplate {
+  id: string;
+  tenantId: string;
+  title: string;
+  defaultReportTitle: string;
+  sections: Array<{ id: string; label: string; defaultText?: string; snippetIds: string[] }>;
+  watermarkByDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface FieldReportTemplatesResponse {
+  ok: boolean;
+  templates?: FieldReportTemplate[];
+  error?: string;
+}
+
+interface FieldDocsBundleRecord {
+  id: string;
+  tenantId: string;
+  jobTypeKey: string;
+  label: string;
+  checklistTemplateId: string;
+  reportTemplateId: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface FieldDocsBundlesResponse {
+  ok: boolean;
+  bundles?: FieldDocsBundleRecord[];
+  error?: string;
+}
+
+interface FieldDocsTextSnippetRecord {
+  id: string;
+  tenantId: string;
+  label: string;
+  bodyText: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface FieldDocsTextSnippetsResponse {
+  ok: boolean;
+  snippets?: FieldDocsTextSnippetRecord[];
+  error?: string;
+}
+
+interface SignedDocumentRecord {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  jobId?: string;
+  propertyId?: string;
+  visitId?: string;
+  kind: "completion_signoff" | "waiver" | "change_order" | "custom";
+  title: string;
+  bodyText: string;
+  status: "pending_signature" | "signed";
+  signature?: {
+    mode: "typed" | "drawn";
+    typedName?: string;
+    drawnDataUrl?: string;
+    signedAt: string;
+    ipAddress: string;
+  };
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+  signedAt?: string;
+}
+
+interface SignedDocumentsResponse {
+  ok: boolean;
+  records?: SignedDocumentRecord[];
+  error?: string;
+}
+
+type FieldDocsMediaHit = NonNullable<FieldDocsSearchResponse["hits"]>[number];
+type FieldDocsMediaAnnotation = NonNullable<FieldDocsMediaHit["annotations"]>[number];
 
 interface PlatformPlan {
   id: "nexi" | "marketing" | "suite";
@@ -470,9 +908,37 @@ interface RuntimeConfigResponse {
   firebase: FirebasePublicConfig;
   firebaseConfigured: boolean;
   authRequired?: boolean;
+  localAuthEnabled?: boolean;
+  localProfiles?: LocalAuthProfileSummary[];
 }
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
+
+interface LocalAuthProfileSummary {
+  id: string;
+  tenantId: string;
+  tenantUserId: string;
+  role: TenantRole;
+  email: string;
+  displayName: string;
+  label: string;
+}
+
+interface LocalAuthSessionResponse {
+  ok: boolean;
+  token?: string;
+  profile?: LocalAuthProfileSummary;
+  error?: string;
+}
+
+interface TenantUserRecord {
+  id: string;
+  tenantId: string;
+  email?: string;
+  displayName: string;
+  role: TenantRole;
+  active: boolean;
+}
 
 interface OperatorContext {
   tenantId: string;
@@ -539,6 +1005,42 @@ interface TenantBrandingResponse {
   error?: string;
 }
 
+interface TenantUsersResponse {
+  ok: boolean;
+  tenantId?: string;
+  users?: TenantUserRecord[];
+  error?: string;
+}
+
+type WorkspaceFilterTargetModule = "requests" | "quotes" | "jobs" | "invoices" | "payments" | "schedule" | "capture";
+type ScheduleScope = "all" | "today" | "upcoming";
+
+interface WorkspaceTarget {
+  module: WorkspaceFilterTargetModule;
+  objectId?: string;
+  filterKey?: string;
+  filterValue?: string;
+}
+
+interface NexOpsNotificationEntry {
+  id: string;
+  unread: boolean;
+  title: string;
+  body: string;
+  relativeTime: string;
+  target: {
+    module: "requests" | "quotes" | "jobs" | "invoices" | "payments";
+    objectId: string;
+  };
+}
+
+interface NexOpsNotificationsResponse {
+  ok: boolean;
+  unreadCount?: number;
+  notifications?: NexOpsNotificationEntry[];
+  error?: string;
+}
+
 interface VoiceSession {
   id: string;
   tenantId: string;
@@ -597,9 +1099,7 @@ const buildTimeFirebaseConfig: FirebasePublicConfig = {
 };
 
 const DEFAULT_TENANT_ID = "aquatrace";
-const AQUATRACE_LOGO_FALLBACK = "/tenants/aquatrace/aquatrace-banner-logo.png";
-const NEXTEAM_ICON_SRC = "/assets/brand/nexteam-icon.png";
-const NEXTEAM_WORDMARK_SRC = "/assets/brand/nexteam-wordmark.png";
+const LOCAL_SESSION_TOKEN_KEY = "nexops.local-auth-token";
 
 function claimString(claims: Record<string, unknown>, key: string): string | undefined {
   const value = claims[key];
@@ -647,41 +1147,157 @@ function createFirebaseAuth(config: FirebasePublicConfig): Auth | null {
   return getAuth(app);
 }
 
-function localBypassUser(): User {
+function readLocalSessionToken(): string | null {
+  try {
+    return window.localStorage.getItem(LOCAL_SESSION_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalSessionToken(token: string): void {
+  try {
+    window.localStorage.setItem(LOCAL_SESSION_TOKEN_KEY, token);
+  } catch {
+    // Ignore local-storage failures in dev mode.
+  }
+}
+
+function clearLocalSessionToken(): void {
+  try {
+    window.localStorage.removeItem(LOCAL_SESSION_TOKEN_KEY);
+  } catch {
+    // Ignore local-storage failures in dev mode.
+  }
+}
+
+function installLocalSessionFetchBridge(): void {
+  const bridgeWindow = window as Window & {
+    __nexopsLocalFetchBridgeInstalled?: boolean;
+    __nexopsOriginalFetch?: typeof window.fetch;
+  };
+  if (bridgeWindow.__nexopsLocalFetchBridgeInstalled) {
+    return;
+  }
+  const originalFetch = window.fetch.bind(window);
+  bridgeWindow.__nexopsOriginalFetch = originalFetch;
+  bridgeWindow.__nexopsLocalFetchBridgeInstalled = true;
+  window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const token = readLocalSessionToken();
+    if (!token) {
+      return originalFetch(input, init);
+    }
+    const requestUrl = typeof input === "string"
+      ? input
+      : input instanceof URL
+        ? input.toString()
+        : input.url;
+    const isSameOrigin = requestUrl.startsWith("/") || requestUrl.startsWith(window.location.origin);
+    if (!isSameOrigin) {
+      return originalFetch(input, init);
+    }
+    const headers = new Headers(input instanceof Request ? input.headers : init?.headers);
+    if (!headers.has("authorization")) {
+      headers.set("authorization", `Bearer ${token}`);
+    }
+    return originalFetch(input, {
+      ...init,
+      headers
+    });
+  }) as typeof window.fetch;
+}
+
+function localSessionUser(token: string, profile: LocalAuthProfileSummary): User {
   return {
-    uid: "local-owner",
-    email: "local-owner@aquatrace.test",
+    uid: profile.tenantUserId,
+    email: profile.email,
     async getIdToken() {
-      return "";
+      return token;
     },
     async getIdTokenResult() {
       return {
-        token: "",
+        token,
         authTime: "",
         issuedAtTime: "",
         expirationTime: "",
         signInProvider: "custom",
         signInSecondFactor: null,
         claims: {
-          tenantId: DEFAULT_TENANT_ID,
-          tenantUserId: "local-owner",
-          tenantRole: "OWNER",
-          role: "OWNER"
+          tenantId: profile.tenantId,
+          tenantUserId: profile.tenantUserId,
+          tenantRole: profile.role,
+          role: profile.role
         }
       };
     }
   } as unknown as User;
 }
 
-async function signOutOperator(auth: Auth | null): Promise<void> {
-  if (auth) {
-    await signOut(auth);
-    return;
+async function restoreLocalSession(tenantId: string): Promise<User | null> {
+  const token = readLocalSessionToken();
+  if (!token) {
+    return null;
   }
-  window.location.reload();
+  try {
+    const response = await fetch(`/api/public/local-auth/session?tenantId=${encodeURIComponent(tenantId)}`, {
+      headers: {
+        authorization: `Bearer ${token}`
+      }
+    });
+    if (!response.ok) {
+      clearLocalSessionToken();
+      return null;
+    }
+    const body = await response.json() as LocalAuthSessionResponse;
+    if (!body.ok || !body.token || !body.profile) {
+      clearLocalSessionToken();
+      return null;
+    }
+    writeLocalSessionToken(body.token);
+    return localSessionUser(body.token, body.profile);
+  } catch {
+    clearLocalSessionToken();
+    return null;
+  }
 }
 
-async function loadAuthBootstrap(): Promise<{ auth: Auth | null; authRequired: boolean; localUser: User | null }> {
+async function signInWithLocalCredentials(email: string, tenantId: string): Promise<User> {
+  const response = await fetch("/api/public/local-auth/sign-in", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      email,
+      tenantId
+    })
+  });
+  const body = await response.json() as LocalAuthSessionResponse;
+  if (!response.ok || !body.ok || !body.token || !body.profile) {
+    throw new Error(body.error || "Local sign-in failed.");
+  }
+  writeLocalSessionToken(body.token);
+  return localSessionUser(body.token, body.profile);
+}
+
+async function signOutOperator(auth: Auth | null): Promise<void> {
+  clearLocalSessionToken();
+  if (auth) {
+    await signOut(auth);
+    window.location.assign("/nexops/sign-in");
+    return;
+  }
+  window.location.assign("/nexops/sign-in");
+}
+
+async function loadAuthBootstrap(): Promise<{
+  auth: Auth | null;
+  authRequired: boolean;
+  localUser: User | null;
+  localAuthEnabled: boolean;
+  localTenantId: string;
+  localProfiles: LocalAuthProfileSummary[];
+}> {
   let runtime: RuntimeConfigResponse | null = null;
   try {
     const response = await fetch("/api/public/runtime-config");
@@ -695,10 +1311,19 @@ async function loadAuthBootstrap(): Promise<{ auth: Auth | null; authRequired: b
       ? runtime.firebase
       : buildTimeFirebaseConfig;
   const authRequired = runtime?.ok ? runtime.authRequired !== false : true;
+  const localAuthEnabled = runtime?.ok && runtime.localAuthEnabled === true;
+  const localProfiles = runtime?.ok ? runtime.localProfiles ?? [] : [];
+  const localTenantId = localProfiles[0]?.tenantId ?? DEFAULT_TENANT_ID;
+  if (localAuthEnabled) {
+    installLocalSessionFetchBridge();
+  }
   return {
     auth: createFirebaseAuth(config),
     authRequired,
-    localUser: authRequired ? null : localBypassUser()
+    localAuthEnabled,
+    localProfiles,
+    localTenantId,
+    localUser: localAuthEnabled ? await restoreLocalSession(localTenantId) : null
   };
 }
 
@@ -724,43 +1349,57 @@ function sourceIsPhoto(source: Source): boolean {
   if (/\b(pdf|document|report)\b/.test(label)) {
     return false;
   }
-  return (source.rail === "companycam" && label.includes("photo"))
-    || (source.rail === "native" && /\b(photo|media|before|after|upload)/.test(label));
+  return source.rail === "native" && /\b(photo|media|before|after|upload)/.test(label);
+}
+
+function formatPhoneActionLabel(phone: string): string {
+  const digits = phone.replace(/[^\d]/g, "");
+  if (digits.length === 10) {
+    return `Call (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `Call (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return `Call ${phone}`;
+}
+
+function formatPhoneDisplay(phone: string): string {
+  const digits = phone.replace(/[^\d]/g, "");
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return phone;
+}
+
+function messageQuickActions(text: string): Array<{ kind: "call" | "maps"; href: string; label: string }> {
+  if (nexiIsApprovalPrompt(text)) {
+    return [];
+  }
+  const actions: Array<{ kind: "call" | "maps"; href: string; label: string }> = [];
+  const phone = nexiPhoneActionValue(text);
+  if (phone) {
+    actions.push({
+      kind: "call",
+      href: `tel:${phone}`,
+      label: formatPhoneActionLabel(phone)
+    });
+  }
+  const address = nexiAddressActionValue(text);
+  if (address) {
+    actions.push({
+      kind: "maps",
+      href: nexiMapsHref(address),
+      label: "Open in Maps"
+    });
+  }
+  return actions;
 }
 
 function mediaDownloadName(source: Source): string {
   return `${source.rail}-${source.ref.replace(/[^a-z0-9_-]/gi, "_")}.jpg`;
-}
-
-function tenantLogoSrc(branding: TenantBranding | null, tenantId: string): string | null {
-  if (branding?.logo?.url) {
-    return branding.logo.url;
-  }
-  if (branding?.logo?.mediaId) {
-    return `/api/media/${encodeURIComponent(branding.logo.mediaId)}?tenantId=${encodeURIComponent(tenantId)}`;
-  }
-  if (tenantId === DEFAULT_TENANT_ID) {
-    return AQUATRACE_LOGO_FALLBACK;
-  }
-  return null;
-}
-
-function TenantBrandMark(props: { branding: TenantBranding | null; tenantId: string }): React.ReactElement {
-  const displayName = props.branding?.displayName ?? (props.tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : props.tenantId);
-  const logoSrc = tenantLogoSrc(props.branding, props.tenantId);
-  if (logoSrc) {
-    return <img alt={props.branding?.logo?.alt ?? `${displayName} logo`} className="tenant-logo" src={logoSrc} />;
-  }
-  return <div className="tenant-wordmark" aria-label={`${displayName} logo placeholder`}>{displayName}</div>;
-}
-
-function NexTeamLockup(props: { className?: string; compact?: boolean }): React.ReactElement {
-  return (
-    <div className={`nexteam-lockup ${props.compact ? "compact" : ""} ${props.className ?? ""}`.trim()} aria-label="NexTeam Studio">
-      <img className="nexteam-lockup-icon" src={NEXTEAM_ICON_SRC} alt="" aria-hidden="true" />
-      {!props.compact ? <img className="nexteam-lockup-wordmark" src={NEXTEAM_WORDMARK_SRC} alt="NexTeam Studio" /> : null}
-    </div>
-  );
 }
 
 function isOwnerCustomizedOperatorTheme(theme: OperatorUiTheme | null): theme is OperatorUiTheme {
@@ -792,7 +1431,7 @@ function formatVisitTime(value: string): string {
 }
 
 function visitStatusLabel(visit: ScheduledVisit): string {
-  return visit.source === "jobber" || visit.readOnly ? "Jobber read-only" : visit.status;
+  return visit.readOnly ? "Read-only" : visit.status;
 }
 
 function personDisplayName(person?: { firstName?: string; lastName?: string }): string {
@@ -805,6 +1444,20 @@ function clientDisplayName(client: CrmClient): string {
     return client.company;
   }
   return personName || client.name;
+}
+
+function clientContactDisplayName(client: CrmClient, primaryContact?: CrmContact): string {
+  const companyDisplay = Boolean(client.company && client.displayNamePreference !== "person");
+  if (!companyDisplay) {
+    return "";
+  }
+  const primaryPerson = personDisplayName(primaryContact?.personName);
+  const clientPerson = personDisplayName(client.personName);
+  const fallback = primaryPerson || clientPerson || primaryContact?.company || "";
+  if (!fallback) {
+    return "";
+  }
+  return fallback.trim().toLowerCase() === clientDisplayName(client).trim().toLowerCase() ? "" : fallback;
 }
 
 function formatAddress(address?: CrmAddress): string {
@@ -937,7 +1590,6 @@ function NexOpsCrmPanel(props: { tenantId: string }): React.ReactElement {
         <div className="nexops-actions" aria-label="Client actions">
           <button type="button">New client</button>
           <button type="button">CSV import</button>
-          <button type="button">Jobber sync</button>
           <button type="button" onClick={() => void refresh()}>Refresh</button>
         </div>
       </div>
@@ -988,7 +1640,7 @@ function NexOpsCrmPanel(props: { tenantId: string }): React.ReactElement {
             {!previewClients.length ? (
               <article className="nexops-empty-list">
                 <h3>No native clients loaded yet</h3>
-                <p>Import by CSV for any tenant, or sync Aquatrace from Jobber read-only API when staging is ready.</p>
+                <p>Import by CSV for any tenant, or start with a native intake request.</p>
               </article>
             ) : null}
           </div>
@@ -1027,7 +1679,7 @@ function NexOpsCrmPanel(props: { tenantId: string }): React.ReactElement {
             </article>
             <article>
               <h4>Import status</h4>
-              <p>{clients.length ? `${clients.length} native records loaded.` : "CSV and Jobber API import are next receipt paths."}</p>
+              <p>{clients.length ? `${clients.length} native records loaded.` : "CSV import and native intake are the current receipt paths."}</p>
             </article>
           </div>
         </section>
@@ -1036,32 +1688,129 @@ function NexOpsCrmPanel(props: { tenantId: string }): React.ReactElement {
   );
 }
 
-type NexOpsModule = "home" | "clients" | "requests" | "quotes" | "schedule" | "jobs" | "invoices" | "payments" | "imports" | "approvals" | "settings" | "patterns";
-
-const NEXOPS_MODULES: Array<{ id: NexOpsModule; label: string; path: string; hidden?: boolean }> = [
-  { id: "home", label: "Home", path: "/nexops" },
-  { id: "clients", label: "Clients", path: "/nexops/clients" },
-  { id: "requests", label: "Requests", path: "/nexops/requests" },
-  { id: "quotes", label: "Quotes", path: "/nexops/quotes" },
-  { id: "schedule", label: "Schedule", path: "/nexops/schedule" },
-  { id: "jobs", label: "Jobs", path: "/nexops/jobs" },
-  { id: "invoices", label: "Invoices", path: "/nexops/invoices" },
-  { id: "payments", label: "Payments", path: "/nexops/payments" },
-  { id: "imports", label: "Import & Sync", path: "/nexops/imports" },
-  { id: "approvals", label: "Approvals", path: "/nexops/approvals" },
-  { id: "settings", label: "Settings", path: "/nexops/settings" },
-  { id: "patterns", label: "Patterns", path: "/nexops/patterns", hidden: true }
-];
-
-function nexOpsModuleFromPath(pathname: string): NexOpsModule {
-  const exact = NEXOPS_MODULES.find((module) => pathname === module.path);
-  if (exact) {
-    return exact.id;
+function NexOpsNavGlyph(props: { module: NexOpsModule }): React.ReactElement {
+  switch (props.module) {
+    case "home":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M3.5 8.2 10 3.5l6.5 4.7v7.3a1 1 0 0 1-1 1h-3.7v-4.5H8.2v4.5H4.5a1 1 0 0 1-1-1V8.2Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        </svg>
+      );
+    case "clients":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M6.3 9.2a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6ZM13.8 10.3a2.3 2.3 0 1 0 0-4.6 2.3 2.3 0 0 0 0 4.6ZM2.8 16.2c.5-2.2 2.3-3.5 4.8-3.5 2.5 0 4.3 1.3 4.8 3.5M11.3 16.2c.4-1.5 1.6-2.5 3.5-2.5 1 0 1.8.2 2.4.7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "requests":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M6 4.5h8.4a1.1 1.1 0 0 1 1.1 1.1v9.5a1.1 1.1 0 0 1-1.1 1.1H5.6a1.1 1.1 0 0 1-1.1-1.1V5.6A1.1 1.1 0 0 1 5.6 4.5H6Zm0 0V3.3m4 1.2V3.3m-3.8 4h7.4M6.2 10h7.6M6.2 12.8H11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "quotes":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M5.4 3.8h6.8l3 3v9.4a1 1 0 0 1-1 1H5.4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M12.2 3.8v3h3M6.8 10.3h6.4M6.8 13h4.3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "schedule":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M4.8 5.1h10.4a1.2 1.2 0 0 1 1.2 1.2v8.5a1.2 1.2 0 0 1-1.2 1.2H4.8a1.2 1.2 0 0 1-1.2-1.2V6.3a1.2 1.2 0 0 1 1.2-1.2Zm0 0V3.4m10.4 1.7V3.4m-11.6 5h12.8M7 11.2h2.2v2.2H7z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "jobs":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="m7.3 5.2 2.8 2.8-5.4 5.4H2v-2.7l5.3-5.5Zm0 0 1.9-1.9a1.4 1.4 0 0 1 2 0l1.4 1.4a1.4 1.4 0 0 1 0 2l-1.9 1.9M11.7 12.5h4.9M10.5 15.8h6.1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "invoices":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M5 3.6h10a1 1 0 0 1 1 1v11.1l-2-1-2 1-2-1-2 1-2-1-2 1V4.6a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M7 7.3h6M7 10.1h6M7 12.9h3.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      );
+    case "payments":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <rect x="2.8" y="5.2" width="14.4" height="9.6" rx="1.8" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M2.8 8.2h14.4M6.2 11.8h2.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      );
+    case "imports":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M6.2 6.4h8.3m0 0-2-2m2 2-2 2M13.8 13.6H5.5m0 0 2 2m-2-2 2-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          <rect x="3.2" y="3.2" width="13.6" height="13.6" rx="2.3" stroke="currentColor" strokeWidth="1.2" opacity="0.55" />
+        </svg>
+      );
+    case "approvals":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M10 3.5 15.5 6v4.2c0 3-2 5.8-5.5 7.2-3.5-1.4-5.5-4.2-5.5-7.2V6L10 3.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="m7.5 10.2 1.6 1.6 3.4-3.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "settings":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M10 5.9a4.1 4.1 0 1 1 0 8.2 4.1 4.1 0 0 1 0-8.2Zm0 0V3.5m0 13v-2.4m4.1-6.5 1.7-1.7m-11.6 11.6 1.7-1.7m0-8.2L4.2 5.9m11.6 11.6-1.7-1.7M16.5 10h-2.4m-8.2 0H3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "capture":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M4.4 6.2h2l1-1.4h5.2l1 1.4h2a1.4 1.4 0 0 1 1.4 1.4v6.2a1.4 1.4 0 0 1-1.4 1.4H4.4A1.4 1.4 0 0 1 3 13.8V7.6a1.4 1.4 0 0 1 1.4-1.4Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <circle cx="10" cy="10.7" r="2.7" stroke="currentColor" strokeWidth="1.6" />
+        </svg>
+      );
+    case "patterns":
+    default:
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="6" stroke="currentColor" strokeWidth="1.6" />
+        </svg>
+      );
   }
-  const nested = [...NEXOPS_MODULES]
-    .sort((left, right) => right.path.length - left.path.length)
-    .find((module) => pathname.startsWith(`${module.path}/`));
-  return nested?.id ?? "home";
+}
+
+function MobileClientSummaryGlyph(props: { kind: "phone" | "email" | "directions" }): React.ReactElement {
+  switch (props.kind) {
+    case "phone":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M5.4 3.9h2.4l1.1 2.8-1.5 1.5a11.8 11.8 0 0 0 4.4 4.4l1.5-1.5 2.8 1.1v2.4a1.6 1.6 0 0 1-1.6 1.6A10.6 10.6 0 0 1 3.8 5.5 1.6 1.6 0 0 1 5.4 3.9Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "email":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <rect x="3.2" y="4.6" width="13.6" height="10.8" rx="2" stroke="currentColor" strokeWidth="1.5" />
+          <path d="m4.6 6.2 5.4 4.3 5.4-4.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "directions":
+    default:
+      return (
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M10 16.8s4.7-4.7 4.7-8.1A4.7 4.7 0 1 0 5.3 8.7c0 3.4 4.7 8.1 4.7 8.1Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+          <circle cx="10" cy="8.7" r="1.8" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+      );
+  }
+}
+
+function MobileClientEditGlyph(): React.ReactElement {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+      <path d="m5.2 14.8 1-3.3 6.5-6.5a1.7 1.7 0 0 1 2.4 0l.9.9a1.7 1.7 0 0 1 0 2.4l-6.5 6.5-3.3 1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="m10.8 6.8 2.4 2.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 function parseCsvPreview(text: string): { rows: number; columns: string[] } {
@@ -1073,27 +1822,8 @@ function parseCsvPreview(text: string): { rows: number; columns: string[] } {
   };
 }
 
-function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.ReactElement {
-  const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
-  const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
-  const [clients, setClients] = useState<CrmClient[]>([]);
-  const [properties, setProperties] = useState<CrmProperty[]>([]);
-  const [jobs, setJobs] = useState<CrmJob[]>([]);
-  const [quotes, setQuotes] = useState<CrmQuote[]>([]);
-  const [invoices, setInvoices] = useState<CrmInvoice[]>([]);
-  const [requests, setRequests] = useState<CrmRequestSummary[]>([]);
-  const [payments, setPayments] = useState<CrmPaymentSummary[]>([]);
-  const [receiptReviews, setReceiptReviews] = useState<CrmReceiptReviewSummary[]>([]);
-  const [status, setStatus] = useState("Loading clients...");
-  const [query, setQuery] = useState("");
-  const [selectedClientId, setSelectedClientId] = useState("");
-  const [activeModule, setActiveModule] = useState<NexOpsModule>(() => nexOpsModuleFromPath(window.location.pathname));
-  const [focusedInvoiceId, setFocusedInvoiceId] = useState("");
-  const [showCreateClient, setShowCreateClient] = useState(false);
-  const [createStatus, setCreateStatus] = useState("");
-  const [csvStatus, setCsvStatus] = useState("No CSV selected yet.");
-  const [jobberSyncStatus, setJobberSyncStatus] = useState("Run a dry-run first to confirm real Jobber counts before writing native NexOps records.");
-  const [newClient, setNewClient] = useState({
+function blankNewClientDraft() {
+  return {
     title: "No title",
     firstName: "",
     lastName: "",
@@ -1104,12 +1834,17 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
     phoneLabel: "Main" as CrmPhone["label"],
     phoneReceivesMessages: false,
     smsCapability: "unknown" as SmsCapability,
+    additionalPhones: [] as ClientPhoneDraft[],
     email: "",
     emailLabel: "Main" as CrmEmail["label"],
+    additionalEmails: [] as ClientEmailDraft[],
     paymentTerms: "",
     askForReview: true,
+    referredBy: "",
+    promoCode: "",
     clientCustomFieldName: "",
     clientCustomFieldValue: "",
+    clientCustomFieldsDraft: [] as CustomFieldDraftRow[],
     additionalContactName: "",
     additionalContactRole: "",
     additionalContactPhone: "",
@@ -1120,6 +1855,9 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
     city: "",
     province: "",
     postalCode: "",
+    country: "US",
+    propertyGeoLat: undefined as number | undefined,
+    propertyGeoLng: undefined as number | undefined,
     billingSameAsPrimaryProperty: true,
     billingStreet1: "",
     billingStreet2: "",
@@ -1132,33 +1870,674 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
     propertyClientName: "",
     propertyClientPhone: "",
     propertyClientEmail: "",
-    companyCamProject: "",
+    propertyAccessNotes: "",
     propertyCustomFieldName: "",
-    propertyCustomFieldValue: ""
+    propertyCustomFieldValue: "",
+    propertyCustomFieldsDraft: [] as CustomFieldDraftRow[]
+  };
+}
+
+function draftPhoneFromRecord(phone: CrmPhone, index: number): ClientPhoneDraft {
+  return {
+    id: `phone_edit_${index}_${Math.random().toString(36).slice(2, 8)}`,
+    label: phone.label ?? "Other",
+    value: phone.value,
+    receivesMessages: phone.receivesMessages === true,
+    smsCapability: phone.smsCapability ?? "unknown"
+  };
+}
+
+function draftEmailFromRecord(email: CrmEmail, index: number): ClientEmailDraft {
+  return {
+    id: `email_edit_${index}_${Math.random().toString(36).slice(2, 8)}`,
+    label: email.label ?? "Other",
+    value: email.value
+  };
+}
+
+function normalizeDraftCountry(country?: string): string {
+  if (!country) {
+    return "US";
+  }
+  return country.toUpperCase() === "USA" ? "US" : country;
+}
+
+function draftFromExistingClient(client: CrmClient, property: CrmProperty | null): ReturnType<typeof blankNewClientDraft> {
+  const draft = blankNewClientDraft();
+  const primaryContact = client.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? client.contacts?.[0];
+  const draftPersonName = draftNameFieldsFromClientRecord({
+    clientName: client.name,
+    company: client.company,
+    displayNamePreference: client.displayNamePreference,
+    personFirstName: client.personName?.firstName,
+    personLastName: client.personName?.lastName,
+    contactFirstName: primaryContact?.personName?.firstName,
+    contactLastName: primaryContact?.personName?.lastName
   });
+  const otherContacts = (client.contacts ?? []).filter((contact) => contact !== primaryContact);
+  const primaryPhones = primaryContact?.phones?.length ? primaryContact.phones : client.phones.map((value) => ({
+    label: "Main" as CrmPhone["label"],
+    value,
+    primary: false,
+    receivesMessages: false,
+    smsCapability: "unknown" as SmsCapability
+  }));
+  const mainPhone = primaryPhones.find((phone) => phone.primary) ?? primaryPhones[0];
+  const extraPhones = primaryPhones.filter((phone) => phone !== mainPhone);
+  const primaryEmails = primaryContact?.emails?.length ? primaryContact.emails : client.emails.map((value) => ({
+    label: "Main" as CrmEmail["label"],
+    value,
+    primary: false
+  }));
+  const mainEmail = primaryEmails.find((email) => email.primary) ?? primaryEmails[0];
+  const extraEmails = primaryEmails.filter((email) => email !== mainEmail);
+  const additionalContact = otherContacts[0];
+  const propertyContact = property?.contacts?.[0];
+  const billingAddress = client.billingAddress;
+  const propertyAddress = property?.address;
+
+  return {
+    ...draft,
+    title: client.personName?.title ?? "No title",
+    firstName: draftPersonName.firstName,
+    lastName: draftPersonName.lastName,
+    company: client.company ?? "",
+    role: primaryContact?.role ?? "",
+    displayNamePreference: client.displayNamePreference ?? (client.company ? "company" : "person"),
+    phone: mainPhone?.value ?? "",
+    phoneLabel: mainPhone?.label ?? "Main",
+    phoneReceivesMessages: mainPhone?.receivesMessages === true,
+    smsCapability: mainPhone?.smsCapability ?? "unknown",
+    additionalPhones: extraPhones.map(draftPhoneFromRecord),
+    email: mainEmail?.value ?? "",
+    emailLabel: mainEmail?.label ?? "Main",
+    additionalEmails: extraEmails.map(draftEmailFromRecord),
+    paymentTerms: typeof client.customFields?.paymentTerms === "string" ? client.customFields.paymentTerms : "",
+    askForReview: client.customFields?.askForReview === false ? false : true,
+    referredBy: typeof client.customFields?.referredBy === "string" ? client.customFields.referredBy : "",
+    promoCode: typeof client.customFields?.promoCode === "string" ? client.customFields.promoCode : "",
+    clientCustomFieldsDraft: customFieldRecordToDraftRows(client.customFields, CLIENT_CUSTOM_FIELD_RESERVED_LABELS, "client_edit"),
+    additionalContactName: personDisplayName(additionalContact?.personName) || additionalContact?.company || "",
+    additionalContactRole: additionalContact?.role ?? "",
+    additionalContactPhone: additionalContact?.phones?.[0]?.value ?? "",
+    additionalContactEmail: additionalContact?.emails?.[0]?.value ?? "",
+    siteName: property?.siteName ?? property?.label ?? "",
+    street1: propertyAddress?.street1 ?? billingAddress?.street1 ?? "",
+    street2: propertyAddress?.street2 ?? billingAddress?.street2 ?? "",
+    city: propertyAddress?.city ?? billingAddress?.city ?? "",
+    province: propertyAddress?.province ?? billingAddress?.province ?? "",
+    postalCode: propertyAddress?.postalCode ?? billingAddress?.postalCode ?? "",
+    country: normalizeDraftCountry(propertyAddress?.country ?? billingAddress?.country),
+    billingSameAsPrimaryProperty: client.billingSameAsPrimaryProperty !== false,
+    billingStreet1: client.billingSameAsPrimaryProperty === false ? (billingAddress?.street1 ?? "") : "",
+    billingStreet2: client.billingSameAsPrimaryProperty === false ? (billingAddress?.street2 ?? "") : "",
+    billingCity: client.billingSameAsPrimaryProperty === false ? (billingAddress?.city ?? "") : "",
+    billingProvince: client.billingSameAsPrimaryProperty === false ? (billingAddress?.province ?? "") : "",
+    billingPostalCode: client.billingSameAsPrimaryProperty === false ? (billingAddress?.postalCode ?? "") : "",
+    leadSource: typeof client.customFields?.leadSource === "string" ? client.customFields.leadSource : "",
+    propertyGatedEntry: property?.customFields?.gatedEntry === true,
+    propertyGateCodes: property?.access?.gateCode ?? "",
+    propertyClientName: String(property?.customFields?.propertyClientName ?? propertyContact?.company ?? personDisplayName(propertyContact?.personName) ?? ""),
+    propertyClientPhone: String(property?.customFields?.propertyClientPhone ?? propertyContact?.phones?.[0]?.value ?? ""),
+    propertyClientEmail: String(property?.customFields?.propertyClientEmail ?? propertyContact?.emails?.[0]?.value ?? ""),
+    propertyAccessNotes: property?.access?.accessNotes ?? "",
+    propertyCustomFieldsDraft: customFieldRecordToDraftRows(property?.customFields, PROPERTY_CUSTOM_FIELD_RESERVED_LABELS, "property_edit")
+  };
+}
+
+const MOBILE_CLIENT_VIEWPORT_MAX = 860;
+
+function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.ReactElement {
+  const initialPathState = parseNexOpsLocation(window.location.pathname);
+  const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
+  const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
+  const [clients, setClients] = useState<CrmClient[]>([]);
+  const [properties, setProperties] = useState<CrmProperty[]>([]);
+  const [jobs, setJobs] = useState<CrmJob[]>([]);
+  const [quotes, setQuotes] = useState<CrmQuote[]>([]);
+  const [invoices, setInvoices] = useState<CrmInvoice[]>([]);
+  const [tenantUsers, setTenantUsers] = useState<TenantUserRecord[]>([]);
+  const [requests, setRequests] = useState<CrmRequestSummary[]>([]);
+  const [payments, setPayments] = useState<CrmPaymentSummary[]>([]);
+  const [receiptReviews, setReceiptReviews] = useState<CrmReceiptReviewSummary[]>([]);
+  const [clientPortalActivity, setClientPortalActivity] = useState<ClientPortalActivityEntry[]>([]);
+  const [clientReviewSequences, setClientReviewSequences] = useState<ReviewSequenceRecord[]>([]);
+  const [clientFieldMedia, setClientFieldMedia] = useState<NonNullable<FieldDocsMediaListResponse["media"]>>([]);
+  const [clientFieldReports, setClientFieldReports] = useState<NonNullable<FieldDocsReportsListResponse["reports"]>>([]);
+  const [clientSignedDocuments, setClientSignedDocuments] = useState<SignedDocumentRecord[]>([]);
+  const [clientQuickRequestDraft, setClientQuickRequestDraft] = useState({ title: "Quick payment request", amount: "0.00", memo: "" });
+  const [clientRailStatus, setClientRailStatus] = useState("Portal activity and review follow-up will load when a client is selected.");
+  const [clientRailBusy, setClientRailBusy] = useState("");
+  const [clientMediaMoveId, setClientMediaMoveId] = useState("");
+  const [clientMediaMoveJobId, setClientMediaMoveJobId] = useState("");
+  const [clientMediaMoveVisitId, setClientMediaMoveVisitId] = useState("");
+  const [clientMediaMoveTargets, setClientMediaMoveTargets] = useState<{ jobs: CaptureClientTargetJob[]; visits: CaptureClientTargetVisit[] }>({ jobs: [], visits: [] });
+  const [lastPortalLink, setLastPortalLink] = useState("");
+  const [status, setStatus] = useState("Loading clients...");
+  const [query, setQuery] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState(initialPathState.clientId ?? "");
+  const [activeClientProfileTab, setActiveClientProfileTab] = useState<ClientProfileTab | null>(initialPathState.clientTab);
+  const [activeModule, setActiveModule] = useState<NexOpsModule>(initialPathState.module);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [focusedRequestId, setFocusedRequestId] = useState("");
+  const [focusedQuoteId, setFocusedQuoteId] = useState("");
+  const [focusedJobId, setFocusedJobId] = useState("");
+  const [focusedInvoiceId, setFocusedInvoiceId] = useState("");
+  const [requestFilterIntent, setRequestFilterIntent] = useState<"all" | "new" | "archived" | "converted_to_quote" | "converted_to_job" | undefined>();
+  const [quoteFilterIntent, setQuoteFilterIntent] = useState<"all" | "draft" | "sent" | "change_requested" | "approved" | "approved_pending_conversion" | "expired" | undefined>();
+  const [jobFilterIntent, setJobFilterIntent] = useState<"All" | "Upcoming" | "Today" | "Late" | "Unscheduled" | "Action Required" | "Requires Invoicing" | "Archived" | undefined>();
+  const [invoiceFilterIntent, setInvoiceFilterIntent] = useState<"all" | "draft" | "awaiting" | "partial_pay" | "paid" | "void" | "bad_debt" | "past_due" | undefined>();
+  const [scheduleScopeIntent, setScheduleScopeIntent] = useState<ScheduleScope | undefined>();
+  const [captureWorkspaceView, setCaptureWorkspaceView] = useState<CaptureWorkspaceView>("session");
+  const [captureSession, setCaptureSession] = useState<CaptureBatchRecord | null>(null);
+  const [captureSessionMode, setCaptureSessionMode] = useState<CaptureSessionMode>("fresh");
+  const [captureSessionOrigin, setCaptureSessionOrigin] = useState<CaptureSessionOrigin>("new");
+  const [captureSelectedMediaId, setCaptureSelectedMediaId] = useState("");
+  const [captureStatus, setCaptureStatus] = useState("Open the camera to start a capture batch.");
+  const [captureBusy, setCaptureBusy] = useState("");
+  const [captureClientQuery, setCaptureClientQuery] = useState("");
+  const [captureSelectedClientId, setCaptureSelectedClientId] = useState("");
+  const [captureSelectedJobId, setCaptureSelectedJobId] = useState("");
+  const [captureSelectedVisitId, setCaptureSelectedVisitId] = useState("");
+  const [captureTargets, setCaptureTargets] = useState<{ jobs: CaptureClientTargetJob[]; visits: CaptureClientTargetVisit[] }>({ jobs: [], visits: [] });
+  const [captureInbox, setCaptureInbox] = useState<CaptureBatchRecord[]>([]);
+  const [captureInboxStatus, setCaptureInboxStatus] = useState("Loading capture inbox...");
+  const [captureRequestIntent, setCaptureRequestIntent] = useState<CaptureRequestIntent | null>(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NexOpsNotificationEntry[]>([]);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const [notificationStatus, setNotificationStatus] = useState("");
+  const [moduleSwitcherOpen, setModuleSwitcherOpen] = useState(false);
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [mobileCreateFabCollapsed, setMobileCreateFabCollapsed] = useState(false);
+  const [mobileCreateFabPulse, setMobileCreateFabPulse] = useState(false);
+  const [showCreateClient, setShowCreateClient] = useState(false);
+  const [creatingClientPage, setCreatingClientPage] = useState(initialPathState.clientDraft === "new");
+  const [clientFormMode, setClientFormMode] = useState<ClientFormMode>("create");
+  const [createClientSurface, setCreateClientSurface] = useState<"client" | "contact" | "property">("client");
+  const [createStatus, setCreateStatus] = useState("");
+  const [csvStatus, setCsvStatus] = useState("No CSV selected yet.");
+  const [newClient, setNewClient] = useState(() => blankNewClientDraft());
+  const [mobileClientViewport, setMobileClientViewport] = useState(() => typeof window !== "undefined" && window.innerWidth <= MOBILE_CLIENT_VIEWPORT_MAX);
+  const [mobileClientExpandedBucket, setMobileClientExpandedBucket] = useState<ClientProfileMobileBucket | null>(null);
+  const [clientOverviewCustomFieldsDraft, setClientOverviewCustomFieldsDraft] = useState<CustomFieldDraftRow[]>([]);
+  const [clientOverviewCustomFieldsOpen, setClientOverviewCustomFieldsOpen] = useState(false);
   const draftDisplayName = [newClient.firstName.trim(), newClient.lastName.trim()].filter(Boolean).join(" ") || newClient.company.trim();
   const newClientHasName = draftDisplayName.length > 0;
   const newClientHasPhone = newClient.phone.trim().length > 0;
   const newClientHasAddress = [
     newClient.street1.trim(),
     newClient.city.trim(),
-    newClient.province.trim(),
-    newClient.postalCode.trim()
+    newClient.province.trim()
   ].every(Boolean);
+  const clientCustomFieldValidation = validateCustomFieldDraftRows(newClient.clientCustomFieldsDraft ?? [], CLIENT_CUSTOM_FIELD_RESERVED_LABELS);
+  const propertyCustomFieldValidation = validateCustomFieldDraftRows(newClient.propertyCustomFieldsDraft ?? [], PROPERTY_CUSTOM_FIELD_RESERVED_LABELS);
   const createClientMissingFields = [
     ...(newClientHasName ? [] : ["name"]),
     ...(newClientHasAddress ? [] : ["address"]),
     ...(newClientHasPhone ? [] : ["telephone"])
   ];
-  const createClientCanSave = createClientMissingFields.length === 0;
+  const createClientCanSave = createClientMissingFields.length === 0
+    && !clientCustomFieldValidation.hasBlockingIssues
+    && !propertyCustomFieldValidation.hasBlockingIssues;
+  const leadSourceOptions = buildLeadSourceOptions(clients);
+  const captureInputRef = useRef<HTMLInputElement | null>(null);
+
+  function emitCrmMutation(): void {
+    window.dispatchEvent(new Event("nexops:crm-mutated"));
+  }
+
+  function resetCaptureAssignmentDraft(): void {
+    setCaptureClientQuery("");
+    setCaptureSelectedClientId("");
+    setCaptureSelectedJobId("");
+    setCaptureSelectedVisitId("");
+    setCaptureTargets({ jobs: [], visits: [] });
+  }
+
+  function orderedCaptureMedia(batch: CaptureBatchRecord | null): FieldDocsMediaRecord[] {
+    if (!batch) {
+      return [];
+    }
+    const mediaById = new Map(batch.media.map((entry) => [entry.id, entry]));
+    return batch.mediaIds
+      .map((id) => mediaById.get(id))
+      .filter((entry): entry is FieldDocsMediaRecord => Boolean(entry));
+  }
+
+  function reopenCaptureBatch(batch: CaptureBatchRecord, nextMode: CaptureSessionMode, statusText: string): void {
+    setCaptureSession(batch);
+    setCaptureSessionOrigin("reopened");
+    setCaptureSessionMode(nextMode);
+    setCaptureStatus(statusText);
+    openCaptureWorkspace("session");
+  }
+
+  function openCaptureWorkspace(view: CaptureWorkspaceView): void {
+    clearWorkspaceTargets();
+    clearWorkspaceFilters();
+    setCaptureWorkspaceView(view);
+    setMobileNavOpen(false);
+    setNotificationsOpen(false);
+    setCreateMenuOpen(false);
+    setActiveModule("capture");
+    window.history.pushState({}, "", "/nexops/capture");
+  }
+
+  async function loadCaptureInbox(tenantId = operatorContext.tenantId): Promise<void> {
+    setCaptureInboxStatus("Loading capture inbox...");
+    try {
+      const body = await fetch(`/api/fielddocs/capture-batches?tenantId=${encodeURIComponent(tenantId)}&status=unassigned&limit=50`)
+        .then((response) => response.json() as Promise<CaptureBatchListResponse>);
+      if (!body.ok) {
+        setCaptureInbox([]);
+        setCaptureInboxStatus(body.error ?? "Capture inbox is unavailable right now.");
+        return;
+      }
+      const batches = body.batches ?? [];
+      setCaptureInbox(batches);
+      setCaptureInboxStatus(batches.length ? `${batches.length} unassigned capture batch${batches.length === 1 ? "" : "es"} ready to route.` : "No unassigned photo batches are waiting right now.");
+    } catch {
+      setCaptureInbox([]);
+      setCaptureInboxStatus("Capture inbox is unavailable right now.");
+    }
+  }
+
+  async function fetchCaptureBatch(batchId: string, tenantId = operatorContext.tenantId): Promise<CaptureBatchRecord | null> {
+    try {
+      const body = await fetch(`/api/fielddocs/capture-batches?tenantId=${encodeURIComponent(tenantId)}&limit=100`)
+        .then((response) => response.json() as Promise<CaptureBatchListResponse>);
+      if (!body.ok) {
+        return null;
+      }
+      return body.batches?.find((batch) => batch.id === batchId) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function startCaptureSession(): Promise<CaptureBatchRecord | null> {
+    if (captureBusy) {
+      return captureSession;
+    }
+    setCaptureBusy("capture-start");
+    setCaptureStatus("Starting a fresh capture batch...");
+    try {
+      const body = await fetch("/api/fielddocs/capture-batches", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: operatorContext.tenantId })
+      }).then((response) => response.json() as Promise<CaptureBatchMutationResponse>);
+      if (!body.ok || !body.batch) {
+        setCaptureStatus(body.error ?? "Capture session could not start.");
+        return null;
+      }
+      setCaptureSession({ ...body.batch, media: body.media ?? [] });
+      setCaptureSessionMode("fresh");
+      setCaptureSessionOrigin("new");
+      setCaptureSelectedMediaId("");
+      resetCaptureAssignmentDraft();
+      setCaptureStatus("Camera is ready. Capture one or more photos, then choose where they go.");
+      openCaptureWorkspace("session");
+      return { ...body.batch, media: body.media ?? [] };
+    } catch {
+      setCaptureStatus("Capture session could not start.");
+      return null;
+    } finally {
+      setCaptureBusy("");
+    }
+  }
+
+  async function loadCaptureTargets(clientId: string): Promise<void> {
+    if (!clientId) {
+      setCaptureTargets({ jobs: [], visits: [] });
+      return;
+    }
+    setCaptureBusy("capture-targets");
+    setCaptureStatus("Loading open jobs and visits for that client...");
+    try {
+      const body = await fetch(`/api/fielddocs/clients/${encodeURIComponent(clientId)}/targets?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+        .then((response) => response.json() as Promise<CaptureClientTargetsResponse>);
+      if (!body.ok) {
+        setCaptureTargets({ jobs: [], visits: [] });
+        setCaptureStatus(body.error ?? "Client capture targets are unavailable.");
+        return;
+      }
+      setCaptureTargets({ jobs: body.jobs ?? [], visits: body.visits ?? [] });
+      setCaptureStatus(body.jobs?.length || body.visits?.length ? "Choose a job or visit, or leave this client-level only." : "No open jobs or visits are available. Photos will attach at the client level.");
+    } catch {
+      setCaptureTargets({ jobs: [], visits: [] });
+      setCaptureStatus("Client capture targets are unavailable.");
+    } finally {
+      setCaptureBusy("");
+    }
+  }
+
+  async function uploadCapturePhotos(files: FileList | null): Promise<void> {
+    if (!files?.length) {
+      return;
+    }
+    const activeBatch = captureSession ?? await startCaptureSession();
+    if (!activeBatch) {
+      return;
+    }
+    setCaptureBusy("capture-upload");
+    setCaptureStatus(`Uploading ${files.length} capture${files.length === 1 ? "" : "s"}...`);
+    try {
+      for (const file of Array.from(files)) {
+        const fileBase64 = await fileToBase64(file);
+        const mime = file.type || "image/jpeg";
+        const body = await fetch("/api/fielddocs/uploads", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            tenantId: operatorContext.tenantId,
+            captureBatchId: activeBatch.id,
+            filename: file.name,
+            mime,
+            fileBase64,
+            tags: ["nexcam-capture-tool"],
+            capturedBy: operatorContext.tenantUserId,
+            ...(mime.startsWith("image/") ? { imageBase64: fileBase64, imageMime: mime } : {})
+          })
+        }).then((response) => response.json() as Promise<UploadMediaResponse>);
+        if (!body.ok || !body.media) {
+          throw new Error(body.error ?? "Capture upload failed.");
+        }
+      }
+      const refreshed = await fetchCaptureBatch(activeBatch.id);
+      if (refreshed) {
+        setCaptureSession(refreshed);
+        if (refreshed.status === "assigned") {
+          setCaptureSessionMode("continued");
+        } else if (refreshed.status === "unassigned") {
+          setCaptureSessionMode("unassigned");
+        } else {
+          setCaptureSessionMode("fresh");
+        }
+      }
+      setCaptureStatus(captureSessionOrigin === "reopened"
+        ? "Photos saved back into this batch. Markup is optional. Keep capturing or tap Done to return it where it belongs."
+        : "Photos saved. Markup is optional. Keep capturing, or tap Done when you're ready to route this batch.");
+      await loadCaptureInbox();
+    } catch (error) {
+      setCaptureStatus(error instanceof Error ? error.message : "Capture upload failed.");
+    } finally {
+      setCaptureBusy("");
+    }
+  }
+
+  async function markCaptureDecideLater(): Promise<void> {
+    if (!captureSession) {
+      return;
+    }
+    setCaptureBusy("capture-decide-later");
+    setCaptureStatus("Parking this batch in the unassigned inbox...");
+    try {
+      const body = await fetch(`/api/fielddocs/capture-batches/${encodeURIComponent(captureSession.id)}/assign`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: operatorContext.tenantId, mode: "decide_later" })
+      }).then((response) => response.json() as Promise<CaptureBatchMutationResponse>);
+      if (!body.ok || !body.batch) {
+        setCaptureStatus(body.error ?? "Could not move this batch to the unassigned inbox.");
+        return;
+      }
+      setCaptureSession(body.batch);
+      setCaptureSessionMode("unassigned");
+      setCaptureStatus("This batch is waiting in the unassigned inbox. You can keep capturing or route it later.");
+      emitCrmMutation();
+      await loadCaptureInbox();
+    } catch {
+      setCaptureStatus("Could not move this batch to the unassigned inbox.");
+    } finally {
+      setCaptureBusy("");
+    }
+  }
+
+  async function assignCaptureToExistingClient(): Promise<void> {
+    if (!captureSession || !captureSelectedClientId) {
+      setCaptureStatus("Choose an existing client before attaching this batch.");
+      return;
+    }
+    setCaptureBusy("capture-assign-existing");
+    setCaptureStatus("Attaching this batch to the selected client...");
+    try {
+      const body = await fetch(`/api/fielddocs/capture-batches/${encodeURIComponent(captureSession.id)}/assign`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          mode: "existing_client",
+          clientId: captureSelectedClientId,
+          ...(captureSelectedJobId ? { jobId: captureSelectedJobId } : {}),
+          ...(captureSelectedVisitId ? { visitId: captureSelectedVisitId } : {})
+        })
+      }).then((response) => response.json() as Promise<CaptureBatchMutationResponse>);
+      if (!body.ok || !body.batch) {
+        setCaptureStatus(body.error ?? "Could not attach this batch to the selected client.");
+        return;
+      }
+      setCaptureSession(body.batch);
+      setCaptureSessionMode("continued");
+      resetCaptureAssignmentDraft();
+      setCaptureStatus("This capture session is now scoped to the selected client. Keep shooting or tap done when you're finished.");
+      emitCrmMutation();
+      await loadCaptureInbox();
+      if (selectedClientId === captureSelectedClientId) {
+        await refreshClientRails(selectedClientId);
+      }
+    } catch {
+      setCaptureStatus("Could not attach this batch to the selected client.");
+    } finally {
+      setCaptureBusy("");
+    }
+  }
+
+  function routeCaptureToNewRequest(batch = captureSession): void {
+    if (!batch) {
+      return;
+    }
+    setCaptureRequestIntent({ batchId: batch.id, mediaIds: batch.media.map((entry) => entry.id) });
+    setCaptureSessionMode("new-client");
+    resetCaptureAssignmentDraft();
+    clearWorkspaceTargets();
+    clearWorkspaceFilters();
+    setMobileNavOpen(false);
+    setNotificationsOpen(false);
+    setActiveModule("requests");
+    window.history.pushState({}, "", "/nexops/requests");
+  }
+
+  async function handleCaptureRequestCreated(request: { id: string; clientName: string; selectedClientId?: string }): Promise<void> {
+    if (!captureRequestIntent) {
+      return;
+    }
+    setCaptureBusy("capture-assign-request");
+    setCaptureStatus("Attaching the capture batch to the new request...");
+    try {
+      const body = await fetch(`/api/fielddocs/capture-batches/${encodeURIComponent(captureRequestIntent.batchId)}/assign`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          mode: "request",
+          requestId: request.id
+        })
+      }).then((response) => response.json() as Promise<CaptureBatchMutationResponse>);
+      if (!body.ok || !body.batch) {
+        setCaptureStatus(body.error ?? "The new request saved, but the capture batch did not attach yet.");
+        return;
+      }
+      setCaptureSession(body.batch);
+      setCaptureSessionMode("continued");
+      setCaptureRequestIntent(null);
+      setCaptureWorkspaceView("session");
+      setCaptureStatus(`Request ${request.id} saved. Further photos in this session now attach directly to ${request.clientName}.`);
+      emitCrmMutation();
+      openCaptureWorkspace("session");
+      await loadCaptureInbox();
+      if (body.clientId) {
+        setSelectedClientId(body.clientId);
+        await refreshClientRails(body.clientId);
+      }
+    } catch {
+      setCaptureStatus("The new request saved, but the capture batch did not attach yet.");
+    } finally {
+      setCaptureBusy("");
+    }
+  }
+
+  function finishCaptureSession(): void {
+    if (captureSessionOrigin === "new" && captureSession?.status === "draft" && captureSession.media.length) {
+      setCaptureSessionMode("choose");
+      setCaptureStatus("Choose where this capture batch should go: New Client, Existing Client, or Decide Later.");
+      return;
+    }
+    const returnToInbox = captureSessionOrigin === "reopened" && captureSession?.status === "unassigned";
+    setCaptureSession(null);
+    setCaptureSessionMode("fresh");
+    setCaptureSessionOrigin("new");
+    setCaptureSelectedMediaId("");
+    setCaptureRequestIntent(null);
+    resetCaptureAssignmentDraft();
+    if (returnToInbox) {
+      setCaptureStatus("Reopened batch saved. It is back in the unassigned inbox until you route it.");
+      setCaptureWorkspaceView("unassigned");
+      setActiveModule("capture");
+      window.history.pushState({}, "", "/nexops/capture");
+      void loadCaptureInbox();
+      return;
+    }
+    setCaptureStatus("Capture session closed. Open the camera again for a fresh batch.");
+    setCaptureWorkspaceView("session");
+    setActiveModule("home");
+    window.history.pushState({}, "", "/nexops");
+  }
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [activeModule]);
+
+  useEffect(() => {
+    document.body.classList.toggle("nexops-mobile-nav-open", mobileNavOpen);
+    return () => document.body.classList.remove("nexops-mobile-nav-open");
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) {
+      return undefined;
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileNavOpen(false);
+      }
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    if (!createMenuOpen && !notificationsOpen && !moduleSwitcherOpen) {
+      return undefined;
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (!isDismissKey(event.key)) {
+        return;
+      }
+      setCreateMenuOpen(false);
+      setNotificationsOpen(false);
+      setModuleSwitcherOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [createMenuOpen, moduleSwitcherOpen, notificationsOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+    const syncViewport = () => setMobileClientViewport(window.innerWidth <= MOBILE_CLIENT_VIEWPORT_MAX);
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    return () => window.removeEventListener("resize", syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !mobileFabVisibleForViewport(window.innerWidth)) {
+      return undefined;
+    }
+    if (!shouldPulseMobileCreateFab(window.localStorage.getItem(NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY))) {
+      return undefined;
+    }
+    setMobileCreateFabPulse(true);
+    window.localStorage.setItem(NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY, "seen");
+    const timer = window.setTimeout(() => setMobileCreateFabPulse(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+    let lastScrollY = window.scrollY;
+    let idleTimer = 0;
+    const syncFabState = () => {
+      if (!mobileFabVisibleForViewport(window.innerWidth)) {
+        setMobileCreateFabCollapsed(false);
+        lastScrollY = window.scrollY;
+        return;
+      }
+      const nextScrollY = window.scrollY;
+      const intent = getMobileCreateFabScrollIntent(lastScrollY, nextScrollY);
+      if (intent === "collapse") {
+        setMobileCreateFabCollapsed(true);
+      } else if (intent === "expand") {
+        setMobileCreateFabCollapsed(false);
+      }
+      lastScrollY = nextScrollY;
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => setMobileCreateFabCollapsed(false), NEXOPS_MOBILE_CREATE_FAB_IDLE_MS);
+    };
+    window.addEventListener("scroll", syncFabState, { passive: true });
+    window.addEventListener("resize", syncFabState);
+    return () => {
+      window.removeEventListener("scroll", syncFabState);
+      window.removeEventListener("resize", syncFabState);
+      window.clearTimeout(idleTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (createMenuOpen || mobileNavOpen || notificationsOpen || moduleSwitcherOpen) {
+      setMobileCreateFabCollapsed(false);
+    }
+  }, [createMenuOpen, mobileNavOpen, moduleSwitcherOpen, notificationsOpen]);
+
+  useEffect(() => {
+    if (!captureSession?.mediaIds.length) {
+      setCaptureSelectedMediaId("");
+      return;
+    }
+    setCaptureSelectedMediaId((current) => current && captureSession.mediaIds.includes(current)
+      ? current
+      : captureSession.mediaIds[captureSession.mediaIds.length - 1] ?? "");
+  }, [captureSession?.id, captureSession?.mediaIds.join("|")]);
+
+  useEffect(() => {
+    if (activeModule === "capture") {
+      void loadCaptureInbox();
+    }
+  }, [activeModule, operatorContext.tenantId]);
 
   async function refreshRelatedRecords(tenantId = operatorContext.tenantId): Promise<void> {
     try {
-      const [propertiesBody, jobsBody, quotesBody, invoicesBody, requestsBody, paymentsBody, receiptReviewsBody] = await Promise.all([
+      const [propertiesBody, jobsBody, quotesBody, invoicesBody, tenantUsersBody, requestsBody, paymentsBody, receiptReviewsBody] = await Promise.all([
         fetch(`/api/crm/properties?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>),
         fetch(`/api/crm/jobs?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>),
         fetch(`/api/crm/quotes?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>),
         fetch(`/api/crm/invoices?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRecordsResponse>),
+        fetch(`/api/platform/tenants/${encodeURIComponent(tenantId)}/users`).then((response) => response.json() as Promise<TenantUsersResponse>),
         fetch(`/api/crm/requests?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmRequestsResponse>),
         fetch(`/api/crm/payments?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmPaymentsResponse>),
         fetch(`/api/crm/receipt-reviews?tenantId=${encodeURIComponent(tenantId)}`).then((response) => response.json() as Promise<CrmReceiptReviewsResponse>)
@@ -1167,6 +2546,7 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
       setJobs(jobsBody.ok ? jobsBody.jobs ?? [] : []);
       setQuotes(quotesBody.ok ? quotesBody.quotes ?? [] : []);
       setInvoices(invoicesBody.ok ? invoicesBody.invoices ?? [] : []);
+      setTenantUsers(tenantUsersBody.ok ? tenantUsersBody.users ?? [] : []);
       setRequests(requestsBody.ok ? requestsBody.requests ?? [] : []);
       setPayments(paymentsBody.ok ? paymentsBody.payments ?? [] : []);
       setReceiptReviews(receiptReviewsBody.ok ? receiptReviewsBody.receiptReviews ?? [] : []);
@@ -1175,6 +2555,7 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
       setJobs([]);
       setQuotes([]);
       setInvoices([]);
+      setTenantUsers([]);
       setRequests([]);
       setPayments([]);
       setReceiptReviews([]);
@@ -1198,7 +2579,7 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
         if (current && nextClients.some((client) => client.id === current)) {
           return current;
         }
-        return nextClients[0]?.id ?? "";
+        return activeClientProfileTab ? current : nextClients[0]?.id ?? "";
       });
       setStatus(nextClients.length ? `${nextClients.length} native NexOps client${nextClients.length === 1 ? "" : "s"} loaded.` : "No native NexOps clients yet.");
     } catch {
@@ -1207,6 +2588,7 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
       setJobs([]);
       setQuotes([]);
       setInvoices([]);
+      setTenantUsers([]);
       setRequests([]);
       setPayments([]);
       setReceiptReviews([]);
@@ -1214,29 +2596,696 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
     }
   }
 
-  function setModule(module: NexOpsModule): void {
-    const target = NEXOPS_MODULES.find((entry) => entry.id === module) ?? NEXOPS_MODULES[0];
-    if (module !== "invoices" && module !== "payments") {
-      setFocusedInvoiceId("");
+  async function refreshClientRails(clientId = selectedClientId, tenantId = operatorContext.tenantId): Promise<void> {
+    if (!clientId) {
+      setClientPortalActivity([]);
+      setClientReviewSequences([]);
+      setClientFieldMedia([]);
+      setClientFieldReports([]);
+      setClientSignedDocuments([]);
+      setClientMediaMoveId("");
+      setClientMediaMoveJobId("");
+      setClientMediaMoveVisitId("");
+      setClientMediaMoveTargets({ jobs: [], visits: [] });
+      setClientRailStatus("Portal activity and review follow-up will load when a client is selected.");
+      return;
     }
+    setClientRailStatus("Loading portal activity, review follow-up, and NexCam rails...");
+    try {
+      const [activityBody, reviewBody, mediaBody, reportsBody, signedDocsBody] = await Promise.all([
+        fetch(`/api/crm/clients/${encodeURIComponent(clientId)}/portal-activity?tenantId=${encodeURIComponent(tenantId)}`)
+          .then((response) => response.json() as Promise<ClientPortalActivityResponse>),
+        fetch(`/api/crm/review-sequences?tenantId=${encodeURIComponent(tenantId)}&clientId=${encodeURIComponent(clientId)}`)
+          .then((response) => response.json() as Promise<ReviewSequenceStatusResponse>),
+        fetch(`/api/fielddocs/media?tenantId=${encodeURIComponent(tenantId)}&clientId=${encodeURIComponent(clientId)}&limit=8`)
+          .then((response) => response.json() as Promise<FieldDocsMediaListResponse>),
+        fetch(`/api/fielddocs/reports?tenantId=${encodeURIComponent(tenantId)}&clientId=${encodeURIComponent(clientId)}&limit=6`)
+          .then((response) => response.json() as Promise<FieldDocsReportsListResponse>),
+        fetch(`/api/fielddocs/signed-documents?tenantId=${encodeURIComponent(tenantId)}&clientId=${encodeURIComponent(clientId)}`)
+          .then((response) => response.json() as Promise<SignedDocumentsResponse>)
+      ]);
+      const nextActivity = activityBody.ok ? activityBody.activity ?? [] : [];
+      const nextSequences = reviewBody.ok ? reviewBody.sequences ?? [] : [];
+      const nextMedia = mediaBody.ok ? mediaBody.media ?? [] : [];
+      const nextReports = reportsBody.ok ? reportsBody.reports ?? [] : [];
+      const nextSignedDocs = signedDocsBody.ok ? (signedDocsBody.records ?? []) : [];
+      setClientPortalActivity(nextActivity);
+      setClientReviewSequences(nextSequences);
+      setClientFieldMedia(nextMedia);
+      setClientFieldReports(nextReports);
+      setClientSignedDocuments(nextSignedDocs);
+      if (!activityBody.ok || !reviewBody.ok || !mediaBody.ok || !reportsBody.ok || !signedDocsBody.ok) {
+        setClientRailStatus(activityBody.error ?? reviewBody.error ?? mediaBody.error ?? reportsBody.error ?? signedDocsBody.error ?? "Client portal rails are unavailable right now.");
+        return;
+      }
+      setClientRailStatus(
+        nextSequences.length
+          ? `${nextActivity.length} portal event${nextActivity.length === 1 ? "" : "s"}, ${nextSequences.length} review sequence${nextSequences.length === 1 ? "" : "s"}, ${nextMedia.length} media item${nextMedia.length === 1 ? "" : "s"}, ${nextReports.length} report${nextReports.length === 1 ? "" : "s"}, and ${nextSignedDocs.length} signed doc${nextSignedDocs.length === 1 ? "" : "s"} loaded.`
+          : nextActivity.length
+            ? `${nextActivity.length} portal event${nextActivity.length === 1 ? "" : "s"} loaded. No review follow-up is active for this client. ${nextMedia.length} media item${nextMedia.length === 1 ? "" : "s"}, ${nextReports.length} report${nextReports.length === 1 ? "" : "s"}, and ${nextSignedDocs.length} signed doc${nextSignedDocs.length === 1 ? "" : "s"} are on the rail.`
+            : nextMedia.length || nextReports.length || nextSignedDocs.length
+              ? `No portal activity or review follow-up is recorded yet. NexCam already has ${nextMedia.length} media item${nextMedia.length === 1 ? "" : "s"}, ${nextReports.length} report${nextReports.length === 1 ? "" : "s"}, and ${nextSignedDocs.length} signed doc${nextSignedDocs.length === 1 ? "" : "s"} for this client.`
+              : "No portal activity, review follow-up, or NexCam media is recorded for this client yet."
+      );
+    } catch {
+      setClientPortalActivity([]);
+      setClientReviewSequences([]);
+      setClientFieldMedia([]);
+      setClientFieldReports([]);
+      setClientSignedDocuments([]);
+      setClientRailStatus("Client portal rails are unavailable right now.");
+    }
+  }
+
+  async function beginClientMediaMove(mediaId: string): Promise<void> {
+    if (!selectedClientId) {
+      return;
+    }
+    setClientRailBusy(`media-targets-${mediaId}`);
+    setClientMediaMoveId(mediaId);
+    setClientMediaMoveJobId("");
+    setClientMediaMoveVisitId("");
+    try {
+      const body = await fetch(`/api/fielddocs/clients/${encodeURIComponent(selectedClientId)}/targets?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+        .then((response) => response.json() as Promise<CaptureClientTargetsResponse>);
+      if (!body.ok) {
+        setClientMediaMoveTargets({ jobs: [], visits: [] });
+        setClientRailStatus(body.error ?? "Could not load job and visit targets for this media item.");
+        return;
+      }
+      setClientMediaMoveTargets({ jobs: body.jobs ?? [], visits: body.visits ?? [] });
+      setClientRailStatus("Choose a job or visit to move this client-level media onto the work rail.");
+    } catch {
+      setClientMediaMoveTargets({ jobs: [], visits: [] });
+      setClientRailStatus("Could not load job and visit targets for this media item.");
+    } finally {
+      setClientRailBusy("");
+    }
+  }
+
+  async function saveClientMediaMove(): Promise<void> {
+    if (!selectedClientId || !clientMediaMoveId || (!clientMediaMoveJobId && !clientMediaMoveVisitId)) {
+      return;
+    }
+    setClientRailBusy(`media-move-${clientMediaMoveId}`);
+    setClientRailStatus("Moving media onto the selected work rail...");
+    try {
+      const visit = clientMediaMoveTargets.visits.find((entry) => entry.id === clientMediaMoveVisitId);
+      const response = await fetch(`/api/fielddocs/media/${encodeURIComponent(clientMediaMoveId)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          clientId: selectedClientId,
+          ...(clientMediaMoveJobId || visit?.jobId ? { jobId: clientMediaMoveJobId || visit?.jobId } : {}),
+          ...(clientMediaMoveVisitId ? { visitId: clientMediaMoveVisitId } : {})
+        })
+      });
+      const body = await response.json() as { ok: boolean; media?: FieldDocsMediaRecord; error?: string };
+      if (!response.ok || !body.ok || !body.media) {
+        setClientRailStatus(body.error ?? "Could not move this media item.");
+        return;
+      }
+      setClientMediaMoveId("");
+      setClientMediaMoveJobId("");
+      setClientMediaMoveVisitId("");
+      setClientMediaMoveTargets({ jobs: [], visits: [] });
+      setClientRailStatus("Media moved onto the selected job/visit rail.");
+      emitCrmMutation();
+      await refreshClientRails(selectedClientId);
+    } catch {
+      setClientRailStatus("Could not move this media item.");
+    } finally {
+      setClientRailBusy("");
+    }
+  }
+
+  useEffect(() => {
+    void refreshClientRails(selectedClientId, operatorContext.tenantId);
+  }, [selectedClientId, operatorContext.tenantId]);
+
+  async function sendClientPortalLink(clientId: string, propertyId?: string): Promise<void> {
+    setClientRailBusy(propertyId ? `portal-link-${propertyId}` : "portal-link");
+    setClientRailStatus("Sending portal link...");
+    try {
+      const body = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}/portal-link`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          ...(propertyId ? { propertyId } : {})
+        })
+      }).then((response) => response.json() as Promise<SendPortalLinkResponse>);
+      if (!body.ok || !body.portalLink) {
+        setClientRailStatus(body.error ?? "Portal link could not be sent.");
+        return;
+      }
+      setLastPortalLink(body.portalLink);
+      setClientRailStatus(`Portal link sent by ${body.delivery ?? "direct"} to ${body.target ?? "the saved client destination"}.`);
+      await refreshClientRails(clientId, operatorContext.tenantId);
+    } catch {
+      setClientRailStatus("Portal link could not be sent.");
+    } finally {
+      setClientRailBusy("");
+    }
+  }
+
+  function openClientStatementPdf(clientId: string): void {
+    const url = `/api/crm/clients/${encodeURIComponent(clientId)}/statement.pdf?tenantId=${encodeURIComponent(operatorContext.tenantId)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    setClientRailStatus("Statement PDF opened in a new tab.");
+  }
+
+  async function sendClientStatement(clientId: string): Promise<void> {
+    setClientRailBusy("send-statement");
+    setClientRailStatus("Sending client statement...");
+    try {
+      const body = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}/statements/send`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: operatorContext.tenantId })
+      }).then((response) => response.json() as Promise<{ ok: boolean; target?: string; error?: string }>);
+      if (!body.ok) {
+        setClientRailStatus(body.error ?? "Statement send failed.");
+        return;
+      }
+      setClientRailStatus(`Statement sent to ${body.target ?? "the saved client destination"}.`);
+      await refreshClientRails(clientId, operatorContext.tenantId);
+    } catch {
+      setClientRailStatus("Statement send failed.");
+    } finally {
+      setClientRailBusy("");
+    }
+  }
+
+  async function deleteClientRecord(clientId: string): Promise<void> {
+    const client = clients.find((entry) => entry.id === clientId);
+    if (!client) {
+      setClientRailStatus("That client is no longer on the rail.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Delete ${clientDisplayName(client)}? This removes the client and any linked properties only when there is no saved request, quote, job, or invoice history.`
+    );
+    if (!confirmed) {
+      return;
+    }
+    setClientRailBusy("delete-client");
+    setClientRailStatus(`Deleting ${clientDisplayName(client)}...`);
+    try {
+      const response = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}?tenantId=${encodeURIComponent(operatorContext.tenantId)}`, {
+        method: "DELETE"
+      });
+      const body = await response.json() as { ok: boolean; error?: string; deletedPropertyIds?: string[] };
+      if (!response.ok || !body.ok) {
+        setClientRailStatus(body.error ?? "Client delete failed.");
+        return;
+      }
+      emitCrmMutation();
+      returnToClientRoster();
+      await refresh();
+      setClientRailStatus(`${clientDisplayName(client)} deleted${body.deletedPropertyIds?.length ? ` with ${body.deletedPropertyIds.length} linked propert${body.deletedPropertyIds.length === 1 ? "y" : "ies"}` : ""}.`);
+    } catch {
+      setClientRailStatus("Client delete failed.");
+    } finally {
+      setClientRailBusy("");
+    }
+  }
+
+  async function createClientQuickPaymentRequest(clientId: string): Promise<void> {
+    if (!clientQuickRequestDraft.title.trim() || Number(clientQuickRequestDraft.amount) <= 0) {
+      setClientRailStatus("Quick payment requests need a title and amount.");
+      return;
+    }
+    setClientRailBusy("quick-payment");
+    setClientRailStatus("Creating quick payment request...");
+    try {
+      const body = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}/quick-payment-request`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          title: clientQuickRequestDraft.title.trim(),
+          amount: Number(clientQuickRequestDraft.amount),
+          ...(clientQuickRequestDraft.memo.trim() ? { memo: clientQuickRequestDraft.memo.trim() } : {})
+        })
+      }).then((response) => response.json() as Promise<{ ok: boolean; invoice?: { id: string; title: string }; error?: string }>);
+      if (!body.ok || !body.invoice) {
+        setClientRailStatus(body.error ?? "Quick payment request failed.");
+        return;
+      }
+      setClientRailStatus(`Quick payment request created as real invoice ${body.invoice.id}.`);
+      await loadClients(selectedClientId || clientId);
+      openInvoiceWorkspace(body.invoice.id);
+    } catch {
+      setClientRailStatus("Quick payment request failed.");
+    } finally {
+      setClientRailBusy("");
+    }
+  }
+
+  async function saveClientMarketingConsent(clientId: string, marketing: boolean): Promise<void> {
+    setClientRailBusy("marketing-consent");
+    setClientRailStatus(marketing
+      ? "Turning marketing consent on..."
+      : "Turning marketing consent off and checking live showcases...");
+    try {
+      const body = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          consent: {
+            ...(selectedClient?.consent.email !== undefined ? { email: selectedClient.consent.email } : {}),
+            ...(selectedClient?.consent.sms !== undefined ? { sms: selectedClient.consent.sms } : {}),
+            marketing
+          }
+        })
+      }).then((response) => response.json() as Promise<CrmClientCreateResponse>);
+      if (!body.ok || !body.client) {
+        setClientRailStatus(body.error ?? "Marketing consent could not be updated.");
+        return;
+      }
+      setClients((current) => current.map((client) => client.id === body.client?.id ? body.client : client));
+      setClientRailStatus(marketing
+        ? "Marketing consent is on for this client."
+        : "Marketing consent is off. Future NexReach generation is blocked and any live showcase is flagged for review.");
+    } catch {
+      setClientRailStatus("Marketing consent could not be updated.");
+    } finally {
+      setClientRailBusy("");
+    }
+  }
+
+  async function saveClientOverviewCustomFields(clientId: string): Promise<void> {
+    if (!selectedClient) {
+      return;
+    }
+    if (clientOverviewCustomFieldValidation.hasBlockingIssues) {
+      setClientRailStatus("Custom field labels must be unique and cannot reuse built-in labels.");
+      return;
+    }
+    setClientRailBusy("custom-fields");
+    setClientRailStatus("Saving custom fields...");
+    try {
+      const body = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          customFields: {
+            ...(selectedClient.customFields ?? {}),
+            ...customFieldDraftRowsToRecord(clientOverviewCustomFieldsDraft, CLIENT_CUSTOM_FIELD_RESERVED_LABELS)
+          }
+        })
+      }).then((response) => response.json() as Promise<CrmClientCreateResponse>);
+      if (!body.ok || !body.client) {
+        setClientRailStatus(body.error ?? "Custom fields could not be saved.");
+        return;
+      }
+      setClients((current) => current.map((client) => client.id === body.client?.id ? body.client : client));
+      setClientOverviewCustomFieldsDraft(
+        customFieldRecordToDraftRows(body.client.customFields, CLIENT_CUSTOM_FIELD_RESERVED_LABELS, "client_profile")
+      );
+      setClientOverviewCustomFieldsOpen(false);
+      setClientRailStatus("Custom fields saved.");
+    } catch {
+      setClientRailStatus("Custom fields could not be saved.");
+    } finally {
+      setClientRailBusy("");
+    }
+  }
+
+  async function stopClientReviewSequence(reviewSequenceId: string): Promise<void> {
+    setClientRailBusy(`stop-review-${reviewSequenceId}`);
+    setClientRailStatus("Stopping review follow-up...");
+    try {
+      const body = await fetch(`/api/crm/review-sequences/${encodeURIComponent(reviewSequenceId)}/stop`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: operatorContext.tenantId })
+      }).then((response) => response.json() as Promise<{ ok: boolean; error?: string }>);
+      if (!body.ok) {
+        setClientRailStatus(body.error ?? "Review sequence could not be stopped.");
+        return;
+      }
+      await refreshClientRails(selectedClientId, operatorContext.tenantId);
+      setClientRailStatus("Review follow-up stopped.");
+    } catch {
+      setClientRailStatus("Review sequence could not be stopped.");
+    } finally {
+      setClientRailBusy("");
+    }
+  }
+
+  async function markClientReviewComplete(reviewSequenceId: string): Promise<void> {
+    setClientRailBusy(`mark-reviewed-${reviewSequenceId}`);
+    setClientRailStatus("Marking review complete...");
+    try {
+      const body = await fetch(`/api/crm/review-sequences/${encodeURIComponent(reviewSequenceId)}/mark-reviewed`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: operatorContext.tenantId })
+      }).then((response) => response.json() as Promise<{ ok: boolean; error?: string }>);
+      if (!body.ok) {
+        setClientRailStatus(body.error ?? "Review completion could not be recorded.");
+        return;
+      }
+      await refreshClientRails(selectedClientId, operatorContext.tenantId);
+      setClientRailStatus("Review completion recorded.");
+    } catch {
+      setClientRailStatus("Review completion could not be recorded.");
+    } finally {
+      setClientRailBusy("");
+    }
+  }
+
+  async function loadNotifications(): Promise<void> {
+    try {
+      const body = await fetch(`/api/crm/notifications?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+        .then((response) => response.json() as Promise<NexOpsNotificationsResponse>);
+      if (!body.ok) {
+        setNotifications([]);
+        setNotificationUnreadCount(0);
+        setNotificationStatus(body.error ?? "Notifications are unavailable right now.");
+        return;
+      }
+      setNotifications(body.notifications ?? []);
+      setNotificationUnreadCount(body.unreadCount ?? 0);
+      setNotificationStatus("");
+    } catch {
+      setNotifications([]);
+      setNotificationUnreadCount(0);
+      setNotificationStatus("Notifications API unreachable.");
+    }
+  }
+
+  function clearWorkspaceTargets(): void {
+    setFocusedRequestId("");
+    setFocusedQuoteId("");
+    setFocusedJobId("");
+    setFocusedInvoiceId("");
+  }
+
+  function clearWorkspaceFilters(): void {
+    setRequestFilterIntent(undefined);
+    setQuoteFilterIntent(undefined);
+    setJobFilterIntent(undefined);
+    setInvoiceFilterIntent(undefined);
+    setScheduleScopeIntent(undefined);
+  }
+
+  function closeHeaderPanels(): void {
+    setMobileNavOpen(false);
+    setNotificationsOpen(false);
+    setCreateMenuOpen(false);
+    setModuleSwitcherOpen(false);
+  }
+
+  function toggleCreateMenu(): void {
+    setMobileNavOpen(false);
+    setNotificationsOpen(false);
+    setModuleSwitcherOpen(false);
+    setCreateMenuOpen((current) => !current);
+  }
+
+  function toggleNotifications(): void {
+    setMobileNavOpen(false);
+    setCreateMenuOpen(false);
+    setModuleSwitcherOpen(false);
+    setNotificationsOpen((current) => !current);
+  }
+
+  function toggleModuleSwitcher(): void {
+    setMobileNavOpen(false);
+    setCreateMenuOpen(false);
+    setNotificationsOpen(false);
+    setModuleSwitcherOpen((current) => !current);
+  }
+
+  function setModule(module: NexOpsModule): void {
+    const targetPath = buildModulePath(module);
+    clearWorkspaceTargets();
+    clearWorkspaceFilters();
+    closeHeaderPanels();
+    setCreatingClientPage(false);
     setActiveModule(module);
-    window.history.pushState({}, "", target.path);
+    if (module !== "clients") {
+      setActiveClientProfileTab(null);
+    }
+    window.history.pushState({}, "", targetPath);
+  }
+
+  function returnToHomeModule(): void {
+    clearWorkspaceTargets();
+    clearWorkspaceFilters();
+    closeHeaderPanels();
+    setCreatingClientPage(false);
+    setShowCreateClient(false);
+    setSelectedClientId("");
+    setActiveClientProfileTab(null);
+    setActiveModule("home");
+    window.history.pushState({}, "", buildModulePath("home"));
+  }
+
+  function openClientProfile(clientId: string, tab: ClientProfileTab = "overview"): void {
+    clearWorkspaceTargets();
+    clearWorkspaceFilters();
+    closeHeaderPanels();
+    setCreatingClientPage(false);
+    setShowCreateClient(false);
+    setSelectedClientId(clientId);
+    setActiveModule("clients");
+    setActiveClientProfileTab(tab);
+    window.history.pushState({}, "", buildClientProfilePath(clientId, tab));
+  }
+
+  function returnToClientRoster(): void {
+    closeHeaderPanels();
+    setCreatingClientPage(false);
+    setShowCreateClient(false);
+    setClientFormMode("create");
+    setSelectedClientId("");
+    setActiveModule("clients");
+    setActiveClientProfileTab(null);
+    window.history.pushState({}, "", buildModulePath("clients"));
+  }
+
+  function setClientProfileTabRoute(tab: ClientProfileTab): void {
+    if (!selectedClientId) {
+      return;
+    }
+    closeHeaderPanels();
+    setCreatingClientPage(false);
+    setActiveModule("clients");
+    setActiveClientProfileTab(tab);
+    window.history.pushState({}, "", buildClientProfilePath(selectedClientId, tab));
+  }
+
+  function openNewClientWorkspace(): void {
+    clearWorkspaceTargets();
+    clearWorkspaceFilters();
+    closeHeaderPanels();
+    setShowCreateClient(false);
+    setCreatingClientPage(true);
+    setClientFormMode("create");
+    setCreateStatus("");
+    setNewClient(blankNewClientDraft());
+    setSelectedClientId("");
+    setActiveModule("clients");
+    setActiveClientProfileTab(null);
+    window.history.pushState({}, "", buildNewClientPath());
+  }
+
+  function openCreateClientDrawer(surface: "client" | "contact" | "property" = "client"): void {
+    setCreateClientSurface(surface);
+    setClientFormMode("create");
+    setCreateStatus("");
+    setNewClient(blankNewClientDraft());
+    closeHeaderPanels();
+    setShowCreateClient(true);
+  }
+
+  function openEditClientWorkspace(): void {
+    if (!selectedClient) {
+      return;
+    }
+    clearWorkspaceTargets();
+    clearWorkspaceFilters();
+    closeHeaderPanels();
+    setShowCreateClient(false);
+    setCreatingClientPage(true);
+    setClientFormMode("edit");
+    setCreateStatus("");
+    setNewClient(draftFromExistingClient(selectedClient, selectedProperties[0] ?? null));
+    setActiveModule("clients");
+  }
+
+  function closeClientFormWorkspace(): void {
+    if (clientFormMode === "edit" && selectedClientId) {
+      setClientFormMode("create");
+      openClientProfile(selectedClientId, activeClientProfileTab ?? "overview");
+      return;
+    }
+    setClientFormMode("create");
+    returnToClientRoster();
+  }
+
+  function openWorkspaceProduct(product: "nexops" | "nexcam" | "nexdocs" | "nexportal" | "nexreach"): void {
+    if (product === "nexdocs") {
+      if (selectedClientId) {
+        setClientProfileTabRoute("nexdocs");
+        return;
+      }
+      closeHeaderPanels();
+      setClientRailStatus("Open any client to enter NexDocs from the dedicated client profile.");
+      setModule("clients");
+      return;
+    }
+    closeHeaderPanels();
+    const targetPath = buildWorkspaceSwitchPath(product, operatorContext.tenantId, selectedClientId || undefined);
+    if (targetPath.startsWith("/nexops")) {
+      window.history.pushState({}, "", targetPath);
+      const nextPathState = parseNexOpsLocation(targetPath);
+      setActiveModule(nextPathState.module);
+      setSelectedClientId(nextPathState.clientId ?? "");
+      setActiveClientProfileTab(nextPathState.clientTab);
+      return;
+    }
+    window.location.assign(targetPath);
+  }
+
+  function handleCreateSelection(option: NexOpsCreateOption): void {
+    if (option.workflow.kind === "client-page") {
+      openNewClientWorkspace();
+      return;
+    }
+    if (option.workflow.kind === "drawer") {
+      openCreateClientDrawer(option.workflow.surface);
+      return;
+    }
+    closeHeaderPanels();
+    setModule(option.workflow.module);
   }
 
   function openInvoiceWorkspace(invoiceId: string): void {
-    const target = NEXOPS_MODULES.find((entry) => entry.id === "invoices");
+    clearWorkspaceTargets();
     setFocusedInvoiceId(invoiceId);
+    clearWorkspaceFilters();
+    closeHeaderPanels();
     setActiveModule("invoices");
-    window.history.pushState({}, "", target?.path ?? "/nexops/invoices");
+    setActiveClientProfileTab(null);
+    window.history.pushState({}, "", buildModulePath("invoices"));
+  }
+
+  function openWorkspaceTarget(target: WorkspaceTarget): void {
+    clearWorkspaceTargets();
+    clearWorkspaceFilters();
+    closeHeaderPanels();
+    setActiveClientProfileTab(null);
+    switch (target.module) {
+      case "requests":
+        if (target.objectId) {
+          setFocusedRequestId(target.objectId);
+        }
+        if (target.filterKey === "status") {
+          setRequestFilterIntent(target.filterValue as "all" | "new" | "archived" | "converted_to_quote" | "converted_to_job");
+        }
+        setActiveModule("requests");
+        window.history.pushState({}, "", "/nexops/requests");
+        return;
+      case "quotes":
+        if (target.objectId) {
+          setFocusedQuoteId(target.objectId);
+        }
+        if (target.filterKey === "status") {
+          setQuoteFilterIntent(target.filterValue as "all" | "draft" | "sent" | "change_requested" | "approved" | "approved_pending_conversion" | "expired");
+        }
+        setActiveModule("quotes");
+        window.history.pushState({}, "", "/nexops/quotes");
+        return;
+      case "jobs":
+        if (target.objectId) {
+          setFocusedJobId(target.objectId);
+        }
+        if (target.filterKey === "status") {
+          setJobFilterIntent(target.filterValue as "All" | "Upcoming" | "Today" | "Late" | "Unscheduled" | "Action Required" | "Requires Invoicing" | "Archived");
+        }
+        setActiveModule("jobs");
+        window.history.pushState({}, "", "/nexops/jobs");
+        return;
+      case "invoices":
+      case "payments":
+        if (target.objectId) {
+          setFocusedInvoiceId(target.objectId);
+        }
+        if (target.filterKey === "status") {
+          setInvoiceFilterIntent(target.filterValue as "all" | "draft" | "awaiting" | "partial_pay" | "paid" | "void" | "bad_debt" | "past_due");
+        }
+        setActiveModule(target.module);
+        window.history.pushState({}, "", target.module === "payments" ? "/nexops/payments" : "/nexops/invoices");
+        return;
+      case "capture":
+        setCaptureWorkspaceView(target.filterValue === "unassigned" ? "unassigned" : "session");
+        setActiveModule("capture");
+        window.history.pushState({}, "", "/nexops/capture");
+        return;
+      case "schedule":
+        if (target.filterKey === "scope") {
+          setScheduleScopeIntent(target.filterValue as ScheduleScope);
+        }
+        setActiveModule("schedule");
+        window.history.pushState({}, "", "/nexops/schedule");
+        return;
+      default:
+        return;
+    }
+  }
+
+  async function openNotification(entry: NexOpsNotificationEntry): Promise<void> {
+    try {
+      if (entry.unread) {
+        await fetch("/api/crm/notifications/read", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ tenantId: operatorContext.tenantId, notificationId: entry.id })
+        });
+      }
+    } finally {
+      openWorkspaceTarget({ module: entry.target.module, objectId: entry.target.objectId });
+      void loadNotifications();
+    }
+  }
+
+  async function markAllNotificationsRead(): Promise<void> {
+    await fetch("/api/crm/notifications/read-all", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: operatorContext.tenantId })
+    });
+    void loadNotifications();
   }
 
   async function createClientFromForm(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (!createClientCanSave) {
+      if (clientCustomFieldValidation.hasBlockingIssues) {
+        setCreateStatus("Resolve duplicate or reserved client custom field labels before saving.");
+        return;
+      }
+      if (propertyCustomFieldValidation.hasBlockingIssues) {
+        setCreateStatus("Resolve duplicate or reserved property custom field labels before saving.");
+        return;
+      }
       setCreateStatus(`Add ${createClientMissingFields.join(", ")} before this client can be saved. Email is recommended, but it is optional.`);
       return;
     }
-    setCreateStatus("Creating client...");
+    const editing = clientFormMode === "edit";
+    if (editing && !selectedClientId) {
+      setCreateStatus("Open a saved client record before trying to edit it.");
+      return;
+    }
+    setCreateStatus(editing ? "Saving client changes..." : "Creating client...");
     const personName = {
       ...(newClient.title && newClient.title !== "No title" ? { title: newClient.title } : {}),
       firstName: newClient.firstName.trim(),
@@ -1252,26 +3301,51 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
     }
     const phoneValue = newClient.phone.trim();
     const emailValue = newClient.email.trim();
+    const additionalPhones = (newClient.additionalPhones ?? [])
+      .filter((entry: ClientPhoneDraft) => entry.value.trim())
+      .map((entry: ClientPhoneDraft) => ({
+        label: entry.label,
+        value: entry.value.trim(),
+        primary: false,
+        receivesMessages: entry.receivesMessages,
+        smsCapability: entry.smsCapability,
+        smsMode: "one_way" as const
+      }));
+    const additionalEmails = (newClient.additionalEmails ?? [])
+      .filter((entry: ClientEmailDraft) => entry.value.trim())
+      .map((entry: ClientEmailDraft) => ({
+        label: entry.label,
+        value: entry.value.trim(),
+        primary: false
+      }));
+    const allContactPhones = [
+      ...(phoneValue ? [{
+        label: newClient.phoneLabel,
+        value: phoneValue,
+        primary: true,
+        receivesMessages: newClient.phoneReceivesMessages,
+        smsCapability: newClient.smsCapability,
+        smsMode: "one_way" as const
+      }] : []),
+      ...additionalPhones
+    ];
+    const allContactEmails = [
+      ...(emailValue ? [{
+        label: newClient.emailLabel,
+        value: emailValue,
+        primary: true
+      }] : []),
+      ...additionalEmails
+    ];
     const contact: CrmContact = {
       personName,
       ...(company ? { company } : {}),
       ...(newClient.role.trim() ? { role: newClient.role.trim() } : {}),
       correspondenceContact: true,
       billingContact: true,
-      phones: phoneValue ? [{
-        label: newClient.phoneLabel,
-        value: phoneValue,
-        primary: true,
-        receivesMessages: newClient.phoneReceivesMessages,
-        smsCapability: newClient.smsCapability,
-        smsMode: "one_way"
-      }] : [],
-      emails: emailValue ? [{
-        label: newClient.emailLabel,
-        value: emailValue,
-        primary: true
-      }] : [],
-      channelPreference: emailValue && newClient.phoneReceivesMessages ? "both" : newClient.phoneReceivesMessages ? "sms" : "email"
+      phones: allContactPhones,
+      emails: allContactEmails,
+      channelPreference: allContactEmails.length && newClient.phoneReceivesMessages ? "both" : newClient.phoneReceivesMessages ? "sms" : "email"
     };
     const propertyAddress = newClient.street1.trim() ? {
       street1: newClient.street1.trim(),
@@ -1320,10 +3394,17 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
     if (newClient.paymentTerms.trim()) {
       clientCustomFields.paymentTerms = newClient.paymentTerms.trim();
     }
-    clientCustomFields.askForReview = newClient.askForReview;
-    if (newClient.clientCustomFieldName.trim() && newClient.clientCustomFieldValue.trim()) {
-      clientCustomFields[newClient.clientCustomFieldName.trim()] = newClient.clientCustomFieldValue.trim();
+    if (newClient.referredBy.trim()) {
+      clientCustomFields.referredBy = newClient.referredBy.trim();
     }
+    if (newClient.promoCode.trim()) {
+      clientCustomFields.promoCode = newClient.promoCode.trim();
+    }
+    clientCustomFields.askForReview = newClient.askForReview;
+    Object.assign(
+      clientCustomFields,
+      customFieldDraftRowsToRecord(newClient.clientCustomFieldsDraft ?? [], CLIENT_CUSTOM_FIELD_RESERVED_LABELS)
+    );
     const propertyCustomFields: Record<string, string | number | boolean> = {};
     propertyCustomFields.gatedEntry = newClient.propertyGatedEntry;
     if (newClient.propertyClientName.trim()) {
@@ -1335,12 +3416,10 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
     if (newClient.propertyClientEmail.trim()) {
       propertyCustomFields.propertyClientEmail = newClient.propertyClientEmail.trim();
     }
-    if (newClient.companyCamProject.trim()) {
-      propertyCustomFields.companyCamProject = newClient.companyCamProject.trim();
-    }
-    if (newClient.propertyCustomFieldName.trim() && newClient.propertyCustomFieldValue.trim()) {
-      propertyCustomFields[newClient.propertyCustomFieldName.trim()] = newClient.propertyCustomFieldValue.trim();
-    }
+    Object.assign(
+      propertyCustomFields,
+      customFieldDraftRowsToRecord(newClient.propertyCustomFieldsDraft ?? [], PROPERTY_CUSTOM_FIELD_RESERVED_LABELS)
+    );
     const propertyContacts: CrmContact[] = [];
     if (newClient.propertyClientName.trim() || newClient.propertyClientPhone.trim() || newClient.propertyClientEmail.trim()) {
       propertyContacts.push({
@@ -1365,123 +3444,62 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
       });
     }
     try {
-      const body = await fetch("/api/crm/clients", {
-        method: "POST",
+      const payload = {
+        tenantId: operatorContext.tenantId,
+        name: displayName,
+        ...(company ? { company } : editing ? { company: null } : {}),
+        personName,
+        displayNamePreference: company ? newClient.displayNamePreference : "person",
+        ...(billingAddress ? { billingAddress } : editing ? { billingAddress: null } : {}),
+        billingSameAsPrimaryProperty: newClient.billingSameAsPrimaryProperty,
+        contacts: [contact, ...additionalContacts],
+        communicationSettings: {
+          quotesAndInvoices: contact.channelPreference,
+          jobReminders: contact.channelPreference,
+          jobClosureFollowUps: "email" as const,
+          reviewRequests: contact.channelPreference,
+          smsDefaultMode: "one_way" as const
+        },
+        emails: allContactEmails.map((entry) => entry.value),
+        phones: allContactPhones.map((entry) => entry.value),
+        consent: { email: Boolean(emailValue), sms: newClient.phoneReceivesMessages, marketing: selectedClient?.consent.marketing ?? false },
+        customFields: clientCustomFields,
+        ...(propertyAddress ? {
+          primaryProperty: {
+            siteName: newClient.siteName.trim() || undefined,
+            label: newClient.siteName.trim() || propertyAddress.street1,
+            address: propertyAddress,
+            ...(typeof newClient.propertyGeoLat === "number" && typeof newClient.propertyGeoLng === "number"
+              ? { geo: { lat: newClient.propertyGeoLat, lng: newClient.propertyGeoLng } }
+              : {}),
+            billingAddressSameAsClient: newClient.billingSameAsPrimaryProperty,
+            access: {
+              gateCode: newClient.propertyGateCodes.trim() || undefined,
+              accessNotes: newClient.propertyAccessNotes.trim() || (newClient.propertyGatedEntry ? "Gated entry enabled" : undefined)
+            },
+            contacts: propertyContacts,
+            customFields: propertyCustomFields
+          }
+        } : {})
+      };
+      const body = await fetch(editing ? `/api/crm/clients/${encodeURIComponent(selectedClientId)}` : "/api/crm/clients", {
+        method: editing ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tenantId: operatorContext.tenantId,
-          name: displayName,
-          ...(company ? { company } : {}),
-          personName,
-          displayNamePreference: company ? newClient.displayNamePreference : "person",
-          ...(billingAddress ? { billingAddress } : {}),
-          billingSameAsPrimaryProperty: newClient.billingSameAsPrimaryProperty,
-          contacts: [contact, ...additionalContacts],
-          communicationSettings: {
-            quotesAndInvoices: contact.channelPreference,
-            jobReminders: contact.channelPreference,
-            jobClosureFollowUps: "email",
-            reviewRequests: contact.channelPreference,
-            smsDefaultMode: "one_way"
-          },
-          emails: emailValue ? [emailValue] : [],
-          phones: phoneValue ? [phoneValue] : [],
-          consent: { email: Boolean(emailValue), sms: newClient.phoneReceivesMessages },
-          customFields: clientCustomFields,
-          ...(propertyAddress ? {
-            primaryProperty: {
-              siteName: newClient.siteName.trim() || undefined,
-              label: newClient.siteName.trim() || propertyAddress.street1,
-              address: propertyAddress,
-              billingAddressSameAsClient: newClient.billingSameAsPrimaryProperty,
-              access: {
-                gateCode: newClient.propertyGateCodes.trim() || undefined,
-                accessNotes: newClient.propertyGatedEntry ? "Gated entry enabled" : undefined
-              },
-              contacts: propertyContacts,
-              customFields: propertyCustomFields
-            }
-          } : {})
-        })
+        body: JSON.stringify(payload)
       }).then((response) => response.json() as Promise<CrmClientCreateResponse>);
       if (!body.ok || !body.client) {
-        setCreateStatus(body.error ?? "Client could not be created.");
+        setCreateStatus(body.error ?? (editing ? "Client could not be updated." : "Client could not be created."));
         return;
       }
-      setCreateStatus(`Created ${clientDisplayName(body.client)}.`);
+      setCreateStatus(`${editing ? "Saved" : "Created"} ${clientDisplayName(body.client)}.`);
       setShowCreateClient(false);
-      setNewClient({
-        title: "No title",
-        firstName: "",
-        lastName: "",
-        company: "",
-        role: "",
-        displayNamePreference: "person",
-        phone: "",
-        phoneLabel: "Main",
-        phoneReceivesMessages: false,
-        smsCapability: "unknown",
-        email: "",
-        emailLabel: "Main",
-        paymentTerms: "",
-        askForReview: true,
-        clientCustomFieldName: "",
-        clientCustomFieldValue: "",
-        additionalContactName: "",
-        additionalContactRole: "",
-        additionalContactPhone: "",
-        additionalContactEmail: "",
-        siteName: "",
-        street1: "",
-        street2: "",
-        city: "",
-        province: "",
-        postalCode: "",
-        billingSameAsPrimaryProperty: true,
-        billingStreet1: "",
-        billingStreet2: "",
-        billingCity: "",
-        billingProvince: "",
-        billingPostalCode: "",
-        leadSource: "",
-        propertyGatedEntry: false,
-        propertyGateCodes: "",
-        propertyClientName: "",
-        propertyClientPhone: "",
-        propertyClientEmail: "",
-        companyCamProject: "",
-        propertyCustomFieldName: "",
-        propertyCustomFieldValue: ""
-      });
+      setCreatingClientPage(false);
+      setClientFormMode("create");
+      setNewClient(blankNewClientDraft());
       await refresh();
+      openClientProfile(body.client.id, "overview");
     } catch {
-      setCreateStatus("Client create request failed.");
-    }
-  }
-
-  async function runJobberSync(mode: "dry-run" | "write"): Promise<void> {
-    setJobberSyncStatus(mode === "dry-run" ? "Checking Jobber read-only counts..." : "Syncing Jobber into native NexOps records...");
-    try {
-      const body = await fetch("/api/crm/jobber-sync", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: operatorContext.tenantId, mode })
-      }).then((response) => response.json() as Promise<JobberSyncResponse>);
-      if (!body.ok) {
-        setJobberSyncStatus(body.error ?? "Jobber sync failed.");
-        return;
-      }
-      const counts = body.counts ?? { clients: 0, properties: 0, jobs: 0 };
-      const writes = body.nativeWriteCounts ?? { clients: 0, properties: 0, jobs: 0 };
-      setJobberSyncStatus(mode === "dry-run"
-        ? `Dry-run found ${counts.clients} clients, ${counts.properties} properties, and ${counts.jobs} jobs. No Jobber writes.`
-        : `Synced ${writes.clients} clients, ${writes.properties} properties, and ${writes.jobs} jobs into native NexOps. Jobber stayed read-only.`);
-      if (mode === "write") {
-        await refresh();
-        window.dispatchEvent(new Event("nexops:crm-mutated"));
-      }
-    } catch {
-      setJobberSyncStatus("Jobber sync request failed.");
+      setCreateStatus(editing ? "Client update request failed." : "Client create request failed.");
     }
   }
 
@@ -1530,12 +3548,25 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
   }, [operatorContext.tenantId]);
 
   useEffect(() => {
-    const onPopState = () => setActiveModule(nexOpsModuleFromPath(window.location.pathname));
+    void loadNotifications();
+    const onCrmMutation = () => void loadNotifications();
+    window.addEventListener("nexops:crm-mutated", onCrmMutation);
+    return () => window.removeEventListener("nexops:crm-mutated", onCrmMutation);
+  }, [operatorContext.tenantId]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const nextLocation = parseNexOpsLocation(window.location.pathname);
+      setActiveModule(nextLocation.module);
+      setActiveClientProfileTab(nextLocation.clientTab);
+      setCreatingClientPage(nextLocation.clientDraft === "new");
+      setSelectedClientId(nextLocation.clientId ?? "");
+    };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const tenantName = tenantBranding?.displayName ?? (operatorContext.tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : operatorContext.tenantId);
+  const tenantName = tenantDisplayName(tenantBranding, operatorContext.tenantId);
   const normalizedQuery = query.trim().toLowerCase();
   const filteredClients = clients.filter((client) => {
     if (!normalizedQuery) {
@@ -1548,29 +3579,34 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
       ...(client.tags ?? [])
     ].join(" ").toLowerCase().includes(normalizedQuery);
   });
-  const selectedClient = clients.find((client) => client.id === selectedClientId) ?? filteredClients[0];
+  const selectedClient = selectedClientId
+    ? clients.find((client) => client.id === selectedClientId) ?? null
+    : filteredClients[0] ?? null;
   const selectedContact = selectedClient?.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? selectedClient?.contacts?.[0];
   const selectedPhone = selectedContact?.phones?.find((phone) => phone.primary) ?? selectedContact?.phones?.[0];
+  const selectedPhoneValue = selectedClient
+    ? primaryClientPhoneValue({
+      contactPhones: selectedContact?.phones,
+      clientPhones: selectedClient.phones
+    })
+    : "";
   const selectedEmail = selectedContact?.emails?.find((email) => email.primary)?.value ?? selectedContact?.emails?.[0]?.value ?? selectedClient?.emails[0];
   const selectedProperties = selectedClient ? properties.filter((property) => property.clientId === selectedClient.id) : [];
+  const selectedRequests = selectedClient ? requests.filter((request) => request.selectedClientId === selectedClient.id) : [];
   const selectedJobs = selectedClient ? jobs.filter((job) => job.clientId === selectedClient.id) : [];
   const selectedQuotes = selectedClient ? quotes.filter((quote) => quote.clientId === selectedClient.id) : [];
   const selectedInvoices = selectedClient ? invoices.filter((invoice) => invoice.clientId === selectedClient.id) : [];
+  const selectedPayments = selectedClient ? payments.filter((payment) => payment.clientId === selectedClient.id) : [];
+  const selectedReceiptReviewSummaries = selectedClient
+    ? receiptReviews.filter((review) => review.clientId === selectedClient.id || selectedInvoices.some((invoice) => invoice.id === review.invoiceId))
+    : [];
+  const directClientMedia = clientFieldMedia.filter((media) => !media.jobId && !media.visitId);
+  const workScopedClientMedia = clientFieldMedia.filter((media) => Boolean(media.jobId || media.visitId));
+  const orderedClientFieldMedia = [...directClientMedia, ...workScopedClientMedia];
   const activeCount = clients.filter((client) => clientStatusLabel(client) === "Active").length;
   const leadCount = clients.filter((client) => clientStatusLabel(client) === "Lead").length;
   const textReadyCount = clients.filter((client) => clientHasTextReadyContact(client)).length;
-  const homeState = buildNexopsHomeState({
-    clients: clients.map((client) => ({
-      statusLabel: clientStatusLabel(client),
-      textReady: clientHasTextReadyContact(client)
-    })),
-    requests,
-    quotes,
-    jobs,
-    invoices,
-    payments,
-    receiptReviews
-  });
+  const clientOverviewCustomFieldValidation = validateCustomFieldDraftRows(clientOverviewCustomFieldsDraft, CLIENT_CUSTOM_FIELD_RESERVED_LABELS);
   const style = {
     "--nexops-brand-primary": "#0c1118",
     "--nexops-brand-accent": "#A8E600",
@@ -1584,90 +3620,36 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
 
   const moduleTitle = NEXOPS_MODULES.find((module) => module.id === activeModule)?.label ?? "NexOps";
 
-  function renderHome(): React.ReactElement {
-    return (
-      <section className="nexops-dashboard">
-        <div className="nexops-page-heading">
-          <div>
-            <h1>Today in NexOps</h1>
-            <p>One hosted business engine for clients, quotes, jobs, money, and closeout.</p>
-          </div>
-          <button type="button" onClick={() => setShowCreateClient(true)}>New Client</button>
-        </div>
-        <NexopsHomeShell
-          now={(
-            <NexopsHomeZoneCard
-              title={homeState.now.title}
-              summary={homeState.now.summary}
-              dominantLabel={homeState.now.dominantLabel}
-              tone={homeState.now.tone}
-              onAction={() => setModule(homeState.now.target)}
-            />
-          )}
-          needsAttention={(
-            <NexopsHomeZoneCard
-              title={homeState.needsAttention.title}
-              summary={homeState.needsAttention.summary}
-              dominantLabel={homeState.needsAttention.dominantLabel}
-              tone={homeState.needsAttention.tone}
-              onAction={() => setModule(homeState.needsAttention.target)}
-            />
-          )}
-          upcoming={(
-            <NexopsHomeZoneCard
-              title={homeState.upcoming.title}
-              summary={homeState.upcoming.summary}
-              dominantLabel={homeState.upcoming.dominantLabel}
-              tone={homeState.upcoming.tone}
-              onAction={() => setModule(homeState.upcoming.target)}
-            />
-          )}
-          businessOverview={(
-            <div className="nexops-home-overview-stack">
-              {homeState.metrics.map((metric) => (
-                <article key={metric.title} className="nexops-home-mini-metric">
-                  <span>{metric.title}</span>
-                  <strong>{metric.value}</strong>
-                  <p>{metric.detail}</p>
-                </article>
-              ))}
-            </div>
-          )}
-        />
-        <div className="nexops-two-column">
-          {renderClients({ compact: true })}
-          <section className="nexops-module-card">
-            <p className="eyebrow">Operations queue</p>
-            <h2>What still needs a move</h2>
-            <div className="nexops-mini-list">
-              {homeState.operations.map((item) => (
-                <button className="nexops-request-row-button" type="button" key={item.label} onClick={() => setModule(item.target)}>
-                  <span>
-                    <strong>{item.label}</strong>
-                    <small>{item.detail}</small>
-                  </span>
-                  <mark>{item.count}</mark>
-                </button>
-              ))}
-            </div>
-          </section>
-        </div>
-      </section>
+  useEffect(() => {
+    setClientOverviewCustomFieldsDraft(
+      customFieldRecordToDraftRows(selectedClient?.customFields, CLIENT_CUSTOM_FIELD_RESERVED_LABELS, "client_profile")
     );
+    setClientOverviewCustomFieldsOpen(false);
+    setMobileClientExpandedBucket(null);
+  }, [selectedClient?.id]);
+
+  function renderHome(): React.ReactElement {
+    return <NexOpsHomePage tenantId={operatorContext.tenantId} onOpenTarget={openWorkspaceTarget} />;
   }
 
   function renderClients(options?: { compact?: boolean }): React.ReactElement {
+    if (creatingClientPage && !options?.compact) {
+      return renderNewClientWorkspace();
+    }
+    if (activeClientProfileTab && !options?.compact) {
+      return renderClientProfile();
+    }
+
     return (
       <section className="nexops-clients-workspace">
         <div className="nexops-clients-heading">
           <div>
             <h1>Clients</h1>
-            <p>{status}</p>
+            <p>{status} Open any row to move into the full client workspace.</p>
           </div>
           <div className="nexops-client-actions">
-            <button type="button" onClick={() => setShowCreateClient(true)}>New Client</button>
+            <button type="button" onClick={openNewClientWorkspace}>New Client</button>
             <button type="button" onClick={() => setModule("imports")}>Import CSV</button>
-            <button type="button" onClick={() => setModule("imports")}>Sync Jobber</button>
             <button type="button" onClick={() => void refresh()}>Refresh</button>
           </div>
         </div>
@@ -1704,49 +3686,1091 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
           </label>
         </div>
 
-        <div className={options?.compact ? "nexops-client-layout compact" : "nexops-client-layout"}>
+        <div className={options?.compact ? "nexops-client-layout compact" : "nexops-client-layout compact"}>
           <section className="nexops-client-table-card" aria-label="Client list">
             <div className="nexops-client-table">
               <div className="nexops-client-table-head">
                 <span>Name</span>
-                <span>Address</span>
-                <span>Tags</span>
+                <span>Primary address</span>
+                <span>Contact</span>
                 <span>Status</span>
-                <span>Last Activity</span>
+                <span>Last activity</span>
               </div>
               {filteredClients.map((client) => (
                 <button
-                  className={`nexops-client-table-row ${selectedClient?.id === client.id ? "selected" : ""}`}
+                  className={`nexops-client-table-row ${selectedClientId === client.id ? "selected" : ""}`}
                   key={client.id}
                   type="button"
-                  onClick={() => setSelectedClientId(client.id)}
+                  onClick={() => openClientProfile(client.id)}
                 >
                   <span>
                     <strong>{clientDisplayName(client)}</strong>
-                    <small>{contactSummary(client)}</small>
+                    <small>{client.company?.trim() ? client.company : contactSummary(client)}</small>
                   </span>
                   <span>{clientPrimaryAddress(client)}</span>
-                  <span>{client.tags?.length ? client.tags.join(", ") : "No tags"}</span>
+                  <span>{selectedClientId === client.id ? "Open now" : (client.phones[0] ?? client.emails[0] ?? "No contact saved")}</span>
                   <span><mark>{clientStatusLabel(client)}</mark></span>
-                  <span>Native record</span>
+                  <span>{client.tags?.[0] ?? "Native record"}</span>
                 </button>
               ))}
               {!filteredClients.length ? (
                 <div className="nexops-client-empty">
                   <h2>No clients match this view yet</h2>
-                  <p>Create one, import a CSV, or run the Aquatrace Jobber sync once staging is ready.</p>
+                  <p>Create one, import a CSV, or start from a native request.</p>
                 </div>
               ) : null}
             </div>
           </section>
-
-          {!options?.compact ? renderClientDetail() : null}
         </div>
       </section>
     );
   }
 
+  function renderNewClientWorkspace(): React.ReactElement {
+    const editing = clientFormMode === "edit";
+    if (mobileClientViewport) {
+      return (
+        <Suspense fallback={<section className="nexops-mobile-client-screen"><p className="eyebrow">Loading</p><h2>{editing ? "Opening client editor" : "Opening new client"}</h2><p>Pulling the mobile intake form into place now.</p></section>}>
+          <NexOpsCreateClientPanel
+            tenantId={operatorContext.tenantId}
+            newClient={newClient}
+            setNewClient={setNewClient}
+            createStatus={createStatus}
+            createClientCanSave={createClientCanSave}
+            createClientMissingFields={createClientMissingFields}
+            leadSourceOptions={leadSourceOptions}
+            mode={clientFormMode}
+            surface="client"
+            layout="page"
+            onClose={closeClientFormWorkspace}
+            onSubmit={createClientFromForm}
+          />
+        </Suspense>
+      );
+    }
+
+    return (
+      <section className="nexops-client-profile">
+        <div className="nexops-client-profile-header-card">
+          <div className="nexops-client-profile-header-actions">
+            <button className="nexops-link-button" type="button" onClick={closeClientFormWorkspace}>{editing ? "Back to profile" : "Back to clients"}</button>
+            <span className="nexops-status-pill">{editing ? "Edit client" : "New client"}</span>
+          </div>
+          <div className="nexops-client-profile-heading">
+            <div>
+              <p className="eyebrow">Client workspace</p>
+              <h1>{editing ? "Edit client" : "New client"}</h1>
+              <p>{editing ? "Update the current client record in the same intake workspace used for new records." : "Start with the primary contact and service address, then save into the full client rail before adding anything else."}</p>
+            </div>
+            <div className="nexops-inline-actions wrap">
+              <span className="nexops-client-create-summary">
+                {createClientCanSave
+                  ? (editing ? "Ready to save changes. Name, address, and telephone are present." : "Ready to save. Name, address, and telephone are present.")
+                  : `Still needed: ${createClientMissingFields.join(", ")}.`}
+              </span>
+            </div>
+          </div>
+          <div className="nexops-client-profile-meta">
+            <article><span>Required</span><strong>Name, address, telephone</strong></article>
+            <article><span>Email</span><strong>Optional but recommended</strong></article>
+            <article><span>Save result</span><strong>{editing ? "Returns to the full client workspace" : "Opens the full client workspace"}</strong></article>
+            <article><span>Billing</span><strong>Lives on the parent client</strong></article>
+          </div>
+        </div>
+
+        <Suspense fallback={<section className="nexops-client-profile-panel"><p className="eyebrow">Loading</p><h2>{editing ? "Opening client editor" : "Opening new client workspace"}</h2><p>Pulling the client details form into place now.</p></section>}>
+          <NexOpsCreateClientPanel
+            tenantId={operatorContext.tenantId}
+            newClient={newClient}
+            setNewClient={setNewClient}
+            createStatus={createStatus}
+            createClientCanSave={createClientCanSave}
+            createClientMissingFields={createClientMissingFields}
+            leadSourceOptions={leadSourceOptions}
+            mode={clientFormMode}
+            surface="client"
+            layout="page"
+            onClose={closeClientFormWorkspace}
+            onSubmit={createClientFromForm}
+          />
+        </Suspense>
+      </section>
+    );
+  }
+
+  function renderMobileClientProfile(): React.ReactElement {
+    if (!selectedClient) {
+      return (
+        <section className="nexops-mobile-client-profile">
+          <div className="nexops-mobile-profile-body">
+            <p>The requested client record is not loaded for this tenant right now.</p>
+          </div>
+        </section>
+      );
+    }
+
+    const activeTab = activeClientProfileTab ?? "overview";
+    const activeBucket = mobileBucketForClientTab(activeTab);
+    const expandedBucket = mobileClientExpandedBucket;
+    const expandedBucketTabs = expandedBucket ? mobileTabsForBucket(expandedBucket) : [];
+    const primaryProperty = selectedProperties[0] ?? null;
+    const openSequences = clientReviewSequences.filter((sequence) => sequence.status === "active");
+    const recentPortalEntries = [...clientPortalActivity]
+      .sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime())
+      .slice(0, 5);
+    const outstandingBalance = selectedInvoices
+      .filter((invoice) => !["paid", "void", "bad_debt"].includes(invoice.status))
+      .reduce((total, invoice) => total + (invoice.totals.total ?? 0), 0);
+    const formatMoney = (value = 0) => new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0
+    }).format(value);
+    const clientCustomFields = visibleCustomFields(selectedClient.customFields, CLIENT_CUSTOM_FIELD_RESERVED_LABELS);
+    const latestRequestIntake = selectedQuotes[0]?.intake ?? selectedJobs[0]?.intake ?? selectedInvoices[0]?.intake;
+    const requestRows = selectedRequests.map((request) => ({
+      id: `request-${request.id}`,
+      title: request.subject ?? "Request",
+      meta: `${request.reviewedAt ? new Date(request.reviewedAt).toLocaleDateString() : "Awaiting review"} | ${clientPrimaryAddress(selectedClient)}`,
+      status: request.status.replaceAll("_", " "),
+      statusTone: "#d48806",
+      onClick: () => openWorkspaceTarget({ module: "requests", objectId: request.id })
+    }));
+    const quoteRows = selectedQuotes.map((quote) => ({
+      id: `quote-${quote.id}`,
+      title: quote.number ?? quote.title,
+      meta: `${quote.updatedAt ? new Date(quote.updatedAt).toLocaleDateString() : "Open quote"} | ${formatMoney(quote.totals.total)} | ${clientPrimaryAddress(selectedClient)}`,
+      status: quote.status.replaceAll("_", " "),
+      statusTone: "#9e4863",
+      onClick: () => openWorkspaceTarget({ module: "quotes", objectId: quote.id })
+    }));
+    const jobRows = selectedJobs.map((job) => ({
+      id: `job-${job.id}`,
+      title: job.number ? `${job.number} · ${job.title}` : job.title,
+      meta: `${job.startAt ? new Date(job.startAt).toLocaleString() : "Not scheduled yet"} | ${primaryProperty ? formatAddress(primaryProperty.address) : clientPrimaryAddress(selectedClient)}`,
+      status: job.status,
+      statusTone: "#2f9e44",
+      onClick: () => openWorkspaceTarget({ module: "jobs", objectId: job.id })
+    }));
+    const invoiceRows = selectedInvoices.map((invoice) => ({
+      id: `invoice-${invoice.id}`,
+      title: invoice.number ?? invoice.title,
+      meta: `${invoice.updatedAt ? new Date(invoice.updatedAt).toLocaleDateString() : "Billing rail"} | ${formatMoney(invoice.totals.total)} | ${primaryProperty ? formatAddress(primaryProperty.address) : clientPrimaryAddress(selectedClient)}`,
+      status: invoice.status.replaceAll("_", " "),
+      statusTone: "#2f9e44",
+      onClick: () => openWorkspaceTarget({ module: "invoices", objectId: invoice.id })
+    }));
+    const paymentRows = selectedPayments.map((payment) => ({
+      id: `payment-${payment.id}`,
+      title: payment.invoiceId ? `Invoice ${payment.invoiceId}` : payment.id,
+      meta: `${payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : payment.provider ?? "Payment rail"} | ${formatMoney(payment.amount ?? 0)}`,
+      status: payment.status.replaceAll("_", " "),
+      statusTone: "#1f77b4",
+      onClick: () => payment.invoiceId ? openWorkspaceTarget({ module: "payments", objectId: payment.invoiceId }) : setModule("payments")
+    }));
+    const fileDocumentTiles = [...clientFieldReports, ...clientSignedDocuments].map((entry) => ({
+      id: `doc-${entry.id}`,
+      label: entry.title,
+      kind: "document" as const
+    }));
+    const fileMediaTiles = orderedClientFieldMedia.map((media) => ({
+      id: `media-${media.id}`,
+      label: media.aiCaption ?? media.type,
+      kind: "media" as const
+    }));
+    const summaryContactName = clientContactDisplayName(selectedClient, selectedContact);
+    const summaryAddress = primaryProperty ? formatAddress(primaryProperty.address) : clientPrimaryAddress(selectedClient);
+    const howTheyFoundUs = typeof selectedClient.customFields?.leadSource === "string" ? selectedClient.customFields.leadSource.trim() : "";
+    const referredBy = typeof selectedClient.customFields?.referredBy === "string" ? selectedClient.customFields.referredBy.trim() : "";
+    const promoCode = typeof selectedClient.customFields?.promoCode === "string" ? selectedClient.customFields.promoCode.trim() : "";
+    const billingAddressLine = selectedClient.billingAddress ? formatAddress(selectedClient.billingAddress) : "";
+    const showBillingAddress = Boolean(billingAddressLine) && billingAddressLine !== summaryAddress;
+    const extraContacts = (selectedClient.contacts ?? []).map((contact, index) => ({
+      id: `${contact.company ?? contact.role ?? "contact"}-${index}`,
+      title: personDisplayName(contact.personName ?? {}) || contact.company || contact.role || `Contact ${index + 1}`,
+      channel: contact.phones?.[0]?.value ?? contact.emails?.[0]?.value ?? "No direct channel saved",
+      detail: contact.role ?? "Client contact"
+    }));
+    const contactRows = [
+      {
+        id: "primary",
+        title: clientDisplayName(selectedClient),
+        channel: selectedPhone?.value ?? selectedEmail ?? "No direct channel saved",
+        detail: selectedClient.company?.trim() || "Primary client"
+      },
+      ...extraContacts
+    ];
+    const activeSectionLabel = CLIENT_PROFILE_TABS.find((tab) => tab.id === activeTab)?.label ?? "Overview";
+    const renderMobileWorkSection = (
+      eyebrow: string,
+      heading: string,
+      emptyCopy: string,
+      rows: Array<{ id: string; title: string; meta: string; status: string; statusTone: string; onClick: () => void; }>,
+      onOpenRail: () => void
+    ): React.ReactElement => (
+      <section className="nexops-mobile-profile-section">
+        <div className="nexops-mobile-section-head">
+          <div>
+            <p className="eyebrow">{eyebrow}</p>
+            <h2>{heading}</h2>
+          </div>
+          <button type="button" onClick={onOpenRail}>Open rail</button>
+        </div>
+        <div className="nexops-mobile-work-list">
+          {rows.map((row) => (
+            <button className="nexops-mobile-work-row" key={row.id} type="button" onClick={row.onClick}>
+              <div>
+                <strong>{row.title}</strong>
+                <small>{row.meta}</small>
+              </div>
+              <span style={{ "--status-dot": row.statusTone } as React.CSSProperties}>{row.status}</span>
+            </button>
+          ))}
+          {!rows.length ? <p className="nexops-empty-copy">{emptyCopy}</p> : null}
+        </div>
+      </section>
+    );
+
+    let sectionContent: React.ReactElement;
+    switch (activeTab) {
+      case "properties":
+        sectionContent = (
+          <section className="nexops-mobile-profile-section">
+            <div className="nexops-mobile-section-head">
+              <div>
+                <p className="eyebrow">Properties</p>
+                <h2>Service addresses</h2>
+              </div>
+            </div>
+            <div className="nexops-mobile-client-stack">
+              {selectedProperties.map((property) => {
+                const visiblePropertyFields = visibleCustomFields(property.customFields, PROPERTY_CUSTOM_FIELD_RESERVED_LABELS);
+                return (
+                  <article className="nexops-mobile-profile-section" key={property.id}>
+                    <div className="nexops-mobile-address-block">
+                      <strong>{formatAddress(property.address)}</strong>
+                    </div>
+                    <dl className="nexops-mobile-key-value">
+                      <div><dt>Gated Entry</dt><dd>{property.customFields?.gatedEntry === true ? "Yes" : "No"}</dd></div>
+                      <div><dt>Gate Entry Code(s)</dt><dd>{property.access?.gateCode ?? "—"}</dd></div>
+                      <div><dt>Property Client Name</dt><dd>{String(property.customFields?.propertyClientName ?? "—")}</dd></div>
+                      <div><dt>Property Client Telephone Number</dt><dd>{String(property.customFields?.propertyClientPhone ?? "—")}</dd></div>
+                      <div><dt>Property Client eMail Address</dt><dd>{String(property.customFields?.propertyClientEmail ?? "—")}</dd></div>
+                    </dl>
+                    {visiblePropertyFields.length ? (
+                      <div className="nexops-mobile-custom-field-readonly">
+                        {visiblePropertyFields.map((field) => (
+                          <div key={field.key}>
+                            <small>{field.label}</small>
+                            <strong>{field.value}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
+              {!selectedProperties.length ? <p className="nexops-empty-copy">No properties are attached to this client yet.</p> : null}
+            </div>
+          </section>
+        );
+        break;
+      case "contacts":
+        sectionContent = (
+          <section className="nexops-mobile-profile-section">
+            <div className="nexops-mobile-section-head">
+              <div>
+                <p className="eyebrow">Contacts</p>
+                <h2>Client contacts</h2>
+              </div>
+            </div>
+            <div className="nexops-mobile-client-list">
+              {contactRows.map((contact) => (
+                <article className="nexops-mobile-client-list-row active" key={contact.id}>
+                  <strong>{contact.title}</strong>
+                  <small>{contact.channel}</small>
+                  <small>{contact.detail}</small>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+        break;
+      case "requests":
+        sectionContent = renderMobileWorkSection("Requests", "Request history", "No requests are attached to this client yet.", requestRows, () => setModule("requests"));
+        break;
+      case "quotes":
+        sectionContent = renderMobileWorkSection("Quotes", "Quote history", "No quotes are attached to this client yet.", quoteRows, () => setModule("quotes"));
+        break;
+      case "jobs":
+        sectionContent = renderMobileWorkSection("Jobs & Visits", "Active work", "No jobs are attached to this client yet.", jobRows, () => setModule("jobs"));
+        break;
+      case "invoices":
+        sectionContent = renderMobileWorkSection("Invoices", "Billing history", "No invoices are attached to this client yet.", invoiceRows, () => setModule("invoices"));
+        break;
+      case "payments":
+        sectionContent = renderMobileWorkSection("Payments", "Money collected", "No payments are attached to this client yet.", paymentRows, () => setModule("payments"));
+        break;
+      case "notes":
+        sectionContent = (
+          <section className="nexops-mobile-profile-section">
+            <div className="nexops-mobile-section-head">
+              <div>
+                <p className="eyebrow">Notes & Communications</p>
+                <h2>{clientDisplayName(selectedClient)} has no notes</h2>
+              </div>
+            </div>
+            <div className="nexops-mobile-note-actions">
+              <button type="button">Add Note</button>
+              <button type="button" onClick={() => openWorkspaceTarget({ module: "capture" })}>📷</button>
+            </div>
+          </section>
+        );
+        break;
+      case "nexreach":
+        sectionContent = (
+          <section className="nexops-mobile-profile-section">
+            <div className="nexops-mobile-section-head">
+              <div>
+                <p className="eyebrow">NexReach</p>
+                <h2>Marketing permission</h2>
+              </div>
+            </div>
+            <p>{selectedClient.consent.marketing ? "Allowed for NexReach drafts and locality-only showcase review." : "Blocked from NexReach until marketing consent is turned on."}</p>
+            <div className="nexops-inline-actions wrap">
+              <button type="button" disabled={clientRailBusy === "marketing-consent" || selectedClient.consent.marketing === true} onClick={() => void saveClientMarketingConsent(selectedClient.id, true)}>Allow marketing use</button>
+              <button type="button" className="ghost" disabled={clientRailBusy === "marketing-consent" || selectedClient.consent.marketing !== true} onClick={() => void saveClientMarketingConsent(selectedClient.id, false)}>Turn marketing off</button>
+            </div>
+          </section>
+        );
+        break;
+      case "portal":
+        sectionContent = (
+          <section className="nexops-mobile-profile-section">
+            <div className="nexops-mobile-section-head">
+              <div>
+                <p className="eyebrow">Client Portal Activity</p>
+                <h2>Portal and receipt review</h2>
+              </div>
+            </div>
+            <p>{clientRailStatus}</p>
+            {lastPortalLink ? <p><a href={lastPortalLink} target="_blank" rel="noreferrer">{lastPortalLink}</a></p> : null}
+            <div className="nexops-inline-actions wrap">
+              <button type="button" disabled={clientRailBusy === "portal-link"} onClick={() => void sendClientPortalLink(selectedClient.id)}>Send client hub link</button>
+              <button type="button" disabled={clientRailBusy === "send-statement"} onClick={() => void sendClientStatement(selectedClient.id)}>Send statement</button>
+            </div>
+            {recentPortalEntries.length ? (
+              <div className="nexops-mobile-question-answer-list">
+                {recentPortalEntries.map((entry) => (
+                  <div key={entry.id}>
+                    <small>{new Date(entry.occurredAt).toLocaleDateString()}</small>
+                    <strong>{entry.title}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {openSequences.length ? (
+              <div className="nexops-mobile-question-answer-list">
+                {openSequences.map((sequence) => (
+                  <div key={sequence.id}>
+                    <small>{sequence.source.replaceAll("_", " ")}</small>
+                    <strong>{sequence.nextSendAt ? `Next send ${new Date(sequence.nextSendAt).toLocaleString()}` : "Waiting on next step"}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {selectedReceiptReviewSummaries.length ? (
+              <div className="nexops-mobile-question-answer-list">
+                {selectedReceiptReviewSummaries.map((review) => (
+                  <div key={review.id}>
+                    <small>Receipt review</small>
+                    <strong>{review.subject ?? review.id}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="nexops-empty-copy">No receipt-review drafts are tied to this client yet.</p>
+            )}
+          </section>
+        );
+        break;
+      case "nexdocs":
+        sectionContent = (
+          <section className="nexops-mobile-profile-section">
+            <div className="nexops-mobile-section-head">
+              <div>
+                <p className="eyebrow">NexDocs</p>
+                <h2>Documents on file</h2>
+              </div>
+            </div>
+            <button className="nexops-mobile-filter-button" type="button">Filter Files</button>
+            <div className="nexops-mobile-file-grid">
+              {fileDocumentTiles.map((tile) => (
+                <div className={`nexops-mobile-file-tile ${tile.kind}`} key={tile.id}>
+                  <span>File</span>
+                  <strong>{tile.label}</strong>
+                </div>
+              ))}
+            </div>
+            {!fileDocumentTiles.length ? <p className="nexops-empty-copy">No NexDocs files are attached to this client yet.</p> : null}
+          </section>
+        );
+        break;
+      case "nexcam":
+        sectionContent = (
+          <section className="nexops-mobile-profile-section">
+            <div className="nexops-mobile-section-head">
+              <div>
+                <p className="eyebrow">NexCam</p>
+                <h2>Field media</h2>
+              </div>
+              <button type="button" onClick={() => openWorkspaceTarget({ module: "capture" })}>Open capture rail</button>
+            </div>
+            <div className="nexops-mobile-file-grid">
+              {fileMediaTiles.map((tile) => (
+                <div className={`nexops-mobile-file-tile ${tile.kind}`} key={tile.id}>
+                  <span>Photo</span>
+                  <strong>{tile.label}</strong>
+                </div>
+              ))}
+            </div>
+            {!fileMediaTiles.length ? <p className="nexops-empty-copy">No NexCam media is attached to this client yet.</p> : null}
+          </section>
+        );
+        break;
+      case "overview":
+      default:
+        sectionContent = (
+          <div className="nexops-mobile-client-stack">
+            <section className="nexops-mobile-profile-section">
+              <div className="nexops-mobile-section-head">
+                <div className="nexops-mobile-section-banner">
+                  <p className="eyebrow">Overview</p>
+                  <h2>At a Glance</h2>
+                </div>
+              </div>
+              <dl className="nexops-mobile-key-value">
+                <div><dt>How They Found Us</dt><dd>{howTheyFoundUs || "—"}</dd></div>
+                {howTheyFoundUs === "Referral" ? <div><dt>Referred By</dt><dd>{referredBy || "—"}</dd></div> : null}
+                {promoCode ? <div><dt>Promo Code</dt><dd>{promoCode}</dd></div> : null}
+                <div><dt>Payment terms</dt><dd>{selectedClient.customFields?.paymentTerms ? String(selectedClient.customFields.paymentTerms) : "Residential default (Due upon receipt)"}</dd></div>
+                {showBillingAddress ? <div><dt>Billing address</dt><dd>{billingAddressLine}</dd></div> : null}
+              </dl>
+            </section>
+
+            {latestRequestIntake?.fieldValues?.length ? (
+              <section className="nexops-mobile-profile-section">
+                <div className="nexops-mobile-section-head">
+                  <div>
+                    <p className="eyebrow">Overview</p>
+                    <h2>Service profile</h2>
+                  </div>
+                </div>
+                <div className="nexops-mobile-question-answer-list">
+                  {latestRequestIntake.fieldValues.map((field) => (
+                    <div key={field.key}>
+                      <small>{field.label}</small>
+                      <strong>{String(field.value || "—")}</strong>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <section className="nexops-mobile-profile-section">
+              <div className="nexops-mobile-section-head">
+                <div>
+                  <p className="eyebrow">Overview</p>
+                  <h2>Custom Fields</h2>
+                </div>
+                <div className="nexops-inline-actions">
+                  <button type="button" onClick={() => setClientOverviewCustomFieldsOpen((current) => !current)}>
+                    {clientOverviewCustomFieldsOpen ? "Cancel" : "Edit"}
+                  </button>
+                </div>
+              </div>
+              {clientOverviewCustomFieldsOpen ? (
+                <div className="nexops-mobile-custom-field-editor">
+                  {clientOverviewCustomFieldsDraft.map((row) => (
+                    <div className="nexops-mobile-custom-field-editor-row" key={row.id}>
+                      <input
+                        value={row.label}
+                        placeholder="Label"
+                        onChange={(event) => setClientOverviewCustomFieldsDraft((current) => current.map((entry) => entry.id === row.id ? { ...entry, label: event.target.value } : entry))}
+                      />
+                      <input
+                        value={row.value}
+                        placeholder="Value"
+                        onChange={(event) => setClientOverviewCustomFieldsDraft((current) => current.map((entry) => entry.id === row.id ? { ...entry, value: event.target.value } : entry))}
+                      />
+                      <button type="button" onClick={() => setClientOverviewCustomFieldsDraft((current) => current.filter((entry) => entry.id !== row.id))}>Remove</button>
+                    </div>
+                  ))}
+                  <div className="nexops-inline-actions wrap">
+                    <button type="button" onClick={() => setClientOverviewCustomFieldsDraft((current) => [...current, createCustomFieldDraftRow("profile")])}>Add Custom Field</button>
+                    <button type="button" disabled={clientRailBusy === "custom-fields" || clientOverviewCustomFieldValidation.hasBlockingIssues} onClick={() => void saveClientOverviewCustomFields(selectedClient.id)}>Save Custom Fields</button>
+                  </div>
+                  {clientOverviewCustomFieldValidation.hasBlockingIssues ? <p className="nexops-empty-copy">Custom field labels must be unique and cannot reuse built-in labels.</p> : null}
+                </div>
+              ) : clientCustomFields.length ? (
+                <div className="nexops-mobile-custom-field-readonly">
+                  {clientCustomFields.map((field) => (
+                    <div key={field.key}>
+                      <small>{field.label}</small>
+                      <strong>{field.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="nexops-empty-copy">No custom fields yet.</p>
+              )}
+            </section>
+          </div>
+        );
+        break;
+    }
+
+    return (
+      <section className="nexops-mobile-client-profile">
+        <div className="nexops-mobile-profile-body">
+          <div className="nexops-mobile-profile-summary">
+            <div className="nexops-mobile-profile-summary-head">
+              <h1>{clientDisplayName(selectedClient)}</h1>
+              <button className="nexops-mobile-profile-edit-button" type="button" aria-label="Edit client details" onClick={openEditClientWorkspace}>
+                <MobileClientEditGlyph />
+              </button>
+            </div>
+            {summaryContactName ? <p className="nexops-mobile-profile-subtitle">{summaryContactName}</p> : null}
+            <div className="nexops-mobile-profile-contact-rail">
+              {selectedPhoneValue ? (
+                <a className="nexops-mobile-profile-contact-link" href={`tel:${selectedPhoneValue}`}>
+                  <span className="nexops-mobile-profile-contact-icon">
+                    <MobileClientSummaryGlyph kind="phone" />
+                  </span>
+                  <span>{formatPhoneDisplay(selectedPhoneValue)}</span>
+                </a>
+              ) : null}
+              {selectedEmail ? (
+                <a className="nexops-mobile-profile-contact-link" href={`mailto:${selectedEmail}`}>
+                  <span className="nexops-mobile-profile-contact-icon">
+                    <MobileClientSummaryGlyph kind="email" />
+                  </span>
+                  <span>{selectedEmail}</span>
+                </a>
+              ) : null}
+              {summaryAddress ? (
+                <a className="nexops-mobile-profile-contact-link" href={nexiMapsHref(summaryAddress)} target="_blank" rel="noreferrer">
+                  <span className="nexops-mobile-profile-contact-icon">
+                    <MobileClientSummaryGlyph kind="directions" />
+                  </span>
+                  <span>{summaryAddress}</span>
+                </a>
+              ) : null}
+            </div>
+            <div className="nexops-mobile-balance-row">
+              <span>Client balance</span>
+              <strong>{formatMoney(outstandingBalance)}</strong>
+            </div>
+            <button className="nexops-mobile-create-button" type="button" onClick={toggleCreateMenu}>+ Create</button>
+          </div>
+
+          <div className="nexops-mobile-profile-nav">
+            <div className="nexops-mobile-bucket-tabs" role="tablist" aria-label="Client mobile buckets">
+              {(Object.keys(CLIENT_PROFILE_MOBILE_BUCKET_LABELS) as ClientProfileMobileBucket[]).map((bucket) => (
+                <button
+                  key={bucket}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeBucket === bucket}
+                  aria-expanded={expandedBucket === bucket}
+                  className={activeBucket === bucket ? "active" : ""}
+                  onClick={() => {
+                    if (expandedBucket === bucket) {
+                      setMobileClientExpandedBucket(null);
+                      return;
+                    }
+                    setMobileClientExpandedBucket(bucket);
+                    setClientProfileTabRoute(mobileTabsForBucket(bucket)[0]);
+                  }}
+                >
+                  {CLIENT_PROFILE_MOBILE_BUCKET_LABELS[bucket]}
+                </button>
+              ))}
+            </div>
+
+            {expandedBucket ? (
+              <div className="nexops-mobile-subsection-shell">
+                <small>{CLIENT_PROFILE_MOBILE_BUCKET_LABELS[expandedBucket]} sections</small>
+                <div className="nexops-mobile-subsection-tabs" role="tablist" aria-label={`${CLIENT_PROFILE_MOBILE_BUCKET_LABELS[expandedBucket]} sections`}>
+                  {expandedBucketTabs.map((tabId) => {
+                    const label = CLIENT_PROFILE_TABS.find((tab) => tab.id === tabId)?.label ?? tabId;
+                    return (
+                      <button
+                        key={tabId}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === tabId}
+                        className={activeTab === tabId ? "active" : ""}
+                        onClick={() => setClientProfileTabRoute(tabId)}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="nexops-mobile-profile-content" aria-label={activeSectionLabel}>
+            {sectionContent}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderClientProfile(): React.ReactElement {
+    if (mobileClientViewport) {
+      return renderMobileClientProfile();
+    }
+    if (!selectedClient) {
+      return (
+        <section className="nexops-client-profile">
+          <div className="nexops-client-profile-header-card">
+            <button className="nexops-link-button" type="button" onClick={returnToClientRoster}>Back to clients</button>
+            <h1>Client profile unavailable</h1>
+            <p>The requested client record is not loaded for this tenant right now. Return to the roster and reopen an active record.</p>
+          </div>
+        </section>
+      );
+    }
+
+    const formatMoney = (value = 0) => new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0
+    }).format(value);
+    const openSequences = clientReviewSequences.filter((sequence) => sequence.status === "active");
+    const outstandingBalance = selectedInvoices
+      .filter((invoice) => !["paid", "void", "bad_debt"].includes(invoice.status))
+      .reduce((total, invoice) => total + (invoice.totals.total ?? 0), 0);
+    const lifetimeValue = selectedInvoices
+      .filter((invoice) => !["void", "bad_debt"].includes(invoice.status))
+      .reduce((total, invoice) => total + (invoice.totals.total ?? 0), 0);
+    const nextJob = [...selectedJobs]
+      .filter((job) => job.startAt)
+      .sort((left, right) => new Date(left.startAt ?? 0).getTime() - new Date(right.startAt ?? 0).getTime())[0];
+    const recentPortalEntries = [...clientPortalActivity]
+      .sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime())
+      .slice(0, 5);
+
+    let tabContent: React.ReactElement;
+    switch (activeClientProfileTab ?? "overview") {
+      case "requests":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-section-head">
+              <div>
+                <p className="eyebrow">Requests</p>
+                <h2>Request history</h2>
+              </div>
+              <button type="button" onClick={() => setModule("requests")}>Open requests rail</button>
+            </div>
+            <div className="nexops-client-profile-list">
+              {selectedRequests.map((request) => (
+                <button className="nexops-client-profile-row" key={request.id} type="button" onClick={() => openWorkspaceTarget({ module: "requests", objectId: request.id })}>
+                  <div>
+                    <strong>{request.subject ?? request.id}</strong>
+                    <span>{request.status.replaceAll("_", " ")}</span>
+                  </div>
+                  <small>{request.reviewedAt ? new Date(request.reviewedAt).toLocaleDateString() : "Awaiting review"}</small>
+                </button>
+              ))}
+              {!selectedRequests.length ? <p className="nexops-empty-copy">No requests are attached to this client yet.</p> : null}
+            </div>
+          </section>
+        );
+        break;
+      case "quotes":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-section-head">
+              <div>
+                <p className="eyebrow">Quotes</p>
+                <h2>Quote history</h2>
+              </div>
+              <button type="button" onClick={() => setModule("quotes")}>Open quotes rail</button>
+            </div>
+            <div className="nexops-client-profile-list">
+              {selectedQuotes.map((quote) => (
+                <button className="nexops-client-profile-row" key={quote.id} type="button" onClick={() => openWorkspaceTarget({ module: "quotes", objectId: quote.id })}>
+                  <div>
+                    <strong>{quote.number ?? quote.title}</strong>
+                    <span>{quote.status.replaceAll("_", " ")} · {formatMoney(quote.totals.total)}</span>
+                  </div>
+                  <small>{quote.updatedAt ? new Date(quote.updatedAt).toLocaleDateString() : "Open quote"}</small>
+                </button>
+              ))}
+              {!selectedQuotes.length ? <p className="nexops-empty-copy">No quotes are attached to this client yet.</p> : null}
+            </div>
+          </section>
+        );
+        break;
+      case "jobs":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-section-head">
+              <div>
+                <p className="eyebrow">Jobs & Visits</p>
+                <h2>Active work</h2>
+              </div>
+              <button type="button" onClick={() => setModule("jobs")}>Open jobs rail</button>
+            </div>
+            <div className="nexops-client-profile-list">
+              {selectedJobs.map((job) => (
+                <button className="nexops-client-profile-row" key={job.id} type="button" onClick={() => openWorkspaceTarget({ module: "jobs", objectId: job.id })}>
+                  <div>
+                    <strong>{job.number ? `${job.number} · ${job.title}` : job.title}</strong>
+                    <span>{job.status} · {job.startAt ? new Date(job.startAt).toLocaleString() : "Not scheduled yet"}</span>
+                  </div>
+                  <small>{job.lineItems?.length ?? 0} line items</small>
+                </button>
+              ))}
+              {!selectedJobs.length ? <p className="nexops-empty-copy">No jobs are attached to this client yet.</p> : null}
+            </div>
+          </section>
+        );
+        break;
+      case "invoices":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-section-head">
+              <div>
+                <p className="eyebrow">Invoices</p>
+                <h2>Billing history</h2>
+              </div>
+              <button type="button" onClick={() => setModule("invoices")}>Open invoices rail</button>
+            </div>
+            <div className="nexops-client-profile-list">
+              {selectedInvoices.map((invoice) => (
+                <button className="nexops-client-profile-row" key={invoice.id} type="button" onClick={() => openWorkspaceTarget({ module: "invoices", objectId: invoice.id })}>
+                  <div>
+                    <strong>{invoice.number ?? invoice.title}</strong>
+                    <span>{invoice.status.replaceAll("_", " ")} · {formatMoney(invoice.totals.total)}</span>
+                  </div>
+                  <small>{invoice.updatedAt ? new Date(invoice.updatedAt).toLocaleDateString() : "Billing rail"}</small>
+                </button>
+              ))}
+              {!selectedInvoices.length ? <p className="nexops-empty-copy">No invoices are attached to this client yet.</p> : null}
+            </div>
+          </section>
+        );
+        break;
+      case "payments":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-section-head">
+              <div>
+                <p className="eyebrow">Payments</p>
+                <h2>Money collected</h2>
+              </div>
+              <button type="button" onClick={() => setModule("payments")}>Open payments rail</button>
+            </div>
+            <div className="nexops-client-profile-list">
+              {selectedPayments.map((payment) => (
+                <button
+                  className="nexops-client-profile-row"
+                  key={payment.id}
+                  type="button"
+                  onClick={() => payment.invoiceId ? openWorkspaceTarget({ module: "payments", objectId: payment.invoiceId }) : setModule("payments")}
+                >
+                  <div>
+                    <strong>{payment.invoiceId ? `Invoice ${payment.invoiceId}` : payment.id}</strong>
+                    <span>{payment.status.replaceAll("_", " ")} · {formatMoney(payment.amount ?? 0)}</span>
+                  </div>
+                  <small>{payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : payment.provider ?? "Payment rail"}</small>
+                </button>
+              ))}
+              {!selectedPayments.length ? <p className="nexops-empty-copy">No payments are attached to this client yet.</p> : null}
+            </div>
+          </section>
+        );
+        break;
+      case "properties":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-section-head">
+              <div>
+                <p className="eyebrow">Properties</p>
+                <h2>Service addresses</h2>
+              </div>
+              <button type="button" onClick={() => openCreateClientDrawer("property")}>Add property</button>
+            </div>
+            <div className="nexops-client-profile-list">
+              {selectedProperties.map((property) => (
+                <article className="nexops-client-profile-row static" key={property.id}>
+                  <div>
+                    <strong>{property.siteName || property.label || property.address.street1}</strong>
+                    <span>{formatAddress(property.address)}</span>
+                  </div>
+                  <small>{property.access?.gateCode ? `Gate code saved` : "No gate code saved"}</small>
+                </article>
+              ))}
+              {!selectedProperties.length ? <p className="nexops-empty-copy">No properties are attached to this client yet.</p> : null}
+            </div>
+          </section>
+        );
+        break;
+      case "contacts":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-section-head">
+              <div>
+                <p className="eyebrow">Contacts</p>
+                <h2>Client contacts</h2>
+              </div>
+              <button type="button" onClick={() => openCreateClientDrawer("contact")}>Add contact</button>
+            </div>
+            <div className="nexops-client-profile-list">
+              {(selectedClient.contacts ?? []).map((contact, index) => (
+                <article className="nexops-client-profile-row static" key={`${contact.company ?? contact.role ?? "contact"}-${index}`}>
+                  <div>
+                    <strong>{personDisplayName(contact.personName ?? {}) || contact.company || contact.role || `Contact ${index + 1}`}</strong>
+                    <span>{contact.phones?.[0]?.value ?? contact.emails?.[0]?.value ?? "No direct channel saved"}</span>
+                  </div>
+                  <small>{contact.role ?? "Client contact"}</small>
+                </article>
+              ))}
+              {!(selectedClient.contacts ?? []).length ? <p className="nexops-empty-copy">No additional contacts are attached to this client yet.</p> : null}
+            </div>
+          </section>
+        );
+        break;
+      case "notes":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-section-head">
+              <div>
+                <p className="eyebrow">Notes & Communications</p>
+                <h2>Office context</h2>
+              </div>
+            </div>
+            <div className="nexops-client-profile-grid two-up">
+              <article className="nexops-client-profile-card">
+                <h3>Recent portal activity</h3>
+                {recentPortalEntries.length ? (
+                  <ul className="nexops-mini-list">
+                    {recentPortalEntries.map((entry) => <li key={entry.id}><strong>{entry.title}</strong><small>{entry.detail}</small></li>)}
+                  </ul>
+                ) : <p>No portal or communication activity is recorded for this client yet.</p>}
+              </article>
+              <article className="nexops-client-profile-card">
+                <h3>Review follow-up</h3>
+                {openSequences.length ? (
+                  <ul className="nexops-mini-list">
+                    {openSequences.map((sequence) => <li key={sequence.id}><strong>{sequence.source.replaceAll("_", " ")}</strong><small>{sequence.nextSendAt ? `Next send ${new Date(sequence.nextSendAt).toLocaleString()}` : "Waiting on next step"}</small></li>)}
+                  </ul>
+                ) : <p>No review sequence is active for this client.</p>}
+              </article>
+            </div>
+          </section>
+        );
+        break;
+      case "nexdocs":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <NexDocsClientWorkspace
+              tenantId={operatorContext.tenantId}
+              clientId={selectedClient.id}
+              clientName={clientDisplayName(selectedClient)}
+              role={operatorContext.role}
+              nexcamCounts={{
+                media: clientFieldMedia.length,
+                reports: clientFieldReports.length,
+                signedDocuments: clientSignedDocuments.length
+              }}
+            />
+          </section>
+        );
+        break;
+      case "nexcam":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-section-head">
+              <div>
+                <p className="eyebrow">NexCam</p>
+                <h2>Field media</h2>
+              </div>
+              <button type="button" onClick={() => openWorkspaceTarget({ module: "capture" })}>Open capture rail</button>
+            </div>
+            <div className="nexops-client-profile-grid two-up">
+              <article className="nexops-client-profile-card">
+                <h3>Reports</h3>
+                {clientFieldReports.length ? (
+                  <ul className="nexops-mini-list">
+                    {clientFieldReports.map((report) => <li key={report.id}><strong>{report.title}</strong><small>{report.visitId ? `Visit ${report.visitId}` : `Job ${report.jobId}`}</small></li>)}
+                  </ul>
+                ) : <p>No field reports are attached to this client yet.</p>}
+              </article>
+              <article className="nexops-client-profile-card">
+                <h3>Media</h3>
+                {orderedClientFieldMedia.length ? (
+                  <ul className="nexops-mini-list">
+                    {orderedClientFieldMedia.map((media) => <li key={media.id}><strong>{media.aiCaption ?? media.type}</strong><small>{media.visitId ? `Visit ${media.visitId}` : media.jobId ? `Job ${media.jobId}` : "Client-level capture"}</small></li>)}
+                  </ul>
+                ) : <p>No field media is attached to this client yet.</p>}
+              </article>
+            </div>
+          </section>
+        );
+        break;
+      case "nexreach":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-grid two-up">
+              <article className="nexops-client-profile-card">
+                <h3>Marketing permission</h3>
+                <p>{selectedClient.consent.marketing ? "Allowed for NexReach drafts and locality-only showcase review." : "Blocked from NexReach until marketing consent is turned on."}</p>
+                <div className="nexops-inline-actions">
+                  <button type="button" disabled={clientRailBusy === "marketing-consent" || selectedClient.consent.marketing === true} onClick={() => void saveClientMarketingConsent(selectedClient.id, true)}>Allow marketing use</button>
+                  <button type="button" className="ghost" disabled={clientRailBusy === "marketing-consent" || selectedClient.consent.marketing !== true} onClick={() => void saveClientMarketingConsent(selectedClient.id, false)}>Turn marketing off</button>
+                </div>
+              </article>
+              <article className="nexops-client-profile-card">
+                <h3>NexReach history</h3>
+                <p>NexReach rollout history, opt-in state, and future campaign activity will stay client-visible from this tab.</p>
+              </article>
+            </div>
+          </section>
+        );
+        break;
+      case "portal":
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-grid two-up">
+              <article className="nexops-client-profile-card">
+                <h3>Client portal</h3>
+                <p>{clientRailStatus}</p>
+                {lastPortalLink ? <p><a href={lastPortalLink} target="_blank" rel="noreferrer">{lastPortalLink}</a></p> : null}
+                <div className="nexops-inline-actions">
+                  <button type="button" disabled={clientRailBusy === "portal-link"} onClick={() => void sendClientPortalLink(selectedClient.id)}>Send client hub link</button>
+                  <button type="button" disabled={clientRailBusy === "send-statement"} onClick={() => void sendClientStatement(selectedClient.id)}>Send statement</button>
+                </div>
+              </article>
+              <article className="nexops-client-profile-card">
+                <h3>Receipt review</h3>
+                {selectedReceiptReviewSummaries.length ? (
+                  <ul className="nexops-mini-list">
+                    {selectedReceiptReviewSummaries.map((review) => <li key={review.id}><strong>{review.subject ?? review.id}</strong><small>{review.status.replaceAll("_", " ")}</small></li>)}
+                  </ul>
+                ) : <p>No receipt-review drafts are tied to this client yet.</p>}
+              </article>
+            </div>
+          </section>
+        );
+        break;
+      case "overview":
+      default:
+        tabContent = (
+          <section className="nexops-client-profile-panel">
+            <div className="nexops-client-profile-metrics">
+              <article><span>Outstanding balance</span><strong>{formatMoney(outstandingBalance)}</strong><small>Awaiting or partial invoices</small></article>
+              <article><span>Lifetime value</span><strong>{formatMoney(lifetimeValue)}</strong><small>Invoice-backed value on this client</small></article>
+              <article><span>Open work</span><strong>{selectedRequests.filter((request) => request.status === "new").length + selectedJobs.filter((job) => job.status !== "Archived").length}</strong><small>Requests and active jobs on deck</small></article>
+            </div>
+            <div className="nexops-client-profile-grid two-up">
+              <article className="nexops-client-profile-card">
+                <h3>Next move</h3>
+                <p>{nextJob ? `${nextJob.title} is next on ${new Date(nextJob.startAt ?? "").toLocaleString()}.` : "No job is scheduled yet for this client."}</p>
+                <ul className="nexops-mini-list">
+                  <li><strong>Quotes</strong><small>{selectedQuotes.length} on file</small></li>
+                  <li><strong>Invoices</strong><small>{selectedInvoices.length} on file</small></li>
+                  <li><strong>Payments</strong><small>{selectedPayments.length} on file</small></li>
+                  {selectedQuotes.slice(0, 1).map((quote) => <li key={quote.id}><strong>Latest quote</strong><small>{quote.number ?? quote.title} - {quote.status.replaceAll("_", " ")}</small></li>)}
+                  {!selectedQuotes.length && !selectedJobs.length ? <li><strong>No work history yet</strong><small>Quotes and jobs will roll up here as soon as the first record lands.</small></li> : null}
+                </ul>
+              </article>
+              <article className="nexops-client-profile-card">
+                <h3>Access & follow-through</h3>
+                <p>{selectedProperties[0] ? formatAddress(selectedProperties[0].address) : clientPrimaryAddress(selectedClient)}</p>
+                <ul className="nexops-mini-list">
+                  <li><strong>Properties</strong><small>{selectedProperties.length} site{selectedProperties.length === 1 ? "" : "s"} linked</small></li>
+                  <li><strong>Gate notes</strong><small>{selectedProperties[0]?.access?.gateCode ?? selectedProperties[0]?.access?.accessNotes ?? "No gate note saved"}</small></li>
+                  <li><strong>Marketing</strong><small>{selectedClient.consent.marketing ? "Allowed" : "Blocked"}</small></li>
+                  <li><strong>Recent record</strong><small>{selectedJobs[0]?.title ?? selectedQuotes[0]?.number ?? selectedQuotes[0]?.title ?? "Nothing recent yet"}</small></li>
+                </ul>
+                <div className="nexops-inline-actions wrap">
+                  <button type="button" onClick={() => setClientProfileTabRoute("nexdocs")}>NexDocs</button>
+                  <button type="button" onClick={() => setClientProfileTabRoute("nexcam")}>NexCam</button>
+                  <button type="button" onClick={() => setClientProfileTabRoute("nexreach")}>NexReach</button>
+                  <button type="button" onClick={() => setClientProfileTabRoute("portal")}>Portal activity</button>
+                </div>
+              </article>
+            </div>
+          </section>
+        );
+        break;
+    }
+
+    return (
+      <section className="nexops-client-profile">
+        <div className="nexops-client-profile-header-card">
+          <div className="nexops-client-profile-header-actions">
+            <button className="nexops-link-button" type="button" onClick={returnToClientRoster}>Back to clients</button>
+            <span className="nexops-status-pill">{clientStatusLabel(selectedClient)}</span>
+          </div>
+          <div className="nexops-client-profile-heading">
+            <div>
+              <p className="eyebrow">Client workspace</p>
+              <h1>{clientDisplayName(selectedClient)}</h1>
+              <p>{selectedClient.company?.trim() ? `${selectedClient.company} - ` : ""}{clientPrimaryAddress(selectedClient)}</p>
+            </div>
+            <div className="nexops-inline-actions wrap">
+              {selectedPhone ? <a className="nexops-link-button" href={`tel:${selectedPhone.value}`}>Call</a> : <button type="button" disabled>Call</button>}
+              {selectedEmail ? <a className="nexops-link-button" href={`mailto:${selectedEmail}`}>Email</a> : <button type="button" disabled>Email</button>}
+              <button type="button" onClick={() => setClientProfileTabRoute("portal")}>More actions</button>
+              <button type="button" onClick={toggleCreateMenu}>Create for client</button>
+              <button
+                type="button"
+                className="nexops-kit-action-danger"
+                disabled={clientRailBusy === "delete-client"}
+                onClick={() => void deleteClientRecord(selectedClient.id)}
+              >
+                Delete client
+              </button>
+            </div>
+          </div>
+          <div className="nexops-client-profile-meta">
+            <article><span>Phone</span><strong>{selectedPhone?.value ?? "Not saved yet"}</strong></article>
+            <article><span>Email</span><strong>{selectedEmail ?? "Not saved yet"}</strong></article>
+            <article><span>Properties</span><strong>{selectedProperties.length || 1}</strong></article>
+            <article><span>Tags</span><strong>{selectedClient.tags?.join(", ") || "No tags"}</strong></article>
+          </div>
+        </div>
+
+        <div className="nexops-client-profile-tabs" role="tablist" aria-label="Client sections">
+          {CLIENT_PROFILE_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={(activeClientProfileTab ?? "overview") === tab.id}
+              className={(activeClientProfileTab ?? "overview") === tab.id ? "active" : ""}
+              onClick={() => setClientProfileTabRoute(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {tabContent}
+      </section>
+    );
+  }
+
   function renderClientDetail(): React.ReactElement {
+    const openSequences = clientReviewSequences.filter((sequence) => sequence.status === "active");
     return (
       <aside className="nexops-client-detail-card" aria-label="Client detail">
         {selectedClient ? (
@@ -1756,6 +4780,25 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
               <h2>{clientDisplayName(selectedClient)}</h2>
               <span>{selectedClient.id}</span>
             </div>
+            <div className="nexops-inline-actions">
+              <button type="button" disabled={clientRailBusy === "portal-link"} onClick={() => void sendClientPortalLink(selectedClient.id)}>Send client hub link</button>
+              <button type="button" disabled={clientRailBusy === "send-statement"} onClick={() => void sendClientStatement(selectedClient.id)}>Send statement</button>
+              <button type="button" disabled={clientRailBusy === "quick-payment"} onClick={() => void createClientQuickPaymentRequest(selectedClient.id)}>Quick payment request</button>
+              <button
+                type="button"
+                className="nexops-kit-action-danger"
+                disabled={clientRailBusy === "delete-client"}
+                onClick={() => void deleteClientRecord(selectedClient.id)}
+              >
+                Delete client
+              </button>
+            </div>
+            <p className="nexops-form-note">{clientRailStatus}</p>
+            {lastPortalLink ? (
+              <p className="nexops-form-note">
+                Last portal link: <a href={lastPortalLink} target="_blank" rel="noreferrer">{lastPortalLink}</a>
+              </p>
+            ) : null}
             <dl>
               <div>
                 <dt>Main phone</dt>
@@ -1780,8 +4823,11 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
                 <ul className="nexops-mini-list">
                   {selectedProperties.map((property) => (
                     <li key={property.id}>
-                      <strong>{property.siteName || property.label || property.address.street1}</strong>
-                      <span>{formatAddress(property.address)}</span>
+                      <span>
+                        <strong>{property.siteName || property.label || property.address.street1}</strong>
+                        <small>{formatAddress(property.address)}</small>
+                      </span>
+                      <button type="button" disabled={clientRailBusy === `portal-link-${property.id}`} onClick={() => void sendClientPortalLink(selectedClient.id, property.id)}>Send property link</button>
                     </li>
                   ))}
                 </ul>
@@ -1790,8 +4836,47 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
               )}
             </section>
             <section>
+              <h3>Marketing consent</h3>
+              <p>
+                {selectedClient.consent.marketing
+                  ? "Allowed for NexReach draft generation and public showcase review, still locality-only."
+                  : "Blocked from NexReach draft generation and public showcase use until this client opts in."}
+              </p>
+              <div className="nexops-inline-actions">
+                <button
+                  type="button"
+                  disabled={clientRailBusy === "marketing-consent" || selectedClient.consent.marketing === true}
+                  onClick={() => void saveClientMarketingConsent(selectedClient.id, true)}
+                >
+                  Allow marketing use
+                </button>
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={clientRailBusy === "marketing-consent" || selectedClient.consent.marketing !== true}
+                  onClick={() => void saveClientMarketingConsent(selectedClient.id, false)}
+                >
+                  Turn off marketing use
+                </button>
+              </div>
+            </section>
+            <section>
               <h3>Work overview</h3>
               <p>{selectedJobs.length} jobs, {selectedQuotes.length} quotes, {selectedInvoices.length} invoices attached to this client.</p>
+              <div className="nexops-request-builder-grid">
+                <label className="nexops-field">
+                  <span>Request title</span>
+                  <input value={clientQuickRequestDraft.title} onChange={(event) => setClientQuickRequestDraft((current) => ({ ...current, title: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Amount</span>
+                  <input type="number" min="0.01" step="0.01" value={clientQuickRequestDraft.amount} onChange={(event) => setClientQuickRequestDraft((current) => ({ ...current, amount: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Memo</span>
+                  <input value={clientQuickRequestDraft.memo} onChange={(event) => setClientQuickRequestDraft((current) => ({ ...current, memo: event.target.value }))} />
+                </label>
+              </div>
               {selectedJobs.length ? (
                 <ul className="nexops-mini-list">
                   {selectedJobs.slice(0, 4).map((job) => (
@@ -1803,6 +4888,235 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
                 </ul>
               ) : null}
             </section>
+            <section>
+              <NexDocsClientWorkspace
+                tenantId={operatorContext.tenantId}
+                clientId={selectedClient.id}
+                clientName={clientDisplayName(selectedClient)}
+                role={operatorContext.role}
+                nexcamCounts={{
+                  media: clientFieldMedia.length,
+                  reports: clientFieldReports.length,
+                  signedDocuments: clientSignedDocuments.length
+                }}
+              />
+            </section>
+            {directClientMedia.length || clientMediaMoveId ? (
+              <section>
+                <h3>Capture routing</h3>
+                <p>Direct client-level NexCam captures can be routed onto the right job or visit when the office is ready to pin them down.</p>
+                <ul className="nexops-mini-list">
+                  {directClientMedia.map((media) => (
+                    <li key={media.id}>
+                      <span className="nexops-client-media-label">
+                        <strong>{media.aiCaption ?? `Client ${media.type}`}</strong>
+                        <small className="nexops-client-media-meta">
+                          Client-level capture
+                          {media.exif?.ts ? ` | ${new Date(media.exif.ts).toLocaleDateString()}` : ""}
+                        </small>
+                      </span>
+                      <span className="nexops-inline-actions">
+                        <a className="nexops-link-button" href={`/api/media/${encodeURIComponent(media.id)}?tenantId=${encodeURIComponent(operatorContext.tenantId)}`} target="_blank" rel="noreferrer">Open</a>
+                        <button type="button" onClick={() => void beginClientMediaMove(media.id)}>Move to job/visit</button>
+                      </span>
+                    </li>
+                  ))}
+                  {clientMediaMoveId ? (
+                    <li className="nexops-inline-editor">
+                      <span>
+                        <strong>Move selected media</strong>
+                        <small>Pick a job or visit for this client. Leave the visit blank if the media should sit on the job only.</small>
+                      </span>
+                      <div className="nexops-two-column">
+                        <label className="nexops-field">
+                          <span>Job</span>
+                          <select value={clientMediaMoveJobId} onChange={(event) => { setClientMediaMoveJobId(event.target.value); setClientMediaMoveVisitId(""); }}>
+                            <option value="">Select a job</option>
+                            {clientMediaMoveTargets.jobs.map((job) => (
+                              <option value={job.id} key={job.id}>{job.number ? `${job.number} - ` : ""}{job.title}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="nexops-field">
+                          <span>Visit</span>
+                          <select value={clientMediaMoveVisitId} onChange={(event) => setClientMediaMoveVisitId(event.target.value)} disabled={!clientMediaMoveTargets.visits.length}>
+                            <option value="">No visit selected</option>
+                            {clientMediaMoveTargets.visits
+                              .filter((visit) => !clientMediaMoveJobId || visit.jobId === clientMediaMoveJobId)
+                              .map((visit) => (
+                                <option value={visit.id} key={visit.id}>{visit.title} - {new Date(visit.start).toLocaleString()}</option>
+                              ))}
+                          </select>
+                        </label>
+                      </div>
+                      <span className="nexops-inline-actions">
+                        <button type="button" disabled={clientRailBusy === `media-move-${clientMediaMoveId}` || (!clientMediaMoveJobId && !clientMediaMoveVisitId)} onClick={() => void saveClientMediaMove()}>Save move</button>
+                        <button type="button" className="ghost" onClick={() => { setClientMediaMoveId(""); setClientMediaMoveJobId(""); setClientMediaMoveVisitId(""); setClientMediaMoveTargets({ jobs: [], visits: [] }); }}>Cancel</button>
+                      </span>
+                    </li>
+                  ) : null}
+                </ul>
+              </section>
+            ) : null}
+            {false ? (
+              <section>
+                <h3><ProductInlineLabel product="nexcam" /></h3>
+              <p>{clientFieldMedia.length} media item{clientFieldMedia.length === 1 ? "" : "s"}, {clientFieldReports.length} report{clientFieldReports.length === 1 ? "" : "s"}, and {clientSignedDocuments.length} signed document{clientSignedDocuments.length === 1 ? "" : "s"} sit on this client's field rail.</p>
+              <div className="nexops-two-column">
+                <div className="nexops-module-page">
+                  <ul className="nexops-mini-list">
+                    {clientFieldReports.map((report) => (
+                      <li key={report.id}>
+                        <span>
+                          <strong>{report.title}</strong>
+                          <small>{report.visitId ? `Visit ${report.visitId}` : `Job ${report.jobId}`}</small>
+                        </span>
+                        <a className="nexops-link-button" href={`/api/fielddocs/reports/${encodeURIComponent(report.id)}/pdf?tenantId=${encodeURIComponent(operatorContext.tenantId)}`} target="_blank" rel="noreferrer">Open PDF</a>
+                      </li>
+                    ))}
+                    {!clientFieldReports.length ? (
+                      <li>
+                        <span>
+                          <strong>No field reports yet</strong>
+                          <small>Generated visit reports will land here and in the client hub.</small>
+                        </span>
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+                <div className="nexops-module-page">
+                  <p className="nexops-inline-meta">
+                    {directClientMedia.length} direct client-level item{directClientMedia.length === 1 ? "" : "s"} and {workScopedClientMedia.length} job/visit-scoped item{workScopedClientMedia.length === 1 ? "" : "s"} are visible together here.
+                  </p>
+                  <ul className="nexops-mini-list">
+                    {orderedClientFieldMedia.map((media) => (
+                      <li key={media.id}>
+                        <span className="nexops-client-media-label">
+                          <strong>{media.aiCaption ?? `Visit ${media.type}`}</strong>
+                          <small className="nexops-client-media-meta">{media.visitId ? `Visit ${media.visitId}` : media.jobId ? `Job ${media.jobId}` : "Client-level capture"}{media.exif?.ts ? ` · ${new Date(media.exif.ts).toLocaleDateString()}` : ""}</small>
+                          <small>{media.visitId ? `Visit ${media.visitId}` : media.jobId ? `Job ${media.jobId}` : "Client media"}{media.exif?.ts ? ` · ${new Date(media.exif.ts).toLocaleDateString()}` : ""}</small>
+                        </span>
+                        <span className="nexops-inline-actions">
+                          <a className="nexops-link-button" href={`/api/media/${encodeURIComponent(media.id)}?tenantId=${encodeURIComponent(operatorContext.tenantId)}`} target="_blank" rel="noreferrer">Open</a>
+                          <button type="button" onClick={() => void beginClientMediaMove(media.id)}>Move to job/visit</button>
+                        </span>
+                      </li>
+                    ))}
+                    {clientMediaMoveId ? (
+                      <li className="nexops-inline-editor">
+                        <span>
+                          <strong>Move selected media</strong>
+                          <small>Pick a job or visit for this client. Leave the visit blank if the media should sit on the job only.</small>
+                        </span>
+                        <div className="nexops-two-column">
+                          <label className="nexops-field">
+                            <span>Job</span>
+                            <select value={clientMediaMoveJobId} onChange={(event) => { setClientMediaMoveJobId(event.target.value); setClientMediaMoveVisitId(""); }}>
+                              <option value="">Select a job</option>
+                              {clientMediaMoveTargets.jobs.map((job) => (
+                                <option value={job.id} key={job.id}>{job.number ? `${job.number} - ` : ""}{job.title}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="nexops-field">
+                            <span>Visit</span>
+                            <select value={clientMediaMoveVisitId} onChange={(event) => setClientMediaMoveVisitId(event.target.value)} disabled={!clientMediaMoveTargets.visits.length}>
+                              <option value="">No visit selected</option>
+                              {clientMediaMoveTargets.visits
+                                .filter((visit) => !clientMediaMoveJobId || visit.jobId === clientMediaMoveJobId)
+                                .map((visit) => (
+                                  <option value={visit.id} key={visit.id}>{visit.title} - {new Date(visit.start).toLocaleString()}</option>
+                                ))}
+                            </select>
+                          </label>
+                        </div>
+                        <span className="nexops-inline-actions">
+                          <button type="button" disabled={clientRailBusy === `media-move-${clientMediaMoveId}` || (!clientMediaMoveJobId && !clientMediaMoveVisitId)} onClick={() => void saveClientMediaMove()}>Save move</button>
+                          <button type="button" className="ghost" onClick={() => { setClientMediaMoveId(""); setClientMediaMoveJobId(""); setClientMediaMoveVisitId(""); setClientMediaMoveTargets({ jobs: [], visits: [] }); }}>Cancel</button>
+                        </span>
+                      </li>
+                    ) : null}
+                    {!orderedClientFieldMedia.length ? (
+                      <li>
+                        <span>
+                          <strong>No media yet</strong>
+                          <small>Direct client captures, visit photos, and uploads will collect here across every job for this client.</small>
+                        </span>
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+              </div>
+              <ul className="nexops-mini-list">
+                {clientSignedDocuments.map((record) => (
+                  <li key={record.id}>
+                    <span>
+                      <strong>{record.title}</strong>
+                      <small>{record.kind.replaceAll("_", " ")} - {record.status}{record.signedAt ? ` - ${new Date(record.signedAt).toLocaleDateString()}` : ""}</small>
+                    </span>
+                    <a className="nexops-link-button" href={`/api/fielddocs/signed-documents/${encodeURIComponent(record.id)}/pdf?tenantId=${encodeURIComponent(operatorContext.tenantId)}`} target="_blank" rel="noreferrer">Open PDF</a>
+                  </li>
+                ))}
+                {!clientSignedDocuments.length ? (
+                  <li>
+                    <span>
+                      <strong>No signed documents yet</strong>
+                      <small>Completion signoffs, waivers, and change orders will surface here and in the client hub once signed.</small>
+                    </span>
+                  </li>
+                ) : null}
+              </ul>
+            </section>
+            ) : null}
+            <section>
+              <h3>Review follow-up</h3>
+              <p>{openSequences.length ? `${openSequences.length} active sequence${openSequences.length === 1 ? "" : "s"} are currently running for this client.` : "No active review follow-up is running for this client right now."}</p>
+              {clientReviewSequences.length ? (
+                <ul className="nexops-mini-list">
+                  {clientReviewSequences.map((sequence) => {
+                    const activeStep = sequence.steps.find((step) => step.id === sequence.activeStepId) ?? sequence.steps.find((step) => step.status === "pending");
+                    return (
+                      <li key={sequence.id}>
+                        <span>
+                          <strong>{sequence.status === "active" ? "Sequence active" : sequence.status === "completed" ? "Sequence completed" : "Sequence stopped"}</strong>
+                          <small>
+                            Job {sequence.jobId}
+                            {activeStep ? ` · Next: ${activeStep.label} on ${new Date(activeStep.dueAt).toLocaleDateString()}` : ""}
+                            {sequence.stopReason ? ` · ${sequence.stopReason.replace("_", " ")}` : ""}
+                          </small>
+                        </span>
+                        <span className="nexops-inline-actions">
+                          {sequence.status === "active" ? (
+                            <>
+                              <button type="button" disabled={clientRailBusy === `mark-reviewed-${sequence.id}`} onClick={() => void markClientReviewComplete(sequence.id)}>Mark reviewed</button>
+                              <button type="button" disabled={clientRailBusy === `stop-review-${sequence.id}`} onClick={() => void stopClientReviewSequence(sequence.id)}>Stop</button>
+                            </>
+                          ) : null}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </section>
+            <section>
+              <h3>Portal activity</h3>
+              {clientPortalActivity.length ? (
+                <ul className="nexops-mini-list">
+                  {clientPortalActivity.slice(0, 6).map((entry) => (
+                    <li key={entry.id}>
+                      <span>
+                        <strong>{entry.title}</strong>
+                        <small>{entry.detail}</small>
+                      </span>
+                      <span>{new Date(entry.occurredAt).toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No client-facing portal actions have been recorded yet.</p>
+              )}
+            </section>
           </>
         ) : (
           <div className="nexops-client-empty">
@@ -1811,6 +5125,88 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
           </div>
         )}
       </aside>
+    );
+  }
+
+  function renderCaptureWorkspace(): React.ReactElement {
+    const filteredClients = clients
+      .filter((client) => {
+        if (!captureClientQuery.trim()) {
+          return true;
+        }
+        const haystack = [
+          clientDisplayName(client),
+          ...client.emails,
+          ...client.phones,
+          clientPrimaryAddress(client)
+        ].join(" ").toLowerCase();
+        return haystack.includes(captureClientQuery.trim().toLowerCase());
+      })
+      .slice(0, 8);
+    const selectedCaptureClient = clients.find((client) => client.id === captureSelectedClientId);
+    const assignedCaptureClient = captureSession?.assignedClientId
+      ? clients.find((client) => client.id === captureSession.assignedClientId)
+      : undefined;
+    const visibleCaptureVisits = captureTargets.visits.filter((visit) => !captureSelectedJobId || visit.jobId === captureSelectedJobId);
+    const captureSessionMedia = orderedCaptureMedia(captureSession);
+    const activeCaptureMedia = captureSessionMedia.find((media) => media.id === captureSelectedMediaId)
+      ?? captureSessionMedia[captureSessionMedia.length - 1]
+      ?? null;
+    const captureAnchorGps = captureSession?.originGps ?? captureSession?.latestGps;
+    const captureGpsMoved = Boolean(
+      captureSession?.originGps
+      && captureSession.latestGps
+      && (captureSession.originGps.lat !== captureSession.latestGps.lat || captureSession.originGps.lng !== captureSession.latestGps.lng)
+    );
+    return (
+      <Suspense fallback={<section className="nexops-module-page"><div className="nexops-module-grid"><article className="nexops-module-card"><p className="eyebrow">Loading</p><h2>Opening capture workspace</h2><p>Pulling the deferred capture rail into the shell now.</p></article></div></section>}>
+        <NexOpsCaptureWorkspace
+          operatorTenantId={operatorContext.tenantId}
+          captureInputRef={captureInputRef}
+          captureBusy={captureBusy}
+          captureStatus={captureStatus}
+          captureWorkspaceView={captureWorkspaceView}
+          captureSession={captureSession}
+          captureSessionOrigin={captureSessionOrigin}
+          captureSessionMode={captureSessionMode}
+          captureInbox={captureInbox}
+          captureInboxStatus={captureInboxStatus}
+          activeCaptureMedia={activeCaptureMedia}
+          captureSessionMedia={captureSessionMedia}
+          captureAnchorGps={captureAnchorGps}
+          captureGpsMoved={captureGpsMoved}
+          filteredClients={filteredClients}
+          selectedCaptureClient={selectedCaptureClient}
+          assignedCaptureClient={assignedCaptureClient}
+          captureClientQuery={captureClientQuery}
+          setCaptureClientQuery={setCaptureClientQuery}
+          captureSelectedClientId={captureSelectedClientId}
+          setCaptureSelectedClientId={setCaptureSelectedClientId}
+          captureSelectedJobId={captureSelectedJobId}
+          setCaptureSelectedJobId={setCaptureSelectedJobId}
+          captureSelectedVisitId={captureSelectedVisitId}
+          setCaptureSelectedVisitId={setCaptureSelectedVisitId}
+          captureTargets={captureTargets}
+          visibleCaptureVisits={visibleCaptureVisits}
+          onStartCaptureSession={startCaptureSession}
+          onOpenCaptureWorkspace={openCaptureWorkspace}
+          onFinishCaptureSession={finishCaptureSession}
+          onUploadCapturePhotos={uploadCapturePhotos}
+          onSetCaptureSelectedMediaId={setCaptureSelectedMediaId}
+          onRouteCaptureToNewRequest={routeCaptureToNewRequest}
+          onMarkCaptureDecideLater={markCaptureDecideLater}
+          onSetCaptureSessionMode={setCaptureSessionMode}
+          onSetCaptureStatus={setCaptureStatus}
+          onLoadCaptureTargets={loadCaptureTargets}
+          onAssignCaptureToExistingClient={assignCaptureToExistingClient}
+          onReopenCaptureBatch={reopenCaptureBatch}
+          onSetCaptureSession={setCaptureSession}
+          onSetCaptureSessionOrigin={setCaptureSessionOrigin}
+          clientDisplayName={clientDisplayName}
+          clientPrimaryAddress={clientPrimaryAddress}
+          contactSummary={contactSummary}
+        />
+      </Suspense>
     );
   }
 
@@ -1949,7 +5345,7 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
         <div className="nexops-page-heading">
           <div>
             <h1>Import & Sync</h1>
-            <p>CSV for every tenant. Jobber read-only sync for Aquatrace.</p>
+            <p>CSV import for every tenant. Third-party adapters stay dormant unless a future tenant explicitly opts in.</p>
           </div>
         </div>
         <div className="nexops-module-grid">
@@ -1976,16 +5372,6 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
               }}
             />
           </article>
-          <article className="nexops-module-card">
-            <p className="eyebrow">Aquatrace Jobber sync</p>
-            <h2>Read-only API lane</h2>
-            <p>{jobberSyncStatus}</p>
-            <div className="nexops-inline-actions">
-              <button type="button" onClick={() => void runJobberSync("dry-run")}>Dry-run Jobber</button>
-              <button type="button" onClick={() => void runJobberSync("write")}>Sync into NexOps</button>
-            </div>
-            <small>Jobber stays read-only. Native NexOps records are upserted by Jobber external IDs.</small>
-          </article>
         </div>
       </section>
     );
@@ -1993,26 +5379,13 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
 
   function renderSettings(): React.ReactElement {
     return (
-      <section className="nexops-module-page">
-        <div className="nexops-page-heading">
-          <div>
-            <h1>Settings</h1>
-            <p>Tenant branding, users, communication defaults, and white-label provisions.</p>
-          </div>
-        </div>
-        <div className="nexops-module-grid">
-          <article className="nexops-module-card">
-            <p className="eyebrow">Tenant brand</p>
-            <h2>{tenantName}</h2>
-            <p>Logo/text fallback, colors, font family, and updatedBy live in tenant branding.</p>
-          </article>
-          <article className="nexops-module-card">
-            <p className="eyebrow">Access</p>
-            <h2>{operatorContext.role}</h2>
-            <p>OWNER and OFFICE_ADMIN see full CRM. TECHNICIAN views only assigned jobs/properties for sensitive fields.</p>
-          </article>
-        </div>
-      </section>
+      <NexOpsSettingsPage
+        tenantId={operatorContext.tenantId}
+        tenantName={tenantName}
+        role={operatorContext.role}
+        tenantUsers={tenantUsers}
+        onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
+      />
     );
   }
 
@@ -2020,175 +5393,40 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
     if (!showCreateClient) {
       return null;
     }
-    const smsPrompt = newClient.phoneReceivesMessages && newClient.smsCapability !== "mobile"
-      ? "This number has not been confirmed as mobile. NexOps will treat texts as one-way and should prompt before sending."
-      : "Texts stay one-way unless an upgraded two-way SMS tier is enabled.";
     return (
-      <div className="nexops-drawer-backdrop" role="presentation">
-        <form className="nexops-drawer nexops-client-form" onSubmit={(event) => void createClientFromForm(event)}>
-          <div className="nexops-drawer-heading nexops-client-form-hero">
-            <div className="nexops-client-form-hero-copy">
-              <NexTeamLockup className="nexops-client-form-brand" />
-              <p className="eyebrow">NexOps CRM</p>
-              <h2>New client</h2>
-              <p>Capture the parent relationship first, then add service sites, local property contacts, and communication rules without mixing billing or field access.</p>
-            </div>
-            <div className="nexops-client-form-hero-actions">
-              <span>Proof screen: final NexTeam design system</span>
-              <button type="button" onClick={() => setShowCreateClient(false)}>Close</button>
-            </div>
-            <ul className="nexops-form-principles" aria-label="Client setup rules">
-              <li>Parent client owns billing</li>
-              <li>Company display is optional</li>
-              <li>Texts stay one-way unless upgraded</li>
-            </ul>
-          </div>
-          <section className="nexops-form-section">
-            <div className="nexops-section-copy">
-              <h3>Primary contact details</h3>
-              <p>Use first and last name by default. If a company is added, NexOps can display the company while keeping the person on file.</p>
-            </div>
-            <div className="nexops-section-fields">
-              <div className="nexops-field-row title-row">
-                <label className="nexops-field"><span>Title</span><select value={newClient.title} onChange={(event) => setNewClient({ ...newClient, title: event.target.value })}>
-                  {["No title", "Mr.", "Mrs.", "Ms.", "Dr.", "Other"].map((label) => <option key={label}>{label}</option>)}
-                </select></label>
-                <label className="nexops-field"><span>First name</span><input value={newClient.firstName} onChange={(event) => setNewClient({ ...newClient, firstName: event.target.value })} /></label>
-                <label className="nexops-field"><span>Last name</span><input value={newClient.lastName} onChange={(event) => setNewClient({ ...newClient, lastName: event.target.value })} /></label>
-              </div>
-              <div className="nexops-field-row">
-                <label className="nexops-field"><span>Company name</span><input value={newClient.company} onChange={(event) => setNewClient({ ...newClient, company: event.target.value, displayNamePreference: event.target.value ? "company" : "person" })} /></label>
-                <label className="nexops-field"><span>Display as</span><select value={newClient.displayNamePreference} onChange={(event) => setNewClient({ ...newClient, displayNamePreference: event.target.value as "person" | "company" })}>
-                  <option value="person">First name Last name</option>
-                  <option value="company" disabled={!newClient.company}>Company name</option>
-                </select></label>
-              </div>
-              <label className="nexops-field"><span>Role</span><input value={newClient.role} onChange={(event) => setNewClient({ ...newClient, role: event.target.value })} /></label>
-              <h4>Communication</h4>
-              <div className="nexops-field-row">
-                <label className="nexops-field"><span>Phone number</span><input value={newClient.phone} onChange={(event) => setNewClient({ ...newClient, phone: event.target.value })} /></label>
-                <label className="nexops-field compact"><span>Phone label</span><select value={newClient.phoneLabel} onChange={(event) => setNewClient({ ...newClient, phoneLabel: event.target.value as CrmPhone["label"] })}>
-                  {(["Main", "Work", "Mobile", "Home", "Fax", "Other"] as CrmPhone["label"][]).map((label) => <option key={label}>{label}</option>)}
-                </select></label>
-              </div>
-              <label className="nexops-check-field"><input type="checkbox" checked={newClient.phoneReceivesMessages} onChange={(event) => setNewClient({ ...newClient, phoneReceivesMessages: event.target.checked })} /> Allow one-way texts to this number</label>
-              {newClient.phoneReceivesMessages ? (
-                <label className="nexops-field"><span>SMS check</span><select value={newClient.smsCapability} onChange={(event) => setNewClient({ ...newClient, smsCapability: event.target.value as SmsCapability })}>
-                  <option value="unknown">Unknown - prompt before sending</option>
-                  <option value="mobile">Mobile - can receive texts</option>
-                  <option value="landline">Landline - prompt</option>
-                  <option value="fax">Fax - text off unless changed</option>
-                  <option value="invalid">Invalid - text off</option>
-                </select></label>
-              ) : null}
-              <p className="nexops-form-note">{smsPrompt}</p>
-              <div className="nexops-field-row">
-                <label className="nexops-field"><span>Email</span><input type="email" value={newClient.email} onChange={(event) => setNewClient({ ...newClient, email: event.target.value })} /></label>
-                <label className="nexops-field compact"><span>Email label</span><select value={newClient.emailLabel} onChange={(event) => setNewClient({ ...newClient, emailLabel: event.target.value as CrmEmail["label"] })}>
-                  {(["Main", "Work", "Personal", "Other"] as CrmEmail["label"][]).map((label) => <option key={label}>{label}</option>)}
-                </select></label>
-              </div>
-              <p className="nexops-form-note">Email is recommended so quotes, invoices, and follow-ups have a reliable destination, but it is not required to save the client.</p>
-              <button className="nexops-link-button" type="button">Communication settings</button>
-              <h4>Lead information</h4>
-              <label className="nexops-field"><span>Lead source</span><input value={newClient.leadSource} onChange={(event) => setNewClient({ ...newClient, leadSource: event.target.value })} /></label>
-              <div className="nexops-field-row">
-                <label className="nexops-field"><span>Payment terms</span><input value={newClient.paymentTerms} onChange={(event) => setNewClient({ ...newClient, paymentTerms: event.target.value })} /></label>
-                <label className="nexops-check-field inline"><input type="checkbox" checked={newClient.askForReview} onChange={(event) => setNewClient({ ...newClient, askForReview: event.target.checked })} /> Ask for a review</label>
-              </div>
-              <details className="nexops-extra-panel" open>
-                <summary>Additional client details</summary>
-                <div className="nexops-extra-panel-body">
-                  <p>Create custom fields to track additional client-level details.</p>
-                  <button type="button">Add Custom Field</button>
-                  <div className="nexops-field-row">
-                    <label className="nexops-field"><span>Custom field name</span><input value={newClient.clientCustomFieldName} onChange={(event) => setNewClient({ ...newClient, clientCustomFieldName: event.target.value })} /></label>
-                    <label className="nexops-field"><span>Custom field value</span><input value={newClient.clientCustomFieldValue} onChange={(event) => setNewClient({ ...newClient, clientCustomFieldValue: event.target.value })} /></label>
-                  </div>
-                </div>
-              </details>
-              <details className="nexops-extra-panel" open>
-                <summary>Additional contacts</summary>
-                <div className="nexops-extra-panel-body">
-                  <p>For contacts with access to all properties, like spouse/family for residential or property managers for commercial.</p>
-                  <button type="button">Add Contact</button>
-                  <div className="nexops-field-row">
-                    <label className="nexops-field"><span>Contact name</span><input value={newClient.additionalContactName} onChange={(event) => setNewClient({ ...newClient, additionalContactName: event.target.value })} /></label>
-                    <label className="nexops-field"><span>Role</span><input value={newClient.additionalContactRole} onChange={(event) => setNewClient({ ...newClient, additionalContactRole: event.target.value })} /></label>
-                  </div>
-                  <div className="nexops-field-row">
-                    <label className="nexops-field"><span>Phone</span><input value={newClient.additionalContactPhone} onChange={(event) => setNewClient({ ...newClient, additionalContactPhone: event.target.value })} /></label>
-                    <label className="nexops-field"><span>Email</span><input type="email" value={newClient.additionalContactEmail} onChange={(event) => setNewClient({ ...newClient, additionalContactEmail: event.target.value })} /></label>
-                  </div>
-                </div>
-              </details>
-            </div>
-          </section>
-          <section className="nexops-form-section">
-            <div className="nexops-section-copy">
-              <h3>Property address</h3>
-              <p>Enter the primary service address, billing address, or site name. Multi-site clients keep billing and correspondence on the parent client.</p>
-              <button type="button">Add Another Address</button>
-            </div>
-            <div className="nexops-section-fields">
-              <label className="nexops-field"><span>Site name</span><input value={newClient.siteName} onChange={(event) => setNewClient({ ...newClient, siteName: event.target.value })} placeholder="Optional, e.g. Mulberry Farms" /></label>
-              <label className="nexops-field"><span>Street 1</span><input value={newClient.street1} onChange={(event) => setNewClient({ ...newClient, street1: event.target.value })} /></label>
-              <label className="nexops-field"><span>Street 2</span><input value={newClient.street2} onChange={(event) => setNewClient({ ...newClient, street2: event.target.value })} /></label>
-              <div className="nexops-field-row">
-                <label className="nexops-field"><span>City</span><input value={newClient.city} onChange={(event) => setNewClient({ ...newClient, city: event.target.value })} /></label>
-                <label className="nexops-field compact"><span>State</span><input value={newClient.province} onChange={(event) => setNewClient({ ...newClient, province: event.target.value })} /></label>
-              </div>
-              <div className="nexops-field-row">
-                <label className="nexops-field compact"><span>ZIP code</span><input value={newClient.postalCode} onChange={(event) => setNewClient({ ...newClient, postalCode: event.target.value })} /></label>
-                <label className="nexops-field"><span>Country</span><select value="USA" onChange={() => undefined}><option value="USA">United States</option></select></label>
-              </div>
-              <label className="nexops-field"><span>Tax rate</span><select value="none" onChange={() => undefined}><option value="none">No tax rate created</option></select></label>
-              <label className="nexops-check-field"><input type="checkbox" checked={newClient.billingSameAsPrimaryProperty} onChange={(event) => setNewClient({ ...newClient, billingSameAsPrimaryProperty: event.target.checked })} /> Billing address is the same as property address</label>
-              {!newClient.billingSameAsPrimaryProperty ? (
-                <div className="nexops-subsection">
-                  <h4>Billing address</h4>
-                  <label className="nexops-field"><span>Billing street 1</span><input value={newClient.billingStreet1} onChange={(event) => setNewClient({ ...newClient, billingStreet1: event.target.value })} /></label>
-                  <label className="nexops-field"><span>Billing street 2</span><input value={newClient.billingStreet2} onChange={(event) => setNewClient({ ...newClient, billingStreet2: event.target.value })} /></label>
-                  <div className="nexops-field-row">
-                    <label className="nexops-field"><span>Billing city</span><input value={newClient.billingCity} onChange={(event) => setNewClient({ ...newClient, billingCity: event.target.value })} /></label>
-                    <label className="nexops-field compact"><span>Billing state</span><input value={newClient.billingProvince} onChange={(event) => setNewClient({ ...newClient, billingProvince: event.target.value })} /></label>
-                  </div>
-                  <label className="nexops-field compact"><span>Billing ZIP</span><input value={newClient.billingPostalCode} onChange={(event) => setNewClient({ ...newClient, billingPostalCode: event.target.value })} /></label>
-                </div>
-              ) : null}
-              <details className="nexops-extra-panel" open>
-                <summary>Property details</summary>
-                <div className="nexops-extra-panel-body">
-                  <p>Create custom fields to track additional property details.</p>
-                  <button type="button">Add Custom Field</button>
-                  <label className="nexops-check-field inline"><input type="checkbox" checked={newClient.propertyGatedEntry} onChange={(event) => setNewClient({ ...newClient, propertyGatedEntry: event.target.checked })} /> Gated entry</label>
-                  <label className="nexops-field"><span>Gate entry code(s)</span><input value={newClient.propertyGateCodes} onChange={(event) => setNewClient({ ...newClient, propertyGateCodes: event.target.value })} /></label>
-                  <label className="nexops-field"><span>Property client name</span><input value={newClient.propertyClientName} onChange={(event) => setNewClient({ ...newClient, propertyClientName: event.target.value })} /></label>
-                  <label className="nexops-field"><span>Property client telephone number</span><input value={newClient.propertyClientPhone} onChange={(event) => setNewClient({ ...newClient, propertyClientPhone: event.target.value })} /></label>
-                  <label className="nexops-field"><span>Property client email address</span><input type="email" value={newClient.propertyClientEmail} onChange={(event) => setNewClient({ ...newClient, propertyClientEmail: event.target.value })} /></label>
-                  <label className="nexops-field"><span>CompanyCam project</span><input value={newClient.companyCamProject} onChange={(event) => setNewClient({ ...newClient, companyCamProject: event.target.value })} /></label>
-                  <div className="nexops-field-row">
-                    <label className="nexops-field"><span>Custom field name</span><input value={newClient.propertyCustomFieldName} onChange={(event) => setNewClient({ ...newClient, propertyCustomFieldName: event.target.value })} /></label>
-                    <label className="nexops-field"><span>Custom field value</span><input value={newClient.propertyCustomFieldValue} onChange={(event) => setNewClient({ ...newClient, propertyCustomFieldValue: event.target.value })} /></label>
-                  </div>
-                </div>
-              </details>
-              <details className="nexops-extra-panel" open>
-                <summary>Property contacts</summary>
-                <div className="nexops-extra-panel-body single-row">
-                  <p>For contacts with access limited to this property. These contacts do not receive parent-client correspondence by default.</p>
-                  <button type="button">Add Contact</button>
-                </div>
-              </details>
-            </div>
-          </section>
-          <div className="nexops-drawer-actions">
-            <span>{createStatus || (createClientCanSave ? "Name, address, and telephone are present. Email is optional." : `Add ${createClientMissingFields.join(", ")} before Save becomes available.`)}</span>
-            <button type="button" onClick={() => setShowCreateClient(false)}>Cancel</button>
-            <button type="submit" disabled={!createClientCanSave}>Save client</button>
-          </div>
-        </form>
-      </div>
+      <Suspense fallback={<div className="nexops-drawer-backdrop" role="presentation"><div className="nexops-drawer nexops-client-form"><p className="eyebrow">Loading</p><h2>Opening client setup</h2><p>Pulling the deferred client form into view now.</p></div></div>}>
+        <NexOpsCreateClientPanel
+          tenantId={operatorContext.tenantId}
+          newClient={newClient}
+          setNewClient={setNewClient}
+          createStatus={createStatus}
+          createClientCanSave={createClientCanSave}
+          createClientMissingFields={createClientMissingFields}
+          leadSourceOptions={leadSourceOptions}
+          surface={createClientSurface}
+          onClose={() => setShowCreateClient(false)}
+          onSubmit={createClientFromForm}
+        />
+      </Suspense>
+    );
+  }
+
+  function renderCreateMenu(): React.ReactElement | null {
+    if (!createMenuOpen) {
+      return null;
+    }
+    const activeContextLabel = activeClientProfileTab && selectedClient
+      ? `Create inside ${clientDisplayName(selectedClient)} without leaving the client workspace.`
+      : `Start from the ${moduleTitle} rail and jump straight into the right builder.`;
+    return (
+      <Suspense fallback={<section className="nexops-create-menu nexops-create-menu-flyout" role="dialog" aria-label="Create a new record"><p className="nexops-module-status">Loading create menu...</p></section>}>
+        <NexOpsCreateMenu
+          presentation={createMenuPresentation(window.innerWidth)}
+          activeContextLabel={activeContextLabel}
+          onClose={() => setCreateMenuOpen(false)}
+          onSelect={handleCreateSelection}
+        />
+      </Suspense>
     );
   }
 
@@ -2205,7 +5443,12 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
           tenantId={operatorContext.tenantId}
           clients={clients}
           properties={properties}
-          onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
+          tenantUsers={tenantUsers}
+          focusedRequestId={focusedRequestId}
+          initialFilter={requestFilterIntent}
+          captureIntent={captureRequestIntent}
+          onCaptureRequestCreated={handleCaptureRequestCreated}
+          onCrmMutation={emitCrmMutation}
         />
       );
     }
@@ -2214,6 +5457,9 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
         <NexOpsQuotesPage
           tenantId={operatorContext.tenantId}
           clients={clients}
+          tenantUsers={tenantUsers}
+          focusedQuoteId={focusedQuoteId}
+          initialFilter={quoteFilterIntent}
           onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
         />
       );
@@ -2222,9 +5468,12 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
       return (
         <NexOpsJobsPage
           tenantId={operatorContext.tenantId}
+          role={operatorContext.role}
           clients={clients}
           onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
           onOpenInvoice={openInvoiceWorkspace}
+          focusedJobId={focusedJobId}
+          initialFilter={jobFilterIntent}
         />
       );
     }
@@ -2235,18 +5484,30 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
           clients={clients}
           entryPoint={activeModule}
           focusedInvoiceId={focusedInvoiceId}
+          initialFilter={invoiceFilterIntent}
           onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
         />
       );
     }
     if (activeModule === "schedule") {
-      return <div className="nexops-embedded-panel"><SchedulePanel tenantId={operatorContext.tenantId} /></div>;
+      return (
+        <NexOpsSchedulePage
+          tenantId={operatorContext.tenantId}
+          role={operatorContext.role}
+          initialScope={scheduleScopeIntent}
+          onOpenJob={(jobId) => openWorkspaceTarget({ module: "jobs", objectId: jobId })}
+          onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
+        />
+      );
     }
     if (activeModule === "imports") {
       return renderImports();
     }
     if (activeModule === "approvals") {
       return <div className="nexops-embedded-panel"><ApprovalQueuePanel tenantId={operatorContext.tenantId} /></div>;
+    }
+    if (activeModule === "capture") {
+      return renderCaptureWorkspace();
     }
     if (activeModule === "settings") {
       return renderSettings();
@@ -2257,15 +5518,69 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
     return renderLifecycle(activeModule);
   }
 
+  function renderNotificationPanel(): React.ReactElement | null {
+    if (!notificationsOpen) {
+      return null;
+    }
+    return (
+      <Suspense fallback={<section className="nexops-notification-panel" role="dialog" aria-label="Notifications"><p className="nexops-module-status">Loading notifications...</p></section>}>
+        <>
+          <button className="nexops-overlay-backdrop" type="button" aria-label="Close notifications" onClick={() => setNotificationsOpen(false)} />
+          <NexOpsNotificationPanel
+            notificationStatus={notificationStatus}
+            notifications={notifications}
+            onMarkAllRead={markAllNotificationsRead}
+            onOpenNotification={openNotification}
+            onClose={() => setNotificationsOpen(false)}
+          />
+        </>
+      </Suspense>
+    );
+  }
+
+  function renderModuleSwitcher(): React.ReactElement | null {
+    if (!moduleSwitcherOpen) {
+      return null;
+    }
+    return (
+      <>
+        <button className="nexops-overlay-backdrop" type="button" aria-label="Close module switcher" onClick={() => setModuleSwitcherOpen(false)} />
+        <section className="nexops-workspace-switcher" role="dialog" aria-label="Switch NexTeam modules">
+          <div className="nexops-workspace-switcher-head">
+            <div>
+              <p className="eyebrow">Modules</p>
+              <h2>Move across the platform</h2>
+            </div>
+            <button type="button" onClick={() => setModuleSwitcherOpen(false)}>Close</button>
+          </div>
+          <div className="nexops-workspace-switcher-grid">
+            {NEXTEAM_WORKSPACE_OPTIONS.map((option) => (
+              <button
+                className={option.id === "nexops" ? "active" : ""}
+                key={option.id}
+                type="button"
+                onClick={() => openWorkspaceProduct(option.id)}
+              >
+                <ProductLogo product={option.id === "nexportal" ? "nexportal" : option.id} className="nexops-workspace-switcher-logo" alt={option.label} />
+                <div>
+                  <strong>{option.label}</strong>
+                  <p>{option.detail}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      </>
+    );
+  }
+
   return (
-    <main className="nexops-app" style={style}>
-      <aside className="nexops-app-sidebar" aria-label="NexOps navigation">
-        <div className="nexops-app-logo">
-          <NexTeamLockup className="nexops-sidebar-lockup" />
-          <span>NexOps</span>
-          <small>{tenantName}</small>
-        </div>
-        <button className="nexops-create-button" type="button" onClick={() => setShowCreateClient(true)}>Create</button>
+      <main className="nexops-app" style={style}>
+        <aside className="nexops-app-sidebar" aria-label="NexOps navigation">
+          <div className="nexops-app-logo">
+            <SidebarBrandStack product="nexops" branding={tenantBranding} tenantId={operatorContext.tenantId} />
+          </div>
+        <button className="nexops-create-button" type="button" aria-controls={NEXOPS_SHARED_CREATE_MENU_ID} aria-expanded={createMenuOpen} onClick={toggleCreateMenu}>Create</button>
         <nav className="nexops-nav">
           {NEXOPS_MODULES.filter((item) => !item.hidden).map((item) => (
             <button className={item.id === activeModule ? "active" : ""} type="button" key={item.id} onClick={() => setModule(item.id)}>
@@ -2276,18 +5591,213 @@ function NexOpsClientsPage(props: { auth: Auth | null; user: User }): React.Reac
       </aside>
 
       <section className="nexops-web-main">
-        <header className="nexops-web-topbar">
-          <p>{tenantName}</p>
-          <div className="nexops-web-tools">
-            <label>
-              <span className="sr-only">Global search</span>
-              <input placeholder="Search NexOps..." />
-            </label>
-            <span>{moduleTitle}</span>
-            <span>{props.user.email ?? "Operator"}</span>
-            <button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
+        <NexOpsSharedMobileBar
+          tenantBranding={tenantBranding}
+          tenantId={operatorContext.tenantId}
+          onBrandClick={returnToHomeModule}
+          brandAriaLabel="Return to NexOps home"
+          rightControls={(
+            <>
+              <button
+                className="nexops-mobile-icon-button"
+                type="button"
+                aria-label="Open camera capture"
+                onClick={() => {
+                  if (captureSession) {
+                    openCaptureWorkspace("session");
+                    return;
+                  }
+                  void startCaptureSession();
+                }}
+              >
+                <NexOpsNavGlyph module="capture" />
+              </button>
+              <button className="nexops-mobile-icon-button nexops-notification-button" type="button" aria-expanded={notificationsOpen} aria-label="Open notifications" onClick={toggleNotifications}>
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 3.7a3.1 3.1 0 0 0-3.1 3.1v1.3c0 .8-.3 1.6-.8 2.2l-.9 1v.8h9.6v-.8l-.9-1c-.5-.6-.8-1.4-.8-2.2V6.8A3.1 3.1 0 0 0 10 3.7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                  <path d="M8.3 14.7a1.8 1.8 0 0 0 3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+                {notificationUnreadCount ? <span className="nexops-notification-badge">{notificationUnreadCount}</span> : null}
+              </button>
+              <button
+                className="nexops-mobile-menu-button"
+                type="button"
+                aria-expanded={mobileNavOpen}
+                aria-controls="nexops-mobile-nav"
+                aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"}
+                onClick={() => setMobileNavOpen((current) => !current)}
+              >
+                <span className="nexops-mobile-menu-glyph" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+                <span className="nexops-mobile-menu-label">Menu</span>
+              </button>
+            </>
+          )}
+        />
+        {mobileNavOpen ? (
+          <div className="nexops-mobile-nav-layer" role="presentation">
+            <button className="nexops-mobile-nav-backdrop" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />
+            <aside className="nexops-mobile-nav-sheet" id="nexops-mobile-nav" role="dialog" aria-modal="true" aria-label="NexOps navigation">
+              <div className="nexops-mobile-nav-header">
+                <div className="nexops-mobile-brand-stack">
+                  <div className="nexops-mobile-brand">
+                    <div className="nexops-mobile-brand-lockup">
+                      <PlatformMark className="nexops-mobile-platform-mark" alt="NexTeam" />
+                      <ProductLogo product="nexops" className="nexops-mobile-product-logo" alt="NexOps" />
+                    </div>
+                  </div>
+                  <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} className="nexops-mobile-tenant-mark" />
+                </div>
+                <button className="nexops-mobile-close-button" type="button" onClick={() => setMobileNavOpen(false)}>Close</button>
+              </div>
+              <div className="nexops-mobile-nav-quick-actions">
+                <button className="nexops-create-button mobile" type="button" onClick={() => {
+                  setMobileNavOpen(false);
+                  setCreateMenuOpen(true);
+                }}>
+                  Create
+                </button>
+                <button type="button" onClick={() => {
+                  setMobileNavOpen(false);
+                  toggleModuleSwitcher();
+                }}>
+                  Modules
+                </button>
+              </div>
+              <div className="nexops-mobile-nav-utility-grid" aria-label="Mobile quick tools">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileNavOpen(false);
+                    if (captureSession) {
+                      openCaptureWorkspace("session");
+                      return;
+                    }
+                    void startCaptureSession();
+                  }}
+                >
+                  <NexOpsNavGlyph module="capture" />
+                  <span>NexCam</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileNavOpen(false);
+                    toggleNotifications();
+                  }}
+                >
+                  <span className="nexops-mobile-nav-utility-icon nexops-notification-button" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none">
+                      <path d="M10 3.7a3.1 3.1 0 0 0-3.1 3.1v1.3c0 .8-.3 1.6-.8 2.2l-.9 1v.8h9.6v-.8l-.9-1c-.5-.6-.8-1.4-.8-2.2V6.8A3.1 3.1 0 0 0 10 3.7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                      <path d="M8.3 14.7a1.8 1.8 0 0 0 3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                    </svg>
+                    {notificationUnreadCount ? <span className="nexops-notification-badge">{notificationUnreadCount}</span> : null}
+                  </span>
+                  <span>Notifications</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileNavOpen(false);
+                    closeHeaderPanels();
+                    setModule("settings");
+                  }}
+                >
+                  <NexOpsNavGlyph module="settings" />
+                  <span>Settings</span>
+                </button>
+                <button type="button" onClick={() => {
+                  setMobileNavOpen(false);
+                  void signOutOperator(props.auth);
+                }}>
+                  <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                    <path d="M12 4.5h2a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 14 15.5h-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                    <path d="M9 13.5 12.5 10 9 6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 10H4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                  </svg>
+                  <span>Sign out</span>
+                </button>
+              </div>
+              {NEXOPS_MOBILE_NAV_GROUPS.map((group) => (
+                <section className="nexops-mobile-nav-group" key={group.title} aria-label={group.title}>
+                  <p>{group.title}</p>
+                  <div className="nexops-mobile-nav-grid">
+                    {group.items.map((moduleId) => {
+                      const module = NEXOPS_MODULES.find((entry) => entry.id === moduleId);
+                      if (!module || module.hidden) {
+                        return null;
+                      }
+                      return (
+                        <button className={module.id === activeModule ? "active" : ""} type="button" key={module.id} onClick={() => setModule(module.id)}>
+                          <NexOpsNavGlyph module={module.id} />
+                          <span>{module.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+              <div className="nexops-mobile-nav-footer">
+                <div>
+                  <strong>{props.user.email ?? "Operator"}</strong>
+                  <span>Signed in for this tenant</span>
+                </div>
+              </div>
+            </aside>
           </div>
-        </header>
+        ) : null}
+        <NexOpsSharedWebTopbar
+          tenantName={tenantName}
+          moduleTitle={moduleTitle}
+          moduleSwitcherOpen={moduleSwitcherOpen}
+          onToggleModuleSwitcher={toggleModuleSwitcher}
+          accountTools={(
+            <>
+              <button
+                className="nexops-web-icon-button"
+                type="button"
+                aria-label="Open camera capture"
+                onClick={() => {
+                  if (captureSession) {
+                    openCaptureWorkspace("session");
+                    return;
+                  }
+                  void startCaptureSession();
+                }}
+              >
+                <NexOpsNavGlyph module="capture" />
+              </button>
+              <button className="nexops-web-icon-button nexops-notification-button" type="button" aria-expanded={notificationsOpen} aria-label="Open notifications" onClick={toggleNotifications}>
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 3.7a3.1 3.1 0 0 0-3.1 3.1v1.3c0 .8-.3 1.6-.8 2.2l-.9 1v.8h9.6v-.8l-.9-1c-.5-.6-.8-1.4-.8-2.2V6.8A3.1 3.1 0 0 0 10 3.7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                  <path d="M8.3 14.7a1.8 1.8 0 0 0 3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+                {notificationUnreadCount ? <span className="nexops-notification-badge">{notificationUnreadCount}</span> : null}
+              </button>
+              <button className="nexops-web-icon-button" type="button" aria-label="Open settings" onClick={() => {
+                closeHeaderPanels();
+                setModule("settings");
+              }}>
+                <NexOpsNavGlyph module="settings" />
+              </button>
+              <span>{props.user.email ?? "Operator"}</span>
+              <button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
+            </>
+          )}
+        />
+        <NexOpsMobileCreateFab
+          collapsed={mobileCreateFabCollapsed}
+          expanded={createMenuOpen}
+          hidden={mobileFabShouldHideOverlays({ mobileNavOpen, notificationsOpen, moduleSwitcherOpen })}
+          pulse={mobileCreateFabPulse}
+          onClick={toggleCreateMenu}
+        />
+        {renderModuleSwitcher()}
+        {renderCreateMenu()}
+        {renderNotificationPanel()}
 
         <Suspense fallback={<div className="nexops-embedded-panel"><section className="nexops-module-card"><p className="eyebrow">Loading</p><h2>Opening this workspace</h2><p>Pulling the next screen into the shell now.</p></section></div>}>
           {renderActiveModule()}
@@ -2319,17 +5829,86 @@ function nexCamModuleFromPath(pathname: string): NexCamModule {
 }
 
 function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElement {
+  const mediaStageRef = useRef<HTMLDivElement | null>(null);
   const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
   const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
   const [activeModule, setActiveModule] = useState<NexCamModule>(() => nexCamModuleFromPath(window.location.pathname));
+  const [clients, setClients] = useState<CrmClient[]>([]);
   const [templates, setTemplates] = useState<FieldDocsTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [mediaHits, setMediaHits] = useState<NonNullable<FieldDocsSearchResponse["hits"]>>([]);
+  const [recentMedia, setRecentMedia] = useState<NonNullable<FieldDocsMediaListResponse["media"]>>([]);
+  const [history, setHistory] = useState<NonNullable<FieldDocsPropertyHistoryResponse["history"]>>([]);
+  const [recentChecklists, setRecentChecklists] = useState<NonNullable<FieldDocsChecklistListResponse["checklists"]>>([]);
   const [checklist, setChecklist] = useState<FieldDocsChecklistResponse["checklist"] | null>(null);
   const [report, setReport] = useState<FieldDocsReportResponse["report"] | null>(null);
+  const [reports, setReports] = useState<NonNullable<FieldDocsReportsListResponse["reports"]>>([]);
+  const [reportTemplates, setReportTemplates] = useState<FieldReportTemplate[]>([]);
+  const [bundles, setBundles] = useState<FieldDocsBundleRecord[]>([]);
+  const [textSnippets, setTextSnippets] = useState<FieldDocsTextSnippetRecord[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<FieldDocsMediaHit | null>(null);
+  const [mediaCommentDraft, setMediaCommentDraft] = useState("");
+  const [mediaManualTagsDraft, setMediaManualTagsDraft] = useState("");
+  const [mediaHiddenFromClientDraft, setMediaHiddenFromClientDraft] = useState(false);
+  const [mediaReviewSaving, setMediaReviewSaving] = useState(false);
+  const [mediaAnnotationsDraft, setMediaAnnotationsDraft] = useState<FieldDocsMediaAnnotation[]>([]);
+  const [drawingPath, setDrawingPath] = useState<Array<{ x: number; y: number }> | null>(null);
+  const [drawMode, setDrawMode] = useState(false);
   const [reportUrl, setReportUrl] = useState("");
   const [status, setStatus] = useState("Loading NexCam...");
   const [mediaQuery, setMediaQuery] = useState("Deborah Justice");
+  const [clientFilterId, setClientFilterId] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [includeTrashed, setIncludeTrashed] = useState(false);
   const [reportTitle, setReportTitle] = useState("Aquatrace Leak Detection Report");
+  const [reportKind, setReportKind] = useState<"field_report" | "ai_recap">("field_report");
+  const [selectedReportTemplateId, setSelectedReportTemplateId] = useState("");
+  const [selectedSnippetIds, setSelectedSnippetIds] = useState<string[]>([]);
+  const [watermarkEnabled, setWatermarkEnabled] = useState(false);
+  const [activeChecklistSection, setActiveChecklistSection] = useState("");
+  const [contextIds, setContextIds] = useState({
+    propertyId: "property_demo_pool",
+    jobId: "job_demo_leak_detection",
+    visitId: "visit_demo_2026_07_18"
+  });
+  const [templateDraft, setTemplateDraft] = useState({
+    title: "",
+    slug: "",
+    description: "",
+    appliesTo: "visit" as "job" | "visit" | "job_or_visit"
+  });
+  const [draftSections, setDraftSections] = useState<Array<{ id: string; title: string; allowNa: boolean }>>([
+    { id: "overview", title: "Overview", allowNa: false }
+  ]);
+  const [draftFields, setDraftFields] = useState<FieldDocsTemplateField[]>([]);
+  const [draftField, setDraftField] = useState({
+    label: "",
+    section: "Overview",
+    type: "free_text" as FieldDocsTemplateField["type"],
+    memory: "visit" as FieldDocsTemplateField["memory"],
+    required: true,
+    photoRequiredDefault: false,
+    helpText: "",
+    unit: "",
+    optionsText: ""
+  });
+  const [reportTemplateDraft, setReportTemplateDraft] = useState({
+    title: "",
+    defaultReportTitle: "",
+    watermarkByDefault: false
+  });
+  const [reportTemplateSections, setReportTemplateSections] = useState<Array<{ id: string; label: string; defaultText: string; snippetIds: string[] }>>([
+    { id: "summary", label: "Summary", defaultText: "", snippetIds: [] }
+  ]);
+  const [snippetDraft, setSnippetDraft] = useState({ label: "", bodyText: "" });
+  const [bundleDraft, setBundleDraft] = useState({
+    label: "",
+    jobTypeKey: "",
+    checklistTemplateId: "",
+    reportTemplateId: "",
+    active: true
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -2361,6 +5940,25 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
   }, [operatorContext.tenantId]);
 
   useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/crm/clients?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+      .then((response) => response.json() as Promise<CrmClientsResponse>)
+      .then((body) => {
+        if (!cancelled) {
+          setClients(body.ok ? (body.clients ?? []) : []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setClients([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [operatorContext.tenantId]);
+
+  useEffect(() => {
     const onPopState = () => setActiveModule(nexCamModuleFromPath(window.location.pathname));
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -2376,7 +5974,11 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
         setStatus(body.error ?? "Checklist templates are unavailable.");
         return;
       }
-      setTemplates(body.templates ?? []);
+      const nextTemplates = body.templates ?? [];
+      setTemplates(nextTemplates);
+      setSelectedTemplateId((current) => current && nextTemplates.some((template) => template.id === current)
+        ? current
+        : (nextTemplates[0]?.id ?? ""));
       setStatus(`${body.templates?.length ?? 0} checklist template${body.templates?.length === 1 ? "" : "s"} ready.`);
     } catch {
       setTemplates([]);
@@ -2384,23 +5986,194 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
     }
   }
 
-  async function createChecklist(): Promise<void> {
-    setStatus("Creating leak detection checklist...");
+  async function refreshReportTemplates(): Promise<void> {
     try {
-      const body = await fetch("/api/fielddocs/checklists/leak-detection", {
+      const body = await fetch(`/api/fielddocs/report-templates?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+        .then((response) => response.json() as Promise<FieldReportTemplatesResponse>);
+      const nextTemplates = body.ok ? (body.templates ?? []) : [];
+      setReportTemplates(nextTemplates);
+      setSelectedReportTemplateId((current) => current && nextTemplates.some((template) => template.id === current)
+        ? current
+        : (nextTemplates[0]?.id ?? ""));
+      setWatermarkEnabled((current) => current || Boolean(nextTemplates[0]?.watermarkByDefault));
+    } catch {
+      setReportTemplates([]);
+    }
+  }
+
+  async function refreshBundles(): Promise<void> {
+    try {
+      const body = await fetch(`/api/fielddocs/bundles?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+        .then((response) => response.json() as Promise<FieldDocsBundlesResponse>);
+      setBundles(body.ok ? (body.bundles ?? []) : []);
+    } catch {
+      setBundles([]);
+    }
+  }
+
+  async function refreshTextSnippets(): Promise<void> {
+    try {
+      const body = await fetch(`/api/fielddocs/text-snippets?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+        .then((response) => response.json() as Promise<FieldDocsTextSnippetsResponse>);
+      setTextSnippets(body.ok ? (body.snippets ?? []) : []);
+    } catch {
+      setTextSnippets([]);
+    }
+  }
+
+  async function refreshRecentMedia(): Promise<void> {
+    try {
+      const params = new URLSearchParams({
+        tenantId: operatorContext.tenantId,
+        propertyId: contextIds.propertyId,
+        jobId: contextIds.jobId,
+        visitId: contextIds.visitId,
+        limit: "12",
+        includeTrashed: String(includeTrashed)
+      });
+      if (clientFilterId.trim()) params.set("clientId", clientFilterId.trim());
+      if (dateFrom) params.set("dateFrom", `${dateFrom}T00:00:00.000Z`);
+      if (dateTo) params.set("dateTo", `${dateTo}T23:59:59.999Z`);
+      const body = await fetch(`/api/fielddocs/media?${params.toString()}`)
+        .then((response) => response.json() as Promise<FieldDocsMediaListResponse>);
+      setRecentMedia(body.ok ? (body.media ?? []) : []);
+    } catch {
+      setRecentMedia([]);
+    }
+  }
+
+  async function refreshHistory(): Promise<void> {
+    if (!contextIds.propertyId.trim()) {
+      setHistory([]);
+      return;
+    }
+    try {
+      const body = await fetch(`/api/fielddocs/properties/${encodeURIComponent(contextIds.propertyId)}/history?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+        .then((response) => response.json() as Promise<FieldDocsPropertyHistoryResponse>);
+      setHistory(body.ok ? (body.history ?? []) : []);
+    } catch {
+      setHistory([]);
+    }
+  }
+
+  async function refreshChecklists(): Promise<void> {
+    try {
+      const params = new URLSearchParams({ tenantId: operatorContext.tenantId });
+      if (contextIds.propertyId.trim()) params.set("propertyId", contextIds.propertyId.trim());
+      if (contextIds.jobId.trim()) params.set("jobId", contextIds.jobId.trim());
+      if (contextIds.visitId.trim()) params.set("visitId", contextIds.visitId.trim());
+      const body = await fetch(`/api/fielddocs/checklists?${params.toString()}`)
+        .then((response) => response.json() as Promise<FieldDocsChecklistListResponse>);
+      setRecentChecklists(body.ok ? (body.checklists ?? []) : []);
+    } catch {
+      setRecentChecklists([]);
+    }
+  }
+
+  async function refreshReports(): Promise<void> {
+    try {
+      const params = new URLSearchParams({
+        tenantId: operatorContext.tenantId,
+        propertyId: contextIds.propertyId,
+        jobId: contextIds.jobId,
+        visitId: contextIds.visitId,
+        limit: "12"
+      });
+      if (clientFilterId.trim()) params.set("clientId", clientFilterId.trim());
+      if (dateFrom) params.set("dateFrom", `${dateFrom}T00:00:00.000Z`);
+      if (dateTo) params.set("dateTo", `${dateTo}T23:59:59.999Z`);
+      const body = await fetch(`/api/fielddocs/reports?${params.toString()}`)
+        .then((response) => response.json() as Promise<FieldDocsReportsListResponse>);
+      const nextReports = body.ok ? (body.reports ?? []) : [];
+      setReports(nextReports);
+      setReport((current) => current ?? nextReports[0] ?? null);
+    } catch {
+      setReports([]);
+    }
+  }
+
+  async function createChecklist(): Promise<void> {
+    setStatus("Creating checklist from library...");
+    try {
+      const body = await fetch("/api/fielddocs/checklists", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: operatorContext.tenantId, jobId: "job_demo_leak_detection" })
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          templateId: selectedTemplateId || templates[0]?.id,
+          propertyId: contextIds.propertyId.trim() || undefined,
+          jobId: contextIds.jobId.trim() || undefined,
+          visitId: contextIds.visitId.trim() || undefined
+        })
       }).then((response) => response.json() as Promise<FieldDocsChecklistResponse>);
       if (!body.ok || !body.checklist) {
         setStatus(body.error ?? "Checklist could not be created.");
         return;
       }
       setChecklist(body.checklist);
-      setStatus(`Checklist ${body.checklist.id} created with ${body.checklist.items.length} items.`);
+      setActiveChecklistSection(body.checklist.fields[0]?.section ?? "");
+      await refreshChecklists();
+      setStatus(`Checklist ${body.checklist.id} created with ${body.checklist.fields.length} fields.`);
     } catch {
       setStatus("Checklist create request failed.");
     }
+  }
+
+  async function saveChecklist(complete = false): Promise<void> {
+    if (!checklist) {
+      return;
+    }
+    setStatus(complete ? "Completing checklist..." : "Saving checklist...");
+    try {
+      const body = await fetch(`/api/fielddocs/checklists/${encodeURIComponent(checklist.id)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          complete,
+          updates: checklist.fields.map((field) => ({
+            fieldId: field.fieldId,
+            status: field.status,
+            photoRequired: field.photoRequired ?? false,
+            ...(field.note !== undefined ? { note: field.note } : {}),
+            ...(field.numberValue !== undefined ? { numberValue: field.numberValue } : {}),
+            ...(field.multiValue !== undefined ? { multiValue: field.multiValue } : {}),
+            ...(field.mediaIds !== undefined ? { mediaIds: field.mediaIds } : {})
+          })),
+          sectionStateUpdates: checklist.sectionStates.map((section) => ({
+            section: section.section,
+            status: section.status
+          }))
+        })
+      }).then((response) => response.json() as Promise<FieldDocsChecklistResponse>);
+      if (!body.ok || !body.checklist) {
+        setStatus(body.error ?? "Checklist save failed.");
+        return;
+      }
+      setChecklist(body.checklist);
+      await Promise.all([refreshHistory(), refreshReports(), refreshChecklists()]);
+      setStatus(complete ? "Checklist completed and property memory updated." : "Checklist draft saved.");
+    } catch {
+      setStatus("Checklist save request failed.");
+    }
+  }
+
+  function patchChecklistField(fieldId: string, patch: Partial<NonNullable<FieldDocsChecklistResponse["checklist"]>["fields"][number]>): void {
+    setChecklist((current) => current ? {
+      ...current,
+      fields: current.fields.map((field) => field.fieldId === fieldId ? { ...field, ...patch } : field)
+    } : current);
+  }
+
+  function patchChecklistSection(sectionName: string, status: "active" | "not_applicable"): void {
+    setChecklist((current) => current ? {
+      ...current,
+      sectionStates: current.sectionStates.map((section) => section.section === sectionName ? {
+        ...section,
+        status,
+        updatedAt: new Date().toISOString()
+      } : section)
+    } : current);
   }
 
   async function searchMedia(): Promise<void> {
@@ -2424,19 +6197,29 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
   async function createReport(): Promise<void> {
     setStatus("Generating NexCam report...");
     try {
+      const mediaIds = (recentMedia.length ? recentMedia : mediaHits).map((hit) => hit.id);
+      const template = reportTemplates.find((entry) => entry.id === selectedReportTemplateId);
       const body = await fetch("/api/fielddocs/reports", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           tenantId: operatorContext.tenantId,
-          jobId: "job_demo_leak_detection",
+          propertyId: contextIds.propertyId.trim() || undefined,
+          jobId: contextIds.jobId.trim() || undefined,
+          visitId: contextIds.visitId.trim() || undefined,
+          kind: reportKind,
           title: reportTitle,
           findings: [
-            "Checklist-driven report generated from NexCam.",
+            reportKind === "ai_recap"
+              ? "AI recap assembled from captured field media, checklist completion, and the current visit context."
+              : "Checklist-driven report generated from NexCam.",
             "Report can attach to closeout receipts and approval-gated emails."
           ],
-          mediaIds: mediaHits.map((hit) => hit.id),
+          mediaIds,
           checklistId: checklist?.id,
+          ...(template ? { templateId: template.id } : {}),
+          ...(selectedSnippetIds.length ? { snippetIds: selectedSnippetIds } : {}),
+          watermarkEnabled,
           status: "posted"
         })
       }).then((response) => response.json() as Promise<FieldDocsReportResponse>);
@@ -2446,10 +6229,235 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
       }
       setReport(body.report);
       setReportUrl(body.pdfUrl ?? "");
+      await refreshReports();
       setStatus(`Report ${body.report.id} generated.`);
     } catch {
       setStatus("Report create request failed.");
     }
+  }
+
+  async function saveTemplate(): Promise<void> {
+    if (!templateDraft.title.trim() || !templateDraft.slug.trim() || !draftFields.length) {
+      setStatus("Template title, slug, and at least one field are required.");
+      return;
+    }
+    setStatus("Saving checklist template...");
+    try {
+      const body = await fetch("/api/fielddocs/checklists/templates", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          title: templateDraft.title.trim(),
+          slug: templateDraft.slug.trim(),
+          description: templateDraft.description.trim() || undefined,
+          appliesTo: templateDraft.appliesTo,
+          active: true,
+          version: 1,
+          sections: draftSections
+            .filter((section) => draftFields.some((field) => field.section === section.title))
+            .map((section) => ({
+              id: section.id,
+              title: section.title,
+              allowNa: section.allowNa
+            })),
+          fields: draftFields
+        })
+      }).then((response) => response.json() as Promise<{ ok: boolean; error?: string }>);
+      if (!body.ok) {
+        setStatus(body.error ?? "Template save failed.");
+        return;
+      }
+      setDraftFields([]);
+      setTemplateDraft({ title: "", slug: "", description: "", appliesTo: "visit" });
+      setDraftSections([{ id: "overview", title: "Overview", allowNa: false }]);
+      setDraftField({
+        label: "",
+        section: "Overview",
+        type: "free_text",
+        memory: "visit",
+        required: true,
+        photoRequiredDefault: false,
+        helpText: "",
+        unit: "",
+        optionsText: ""
+      });
+      await refreshTemplates();
+      setStatus("Template saved to the NexCam library.");
+    } catch {
+      setStatus("Template save request failed.");
+    }
+  }
+
+  function addDraftField(): void {
+    if (!draftField.label.trim() || !draftField.section.trim()) {
+      setStatus("Each field needs a label and section.");
+      return;
+    }
+    const sectionTitle = draftField.section.trim();
+    setDraftFields((current) => [
+      ...current,
+      {
+        id: `field_${crypto.randomUUID()}`,
+        label: draftField.label.trim(),
+        section: sectionTitle,
+        type: draftField.type,
+        memory: draftField.memory,
+        required: draftField.required,
+        photoRequiredDefault: draftField.photoRequiredDefault,
+        ...(draftField.helpText.trim() ? { helpText: draftField.helpText.trim() } : {}),
+        ...(draftField.unit.trim() ? { unit: draftField.unit.trim() } : {}),
+        ...(draftField.optionsText.trim() ? { options: draftField.optionsText.split(",").map((option) => option.trim()).filter(Boolean) } : {})
+      }
+    ]);
+    setDraftSections((current) => current.some((section) => section.title === sectionTitle)
+      ? current
+      : [...current, {
+          id: sectionTitle.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+          title: sectionTitle,
+          allowNa: false
+        }]
+    );
+    setDraftField({
+      label: "",
+      section: sectionTitle,
+      type: "free_text",
+      memory: "visit",
+      required: true,
+      photoRequiredDefault: false,
+      helpText: "",
+      unit: "",
+      optionsText: ""
+    });
+    setStatus("Field added to the draft template.");
+  }
+
+  function removeDraftField(fieldId: string): void {
+    setDraftFields((current) => current.filter((field) => field.id !== fieldId));
+  }
+
+  function toggleDraftSectionAllowNa(sectionId: string): void {
+    setDraftSections((current) => current.map((section) => section.id === sectionId ? {
+      ...section,
+      allowNa: !section.allowNa
+    } : section));
+  }
+
+  function removeDraftSection(sectionId: string): void {
+    const section = draftSections.find((entry) => entry.id === sectionId);
+    if (!section) {
+      return;
+    }
+    setDraftSections((current) => current.filter((entry) => entry.id !== sectionId));
+    setDraftFields((current) => current.filter((field) => field.section !== section.title));
+  }
+
+  async function saveReportTemplate(): Promise<void> {
+    if (!reportTemplateDraft.title.trim() || !reportTemplateDraft.defaultReportTitle.trim() || !reportTemplateSections.length) {
+      setStatus("Report templates need a title, default report title, and at least one section.");
+      return;
+    }
+    setStatus("Saving report template...");
+    try {
+      const body = await fetch("/api/fielddocs/report-templates", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          title: reportTemplateDraft.title.trim(),
+          defaultReportTitle: reportTemplateDraft.defaultReportTitle.trim(),
+          sections: reportTemplateSections.map((section) => ({
+            id: section.id,
+            label: section.label,
+            ...(section.defaultText.trim() ? { defaultText: section.defaultText.trim() } : {}),
+            snippetIds: section.snippetIds
+          })),
+          watermarkByDefault: reportTemplateDraft.watermarkByDefault
+        })
+      }).then((response) => response.json() as Promise<{ ok: boolean; error?: string }>);
+      if (!body.ok) {
+        setStatus(body.error ?? "Report template save failed.");
+        return;
+      }
+      setReportTemplateDraft({ title: "", defaultReportTitle: "", watermarkByDefault: false });
+      setReportTemplateSections([{ id: "summary", label: "Summary", defaultText: "", snippetIds: [] }]);
+      await refreshReportTemplates();
+      setStatus("Report template saved.");
+    } catch {
+      setStatus("Report template save failed.");
+    }
+  }
+
+  async function saveTextSnippet(): Promise<void> {
+    if (!snippetDraft.label.trim() || !snippetDraft.bodyText.trim()) {
+      setStatus("Snippets need both a label and body text.");
+      return;
+    }
+    setStatus("Saving reusable text snippet...");
+    try {
+      const body = await fetch("/api/fielddocs/text-snippets", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          label: snippetDraft.label.trim(),
+          bodyText: snippetDraft.bodyText.trim()
+        })
+      }).then((response) => response.json() as Promise<{ ok: boolean; error?: string }>);
+      if (!body.ok) {
+        setStatus(body.error ?? "Text snippet save failed.");
+        return;
+      }
+      setSnippetDraft({ label: "", bodyText: "" });
+      await refreshTextSnippets();
+      setStatus("Reusable text snippet saved.");
+    } catch {
+      setStatus("Text snippet save failed.");
+    }
+  }
+
+  async function saveBundle(): Promise<void> {
+    if (!bundleDraft.label.trim() || !bundleDraft.jobTypeKey.trim() || !bundleDraft.checklistTemplateId || !bundleDraft.reportTemplateId) {
+      setStatus("Bundles need a label, job-type key, checklist template, and report template.");
+      return;
+    }
+    setStatus("Saving job-type bundle...");
+    try {
+      const body = await fetch("/api/fielddocs/bundles", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          label: bundleDraft.label.trim(),
+          jobTypeKey: bundleDraft.jobTypeKey.trim(),
+          checklistTemplateId: bundleDraft.checklistTemplateId,
+          reportTemplateId: bundleDraft.reportTemplateId,
+          active: bundleDraft.active
+        })
+      }).then((response) => response.json() as Promise<{ ok: boolean; error?: string }>);
+      if (!body.ok) {
+        setStatus(body.error ?? "Bundle save failed.");
+        return;
+      }
+      setBundleDraft({
+        label: "",
+        jobTypeKey: "",
+        checklistTemplateId: templates[0]?.id ?? "",
+        reportTemplateId: reportTemplates[0]?.id ?? "",
+        active: true
+      });
+      await refreshBundles();
+      setStatus("Job-type bundle saved.");
+    } catch {
+      setStatus("Bundle save failed.");
+    }
+  }
+
+  function toggleSnippetSelection(snippetId: string): void {
+    setSelectedSnippetIds((current) => current.includes(snippetId)
+      ? current.filter((entry) => entry !== snippetId)
+      : [...current, snippetId]
+    );
   }
 
   function setModule(module: NexCamModule): void {
@@ -2460,7 +6468,34 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
 
   useEffect(() => {
     void refreshTemplates();
+    void refreshReportTemplates();
+    void refreshBundles();
+    void refreshTextSnippets();
   }, [operatorContext.tenantId]);
+
+  useEffect(() => {
+    setBundleDraft((current) => ({
+      ...current,
+      checklistTemplateId: current.checklistTemplateId || templates[0]?.id || "",
+      reportTemplateId: current.reportTemplateId || reportTemplates[0]?.id || ""
+    }));
+  }, [reportTemplates, templates]);
+
+  useEffect(() => {
+    void Promise.all([refreshRecentMedia(), refreshHistory(), refreshReports(), refreshChecklists()]);
+  }, [operatorContext.tenantId, contextIds.propertyId, contextIds.jobId, contextIds.visitId, clientFilterId, dateFrom, dateTo, includeTrashed]);
+
+  useEffect(() => {
+    if (!checklist) {
+      setActiveChecklistSection("");
+      return;
+    }
+    const firstSection = checklist.fields[0]?.section ?? "";
+    const hasCurrentSection = checklist.fields.some((field) => field.section === activeChecklistSection);
+    if (!hasCurrentSection) {
+      setActiveChecklistSection(firstSection);
+    }
+  }, [checklist, activeChecklistSection]);
 
   const style = {
     "--nexops-brand-primary": "#0c1118",
@@ -2472,26 +6507,367 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
     "--nexops-brand-muted": "#68717c",
     "--nexops-font-family": "Montserrat, Aptos, Segoe UI, Helvetica Neue, sans-serif"
   } as React.CSSProperties;
-  const template = templates[0];
-  const propertyItems = template?.items.filter((item) => item.memory === "property") ?? [];
-  const visitItems = template?.items.filter((item) => item.memory === "visit") ?? [];
+  const template = templates.find((item) => item.id === selectedTemplateId) ?? templates[0];
+  const checklistTemplate = checklist
+    ? templates.find((item) => item.id === checklist.templateId) ?? template
+    : template;
+  const propertyItems = template?.fields.filter((item) => item.memory === "property") ?? [];
+  const visitItems = template?.fields.filter((item) => item.memory === "visit") ?? [];
+  const activeSectionRecord = checklist?.sectionStates.find((section) => section.section === activeChecklistSection);
+  const activeSectionTemplate = checklistTemplate?.sections.find((section) => section.title === activeChecklistSection);
+  const activeSectionAllowsNa = activeSectionTemplate?.allowNa === true;
+  const activeSectionIsNa = activeSectionRecord?.status === "not_applicable";
+
+  function renderChecklistField(field: NonNullable<FieldDocsChecklistResponse["checklist"]>["fields"][number]): React.ReactElement {
+    return (
+      <article className="nexops-module-card" key={field.fieldId}>
+        <p className="eyebrow">{field.section} · {field.memory === "property" ? "Property field" : "Visit field"}</p>
+        <h2>{field.label}</h2>
+        <p className="nexcam-field-note">
+          {field.required ? "Required" : "Optional"}
+          {field.photoRequired ? " - photo required on this checklist" : ""}
+        </p>
+        {field.type === "pass_fail" ? (
+          <>
+            <label className="nexops-field">
+              <span>Status</span>
+              <select value={field.status} onChange={(event) => patchChecklistField(field.fieldId, { status: event.target.value as typeof field.status })}>
+                <option value="pending">Pending</option>
+                <option value="pass">Pass</option>
+                <option value="fail">Fail</option>
+                <option value="not_applicable">Not applicable</option>
+              </select>
+            </label>
+            <label className="nexops-field">
+              <span>Notes</span>
+              <textarea rows={3} value={field.note ?? ""} onChange={(event) => patchChecklistField(field.fieldId, { note: event.target.value })} />
+            </label>
+          </>
+        ) : null}
+        {field.type === "free_text" ? (
+          <label className="nexops-field">
+            <span>Notes</span>
+            <textarea rows={3} value={field.note ?? ""} onChange={(event) => patchChecklistField(field.fieldId, { note: event.target.value })} />
+          </label>
+        ) : null}
+        {(field.type === "count" || field.type === "measurement") ? (
+          <label className="nexops-field">
+            <span>{field.unit ? `Value (${field.unit})` : "Value"}</span>
+            <input
+              type="number"
+              value={field.numberValue ?? ""}
+              onChange={(event) => patchChecklistField(field.fieldId, { numberValue: event.target.value === "" ? undefined : Number(event.target.value) })}
+            />
+          </label>
+        ) : null}
+        {field.type === "multi_select" ? (
+          <div className="nexops-field">
+            <span>Choices</span>
+            <div className="nexops-request-toggle-row">
+              {(field.options ?? []).map((option) => {
+                const selected = field.multiValue?.includes(option) ?? false;
+                return (
+                  <button
+                    type="button"
+                    className={selected ? "active" : ""}
+                    key={option}
+                    onClick={() => patchChecklistField(field.fieldId, {
+                      multiValue: selected
+                        ? (field.multiValue ?? []).filter((candidate) => candidate !== option)
+                        : [...(field.multiValue ?? []), option]
+                    })}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+        {field.type === "photo_attachment" ? (
+          <label className="nexops-field">
+            <span>Attached media IDs (comma separated)</span>
+            <textarea
+              rows={2}
+              value={(field.mediaIds ?? []).join(", ")}
+              onChange={(event) => patchChecklistField(field.fieldId, {
+                mediaIds: event.target.value.split(",").map((item) => item.trim()).filter(Boolean)
+              })}
+            />
+          </label>
+        ) : null}
+        <label className="nexops-check-field inline">
+          <input
+            type="checkbox"
+            checked={field.photoRequired ?? false}
+            onChange={(event) => patchChecklistField(field.fieldId, { photoRequired: event.target.checked })}
+          />
+          Photo required on this checklist instance
+        </label>
+      </article>
+    );
+  }
+
+  const checklistSections = checklist
+    ? Array.from(new Set(checklist.fields.map((field) => field.section)))
+    : [];
+  const visibleChecklistFields = checklist
+    ? checklist.fields.filter((field) => field.section === (activeChecklistSection || checklistSections[0] || field.section))
+    : [];
+  const latestHistory = history[0];
+  const carryforwardFields = latestHistory?.fields.filter((field) => field.memory === "property") ?? [];
+
+  function fieldHasValue(field: NonNullable<FieldDocsChecklistResponse["checklist"]>["fields"][number]): boolean {
+    return field.status !== "pending"
+      || (field.note ?? "").trim().length > 0
+      || field.numberValue !== undefined
+      || (field.multiValue?.length ?? 0) > 0
+      || (field.mediaIds?.length ?? 0) > 0;
+  }
+
+  function describeFieldValue(field: NonNullable<FieldDocsChecklistResponse["checklist"]>["fields"][number]): string {
+    if (field.type === "multi_select") {
+      return field.multiValue?.length ? field.multiValue.join(", ") : "Blank";
+    }
+    if (field.type === "count" || field.type === "measurement") {
+      return field.numberValue !== undefined
+        ? `${field.numberValue}${field.unit ? ` ${field.unit}` : ""}`
+        : "Blank";
+    }
+    if (field.type === "photo_attachment") {
+      return `${field.mediaIds?.length ?? 0} attached`;
+    }
+    if ((field.note ?? "").trim()) {
+      return field.note ?? "";
+    }
+    if (field.status !== "pending") {
+      return field.status.replaceAll("_", " ");
+    }
+    return "Blank";
+  }
+
+  function syncMediaRecord(nextMedia: FieldDocsMediaHit): void {
+    setSelectedMedia(nextMedia);
+    setMediaAnnotationsDraft(nextMedia.annotations ?? []);
+    setCaptureSession((current) => current && current.media.some((item) => item.id === nextMedia.id)
+      ? {
+          ...current,
+          media: current.media.map((item) => item.id === nextMedia.id ? { ...item, ...nextMedia } : item)
+        }
+      : current);
+    setRecentMedia((current) => current.map((item) => item.id === nextMedia.id ? nextMedia : item));
+    setMediaHits((current) => current.map((item) => item.id === nextMedia.id ? nextMedia : item));
+  }
+
+  function openMediaReview(hit: FieldDocsMediaHit): void {
+    setSelectedMedia(hit);
+    setMediaCommentDraft("");
+    setMediaManualTagsDraft((hit.manualTags ?? []).join(", "));
+    setMediaHiddenFromClientDraft(hit.hiddenFromClient === true);
+    setMediaAnnotationsDraft(hit.annotations ?? []);
+    setDrawingPath(null);
+    setDrawMode(false);
+  }
+
+  function closeMediaReview(): void {
+    setSelectedMedia(null);
+    setMediaCommentDraft("");
+    setMediaManualTagsDraft("");
+    setMediaHiddenFromClientDraft(false);
+    setMediaAnnotationsDraft([]);
+    setDrawingPath(null);
+    setDrawMode(false);
+  }
+
+  function mediaPoint(event: React.PointerEvent<HTMLDivElement>): { x: number; y: number } | null {
+    const bounds = mediaStageRef.current?.getBoundingClientRect();
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) {
+      return null;
+    }
+    return {
+      x: Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)),
+      y: Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height))
+    };
+  }
+
+  function beginMediaDraw(event: React.PointerEvent<HTMLDivElement>): void {
+    if (!drawMode || !selectedMedia || selectedMedia.type !== "photo") {
+      return;
+    }
+    const point = mediaPoint(event);
+    if (!point) {
+      return;
+    }
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDrawingPath([point]);
+  }
+
+  function updateMediaDraw(event: React.PointerEvent<HTMLDivElement>): void {
+    if (!drawMode || !drawingPath) {
+      return;
+    }
+    const point = mediaPoint(event);
+    if (!point) {
+      return;
+    }
+    setDrawingPath((current) => current ? [...current, point] : current);
+  }
+
+  function finishMediaDraw(event: React.PointerEvent<HTMLDivElement>): void {
+    if (!drawMode || !drawingPath) {
+      return;
+    }
+    const point = mediaPoint(event);
+    const points = point ? [...drawingPath, point] : drawingPath;
+    if (points.length >= 2) {
+      setMediaAnnotationsDraft((current) => [
+        ...current,
+        {
+          id: `annotation_${crypto.randomUUID()}`,
+          kind: "path",
+          color: "#106060",
+          createdAt: new Date().toISOString(),
+          points
+        }
+      ]);
+      setStatus("Markup added. Save media review to keep it.");
+    }
+    setDrawingPath(null);
+  }
+
+  function removeLastMarkup(): void {
+    setMediaAnnotationsDraft((current) => current.slice(0, -1));
+    setStatus("Last markup removed. Save media review to keep the change.");
+  }
+
+  function annotationPolyline(points: Array<{ x: number; y: number }>): string {
+    return points.map((point) => `${(point.x * 100).toFixed(2)},${(point.y * 100).toFixed(2)}`).join(" ");
+  }
+
+  async function saveMediaReview(): Promise<void> {
+    if (!selectedMedia || mediaReviewSaving) {
+      return;
+    }
+    setMediaReviewSaving(true);
+    setStatus("Saving photo review...");
+    try {
+      const response = await fetch(`/api/fielddocs/media/${encodeURIComponent(selectedMedia.id)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          ...(mediaCommentDraft.trim() ? { comment: mediaCommentDraft.trim() } : {}),
+          manualTags: mediaManualTagsDraft.split(",").map((tag) => tag.trim()).filter(Boolean),
+          hiddenFromClient: mediaHiddenFromClientDraft,
+          annotations: mediaAnnotationsDraft
+        })
+      });
+      const body = await response.json() as { ok: boolean; media?: FieldDocsMediaHit; error?: string };
+      if (!response.ok || !body.ok || !body.media) {
+        throw new Error(body.error ?? "Photo review save failed.");
+      }
+      syncMediaRecord(body.media);
+      setMediaCommentDraft("");
+      setDrawingPath(null);
+      setDrawMode(false);
+      setStatus("Photo review saved.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Photo review save failed.");
+    } finally {
+      setMediaReviewSaving(false);
+    }
+  }
+
+  async function setMediaTrashState(trashed: boolean): Promise<void> {
+    if (!selectedMedia || mediaReviewSaving) {
+      return;
+    }
+    setMediaReviewSaving(true);
+    setStatus(trashed ? "Moving photo to tenant trash..." : "Restoring photo from tenant trash...");
+    try {
+      const response = await fetch(`/api/fielddocs/media/${encodeURIComponent(selectedMedia.id)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          trashedAt: trashed ? new Date().toISOString() : null,
+          purgeAfter: trashed ? new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)).toISOString() : null
+        })
+      });
+      const body = await response.json() as { ok: boolean; media?: FieldDocsMediaHit; error?: string };
+      if (!response.ok || !body.ok || !body.media) {
+        throw new Error(body.error ?? "Photo trash update failed.");
+      }
+      syncMediaRecord(body.media);
+      await refreshRecentMedia();
+      setStatus(trashed ? "Photo moved to tenant trash. It will purge after 30 days unless restored." : "Photo restored from tenant trash.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Photo trash update failed.");
+    } finally {
+      setMediaReviewSaving(false);
+    }
+  }
+
+  function mediaContextLabel(hit: NonNullable<FieldDocsSearchResponse["hits"]>[number]): string {
+    if (hit.visitId) return `Visit ${hit.visitId}`;
+    if (hit.jobId) return `Job ${hit.jobId}`;
+    if (hit.propertyId) return `Property ${hit.propertyId}`;
+    return "Unassigned review queue";
+  }
+
+  function formatFieldType(field: FieldDocsTemplateField): string {
+    return field.type.replaceAll("_", " ");
+  }
+
+  function renderMediaCard(hit: FieldDocsMediaHit, eyebrow: string): React.ReactElement {
+    const timestamp = hit.exif?.ts ? hit.exif.ts.slice(0, 16).replace("T", " ") : "No capture time";
+    const gps = hit.exif?.gps ? `${hit.exif.gps.lat.toFixed(4)}, ${hit.exif.gps.lng.toFixed(4)}` : "No GPS on file";
+    const allTags = Array.from(new Set([...(hit.aiTags ?? []), ...(hit.manualTags ?? [])]));
+    return (
+      <article className="nexops-module-card" key={`${eyebrow}-${hit.id}`}>
+        <p className="eyebrow">{eyebrow}</p>
+        <h2>{hit.aiCaption || hit.storageRef}</h2>
+        <p>{allTags.length ? allTags.join(", ") : "AI tags still pending or not available."}</p>
+        <small>{mediaContextLabel(hit)}</small>
+        <small>{timestamp}</small>
+        <small>{gps}</small>
+        <small>
+          {hit.manualTags?.length ? `Manual tags: ${hit.manualTags.join(", ")}` : "No manual tags yet"}
+          {hit.hiddenFromClient ? " - hidden from client" : ""}
+          {hit.trashedAt ? " - in tenant trash" : ""}
+        </small>
+        <small>{(hit.comments?.length ?? 0)} comment{(hit.comments?.length ?? 0) === 1 ? "" : "s"} · {(hit.annotations?.length ?? 0)} markup path{(hit.annotations?.length ?? 0) === 1 ? "" : "s"}</small>
+        <div className="nexops-inline-actions">
+          {hit.type === "photo" ? (
+            <button className="nexops-link-button" type="button" onClick={() => openMediaReview(hit)}>Review photo</button>
+          ) : null}
+          <a className="nexops-link-button" href={`/api/media/${encodeURIComponent(hit.id)}?tenantId=${encodeURIComponent(operatorContext.tenantId)}`} target="_blank" rel="noreferrer">Open file</a>
+        </div>
+      </article>
+    );
+  }
 
   function renderOverview(): React.ReactElement {
+    const filledCount = checklist ? checklist.fields.filter((field) => fieldHasValue(field)).length : 0;
+    const activeSection = activeChecklistSection || checklistSections[0] || "No section yet";
     return (
       <section className="nexops-dashboard">
         <div className="nexops-page-heading">
           <div>
-            <h1>NexCam Field Docs</h1>
-            <p>Checklist templates, visit media, and branded reports connected back to NexOps.</p>
+            <ProductLogo product="nexcam" className="nexcam-heading-logo" alt="NexCam" />
+            <p>Template-driven field capture, visit media, property carryforward, and closeout-ready reports.</p>
           </div>
-          <button type="button" onClick={() => void createChecklist()}>Start Checklist</button>
+          <div className="nexops-inline-actions">
+            <button className="nexops-link-button" type="button" onClick={() => void refreshChecklists()}>Refresh context</button>
+            <button type="button" onClick={() => void createChecklist()}>Start checklist</button>
+          </div>
         </div>
         <div className="nexops-workflow-strip">
           {[
-            ["Templates", String(templates.length), "Property-persistent fields marked"],
-            ["Media hits", String(mediaHits.length), "Searchable photos/PDFs"],
-            ["Checklist", checklist ? "Ready" : "Not started", "Visit-fresh execution"],
-            ["Report", report ? "Generated" : "Not generated", "PDF export + email attachment rail"]
+            ["Templates", String(templates.length), "Reusable library, not a one-off checklist."],
+            ["Carryforward", String(carryforwardFields.length), "Property memory pulled from the latest completed visit."],
+            ["Recent media", String(recentMedia.length), "Visit-scoped photos, PDFs, and uploads."],
+            ["Reports", String(reports.length), "PDF exports ready for the receipt rail."]
           ].map(([title, value, detail]) => (
             <article key={title}>
               <span>{title}</span>
@@ -2501,8 +6877,128 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
           ))}
         </div>
         <div className="nexops-two-column">
-          {renderTemplates()}
-          {renderPhotos()}
+          <section className="nexops-module-page">
+            <article className="nexops-module-card wide nexcam-context-card">
+              <p className="eyebrow">Visit context</p>
+              <h2>Start from a real property, job, and visit rail</h2>
+              <div className="nexops-request-builder-grid">
+                <label className="nexops-field">
+                  <span>Property ID</span>
+                  <input value={contextIds.propertyId} onChange={(event) => setContextIds((current) => ({ ...current, propertyId: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Job ID</span>
+                  <input value={contextIds.jobId} onChange={(event) => setContextIds((current) => ({ ...current, jobId: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Visit ID</span>
+                  <input value={contextIds.visitId} onChange={(event) => setContextIds((current) => ({ ...current, visitId: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Template</span>
+                  <select value={selectedTemplateId} onChange={(event) => setSelectedTemplateId(event.target.value)}>
+                    {templates.map((item) => <option value={item.id} key={item.id}>{item.title}</option>)}
+                  </select>
+                </label>
+              </div>
+              {template ? (
+                <div className="nexops-request-summary-grid">
+                  <article>
+                    <h3>{template.title}</h3>
+                    <p>{template.itemCount} fields across {template.sections.length} sections.</p>
+                    <small>{template.appliesTo.replaceAll("_", " ")} rail</small>
+                  </article>
+                  <article>
+                    <h3>{template.propertyPersistentCount} property fields</h3>
+                    <p>{template.visitFreshCount} visit-fresh fields start blank every time.</p>
+                    <small>{template.fieldTypes?.join(", ") ?? "Field types ready"}</small>
+                  </article>
+                </div>
+              ) : null}
+            </article>
+            {checklist ? (
+              <article className="nexops-module-card wide nexcam-checklist-shell">
+                <p className="eyebrow">Active checklist</p>
+                <h2>{checklist.title}</h2>
+                <p>{filledCount} of {checklist.fields.length} fields have data. Current section: {activeSection}.</p>
+                <div className="nexcam-section-pills">
+                  {checklistSections.map((section) => {
+                    const sectionCount = checklist.fields.filter((field) => field.section === section).length;
+                    const sectionFilled = checklist.fields.filter((field) => field.section === section && fieldHasValue(field)).length;
+                    return (
+                      <button
+                        type="button"
+                        key={section}
+                        className={section === activeSection ? "active" : ""}
+                        onClick={() => setActiveChecklistSection(section)}
+                      >
+                        {section} ({sectionFilled}/{sectionCount}){checklist.sectionStates.find((entry) => entry.section === section)?.status === "not_applicable" ? " - N/A" : ""}
+                      </button>
+                    );
+                  })}
+                </div>
+                {activeSectionAllowsNa ? (
+                  <div className="nexops-inline-actions">
+                    <button
+                      className={activeSectionIsNa ? "" : "nexops-link-button"}
+                      type="button"
+                      onClick={() => patchChecklistSection(activeSection, activeSectionIsNa ? "active" : "not_applicable")}
+                    >
+                      {activeSectionIsNa ? "Section marked N/A - restore section" : "Mark this section N/A"}
+                    </button>
+                    <small>{activeSectionIsNa ? "This section will not block completion or show as incomplete in the report." : "Use this only when the full section does not apply on this checklist."}</small>
+                  </div>
+                ) : null}
+                {activeSectionIsNa ? (
+                  <p className="nexops-form-note">This live checklist section is currently marked not applicable.</p>
+                ) : null}
+                <div className="nexcam-media-grid">
+                  {visibleChecklistFields.map((field) => renderChecklistField(field))}
+                </div>
+                <div className="nexops-inline-actions">
+                  <button className="nexops-link-button" type="button" onClick={() => void saveChecklist(false)}>Save draft</button>
+                  <button type="button" onClick={() => void saveChecklist(true)}>Complete checklist</button>
+                </div>
+              </article>
+            ) : (
+              <article className="nexops-module-card wide">
+                <p className="eyebrow">No checklist open</p>
+                <h2>Pick a template, then start the visit checklist</h2>
+                <p>NexCam now reads from the real template library and stores property-memory fields back on the property rail.</p>
+              </article>
+            )}
+          </section>
+          <section className="nexops-module-page">
+            <article className="nexops-module-card wide">
+              <p className="eyebrow">Property carryforward</p>
+              <h2>{latestHistory ? `Latest completed checklist ${latestHistory.id}` : "Nothing completed for this property yet"}</h2>
+              <p>{latestHistory ? "These are the property-persistent values ready to prefill the next visit on this exact property." : "Complete one visit checklist for this property to see carryforward values here."}</p>
+              {carryforwardFields.length ? (
+                <ul className="nexcam-history-values">
+                  {carryforwardFields.map((field) => (
+                    <li key={field.fieldId}>
+                      <strong>{field.label}</strong>
+                      <span>{describeFieldValue(field)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </article>
+            <ul className="nexops-mini-list">
+              {recentChecklists.slice(0, 4).map((entry) => (
+                <li key={entry.id}>
+                  <strong>{entry.title}</strong>
+                  <span>{entry.visitId ?? entry.jobId ?? entry.propertyId ?? "Current context"} - {entry.status}</span>
+                </li>
+              ))}
+              {!recentChecklists.length ? (
+                <li>
+                  <strong>No checklists in this context yet</strong>
+                  <span>Create one from the selected template to start the history rail.</span>
+                </li>
+              ) : null}
+            </ul>
+          </section>
         </div>
       </section>
     );
@@ -2521,6 +7017,79 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
             <button type="button" onClick={() => void createChecklist()}>Create visit checklist</button>
           </div>
         </div>
+        <article className="nexops-module-card wide nexops-request-builder-card">
+          <p className="eyebrow">New reusable template</p>
+          <div className="nexops-request-builder-grid">
+            <label className="nexops-field">
+              <span>Title</span>
+              <input value={templateDraft.title} onChange={(event) => setTemplateDraft((current) => ({ ...current, title: event.target.value }))} />
+            </label>
+            <label className="nexops-field">
+              <span>Slug</span>
+              <input value={templateDraft.slug} onChange={(event) => setTemplateDraft((current) => ({ ...current, slug: event.target.value }))} />
+            </label>
+            <label className="nexops-field">
+              <span>Applies to</span>
+              <select value={templateDraft.appliesTo} onChange={(event) => setTemplateDraft((current) => ({ ...current, appliesTo: event.target.value as typeof current.appliesTo }))}>
+                <option value="visit">Visit</option>
+                <option value="job">Job</option>
+                <option value="job_or_visit">Job or visit</option>
+              </select>
+            </label>
+            <label className="nexops-field">
+              <span>Description</span>
+              <input value={templateDraft.description} onChange={(event) => setTemplateDraft((current) => ({ ...current, description: event.target.value }))} />
+            </label>
+          </div>
+          <div className="nexops-request-builder-grid">
+            <label className="nexops-field">
+              <span>Field label</span>
+              <input value={draftField.label} onChange={(event) => setDraftField((current) => ({ ...current, label: event.target.value }))} />
+            </label>
+            <label className="nexops-field">
+              <span>Section</span>
+              <input value={draftField.section} onChange={(event) => setDraftField((current) => ({ ...current, section: event.target.value }))} />
+            </label>
+            <label className="nexops-field">
+              <span>Field type</span>
+              <select value={draftField.type} onChange={(event) => setDraftField((current) => ({ ...current, type: event.target.value as typeof current.type }))}>
+                <option value="free_text">Free text</option>
+                <option value="pass_fail">Pass / fail</option>
+                <option value="count">Count</option>
+                <option value="measurement">Measurement</option>
+                <option value="multi_select">Multi-select</option>
+                <option value="photo_attachment">Photo attachment</option>
+              </select>
+            </label>
+            <label className="nexops-field">
+              <span>Memory rail</span>
+              <select value={draftField.memory} onChange={(event) => setDraftField((current) => ({ ...current, memory: event.target.value as typeof current.memory }))}>
+                <option value="visit">Visit field</option>
+                <option value="property">Property field</option>
+              </select>
+            </label>
+            <label className="nexops-field">
+              <span>Unit (optional)</span>
+              <input value={draftField.unit} onChange={(event) => setDraftField((current) => ({ ...current, unit: event.target.value }))} />
+            </label>
+            <label className="nexops-field">
+              <span>Options (comma separated)</span>
+              <input value={draftField.optionsText} onChange={(event) => setDraftField((current) => ({ ...current, optionsText: event.target.value }))} />
+            </label>
+          </div>
+          <div className="nexops-inline-actions">
+            <button type="button" onClick={addDraftField}>Add field</button>
+            <button type="button" onClick={() => void saveTemplate()}>Save template</button>
+          </div>
+          <ul className="nexops-mini-list">
+            {draftFields.map((field) => (
+              <li key={field.id}>
+                <strong>{field.label}</strong>
+                <span>{field.section} · {field.type} · {field.memory}</span>
+              </li>
+            ))}
+          </ul>
+        </article>
         <div className="nexcam-template-grid">
           {templates.map((item) => (
             <article className="nexops-module-card wide" key={item.id}>
@@ -2531,19 +7100,36 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
                 <div>
                   <h3>Property-persistent</h3>
                   <ul className="nexcam-item-list">
-                    {propertyItems.slice(0, 10).map((field) => <li key={`${field.section}-${field.label}`}>{field.section}: {field.label}</li>)}
+                    {item.fields.filter((field) => field.memory === "property").slice(0, 10).map((field) => <li key={`${field.id}`}>{field.section}: {field.label}</li>)}
                   </ul>
                 </div>
                 <div>
                   <h3>Visit-fresh</h3>
                   <ul className="nexcam-item-list">
-                    {visitItems.slice(0, 10).map((field) => <li key={`${field.section}-${field.label}`}>{field.section}: {field.label}</li>)}
+                    {item.fields.filter((field) => field.memory === "visit").slice(0, 10).map((field) => <li key={`${field.id}`}>{field.section}: {field.label}</li>)}
                   </ul>
                 </div>
               </div>
             </article>
           ))}
         </div>
+        {checklist ? (
+          <section className="nexops-module-page">
+            <div className="nexops-page-heading">
+              <div>
+                <h1>Checklist Editor</h1>
+                <p>{checklist.status === "completed" ? "Completed" : "Draft"} for {checklist.visitId ?? checklist.jobId ?? "current context"}.</p>
+              </div>
+              <div className="nexops-inline-actions">
+                <button type="button" onClick={() => void saveChecklist(false)}>Save draft</button>
+                <button type="button" onClick={() => void saveChecklist(true)}>Complete checklist</button>
+              </div>
+            </div>
+            <div className="nexcam-media-grid">
+              {checklist.fields.map((field) => renderChecklistField(field))}
+            </div>
+          </section>
+        ) : null}
       </section>
     );
   }
@@ -2558,23 +7144,32 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
           </div>
           <div className="nexops-inline-actions">
             <input value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} placeholder="Deborah Justice" />
+            <button type="button" onClick={() => void refreshRecentMedia()}>Refresh recent</button>
             <button type="button" onClick={() => void searchMedia()}>Search media</button>
           </div>
         </div>
         <div className="nexcam-media-grid">
+          {recentMedia.map((hit) => (
+            <article className="nexops-module-card" key={`recent-${hit.id}`}>
+              <p className="eyebrow">Recent {hit.type}</p>
+              <h2>{hit.aiCaption || hit.storageRef}</h2>
+              <p>{hit.aiTags.length ? hit.aiTags.join(", ") : "No tags yet"}</p>
+              <small>{hit.visitId ? `Visit ${hit.visitId}` : hit.jobId ? `Job ${hit.jobId}` : "Unassigned review queue"}</small>
+            </article>
+          ))}
           {mediaHits.map((hit) => (
             <article className="nexops-module-card" key={hit.id}>
               <p className="eyebrow">{hit.type}</p>
               <h2>{hit.aiCaption || hit.storageRef}</h2>
               <p>{hit.aiTags.length ? hit.aiTags.join(", ") : "No tags yet"}</p>
-              <small>{hit.jobId ? `Job ${hit.jobId}` : "Unassigned review queue"}</small>
+              <small>{hit.visitId ? `Visit ${hit.visitId}` : hit.jobId ? `Job ${hit.jobId}` : "Unassigned review queue"}</small>
             </article>
           ))}
-          {!mediaHits.length ? (
+          {!mediaHits.length && !recentMedia.length ? (
             <article className="nexops-module-card">
               <p className="eyebrow">Unresolved queue</p>
               <h2>No media loaded in this view yet</h2>
-              <p>Search a real client/job after native or CompanyCam import populates the media repository.</p>
+              <p>Search a real client or job after native uploads populate the media repository.</p>
             </article>
           ) : null}
         </div>
@@ -2592,6 +7187,7 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
           </div>
           <div className="nexops-inline-actions">
             <input value={reportTitle} onChange={(event) => setReportTitle(event.target.value)} />
+            <button type="button" onClick={() => void refreshReports()}>Refresh reports</button>
             <button type="button" onClick={() => void createReport()}>Generate report</button>
           </div>
         </div>
@@ -2601,24 +7197,549 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
           <p>{report ? `${report.status} report ${report.id}` : "Create a checklist, search media, then generate a report."}</p>
           {reportUrl ? <a href={reportUrl} target="_blank" rel="noreferrer">Open PDF</a> : null}
         </article>
+        <ul className="nexops-record-list">
+          {reports.map((entry) => (
+            <li key={entry.id}>
+              <div>
+                <strong>{entry.title}</strong>
+                <small>{entry.visitId ? `Visit ${entry.visitId}` : `Job ${entry.jobId}`}</small>
+              </div>
+              <mark>{entry.status}</mark>
+              <a href={`/api/fielddocs/reports/${encodeURIComponent(entry.id)}/pdf?tenantId=${encodeURIComponent(operatorContext.tenantId)}`} target="_blank" rel="noreferrer">PDF</a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
+
+  function renderTemplatesPanel(): React.ReactElement {
+    return (
+      <section className="nexops-module-page">
+        <div className="nexops-page-heading">
+          <div>
+            <h1>Checklist Templates</h1>
+            <p>Generalized library with explicit property-field vs visit-field storage rails.</p>
+          </div>
+          <div className="nexops-inline-actions">
+            <button className="nexops-link-button" type="button" onClick={() => void refreshTemplates()}>Refresh</button>
+            <button type="button" onClick={() => void createChecklist()}>Create visit checklist</button>
+          </div>
+        </div>
+        <div className="nexops-two-column">
+          <section className="nexops-module-page">
+            <article className="nexops-module-card wide">
+              <p className="eyebrow">Library</p>
+              <h2>{template?.title ?? "No templates found"}</h2>
+              <p>{template?.description ?? "Create reusable NexCam templates, then launch visit checklists from them."}</p>
+              {template ? (
+                <div className="nexops-request-summary-grid">
+                  <article>
+                    <h3>{template.propertyPersistentCount} property fields</h3>
+                    <p>Carry forward on the next visit for this exact property.</p>
+                    <small>{template.sections.join(", ")}</small>
+                  </article>
+                  <article>
+                    <h3>{template.visitFreshCount} visit fields</h3>
+                    <p>Always blank when a new visit checklist starts.</p>
+                    <small>{template.fieldTypes?.join(", ") ?? "Mixed field types"}</small>
+                  </article>
+                </div>
+              ) : null}
+            </article>
+            <ul className="nexops-record-list">
+              {templates.map((item) => (
+                <li key={item.id}>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <small>{item.itemCount} fields - {item.appliesTo.replaceAll("_", " ")} - {item.system ? "Seeded template" : "Owner template"}</small>
+                  </div>
+                  <mark>{item.sections.length} sections</mark>
+                  <button className="nexops-link-button" type="button" onClick={() => setSelectedTemplateId(item.id)}>Use</button>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <section className="nexops-module-page">
+            <article className="nexops-module-card wide nexops-request-builder-card">
+              <p className="eyebrow">New reusable template</p>
+              <div className="nexops-request-builder-grid">
+                <label className="nexops-field">
+                  <span>Title</span>
+                  <input value={templateDraft.title} onChange={(event) => setTemplateDraft((current) => ({ ...current, title: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Slug</span>
+                  <input value={templateDraft.slug} onChange={(event) => setTemplateDraft((current) => ({ ...current, slug: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Applies to</span>
+                  <select value={templateDraft.appliesTo} onChange={(event) => setTemplateDraft((current) => ({ ...current, appliesTo: event.target.value as typeof current.appliesTo }))}>
+                    <option value="visit">Visit</option>
+                    <option value="job">Job</option>
+                    <option value="job_or_visit">Job or visit</option>
+                  </select>
+                </label>
+                <label className="nexops-field">
+                  <span>Description</span>
+                  <input value={templateDraft.description} onChange={(event) => setTemplateDraft((current) => ({ ...current, description: event.target.value }))} />
+                </label>
+              </div>
+              <div className="nexops-request-builder-grid">
+                <label className="nexops-field">
+                  <span>Field label</span>
+                  <input value={draftField.label} onChange={(event) => setDraftField((current) => ({ ...current, label: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Section</span>
+                  <input value={draftField.section} onChange={(event) => setDraftField((current) => ({ ...current, section: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Field type</span>
+                  <select value={draftField.type} onChange={(event) => setDraftField((current) => ({ ...current, type: event.target.value as typeof current.type }))}>
+                    <option value="free_text">Free text</option>
+                    <option value="pass_fail">Pass / fail</option>
+                    <option value="count">Count</option>
+                    <option value="measurement">Measurement</option>
+                    <option value="multi_select">Multi-select</option>
+                    <option value="photo_attachment">Photo attachment</option>
+                  </select>
+                </label>
+                <label className="nexops-field">
+                  <span>Memory rail</span>
+                  <select value={draftField.memory} onChange={(event) => setDraftField((current) => ({ ...current, memory: event.target.value as typeof current.memory }))}>
+                    <option value="visit">Visit field</option>
+                    <option value="property">Property field</option>
+                  </select>
+                </label>
+                <label className="nexops-field">
+                  <span>Help text</span>
+                  <input value={draftField.helpText} onChange={(event) => setDraftField((current) => ({ ...current, helpText: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Unit (optional)</span>
+                  <input value={draftField.unit} onChange={(event) => setDraftField((current) => ({ ...current, unit: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Options (comma separated)</span>
+                  <input value={draftField.optionsText} onChange={(event) => setDraftField((current) => ({ ...current, optionsText: event.target.value }))} />
+                </label>
+                <label className="nexops-field nexcam-checkbox-field">
+                  <span>Required</span>
+                  <input type="checkbox" checked={draftField.required} onChange={(event) => setDraftField((current) => ({ ...current, required: event.target.checked }))} />
+                </label>
+                <label className="nexops-field nexcam-checkbox-field">
+                  <span>Photo required by default</span>
+                  <input type="checkbox" checked={draftField.photoRequiredDefault} onChange={(event) => setDraftField((current) => ({ ...current, photoRequiredDefault: event.target.checked }))} />
+                </label>
+              </div>
+              <article className="nexops-module-card wide">
+                <p className="eyebrow">Sections</p>
+                <ul className="nexops-mini-list nexcam-template-draft-fields">
+                  {draftSections.map((section) => (
+                    <li key={section.id}>
+                      <span>
+                        <strong>{section.title}</strong>
+                        <small>{section.allowNa ? "Can be marked N/A on live checklists" : "Always active on live checklists"}</small>
+                      </span>
+                      <span className="nexops-inline-actions">
+                        <button className="nexops-link-button" type="button" onClick={() => toggleDraftSectionAllowNa(section.id)}>
+                          {section.allowNa ? "Disable N/A" : "Allow N/A"}
+                        </button>
+                        {draftSections.length > 1 ? (
+                          <button className="nexops-link-button" type="button" onClick={() => removeDraftSection(section.id)}>Remove</button>
+                        ) : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+              <div className="nexops-inline-actions">
+                <button className="nexops-link-button" type="button" onClick={addDraftField}>Add field</button>
+                <button type="button" onClick={() => void saveTemplate()}>Save template</button>
+              </div>
+              <ul className="nexops-mini-list nexcam-template-draft-fields">
+                {draftFields.map((field) => (
+                  <li key={field.id}>
+                    <strong>{field.label}</strong>
+                    <span>{field.section} - {formatFieldType(field)} - {field.memory}{field.required ? " - required" : ""}{field.photoRequiredDefault ? " - photo required" : ""}</span>
+                    <button className="nexops-link-button" type="button" onClick={() => removeDraftField(field.id)}>Remove</button>
+                  </li>
+                ))}
+                {!draftFields.length ? (
+                  <li>
+                    <strong>No draft fields yet</strong>
+                    <span>Add the property-field and visit-field mix first, then save the reusable template.</span>
+                  </li>
+                ) : null}
+              </ul>
+            </article>
+            <article className="nexops-module-card wide nexops-request-builder-card">
+              <p className="eyebrow">Report templates</p>
+              <div className="nexops-request-builder-grid">
+                <label className="nexops-field">
+                  <span>Title</span>
+                  <input value={reportTemplateDraft.title} onChange={(event) => setReportTemplateDraft((current) => ({ ...current, title: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Default report title</span>
+                  <input value={reportTemplateDraft.defaultReportTitle} onChange={(event) => setReportTemplateDraft((current) => ({ ...current, defaultReportTitle: event.target.value }))} />
+                </label>
+                <label className="nexops-field nexcam-checkbox-field">
+                  <span>Watermark on by default</span>
+                  <input type="checkbox" checked={reportTemplateDraft.watermarkByDefault} onChange={(event) => setReportTemplateDraft((current) => ({ ...current, watermarkByDefault: event.target.checked }))} />
+                </label>
+              </div>
+              <ul className="nexops-mini-list nexcam-template-draft-fields">
+                {reportTemplateSections.map((section, index) => (
+                  <li key={section.id}>
+                    <div className="nexops-request-builder-grid">
+                      <label className="nexops-field">
+                        <span>Section label</span>
+                        <input value={section.label} onChange={(event) => setReportTemplateSections((current) => current.map((entry, entryIndex) => entryIndex === index ? { ...entry, label: event.target.value } : entry))} />
+                      </label>
+                      <label className="nexops-field">
+                        <span>Default text</span>
+                        <textarea rows={3} value={section.defaultText} onChange={(event) => setReportTemplateSections((current) => current.map((entry, entryIndex) => entryIndex === index ? { ...entry, defaultText: event.target.value } : entry))} />
+                      </label>
+                    </div>
+                    <div className="nexops-inline-actions">
+                      {textSnippets.map((snippet) => {
+                        const selected = section.snippetIds.includes(snippet.id);
+                        return (
+                          <button
+                            key={`${section.id}-${snippet.id}`}
+                            className={selected ? "active" : "nexops-link-button"}
+                            type="button"
+                            onClick={() => setReportTemplateSections((current) => current.map((entry, entryIndex) => entryIndex === index ? {
+                              ...entry,
+                              snippetIds: selected
+                                ? entry.snippetIds.filter((id) => id !== snippet.id)
+                                : [...entry.snippetIds, snippet.id]
+                            } : entry))}
+                          >
+                            {snippet.label}
+                          </button>
+                        );
+                      })}
+                      <button className="nexops-link-button" type="button" onClick={() => setReportTemplateSections((current) => current.length === 1 ? current : current.filter((_, entryIndex) => entryIndex !== index))}>Remove section</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="nexops-inline-actions">
+                <button className="nexops-link-button" type="button" onClick={() => setReportTemplateSections((current) => [...current, { id: `section_${crypto.randomUUID()}`, label: "New section", defaultText: "", snippetIds: [] }])}>Add report section</button>
+                <button type="button" onClick={() => void saveReportTemplate()}>Save report template</button>
+              </div>
+              <ul className="nexops-record-list">
+                {reportTemplates.map((entry) => (
+                  <li key={entry.id}>
+                    <div>
+                      <strong>{entry.title}</strong>
+                      <small>{entry.sections.length} sections - default title: {entry.defaultReportTitle}</small>
+                    </div>
+                    <mark>{entry.watermarkByDefault ? "Watermark on" : "Watermark optional"}</mark>
+                    <button className="nexops-link-button" type="button" onClick={() => {
+                      setSelectedReportTemplateId(entry.id);
+                      setReportTitle(entry.defaultReportTitle);
+                      setWatermarkEnabled(entry.watermarkByDefault);
+                    }}>Use</button>
+                  </li>
+                ))}
+              </ul>
+            </article>
+            <article className="nexops-module-card wide nexops-request-builder-card">
+              <p className="eyebrow">Text snippets</p>
+              <div className="nexops-request-builder-grid">
+                <label className="nexops-field">
+                  <span>Label</span>
+                  <input value={snippetDraft.label} onChange={(event) => setSnippetDraft((current) => ({ ...current, label: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Snippet text</span>
+                  <textarea rows={3} value={snippetDraft.bodyText} onChange={(event) => setSnippetDraft((current) => ({ ...current, bodyText: event.target.value }))} />
+                </label>
+              </div>
+              <div className="nexops-inline-actions">
+                <button type="button" onClick={() => void saveTextSnippet()}>Save snippet</button>
+              </div>
+              <ul className="nexops-record-list">
+                {textSnippets.map((snippet) => (
+                  <li key={snippet.id}>
+                    <div>
+                      <strong>{snippet.label}</strong>
+                      <small>{snippet.bodyText}</small>
+                    </div>
+                    <mark>Reusable</mark>
+                    <button className="nexops-link-button" type="button" onClick={() => toggleSnippetSelection(snippet.id)}>
+                      {selectedSnippetIds.includes(snippet.id) ? "Selected" : "Select"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </article>
+            <article className="nexops-module-card wide nexops-request-builder-card">
+              <p className="eyebrow">Job-type bundles</p>
+              <div className="nexops-request-builder-grid">
+                <label className="nexops-field">
+                  <span>Bundle label</span>
+                  <input value={bundleDraft.label} onChange={(event) => setBundleDraft((current) => ({ ...current, label: event.target.value }))} />
+                </label>
+                <label className="nexops-field">
+                  <span>Job type key</span>
+                  <input value={bundleDraft.jobTypeKey} onChange={(event) => setBundleDraft((current) => ({ ...current, jobTypeKey: event.target.value }))} placeholder="pool_leak_detection" />
+                </label>
+                <label className="nexops-field">
+                  <span>Checklist template</span>
+                  <select value={bundleDraft.checklistTemplateId} onChange={(event) => setBundleDraft((current) => ({ ...current, checklistTemplateId: event.target.value }))}>
+                    <option value="">Choose checklist</option>
+                    {templates.map((entry) => <option key={entry.id} value={entry.id}>{entry.title}</option>)}
+                  </select>
+                </label>
+                <label className="nexops-field">
+                  <span>Report template</span>
+                  <select value={bundleDraft.reportTemplateId} onChange={(event) => setBundleDraft((current) => ({ ...current, reportTemplateId: event.target.value }))}>
+                    <option value="">Choose report template</option>
+                    {reportTemplates.map((entry) => <option key={entry.id} value={entry.id}>{entry.title}</option>)}
+                  </select>
+                </label>
+                <label className="nexops-field nexcam-checkbox-field">
+                  <span>Active</span>
+                  <input type="checkbox" checked={bundleDraft.active} onChange={(event) => setBundleDraft((current) => ({ ...current, active: event.target.checked }))} />
+                </label>
+              </div>
+              <div className="nexops-inline-actions">
+                <button type="button" onClick={() => void saveBundle()}>Save bundle</button>
+              </div>
+              <ul className="nexops-record-list">
+                {bundles.map((bundle) => (
+                  <li key={bundle.id}>
+                    <div>
+                      <strong>{bundle.label}</strong>
+                      <small>{bundle.jobTypeKey} - checklist {bundle.checklistTemplateId} - report {bundle.reportTemplateId}</small>
+                    </div>
+                    <mark>{bundle.active ? "Active" : "Inactive"}</mark>
+                    <span />
+                  </li>
+                ))}
+              </ul>
+            </article>
+          </section>
+        </div>
+      </section>
+    );
+  }
+
+  function renderPhotosPanel(): React.ReactElement {
+    return (
+      <section className="nexops-module-page">
+        <div className="nexops-page-heading">
+          <div>
+            <h1>Photos & Media</h1>
+            <p>Visit-scoped uploads, AI tags, and generic content search over the native media rail.</p>
+          </div>
+          <div className="nexops-inline-actions">
+            <input value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} placeholder="Deborah Justice" />
+            <button className="nexops-link-button" type="button" onClick={() => void refreshRecentMedia()}>Refresh recent</button>
+            <button type="button" onClick={() => void searchMedia()}>Search media</button>
+          </div>
+        </div>
+        <article className="nexops-module-card wide">
+          <p className="eyebrow">Staff filters</p>
+          <div className="nexops-request-builder-grid">
+            <label className="nexops-field">
+              <span>Client</span>
+              <select value={clientFilterId} onChange={(event) => setClientFilterId(event.target.value)}>
+                <option value="">All clients</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>{clientDisplayName(client)}</option>
+                ))}
+              </select>
+            </label>
+            <label className="nexops-field">
+              <span>From</span>
+              <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+            </label>
+            <label className="nexops-field">
+              <span>To</span>
+              <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+            </label>
+            <label className="nexops-check-field inline">
+              <input type="checkbox" checked={includeTrashed} onChange={(event) => setIncludeTrashed(event.target.checked)} />
+              Include tenant trash
+            </label>
+          </div>
+        </article>
+        <div className="nexops-two-column">
+          <section className="nexops-module-page">
+            <article className="nexops-module-card wide">
+              <p className="eyebrow">Recent visit media</p>
+              <h2>{recentMedia.length ? `${recentMedia.length} items in this context` : "No media in this context yet"}</h2>
+              <p>Media stays grouped by property, job, and dated visit so one job never becomes a flat pile.</p>
+            </article>
+            <div className="nexcam-media-grid">
+              {recentMedia.map((hit) => renderMediaCard(hit, `Recent ${hit.type}`))}
+            </div>
+          </section>
+          <section className="nexops-module-page">
+            <article className="nexops-module-card wide">
+              <p className="eyebrow">Generic content search</p>
+              <h2>{mediaHits.length ? `${mediaHits.length} match${mediaHits.length === 1 ? "" : "es"} for "${mediaQuery}"` : "Search by content, tag, or context"}</h2>
+              <p>Search reads the same AI caption, AI tags, and manual tags Nexi can query conversationally later.</p>
+            </article>
+            <div className="nexcam-media-grid">
+              {mediaHits.map((hit) => renderMediaCard(hit, "Search match"))}
+              {!mediaHits.length && !recentMedia.length ? (
+                <article className="nexops-module-card">
+                  <p className="eyebrow">Unresolved queue</p>
+                  <h2>No media loaded in this view yet</h2>
+                  <p>Search a real client or visit after uploads populate the native media repository.</p>
+                </article>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      </section>
+    );
+  }
+
+  function renderReportsPanel(): React.ReactElement {
+    return (
+      <section className="nexops-module-page">
+        <div className="nexops-page-heading">
+          <div>
+            <h1>Reports</h1>
+            <p>Checklist to branded PDF, ready for closeout receipt attachments.</p>
+          </div>
+          <div className="nexops-inline-actions">
+            <button className="nexops-link-button" type="button" onClick={() => void refreshReports()}>Refresh reports</button>
+            <button type="button" onClick={() => void createReport()}>Generate report</button>
+          </div>
+        </div>
+        <article className="nexops-module-card wide">
+          <p className="eyebrow">Staff filters</p>
+          <div className="nexops-request-builder-grid">
+            <label className="nexops-field">
+              <span>Client</span>
+              <select value={clientFilterId} onChange={(event) => setClientFilterId(event.target.value)}>
+                <option value="">All clients</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>{clientDisplayName(client)}</option>
+                ))}
+              </select>
+            </label>
+            <label className="nexops-field">
+              <span>From</span>
+              <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+            </label>
+            <label className="nexops-field">
+              <span>To</span>
+              <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+            </label>
+            <label className="nexops-field">
+              <span>Report type</span>
+              <select value={reportKind} onChange={(event) => setReportKind(event.target.value as "field_report" | "ai_recap")}>
+                <option value="field_report">Field report</option>
+                <option value="ai_recap">AI recap</option>
+              </select>
+            </label>
+            <label className="nexops-field">
+              <span>Report template</span>
+              <select
+                value={selectedReportTemplateId}
+                onChange={(event) => {
+                  const nextTemplateId = event.target.value;
+                  const nextTemplate = reportTemplates.find((entry) => entry.id === nextTemplateId);
+                  setSelectedReportTemplateId(nextTemplateId);
+                  if (nextTemplate) {
+                    setReportTitle(nextTemplate.defaultReportTitle);
+                    setWatermarkEnabled(nextTemplate.watermarkByDefault);
+                  }
+                }}
+              >
+                <option value="">No template</option>
+                {reportTemplates.map((entry) => <option key={entry.id} value={entry.id}>{entry.title}</option>)}
+              </select>
+            </label>
+          </div>
+        </article>
+        <div className="nexops-two-column">
+          <section className="nexops-module-page">
+            <article className="nexops-module-card wide">
+              <p className="eyebrow">Generate</p>
+              <h2>{report?.title ?? "Create the visit report from the completed checklist"}</h2>
+              <label className="nexops-field">
+                <span>Report title</span>
+                <input value={reportTitle} onChange={(event) => setReportTitle(event.target.value)} />
+              </label>
+              <div className="nexops-inline-actions">
+                {textSnippets.map((snippet) => (
+                  <button
+                    key={snippet.id}
+                    type="button"
+                    className={selectedSnippetIds.includes(snippet.id) ? "active" : "nexops-link-button"}
+                    onClick={() => toggleSnippetSelection(snippet.id)}
+                  >
+                    {snippet.label}
+                  </button>
+                ))}
+              </div>
+              <label className="nexops-check-field inline">
+                <input type="checkbox" checked={watermarkEnabled} onChange={(event) => setWatermarkEnabled(event.target.checked)} />
+                Add tenant watermark on export
+              </label>
+              <p>{report ? `${report.status} report ${report.id} ready for the closeout receipt rail.` : "Use the current context and checklist to generate the report PDF."}</p>
+              <div className="nexops-inline-actions">
+                {reportUrl ? <a className="nexops-link-button" href={reportUrl} target="_blank" rel="noreferrer">Open latest PDF</a> : null}
+              </div>
+            </article>
+          </section>
+          <section className="nexops-module-page">
+            <article className="nexops-module-card wide">
+              <p className="eyebrow">Recent reports</p>
+              <ul className="nexops-record-list">
+                {reports.map((entry) => (
+                  <li key={entry.id}>
+                    <div>
+                      <strong>{entry.title}</strong>
+                      <small>{entry.visitId ? `Visit ${entry.visitId}` : `Job ${entry.jobId}`} - {entry.kind === "ai_recap" ? "AI recap" : "Field report"}</small>
+                    </div>
+                    <mark>{entry.status}</mark>
+                    <a className="nexops-link-button" href={`/api/fielddocs/reports/${encodeURIComponent(entry.id)}/pdf?tenantId=${encodeURIComponent(operatorContext.tenantId)}`} target="_blank" rel="noreferrer">PDF</a>
+                  </li>
+                ))}
+                {!reports.length ? (
+                  <li>
+                    <div>
+                      <strong>No reports in this context yet</strong>
+                      <small>Complete a checklist, then generate the branded PDF here.</small>
+                    </div>
+                    <mark>pending</mark>
+                    <span />
+                  </li>
+                ) : null}
+              </ul>
+            </article>
+          </section>
+        </div>
       </section>
     );
   }
 
   function renderActiveModule(): React.ReactElement {
-    if (activeModule === "templates") return renderTemplates();
-    if (activeModule === "photos") return renderPhotos();
-    if (activeModule === "reports") return renderReports();
+    if (activeModule === "templates") return renderTemplatesPanel();
+    if (activeModule === "photos") return renderPhotosPanel();
+    if (activeModule === "reports") return renderReportsPanel();
     return renderOverview();
   }
+
+  const tenantName = tenantDisplayName(tenantBranding, operatorContext.tenantId);
 
   return (
     <main className="nexops-app nexcam-app" style={style}>
       <aside className="nexops-app-sidebar" aria-label="NexCam navigation">
         <div className="nexops-app-logo">
-          <NexTeamLockup className="nexops-sidebar-lockup" />
-          <span>NexCam</span>
-          <small>{tenantBranding?.displayName ?? (operatorContext.tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : operatorContext.tenantId)}</small>
+          <SidebarBrandStack product="nexcam" branding={tenantBranding} tenantId={operatorContext.tenantId} />
         </div>
         <button className="nexops-create-button" type="button" onClick={() => void createChecklist()}>Start Checklist</button>
         <nav className="nexops-nav">
@@ -2631,7 +7752,13 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
       </aside>
       <section className="nexops-web-main">
         <header className="nexops-web-topbar">
-          <p>{tenantBranding?.displayName ?? "Aquatrace"}</p>
+          <div className="nexops-web-brand">
+            <ProductLogo product="nexcam" className="nexops-header-product-logo" alt="NexCam" />
+            <div className="nexops-web-brand-copy">
+              <strong>NexCam</strong>
+              <span>{tenantName}</span>
+            </div>
+          </div>
           <div className="nexops-web-tools">
             <span>{status}</span>
             <span>{props.user.email ?? "Operator"}</span>
@@ -2640,6 +7767,121 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
         </header>
         {renderActiveModule()}
       </section>
+      {selectedMedia ? (
+        <>
+          <button className="nexops-overlay-backdrop" type="button" aria-label="Close NexCam photo review" onClick={closeMediaReview} />
+          <section className="nexops-overlay-panel nexcam-review-panel" role="dialog" aria-modal="true" aria-label="NexCam photo review">
+            <div className="nexops-overlay-head">
+              <div>
+                <p className="eyebrow">Photo review</p>
+                <h2>{selectedMedia.aiCaption || selectedMedia.id}</h2>
+                <small>{mediaContextLabel(selectedMedia)}</small>
+              </div>
+              <button type="button" className="nexops-link-button" onClick={closeMediaReview}>Close</button>
+            </div>
+            <div className="nexcam-review-layout">
+              <div className="nexcam-review-stage-card">
+                <div className="nexops-inline-actions">
+                  <button type="button" className={drawMode ? "active" : ""} onClick={() => setDrawMode((current) => !current)}>
+                    {drawMode ? "Stop drawing" : "Draw markup"}
+                  </button>
+                  <button type="button" className="nexops-link-button" onClick={removeLastMarkup} disabled={!mediaAnnotationsDraft.length}>
+                    Remove last markup
+                  </button>
+                  <a className="nexops-link-button" href={`/api/media/${encodeURIComponent(selectedMedia.id)}?tenantId=${encodeURIComponent(operatorContext.tenantId)}`} target="_blank" rel="noreferrer">Open original</a>
+                </div>
+                <div
+                  ref={mediaStageRef}
+                  className={`nexcam-review-stage${drawMode ? " draw-mode" : ""}`}
+                  onPointerDown={beginMediaDraw}
+                  onPointerMove={updateMediaDraw}
+                  onPointerUp={finishMediaDraw}
+                  onPointerLeave={finishMediaDraw}
+                >
+                  <img
+                    className="nexcam-review-image"
+                    src={`/api/media/${encodeURIComponent(selectedMedia.id)}?tenantId=${encodeURIComponent(operatorContext.tenantId)}`}
+                    alt={selectedMedia.aiCaption || selectedMedia.id}
+                  />
+                  <svg className="nexcam-review-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                    {mediaAnnotationsDraft.map((annotation) => (
+                      <polyline
+                        key={annotation.id}
+                        points={annotationPolyline(annotation.points)}
+                        fill="none"
+                        stroke={annotation.color ?? "#106060"}
+                        strokeWidth={1.2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    ))}
+                    {drawingPath?.length ? (
+                      <polyline
+                        points={annotationPolyline(drawingPath)}
+                        fill="none"
+                        stroke="#28d7ff"
+                        strokeWidth={1.2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeDasharray="2 2"
+                      />
+                    ) : null}
+                  </svg>
+                </div>
+                <small>{selectedMedia.exif?.ts ? `Captured ${new Date(selectedMedia.exif.ts).toLocaleString()}` : "No capture timestamp"} · {selectedMedia.exif?.gps ? `${selectedMedia.exif.gps.lat.toFixed(4)}, ${selectedMedia.exif.gps.lng.toFixed(4)}` : "No GPS on file"}</small>
+              </div>
+              <div className="nexcam-review-sidebar">
+                <article className="nexops-module-card wide">
+                  <p className="eyebrow">Tags</p>
+                  <h3>{selectedMedia.aiTags.length ? selectedMedia.aiTags.join(", ") : "No AI tags yet"}</h3>
+                  <small>Search and Nexi read this same tag/caption rail.</small>
+                  <label className="nexops-field">
+                    <span>Manual tags</span>
+                    <input value={mediaManualTagsDraft} onChange={(event) => setMediaManualTagsDraft(event.target.value)} placeholder="pool, leak, equipment pad" />
+                  </label>
+                  <label className="nexops-check-field inline">
+                    <input type="checkbox" checked={mediaHiddenFromClientDraft} onChange={(event) => setMediaHiddenFromClientDraft(event.target.checked)} />
+                    Hide this single photo from the client
+                  </label>
+                  <div className="nexops-inline-actions">
+                    <button type="button" className="nexops-link-button" onClick={() => void setMediaTrashState(!selectedMedia.trashedAt)} disabled={mediaReviewSaving}>
+                      {selectedMedia.trashedAt ? "Restore from trash" : "Move to tenant trash"}
+                    </button>
+                  </div>
+                  {selectedMedia.purgeAfter ? <small>Trash purges after {new Date(selectedMedia.purgeAfter).toLocaleDateString()} unless restored.</small> : null}
+                </article>
+                <article className="nexops-module-card wide">
+                  <p className="eyebrow">Comments</p>
+                  <ul className="nexops-mini-list nexcam-comment-list">
+                    {(selectedMedia.comments ?? []).map((entry) => (
+                      <li key={entry.id}>
+                        <strong>{entry.author ?? "Field note"}</strong>
+                        <span>{entry.text}</span>
+                        <small>{new Date(entry.createdAt).toLocaleString()}</small>
+                      </li>
+                    ))}
+                    {!(selectedMedia.comments ?? []).length ? (
+                      <li>
+                        <strong>No comments yet</strong>
+                        <span>Add a job-specific note without editing the AI caption.</span>
+                      </li>
+                    ) : null}
+                  </ul>
+                  <label className="nexops-field">
+                    <span>Add comment</span>
+                    <textarea rows={4} value={mediaCommentDraft} onChange={(event) => setMediaCommentDraft(event.target.value)} />
+                  </label>
+                  <div className="nexops-inline-actions">
+                    <button type="button" onClick={() => void saveMediaReview()} disabled={mediaReviewSaving}>
+                      {mediaReviewSaving ? "Saving..." : "Save review"}
+                    </button>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </section>
+        </>
+      ) : null}
     </main>
   );
 }
@@ -2667,11 +7909,10 @@ function SchedulePanel(props: { tenantId: string }): React.ReactElement {
         }
         setVisits(body.visits ?? []);
         if (!(body.visits ?? []).length) {
-          setStatus("No native or Jobber visits in this window yet.");
+          setStatus("No visits in this window yet.");
           return;
         }
-        const jobberCount = body.sourceCounts?.jobber ?? 0;
-        setStatus(jobberCount ? `${jobberCount} Jobber visit${jobberCount === 1 ? "" : "s"} shown read-only.` : "");
+        setStatus("");
       })
       .catch(() => {
         if (!cancelled) {
@@ -3097,7 +8338,15 @@ function ReputationPanel(props: { tenantId: string; user: User }): React.ReactEl
   );
 }
 
-function AuthGate(props: { auth: Auth | null; user: User | null; authReady: boolean; onSignedIn: (user: User | null) => void }): React.ReactElement {
+function AuthGate(props: {
+  auth: Auth | null;
+  user: User | null;
+  authReady: boolean;
+  localAuthEnabled: boolean;
+  localTenantId: string;
+  localProfiles: LocalAuthProfileSummary[];
+  onSignedIn: (user: User | null) => void;
+}): React.ReactElement {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [working, setWorking] = useState(false);
@@ -3105,16 +8354,21 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (!props.auth || working) {
+    if (working) {
       return;
     }
     setWorking(true);
     setError("");
     try {
-      const result = await signInWithEmailAndPassword(props.auth, email.trim(), password);
-      props.onSignedIn(result.user);
+      if (props.localAuthEnabled) {
+        const result = await signInWithLocalCredentials(email.trim(), props.localTenantId);
+        props.onSignedIn(result);
+      } else if (props.auth) {
+        const result = await signInWithEmailAndPassword(props.auth, email.trim(), password);
+        props.onSignedIn(result.user);
+      }
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : "Firebase sign-in failed.");
+      setError(authError instanceof Error ? authError.message : props.localAuthEnabled ? "Local sign-in failed." : "Firebase sign-in failed.");
     } finally {
       setWorking(false);
     }
@@ -3124,9 +8378,10 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
     return (
       <main className="shell">
         <section className="auth-card">
+          <NexiIdentityMark className="auth-card-brand" caption="Nexi" />
           <p className="eyebrow">Nexi access</p>
           <h1>Checking session</h1>
-          <p>Loading Firebase operator access.</p>
+          <p>Loading operator access.</p>
         </section>
       </main>
     );
@@ -3139,16 +8394,55 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
     if (window.location.pathname.startsWith("/nexcam")) {
       return <NexCamPage auth={props.auth} user={props.user} />;
     }
+    if (window.location.pathname.startsWith("/nexreach")) {
+      return (
+        <Suspense fallback={<main className="shell"><section className="auth-card"><h1>Loading NexReach</h1></section></main>}>
+          <NexReachPage auth={props.auth} user={props.user} />
+        </Suspense>
+      );
+    }
     if (window.location.pathname.startsWith("/nexops")) {
       return <NexOpsClientsPage auth={props.auth} user={props.user} />;
     }
-    return <Chat auth={props.auth} user={props.user} />;
+    return <NexiStandaloneChat auth={props.auth} user={props.user} />;
+  }
+
+  if (props.localAuthEnabled) {
+    return (
+      <main className="shell">
+        <section className="auth-card">
+          <ProductLogo product="nexops" className="auth-card-brand" alt="NexOps" />
+          <p className="eyebrow">Aquatrace staff access</p>
+          <h1>NexOps Sign-In</h1>
+          <p>Use a local staff email to unlock the Aquatrace workspace for testing. Owner, office admin, and technician sessions stay role-scoped after sign-in.</p>
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <label>
+              Email
+              <input autoComplete="email" inputMode="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+            </label>
+            {error ? <p className="auth-error">{error}</p> : null}
+            <button type="submit" disabled={working || !email.trim()}>
+              {working ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+          <div className="auth-profile-hints" aria-label="Available local role accounts">
+            {props.localProfiles.map((profile) => (
+              <article key={profile.id}>
+                <strong>{profile.label}</strong>
+                <span>{profile.email}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+      </main>
+    );
   }
 
   if (!props.auth) {
     return (
       <main className="shell">
         <section className="auth-card">
+          <NexiIdentityMark className="auth-card-brand" caption="Nexi" />
           <p className="eyebrow">Nexi access</p>
           <h1>Firebase config missing</h1>
           <p>The chat is locked until the Firebase web config is present in staging runtime variables.</p>
@@ -3160,6 +8454,7 @@ function AuthGate(props: { auth: Auth | null; user: User | null; authReady: bool
   return (
     <main className="shell">
       <section className="auth-card">
+        <NexiIdentityMark className="auth-card-brand" caption="Nexi" />
         <p className="eyebrow">Aquatrace ops</p>
         <h1>Nexi Sign-In</h1>
         <p>Use your Firebase operator account to unlock the Job Desk.</p>
@@ -3287,6 +8582,1105 @@ function PlatformConsole(props: { auth: Auth | null; user: User }): React.ReactE
         ))}
       </section>
     </main>
+  );
+}
+
+function NexiStandaloneChat(props: { auth: Auth | null; user: User }): React.ReactElement {
+  const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
+  const [operatorTheme, setOperatorTheme] = useState<OperatorUiTheme | null>(null);
+  const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [draft, setDraft] = useState("");
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [pendingApproval, setPendingApproval] = useState<NexiStandalonePendingApproval | null>(null);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [activeMedia, setActiveMedia] = useState<Source | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [handsFree, setHandsFree] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState("Voice off");
+  const [interimTranscript, setInterimTranscript] = useState("");
+  const [voiceSessionId, setVoiceSessionId] = useState<string | null>(null);
+  const [lastVoiceLatencyMs, setLastVoiceLatencyMs] = useState<number | null>(null);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NexOpsNotificationEntry[]>([]);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const [notificationStatus, setNotificationStatus] = useState("");
+  const [moduleSwitcherOpen, setModuleSwitcherOpen] = useState(false);
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
+  const ttsAbortRef = useRef<AbortController | null>(null);
+  const handsFreeRef = useRef(false);
+  const voiceSessionRef = useRef<string | null>(null);
+  const voiceWindow = window as VoiceWindow;
+  const SpeechRecognition = voiceWindow.SpeechRecognition ?? voiceWindow.webkitSpeechRecognition;
+  const speechSupported = Boolean(SpeechRecognition);
+  const storedSessionKey = nexiStoredSessionKey(operatorContext.tenantId, props.user.uid);
+
+  useEffect(() => {
+    handsFreeRef.current = handsFree;
+  }, [handsFree]);
+
+  useEffect(() => {
+    voiceSessionRef.current = voiceSessionId;
+  }, [voiceSessionId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadOperatorContext(props.user)
+      .then((context) => {
+        if (!cancelled) {
+          setOperatorContext(context);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOperatorContext(fallbackOperatorContext(props.user));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [props.user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    props.user.getIdToken()
+      .then((idToken) => fetch(`/api/sites/operator-ui?tenantId=${encodeURIComponent(operatorContext.tenantId)}`, {
+        headers: { authorization: `Bearer ${idToken}` }
+      }))
+      .then((response) => response.json() as Promise<OperatorUiThemeResponse>)
+      .then((body) => {
+        if (!cancelled && body.ok && body.theme) {
+          setOperatorTheme(body.theme);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOperatorTheme(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [operatorContext.tenantId, props.user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/public/tenant-branding?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+      .then((response) => response.json() as Promise<TenantBrandingResponse>)
+      .then((body) => {
+        if (!cancelled && body.ok && body.branding) {
+          setTenantBranding(body.branding);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTenantBranding(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [operatorContext.tenantId]);
+
+  useEffect(() => {
+    document.body.classList.toggle("nexops-mobile-nav-open", mobileNavOpen);
+    return () => {
+      document.body.classList.remove("nexops-mobile-nav-open");
+    };
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const restored = parseNexiStoredSession(window.localStorage.getItem(storedSessionKey));
+    if (!restored) {
+      setConversationId(null);
+      setPendingApproval(null);
+      setMessages([]);
+      setHistoryLoaded(true);
+      return;
+    }
+    setConversationId(restored.conversationId);
+    setPendingApproval(restored.pendingApproval);
+    setHistoryLoaded(false);
+    let cancelled = false;
+    props.user.getIdToken()
+      .then((idToken) => fetch(`/api/nexi/history?tenantId=${encodeURIComponent(operatorContext.tenantId)}&conversationId=${encodeURIComponent(restored.conversationId)}`, {
+        headers: { authorization: `Bearer ${idToken}` }
+      }))
+      .then((response) => response.json() as Promise<NexiHistoryResponse>)
+      .then((body) => {
+        if (cancelled) {
+          return;
+        }
+        if (!body.ok) {
+          setHistoryLoaded(true);
+          return;
+        }
+        setConversationId(body.conversationId ?? restored.conversationId);
+        setPendingApproval(body.pendingApproval ?? restored.pendingApproval);
+        setMessages(Array.isArray(body.messages) ? body.messages : []);
+        setHistoryLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHistoryLoaded(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [operatorContext.tenantId, props.user, storedSessionKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !historyLoaded || !conversationId) {
+      return;
+    }
+    window.localStorage.setItem(storedSessionKey, stringifyNexiStoredSession({
+      conversationId,
+      pendingApproval
+    }));
+  }, [conversationId, historyLoaded, pendingApproval, storedSessionKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !historyLoaded || conversationId) {
+      return;
+    }
+    window.localStorage.removeItem(storedSessionKey);
+  }, [conversationId, historyLoaded, storedSessionKey]);
+
+  useEffect(() => {
+    void loadNotifications();
+    const reloadNotifications = () => void loadNotifications();
+    window.addEventListener("nexops:crm-mutated", reloadNotifications);
+    window.addEventListener("nexops:approval-queued", reloadNotifications);
+    return () => {
+      window.removeEventListener("nexops:crm-mutated", reloadNotifications);
+      window.removeEventListener("nexops:approval-queued", reloadNotifications);
+      recognitionRef.current?.stop();
+      audioRef.current?.pause();
+      ttsAbortRef.current?.abort();
+    };
+  }, [operatorContext.tenantId]);
+
+  async function startVoiceSession(): Promise<string | null> {
+    if (voiceSessionRef.current) {
+      return voiceSessionRef.current;
+    }
+    try {
+      const response = await fetch("/api/voice/session/start", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          tenantUserId: operatorContext.tenantUserId
+        })
+      });
+      const body = await response.json() as VoiceSessionResponse;
+      if (!body.ok || !body.session) {
+        throw new Error(body.error ?? "Voice session did not start.");
+      }
+      setVoiceSessionId(body.session.id);
+      voiceSessionRef.current = body.session.id;
+      return body.session.id;
+    } catch {
+      setVoiceStatus("Voice session did not start. Basic voice still works.");
+      return null;
+    }
+  }
+
+  async function updateVoiceSession(path: string, body?: unknown): Promise<void> {
+    const sessionId = voiceSessionRef.current;
+    if (!sessionId) {
+      return;
+    }
+    await fetch(`/api/voice/session/${encodeURIComponent(sessionId)}${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: body === undefined ? "{}" : JSON.stringify(body)
+    }).catch(() => undefined);
+  }
+
+  function finishSpokenReply(status = "Voice ready"): void {
+    setSpeaking(false);
+    ttsAbortRef.current = null;
+    if (handsFreeRef.current) {
+      void updateVoiceSession("/listen");
+      setVoiceStatus("Listening for the next question");
+      startDictation(true);
+      return;
+    }
+    setVoiceStatus(status);
+  }
+
+  async function speakAssistantWithBrowserVoice(text: string): Promise<boolean> {
+    if (typeof window === "undefined" || typeof SpeechSynthesisUtterance === "undefined" || !window.speechSynthesis) {
+      return false;
+    }
+    return await new Promise<boolean>((resolve) => {
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US";
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find((voice) => /aria|samantha|jenny|ava|zira/i.test(voice.name))
+          ?? voices.find((voice) => /^en(?:-|_)/i.test(voice.lang))
+          ?? voices[0];
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+        utterance.onend = () => {
+          finishSpokenReply("Voice ready (device voice)");
+          resolve(true);
+        };
+        utterance.onerror = () => {
+          setSpeaking(false);
+          ttsAbortRef.current = null;
+          setVoiceStatus("Voice playback blocked");
+          resolve(false);
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+
+  function stopVoicePlayback(): void {
+    ttsAbortRef.current?.abort();
+    ttsAbortRef.current = null;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeaking(false);
+  }
+
+  async function interruptVoice(reason = "operator_started_talking"): Promise<void> {
+    stopVoicePlayback();
+    await updateVoiceSession("/interrupt", { reason });
+    setVoiceStatus("Stopped. Listening.");
+    if (handsFreeRef.current) {
+      startDictation(true);
+    }
+  }
+
+  async function speakAssistant(text: string): Promise<void> {
+    if (!voiceEnabled || !text.trim()) {
+      return;
+    }
+    setSpeaking(true);
+    setVoiceStatus("Nexi is speaking");
+    const startedAt = performance.now();
+    const controller = new AbortController();
+    ttsAbortRef.current?.abort();
+    ttsAbortRef.current = controller;
+    try {
+      audioRef.current?.pause();
+      recognitionRef.current?.stop();
+      const response = await fetch("/api/voice/tts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: operatorContext.tenantId, text }),
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        throw new Error("TTS unavailable");
+      }
+      const audioBlob = await response.blob();
+      const firstAudioLatencyMs = Math.round(performance.now() - startedAt);
+      setLastVoiceLatencyMs(firstAudioLatencyMs);
+      await updateVoiceSession("/turn", {
+        firstAudioLatencyMs,
+        estimatedCostUsd: Number(response.headers.get("x-voice-estimated-cost-usd") ?? 0),
+        characterCount: Number(response.headers.get("x-voice-character-count") ?? 0),
+        audioBytes: Number(response.headers.get("x-voice-audio-bytes") ?? audioBlob.size)
+      });
+      const url = URL.createObjectURL(audioBlob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        finishSpokenReply();
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        setSpeaking(false);
+        ttsAbortRef.current = null;
+        setVoiceStatus("Voice playback failed");
+      };
+      await audio.play();
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        const fellBackToDeviceVoice = await speakAssistantWithBrowserVoice(text);
+        if (fellBackToDeviceVoice) {
+          return;
+        }
+      }
+      setSpeaking(false);
+      ttsAbortRef.current = null;
+      setVoiceStatus(error instanceof DOMException && error.name === "AbortError" ? "Stopped." : "Voice playback blocked");
+    }
+  }
+
+  async function toggleVoice(): Promise<void> {
+    const next = !voiceEnabled;
+    setVoiceEnabled(next);
+    setVoiceStatus(next ? "Voice ready" : "Voice off");
+    if (!next) {
+      stopVoicePlayback();
+      recognitionRef.current?.stop();
+      setListening(false);
+      setHandsFree(false);
+      setInterimTranscript("");
+      return;
+    }
+    await startVoiceSession();
+    if (speechSupported) {
+      startDictation(false);
+      return;
+    }
+    setVoiceStatus("Mic not supported here");
+  }
+
+  async function toggleHandsFree(): Promise<void> {
+    if (handsFree) {
+      setHandsFree(false);
+      handsFreeRef.current = false;
+      recognitionRef.current?.stop();
+      setListening(false);
+      setInterimTranscript("");
+      setVoiceStatus("Hands-free paused.");
+      return;
+    }
+    if (!speechSupported) {
+      setVoiceStatus("Mic not supported here");
+      return;
+    }
+    setVoiceEnabled(true);
+    setHandsFree(true);
+    handsFreeRef.current = true;
+    await startVoiceSession();
+    startDictation(true);
+  }
+
+  function startDictation(fullDuplex = false): void {
+    if (!SpeechRecognition || listening) {
+      setVoiceStatus("Mic not supported here");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = fullDuplex;
+    recognition.interimResults = fullDuplex;
+    recognition.onresult = (event) => {
+      const startIndex = event.resultIndex ?? 0;
+      const finalParts: string[] = [];
+      const interimParts: string[] = [];
+      for (let index = startIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        const transcript = result?.[0]?.transcript?.trim() ?? "";
+        if (!transcript) {
+          continue;
+        }
+        if (result?.isFinal || !fullDuplex) {
+          finalParts.push(transcript);
+        } else {
+          interimParts.push(transcript);
+        }
+      }
+      setInterimTranscript(interimParts.join(" "));
+      const transcript = finalParts.join(" ").trim();
+      if (!transcript) {
+        return;
+      }
+      if (fullDuplex) {
+        recognition.stop();
+        setListening(false);
+        setInterimTranscript("");
+        setVoiceStatus("Heard you. Checking now.");
+        void sendTextMessage(transcript);
+        return;
+      }
+      setDraft((current) => [current, transcript].filter(Boolean).join(" ").trim());
+      setVoiceStatus("Dictation captured");
+    };
+    recognition.onerror = () => {
+      setListening(false);
+      setVoiceStatus("Mic capture failed");
+    };
+    recognition.onend = () => {
+      setListening(false);
+      recognitionRef.current = null;
+    };
+    recognitionRef.current = recognition;
+    setListening(true);
+    setVoiceStatus("Listening");
+    recognition.start();
+  }
+
+  async function loadNotifications(): Promise<void> {
+    try {
+      const body = await fetch(`/api/crm/notifications?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
+        .then((response) => response.json() as Promise<NexOpsNotificationsResponse>);
+      if (!body.ok) {
+        setNotifications([]);
+        setNotificationUnreadCount(0);
+        setNotificationStatus(body.error ?? "Notifications are unavailable right now.");
+        return;
+      }
+      setNotifications(body.notifications ?? []);
+      setNotificationUnreadCount(body.unreadCount ?? 0);
+      setNotificationStatus("");
+    } catch {
+      setNotifications([]);
+      setNotificationUnreadCount(0);
+      setNotificationStatus("Notifications API unreachable.");
+    }
+  }
+
+  function closeShellPanels(): void {
+    setMobileNavOpen(false);
+    setNotificationsOpen(false);
+    setCreateMenuOpen(false);
+    setModuleSwitcherOpen(false);
+  }
+
+  function navigateTo(path: string): void {
+    closeShellPanels();
+    window.location.assign(path);
+  }
+
+  function toggleCreateMenu(): void {
+    setMobileNavOpen(false);
+    setNotificationsOpen(false);
+    setModuleSwitcherOpen(false);
+    setCreateMenuOpen((current) => !current);
+  }
+
+  function toggleNotifications(): void {
+    setMobileNavOpen(false);
+    setCreateMenuOpen(false);
+    setModuleSwitcherOpen(false);
+    setNotificationsOpen((current) => !current);
+  }
+
+  function toggleModuleSwitcher(): void {
+    setMobileNavOpen(false);
+    setCreateMenuOpen(false);
+    setNotificationsOpen(false);
+    setModuleSwitcherOpen((current) => !current);
+  }
+
+  function openWorkspaceProduct(product: "nexops" | "nexcam" | "nexdocs" | "nexportal" | "nexreach"): void {
+    navigateTo(buildWorkspaceSwitchPath(product, operatorContext.tenantId));
+  }
+
+  function handleCreateSelection(option: NexOpsCreateOption): void {
+    if (option.workflow.kind === "client-page" || option.workflow.kind === "drawer") {
+      navigateTo(buildNewClientPath());
+      return;
+    }
+    navigateTo(buildModulePath(option.workflow.module));
+  }
+
+  async function openNotification(entry: NexOpsNotificationEntry): Promise<void> {
+    try {
+      if (entry.unread) {
+        await fetch("/api/crm/notifications/read", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ tenantId: operatorContext.tenantId, notificationId: entry.id })
+        });
+      }
+    } finally {
+      navigateTo(buildModulePath(entry.target.module));
+    }
+  }
+
+  async function markAllNotificationsRead(): Promise<void> {
+    await fetch("/api/crm/notifications/read-all", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: operatorContext.tenantId })
+    });
+    void loadNotifications();
+  }
+
+  async function sendTextMessage(rawText: string, approvalContextOverride?: NexiStandalonePendingApproval | null): Promise<void> {
+    const text = rawText.trim();
+    if (!text || working) {
+      return;
+    }
+    const activeApprovalPrompt = nexiActiveApprovalPrompt(messages, pendingApproval);
+    const effectivePendingApproval = approvalContextOverride ?? activeApprovalPrompt.pendingApproval ?? pendingApproval ?? null;
+    const latestAssistantMessage = [...messages].reverse().find((message) => message.role === "assistant");
+    const conversationOffer = !effectivePendingApproval && latestAssistantMessage
+      ? nexiConversationOffer(
+        latestAssistantMessage.text,
+        typeof navigator !== "undefined" ? navigator.userAgent : undefined
+      )
+      : null;
+    const offerReply = nexiConversationOfferReplyAction(text, conversationOffer);
+    if (conversationOffer && offerReply !== "none") {
+      const assistantText = offerReply === "confirm"
+        ? conversationOffer.kind === "call"
+          ? "Opening the phone dialer now."
+          : "Opening directions in Maps now."
+        : conversationOffer.kind === "call"
+          ? "Okay, I won't place the call right now."
+          : "Okay, I won't open Maps right now.";
+      setDraft("");
+      setMessages((current) => [
+        ...current,
+        { id: crypto.randomUUID(), role: "user", text, sources: [] },
+        { id: crypto.randomUUID(), role: "assistant", text: assistantText, sources: [] }
+      ]);
+      if (offerReply === "confirm") {
+        if (conversationOffer.kind === "maps") {
+          window.open(conversationOffer.href, "_blank", "noopener,noreferrer");
+        } else {
+          window.location.assign(conversationOffer.href);
+        }
+      }
+      void speakAssistant(assistantText);
+      return;
+    }
+    const actorDisplayName = formatNexiOperatorDisplayName(props.user.displayName, props.user.email);
+    const requestorOrigin = await resolveRequestorOriginForNexiMessage(
+      text,
+      typeof navigator !== "undefined" ? navigator.geolocation : undefined
+    );
+    setDraft("");
+    setWorking(true);
+    setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", text, sources: [] }]);
+    try {
+      const idToken = await props.user.getIdToken();
+      const response = await fetch("/api/nexi/message", {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          conversationId,
+          pendingApproval: effectivePendingApproval,
+          actorDisplayName,
+          ...(requestorOrigin ? { requestorOrigin } : {}),
+          message: text
+        })
+      });
+      const body = await response.json() as NexiResponse;
+      const assistantText = sanitizeNexiRenderedText(
+        body.ok
+          ? body.answer ?? "I do not have an answer yet."
+          : body.error ?? NEXI_FRIENDLY_FAILURE_MESSAGE
+      );
+      const nextPendingApproval = body.ok ? (body.pendingApproval ?? null) : null;
+      if (body.ok) {
+        setConversationId(body.conversationId ?? conversationId ?? null);
+        setPendingApproval(nextPendingApproval);
+      }
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          text: assistantText,
+          sources: body.sources ?? [],
+          pendingApproval: body.ok && nextPendingApproval && nexiIsApprovalPrompt(assistantText) ? nextPendingApproval : null
+        }
+      ]);
+      if (body.ok && responseQueuedApproval(body.sources)) {
+        window.dispatchEvent(new CustomEvent("nexops:approval-queued"));
+      }
+      void speakAssistant(assistantText);
+    } catch {
+      setMessages((current) => [
+        ...current,
+        { id: crypto.randomUUID(), role: "assistant", text: NEXI_FRIENDLY_FAILURE_MESSAGE, sources: [] }
+      ]);
+      void speakAssistant(NEXI_FRIENDLY_FAILURE_MESSAGE);
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function sendMessage(event: React.FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    await sendTextMessage(draft);
+  }
+
+  async function uploadJobDeskFile(event: React.ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = "";
+    if (!file || uploading) {
+      return;
+    }
+    setUploading(true);
+    setUploadStatus(`Uploading ${file.name}...`);
+    setMessages((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        role: "user",
+        text: `Upload ${file.name}`,
+        sources: []
+      }
+    ]);
+    try {
+      const fileBase64 = await fileToBase64(file);
+      const mime = file.type || "application/octet-stream";
+      const isImage = mime.startsWith("image/");
+      const response = await fetch("/api/fielddocs/uploads", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          filename: file.name,
+          mime,
+          fileBase64,
+          tags: ["job-desk-upload"],
+          capturedBy: operatorContext.tenantUserId,
+          ...(isImage ? { imageBase64: fileBase64, imageMime: mime } : {})
+        })
+      });
+      const body = await response.json() as UploadMediaResponse;
+      if (!response.ok || !body.ok || !body.media) {
+        throw new Error(body.error ?? "Upload failed");
+      }
+      const mediaSource: Source = {
+        rail: "native",
+        ref: body.media.id,
+        label: `Uploaded ${body.media.type} ${file.name}`
+      };
+      const assistantText = `Uploaded ${file.name} to the shared tenant media rail.`;
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          text: assistantText,
+          sources: [mediaSource]
+        }
+      ]);
+      setUploadStatus("Upload saved.");
+      void speakAssistant(assistantText);
+    } catch {
+      setMessages((current) => [
+        ...current,
+        { id: crypto.randomUUID(), role: "assistant", text: NEXI_FRIENDLY_FAILURE_MESSAGE, sources: [] }
+      ]);
+      setUploadStatus("Upload failed.");
+      void speakAssistant(NEXI_FRIENDLY_FAILURE_MESSAGE);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const brandColors = tenantBranding?.colors;
+  const customOperatorTheme = isOwnerCustomizedOperatorTheme(operatorTheme) ? operatorTheme : null;
+  const themeStyle = {
+    "--jobdesk-shell-background": customOperatorTheme?.colors.shellBackground ?? brandColors?.background,
+    "--jobdesk-panel-background": customOperatorTheme?.colors.panelBackground ?? brandColors?.surface,
+    "--jobdesk-header-background": customOperatorTheme?.colors.headerBackground ?? brandColors?.primary,
+    "--jobdesk-accent": customOperatorTheme?.colors.accent ?? brandColors?.accent,
+    "--jobdesk-accent-text": customOperatorTheme?.colors.accentText ?? brandColors?.accentText,
+    "--jobdesk-user-bubble": customOperatorTheme?.colors.userBubble ?? brandColors?.userBubble,
+    "--jobdesk-assistant-bubble": customOperatorTheme?.colors.assistantBubble ?? brandColors?.assistantBubble,
+    "--jobdesk-text": customOperatorTheme?.colors.text ?? brandColors?.text,
+    "--jobdesk-muted-text": brandColors?.mutedText,
+    "--jobdesk-font-family": tenantBranding?.fontFamily
+  } as React.CSSProperties;
+  const tenantName = tenantDisplayName(tenantBranding, operatorContext.tenantId);
+  const liveStatus = [
+    voiceStatus,
+    uploadStatus,
+    interimTranscript ? `Heard: ${interimTranscript}` : "",
+    lastVoiceLatencyMs !== null ? `Audio start ${(lastVoiceLatencyMs / 1000).toFixed(1)}s` : ""
+  ].filter(Boolean).join(" | ");
+
+  function renderMessageSources(message: ChatMessage): React.ReactNode {
+    const photoSources = message.sources.filter(sourceIsPhoto);
+    const textSources = message.sources.filter((source) => !sourceIsPhoto(source) && !nexiShouldHideRenderedSource(source));
+    const actions = message.role === "assistant" ? messageQuickActions(message.text) : [];
+    const activeApprovalPrompt = nexiActiveApprovalPrompt(messages, pendingApproval);
+    const showConfirmationButtons = message.role === "assistant"
+      && activeApprovalPrompt.messageId === message.id
+      && Boolean(activeApprovalPrompt.pendingApproval);
+    return (
+      <>
+        {photoSources.length > 0 ? (
+          <div className="photo-strip" aria-label="Photos from this answer">
+            {photoSources.map((source) => (
+              <figure className="photo-tile" key={`${source.rail}:${source.ref}`}>
+                <button
+                  aria-label={`Open full-size ${source.label}`}
+                  className="photo-open"
+                  type="button"
+                  onClick={() => setActiveMedia(source)}
+                >
+                  {sourceThumb(source, operatorContext.tenantId)}
+                </button>
+                <figcaption className="photo-caption">
+                  <span>{source.label}</span>
+                  <a href={mediaDownloadUrl(source, operatorContext.tenantId)} download={mediaDownloadName(source)}>
+                    Save
+                  </a>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        ) : null}
+        {textSources.length > 0 ? (
+          <div className="sources">
+            {textSources.map((source) => (
+              <span className="source" key={`${source.rail}:${source.ref}`}>
+                <span>{source.label}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {actions.length > 0 ? (
+          <div className="nexi-message-actions" aria-label="Quick actions from this answer">
+            {actions.map((action) => (
+              <a
+                className={`nexi-message-action ${action.kind}`}
+                href={action.href}
+                key={`${action.kind}:${action.href}`}
+                rel="noreferrer"
+                target={action.kind === "maps" ? "_blank" : undefined}
+              >
+                {action.label}
+              </a>
+            ))}
+          </div>
+        ) : null}
+        {showConfirmationButtons ? (
+          <div className="nexi-confirmation-actions" aria-label="Approval choices">
+            <button
+              className="nexi-confirmation-button yes"
+              disabled={working}
+              type="button"
+              onClick={() => void sendTextMessage("yes", activeApprovalPrompt.pendingApproval)}
+            >
+              Yes
+            </button>
+            <button
+              className="nexi-confirmation-button no"
+              disabled={working}
+              type="button"
+              onClick={() => void sendTextMessage("no", activeApprovalPrompt.pendingApproval)}
+            >
+              No
+            </button>
+          </div>
+        ) : null}
+      </>
+    );
+  }
+
+  function renderCreateMenu(): React.ReactElement | null {
+    if (!createMenuOpen) {
+      return null;
+    }
+    return (
+      <Suspense fallback={<section className="nexops-create-menu nexops-create-menu-flyout" role="dialog" aria-label="Create a new record"><p className="nexops-module-status">Loading create menu...</p></section>}>
+        <NexOpsCreateMenu
+          presentation={createMenuPresentation(window.innerWidth)}
+          activeContextLabel="Pick the object you want to create. Nexi will route you into the matching NexOps workspace."
+          onClose={() => setCreateMenuOpen(false)}
+          onSelect={handleCreateSelection}
+        />
+      </Suspense>
+    );
+  }
+
+  function renderNotificationPanel(): React.ReactElement | null {
+    if (!notificationsOpen) {
+      return null;
+    }
+    return (
+      <Suspense fallback={<section className="nexops-notification-panel" role="dialog" aria-label="Notifications"><p className="nexops-module-status">Loading notifications...</p></section>}>
+        <>
+          <button className="nexops-overlay-backdrop" type="button" aria-label="Close notifications" onClick={() => setNotificationsOpen(false)} />
+          <NexOpsNotificationPanel
+            notificationStatus={notificationStatus}
+            notifications={notifications}
+            onMarkAllRead={markAllNotificationsRead}
+            onOpenNotification={openNotification}
+            onClose={() => setNotificationsOpen(false)}
+          />
+        </>
+      </Suspense>
+    );
+  }
+
+  function renderModuleSwitcher(): React.ReactElement | null {
+    if (!moduleSwitcherOpen) {
+      return null;
+    }
+    return (
+      <>
+        <button className="nexops-overlay-backdrop" type="button" aria-label="Close module switcher" onClick={() => setModuleSwitcherOpen(false)} />
+        <section className="nexops-workspace-switcher" role="dialog" aria-label="Switch NexTeam modules">
+          <div className="nexops-workspace-switcher-head">
+            <div>
+              <p className="eyebrow">Modules</p>
+              <h2>Move across the platform</h2>
+            </div>
+            <button type="button" onClick={() => setModuleSwitcherOpen(false)}>Close</button>
+          </div>
+          <div className="nexops-workspace-switcher-grid">
+            {NEXTEAM_WORKSPACE_OPTIONS.map((option) => (
+              <button className={option.id === "nexops" ? "active" : ""} key={option.id} type="button" onClick={() => openWorkspaceProduct(option.id)}>
+                <ProductLogo product={option.id === "nexportal" ? "nexportal" : option.id} className="nexops-workspace-switcher-logo" alt={option.label} />
+                <div>
+                  <strong>{option.label}</strong>
+                  <p>{option.detail}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  function renderMobileNav(): React.ReactElement | null {
+    if (!mobileNavOpen) {
+      return null;
+    }
+    return (
+      <div className="nexops-mobile-nav-layer" role="presentation">
+        <button className="nexops-mobile-nav-backdrop" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />
+        <aside className="nexops-mobile-nav-sheet" id="nexops-mobile-nav" role="dialog" aria-modal="true" aria-label="Nexi navigation">
+          <div className="nexops-mobile-nav-header">
+            <div className="nexops-mobile-brand-stack">
+              <div className="nexops-mobile-brand">
+                <div className="nexops-mobile-brand-lockup">
+                  <PlatformMark className="nexops-mobile-platform-mark" alt="NexTeam" />
+                  <ProductLogo product="nexi" className="nexops-mobile-product-logo" alt="Nexi" />
+                </div>
+              </div>
+              <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} className="nexops-mobile-tenant-mark" />
+            </div>
+            <button className="nexops-mobile-close-button" type="button" onClick={() => setMobileNavOpen(false)}>Close</button>
+          </div>
+          <div className="nexops-mobile-nav-quick-actions">
+            <button className="nexops-create-button mobile" type="button" onClick={() => {
+              setMobileNavOpen(false);
+              setCreateMenuOpen(true);
+            }}>
+              Create
+            </button>
+            <button type="button" onClick={() => {
+              setMobileNavOpen(false);
+              toggleModuleSwitcher();
+            }}>
+              Modules
+            </button>
+          </div>
+          <div className="nexops-mobile-nav-utility-grid" aria-label="Mobile quick tools">
+            <button type="button" onClick={() => navigateTo("/nexcam")}>
+              <NexOpsNavGlyph module="capture" />
+              <span>NexCam</span>
+            </button>
+            <button type="button" onClick={() => {
+              setMobileNavOpen(false);
+              toggleNotifications();
+            }}>
+              <span className="nexops-mobile-nav-utility-icon nexops-notification-button" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none">
+                  <path d="M10 3.7a3.1 3.1 0 0 0-3.1 3.1v1.3c0 .8-.3 1.6-.8 2.2l-.9 1v.8h9.6v-.8l-.9-1c-.5-.6-.8-1.4-.8-2.2V6.8A3.1 3.1 0 0 0 10 3.7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                  <path d="M8.3 14.7a1.8 1.8 0 0 0 3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+                {notificationUnreadCount ? <span className="nexops-notification-badge">{notificationUnreadCount}</span> : null}
+              </span>
+              <span>Notifications</span>
+            </button>
+            <button type="button" onClick={() => navigateTo("/nexops/settings")}>
+              <NexOpsNavGlyph module="settings" />
+              <span>Settings</span>
+            </button>
+            <button type="button" onClick={() => void signOutOperator(props.auth)}>
+              <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                <path d="M12 4.5h2a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 14 15.5h-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                <path d="M9 13.5 12.5 10 9 6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M12 10H4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              <span>Sign out</span>
+            </button>
+          </div>
+          {NEXOPS_MOBILE_NAV_GROUPS.map((group) => (
+            <section className="nexops-mobile-nav-group" key={group.title} aria-label={group.title}>
+              <p>{group.title}</p>
+              <div className="nexops-mobile-nav-grid">
+                {group.items.map((moduleId) => {
+                  const module = NEXOPS_MODULES.find((entry) => entry.id === moduleId);
+                  if (!module || module.hidden) {
+                    return null;
+                  }
+                  return (
+                    <button type="button" key={module.id} onClick={() => navigateTo(buildModulePath(module.id))}>
+                      <NexOpsNavGlyph module={module.id} />
+                      <span>{module.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+          <div className="nexops-mobile-nav-footer">
+            <div>
+              <strong>{props.user.email ?? "Operator"}</strong>
+              <span>Signed in for this tenant</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    );
+  }
+
+  const header = (
+    <>
+      <NexOpsSharedMobileBar
+        product="nexi"
+        tenantBranding={tenantBranding}
+        tenantId={operatorContext.tenantId}
+        onBrandClick={() => navigateTo(buildModulePath("home"))}
+        brandAriaLabel="Return to NexOps home"
+        rightControls={(
+          <div className="nexi-mobile-header-controls">
+            <div className="nexi-mobile-header-icons">
+              <button className="nexops-mobile-icon-button nexi-header-control" type="button" aria-label="Open camera capture" onClick={() => navigateTo("/nexcam")}>
+                <NexOpsNavGlyph module="capture" />
+              </button>
+              <button className="nexops-mobile-icon-button nexi-header-control" type="button" aria-expanded={mobileNavOpen} aria-controls="nexops-mobile-nav" aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"} onClick={() => setMobileNavOpen((current) => !current)}>
+                <span className="nexops-mobile-menu-glyph" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </button>
+            </div>
+            <button
+              className={`nexi-voice-toggle ${voiceEnabled ? "on" : ""}`}
+              type="button"
+              role="switch"
+              aria-checked={voiceEnabled}
+              aria-label={voiceEnabled ? "Turn Nexi Voice off" : "Turn Nexi Voice on"}
+              onClick={() => void toggleVoice()}
+            >
+              <span className="nexi-voice-toggle-label" aria-hidden="true">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                  <rect x="7.2" y="3.6" width="5.6" height="9.4" rx="2.8" stroke="currentColor" strokeWidth="1.9" />
+                  <path d="M5.2 10.6c0 3.4 2.6 6 4.8 6s4.8-2.6 4.8-6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                  <path d="M10 16.6v3.2" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                  <path d="M7.3 19.8h5.4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                  <path d="M16.8 8.2c1 .7 1.6 1.7 1.6 2.8 0 1.2-.6 2.2-1.6 2.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  <path d="M19.3 6.3c1.5 1.1 2.4 2.8 2.4 4.7 0 1.9-.9 3.6-2.4 4.7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </span>
+              <span className="nexi-voice-toggle-switch" aria-hidden="true">
+                <span className="nexi-voice-toggle-thumb">
+                  <span className="nexi-voice-toggle-mark" aria-hidden="true">{voiceEnabled ? "✓" : "✕"}</span>
+                </span>
+              </span>
+            </button>
+          </div>
+        )}
+      />
+      {renderMobileNav()}
+      <NexOpsSharedWebTopbar
+        product="nexi"
+        tenantName={tenantName}
+        moduleTitle="Nexi"
+        moduleSwitcherOpen={moduleSwitcherOpen}
+        onToggleModuleSwitcher={toggleModuleSwitcher}
+        accountTools={(
+          <>
+            <button className="nexops-web-icon-button nexi-header-control" type="button" aria-label="Open camera capture" onClick={() => navigateTo("/nexcam")}>
+              <NexOpsNavGlyph module="capture" />
+            </button>
+            <button className="nexops-web-icon-button nexi-header-control" type="button" aria-label="Open navigation menu" onClick={() => setMobileNavOpen((current) => !current)}>
+              <span className="nexops-mobile-menu-glyph" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+            </button>
+            <span>{props.user.email ?? "Operator"}</span>
+            <button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
+          </>
+        )}
+      />
+    </>
+  );
+
+  const overlays = (
+    <>
+      {renderModuleSwitcher()}
+      {renderCreateMenu()}
+      {renderNotificationPanel()}
+      {activeMedia ? (
+        <div className="lightbox" role="dialog" aria-modal="true" aria-label={activeMedia.label} onClick={() => setActiveMedia(null)}>
+          <div className="lightbox-card" onClick={(event) => event.stopPropagation()}>
+            <img src={mediaUrl(activeMedia, operatorContext.tenantId)} alt={activeMedia.label} />
+            <div className="lightbox-actions">
+              <a href={mediaDownloadUrl(activeMedia, operatorContext.tenantId)} download={mediaDownloadName(activeMedia)}>
+                Save full-size
+              </a>
+              <button type="button" onClick={() => setActiveMedia(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+
+  return (
+    <NexiStandaloneLayout
+      className={`density-${customOperatorTheme?.density ?? "comfortable"}`}
+      style={themeStyle}
+      header={header}
+      overlays={overlays}
+      statusLiveText={liveStatus}
+      messages={messages}
+      working={working}
+      draft={draft}
+      uploading={uploading}
+      speechSupported={speechSupported}
+      listening={listening}
+      speaking={speaking}
+      onDraftChange={setDraft}
+      onSubmit={sendMessage}
+      onAttachFiles={(event) => void uploadJobDeskFile(event)}
+      onMicClick={() => {
+        if (speaking) {
+          void interruptVoice();
+          return;
+        }
+        if (handsFree) {
+          void toggleHandsFree();
+          return;
+        }
+        startDictation(false);
+      }}
+      renderMessageSources={renderMessageSources}
+    />
   );
 }
 
@@ -3457,12 +9851,62 @@ function Chat(props: { auth: Auth | null; user: User }): React.ReactElement {
     }).catch(() => undefined);
   }
 
+  function finishSpokenReply(status = "Voice ready"): void {
+    setSpeaking(false);
+    ttsAbortRef.current = null;
+    if (handsFreeRef.current) {
+      void updateVoiceSession("/listen");
+      setVoiceStatus("Listening for the next question");
+      startDictation(true);
+      return;
+    }
+    setVoiceStatus(status);
+  }
+
+  async function speakAssistantWithBrowserVoice(text: string): Promise<boolean> {
+    if (typeof window === "undefined" || typeof SpeechSynthesisUtterance === "undefined" || !window.speechSynthesis) {
+      return false;
+    }
+    return await new Promise<boolean>((resolve) => {
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US";
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find((voice) => /aria|samantha|jenny|ava|zira/i.test(voice.name))
+          ?? voices.find((voice) => /^en(?:-|_)/i.test(voice.lang))
+          ?? voices[0];
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+        utterance.onend = () => {
+          finishSpokenReply("Voice ready (device voice)");
+          resolve(true);
+        };
+        utterance.onerror = () => {
+          setSpeaking(false);
+          ttsAbortRef.current = null;
+          setVoiceStatus("Voice playback blocked");
+          resolve(false);
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+
   function stopVoicePlayback(): void {
     ttsAbortRef.current?.abort();
     ttsAbortRef.current = null;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
+    }
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
     }
     setSpeaking(false);
   }
@@ -3512,15 +9956,7 @@ function Chat(props: { auth: Auth | null; user: User }): React.ReactElement {
       audioRef.current = audio;
       audio.onended = () => {
         URL.revokeObjectURL(url);
-        setSpeaking(false);
-        ttsAbortRef.current = null;
-        if (handsFreeRef.current) {
-          void updateVoiceSession("/listen");
-          setVoiceStatus("Listening for the next question");
-          startDictation(true);
-          return;
-        }
-        setVoiceStatus("Voice ready");
+        finishSpokenReply();
       };
       audio.onerror = () => {
         URL.revokeObjectURL(url);
@@ -3530,6 +9966,12 @@ function Chat(props: { auth: Auth | null; user: User }): React.ReactElement {
       };
       await audio.play();
     } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        const fellBackToDeviceVoice = await speakAssistantWithBrowserVoice(text);
+        if (fellBackToDeviceVoice) {
+          return;
+        }
+      }
       setSpeaking(false);
       ttsAbortRef.current = null;
       setVoiceStatus(error instanceof DOMException && error.name === "AbortError" ? "Stopped." : "Voice playback blocked");
@@ -3633,6 +10075,10 @@ function Chat(props: { auth: Auth | null; user: User }): React.ReactElement {
     if (!text || working) {
       return;
     }
+    const requestorOrigin = await resolveRequestorOriginForNexiMessage(
+      text,
+      typeof navigator !== "undefined" ? navigator.geolocation : undefined
+    );
     setDraft("");
     setWorking(true);
     setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", text, sources: [] }]);
@@ -3641,7 +10087,12 @@ function Chat(props: { auth: Auth | null; user: User }): React.ReactElement {
       const response = await fetch("/api/nexi/message", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${idToken}` },
-        body: JSON.stringify({ tenantId: operatorContext.tenantId, conversationId, message: text })
+        body: JSON.stringify({
+          tenantId: operatorContext.tenantId,
+          conversationId,
+          ...(requestorOrigin ? { requestorOrigin } : {}),
+          message: text
+        })
       });
       const body = await response.json() as NexiResponse;
       const assistantText = body.ok ? body.answer ?? "I do not have an answer yet." : body.error ?? "Nexi could not answer that.";
@@ -3707,6 +10158,7 @@ function Chat(props: { auth: Auth | null; user: User }): React.ReactElement {
           mime,
           fileBase64,
           tags: ["job-desk-upload", ...(linkTarget ? [`linked:${linkTarget}`] : [])],
+          capturedBy: operatorContext.tenantUserId,
           ...(isImage ? { imageBase64: fileBase64, imageMime: mime } : {})
         })
       });
@@ -3764,7 +10216,10 @@ function Chat(props: { auth: Auth | null; user: User }): React.ReactElement {
       <section className="phone">
         <header className="topbar">
           <div className="brand-stack">
-            <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} />
+            <div className="brand-stack-row">
+              <NexiIdentityMark className="brand-stack-nexi" />
+              <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} />
+            </div>
             <h1>Nexi Job Desk</h1>
             <p className="signed-in">{props.user.email ?? "Firebase operator"}</p>
           </div>
@@ -3916,22 +10371,28 @@ function App(): React.ReactElement {
   const [auth, setAuth] = useState<Auth | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [localAuthEnabled, setLocalAuthEnabled] = useState(false);
+  const [localTenantId, setLocalTenantId] = useState(DEFAULT_TENANT_ID);
+  const [localProfiles, setLocalProfiles] = useState<LocalAuthProfileSummary[]>([]);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     let cancelled = false;
     loadAuthBootstrap()
-      .then(({ auth: nextAuth, authRequired, localUser }) => {
+      .then(({ auth: nextAuth, localUser, localAuthEnabled: nextLocalAuthEnabled, localTenantId: nextLocalTenantId, localProfiles: nextLocalProfiles }) => {
         if (cancelled) {
           return;
         }
         setAuth(nextAuth);
-        if (!authRequired && localUser) {
+        setLocalAuthEnabled(nextLocalAuthEnabled);
+        setLocalTenantId(nextLocalTenantId);
+        setLocalProfiles(nextLocalProfiles);
+        if (localUser) {
           setUser(localUser);
           setAuthReady(true);
           return;
         }
-        if (!nextAuth) {
+        if (nextLocalAuthEnabled || !nextAuth) {
           setAuthReady(true);
           return;
         }
@@ -3951,10 +10412,11 @@ function App(): React.ReactElement {
     };
   }, []);
 
-  return <AuthGate auth={auth} user={user} authReady={authReady} onSignedIn={setUser} />;
+  return <AuthGate auth={auth} user={user} authReady={authReady} localAuthEnabled={localAuthEnabled} localTenantId={localTenantId} localProfiles={localProfiles} onSignedIn={setUser} />;
 }
 
 const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(<App />);
 }
+

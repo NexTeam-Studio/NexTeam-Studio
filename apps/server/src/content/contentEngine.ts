@@ -13,22 +13,26 @@ export interface TenantBrandVoice {
 export interface ContentJobFact {
   id: string;
   tenantId: string;
+  clientId?: string | undefined;
   title: string;
   clientName?: string | undefined;
   city?: string | undefined;
   state?: string | undefined;
   outcome?: string | undefined;
   completedAt?: string | undefined;
+  serviceType?: string | undefined;
   lineItems?: Array<{ name: string; total?: number | undefined }> | undefined;
 }
 
 export interface ContentMediaFact {
   id: string;
-  type: "photo" | "video" | "pdf";
+  type: "photo" | "video" | "audio" | "pdf";
   thumbRef?: string | undefined;
   storageRef?: string | undefined;
   caption?: string | undefined;
 }
+
+export type ContentDraftStatus = "draft" | "approval_pending" | "publish_ready" | "published_deferred" | "rejected";
 
 export interface ContentDraft {
   id: string;
@@ -36,13 +40,84 @@ export interface ContentDraft {
   kind: ContentDraftKind;
   title: string;
   body: string;
+  shortCaption?: string | undefined;
+  longCaption?: string | undefined;
   mediaRefs: string[];
   jobId?: string | undefined;
-  status: "draft" | "approval_pending" | "publish_ready" | "published_deferred" | "rejected";
+  clientId?: string | undefined;
+  clientName?: string | undefined;
+  locality?: string | undefined;
+  serviceType?: string | undefined;
+  status: ContentDraftStatus;
   approvalId?: string | undefined;
+  watermarkLabel?: string | undefined;
+  showcaseId?: string | undefined;
+  selectionNotes?: string[] | undefined;
   sources: Source[];
   calendarSlot?: string | undefined;
   createdAt: string;
+  updatedAt?: string | undefined;
+}
+
+export type ContentEligibilityStatus = "eligible" | "blocked_consent" | "drafted";
+
+export interface ContentEligibilityRecord {
+  id: string;
+  tenantId: string;
+  jobId: string;
+  clientId: string;
+  status: ContentEligibilityStatus;
+  locality: string;
+  serviceType: string;
+  closedAt?: string | undefined;
+  draftIds?: string[] | undefined;
+  blockedReason?: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContentSettings {
+  id: string;
+  tenantId: string;
+  toneNotes: string;
+  serviceAreaLine: string;
+  licenseLine: string;
+  ctaLine: string;
+  approvalAuthority: "owner_only";
+  seededDefaults: boolean;
+  portfolioTokenHash?: string | undefined;
+  portfolioTokenIssuedAt?: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ContentShowcaseStatus = "live" | "review_required";
+
+export interface ContentShowcase {
+  id: string;
+  tenantId: string;
+  draftId: string;
+  clientId: string;
+  title: string;
+  writeUp: string;
+  locality: string;
+  serviceType: string;
+  mediaRefs: string[];
+  featuredReviewIds: string[];
+  status: ContentShowcaseStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContentAudienceMember {
+  clientId: string;
+  clientName: string;
+  locality: string;
+  serviceType: string;
+  lastClosedJobAt?: string | undefined;
+  email?: string | undefined;
+  phone?: string | undefined;
+  marketingConsent: boolean;
 }
 
 export interface ContentCalendarItem {
@@ -80,12 +155,14 @@ export function contentJobFactFromJob(job: Job & { clientName?: string; city?: s
   return {
     id: job.id,
     tenantId: job.tenantId,
+    clientId: job.clientId,
     title: job.title,
     clientName: job.clientName,
     city: job.city,
     state: job.state,
     outcome: job.outcome,
     completedAt: job.completedAt,
+    serviceType: job.lineItems?.[0]?.name || job.title,
     lineItems: job.lineItems?.map((item) => ({ name: item.name, total: item.total }))
   };
 }
@@ -114,6 +191,13 @@ function jobPlace(job: ContentJobFact): string {
   return [job.city, job.state].filter(Boolean).join(", ") || "a local pool";
 }
 
+export function serviceTypeFromJob(job: ContentJobFact): string {
+  return job.serviceType?.trim()
+    || job.lineItems?.[0]?.name?.trim()
+    || job.title.trim()
+    || "Pool leak detection";
+}
+
 function findingsLine(job: ContentJobFact): string {
   if (job.outcome) {
     return job.outcome;
@@ -136,6 +220,7 @@ function makeDraftId(kind: ContentDraftKind): string {
 
 function makeDraft(kind: ContentDraftKind, input: DraftGenerationInput, title: string, body: string): ContentDraft {
   const mediaRefs = input.media.filter((item) => item.type === "photo").map((item) => item.id);
+  const createdAt = input.now ?? new Date().toISOString();
   return {
     id: makeDraftId(kind),
     tenantId: input.tenantId,
@@ -144,9 +229,14 @@ function makeDraft(kind: ContentDraftKind, input: DraftGenerationInput, title: s
     body,
     mediaRefs,
     jobId: input.job.id,
+    clientId: input.job.clientId,
+    clientName: input.job.clientName,
+    locality: jobPlace(input.job),
+    serviceType: serviceTypeFromJob(input.job),
     status: "draft",
     sources: [source(input.job), ...mediaSources(input.media)],
-    createdAt: input.now ?? new Date().toISOString()
+    createdAt,
+    updatedAt: createdAt
   };
 }
 
@@ -165,12 +255,17 @@ export function generateGbpPost(input: DraftGenerationInput): ContentDraft {
 export function generateSocialPost(input: DraftGenerationInput): ContentDraft {
   const brand = defaultBrandVoice(input.brandVoice);
   const title = `Field note: ${jobPlace(input.job)} leak detection`;
-  const body = [
+  const shortCaption = `${brand.businessName} wrapped another documented leak call in ${jobPlace(input.job)}.`;
+  const longCaption = [
     `Field note from ${brand.businessName}: not every leak is obvious from the surface.`,
     findingsLine(input.job),
     "A documented inspection gives owners a cleaner next step than guessing with water bills and buckets."
   ].join("\n\n");
-  return makeDraft("social_post", input, title, body);
+  return {
+    ...makeDraft("social_post", input, title, longCaption),
+    shortCaption,
+    longCaption
+  };
 }
 
 export function generateSeoArticle(input: DraftGenerationInput): ContentDraft {

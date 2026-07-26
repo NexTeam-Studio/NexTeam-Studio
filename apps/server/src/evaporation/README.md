@@ -11,4 +11,4 @@ Start here when something breaks:
 - `routes.ts` exposes `/api/evaporation/run` and the PDF download endpoint.
 - `nexiTools.ts` exposes the `runEvaporation` tool to Nexi.
 
-The tool does not send email, publish anywhere, or write to CompanyCam. It returns report metadata, a PDF URL, and attachment metadata so approval-gated comms can attach the PDF later.
+The tool does not send email, publish anywhere, or write to any dormant third-party media rail. It returns report metadata, a PDF URL, and attachment metadata so approval-gated comms can attach the PDF later.

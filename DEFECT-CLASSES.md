@@ -222,6 +222,7 @@ KNOWN VARIANTS:
 - (1) Draft the VGB hotel GM outreach campaign for the Chris-owned test list. Do not send it; park it for approval.
 - (1) What did semrush site audit say
 - (1) What needs my attention
+- (repo audit 2026-07-21, resolved restored) CRM-style Nexi prompts could return raw Anthropic validation text `tools: Tool names must be unique.` because `createContentNexiTools(...)` was registered in both the static `/api/nexi` tool pack and the owner/admin request-scoped tool pack. The fix removed the static registration, kept the role-scoped registration, and added a registry-level duplicate-name guard plus regression coverage in `apps/server/test/nexi-job-desk.test.mjs`.
 
 STATUS: OPEN - backfilled; separate Part 9 closure audit not yet run.
 
@@ -248,6 +249,7 @@ KNOWN VARIANTS:
 - (module audit) M5 content tools existed, but content queue visibility was not proven through owner-facing chat/UI after Part 9. Phase 0 item 3 now routes content queue prompts to `contentQueue`, supports approve/reject decisions, exposes a `/web` Content Queue card, and proves live staging show/approve/reject states; receipts: `receipts/phase0/content-queue-visibility-local-smoke-20260708.json`, `receipts/phase0/phase0-reality-live-receipt-current.json`.
 - (module audit) M12a voice was left marked in progress after live staging TTS and usageLog cost receipts existed. Phase 0 item 4 corrected BUILDSTATE to done for the M12a foundation and records the status receipt at `receipts/phase0/m12a-voice-reality-gate-status-20260708.json`; M12b full-duplex/interruptible voice remains separate future scope.
 - (module audit) M6 Campaigns was marked blocked even though generation, templates, sequencing, compliance injection, suppression, tracking, transactional queueing, and ApprovalQueue-only behavior were live-receipted. Phase 0 item 5 separates the completed build-to-approval module from the parked external bulk-send boundary; receipt: `receipts/phase0/m6-campaigns-blocker-resolution-20260708.json`.
+- (repo audit 2026-07-20) The fresh full live regression wall (`203` prompts) failed before answer evaluation because the proof-session/runtime-config path could not provide `VITE_FIREBASE_API_KEY`, so every case aborted with `Missing required environment variable VITE_FIREBASE_API_KEY.` This means the currently claimed staging proof surface is not actually reachable for the audit runner even though staging `/api/health` stays green. Receipts: `receipts/audit/full-project-audit-20260720/regression-wall-live.txt`, `receipts/m1/nexi-regression-wall-live.json`.
 
 STATUS: OPEN - createClient, content queue, M12a voice, M6 campaigns, and Item 7 evap reality gaps are corrected; M4/M11 owner-facing photo upload remains open until the real-device path is proven.
 
@@ -423,11 +425,13 @@ REGRESSION TEST IDS:
 
 DEFINITION: A test attempts to freeze time or environment in one way, but the code under test reads a different clock/source, creating a false red that looks like product failure.
 
-ROOT CAUSE: Legacy tests monkeypatch `Date.now` while the runtime path uses `new Date()` directly, so the intended frozen instant never reaches the schedule/window logic.
+ROOT CAUSE: Tests hardcode dates or monkeypatch one clock source while the runtime path derives state from a different current-time input, so calendar- and expiry-sensitive assertions drift into false reds once the real date passes the fixture window.
 
 KNOWN VARIANTS:
 
 - (repo audit 2026-07-14) `src/server/jobberService.test.mjs` fails in `jobber service answers a schedule question through the refresh-token lane` with `0 !== 1` because the test freezes `Date.now`, but `answerScheduleQuestion()` calls `resolveScheduleWindow(question)` and `resolveScheduleWindow()` defaults `now = new Date()`.
+- (repo audit 2026-07-20) `apps/server/test/platform.test.mjs` fails in `platform routes manage tenant users and job links without leaking token hashes by default` because the fixture creates a job-access link expiring at `2026-07-20T12:00:00.000Z`, while the audit rerun happened after that timestamp on the same calendar day. Verification correctly returns the link as expired, so the red assertion is caused by a stale fixed expiry, not by token-hash leakage or broken access-link logic.
+- (repo audit 2026-07-20) `apps/server/test/schedule-home-activity.test.mjs` fails in `CRM scheduling tools queue unscheduled jobs, create 25-visit series, shift remaining visits, and read role-aware queues` because the fixture schedules a visit on `2026-07-20T13:00:00.000Z` but still expects the derived job state to remain `Upcoming`. On the real audit date, the lifecycle engine correctly derives `Today`, so the red is a date-drifted expectation rather than a proven queue/status regression.
 
 STATUS: OPEN - unrelated to tenant isolation, but newly surfaced during the same verification pass and now explicitly tracked.
 
@@ -436,3 +440,26 @@ CLOSURE RECEIPT: Pending targeted Jobber schedule-lane test audit.
 REGRESSION TEST IDS:
 
 - `src/server/jobberService.test.mjs` refresh-token schedule case
+- `apps/server/test/platform.test.mjs` job-access-link expiry case
+- `apps/server/test/schedule-home-activity.test.mjs` today-vs-upcoming derived-status case
+
+## CLASS K - RECEIPT / LOG PII RETENTION
+
+DEFINITION: Verification receipts, transcript summaries, or docs retain real mailbox addresses or message-content snippets that go beyond what the audit trail needs, causing the PII/log scan to flag historical artifacts even when runtime code is otherwise secret-safe.
+
+ROOT CAUSE: Redaction discipline was applied inconsistently across historical receipts. Some artifacts preserved live mailbox identifiers and answer excerpts for proof convenience, but those values were never swept back down to minimum-necessary metadata.
+
+KNOWN VARIANTS:
+
+- (repo audit 2026-07-20) `receipts/m6-lite-gmail-oauth-capture.txt` stores real mailbox addresses in a credential-capture receipt (`GMAIL_READONLY_MAILBOX_1_EMAIL=chris@aquatraceleak.com`, `GMAIL_READONLY_MAILBOX_2_EMAIL=aquatraceleak@gmail.com`) even though the account inventory rule only needs mailbox roles and env names.
+- (repo audit 2026-07-20) `receipts/m1/nexi-trial-turns-summary.txt` and `receipts/m1/nexi-trial-keyword-slices.txt` retain real mailbox-address prompts plus answer snippets from live email-triage trials, which is more content than the audit trail needs once the pass/fail result is established.
+- (repo audit 2026-07-20) `src/features/missioncontrol/readme.md` and related legacy docs still embed real Aquatrace mailbox addresses in example/test-email instructions, so the repo-level PII scan does not currently come back clean.
+
+STATUS: OPEN - audit finding logged; no runtime patch was applied during this verification pass.
+
+CLOSURE RECEIPT: Pending a dedicated redaction sweep that replaces live mailbox addresses and transcript-body excerpts with role labels or sanitized placeholders, followed by a clean rerun of the PII/log-content scan.
+
+REGRESSION TEST IDS:
+
+- `receipts/audit/full-project-audit-20260720/pii-log-scan.txt`
+- Future policy check should fail receipts/docs that include live mailbox addresses or transcript body excerpts outside explicitly approved redacted fixtures.

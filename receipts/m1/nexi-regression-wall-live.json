@@ -1,1296 +1,1287 @@
 {
   "ok": false,
-  "runId": "regression-wall-1783466607283-5aa60bd4",
+  "complete": true,
+  "runId": "regression-wall-1784583821440-d5e6b4ba",
   "baseUrl": "https://nexteam-studio-staging.up.railway.app",
   "tenantId": "aquatrace",
-  "total": 174,
-  "passed": 126,
-  "failed": 48,
+  "total": 203,
+  "passed": 0,
+  "failed": 203,
   "caseFilter": null,
   "limit": null,
+  "offset": null,
   "results": [
     {
       "id": "20260704172042-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:20:42.712Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField for poolGallons came back empty (no matched blueprint) — no pool gallons value on file for Camp Mikell. - getJobDetail failed to complete its check, so I couldn't cross-check via",
-      "latencyMs": 39739
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260704172049-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:20:49.617Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. The blueprint lookup for Camp Mikell came back with no matched blueprint and no value for poolGallons, and the job detail check also failed to return anything usable. No documents or suggested blueprints turn",
-      "latencyMs": 36279
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704172534-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
       "createdAt": "2026-07-04T17:25:34.406Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on today's schedule (Jobber): - **Swimming Pool Leak Detection Service** – Forrest Ferguson, 290 River Oaks Drive, Hartwell, GA - Status: lead - Scheduled: all day, 2026-07-07 - Total: $550 Source: Jobber (getSchedule)",
-      "latencyMs": 35518
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704172544-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
       "createdAt": "2026-07-04T17:25:44.767Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 CompanyCam photos for the Deborah Justice job (181 Isbell Road, Fair Play, SC). **CompanyCam IDs:** 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 3338748995, 3338749169, 3338749380, 3338749547,",
-      "latencyMs": 5074
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260704172547-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:25:47.688Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField: no matched blueprint for Camp Mikell, poolGallons came back empty - getJobDetail: check failed before returning data - getDocuments: no project, documents, reports, or suggested",
-      "latencyMs": 28828
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704172554-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:25:54.012Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - **lookupSiteJobBlueprintField**: no match found for poolGallons — no blueprint ID matched for Camp Mikell. - **getDocuments**: no project, documents, reports, or suggested blueprints found for Camp Mikell. ",
-      "latencyMs": 35746
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704172947-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
       "createdAt": "2026-07-04T17:29:47.787Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on today's schedule (Jobber): - **Swimming Pool Leak Detection Service** — Forrest Ferguson, 290 River Oaks Drive, Hartwell, GA — all day, status: lead — $550 total Source: Jobber (getSchedule)",
-      "latencyMs": 34592
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704173045-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
       "createdAt": "2026-07-04T17:30:45.190Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on today's schedule (all day, 7/7): - **Swimming Pool Leak Detection Service** — Forrest Ferguson, 290 River Oaks Drive, Hartwell, GA — status: lead — $550 Source: Jobber (via getSchedule)",
-      "latencyMs": 36357
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704173052-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
       "createdAt": "2026-07-04T17:30:52.873Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 CompanyCam photos for Deborah Justice (181 Isbell Road, Fair Play, SC). **Source: CompanyCam** - Photo IDs: 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 3338748995, 3338749169, 3338749380, 333",
-      "latencyMs": 4648
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704173057-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:30:57.286Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField: no matched blueprint for Camp Mikell, poolGallons came back empty - getJobDetail: check failed on my end - getDocuments: no project, documents, reports, or suggested blueprints ",
-      "latencyMs": 33287
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704173102-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:31:02.700Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField (poolGallons): no matched blueprint for Camp Mikell — value came back empty - getJobDetail: check failed before returning data - getDocuments: no project, documents, reports, or ",
-      "latencyMs": 33320
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704173548-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
       "createdAt": "2026-07-04T17:35:48.602Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on the schedule today (all day, 2026-07-07): - **Swimming Pool Leak Detection Service** — Forrest Ferguson, 290 River Oaks Drive, Hartwell, GA — status: lead — $550 Source: Jobber (getSchedule)",
-      "latencyMs": 35330
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260704173555-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
       "createdAt": "2026-07-04T17:35:55.752Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 CompanyCam photos for Deborah Justice (181 Isbell Road, Fair Play, SC). **Source: CompanyCam** — project ID 107503799 Photo IDs: - 3338800086 - 3338756524 - 3338754200 - 3338751881 - 3338681696 - 3338748643 - 3338748847 - 333874899",
-      "latencyMs": 4811
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704173600-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:36:00.708Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField came back with no value for poolGallons (no matching blueprint found) - getJobDetail failed to complete the check - getDocuments found no Camp Mikell documents or suggested bluep",
-      "latencyMs": 32451
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704173606-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:36:06.992Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField: no value for poolGallons, no matching blueprint found for Camp Mikell - getJobDetail: check failed to complete - getDocuments: no Camp Mikell documents, reports, or suggested bl",
-      "latencyMs": 34023
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704174049-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
       "createdAt": "2026-07-04T17:40:49.119Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on today's schedule (all day, 2026-07-07): - **Swimming Pool Leak Detection Service** – Forrest Ferguson, 290 River Oaks Drive, Hartwell, GA – status: lead – $550 Source: Jobber (getSchedule)",
-      "latencyMs": 35174
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704174053-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
       "createdAt": "2026-07-04T17:40:53.215Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 photos for Deborah Justice's job at 181 Isbell Road, Fair Play, SC. - CompanyCam project ID: 107503799 - Photo IDs: 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 3338748995, 3338749169, 3338749",
-      "latencyMs": 4977
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704174056-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:40:56.525Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - **lookupSiteJobBlueprintField**: no match found for poolGallons on Camp Mikell (matchedBlueprintId: null) - **getJobDetail**: check failed before returning data - **getDocuments**: no matching project, docu",
-      "latencyMs": 33184
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704174059-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:40:59.515Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
-      "latencyMs": 36730
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704174524-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
       "createdAt": "2026-07-04T17:45:24.849Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on today's schedule (all day, 2026-07-07): - **Swimming Pool Leak Detection Service** – Forrest Ferguson, 290 River Oaks Drive, Hartwell, GA – status: lead – total: $550 Source: Jobber (getSchedule)",
-      "latencyMs": 32753
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704174530-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
       "createdAt": "2026-07-04T17:45:30.588Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 CompanyCam photos for Deborah Justice (181 Isbell Road, Fair Play, SC 29643). **Source: CompanyCam** - Photo IDs: 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 3338748995, 3338749169, 333874938",
-      "latencyMs": 5167
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704174533-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:45:33.784Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField: no matching blueprint found for poolGallons (Camp Mikell) - getJobDetail: check failed, couldn't retrieve - getDocuments: no project, documents, reports, or suggested blueprints",
-      "latencyMs": 32092
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704174536-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:45:36.844Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField: no matching blueprint found, poolGallons came back empty for Camp Mikell - getJobDetail: check failed before returning any data - getDocuments: no project, documents, reports, o",
-      "latencyMs": 35746
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704174553-1-reply-with-exactly-readiness-check",
       "createdAt": "2026-07-04T17:45:53.922Z",
       "expectedIntent": "meta_echo",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "readiness check.",
-      "latencyMs": 1023
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704174559-2-reply-with-exactly-readiness-check",
       "createdAt": "2026-07-04T17:45:59.565Z",
       "expectedIntent": "meta_echo",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "readiness check.",
-      "latencyMs": 944
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704175316-1-what-jobber-jobs-are-on-the-schedule-today-use-getschedule-and-include-sources",
       "createdAt": "2026-07-04T17:53:16.006Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on today's schedule (all day, 2026-07-07): - **Swimming Pool Leak Detection Service** – Forrest Ferguson, 290 River Oaks Drive, Hartwell, GA. Status: lead. Total: $550. Source: Jobber (getSchedule)",
-      "latencyMs": 30770
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704175322-1-find-companycam-photos-for-deborah-justice-use-getphotos-and-include-sources",
       "createdAt": "2026-07-04T17:53:22.864Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 CompanyCam photos for Deborah Justice (181 Isbell Road, Fair Play, SC). **Photo IDs (CompanyCam):** 3338800086, 3338756524, 3338754200, 3338751881, 3338681696, 3338748643, 3338748847, 3338748995, 3338749169, 3338749380, 3338749547,",
-      "latencyMs": 5182
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704175325-1-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:53:25.888Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField came back with no value for poolGallons — no matching blueprint was found. - getJobDetail failed to complete its check, so I couldn't cross-check job details either. - getDocumen",
-      "latencyMs": 33272
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704175328-2-how-many-pool-gallons-are-in-the-camp-mikell-sitejobblueprint-use-lookupsitejobb",
       "createdAt": "2026-07-04T17:53:28.972Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down. - lookupSiteJobBlueprintField: no value for poolGallons, no matching blueprint found. - getJobDetail: check failed before returning any data. - getDocuments: no documents, reports, or suggested blueprints for",
-      "latencyMs": 30800
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704175331-1-reply-with-exactly-readiness-check",
       "createdAt": "2026-07-04T17:53:31.466Z",
       "expectedIntent": "meta_echo",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "readiness check.",
-      "latencyMs": 888
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260704175335-2-reply-with-exactly-readiness-check",
       "createdAt": "2026-07-04T17:53:35.850Z",
       "expectedIntent": "meta_echo",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "readiness check.",
-      "latencyMs": 907
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260704175418-1-find-companycam-photos-for-deborah-justice",
       "createdAt": "2026-07-04T17:54:18.266Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 photos on the Deborah Justice job (181 Isbell Road, Fair Play, SC). They're not individually labeled or tagged, so I can't break them out by date or subject — just the full set of 25 images logged in CompanyCam for this project.",
-      "latencyMs": 4352
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705015415-1-what-s-on-schedule-for-monday",
       "createdAt": "2026-07-05T01:54:15.668Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Nothing on the books for Monday — schedule's clear.",
-      "latencyMs": 29091
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705015758-2-a-lot-of-information-here-mich-of-these-are-unscheduled-or-late-jobs-there-is-a-",
       "createdAt": "2026-07-05T01:57:58.518Z",
       "expectedIntent": "pipeline_status",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPipeline"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have date/time info tied to these job records — the pipeline data only shows status, title, and totals, not scheduled dates. Here's what I can confirm: there are 5 jobs currently marked **scheduled** in the system: - Swimming Pool L",
-      "latencyMs": 11172
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705015834-3-what-is-our-current-ytd-revenue",
       "createdAt": "2026-07-05T01:58:34.059Z",
       "expectedIntent": "capability_gap_revenue",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "I can't total revenue from chat yet because the revenue summary tool is not wired to Nexi. I logged it as capability_not_available.",
-      "latencyMs": 1599
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705015924-4-who-owes-us-money",
       "createdAt": "2026-07-05T01:59:24.594Z",
-      "expectedIntent": "payment_status_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule",
-        "getJobDetail",
-        "invoiceStatus",
-        "searchEmail"
+      "expectedIntent": "capability_gap_ar_summary",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
-      "latencyMs": 58853
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705020136-5-show-me-deborah-justice-pool-photos",
       "createdAt": "2026-07-05T02:01:36.601Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
-      "latencyMs": 3436
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705020209-6-what-sources-do-you-use",
       "createdAt": "2026-07-05T02:02:09.845Z",
       "expectedIntent": "meta_capability",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "I can check Aquatrace work records, schedules, job reports, photos, saved site notes, invoices, and connected email when those are wired for this tenant.",
-      "latencyMs": 1311
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260705020327-7-what-was-the-issue-at-camp-mikell",
       "createdAt": "2026-07-05T02:03:27.449Z",
       "expectedIntent": "job_detail_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "**Camp Mikell (Alex Mastej) — Leak Detection findings, June 5, 2026:** Significant water loss found in multiple areas: - **Backwash line** — ~1,700 gallons/day loss - **Main drain #3** — ~2,000 gallons/day loss, plus a defect under the drai",
-      "latencyMs": 37357
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705020702-8-you-re-incorrect-this-would-have-been-referenced-in-companycan",
       "createdAt": "2026-07-05T02:07:02.865Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 1362
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705020810-9-somewhat-correct-there-is-a-report-in-company-cam-that-specifies-the-resukts",
       "createdAt": "2026-07-05T02:08:10.868Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 1329
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705020837-10-the-photos-in-that-reply-show-thumbnails-but-are-t-clickable-or-savable",
       "createdAt": "2026-07-05T02:08:37.056Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
-      "latencyMs": 1072
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705020910-11-what-were-the-pool-leak-detection-results-for-deborah-justice-in-company-cam-rep",
       "createdAt": "2026-07-05T02:09:10.686Z",
       "expectedIntent": "job_detail_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "**Deborah Justice — Leak Detection results, July 2, 2026 (181 Isbell Road, Fair Play, SC):** Pool: 37,602 gallons, avg depth 60\". Techs: Chris, Logan. Completed 3:10pm Thursday. - **Deep end skimmer throat** — small water loss at missing gr",
-      "latencyMs": 32502
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260705021006-12-findings-are-in-the-report-what-are-the-total-gallons-of-deborah-justice",
       "createdAt": "2026-07-05T02:10:06.484Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "**Deborah Justice — total pool gallons: 37,602 gallons** (Surface area 1,002.7 sq ft × avg depth 60\" → 626.6875 gallons/inch) Source: CompanyCam leak detection checklist (\"Exported - Current Aquatrace Swimming Pool Leak Detection Checklist ",
-      "latencyMs": 32370
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705021035-13-same-report-shows-results-of-leak-detection-what-are-they",
       "createdAt": "2026-07-05T02:10:35.915Z",
       "expectedIntent": "job_detail_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "This job actually belongs to **Forrest Ferguson** at 290 River Oaks Drive, Hartwell — not Deborah Justice. Looks like a mismatch on the name. For this job: - **Jobber**: status \"lead,\" no line items, no notes, $550 total — no leak detection",
-      "latencyMs": 34331
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705021112-14-who-are-the-technicians-for-deborah-justice",
       "createdAt": "2026-07-05T02:11:12.781Z",
       "expectedIntent": "job_detail_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "**Deborah Justice — technicians: Chris and Logan** Source: CompanyCam leak detection checklist (07-02-2026). Jobber has no technician field on this job (status is \"lead,\" no line items), so nothing to compare there — just no data on that si",
-      "latencyMs": 36866
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705021149-15-wrong-answer",
       "createdAt": "2026-07-05T02:11:49.039Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 1573
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705024248-1-findings-are-in-the-report-what-are-the-total-gallons-of-deborah-justice",
       "createdAt": "2026-07-05T02:42:48.510Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "**37,602 gallons** for Deborah Justice's pool (181 Isbell Road, Fair Play, SC). - Surface area: 1,002.7 sq ft - Average depth: 60 in - Gallons per inch: 626.6875 This is from the CompanyCam leak detection checklist (Jobber job record has no",
-      "latencyMs": 35240
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705024300-2-what-sources-do-you-use",
       "createdAt": "2026-07-05T02:43:00.828Z",
       "expectedIntent": "meta_capability",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "I can check Aquatrace work records, schedules, job reports, photos, saved site notes, invoices, and connected email when those are wired for this tenant.",
-      "latencyMs": 1774
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260705024302-3-wrong-answer-that-was-a-live-receipt-correction-and-should-be-logged",
       "createdAt": "2026-07-05T02:43:02.191Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 1733
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705024409-1-findings-are-in-the-report-what-are-the-total-gallons-of-deborah-justice",
       "createdAt": "2026-07-05T02:44:09.167Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Deborah Justice's pool holds **37,602 gallons** total, per the CompanyCam leak detection report (surface area 1,002.7 sq ft, average depth 60 in).",
-      "latencyMs": 32372
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705024410-2-wrong-answer-that-was-a-live-receipt-correction-and-should-be-logged",
       "createdAt": "2026-07-05T02:44:10.672Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 1688
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705024415-1-what-sources-do-you-use",
       "createdAt": "2026-07-05T02:44:15.790Z",
       "expectedIntent": "meta_capability",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "I can check Aquatrace work records, schedules, job reports, photos, saved site notes, invoices, and connected email when those are wired for this tenant.",
-      "latencyMs": 1838
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705144853-1-what-were-the-pool-leak-detection-results-for-deborah-justice-in-companycam-repo",
       "createdAt": "2026-07-05T14:48:53.350Z",
       "expectedIntent": "job_detail_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Here's what the leak detection checklist found for Deborah Justice (181 Isbell Road, Fair Play, SC — service date 7/2/26, techs Chris & Logan): **Water loss found:** - Deep end skimmer throat — small water loss at missing grout locations - ",
-      "latencyMs": 35983
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705144901-2-what-are-the-total-gallons-of-deborah-justice",
       "createdAt": "2026-07-05T14:49:01.802Z",
       "expectedIntent": "site_blueprint_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "lookupSiteJobBlueprintField"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "**37,602 gallons** for Deborah Justice's pool (181 Isbell Road, Fair Play, SC), per the CompanyCam leak detection checklist. That's based on a surface area of 1,002.7 sq ft and average depth of 60\", using 626.6875 gallons/inch. Jobber doesn",
-      "latencyMs": 31405
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705150543-1-what-s-on-monday-july-6-2026",
       "createdAt": "2026-07-05T15:05:43.830Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on the books for Monday, July 6: - **Swimming Pool Leak Detection** — Rachel Payne, 400 Jacobs Road, Bryson City, NC — all-day — status: lead, total $770",
-      "latencyMs": 31374
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705151207-1-what-s-on-schedule-for-tomorrow",
       "createdAt": "2026-07-05T15:12:07.936Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Nothing on the books for tomorrow — schedule's clear.",
-      "latencyMs": 36143
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705151314-2-who-is-assigned-to-it",
       "createdAt": "2026-07-05T15:13:14.062Z",
       "expectedIntent": "general_job_fact",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have that written down anywhere yet. I wrote it down so we can fill the gap.",
-      "latencyMs": 37207
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705151417-3-no-what-is-the-eta-for-the-job",
       "createdAt": "2026-07-05T15:14:17.306Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Checked the schedule for tomorrow (July 8) — there are no jobs on it, so there's no ETA to give.",
-      "latencyMs": 3150
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705151821-4-what-was-the-issue-at-camp-mikell",
       "createdAt": "2026-07-05T15:18:21.050Z",
       "expectedIntent": "job_detail_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "**Camp Mikell (Alex Mastej), 237 Camp Mikell Court, Toccoa, GA** — leak detection checklist from 6/5/26, techs Chris & Catherine: - **Backwash line:** ~1,700 gal/day water loss - **Main drain #3:** ~2,000 gal loss; defect under the main dra",
-      "latencyMs": 37309
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705151859-5-what-was-the-issue-at-forrest-gerguson",
       "createdAt": "2026-07-05T15:18:59.474Z",
       "expectedIntent": "job_detail_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I don't have an issue/checklist written down for Forrest Ferguson (290 River Oaks Drive, Hartwell). What's there is a Moasure site measurement export (plan view/edges, 810.2 sq ft area) from 15 Jul 2025 — that's a layout/dimensions document",
-      "latencyMs": 31892
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260705152536-6-ok-all-of-these-were-reasonably-correct-but-the-format-should-only-be-inclusive-",
       "createdAt": "2026-07-05T15:25:36.518Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
-      "latencyMs": 1687
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705152621-7-show-me-the-deborah-justice-photos",
       "createdAt": "2026-07-05T15:26:21.399Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found **25 photos** for Deborah Justice (181 Isbell Road, Fair Play, SC) in CompanyCam. No tags or descriptions are attached to them — just the raw image set.",
-      "latencyMs": 4613
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705152707-8-what-is-on-schedule-for-next-week",
       "createdAt": "2026-07-05T15:27:07.156Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "That record is actually for June 5, 2026, not next week — but here's what's on it: **Camp Mikell** (Alex Mastej) — Commercial Swimming Pool Leak Detection Service, all-day, $2,700 total. Status: lead. If you meant a different week, let me k",
-      "latencyMs": 27163
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705152825-9-i-asked-that-and-now-you-are-wasting-api-tokens-because-you-should-already-inger",
       "createdAt": "2026-07-05T15:28:25.589Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
-      "latencyMs": 1710
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260705152856-10-what-is-approved-but-not-scheduled-yet",
       "createdAt": "2026-07-05T15:28:56.873Z",
       "expectedIntent": "pipeline_status",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPipeline"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "**5 jobs are scheduled but not yet marked in progress:** - Swimming Pool Leak Detection Service — $650 - Swimming Pool Plumbing — $455 - Commercial Main Drain Measurements & Cover Replacements — $125 - Commercial Main Drain Measurements & C",
-      "latencyMs": 8036
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705151240-1-what-s-on-monday-july-6-2026",
       "createdAt": "2026-07-05T15:12:40.261Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on the books for Monday, July 6, 2026: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC — all-day, status: lead, quoted total $770",
-      "latencyMs": 26116
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260705152401-1-what-was-the-issue-at-deborah-justice",
       "createdAt": "2026-07-05T15:24:01.391Z",
       "expectedIntent": "job_detail_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Leak detection found several confirmed water loss points at the Deborah Justice property (181 Isbell Road, Fair Play, SC), inspected July 2, 2026 by Chris & Logan. **Confirmed water loss:** - Deep end skimmer throat – missing grout, small a",
-      "latencyMs": 41343
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705152435-1-who-was-the-technician-for-deborah-justice",
       "createdAt": "2026-07-05T15:24:35.035Z",
       "expectedIntent": "job_detail_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Chris and Logan handled the leak detection service for Deborah Justice, completed 3:10pm on Thursday, July 2, 2026, per the CompanyCam checklist report. Chris Sears is listed as the one who filled out the inspection findings.",
-      "latencyMs": 33603
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705152441-1-show-me-photos-for-deborah-justice",
       "createdAt": "2026-07-05T15:24:41.023Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 photos for the Deborah Justice job at 181 Isbell Road, Fair Play, SC — all logged in CompanyCam, no descriptions or tags attached to any of them.",
-      "latencyMs": 3744
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260705152555-1-what-was-the-issue-at-deborah-justice",
       "createdAt": "2026-07-05T15:25:55.824Z",
       "expectedIntent": "job_detail_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Leak detection at 181 Isbell Road (Fair Play, SC) found active water loss in a few spots: - **Deep end skimmer throat** – small water loss at missing grout - **Spa water line** – missing grout in several areas, minor water loss - **Primary ",
-      "latencyMs": 34195
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705152637-1-who-was-the-technician-for-deborah-justice",
       "createdAt": "2026-07-05T15:26:37.006Z",
       "expectedIntent": "job_detail_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getJobDetail",
-        "getDocuments",
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Chris and Logan were the technicians on the Deborah Justice job (leak detection service, 181 Isbell Road, Fair Play, SC — completed 3:10pm, Thursday July 2nd, 2026), per the CompanyCam checklist report. Jobber's job record doesn't list a te",
-      "latencyMs": 31368
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705152641-1-show-me-photos-for-deborah-justice",
       "createdAt": "2026-07-05T15:26:41.641Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 photos on the Deborah Justice job at 181 Isbell Road, Fair Play, SC — all logged in CompanyCam, no descriptions or tags attached to them.",
-      "latencyMs": 3783
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260705155819-1-show-me-the-deborah-justice-photos",
       "createdAt": "2026-07-05T15:58:19.918Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 photos for Deborah Justice (181 Isbell Road, Fair Play, SC), all in CompanyCam. No captions or tags are attached to any of them, so I can't tell you what each shows — just that they're logged against this job. If you want, I can pu",
-      "latencyMs": 3469
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705155841-1-what-s-on-monday-july-6-2026",
       "createdAt": "2026-07-05T15:58:41.718Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on Monday, July 6, 2026: - **Swimming Pool Leak Detection** (lead status) – Rachel Payne, 400 Jacobs Road, Bryson City, NC – scheduled all day, total $770",
-      "latencyMs": 23477
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705155845-2-what-s-the-eta",
       "createdAt": "2026-07-05T15:58:45.724Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "No specific ETA or arrival time is listed — it's scheduled as an all-day job on July 6, 2026, with no start time noted.",
-      "latencyMs": 2099
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705160350-1-show-me-the-deborah-justice-photos",
       "createdAt": "2026-07-05T16:03:50.029Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 photos for the Deborah Justice job at 181 Isbell Road, Fair Play, SC. None of them have descriptions or tags attached — just raw CompanyCam image files. Here are the IDs",
-      "latencyMs": 5686
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705160410-1-what-s-on-monday-july-6-2026",
       "createdAt": "2026-07-05T16:04:10.013Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on the books for Monday, July 6: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC. All-day, status: lead, quoted at $770.",
-      "latencyMs": 29053
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705160414-2-what-s-the-eta",
       "createdAt": "2026-07-05T16:04:14.736Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "No specific arrival time listed — it's scheduled as an all-day job for Monday, July 6, with no set time slot.",
-      "latencyMs": 2218
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705160517-1-show-me-the-deborah-justice-photos",
       "createdAt": "2026-07-05T16:05:17.847Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 photos for the Deborah Justice job (181 Isbell Road, Fair Play, SC), all in CompanyCam. No captions or tags are attached to them, so I can't tell you what's in each shot — just that they're logged under this job.",
-      "latencyMs": 3318
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705160542-1-what-s-on-monday-july-6-2026",
       "createdAt": "2026-07-05T16:05:42.810Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on the books for Monday, July 6: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC 28713 (all-day, lead status, $770)",
-      "latencyMs": 30211
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705160553-2-what-s-the-eta",
       "createdAt": "2026-07-05T16:05:53.521Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "No specific time is set — it's booked as an all-day appointment for July 6, not a timed ETA.",
-      "latencyMs": 2362
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705161046-1-show-me-the-deborah-justice-photos",
       "createdAt": "2026-07-05T16:10:46.130Z",
       "expectedIntent": "companycam_photo_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getPhotos"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Found 25 photos on the Deborah Justice job (181 Isbell Road, Fair Play, SC), all logged in CompanyCam. None have descriptions or tags attached. CompanyCam photo IDs: - 3338800086, 3338756524, 3338754200, 3338751881, 3338681696 - 3338748643,",
-      "latencyMs": 5076
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705161106-1-what-s-on-monday-july-6-2026",
       "createdAt": "2026-07-05T16:11:06.914Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "One job on Monday, July 6, 2026: - **Swimming Pool Leak Detection** – Rachel Payne, 400 Jacobs Road, Bryson City, NC. Scheduled all day. Status: lead. Quoted total: $770.",
-      "latencyMs": 29352
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705161111-2-what-s-the-eta",
       "createdAt": "2026-07-05T16:11:11.049Z",
       "expectedIntent": "schedule_lookup",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "No specific arrival time listed — it's scheduled as an all-day job on July 6, 2026, not tied to a particular hour.",
-      "latencyMs": 2911
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705191129-1-what-emails-came-in-today",
       "createdAt": "2026-07-05T19:11:29.680Z",
       "expectedIntent": "email_summary",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "summarizeInbox"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "20 emails came in today (July 7). Here's what actually needs your attention: **Client inquiries** - Marcee Quinn - \"Clarion Sump Photos Needed.....\" - a commercial pool got refilled after renovation without giving her a chance to get sump p",
-      "latencyMs": 8529
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705191708-1-what-emails-came-in-today",
       "createdAt": "2026-07-05T19:17:08.856Z",
       "expectedIntent": "email_summary",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "summarizeInbox"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "20 emails came in today. Here are the ones that actually need your attention: **Client / job-related** - Marcee Quinn - Clarion Sump Photos Needed - a commercial pool got filled after renovation without giving her a chance to get sump pictu",
-      "latencyMs": 9224
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705192403-1-what-emails-came-in-today",
       "createdAt": "2026-07-05T19:24:03.330Z",
       "expectedIntent": "email_summary",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "summarizeInbox"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "20 emails today. Here's what actually needs your attention: **Client inquiries** - Marcee Quinn - Clarion Sump Photos Needed - a commercial pool got filled after renovation without giving her a chance to grab sump photos first; she's flaggi",
-      "latencyMs": 8468
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705193434-1-read-email-chris-19f3354877e85a73-and-tell-me-whether-it-has-attachments-do-not-",
       "createdAt": "2026-07-05T19:34:34.724Z",
       "expectedIntent": "email_direct_read",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getEmailMessage"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "No attachments on that email.",
-      "latencyMs": 3335
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705194001-1-read-email-chris-19f3354877e85a73-and-tell-me-whether-it-has-attachments-do-not-",
       "createdAt": "2026-07-05T19:40:01.336Z",
       "expectedIntent": "email_direct_read",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getEmailMessage"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "No attachments on that email.",
-      "latencyMs": 2326
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705194113-1-what-emails-came-in-today",
       "createdAt": "2026-07-05T19:41:13.562Z",
       "expectedIntent": "email_summary",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "summarizeInbox"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "20 emails came in today across both inboxes. Here's what actually needs your attention: **Client inquiries** - Marcee Quinn - Clarion Sump Photos Needed - commercial pool got refilled after renovation without notice; she needs sump photos t",
-      "latencyMs": 9605
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705200500-1-what-needs-my-attention",
       "createdAt": "2026-07-05T20:05:00.984Z",
       "expectedIntent": "email_triage",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "triageInbox"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Here's what's actually actionable today — filtered down from 24 scanned emails (skipped spam/newsletters): **Urgent — client work** - Marcee Quinn — Clarion Sump Photos Needed — commercial pool got filled after renovation before she could g",
-      "latencyMs": 14570
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705202457-1-what-emails-came-in-today",
       "createdAt": "2026-07-05T20:24:57.631Z",
       "expectedIntent": "email_summary",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "summarizeInbox"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "20 emails came in today (10 in chris@, 10 in aquatraceleak@). **Needs your attention** - Marcee Quinn - \"Clarion Sump Photos Needed\" - a commercial pool got refilled after renovation without telling her first; she needs sump photos taken be",
-      "latencyMs": 13707
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705202705-2-great-detail-organization-and-format-sucks",
       "createdAt": "2026-07-05T20:27:05.145Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
-      "latencyMs": 1107
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705202722-3-what-needs-my-attention",
       "createdAt": "2026-07-05T20:27:22.262Z",
       "expectedIntent": "email_triage",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "triageInbox"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Two real client items need action today — the rest of \"high priority\" is auto-tagging noise. **Actually needs you** - Angi Pro - New Pools request: Heather M. - wants help filling a newly installed pool with water, no cleaning needed. - Mar",
-      "latencyMs": 9186
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705202845-4-emails-pulled-but-no-information-specific-we-need-to-figure-out-how-to-roagaize-",
       "createdAt": "2026-07-05T20:28:45.075Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
-      "latencyMs": 1047
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705202927-5-that-was-an-email-in-the-inbox",
       "createdAt": "2026-07-05T20:29:27.537Z",
       "expectedIntent": "email_search_or_read",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "searchEmail"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Nothing that needs your attention today — it's all promo/system noise, no client emails. - **Sierra (10x)** - clothing sale spam to chris@ - **Uline (4x)** - warehouse supply ads to aquatraceleak@ - **Carnival Cruise** - promo email - **Goo",
-      "latencyMs": 5801
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260705203001-6-send-me-an-email-to-chris1bata-gmail-com-bryson-city-job-is-confirmed-for-tomorr",
       "createdAt": "2026-07-05T20:30:01.072Z",
       "expectedIntent": "email_draft_action",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "draftEmail"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "That draft didn't get your actual message — it queued generic placeholder text instead of \"Bryson City job is confirmed for tomorrow.\"",
-      "latencyMs": 2592
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705210628-1-what-did-the-semrush-site-audit-say",
       "createdAt": "2026-07-05T21:06:28.010Z",
       "expectedIntent": "email_search_or_read",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "searchEmail"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
-      "latencyMs": 1535
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705210631-2-send-an-email-to-nexi-aquatraceleak-com-saying-i-received-the-audit-and-will-rev",
       "createdAt": "2026-07-05T21:06:31.948Z",
       "expectedIntent": "email_draft_action",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "draftEmail"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Draft's queued for approval, sent to nexi@aquatraceleak.com with the subject \"I received the audit and will review it today.\" Just needs the sign-off to go out.",
-      "latencyMs": 2259
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705210636-3-formatting-feedback-attention-items-must-lead-with-sender-subject-and-one-line-a",
       "createdAt": "2026-07-05T21:06:36.919Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
-      "latencyMs": 855
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705210638-4-that-was-incorrect-this-feedback-should-be-logged-as-a-correction",
       "createdAt": "2026-07-05T21:06:38.365Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 1009
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705211359-1-what-did-the-semrush-site-audit-say",
       "createdAt": "2026-07-05T21:13:59.229Z",
       "expectedIntent": "email_search_or_read",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "searchEmail"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
-      "latencyMs": 1205
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705211403-2-send-an-email-to-nexi-aquatraceleak-com-saying-i-received-the-audit-and-will-rev",
       "createdAt": "2026-07-05T21:14:03.812Z",
       "expectedIntent": "email_draft_action",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "draftEmail"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "Draft queued for approval, awaiting your sign-off before it goes out. - **To:** nexi@aquatraceleak.com - **Subject:** I received the audit and will review it today - **Body:** \"I received the audit and will review it today.\" Just confirm an",
-      "latencyMs": 2430
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705211407-3-formatting-feedback-attention-items-must-lead-with-sender-subject-and-one-line-a",
       "createdAt": "2026-07-05T21:14:07.953Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
-      "latencyMs": 917
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705211409-4-that-was-incorrect-this-feedback-should-be-logged-as-a-correction",
       "createdAt": "2026-07-05T21:14:09.333Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 815
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705215015-1-what-were-the-leak-detection-findings-for-valley-view-condominiums-from-the-comp",
@@ -1298,11 +1289,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 21285
+      "latencyMs": 0
     },
     {
       "id": "20260705215044-1-what-were-the-leak-detection-findings-for-l3-campus-statehouse-arena-from-the-co",
@@ -1310,11 +1301,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 33146
+      "latencyMs": 0
     },
     {
       "id": "20260705215138-1-what-were-the-leak-detection-findings-for-valley-view-condominiums-from-the-comp",
@@ -1322,11 +1313,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 37986
+      "latencyMs": 0
     },
     {
       "id": "20260705215212-1-what-were-the-leak-detection-findings-for-camp-mikell-from-the-companycam-report",
@@ -1334,11 +1325,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 34528
+      "latencyMs": 0
     },
     {
       "id": "20260705215312-1-what-were-the-leak-detection-findings-for-valley-view-condominiums-from-the-comp",
@@ -1346,11 +1337,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 35455
+      "latencyMs": 0
     },
     {
       "id": "20260705215347-1-what-were-the-leak-detection-findings-for-camp-mikell-from-the-companycam-report",
@@ -1358,11 +1349,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 33883
+      "latencyMs": 0
     },
     {
       "id": "20260705225853-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
@@ -1370,11 +1361,11 @@
       "expectedIntent": "email_draft_action",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1188
+      "latencyMs": 0
     },
     {
       "id": "20260705225921-2-whats-important-from-chris-aquatraceleak-com",
@@ -1382,11 +1373,11 @@
       "expectedIntent": "email_triage",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1536
+      "latencyMs": 0
     },
     {
       "id": "20260705232426-3-what-was-the-service-ime-competion-for-deborah-justice",
@@ -1394,21 +1385,23 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 34546
+      "latencyMs": 0
     },
     {
       "id": "20260705232454-4-yes-there-is-incorrect-here-service-comletion-is-in-company-cam-reports",
       "createdAt": "2026-07-05T23:24:54.702Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 972
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260705232530-5-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
@@ -1416,11 +1409,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 32647
+      "latencyMs": 0
     },
     {
       "id": "20260705232559-6-using-company-cam-find-the-completion-time-for-deboarh-justice",
@@ -1428,36 +1421,35 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 36946
+      "latencyMs": 0
     },
     {
       "id": "20260705232613-7-correct",
       "createdAt": "2026-07-05T23:26:13.337Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
-      "latencyMs": 909
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706202435-8-did-todays-pool-pay",
       "createdAt": "2026-07-06T20:24:35.401Z",
       "expectedIntent": "payment_status_cross_rail",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "getSchedule",
-        "getJobDetail",
-        "invoiceStatus",
-        "searchEmail"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
-      "latencyMs": 68806
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706202511-9-what-was-the-issue-at-todays-pool",
@@ -1465,11 +1457,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 35967
+      "latencyMs": 1
     },
     {
       "id": "20260706020754-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
@@ -1477,11 +1469,11 @@
       "expectedIntent": "email_draft_action",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1022
+      "latencyMs": 0
     },
     {
       "id": "20260706020819-1-what-was-the-service-time-completion-for-deborah-justice",
@@ -1489,21 +1481,23 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 37689
+      "latencyMs": 1
     },
     {
       "id": "20260706020821-2-yes-there-is-incorrect-here-service-completion-is-in-company-cam-reports",
       "createdAt": "2026-07-06T02:08:21.208Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 891
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706020857-3-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
@@ -1511,11 +1505,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 31960
+      "latencyMs": 0
     },
     {
       "id": "20260706032640-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
@@ -1523,11 +1517,11 @@
       "expectedIntent": "email_draft_action",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1412
+      "latencyMs": 0
     },
     {
       "id": "20260706032703-1-what-was-the-service-ime-competion-for-deborah-justice",
@@ -1535,21 +1529,23 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 35293
+      "latencyMs": 0
     },
     {
       "id": "20260706032704-1-yes-there-is-incorrect-here-service-comletion-is-in-company-cam-reports",
       "createdAt": "2026-07-06T03:27:04.800Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 887
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706032743-2-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
@@ -1557,11 +1553,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 33010
+      "latencyMs": 0
     },
     {
       "id": "20260706032832-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
@@ -1569,11 +1565,11 @@
       "expectedIntent": "email_draft_action",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1142
+      "latencyMs": 0
     },
     {
       "id": "20260706032900-1-what-was-the-service-ime-competion-for-deborah-justice",
@@ -1581,21 +1577,23 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 34449
+      "latencyMs": 0
     },
     {
       "id": "20260706032902-1-yes-there-is-incorrect-here-service-comletion-is-in-company-cam-reports",
       "createdAt": "2026-07-06T03:29:02.061Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 980
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706032939-2-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
@@ -1603,11 +1601,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 30590
+      "latencyMs": 0
     },
     {
       "id": "20260706033628-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
@@ -1615,11 +1613,11 @@
       "expectedIntent": "email_draft_action",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1253
+      "latencyMs": 0
     },
     {
       "id": "20260706033653-1-what-was-the-service-ime-competion-for-deborah-justice",
@@ -1627,21 +1625,23 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 32591
+      "latencyMs": 0
     },
     {
       "id": "20260706033655-1-yes-there-is-incorrect-here-service-comletion-is-in-company-cam-reports",
       "createdAt": "2026-07-06T03:36:55.203Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 1003
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706033729-2-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
@@ -1649,11 +1649,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 31400
+      "latencyMs": 0
     },
     {
       "id": "20260706033859-1-send-me-an-email-at-chris1bata-gmail-com-tell-me-bryson-city-s-on-checdule-for-t",
@@ -1661,11 +1661,11 @@
       "expectedIntent": "email_draft_action",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1210
+      "latencyMs": 0
     },
     {
       "id": "20260706033924-1-what-was-the-service-ime-competion-for-deborah-justice",
@@ -1673,21 +1673,23 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 36021
+      "latencyMs": 0
     },
     {
       "id": "20260706033926-1-yes-there-is-incorrect-here-service-comletion-is-in-company-cam-reports",
       "createdAt": "2026-07-06T03:39:26.247Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 1011
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706034005-2-ok-where-is-the-answer-then-i-corrected-you-and-you-should-have-replied-with-cor",
@@ -1695,11 +1697,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 32549
+      "latencyMs": 0
     },
     {
       "id": "20260706121714-1-did-i-send-the-report-more-medallion-pool-company-last-week",
@@ -1707,23 +1709,23 @@
       "expectedIntent": "email_search_or_read",
       "ok": false,
       "failures": [
-        "missing required tools: searchEmail"
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
-      "answerSample": "I can't attach and email report PDFs from chat yet. I logged it as capability_not_available.",
-      "latencyMs": 1068
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706121750-2-there-is-a-report-for-medallion-pool-company-last-week-in-company-camp-but-i-nee",
       "createdAt": "2026-07-06T12:17:50.545Z",
       "expectedIntent": "email_search_or_read",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "searchEmail"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
-      "latencyMs": 1487
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706121819-3-you-need-to-infer-what-i-mean-regardless-of-typos-the-report-should-be-sitting-i",
@@ -1731,12 +1733,11 @@
       "expectedIntent": "payment_status_cross_rail",
       "ok": false,
       "failures": [
-        "missing required tools: getSchedule, getJobDetail, invoiceStatus, searchEmail",
-        "payment answer did not exhaust invoice and email rails"
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
-      "answerSample": "I can't attach and email report PDFs from chat yet. I logged it as capability_not_available.",
-      "latencyMs": 975
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706121846-4-check-email-for-a-report-sent-to-medallion-pool-company-last-week",
@@ -1744,23 +1745,23 @@
       "expectedIntent": "email_search_or_read",
       "ok": false,
       "failures": [
-        "missing required tools: searchEmail"
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
-      "answerSample": "I can't attach and email report PDFs from chat yet. I logged it as capability_not_available.",
-      "latencyMs": 1006
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706121905-5-aquatraceleak-gmail-com",
       "createdAt": "2026-07-06T12:19:05.002Z",
       "expectedIntent": "email_search_or_read",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "searchEmail"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
-      "latencyMs": 1017
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706122032-6-do-you-see-any-emails-for-medallion-pool-company",
@@ -1768,23 +1769,23 @@
       "expectedIntent": "email_search_or_read",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1806
+      "latencyMs": 0
     },
     {
       "id": "20260706122140-7-check-the-email-inbox-and-see-if-they-were-four-was-sent-to-oleta-falls-communit",
       "createdAt": "2026-07-06T12:21:40.740Z",
       "expectedIntent": "email_search_or_read",
-      "ok": true,
-      "failures": [],
-      "tools": [
-        "searchEmail"
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
-      "answerSample": "I couldn't find an email that matched that. I wrote it down so we can fill the gap.",
-      "latencyMs": 1015
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706122253-8-what-s-on-schedule-for-today",
@@ -1792,11 +1793,11 @@
       "expectedIntent": "schedule_lookup",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 27060
+      "latencyMs": 0
     },
     {
       "id": "20260706122545-9-what-s-on-schedule-for-today",
@@ -1804,11 +1805,11 @@
       "expectedIntent": "schedule_lookup",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 34564
+      "latencyMs": 0
     },
     {
       "id": "20260706122834-10-show-me-pictures-from-deborah-justice",
@@ -1816,11 +1817,11 @@
       "expectedIntent": "companycam_photo_lookup",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1279
+      "latencyMs": 0
     },
     {
       "id": "20260706122902-11-deborah-justice-is-in-company-cam-and-you-have-shown-me-the-pictures-before",
@@ -1828,11 +1829,11 @@
       "expectedIntent": "companycam_photo_lookup",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1343
+      "latencyMs": 0
     },
     {
       "id": "20260706122934-12-what-is-the-square-footage-of-the-deborah-justice-pool-and-how-many-gallons-per-",
@@ -1840,11 +1841,11 @@
       "expectedIntent": "report_measurement_lookup",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 37114
+      "latencyMs": 0
     },
     {
       "id": "20260706123034-13-gallons-per-inch-and-square-footage-are-both-available-in-the-same-report-in-the",
@@ -1852,11 +1853,11 @@
       "expectedIntent": "report_measurement_lookup",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 31849
+      "latencyMs": 0
     },
     {
       "id": "20260706123058-14-deborah-justice",
@@ -1864,31 +1865,35 @@
       "expectedIntent": "report_measurement_lookup",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1052
+      "latencyMs": 0
     },
     {
       "id": "20260706123130-15-how-many-miles-are-we-away-from-today-s-pool",
       "createdAt": "2026-07-06T12:31:30.012Z",
-      "expectedIntent": "capability_gap_distance_or_maps",
-      "ok": true,
-      "failures": [],
+      "expectedIntent": "distance_lookup",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "I can't measure drive distance in chat yet because the distance tool is not wired to Nexi. I logged it as capability_not_available.",
-      "latencyMs": 985
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706123148-16-open-denver-justice-pool-address-in-google-maps",
       "createdAt": "2026-07-06T12:31:48.481Z",
-      "expectedIntent": "capability_gap_distance_or_maps",
-      "ok": true,
-      "failures": [],
+      "expectedIntent": "capability_gap_open_map",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "I can't open Google Maps from here yet. I can give you the address, but the map-opening tool is not wired to Nexi.",
-      "latencyMs": 1128
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260706202634-1-did-todays-pool-pay",
@@ -1896,11 +1901,11 @@
       "expectedIntent": "payment_status_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 68419
+      "latencyMs": 1
     },
     {
       "id": "20260706202756-2-what-ssues-were-found-on-rachel-paynes-pool",
@@ -1908,11 +1913,11 @@
       "expectedIntent": "job_detail_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 34686
+      "latencyMs": 0
     },
     {
       "id": "20260706202830-3-did-she-pay",
@@ -1920,21 +1925,23 @@
       "expectedIntent": "payment_status_cross_rail",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 69806
+      "latencyMs": 1
     },
     {
       "id": "20260706202858-4-incorrect-it-is-paid-in-jobber-and-also-email-receipt-was-sent-and-zero-blaanc-e",
       "createdAt": "2026-07-06T20:28:58.838Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.",
-      "latencyMs": 1073
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706202922-5-what-time-is-tomorrows-pool",
@@ -1942,21 +1949,23 @@
       "expectedIntent": "schedule_lookup",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 33961
+      "latencyMs": 0
     },
     {
       "id": "20260706202946-6-explain-this-date-you-randonly-pulled-from-your-ass",
       "createdAt": "2026-07-06T20:29:46.828Z",
       "expectedIntent": "feedback_or_correction",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "You're right. I noted that feedback so we can fix the behavior instead of repeating it.",
-      "latencyMs": 1120
+      "answerSample": "",
+      "latencyMs": 1
     },
     {
       "id": "20260706203000-7-when-is-forrest-ferguson-scheduled",
@@ -1964,11 +1973,11 @@
       "expectedIntent": "schedule_lookup",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1033
+      "latencyMs": 0
     },
     {
       "id": "20260706203043-8-his-job-is-on-schedule-for-tomorrow-in-jobber-he-also-has-pror-work-alst-year",
@@ -1976,21 +1985,23 @@
       "expectedIntent": "schedule_lookup",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 32445
+      "latencyMs": 0
     },
     {
       "id": "20260706203049-9-how-far-is-deborah-justice-from-here",
       "createdAt": "2026-07-06T20:30:49.540Z",
-      "expectedIntent": "capability_gap_distance_or_maps",
-      "ok": true,
-      "failures": [],
+      "expectedIntent": "distance_lookup",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "I can't measure drive distance in chat yet because the distance tool is not wired to Nexi. I logged it as capability_not_available.",
-      "latencyMs": 1135
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706203112-10-what-is-forrest-fergusons-address",
@@ -1998,41 +2009,47 @@
       "expectedIntent": "general_job_fact",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 35998
+      "latencyMs": 0
     },
     {
       "id": "20260706203121-11-open-it-in-google-maps",
       "createdAt": "2026-07-06T20:31:21.686Z",
-      "expectedIntent": "capability_gap_distance_or_maps",
-      "ok": true,
-      "failures": [],
+      "expectedIntent": "capability_gap_open_map",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "I can't open Google Maps from here yet. I can give you the address, but the map-opening tool is not wired to Nexi.",
-      "latencyMs": 1105
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706203133-12-how-far-is-it-from-my-house",
       "createdAt": "2026-07-06T20:31:33.417Z",
-      "expectedIntent": "capability_gap_distance_or_maps",
-      "ok": true,
-      "failures": [],
+      "expectedIntent": "distance_lookup",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "I can't measure drive distance in chat yet because the distance tool is not wired to Nexi. I logged it as capability_not_available.",
-      "latencyMs": 1073
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260706203144-13-102-kate-lane-fair-play-sc",
       "createdAt": "2026-07-06T20:31:44.890Z",
-      "expectedIntent": "capability_gap_distance_or_maps",
-      "ok": true,
-      "failures": [],
+      "expectedIntent": "distance_lookup",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "I can't measure drive distance in chat yet because the distance tool is not wired to Nexi. I logged it as capability_not_available.",
-      "latencyMs": 1060
+      "answerSample": "",
+      "latencyMs": 0
     },
     {
       "id": "20260707-owner-1-total-gallons-deborah-justice-cross-rail",
@@ -2040,11 +2057,11 @@
       "expectedIntent": "report_measurement_lookup",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 35455
+      "latencyMs": 1
     },
     {
       "id": "20260707-owner-2-show-me-a-client-list",
@@ -2052,11 +2069,11 @@
       "expectedIntent": "crm_client_list",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1852
+      "latencyMs": 0
     },
     {
       "id": "20260707-owner-3-how-many-clients-do-we-have",
@@ -2064,21 +2081,371 @@
       "expectedIntent": "crm_client_list",
       "ok": false,
       "failures": [
-        "Nexi message failed (400): You have reached your specified API usage limits. You will regain access on 2026-08-01 at 00:00 UTC."
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
       ],
       "tools": [],
       "answerSample": "",
-      "latencyMs": 1567
+      "latencyMs": 0
     },
     {
       "id": "20260707-owner-4-email-me-report-pdfs",
       "createdAt": "2026-07-07T23:59:03.000-04:00",
       "expectedIntent": "capability_gap_report_pdf_email",
-      "ok": true,
-      "failures": [],
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
       "tools": [],
-      "answerSample": "I can't attach and email report PDFs from chat yet. I logged it as capability_not_available.",
-      "latencyMs": 1264
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-p1w-check-inbox",
+      "createdAt": "2026-07-08T23:58:00.000-04:00",
+      "expectedIntent": "email_inbox_summary",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-p1w-summarize-inbox",
+      "createdAt": "2026-07-08T23:58:01.000-04:00",
+      "expectedIntent": "email_inbox_summary",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-p1w-order-unread",
+      "createdAt": "2026-07-08T23:58:02.000-04:00",
+      "expectedIntent": "email_inbox_triage",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-p1x-use-evaporation-calculator-deborah-justice",
+      "createdAt": "2026-07-08T23:58:03.000-04:00",
+      "expectedIntent": "evaporation_report_from_job_context",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-p1y-pool-main-drains-deborah-justice",
+      "createdAt": "2026-07-08T23:58:04.000-04:00",
+      "expectedIntent": "section_scoped_report_measurement_lookup",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-p1y-spa-main-drains-followup",
+      "createdAt": "2026-07-08T23:58:05.000-04:00",
+      "expectedIntent": "section_scoped_report_measurement_lookup",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 1
+    },
+    {
+      "id": "20260708-owner-p2z-what-time-is-it",
+      "createdAt": "2026-07-08T23:58:06.000-04:00",
+      "expectedIntent": "current_time",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-p2z-current-temp-fair-play",
+      "createdAt": "2026-07-08T23:58:07.000-04:00",
+      "expectedIntent": "current_weather",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-p2aa-what-commands-can-i-use",
+      "createdAt": "2026-07-08T23:58:08.000-04:00",
+      "expectedIntent": "meta_capabilities",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-p2aa-why-did-that-fail",
+      "createdAt": "2026-07-08T23:58:09.000-04:00",
+      "expectedIntent": "meta_failure_explanation",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-p2aa-how-do-i-upload-photos",
+      "createdAt": "2026-07-08T23:58:10.000-04:00",
+      "expectedIntent": "meta_photo_upload_help",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-good-ytd-revenue-honest-gap",
+      "createdAt": "2026-07-08T23:58:11.000-04:00",
+      "expectedIntent": "capability_gap_revenue",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-good-close-out-mismatch-caution",
+      "createdAt": "2026-07-08T23:58:12.000-04:00",
+      "expectedIntent": "approval_caution_no_unsafe_write",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-good-denver-deborah-clarification",
+      "createdAt": "2026-07-08T23:58:13.000-04:00",
+      "expectedIntent": "companycam_photo_lookup_or_clarification",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260708-owner-good-fourteen-vs-four-glitch-catch",
+      "createdAt": "2026-07-08T23:58:14.000-04:00",
+      "expectedIntent": "section_scoped_report_measurement_lookup",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260709-owner-class-h-client-lookup-kristi-king",
+      "createdAt": "2026-07-09T18:00:00.000-04:00",
+      "expectedIntent": "client_identity_lookup_live_jobber_fallback",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 1
+    },
+    {
+      "id": "20260709-owner-class-h-job-lookup-kristi-king",
+      "createdAt": "2026-07-09T18:00:01.000-04:00",
+      "expectedIntent": "job_identity_lookup_live_jobber",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "20260709-owner-class-h-client-lookup-valley-view-condominiums",
+      "createdAt": "2026-07-09T18:00:02.000-04:00",
+      "expectedIntent": "client_identity_lookup_live_jobber_fallback_other_client",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "part9-class-A-valley-view-findings-different-client",
+      "createdAt": "2026-07-08T20:45:00.000Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "part9-class-A-rachel-payne-findings-different-phrasing",
+      "createdAt": "2026-07-08T20:45:01.000Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "part9-class-A-forrest-ferguson-issue-different-client",
+      "createdAt": "2026-07-08T20:45:02.000Z",
+      "expectedIntent": "job_detail_cross_rail",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "part9-class-A-deborah-justice-measurement-section-scope",
+      "createdAt": "2026-07-08T20:45:03.000Z",
+      "expectedIntent": "section_scoped_report_measurement_lookup",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "part9-class-C-draft-email-action-not-search",
+      "createdAt": "2026-07-08T20:46:00.000Z",
+      "expectedIntent": "email_draft_action",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "part9-class-C-inbox-summary-not-search-misroute",
+      "createdAt": "2026-07-08T20:46:01.000Z",
+      "expectedIntent": "email_inbox_summary",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "part9-class-C-correction-not-fact-lookup",
+      "createdAt": "2026-07-08T20:46:02.000Z",
+      "expectedIntent": "feedback_or_correction",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "part9-class-C-capabilities-meta-not-stonewall",
+      "createdAt": "2026-07-08T20:46:03.000Z",
+      "expectedIntent": "meta_capabilities",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "part9-class-D-distance-tool-gap-plain-language",
+      "createdAt": "2026-07-08T20:47:00.000Z",
+      "expectedIntent": "distance_lookup",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "part9-class-D-report-pdf-email-attachment-gap",
+      "createdAt": "2026-07-08T20:47:01.000Z",
+      "expectedIntent": "capability_gap_report_pdf_email",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
+    },
+    {
+      "id": "part9-class-D-ar-summary-gap-not-empty-data",
+      "createdAt": "2026-07-08T20:47:02.000Z",
+      "expectedIntent": "capability_gap_ar_summary",
+      "ok": false,
+      "failures": [
+        "Missing required environment variable VITE_FIREBASE_API_KEY."
+      ],
+      "tools": [],
+      "answerSample": "",
+      "latencyMs": 0
     }
   ]
 }

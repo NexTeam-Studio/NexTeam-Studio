@@ -1,19 +1,15 @@
-import { createHash } from "node:crypto";
 import { z } from "zod";
 import {
   RailError,
   type ApprovalQueueService,
   type ApprovalItem,
-  type DocRef,
   type EmailMessageSummary,
   type EmailReadProvider,
   type NexiTool,
   type OutboundEmailAttachment,
-  type ProjectRef,
   type Source,
   type Tenant
 } from "@nexteam/core";
-import { CompanyCamAdapter } from "@nexteam/providers";
 import type { CommsRail } from "./gmailRegistry.js";
 
 const searchEmailInputSchema = z.object({
@@ -71,22 +67,7 @@ const draftEmailInputSchema = z.object({
   attachments: z.array(draftEmailAttachmentSchema).max(10).optional()
 });
 
-const draftReportEmailInputSchema = z.object({
-  to: z.array(z.string().email()).optional(),
-  clientName: z.string().min(1).max(160),
-  jobId: z.string().min(1).max(160).optional(),
-  reportTitle: z.string().min(1).max(180).optional(),
-  bodyText: z.string().min(1).max(4000).optional(),
-  findings: z.array(z.string().min(1).max(400)).max(20).optional()
-});
-
 const AQUATRACE_SIGNATURE = "Nexi\nAquatrace Swimming Pool Leak Detection";
-
-export interface ReportDocumentProvider {
-  findProjects(query: string): Promise<ProjectRef[]>;
-  getDocuments(projectRef: ProjectRef): Promise<DocRef[]>;
-  fetchProjectDocumentBinary(projectRef: ProjectRef, documentRef: DocRef): Promise<{ buffer: Buffer; mime: string; filename?: string | undefined }>;
-}
 
 function emailSource(message: EmailMessageSummary): Source {
   return {
@@ -243,77 +224,6 @@ function attachmentMediaRefs(attachments: OutboundEmailAttachment[] | undefined)
   return attachments.map((attachment) => `attachment:${attachment.filename}`);
 }
 
-function safeAttachmentName(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "aquatrace-report";
-}
-
-function isPdfDocument(document: DocRef): boolean {
-  const label = document.label.toLowerCase();
-  const mime = (document.mime ?? "").toLowerCase();
-  return mime.includes("pdf") || label.endsWith(".pdf") || label.includes("checklist") || label.includes("report");
-}
-
-function companyCamDocumentSource(document: DocRef): Source {
-  return {
-    rail: "companycam",
-    ref: document.externalIds?.companycam ?? document.id,
-    label: `CompanyCam document ${document.label}`
-  };
-}
-
-async function companyCamReportAttachments(input: {
-  tenant: Tenant;
-  clientName: string;
-  provider?: ReportDocumentProvider | undefined;
-}): Promise<{ project: ProjectRef; attachments: OutboundEmailAttachment[]; sources: Source[] }> {
-  const provider = input.provider ?? CompanyCamAdapter.fromEnv(process.env, input.tenant.id);
-  const projects = await provider.findProjects(input.clientName);
-  const project = projects[0];
-  if (!project) {
-    throw new RailError(`I couldn't find a CompanyCam project for ${input.clientName}.`, { provider: "companycam", op: "draftReportEmail", status: 404 });
-  }
-  const documents = (await provider.getDocuments(project)).filter(isPdfDocument).slice(0, 10);
-  if (documents.length === 0) {
-    throw new RailError(`I couldn't find existing CompanyCam PDF reports for ${input.clientName}.`, { provider: "companycam", op: "draftReportEmail", status: 404 });
-  }
-  const attachments: OutboundEmailAttachment[] = [];
-  const sources: Source[] = [{
-    rail: "companycam",
-    ref: project.externalIds?.companycam ?? project.id,
-    label: `CompanyCam project ${project.name}`
-  }];
-  for (const document of documents) {
-    const binary = await provider.fetchProjectDocumentBinary(project, document);
-    const filename = binary.filename || document.label || `${safeAttachmentName(input.clientName)}-${document.id}.pdf`;
-    attachments.push({
-      filename: filename.toLowerCase().endsWith(".pdf") ? filename : `${filename}.pdf`,
-      mime: binary.mime || document.mime || "application/pdf",
-      contentBase64: binary.buffer.toString("base64")
-    });
-    sources.push(companyCamDocumentSource(document));
-  }
-  return { project, attachments, sources };
-}
-
-function hashBase64(value: string): string {
-  return createHash("sha256").update(value).digest("hex").slice(0, 16);
-}
-
-function approvalSummary(approval: ApprovalItem): Pick<ApprovalItem, "id" | "tenantId" | "kind" | "preview" | "status" | "createdBy"> {
-  return {
-    id: approval.id,
-    tenantId: approval.tenantId,
-    kind: approval.kind,
-    preview: approval.preview,
-    status: approval.status,
-    createdBy: approval.createdBy
-  };
-}
-
 async function queueEmailApproval(input: {
   tenant: Tenant;
   rail: CommsRail;
@@ -464,7 +374,7 @@ function triageCategory(message: EmailMessageSummary): { category: TriageCategor
     && !/\b(?:no-?reply|donotreply|do-not-reply)\b/i.test(text)) {
     return { category: "client_inquiry", rank: 10, reason: "Likely client inquiry or active service conversation." };
   }
-  if (/\b(?:jobber|companycam|stripe|railway|firebase|google cloud|wordpress|domain|billing|subscription|receipt|security|alert|audit|failed|action required|verification)\b/i.test(text)) {
+  if (/\b(?:stripe|railway|firebase|google cloud|wordpress|domain|billing|subscription|receipt|security|alert|audit|failed|action required|verification)\b/i.test(text)) {
     return { category: "service_notice", rank: 30, reason: "Legitimate service, billing, security, or audit notice." };
   }
   return { category: "other", rank: 90, reason: "Not classified as urgent Aquatrace work." };
@@ -506,7 +416,6 @@ function triageItems(messages: EmailMessageSummary[]): { items: TriageItem[]; ex
 export function createCommsNexiTools(
   rail: CommsRail,
   approvalQueue: ApprovalQueueService,
-  options: { reportDocumentProvider?: ReportDocumentProvider | undefined } = {}
 ): NexiTool[] {
   return [
     {
@@ -696,51 +605,6 @@ export function createCommsNexiTools(
         return {
           result: { approval },
           sources: [{ rail: "native", ref: approval.id, label: `ApprovalQueue email draft ${approval.id}` }]
-        };
-      }
-    },
-    {
-      name: "draftReportEmail",
-      description: "Find existing Aquatrace CompanyCam report PDFs and attach them to an approval-gated email draft. This never sends directly.",
-      inputSchema: draftReportEmailInputSchema,
-      handler: async (tenant: Tenant, args: unknown) => {
-        assertCommsTenant(rail, tenant, "draftReportEmail");
-        const input = draftReportEmailInputSchema.parse(args);
-        const to = input.to?.length ? input.to : rail.operatorEmail ? [rail.operatorEmail] : [];
-        if (to.length === 0) {
-          throw new RailError("I need an email address for that report draft.", { provider: "gmail", op: "draftReportEmail", status: 400 });
-        }
-        const reportDocs = await companyCamReportAttachments({
-          tenant,
-          clientName: input.clientName,
-          provider: options.reportDocumentProvider
-        });
-        const bodyText = input.bodyText
-          ?? `Attached is the Aquatrace report PDF for ${input.clientName}.\n\nPlease review it and let us know if you have any questions.`;
-        const approval = await queueEmailApproval({
-          tenant,
-          rail,
-          approvalQueue,
-          to,
-          subject: `${input.clientName} Aquatrace report`,
-          bodyText,
-          attachments: reportDocs.attachments
-        });
-        return {
-          result: {
-            approval: approvalSummary(approval),
-            attachments: reportDocs.attachments.map((attachment) => ({
-              filename: attachment.filename,
-              mime: attachment.mime,
-              byteSize: Buffer.from(attachment.contentBase64, "base64").byteLength,
-              contentBase64Sha256_16: hashBase64(attachment.contentBase64)
-            })),
-            sendsAreApprovalQueuedOnly: true
-          },
-          sources: [
-            { rail: "native", ref: approval.id, label: `ApprovalQueue report email ${approval.id}` },
-            ...reportDocs.sources
-          ]
         };
       }
     }

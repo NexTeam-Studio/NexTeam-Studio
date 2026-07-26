@@ -1,7 +1,7 @@
 # NEXTEAM FIELD DOCUMENTATION MASTER SPEC — "COMPANYCAM ON STEROIDS"
 **Final module name: NexCam**
 Companion to: NEXTEAM-PHASE1-MASTER-SPEC.md (the NexOps/Jobber-style module)
-Owner: Chris Sears | Date: 2026-07-10 | Lane: M4 Field Docs (with M2/M3/M8 read integration)
+Owner: Chris Sears | Date: 2026-07-10 | Lane: M4 NexCam / NexDocs (with M2/M3/M8 read integration)
 
 ---
 
@@ -11,7 +11,7 @@ NexCam replaces CompanyCam for a trade business: every photo timestamped and org
 
 ## 2. LANE OWNERSHIP
 
-NexCam = **M4 Field Docs lane.** Owns: photos/media, checklists, checklist templates, completion reports, PDF generation. May be READ by: M2 (client record shows media), M3 (visit shows its photos), M8 (client hub displays), M5 (content engine pulls approved job photos), M1 (Nexi answers photo/report questions). No other lane edits M4's files; M4 edits no other lane's.
+NexCam = **M4 media lane.** Owns: photos/media, checklists, checklist templates, completion reports, PDF generation. NexDocs = the freeform client-document library that sits beside NexCam without restructuring its job/visit organization. Both may be READ by: M2 (client record shows media/documents), M3 (visit shows its photos), M8 (client hub displays), M5 (content engine pulls approved job photos), M1 (Nexi answers photo/report/document questions). No other lane edits M4's files; M4 edits no other lane's.
 
 ## 3. CORE CAPABILITIES
 

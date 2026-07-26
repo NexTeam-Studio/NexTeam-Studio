@@ -18,6 +18,11 @@ import type { CommsRail } from "../comms/gmailRegistry.js";
 import type { PlatformRepository } from "../platform/repository.js";
 import type { SchedulingRepository } from "../scheduling/repository.js";
 import type { ScheduledVisit } from "../scheduling/schedulingEngine.js";
+import {
+  bookingTemplateVariables,
+  communicationChannelEnabled,
+  resolveTemplateMessage
+} from "./communicationTemplates.js";
 import type { LedgerService } from "./ledgerFoundation.js";
 import { buildInvoiceDraftFromJobs } from "./invoiceFoundation.js";
 import {
@@ -76,6 +81,19 @@ export interface ScheduleJobVisitInput {
   start: string;
   end: string;
   assignedTo?: string[] | undefined;
+  details?: string | undefined;
+}
+
+export interface ScheduleJobVisitSeriesInput {
+  tenantId: string;
+  jobId: string;
+  visits: Array<{
+    title?: string | undefined;
+    start: string;
+    end: string;
+    assignedTo?: string[] | undefined;
+    details?: string | undefined;
+  }>;
 }
 
 export interface MoveJobVisitInput {
@@ -83,6 +101,10 @@ export interface MoveJobVisitInput {
   visitId: string;
   start: string;
   end: string;
+}
+
+export interface MoveJobVisitSeriesInput extends MoveJobVisitInput {
+  shiftRemaining?: boolean | undefined;
 }
 
 export interface CompleteJobVisitInput {
@@ -105,6 +127,35 @@ export interface PrepareJobActionPreview {
   body: string;
 }
 
+export interface BookingConfirmationPreview {
+  job: JobDetailRecord;
+  visit: ScheduledVisit;
+  defaultCopyTarget?: string | undefined;
+  emailEnabled: boolean;
+  smsEnabled: boolean;
+  emailTarget?: string | undefined;
+  smsTarget?: string | undefined;
+  emailSubject: string;
+  emailBodyText: string;
+  smsBodyText: string;
+  googleCalendarUrl: string;
+  outlookCalendarUrl: string;
+  calendarFilename: string;
+}
+
+export interface SendBookingConfirmationInput {
+  tenantId: string;
+  jobId: string;
+  actorId: string;
+  visitId?: string | undefined;
+  mode: "email" | "sms";
+  target?: string | undefined;
+  subject?: string | undefined;
+  bodyText?: string | undefined;
+  sendCopy?: boolean | undefined;
+  copyTarget?: string | undefined;
+}
+
 interface JobLifecycleDeps {
   crmRepository: NativeCrmRepository;
   schedulingRepository: SchedulingRepository;
@@ -125,6 +176,15 @@ function now(input?: Date | string): string {
   return new Date().toISOString();
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function defaultEnd(start: string): string {
   const parsed = new Date(start);
   if (!Number.isFinite(parsed.getTime())) {
@@ -136,6 +196,11 @@ function defaultEnd(start: string): string {
 
 function roundMoney(value: number): number {
   return Number(value.toFixed(2));
+}
+
+function shiftIso(value: string, deltaMs: number): string {
+  const parsed = new Date(value);
+  return new Date(parsed.getTime() + deltaMs).toISOString();
 }
 
 function buildTotals(lineItems: LineItem[]): Job["totals"] {
@@ -338,6 +403,56 @@ async function sendLifecycleSms(
   await commsRail.sendSms(outbound);
 }
 
+function googleCalendarUrl(visit: ScheduledVisit, title: string, location: string, details: string): string {
+  const start = visit.start.replaceAll("-", "").replaceAll(":", "").replace(/\.\d{3}Z$/, "Z");
+  const end = visit.end.replaceAll("-", "").replaceAll(":", "").replace(/\.\d{3}Z$/, "Z");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${start}/${end}`,
+    details,
+    location
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function outlookCalendarUrl(visit: ScheduledVisit, title: string, location: string, details: string): string {
+  const params = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    subject: title,
+    startdt: visit.start,
+    enddt: visit.end,
+    location,
+    body: details
+  });
+  return `https://outlook.office.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
+function bookingCalendarAttachment(visit: ScheduledVisit, title: string, location: string, description: string): { filename: string; mime: string; contentBase64: string } {
+  const uid = `${visit.id}@nexops.local`;
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//NexOps//Booking Confirmation//EN",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${now().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")}`,
+    `DTSTART:${visit.start.replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")}`,
+    `DTEND:${visit.end.replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")}`,
+    `SUMMARY:${title.replace(/\n/g, " ")}`,
+    `LOCATION:${location.replace(/\n/g, " ")}`,
+    `DESCRIPTION:${description.replace(/\n/g, "\\n")}`,
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].join("\r\n");
+  return {
+    filename: `booking-${visit.id}.ics`,
+    mime: "text/calendar",
+    contentBase64: Buffer.from(lines, "utf8").toString("base64")
+  };
+}
+
 export class JobLifecycleService {
   constructor(private readonly deps: JobLifecycleDeps) {}
 
@@ -434,7 +549,7 @@ export class JobLifecycleService {
   }
 
   private async syncScheduleWindow(job: Job, visits: ScheduledVisit[]): Promise<Job> {
-    const nativeVisits = visits.filter((visit) => visit.jobId === job.id && visit.source !== "jobber");
+    const nativeVisits = visits.filter((visit) => visit.jobId === job.id && visit.readOnly !== true);
     if (!nativeVisits.length) {
       return job;
     }
@@ -652,6 +767,132 @@ export class JobLifecycleService {
     };
   }
 
+  async prepareBookingConfirmation(tenantId: string, jobId: string, visitId?: string | undefined): Promise<BookingConfirmationPreview> {
+    const detail = requireJobLifecycleRecord(await this.getJobDetail(tenantId, jobId), `Native job ${jobId} was not found.`, "prepareBookingConfirmation");
+    const sortedVisits = [...detail.visits].sort((left, right) => left.start.localeCompare(right.start));
+    const visit = visitId
+      ? sortedVisits.find((candidate) => candidate.id === visitId)
+      : sortedVisits.find((candidate) => activeVisit(candidate)) ?? sortedVisits[0];
+    const selectedVisit = requireJobLifecycleRecord(visit, "Schedule a visit before sending a booking confirmation.", "prepareBookingConfirmation");
+    const settings = await this.deps.crmRepository.getCrmSettings(tenantId);
+    const users = await this.tenantUsers(tenantId);
+    const technicianLabel = technicianNames(users, selectedVisit.assignedTo);
+    const location = jobLocationLabel(detail.property, detail.client);
+    const accessNote = reminderAccessNote(detail, detail.property);
+    const visitWindow = `${new Date(selectedVisit.start).toLocaleString()} to ${new Date(selectedVisit.end).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+    const emailFallback = [
+      `Hi ${detail.client?.name ?? "there"},`,
+      "",
+      `Your visit for ${detail.title} is booked for ${visitWindow}.`,
+      `Service address: ${location}.`,
+      "Arrival window: morning jobs arrive between 8:00 AM and noon; afternoon jobs arrive between noon and 5:00 PM unless the office confirms a tighter slot.",
+      `Technician: ${technicianLabel}.`,
+      accessNote ? `Access note: ${accessNote}.` : "",
+      "",
+      "Add this visit to your calendar with the links below or the attached .ics file."
+    ].filter(Boolean).join("\n");
+    const googleUrl = googleCalendarUrl(selectedVisit, detail.title, location, emailFallback);
+    const outlookUrl = outlookCalendarUrl(selectedVisit, detail.title, location, emailFallback);
+    const vars = bookingTemplateVariables({
+      job: detail,
+      visit: selectedVisit,
+      client: detail.client,
+      property: detail.property,
+      technicianLabel,
+      googleCalendarUrl: googleUrl,
+      outlookCalendarUrl: outlookUrl
+    });
+    const emailTemplate = resolveTemplateMessage({
+      settings,
+      category: "booking_confirmation",
+      channel: "email",
+      fallbackSubject: "Your job is booked",
+      fallbackBodyText: emailFallback,
+      variables: vars
+    });
+    const smsTemplate = resolveTemplateMessage({
+      settings,
+      category: "booking_confirmation",
+      channel: "sms",
+      fallbackSubject: "Booking confirmation",
+      fallbackBodyText: [
+        `${detail.title} is booked for ${visitWindow}.`,
+        location,
+        accessNote ? `Access: ${accessNote}.` : ""
+      ].filter(Boolean).join(" "),
+      variables: vars
+    });
+    return {
+      job: detail,
+      visit: selectedVisit,
+      defaultCopyTarget: this.deps.commsRail?.operatorEmail,
+      emailEnabled: emailTemplate.enabled && communicationChannelEnabled(settings, "booking_confirmation", "email"),
+      smsEnabled: smsTemplate.enabled && communicationChannelEnabled(settings, "booking_confirmation", "sms"),
+      emailTarget: detail.client?.emails[0],
+      smsTarget: detail.client?.phones[0],
+      emailSubject: emailTemplate.subject,
+      emailBodyText: emailTemplate.bodyText,
+      smsBodyText: smsTemplate.bodyText,
+      googleCalendarUrl: googleUrl,
+      outlookCalendarUrl: outlookUrl,
+      calendarFilename: `booking-${selectedVisit.id}.ics`
+    };
+  }
+
+  async sendBookingConfirmation(input: SendBookingConfirmationInput): Promise<{ job: JobDetailRecord; visit: ScheduledVisit }> {
+    const preview = await this.prepareBookingConfirmation(input.tenantId, input.jobId, input.visitId);
+    const target = input.target?.trim() || (input.mode === "email" ? preview.emailTarget : preview.smsTarget);
+    if (!target) {
+      throw new RailError(`A ${input.mode === "email" ? "client email" : "client phone number"} is required before sending a booking confirmation.`, { provider: "native", op: "sendBookingConfirmation", status: 400 });
+    }
+    const subject = input.subject?.trim() || preview.emailSubject;
+    const bodyText = input.bodyText?.trim() || (input.mode === "email" ? preview.emailBodyText : preview.smsBodyText);
+    const copyTarget = (input.copyTarget ?? preview.defaultCopyTarget)?.trim();
+    if (input.mode === "email") {
+      if (!preview.emailEnabled) {
+        throw new RailError("Email booking confirmations are disabled in Settings.", { provider: "native", op: "sendBookingConfirmation", status: 409 });
+      }
+      if (!this.deps.commsRail?.sendAdapter) {
+        throw new RailError("Email delivery is not configured for this tenant.", { provider: "native", op: "sendBookingConfirmation", status: 501 });
+      }
+      const htmlBody = `<p>${escapeHtml(bodyText).replace(/\n/g, "<br/>")}</p><p><a href="${preview.googleCalendarUrl}">Add to Google Calendar</a> | <a href="${preview.outlookCalendarUrl}">Add to Outlook</a></p>`;
+      await this.deps.commsRail.sendAdapter.sendEmail({
+        tenantId: input.tenantId,
+        mailbox: this.deps.commsRail.sendAdapter.mailbox,
+        to: [target],
+        ...(copyTarget && (input.sendCopy ?? true) ? { cc: [copyTarget] } : {}),
+        subject,
+        bodyText,
+        bodyHtml: htmlBody,
+        attachments: [bookingCalendarAttachment(preview.visit, preview.job.title, jobLocationLabel(preview.job.property, preview.job.client), bodyText)]
+      });
+    } else {
+      if (!preview.smsEnabled) {
+        throw new RailError("Text booking confirmations are disabled in Settings.", { provider: "native", op: "sendBookingConfirmation", status: 409 });
+      }
+      await sendLifecycleSms(this.deps.commsRail, {
+        tenantId: input.tenantId,
+        to: target,
+        body: bodyText
+      });
+    }
+    await this.emitLifecycleEvent({
+      tenantId: input.tenantId,
+      jobId: input.jobId,
+      type: "visit.booking_confirmation_sent",
+      createdAt: now(),
+      payload: {
+        visitId: preview.visit.id,
+        mode: input.mode,
+        target,
+        subject,
+        ...(copyTarget && input.mode === "email" && (input.sendCopy ?? true) ? { copyTarget } : {})
+      }
+    });
+    const refreshed = requireJobLifecycleRecord(await this.getJobDetail(input.tenantId, input.jobId), `Native job ${input.jobId} was not found.`, "sendBookingConfirmation");
+    return { job: refreshed, visit: preview.visit };
+  }
+
   async createJob(input: CreateJobInput): Promise<Job> {
     const timestamp = now();
     const lineItems = input.lineItems ?? [];
@@ -747,7 +988,8 @@ export class JobLifecycleService {
         ...(job.property?.address ? { address: job.property.address } : {})
       },
       status: "scheduled",
-      ...(job.intake ? { intake: job.intake } : {})
+      ...(job.intake ? { intake: job.intake } : {}),
+      ...(input.details?.trim() ? { details: input.details.trim() } : {})
     };
     const saved = await this.deps.schedulingRepository.saveVisit(visit);
     await this.regenerateVisitReminders(input.tenantId, input.jobId, saved);
@@ -763,6 +1005,22 @@ export class JobLifecycleService {
       }
     });
     return saved;
+  }
+
+  async scheduleVisitSeries(input: ScheduleJobVisitSeriesInput): Promise<ScheduledVisit[]> {
+    const created: ScheduledVisit[] = [];
+    for (const visitInput of input.visits) {
+      created.push(await this.scheduleVisit({
+        tenantId: input.tenantId,
+        jobId: input.jobId,
+        ...(visitInput.title ? { title: visitInput.title } : {}),
+        start: visitInput.start,
+        end: visitInput.end,
+        ...(visitInput.assignedTo ? { assignedTo: visitInput.assignedTo } : {}),
+        ...(visitInput.details ? { details: visitInput.details } : {})
+      }));
+    }
+    return created;
   }
 
   async moveVisit(input: MoveJobVisitInput): Promise<ScheduledVisit> {
@@ -787,6 +1045,52 @@ export class JobLifecycleService {
       }
     });
     return moved;
+  }
+
+  async moveVisitSeries(input: MoveJobVisitSeriesInput): Promise<{ visit: ScheduledVisit; shiftedVisits: ScheduledVisit[] }> {
+    const existing = await this.deps.schedulingRepository.getVisit(input.tenantId, input.visitId);
+    const visit = requireJobLifecycleRecord(existing, `Visit ${input.visitId} was not found.`, "moveVisitSeries");
+    const moved = await this.moveVisit(input);
+    if (!input.shiftRemaining) {
+      return { visit: moved, shiftedVisits: [] };
+    }
+    const deltaMs = new Date(input.start).getTime() - new Date(visit.start).getTime();
+    if (!Number.isFinite(deltaMs) || deltaMs === 0) {
+      return { visit: moved, shiftedVisits: [] };
+    }
+    const following = (await this.deps.schedulingRepository.listVisits(input.tenantId, { from: visit.start }))
+      .filter((candidate) =>
+        candidate.jobId === visit.jobId
+        && candidate.id !== visit.id
+        && activeVisit(candidate)
+        && candidate.start >= visit.start
+      )
+      .sort((left, right) => left.start.localeCompare(right.start));
+    const shiftedVisits: ScheduledVisit[] = [];
+    for (const candidate of following) {
+      const shifted = await this.deps.schedulingRepository.saveVisit({
+        ...candidate,
+        start: shiftIso(candidate.start, deltaMs),
+        end: shiftIso(candidate.end, deltaMs)
+      });
+      await this.regenerateVisitReminders(input.tenantId, shifted.jobId, shifted);
+      await this.emitLifecycleEvent({
+        tenantId: input.tenantId,
+        jobId: shifted.jobId,
+        type: "job.state_changed",
+        createdAt: now(),
+        payload: {
+          reason: "visit_shifted_with_series",
+          visitId: shifted.id,
+          anchorVisitId: moved.id,
+          offsetMinutes: Math.round(deltaMs / 60000),
+          start: shifted.start,
+          end: shifted.end
+        }
+      });
+      shiftedVisits.push(shifted);
+    }
+    return { visit: moved, shiftedVisits };
   }
 
   async completeVisit(input: CompleteJobVisitInput): Promise<{ visit: ScheduledVisit; job: JobDetailRecord; actionAlert?: JobActionAlertRecord | undefined }> {

@@ -17,7 +17,7 @@ function tenant() {
     name: "Aquatrace",
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
-    adapters: { crm: "native", media: "companycam", email: "gmail_relay" },
+    adapters: { crm: "native", media: "native", email: "gmail_relay" },
     approval: {},
     timezone: "America/New_York",
     plan: "suite"
@@ -84,7 +84,8 @@ test("M7 imports GBP reviews, emits review.received, and drafts approval-only re
   assert.equal(polled.configured, true);
   assert.equal(polled.imported.length, 1);
   assert.equal(polled.imported[0].provider, "gbp");
-  assert.equal(eventBus.listEvents()[0].type, "review.received");
+  const events = await eventBus.listEvents({ tenantId: "aquatrace" });
+  assert.equal(events[0]?.type, "review.received");
 
   const reply = await service.draftReviewReply(tenant(), polled.imported[0].id, "internal:owner_chris");
   assert.equal(reply.review.replyStatus, "drafted");

@@ -1,0 +1,401 @@
+{
+  "generatedAt": "2026-07-17T19:01:20.318Z",
+  "tenantId": "aquatrace",
+  "jobId": "job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f",
+  "transcript": [
+    {
+      "user": "send Deborah Justice a portal link by email",
+      "tool": "sendPortalLink",
+      "answer": "I sent the NexPortal link to deborah@example.test by email.\nhttp://127.0.0.1:4175/nexportal/session/portal_session_4abea771-e90d-463e-8913-a56fb1ce07a6?tenantId=aquatrace&token=2f5c5dc3d44cab68729af7a877e9b2457a2a",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "client_1",
+          "label": "Portal client client_1"
+        },
+        {
+          "rail": "native",
+          "ref": "portal_session_4abea771-e90d-463e-8913-a56fb1ce07a6",
+          "label": "Portal session portal_session_4abea771-e90d-463e-8913-a56fb1ce07a6"
+        }
+      ],
+      "toolResult": {
+        "clientId": "client_1",
+        "sessionId": "portal_session_4abea771-e90d-463e-8913-a56fb1ce07a6",
+        "url": "http://127.0.0.1:4175/nexportal/session/portal_session_4abea771-e90d-463e-8913-a56fb1ce07a6?tenantId=aquatrace&token=2f5c5dc3d44cab68729af7a877e9b2457a2a",
+        "delivery": "email",
+        "target": "deborah@example.test"
+      }
+    },
+    {
+      "user": "show Deborah Justice portal activity",
+      "tool": "getClientPortalActivity",
+      "answer": "I found 1 client portal activity. Latest: Portal link sent.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "evt_9f81ce8c-d08b-4c34-aa0c-5343a8ddf23e",
+          "label": "Portal activity Portal link sent"
+        }
+      ],
+      "toolResult": {
+        "clientId": "client_1",
+        "activity": [
+          {
+            "id": "evt_9f81ce8c-d08b-4c34-aa0c-5343a8ddf23e",
+            "occurredAt": "2026-07-17T19:01:20.293Z",
+            "title": "Portal link sent",
+            "detail": "A fresh magic link went out to the client.",
+            "objectType": "portal",
+            "objectId": "portal_session_4abea771-e90d-463e-8913-a56fb1ce07a6"
+          }
+        ]
+      }
+    },
+    {
+      "user": "generate a statement for Deborah Justice",
+      "tool": "generateStatement",
+      "answer": "Deborah Justice statement is ready with 1 ledger line and a running balance of $300.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "client_1",
+          "label": "Client statement client_1"
+        }
+      ],
+      "toolResult": {
+        "clientId": "client_1",
+        "statement": {
+          "tenantName": "Aquatrace",
+          "clientName": "Deborah Justice",
+          "lines": [
+            {
+              "id": "invoice_chat",
+              "occurredAt": "2026-07-17T04:00:00.000Z",
+              "kind": "invoice",
+              "label": "INV-CHAT",
+              "detail": "Leak detection invoice",
+              "debit": 300,
+              "credit": 0,
+              "runningBalance": 300
+            }
+          ],
+          "runningBalance": 300
+        }
+      }
+    },
+    {
+      "user": "send Deborah Justice a statement to deborah@example.test",
+      "tool": "sendStatement",
+      "answer": "I sent the client statement to deborah@example.test.\nhttp://127.0.0.1:4175/nexportal/statements/client_1.pdf?tenantId=aquatrace",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "client_1",
+          "label": "Client statement client_1"
+        }
+      ],
+      "toolResult": {
+        "clientId": "client_1",
+        "url": "http://127.0.0.1:4175/nexportal/statements/client_1.pdf?tenantId=aquatrace",
+        "target": "deborah@example.test"
+      }
+    },
+    {
+      "user": "start a review sequence for job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f",
+      "tool": "startReviewSequence",
+      "answer": "I started the review follow-up sequence.\nNext send: 2026-07-18T04:00:00.000Z",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f",
+          "label": "Native job Review job chat"
+        }
+      ],
+      "toolResult": {
+        "started": true,
+        "sequence": {
+          "id": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5",
+          "tenantId": "aquatrace",
+          "clientId": "client_1",
+          "jobId": "job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f",
+          "invoiceId": "invoice_chat",
+          "source": "manual",
+          "providerState": "gbp_pending",
+          "status": "active",
+          "activeStepId": "review_sequence_83e83228-41bd-47e8-8941-5ae1d8c946d8_review_initial",
+          "nextSendAt": "2026-07-18T04:00:00.000Z",
+          "optOutTokenHash": "20087a2ce53eea40befe7e2252af9f9735239bce275d503d9c8d4223f0148b54",
+          "steps": [
+            {
+              "id": "review_sequence_83e83228-41bd-47e8-8941-5ae1d8c946d8_review_initial",
+              "label": "Initial review request",
+              "offsetDays": 1,
+              "channels": "both",
+              "templateCategory": "review_request_initial",
+              "dueAt": "2026-07-18T04:00:00.000Z",
+              "status": "pending"
+            },
+            {
+              "id": "review_sequence_24e571e1-b2c0-4983-a352-34a403bf3368_review_nudge_1",
+              "label": "Review nudge",
+              "offsetDays": 4,
+              "channels": "both",
+              "templateCategory": "review_request_nudge",
+              "dueAt": "2026-07-21T04:00:00.000Z",
+              "status": "pending"
+            },
+            {
+              "id": "review_sequence_cbb5423f-b652-4268-b724-6c072c0d3ad3_review_nudge_2",
+              "label": "Final review nudge",
+              "offsetDays": 10,
+              "channels": "both",
+              "templateCategory": "review_request_nudge",
+              "dueAt": "2026-07-27T04:00:00.000Z",
+              "status": "pending"
+            }
+          ],
+          "createdAt": "2026-07-17T19:01:20.315Z",
+          "updatedAt": "2026-07-17T19:01:20.315Z"
+        }
+      }
+    },
+    {
+      "user": "what is the review sequence status for job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f",
+      "tool": "getReviewSequenceStatus",
+      "answer": "I found 1 active review follow-up sequence. First sequence is active with the next send at 2026-07-18T04:00:00.000Z.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5",
+          "label": "Review sequence review_sequence_113ea708-8b38-4812-925a-239eb55a96b5"
+        }
+      ],
+      "toolResult": {
+        "sequences": [
+          {
+            "id": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5",
+            "tenantId": "aquatrace",
+            "clientId": "client_1",
+            "jobId": "job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f",
+            "invoiceId": "invoice_chat",
+            "source": "manual",
+            "providerState": "gbp_pending",
+            "status": "active",
+            "activeStepId": "review_sequence_83e83228-41bd-47e8-8941-5ae1d8c946d8_review_initial",
+            "nextSendAt": "2026-07-18T04:00:00.000Z",
+            "optOutTokenHash": "20087a2ce53eea40befe7e2252af9f9735239bce275d503d9c8d4223f0148b54",
+            "steps": [
+              {
+                "id": "review_sequence_83e83228-41bd-47e8-8941-5ae1d8c946d8_review_initial",
+                "label": "Initial review request",
+                "offsetDays": 1,
+                "channels": "both",
+                "templateCategory": "review_request_initial",
+                "dueAt": "2026-07-18T04:00:00.000Z",
+                "status": "pending"
+              },
+              {
+                "id": "review_sequence_24e571e1-b2c0-4983-a352-34a403bf3368_review_nudge_1",
+                "label": "Review nudge",
+                "offsetDays": 4,
+                "channels": "both",
+                "templateCategory": "review_request_nudge",
+                "dueAt": "2026-07-21T04:00:00.000Z",
+                "status": "pending"
+              },
+              {
+                "id": "review_sequence_cbb5423f-b652-4268-b724-6c072c0d3ad3_review_nudge_2",
+                "label": "Final review nudge",
+                "offsetDays": 10,
+                "channels": "both",
+                "templateCategory": "review_request_nudge",
+                "dueAt": "2026-07-27T04:00:00.000Z",
+                "status": "pending"
+              }
+            ],
+            "createdAt": "2026-07-17T19:01:20.315Z",
+            "updatedAt": "2026-07-17T19:01:20.315Z"
+          }
+        ],
+        "activeCount": 1
+      }
+    },
+    {
+      "user": "stop the review sequence for job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f",
+      "tool": "stopReviewSequence",
+      "answer": "I stopped the review follow-up sequence as manual. Current status: stopped.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5",
+          "label": "Review sequence review_sequence_113ea708-8b38-4812-925a-239eb55a96b5"
+        }
+      ],
+      "toolResult": {
+        "sequence": {
+          "id": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5",
+          "tenantId": "aquatrace",
+          "clientId": "client_1",
+          "jobId": "job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f",
+          "invoiceId": "invoice_chat",
+          "source": "manual",
+          "providerState": "gbp_pending",
+          "status": "stopped",
+          "stopReason": "manual",
+          "stoppedAt": "2026-07-17T19:01:20.316Z",
+          "optOutTokenHash": "20087a2ce53eea40befe7e2252af9f9735239bce275d503d9c8d4223f0148b54",
+          "steps": [
+            {
+              "id": "review_sequence_83e83228-41bd-47e8-8941-5ae1d8c946d8_review_initial",
+              "label": "Initial review request",
+              "offsetDays": 1,
+              "channels": "both",
+              "templateCategory": "review_request_initial",
+              "dueAt": "2026-07-18T04:00:00.000Z",
+              "status": "stopped"
+            },
+            {
+              "id": "review_sequence_24e571e1-b2c0-4983-a352-34a403bf3368_review_nudge_1",
+              "label": "Review nudge",
+              "offsetDays": 4,
+              "channels": "both",
+              "templateCategory": "review_request_nudge",
+              "dueAt": "2026-07-21T04:00:00.000Z",
+              "status": "stopped"
+            },
+            {
+              "id": "review_sequence_cbb5423f-b652-4268-b724-6c072c0d3ad3_review_nudge_2",
+              "label": "Final review nudge",
+              "offsetDays": 10,
+              "channels": "both",
+              "templateCategory": "review_request_nudge",
+              "dueAt": "2026-07-27T04:00:00.000Z",
+              "status": "stopped"
+            }
+          ],
+          "createdAt": "2026-07-17T19:01:20.315Z",
+          "updatedAt": "2026-07-17T19:01:20.316Z"
+        }
+      }
+    },
+    {
+      "user": "start a review sequence for job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f again",
+      "tool": "startReviewSequence",
+      "answer": "I started the review follow-up sequence.\nNext send: 2026-07-18T04:00:00.000Z",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f",
+          "label": "Native job Review job chat"
+        }
+      ],
+      "toolResult": {
+        "started": true,
+        "sequence": {
+          "id": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5",
+          "tenantId": "aquatrace",
+          "clientId": "client_1",
+          "jobId": "job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f",
+          "invoiceId": "invoice_chat",
+          "source": "manual",
+          "providerState": "gbp_pending",
+          "status": "active",
+          "activeStepId": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5_review_initial",
+          "nextSendAt": "2026-07-18T04:00:00.000Z",
+          "optOutTokenHash": "4a56bd29162fa2249312e713cbbd5d950d66360408f60934f5643a2de9bd88fc",
+          "steps": [
+            {
+              "id": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5_review_initial",
+              "label": "Initial review request",
+              "offsetDays": 1,
+              "channels": "both",
+              "templateCategory": "review_request_initial",
+              "dueAt": "2026-07-18T04:00:00.000Z",
+              "status": "pending"
+            },
+            {
+              "id": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5_review_nudge_1",
+              "label": "Review nudge",
+              "offsetDays": 4,
+              "channels": "both",
+              "templateCategory": "review_request_nudge",
+              "dueAt": "2026-07-21T04:00:00.000Z",
+              "status": "pending"
+            },
+            {
+              "id": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5_review_nudge_2",
+              "label": "Final review nudge",
+              "offsetDays": 10,
+              "channels": "both",
+              "templateCategory": "review_request_nudge",
+              "dueAt": "2026-07-27T04:00:00.000Z",
+              "status": "pending"
+            }
+          ],
+          "createdAt": "2026-07-17T19:01:20.315Z",
+          "updatedAt": "2026-07-17T19:01:20.317Z"
+        }
+      }
+    },
+    {
+      "user": "mark the review sequence for job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f reviewed",
+      "tool": "markReviewed",
+      "answer": "I marked that review follow-up complete as reviewed. Current status: completed.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5",
+          "label": "Review sequence review_sequence_113ea708-8b38-4812-925a-239eb55a96b5"
+        }
+      ],
+      "toolResult": {
+        "sequence": {
+          "id": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5",
+          "tenantId": "aquatrace",
+          "clientId": "client_1",
+          "jobId": "job_fe1c68a6-d37f-4ff1-8624-c59aff75b79f",
+          "invoiceId": "invoice_chat",
+          "source": "manual",
+          "providerState": "gbp_pending",
+          "status": "completed",
+          "stopReason": "reviewed",
+          "reviewedAt": "2026-07-17T19:01:20.317Z",
+          "stoppedAt": "2026-07-17T19:01:20.317Z",
+          "optOutTokenHash": "4a56bd29162fa2249312e713cbbd5d950d66360408f60934f5643a2de9bd88fc",
+          "steps": [
+            {
+              "id": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5_review_initial",
+              "label": "Initial review request",
+              "offsetDays": 1,
+              "channels": "both",
+              "templateCategory": "review_request_initial",
+              "dueAt": "2026-07-18T04:00:00.000Z",
+              "status": "stopped"
+            },
+            {
+              "id": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5_review_nudge_1",
+              "label": "Review nudge",
+              "offsetDays": 4,
+              "channels": "both",
+              "templateCategory": "review_request_nudge",
+              "dueAt": "2026-07-21T04:00:00.000Z",
+              "status": "stopped"
+            },
+            {
+              "id": "review_sequence_113ea708-8b38-4812-925a-239eb55a96b5_review_nudge_2",
+              "label": "Final review nudge",
+              "offsetDays": 10,
+              "channels": "both",
+              "templateCategory": "review_request_nudge",
+              "dueAt": "2026-07-27T04:00:00.000Z",
+              "status": "stopped"
+            }
+          ],
+          "createdAt": "2026-07-17T19:01:20.315Z",
+          "updatedAt": "2026-07-17T19:01:20.317Z"
+        }
+      }
+    }
+  ]
+}

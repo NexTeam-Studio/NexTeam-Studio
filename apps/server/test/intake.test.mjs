@@ -33,7 +33,7 @@ function tenant() {
     name: "Aquatrace",
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
-    adapters: { crm: "native", media: "companycam", email: "gmail_relay" },
+    adapters: { crm: "native", media: "native", email: "gmail_relay" },
     approval: {},
     timezone: "America/New_York",
     plan: "suite"
@@ -75,8 +75,8 @@ test("M10 service drafts Demo Pool Co blueprint, queues approval, and provisions
     sessionId: session.id,
     field: "appStack",
     value: [
-      { category: "crm", currentTool: "Jobber", decision: "COEXIST", notes: "Import read-only first." },
-      { category: "photos", currentTool: "CompanyCam", decision: "REPLACE_LATER", notes: "Keep until mobile is proven." }
+      { category: "crm", currentTool: "Legacy CRM", decision: "COEXIST", notes: "Import read-only first." },
+      { category: "photos", currentTool: "Legacy photo archive", decision: "REPLACE_LATER", notes: "Keep until native uploads are proven." }
     ]
   }, "aquatrace");
 
@@ -201,7 +201,7 @@ test("M10 chat router sends onboarding language to intake tools instead of job l
   await service.answer({ sessionId, field: "serviceArea", value: "Fair Play" }, "aquatrace");
   await service.answer({ sessionId, field: "pricingNotes", value: "Owner approves quotes." }, "aquatrace");
   await service.answer({ sessionId, field: "brandVoice", value: "Plain and practical." }, "aquatrace");
-  await service.answer({ sessionId, field: "appStack", value: "Jobber, CompanyCam" }, "aquatrace");
+  await service.answer({ sessionId, field: "appStack", value: "Legacy CRM, legacy photo archive" }, "aquatrace");
 
   const finalized = await runExplicitLocalToolLoop({
     tenant: tenant(),

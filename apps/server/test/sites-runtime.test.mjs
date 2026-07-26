@@ -30,7 +30,7 @@ test("M8 generates Aquatrace site blocks and renders static HTML", () => {
     gallery: [
       {
         mediaId: "3338800086",
-        thumbRef: "companycam:3338800086",
+        thumbRef: "legacy-media:3338800086",
         caption: "Return fitting dye test from a real leak detection job"
       }
     ]
@@ -119,7 +119,7 @@ test("M8 lead form creates lead, event, and approval-queued owner notification o
     assert.equal(leadsResult.leads.length, 1);
     assert.equal(leadsResult.leads[0].name, "Rachel Payne");
 
-    const events = eventBus.listEvents();
+    const events = await eventBus.listEvents({ tenantId: "aquatrace" });
     assert.equal(events.length, 1);
     assert.equal(events[0].type, "lead.received");
     assert.equal(events[0].payload.hasEmail, true);
@@ -182,7 +182,7 @@ test("M8 Nexi tool changes Job Desk appearance without touching another tenant",
     name: "Aquatrace",
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
-    adapters: { crm: "jobber", media: "companycam", email: "gmail_relay" },
+    adapters: { crm: "native", media: "native", email: "gmail_relay" },
     approval: {},
     timezone: "America/New_York",
     plan: "suite"

@@ -128,6 +128,7 @@ export interface VisionSurveyBatchResult {
 const PER_PHOTO_ESTIMATE_USD = 0.018;
 
 function normalizedText(media: Media): string {
+  const externalIds = Object.values(media.externalIds ?? {});
   return [
     media.storageRef,
     media.thumbRef ?? "",
@@ -135,7 +136,7 @@ function normalizedText(media: Media): string {
     media.capturedBy ?? "",
     media.jobId ?? "",
     media.propertyId ?? "",
-    media.externalIds?.companycam ?? "",
+    ...externalIds,
     ...media.aiTags
   ].join(" ").toLowerCase();
 }
@@ -281,13 +282,14 @@ export function reviewMediaMetadata(media: Media): VisionSurveyReview {
 function matchesFolder(media: Media, folderRef: string | undefined): boolean {
   if (!folderRef) return true;
   const needle = folderRef.toLowerCase();
+  const externalIds = Object.values(media.externalIds ?? {});
   return [
     media.id,
     media.jobId ?? "",
     media.propertyId ?? "",
     media.storageRef,
-    media.externalIds?.companycam ?? ""
-  ].some((value) => value.toLowerCase().includes(needle));
+    ...externalIds
+  ].some((value) => String(value).toLowerCase().includes(needle));
 }
 
 function photoBatch(records: Media[], input: z.infer<typeof visionSurveyBatchInputSchema>): Media[] {

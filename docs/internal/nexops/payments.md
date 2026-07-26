@@ -1,7 +1,7 @@
 # NexOps Payments
 
-Last updated: 2026-07-13  
-Build piece: Ledger domain foundation + close/invoice/payment flow
+Last updated: 2026-07-18  
+Build piece: Ledger domain foundation + close/invoice/payment flow + client hub/review follow-up + payments/signatures pass
 
 ## Statuses
 
@@ -178,6 +178,13 @@ Build piece: Ledger domain foundation + close/invoice/payment flow
 - Email carries the selected attachments directly.
 - SMS carries the secure hosted link instead of file payloads.
 
+### open invoice -> tipped payment
+- Triggered by client-facing or office-side payment collection when tipping is enabled for the tenant.
+- Result:
+  - tip amount is stored as its own payment ledger line
+  - invoice balance logic still reconciles against the invoice amount, not the invoice-plus-tip display total
+  - receipt and statement surfaces can show the tip distinctly
+
 ## Triggers
 
 ### Ledger read routes
@@ -193,6 +200,8 @@ Build piece: Ledger domain foundation + close/invoice/payment flow
 ### Ledger write routes
 - `POST /api/crm/invoices/:id/payments`
 - `POST /api/crm/invoices/:id/checkout`
+- `POST /api/crm/jobs/:id/quick-payment-request`
+- `POST /api/crm/clients/:id/quick-payment-request`
 - `POST /api/stripe/webhook`
 - `POST /api/crm/payments/:id/refund`
 - `POST /api/crm/invoices/:id/void`
@@ -217,6 +226,8 @@ Build piece: Ledger domain foundation + close/invoice/payment flow
 - `revisePendingReceiptReviewApproval`
 - `revisePendingLedgerActionApproval`
 - `approvePendingApproval`
+- `generateStatement`
+- `sendStatement`
 
 ### Billing authority
 - Billing routes and billing chat tools are owner/admin-only in this piece.
@@ -264,6 +275,22 @@ Build piece: Ledger domain foundation + close/invoice/payment flow
 - Known follow-up:
   - milestone `dueAt` dates should eventually trigger their own staff reminder path so scheduled payment checkpoints do not rely on manual follow-through alone
 
+### Quick payment request fast-path
+- Job-detail and client-detail now expose a lightweight payment-request shortcut for deposits, reimbursements, and change-order collection.
+- Under the hood this does not create a parallel payment object.
+- The shortcut materializes a real draft invoice with:
+  - one line item
+  - `code = "quick-request"`
+  - the entered title as the line name
+  - optional memo as the line description
+  - normal invoice totals
+  - normal invoice ledger balance
+- When launched from a job, the created invoice also carries:
+  - `jobId`
+  - `jobIds[]`
+  - `jobReferences[]`
+- Once created, collection runs through the same invoice payment and receipt-review rail as any other invoice.
+
 ### Saved card scope
 - Card-on-file authorization captured during quote approval is stored on the client billing profile broadly.
 - Reuse is client-wide, not limited to the one quote that first captured the card.
@@ -289,6 +316,14 @@ Build piece: Ledger domain foundation + close/invoice/payment flow
 - Local Piece 5 verification covers order creation and capture through the PayPal helper rail.
 - Live provider proof is still a separate external receipt step before field use.
 
+### Tap to Pay target rail
+- The ledger domain is already shaped so a future in-person card-present collection path can land on the same:
+  - `Payment`
+  - `ReceiptReview`
+  - invoice balance reconciliation
+  - statement / history surfaces
+- No separate "tap to pay payment" record type is needed or desired.
+
 ### Receipt review defaults
 - Successful payment and refund actions create `ReceiptReview` objects immediately.
 - Default attachment inventory for invoice-backed receipts includes:
@@ -298,11 +333,56 @@ Build piece: Ledger domain foundation + close/invoice/payment flow
   - other job files
 - Quote-deposit bridge receipts currently attach the quote PDF and related job files when present.
 - Piece 5 editing now allows staff to trim attachment selection, change channels, and edit recipient/body/subject before send.
+- Closeout currently does not require a field report to exist before receipt review can proceed.
+- When a posted NexCam field report does exist for the job, the attachment path is now proven end to end:
+  - receipt review picks up the real field-report attachment
+  - outbound receipt email sends the actual generated PDF bytes
+  - no placeholder/stub attachment is used in that path
+- Receipt-review artifacts now surface through NexDocs `officeRecords`, so clients read them from the same unified document library as quote PDFs, invoice PDFs, and statements.
+
+### Client hub statements
+- Client statements now render from the same ledger source as invoice/payment detail.
+- Date-range statement output includes:
+  - invoices
+  - payments
+  - credits
+  - running balance
+  - tip amounts as distinct payment detail rather than invisible invoice inflation
+- Staff can generate/send a statement from the client record and clients can download the PDF from the hub when permitted by scope.
+- Statement PDFs now live on the same unified NexDocs `officeRecords` rail instead of a separate client-hub-only document surface.
 
 ### Receipt review send channels
 - Email sends the selected attachments directly.
 - SMS sends the hosted receipt link instead of file attachments.
 - Both channels can be used from the same review when staff chooses both.
+
+### Tap to Pay rail
+- Tap to Pay now uses the real Stripe Terminal / React Native SDK lane rather than a placeholder enum-only shape.
+- Server-side pieces now include:
+  - `POST /api/mobile/tap-to-pay/connection-token`
+  - `POST /api/mobile/tap-to-pay/payment-intent`
+  - `POST /api/mobile/tap-to-pay/complete`
+  - `POST /api/mobile/tap-to-pay/failure`
+- Mobile flow now performs:
+  - Terminal SDK initialize
+  - Tap to Pay discovery
+  - Tap to Pay connect on the phone itself (no separate external reader required for the Tap to Pay path)
+  - payment-intent retrieve
+  - card collection
+  - confirmation
+  - final ledger writeback
+- Successful Tap to Pay collections land on the same existing ledger objects as every other payment rail:
+  - `Payment`
+  - invoice ledger reconciliation
+  - `ReceiptReview`
+  - invoice/client payment history
+  - reporting surfaces
+- Tap to Pay writes `Payment.provider = "stripe"`, `Payment.method = "card"`, and `Payment.methodDetails.collectionChannel = "tap_to_pay"` rather than inventing a parallel payment record type.
+- Failed Tap to Pay attempts now reuse the shared failed-payment pattern:
+  - the attempt can be logged as `Payment.status = "failed"`
+  - no invoice money is applied
+  - no receipt review is created
+  - staff gets a field-facing failure message instead of a silent hang
 
 ### Void vs bad debt stay separate
 - `void` releases applied client value and treats the invoice as cancelled.
@@ -312,5 +392,19 @@ Build piece: Ledger domain foundation + close/invoice/payment flow
 
 - Disputes and chargebacks are not modeled yet.
 - Multi-invoice payment allocation is not built yet.
+- Tap to Pay is now implemented in code, but full field proof still depends on hardware/runtime constraints outside this Windows shell:
+  - Expo Go is not enough; the mobile app must run as a native development build with `@stripe/stripe-terminal-react-native` linked through Expo prebuild/run.
+  - Stripe Terminal React Native SDK itself requires Android API 26+ or iOS 15.1+.
+  - Tap to Pay on iPhone additionally requires Apple's Tap to Pay entitlement on the iOS app.
+  - Tap to Pay on Android has a narrower real-device gate than the base SDK:
+    - Android 13+
+    - integrated NFC + ARM
+    - Google Mobile Services / Play Store
+    - recent security patch
+    - hardware keystore
+    - developer options off
+    - no rooted / custom-OS / emulator devices
+- Because this workstation does not provide a supported physical Tap to Pay device, this piece is locally proven at the server/ledger route layer and mobile bundle layer, but still needs a real-device or Stripe-supported simulated-device collection receipt before it can be described as fully field-proven.
 - Live third-party proof for email/SMS delivery and real external payment settlement still requires explicit field receipts beyond local verification.
-- Tenant-manageable Products & Services catalog management still does not exist here; invoice lines inherit quote/job snapshots and custom lines for now.
+- Tenant-manageable Products & Services catalog management now exists on the shared Settings surface; invoice lines still snapshot quote/job values when materialized, but staff can also work from shared catalog items or custom lines in the current invoice editor.
+- Statement send currently uses the adapter-backed outbound path in local verification; live field proof still needs real Gmail/Twilio credentials before that part is considered externally proven.

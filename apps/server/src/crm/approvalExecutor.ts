@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   addressSchema,
@@ -12,7 +13,8 @@ import {
   type ApprovalItem,
   type CRMProvider,
   type LineItem,
-  type NewClient
+  type NewClient,
+  type Property
 } from "@nexteam/core";
 import type { JobLifecycleService } from "./jobLifecycle.js";
 import type { LedgerService } from "./ledgerFoundation.js";
@@ -33,6 +35,13 @@ const createClientApprovalArgsSchema = z.object({
     phones: z.array(z.string()),
     consent: z.object({ email: z.boolean(), sms: z.boolean() })
   }),
+  primaryProperty: z.object({
+    tenantId: z.string().min(1),
+    siteName: z.string().optional(),
+    label: z.string().optional(),
+    address: addressSchema,
+    billingAddressSameAsClient: z.boolean().optional()
+  }).optional(),
   addressNote: z.string().optional()
 });
 
@@ -76,6 +85,26 @@ const performJobActionApprovalArgsSchema = z.object({
   jobId: z.string().min(1),
   action: z.enum(["close", "invoice", "close_and_invoice", "dismiss_invoice_reminder"]),
   actorId: z.string().optional()
+});
+
+const scheduleJobVisitSeriesApprovalArgsSchema = z.object({
+  tenantId: z.string().min(1),
+  jobId: z.string().min(1),
+  visits: z.array(z.object({
+    title: z.string().optional(),
+    start: z.string().min(1),
+    end: z.string().min(1),
+    assignedTo: z.array(z.string().min(1)).optional(),
+    details: z.string().optional()
+  })).min(1)
+});
+
+const moveJobVisitSeriesApprovalArgsSchema = z.object({
+  tenantId: z.string().min(1),
+  visitId: z.string().min(1),
+  start: z.string().min(1),
+  end: z.string().min(1),
+  shiftRemaining: z.boolean().optional()
 });
 
 const performLedgerActionApprovalArgsSchema = z.object({
@@ -162,6 +191,8 @@ export class CrmApprovalExecutor implements ApprovalExecutor {
       "createQuote",
       "createJob",
       "performJobAction",
+      "scheduleJobVisitSeries",
+      "moveJobVisitSeries",
       "performLedgerAction",
       "composeInvoiceFromJobs",
       "sendInvoice",
@@ -179,7 +210,28 @@ export class CrmApprovalExecutor implements ApprovalExecutor {
         throw new RailError("Approved client artifact targets a different tenant.", { provider: "native", op: "createClient", status: 403 });
       }
       const client = await this.provider.createClient(args.client as NewClient);
-      return { client, addressNote: args.addressNote };
+      let property: Property | undefined;
+      if (args.primaryProperty) {
+        if (!this.provider.upsertProperty) {
+          throw new RailError("The configured CRM provider cannot save native client properties yet.", { provider: "native", op: "upsertProperty", status: 501 });
+        }
+        if (args.primaryProperty.tenantId !== item.tenantId) {
+          throw new RailError("Approved client property targets a different tenant.", { provider: "native", op: "upsertProperty", status: 403 });
+        }
+        property = await this.provider.upsertProperty({
+          id: `property_${randomUUID()}`,
+          tenantId: args.primaryProperty.tenantId,
+          clientId: client.id,
+          ...(args.primaryProperty.siteName ? { siteName: args.primaryProperty.siteName } : {}),
+          ...(args.primaryProperty.label ? { label: args.primaryProperty.label } : {}),
+          address: args.primaryProperty.address,
+          ...(args.primaryProperty.billingAddressSameAsClient !== undefined
+            ? { billingAddressSameAsClient: args.primaryProperty.billingAddressSameAsClient }
+            : {}),
+          assets: []
+        });
+      }
+      return { client, property, addressNote: args.addressNote };
     }
     if (item.execute.op === "createQuote") {
       if (!this.provider.createQuote) {
@@ -227,6 +279,28 @@ export class CrmApprovalExecutor implements ApprovalExecutor {
         action: actionArgs.action,
         actorId: actionArgs.actorId ?? item.decidedBy ?? item.createdBy
       });
+    }
+    if (item.execute.op === "scheduleJobVisitSeries") {
+      if (!this.jobLifecycleService) {
+        throw new RailError("Job lifecycle approval execution is not wired for this tenant yet.", { provider: "native", op: "scheduleJobVisitSeries", status: 501 });
+      }
+      const args = scheduleJobVisitSeriesApprovalArgsSchema.parse(item.execute.args);
+      if (args.tenantId !== item.tenantId) {
+        throw new RailError("Approved visit-series draft targets a different tenant.", { provider: "native", op: "scheduleJobVisitSeries", status: 403 });
+      }
+      const visits = await this.jobLifecycleService.scheduleVisitSeries(args);
+      return { visits };
+    }
+    if (item.execute.op === "moveJobVisitSeries") {
+      if (!this.jobLifecycleService) {
+        throw new RailError("Job lifecycle approval execution is not wired for this tenant yet.", { provider: "native", op: "moveJobVisitSeries", status: 501 });
+      }
+      const args = moveJobVisitSeriesApprovalArgsSchema.parse(item.execute.args);
+      if (args.tenantId !== item.tenantId) {
+        throw new RailError("Approved visit-shift draft targets a different tenant.", { provider: "native", op: "moveJobVisitSeries", status: 403 });
+      }
+      const result = await this.jobLifecycleService.moveVisitSeries(args);
+      return result;
     }
     if (!this.ledgerService) {
       throw new RailError("Ledger approval execution is not wired for this tenant yet.", { provider: "native", op: "performLedgerAction", status: 501 });

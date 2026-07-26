@@ -1,4 +1,4 @@
-# Aquatrace NexCam Field Docs Lane
+# Aquatrace NexCam / NexDocs Lane
 
 Last updated: 2026-07-10 by build/nightly-integration-20260709
 

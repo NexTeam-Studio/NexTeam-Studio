@@ -386,6 +386,7 @@ input {
   color: var(--nexops-brand-text, #082131);
   background: var(--nexops-brand-background, #f6f8f5);
   font-family: var(--nexops-font-family, "Montserrat", "Aptos", "Segoe UI", "Helvetica Neue", sans-serif);
+  overflow-x: clip;
 }
 
 .nexops-app button,
@@ -413,9 +414,88 @@ input {
 
 .nexops-app-logo {
   display: grid;
-  gap: 8px;
-  padding: 4px 8px 16px;
+  gap: 12px;
+  justify-items: center;
+  padding: 4px 8px 12px;
   color: #fff;
+}
+
+.product-logo {
+  display: block;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.product-inline-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.product-inline-label span {
+  font: inherit;
+}
+
+.product-inline-label-image {
+  width: 92px;
+  max-height: 24px;
+}
+
+.nexops-sidebar-product-logo {
+  width: min(184px, 100%);
+  max-height: 56px;
+}
+
+.nexops-sidebar-brand-stack {
+  width: 100%;
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.nexops-sidebar-brand-tier {
+  width: 100%;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+}
+
+.nexops-sidebar-brand-tier-platform {
+  min-height: 88px;
+  padding: 2px 4px;
+}
+
+.nexops-sidebar-brand-tier-tenant {
+  min-height: 70px;
+}
+
+.nexops-sidebar-brand-logo {
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.nexops-sidebar-brand-logo-product {
+  max-height: 42px;
+}
+
+.nexops-sidebar-brand-logo-platform {
+  max-height: 86px;
+  max-width: 126px;
+}
+
+.nexops-sidebar-tenant-mark {
+  width: auto;
+  max-width: 138px;
+  max-height: 54px;
+  object-fit: contain;
 }
 
 .nexteam-lockup {
@@ -482,6 +562,475 @@ input {
   font-weight: 700;
 }
 
+body.nexops-mobile-nav-open {
+  overflow: hidden;
+}
+
+.nexops-mobile-bar,
+.nexops-mobile-nav-layer {
+  display: none;
+}
+
+.nexops-mobile-brand-stack {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.nexops-mobile-header-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+}
+
+.nexops-mobile-header-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.nexops-mobile-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.nexops-mobile-header-right {
+  display: grid;
+  justify-self: end;
+  justify-items: center;
+  gap: 8px;
+  width: max-content;
+  min-width: 0;
+}
+
+.nexops-mobile-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.nexops-mobile-brand-lockup {
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nexops-mobile-brand-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 72px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.nexops-mobile-brand-button:focus-visible {
+  outline: 2px solid rgba(212, 255, 32, 0.92);
+  outline-offset: 6px;
+  border-radius: 22px;
+}
+
+.nexops-mobile-platform-mark {
+  display: block;
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.nexops-mobile-tenant-mark.tenant-logo {
+  width: auto;
+  max-width: 144px;
+  max-height: 40px;
+  margin: 0;
+}
+
+.nexops-mobile-tenant-mark.tenant-wordmark {
+  max-width: 144px;
+  margin: 0;
+  color: #f8fffc;
+  font-size: 0.9rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-shadow: none;
+  text-align: center;
+}
+
+.nexops-mobile-product-logo {
+  flex: 0 0 auto;
+  width: 102px;
+  max-height: 28px;
+}
+
+.nexops-mobile-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.nexops-mobile-secondary-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.nexops-mobile-icon-button,
+.nexops-web-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  color: #f8fffc;
+  background: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.nexops-mobile-utility-button,
+.nexops-module-switcher-button {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 11px 16px;
+  color: #f8fffc;
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nexops-mobile-icon-button svg,
+.nexops-web-icon-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.nexops-mobile-menu-button,
+.nexops-mobile-close-button,
+.nexops-mobile-nav-footer button {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 11px 14px;
+  color: #f8fffc;
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.nexops-mobile-menu-button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  justify-content: center;
+  min-width: 38px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.nexops-mobile-menu-glyph {
+  display: inline-grid;
+  gap: 3px;
+}
+
+.nexops-mobile-menu-glyph span {
+  display: block;
+  width: 15px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.nexops-mobile-menu-label {
+  display: none;
+}
+
+.nexops-mobile-create-fab {
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-width: 64px;
+  height: 64px;
+  width: 64px;
+  padding: 0;
+  border: 1px solid rgba(212, 255, 32, 0.28);
+  border-radius: 999px;
+  color: #f8fffc;
+  background: linear-gradient(135deg, rgba(7, 14, 20, 0.98) 0%, rgba(11, 34, 39, 0.98) 100%);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 18px 36px rgba(9, 17, 24, 0.34);
+  transition: transform 180ms ease, box-shadow 180ms ease, width 180ms ease, padding 180ms ease, opacity 180ms ease;
+}
+
+.nexops-mobile-create-fab::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  background: center / contain no-repeat url("/assets/brand/nexteam-block-logo.png");
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+.nexops-mobile-create-fab:hover,
+.nexops-mobile-create-fab:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 42px rgba(9, 17, 24, 0.4);
+  outline: none;
+}
+
+.nexops-mobile-create-fab-icon {
+  position: relative;
+  z-index: 1;
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 700;
+  text-shadow: 0 2px 14px rgba(7, 14, 20, 0.26);
+}
+
+.nexops-mobile-create-fab-label {
+  display: none;
+}
+
+.nexops-mobile-create-fab.collapsed {
+  width: 64px;
+  min-width: 64px;
+  padding: 0;
+  gap: 0;
+}
+
+.nexops-mobile-create-fab.collapsed .nexops-mobile-create-fab-label {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.nexops-mobile-create-fab.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+}
+
+.nexops-mobile-create-fab.active {
+  box-shadow: 0 24px 50px rgba(9, 17, 24, 0.42);
+}
+
+.nexops-mobile-create-fab.pulse {
+  animation: nexops-mobile-create-fab-pulse 900ms ease-out 1;
+}
+
+@keyframes nexops-mobile-create-fab-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 18px 36px rgba(9, 17, 24, 0.34);
+  }
+
+  45% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 10px rgba(212, 255, 32, 0.18), 0 22px 42px rgba(9, 17, 24, 0.38);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 18px 36px rgba(9, 17, 24, 0.34);
+  }
+}
+
+.nexops-mobile-nav-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  justify-content: flex-end;
+}
+
+.nexops-mobile-nav-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(9, 17, 24, 0.48);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.nexops-mobile-nav-sheet {
+  position: relative;
+  z-index: 1;
+  width: min(332px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  margin: 12px;
+  overflow-y: auto;
+  display: grid;
+  gap: 18px;
+  padding: 20px 18px 18px;
+  border: 1px solid rgba(8, 33, 49, 0.08);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 22px 54px rgba(9, 17, 24, 0.22);
+}
+
+.nexops-mobile-nav-header,
+.nexops-mobile-nav-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-mobile-nav-group {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-mobile-nav-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nexops-mobile-nav-quick-actions button {
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: center;
+}
+
+.nexops-mobile-nav-quick-actions button:last-child {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 999px;
+  padding: 12px 16px;
+  color: #173344;
+  background: #f7faf7;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nexops-mobile-nav-group p {
+  margin: 0;
+  color: #5f7280;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.nexops-mobile-nav-utility-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nexops-mobile-nav-utility-grid button {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 18px;
+  padding: 14px 12px;
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+  color: #173344;
+  background: #f7faf7;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.nexops-mobile-nav-utility-grid button svg,
+.nexops-mobile-nav-utility-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.nexops-mobile-nav-utility-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.nexops-mobile-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nexops-mobile-nav-grid button {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 18px;
+  padding: 14px 12px;
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+  color: #173344;
+  background: #f7faf7;
+  font-weight: 850;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.nexops-mobile-nav-grid button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.nexops-mobile-nav-grid button.active {
+  border-color: transparent;
+  color: #08100c;
+  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
+  box-shadow: 0 12px 24px rgba(37, 210, 56, 0.18);
+}
+
+.nexops-mobile-nav-footer {
+  padding-top: 4px;
+  border-top: 1px solid rgba(8, 33, 49, 0.08);
+}
+
+.nexops-mobile-nav-footer > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.nexops-mobile-nav-footer strong,
+.nexops-mobile-nav-footer span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nexops-mobile-nav-footer strong {
+  color: #082131;
+  font-size: 0.85rem;
+}
+
+.nexops-mobile-nav-footer span {
+  color: #5f7280;
+  font-size: 0.75rem;
+}
+
 .nexops-create-button,
 .nexops-client-actions button,
 .nexops-web-tools button {
@@ -534,6 +1083,7 @@ input {
   display: grid;
   gap: 22px;
   padding: 34px 28px 48px;
+  overflow-x: clip;
 }
 
 .nexops-page-heading {
@@ -923,6 +1473,18 @@ input {
   cursor: pointer;
 }
 
+.nexops-request-row-button mark {
+  min-width: 2.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.38rem 0.6rem;
+  border-radius: 999px;
+  color: #173344;
+  background: rgba(8, 33, 49, 0.08);
+  font-weight: 900;
+}
+
 .nexops-record-list li.selected,
 .nexops-record-list li:has(.nexops-request-row-button:hover) {
   background: rgba(8, 33, 49, 0.06);
@@ -1002,6 +1564,156 @@ input {
 .nexops-request-propagation-row label {
   display: flex;
   justify-content: center;
+}
+
+.nexops-density-inline-facts {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.nexops-density-inline-facts article {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.nexops-density-inline-facts h3,
+.nexops-density-inline-facts p,
+.nexops-density-inline-facts small {
+  margin: 0;
+}
+
+.nexops-density-inline-facts h3 {
+  color: #526675;
+  font-size: 0.8rem;
+}
+
+.nexops-density-inline-facts p {
+  color: #082131;
+  font-weight: 850;
+}
+
+.nexops-request-upload-field {
+  display: grid;
+  gap: 8px;
+}
+
+.nexops-request-upload-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nexops-request-upload-pill {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 999px;
+  padding: 7px 11px;
+  color: #173344;
+  background: rgba(8, 33, 49, 0.05);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nexops-density-disclosure-card,
+.nexops-density-disclosure-panel {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.nexops-density-disclosure-card > summary,
+.nexops-density-disclosure-panel > summary {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.nexops-density-disclosure-card > summary::-webkit-details-marker,
+.nexops-density-disclosure-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.nexops-density-disclosure-card[open] > summary,
+.nexops-density-disclosure-panel[open] > summary {
+  border-bottom: 1px solid rgba(8, 33, 49, 0.08);
+}
+
+.nexops-density-disclosure-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.nexops-density-disclosure-copy h2,
+.nexops-density-disclosure-copy h3,
+.nexops-density-disclosure-copy p,
+.nexops-density-disclosure-copy small {
+  margin: 0;
+}
+
+.nexops-density-disclosure-copy small {
+  color: #526675;
+}
+
+.nexops-density-disclosure-caret {
+  color: #526675;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.nexops-density-disclosure-body {
+  display: grid;
+  gap: 14px;
+  padding: 0 20px 20px;
+}
+
+.nexops-density-full-span {
+  grid-column: 1 / -1;
+}
+
+.nexops-density-summary-strip {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.nexops-density-summary-strip article {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(8, 33, 49, 0.04);
+}
+
+.nexops-density-summary-strip article strong,
+.nexops-density-summary-strip article span,
+.nexops-density-summary-strip article small {
+  margin: 0;
+}
+
+.nexops-density-summary-strip article span {
+  color: #526675;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.nexops-density-summary-strip article strong {
+  color: #082131;
+  font-size: 1rem;
+}
+
+.nexops-density-summary-strip article small {
+  color: #526675;
+  font-size: 0.76rem;
 }
 
 .nexops-quote-composer-card,
@@ -1254,6 +1966,37 @@ input {
   gap: 20px;
 }
 
+.nexops-home-overview-compact {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-home-overview-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(8, 33, 49, 0.08);
+}
+
+.nexops-home-overview-line:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.nexops-home-overview-line span {
+  color: #526675;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.nexops-home-overview-line strong {
+  color: #082131;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
 .nexops-invoice-inline-total {
   color: #082131;
   font-size: 1.05rem;
@@ -1436,6 +2179,8 @@ input {
 }
 
 .nexops-client-form-brand {
+  width: min(240px, 70vw);
+  max-height: 58px;
   margin-bottom: 6px;
 }
 
@@ -1738,11 +2483,69 @@ input {
   backdrop-filter: blur(12px);
 }
 
+.nexops-client-form-page {
+  padding: 0;
+  overflow: hidden;
+}
+
+.nexops-client-form-page-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 24px;
+  border-bottom: 1px solid rgba(8, 33, 49, 0.08);
+  background: linear-gradient(180deg, #ffffff, #f6faf5);
+}
+
+.nexops-client-form-page-head h2,
+.nexops-client-form-page-head p {
+  margin: 0;
+}
+
+.nexops-client-form-page-head h2 {
+  color: #082131;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1;
+}
+
+.nexops-client-form-page-head p:last-child,
+.nexops-client-form-page-note {
+  max-width: 720px;
+  color: #526675;
+  line-height: 1.5;
+}
+
+.nexops-client-form-page .nexops-form-section {
+  margin: 0 24px;
+}
+
+.nexops-client-form-page-actions {
+  position: static;
+  bottom: auto;
+  margin: 0;
+  padding: 20px 24px 24px;
+  border-top: 1px solid rgba(8, 33, 49, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 245, 0.98));
+  backdrop-filter: none;
+}
+
 .nexcam-app .nexops-create-button,
 .nexcam-app .nexops-page-heading button,
 .nexcam-app .nexops-inline-actions button {
   color: #081a1a;
   background: var(--nexops-brand-accent, #00f0f0);
+}
+
+.nexcam-app .nexops-page-heading .nexops-link-button,
+.nexcam-app .nexops-inline-actions .nexops-link-button,
+.nexcam-app .nexops-module-card .nexops-link-button,
+.nexcam-app .nexops-record-list .nexops-link-button {
+  border: 1px solid rgba(16, 24, 34, 0.12);
+  color: #101822;
+  background: #fff;
+  box-shadow: none;
 }
 
 .nexcam-item-columns {
@@ -1751,9 +2554,72 @@ input {
   gap: 14px;
 }
 
+.nexcam-history-values {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nexcam-history-values li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(8, 33, 49, 0.05);
+}
+
+.nexcam-history-values strong,
+.nexcam-history-values span {
+  margin: 0;
+}
+
+.nexcam-field-note {
+  color: #526675;
+  font-size: 0.82rem;
+}
+
+.nexcam-section-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nexcam-section-pills button {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 999px;
+  padding: 10px 12px;
+  color: #082131;
+  background: #fff;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.nexcam-section-pills button.active {
+  color: #08100c;
+  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
+}
+
+.nexcam-checkbox-field {
+  align-content: start;
+}
+
+.nexcam-checkbox-field input {
+  width: 18px;
+  height: 18px;
+}
+
+.nexcam-template-draft-fields li {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+}
+
 .nexops-web-main {
   min-width: 0;
   background: #fff;
+  overflow-x: clip;
 }
 
 .nexops-web-topbar {
@@ -1765,16 +2631,47 @@ input {
   align-items: center;
   gap: 20px;
   padding: 18px 28px;
-  border-bottom: 1px solid rgba(8, 33, 49, 0.1);
-  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(120deg, rgba(7, 14, 20, 0.98) 0%, rgba(10, 31, 35, 0.98) 58%, rgba(14, 84, 87, 0.96) 100%);
   backdrop-filter: blur(10px);
 }
 
-.nexops-web-topbar p {
-  margin: 0;
-  color: #385161;
-  font-size: 0.92rem;
-  font-weight: 850;
+.nexops-web-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.nexops-header-product-logo {
+  width: 136px;
+  max-height: 42px;
+  flex: 0 0 auto;
+}
+
+.nexops-web-brand-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.nexops-web-brand-copy strong,
+.nexops-web-brand-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nexops-web-brand-copy strong {
+  color: #f8fffc;
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.nexops-web-brand-copy span {
+  color: rgba(233, 242, 245, 0.76);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .nexops-web-tools {
@@ -1783,7 +2680,22 @@ input {
   gap: 12px;
 }
 
-.nexops-web-tools input,
+.nexops-web-account-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nexops-web-tools input {
+  min-width: 210px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 11px;
+  padding: 12px 14px;
+  color: #f8fffc;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .nexops-client-controls input {
   min-width: 210px;
   box-sizing: border-box;
@@ -1795,13 +2707,104 @@ input {
 }
 
 .nexops-web-tools span {
-  color: #385161;
+  color: rgba(233, 242, 245, 0.82);
   font-size: 0.84rem;
 }
 
 .nexops-web-tools button {
-  color: #082131;
-  background: #edf2ef;
+  color: #f8fffc;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nexops-web-account-tools .nexops-web-icon-button {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nexops-web-account-tools > button:not(.nexops-web-icon-button) {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+.nexops-mobile-bar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(120deg, rgba(7, 14, 20, 0.98) 0%, rgba(10, 31, 35, 0.98) 58%, rgba(14, 84, 87, 0.96) 100%);
+}
+
+.nexops-workspace-switcher {
+  position: absolute;
+  top: 92px;
+  right: 24px;
+  width: min(520px, calc(100% - 32px));
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 24px 60px rgba(12, 17, 24, 0.2);
+  z-index: 12;
+}
+
+.nexops-workspace-switcher-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-workspace-switcher-head h2 {
+  margin: 0;
+  color: #0c1825;
+}
+
+.nexops-workspace-switcher-head button {
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #0c1825;
+  background: #f4f7f2;
+}
+
+.nexops-workspace-switcher-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nexops-workspace-switcher-grid button {
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  text-align: left;
+  background: rgba(248, 251, 249, 0.98);
+  color: #0c1825;
+}
+
+.nexops-workspace-switcher-grid button.active {
+  border-color: rgba(15, 106, 103, 0.24);
+  background: rgba(232, 248, 243, 0.98);
+}
+
+.nexops-workspace-switcher-grid strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.98rem;
+}
+
+.nexops-workspace-switcher-grid p {
+  margin: 0;
+  color: #586170;
+  line-height: 1.35;
+}
+
+.nexops-workspace-switcher-logo {
+  width: 42px;
+  max-height: 42px;
+  flex: 0 0 auto;
 }
 
 .nexops-clients-workspace {
@@ -2313,6 +3316,52 @@ input {
   min-width: 0;
 }
 
+.brand-stack-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.brand-stack-row .tenant-logo,
+.brand-stack-row .tenant-wordmark {
+  margin: 0;
+}
+
+.brand-stack-nexi {
+  flex: 0 0 auto;
+}
+
+.nexi-identity-mark {
+  display: inline-grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.nexi-avatar-stage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  min-height: 88px;
+}
+
+.nexi-avatar-fallback {
+  width: min(184px, 36vw);
+  max-height: 74px;
+}
+
+.nexi-signature-mark {
+  width: 86px;
+  max-height: 24px;
+}
+
+.nexi-identity-caption {
+  color: rgba(248, 255, 252, 0.74);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
 .tenant-wordmark {
   width: fit-content;
   max-width: min(280px, 100%);
@@ -2350,6 +3399,12 @@ input {
   margin: 8px 0 0;
   color: rgba(248, 255, 252, 0.72);
   font-size: 0.82rem;
+}
+
+.nexcam-heading-logo {
+  width: min(220px, 100%);
+  max-height: 56px;
+  margin-bottom: 10px;
 }
 
 .sign-out {
@@ -2445,6 +3500,7 @@ h1 {
   display: grid;
   gap: 8px;
   margin-top: 12px;
+  min-width: 0;
 }
 
 .photo-strip {
@@ -2517,6 +3573,15 @@ h1 {
   background: rgba(0, 255, 255, 0.16);
   color: #151817;
   font-size: 0.82rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.source span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .typing {
@@ -2682,15 +3747,475 @@ h1 {
   opacity: 0.48;
 }
 
+.nexops-mobile-icon-button.active,
+.nexops-web-icon-button.active {
+  border-color: rgba(37, 210, 56, 0.48);
+  background: rgba(37, 210, 56, 0.16);
+  color: #123b20;
+}
+
+.nexi-standalone-app {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  overscroll-behavior: none;
+  isolation: isolate;
+  background: var(--jobdesk-shell-background, #edf7f0);
+  color: var(--jobdesk-text, #151817);
+  font-family: var(--jobdesk-font-family, "Montserrat", sans-serif);
+}
+
+.nexi-standalone-app > .nexops-mobile-bar,
+.nexi-standalone-app > .nexops-web-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.nexi-standalone-app .nexops-mobile-secondary-controls {
+  justify-content: flex-end;
+}
+
+.nexi-standalone-app .nexops-mobile-controls {
+  width: 100%;
+  justify-content: center;
+}
+
+.nexi-mobile-header-controls {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: 104px;
+}
+
+.nexi-mobile-header-icons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.nexi-standalone-shell {
+  width: min(1180px, calc(100vw - 24px));
+  max-width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px;
+  margin: 0 auto;
+  padding: 18px 0 max(18px, env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+}
+
+.nexi-standalone-thread {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 8px 128px;
+  scroll-padding-bottom: 128px;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+.nexi-standalone-bubble {
+  width: fit-content;
+  max-width: min(760px, calc(100% - 56px));
+  min-width: 0;
+  display: grid;
+  justify-self: start;
+  gap: 10px;
+  padding: 18px 20px;
+  border: 1px solid rgba(37, 210, 56, 0.16);
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(212, 255, 32, 0.92), rgba(37, 210, 56, 0.88));
+  box-shadow: 0 18px 48px rgba(21, 24, 23, 0.08);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.nexi-standalone-bubble.user {
+  justify-self: end;
+  border-color: rgba(21, 24, 23, 0.08);
+  background: #fff;
+}
+
+.nexi-standalone-bubble p {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: inherit;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.nexi-standalone-typing {
+  padding: 0 12px 8px;
+  color: rgba(21, 24, 23, 0.72);
+  font-size: 0.92rem;
+}
+
+.nexi-standalone-composer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(21, 24, 23, 0.08);
+  border-radius: 28px;
+  background: rgba(248, 255, 252, 0.96);
+  box-shadow: 0 20px 44px rgba(21, 24, 23, 0.12);
+  backdrop-filter: blur(18px);
+}
+
+.nexi-standalone-attach,
+.nexi-standalone-mic,
+.nexi-standalone-send {
+  min-width: 52px;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 800;
+}
+
+.nexi-standalone-attach {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid rgba(37, 210, 56, 0.22);
+  background: linear-gradient(160deg, rgba(7, 14, 20, 0.98), rgba(10, 31, 35, 0.98));
+  color: #f8fffc;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.nexi-standalone-attach.disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.nexi-standalone-attach-mark {
+  position: absolute;
+  inset: 9px;
+  width: calc(100% - 18px);
+  height: calc(100% - 18px);
+  z-index: 0;
+  opacity: 0.92;
+}
+
+.nexi-standalone-attach-plus {
+  position: relative;
+  z-index: 1;
+  font-size: 1.22rem;
+  line-height: 1;
+  font-weight: 900;
+  text-shadow: 0 1px 12px rgba(7, 14, 20, 0.36);
+}
+
+.nexi-standalone-attach input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.nexi-standalone-draft {
+  min-width: 0;
+  min-height: 52px;
+  border: 1px solid rgba(21, 24, 23, 0.12);
+  border-radius: 999px;
+  padding: 0 18px;
+  background: #fff;
+  color: #151817;
+  font: inherit;
+}
+
+.nexi-standalone-mic,
+.nexi-standalone-send {
+  border: 0;
+  color: var(--jobdesk-accent-text, #101010);
+  background: linear-gradient(135deg, #D4FF20, #25D238);
+}
+
+.nexi-standalone-mic.active {
+  color: #fff;
+  background: #e75f48;
+}
+
+.nexi-standalone-send:disabled {
+  opacity: 0.48;
+}
+
+.nexi-header-control {
+  border-color: rgba(212, 255, 32, 0.24);
+  color: #101010;
+  background: linear-gradient(135deg, #D4FF20, #25D238);
+  box-shadow: 0 14px 30px rgba(37, 210, 56, 0.24);
+}
+
+.nexi-voice-toggle {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  justify-self: center;
+  gap: 8px;
+  min-width: 74px;
+  max-width: 82px;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px;
+  color: #101010;
+  background: linear-gradient(135deg, rgba(212, 255, 32, 0.88), rgba(37, 210, 56, 0.74));
+  box-shadow: 0 14px 30px rgba(37, 210, 56, 0.2);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.nexi-voice-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.nexi-voice-toggle-label svg {
+  width: 20px;
+  height: 20px;
+  color: #133118;
+}
+
+.nexi-voice-toggle-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(21, 24, 23, 0.18);
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.nexi-voice-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(21, 24, 23, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms ease;
+}
+
+.nexi-voice-toggle-mark {
+  font-size: 0;
+  line-height: 1;
+  color: transparent;
+}
+
+.nexi-voice-toggle-mark::before {
+  content: "\2715";
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  color: #3d4542;
+}
+
+.nexi-voice-toggle.on {
+  background: linear-gradient(135deg, #D4FF20 0%, #8EF236 50%, #25D238 100%);
+  border-color: rgba(37, 210, 56, 0.28);
+  box-shadow: 0 16px 34px rgba(37, 210, 56, 0.26);
+}
+
+.nexi-voice-toggle.on .nexi-voice-toggle-switch {
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(21, 24, 23, 0.06);
+}
+
+.nexi-voice-toggle.on .nexi-voice-toggle-thumb {
+  transform: translateX(20px);
+}
+
+.nexi-voice-toggle.on .nexi-voice-toggle-mark::before {
+  content: "\2713";
+  color: #1f5e24;
+}
+
+.nexi-standalone-app .nexops-mobile-header-grid {
+  grid-template-columns: minmax(0, 116px) minmax(0, 1fr) minmax(0, 104px);
+}
+
+.nexi-standalone-app .nexops-mobile-header-center {
+  overflow: hidden;
+}
+
+.nexi-standalone-app .nexops-mobile-tenant-mark.tenant-logo,
+.nexi-standalone-app .nexops-mobile-tenant-mark.tenant-wordmark {
+  max-width: 120px;
+}
+
+.nexi-message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.nexi-message-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border-radius: 999px;
+  padding: 0 14px;
+  border: 1px solid rgba(37, 210, 56, 0.2);
+  background: rgba(255, 255, 255, 0.78);
+  color: #151817;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 12px 24px rgba(21, 24, 23, 0.08);
+}
+
+.nexi-message-action.maps {
+  background: linear-gradient(135deg, rgba(212, 255, 32, 0.22), rgba(37, 210, 56, 0.18));
+}
+
+.nexi-confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.nexi-confirmation-button {
+  min-height: 40px;
+  border-radius: 999px;
+  padding: 0 18px;
+  border: 0;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #101010;
+  box-shadow: 0 12px 24px rgba(21, 24, 23, 0.1);
+}
+
+.nexi-confirmation-button.yes {
+  background: linear-gradient(135deg, #D4FF20, #25D238);
+}
+
+.nexi-confirmation-button.no {
+  background: #fff;
+  border: 1px solid rgba(21, 24, 23, 0.12);
+}
+
+.nexi-confirmation-button:disabled {
+  opacity: 0.54;
+}
+
+.nexi-header-control svg,
+.nexi-header-control .nexops-mobile-menu-glyph {
+  color: inherit;
+}
+
+.nexi-header-control .nexops-mobile-menu-glyph span {
+  background: currentColor;
+}
+
+@media (max-width: 960px) {
+  .nexi-standalone-shell {
+    width: min(100vw, calc(100vw - 16px));
+    padding: 12px 0 18px;
+  }
+
+  .nexi-standalone-thread {
+    padding-inline: 0;
+  }
+
+  .nexi-standalone-bubble {
+    border-radius: 22px;
+    padding: 16px;
+  }
+
+  .nexi-voice-toggle {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .nexi-standalone-app {
+    min-height: 100dvh;
+    height: 100dvh;
+  }
+
+  .nexi-standalone-shell {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 8px 12px;
+  }
+
+  .nexi-standalone-composer {
+    gap: 8px;
+    padding: 10px;
+    border-radius: 22px;
+  }
+
+  .nexi-standalone-attach,
+  .nexi-standalone-mic,
+  .nexi-standalone-send,
+  .nexi-standalone-draft {
+    min-height: 48px;
+  }
+
+  .nexi-standalone-attach,
+  .nexi-standalone-mic,
+  .nexi-standalone-send {
+    min-width: 48px;
+  }
+}
+
 .auth-card {
   width: min(430px, 100%);
   display: grid;
   gap: 16px;
   padding: 30px;
+  box-sizing: border-box;
+  overflow: hidden;
   border: 1px solid rgba(21, 24, 23, 0.16);
   border-radius: 34px;
   background: rgba(248, 255, 252, 0.92);
   box-shadow: 0 28px 90px rgba(16, 24, 24, 0.28);
+}
+
+.auth-card-brand {
+  display: block;
+  width: min(176px, 100%);
+  max-width: 176px;
+  max-height: 72px;
+  object-fit: contain;
+  justify-self: start;
 }
 
 .auth-card h1 {
@@ -2733,6 +4258,800 @@ h1 {
 
 .auth-form button:disabled {
   opacity: 0.48;
+}
+
+.auth-profile-hints {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-profile-hints article {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(21, 24, 23, 0.08);
+  border-radius: 18px;
+  background: rgba(248, 255, 252, 0.92);
+}
+
+.auth-profile-hints strong {
+  color: #151817;
+  font-size: 0.92rem;
+}
+
+.auth-profile-hints span {
+  color: #526055;
+  font-size: 0.82rem;
+}
+
+.nexops-client-profile {
+  display: grid;
+  gap: 18px;
+}
+
+.nexops-client-profile-header-card,
+.nexops-client-profile-panel {
+  display: grid;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 46px rgba(8, 33, 49, 0.08);
+}
+
+.nexops-client-profile-header-actions,
+.nexops-client-profile-section-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.nexops-client-profile-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.nexops-client-profile-heading h1,
+.nexops-client-profile-heading p,
+.nexops-client-profile-section-head h2,
+.nexops-client-profile-section-head p,
+.nexops-client-profile-card h3,
+.nexops-client-profile-card p {
+  margin: 0;
+}
+
+.nexops-client-profile-heading h1 {
+  color: #082131;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1;
+}
+
+.nexops-client-profile-heading p,
+.nexops-client-profile-section-head p,
+.nexops-client-profile-card p {
+  color: #526675;
+  line-height: 1.5;
+}
+
+.nexops-client-create-summary {
+  max-width: 280px;
+  color: #526675;
+  line-height: 1.45;
+}
+
+.nexops-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #173344;
+  background: rgba(212, 255, 32, 0.22);
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.nexops-client-profile-meta,
+.nexops-client-profile-metrics {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-client-profile-meta {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.nexops-client-profile-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nexops-client-profile-meta article,
+.nexops-client-profile-metrics article,
+.nexops-client-profile-card {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff, #f5faf7);
+}
+
+.nexops-client-profile-meta span,
+.nexops-client-profile-metrics span {
+  color: #5f7280;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.nexops-client-profile-meta strong,
+.nexops-client-profile-metrics strong {
+  color: #082131;
+  font-size: 1rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.nexops-client-profile-meta strong {
+  font-size: 1.05rem;
+}
+
+.nexops-client-profile-grid.two-up {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.nexops-client-profile-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nexops-client-profile-tabs button {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: #173344;
+  background: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nexops-client-profile-tabs button.active {
+  border-color: transparent;
+  color: #08100c;
+  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
+  box-shadow: 0 14px 28px rgba(37, 210, 56, 0.18);
+}
+
+.nexops-client-profile-list {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-client-profile-row {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 18px;
+  color: inherit;
+  background: rgba(8, 33, 49, 0.03);
+  text-align: left;
+  cursor: pointer;
+}
+
+.nexops-client-profile-row.static {
+  cursor: default;
+}
+
+.nexops-client-profile-row strong,
+.nexops-client-profile-row small {
+  display: block;
+  min-width: 0;
+}
+
+.nexops-client-profile-row small {
+  color: #5f7280;
+  line-height: 1.45;
+}
+
+.nexops-mobile-client-screen,
+.nexops-mobile-client-profile {
+  min-height: 100dvh;
+  background: #f6f7f2;
+  color: #10202c;
+}
+
+.nexops-mobile-client-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(8, 33, 49, 0.08);
+}
+
+.nexops-mobile-client-head button,
+.nexops-mobile-client-head-actions a,
+.nexops-mobile-client-head-actions span {
+  border: 0;
+  background: none;
+  color: #143142;
+  font-size: 22px;
+  text-decoration: none;
+}
+
+.nexops-mobile-client-head h1,
+.nexops-mobile-client-head h1 {
+  margin: 0;
+  font-size: 1.95rem;
+  line-height: 1.05;
+  font-weight: 800;
+  color: #113248;
+}
+
+.nexops-mobile-client-head-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  align-items: center;
+}
+
+.nexops-mobile-client-head-actions .disabled {
+  opacity: 0.35;
+}
+
+.nexops-mobile-client-body,
+.nexops-mobile-profile-body {
+  display: grid;
+  gap: 14px;
+  padding: 16px 20px 120px;
+}
+
+.nexops-mobile-client-screen-sheet .nexops-mobile-client-body {
+  padding-bottom: 24px;
+}
+
+.nexops-mobile-client-row-action,
+.nexops-mobile-filter-button {
+  width: 100%;
+  padding: 18px 20px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 18px;
+  background: #ffffff;
+  color: #397d1f;
+  text-align: left;
+  font-size: 1.03rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nexops-mobile-client-row-action.add {
+  color: #397d1f;
+  text-align: center;
+}
+
+.nexops-mobile-inline-panel,
+.nexops-mobile-profile-section {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid rgba(8, 33, 49, 0.08);
+  box-shadow: 0 12px 30px rgba(10, 24, 17, 0.05);
+}
+
+.nexops-mobile-profile-section .eyebrow {
+  background: linear-gradient(135deg, #d4ff20 0%, #25d238 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.nexops-mobile-inline-panel.nested {
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid rgba(8, 33, 49, 0.08);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.nexops-mobile-client-field {
+  display: grid;
+  gap: 8px;
+}
+
+.nexops-mobile-client-field span,
+.nexops-mobile-key-value dt,
+.nexops-mobile-question-answer-list small,
+.nexops-mobile-custom-field-readonly small {
+  color: #677785;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.nexops-mobile-client-field input,
+.nexops-mobile-client-field select,
+.nexops-mobile-custom-field-editor-row input {
+  width: 100%;
+  min-width: 0;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(8, 33, 49, 0.14);
+  background: #ffffff;
+  color: #10202c;
+  font: inherit;
+}
+
+.nexops-mobile-client-field input:focus,
+.nexops-mobile-client-field select:focus,
+.nexops-mobile-custom-field-editor-row input:focus {
+  outline: none;
+  border-color: #58b726;
+  box-shadow: 0 0 0 3px rgba(88, 183, 38, 0.14);
+}
+
+.nexops-mobile-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #173344;
+  font-weight: 600;
+}
+
+.nexops-mobile-toggle-row input {
+  width: 22px;
+  height: 22px;
+}
+
+.nexops-mobile-inline-link {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #4d991f;
+  font-size: 0.98rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nexops-mobile-inline-link.danger {
+  color: #b23b2c;
+}
+
+.nexops-mobile-helper-note,
+.nexops-mobile-validation-note {
+  margin: 0;
+  color: #62717a;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.nexops-mobile-validation-note {
+  color: #a33c2a;
+}
+
+.nexops-mobile-two-up {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nexops-mobile-custom-field-list,
+.nexops-mobile-client-list,
+.nexops-mobile-work-list,
+.nexops-mobile-question-answer-list,
+.nexops-mobile-custom-field-readonly {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-mobile-custom-field-row,
+.nexops-mobile-custom-field-editor-row {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-mobile-client-list-row,
+.nexops-mobile-work-row {
+  width: 100%;
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  background: #ffffff;
+  color: inherit;
+  text-align: left;
+}
+
+.nexops-mobile-client-list-row.active {
+  border-color: rgba(37, 210, 56, 0.28);
+  box-shadow: 0 10px 24px rgba(37, 210, 56, 0.12);
+}
+
+.nexops-mobile-client-list-row strong,
+.nexops-mobile-work-row strong,
+.nexops-mobile-question-answer-list strong,
+.nexops-mobile-custom-field-readonly strong {
+  color: #132a39;
+}
+
+.nexops-mobile-client-list-row small,
+.nexops-mobile-work-row small {
+  color: #6a7986;
+}
+
+.nexops-mobile-client-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: grid;
+  gap: 12px;
+  padding: 14px 20px 20px;
+  background: linear-gradient(180deg, rgba(246, 247, 242, 0) 0%, #f6f7f2 28%, #f6f7f2 100%);
+}
+
+.nexops-mobile-client-footer p {
+  margin: 0;
+  color: #667884;
+  font-size: 0.94rem;
+  text-align: center;
+}
+
+.nexops-mobile-client-footer button,
+.nexops-mobile-create-button,
+.nexops-mobile-note-actions button:first-child {
+  width: 100%;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #D4FF20 0%, #25D238 100%));
+  color: #0f1e14;
+  font-size: 1.06rem;
+  font-weight: 800;
+  box-shadow: 0 18px 34px rgba(37, 210, 56, 0.18);
+}
+
+.nexops-mobile-client-footer button:disabled {
+  opacity: 0.42;
+  box-shadow: none;
+}
+
+.nexops-mobile-profile-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-mobile-profile-summary-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-mobile-profile-summary-head h1 {
+  flex: 1 1 auto;
+}
+
+.nexops-mobile-profile-summary h1 {
+  margin: 0;
+  font-size: 2.1rem;
+  line-height: 1.05;
+  font-weight: 800;
+  color: #113248;
+}
+
+.nexops-mobile-profile-edit-button {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at top right, rgba(74, 195, 170, 0.22), transparent 42%),
+    linear-gradient(135deg, #081a27 0%, #0d2830 54%, #13595a 100%);
+  color: #d4ff20;
+  box-shadow: 0 14px 28px rgba(7, 20, 27, 0.18);
+}
+
+.nexops-mobile-profile-edit-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.nexops-mobile-profile-subtitle {
+  margin: -4px 0 0;
+  color: #5f7180;
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.nexops-mobile-profile-contact-rail {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-mobile-profile-contact-link {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  color: #183545;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.nexops-mobile-profile-contact-link span:last-child {
+  min-width: 0;
+  word-break: break-word;
+}
+
+.nexops-mobile-profile-contact-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  color: #4d991f;
+}
+
+.nexops-mobile-profile-contact-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.nexops-mobile-balance-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  color: #263e4d;
+}
+
+.nexops-mobile-balance-row strong {
+  font-size: 1.8rem;
+}
+
+.nexops-mobile-profile-nav {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: grid;
+  gap: 8px;
+  padding: 10px 0 12px;
+  background: linear-gradient(180deg, #f6f7f2 0%, #f6f7f2 78%, rgba(246, 247, 242, 0.92) 100%);
+}
+
+.nexops-mobile-bucket-tabs,
+.nexops-mobile-subsection-tabs,
+.nexops-mobile-filter-pills {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.nexops-mobile-bucket-tabs button,
+.nexops-mobile-filter-pills button {
+  flex: 0 0 auto;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #e8ebe4;
+  color: #243746;
+  font-weight: 700;
+}
+
+.nexops-mobile-bucket-tabs button.active,
+.nexops-mobile-filter-pills button.active {
+  background: #113248;
+  color: #ffffff;
+}
+
+.nexops-mobile-subsection-tabs button {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #4d5c68;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.nexops-mobile-subsection-tabs button.active {
+  border-color: rgba(37, 210, 56, 0.28);
+  background: rgba(212, 255, 32, 0.24);
+  color: #133340;
+  box-shadow: 0 10px 24px rgba(37, 210, 56, 0.12);
+}
+
+.nexops-mobile-subsection-shell {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 4px 16px;
+  margin-left: 6px;
+  border-left: 3px solid rgba(37, 210, 56, 0.22);
+  border-radius: 0 18px 18px 0;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.nexops-mobile-subsection-shell small {
+  color: #667784;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nexops-mobile-profile-content {
+  display: grid;
+  gap: 14px;
+}
+
+.nexops-mobile-client-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.nexops-mobile-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.nexops-mobile-section-banner {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at right center, rgba(74, 195, 170, 0.2), transparent 32%),
+    linear-gradient(135deg, #081a27 0%, #0d2830 54%, #13595a 100%);
+  box-shadow: 0 14px 28px rgba(7, 20, 27, 0.18);
+}
+
+.nexops-mobile-section-banner .eyebrow {
+  margin-bottom: 6px;
+}
+
+.nexops-mobile-section-head h2,
+.nexops-mobile-profile-section h2 {
+  margin: 0;
+  color: #173344;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.nexops-mobile-section-head .nexops-mobile-section-banner h2 {
+  display: inline-block;
+  background: linear-gradient(135deg, #f3ffbf 0%, #d4ff20 42%, #25d238 100%);
+  background-size: 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+}
+
+.nexops-mobile-section-head button {
+  border: 0;
+  background: none;
+  color: #4b991e;
+  font-size: 1.25rem;
+}
+
+.nexops-mobile-key-value {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.nexops-mobile-key-value div {
+  display: grid;
+  gap: 3px;
+}
+
+.nexops-mobile-key-value dd {
+  margin: 0;
+  color: #172d3b;
+  font-weight: 600;
+}
+
+.nexops-mobile-address-block {
+  color: #172d3b;
+  line-height: 1.5;
+}
+
+.nexops-mobile-work-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.nexops-mobile-work-row span {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #425564;
+  font-size: 0.93rem;
+  font-weight: 700;
+}
+
+.nexops-mobile-work-row span::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--status-dot, #4d991f);
+}
+
+.nexops-mobile-note-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  gap: 12px;
+}
+
+.nexops-mobile-note-actions button:last-child {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  font-size: 1.35rem;
+}
+
+.nexops-mobile-file-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nexops-mobile-file-tile {
+  min-height: 96px;
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 18px;
+  background: #f2f4ef;
+  border: 1px solid rgba(8, 33, 49, 0.08);
+}
+
+.nexops-mobile-file-tile.document {
+  background: #ffffff;
+}
+
+.nexops-mobile-file-tile span {
+  color: #6a7986;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.nexops-mobile-file-tile strong {
+  color: #173344;
+  font-size: 0.92rem;
+  line-height: 1.3;
 }
 
 .auth-error {
@@ -2929,12 +5248,35 @@ h1 {
   }
 
   .nexops-app-sidebar {
-    position: static;
-    height: auto;
+    display: none;
   }
 
-  .nexops-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .nexops-mobile-bar {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(120deg, rgba(7, 14, 20, 0.98) 0%, rgba(10, 31, 35, 0.98) 58%, rgba(14, 84, 87, 0.96) 100%);
+    backdrop-filter: blur(12px);
+    overflow: clip;
+  }
+
+  .nexops-mobile-nav-layer {
+    display: flex;
+  }
+
+  .nexops-web-topbar {
+    display: none;
+  }
+
+  .nexops-dashboard,
+  .nexops-module-page {
+    gap: 18px;
+    padding: 22px 16px 34px;
   }
 
   .nexops-web-topbar,
@@ -2942,6 +5284,10 @@ h1 {
   .nexops-web-tools {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .nexops-web-account-tools {
+    justify-content: space-between;
   }
 
   .nexops-client-stats,
@@ -2993,9 +5339,57 @@ h1 {
     margin-left: 0;
   }
 
+  .nexops-page-heading {
+    gap: 14px;
+  }
+
+  .nexops-page-heading h1 {
+    font-size: clamp(1.8rem, 9vw, 2.25rem);
+  }
+
+  .nexops-mobile-header-grid {
+    column-gap: 10px;
+  }
+
+  .nexops-page-heading > button,
+  .nexops-page-heading .nexops-inline-actions button,
+  .refresh-button,
+  .nexops-web-tools button {
+    border: 1px solid rgba(8, 33, 49, 0.14);
+    color: #173344;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .nexops-create-menu-flyout {
+    top: 72px;
+    width: min(820px, calc(100vw - 32px));
+    max-height: calc(100vh - 96px);
+    padding: 20px;
+  }
+
+  .nexops-mobile-create-fab {
+    display: inline-flex;
+  }
+
+  .nexops-create-menu-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .nexops-client-controls input,
-  .nexops-web-tools input {
+  .nexops-web-tools input,
+  .nexops-mobile-search input {
     width: 100%;
+  }
+
+  .nexops-notification-panel {
+    position: fixed;
+    top: 88px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-height: calc(100vh - 112px);
+    overflow: auto;
   }
 
   .nexops-client-table-card {
@@ -3023,6 +5417,23 @@ h1 {
     position: static;
   }
 
+  .nexops-kit-action-secondary,
+  .nexops-kit-action-quiet,
+  .nexops-kit-action-warning,
+  .nexops-kit-action-blocked {
+    border-color: rgba(8, 33, 49, 0.14);
+    color: #173344;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .nexops-kit-action-dominant,
+  .nexops-kit-action-success {
+    color: #08100c;
+    background: var(--nexops-brand-gradient, var(--nexteam-gradient));
+    box-shadow: 0 12px 24px rgba(37, 210, 56, 0.18);
+  }
+
   .nexops-drawer {
     width: min(calc(100vw - 24px), 720px);
     height: calc(100vh - 24px);
@@ -3046,6 +5457,10 @@ h1 {
     text-align: left;
   }
 
+  .nexops-client-form-page-head {
+    padding: 20px 18px;
+  }
+
   .nexops-client-form-brand {
     align-items: flex-start;
     flex-direction: column;
@@ -3067,6 +5482,10 @@ h1 {
     padding: 18px;
   }
 
+  .nexops-client-form-page .nexops-form-section {
+    margin: 0 14px;
+  }
+
   .nexops-field-row .nexops-field,
   .nexops-field-row .nexops-field:first-child,
   .nexops-field-row .nexops-field:last-child {
@@ -3079,6 +5498,11 @@ h1 {
     padding: 16px 14px;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .nexops-client-form-page-actions {
+    margin: 0;
+    padding: 16px 14px 18px;
   }
 
   .ops-grid {
@@ -3290,6 +5714,48 @@ h1 {
 .nexops-job-status.status-complete {
   background: rgba(235, 239, 244, 0.94);
   color: #4a6272;
+}
+
+.nexops-signature-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.nexops-signature-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nexops-signature-tabs button {
+  border: 1px solid rgba(10, 39, 64, 0.14);
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-strong);
+  font: inherit;
+  font-weight: 700;
+}
+
+.nexops-signature-tabs button.active {
+  border-color: rgba(28, 177, 94, 0.34);
+  background: rgba(232, 255, 237, 0.94);
+  box-shadow: 0 10px 22px rgba(28, 177, 94, 0.12);
+}
+
+.nexops-signature-drawn {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-signature-canvas {
+  width: 100%;
+  max-width: 720px;
+  min-height: 180px;
+  border: 1px dashed rgba(10, 39, 64, 0.2);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff, #f4fbfb);
+  touch-action: none;
 }
 
 .nexops-jobs-bullets {
@@ -3770,5 +6236,1360 @@ h1 {
 
   .nexops-kit-field-header-actions {
     justify-content: start;
+  }
+}
+
+.nexops-web-main {
+  position: relative;
+}
+
+.nexops-module-status {
+  margin: 12px 0 0;
+  color: #526675;
+}
+
+.nexops-primary-inline-button {
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
+  color: #0c1118;
+  font-weight: 800;
+}
+
+.nexops-home-surface,
+.nexops-schedule-surface {
+  display: grid;
+  gap: 20px;
+}
+
+.nexops-home-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 18px;
+}
+
+.nexops-home-health-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nexops-home-health-metric {
+  padding: 18px 20px;
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.nexops-home-health-metric span,
+.nexops-home-health-metric small {
+  display: block;
+  color: #6b7380;
+}
+
+.nexops-home-health-metric strong {
+  display: block;
+  margin: 6px 0;
+  color: #0c1825;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.nexops-home-queue-grid,
+.nexops-home-queue-group,
+.nexops-home-queue-list,
+.nexops-home-technician-rail,
+.nexops-home-visit-list,
+.nexops-activity-feed,
+.nexops-schedule-list,
+.nexops-schedule-unscheduled-list,
+.nexops-schedule-draft-list {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-home-section-head {
+  margin-bottom: 6px;
+}
+
+.nexops-home-section-head .eyebrow,
+.nexops-notification-head .eyebrow {
+  margin: 0 0 6px;
+}
+
+.nexops-home-section-head h2,
+.nexops-notification-head h2 {
+  margin: 0;
+  color: #0c1825;
+}
+
+.nexops-home-queue-row,
+.nexops-home-visit-row,
+.nexops-activity-row,
+.nexops-schedule-unscheduled-row,
+.nexops-notification-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.84);
+  text-align: left;
+}
+
+.nexops-home-queue-row-main,
+.nexops-activity-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.nexops-home-queue-row strong,
+.nexops-home-visit-row strong,
+.nexops-activity-row strong,
+.nexops-schedule-unscheduled-row strong,
+.nexops-notification-row strong {
+  color: #0c1825;
+  font-size: 1rem;
+}
+
+.nexops-home-queue-row p,
+.nexops-home-visit-row p,
+.nexops-activity-row p,
+.nexops-schedule-unscheduled-row p,
+.nexops-notification-row p {
+  margin: 0;
+  color: #586170;
+  line-height: 1.35;
+}
+
+.nexops-home-queue-row-stats,
+.nexops-home-visit-row span,
+.nexops-activity-meta,
+.nexops-schedule-unscheduled-meta {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  color: #0c1825;
+}
+
+.nexops-home-queue-row-stats span,
+.nexops-schedule-unscheduled-meta span {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.nexops-home-queue-row-stats small,
+.nexops-home-visit-row small,
+.nexops-activity-meta small,
+.nexops-schedule-unscheduled-meta small {
+  color: #6b7380;
+}
+
+.nexops-home-queue-chevron {
+  color: #8c97a5;
+  font-size: 1.35rem;
+}
+
+.nexops-home-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nexops-home-filter-row button {
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 999px;
+  padding: 9px 14px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #526675;
+}
+
+.nexops-home-filter-row button.active {
+  border-color: rgba(12, 17, 24, 0.18);
+  background: #0f6a67;
+  color: #f8fffc;
+}
+
+.nexops-notification-button {
+  position: relative;
+}
+
+.nexops-notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #d7263d;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.nexops-notification-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.nexops-notification-panel {
+  position: absolute;
+  top: 92px;
+  right: 24px;
+  width: min(420px, calc(100% - 24px));
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 60px rgba(12, 17, 24, 0.18);
+  z-index: 12;
+}
+
+.nexops-notification-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-notification-head button {
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #f4f7f2;
+}
+
+.nexops-notification-list {
+  display: grid;
+  gap: 10px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.nexops-notification-row.unread {
+  border-color: rgba(15, 106, 103, 0.24);
+  background: rgba(233, 248, 244, 0.96);
+}
+
+.nexops-schedule-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.nexops-schedule-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nexops-schedule-toolbar-actions input,
+.nexops-overlay-form input,
+.nexops-overlay-form select,
+.nexops-overlay-form textarea,
+.nexops-schedule-team-filter summary {
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.nexops-schedule-team-filter {
+  position: relative;
+}
+
+.nexops-schedule-team-filter summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.nexops-schedule-team-options {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(12, 17, 24, 0.14);
+  z-index: 6;
+}
+
+.nexops-schedule-team-options label,
+.nexops-inline-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nexops-schedule-team-options button {
+  justify-self: start;
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #f4f7f2;
+}
+
+.nexops-schedule-unscheduled {
+  display: grid;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(12, 17, 24, 0.08);
+}
+
+.nexops-schedule-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nexops-schedule-week-day,
+.nexops-schedule-slot,
+.nexops-schedule-month-cell {
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.nexops-schedule-week-day header,
+.nexops-schedule-month-day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.nexops-schedule-week-day header button,
+.nexops-schedule-month-day,
+.nexops-schedule-slot-label,
+.nexops-schedule-week-slot-label {
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.nexops-schedule-week-slots,
+.nexops-schedule-day-grid,
+.nexops-schedule-slot-visits,
+.nexops-schedule-week-slot {
+  display: grid;
+  gap: 8px;
+}
+
+.nexops-schedule-week-slot,
+.nexops-schedule-slot {
+  padding: 12px;
+}
+
+.nexops-schedule-slot-label,
+.nexops-schedule-week-slot-label {
+  color: #6b7380;
+  font-size: 0.85rem;
+}
+
+.nexops-schedule-month-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nexops-schedule-month-day {
+  width: 100%;
+}
+
+.nexops-schedule-month-day strong {
+  font-size: 1.2rem;
+}
+
+.nexops-schedule-month-day span {
+  color: #6b7380;
+  font-size: 0.85rem;
+}
+
+.nexops-schedule-month-visits {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.nexops-schedule-visit {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  border-left-width: 4px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.nexops-schedule-visit.compact {
+  padding: 12px;
+}
+
+.nexops-schedule-visit.read-only {
+  opacity: 0.74;
+}
+
+.nexops-schedule-visit-main,
+.nexops-schedule-visit-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-schedule-visit-main {
+  align-items: start;
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
+  padding: 0;
+}
+
+.nexops-schedule-visit-main strong,
+.nexops-schedule-visit-main p,
+.nexops-schedule-visit-main small {
+  display: block;
+  margin: 0;
+}
+
+.nexops-schedule-visit-main p {
+  color: #0c1825;
+  margin-top: 4px;
+}
+
+.nexops-schedule-visit-main small,
+.nexops-schedule-visit-meta {
+  color: #6b7380;
+}
+
+.nexops-schedule-visit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.84rem;
+}
+
+.nexops-schedule-visit-actions button,
+.nexops-overlay-head button,
+.nexops-overlay-actions button,
+.nexops-schedule-draft-head button {
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #f4f7f2;
+}
+
+.nexops-tone-success {
+  border-left-color: #2a9d5b;
+}
+
+.nexops-tone-warning {
+  border-left-color: #c88318;
+}
+
+.nexops-tone-danger {
+  border-left-color: #c54545;
+}
+
+.nexops-tone-secondary {
+  border-left-color: #7a8795;
+}
+
+.nexops-overlay-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.nexops-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(12, 17, 24, 0.42);
+}
+
+.nexops-overlay-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(840px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  transform: translate(-50%, -50%);
+  padding: 22px;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 28px 80px rgba(12, 17, 24, 0.28);
+}
+
+.nexops-overlay-panel.compact {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.nexops-create-menu-backdrop {
+  cursor: pointer;
+}
+
+.nexops-create-menu {
+  position: fixed;
+  z-index: 31;
+  display: grid;
+  gap: 20px;
+  box-sizing: border-box;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 28px 80px rgba(12, 17, 24, 0.22);
+}
+
+.nexops-create-menu-flyout {
+  top: 92px;
+  left: 50%;
+  width: min(980px, calc(100vw - 48px));
+  max-height: calc(100vh - 124px);
+  overflow: auto;
+  transform: translateX(-50%);
+  padding: 24px;
+  border-radius: 28px;
+}
+
+.nexops-create-menu-sheet {
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  width: auto;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  padding: 18px;
+  border-radius: 32px;
+}
+
+.nexops-create-menu-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid rgba(8, 33, 49, 0.08);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(213, 255, 47, 0.16), rgba(37, 210, 56, 0.08) 55%, rgba(255, 255, 255, 0.96));
+}
+
+.nexops-create-menu-head > div {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.nexops-create-menu-head .eyebrow,
+.nexops-create-menu-head h2,
+.nexops-create-menu-head p {
+  margin: 0;
+}
+
+.nexops-create-menu-head h2 {
+  color: #082131;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  line-height: 1;
+}
+
+.nexops-create-menu-head p:last-child {
+  color: #526675;
+  line-height: 1.5;
+}
+
+.nexops-create-menu-head button {
+  flex: 0 0 auto;
+  border: 1px solid rgba(8, 33, 49, 0.14);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: #082131;
+  background: #f7faf7;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nexops-create-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.nexops-create-menu-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+  min-height: 104px;
+  padding: 18px 16px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 22px;
+  color: #082131;
+  background: linear-gradient(180deg, #ffffff, #f6faf6);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.nexops-create-menu-option:hover,
+.nexops-create-menu-option:focus-visible {
+  border-color: rgba(37, 210, 56, 0.28);
+  box-shadow: 0 16px 28px rgba(12, 17, 24, 0.08);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.nexops-create-menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  color: #0d3d44;
+  background: linear-gradient(135deg, rgba(212, 255, 32, 0.22), rgba(37, 210, 56, 0.2));
+}
+
+.nexops-create-menu-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.nexops-create-menu-copy {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.nexops-create-menu-copy strong,
+.nexops-create-menu-copy small {
+  display: block;
+}
+
+.nexops-create-menu-copy strong {
+  color: #082131;
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.nexops-create-menu-copy small {
+  color: #526675;
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+.nexcam-review-panel {
+  width: min(1100px, calc(100vw - 32px));
+}
+
+.nexcam-review-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.75fr);
+  gap: 18px;
+}
+
+.nexcam-review-stage-card,
+.nexcam-review-sidebar {
+  display: grid;
+  gap: 14px;
+}
+
+.nexcam-review-stage {
+  position: relative;
+  overflow: hidden;
+  min-height: 360px;
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  border-radius: 18px;
+  background: #eef4f2;
+}
+
+.nexcam-review-stage.draw-mode {
+  cursor: crosshair;
+}
+
+.nexcam-review-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 68vh;
+  object-fit: contain;
+  background: #dfe9e4;
+}
+
+.nexcam-review-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.nexcam-comment-list li {
+  display: grid;
+  gap: 4px;
+}
+
+.nexcam-comment-list span {
+  color: #243235;
+}
+
+.nexops-overlay-form,
+.nexops-schedule-draft-card,
+.nexops-schedule-assignment-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.nexops-overlay-head,
+.nexops-schedule-draft-head,
+.nexops-overlay-actions {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-schedule-draft-card {
+  padding: 16px;
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  border-radius: 18px;
+  background: #fbfcfb;
+}
+
+.nexops-schedule-assignment-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.nexops-schedule-assignment-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.nexops-schedule-assignment-grid label.active {
+  border-color: rgba(15, 106, 103, 0.28);
+  background: rgba(233, 248, 244, 0.96);
+}
+
+.nexops-field-row.three-up {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nexops-capture-workspace .nexops-module-grid {
+  align-items: start;
+}
+
+.nexops-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(167, 230, 0, 0.18);
+  color: var(--nexops-brand-text, #101822);
+  font-weight: 700;
+}
+
+.nexops-inline-meta {
+  margin: 0 0 0.9rem;
+  color: var(--nexops-brand-muted, #68717c);
+  font-size: 0.95rem;
+}
+
+.nexops-capture-media-list li,
+.nexops-capture-batch-list li,
+.nexops-inline-editor {
+  gap: 1rem;
+}
+
+.nexops-capture-decision-row,
+.nexops-capture-assignment-panel,
+.nexops-success-banner,
+.nexops-warning-banner,
+.nexops-inline-editor {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  border-radius: 1rem;
+  background: rgba(245, 247, 241, 0.8);
+}
+
+.nexops-capture-decision-row,
+.nexops-inline-editor .nexops-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.nexops-capture-assignment-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.nexops-capture-preview-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.nexops-capture-preview-image {
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  background: rgba(16, 24, 34, 0.04);
+}
+
+.nexops-capture-preview-footnote {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin-top: 0.85rem;
+  color: var(--nexops-brand-muted, #68717c);
+  font-size: 0.92rem;
+}
+
+.nexops-capture-carousel {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(120px, 150px);
+  gap: 0.85rem;
+  margin-top: 1rem;
+  padding-bottom: 0.35rem;
+  overflow-x: auto;
+}
+
+.nexops-capture-thumb {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.55rem;
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.94);
+  text-align: left;
+  color: var(--nexops-brand-text, #101822);
+}
+
+.nexops-capture-thumb img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 0.7rem;
+  background: rgba(16, 24, 34, 0.04);
+}
+
+.nexops-capture-thumb span {
+  font-weight: 700;
+}
+
+.nexops-capture-thumb small {
+  color: var(--nexops-brand-muted, #68717c);
+}
+
+.nexops-capture-thumb.active {
+  border-color: rgba(37, 210, 56, 0.42);
+  box-shadow: 0 0 0 2px rgba(37, 210, 56, 0.12);
+}
+
+.nexops-list-select {
+  width: 100%;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(12, 17, 24, 0.08);
+  border-radius: 0.9rem;
+  background: #fff;
+  text-align: left;
+  color: var(--nexops-brand-text, #101822);
+}
+
+.nexops-list-select.active {
+  border-color: rgba(37, 210, 56, 0.5);
+  background: rgba(212, 255, 32, 0.18);
+}
+
+.nexops-list-select small,
+.nexops-success-banner span,
+.nexops-warning-banner span,
+.nexops-inline-editor small {
+  color: var(--nexops-brand-muted, #68717c);
+}
+
+.nexops-client-media-label > small:last-child {
+  display: none;
+}
+
+.nexops-client-media-meta {
+  display: block;
+}
+
+.nexops-success-banner {
+  background: rgba(37, 210, 56, 0.1);
+}
+
+.nexops-warning-banner {
+  background: rgba(255, 228, 156, 0.28);
+}
+
+@media (max-width: 1080px) {
+  .nexops-home-layout,
+  .nexops-schedule-month-grid,
+  .nexops-schedule-week-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nexcam-review-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .nexops-home-health-strip,
+  .nexops-field-row.three-up {
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-notification-panel {
+    top: 72px;
+    right: 12px;
+    width: calc(100% - 24px);
+  }
+
+  .nexops-schedule-toolbar,
+  .nexops-overlay-head,
+  .nexops-overlay-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nexops-schedule-toolbar-actions {
+    width: 100%;
+  }
+
+  .nexops-schedule-team-options {
+    right: auto;
+    left: 0;
+  }
+
+  .nexops-capture-carousel {
+    grid-auto-columns: minmax(110px, 132px);
+  }
+}
+
+@media (max-width: 560px) {
+  .nexops-mobile-bar {
+    gap: 10px;
+    padding: 14px 12px;
+    overflow-x: clip;
+  }
+
+  .nexops-mobile-header-grid {
+    column-gap: 8px;
+  }
+
+  .nexops-mobile-brand-lockup {
+    gap: 4px;
+  }
+
+  .nexops-mobile-platform-mark {
+    width: 52px;
+    height: 52px;
+  }
+
+  .nexops-mobile-product-logo {
+    width: 94px;
+    max-height: 24px;
+  }
+
+  .nexops-mobile-tenant-mark.tenant-logo {
+    max-width: 128px;
+    max-height: 34px;
+  }
+
+  .nexops-mobile-tenant-mark.tenant-wordmark {
+    max-width: 128px;
+    font-size: 0.8rem;
+  }
+
+  .nexops-mobile-icon-button,
+  .nexops-mobile-menu-button {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+  }
+
+  .nexops-mobile-create-fab {
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    min-width: 60px;
+    height: 60px;
+    padding: 0 18px;
+    font-size: 0.9rem;
+  }
+
+  .nexops-mobile-create-fab.collapsed {
+    width: 60px;
+    min-width: 60px;
+  }
+
+  .nexops-mobile-nav-sheet {
+    width: min(320px, calc(100vw - 20px));
+    margin: 10px;
+    padding: 18px 16px 16px;
+  }
+}
+.nexreach-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(250px, 310px) minmax(0, 1fr);
+  background:
+    radial-gradient(circle at top left, rgba(40, 255, 163, 0.14), transparent 26%),
+    linear-gradient(180deg, #f7fbf9 0%, #edf6f2 100%);
+  color: #10211d;
+}
+
+.nexreach-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: rgba(16, 33, 29, 0.96);
+  color: #f3faf6;
+  border-right: 1px solid rgba(190, 214, 203, 0.18);
+}
+
+.nexreach-sidebar-copy h1 {
+  margin: 0.2rem 0 0.5rem;
+  font-size: 1.9rem;
+}
+
+.nexreach-sidebar-copy p,
+.nexreach-sidebar-meta {
+  color: rgba(243, 250, 246, 0.78);
+}
+
+.nexreach-sidebar-meta {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+}
+
+.nexreach-main {
+  padding: 1.5rem;
+}
+
+.nexreach-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.nexreach-header h2 {
+  margin: 0.35rem 0;
+  font-size: clamp(2rem, 3.4vw, 3rem);
+}
+
+.nexreach-inline-label {
+  color: #0c8f78;
+}
+
+.nexreach-header p {
+  margin: 0;
+  color: #49655b;
+}
+
+.nexreach-header-actions,
+.nexreach-card-actions,
+.nexreach-filter-row,
+.nexreach-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.nexreach-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.nexreach-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(183, 205, 193, 0.72);
+  border-radius: 24px;
+  padding: 1.2rem;
+  box-shadow: 0 18px 40px rgba(18, 45, 39, 0.08);
+}
+
+.nexreach-settings-card {
+  grid-column: 1 / -1;
+}
+
+.nexreach-card-header,
+.nexreach-draft-meta,
+.nexreach-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.nexreach-card-header h3 {
+  margin: 0.1rem 0 0;
+  font-size: 1.2rem;
+}
+
+.nexreach-card-header > span {
+  color: #49655b;
+  font-size: 0.92rem;
+}
+
+.nexreach-eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  color: #0c8f78;
+}
+
+.nexreach-list {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.nexreach-list-item,
+.nexreach-draft-card {
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(192, 211, 201, 0.76);
+  background: rgba(245, 250, 247, 0.92);
+}
+
+.nexreach-draft-card {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.nexreach-list-item strong,
+.nexreach-draft-card strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.nexreach-list-item p,
+.nexreach-draft-card p,
+.nexreach-note-list {
+  margin: 0.2rem 0 0;
+  color: #4a655c;
+}
+
+.nexreach-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.nexreach-badge-eligible,
+.nexreach-badge-ready,
+.nexreach-badge-live {
+  background: rgba(62, 225, 143, 0.16);
+  color: #106a42;
+}
+
+.nexreach-badge-pending,
+.nexreach-badge-drafted,
+.nexreach-badge-review_required {
+  background: rgba(255, 226, 120, 0.2);
+  color: #895d00;
+}
+
+.nexreach-badge-blocked_consent,
+.nexreach-badge-rejected {
+  background: rgba(244, 151, 151, 0.2);
+  color: #8a1e1e;
+}
+
+.nexreach-primary-button,
+.nexreach-ghost-button,
+.nexreach-ghost-link,
+.nexreach-chip {
+  border-radius: 999px;
+  font: inherit;
+  text-decoration: none;
+}
+
+.nexreach-primary-button {
+  border: none;
+  background: linear-gradient(135deg, #5bd43d 0%, #d8ff00 100%);
+  color: #12211d;
+  padding: 0.78rem 1.15rem;
+  font-weight: 800;
+  box-shadow: 0 12px 24px rgba(112, 245, 58, 0.2);
+}
+
+.nexreach-ghost-button,
+.nexreach-ghost-link,
+.nexreach-chip {
+  border: 1px solid rgba(171, 196, 184, 0.92);
+  background: #fff;
+  color: #17352d;
+  padding: 0.7rem 1rem;
+}
+
+.nexreach-chip.active {
+  background: rgba(92, 212, 61, 0.15);
+  border-color: rgba(92, 212, 61, 0.4);
+}
+
+.nexreach-card label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  color: #355148;
+}
+
+.nexreach-card input,
+.nexreach-card textarea {
+  width: 100%;
+  border: 1px solid rgba(180, 203, 192, 0.95);
+  border-radius: 16px;
+  padding: 0.85rem 1rem;
+  background: #fff;
+  color: #10211d;
+  font: inherit;
+}
+
+.nexreach-filter-row input {
+  flex: 1 1 160px;
+}
+
+.nexreach-empty {
+  margin: 0;
+  color: #667f76;
+}
+
+.nexreach-note-list {
+  padding-left: 1rem;
+}
+
+.nexreach-portfolio-link {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: rgba(22, 168, 122, 0.08);
+  border: 1px solid rgba(22, 168, 122, 0.18);
+  word-break: break-all;
+}
+
+.nexreach-settings-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+@media (max-width: 1080px) {
+  .nexreach-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .nexreach-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .nexops-create-menu-sheet {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    max-width: calc(100vw - 16px);
+    padding: 16px;
+    border-radius: 26px;
+  }
+
+  .nexops-create-menu-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nexops-create-menu-head button {
+    align-self: flex-start;
+  }
+
+  .nexops-create-menu-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-create-menu-option {
+    min-height: 0;
+    padding: 16px 14px;
+  }
+
+  .nexops-client-profile-heading,
+  .nexops-client-profile-grid.two-up,
+  .nexops-client-profile-meta,
+  .nexops-client-profile-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nexops-client-profile-header-card,
+  .nexops-client-profile-panel {
+    padding: 18px;
+  }
+
+  .nexreach-main,
+  .nexreach-sidebar {
+    padding: 1rem;
+  }
+
+  .nexreach-header,
+  .nexreach-card-header,
+  .nexreach-draft-meta,
+  .nexreach-list-item {
+    flex-direction: column;
+  }
+
+  .nexreach-primary-button,
+  .nexreach-ghost-button,
+  .nexreach-ghost-link,
+  .nexreach-chip {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
   }
 }

@@ -19,9 +19,13 @@ import {
 } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../comms/gmailRegistry.js";
+import type { AccessContext } from "../auth/accessContext.js";
 import type { PlatformRepository } from "../platform/repository.js";
 import type { JobLifecycleService } from "./jobLifecycle.js";
 import type { LedgerService } from "./ledgerFoundation.js";
+import type { OperationsHubService } from "./operationsHub.js";
+import type { PortalHubService } from "./portalHubService.js";
+import type { ReviewSequenceService } from "./reviewSequenceService.js";
 import {
   availableRequestFields,
   buildServiceRequest,
@@ -29,7 +33,7 @@ import {
   ensureRequestForms,
   notifyRequestCreated
 } from "./requestFoundation.js";
-import { materializeQuoteRecord, quoteComposerInputSchema, quotePreviewBody } from "./quoteFoundation.js";
+import { ensureQuoteConfiguration, materializeQuoteRecord, quoteComposerInputSchema, quotePreviewBody } from "./quoteFoundation.js";
 
 const clientLookupInputSchema = z.object({ q: z.string().default("") });
 const createClientInputSchema = z.object({
@@ -44,7 +48,7 @@ const createClientInputSchema = z.object({
   address: z.string().min(1).optional(),
   emails: z.array(z.string()).default([]),
   phones: z.array(z.string()).default([]),
-  consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
+  consent: z.object({ email: z.boolean(), sms: z.boolean(), marketing: z.boolean().optional() }).default({ email: false, sms: false, marketing: false })
 });
 export type CreateClientInput = z.infer<typeof createClientInputSchema>;
 const quoteStatusSchema = z.enum(["draft", "pending_approval", "sent", "change_requested", "approved", "approved_internal", "declined", "expired", "archived"]);
@@ -66,6 +70,43 @@ const listQuotesInputSchema = z.object({
 const getQuoteDetailInputSchema = z.object({
   quoteId: z.string().optional(),
   query: z.string().optional()
+});
+const listQuoteTemplatesInputSchema = z.object({
+  q: z.string().default("")
+});
+const listCatalogItemsInputSchema = z.object({
+  q: z.string().default(""),
+  visibleOnly: z.boolean().default(false)
+});
+const saveCatalogItemInputSchema = z.object({
+  id: z.string().optional(),
+  code: z.string().optional(),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  price: z.number().min(0),
+  tag: z.string().default("Service"),
+  taxable: z.boolean().default(true),
+  visible: z.boolean().default(true)
+});
+const listCommunicationTemplatesInputSchema = z.object({
+  q: z.string().default(""),
+  category: z.string().optional()
+});
+const saveCommunicationTemplateInputSchema = z.object({
+  id: z.string().optional(),
+  category: z.string().min(1),
+  label: z.string().min(1),
+  description: z.string().optional(),
+  emailEnabled: z.boolean().default(true),
+  smsEnabled: z.boolean().default(false),
+  emailSubject: z.string().optional(),
+  emailBody: z.string().optional(),
+  smsBody: z.string().optional()
+});
+const listTeamMembersInputSchema = z.object({
+  q: z.string().default(""),
+  role: z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]).optional(),
+  activeOnly: z.boolean().default(true)
 });
 const getPipelineInputSchema = z.object({
   from: z.string().optional(),
@@ -119,6 +160,144 @@ const jobActionToolInputSchema = z.object({
   query: z.string().optional(),
   action: z.enum(["close", "invoice", "close_and_invoice", "dismiss_invoice_reminder"])
 });
+const sendPortalLinkInputSchema = z.object({
+  clientId: z.string().min(1).optional(),
+  clientQuery: z.string().min(1).optional(),
+  propertyId: z.string().min(1).optional(),
+  target: z.string().optional(),
+  preferredChannel: z.enum(["email", "sms"]).optional(),
+  sourceObjectType: z.enum(["quote", "invoice"]).optional(),
+  sourceObjectId: z.string().min(1).optional()
+}).superRefine((value, ctx) => {
+  if (!value.clientId && !value.clientQuery?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "clientId or clientQuery is required.", path: ["clientQuery"] });
+  }
+  if (value.sourceObjectType && !value.sourceObjectId?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "sourceObjectId is required when sourceObjectType is provided.", path: ["sourceObjectId"] });
+  }
+});
+const clientPortalActivityInputSchema = z.object({
+  clientId: z.string().min(1).optional(),
+  clientQuery: z.string().min(1).optional(),
+  propertyId: z.string().min(1).optional()
+}).superRefine((value, ctx) => {
+  if (!value.clientId && !value.clientQuery?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "clientId or clientQuery is required.", path: ["clientQuery"] });
+  }
+});
+const statementToolInputSchema = z.object({
+  clientId: z.string().min(1).optional(),
+  clientQuery: z.string().min(1).optional(),
+  from: z.string().optional(),
+  to: z.string().optional()
+}).superRefine((value, ctx) => {
+  if (!value.clientId && !value.clientQuery?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "clientId or clientQuery is required.", path: ["clientQuery"] });
+  }
+});
+const sendStatementToolInputSchema = z.object({
+  clientId: z.string().min(1).optional(),
+  clientQuery: z.string().min(1).optional(),
+  from: z.string().optional(),
+  to: z.string().optional(),
+  target: z.string().optional()
+}).superRefine((value, ctx) => {
+  if (!value.clientId && !value.clientQuery?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "clientId or clientQuery is required.", path: ["clientQuery"] });
+  }
+});
+const reviewSequenceStatusInputSchema = z.object({
+  clientId: z.string().min(1).optional(),
+  clientQuery: z.string().min(1).optional(),
+  jobId: z.string().min(1).optional(),
+  jobQuery: z.string().min(1).optional()
+}).superRefine((value, ctx) => {
+  if (!value.clientId && !value.clientQuery?.trim() && !value.jobId && !value.jobQuery?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Provide a client or job to inspect review status.", path: ["clientQuery"] });
+  }
+});
+const reviewSequenceActionInputSchema = z.object({
+  reviewSequenceId: z.string().min(1).optional(),
+  jobId: z.string().min(1).optional(),
+  jobQuery: z.string().min(1).optional()
+}).superRefine((value, ctx) => {
+  if (!value.reviewSequenceId && !value.jobId && !value.jobQuery?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "reviewSequenceId or an exact job match is required.", path: ["jobQuery"] });
+  }
+});
+const startReviewSequenceToolInputSchema = z.object({
+  jobId: z.string().min(1).optional(),
+  jobQuery: z.string().min(1).optional()
+}).superRefine((value, ctx) => {
+  if (!value.jobId && !value.jobQuery?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "jobId or an exact job match is required.", path: ["jobQuery"] });
+  }
+});
+const workspaceRoleSchema = z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]);
+const workspaceAccessInputFields = {
+  role: workspaceRoleSchema.optional(),
+  tenantUserId: z.string().optional(),
+  tenantUserQuery: z.string().optional()
+} as const;
+const getScheduleInputSchema = z.object({
+  from: z.string().optional(),
+  to: z.string().optional(),
+  day: z.string().optional(),
+  teamMemberIds: z.array(z.string().min(1)).optional(),
+  teamMemberQuery: z.string().optional(),
+  includeUnscheduled: z.boolean().default(true),
+  ...workspaceAccessInputFields
+});
+const getActivityFeedInputSchema = z.object({
+  objectType: z.enum(["requests", "quotes", "jobs", "invoices", "payments"]).optional(),
+  limit: z.number().int().min(1).max(100).default(25),
+  ...workspaceAccessInputFields
+});
+const getHomeQueuesInputSchema = z.object({
+  ...workspaceAccessInputFields
+});
+const scheduleJobVisitsToolInputSchema = z.object({
+  jobId: z.string().min(1).optional(),
+  query: z.string().optional(),
+  visits: z.array(z.object({
+    title: z.string().optional(),
+    start: z.string().min(1),
+    end: z.string().min(1),
+    assignedTo: z.array(z.string().min(1)).optional(),
+    assignedTeamQuery: z.string().optional(),
+    details: z.string().optional()
+  })).min(1)
+}).superRefine((value, ctx) => {
+  if (!value.jobId && !value.query?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "jobId or query is required.", path: ["query"] });
+  }
+});
+const shiftJobVisitSeriesToolInputSchema = z.object({
+  visitId: z.string().min(1).optional(),
+  jobId: z.string().min(1).optional(),
+  query: z.string().optional(),
+  anchorStart: z.string().optional(),
+  start: z.string().optional(),
+  end: z.string().optional(),
+  shiftDays: z.number().int().optional(),
+  shiftHours: z.number().int().optional(),
+  shiftRemaining: z.boolean().default(true)
+}).superRefine((value, ctx) => {
+  if (!value.visitId && !value.jobId && !value.query?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "visitId or an exact job match is required.", path: ["query"] });
+  }
+  const hasAbsoluteMove = Boolean(value.start?.trim() && value.end?.trim());
+  const hasRelativeMove = Number.isFinite(value.shiftDays) || Number.isFinite(value.shiftHours);
+  if (!hasAbsoluteMove && !hasRelativeMove) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Provide start/end or a day/hour offset.", path: ["start"] });
+  }
+  if (value.start?.trim() && !value.end?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "end is required when start is provided.", path: ["end"] });
+  }
+  if (value.end?.trim() && !value.start?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "start is required when end is provided.", path: ["start"] });
+  }
+});
 const createRequestToolInputSchema = z.object({
   rawText: z.string().default(""),
   clientName: z.string().optional(),
@@ -139,12 +318,14 @@ interface InvoiceReadableProvider extends CRMProvider {
 }
 
 export interface CrmReadToolOptions {
-  fallbackClientProvider?: Pick<CRMProvider, "getClients"> | undefined;
   requestRepository?: NativeCrmRepository | undefined;
   platformRepository?: Pick<PlatformRepository, "listTenantUsers"> | undefined;
   commsRail?: CommsRail | undefined;
   jobLifecycleService?: JobLifecycleService | undefined;
   ledgerService?: Pick<LedgerService, "listInvoices"> | undefined;
+  operationsHubService?: OperationsHubService | undefined;
+  portalHubService?: PortalHubService | undefined;
+  reviewSequenceService?: ReviewSequenceService | undefined;
 }
 
 function source(ref: string, label: string, rail: Source["rail"] = "native"): Source {
@@ -159,24 +340,235 @@ function defaultRange(): { from: string; to: string } {
   return { from: "1970-01-01T00:00:00.000Z", to: "2100-01-01T00:00:00.000Z" };
 }
 
+function isoRangeForDay(day: string): { from: string; to: string } {
+  return {
+    from: `${day}T00:00:00.000Z`,
+    to: `${day}T23:59:59.999Z`
+  };
+}
+
+function shiftIso(value: string, deltaMs: number): string {
+  const next = new Date(new Date(value).getTime() + deltaMs);
+  return next.toISOString();
+}
+
 function normalizedPhone(value: string): string {
   return value.replace(/\D+/g, "");
 }
 
-function parseRequestAddress(value: string): { street1: string; city: string; province: string; postalCode: string } | null {
-  const match = value.trim().match(/^(.+?),\s*([^,]+),\s*([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/);
-  if (!match) {
+function slugifyToken(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "item";
+}
+
+async function resolveTenantUser(
+  tenantId: string,
+  platformRepository: Pick<PlatformRepository, "listTenantUsers"> | undefined,
+  input: { tenantUserId?: string | undefined; tenantUserQuery?: string | undefined; role?: z.infer<typeof workspaceRoleSchema> | undefined }
+): Promise<{ tenantUserId: string; role: z.infer<typeof workspaceRoleSchema> } | null> {
+  if (!platformRepository) {
+    if (input.tenantUserId?.trim()) {
+      return {
+        tenantUserId: input.tenantUserId.trim(),
+        role: input.role ?? "OWNER"
+      };
+    }
+    return input.role ? { tenantUserId: "nexi", role: input.role } : null;
+  }
+  const users = await platformRepository.listTenantUsers(tenantId);
+  if (input.tenantUserId?.trim()) {
+    const user = users.find((entry) => entry.id === input.tenantUserId?.trim());
+    if (!user) {
+      throw new RailError(`Tenant user ${input.tenantUserId} was not found.`, { provider: "native", op: "resolveTenantUser", status: 404 });
+    }
+    return { tenantUserId: user.id, role: input.role ?? user.role };
+  }
+  if (input.tenantUserQuery?.trim()) {
+    const needle = normalized(input.tenantUserQuery);
+    const matches = users.filter((user) =>
+      [user.displayName, user.email, user.role]
+        .filter(Boolean)
+        .some((value) => normalized(String(value)).includes(needle))
+    );
+    if (matches.length !== 1) {
+      throw new RailError("I need one exact team member match before I can scope that workspace view.", {
+        provider: "native",
+        op: "resolveTenantUser",
+        status: 400
+      });
+    }
+    return { tenantUserId: matches[0]!.id, role: input.role ?? matches[0]!.role };
+  }
+  const fallback = users.find((user) => user.role === "OWNER" && user.active) ?? users.find((user) => user.active) ?? users[0];
+  return fallback ? { tenantUserId: fallback.id, role: input.role ?? fallback.role } : (input.role ? { tenantUserId: "nexi", role: input.role } : null);
+}
+
+async function resolveWorkspaceAccess(
+  tenantId: string,
+  options: CrmReadToolOptions,
+  input: { tenantUserId?: string | undefined; tenantUserQuery?: string | undefined; role?: z.infer<typeof workspaceRoleSchema> | undefined }
+): Promise<AccessContext> {
+  const resolved = await resolveTenantUser(tenantId, options.platformRepository, input);
+  return {
+    tenantId,
+    tenantUserId: resolved?.tenantUserId ?? "nexi",
+    role: input.role ?? resolved?.role ?? "OWNER",
+    accessKind: "internal"
+  };
+}
+
+function catalogCodeSeed(value: string): string {
+  return value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 4)
+    .map((segment) => segment.slice(0, 3))
+    .join("-")
+    || "CUSTOM";
+}
+
+function sanitizeRequestAddress(value: string): string {
+  return value
+    .replace(/\b(?:telephone|phone|mobile|cell|text|email|e-mail)\b[\s\S]*$/i, "")
+    .replace(/(?:,?\s*(?:\+?1[\s.-]*)?(?:\(\d{3}\)|\d{3})[\s.-]*\d{3}[\s.-]*\d{4})\s*$/i, "")
+    .replace(/[?.!]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const US_STATE_ABBREVIATIONS: Record<string, string> = {
+  alabama: "AL",
+  alaska: "AK",
+  arizona: "AZ",
+  arkansas: "AR",
+  california: "CA",
+  colorado: "CO",
+  connecticut: "CT",
+  delaware: "DE",
+  florida: "FL",
+  georgia: "GA",
+  hawaii: "HI",
+  idaho: "ID",
+  illinois: "IL",
+  indiana: "IN",
+  iowa: "IA",
+  kansas: "KS",
+  kentucky: "KY",
+  louisiana: "LA",
+  maine: "ME",
+  maryland: "MD",
+  massachusetts: "MA",
+  michigan: "MI",
+  minnesota: "MN",
+  mississippi: "MS",
+  missouri: "MO",
+  montana: "MT",
+  nebraska: "NE",
+  nevada: "NV",
+  "new hampshire": "NH",
+  "new jersey": "NJ",
+  "new mexico": "NM",
+  "new york": "NY",
+  "north carolina": "NC",
+  "north dakota": "ND",
+  ohio: "OH",
+  oklahoma: "OK",
+  oregon: "OR",
+  pennsylvania: "PA",
+  "rhode island": "RI",
+  "south carolina": "SC",
+  "south dakota": "SD",
+  tennessee: "TN",
+  texas: "TX",
+  utah: "UT",
+  vermont: "VT",
+  virginia: "VA",
+  washington: "WA",
+  "west virginia": "WV",
+  wisconsin: "WI",
+  wyoming: "WY",
+  "district of columbia": "DC"
+};
+
+function normalizeStateProvince(value: string): string | null {
+  const normalized = value.trim().replace(/\./g, "").replace(/\s+/g, " ").toLowerCase();
+  if (!normalized) {
     return null;
   }
-  const street1 = match[1]!;
-  const city = match[2]!;
-  const province = match[3]!;
-  const postalCode = match[4]!;
+  if (/^[a-z]{2}$/i.test(normalized)) {
+    return normalized.toUpperCase();
+  }
+  return US_STATE_ABBREVIATIONS[normalized] ?? null;
+}
+
+function titleCaseAddressText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\b([a-z])/g, (_match, letter: string) => letter.toUpperCase());
+}
+
+function parseTrailingStateAndPostalCode(value: string): { head: string; province: string; postalCode: string } | null {
+  const zipMatch = value.match(/\s+(\d{5}(?:-\d{4})?)$/);
+  const postalCode = zipMatch?.[1]?.trim() ?? "";
+  const withoutZip = (zipMatch ? value.slice(0, zipMatch.index) : value).trim().replace(/,\s*$/, "");
+  const stateCandidates = Object.keys(US_STATE_ABBREVIATIONS)
+    .concat(Object.values(US_STATE_ABBREVIATIONS))
+    .sort((left, right) => right.length - left.length);
+  const lower = withoutZip.toLowerCase();
+  for (const candidate of stateCandidates) {
+    const normalizedCandidate = candidate.toLowerCase();
+    if (!lower.endsWith(` ${normalizedCandidate}`) && lower !== normalizedCandidate) {
+      continue;
+    }
+    const province = normalizeStateProvince(candidate);
+    if (!province) {
+      continue;
+    }
+    const head = withoutZip.slice(0, withoutZip.length - candidate.length).trim().replace(/,\s*$/, "");
+    if (!head) {
+      return null;
+    }
+    return { head, province, postalCode };
+  }
+  return null;
+}
+
+function parseRequestAddress(value: string): { street1: string; city: string; province: string; postalCode: string } | null {
+  const sanitized = sanitizeRequestAddress(value);
+  const match = sanitized.match(
+    /^(.+?\b(?:road|rd|drive|dr|lane|ln|street|st|avenue|ave|court|ct|trail|trl|way|circle|cir|boulevard|blvd|highway|hwy|place|pl|parkway|pkwy))\.?,?\s+([^,]+?),?\s+([A-Za-z]{2}|[A-Za-z]+(?:\s+[A-Za-z]+)*)(?:\s+(\d{5}(?:-\d{4})?))?$/i
+  );
+  if (match) {
+    const street1 = match[1]!;
+    const city = match[2]!;
+    const province = normalizeStateProvince(match[3]!);
+    const postalCode = match[4]?.trim() ?? "";
+    if (province) {
+      return {
+        street1: titleCaseAddressText(street1.trim()),
+        city: titleCaseAddressText(city.trim()),
+        province,
+        postalCode
+      };
+    }
+  }
+
+  const trailing = parseTrailingStateAndPostalCode(sanitized);
+  if (!trailing) {
+    return null;
+  }
+  const streetAndCity = trailing.head.match(
+    /^(.+?\b(?:road|rd|drive|dr|lane|ln|street|st|avenue|ave|court|ct|trail|trl|way|circle|cir|boulevard|blvd|highway|hwy|place|pl|parkway|pkwy))\.?,?\s+(.+)$/i
+  );
+  if (!streetAndCity?.[1] || !streetAndCity[2]) {
+    return null;
+  }
   return {
-    street1: street1.trim(),
-    city: city.trim(),
-    province: province.trim().toUpperCase(),
-    postalCode: postalCode.trim()
+    street1: titleCaseAddressText(streetAndCity[1].trim()),
+    city: titleCaseAddressText(streetAndCity[2].trim().replace(/,\s*$/, "")),
+    province: trailing.province,
+    postalCode: trailing.postalCode
   };
 }
 
@@ -229,7 +621,29 @@ function queuedClientRecord(tenantId: string, input: CreateClientInput) {
   };
 }
 
+function queuedClientPrimaryProperty(
+  tenantId: string,
+  client: ReturnType<typeof queuedClientRecord>,
+  input: CreateClientInput
+) {
+  const parsedAddress = input.address ? parseRequestAddress(input.address) : null;
+  if (!parsedAddress) {
+    return undefined;
+  }
+  return {
+    tenantId,
+    label: "Primary service address",
+    siteName: input.company?.trim() || client.name,
+    address: {
+      ...parsedAddress,
+      country: "USA"
+    },
+    billingAddressSameAsClient: true
+  };
+}
+
 function queuedClientPreviewBody(client: ReturnType<typeof queuedClientRecord>, input: CreateClientInput): string {
+  const parsedAddress = input.address ? parseRequestAddress(input.address) : null;
   const contactSummary = (client.contacts ?? []).map((contact) => {
     const person = [contact.personName?.firstName, contact.personName?.lastName].filter(Boolean).join(" ");
     const channels = contact.channelPreference === "both" ? "email + one-way text" : contact.channelPreference;
@@ -242,10 +656,12 @@ function queuedClientPreviewBody(client: ReturnType<typeof queuedClientRecord>, 
     client.emails.length ? `Email: ${client.emails.join(", ")}` : "Email: not provided",
     client.phones.length ? `Phone: ${client.phones.join(", ")}` : "",
     contactSummary.length ? `Contacts: ${contactSummary.join("; ")}` : "",
+    parsedAddress ? `Address: ${parsedAddress.street1}` : "",
+    parsedAddress ? `City: ${parsedAddress.city}` : "",
+    parsedAddress ? `State: ${parsedAddress.province}` : "",
+    parsedAddress?.postalCode ? `ZIP: ${parsedAddress.postalCode}` : "",
     client.billingSameAsPrimaryProperty === false ? "Billing address: separate address on file" : "",
-    input.address ? `Address note: ${input.address}` : "",
-    `Email OK: ${client.consent.email ? "yes" : "no"}`,
-    `Text OK: ${client.consent.sms ? "yes, one-way outbound unless upgraded" : "no"}`
+    !parsedAddress && input.address ? `Address: ${sanitizeRequestAddress(input.address)}` : ""
   ].filter(Boolean).join("\n");
 }
 
@@ -255,6 +671,7 @@ export async function queueClientCreateApproval(
   approvalQueue: ApprovalQueueService
 ): Promise<{ approval: Awaited<ReturnType<ApprovalQueueService["create"]>>; pendingClient: ReturnType<typeof queuedClientRecord>; addressNote?: string | undefined; writesAreApprovalQueuedOnly: true }> {
   const client = queuedClientRecord(tenant.id, input);
+  const primaryProperty = queuedClientPrimaryProperty(tenant.id, client, input);
   const approval = await approvalQueue.create({
     tenantId: tenant.id,
     kind: "client",
@@ -268,6 +685,7 @@ export async function queueClientCreateApproval(
       args: {
         tenantId: tenant.id,
         client,
+        ...(primaryProperty ? { primaryProperty } : {}),
         ...(input.address ? { addressNote: input.address } : {})
       }
     },
@@ -330,7 +748,7 @@ async function resolveExactClientId(
   provider: CRMProvider,
   clientId: string | undefined,
   clientQuery: string | undefined,
-  op: "createQuote" | "createJob"
+  op: string
 ): Promise<string> {
   if (clientId) {
     return clientId;
@@ -347,6 +765,27 @@ async function resolveExactClientId(
     return matches[0]!.id;
   }
   throw new RailError("A client match is required before I can save that.", { provider: "native", op, status: 400 });
+}
+
+async function resolveReviewSequenceIdForAction(
+  tenantId: string,
+  input: z.infer<typeof reviewSequenceActionInputSchema>,
+  reviewSequenceService: ReviewSequenceService,
+  jobLifecycleService: JobLifecycleService
+): Promise<string> {
+  if (input.reviewSequenceId?.trim()) {
+    return input.reviewSequenceId.trim();
+  }
+  const job = await resolveJobForAction(tenantId, { jobId: input.jobId, query: input.jobQuery }, jobLifecycleService);
+  const status = await reviewSequenceService.listStatus(tenantId, { jobId: job.id });
+  if (status.sequences.length !== 1) {
+    throw new RailError("I need one exact review sequence for that job before I can continue.", {
+      provider: "native",
+      op: "reviewSequenceAction",
+      status: 400
+    });
+  }
+  return status.sequences[0]!.id;
 }
 
 async function queueJobCreateApproval(
@@ -479,7 +918,213 @@ async function queueJobActionApproval(
   };
 }
 
-function requestQueryValue(request: ServiceRequest, key: string): string | number | boolean | undefined {
+async function resolveVisitAssignmentIds(
+  tenantId: string,
+  platformRepository: Pick<PlatformRepository, "listTenantUsers"> | undefined,
+  input: { assignedTo?: string[] | undefined; assignedTeamQuery?: string | undefined }
+): Promise<string[]> {
+  if (input.assignedTo?.length) {
+    return [...new Set(input.assignedTo.map((value) => value.trim()).filter(Boolean))];
+  }
+  if (!input.assignedTeamQuery?.trim()) {
+    return [];
+  }
+  if (!platformRepository) {
+    throw new RailError("Team-member resolution is not wired for this tenant yet.", { provider: "native", op: "resolveVisitAssignmentIds", status: 501 });
+  }
+  const users = await platformRepository.listTenantUsers(tenantId);
+  const needle = normalized(input.assignedTeamQuery);
+  const matches = users.filter((user) =>
+    user.active
+    && normalized([user.displayName, user.email, user.role].filter(Boolean).join(" ")).includes(needle)
+  );
+  if (matches.length !== 1) {
+    throw new RailError("I need one exact team-member match before I can assign that visit.", {
+      provider: "native",
+      op: "resolveVisitAssignmentIds",
+      status: 400
+    });
+  }
+  return [matches[0]!.id];
+}
+
+function formatVisitPreviewMoment(start: string, end: string): string {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  return `${startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })} ${startDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}-${endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+}
+
+function activeScheduledVisit(visit: { status?: string | undefined }): boolean {
+  return visit.status !== "complete" && visit.status !== "cancelled";
+}
+
+export async function queueScheduleJobVisitsApproval(
+  tenant: Tenant,
+  input: z.infer<typeof scheduleJobVisitsToolInputSchema>,
+  jobLifecycleService: JobLifecycleService,
+  approvalQueue: ApprovalQueueService,
+  platformRepository: Pick<PlatformRepository, "listTenantUsers"> | undefined,
+  requireUnscheduled = false
+): Promise<{
+  approval: Awaited<ReturnType<ApprovalQueueService["create"]>>;
+  jobId: string;
+  jobTitle: string;
+  pendingVisits: Array<{ title?: string | undefined; start: string; end: string; assignedTo: string[]; details?: string | undefined }>;
+  writesAreApprovalQueuedOnly: true;
+}> {
+  const job = await resolveJobForAction(tenant.id, { jobId: input.jobId, query: input.query }, jobLifecycleService);
+  if (requireUnscheduled && job.status !== "Unscheduled") {
+    throw new RailError(`${job.title} is ${job.status}, so it is not sitting in the Unscheduled queue right now.`, {
+      provider: "native",
+      op: "scheduleJobVisits",
+      status: 400
+    });
+  }
+  const tenantUsers = platformRepository ? await platformRepository.listTenantUsers(tenant.id) : [];
+  const visits = await Promise.all(input.visits.map(async (visit) => ({
+    ...(visit.title?.trim() ? { title: visit.title.trim() } : {}),
+    start: visit.start,
+    end: visit.end,
+    assignedTo: await resolveVisitAssignmentIds(tenant.id, platformRepository, visit),
+    ...(visit.details?.trim() ? { details: visit.details.trim() } : {})
+  })));
+  const approval = await approvalQueue.create({
+    tenantId: tenant.id,
+    kind: "job",
+    preview: {
+      title: `Schedule job visits: ${job.title}`,
+      body: [
+        `Job: ${job.title}${job.number ? ` (${job.number})` : ""}`,
+        `Visit count: ${visits.length}`,
+        ...visits.map((visit, index) => {
+          const assignedLabel = visit.assignedTo
+            .map((userId) => tenantUsers.find((user) => user.id === userId)?.displayName ?? userId)
+            .join(", ");
+          return `${index + 1}. ${formatVisitPreviewMoment(visit.start, visit.end)}${visit.title ? ` | ${visit.title}` : ""}${assignedLabel ? ` | assigned: ${assignedLabel}` : ""}${visit.details ? ` | ${visit.details}` : ""}`;
+        })
+      ].join("\n")
+    },
+    execute: {
+      service: "crm",
+      op: "scheduleJobVisitSeries",
+      args: {
+        tenantId: tenant.id,
+        jobId: job.id,
+        visits: jsonClone(visits)
+      }
+    },
+    createdBy: "nexi"
+  });
+  return {
+    approval,
+    jobId: job.id,
+    jobTitle: job.title,
+    pendingVisits: visits,
+    writesAreApprovalQueuedOnly: true
+  };
+}
+
+async function resolveVisitShiftAnchor(
+  tenantId: string,
+  input: z.infer<typeof shiftJobVisitSeriesToolInputSchema>,
+  jobLifecycleService: JobLifecycleService,
+  operationsHubService: OperationsHubService | undefined,
+  platformRepository: Pick<PlatformRepository, "listTenantUsers"> | undefined
+): Promise<{ jobId: string; jobTitle: string; visitId: string; start: string; end: string; remainingCount: number }> {
+  if (input.visitId?.trim() && operationsHubService) {
+    const access = await resolveWorkspaceAccess(tenantId, { platformRepository }, {});
+    const workspace = await operationsHubService.getScheduleWorkspace({
+      access,
+      from: defaultRange().from,
+      to: defaultRange().to
+    });
+    const visit = workspace.visits.find((entry) => entry.id === input.visitId?.trim());
+    if (visit) {
+      const siblingCount = workspace.visits.filter((entry) => entry.jobId === visit.jobId && entry.start >= visit.start).length;
+      return {
+        jobId: visit.jobId,
+        jobTitle: visit.jobTitle,
+        visitId: visit.id,
+        start: visit.start,
+        end: visit.end,
+        remainingCount: Math.max(0, siblingCount - 1)
+      };
+    }
+  }
+  const job = await resolveJobForAction(tenantId, { jobId: input.jobId, query: input.query }, jobLifecycleService);
+  const anchor = job.visits
+    .filter((visit) => activeScheduledVisit(visit))
+    .sort((left, right) => left.start.localeCompare(right.start))
+    .find((visit) => !input.anchorStart || visit.start === input.anchorStart || visit.start.startsWith(input.anchorStart));
+  if (!anchor) {
+    throw new RailError("I could not find a remaining scheduled visit to move on that job.", {
+      provider: "native",
+      op: "shiftJobVisitSeries",
+      status: 404
+    });
+  }
+  const remainingCount = job.visits.filter((visit) => activeScheduledVisit(visit) && visit.id !== anchor.id && visit.start >= anchor.start).length;
+  return {
+    jobId: job.id,
+    jobTitle: job.title,
+    visitId: anchor.id,
+    start: anchor.start,
+    end: anchor.end,
+    remainingCount
+  };
+}
+
+export async function queueShiftJobVisitSeriesApproval(
+  tenant: Tenant,
+  input: z.infer<typeof shiftJobVisitSeriesToolInputSchema>,
+  jobLifecycleService: JobLifecycleService,
+  operationsHubService: OperationsHubService | undefined,
+  approvalQueue: ApprovalQueueService,
+  platformRepository: Pick<PlatformRepository, "listTenantUsers"> | undefined
+): Promise<{
+  approval: Awaited<ReturnType<ApprovalQueueService["create"]>>;
+  anchorVisitId: string;
+  jobId: string;
+  writesAreApprovalQueuedOnly: true;
+}> {
+  const anchor = await resolveVisitShiftAnchor(tenant.id, input, jobLifecycleService, operationsHubService, platformRepository);
+  const deltaMs = ((input.shiftDays ?? 0) * 24 * 60 * 60 * 1000) + ((input.shiftHours ?? 0) * 60 * 60 * 1000);
+  const nextStart = input.start ?? shiftIso(anchor.start, deltaMs);
+  const nextEnd = input.end ?? shiftIso(anchor.end, deltaMs);
+  const approval = await approvalQueue.create({
+    tenantId: tenant.id,
+    kind: "job",
+    preview: {
+      title: `Shift job visit series: ${anchor.jobTitle}`,
+      body: [
+        `Anchor visit: ${formatVisitPreviewMoment(anchor.start, anchor.end)}`,
+        `New anchor window: ${formatVisitPreviewMoment(nextStart, nextEnd)}`,
+        `Shift remaining visits: ${input.shiftRemaining ? "yes" : "no"}`,
+        input.shiftRemaining ? `Remaining visits affected: ${anchor.remainingCount}` : "Remaining visits affected: 0"
+      ].join("\n")
+    },
+    execute: {
+      service: "crm",
+      op: "moveJobVisitSeries",
+      args: {
+        tenantId: tenant.id,
+        visitId: anchor.visitId,
+        start: nextStart,
+        end: nextEnd,
+        shiftRemaining: input.shiftRemaining
+      }
+    },
+    createdBy: "nexi"
+  });
+  return {
+    approval,
+    anchorVisitId: anchor.visitId,
+    jobId: anchor.jobId,
+    writesAreApprovalQueuedOnly: true
+  };
+}
+
+function requestQueryValue(request: ServiceRequest, key: string): string | number | boolean | string[] | undefined {
   return request.intake.fieldIndex[key];
 }
 
@@ -491,6 +1136,9 @@ function requestFieldText(request: ServiceRequest, key: string): string | undefi
   const value = requestQueryValue(request, key);
   if (value === undefined || value === null || value === "") {
     return undefined;
+  }
+  if (Array.isArray(value)) {
+    return value.length ? value.join(", ") : undefined;
   }
   return typeof value === "boolean" ? (value ? "yes" : "no") : String(value);
 }
@@ -711,7 +1359,7 @@ function exactOrStrongClientMatch(clients: Client[], query: string): boolean {
 function dedupeClients(clients: Client[]): Client[] {
   const seen = new Set<string>();
   return clients.filter((client) => {
-    const key = client.externalIds?.jobber ? `jobber:${client.externalIds.jobber}` : `native:${client.id}`;
+    const key = client.id;
     if (seen.has(key)) {
       return false;
     }
@@ -722,7 +1370,99 @@ function dedupeClients(clients: Client[]): Client[] {
 
 export function createCrmReadToolsWithOptions(provider: CRMProvider, options: CrmReadToolOptions = {}): NexiTool[] {
   const readable = provider as InvoiceReadableProvider;
+  const readScheduleWorkspace = async (tenant: Tenant, args: unknown) => {
+    if (!options.operationsHubService) {
+      throw new RailError("Native schedule workspace tools are not wired for this tenant yet.", { provider: "native", op: "getSchedule", status: 501 });
+    }
+    const input = getScheduleInputSchema.parse(args);
+    const access = await resolveWorkspaceAccess(tenant.id, options, input);
+    const dayRange = input.day?.trim() ? isoRangeForDay(input.day.trim()) : null;
+    const teamMemberIds = input.teamMemberIds?.length
+      ? input.teamMemberIds
+      : input.teamMemberQuery?.trim()
+        ? [(await resolveTenantUser(tenant.id, options.platformRepository, { tenantUserQuery: input.teamMemberQuery }))?.tenantUserId ?? ""].filter(Boolean)
+        : undefined;
+    const workspace = await options.operationsHubService.getScheduleWorkspace({
+      access,
+      from: input.from ?? dayRange?.from,
+      to: input.to ?? dayRange?.to,
+      teamMemberIds,
+    });
+    return {
+      result: {
+        from: input.from ?? dayRange?.from ?? null,
+        to: input.to ?? dayRange?.to ?? null,
+        visits: workspace.visits,
+        unscheduledJobs: input.includeUnscheduled ? workspace.unscheduledJobs : [],
+        teamMembers: workspace.teamMembers
+      },
+      sources: [
+        source("schedule-workspace", "Native schedule workspace"),
+        ...workspace.visits.slice(0, 10).map((visit) => source(visit.id, `Scheduled visit ${visit.jobTitle}`))
+      ]
+    };
+  };
+  const readActivityFeed = async (tenant: Tenant, args: unknown) => {
+    if (!options.operationsHubService) {
+      throw new RailError("Native activity tools are not wired for this tenant yet.", { provider: "native", op: "getActivityFeed", status: 501 });
+    }
+    const input = getActivityFeedInputSchema.parse(args);
+    const access = await resolveWorkspaceAccess(tenant.id, options, input);
+    const activity = await options.operationsHubService.getActivityFeed({
+      access,
+      ...(input.objectType ? { objectType: input.objectType } : {}),
+      limit: input.limit
+    });
+    return {
+      result: { activity },
+      sources: activity.length
+        ? activity.slice(0, 20).map((entry) => source(entry.eventId, `${entry.actor} ${entry.action}`))
+        : [source("activity-feed", "Native activity feed")]
+    };
+  };
+  const readHomeQueues = async (tenant: Tenant, args: unknown) => {
+    if (!options.operationsHubService) {
+      throw new RailError("Native home queue tools are not wired for this tenant yet.", { provider: "native", op: "getHomeQueues", status: 501 });
+    }
+    const input = getHomeQueuesInputSchema.parse(args);
+    const access = await resolveWorkspaceAccess(tenant.id, options, input);
+    const snapshot = await options.operationsHubService.getHomeSnapshot({ access });
+    return {
+      result: snapshot,
+      sources: [source("home-queues", "Native home status queues")]
+    };
+  };
   return [
+    {
+      name: "getSchedule",
+      description: "Read the native NexOps schedule workspace for a day, range, or team member, including the unscheduled queue.",
+      inputSchema: getScheduleInputSchema,
+      handler: readScheduleWorkspace
+    },
+    {
+      name: "listVisits",
+      description: "Alias of getSchedule for visit-by-visit schedule readback from the same native workspace.",
+      inputSchema: getScheduleInputSchema,
+      handler: readScheduleWorkspace
+    },
+    {
+      name: "getHomeQueues",
+      description: "Read the live NexOps Home queues and health strip from the same derived source as the web dashboard.",
+      inputSchema: getHomeQueuesInputSchema,
+      handler: readHomeQueues
+    },
+    {
+      name: "getActivityFeed",
+      description: "Read the persisted NexOps lifecycle activity feed, filtered by object type when needed.",
+      inputSchema: getActivityFeedInputSchema,
+      handler: readActivityFeed
+    },
+    {
+      name: "listRecentActivity",
+      description: "Alias of getActivityFeed for conversational 'what happened' queries.",
+      inputSchema: getActivityFeedInputSchema,
+      handler: readActivityFeed
+    },
     {
       name: "listRequests",
       description: "Read native NexOps requests by client name, address, email, phone, or request text.",
@@ -797,26 +1537,33 @@ export function createCrmReadToolsWithOptions(provider: CRMProvider, options: Cr
       name: "clientLookup",
       description: "Read native CRM clients by name, company, email, or phone. Pass an empty query for the tenant client list.",
       inputSchema: clientLookupInputSchema,
-      handler: async (_tenant: Tenant, args: unknown) => {
+      handler: async (tenant: Tenant, args: unknown) => {
         const input = clientLookupInputSchema.parse(args);
         const query = input.q.trim();
         const nativeClients = await provider.getClients(query);
-        let jobberClients: Client[] = [];
-        if (query && options.fallbackClientProvider && !exactOrStrongClientMatch(nativeClients, query)) {
-          jobberClients = await options.fallbackClientProvider.getClients(query);
-        }
-        const clients = dedupeClients([...nativeClients, ...jobberClients]);
+        const relatedProperties = options.requestRepository
+          ? await options.requestRepository.listProperties(tenant.id)
+          : [];
+        const clients = dedupeClients(nativeClients).map((client) => {
+          const propertiesForClient = relatedProperties
+            .filter((property) => property.clientId === client.id)
+            .map((property) => ({
+              id: property.id,
+              label: property.label,
+              siteName: property.siteName,
+              address: property.address,
+              access: property.access
+            }));
+          return propertiesForClient.length > 0
+            ? { ...client, relatedProperties: propertiesForClient }
+            : client;
+        });
         return {
           result: {
             clients,
-            nativeCount: nativeClients.length,
-            jobberFallbackCount: jobberClients.length,
-            fallbackUsed: jobberClients.length > 0
+            nativeCount: nativeClients.length
           },
-          sources: [
-            source("clients", "Native CRM clients"),
-            ...(jobberClients.length ? [source("jobber-clients", "Live Jobber client search fallback", "jobber")] : [])
-          ]
+          sources: [source("clients", "Native CRM clients")]
         };
       }
     },
@@ -937,6 +1684,103 @@ export function createCrmReadToolsWithOptions(provider: CRMProvider, options: Cr
       }
     },
     {
+      name: "listQuoteTemplates",
+      description: "Read tenant quote templates so Nexi can select the right template id before drafting a quote.",
+      inputSchema: listQuoteTemplatesInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.requestRepository) {
+          throw new RailError("Native quote template tools are not wired for this tenant yet.", { provider: "native", op: "listQuoteTemplates", status: 501 });
+        }
+        const input = listQuoteTemplatesInputSchema.parse(args);
+        const needle = input.q.trim().toLowerCase();
+        const { templates } = await ensureQuoteConfiguration(options.requestRepository, tenant.id);
+        const matches = templates
+          .filter((template) => !needle || [template.name, template.description, template.titlePrefix].filter(Boolean).join(" ").toLowerCase().includes(needle))
+          .sort((left, right) => left.name.localeCompare(right.name));
+        return {
+          result: { templates: matches },
+          sources: matches.length
+            ? matches.map((template) => source(template.id, `Quote template ${template.name}`))
+            : [source("quote-templates", "Tenant quote template list")]
+        };
+      }
+    },
+    {
+      name: "listCatalogItems",
+      description: "Read tenant Products & Services catalog items by code, name, description, or tag.",
+      inputSchema: listCatalogItemsInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.requestRepository) {
+          throw new RailError("Native catalog tools are not wired for this tenant yet.", { provider: "native", op: "listCatalogItems", status: 501 });
+        }
+        const input = listCatalogItemsInputSchema.parse(args);
+        const needle = input.q.trim().toLowerCase();
+        const settings = await options.requestRepository.getCrmSettings(tenant.id);
+        const items = settings.catalogItems
+          .filter((item) => !input.visibleOnly || item.visible)
+          .filter((item) => !needle || [item.code, item.name, item.description, item.tag].filter(Boolean).join(" ").toLowerCase().includes(needle))
+          .sort((left, right) => left.name.localeCompare(right.name));
+        return {
+          result: { items },
+          sources: items.length
+            ? items.map((item) => source(item.id, `Catalog item ${item.name}`))
+            : [source("catalog", "Tenant Products & Services catalog")]
+        };
+      }
+    },
+    {
+      name: "listCommunicationTemplates",
+      description: "Read tenant email and text templates by category, label, or body text.",
+      inputSchema: listCommunicationTemplatesInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.requestRepository) {
+          throw new RailError("Native communication-template tools are not wired for this tenant yet.", { provider: "native", op: "listCommunicationTemplates", status: 501 });
+        }
+        const input = listCommunicationTemplatesInputSchema.parse(args);
+        const needle = input.q.trim().toLowerCase();
+        const settings = await options.requestRepository.getCrmSettings(tenant.id);
+        const templates = settings.communicationTemplates
+          .filter((template) => !input.category || template.category === input.category)
+          .filter((template) => !needle || [
+            template.category,
+            template.label,
+            template.description,
+            template.emailSubject,
+            template.emailBody,
+            template.smsBody
+          ].filter(Boolean).join(" ").toLowerCase().includes(needle))
+          .sort((left, right) => left.label.localeCompare(right.label));
+        return {
+          result: { templates },
+          sources: templates.length
+            ? templates.map((template) => source(template.id, `Communication template ${template.label}`))
+            : [source("communication-templates", "Tenant communication template list")]
+        };
+      }
+    },
+    {
+      name: "listTeamMembers",
+      description: "Read tenant team members so Nexi can assign salesperson or rep fields with real user ids.",
+      inputSchema: listTeamMembersInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.platformRepository) {
+          throw new RailError("Native tenant-user tools are not wired for this tenant yet.", { provider: "native", op: "listTeamMembers", status: 501 });
+        }
+        const input = listTeamMembersInputSchema.parse(args);
+        const needle = input.q.trim().toLowerCase();
+        const users = (await options.platformRepository.listTenantUsers(tenant.id))
+          .filter((user) => !input.activeOnly || user.active)
+          .filter((user) => !input.role || user.role === input.role)
+          .filter((user) => !needle || [user.displayName, user.email, user.role].filter(Boolean).join(" ").toLowerCase().includes(needle));
+        return {
+          result: { users },
+          sources: users.length
+            ? users.map((user) => source(user.id, `Tenant user ${user.displayName}`))
+            : [source("tenant-users", "Tenant user list")]
+        };
+      }
+    },
+    {
       name: "invoiceStatus",
       description: "Read native CRM invoice status by invoice id or client id.",
       inputSchema: invoiceStatusInputSchema,
@@ -954,6 +1798,212 @@ export function createCrmReadToolsWithOptions(provider: CRMProvider, options: Cr
           sources: invoices.length
             ? invoices.map((invoice) => source(invoice.id, `Native invoice ${invoice.title}`))
             : [source("invoices", "Native CRM invoices")]
+        };
+      }
+    },
+    {
+      name: "sendPortalLink",
+      description: "Generate and send a NexPortal client hub magic link for a client or a single property view.",
+      inputSchema: sendPortalLinkInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.portalHubService) {
+          throw new RailError("Client hub tools are not wired for this tenant yet.", { provider: "native", op: "sendPortalLink", status: 501 });
+        }
+        const input = sendPortalLinkInputSchema.parse(args);
+        const clientId = await resolveExactClientId(provider, input.clientId, input.clientQuery, "sendPortalLink");
+        const sent = await options.portalHubService.issueMagicLink({
+          tenantId: tenant.id,
+          clientId,
+          ...(input.propertyId ? { propertyId: input.propertyId } : {}),
+          ...(input.target?.trim() ? { target: input.target.trim() } : {}),
+          ...(input.preferredChannel ? { preferredChannel: input.preferredChannel } : {}),
+          ...(input.sourceObjectType ? { sourceObjectType: input.sourceObjectType } : {}),
+          ...(input.sourceObjectId?.trim() ? { sourceObjectId: input.sourceObjectId.trim() } : {})
+        });
+        return {
+          result: {
+            clientId,
+            sessionId: sent.session.id,
+            url: sent.url,
+            delivery: sent.delivery,
+            target: sent.target
+          },
+          sources: [
+            source(clientId, `Portal client ${clientId}`),
+            source(sent.session.id, `Portal session ${sent.session.id}`)
+          ]
+        };
+      }
+    },
+    {
+      name: "getClientPortalActivity",
+      description: "Read the portal activity trail for a client so staff can see viewed, confirmed, paid, and statement events.",
+      inputSchema: clientPortalActivityInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.portalHubService) {
+          throw new RailError("Client hub tools are not wired for this tenant yet.", { provider: "native", op: "getClientPortalActivity", status: 501 });
+        }
+        const input = clientPortalActivityInputSchema.parse(args);
+        const clientId = await resolveExactClientId(provider, input.clientId, input.clientQuery, "getClientPortalActivity");
+        const activity = await options.portalHubService.listPortalActivity({
+          tenantId: tenant.id,
+          clientId,
+          ...(input.propertyId ? { propertyId: input.propertyId } : {})
+        });
+        return {
+          result: {
+            clientId,
+            activity
+          },
+          sources: activity.length
+            ? activity.map((entry) => source(entry.id, `Portal activity ${entry.title}`))
+            : [source(clientId, "Client portal activity")]
+        };
+      }
+    },
+    {
+      name: "generateStatement",
+      description: "Generate a client statement snapshot with invoices, payments, credits, and running balance.",
+      inputSchema: statementToolInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.portalHubService) {
+          throw new RailError("Statement tools are not wired for this tenant yet.", { provider: "native", op: "generateStatement", status: 501 });
+        }
+        const input = statementToolInputSchema.parse(args);
+        const clientId = await resolveExactClientId(provider, input.clientId, input.clientQuery, "generateStatement");
+        const statement = await options.portalHubService.generateStatementSnapshot({
+          tenantId: tenant.id,
+          clientId,
+          ...(input.from ? { from: input.from } : {}),
+          ...(input.to ? { to: input.to } : {})
+        });
+        return {
+          result: {
+            clientId,
+            statement
+          },
+          sources: [source(clientId, `Client statement ${clientId}`)]
+        };
+      }
+    },
+    {
+      name: "sendStatement",
+      description: "Send a client statement by email or text using the shared statement_send template category.",
+      inputSchema: sendStatementToolInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.portalHubService) {
+          throw new RailError("Statement tools are not wired for this tenant yet.", { provider: "native", op: "sendStatement", status: 501 });
+        }
+        const input = sendStatementToolInputSchema.parse(args);
+        const clientId = await resolveExactClientId(provider, input.clientId, input.clientQuery, "sendStatement");
+        const sent = await options.portalHubService.sendStatement({
+          tenantId: tenant.id,
+          clientId,
+          ...(input.from ? { from: input.from } : {}),
+          ...(input.to ? { to: input.to } : {}),
+          ...(input.target?.trim() ? { target: input.target.trim() } : {}),
+          actorId: "nexi"
+        });
+        return {
+          result: {
+            clientId,
+            url: sent.url,
+            target: sent.target
+          },
+          sources: [source(clientId, `Client statement ${clientId}`)]
+        };
+      }
+    },
+    {
+      name: "getReviewSequenceStatus",
+      description: "Read the review follow-up sequence state for a client or a job.",
+      inputSchema: reviewSequenceStatusInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.reviewSequenceService) {
+          throw new RailError("Review-sequence tools are not wired for this tenant yet.", { provider: "native", op: "getReviewSequenceStatus", status: 501 });
+        }
+        const input = reviewSequenceStatusInputSchema.parse(args);
+        const filters: { clientId?: string; jobId?: string } = {};
+        if (input.clientId || input.clientQuery?.trim()) {
+          filters.clientId = await resolveExactClientId(provider, input.clientId, input.clientQuery, "getReviewSequenceStatus");
+        }
+        if (input.jobId || input.jobQuery?.trim()) {
+          if (!options.jobLifecycleService) {
+            throw new RailError("Job lookup is not wired for review status queries yet.", { provider: "native", op: "getReviewSequenceStatus", status: 501 });
+          }
+          const job = await resolveJobForAction(tenant.id, { jobId: input.jobId, query: input.jobQuery }, options.jobLifecycleService);
+          filters.jobId = job.id;
+        }
+        const status = await options.reviewSequenceService.listStatus(tenant.id, filters);
+        return {
+          result: status,
+          sources: status.sequences.length
+            ? status.sequences.map((sequence) => source(sequence.id, `Review sequence ${sequence.id}`))
+            : [source(filters.jobId ?? filters.clientId ?? "review-sequences", "Review follow-up status")]
+        };
+      }
+    },
+    {
+      name: "stopReviewSequence",
+      description: "Stop a review follow-up sequence manually so no more review nudges go out for that job.",
+      inputSchema: reviewSequenceActionInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.reviewSequenceService || !options.jobLifecycleService) {
+          throw new RailError("Review-sequence tools are not wired for this tenant yet.", { provider: "native", op: "stopReviewSequence", status: 501 });
+        }
+        const input = reviewSequenceActionInputSchema.parse(args);
+        const reviewSequenceId = await resolveReviewSequenceIdForAction(tenant.id, input, options.reviewSequenceService, options.jobLifecycleService);
+        const sequence = await options.reviewSequenceService.stopSequence({
+          tenantId: tenant.id,
+          reviewSequenceId,
+          reason: "manual"
+        });
+        return {
+          result: { sequence },
+          sources: [source(sequence.id, `Review sequence ${sequence.id}`)]
+        };
+      }
+    },
+    {
+      name: "markReviewed",
+      description: "Mark a review sequence complete once the client has left the review, stopping all future nudges.",
+      inputSchema: reviewSequenceActionInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.reviewSequenceService || !options.jobLifecycleService) {
+          throw new RailError("Review-sequence tools are not wired for this tenant yet.", { provider: "native", op: "markReviewed", status: 501 });
+        }
+        const input = reviewSequenceActionInputSchema.parse(args);
+        const reviewSequenceId = await resolveReviewSequenceIdForAction(tenant.id, input, options.reviewSequenceService, options.jobLifecycleService);
+        const sequence = await options.reviewSequenceService.markReviewed({
+          tenantId: tenant.id,
+          reviewSequenceId
+        });
+        return {
+          result: { sequence },
+          sources: [source(sequence.id, `Review sequence ${sequence.id}`)]
+        };
+      }
+    },
+    {
+      name: "startReviewSequence",
+      description: "Manually start a review follow-up sequence for a closed and fully paid job that should now enter the review rail.",
+      inputSchema: startReviewSequenceToolInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.reviewSequenceService || !options.jobLifecycleService) {
+          throw new RailError("Review-sequence tools are not wired for this tenant yet.", { provider: "native", op: "startReviewSequence", status: 501 });
+        }
+        const input = startReviewSequenceToolInputSchema.parse(args);
+        const job = await resolveJobForAction(tenant.id, { jobId: input.jobId, query: input.jobQuery }, options.jobLifecycleService);
+        const sequence = await options.reviewSequenceService.maybeStartForJob({
+          tenantId: tenant.id,
+          jobId: job.id,
+          source: "manual"
+        });
+        return {
+          result: sequence
+            ? { started: true, sequence }
+            : { started: false, sequence: null, note: "Review follow-up starts only after the job is closed, final payment is settled, and review defaults are enabled." },
+          sources: [source(job.id, `Native job ${job.title}`)]
         };
       }
     }
@@ -1097,6 +2147,102 @@ export function createCrmToolsWithOptions(provider: CRMProvider, approvalQueue: 
       }
     },
     {
+      name: "saveCatalogItem",
+      description: "Create or update a tenant Products & Services catalog item in the shared Settings catalog.",
+      inputSchema: saveCatalogItemInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.requestRepository) {
+          throw new RailError("Native catalog tools are not wired for this tenant yet.", { provider: "native", op: "saveCatalogItem", status: 501 });
+        }
+        const input = saveCatalogItemInputSchema.parse(args);
+        const settings = await options.requestRepository.getCrmSettings(tenant.id);
+        const timestamp = new Date().toISOString();
+        const code = input.code?.trim() || catalogCodeSeed(input.name);
+        const existing = settings.catalogItems.find((item) =>
+          (input.id?.trim() && item.id === input.id.trim())
+          || item.code.trim().toLowerCase() === code.trim().toLowerCase()
+        );
+        const item = {
+          id: existing?.id ?? input.id?.trim() ?? `catalog_${slugifyToken(code)}`,
+          tenantId: tenant.id,
+          code,
+          name: input.name.trim(),
+          ...(input.description?.trim() ? { description: input.description.trim() } : {}),
+          price: Math.round(input.price * 100) / 100,
+          tag: input.tag.trim() || "Service",
+          taxable: input.taxable,
+          visible: input.visible,
+          source: "tenant" as const,
+          createdAt: existing?.createdAt ?? timestamp,
+          updatedAt: timestamp
+        };
+        const nextCatalog = existing
+          ? settings.catalogItems.map((entry) => entry.id === existing.id ? item : entry)
+          : [...settings.catalogItems, item];
+        const savedSettings = await options.requestRepository.saveCrmSettings({
+          ...settings,
+          catalogItems: nextCatalog,
+          updatedAt: timestamp
+        });
+        return {
+          result: {
+            item,
+            catalogCount: savedSettings.catalogItems.length,
+            created: !existing
+          },
+          sources: [source(item.id, `Catalog item ${item.name}`)]
+        };
+      }
+    },
+    {
+      name: "saveCommunicationTemplate",
+      description: "Create or update a tenant email/text template in the shared Settings template manager.",
+      inputSchema: saveCommunicationTemplateInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.requestRepository) {
+          throw new RailError("Native communication-template tools are not wired for this tenant yet.", { provider: "native", op: "saveCommunicationTemplate", status: 501 });
+        }
+        const input = saveCommunicationTemplateInputSchema.parse(args);
+        const settings = await options.requestRepository.getCrmSettings(tenant.id);
+        const timestamp = new Date().toISOString();
+        const category = input.category.trim();
+        const existing = settings.communicationTemplates.find((template) =>
+          (input.id?.trim() && template.id === input.id.trim())
+          || template.category === category
+        );
+        const template = {
+          id: existing?.id ?? input.id?.trim() ?? `template_${slugifyToken(category)}`,
+          tenantId: tenant.id,
+          category,
+          label: input.label.trim(),
+          ...(input.description?.trim() ? { description: input.description.trim() } : {}),
+          emailEnabled: input.emailEnabled,
+          smsEnabled: input.smsEnabled,
+          ...(input.emailSubject?.trim() ? { emailSubject: input.emailSubject.trim() } : {}),
+          ...(input.emailBody?.trim() ? { emailBody: input.emailBody.trim() } : {}),
+          ...(input.smsBody?.trim() ? { smsBody: input.smsBody.trim() } : {}),
+          createdAt: existing?.createdAt ?? timestamp,
+          updatedAt: timestamp
+        };
+        const nextTemplates = existing
+          ? settings.communicationTemplates.map((entry) => entry.id === existing.id ? template : entry)
+          : [...settings.communicationTemplates, template];
+        const savedSettings = await options.requestRepository.saveCrmSettings({
+          ...settings,
+          communicationTemplates: nextTemplates,
+          updatedAt: timestamp
+        });
+        return {
+          result: {
+            template,
+            templateCount: savedSettings.communicationTemplates.length,
+            created: !existing
+          },
+          sources: [source(template.id, `Communication template ${template.label}`)]
+        };
+      }
+    },
+    {
       name: "createJob",
       description: "Build a native NexOps job draft, read it back in chat, and park the real write behind approval.",
       inputSchema: createJobToolInputSchema,
@@ -1145,6 +2291,113 @@ export function createCrmToolsWithOptions(provider: CRMProvider, approvalQueue: 
             return {
               result: {
                 preview: null,
+                needsClarification: error.message
+              },
+              sources: []
+            };
+          }
+          throw error;
+        }
+      }
+    },
+    {
+      name: "scheduleUnscheduledJob",
+      description: "Read back a visit plan for an unscheduled job, then park the real scheduling write behind approval.",
+      inputSchema: scheduleJobVisitsToolInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.jobLifecycleService) {
+          throw new RailError("Native scheduling tools are not wired for this tenant yet.", { provider: "native", op: "scheduleUnscheduledJob", status: 501 });
+        }
+        try {
+          const input = scheduleJobVisitsToolInputSchema.parse(args);
+          const queued = await queueScheduleJobVisitsApproval(
+            tenant,
+            input,
+            options.jobLifecycleService,
+            approvalQueue,
+            options.platformRepository,
+            true
+          );
+          return {
+            result: queued,
+            sources: [source(queued.approval.id, `ApprovalQueue visit series ${queued.approval.id}`)]
+          };
+        } catch (error) {
+          if (error instanceof RailError && error.status === 400) {
+            return {
+              result: {
+                approval: null,
+                needsClarification: error.message
+              },
+              sources: []
+            };
+          }
+          throw error;
+        }
+      }
+    },
+    {
+      name: "scheduleJobVisits",
+      description: "Read back one or many job visits in chat, then park the real scheduling write behind approval.",
+      inputSchema: scheduleJobVisitsToolInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.jobLifecycleService) {
+          throw new RailError("Native scheduling tools are not wired for this tenant yet.", { provider: "native", op: "scheduleJobVisits", status: 501 });
+        }
+        try {
+          const input = scheduleJobVisitsToolInputSchema.parse(args);
+          const queued = await queueScheduleJobVisitsApproval(
+            tenant,
+            input,
+            options.jobLifecycleService,
+            approvalQueue,
+            options.platformRepository
+          );
+          return {
+            result: queued,
+            sources: [source(queued.approval.id, `ApprovalQueue visit series ${queued.approval.id}`)]
+          };
+        } catch (error) {
+          if (error instanceof RailError && error.status === 400) {
+            return {
+              result: {
+                approval: null,
+                needsClarification: error.message
+              },
+              sources: []
+            };
+          }
+          throw error;
+        }
+      }
+    },
+    {
+      name: "shiftJobVisitSeries",
+      description: "Read back a visit move or remaining-series shift in chat, then park the real reschedule write behind approval.",
+      inputSchema: shiftJobVisitSeriesToolInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.jobLifecycleService) {
+          throw new RailError("Native scheduling tools are not wired for this tenant yet.", { provider: "native", op: "shiftJobVisitSeries", status: 501 });
+        }
+        try {
+          const input = shiftJobVisitSeriesToolInputSchema.parse(args);
+          const queued = await queueShiftJobVisitSeriesApproval(
+            tenant,
+            input,
+            options.jobLifecycleService,
+            options.operationsHubService,
+            approvalQueue,
+            options.platformRepository
+          );
+          return {
+            result: queued,
+            sources: [source(queued.approval.id, `ApprovalQueue visit shift ${queued.approval.id}`)]
+          };
+        } catch (error) {
+          if (error instanceof RailError && error.status === 400) {
+            return {
+              result: {
+                approval: null,
                 needsClarification: error.message
               },
               sources: []

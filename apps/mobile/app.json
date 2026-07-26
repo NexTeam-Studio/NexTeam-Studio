@@ -39,10 +39,22 @@
           "icon": "./assets/notification-icon.png",
           "color": "#0f766e"
         }
+      ],
+      [
+        "@stripe/stripe-terminal-react-native",
+        {
+          "appDelegate": true,
+          "tapToPayCheck": true,
+          "locationWhenInUsePermission": "NexTeam uses location while collecting Tap to Pay charges so Stripe can place the device at the correct business location.",
+          "bluetoothPeripheralPermission": "NexTeam uses Bluetooth when Stripe Terminal needs to discover nearby readers.",
+          "bluetoothAlwaysUsagePermission": "NexTeam uses Bluetooth to maintain Stripe Terminal reader connections during in-person collection.",
+          "localNetworkUsagePermission": "NexTeam uses the local network when Stripe Terminal connects to supported readers on the same network."
+        }
       ]
     ],
     "extra": {
-      "apiBaseUrl": "https://nexteam-studio-staging.up.railway.app"
+      "apiBaseUrl": "http://127.0.0.1:3000",
+      "tenantId": "aquatrace"
     }
   }
 }

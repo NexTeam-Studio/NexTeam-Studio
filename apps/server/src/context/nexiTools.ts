@@ -59,7 +59,7 @@ function homeBaseAddress(env: NodeJS.ProcessEnv | undefined): string {
   return env?.AQUATRACE_HOME_BASE_ADDRESS
     || env?.TENANT_HOME_BASE_ADDRESS
     || env?.M6_PHYSICAL_ADDRESS
-    || "102 Kate Lane, Bryson City, NC 28713";
+    || "102 Kate Lane, Fair Play, SC 29643";
 }
 
 function metersToMiles(meters: number): number {
@@ -155,7 +155,7 @@ export function createContextNexiTools(input: {
     },
     {
       name: "getDistance",
-      description: "Return drive distance and drive time from the tenant home base or a provided origin to a destination.",
+      description: "Return drive distance and drive time from a provided origin, or the tenant home base when no origin is supplied, to a destination.",
       inputSchema: getDistanceInputSchema,
       handler: async (_tenant: Tenant, args: unknown) => {
         const parsed = getDistanceInputSchema.parse(args);

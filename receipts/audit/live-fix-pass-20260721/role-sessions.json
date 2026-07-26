@@ -1,0 +1,143 @@
+{
+  "owner": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "access": {
+        "tenantId": "aquatrace",
+        "tenantUserId": "local-owner",
+        "role": "OWNER",
+        "email": "chris@aquatraceleak.com"
+      },
+      "branding": {
+        "displayName": "Aquatrace"
+      },
+      "authRequired": false,
+      "firebaseConfigured": false,
+      "localDevHeader": "x-nexteam-local-profile",
+      "localProfiles": [
+        {
+          "id": "local-owner",
+          "tenantId": "aquatrace",
+          "tenantUserId": "local-owner",
+          "role": "OWNER",
+          "email": "chris@aquatraceleak.com",
+          "displayName": "Chris",
+          "label": "Chris - Owner"
+        },
+        {
+          "id": "office_catherine",
+          "tenantId": "aquatrace",
+          "tenantUserId": "office_catherine",
+          "role": "OFFICE_ADMIN",
+          "email": "catherine@local.dev",
+          "displayName": "Catherine",
+          "label": "Catherine - Office Admin"
+        },
+        {
+          "id": "tech_logan",
+          "tenantId": "aquatrace",
+          "tenantUserId": "tech_logan",
+          "role": "TECHNICIAN",
+          "email": "logan@aquatraceleak.com",
+          "displayName": "Logan",
+          "label": "Logan - Technician"
+        }
+      ]
+    }
+  },
+  "office_admin": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "access": {
+        "tenantId": "aquatrace",
+        "tenantUserId": "office_catherine",
+        "role": "OFFICE_ADMIN",
+        "email": "catherine@local.dev"
+      },
+      "branding": {
+        "displayName": "Aquatrace"
+      },
+      "authRequired": false,
+      "firebaseConfigured": false,
+      "localDevHeader": "x-nexteam-local-profile",
+      "localProfiles": [
+        {
+          "id": "local-owner",
+          "tenantId": "aquatrace",
+          "tenantUserId": "local-owner",
+          "role": "OWNER",
+          "email": "chris@aquatraceleak.com",
+          "displayName": "Chris",
+          "label": "Chris - Owner"
+        },
+        {
+          "id": "office_catherine",
+          "tenantId": "aquatrace",
+          "tenantUserId": "office_catherine",
+          "role": "OFFICE_ADMIN",
+          "email": "catherine@local.dev",
+          "displayName": "Catherine",
+          "label": "Catherine - Office Admin"
+        },
+        {
+          "id": "tech_logan",
+          "tenantId": "aquatrace",
+          "tenantUserId": "tech_logan",
+          "role": "TECHNICIAN",
+          "email": "logan@aquatraceleak.com",
+          "displayName": "Logan",
+          "label": "Logan - Technician"
+        }
+      ]
+    }
+  },
+  "technician": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "access": {
+        "tenantId": "aquatrace",
+        "tenantUserId": "tech_logan",
+        "role": "TECHNICIAN",
+        "email": "logan@aquatraceleak.com"
+      },
+      "branding": {
+        "displayName": "Aquatrace"
+      },
+      "authRequired": false,
+      "firebaseConfigured": false,
+      "localDevHeader": "x-nexteam-local-profile",
+      "localProfiles": [
+        {
+          "id": "local-owner",
+          "tenantId": "aquatrace",
+          "tenantUserId": "local-owner",
+          "role": "OWNER",
+          "email": "chris@aquatraceleak.com",
+          "displayName": "Chris",
+          "label": "Chris - Owner"
+        },
+        {
+          "id": "office_catherine",
+          "tenantId": "aquatrace",
+          "tenantUserId": "office_catherine",
+          "role": "OFFICE_ADMIN",
+          "email": "catherine@local.dev",
+          "displayName": "Catherine",
+          "label": "Catherine - Office Admin"
+        },
+        {
+          "id": "tech_logan",
+          "tenantId": "aquatrace",
+          "tenantUserId": "tech_logan",
+          "role": "TECHNICIAN",
+          "email": "logan@aquatraceleak.com",
+          "displayName": "Logan",
+          "label": "Logan - Technician"
+        }
+      ]
+    }
+  }
+}

@@ -17,7 +17,7 @@ function tenant() {
     name: "Aquatrace",
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
-    adapters: { crm: "native", media: "companycam", email: "gmail_relay" },
+    adapters: { crm: "native", media: "native", email: "gmail_relay" },
     approval: {},
     timezone: "America/New_York",
     plan: "suite"
@@ -174,7 +174,7 @@ test("whatsMyDay reads native visits for the requested technician", async () => 
   assert.equal(output.sources[0].rail, "native");
 });
 
-test("calendar board overlays Jobber visits as read-only schedule cards", async () => {
+test("calendar board returns native visits only even if stale overlay deps are passed in", async () => {
   const repository = new InMemorySchedulingRepository();
   const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
   await repository.saveVisit(visit({
@@ -187,74 +187,16 @@ test("calendar board overlays Jobber visits as read-only schedule cards", async 
     location: { label: "Fair Play" }
   }));
 
+  let dormantCalls = 0;
   const app = express();
   app.use(express.json());
   registerSchedulingRoutes(app, {
     repository,
     approvalQueue,
-    jobber: {
-      isConfigured: () => true,
-      async getJobs(range) {
-        assert.equal(range.from, "2026-07-08T00:00:00.000Z");
-        assert.equal(range.to, "2026-07-09T00:00:00.000Z");
-        return [{
-          id: "jobber_real_tomorrow",
-          tenantId: "aquatrace",
-          clientId: "client_rachel",
-          status: "scheduled",
-          title: "Rachel Payne - Swimming Pool Leak Detection Service",
-          startAt: "2026-07-08T13:00:00.000Z",
-          endAt: "2026-07-08T15:00:00.000Z",
-          lineItems: [],
-          totals: { subtotal: 0, tax: 0, total: 0 },
-          externalIds: { jobber: "jobber_real_tomorrow" }
-        }];
-      }
-    }
-  });
-
-  const server = app.listen(0);
-  try {
-    const address = server.address();
-    assert.equal(typeof address, "object");
-    const response = await fetch(`http://127.0.0.1:${address.port}/api/scheduling/calendar?tenantId=aquatrace&from=2026-07-08T00%3A00%3A00.000Z&to=2026-07-09T00%3A00%3A00.000Z`);
-    const body = await response.json();
-
-    assert.equal(body.ok, true);
-    assert.deepEqual(body.sourceCounts, { native: 1, jobber: 1 });
-    assert.deepEqual(body.visits.map((item) => item.id), ["native_visit", "jobber_jobber_real_tomorrow"]);
-    const jobberVisit = body.visits.find((item) => item.source === "jobber");
-    assert.equal(jobberVisit.title, "Rachel Payne - Swimming Pool Leak Detection Service");
-    assert.equal(jobberVisit.readOnly, true);
-    assert.equal(jobberVisit.status, "scheduled");
-  } finally {
-    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
-  }
-});
-
-test("calendar board returns native visits when Jobber overlay is slow", async () => {
-  const repository = new InMemorySchedulingRepository();
-  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
-  await repository.saveVisit(visit({
-    id: "native_only",
-    jobId: "native_job",
-    title: "Native booked visit",
-    start: "2026-07-08T09:00:00.000Z",
-    end: "2026-07-08T11:00:00.000Z",
-    assignedTo: ["logan"],
-    location: { label: "Fair Play" }
-  }));
-
-  const app = express();
-  app.use(express.json());
-  registerSchedulingRoutes(app, {
-    repository,
-    approvalQueue,
-    env: { SCHEDULE_JOBBER_OVERLAY_TIMEOUT_MS: "20" },
-    jobber: {
+    legacyOverlayReader: {
       isConfigured: () => true,
       async getJobs() {
-        await new Promise((resolve) => setTimeout(resolve, 250));
+        dormantCalls += 1;
         return [];
       }
     }
@@ -268,9 +210,57 @@ test("calendar board returns native visits when Jobber overlay is slow", async (
     const body = await response.json();
 
     assert.equal(body.ok, true);
-    assert.deepEqual(body.sourceCounts, { native: 1, jobber: 0 });
+    assert.equal(dormantCalls, 0);
+    assert.deepEqual(body.sourceCounts, { native: 1 });
+    assert.deepEqual(body.visits.map((item) => item.id), ["native_visit"]);
+    assert.deepEqual(body.warnings, []);
+    assert.equal(body.visits[0].source ?? "native", "native");
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
+});
+
+test("calendar board ignores stale overlay timeout env and still serves native visits without warnings", async () => {
+  const repository = new InMemorySchedulingRepository();
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  await repository.saveVisit(visit({
+    id: "native_only",
+    jobId: "native_job",
+    title: "Native booked visit",
+    start: "2026-07-08T09:00:00.000Z",
+    end: "2026-07-08T11:00:00.000Z",
+    assignedTo: ["logan"],
+    location: { label: "Fair Play" }
+  }));
+
+  let dormantCalls = 0;
+  const app = express();
+  app.use(express.json());
+  registerSchedulingRoutes(app, {
+    repository,
+    approvalQueue,
+    env: { SCHEDULE_DORMANT_OVERLAY_TIMEOUT_MS: "20" },
+    legacyOverlayReader: {
+      isConfigured: () => true,
+      async getJobs() {
+        dormantCalls += 1;
+        return [];
+      }
+    }
+  });
+
+  const server = app.listen(0);
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/scheduling/calendar?tenantId=aquatrace&from=2026-07-08T00%3A00%3A00.000Z&to=2026-07-09T00%3A00%3A00.000Z`);
+    const body = await response.json();
+
+    assert.equal(body.ok, true);
+    assert.equal(dormantCalls, 0);
+    assert.deepEqual(body.sourceCounts, { native: 1 });
     assert.equal(body.visits[0].id, "native_only");
-    assert.match(body.warnings[0], /Jobber overlay skipped after 20ms/);
+    assert.deepEqual(body.warnings, []);
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }

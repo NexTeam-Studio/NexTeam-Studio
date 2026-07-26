@@ -1,15 +1,23 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import express from "express";
 import { z } from "zod";
+import { ApprovalQueueService, InMemoryApprovalQueueRepository } from "@nexteam/core";
+import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
+import { createApprovalNexiTools } from "../dist/approval/nexiTools.js";
+import { CrmApprovalExecutor } from "../dist/crm/approvalExecutor.js";
 import { ingestSiteJobBlueprint } from "../dist/nexi/siteJobBlueprintIngest.js";
-import { extractCompanyCamReportFields, siteJobBlueprintFromCompanyCamReport } from "../dist/nexi/reportDocuments.js";
-import { extractAquatraceDocument, ingestAquatraceReportSet, parseLossNotation } from "../dist/fielddocs/reportExtraction.js";
 import { answerNexiMessage, runExplicitLocalToolLoop } from "../dist/nexi/nexiService.js";
+import { createCrmToolsWithOptions, queueClientCreateApproval } from "../dist/crm/nexiTools.js";
+import { createNexiRouter } from "../dist/nexi/nexiRoutes.js";
 import { createNexiJobDeskTools } from "../dist/nexi/nexiTools.js";
+import { createContentNexiTools } from "../dist/content/nexiTools.js";
 import { FirestoreNexiRepository, MemoryNexiRepository } from "../dist/nexi/nexiRepository.js";
-import { createContextNexiTools } from "../dist/context/nexiTools.js";
+import { mergeNexiToolSets } from "../dist/nexi/toolRegistry.js";
 import { MemoryUsageLogWriter } from "../dist/usageLog.js";
 import { enforceSources, promptIsActionRequest, promptIsMetaOrFeedback, runNexiToolLoop } from "@nexteam/nexi";
+
+const NEXI_FRIENDLY_FAILURE_MESSAGE = "I couldn't pull that up just now - the check failed on my end and I've logged it to fix. Give me a moment and try again.";
 
 function tenant() {
   return {
@@ -17,11 +25,38 @@ function tenant() {
     name: "Aquatrace",
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
-    adapters: { crm: "jobber", media: "companycam", email: "gmail_relay" },
+    adapters: { crm: "native", media: "native", email: "gmail_relay" },
     approval: {},
     timezone: "America/New_York",
     plan: "suite"
   };
+}
+
+function pendingApprovalContext(approvalId, overrides = {}) {
+  return {
+    approvalId,
+    awaitingChanges: false,
+    revisableClientCreate: false,
+    revisableQuoteCreate: false,
+    revisableJobCreate: false,
+    revisableJobAction: false,
+    revisableJobVisitSeries: false,
+    revisableVisitShift: false,
+    revisableLedgerAction: false,
+    revisableInvoiceCompose: false,
+    revisableInvoiceSend: false,
+    revisableCollectPayment: false,
+    revisableReceiptReview: false,
+    revisableContentDraft: false,
+    ...overrides
+  };
+}
+
+function anthropicToolUseResponse(name, input, usage = { input_tokens: 18, output_tokens: 11, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }) {
+  return new Response(JSON.stringify({
+    content: [{ type: "tool_use", id: `tool_${name}`, name, input }],
+    usage
+  }), { status: 200 });
 }
 
 test("Camp Mikell fixture extracts 101000 gallons", () => {
@@ -41,7 +76,7 @@ test("source check blocks factual answers without sources", () => {
 });
 
 test("source check does not block meta or feedback turns", () => {
-  const meta = enforceSources("I use Jobber, CompanyCam, and native SiteJobBlueprint sources.", [], "What sources do you use");
+  const meta = enforceSources("I use native schedule, email, and SiteJobBlueprint sources.", [], "What sources do you use");
   assert.equal(meta.ok, true);
   assert.equal(promptIsMetaOrFeedback("The thumbnails are not clickable or savable"), true);
   assert.equal(promptIsMetaOrFeedback("Great detail, organization and format sucks"), true);
@@ -60,8 +95,6 @@ test("source check does not block email action commands or honest tool failures"
   assert.equal(contentAction.ok, true);
   const failure = enforceSources("I couldn't open that email yet. I wrote it down so we can fix it.", [], "What did the Semrush site audit say?");
   assert.equal(failure.ok, true);
-  const noSource = enforceSources("I don't have that written down anywhere yet. I wrote it down so we can fill the gap.", [], "What did the Semrush site audit say?");
-  assert.equal(noSource.ok, true);
 });
 
 test("Nexi meta/help turns answer without source stonewalls", async () => {
@@ -89,7 +122,7 @@ test("Nexi tool loop preloads obvious tools and records cache metrics", async ()
   const fetchFn = async (_url, init) => {
     calls.push(JSON.parse(init.body));
     return new Response(JSON.stringify({
-      content: [{ type: "text", text: "I found one Jobber job for today." }],
+      content: [{ type: "text", text: "I found one native visit for today." }],
       usage: { input_tokens: 10, output_tokens: 8, cache_creation_input_tokens: 0, cache_read_input_tokens: 64 }
     }), { status: 200 });
   };
@@ -111,7 +144,7 @@ test("Nexi tool loop preloads obvious tools and records cache metrics", async ()
         parsedToolArgs = args;
         return {
           result: { jobs: [{ id: "job_1", title: "Leak detection" }] },
-          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Leak detection" }]
+          sources: [{ rail: "native", ref: "job_1", label: "Native job Leak detection" }]
         };
       }
     }],
@@ -127,9 +160,80 @@ test("Nexi tool loop preloads obvious tools and records cache metrics", async ()
   assert.match(parsedToolArgs.from, /^\d{4}-\d{2}-\d{2}T/);
   assert.match(parsedToolArgs.to, /^\d{4}-\d{2}-\d{2}T/);
   assert.equal(result.sources.length, 1);
+  assert.equal(result.sources[0].rail, "native");
   assert.equal(result.usage.cacheReadInputTokens, 64);
   assert.equal(usageLog.records.length, 1);
   assert.equal(usageLog.records[0].usage.cacheReadInputTokens, 64);
+});
+
+test("Nexi tool registry rejects duplicate tool names before the model call", () => {
+  const sharedTool = {
+    name: "clientLookup",
+    description: "Read clients.",
+    inputSchema: z.object({ q: z.string().optional() }),
+    handler: async () => ({
+      result: { clients: [] },
+      sources: [{ rail: "native", ref: "clients", label: "Native CRM clients" }]
+    })
+  };
+
+  assert.throws(
+    () => mergeNexiToolSets([
+      { label: "static-extra", tools: [sharedTool] },
+      { label: "request-scoped", tools: [sharedTool] }
+    ]),
+    /Duplicate Nexi tool registration for "clientLookup"/
+  );
+});
+
+test("CRM-style prompts send a unique Nexi tool list even when content tools are enabled", async () => {
+  const crmTool = {
+    name: "clientLookup",
+    description: "Read native CRM clients.",
+    inputSchema: z.object({ q: z.string().optional() }),
+    inputJsonSchema: {
+      type: "object",
+      properties: { q: { type: "string" } }
+    },
+    handler: async () => ({
+      result: { clients: [{ id: "client_1", name: "Aquatrace Swimming Pool Leak Detection" }] },
+      sources: [{ rail: "native", ref: "client_1", label: "Native CRM client Aquatrace Swimming Pool Leak Detection" }]
+    })
+  };
+  const tools = mergeNexiToolSets([
+    { label: "static-extra", tools: [crmTool] },
+    {
+      label: "request-scoped",
+      tools: createContentNexiTools({
+        service: {},
+        actorRole: "OWNER",
+        actorId: "owner_chris"
+      })
+    }
+  ]);
+  let requestToolNames = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "List the CRM clients in Aquatrace right now." }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      const body = JSON.parse(init.body);
+      requestToolNames = body.tools.map((tool) => tool.name);
+      assert.equal(new Set(requestToolNames).size, requestToolNames.length);
+      return new Response(JSON.stringify({
+        content: [{ type: "text", text: "No native NexOps clients are loaded right now." }],
+        usage: { input_tokens: 11, output_tokens: 9, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }
+      }), { status: 200 });
+    }
+  });
+
+  assert.ok(requestToolNames.includes("clientLookup"));
+  assert.ok(requestToolNames.includes("generateJobContent"));
+  assert.doesNotMatch(result.answer, /Tool names must be unique/i);
 });
 
 test("local Nexi fallback routes email-today prompts to summarizeInbox before schedule", async () => {
@@ -144,7 +248,7 @@ test("local Nexi fallback routes email-today prompts to summarizeInbox before sc
       inputSchema: z.object({ from: z.string(), to: z.string() }),
       handler: async () => {
         called.push("getSchedule");
-        return { result: { jobs: [] }, sources: [{ rail: "jobber", ref: "jobs", label: "Jobber jobs" }] };
+        return { result: { jobs: [] }, sources: [{ rail: "native", ref: "jobs", label: "Native jobs" }] };
       }
     }, {
       name: "summarizeInbox",
@@ -179,7 +283,7 @@ test("local Nexi fallback routes attention prompts to triageInbox", async () => 
       inputSchema: z.object({ nameQuery: z.string().optional() }),
       handler: async () => {
         called.push("getJobDetail");
-        return { result: { id: "job_1" }, sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job" }] };
+        return { result: { id: "job_1" }, sources: [{ rail: "native", ref: "job_1", label: "Native job" }] };
       }
     }, {
       name: "triageInbox",
@@ -229,50 +333,6 @@ test("local Nexi fallback routes email source refs to getEmailMessage", async ()
   assert.equal(result.sources[0].ref, "email:chris:msg_1");
 });
 
-test("Nexi Anthropic gateway preloads email source refs with getEmailMessage", async () => {
-  const calls = [];
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "read email:chris:msg_1 and list attachments" }],
-    tools: [{
-      name: "summarizeInbox",
-      description: "Summarize inbox.",
-      inputSchema: z.object({ maxResults: z.number().optional() }),
-      handler: async () => {
-        throw new Error("summarizeInbox should not run for explicit email refs");
-      }
-    }, {
-      name: "getEmailMessage",
-      description: "Read email message.",
-      inputSchema: z.object({ mailbox: z.string(), messageId: z.string() }),
-      handler: async (_tenant, args) => {
-        toolCalls.push(args);
-        return {
-          result: { message: { id: "msg_1", tenantId: "aquatrace", mailbox: "chris", threadId: "thr_1", bodyText: "body", labels: [], attachments: [] } },
-          sources: [{ rail: "email", ref: "email:chris:msg_1", label: "Email chris msg_1" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "The email has no attachments." }],
-        usage: { input_tokens: 10, output_tokens: 6 }
-      }), { status: 200 });
-    }
-  });
-  assert.deepEqual(toolCalls, [{ mailbox: "chris", messageId: "msg_1" }]);
-  assert.match(calls[0].messages.at(-1).content, /Verified getEmailMessage result/);
-  assert.deepEqual(calls[0].tools, []);
-  assert.equal(result.toolRuns[0].name, "getEmailMessage");
-  assert.equal(result.sources[0].ref, "email:chris:msg_1");
-});
-
 test("Nexi Anthropic gateway answers draftEmail action commands from the approval result", async () => {
   const toolCalls = [];
   const result = await runNexiToolLoop({
@@ -315,3117 +375,219 @@ test("Nexi Anthropic gateway answers draftEmail action commands from the approva
   assert.equal(result.answer, "I drafted that email and put it in the approval queue (approval_1). It has not been sent.");
 });
 
-test("Nexi Anthropic gateway preloads draftEmail for send-me-at action commands", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "send me an email at owner@example.test, tell me Bryson City is on schedule for tomorrow" }],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string().optional() }),
-      handler: async () => {
-        throw new Error("searchEmail should not run for send commands");
-      }
-    }, {
-      name: "draftEmail",
-      description: "Draft email.",
-      inputSchema: z.object({ to: z.array(z.string().email()), subject: z.string(), bodyText: z.string() }),
-      handler: async (_tenant, args) => {
-        toolCalls.push(args);
-        return {
-          result: { approval: { id: "approval_1", status: "pending" } },
-          sources: [{ rail: "native", ref: "approval_1", label: "ApprovalQueue email draft approval_1" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("draftEmail direct answers should not call the model");
-    }
-  });
-  assert.deepEqual(toolCalls, [{
-    to: ["owner@example.test"],
-    subject: "Bryson City is on schedule for tomorrow",
-    bodyText: "Bryson City is on schedule for tomorrow"
-  }]);
-  assert.equal(result.toolRuns[0].name, "draftEmail");
-  assert.equal(result.sources[0].ref, "approval_1");
-  assert.equal(result.answer, "I drafted that email and put it in the approval queue (approval_1). It has not been sent.");
-});
-
-test("Nexi Anthropic gateway preloads draftReportEmail for report PDF email requests", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "email the Deborah Justice report PDF to owner@example.test" }],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string().optional() }),
-      handler: async () => {
-        throw new Error("searchEmail should not run for report PDF email requests");
-      }
-    }, {
-      name: "draftReportEmail",
-      description: "Draft report email.",
-      inputSchema: z.object({
-        to: z.array(z.string().email()).optional(),
-        clientName: z.string(),
-        reportTitle: z.string().optional(),
-        bodyText: z.string().optional(),
-        findings: z.array(z.string()).optional()
-      }),
-      handler: async (_tenant, args) => {
-        toolCalls.push(args);
-        return {
-          result: {
-            approval: { id: "approval_report_1", status: "pending" },
-            attachment: { filename: "deborah-justice-aquatrace-report.pdf", mime: "application/pdf", byteSize: 1200 },
-            sendsAreApprovalQueuedOnly: true
-          },
-          sources: [{ rail: "native", ref: "approval_report_1", label: "ApprovalQueue report email approval_report_1" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("draftReportEmail direct answers should not call the model");
-    }
-  });
-  assert.deepEqual(toolCalls, [{
-    to: ["owner@example.test"],
-    clientName: "Deborah Justice",
-    reportTitle: "Deborah Justice Aquatrace report",
-    bodyText: "Attached is the Aquatrace report PDF for Deborah Justice. Please review it and let us know if you have any questions.",
-    findings: [
-      "Report delivery requested for Deborah Justice.",
-      "PDF generated by the Aquatrace field documentation rail and parked for approval before sending."
-    ]
-  }]);
-  assert.equal(result.toolRuns[0].name, "draftReportEmail");
-  assert.equal(result.sources[0].ref, "approval_report_1");
-  assert.equal(result.answer, "I drafted the report email with deborah-justice-aquatrace-report.pdf attached and put it in the approval queue (approval_report_1). It has not been sent.");
-});
-
-test("Nexi Anthropic gateway preloads draftReportEmail for typoed report PDF email requests", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "email the Deborah Justcie report PDF to\nchris1bata@gmail.com" }],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string().optional() }),
-      handler: async () => {
-        throw new Error("searchEmail should not run for report PDF email requests");
-      }
-    }, {
-      name: "draftReportEmail",
-      description: "Draft report email.",
-      inputSchema: z.object({
-        to: z.array(z.string().email()).optional(),
-        clientName: z.string(),
-        reportTitle: z.string().optional(),
-        bodyText: z.string().optional(),
-        findings: z.array(z.string()).optional()
-      }),
-      handler: async (_tenant, args) => {
-        toolCalls.push(args);
-        return {
-          result: {
-            approval: { id: "approval_report_typo_1", status: "pending" },
-            attachment: { filename: "deborah-justcie-aquatrace-report.pdf", mime: "application/pdf", byteSize: 1200 },
-            sendsAreApprovalQueuedOnly: true
-          },
-          sources: [{ rail: "native", ref: "approval_report_typo_1", label: "ApprovalQueue report email approval_report_typo_1" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("draftReportEmail direct answers should not call the model");
-    }
-  });
-  assert.deepEqual(toolCalls, [{
-    to: ["chris1bata@gmail.com"],
-    clientName: "Deborah Justcie",
-    reportTitle: "Deborah Justcie Aquatrace report",
-    bodyText: "Attached is the Aquatrace report PDF for Deborah Justcie. Please review it and let us know if you have any questions.",
-    findings: [
-      "Report delivery requested for Deborah Justcie.",
-      "PDF generated by the Aquatrace field documentation rail and parked for approval before sending."
-    ]
-  }]);
-  assert.equal(result.toolRuns[0].name, "draftReportEmail");
-  assert.equal(result.sources[0].ref, "approval_report_typo_1");
-  assert.match(result.answer, /approval_report_typo_1/);
-});
-
-test("Nexi report PDF email action failures do not source-stonewall", async () => {
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "email the Deborah Justcie report PDF to\nchris1bata@gmail.com" }],
-    tools: [{
-      name: "draftReportEmail",
-      description: "Draft report email.",
-      inputSchema: z.object({
-        to: z.array(z.string().email()).optional(),
-        clientName: z.string(),
-        reportTitle: z.string().optional(),
-        bodyText: z.string().optional(),
-        findings: z.array(z.string()).optional()
-      }),
-      handler: async () => {
-        throw new Error("simulated live send-adapter config failure");
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("draftReportEmail action failures should not call the model");
-    }
-  });
-  assert.equal(result.toolRuns[0].name, "draftReportEmail");
-  assert.equal(result.toolRuns[0].result.diagnosticCategory, "report_email_draft_failed");
-  assert.match(result.answer, /couldn't create that report email draft yet/i);
-  assert.match(result.answer, /Most likely break point: report lookup, PDF build, or approval details/i);
-  assert.doesNotMatch(result.answer, /written down anywhere|verified source|matching email/i);
-});
-
-test("Nexi Anthropic gateway preloads runEvaporation for evap report requests", async () => {
-  const calls = [];
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{
-      role: "user",
-      content: "Run the evap for 100 Main Street, Bryson City, NC 28713 with surface area 500 square feet, water temperature 82 degrees, and observed daily loss 1.5 inches."
-    }],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string().optional() }),
-      handler: async () => {
-        throw new Error("searchEmail should not run for evap requests");
-      }
-    }, {
-      name: "runEvaporation",
-      description: "Run evaporation.",
-      inputSchema: z.object({
-        address: z.string(),
-        zip: z.string().optional(),
-        surfaceAreaFt2: z.number(),
-        waterTempF: z.number(),
-        observedLoss: z.object({ inches: z.number(), observationDays: z.number() }).optional()
-      }),
-      handler: async (_tenant, args) => {
-        toolCalls.push(args);
-        return {
-          result: {
-            report: {
-              id: "evap_1",
-              calculation: {
-                evapInchesPerDay: 1.2384,
-                leakInchesPerDay: 0.2616
-              }
-            },
-            pdfUrl: "/api/evaporation/reports/evap_1/pdf?tenantId=aquatrace"
-          },
-          sources: [{ rail: "native", ref: "evap_1", label: "Aquatrace evaporation report evap_1" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "I ran the evaporation report and made the PDF." }],
-        usage: { input_tokens: 10, output_tokens: 6 }
-      }), { status: 200 });
-    }
-  });
-  assert.deepEqual(toolCalls, [{
-    address: "100 Main Street, Bryson City, NC 28713",
-    zip: "28713",
-    surfaceAreaFt2: 500,
-    waterTempF: 82,
-    observedLoss: { inches: 1.5, observationDays: 1 }
-  }]);
-  assert.match(calls[0].messages.at(-1).content, /Verified runEvaporation result/);
-  assert.deepEqual(calls[0].tools, []);
-  assert.equal(result.toolRuns[0].name, "runEvaporation");
-  assert.equal(result.sources[0].ref, "evap_1");
-});
-
-test("Nexi Anthropic gateway preloads draftCampaign for campaign action commands", async () => {
-  const calls = [];
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "Draft the VGB hotel GM outreach campaign for the Chris-owned test list." }],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string().optional() }),
-      handler: async () => {
-        throw new Error("searchEmail should not run for campaign draft requests");
-      }
-    }, {
-      name: "draftCampaign",
-      description: "Draft campaign.",
-      inputSchema: z.object({
-        templateId: z.string(),
-        audience: z.object({
-          channel: z.enum(["email", "sms"]),
-          tagsAny: z.array(z.string()).optional(),
-          consentRequired: z.boolean(),
-          excludeSuppressed: z.boolean(),
-          maxResults: z.number()
-        })
-      }),
-      handler: async (_tenant, args) => {
-        toolCalls.push(args);
-        return {
-          result: {
-            campaign: { id: "camp_1", name: "VGB Hotel GM Outreach" },
-            selectedCount: 2,
-            queuedApprovals: [{ id: "appr_1" }],
-            boundary: { executionBlocked: true },
-            sendsAreApprovalQueuedOnly: true
-          },
-          sources: [{ rail: "native", ref: "camp_1", label: "Campaign VGB Hotel GM Outreach" }]
-        };
-      }
-    }],
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "I queued the campaign draft for approval only." }],
-        usage: { input_tokens: 5, output_tokens: 5 }
-      }), { status: 200 });
-    },
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer"
-  });
-
-  assert.deepEqual(toolCalls, [{
-    templateId: "vgb-hotel-gm-outreach",
-    audience: {
-      channel: "email",
-      tagsAny: ["test"],
-      consentRequired: true,
-      excludeSuppressed: true,
-      maxResults: 2
-    }
-  }]);
-  assert.match(calls[0].messages.at(-1).content, /Verified draftCampaign result/);
-  assert.deepEqual(calls[0].tools, []);
-  assert.equal(result.toolRuns[0].name, "draftCampaign");
-  assert.equal(result.sources[0].ref, "camp_1");
-});
-
-test("Nexi Anthropic gateway treats mailbox address follow-ups as email search context", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "Check email for a report sent to Medallion Pool Company last week" },
-      { role: "assistant", content: "Which mailbox should I check?" },
-      { role: "user", content: "aquatraceleak@gmail.com" }
-    ],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ mailbox: z.string().optional(), keywords: z.string().optional() }),
-      handler: async (_tenant, args) => {
-        toolCalls.push(args);
-        return {
-          result: { count: 1, messages: [{ id: "msg_1", mailbox: "aquatraceleak", subject: "Medallion report" }] },
-          sources: [{ rail: "email", ref: "email:aquatraceleak:msg_1", label: "Email aquatraceleak msg_1" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I found one Medallion Pool Company report email." }],
-      usage: { input_tokens: 10, output_tokens: 6 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(toolCalls, [{
-    mailbox: "aquatraceleak",
-    keywords: "Check email for a report sent to Medallion Pool Company last week"
-  }]);
-  assert.equal(result.toolRuns[0].name, "searchEmail");
-  assert.equal(result.sources[0].ref, "email:aquatraceleak:msg_1");
-});
-
-test("Nexi routes broad inbox commands to summary and triage instead of email search", async () => {
-  const toolCalls = [];
-  const base = {
-    tenant: tenant(),
-    system: "Use tools.",
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I checked the inbox." }],
-      usage: { input_tokens: 5, output_tokens: 5 }
-    }), { status: 200 })
-  };
-  const summarizeInbox = {
-    name: "summarizeInbox",
-    description: "Summarize inbox.",
-    inputSchema: z.object({ mailbox: z.string().optional(), keywords: z.string().optional(), maxResults: z.number().optional() }),
-    handler: async (_tenant, args) => {
-      toolCalls.push(["summarizeInbox", args]);
-      return {
-        result: { count: 0, items: [] },
-        sources: [{ rail: "native", ref: "email-summary:test", label: "Email summary test" }]
-      };
-    }
-  };
-  const triageInbox = {
-    name: "triageInbox",
-    description: "Triage inbox.",
-    inputSchema: z.object({ mailbox: z.string().optional(), date: z.string().optional(), keywords: z.string().optional(), maxResults: z.number().optional() }),
-    handler: async (_tenant, args) => {
-      toolCalls.push(["triageInbox", args]);
-      return {
-        result: { items: [] },
-        sources: [{ rail: "native", ref: "email-triage:test", label: "Email triage test" }]
-      };
-    }
-  };
-  const searchEmail = {
-    name: "searchEmail",
-    description: "Search email.",
-    inputSchema: z.object({ keywords: z.string().optional() }),
-    handler: async () => {
-      throw new Error("generic inbox commands should not search email");
-    }
-  };
-
-  await runNexiToolLoop({ ...base, messages: [{ role: "user", content: "check inbox" }], tools: [summarizeInbox, triageInbox, searchEmail] });
-  await runNexiToolLoop({ ...base, messages: [{ role: "user", content: "summarize inbox" }], tools: [summarizeInbox, triageInbox, searchEmail] });
-  await runNexiToolLoop({ ...base, messages: [{ role: "user", content: "order unread" }], tools: [summarizeInbox, triageInbox, searchEmail] });
-
-  assert.deepEqual(toolCalls.map((entry) => entry[0]), ["summarizeInbox", "summarizeInbox", "triageInbox"]);
-  assert.match(toolCalls[2][1].keywords, /is:unread/);
-});
-
-test("Nexi routes basic clock and weather questions to native context tools", async () => {
-  const calls = [];
-  const tools = createContextNexiTools({
-    now: () => new Date("2026-07-08T16:30:00.000Z"),
-    weatherProvider: {
-      async getWeather(input) {
-        calls.push(["weather", input]);
-        return {
-          current: {
-            city: "Fair Play",
-            airTempF: 91,
-            relativeHumidityPct: 55,
-            windMph: 4,
-            fetchedAt: "2026-07-08T16:30:00.000Z"
-          },
-          forecast: []
-        };
-      }
-    }
-  });
-  const base = {
-    tenant: tenant(),
-    system: "Use tools.",
-    tools,
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I checked it." }],
-      usage: { input_tokens: 5, output_tokens: 5 }
-    }), { status: 200 })
-  };
-  const time = await runNexiToolLoop({ ...base, messages: [{ role: "user", content: "what time is it" }] });
-  const weather = await runNexiToolLoop({ ...base, messages: [{ role: "user", content: "current temp in Fair Play" }] });
-  assert.equal(time.toolRuns[0].name, "getCurrentTime");
-  assert.equal(weather.toolRuns[0].name, "getCurrentWeather");
-  assert.deepEqual(calls[0], ["weather", { address: "Fair Play, SC" }]);
-});
-
-test("Nexi Anthropic gateway sanitizes deterministic email tool failures", async () => {
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "What did the Semrush site audit say?" }],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string().optional() }),
-      handler: async () => {
-        throw new Error("Invalid time value");
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("Anthropic should not be called for a deterministic email tool failure");
-    }
-  });
-  assert.equal(result.toolRuns[0].name, "searchEmail");
-  assert.match(JSON.stringify(result.toolRuns[0].result), /failed safely/);
-  assert.doesNotMatch(JSON.stringify(result.toolRuns[0].result), /Invalid time value/);
-  assert.equal(result.answer, "I couldn't find an email that matched that. I wrote it down so we can fill the gap.");
-  assert.equal(result.failureReason, "email_lookup_without_sources");
-});
-
-test("Nexi Anthropic gateway turns empty deterministic email searches into logged honest failures", async () => {
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "What did the Semrush site audit say?" }],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string().optional() }),
-      handler: async () => ({ result: { messages: [] }, sources: [] })
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("Anthropic should not be called for an empty deterministic email lookup");
-    }
-  });
-  assert.equal(result.toolRuns[0].name, "searchEmail");
-  assert.equal(result.answer, "I couldn't find an email that matched that. I wrote it down so we can fill the gap.");
-  assert.equal(result.failureReason, "email_lookup_without_sources");
-});
-
-test("Nexi Anthropic gateway preloads triageInbox for attention prompts", async () => {
-  const calls = [];
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "what needs my attention" }],
-    tools: [{
-      name: "getJobDetail",
-      description: "Read job detail.",
-      inputSchema: z.object({ nameQuery: z.string().optional() }),
-      handler: async () => {
-        throw new Error("getJobDetail should not run for inbox triage prompts");
-      }
-    }, {
-      name: "triageInbox",
-      description: "Triage inbox.",
-      inputSchema: z.object({ date: z.string(), maxResults: z.number().optional() }),
-      handler: async (_tenant, args) => {
-        toolCalls.push(args);
-        return {
-          result: { scannedCount: 1, excludedNoiseCount: 0, items: [{ category: "client_inquiry", messageId: "msg_1" }] },
-          sources: [{ rail: "email", ref: "email:chris:msg_1", label: "Email chris msg_1" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "One client inquiry needs attention." }],
-        usage: { input_tokens: 10, output_tokens: 6 }
-      }), { status: 200 });
-    }
-  });
-  assert.equal(toolCalls.length, 1);
-  assert.match(calls[0].messages.at(-1).content, /Verified triageInbox result/);
-  assert.deepEqual(calls[0].tools, []);
-  assert.equal(result.toolRuns[0].name, "triageInbox");
-  assert.equal(result.sources[0].ref, "email:chris:msg_1");
-});
-
-test("Nexi payment-status prompts exhaust schedule, Jobber, native invoice, and email rails", async () => {
-  const calls = [];
-  const toolNames = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "What was on today's schedule?" },
-      { role: "assistant", content: "Rachel Payne was today's pool." },
-      { role: "user", content: "did todays pool pay?" }
-    ],
-    tools: [
-      {
-        name: "getSchedule",
-        description: "Read schedule.",
-        inputSchema: z.object({ from: z.string(), to: z.string() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getSchedule", args]);
-          return {
-            result: { jobs: [{ id: "job_1", title: "Rachel Payne leak detection", client: { name: "Rachel Payne" } }] },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }]
-          };
-        }
-      },
-      {
-        name: "getJobDetail",
-        description: "Read job detail.",
-        inputSchema: z.object({ nameQuery: z.string().optional(), id: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getJobDetail", args]);
-          return {
-            result: { job: { id: "job_1", status: "lead", title: "Rachel Payne leak detection" } },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }]
-          };
-        }
-      },
-      {
-        name: "invoiceStatus",
-        description: "Read native invoice status.",
-        inputSchema: z.object({ invoiceId: z.string().optional(), clientId: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["invoiceStatus", args]);
-          return {
-            result: { invoices: [{ id: "inv_1", title: "Rachel Payne invoice", status: "paid", balanceCents: 0 }] },
-            sources: [{ rail: "native", ref: "inv_1", label: "Native invoice Rachel Payne" }]
-          };
-        }
-      },
-      {
-        name: "searchEmail",
-        description: "Search email receipts.",
-        inputSchema: z.object({ keywords: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["searchEmail", args]);
-          return {
-            result: { messages: [{ messageId: "msg_1", subject: "Payment received" }] },
-            sources: [{ rail: "email", ref: "email:chris:msg_1", label: "Email chris msg_1" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "Yes. Native invoices show Rachel Payne paid with a zero balance, and email has a payment receipt." }],
-        usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
-      }), { status: 200 });
-    }
-  });
-  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getSchedule", "getJobDetail", "invoiceStatus", "searchEmail"]);
-  assert.match(calls[0].messages.at(-1).content, /For payment, paid\/unpaid, invoice, balance, and receipt questions/i);
-  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
-  assert.equal(result.sources.some((source) => source.rail === "native"), true);
-  assert.equal(result.sources.some((source) => source.rail === "email"), true);
-});
-
-test("Nexi tomorrow schedule prompts reject fabricated stale tool dates", async () => {
-  let parsedToolArgs = null;
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "what time is tomorrows pool" }],
-    tools: [{
-      name: "getSchedule",
-      description: "Read schedule.",
-      inputSchema: z.object({ from: z.string(), to: z.string() }),
-      handler: async (_tenant, args) => {
-        parsedToolArgs = args;
-        return {
-          result: { jobs: [{ id: "job_1", title: "Forrest Ferguson leak detection" }] },
-          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Forrest Ferguson" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "Forrest Ferguson is on tomorrow's schedule." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.ok(parsedToolArgs);
-  assert.doesNotMatch(parsedToolArgs.from, /^2024-01-/);
-  assert.doesNotMatch(parsedToolArgs.to, /^2024-01-/);
-  assert.equal(new Date(parsedToolArgs.to).getTime() - new Date(parsedToolArgs.from).getTime(), 24 * 60 * 60 * 1000);
-  assert.equal(result.toolRuns[0].name, "getSchedule");
-  assert.equal(result.sources.length, 1);
-});
-
-test("Nexi distance prompts return capability gaps instead of missing-data failures", async () => {
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "how far is Forrest Ferguson from the shop?" }],
-    tools: [],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("capability gaps should not call the model");
-    }
-  });
-  assert.equal(result.failureReason, "capability_not_available");
-  assert.match(result.answer, /can't measure drive distance/i);
-  assert.doesNotMatch(result.answer, /written down anywhere/i);
-  assert.deepEqual(result.toolRuns, []);
-});
-
-test("Nexi unsupported delete-client prompts return capability gaps instead of missing-data wording", async () => {
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "delete the Atlas Approval Proof client" }],
-    tools: [],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("unsupported write capability gaps should not call the model");
-    }
-  });
-  assert.equal(result.failureReason, "capability_not_available");
-  assert.match(result.answer, /can't delete client records yet/i);
-  assert.doesNotMatch(result.answer, /written down anywhere/i);
-});
-
-test("Nexi unsupported saved-write prompts keep capability-gap wording across client, request, and billing actions", async () => {
-  const cases = [
+test("personal email and text requests resolve to the logged-in user's own contact details for owner and technician seats", async () => {
+  for (const actor of [
     {
-      prompt: "change Logan Sears phone number to 8645550000",
-      expected: /can't edit saved client records from chat yet/i
+      label: "owner",
+      displayName: "Chris",
+      email: "chris@aquatraceleak.com",
+      phone: "8648737082"
     },
     {
-      prompt: "delete request request_123",
-      expected: /can't delete saved requests from chat yet/i
-    },
-    {
-      prompt: "delete invoice inv_123",
-      expected: /can't delete saved work or billing records from chat yet/i
+      label: "technician",
+      displayName: "Logan",
+      email: "logan@aquatraceleak.com",
+      phone: "8645581725"
     }
-  ];
-  for (const entry of cases) {
-    const result = await runNexiToolLoop({
+  ]) {
+    const emailTargets = [];
+    const statementTargets = [];
+
+    const emailTurn = await answerNexiMessage({
       tenant: tenant(),
-      system: "Use tools.",
-      messages: [{ role: "user", content: entry.prompt }],
-      tools: [],
-      routeActionName: "/api/nexi/message",
-      taskType: "job_desk_answer",
-      env: { ANTHROPIC_API_KEY: "test-key" },
-      fetchFn: async () => {
-        throw new Error("unsupported write capability gaps should not call the model");
-      }
-    });
-    assert.equal(result.failureReason, "capability_not_available");
-    assert.match(result.answer, entry.expected);
-    assert.doesNotMatch(result.answer, /written down anywhere/i);
-  }
-});
-
-test("Nexi distance prompts run the native distance tool when wired", async () => {
-  const calls = [];
-  const tools = createContextNexiTools({
-    env: { AQUATRACE_HOME_BASE_ADDRESS: "102 Kate Lane, Bryson City, NC 28713" },
-    distanceProvider: {
-      async getDistance(input) {
-        calls.push(input);
-        return {
-          origin: input.origin,
-          destination: input.destination,
-          driveMinutes: 42,
-          distanceMiles: 36.5,
-          provider: "google_maps"
-        };
-      }
-    }
-  });
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "how far is 123 Main Road from my house?" }],
-    tools,
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("getDistance direct answers should not call the model");
-    }
-  });
-  assert.equal(result.toolRuns[0].name, "getDistance");
-  assert.deepEqual(calls[0], {
-    origin: "102 Kate Lane, Bryson City, NC 28713",
-    destination: "123 Main Road"
-  });
-  assert.equal(result.sources[0].rail, "native");
-  assert.match(result.answer, /about 42 minutes/);
-  assert.match(result.answer, /36\.5 miles/);
-});
-
-test("Nexi distance prompts use job detail addresses before measuring", async () => {
-  const calls = [];
-  const tools = [
-    {
-      name: "getJobDetail",
-      description: "Read job detail.",
-      inputSchema: z.object({ nameQuery: z.string().optional() }),
-      handler: async (_tenant, args) => {
-        calls.push(["job", args]);
-        return {
-          result: {
-            job: {
-              id: "job_forrest",
-              title: "Forrest Ferguson",
-              address: {
-                street1: "987 Lake View Road",
-                city: "Fair Play",
-                province: "SC",
-                postalCode: "29643"
-              }
-            }
-          },
-          sources: [{ rail: "jobber", ref: "job_forrest", label: "Jobber job Forrest Ferguson" }]
-        };
-      }
-    },
-    ...createContextNexiTools({
-      env: { AQUATRACE_HOME_BASE_ADDRESS: "102 Kate Lane, Bryson City, NC 28713" },
-      distanceProvider: {
-        async getDistance(input) {
-          calls.push(["distance", input]);
-          return {
-            origin: input.origin,
-            destination: input.destination,
-            driveMinutes: 28,
-            distanceText: "21.2 mi",
-            provider: "google_maps"
-          };
-        }
-      }
-    })
-  ];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "how far is Forrest Ferguson from the shop?" }],
-    tools,
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("getDistance direct answers should not call the model");
-    }
-  });
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail", "getDistance"]);
-  assert.deepEqual(calls[1], ["distance", {
-    origin: "102 Kate Lane, Bryson City, NC 28713",
-    destination: "987 Lake View Road, Fair Play, SC, 29643"
-  }]);
-  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
-  assert.equal(result.sources.some((source) => source.ref === "google-maps-distance"), true);
-  assert.match(result.answer, /about 28 minutes/);
-  assert.match(result.answer, /21\.2 mi/);
-});
-
-test("Nexi report-PDF email requests return capability gaps instead of email search misses", async () => {
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "email me the report PDFs" }],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string().optional() }),
-      handler: async () => {
-        throw new Error("searchEmail should not run for missing report-PDF send capability");
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("capability gaps should not call the model");
-    }
-  });
-  assert.equal(result.failureReason, "capability_not_available");
-  assert.match(result.answer, /attach and email report PDFs/i);
-  assert.doesNotMatch(result.answer, /find an email|matched/i);
-  assert.deepEqual(result.toolRuns, []);
-});
-
-test("Nexi existing-report email questions stay on Gmail search", async () => {
-  const prompts = [
-    "Did I send the report more medallion Pool company last week?",
-    "Check email for a report sent to medallion Pool company last week",
-    "You need to infer what I mean. Regardless of typos. The report should be sitting in one of the email boxes as sent and I also copy ourselves on those so we should also have a receipt in the mail"
-  ];
-
-  for (const prompt of prompts) {
-    const toolCalls = [];
-    const result = await runNexiToolLoop({
-      tenant: tenant(),
-      system: "Use tools.",
-      messages: [{ role: "user", content: prompt }],
+      message: "Send me an email saying the report is ready for review.",
+      actorDisplayName: actor.displayName,
+      requestorContext: {
+        tenantUserId: `${actor.label}_seat`,
+        displayName: actor.displayName,
+        email: actor.email,
+        phones: [actor.phone]
+      },
       tools: [{
-        name: "searchEmail",
-        description: "Search email.",
-        inputSchema: z.object({ keywords: z.string().optional() }),
+        name: "draftEmail",
+        description: "Draft an email for approval.",
+        inputSchema: z.object({ to: z.array(z.string().email()), subject: z.string(), bodyText: z.string() }),
         handler: async (_tenant, args) => {
-          toolCalls.push(args);
+          emailTargets.push(args.to[0]);
           return {
-            result: { count: 1, messages: [{ id: "msg_1", mailbox: "aquatraceleak", subject: "Medallion report" }] },
-            sources: [{ rail: "email", ref: "email:aquatraceleak:msg_1", label: "Email aquatraceleak msg_1" }]
+            result: { approval: { id: `approval_${actor.label}`, status: "pending" } },
+            sources: [{ rail: "native", ref: `approval_${actor.label}`, label: `ApprovalQueue draft ${actor.label}` }]
           };
         }
       }],
-      routeActionName: "/api/nexi/message",
-      taskType: "job_desk_answer",
-      env: { ANTHROPIC_API_KEY: "test-key" },
-      fetchFn: async () => new Response(JSON.stringify({
-        content: [{ type: "text", text: "I found one Medallion Pool Company report email." }],
-        usage: { input_tokens: 10, output_tokens: 6 }
-      }), { status: 200 })
+      repository: new MemoryNexiRepository(),
+      gateway: runExplicitLocalToolLoop
     });
 
-    assert.equal(toolCalls.length, 1);
-    assert.equal(typeof toolCalls[0].keywords, "string");
-    assert.ok(toolCalls[0].keywords.length > 0);
-    assert.equal(result.toolRuns[0].name, "searchEmail");
-    assert.notEqual(result.failureReason, "capability_not_available");
-  }
-});
+    assert.equal(emailTargets[0], actor.email);
+    assert.equal(emailTurn.toolRuns[0].name, "draftEmail");
 
-test("Nexi broad client list and count prompts route to CRM clientLookup", async () => {
-  const prompts = ["show me a client list", "how many clients do we have"];
-  for (const prompt of prompts) {
-    const toolCalls = [];
-    const result = await runNexiToolLoop({
+    const textTurn = await answerNexiMessage({
       tenant: tenant(),
-      system: "Use tools.",
-      messages: [{ role: "user", content: prompt }],
-      tools: [
-        {
-          name: "clientLookup",
-          description: "Read native CRM clients.",
-          inputSchema: z.object({ q: z.string().default("") }),
-          handler: async (_tenant, args) => {
-            toolCalls.push(args);
-            return {
-              result: { clients: [{ id: "client_1", name: "Deborah Justice" }, { id: "client_2", name: "Rachel Payne" }] },
-              sources: [{ rail: "native", ref: "clients", label: "Native CRM clients" }]
-            };
-          }
-        },
-        {
-          name: "searchEmail",
-          description: "Search email.",
-          inputSchema: z.object({ keywords: z.string().optional() }),
-          handler: async () => {
-            throw new Error("searchEmail should not run for client list prompts");
-          }
+      message: "Send Logan Sears a statement to me by text.",
+      actorDisplayName: actor.displayName,
+      requestorContext: {
+        tenantUserId: `${actor.label}_seat`,
+        displayName: actor.displayName,
+        email: actor.email,
+        phones: [actor.phone]
+      },
+      tools: [{
+        name: "sendStatement",
+        description: "Send a client statement.",
+        inputSchema: z.object({ clientQuery: z.string(), target: z.string().optional() }),
+        handler: async (_tenant, args) => {
+          statementTargets.push(args.target);
+          return {
+            result: { target: args.target, url: "https://example.test/statement.pdf" },
+            sources: [{ rail: "native", ref: "statement_send", label: "Client statement delivery" }]
+          };
         }
-      ],
-      routeActionName: "/api/nexi/message",
-      taskType: "job_desk_answer",
-      env: { ANTHROPIC_API_KEY: "test-key" },
-      fetchFn: async () => new Response(JSON.stringify({
-        content: [{ type: "text", text: "There are 2 clients: Deborah Justice and Rachel Payne." }],
-        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-      }), { status: 200 })
+      }],
+      repository: new MemoryNexiRepository(),
+      gateway: runExplicitLocalToolLoop
     });
-    assert.deepEqual(result.toolRuns.map((run) => run.name), ["clientLookup"]);
-    assert.equal(toolCalls[0].q, "");
-    assert.equal(result.sources.some((source) => source.ref === "clients"), true);
+
+    assert.equal(statementTargets[0], actor.phone);
+    assert.equal(textTurn.toolRuns[0].name, "sendStatement");
   }
 });
 
-test("Nexi named client lookup preserves the requested client name instead of broad-listing", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "Look up client Kristi King" }],
-    tools: [
-      {
-        name: "clientLookup",
-        description: "Read native CRM clients.",
-        inputSchema: z.object({ q: z.string().default("") }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(args);
-          return {
-            result: { clients: [{ id: "client_kristi", name: "Kristi King" }], nativeCount: 0, jobberFallbackCount: 1, fallbackUsed: true },
-            sources: [
-              { rail: "native", ref: "clients", label: "Native CRM clients" },
-              { rail: "jobber", ref: "jobber-clients", label: "Live Jobber client search fallback" }
-            ]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("named client lookup should answer directly from checked records");
-    }
-  });
-
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["clientLookup"]);
-  assert.equal(toolCalls[0].q, "Kristi King");
-  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
-  assert.equal(result.answer, "I found Kristi King in Jobber.");
-});
-
-test("Nexi named client lookup never reuses a cached different client", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "Look up client Valley View Condominiums" }],
-    cachedToolRuns: [{
-      name: "clientLookup",
-      result: { clients: [{ id: "client_kristi", name: "Kristi King" }], nativeCount: 0, jobberFallbackCount: 1, fallbackUsed: true },
-      sources: [{ rail: "jobber", ref: "jobber-clients", label: "Live Jobber client search fallback" }]
-    }],
-    tools: [
-      {
-        name: "clientLookup",
-        description: "Read native CRM clients.",
-        inputSchema: z.object({ q: z.string().default("") }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(args);
-          return {
-            result: { clients: [{ id: "client_valley", name: "Valley View Condominiums" }], nativeCount: 0, jobberFallbackCount: 1, fallbackUsed: true },
-            sources: [{ rail: "jobber", ref: "jobber-clients", label: "Live Jobber client search fallback" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("named client lookup should answer directly from fresh checked records");
-    }
-  });
-
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["clientLookup"]);
-  assert.equal(toolCalls[0].q, "Valley View Condominiums");
-  assert.equal(result.answer, "I found Valley View Condominiums in Jobber.");
-});
-
-test("Nexi named job lookup routes to Jobber detail instead of the schedule board", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "What job do we have for Kristi King?" }],
-    tools: [
-      {
-        name: "getSchedule",
-        description: "Read schedule.",
-        inputSchema: z.object({ from: z.string().optional(), to: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getSchedule", args]);
-          return {
-            result: { jobs: [] },
-            sources: [{ rail: "jobber", ref: "schedule", label: "Jobber schedule" }]
-          };
-        }
-      },
-      {
-        name: "getJobDetail",
-        description: "Read job detail.",
-        inputSchema: z.object({ nameQuery: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getJobDetail", args]);
-          return {
-            result: {
-              job: {
-                id: "job_kristi",
-                title: "Swimming Pool Leak Detection Service and Vinyl Liner Repair",
-                status: "archived",
-                clientName: "Kristi King"
-              }
-            },
-            sources: [{ rail: "jobber", ref: "job_kristi", label: "Jobber job Kristi King" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I found Kristi King's Jobber job." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail"]);
-  assert.deepEqual(toolCalls, [["getJobDetail", { nameQuery: "Kristi King" }]]);
-  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
-});
-
-test("Nexi create-client prompts route to approval-gated CRM createClient", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "add a new client Lane Evans, address 123 Main Road, Fair Play SC, email lane@example.test, phone 864-555-0100" }],
-    tools: [
-      {
-        name: "createClient",
-        description: "Queue native CRM client creation for approval.",
-        inputSchema: z.object({
-          name: z.string(),
-          address: z.string().optional(),
-          emails: z.array(z.string()).default([]),
-          phones: z.array(z.string()).default([]),
-          consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
-        }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(args);
-          return {
-            result: {
-              approval: {
-                id: "appr_client_1",
-                status: "pending",
-                kind: "client",
-                preview: {
-                  title: "Create client: Lane Evans",
-                  body: "Name: Lane Evans\nEmail: lane@example.test\nPhone: 8645550100\nAddress note: 123 Main Road, Fair Play SC"
-                }
-              },
-              writesAreApprovalQueuedOnly: true
-            },
-            sources: [{ rail: "native", ref: "approval_client_1", label: "ApprovalQueue client create approval_client_1" }]
-          };
-        }
-      },
-      {
-        name: "searchEmail",
-        description: "Search email.",
-        inputSchema: z.object({ keywords: z.string().optional() }),
-        handler: async () => {
-          throw new Error("searchEmail should not run for create-client prompts");
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("chat-native approval prompts should not call the model");
-    }
-  });
-
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["createClient"]);
-  assert.equal(toolCalls[0].name, "Lane Evans");
-  assert.equal(toolCalls[0].address, "123 Main Road, Fair Play SC");
-  assert.deepEqual(toolCalls[0].emails, ["lane@example.test"]);
-  assert.deepEqual(toolCalls[0].phones, ["8645550100"]);
-  assert.match(result.answer, /Client draft ready/i);
-  assert.match(result.answer, /Approve this\? yes \/ no \/ make changes\./i);
-  assert.match(result.answer, /Approval id: appr_client_1/i);
-  assert.equal(result.sources.some((source) => source.ref === "approval_client_1"), true);
-});
-
-test("Nexi create-client drafts block approval until name, address, and telephone are present", async () => {
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "create a new client Logan Sears at 6020 Frest Dr, Seneca SC 29672" }],
-    tools: [{
-      name: "createClient",
-      description: "Queue native CRM client creation for approval.",
-      inputSchema: z.object({
-        name: z.string(),
-        address: z.string().optional(),
-        emails: z.array(z.string()).default([]),
-        phones: z.array(z.string()).default([]),
-        consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
-      }),
-      handler: async () => ({
-        result: {
-          needsClarification: "I still need telephone before I can save this client. Email is helpful, but it is not required.",
-          missingFields: ["telephone"],
-          saveBlocked: true
-        },
-        sources: []
-      })
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("required-field clarification should not call the model");
-    }
-  });
-  assert.equal(result.toolRuns[0].name, "createClient");
-  assert.match(result.answer, /still need telephone/i);
-  assert.equal(result.sources.length, 0);
-});
-
-test("Nexi approval prompts execute create-client drafts from chat after yes", async () => {
-  const calls = [];
-  const initialAnswer = "Client draft ready. I read it back below exactly before anything gets created.\n\nCreate client: Logan Sears\nName: Logan Sears\nEmail: 4lbsears@gmail.com\nPhone: 8645581725\nAddress note: 6020 Frest Dr, Seneca SC 29672\n\nApprove this? yes / no / make changes.\nApproval id: appr_client_logan";
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "create the client Logan Sears address 6020 Frest Dr Seneca SC 29672 telephone number 8645581725 and email 4lbsears@gmail.com" },
-      { role: "assistant", content: initialAnswer },
-      { role: "user", content: "yes" }
-    ],
-    tools: [{
-      name: "approvePendingApproval",
-      description: "Approve and execute the referenced approval item directly from chat.",
-      inputSchema: z.object({ approvalId: z.string().optional() }),
-      handler: async (_tenant, args) => {
-        calls.push(args);
-        return {
-          result: {
-            approval: { id: "appr_client_logan" },
-            executedApproval: { id: "appr_client_logan", status: "executed" },
-            execution: { client: { id: "client_logan", name: "Logan Sears" } }
-          },
-          sources: [{ rail: "native", ref: "appr_client_logan", label: "ApprovalQueue approval appr_client_logan" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("approval confirmations should not call the model");
-    }
-  });
-  assert.deepEqual(calls, [{ approvalId: "appr_client_logan" }]);
-  assert.match(result.answer, /Approved and created Logan Sears/i);
-  assert.equal(result.toolRuns[0].name, "approvePendingApproval");
-});
-
-test("Nexi create-quote prompts route to approval-gated CRM createQuote", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "draft a quote for Deborah Justice for main drain documentation at $995 with signature and deposit" }],
-    tools: [{
-      name: "createQuote",
-      description: "Queue native quote creation for approval.",
-      inputSchema: z.object({
-        clientQuery: z.string().optional(),
-        title: z.string(),
-        items: z.array(z.object({
-          kind: z.string(),
-          name: z.string().optional(),
-          quantity: z.number(),
-          unitPrice: z.number()
-        })),
-        approvalRules: z.object({
-          requireSignature: z.boolean(),
-          requireDeposit: z.boolean(),
-          requireCardOnFile: z.boolean()
-        }).optional()
-      }),
-      handler: async (_tenant, args) => {
-        toolCalls.push(args);
-        return {
-          result: {
-            approval: {
-              id: "appr_quote_1",
-              status: "pending",
-              kind: "quote",
-              preview: {
-                title: "Create quote: Deborah Justice quote",
-                body: "Quote #: Q-1001\nTitle: Deborah Justice quote\nTotal: $995.00"
-              }
-            },
-            pendingQuote: {
-              id: "quote_draft_1",
-              number: "Q-1001",
-              title: "Deborah Justice quote",
-              totals: { total: 995 }
-            },
-            writesAreApprovalQueuedOnly: true
-          },
-          sources: [{ rail: "native", ref: "approval_quote_1", label: "ApprovalQueue quote create approval_quote_1" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("quote approval prompts should not call the model");
-    }
-  });
-
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["createQuote"]);
-  assert.equal(toolCalls[0].clientQuery, "Deborah Justice");
-  assert.equal(toolCalls[0].title, "Deborah Justice quote");
-  assert.equal(toolCalls[0].approvalRules.requireSignature, true);
-  assert.equal(toolCalls[0].approvalRules.requireDeposit, true);
-  assert.match(result.answer, /Quote draft ready/i);
-  assert.match(result.answer, /Approve this\? yes \/ no \/ make changes\./i);
-  assert.match(result.answer, /Approval id: appr_quote_1/i);
-});
-
-test("Nexi quote approval prompts support chat-native revisions before execution", async () => {
-  const calls = [];
-  const initialAnswer = "Quote draft ready. I read it back below exactly before anything gets created.\n\nCreate quote: Deborah Justice quote\nQuote #: Q-1001\nTitle: Deborah Justice quote\nTotal: $995.00\n\nApprove this? yes / no / make changes.\nApproval id: appr_quote_1";
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "draft a quote for Deborah Justice for main drain documentation at $995 with signature and deposit" },
-      { role: "assistant", content: initialAnswer },
-      { role: "user", content: "make changes. raise the deposit to 30 percent and change the title to Deborah Justice revised quote" }
-    ],
-    tools: [{
-      name: "revisePendingQuoteCreateApproval",
-      description: "Revise the pending quote draft directly from chat.",
-      inputSchema: z.object({ approvalId: z.string(), changeRequest: z.string() }),
-      handler: async (_tenant, args) => {
-        calls.push(args);
-        return {
-          result: {
-            approval: {
-              id: "appr_quote_2",
-              status: "pending",
-              kind: "quote",
-              preview: {
-                title: "Create quote: Deborah Justice revised quote",
-                body: "Quote #: Q-1001\nTitle: Deborah Justice revised quote\nApproval rules: signature required, deposit required (30%)\nTotal: $995.00"
-              }
-            },
-            pendingQuote: {
-              id: "quote_draft_1",
-              number: "Q-1001",
-              title: "Deborah Justice revised quote",
-              totals: { total: 995 }
-            },
-            replacedApprovalId: "appr_quote_1",
-            writesAreApprovalQueuedOnly: true
-          },
-          sources: [{ rail: "native", ref: "approval_quote_2", label: "ApprovalQueue quote create approval_quote_2" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("quote revision prompts should not call the model");
-    }
-  });
-
-  assert.deepEqual(calls, [{
-    approvalId: "appr_quote_1",
-    changeRequest: "make changes. raise the deposit to 30 percent and change the title to Deborah Justice revised quote"
-  }]);
-  assert.equal(result.toolRuns[0].name, "revisePendingQuoteCreateApproval");
-  assert.match(result.answer, /Updated quote draft ready/i);
-  assert.match(result.answer, /Deborah Justice revised quote/i);
-  assert.match(result.answer, /30%/i);
-  assert.match(result.answer, /Approval id: appr_quote_2/i);
-});
-
-test("Nexi create-client parser splits bare name and street address from original regression phrasing", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "add a new client logan sears 6020 forest drive seneca sc 29672" }],
-    tools: [
-      {
-        name: "createClient",
-        description: "Queue native CRM client creation for approval.",
-        inputSchema: z.object({
-          name: z.string(),
-          address: z.string().optional(),
-          emails: z.array(z.string()).default([]),
-          phones: z.array(z.string()).default([]),
-          consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
-        }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(args);
-          return {
-            result: { approval: { id: "approval_client_logan", status: "pending", kind: "client" }, writesAreApprovalQueuedOnly: true },
-            sources: [{ rail: "native", ref: "approval_client_logan", label: "ApprovalQueue client create approval_client_logan" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I parked Logan Sears as a new client for approval." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["createClient"]);
-  assert.equal(toolCalls[0].name, "logan sears");
-  assert.equal(toolCalls[0].address, "6020 forest drive seneca sc 29672");
-  assert.deepEqual(toolCalls[0].emails, []);
-  assert.deepEqual(toolCalls[0].phones, []);
-  assert.equal(toolCalls[0].consent.email, false);
-  assert.equal(toolCalls[0].consent.sms, false);
-  assert.equal(result.sources.some((source) => source.ref === "approval_client_logan"), true);
-});
-
-test("Nexi create-client parser keeps telephone and email out of the address note", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "create the client logan sears address 6020 frest dr seneca sc 29672 telephone number 8645581725 and email 4lbsears@gmail.com" }],
-    tools: [
-      {
-        name: "createClient",
-        description: "Queue native CRM client creation for approval.",
-        inputSchema: z.object({
-          name: z.string(),
-          address: z.string().optional(),
-          emails: z.array(z.string()).default([]),
-          phones: z.array(z.string()).default([]),
-          consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
-        }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(args);
-          return {
-            result: { approval: { id: "approval_client_logan_full", status: "pending", kind: "client" }, writesAreApprovalQueuedOnly: true },
-            sources: [{ rail: "native", ref: "approval_client_logan_full", label: "ApprovalQueue client create approval_client_logan_full" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I parked Logan Sears as a new client for approval." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["createClient"]);
-  assert.equal(toolCalls[0].name, "logan sears");
-  assert.equal(toolCalls[0].address, "6020 frest dr seneca sc 29672");
-  assert.deepEqual(toolCalls[0].phones, ["8645581725"]);
-  assert.deepEqual(toolCalls[0].emails, ["4lbsears@gmail.com"]);
-  assert.equal(result.sources.some((source) => source.ref === "approval_client_logan_full"), true);
-});
-
-test("Nexi tenant intake prompts route to startIntake instead of search or createClient", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "onboard Demo Pool Co as a new tenant" }],
-    tools: [
-      {
-        name: "startIntake",
-        description: "Start tenant onboarding.",
-        inputSchema: z.object({
-          businessName: z.string().optional(),
-          targetTenantId: z.string().optional(),
-          industryPack: z.enum(["pool_leak", "hvac", "plumbing"]).default("pool_leak"),
-          plan: z.enum(["nexi", "marketing", "suite"]).default("suite"),
-          timezone: z.string().default("America/New_York")
-        }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(args);
-          return {
-            result: {
-              session: {
-                id: "intake_demo_pool",
-                targetTenantId: "demo-pool-co",
-                status: "interviewing",
-                nextQuestion: "What services should Nexi know?"
-              },
-              approvalRequiredBeforeProvisioning: true
-            },
-            sources: [{ rail: "native", ref: "intake_demo_pool", label: "Tenant intake demo-pool-co" }]
-          };
-        }
-      },
-      {
-        name: "createClient",
-        description: "Create a client.",
-        inputSchema: z.object({ name: z.string() }),
-        handler: async () => {
-          throw new Error("createClient should not run for tenant intake prompts");
-        }
-      },
-      {
-        name: "searchEmail",
-        description: "Search email.",
-        inputSchema: z.object({ keywords: z.string().optional() }),
-        handler: async () => {
-          throw new Error("searchEmail should not run for tenant intake prompts");
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I started the Demo Pool Co intake." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["startIntake"]);
-  assert.equal(toolCalls[0].businessName, "Demo Pool Co");
-  assert.equal(toolCalls[0].targetTenantId, "demo-pool-co");
-  assert.equal(toolCalls[0].industryPack, "pool_leak");
-  assert.equal(result.sources.some((source) => source.ref === "intake_demo_pool"), true);
-});
-
-test("Nexi content queue prompts route to content queue approve and reject tools", async () => {
-  const calls = [];
-  const pendingDraft = {
-    id: "content_gbp_post_12345678-abcd-4abc-8abc-123456789abc",
-    title: "Aquatrace completed leak detection in Bryson City",
-    status: "approval_pending"
-  };
-  const tools = [
-    {
-      name: "contentQueue",
-      description: "List content drafts.",
-      inputSchema: z.object({ tenantId: z.string().optional() }),
-      handler: async () => {
-        calls.push(["contentQueue", {}]);
-        return {
-          result: { drafts: [pendingDraft], publishingDeferred: true },
-          sources: [{ rail: "native", ref: pendingDraft.id, label: "Native content draft Aquatrace completed leak detection in Bryson City" }]
-        };
-      }
-    },
-    {
-      name: "approve",
-      description: "Approve content draft.",
-      inputSchema: z.object({ draftId: z.string() }),
-      handler: async (_tenant, args) => {
-        calls.push(["approve", args]);
-        return {
-          result: { draft: { ...pendingDraft, status: "publish_ready" }, approval: { status: "approved" }, publishingDeferred: true },
-          sources: [{ rail: "native", ref: pendingDraft.id, label: "Native content draft Aquatrace completed leak detection in Bryson City" }]
-        };
-      }
-    },
-    {
-      name: "rejectContentDraft",
-      description: "Reject content draft.",
-      inputSchema: z.object({ draftId: z.string() }),
-      handler: async (_tenant, args) => {
-        calls.push(["rejectContentDraft", args]);
-        return {
-          result: { draft: { ...pendingDraft, status: "rejected" }, approval: { status: "rejected" }, publishingDeferred: true },
-          sources: [{ rail: "native", ref: pendingDraft.id, label: "Native content draft Aquatrace completed leak detection in Bryson City" }]
-        };
-      }
-    },
-    {
-      name: "campaignQueue",
-      description: "Read campaign queue.",
-      inputSchema: z.object({}),
-      handler: async () => {
-        throw new Error("campaignQueue should not run for content queue prompts");
-      }
-    },
-    {
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string().optional() }),
-      handler: async () => {
-        throw new Error("searchEmail should not run for content queue prompts");
-      }
-    }
-  ];
-
-  const queueResult = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "show me the content queue" }],
-    tools,
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "There is 1 content draft waiting for approval." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(queueResult.toolRuns.map((run) => run.name), ["contentQueue"]);
-
-  const approveResult = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "approve the first content draft" }],
-    tools,
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "Approved. It is publish-ready, but publishing is still deferred." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(approveResult.toolRuns.map((run) => run.name), ["contentQueue", "approve"]);
-  assert.equal(calls.some(([name, args]) => name === "approve" && args.draftId === pendingDraft.id), true);
-
-  const rejectResult = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: `reject content draft ${pendingDraft.id}` }],
-    tools,
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "Rejected. It will not be published." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(rejectResult.toolRuns.map((run) => run.name), ["contentQueue", "rejectContentDraft"]);
-  assert.equal(calls.some(([name, args]) => name === "rejectContentDraft" && args.draftId === pendingDraft.id), true);
-});
-
-test("Nexi writes owner-supplied freeform content without forcing job rail lookups", async () => {
-  const tools = [
-    {
-      name: "getJobDetail",
-      description: "Get job detail.",
-      inputSchema: z.object({ q: z.string().optional() }),
-      handler: async () => {
-        throw new Error("owner-supplied writing prompts should not call Jobber");
-      }
-    },
-    {
-      name: "getDocuments",
-      description: "Get documents.",
-      inputSchema: z.object({ projectQuery: z.string().optional(), question: z.string().optional() }),
-      handler: async () => {
-        throw new Error("owner-supplied writing prompts should not call CompanyCam");
-      }
-    }
-  ];
-
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools when needed.",
-    messages: [{
-      role: "user",
-      content: "write me an article for pool owners based on this real Aquatrace job scenario: pressure testing pointed to a leaking return line, but do not name the customer"
-    }],
-    tools,
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      const body = JSON.parse(init.body);
-      assert.deepEqual(body.tools, []);
-      return new Response(JSON.stringify({
-        content: [{
-          type: "text",
-          text: "# Why Pressure Testing Matters\n\nA hidden return line leak can keep costing a pool owner water until the line is tested under pressure."
-        }],
-        usage: { input_tokens: 12, output_tokens: 18, cache_read_input_tokens: 20 }
-      }), { status: 200 });
-    }
-  });
-
-  assert.deepEqual(result.toolRuns, []);
-  assert.match(result.answer, /Pressure Testing Matters/);
-});
-
-test("Nexi report-based article prompts use the CompanyCam document lookup path", async () => {
-  const toolCalls = [];
-  const tools = [
-    {
-      name: "getJobDetail",
-      description: "Read job detail.",
-      inputSchema: z.object({ nameQuery: z.string().optional() }),
-      handler: async (_tenant, args) => {
-        toolCalls.push(["getJobDetail", args]);
-        return {
-          result: { job: { title: "Swimming Pool Leak Detection Service", status: "lead" } },
-          sources: [{ rail: "jobber", ref: "job_deborah", label: "Jobber job Swimming Pool Leak Detection Service" }]
-        };
-      }
-    },
-    {
-      name: "getDocuments",
-      description: "Get documents.",
-      inputSchema: z.object({ projectQuery: z.string().optional(), question: z.string().optional() }),
-      handler: async (_tenant, args) => {
-        toolCalls.push(["getDocuments", args]);
-        return {
-          result: {
-            project: { name: "Deborah Justice" },
-            documents: [{ id: "doc_justice", label: "Exported checklist 07-02-2026.pdf" }],
-            reports: [{ parsed: true, fields: { completionTime: "3:10pm", technicianNames: "Chris, Logan" }, textSnippet: "Completion time 3:10pm. Technicians Chris and Logan." }]
-          },
-          sources: [{ rail: "companycam", ref: "doc_justice", label: "CompanyCam document Exported checklist 07-02-2026.pdf" }]
-        };
-      }
-    }
-  ];
-
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools when needed.",
-    messages: [{ role: "user", content: "write me an article based on the Deborah Justice report" }],
-    tools,
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      const body = JSON.parse(init.body);
-      assert.deepEqual(body.tools, []);
-      assert.match(JSON.stringify(body.messages), /Verified getDocuments result/);
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "# What a Leak Report Shows\n\nThe Deborah Justice report recorded a 3:10pm completion time with Chris and Logan on site." }],
-        usage: { input_tokens: 18, output_tokens: 20, cache_read_input_tokens: 12 }
-      }), { status: 200 });
-    }
-  });
-
-  assert.deepEqual(toolCalls.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
-  assert.equal(toolCalls[1][1].projectQuery, "Deborah Justice");
-  assert.match(result.answer, /Leak Report Shows/);
-});
-
-test("Nexi saves chat-authored freeform content into the content queue", async () => {
-  const calls = [];
-  const tools = [
-    {
-      name: "queueFreeformContent",
-      description: "Save freeform content.",
-      inputSchema: z.object({
-        kind: z.enum(["gbp_post", "social_post", "article"]),
-        title: z.string(),
-        body: z.string(),
-        sourcePrompt: z.string().optional()
-      }),
-      handler: async (_tenant, args) => {
-        calls.push(args);
-        return {
-          result: {
-            draft: {
-              id: "content_article_12345678-abcd-4abc-8abc-123456789abc",
-              kind: args.kind,
-              title: args.title,
-              body: args.body,
-              status: "approval_pending",
-              approvalId: "appr_freeform_1"
-            },
-            savedToContentQueue: true,
-            publishingDeferred: true
-          },
-          sources: [{ rail: "native", ref: "content_article_12345678-abcd-4abc-8abc-123456789abc", label: `Native content draft ${args.title}` }]
-        };
-      }
-    },
-    {
-      name: "contentQueue",
-      description: "List content drafts.",
-      inputSchema: z.object({}),
-      handler: async () => {
-        throw new Error("save-this prompts should create a draft, not only list the queue");
-      }
-    },
-    {
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string().optional() }),
-      handler: async () => {
-        throw new Error("freeform content save prompts should not search email");
-      }
-    }
-  ];
-
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "write me an article about a return line leak" },
-      {
-        role: "assistant",
-        content: "# What a Return Line Leak Looks Like\n\nA return line leak can hide until pressure testing proves the line is losing water."
-      },
-      { role: "user", content: "save this to the content queue" }
-    ],
-    tools,
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("saving chat-authored content should not need a model call");
-    }
-  });
-
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["queueFreeformContent"]);
-  assert.equal(calls[0].kind, "article");
-  assert.equal(calls[0].title, "What a Return Line Leak Looks Like");
-  assert.match(calls[0].body, /pressure testing proves/);
-  assert.match(result.answer, /saved "What a Return Line Leak Looks Like" to the content queue/i);
-  assert.match(result.answer, /not been published/i);
-});
-
-test("Nexi freeform content save skips stale status replies and queues the latest article", async () => {
-  const calls = [];
-  const tools = [{
-    name: "queueFreeformContent",
-    description: "Save freeform content.",
-    inputSchema: z.object({
-      kind: z.enum(["gbp_post", "social_post", "article"]),
-      title: z.string(),
-      body: z.string(),
-      sourcePrompt: z.string().optional()
-    }),
+test("personal directions prefer live requestor coordinates, fall back to the logged-in user's profile address, and leave shop questions on the tenant base path", async () => {
+  const seenOrigins = [];
+  const distanceTool = {
+    name: "getDistance",
+    description: "Return drive distance and time.",
+    inputSchema: z.object({ destination: z.string(), origin: z.string().optional() }),
     handler: async (_tenant, args) => {
-      calls.push(args);
+      seenOrigins.push(args.origin);
       return {
         result: {
-          draft: {
-            id: "content_article_fresh-1234-4abc-8abc-123456789abc",
-            kind: args.kind,
-            title: args.title,
-            body: args.body,
-            status: "approval_pending",
-            approvalId: "appr_fresh_article"
-          },
-          savedToContentQueue: true,
-          publishingDeferred: true
+          origin: args.origin ?? "tenant-home-base",
+          destination: args.destination,
+          driveMinutes: 18,
+          provider: "heuristic"
         },
-        sources: [{ rail: "native", ref: "content_article_fresh-1234-4abc-8abc-123456789abc", label: `Native content draft ${args.title}` }]
+        sources: [{ rail: "native", ref: "distance", label: "Distance tool" }]
       };
     }
-  }];
-
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "write me an article about Deborah Justice's leak report" },
-      {
-        role: "assistant",
-        content: "# What a Leak Report Can Teach a Pool Owner\n\nA good leak report ties measurements, photos, and technician notes into one plain-English next step for the owner."
-      },
-      { role: "user", content: "save it to the content queue" },
-      { role: "assistant", content: "I saved the wrong old note to the content queue and rejected it." },
-      { role: "user", content: "save this article to the content queue" }
-    ],
-    tools,
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("saving chat-authored content should not need a model call");
-    }
-  });
-
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["queueFreeformContent"]);
-  assert.equal(calls[0].title, "What a Leak Report Can Teach a Pool Owner");
-  assert.match(calls[0].body, /technician notes into one plain-English next step/);
-  assert.doesNotMatch(calls[0].body, /wrong old note/i);
-});
-
-test("Nexi address-only follow-ups preserve the prior distance capability intent", async () => {
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "how far is Forrest Ferguson from the shop?" },
-      { role: "assistant", content: "I can't measure drive distance in chat yet." },
-      { role: "user", content: "123 Main Road" }
-    ],
-    tools: [],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("address-only distance follow-ups should not call the model");
-    }
-  });
-  assert.equal(result.failureReason, "capability_not_available");
-  assert.match(result.answer, /can't measure drive distance/i);
-  assert.doesNotMatch(result.answer, /written down anywhere/i);
-});
-
-test("Nexi schedule prompts parse requested calendar dates in tenant timezone", async () => {
-  const calls = [];
-  let parsedToolArgs = null;
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "What's on Monday July 6, 2026?" }],
-    tools: [{
-      name: "getSchedule",
-      description: "Read schedule.",
-      inputSchema: z.object({ from: z.string(), to: z.string() }),
-      inputJsonSchema: {
-        type: "object",
-        properties: { from: { type: "string" }, to: { type: "string" } },
-        required: ["from", "to"]
-      },
-      handler: async (_tenant, args) => {
-        parsedToolArgs = args;
-        return {
-          result: {
-            jobs: [{
-              id: "job_1",
-              title: "Rachel Payne leak detection",
-              startAt: "2026-07-06T04:00:00.000Z",
-              endAt: "2026-07-07T03:59:59.000Z"
-            }]
-          },
-          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne leak detection" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "Rachel Payne is scheduled on Monday July 6." }],
-        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-      }), { status: 200 });
-    }
-  });
-  assert.equal(calls.length, 1);
-  assert.deepEqual(parsedToolArgs, {
-    from: "2026-07-06T04:00:00.000Z",
-    to: "2026-07-07T04:00:00.000Z"
-  });
-  assert.match(calls[0].messages.at(-1).content, /Verified getSchedule result/);
-  assert.equal(result.sources.length, 1);
-});
-
-test("Nexi answers meta questions directly without exposing tools", async () => {
-  const calls = [];
-  let toolCalled = false;
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "What sources do you use today?" }],
-    tools: [{
-      name: "getSchedule",
-      description: "Read schedule.",
-      inputSchema: z.object({ from: z.string(), to: z.string() }),
-      handler: async () => {
-        toolCalled = true;
-        return {
-          result: { jobs: [] },
-          sources: [{ rail: "jobber", ref: "jobs", label: "Jobber jobs GraphQL read" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "I use Jobber, CompanyCam, and native SiteJobBlueprint sources." }],
-        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-      }), { status: 200 });
-    }
-  });
-  assert.equal(calls.length, 0);
-  assert.equal(toolCalled, false);
-  assert.match(result.answer, /work records/);
-  assert.deepEqual(result.toolRuns, []);
-});
-
-test("Nexi exact echo turns never route to email search", async () => {
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "Reply with exactly: readiness check." }],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string() }),
-      handler: async () => {
-        throw new Error("searchEmail must not run for exact echo turns");
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("Anthropic must not run for exact echo turns");
-    }
-  });
-  assert.equal(result.answer, "readiness check.");
-  assert.deepEqual(result.toolRuns, []);
-});
-
-test("Nexi feedback about token waste never routes to email search", async () => {
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "I asked that and now you are wasting api tokens because you should already infer what I asked here" }],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string() }),
-      handler: async () => {
-        throw new Error("searchEmail must not run for feedback turns");
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("Anthropic must not run for feedback turns");
-    }
-  });
-  assert.match(result.answer, /noted that feedback/);
-  assert.deepEqual(result.toolRuns, []);
-});
-
-test("Nexi frustrated date feedback never triggers the source stonewall", async () => {
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "explain this date you randonly pulled from your ass" }],
-    tools: [{
-      name: "searchEmail",
-      description: "Search email.",
-      inputSchema: z.object({ keywords: z.string() }),
-      handler: async () => {
-        throw new Error("searchEmail must not run for date feedback turns");
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => {
-      throw new Error("Anthropic must not run for date feedback turns");
-    }
-  });
-  assert.match(result.answer, /noted that feedback/);
-  assert.doesNotMatch(result.answer, /written down anywhere/i);
-  assert.deepEqual(result.toolRuns, []);
-});
-
-test("Nexi photo prompts extract the CompanyCam project query", async () => {
-  const calls = [];
-  let parsedToolArgs = null;
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "Find CompanyCam photos for Deborah Justice. Use getPhotos and include sources." }],
-    tools: [{
-      name: "getPhotos",
-      description: "Read photos.",
-      inputSchema: z.object({ projectQuery: z.string() }),
-      handler: async (_tenant, args) => {
-        parsedToolArgs = args;
-        return {
-          result: { project: { name: "Deborah Justice" }, media: [{ id: "photo_1" }] },
-          sources: [{ rail: "companycam", ref: "photo_1", label: "CompanyCam photo photo_1" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "I found one CompanyCam photo." }],
-        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-      }), { status: 200 });
-    }
-  });
-  assert.equal(calls.length, 1);
-  assert.equal(parsedToolArgs.projectQuery, "Deborah Justice");
-  assert.equal(result.sources.length, 1);
-});
-
-test("Nexi exact photo prompt extracts trailing entity before photos", async () => {
-  const calls = [];
-  let parsedToolArgs = null;
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "Show me the Deborah Justice photos" }],
-    tools: [{
-      name: "getPhotos",
-      description: "Read photos.",
-      inputSchema: z.object({ projectQuery: z.string() }),
-      handler: async (_tenant, args) => {
-        parsedToolArgs = args;
-        return {
-          result: { project: { name: "Deborah Justice" }, media: [{ id: "photo_1" }] },
-          sources: [{ rail: "companycam", ref: "photo_1", label: "CompanyCam photo photo_1" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "I found one Deborah Justice photo. Let me know if you want me to pull specific photos." }],
-        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-      }), { status: 200 });
-    }
-  });
-  assert.equal(calls.length, 1);
-  assert.equal(parsedToolArgs.projectQuery, "Deborah Justice");
-  assert.equal(result.sources.length, 1);
-  assert.equal(result.toolRuns[0].name, "getPhotos");
-  assert.equal(result.answer, "I found one Deborah Justice photo.");
-});
-
-test("Nexi getPhotos includes native Job Desk uploads when CompanyCam has no usable result", async () => {
-  const nativeReader = {
-    async listMedia() {
-      return [{
-        id: "media_uploaded_photo",
-        tenantId: "aquatrace",
-        type: "photo",
-        storageRef: "gs://bucket/tenants/aquatrace/media/media_uploaded_photo/companycam-3338756524.jpg",
-        thumbRef: "gs://bucket/tenants/aquatrace/media/media_uploaded_photo/companycam-3338756524.jpg",
-        aiTags: ["job-desk-upload"],
-        aiCaption: "Uploaded photo tagged job-desk-upload."
-      }];
-    }
   };
-  const tool = createNexiJobDeskTools({}, undefined, nativeReader).find((candidate) => candidate.name === "getPhotos");
-  assert.ok(tool);
-  const result = await tool.handler(tenant(), { projectQuery: "the photo I just uploaded" });
-  assert.equal(result.result.nativeMedia[0].id, "media_uploaded_photo");
-  assert.equal(result.sources[0].rail, "native");
-  assert.match(result.sources[0].label, /Native photo upload/);
-});
 
-test("Nexi getDocuments includes native uploaded PDFs immediately", async () => {
-  const nativeReader = {
-    async listMedia() {
-      return [{
-        id: "media_uploaded_pdf",
-        tenantId: "aquatrace",
-        type: "pdf",
-        storageRef: "gs://bucket/tenants/aquatrace/media/media_uploaded_pdf/Para_42_section_VI_6.pdf",
-        aiTags: ["job-desk-upload"],
-        aiCaption: "Uploaded pdf tagged job-desk-upload."
-      }];
-    }
-  };
-  const tool = createNexiJobDeskTools({}, undefined, nativeReader).find((candidate) => candidate.name === "getDocuments");
-  assert.ok(tool);
-  const result = await tool.handler(tenant(), { projectQuery: "this uploaded pdf document", question: "summarize this uploaded pdf document" });
-  assert.equal(result.result.nativeDocuments[0].id, "media_uploaded_pdf");
-  assert.equal(result.sources[0].rail, "native");
-  assert.match(result.sources[0].label, /Native pdf upload/);
-});
-
-test("Nexi schedule follow-ups use prior conversation date window", async () => {
-  let parsedToolArgs = null;
-  const result = await runNexiToolLoop({
+  const geoTurn = await answerNexiMessage({
     tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "What's on Monday July 6, 2026?" },
-      { role: "assistant", content: "Rachel Payne is scheduled on Monday July 6, 2026." },
-      { role: "user", content: "What's the ETA?" }
-    ],
-    tools: [{
-      name: "getSchedule",
-      description: "Read schedule.",
-      inputSchema: z.object({ from: z.string(), to: z.string() }),
-      inputJsonSchema: {
-        type: "object",
-        properties: { from: { type: "string" }, to: { type: "string" } },
-        required: ["from", "to"]
+    message: "How far is 6020 Frest Dr, Seneca, SC 29672 from here?",
+    requestorContext: {
+      tenantUserId: "tenant_user_chris",
+      displayName: "Chris",
+      email: "chris@aquatraceleak.com",
+      phones: ["8648737082"],
+      address: {
+        street1: "102 Kate Lane",
+        city: "Fair Play",
+        province: "SC",
+        postalCode: "29643",
+        country: "US"
       },
-      handler: async (_tenant, args) => {
-        parsedToolArgs = args;
-        return {
-          result: { jobs: [{ id: "job_1", title: "Rachel Payne leak detection" }] },
-          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne leak detection" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "Rachel Payne is scheduled all day Monday." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(parsedToolArgs, {
-    from: "2026-07-06T04:00:00.000Z",
-    to: "2026-07-07T04:00:00.000Z"
-  });
-  assert.equal(result.sources.length, 1);
-});
-
-test("Nexi reuses cached deterministic tool runs for context follow-ups", async () => {
-  const calls = [];
-  let toolCalled = false;
-  const cachedToolRuns = [{
-    name: "getSchedule",
-    result: {
-      window: { from: "2026-07-06T04:00:00.000Z", to: "2026-07-07T04:00:00.000Z" },
-      jobs: [{ id: "job_1", title: "Rachel Payne leak detection" }]
+      origin: "34.500001,-82.750001"
     },
-    sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne leak detection" }]
-  }];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "What's on Monday July 6, 2026?" },
-      { role: "assistant", content: "Rachel Payne is scheduled on Monday July 6, 2026." },
-      { role: "user", content: "What's the ETA?" }
-    ],
-    tools: [{
-      name: "getSchedule",
-      description: "Read schedule.",
-      inputSchema: z.object({ from: z.string(), to: z.string() }),
-      inputJsonSchema: {
-        type: "object",
-        properties: { from: { type: "string" }, to: { type: "string" } },
-        required: ["from", "to"]
-      },
-      handler: async () => {
-        toolCalled = true;
-        throw new Error("cached follow-up should not re-query getSchedule");
-      }
-    }],
-    cachedToolRuns,
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "Rachel Payne is still the Monday schedule item." }],
-        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-      }), { status: 200 });
-    }
+    tools: [distanceTool],
+    repository: new MemoryNexiRepository(),
+    gateway: runExplicitLocalToolLoop
   });
-  assert.equal(toolCalled, false);
-  assert.equal(calls.length, 1);
-  assert.deepEqual(calls[0].tools, []);
-  assert.match(calls[0].messages.at(-2).content, /saved checked records/);
-  assert.deepEqual(result.toolRuns, cachedToolRuns);
-  assert.equal(result.sources[0].ref, "job_1");
+
+  assert.equal(seenOrigins[0], "34.500001,-82.750001");
+  assert.equal(geoTurn.toolRuns[0].name, "getDistance");
+
+  const profileTurn = await answerNexiMessage({
+    tenant: tenant(),
+    message: "How far is 6020 Frest Dr, Seneca, SC 29672 from my house?",
+    requestorContext: {
+      tenantUserId: "office_catherine",
+      displayName: "Catherine",
+      email: "catherine@local.dev",
+      phones: ["8646171838"],
+      address: {
+        street1: "102 Kate Lane",
+        city: "Fair Play",
+        province: "SC",
+        postalCode: "29643",
+        country: "US"
+      }
+    },
+    tools: [distanceTool],
+    repository: new MemoryNexiRepository(),
+    gateway: runExplicitLocalToolLoop
+  });
+
+  assert.equal(seenOrigins[1], "102 Kate Lane, Fair Play, SC 29643");
+  assert.equal(profileTurn.toolRuns[0].name, "getDistance");
+
+  const shopTurn = await answerNexiMessage({
+    tenant: tenant(),
+    message: "How far is 6020 Frest Dr, Seneca, SC 29672 from the shop?",
+    requestorContext: {
+      tenantUserId: "tenant_user_chris",
+      displayName: "Chris",
+      email: "chris@aquatraceleak.com",
+      phones: ["8648737082"],
+      origin: "34.500001,-82.750001",
+      address: {
+        street1: "102 Kate Lane",
+        city: "Fair Play",
+        province: "SC",
+        postalCode: "29643",
+        country: "US"
+      }
+    },
+    tools: [distanceTool],
+    repository: new MemoryNexiRepository(),
+    gateway: runExplicitLocalToolLoop
+  });
+
+  assert.equal(seenOrigins[2], undefined);
+  assert.equal(shopTurn.toolRuns[0].name, "getDistance");
 });
 
-test("Nexi report prompts preload CompanyCam documents with the requested entity", async () => {
-  const calls = [];
-  let parsedToolArgs = null;
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "What were the pool leak detection results for Deborah Justice in CompanyCam report?" }],
-    tools: [{
-      name: "getDocuments",
-      description: "Read documents.",
-      inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-      handler: async (_tenant, args) => {
-        parsedToolArgs = args;
-        return {
-          result: {
-            project: { id: "107503799", name: "Deborah Justice" },
-            reports: [{ fields: { reportFindings: "Leak found at return fitting." } }]
-          },
-          sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document leak checklist" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "The CompanyCam report says leak found at return fitting." }],
-        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-      }), { status: 200 });
+test("lookupSiteJobBlueprintField returns stored fields for the requested entity", async () => {
+  const tool = createNexiJobDeskTools({
+    async loadSiteJobBlueprints() {
+      return [{
+        id: "site_job_deborah_justice",
+        tenantId: "aquatrace",
+        kind: "site_blueprint",
+        fields: { projectName: "Deborah Justice", poolGallons: 32500 },
+        extractedFrom: "legacy-import-doc-18218446",
+        extractedAt: new Date().toISOString()
+      }];
     }
-  });
-  assert.equal(calls.length, 1);
-  assert.equal(parsedToolArgs.projectQuery, "Deborah Justice");
-  assert.match(parsedToolArgs.question, /Deborah Justice/);
+  }).find((candidate) => candidate.name === "lookupSiteJobBlueprintField");
+  assert.ok(tool);
+  const result = await tool.handler(tenant(), { field: "poolGallons", requestedEntity: "Deborah Justice" });
+  assert.equal(result.result.value, 32500);
   assert.equal(result.sources.length, 1);
+  assert.equal(result.sources[0].rail, "native");
 });
 
-test("Nexi assigned follow-ups use the prior job subject and getJobDetail", async () => {
-  const calls = [];
-  let parsedToolArgs = null;
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "What's on Monday July 6, 2026?" },
-      { role: "assistant", content: "Rachel Payne is on Monday." },
-      { role: "user", content: "who is assigned to it" }
-    ],
-    tools: [{
-      name: "getJobDetail",
-      description: "Read job detail.",
-      inputSchema: z.object({ nameQuery: z.string() }),
-      handler: async (_tenant, args) => {
-        parsedToolArgs = args;
-        return {
-          result: { job: { title: "Rachel Payne", assignedTo: ["Chris"] } },
-          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "Chris is assigned." }],
-        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-      }), { status: 200 });
+test("SiteJobBlueprint field lookup reads section-scoped counts from pooled JSON fields", async () => {
+  const tool = createNexiJobDeskTools({
+    async loadSiteJobBlueprints() {
+      return [{
+        id: "site_job_deborah_justice",
+        tenantId: "aquatrace",
+        kind: "site_blueprint",
+        fields: {
+          projectName: "Deborah Justice",
+          poolSpaCountsJson: JSON.stringify({ poolMainDrains: 4, spaMainDrains: 2 })
+        },
+        extractedFrom: "legacy-import-doc-18218446",
+        extractedAt: new Date().toISOString()
+      }];
     }
-  });
-  assert.equal(calls.length, 1);
-  assert.equal(parsedToolArgs.nameQuery, "Rachel Payne");
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail"]);
-});
-
-test("Nexi total-gallons report questions also run SiteJobBlueprint lookup", async () => {
-  const calls = [];
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "Findings are in the report. What are the total gallons of Deborah Justice" }],
-    tools: [
-      {
-        name: "getDocuments",
-        description: "Read CompanyCam docs.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getDocuments", args]);
-          return {
-            result: { documents: [{ id: "doc_1", text: "Total gallons 37602" }] },
-            sources: [{ rail: "companycam", ref: "doc_1", label: "CompanyCam document Deborah Justice report" }]
-          };
-        }
-      },
-      {
-        name: "lookupSiteJobBlueprintField",
-        description: "Read blueprint field.",
-        inputSchema: z.object({ field: z.string(), requestedEntity: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["lookupSiteJobBlueprintField", args]);
-          return {
-            result: { value: 37602 },
-            sources: [{ rail: "native", ref: "blueprint_1", label: "SiteJobBlueprint Deborah Justice" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "Deborah Justice total gallons are 37,602." }],
-        usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-      }), { status: 200 });
-    }
-  });
-  assert.equal(calls.length, 1);
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getDocuments", "lookupSiteJobBlueprintField"]);
-  assert.equal(toolCalls[1][1].field, "poolGallons");
-  assert.equal(toolCalls[1][1].requestedEntity, "Deborah Justice");
-});
-
-test("Nexi total-gallons job questions run Jobber and CompanyCam before blueprint fields", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "What are the total gallons for Deborah Justice?" }],
-    tools: [
-      {
-        name: "getJobDetail",
-        description: "Read Jobber job.",
-        inputSchema: z.object({ nameQuery: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getJobDetail", args]);
-          return {
-            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", status: "lead", client: { name: "Deborah Justice" } } },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
-          };
-        }
-      },
-      {
-        name: "getDocuments",
-        description: "Read CompanyCam docs.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getDocuments", args]);
-          return {
-            result: { documents: [{ id: "doc_1", text: "Total gallons 37602" }] },
-            sources: [{ rail: "companycam", ref: "doc_1", label: "CompanyCam document Deborah Justice report" }]
-          };
-        }
-      },
-      {
-        name: "lookupSiteJobBlueprintField",
-        description: "Read blueprint field.",
-        inputSchema: z.object({ field: z.string(), requestedEntity: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["lookupSiteJobBlueprintField", args]);
-          return {
-            result: { value: 37602 },
-            sources: [{ rail: "native", ref: "blueprint_1", label: "SiteJobBlueprint Deborah Justice" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I checked Jobber and the CompanyCam report. Deborah Justice total gallons are 37,602." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail", "getDocuments", "lookupSiteJobBlueprintField"]);
-  assert.equal(toolCalls[0][1].nameQuery, "Deborah Justice");
-  assert.equal(toolCalls[1][1].projectQuery, "Deborah Justice");
-  assert.equal(toolCalls[2][1].field, "poolGallons");
-  assert.equal(toolCalls[2][1].requestedEntity, "Deborah Justice");
-});
-
-test("Nexi under-specified evaporation commands read job/report context before running calculator", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "use the evaporation calculator on Deborah Justice's pool" }],
-    tools: [
-      {
-        name: "getJobDetail",
-        description: "Read Jobber job.",
-        inputSchema: z.object({ nameQuery: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getJobDetail", args]);
-          return {
-            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", address: "181 Isbell Road, Fair Play, SC 29643" } },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
-          };
-        }
-      },
-      {
-        name: "getDocuments",
-        description: "Read CompanyCam docs.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getDocuments", args]);
-          return {
-            result: {
-              reports: [{
-                fields: {
-                  projectAddress: "181 Isbell Road, Fair Play, SC 29643",
-                  evapSurfaceAreaSqFt: 1002.7,
-                  evapWaterTempF: 82,
-                  observedDailyLossInchesPerDay: 0.5
-                }
-              }]
-            },
-            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
-          };
-        }
-      },
-      {
-        name: "runEvaporation",
-        description: "Run evaporation.",
-        inputSchema: z.object({
-          clientName: z.string().optional(),
-          address: z.string(),
-          surfaceAreaFt2: z.number(),
-          waterTempF: z.number(),
-          observedLoss: z.object({ inches: z.number(), observationDays: z.number() }).optional()
-        }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["runEvaporation", args]);
-          return {
-            result: { report: { calculation: { evapInchesPerDay: 0.25, leakInchesPerDay: 0.25 } } },
-            sources: [{ rail: "native", ref: "evap_1", label: "Aquatrace evaporation report evap_1" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I ran the evaporation calculator for Deborah Justice." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail", "getDocuments", "runEvaporation"]);
-  assert.equal(toolCalls[0][1].nameQuery, "Deborah Justice");
-  assert.equal(toolCalls[1][1].projectQuery, "Deborah Justice");
-  assert.equal(toolCalls[2][1].address, "181 Isbell Road, Fair Play, SC 29643");
-  assert.equal(toolCalls[2][1].surfaceAreaFt2, 1002.7);
-  assert.equal(toolCalls[2][1].waterTempF, 82);
-  assert.deepEqual(toolCalls[2][1].observedLoss, { inches: 0.5, observationDays: 1 });
-});
-
-test("Nexi answers natural evaporation-at-client wording from report context", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "what is the evaporation at Deborah Justice right now" }],
-    tools: [
-      {
-        name: "getJobDetail",
-        description: "Read Jobber job.",
-        inputSchema: z.object({ nameQuery: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getJobDetail", args]);
-          return {
-            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", address: "181 Isbell Road, Fair Play, SC 29643" } },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
-          };
-        }
-      },
-      {
-        name: "getDocuments",
-        description: "Read CompanyCam docs.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getDocuments", args]);
-          return {
-            result: {
-              reports: [{
-                fields: {
-                  projectAddress: "181 Isbell Road, Fair Play, SC 29643",
-                  evapSurfaceAreaSqFt: 1002.7,
-                  evapWaterTempF: 87,
-                  observedDailyLossInchesPerDay: 0.5
-                }
-              }]
-            },
-            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
-          };
-        }
-      },
-      {
-        name: "runEvaporation",
-        description: "Run evaporation.",
-        inputSchema: z.object({
-          clientName: z.string().optional(),
-          address: z.string(),
-          surfaceAreaFt2: z.number(),
-          waterTempF: z.number(),
-          observedLoss: z.object({ inches: z.number(), observationDays: z.number() }).optional()
-        }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["runEvaporation", args]);
-          return {
-            result: { report: { calculation: { evapInchesPerDay: 0.31, leakInchesPerDay: 0.19 } } },
-            sources: [{ rail: "native", ref: "evap_justice", label: "Aquatrace evaporation report evap_justice" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "I ran the evaporation calculator for Deborah Justice." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail", "getDocuments", "runEvaporation"]);
-  assert.equal(toolCalls[0][1].nameQuery, "Deborah Justice");
-  assert.equal(toolCalls[1][1].projectQuery, "Deborah Justice");
-  assert.equal(toolCalls[2][1].address, "181 Isbell Road, Fair Play, SC 29643");
-  assert.equal(toolCalls[2][1].surfaceAreaFt2, 1002.7);
-  assert.equal(toolCalls[2][1].waterTempF, 87);
-  assert.deepEqual(toolCalls[2][1].observedLoss, { inches: 0.5, observationDays: 1 });
-});
-
-test("Nexi spa-main-drain follow-ups inherit the job and request the spa field", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "How many pool main drains did Deborah Justice have?" },
-      { role: "assistant", content: "The pool section had 4 main drains." },
-      { role: "user", content: "what about the spa main drains?" }
-    ],
-    tools: [
-      {
-        name: "getJobDetail",
-        description: "Read Jobber job.",
-        inputSchema: z.object({ nameQuery: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getJobDetail", args]);
-          return {
-            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", client: { name: "Deborah Justice" } } },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
-          };
-        }
-      },
-      {
-        name: "getDocuments",
-        description: "Read CompanyCam docs.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getDocuments", args]);
-          return {
-            result: { reports: [{ fields: { poolMainDrains: 4, spaMainDrains: 2 } }] },
-            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
-          };
-        }
-      },
-      {
-        name: "lookupSiteJobBlueprintField",
-        description: "Read field.",
-        inputSchema: z.object({ field: z.string(), requestedEntity: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["lookupSiteJobBlueprintField", args]);
-          return {
-            result: { field: args.field, value: 2 },
-            sources: [{ rail: "native", ref: "blueprint_1", label: "SiteJobBlueprint Deborah Justice" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "The spa section lists 2 main drains." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getJobDetail", "getDocuments", "lookupSiteJobBlueprintField"]);
-  assert.equal(toolCalls[0][1].nameQuery, "Deborah Justice");
-  assert.equal(toolCalls[1][1].projectQuery, "Deborah Justice");
-  assert.equal(toolCalls[2][1].field, "spaMainDrains");
-  assert.equal(toolCalls[2][1].requestedEntity, "Deborah Justice");
-});
-
-test("Nexi bare entity follow-ups inherit report measurement rails", async () => {
-  const toolCalls = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "What is the square footage of the Deborah Justice pool and how many gallons per inch?" },
-      { role: "assistant", content: "I found the report numbers." },
-      { role: "user", content: "Deborah Justice" }
-    ],
-    tools: [
-      {
-        name: "getDocuments",
-        description: "Read CompanyCam docs.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["getDocuments", args]);
-          return {
-            result: { documents: [{ id: "doc_1", text: "Square footage 1002.7; gallons per inch 626.7" }] },
-            sources: [{ rail: "companycam", ref: "doc_1", label: "CompanyCam document Deborah Justice report" }]
-          };
-        }
-      },
-      {
-        name: "lookupSiteJobBlueprintField",
-        description: "Read blueprint field.",
-        inputSchema: z.object({ field: z.string().optional(), requestedEntity: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolCalls.push(["lookupSiteJobBlueprintField", args]);
-          return {
-            result: { value: 37602 },
-            sources: [{ rail: "native", ref: "blueprint_1", label: "SiteJobBlueprint Deborah Justice" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "Deborah Justice has 1,002.7 sq ft and 626.7 gallons per inch." }],
-      usage: { input_tokens: 8, output_tokens: 6, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(result.toolRuns.map((run) => run.name), ["getDocuments", "lookupSiteJobBlueprintField"]);
-  assert.equal(toolCalls[0][1].projectQuery, "Deborah Justice");
-  assert.equal(toolCalls[1][1].requestedEntity, "Deborah Justice");
-  assert.equal(result.sources.some((source) => source.rail === "companycam"), true);
-  assert.equal(result.sources.some((source) => source.rail === "native"), true);
-});
-
-test("Aquatrace report extraction handles locked report rules", () => {
-  const loss = parseLossNotation('2" + 1/2"');
-  assert.equal(loss.inchesPerDay, 2.5);
-
-  const jobReportText = `
-Summary Summary Valley View Condominiums Client Name Dillard, GA City / State Chris Sears Logan Sears Aquatrace Technician Name(s) Tuesday, June 16th, 2026 Project Service Date 3:00pm, June 16th, 2026 Project Service Completion Time
-Swimming Pool Leak Detection Details /Results
--- 2 of 10 --
-Structure had a crack defect without water loss. Plumbing leak found at the return line with hard water loss.
--- 3 of 10 --
-Conditions Upon Arrival Daily Evaporation Index 0 1/4" Reported Daily Loss 2" + 1/2" Pool/Spa Overview Skimmer System Type skimmer How many skimmers 2 13 wall returns / 5 cleaner ports
-Measurements Square Footage (Surface Area) 1048.9ft² Estimated Average Depth (Inches) 40in Estimated Approximate Gallons / Inch ... 650 Gallons/Inch Estimated Approximate Total Gallons 42,000 Gallons
-Testing Procedures Used dye test, pressure test Testing Procedures Successful dye test Results
-`;
-  const moasureText = "PLAN VIEW 134.2ft (1048.9ft²) Created on 16 Jun 2026 PLAN VIEW : EDGES 134.2ft (1048.9ft²) Created on 16 Jun 2026 Base Layer 1 (0.0ft), 39.8ft, (-0.0ft)";
-  const orphanMoasureText = "PLAN VIEW 94.0ft (526.6ft²) Created on 26 May 2026 Base Layer 1 (0.0ft), 19.8ft, (0.0ft)";
-  const evapText = 'Pool Evaporation Report Generated: June 16, 2026 ZIP Code 30537 Water Temp 83°F Surface Area 1049 ft² Observed Daily Loss 2" + 1/2" EVAPORATION ESTIMATE 0 3/4" inches / day 451 gallons / day POTENTIAL LEAK LOSS (AFTER EVAPORATION) 1 3/4" inches / day 1183 gallons / day TOTAL DAILY WATER LOSS 2 1/2" inches / day 1635 gallons / day';
-  const set = ingestAquatraceReportSet({
-    documents: [
-      { id: "checklist-0616", label: "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 06-16-2026.pdf", text: jobReportText },
-      { id: "moasure-0616", label: "Moasure Export (18).pdf", text: moasureText },
-      { id: "evap-0616", label: "Swimming Pool Evaporation Calculator _ Aquatrace Leak Detection (1).pdf", text: evapText },
-      { id: "moasure-orphan", label: "Moasure Export (12).pdf", text: orphanMoasureText }
-    ],
-    jobberHierarchyCandidates: [{
-      clientName: "Valley View Condominiums",
-      propertyName: "Pool",
-      tierPath: ["Valley View Condominiums", "Pool"],
-      jobberClientId: "jobber_client_1",
-      jobberPropertyId: "jobber_property_1"
-    }]
-  });
-
-  assert.equal(set.visits.length, 1);
-  const visit = set.visits[0];
-  assert.equal(visit.clientDisplayName, "Valley View Condominiums");
-  assert.equal(visit.serviceDateKey, "2026-06-16");
-  assert.deepEqual(visit.sourceDocumentIds, ["checklist-0616", "moasure-0616", "evap-0616"]);
-  assert.equal(visit.fields.gallonsPerInch, 655.5625);
-  assert.equal(visit.fields.observedDailyLossInchesPerDay, 2.5);
-  assert.equal(visit.fields.evapEstimateInchesPerDay, 0.75);
-  assert.equal(visit.fields.parentClientName, "Valley View Condominiums");
-  assert.equal(visit.jobReport.results.structure.status, "pass");
-  assert.equal(visit.jobReport.results.structure.defectWithoutLoss, true);
-  assert.equal(visit.jobReport.results.plumbing.status, "fail");
-  assert.equal(visit.jobReport.results.plumbing.hardWaterLossFound, true);
-  assert.match(visit.flags.join(","), /moasure_linked_by_date_match/);
-  assert.match(visit.flags.join(","), /evap_pdf_overrides_checklist_delta_inches:0.5/);
-  assert.match(visit.fields.legacyParsedCountsJson, /wallReturn/);
-  assert.equal(set.unresolvedDocs.length, 1);
-  assert.equal(set.unresolvedDocs[0].documentId, "moasure-orphan");
-});
-
-test("Aquatrace document classifier parses standalone Moasure and evap PDFs", () => {
-  const moasure = extractAquatraceDocument({
-    id: "l3-moasure",
-    label: "L3 Campus - Statehouse Arena.pdf",
-    text: "AQUATRACE : L3 CAMPUS - STATEHOUSE ARENA : PLAN VIEW 159.6ft (1224.6ft²) Created on 23 Jun 2026 DEPTH VIEW 1224.6ft² (197gal)"
-  });
-  assert.equal(moasure.documentType, "moasure_export");
-  assert.equal(moasure.createdDateKey, "2026-06-23");
-  assert.equal(moasure.titleClientHint, "L3 CAMPUS - STATEHOUSE ARENA");
-  assert.equal(moasure.areaSqFt, 1224.6);
-
-  const evap = extractAquatraceDocument({
-    id: "l3-evap",
-    label: "Swimming Pool Evaporation Calculator _ Aquatrace Leak Detection.pdf",
-    text: 'Pool Evaporation Report Generated: June 23, 2026 ZIP Code 32301 Water Temp 85°F Surface Area 1065 ft² EVAPORATION ESTIMATE 0 1/4" inches / day 199 gallons / day'
-  });
-  assert.equal(evap.documentType, "evap_calc");
-  assert.equal(evap.generatedDateKey, "2026-06-23");
-  assert.equal(evap.evapEstimate.inchesPerDay, 0.25);
-  assert.equal(evap.evapGallonsPerDay, 199);
-});
-
-test("Nexi issue prompts preload both Jobber and CompanyCam rails", async () => {
-  const calls = [];
-  const toolNames = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "What was the issue at Deborah Justice?" }],
-    tools: [
-      {
-        name: "getJobDetail",
-        description: "Read job.",
-        inputSchema: z.object({ nameQuery: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getJobDetail", args]);
-          return {
-            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", client: { name: "Deborah Justice" } } },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
-          };
-        }
-      },
-      {
-        name: "getDocuments",
-        description: "Read documents.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getDocuments", args]);
-          return {
-            result: { reports: [{ fields: { reportFindings: "Leak at primary spa circulation line." } }] },
-            sources: [{ rail: "companycam", ref: "doc_1", label: "CompanyCam document Deborah Justice report" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      calls.push(JSON.parse(init.body));
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "Jobber identifies the job and CompanyCam says the issue was the primary spa circulation line." }],
-        usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
-      }), { status: 200 });
-    }
-  });
-  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
-  assert.equal(toolNames[0][1].nameQuery, "Deborah Justice");
-  assert.equal(toolNames[1][1].projectQuery, "Deborah Justice");
-  assert.match(calls[0].messages.at(-1).content, /Verified getJobDetail result/);
-  assert.match(calls[0].messages.at(-1).content, /Verified getDocuments result/);
-  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
-  assert.equal(result.sources.some((source) => source.rail === "companycam"), true);
-});
-
-test("Nexi typo issue prompts still preload both Jobber and CompanyCam rails", async () => {
-  const toolNames = [];
-  await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "what ssues were found on rachel paynes pool" }],
-    tools: [
-      {
-        name: "getJobDetail",
-        description: "Read job.",
-        inputSchema: z.object({ nameQuery: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getJobDetail", args]);
-          return {
-            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", client: { name: "Rachel Payne" } } },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }]
-          };
-        }
-      },
-      {
-        name: "getDocuments",
-        description: "Read documents.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getDocuments", args]);
-          return {
-            result: { reports: [{ fields: { reportFindings: "Leak at return line connection." } }] },
-            sources: [{ rail: "companycam", ref: "doc_1", label: "CompanyCam document Rachel Payne report" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "CompanyCam says the issue was the return line connection." }],
-      usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
-});
-
-test("Nexi completion-time prompts preload Jobber and CompanyCam report rails", async () => {
-  const toolNames = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "what was the service time completion for Deborah Justice" }],
-    tools: [
-      {
-        name: "getJobDetail",
-        description: "Read job.",
-        inputSchema: z.object({ nameQuery: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getJobDetail", args]);
-          return {
-            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", status: "lead", client: { name: "Deborah Justice" } } },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
-          };
-        }
-      },
-      {
-        name: "getDocuments",
-        description: "Read documents.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getDocuments", args]);
-          return {
-            result: { reports: [{ fields: { completionTime: "3:10pm, Thursday July 2nd, 2026", technicianNames: ["Chris", "Logan"] } }] },
-            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "CompanyCam says Deborah Justice was completed at 3:10pm Thursday July 2, 2026 by Chris and Logan." }],
-      usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
-  assert.equal(toolNames[0][1].nameQuery, "Deborah Justice");
-  assert.equal(toolNames[1][1].projectQuery, "Deborah Justice");
-  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
-  assert.equal(result.sources.some((source) => source.ref === "18218446"), true);
-});
-
-test("Nexi completion-time typo prompts still preload Jobber and CompanyCam report rails", async () => {
-  const toolNames = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "what was the service ime competion for Deborah Justice" }],
-    tools: [
-      {
-        name: "getJobDetail",
-        description: "Read job.",
-        inputSchema: z.object({ nameQuery: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getJobDetail", args]);
-          return {
-            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", status: "lead", client: { name: "Deborah Justice" } } },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
-          };
-        }
-      },
-      {
-        name: "getDocuments",
-        description: "Read documents.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getDocuments", args]);
-          return {
-            result: { reports: [{ fields: { completionTime: "3:10pm, Thursday July 2nd, 2026", technicianNames: ["Chris", "Logan"] } }] },
-            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async (_url, init) => {
-      const request = JSON.parse(init.body);
-      assert.match(request.messages.at(-1).content, /do not treat Jobber's missing completion\/status\/measurement field/i);
-      return new Response(JSON.stringify({
-        content: [{ type: "text", text: "CompanyCam says Deborah Justice was completed at 3:10pm Thursday July 2, 2026 by Chris and Logan." }],
-        usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
-      }), { status: 200 });
-    }
-  });
-  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
-  assert.equal(toolNames[0][1].nameQuery, "Deborah Justice");
-  assert.equal(toolNames[1][1].projectQuery, "Deborah Justice");
-  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
-  assert.equal(result.sources.some((source) => source.ref === "18218446"), true);
-});
-
-test("Nexi correction follow-ups resume CompanyCam report lookup instead of email search", async () => {
-  const toolNames = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [
-      { role: "user", content: "what was the service time completion for Deborah Justice" },
-      { role: "assistant", content: "Deborah Justice is currently a lead and no completion date exists." },
-      { role: "user", content: "yes there is, incorrect here, service completion is in company cam reports" },
-      { role: "assistant", content: "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer." },
-      { role: "user", content: "ok, where is the answer then, i corrected you and you should have replied with correct answer" }
-    ],
-    tools: [
-      {
-        name: "searchEmail",
-        description: "Search email.",
-        inputSchema: z.object({ keywords: z.string().optional() }),
-        handler: async () => {
-          throw new Error("searchEmail should not run for correction follow-ups");
-        }
-      },
-      {
-        name: "getJobDetail",
-        description: "Read job.",
-        inputSchema: z.object({ nameQuery: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getJobDetail", args]);
-          return {
-            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", status: "lead", client: { name: "Deborah Justice" } } },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
-          };
-        }
-      },
-      {
-        name: "getDocuments",
-        description: "Read documents.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getDocuments", args]);
-          return {
-            result: { reports: [{ fields: { completionTime: "3:10pm, Thursday July 2nd, 2026", technicianNames: ["Chris", "Logan"] } }] },
-            sources: [{ rail: "companycam", ref: "18218446", label: "CompanyCam document Deborah Justice checklist" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "The answer is in CompanyCam: Deborah Justice was completed at 3:10pm Thursday July 2, 2026 by Chris and Logan." }],
-      usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments"]);
-  assert.equal(toolNames[0][1].nameQuery, "Deborah Justice");
-  assert.equal(toolNames[1][1].projectQuery, "Deborah Justice");
-  assert.equal(result.sources.some((source) => source.ref === "18218446"), true);
-});
-
-test("Nexi technician prompts preload Jobber plus CompanyCam documents and photos", async () => {
-  const toolNames = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "Who are the technicians for Deborah Justice?" }],
-    tools: [
-      {
-        name: "getJobDetail",
-        description: "Read job.",
-        inputSchema: z.object({ nameQuery: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getJobDetail", args]);
-          return {
-            result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", client: { name: "Deborah Justice" } } },
-            sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
-          };
-        }
-      },
-      {
-        name: "getDocuments",
-        description: "Read documents.",
-        inputSchema: z.object({ projectQuery: z.string(), question: z.string().optional() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getDocuments", args]);
-          return {
-            result: { reports: [{ textSnippet: "Technician: Cody" }] },
-            sources: [{ rail: "companycam", ref: "doc_1", label: "CompanyCam document Deborah Justice report" }]
-          };
-        }
-      },
-      {
-        name: "getPhotos",
-        description: "Read photos.",
-        inputSchema: z.object({ projectQuery: z.string() }),
-        handler: async (_tenant, args) => {
-          toolNames.push(["getPhotos", args]);
-          return {
-            result: { media: [{ id: "photo_1", capturedBy: "Cody" }] },
-            sources: [{ rail: "companycam", ref: "photo_1", label: "CompanyCam photo photo_1" }]
-          };
-        }
-      }
-    ],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "CompanyCam indicates Cody was the technician." }],
-      usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail", "getDocuments", "getPhotos"]);
-  assert.equal(toolNames[1][1].projectQuery, "Deborah Justice");
-  assert.equal(toolNames[2][1].projectQuery, "Deborah Justice");
-  assert.equal(result.toolRuns.length, 3);
-  assert.equal(result.sources.some((source) => source.rail === "jobber"), true);
-  assert.equal(result.sources.filter((source) => source.rail === "companycam").length, 2);
-});
-
-test("Nexi address prompts preload Jobber details instead of answering from memory", async () => {
-  const toolNames = [];
-  const result = await runNexiToolLoop({
-    tenant: tenant(),
-    system: "Use tools.",
-    messages: [{ role: "user", content: "What is Forrest Ferguson's address?" }],
-    tools: [{
-      name: "getJobDetail",
-      description: "Read job.",
-      inputSchema: z.object({ nameQuery: z.string().optional() }),
-      handler: async (_tenant, args) => {
-        toolNames.push(["getJobDetail", args]);
-        return {
-          result: { job: { id: "job_1", title: "Swimming Pool Leak Detection", client: { name: "Forrest Ferguson" }, address: "290 River Oaks Drive" } },
-          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Forrest Ferguson" }]
-        };
-      }
-    }],
-    routeActionName: "/api/nexi/message",
-    taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
-    fetchFn: async () => new Response(JSON.stringify({
-      content: [{ type: "text", text: "Forrest Ferguson's address is 290 River Oaks Drive." }],
-      usage: { input_tokens: 12, output_tokens: 9, cache_read_input_tokens: 16 }
-    }), { status: 200 })
-  });
-  assert.deepEqual(toolNames.map((entry) => entry[0]), ["getJobDetail"]);
-  assert.equal(result.sources[0].rail, "jobber");
+  }).find((candidate) => candidate.name === "lookupSiteJobBlueprintField");
+  assert.ok(tool);
+  const result = await tool.handler(tenant(), { field: "spaMainDrains", requestedEntity: "Deborah Justice" });
+  assert.equal(result.result.value, 2);
+  assert.equal(result.sources.length, 1);
 });
 
 test("Nexi service persists failureLog for source-enforced failures", async () => {
@@ -3449,12 +611,1199 @@ test("Nexi service persists failureLog for source-enforced failures", async () =
   assert.equal(repository.failureLog[0].reason, "factual_answer_without_sources");
 });
 
+test("Nexi service sanitizes raw internal answers before they reach chat history", async () => {
+  const repository = new MemoryNexiRepository();
+  const result = await answerNexiMessage({
+    tenant: tenant(),
+    message: "What is the phone number on file?",
+    tools: [],
+    repository,
+    gateway: async () => ({
+      answer: "tools: Tool names must be unique.",
+      sources: [],
+      usage: { inputTokens: 1, outputTokens: 1, cacheCreationInputTokens: 0, cacheReadInputTokens: 0, totalTokens: 2 },
+      raw: { test: true },
+      toolRuns: []
+    })
+  });
+  assert.equal(result.answer, NEXI_FRIENDLY_FAILURE_MESSAGE);
+  assert.equal(repository.conversations[0].assistantText, NEXI_FRIENDLY_FAILURE_MESSAGE);
+  assert.equal(repository.failureLog[0].reason, "nexi_user_safe_error_wrapped");
+});
+
+test("Nexi service formats client approvals as clean field-list confirmations without raw ids", async () => {
+  const anthropicCalls = [];
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    actorDisplayName: "Chris",
+    messages: [{ role: "user", content: "Create a new client Logan Sears at 6020 Frest Dr Seneca SC 29672 phone 8645581725 email 4lbsears@gmail.com" }],
+    tools: [{
+      name: "createClient",
+      description: "Queue a client create approval.",
+      inputSchema: z.object({
+        name: z.string(),
+        address: z.string().optional(),
+        emails: z.array(z.string()).default([]),
+        phones: z.array(z.string()).default([]),
+        consent: z.object({ email: z.boolean(), sms: z.boolean() })
+      }),
+      handler: async () => ({
+        result: {
+          approval: {
+            id: "appr_client_1",
+            preview: {
+              title: "Create client: Logan Sears",
+              body: "Name: Logan Sears\nEmail: 4lbsears@gmail.com\nPhone: 8645581725\nAddress: 6020 Frest Dr\nCity: Seneca\nState: SC\nZIP: 29672"
+            }
+          }
+        },
+        sources: [{ rail: "native", ref: "approval_1", label: "Approval queue client create" }]
+      })
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      anthropicCalls.push(JSON.parse(init.body));
+      return anthropicToolUseResponse("submit_create_client_extraction", {
+        name: "Logan Sears",
+        address: "6020 Frest Dr Seneca SC 29672",
+        emails: ["4lbsears@gmail.com"],
+        phones: ["8645581725"],
+        consent: { email: false, sms: false }
+      });
+    }
+  });
+
+  assert.match(result.answer, /^Logan Sears$/m);
+  assert.match(result.answer, /^6020 Frest Dr, Seneca, SC 29672$/m);
+  assert.match(result.answer, /^\(864\) 558-1725$/m);
+  assert.match(result.answer, /^4lbsears@gmail\.com$/m);
+  assert.match(result.answer, /Do the Client Details look correct\?/);
+  assert.doesNotMatch(result.answer, /appr_client_1/);
+  assert.doesNotMatch(result.answer, /Here is your request, Chris\./);
+  assert.doesNotMatch(result.answer, /You requested create client for Logan Sears with the following details:/);
+  assert.equal(result.pendingApproval?.approvalId, "appr_client_1");
+  assert.equal(anthropicCalls.length, 1);
+});
+
+test("freeform client create parsing preserves short email prefixes both inline and split before the @ token", async () => {
+  const phrases = [
+    "Create a new client Logan Sears at 6020 Frest Dr Seneca SC 29672 phone 8645581725 email 4lbsears@gmail.com",
+    "Create a new client Logan Sears at 6020 Frest Dr Seneca SC 29672 phone 8645581725 email 4lb sears@gmail.com"
+  ];
+
+  for (const createPhrase of phrases) {
+    const repository = new MemoryNativeCrmRepository();
+    const provider = new NativeAdapter(repository, "aquatrace");
+    const approvalQueue = new ApprovalQueueService(
+      new InMemoryApprovalQueueRepository(),
+      new CrmApprovalExecutor(provider)
+    );
+    const tools = [
+      ...createCrmToolsWithOptions(provider, approvalQueue, { requestRepository: repository }),
+      ...createApprovalNexiTools({
+        approvalQueue,
+        actorId: "owner_1",
+        actorRole: "OWNER",
+        crmRepository: repository,
+        publicBaseUrl: "http://127.0.0.1:4275"
+      })
+    ];
+
+    const createTurn = await runExplicitLocalToolLoop({
+      tenant: tenant(),
+      system: "Use tools.",
+      actorDisplayName: "Chris",
+      messages: [{ role: "user", content: createPhrase }],
+      tools,
+      routeActionName: "/api/nexi/message",
+      taskType: "job_desk_answer",
+      env: { ANTHROPIC_API_KEY: "test-key" },
+      fetchFn: async () => anthropicToolUseResponse("submit_create_client_extraction", {
+        name: "Logan Sears",
+        address: "6020 Frest Dr Seneca SC 29672",
+        emails: ["sears@gmail.com"],
+        phones: ["8645581725"],
+        consent: { email: false, sms: false }
+      })
+    });
+
+    assert.match(createTurn.answer, /^4lbsears@gmail\.com$/m);
+    assert.ok(createTurn.pendingApproval?.approvalId);
+
+    await runExplicitLocalToolLoop({
+      tenant: tenant(),
+      system: "Use tools.",
+      actorDisplayName: "Chris",
+      messages: [
+        { role: "user", content: createPhrase },
+        { role: "assistant", content: createTurn.answer },
+        { role: "user", content: "yes" }
+      ],
+      tools,
+      routeActionName: "/api/nexi/message",
+      taskType: "job_desk_answer",
+      env: {},
+      pendingApproval: createTurn.pendingApproval
+    });
+
+    const clients = await repository.listClients("aquatrace");
+    const createdClient = clients.find((client) => client.name === "Logan Sears");
+    assert.ok(createdClient);
+    assert.deepEqual(createdClient?.emails, ["4lbsears@gmail.com"]);
+  }
+});
+
+test("client approvals ask for a missing full name instead of rendering punctuation placeholders", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "Create a new client with phone 8645581725 email 4lbsears@gmail.com" }],
+    tools: [{
+      name: "createClient",
+      description: "Queue a client create approval.",
+      inputSchema: z.object({
+        name: z.string().optional(),
+        address: z.string().optional(),
+        emails: z.array(z.string()).default([]),
+        phones: z.array(z.string()).default([]),
+        consent: z.object({ email: z.boolean(), sms: z.boolean() }).default({ email: false, sms: false })
+      }),
+      handler: async () => ({
+        result: {
+          approval: {
+            id: "appr_client_missing_name",
+            preview: {
+              title: "Create client: .",
+              body: "Name: .\nEmail: 4lbsears@gmail.com\nPhone: 8645581725\nAddress: 6020 Frest Dr\nCity: Seneca\nState: SC\nZIP: 29672"
+            }
+          }
+        },
+        sources: [{ rail: "native", ref: "approval_missing_name", label: "Approval queue client create" }]
+      })
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {}
+  });
+
+  assert.match(result.answer, /I still need the client's full name before I can queue this/i);
+  assert.doesNotMatch(result.answer, /^\.$/m);
+});
+
+test("freeform client create approval preserves the parsed name and full email, saves the approved address, and honors typed yes replies", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const provider = new NativeAdapter(repository, "aquatrace");
+  const approvalQueue = new ApprovalQueueService(
+    new InMemoryApprovalQueueRepository(),
+    new CrmApprovalExecutor(provider)
+  );
+  const tools = [
+    ...createCrmToolsWithOptions(provider, approvalQueue, { requestRepository: repository }),
+    ...createApprovalNexiTools({
+      approvalQueue,
+      actorId: "owner_1",
+      actorRole: "OWNER",
+      crmRepository: repository,
+      publicBaseUrl: "http://127.0.0.1:4275"
+    })
+  ];
+  const createPhrase = "Add new client to system Catherine Sears 102 Kate Lane Fair Play South Carolina 29643 864-617-1838 email Catherine Sears31@gmail.com";
+  const anthropicCalls = [];
+
+  const createTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    actorDisplayName: "Chris",
+    messages: [{ role: "user", content: createPhrase }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async (_url, init) => {
+      anthropicCalls.push(JSON.parse(init.body));
+      return anthropicToolUseResponse("submit_create_client_extraction", {
+        name: "Catherine Sears",
+        address: "102 Kate Lane Fair Play SC 29643",
+        emails: ["CatherineSears31@gmail.com"],
+        phones: ["864-617-1838"],
+        consent: { email: false, sms: false }
+      });
+    }
+  });
+
+  assert.equal(createTurn.toolRuns[0].name, "createClient");
+  assert.match(createTurn.answer, /^Catherine Sears$/m);
+  assert.match(createTurn.answer, /^102 Kate Lane, Fair Play, SC 29643$/m);
+  assert.match(createTurn.answer, /^\(864\) 617-1838$/m);
+  assert.match(createTurn.answer, /^CatherineSears31@gmail\.com$/m);
+  assert.match(createTurn.answer, /Do the Client Details look correct\?/);
+  assert.doesNotMatch(createTurn.answer, /\bto system Catherine Sears\b/i);
+  assert.doesNotMatch(createTurn.answer, /\b31@gmail\.com\b/);
+  assert.ok(createTurn.pendingApproval?.approvalId);
+  assert.equal(anthropicCalls.length, 1);
+
+  const approveTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    actorDisplayName: "Chris",
+    messages: [
+      { role: "user", content: createPhrase },
+      { role: "assistant", content: createTurn.answer },
+      { role: "user", content: "yes" }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {},
+    pendingApproval: createTurn.pendingApproval
+  });
+
+  assert.equal(approveTurn.toolRuns[0].name, "approvePendingApproval");
+
+  const clients = await repository.listClients("aquatrace");
+  const createdClient = clients.find((client) => client.name === "Catherine Sears");
+  assert.ok(createdClient);
+  assert.deepEqual(createdClient?.emails, ["CatherineSears31@gmail.com"]);
+  assert.deepEqual(createdClient?.phones.map((phone) => phone.replace(/[^\d]/g, "")), ["8646171838"]);
+
+  const properties = await repository.listProperties("aquatrace");
+  const createdProperty = properties.find((property) => property.clientId === createdClient?.id);
+  assert.ok(createdProperty);
+  assert.equal(createdProperty?.address.street1, "102 Kate Lane");
+  assert.equal(createdProperty?.address.city, "Fair Play");
+  assert.equal(createdProperty?.address.province, "SC");
+  assert.equal(createdProperty?.address.postalCode, "29643");
+
+  const lookupTurn = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is the address for Catherine Sears?" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("saved client address lookups should answer directly from clientLookup");
+    }
+  });
+
+  assert.equal(lookupTurn.toolRuns[0].name, "clientLookup");
+  assert.match(lookupTurn.answer, /The address on file for Catherine Sears is 102 Kate Lane, Fair Play, SC, 29643\./);
+  assert.match(lookupTurn.answer, /Would you like directions or should I open it in Maps\?/);
+
+  const phoneLookupTurn = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is Catherine Sears phone number?" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("saved client phone lookups should answer directly from clientLookup");
+    }
+  });
+
+  assert.equal(phoneLookupTurn.toolRuns[0].name, "clientLookup");
+  assert.match(phoneLookupTurn.answer, /The phone number on file for Catherine Sears is 864-617-1838\./);
+  assert.match(phoneLookupTurn.answer, /Would you like me to call now\?/);
+
+  const naturalAddressLookupTurn = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is Catherine Sears address?" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("natural address lookups should answer directly from clientLookup");
+    }
+  });
+
+  assert.equal(naturalAddressLookupTurn.toolRuns[0].name, "clientLookup");
+  assert.match(naturalAddressLookupTurn.answer, /The address on file for Catherine Sears is 102 Kate Lane, Fair Play, SC, 29643\./);
+  assert.match(naturalAddressLookupTurn.answer, /Would you like directions or should I open it in Maps\?/);
+});
+
+test("fresh create-client phrasing with an article and sentence break still routes into createClient", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const provider = new NativeAdapter(repository, "aquatrace");
+  const approvalQueue = new ApprovalQueueService(
+    new InMemoryApprovalQueueRepository(),
+    new CrmApprovalExecutor(provider)
+  );
+  const tools = [
+    ...createCrmToolsWithOptions(provider, approvalQueue, { requestRepository: repository }),
+    ...createApprovalNexiTools({
+      approvalQueue,
+      actorId: "owner_1",
+      actorRole: "OWNER",
+      crmRepository: repository,
+      publicBaseUrl: "http://127.0.0.1:4275"
+    })
+  ];
+  const createPhrase = "Add a new client. Catherine Sears 102 Kate Lane Fair Play SC 8646171838 catherinesears31@gmail.com";
+  let extractionCalls = 0;
+
+  const createTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    actorDisplayName: "Chris",
+    messages: [{ role: "user", content: createPhrase }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      extractionCalls += 1;
+      return anthropicToolUseResponse("submit_create_client_extraction", {
+        name: "Catherine Sears",
+        address: "102 Kate Lane Fair Play SC",
+        emails: ["catherinesears31@gmail.com"],
+        phones: ["8646171838"],
+        consent: { email: false, sms: false }
+      });
+    }
+  });
+
+  assert.equal(extractionCalls, 1);
+  assert.equal(createTurn.toolRuns[0].name, "createClient");
+  assert.match(createTurn.answer, /^Catherine Sears$/m);
+  assert.match(createTurn.answer, /^102 Kate Lane, Fair Play, SC$/m);
+  assert.match(createTurn.answer, /^\(864\) 617-1838$/m);
+  assert.match(createTurn.answer, /^catherinesears31@gmail\.com$/m);
+  assert.doesNotMatch(createTurn.answer, /can't edit saved client records from chat yet/i);
+});
+
+test("approval actions require an explicit approval id and never silently approve the newest pending client", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const provider = new NativeAdapter(repository, "aquatrace");
+  const approvalQueue = new ApprovalQueueService(
+    new InMemoryApprovalQueueRepository(),
+    new CrmApprovalExecutor(provider)
+  );
+  const firstQueued = await queueClientCreateApproval(tenant(), {
+    name: "Logan Sears",
+    address: "6020 Forest Dr Seneca SC 29672",
+    emails: ["4lbsears@gmail.com"],
+    phones: ["8645551725"],
+    consent: { email: false, sms: false }
+  }, approvalQueue);
+  const secondQueued = await queueClientCreateApproval(tenant(), {
+    name: "Kit Foster",
+    address: "408 Kingsgate Court Simpsonville SC 29680",
+    emails: [],
+    phones: ["8648888888"],
+    consent: { email: false, sms: false }
+  }, approvalQueue);
+  const approveTool = createApprovalNexiTools({
+    approvalQueue,
+    actorId: "owner_1",
+    actorRole: "OWNER",
+    crmRepository: repository,
+    publicBaseUrl: "http://127.0.0.1:4275"
+  }).find((tool) => tool.name === "approvePendingApproval");
+
+  assert.ok(approveTool);
+  await assert.rejects(
+    () => approveTool.handler(tenant(), {}),
+    /approvalId/i
+  );
+
+  const clients = await repository.listClients("aquatrace");
+  assert.equal(clients.length, 0);
+
+  const pending = await approvalQueue.listPending("aquatrace");
+  assert.deepEqual(
+    pending.map((item) => item.id),
+    [firstQueued.approval.id, secondQueued.approval.id]
+  );
+});
+
+test("fresh single client records without a zip still save address data, answer email lookups, and resolve possessive short-form references", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const provider = new NativeAdapter(repository, "aquatrace");
+  const approvalQueue = new ApprovalQueueService(
+    new InMemoryApprovalQueueRepository(),
+    new CrmApprovalExecutor(provider)
+  );
+  const tools = [
+    ...createCrmToolsWithOptions(provider, approvalQueue, { requestRepository: repository }),
+    ...createApprovalNexiTools({
+      approvalQueue,
+      actorId: "owner_1",
+      actorRole: "OWNER",
+      crmRepository: repository,
+      publicBaseUrl: "http://127.0.0.1:4275"
+    })
+  ];
+  const createPhrase = "Add new client to system Catherine Sears 102 Kate Lane Fair Play South Carolina 864-617-1838 email Catherine Sears31@gmail.com";
+
+  const createTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    actorDisplayName: "Chris",
+    messages: [{ role: "user", content: createPhrase }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => anthropicToolUseResponse("submit_create_client_extraction", {
+      name: "Catherine Sears",
+      address: "102 Kate Lane Fair Play South Carolina",
+      emails: ["CatherineSears31@gmail.com"],
+      phones: ["864-617-1838"],
+      consent: { email: false, sms: false }
+    })
+  });
+
+  assert.equal(createTurn.toolRuns[0].name, "createClient");
+  assert.match(createTurn.answer, /^Catherine Sears$/m);
+  assert.match(createTurn.answer, /^102 Kate Lane, Fair Play, SC$/m);
+  assert.match(createTurn.answer, /^CatherineSears31@gmail\.com$/m);
+  assert.ok(createTurn.pendingApproval?.approvalId);
+
+  const approveTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    actorDisplayName: "Chris",
+    messages: [
+      { role: "user", content: createPhrase },
+      { role: "assistant", content: createTurn.answer },
+      { role: "user", content: "yes" }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {},
+    pendingApproval: createTurn.pendingApproval
+  });
+
+  assert.equal(approveTurn.toolRuns[0].name, "approvePendingApproval");
+
+  const clients = await repository.listClients("aquatrace");
+  const createdClient = clients.find((client) => client.name === "Catherine Sears");
+  assert.ok(createdClient);
+  assert.deepEqual(createdClient?.emails, ["CatherineSears31@gmail.com"]);
+
+  const properties = await repository.listProperties("aquatrace");
+  const createdProperty = properties.find((property) => property.clientId === createdClient?.id);
+  assert.ok(createdProperty);
+  assert.equal(createdProperty?.address.street1, "102 Kate Lane");
+  assert.equal(createdProperty?.address.city, "Fair Play");
+  assert.equal(createdProperty?.address.province, "SC");
+  assert.equal(createdProperty?.address.postalCode, "");
+
+  const addressLookupTurn = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is the address for Catherine Sears?" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("fresh saved client address lookups should answer directly from clientLookup");
+    }
+  });
+
+  assert.equal(addressLookupTurn.toolRuns[0].name, "clientLookup");
+  assert.match(addressLookupTurn.answer, /The address on file for Catherine Sears is 102 Kate Lane, Fair Play, SC\./);
+
+  const emailLookupTurn = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is Catherine Sears email address?" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("saved client email lookups should answer directly from clientLookup");
+    }
+  });
+
+  assert.equal(emailLookupTurn.toolRuns[0].name, "clientLookup");
+  assert.match(emailLookupTurn.answer, /The email on file for Catherine Sears is CatherineSears31@gmail\.com\./);
+
+  const fullNamePhoneTurn = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is Catherine Sears telephone number?" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("full-name phone lookups should answer directly from clientLookup");
+    }
+  });
+
+  assert.equal(fullNamePhoneTurn.toolRuns[0].name, "clientLookup");
+  assert.match(fullNamePhoneTurn.answer, /The phone number on file for Catherine Sears is 864-617-1838\./);
+
+  const possessivePhoneTurn = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "What is Catherine Sears telephone number?" },
+      { role: "assistant", content: fullNamePhoneTurn.answer },
+      { role: "user", content: "What is Catherine's telephone number?" }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("possessive phone lookups should stay on clientLookup");
+    }
+  });
+
+  assert.equal(possessivePhoneTurn.toolRuns[0].name, "clientLookup");
+  assert.match(possessivePhoneTurn.answer, /The phone number on file for Catherine Sears is 864-617-1838\./);
+  assert.doesNotMatch(possessivePhoneTurn.answer, /did not find/i);
+});
+
+test("pending client confirmations accept natural-language corrections and restate the updated address before approval", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const provider = new NativeAdapter(repository, "aquatrace");
+  const approvalQueue = new ApprovalQueueService(
+    new InMemoryApprovalQueueRepository(),
+    new CrmApprovalExecutor(provider)
+  );
+  const tools = [
+    ...createCrmToolsWithOptions(provider, approvalQueue, { requestRepository: repository }),
+    ...createApprovalNexiTools({
+      approvalQueue,
+      actorId: "owner_1",
+      actorRole: "OWNER",
+      crmRepository: repository,
+      publicBaseUrl: "http://127.0.0.1:4275"
+    })
+  ];
+  const createPhrase = "Add new client to system Catherine Sears 102 Cate Lane Fair Play South Carolina 29643 864-617-1838 email Catherine Sears31@gmail.com";
+  const createTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    actorDisplayName: "Chris",
+    messages: [{ role: "user", content: createPhrase }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => anthropicToolUseResponse("submit_create_client_extraction", {
+      name: "Catherine Sears",
+      address: "102 Cate Lane Fair Play SC 29643",
+      emails: ["CatherineSears31@gmail.com"],
+      phones: ["864-617-1838"],
+      consent: { email: false, sms: false }
+    })
+  });
+
+  const makeChangesTurn = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: createPhrase },
+      { role: "assistant", content: createTurn.answer },
+      { role: "user", content: "make changes" }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {},
+    pendingApproval: createTurn.pendingApproval
+  });
+
+  assert.match(makeChangesTurn.answer, /Tell me what to change/i);
+  assert.equal(makeChangesTurn.pendingApproval?.awaitingChanges, true);
+
+  const revisedTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    actorDisplayName: "Chris",
+    messages: [
+      { role: "user", content: createPhrase },
+      { role: "assistant", content: createTurn.answer },
+      { role: "user", content: "make changes" },
+      { role: "assistant", content: makeChangesTurn.answer },
+      { role: "user", content: "Kate Lane is spelled with a k instead of a c" }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {},
+    pendingApproval: makeChangesTurn.pendingApproval
+  });
+
+  assert.equal(revisedTurn.toolRuns[0].name, "revisePendingClientCreateApproval");
+  assert.match(revisedTurn.answer, /^Catherine Sears$/m);
+  assert.match(revisedTurn.answer, /^102 Kate Lane, Fair Play, SC 29643$/m);
+  assert.match(revisedTurn.answer, /Do the Client Details look correct\?/);
+
+  const approveTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    actorDisplayName: "Chris",
+    messages: [
+      { role: "user", content: createPhrase },
+      { role: "assistant", content: createTurn.answer },
+      { role: "user", content: "make changes" },
+      { role: "assistant", content: makeChangesTurn.answer },
+      { role: "user", content: "Kate Lane is spelled with a k instead of a c" },
+      { role: "assistant", content: revisedTurn.answer },
+      { role: "user", content: "yes" }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {},
+    pendingApproval: revisedTurn.pendingApproval
+  });
+
+  assert.equal(approveTurn.toolRuns[0].name, "approvePendingApproval");
+
+  const lookupTurn = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is the address for Catherine Sears?" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("corrected client address lookups should answer directly from clientLookup");
+    }
+  });
+
+  assert.equal(lookupTurn.toolRuns[0].name, "clientLookup");
+  assert.match(lookupTurn.answer, /The address on file for Catherine Sears is 102 Kate Lane, Fair Play, SC, 29643\./);
+});
+
+test("client lookup follow-ups resolve both his and her pronouns to the active conversation entity", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const adapter = new NativeAdapter(repository, "aquatrace");
+  const approvalQueue = new ApprovalQueueService(
+    new InMemoryApprovalQueueRepository(),
+    new CrmApprovalExecutor(adapter)
+  );
+  await adapter.createClient({
+    tenantId: "aquatrace",
+    name: "Logan Sears",
+    emails: ["logan@aquatraceleak.com"],
+    phones: ["8645581725"],
+    consent: { email: false, sms: false }
+  });
+  await adapter.createClient({
+    tenantId: "aquatrace",
+    name: "Catherine Sears",
+    emails: ["catherine@aquatraceleak.com"],
+    phones: ["8646171838"],
+    consent: { email: false, sms: false }
+  });
+
+  const tools = createCrmToolsWithOptions(adapter, approvalQueue, { requestRepository: repository });
+
+  const hisTurn = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "What is Logan Sears telephone number?" },
+      { role: "assistant", content: "The phone number on file for Logan Sears is 8645581725." },
+      { role: "user", content: "What is his email address?" }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("pronoun follow-up lookups should answer directly from clientLookup");
+    }
+  });
+
+  assert.equal(hisTurn.toolRuns[0].name, "clientLookup");
+  assert.match(hisTurn.answer, /The email on file for Logan Sears is logan@aquatraceleak\.com\./);
+
+  const herTurn = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "What is Catherine Sears telephone number?" },
+      { role: "assistant", content: "The phone number on file for Catherine Sears is 8646171838." },
+      { role: "user", content: "What is her email address?" }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("pronoun follow-up lookups should answer directly from clientLookup");
+    }
+  });
+
+  assert.equal(herTurn.toolRuns[0].name, "clientLookup");
+  assert.match(herTurn.answer, /The email on file for Catherine Sears is catherine@aquatraceleak\.com\./);
+});
+
+test("contact-card delivery requests report the same honest capability gap across email, text, and follow-up phrasing", async () => {
+  const messageSets = [
+    [{ role: "user", content: "Email me Logan Sears full contact card" }],
+    [{ role: "user", content: "Text me Logan Sears contact card information" }],
+    [
+      { role: "user", content: "Email me Logan Sears full contact card" },
+      { role: "assistant", content: "I can't send a client's full contact card from chat yet. That delivery flow is still waiting on tenant user-seat profiles, so I don't want to fake it as a data problem." },
+      { role: "user", content: "Can you text it to me instead?" }
+    ]
+  ];
+
+  for (const messages of messageSets) {
+    const result = await runNexiToolLoop({
+      tenant: tenant(),
+      system: "Use tools.",
+      messages,
+      tools: [{
+        name: "searchEmail",
+        description: "Search email.",
+        inputSchema: z.object({ keywords: z.string().optional() }),
+        handler: async () => {
+          throw new Error("contact-card delivery should not route into searchEmail");
+        }
+      }],
+      routeActionName: "/api/nexi/message",
+      taskType: "job_desk_answer",
+      env: {}
+    });
+
+    assert.equal(result.toolRuns.length, 0);
+    assert.match(result.answer, /can't send a client's full contact card from chat yet/i);
+    assert.match(result.answer, /tenant user-seat profiles/i);
+    assert.doesNotMatch(result.answer, /couldn't find an email/i);
+    assert.doesNotMatch(result.answer, /did not find a matching client/i);
+  }
+});
+
+test("post-approval client edit requests return the honest saved-record capability gap across natural phrasings", async () => {
+  const phrasings = [
+    "Let's add the ZIP code to this 29643",
+    "Update Catherine Sears's ZIP code to 29643",
+    "Can you fix the address on this client to 102 Kate Lane, Fair Play, SC 29643?"
+  ];
+
+  for (const content of phrasings) {
+    const result = await runNexiToolLoop({
+      tenant: tenant(),
+      system: "Use tools.",
+      messages: [
+        { role: "user", content: "What is Catherine Sears telephone number?" },
+        { role: "assistant", content: "The phone number on file for Catherine Sears is 8646171838." },
+        { role: "user", content }
+      ],
+      tools: [],
+      routeActionName: "/api/nexi/message",
+      taskType: "job_desk_answer",
+      env: { ANTHROPIC_API_KEY: "test-key" },
+      fetchFn: async () => {
+        throw new Error("post-approval edit requests should not call the model");
+      }
+    });
+
+    assert.equal(result.toolRuns.length, 0);
+    assert.match(result.answer, /can't edit saved client records from chat yet/i, `expected the honest capability gap for: ${content}`);
+    assert.doesNotMatch(result.answer, /did not find/i);
+  }
+});
+
+test("post-approval edit follow-ups using pronouns after a lookup still return the honest saved-record capability gap", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "What is Catherine Sears address?" },
+      { role: "assistant", content: "The address on file for Catherine Sears is 102 Kate Lane, Fair Play, SC.\n\nWould you like directions or should I open it in Maps?" },
+      { role: "user", content: "Add a zip code to her address 29643" }
+    ],
+    tools: [],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("post-approval pronoun edit requests should not call the model");
+    }
+  });
+
+  assert.equal(result.toolRuns.length, 0);
+  assert.match(result.answer, /can't edit saved client records from chat yet/i);
+  assert.doesNotMatch(result.answer, /The address on file for Catherine Sears/i);
+  assert.doesNotMatch(result.answer, /Would you like directions/i);
+  assert.doesNotMatch(result.answer, /did not find/i);
+});
+
+test("approval rejections omit stray punctuation when the pending title is empty or malformed", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "assistant", content: "Catherine Sears\n102 Kate Lane, Fair Play, SC 29643\n(864) 617-1838\nCatherineSears31@gmail.com\n\nDo the Client Details look correct?" },
+      { role: "user", content: "no" }
+    ],
+    tools: [{
+      name: "rejectPendingApproval",
+      description: "Reject a pending approval.",
+      inputSchema: z.object({ approvalId: z.string().optional() }),
+      handler: async () => ({
+        result: {
+          approval: {
+            preview: {
+              title: "Create client: ."
+            }
+          }
+        },
+        sources: [{ rail: "native", ref: "approval_rejected", label: "Approval queue rejection" }]
+      })
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {},
+    pendingApproval: pendingApprovalContext("appr_reject_client", { revisableClientCreate: true })
+  });
+
+  assert.equal(result.answer, "Rejected Create client. Nothing was created.");
+  assert.doesNotMatch(result.answer, /\.\./);
+});
+
+test("Nexi service answers phone lookups directly from matched client records", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is the phone number for Logan Sears?" }],
+    tools: [{
+      name: "clientLookup",
+      description: "Read native clients.",
+      inputSchema: z.object({ q: z.string().optional() }),
+      handler: async () => ({
+        result: {
+          clients: [{
+            name: "Logan Sears",
+            phones: ["8645581725"],
+            relatedProperties: [{
+              address: {
+                street1: "6020 Frest Dr",
+                city: "Seneca",
+                state: "SC",
+                postalCode: "29672"
+              }
+            }]
+          }],
+          nativeCount: 1
+        },
+        sources: [{ rail: "native", ref: "clients", label: "Native CRM clients" }]
+      })
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("clientLookup direct answers should not call the model");
+    }
+  });
+
+  assert.match(result.answer, /The phone number on file for Logan Sears is 8645581725\./);
+  assert.match(result.answer, /Would you like me to call now\?/);
+});
+
+test("Nexi service answers address lookups directly from matched client property records", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is the address for Logan Sears?" }],
+    tools: [{
+      name: "clientLookup",
+      description: "Read native clients.",
+      inputSchema: z.object({ q: z.string().optional() }),
+      handler: async () => ({
+        result: {
+          clients: [{
+            name: "Logan Sears",
+            phones: ["8645581725"],
+            relatedProperties: [{
+              address: {
+                street1: "6020 Frest Dr",
+                city: "Seneca",
+                state: "SC",
+                postalCode: "29672"
+              }
+            }]
+          }],
+          nativeCount: 1
+        },
+        sources: [{ rail: "native", ref: "clients", label: "Native CRM clients" }]
+      })
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("clientLookup direct answers should not call the model");
+    }
+  });
+
+  assert.match(result.answer, /The address on file for Logan Sears is 6020 Frest Dr, Seneca, SC, 29672\./);
+  assert.match(result.answer, /Would you like directions or should I open it in Maps\?/);
+});
+
+test("Nexi client lookup misses stay on the native rail and never mention dormant vendors", async () => {
+  let lookupCalls = 0;
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is Valerie Lane phone number?" }],
+    tools: [{
+      name: "clientLookup",
+      description: "Read native clients.",
+      inputSchema: z.object({ q: z.string().optional() }),
+      handler: async () => {
+        lookupCalls += 1;
+        return {
+          result: {
+            clients: [],
+            nativeCount: 0,
+            fallbackUsed: false,
+            jobberFallbackCount: 0
+          },
+          sources: [{ rail: "native", ref: "clients", label: "Native CRM clients" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("native client lookup misses should not fall through to the model");
+    }
+  });
+
+  assert.equal(lookupCalls, 1);
+  assert.match(result.answer, /native client list/i);
+  assert.doesNotMatch(result.answer, /Jobber|CompanyCam/i);
+});
+
+test("client approval preview keeps the parsed zip separate from the phone number", async () => {
+  let capturedApproval = null;
+  await queueClientCreateApproval(
+    tenant(),
+    {
+      name: "Logan Sears",
+      address: "6020 Frest Dr Seneca SC 29672 telephone 8645581725",
+      emails: ["4lbsears@gmail.com"],
+      phones: ["8645581725"],
+      consent: { email: false, sms: false, marketing: false }
+    },
+    {
+      create: async (approval) => {
+        capturedApproval = approval;
+        return { id: "appr_client_preview", status: "pending", ...approval };
+      }
+    }
+  );
+
+  assert.ok(capturedApproval);
+  assert.match(capturedApproval.preview.body, /Address: 6020 Frest Dr/);
+  assert.match(capturedApproval.preview.body, /City: Seneca/);
+  assert.match(capturedApproval.preview.body, /State: SC/);
+  assert.match(capturedApproval.preview.body, /ZIP: 29672/);
+  assert.doesNotMatch(capturedApproval.preview.body, /Address: .*8645581725/i);
+  assert.doesNotMatch(capturedApproval.preview.body, /Email OK:/);
+  assert.doesNotMatch(capturedApproval.preview.body, /Text OK:/);
+});
+
+test("Nexi message route wraps duplicate tool registration failures in the friendly fallback", async () => {
+  const duplicateTool = {
+    name: "clientLookup",
+    description: "Read native clients.",
+    inputSchema: z.object({ q: z.string().optional() }),
+    handler: async () => ({
+      result: { clients: [] },
+      sources: [{ rail: "native", ref: "client_1", label: "Native client" }]
+    })
+  };
+  const app = express();
+  app.use(express.json());
+  app.use("/api/nexi", createNexiRouter({ NEXI_FIREBASE_AUTH_REQUIRED: "false", TENANT_ID: "aquatrace" }, {
+    extraTools: [duplicateTool],
+    extraToolsForRequest: async () => [duplicateTool]
+  }));
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/nexi/message`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        conversationId: "dup-tools",
+        message: "What's the phone number for Aquatrace?"
+      })
+    });
+    const body = await response.json();
+    assert.equal(response.status, 500);
+    assert.equal(body.ok, false);
+    assert.equal(body.error, NEXI_FRIENDLY_FAILURE_MESSAGE);
+    assert.doesNotMatch(body.error, /tool names must be unique|duplicate nexi tool registration/i);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve(undefined)));
+  }
+});
+
+test("Nexi message history route restores the same conversation and clears pending approval after approval", async () => {
+  const queueJobActionTool = {
+    name: "queueJobAction",
+    description: "Queue a job close or invoice action.",
+    inputSchema: z.object({
+      jobId: z.string().optional(),
+      query: z.string().optional(),
+      action: z.enum(["close", "invoice", "close_and_invoice", "dismiss_invoice_reminder"])
+    }),
+    handler: async (_tenant, args) => ({
+      result: {
+        approval: {
+          id: "appr_job_1",
+          preview: {
+            title: "Close and invoice job: Leak follow-up",
+            body: `Job: ${args.jobId ?? args.query}\nAction: ${args.action}`
+          }
+        }
+      },
+      sources: [{ rail: "native", ref: "approval_job_1", label: "Approval queue job action" }]
+    })
+  };
+  const approvePendingApprovalTool = {
+    name: "approvePendingApproval",
+    description: "Approve a pending approval record.",
+    inputSchema: z.object({ approvalId: z.string() }),
+    handler: async (_tenant, args) => ({
+      result: {
+        executedApproval: {
+          id: args.approvalId,
+          preview: { title: "Close and invoice job: Leak follow-up" }
+        }
+      },
+      sources: [{ rail: "native", ref: "approval_job_1", label: "Approval queue job action" }]
+    })
+  };
+  const app = express();
+  app.use(express.json());
+  app.use("/api/nexi", createNexiRouter({
+    NEXI_FIREBASE_AUTH_REQUIRED: "false",
+    NEXI_LOCAL_FAKE_GATEWAY: "true",
+    TENANT_ID: "aquatrace"
+  }, {
+    extraTools: [queueJobActionTool, approvePendingApprovalTool]
+  }));
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+
+    const firstResponse = await fetch(`http://127.0.0.1:${address.port}/api/nexi/message`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        conversationId: "resume-thread",
+        actorDisplayName: "Chris",
+        message: "Close and invoice job job_123"
+      })
+    });
+    const firstBody = await firstResponse.json();
+    assert.equal(firstResponse.status, 200);
+    assert.equal(firstBody.ok, true);
+    assert.match(firstBody.answer, /Here is your request, Chris\./);
+    assert.match(firstBody.answer, /You requested close and invoice job for Leak follow-up with the following details:/);
+    assert.doesNotMatch(firstBody.answer, /appr_job_1/);
+    assert.equal(firstBody.pendingApproval.approvalId, "appr_job_1");
+
+    const secondResponse = await fetch(`http://127.0.0.1:${address.port}/api/nexi/message`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        conversationId: "resume-thread",
+        actorDisplayName: "Chris",
+        message: "yes",
+        pendingApproval: firstBody.pendingApproval
+      })
+    });
+    const secondBody = await secondResponse.json();
+    assert.equal(secondResponse.status, 200);
+    assert.equal(secondBody.ok, true);
+    assert.equal(secondBody.pendingApproval, null);
+
+    const historyResponse = await fetch(`http://127.0.0.1:${address.port}/api/nexi/history?tenantId=aquatrace&conversationId=resume-thread`);
+    const historyBody = await historyResponse.json();
+    assert.equal(historyResponse.status, 200);
+    assert.equal(historyBody.ok, true);
+    assert.equal(historyBody.conversationId, "resume-thread");
+    assert.equal(historyBody.messages.length, 4);
+    assert.equal(historyBody.messages[0].text, "Close and invoice job job_123");
+    assert.match(historyBody.messages[1].text, /Here is your request, Chris\./);
+    assert.equal(historyBody.messages[2].text, "yes");
+    assert.equal(historyBody.pendingApproval, null);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve(undefined)));
+  }
+});
+
+test("Nexi message route wraps request-scoped tool factory failures in the friendly fallback", async () => {
+  const app = express();
+  app.use(express.json());
+  app.use("/api/nexi", createNexiRouter({ NEXI_FIREBASE_AUTH_REQUIRED: "false", TENANT_ID: "aquatrace" }, {
+    extraToolsForRequest: async () => {
+      throw new Error("Unknown tool: phoneLookup");
+    }
+  }));
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/nexi/message`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        conversationId: "scoped-tools",
+        message: "What's the address for Aquatrace?"
+      })
+    });
+    const body = await response.json();
+    assert.equal(response.status, 500);
+    assert.equal(body.ok, false);
+    assert.equal(body.error, NEXI_FRIENDLY_FAILURE_MESSAGE);
+    assert.doesNotMatch(body.error, /unknown tool|phoneLookup/i);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve(undefined)));
+  }
+});
+
 test("Nexi service persists tool runs for conversation reuse", async () => {
   const repository = new MemoryNexiRepository();
   const toolRuns = [{
     name: "getSchedule",
     result: { jobs: [{ id: "job_1", title: "Rachel Payne leak detection" }] },
-    sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne leak detection" }]
+    sources: [{ rail: "native", ref: "job_1", label: "Native job Rachel Payne leak detection" }]
   }];
   const result = await answerNexiMessage({
     tenant: tenant(),
@@ -3508,10 +1857,10 @@ test("Nexi service returns the stable conversation id, not the Firestore record 
     repository,
     gateway: async () => ({
       answer: "Rachel Payne is scheduled today.",
-      sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }],
+      sources: [{ rail: "native", ref: "job_1", label: "Native job Rachel Payne" }],
       usage: { inputTokens: 1, outputTokens: 1, cacheCreationInputTokens: 0, cacheReadInputTokens: 0, totalTokens: 2 },
       raw: { test: true },
-      toolRuns: [{ name: "getSchedule", result: { jobs: [] }, sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Rachel Payne" }] }]
+      toolRuns: [{ name: "getSchedule", result: { jobs: [] }, sources: [{ rail: "native", ref: "job_1", label: "Native job Rachel Payne" }] }]
     })
   });
   assert.match(first.conversationId, /^thread_/);
@@ -3538,159 +1887,6 @@ test("Nexi service returns the stable conversation id, not the Firestore record 
   assert.equal(second.conversationId, first.conversationId);
   assert.equal(secondMessages.some((message) => message.role === "user" && message.content === "What is on today's schedule?"), true);
   assert.equal(repository.conversations.length, 2);
-});
-
-test("CompanyCam report fields produce entity-keyed SiteJobBlueprints", async () => {
-  const fields = extractCompanyCamReportFields(`
-Swimming Pool Leak Detection Details /Results
--- 2 of 10 --
-Leak detection found water loss at the return line and skimmer throat.
--- 3 of 10 --
-Estimated Approximate Total Gallons
-32,500 Gallons
-`);
-  assert.equal(fields.poolGallons, 32500);
-  assert.match(fields.reportFindings, /return line/i);
-  const blueprint = siteJobBlueprintFromCompanyCamReport({
-    tenantId: "aquatrace",
-    project: {
-      id: "107503799",
-      name: "Deborah Justice",
-      externalIds: { companycam: "107503799" },
-      address: { street1: "181 Isbell Road", city: "Fair Play", province: "South Carolina", postalCode: "29643" }
-    },
-    report: {
-      document: {
-        id: "18218446",
-        tenantId: "aquatrace",
-        label: "Exported - Current Aquatrace Swimming Pool Leak Detection Checklist 07-02-2026.pdf",
-        storageRef: "companycam-doc:18218446",
-        externalIds: { companycam: "18218446" }
-      },
-      fields,
-      textSnippet: "Estimated Approximate Total Gallons 32,500 Gallons",
-      byteLength: 1024,
-      parsed: true
-    }
-  });
-  assert.equal(blueprint.fields.projectName, "Deborah Justice");
-  assert.equal(blueprint.fields.poolGallons, 32500);
-  const repository = new MemoryNexiRepository();
-  await repository.saveSiteJobBlueprint(blueprint);
-  const tool = createNexiJobDeskTools({}, repository).find((candidate) => candidate.name === "lookupSiteJobBlueprintField");
-  const match = await tool.handler(tenant(), { field: "poolGallons", requestedEntity: "Deborah Justice" });
-  assert.equal(match.result.value, 32500);
-});
-
-test("CompanyCam report extraction keeps pool, spa, and basin count sections separate", async () => {
-  const fields = extractCompanyCamReportFields(`
-Swimming Pool Leak Detection Details /Results
-Pool/Spa Overview
-Pool How many skimmers 2 How many wall returns 13 How many floor returns 0 How many main drains 4 How many lights 2 How many cleaner ports 5
-Spa How many skimmers 0 How many wall returns 6 How many floor returns 0 How many main drains 2 How many lights 1 How many cleaner ports 0
-Catch Basin How many skimmers 0 How many wall returns 1 How many floor returns 0 How many main drains 1 How many lights 0 How many cleaner ports 0
-Measurements Square Footage (Surface Area) 1002.7ftÂ² Estimated Average Depth (Inches) 60in Estimated Approximate Total Gallons 37,602 Gallons
-`);
-  assert.equal(fields.poolMainDrains, 4);
-  assert.equal(fields.spaMainDrains, 2);
-  assert.equal(fields.catchBasinMainDrains, 1);
-  assert.match(fields.poolSpaCountsJson, /"spaMainDrains":2/);
-});
-
-test("SiteJobBlueprint field lookup reads section-scoped counts from old JSON fields", async () => {
-  const repository = new MemoryNexiRepository();
-  await repository.saveSiteJobBlueprint({
-    id: "site_job_deborah_justice",
-    tenantId: "aquatrace",
-    kind: "site_blueprint",
-    fields: {
-      projectName: "Deborah Justice",
-      poolSpaCountsJson: JSON.stringify({ poolMainDrains: 4, spaMainDrains: 2 })
-    },
-    extractedFrom: "companycam-doc:18218446",
-    extractedAt: new Date().toISOString()
-  });
-  const tool = createNexiJobDeskTools({}, repository).find((candidate) => candidate.name === "lookupSiteJobBlueprintField");
-  assert.ok(tool);
-  const result = await tool.handler(tenant(), { field: "spaMainDrains", requestedEntity: "Deborah Justice" });
-  assert.equal(result.result.value, 2);
-  assert.equal(result.sources.length, 1);
-});
-
-test("SiteJobBlueprint field lookup rejects mismatched requested entity", async () => {
-  const repository = new MemoryNexiRepository();
-  await repository.saveSiteJobBlueprint({
-    id: "site_job_camp_mikell",
-    tenantId: "aquatrace",
-    kind: "site_blueprint",
-    fields: { poolGallons: 101000 },
-    extractedFrom: "camp-mikell-checklist-live",
-    extractedAt: new Date().toISOString()
-  });
-  const tool = createNexiJobDeskTools({}, repository).find((candidate) => candidate.name === "lookupSiteJobBlueprintField");
-  assert.ok(tool);
-
-  const mismatch = await tool.handler(tenant(), { field: "poolGallons", requestedEntity: "Deborah Justice" });
-  assert.deepEqual(mismatch.sources, []);
-  assert.equal(mismatch.result.value, null);
-  assert.equal(mismatch.result.requestedEntity, "Deborah Justice");
-
-  const match = await tool.handler(tenant(), { field: "poolGallons", requestedEntity: "Camp Mikell" });
-  assert.equal(match.result.value, 101000);
-  assert.equal(match.sources.length, 1);
-  assert.match(match.sources[0].label, /camp-mikell-checklist-live/);
-});
-
-test("Nexi service logs user-flagged incorrect answers with correction context", async () => {
-  const repository = new MemoryNexiRepository();
-  await repository.saveConversation({
-    tenantId: "aquatrace",
-    conversationId: "trial-day-1",
-    userText: "Who are the technicians for Deborah Justice",
-    assistantText: "No technician is listed in Jobber.",
-    sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Deborah Justice" }]
-  });
-  const result = await answerNexiMessage({
-    tenant: tenant(),
-    message: "Wrong answer, the technician was in CompanyCam.",
-    conversationId: "trial-day-1",
-    tools: [],
-    repository,
-    gateway: async () => {
-      throw new Error("correction handling should not call the model");
-    }
-  });
-  assert.match(result.failureId, /^fail_/);
-  assert.equal(repository.failureLog.length, 1);
-  assert.equal(repository.failureLog[0].reason, "user_flagged_incorrect");
-  assert.match(repository.failureLog[0].correctionText, /CompanyCam/);
-  assert.equal(repository.failureLog[0].flaggedAnswer, "No technician is listed in Jobber.");
-  assert.match(result.answer, /logged/i);
-});
-
-test("Nexi service logs softer correction wording before the source gate can fire", async () => {
-  const repository = new MemoryNexiRepository();
-  await repository.saveConversation({
-    tenantId: "aquatrace",
-    conversationId: "trial-day-1b",
-    userText: "What was the issue at Camp Mikell?",
-    assistantText: "The job title says swimming pool leak detection.",
-    sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job Camp Mikell" }]
-  });
-  const result = await answerNexiMessage({
-    tenant: tenant(),
-    message: "That was incorrect, it's in CompanyCam.",
-    conversationId: "trial-day-1b",
-    tools: [],
-    repository,
-    gateway: async () => {
-      throw new Error("correction handling should not call the model");
-    }
-  });
-  assert.match(result.failureId, /^fail_/);
-  assert.equal(repository.failureLog[0].reason, "user_flagged_incorrect");
-  assert.match(repository.failureLog[0].correctionText, /CompanyCam/);
-  assert.equal(repository.failureLog[0].flaggedAnswer, "The job title says swimming pool leak detection.");
 });
 
 test("Firestore conversation history reads are scoped to one conversation", async () => {

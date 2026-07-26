@@ -1,6 +1,6 @@
 # Context Tools
 
-This directory holds small tenant-aware tools Nexi uses for real-world context that is not owned by Jobber, CompanyCam, CRM, or email.
+This directory holds small tenant-aware tools Nexi uses for real-world context that is not owned by the CRM, media, or email modules.
 
 Current tools:
 - `getCurrentTime`: answers tenant-local date/time questions.

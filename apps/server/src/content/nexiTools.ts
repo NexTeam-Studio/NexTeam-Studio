@@ -1,224 +1,263 @@
 import { z } from "zod";
-import { type ApprovalQueueService, type NexiTool, type Source } from "@nexteam/core";
-import { summarizeContentStats, type ContentDraft, type ContentDraftKind } from "./contentEngine.js";
-import type { ContentRepository } from "./repository.js";
-import { draftContentForJob, queueContentDraftForApproval } from "./workflow.js";
+import { RailError, type NexiTool, type Source, type TenantUserRole } from "@nexteam/core";
+import type { NexReachService } from "./nexreachService.js";
 
-const contentKindSchema = z.enum(["gbp_post", "social_post", "article"]);
-
-const jobFactSchema = z.object({
-  id: z.string().min(1),
-  tenantId: z.string().min(1),
-  title: z.string().min(1),
-  clientName: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  outcome: z.string().optional(),
-  completedAt: z.string().optional(),
-  lineItems: z.array(z.object({
-    name: z.string().min(1),
-    total: z.number().optional()
-  })).optional()
+const generateJobContentSchema = z.object({
+  jobId: z.string().min(1),
+  cadence: z.enum(["owner_on_demand", "manual_batch"]).default("owner_on_demand"),
+  requestedKinds: z.array(z.enum(["article", "social_post", "gbp_post"])).default(["article", "social_post"])
 });
 
-const mediaFactSchema = z.object({
-  id: z.string().min(1),
-  type: z.enum(["photo", "video", "pdf"]),
-  thumbRef: z.string().optional(),
-  storageRef: z.string().optional(),
-  caption: z.string().optional()
-});
-
-const draftPostFromJobSchema = z.object({
-  job: jobFactSchema,
-  media: z.array(mediaFactSchema).default([]),
-  requestedKinds: z.array(contentKindSchema).default(["gbp_post"])
-});
-
-const contentQueueSchema = z.object({
-  tenantId: z.string().optional()
-});
-
-const queueFreeformContentSchema = z.object({
-  kind: contentKindSchema.default("article"),
-  title: z.string().min(1),
-  body: z.string().min(1),
-  jobId: z.string().optional(),
-  clientName: z.string().optional(),
-  sourcePrompt: z.string().optional()
-});
-
-const approveSchema = z.object({
-  tenantId: z.string().optional(),
+const draftIdSchema = z.object({
   draftId: z.string().min(1)
 });
 
-const rejectSchema = z.object({
-  tenantId: z.string().optional(),
-  draftId: z.string().min(1)
+const pendingDraftListSchema = z.object({});
+
+const listConsentedClientsSchema = z.object({
+  serviceType: z.string().optional(),
+  locality: z.string().optional(),
+  closedSince: z.string().optional()
 });
 
-const contentStatsSchema = z.object({
-  tenantId: z.string().optional()
+const revisePendingDraftApprovalSchema = z.object({
+  approvalId: z.string().min(1),
+  changeRequest: z.string().min(1)
 });
 
 function source(ref: string, label: string): Source {
   return { rail: "native", ref, label };
 }
 
-function freeformDraft(input: {
-  tenantId: string;
-  kind: ContentDraftKind;
-  title: string;
-  body: string;
-  jobId?: string | undefined;
-  clientName?: string | undefined;
-  sourcePrompt?: string | undefined;
-}): ContentDraft {
-  const draftId = `content_${input.kind}_${crypto.randomUUID()}`;
-  const sources = [
-    source(draftId, `Nexi freeform ${input.kind.replace("_", " ")} draft`)
-  ];
-  if (input.jobId) {
-    sources.push(source(input.jobId, `Native job reference ${input.jobId}`));
+function ensureMarketingRole(actorRole: TenantUserRole | undefined): void {
+  if (!actorRole || actorRole === "OWNER" || actorRole === "OFFICE_ADMIN") {
+    return;
   }
-  return {
-    id: draftId,
-    tenantId: input.tenantId,
-    kind: input.kind,
-    title: input.title,
-    body: input.body,
-    mediaRefs: [],
-    jobId: input.jobId,
-    status: "draft",
-    sources,
-    createdAt: new Date().toISOString()
-  };
+  throw new RailError("Only OWNER and OFFICE_ADMIN can use NexReach marketing tools.", {
+    provider: "native",
+    op: "nexreachRoleFence",
+    status: 403
+  });
+}
+
+function draftPatchFromChangeRequest(text: string): {
+  title?: string;
+  body?: string;
+  shortCaption?: string;
+  longCaption?: string;
+} {
+  const patch: {
+    title?: string;
+    body?: string;
+    shortCaption?: string;
+    longCaption?: string;
+  } = {};
+  const title = text.match(/\btitle\s*(?:is|to|=|:)\s*([^.!?\n]+)/i)?.[1]?.trim();
+  const shortCaption = text.match(/\bshort\s+caption\s*(?:is|to|=|:)\s*([\s\S]+?)(?=\n(?:long\s+caption|body)\b|$)/i)?.[1]?.trim();
+  const longCaption = text.match(/\blong\s+caption\s*(?:is|to|=|:)\s*([\s\S]+?)(?=\n(?:short\s+caption|body)\b|$)/i)?.[1]?.trim();
+  const body = text.match(/\bbody\s*(?:is|to|=|:)\s*([\s\S]+)$/i)?.[1]?.trim();
+  if (title) {
+    patch.title = title;
+  }
+  if (shortCaption) {
+    patch.shortCaption = shortCaption;
+  }
+  if (longCaption) {
+    patch.longCaption = longCaption;
+  }
+  if (body) {
+    patch.body = body;
+  }
+  return patch;
 }
 
 export function createContentNexiTools(input: {
-  repository: ContentRepository;
-  approvalQueue: ApprovalQueueService;
+  service: NexReachService;
+  actorRole?: TenantUserRole | undefined;
+  actorId?: string | undefined;
 }): NexiTool[] {
   return [
     {
-      name: "draftPostFromJob",
-      description: "Draft GBP, social, or article content from a completed native job and queue it for approval. Does not publish.",
-      inputSchema: draftPostFromJobSchema,
+      name: "generateJobContent",
+      description: "Generate NexReach article and social drafts for a consent-eligible closed job. Drafts park for owner approval and do not publish anywhere.",
+      inputSchema: generateJobContentSchema,
       handler: async (tenant, args) => {
-        const parsed = draftPostFromJobSchema.parse(args);
-        const drafts = await draftContentForJob({
+        ensureMarketingRole(input.actorRole);
+        const parsed = generateJobContentSchema.parse(args);
+        const result = await input.service.generateJobContent({
           tenantId: tenant.id,
-          job: { ...parsed.job, tenantId: tenant.id },
-          media: parsed.media,
-          requestedKinds: parsed.requestedKinds as ContentDraftKind[],
-          repository: input.repository,
-          approvalQueue: input.approvalQueue
+          jobId: parsed.jobId,
+          actorId: input.actorId,
+          cadence: parsed.cadence,
+          requestedKinds: parsed.requestedKinds
         });
         return {
-          result: { drafts, publishingDeferred: true },
-          sources: drafts.flatMap((draft) => [source(draft.id, `Native content draft ${draft.title}`), ...draft.sources])
+          result: {
+            ...result,
+            publishingDeferred: true,
+            draftCount: result.drafts.length
+          },
+          sources: [
+            source(result.eligibility.jobId, `Closed job ${result.eligibility.jobId}`),
+            ...result.drafts.map((draft) => source(draft.id, `NexReach draft ${draft.title}`))
+          ]
         };
       }
     },
     {
-      name: "queueFreeformContent",
-      description: "Save owner-requested content written in chat as a real content draft queued for approval. Does not publish.",
-      inputSchema: queueFreeformContentSchema,
-      handler: async (tenant, args) => {
-        const parsed = queueFreeformContentSchema.parse(args);
-        const draft = await queueContentDraftForApproval({
-          draft: freeformDraft({
-            tenantId: tenant.id,
-            kind: parsed.kind as ContentDraftKind,
-            title: parsed.title,
-            body: parsed.body,
-            jobId: parsed.jobId,
-            clientName: parsed.clientName,
-            sourcePrompt: parsed.sourcePrompt
-          }),
-          repository: input.repository,
-          approvalQueue: input.approvalQueue
-        });
-        await input.repository.saveCalendarItems([{
-          id: `cal_${draft.kind}_${draft.id}`,
-          tenantId: draft.tenantId,
-          kind: draft.kind,
-          title: draft.title,
-          scheduledFor: draft.createdAt,
-          cadenceReason: "Owner asked Nexi to save this freeform content draft.",
-          draftId: draft.id
-        }]);
+      name: "listPendingDrafts",
+      description: "List NexReach drafts that are still waiting for owner approval.",
+      inputSchema: pendingDraftListSchema,
+      handler: async (tenant) => {
+        ensureMarketingRole(input.actorRole);
+        const drafts = await input.service.listPendingDrafts(tenant.id);
         return {
-          result: { draft, publishingDeferred: true, savedToContentQueue: true },
-          sources: [source(draft.id, `Native content draft ${draft.title}`), ...draft.sources]
+          result: {
+            drafts,
+            publishingDeferred: true
+          },
+          sources: drafts.map((draft) => source(draft.id, `NexReach pending draft ${draft.title}`))
+        };
+      }
+    },
+    {
+      name: "approveDraft",
+      description: "Restate a NexReach draft for explicit yes/no approval in chat. The next yes executes the approval and marks the draft ready for use.",
+      inputSchema: draftIdSchema,
+      handler: async (tenant, args) => {
+        ensureMarketingRole(input.actorRole);
+        const parsed = draftIdSchema.parse(args);
+        const result = await input.service.restateDraftForApproval(tenant.id, parsed.draftId);
+        return {
+          result,
+          sources: [source(result.approval.id, `ApprovalQueue marketing draft ${result.approval.id}`)]
+        };
+      }
+    },
+    {
+      name: "discardDraft",
+      description: "Discard a pending NexReach draft and reject its approval item.",
+      inputSchema: draftIdSchema,
+      handler: async (tenant, args) => {
+        ensureMarketingRole(input.actorRole);
+        const parsed = draftIdSchema.parse(args);
+        const result = await input.service.discardDraft({
+          tenantId: tenant.id,
+          draftId: parsed.draftId,
+          actorId: input.actorId
+        });
+        return {
+          result,
+          sources: [source(result.draft.id, `NexReach rejected draft ${result.draft.title}`)]
+        };
+      }
+    },
+    {
+      name: "listConsentedClients",
+      description: "List the NexReach audience pool of consented clients, with optional service, locality, and recency filters.",
+      inputSchema: listConsentedClientsSchema,
+      handler: async (tenant, args) => {
+        ensureMarketingRole(input.actorRole);
+        const parsed = listConsentedClientsSchema.parse(args);
+        const audience = await input.service.listAudience(tenant.id, {
+          ...(parsed.serviceType ? { serviceType: parsed.serviceType } : {}),
+          ...(parsed.locality ? { locality: parsed.locality } : {}),
+          ...(parsed.closedSince ? { closedSince: parsed.closedSince } : {})
+        });
+        return {
+          result: { audience },
+          sources: audience.map((member) => source(member.clientId, `Consented client ${member.clientName}`))
+        };
+      }
+    },
+    {
+      name: "revisePendingDraftApproval",
+      description: "Apply requested title or copy changes to a pending NexReach draft, then restate the revised draft for approval.",
+      inputSchema: revisePendingDraftApprovalSchema,
+      handler: async (tenant, args) => {
+        ensureMarketingRole(input.actorRole);
+        const parsed = revisePendingDraftApprovalSchema.parse(args);
+        const drafts = await input.service.listPendingDrafts(tenant.id);
+        const draft = drafts.find((entry) => entry.approval?.id === parsed.approvalId);
+        if (!draft) {
+          throw new RailError("That pending approval is not a NexReach draft I can revise right now.", {
+            provider: "native",
+            op: "revisePendingDraftApproval",
+            status: 404
+          });
+        }
+        const patch = draftPatchFromChangeRequest(parsed.changeRequest);
+        if (!Object.keys(patch).length) {
+          return {
+            result: {
+              needsClarification: "Tell me the changed title, body, short caption, or long caption and I'll restate the draft before anything is approved.",
+              approval: draft.approval
+            },
+            sources: [source(parsed.approvalId, `ApprovalQueue marketing draft ${parsed.approvalId}`)]
+          };
+        }
+        const revised = await input.service.reviseDraft({
+          tenantId: tenant.id,
+          draftId: draft.id,
+          actorId: input.actorId,
+          ...patch
+        });
+        return {
+          result: revised,
+          sources: [source(revised.approval.id, `ApprovalQueue marketing draft ${revised.approval.id}`)]
         };
       }
     },
     {
       name: "contentQueue",
-      description: "List draft content queued for a tenant.",
-      inputSchema: contentQueueSchema,
-      handler: async (tenant, args) => {
-        const parsed = contentQueueSchema.parse(args);
-        const tenantId = parsed.tenantId ?? tenant.id;
-        const drafts = await input.repository.listDrafts(tenantId);
+      description: "Legacy alias for listPendingDrafts.",
+      inputSchema: pendingDraftListSchema,
+      handler: async (tenant) => {
+        ensureMarketingRole(input.actorRole);
+        const drafts = await input.service.listPendingDrafts(tenant.id);
         return {
           result: { drafts, publishingDeferred: true },
-          sources: drafts.map((draft) => source(draft.id, `Native content draft ${draft.title}`))
+          sources: drafts.map((draft) => source(draft.id, `NexReach pending draft ${draft.title}`))
         };
       }
     },
     {
       name: "approve",
-      description: "Approve a queued content draft into publish-ready state without publishing it.",
-      inputSchema: approveSchema,
+      description: "Legacy alias that directly approves and executes a NexReach draft.",
+      inputSchema: draftIdSchema,
       handler: async (tenant, args) => {
-        const parsed = approveSchema.parse(args);
-        const tenantId = parsed.tenantId ?? tenant.id;
-        const draft = await input.repository.getDraft(tenantId, parsed.draftId);
-        if (!draft) {
-          return { result: { draft: null, publishingDeferred: true }, sources: [] };
-        }
-        const approval = draft.approvalId ? await input.approvalQueue.approve(draft.approvalId) : null;
-        const updated = await input.repository.updateDraft(tenantId, draft.id, { status: "publish_ready" });
+        ensureMarketingRole(input.actorRole);
+        const parsed = draftIdSchema.parse(args);
+        const result = await input.service.approveDraft({
+          tenantId: tenant.id,
+          draftId: parsed.draftId,
+          actorId: input.actorId
+        });
         return {
-          result: { draft: updated, approval, publishingDeferred: true },
-          sources: [source(draft.id, `Native content draft ${draft.title}`)]
+          result: {
+            draft: result.draft,
+            approval: result.approval,
+            publishingDeferred: true
+          },
+          sources: [source(result.draft.id, `NexReach ready draft ${result.draft.title}`)]
         };
       }
     },
     {
       name: "rejectContentDraft",
-      description: "Reject a queued content draft without publishing it.",
-      inputSchema: rejectSchema,
+      description: "Legacy alias for discardDraft.",
+      inputSchema: draftIdSchema,
       handler: async (tenant, args) => {
-        const parsed = rejectSchema.parse(args);
-        const tenantId = parsed.tenantId ?? tenant.id;
-        const draft = await input.repository.getDraft(tenantId, parsed.draftId);
-        if (!draft) {
-          return { result: { draft: null, publishingDeferred: true }, sources: [] };
-        }
-        const approval = draft.approvalId ? await input.approvalQueue.reject(draft.approvalId) : null;
-        const updated = await input.repository.updateDraft(tenantId, draft.id, { status: "rejected" });
+        ensureMarketingRole(input.actorRole);
+        const parsed = draftIdSchema.parse(args);
+        const result = await input.service.discardDraft({
+          tenantId: tenant.id,
+          draftId: parsed.draftId,
+          actorId: input.actorId
+        });
         return {
-          result: { draft: updated, approval, publishingDeferred: true },
-          sources: [source(draft.id, `Native content draft ${draft.title}`)]
-        };
-      }
-    },
-    {
-      name: "contentStats",
-      description: "Summarize content draft and performance metrics for a tenant.",
-      inputSchema: contentStatsSchema,
-      handler: async (tenant, args) => {
-        const parsed = contentStatsSchema.parse(args);
-        const tenantId = parsed.tenantId ?? tenant.id;
-        const drafts = await input.repository.listDrafts(tenantId);
-        const performance = await input.repository.listPerformance(tenantId);
-        return {
-          result: { stats: summarizeContentStats(drafts, performance), publishingDeferred: true },
-          sources: [source("content_stats", `Native content stats for ${tenantId}`)]
+          result,
+          sources: [source(result.draft.id, `NexReach rejected draft ${result.draft.title}`)]
         };
       }
     }

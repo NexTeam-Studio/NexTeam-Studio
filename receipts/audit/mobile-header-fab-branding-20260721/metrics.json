@@ -1,0 +1,46 @@
+{
+  "url": "http://127.0.0.1:4175/nexops/jobs",
+  "platform": {
+    "left": 33,
+    "top": 14,
+    "right": 85,
+    "bottom": 66,
+    "width": 52,
+    "height": 52
+  },
+  "product": {
+    "left": 12,
+    "top": 70,
+    "right": 106,
+    "bottom": 93.5,
+    "width": 94,
+    "height": 23.5
+  },
+  "tenant": {
+    "left": 131,
+    "top": 38.8125,
+    "right": 259,
+    "bottom": 68.671875,
+    "width": 128,
+    "height": 29.859375
+  },
+  "fab": {
+    "left": 311.869384765625,
+    "top": 767.8775634765625,
+    "right": 376.130615234375,
+    "bottom": 828.1224975585938,
+    "width": 64.26123046875,
+    "height": 60.24493408203125
+  },
+  "fabClasses": "nexops-mobile-create-fab pulse",
+  "lockup": {
+    "left": 12,
+    "top": 14,
+    "right": 106,
+    "bottom": 93.5,
+    "width": 94,
+    "height": 79.5
+  },
+  "bodyScrollWidth": 390,
+  "innerWidth": 390
+}

@@ -45,7 +45,7 @@ function exportData() {
           tenantId: "aquatrace",
           userText: "what is on today's schedule",
           assistantText: "I checked the schedule. You have one job.",
-          sources: [{ rail: "jobber", ref: "job_1", label: "Jobber job" }],
+          sources: [{ rail: "native", ref: "job_1", label: "Native job" }],
           createdAt: `${date}T18:15:00.000Z`
         }
       ],

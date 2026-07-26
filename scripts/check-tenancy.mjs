@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const explicitFiles = process.argv.slice(2).filter((arg) => !arg.startsWith("-"));
 const files = explicitFiles.length
@@ -17,6 +17,9 @@ const operationPattern = /\.(?:add|get|set|update|delete|doc|batch)\s*\(/;
 const failures = [];
 
 for (const file of files) {
+  if (!existsSync(file)) {
+    continue;
+  }
   const text = readFileSync(file, "utf8");
   for (const match of text.matchAll(collectionPattern)) {
     const collection = match[1];

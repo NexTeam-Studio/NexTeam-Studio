@@ -1,6 +1,8 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { getPoolLeakCatalogItem } from "@nexteam/industry-packs";
 import {
+  communicationTemplateRecordSchema,
+  productServiceCatalogItemSchema,
   RailError,
   quoteApprovalRulesSchema,
   quoteDiscountSchema,
@@ -61,6 +63,7 @@ export const quoteComposerInputSchema = z.object({
   requestId: z.string().min(1).optional(),
   jobId: z.string().min(1).optional(),
   templateId: z.string().min(1).optional(),
+  salespersonUserId: z.string().min(1).optional(),
   title: z.string().min(1),
   items: z.array(quoteLineItemInputSchema).default([]),
   approvalRules: quoteApprovalRulesSchema.partial().optional(),
@@ -106,8 +109,25 @@ export const crmSettingsPatchSchema = z.object({
       smsIncludeSummary: z.boolean().optional(),
       smsIncludePayLink: z.boolean().optional(),
       smsIncludeHostedLink: z.boolean().optional()
-    }).optional()
-  }).optional()
+    }).optional(),
+    tippingEnabled: z.boolean().optional()
+  }).optional(),
+  portalDefaults: z.object({
+    keepBusinessAddressPrivate: z.boolean().optional(),
+    hubSessionReverifyDays: z.number().int().min(1).optional()
+  }).optional(),
+  reviewDefaults: z.object({
+    enabled: z.boolean().optional(),
+    steps: z.array(z.object({
+      id: z.string().min(1),
+      label: z.string().min(1),
+      offsetDays: z.number().int().min(0),
+      channels: z.enum(["email", "sms", "both"]),
+      templateCategory: z.enum(["review_request_initial", "review_request_nudge"])
+    })).optional()
+  }).optional(),
+  catalogItems: z.array(productServiceCatalogItemSchema).optional(),
+  communicationTemplates: z.array(communicationTemplateRecordSchema).optional()
 });
 
 export const quoteCreateApprovalArgsSchema = z.object({
@@ -163,19 +183,45 @@ function roundMoney(value: number): number {
   return Number(value.toFixed(2));
 }
 
-function buildLineItem(input: z.infer<typeof quoteLineItemInputSchema>, index: number): LineItem {
+function catalogItemFromSettings(settings: CrmSettings, code: string) {
+  const normalized = code.trim().toLowerCase();
+  const tenantItem = settings.catalogItems.find((item) => item.code.trim().toLowerCase() === normalized);
+  if (tenantItem) {
+    return tenantItem;
+  }
+  const seeded = getPoolLeakCatalogItem(code);
+  if (!seeded) {
+    return null;
+  }
+  return {
+    id: `catalog_${seeded.code.toLowerCase()}`,
+    tenantId: settings.tenantId,
+    code: seeded.code,
+    name: seeded.name,
+    description: seeded.description,
+    price: roundMoney(Math.round(seeded.unitPriceCents) / 100),
+    tag: "Service",
+    taxable: true,
+    visible: seeded.visible,
+    source: "seed" as const,
+    createdAt: settings.createdAt,
+    updatedAt: settings.updatedAt
+  };
+}
+
+function buildLineItem(settings: CrmSettings, input: z.infer<typeof quoteLineItemInputSchema>, index: number): LineItem {
   if (input.kind === "catalog") {
     const catalogCode = input.catalogCode?.trim();
-    const catalogItem = catalogCode ? getPoolLeakCatalogItem(catalogCode) : null;
+    const catalogItem = catalogCode ? catalogItemFromSettings(settings, catalogCode) : null;
     if (!catalogItem) {
       throw new RailError(`Catalog item ${catalogCode ?? "unknown"} was not found.`, { provider: "native", op: "buildQuoteLineItem", status: 400 });
     }
-    const unitPrice = roundMoney(input.unitPrice ?? Math.round(catalogItem.unitPriceCents) / 100);
+    const unitPrice = roundMoney(input.unitPrice ?? catalogItem.price);
     return {
       id: input.code ? `line_${input.code.toLowerCase()}_${index + 1}` : `line_${catalogItem.code.toLowerCase()}_${index + 1}`,
       code: catalogItem.code,
       name: catalogItem.name,
-      description: input.description,
+      description: input.description ?? catalogItem.description,
       quantity: input.quantity,
       unitPrice,
       total: roundMoney(input.quantity * unitPrice),
@@ -201,8 +247,8 @@ function buildLineItem(input: z.infer<typeof quoteLineItemInputSchema>, index: n
   };
 }
 
-function buildLineItems(inputs: z.infer<typeof quoteLineItemInputSchema>[]): LineItem[] {
-  return inputs.map((input, index) => buildLineItem(input, index));
+function buildLineItems(settings: CrmSettings, inputs: z.infer<typeof quoteLineItemInputSchema>[]): LineItem[] {
+  return inputs.map((input, index) => buildLineItem(settings, input, index));
 }
 
 function discountAmount(subtotal: number, discount?: QuoteDiscount | undefined): number {
@@ -300,6 +346,11 @@ function quoteExpiry(settings: CrmSettings, template: QuoteTemplate | undefined,
   return addDays(timestamp, days);
 }
 
+function intakeString(input: IntakeSnapshot | undefined, key: string): string | undefined {
+  const value = input?.fieldIndex?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
 export async function materializeQuoteRecord(
   repository: Pick<NativeCrmRepository, "getCrmSettings" | "saveCrmSettings" | "listQuoteTemplates" | "upsertQuoteTemplate" | "reserveDocumentNumber">,
   input: QuoteComposerInput,
@@ -315,7 +366,7 @@ export async function materializeQuoteRecord(
   const { settings, templates } = await ensureQuoteConfiguration(repository, input.tenantId);
   const template = selectedTemplate(templates, input.templateId);
   const defaultLineItems = template?.defaultLineItems ?? EMPTY_LINE_ITEMS;
-  const lineItems = buildLineItems(input.items.length ? input.items : defaultLineItems.map((item) => ({
+  const lineItems = buildLineItems(settings, input.items.length ? input.items : defaultLineItems.map((item) => ({
     kind: item.source === "custom" ? "custom" : "catalog",
     catalogCode: item.catalogCode,
     code: item.code,
@@ -329,6 +380,7 @@ export async function materializeQuoteRecord(
   const approvalRules = mergedApprovalRules(template?.defaultApprovalRules ?? settings.quoteDefaults.approvalRules, input.approvalRules);
   const totals = calculateQuoteTotals(lineItems, input.discount, input.taxRate ?? 0);
   const number = options.existingNumber ?? await reserveDocumentNumber(repository, input.tenantId, "quote");
+  const salespersonUserId = input.salespersonUserId ?? intakeString(options.intake ?? input.intake, "salesperson_user_id");
   const quote: Quote = {
     id: options.existingId ?? `quote_${randomUUID()}`,
     tenantId: input.tenantId,
@@ -337,6 +389,7 @@ export async function materializeQuoteRecord(
     ...(input.jobId ? { jobId: input.jobId } : {}),
     ...(input.requestId ? { requestId: input.requestId } : {}),
     ...(input.templateId ? { templateId: input.templateId } : template?.id ? { templateId: template.id } : {}),
+    ...(salespersonUserId ? { salespersonUserId } : {}),
     version: options.version ?? 1,
     status: options.status ?? "draft",
     title: input.title.trim(),

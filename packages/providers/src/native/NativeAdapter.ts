@@ -18,10 +18,13 @@ import {
   type ServiceRequest,
   jobSchema
 } from "@nexteam/core";
+import { VGB_LINE_ITEM_CATALOG } from "@nexteam/industry-packs";
 
 export interface NativeCrmRepository {
   listClients(tenantId: string): Promise<Client[]>;
   listProperties(tenantId: string): Promise<Property[]>;
+  deleteClient(tenantId: string, clientId: string): Promise<void>;
+  deletePropertiesForClient(tenantId: string, clientId: string): Promise<string[]>;
   listRequests(tenantId: string): Promise<ServiceRequest[]>;
   getRequest(tenantId: string, id: string): Promise<ServiceRequest | null>;
   createRequest(request: ServiceRequest): Promise<ServiceRequest>;
@@ -96,6 +99,226 @@ function defaultCrmSettingsTimestamp(): string {
   return "2026-07-12T00:00:00.000Z";
 }
 
+function defaultCatalogItems(tenantId: string) {
+  const timestamp = defaultCrmSettingsTimestamp();
+  const seedItems = [
+    {
+      id: `catalog_seed_leak_detection_${tenantId}`,
+      tenantId,
+      code: "AQ-LEAK-DETECT",
+      name: "Swimming Pool Leak Detection",
+      description: "Core leak-detection visit. Price intentionally left at 0 until tenant pricing is confirmed.",
+      price: 0,
+      tag: "Service",
+      taxable: true,
+      visible: true,
+      source: "seed" as const,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `catalog_seed_general_repair_${tenantId}`,
+      tenantId,
+      code: "AQ-GENERAL-REPAIR",
+      name: "General Pool Repair",
+      description: "General repair service shell. Pricing remains tenant-managed and intentionally unset here.",
+      price: 0,
+      tag: "Service",
+      taxable: true,
+      visible: true,
+      source: "seed" as const,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `catalog_seed_commercial_docs_${tenantId}`,
+      tenantId,
+      code: "AQ-COMMERCIAL-DOCS",
+      name: "Commercial / VGB Documentation",
+      description: "Commercial documentation shell that can be paired with the seeded VGB line library below.",
+      price: 0,
+      tag: "Service",
+      taxable: true,
+      visible: true,
+      source: "seed" as const,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    }
+  ];
+  const vgbItems = VGB_LINE_ITEM_CATALOG.map((item) => ({
+    id: `catalog_${tenantId}_${item.code.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
+    tenantId,
+    code: item.code,
+    name: item.name,
+    description: item.description,
+    price: Number((item.unitPriceCents / 100).toFixed(2)),
+    tag: item.category || "Service",
+    taxable: item.taxable,
+    visible: item.visible,
+    source: "seed" as const,
+    createdAt: timestamp,
+    updatedAt: timestamp
+  }));
+  return [...seedItems, ...vgbItems];
+}
+
+function defaultCommunicationTemplates(tenantId: string) {
+  const timestamp = defaultCrmSettingsTimestamp();
+  return [
+    {
+      id: `comms_request_confirmation_${tenantId}`,
+      tenantId,
+      category: "request_confirmation",
+      label: "Request confirmation",
+      description: "Automatic confirmation after a request is submitted.",
+      emailEnabled: true,
+      smsEnabled: false,
+      emailSubject: "We received your request",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nWe received your request for {{SERVICE_ADDRESS}} and the office is reviewing it now.\n\nSummary: {{REQUEST_SUMMARY}}\n\n{{TENANT_NAME}}",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `comms_quote_send_${tenantId}`,
+      tenantId,
+      category: "quote_send",
+      label: "Quote send / resend",
+      description: "Used when the office sends or resends a quote.",
+      emailEnabled: true,
+      smsEnabled: true,
+      emailSubject: "Your quote from {{TENANT_NAME}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nYour quote {{QUOTE_NUMBER}} is ready to review.\n\n{{PORTAL_URL}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}}: your quote {{QUOTE_NUMBER}} is ready to review. {{PORTAL_URL}}",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `comms_quote_approved_${tenantId}`,
+      tenantId,
+      category: "quote_approval_confirmation",
+      label: "Quote approval confirmation",
+      description: "Client-facing approval confirmation after acceptance succeeds.",
+      emailEnabled: true,
+      smsEnabled: false,
+      emailSubject: "Quote approved",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nWe recorded approval for quote {{QUOTE_NUMBER}} on {{APPROVED_AT}}.\n\n{{TENANT_NAME}}",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `comms_deposit_paid_${tenantId}`,
+      tenantId,
+      category: "deposit_paid_confirmation",
+      label: "Deposit paid confirmation",
+      description: "Staff-facing alert when a deposit is captured.",
+      emailEnabled: true,
+      smsEnabled: false,
+      emailSubject: "Deposit paid for {{QUOTE_NUMBER}}",
+      emailBody: "Deposit received.\n\nQuote: {{QUOTE_NUMBER}}\nAmount: {{DEPOSIT_AMOUNT}}\nAddress: {{SERVICE_ADDRESS}}\nContact: {{CLIENT_NAME}} {{CLIENT_PHONE}} {{CLIENT_EMAIL}}\n\n{{QUOTE_URL}}",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `comms_booking_confirmation_${tenantId}`,
+      tenantId,
+      category: "booking_confirmation",
+      label: "Booking confirmation",
+      description: "Client-facing booking confirmation for scheduled work.",
+      emailEnabled: true,
+      smsEnabled: true,
+      emailSubject: "Your job is booked",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nYour visit for {{JOB_TITLE}} is booked for {{VISIT_WINDOW}} at {{SERVICE_ADDRESS}}.\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}}: {{JOB_TITLE}} is booked for {{VISIT_WINDOW}} at {{SERVICE_ADDRESS}}.",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `comms_invoice_send_${tenantId}`,
+      tenantId,
+      category: "invoice_send",
+      label: "Invoice send",
+      description: "Client-facing invoice send template.",
+      emailEnabled: true,
+      smsEnabled: true,
+      emailSubject: "Invoice {{INVOICE_NUMBER}} from {{TENANT_NAME}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nInvoice {{INVOICE_NUMBER}} is ready.\n\nBalance due: {{BALANCE_DUE}}\n{{PAY_LINK_LABEL}}\n{{HOSTED_LINK_LABEL}}\n{{SUMMARY_LINE}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}} invoice {{INVOICE_NUMBER}} is ready. Balance due {{BALANCE_DUE}}. {{PAY_LINK_LABEL}} {{HOSTED_LINK_LABEL}} {{SUMMARY_LINE}}",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `comms_invoice_reminder_${tenantId}`,
+      tenantId,
+      category: "invoice_reminder",
+      label: "Invoice reminder / past due",
+      description: "Reminder or past-due notice for unpaid invoices.",
+      emailEnabled: true,
+      smsEnabled: true,
+      emailSubject: "Payment reminder for invoice {{INVOICE_NUMBER}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nInvoice {{INVOICE_NUMBER}} still shows {{BALANCE_DUE}} due.\n\n{{PAY_LINK_LABEL}}\n{{SUMMARY_LINE}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}} reminder: invoice {{INVOICE_NUMBER}} still shows {{BALANCE_DUE}} due. {{PAY_LINK_LABEL}} {{SUMMARY_LINE}}",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `comms_payment_receipt_${tenantId}`,
+      tenantId,
+      category: "payment_receipt",
+      label: "Receipt / payment confirmation",
+      description: "Customer receipt after payment review is sent.",
+      emailEnabled: true,
+      smsEnabled: true,
+      emailSubject: "Payment received",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nWe recorded payment for invoice {{INVOICE_NUMBER}}.\n\nReceipt total: {{PAYMENT_AMOUNT}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}} received {{PAYMENT_AMOUNT}} for invoice {{INVOICE_NUMBER}}. Thank you.",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `comms_statement_send_${tenantId}`,
+      tenantId,
+      category: "statement_send",
+      label: "Statement send",
+      description: "Client-facing statement delivery from the billing history rail.",
+      emailEnabled: true,
+      smsEnabled: true,
+      emailSubject: "Your statement from {{TENANT_NAME}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nYour statement is ready.\n\n{{STATEMENT_LINK}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}} statement ready: {{STATEMENT_LINK}}",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `comms_review_initial_${tenantId}`,
+      tenantId,
+      category: "review_request_initial",
+      label: "Review request - initial",
+      description: "First post-closeout review request.",
+      emailEnabled: true,
+      smsEnabled: true,
+      emailSubject: "How did we do?",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nThanks again for trusting {{TENANT_NAME}}. If the work solved the issue, would you mind leaving a quick review?\n\n{{REVIEW_URL}}\n\nReview-only opt out: {{REVIEW_OPTOUT_URL}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}} thanks you for the opportunity. Leave a quick review here: {{REVIEW_URL}} Reply STOP-REVIEWS or tap {{REVIEW_OPTOUT_URL}} to stop review follow-ups.",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `comms_review_nudge_${tenantId}`,
+      tenantId,
+      category: "review_request_nudge",
+      label: "Review request - nudge",
+      description: "Follow-up reminder when no review has been marked yet.",
+      emailEnabled: true,
+      smsEnabled: true,
+      emailSubject: "Quick follow-up from {{TENANT_NAME}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nJust checking back in. If you still have a minute to leave a review, here is the link again:\n\n{{REVIEW_URL}}\n\nReview-only opt out: {{REVIEW_OPTOUT_URL}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}} follow-up: if you can leave a quick review, use {{REVIEW_URL}}. Stop review follow-ups here: {{REVIEW_OPTOUT_URL}}",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    }
+  ];
+}
+
 export function defaultCrmSettings(tenantId: string): CrmSettings {
   const timestamp = defaultCrmSettingsTimestamp();
   return {
@@ -128,8 +351,41 @@ export function defaultCrmSettings(tenantId: string): CrmSettings {
         smsIncludeSummary: true,
         smsIncludePayLink: true,
         smsIncludeHostedLink: true
-      }
+      },
+      tippingEnabled: false
     },
+    portalDefaults: {
+      keepBusinessAddressPrivate: false,
+      hubSessionReverifyDays: 14
+    },
+    reviewDefaults: {
+      enabled: true,
+      steps: [
+        {
+          id: "review_initial",
+          label: "Initial review request",
+          offsetDays: 1,
+          channels: "both",
+          templateCategory: "review_request_initial"
+        },
+        {
+          id: "review_nudge_1",
+          label: "Review nudge",
+          offsetDays: 4,
+          channels: "both",
+          templateCategory: "review_request_nudge"
+        },
+        {
+          id: "review_nudge_2",
+          label: "Final review nudge",
+          offsetDays: 10,
+          channels: "both",
+          templateCategory: "review_request_nudge"
+        }
+      ]
+    },
+    catalogItems: defaultCatalogItems(tenantId),
+    communicationTemplates: defaultCommunicationTemplates(tenantId),
     createdAt: timestamp,
     updatedAt: timestamp
   };
@@ -142,9 +398,78 @@ export function defaultQuoteTemplates(tenantId: string): QuoteTemplate[] {
     {
       id: `quote_template_standard_${tenantId}`,
       tenantId,
-      name: "Standard quote",
-      description: "Default office template with signature, deposit, and card-on-file enabled.",
-      titlePrefix: "Quote",
+      name: "Standard leak detection",
+      description: "Aquatrace starter template for standard leak-detection quoting. Pricing stays editable until tenant confirmation.",
+      titlePrefix: "Leak Detection Quote",
+      defaultLineItems: [
+        {
+          id: "line_template_leak_detection_1",
+          code: "AQ-LEAK-DETECT",
+          name: "Swimming Pool Leak Detection",
+          description: "Default service shell. Price intentionally left at 0 until tenant pricing is confirmed.",
+          quantity: 1,
+          unitPrice: 0,
+          total: 0,
+          source: "catalog",
+          catalogCode: "AQ-LEAK-DETECT",
+          clientSelectable: false,
+          defaultSelected: true
+        }
+      ],
+      defaultApprovalRules: settings.quoteDefaults.approvalRules,
+      expiryDays: settings.quoteDefaults.expiryDays,
+      terms: settings.quoteDefaults.terms,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `quote_template_repair_${tenantId}`,
+      tenantId,
+      name: "General repair",
+      description: "Starter template for repair proposals with tenant-managed pricing.",
+      titlePrefix: "Repair Quote",
+      defaultLineItems: [
+        {
+          id: "line_template_repair_1",
+          code: "AQ-GENERAL-REPAIR",
+          name: "General Pool Repair",
+          description: "Starter repair line. Price intentionally left at 0 until tenant pricing is confirmed.",
+          quantity: 1,
+          unitPrice: 0,
+          total: 0,
+          source: "catalog",
+          catalogCode: "AQ-GENERAL-REPAIR",
+          clientSelectable: false,
+          defaultSelected: true
+        }
+      ],
+      defaultApprovalRules: settings.quoteDefaults.approvalRules,
+      expiryDays: settings.quoteDefaults.expiryDays,
+      terms: settings.quoteDefaults.terms,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
+      id: `quote_template_commercial_${tenantId}`,
+      tenantId,
+      name: "Commercial / VGB documentation",
+      description: "Starter commercial documentation template using the seeded VGB catalog.",
+      titlePrefix: "Commercial Documentation Quote",
+      defaultLineItems: [
+        {
+          id: "line_template_commercial_1",
+          code: "VGB-001",
+          name: "VGB-001 - Main Drain Cover Field Documentation — Zone 1",
+          description: "Seeded from the tenant catalog so the office can swap zones or add-ons before send.",
+          quantity: 1,
+          unitPrice: 950,
+          total: 950,
+          source: "catalog",
+          catalogCode: "VGB-001",
+          clientSelectable: false,
+          defaultSelected: true
+        }
+      ],
       defaultApprovalRules: settings.quoteDefaults.approvalRules,
       expiryDays: settings.quoteDefaults.expiryDays,
       terms: settings.quoteDefaults.terms,
@@ -186,6 +511,18 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
 
   async listProperties(tenantId: string): Promise<Property[]> {
     return (this.records.properties ?? []).filter((record) => record.tenantId === tenantId);
+  }
+
+  async deleteClient(tenantId: string, clientId: string): Promise<void> {
+    this.records.clients = this.records.clients.filter((record) => !(record.tenantId === tenantId && record.id === clientId));
+  }
+
+  async deletePropertiesForClient(tenantId: string, clientId: string): Promise<string[]> {
+    const deletedIds = this.records.properties
+      .filter((record) => record.tenantId === tenantId && record.clientId === clientId)
+      .map((record) => record.id);
+    this.records.properties = this.records.properties.filter((record) => !(record.tenantId === tenantId && record.clientId === clientId));
+    return deletedIds;
   }
 
   async listRequests(tenantId: string): Promise<ServiceRequest[]> {
@@ -309,10 +646,8 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
       this.records.clients.push(client);
       return client;
     }
-    const existing = this.records.clients[index];
-    const next = { ...existing, ...client };
-    this.records.clients[index] = next;
-    return next;
+    this.records.clients[index] = client;
+    return client;
   }
 
   async upsertProperty(property: Property): Promise<Property> {
@@ -321,10 +656,8 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
       this.records.properties.push(property);
       return property;
     }
-    const existing = this.records.properties[index];
-    const next = { ...existing, ...property };
-    this.records.properties[index] = next;
-    return next;
+    this.records.properties[index] = property;
+    return property;
   }
 
   async upsertJob(job: Job): Promise<Job> {
@@ -495,6 +828,13 @@ export class NativeAdapter implements CRMProvider {
       customFields: d.customFields
     };
     return this.repository.createClient(client);
+  }
+
+  async upsertProperty(property: Property): Promise<Property> {
+    if (property.tenantId !== this.tenantId) {
+      throw new RailError("Native property tenant mismatch.", { provider: "native", op: "upsertProperty", status: 403 });
+    }
+    return this.repository.upsertProperty(property);
   }
 
   async createJob(job: Job): Promise<Job> {

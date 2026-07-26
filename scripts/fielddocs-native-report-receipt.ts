@@ -56,7 +56,7 @@ async function main(): Promise<void> {
     findings: [
       "Skimmer throat dye test documented before repair.",
       "After photo attached for operator review.",
-      "Report is native FieldDocs documentation only; no outbound delivery was performed."
+  "Report is native NexCam documentation only; no outbound delivery was performed."
     ],
     mediaIds: [beforeMedia.id, afterMedia.id],
     checklistId: checklist.id,

@@ -7,14 +7,18 @@ const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 export const uploadMediaInputSchema = z.object({
   tenantId: z.string().min(1),
+  clientId: z.string().min(1).optional(),
   jobId: z.string().min(1).optional(),
+  visitId: z.string().min(1).optional(),
   propertyId: z.string().min(1).optional(),
+  captureBatchId: z.string().min(1).optional(),
   filename: z.string().min(1),
   mime: z.string().min(1),
   fileBase64: z.string().min(1).optional(),
   tags: z.array(z.string()).default([]),
   capturedAt: z.string().optional(),
-  gps: z.object({ lat: z.number(), lng: z.number() }).optional()
+  gps: z.object({ lat: z.number(), lng: z.number() }).optional(),
+  capturedBy: z.string().min(1).optional()
 });
 
 export type UploadMediaInput = z.infer<typeof uploadMediaInputSchema>;
@@ -22,6 +26,9 @@ export type UploadMediaInput = z.infer<typeof uploadMediaInputSchema>;
 function mediaTypeFromMime(mime: string): Media["type"] {
   if (mime.startsWith("video/")) {
     return "video";
+  }
+  if (mime.startsWith("audio/")) {
+    return "audio";
   }
   if (mime === "application/pdf") {
     return "pdf";
@@ -41,8 +48,12 @@ export function createNativeMediaFromUpload(input: UploadMediaInput): Media {
   return mediaSchema.parse({
     id,
     tenantId: input.tenantId,
+    clientId: input.clientId,
     jobId: input.jobId,
+    visitId: input.visitId,
     propertyId: input.propertyId,
+    captureBatchId: input.captureBatchId,
+    ...(input.capturedBy ? { capturedBy: input.capturedBy } : {}),
     type,
     storageRef: `native://tenants/${input.tenantId}/media/${id}/${filename}`,
     thumbRef: type === "photo" ? `native://tenants/${input.tenantId}/media/${id}/thumb_${filename}.jpg` : undefined,

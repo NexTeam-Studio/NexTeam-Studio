@@ -1,13 +1,10 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
-import { type ApprovalQueueService, type Job, RailError } from "@nexteam/core";
-import { JobberAdapter } from "@nexteam/providers";
+import { type ApprovalQueueService, RailError } from "@nexteam/core";
 import type { JobLifecycleService } from "../crm/jobLifecycle.js";
 import { detectConflicts, driveTimeProviderFromEnv, suggestSlots, type ScheduledVisit, type ScheduleLocation } from "./schedulingEngine.js";
 import type { SchedulingRepository } from "./repository.js";
 import { queueScheduleNotification } from "./notifications.js";
-
-const DEFAULT_JOBBER_OVERLAY_TIMEOUT_MS = 8_000;
 
 const locationSchema = z.object({
   label: z.string(),
@@ -75,92 +72,6 @@ export interface SchedulingRouteDeps {
   approvalQueue: ApprovalQueueService;
   jobLifecycleService?: JobLifecycleService | undefined;
   env?: NodeJS.ProcessEnv | undefined;
-  jobber?: JobberScheduleReader | null | undefined;
-}
-
-export interface JobberScheduleReader {
-  isConfigured(): boolean;
-  getJobs(range: { from: string; to: string }): Promise<Job[]>;
-}
-
-function addressLabel(job: Job): string {
-  const property = "property" in job && job.property && typeof job.property === "object" ? job.property as { address?: Partial<{ street1: string; city: string; province: string; postalCode: string; country: string }> } : null;
-  const address = property?.address;
-  return [
-    address?.street1,
-    address?.city,
-    address?.province
-  ].filter(Boolean).join(", ") || "Jobber schedule";
-}
-
-function addDefaultEnd(start: string): string {
-  const date = new Date(start);
-  if (!Number.isFinite(date.getTime())) {
-    return start;
-  }
-  date.setUTCHours(date.getUTCHours() + 2);
-  return date.toISOString();
-}
-
-function overlayTimeoutMs(env: NodeJS.ProcessEnv): number {
-  const configured = Number(env.SCHEDULE_JOBBER_OVERLAY_TIMEOUT_MS);
-  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_JOBBER_OVERLAY_TIMEOUT_MS;
-}
-
-function timeoutWarning(ms: number): Promise<{ visits: ScheduledVisit[]; warning: string }> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ visits: [], warning: `Jobber overlay skipped after ${ms}ms so the calendar could stay responsive.` });
-    }, ms);
-  });
-}
-
-export function jobberVisitFromJob(job: Job): ScheduledVisit | null {
-  if (!job.startAt) {
-    return null;
-  }
-  return {
-    id: `jobber_${job.externalIds?.jobber ?? job.id}`,
-    tenantId: job.tenantId,
-    jobId: job.id,
-    title: job.title,
-    start: job.startAt,
-    end: job.endAt && job.endAt !== job.startAt ? job.endAt : addDefaultEnd(job.startAt),
-    assignedTo: [],
-    location: { label: addressLabel(job) },
-    status: job.status === "Archived" ? "complete" : "scheduled",
-    source: "jobber",
-    readOnly: true
-  };
-}
-
-async function listJobberOverlayVisits(input: {
-  tenantId: string;
-  range: { from?: string; to?: string };
-  env: NodeJS.ProcessEnv;
-  reader?: JobberScheduleReader | null | undefined;
-}): Promise<{ visits: ScheduledVisit[]; warning?: string | undefined }> {
-  if (!input.range.from || !input.range.to) {
-    return { visits: [], warning: "Jobber overlay skipped because calendar range was incomplete." };
-  }
-  const reader = input.reader === undefined ? JobberAdapter.fromEnv(input.env, input.tenantId) : input.reader;
-  if (!reader || !reader.isConfigured()) {
-    return { visits: [] };
-  }
-  try {
-    const timeoutMs = overlayTimeoutMs(input.env);
-    const jobsResult = await Promise.race([
-      reader.getJobs({ from: input.range.from, to: input.range.to }).then((jobs) => ({ jobs })),
-      timeoutWarning(timeoutMs)
-    ]);
-    if ("warning" in jobsResult) {
-      return jobsResult;
-    }
-    const jobs = jobsResult.jobs;
-    return { visits: jobs.map(jobberVisitFromJob).filter((visit): visit is ScheduledVisit => Boolean(visit)) };
-  } catch (error) {
-    return { visits: [], warning: error instanceof Error ? error.message : "Jobber overlay unavailable." };
-  }
 }
 
 export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps): void {
@@ -177,19 +88,11 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
         range.to = to;
       }
       const nativeVisits = (await deps.repository.listVisits(tenantId, range)).map((visit) => ({ ...visit, source: visit.source ?? "native" as const }));
-      const overlay = await listJobberOverlayVisits({
-        tenantId,
-        range,
-        env: deps.env ?? process.env,
-        reader: deps.jobber
-      });
-      const nativeJobIds = new Set(nativeVisits.map((visit) => visit.jobId));
-      const jobberVisits = overlay.visits.filter((visit) => !nativeJobIds.has(visit.jobId));
       res.json({
         ok: true,
-        visits: [...nativeVisits, ...jobberVisits].sort((left, right) => left.start.localeCompare(right.start)),
-        sourceCounts: { native: nativeVisits.length, jobber: jobberVisits.length },
-        warnings: overlay.warning ? [overlay.warning] : []
+        visits: [...nativeVisits].sort((left, right) => left.start.localeCompare(right.start)),
+        sourceCounts: { native: nativeVisits.length },
+        warnings: []
       });
     } catch (error) {
       sendError(res, error);

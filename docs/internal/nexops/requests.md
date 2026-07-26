@@ -1,6 +1,6 @@
 # NexOps Requests
 
-Last updated: 2026-07-12
+Last updated: 2026-07-18
 Build piece: Request foundation
 
 ## Statuses
@@ -63,6 +63,17 @@ Build piece: Request foundation
 - `GET /request-forms/:tenantId/:slug` renders the public form.
 - `POST /api/request-forms/:tenantId/:slug/submit` creates a real request directly.
 - Website submissions are not parked in a separate lead-only queue first.
+- Request forms can now include `marketing_consent`.
+  - When checked, the resulting request stores `request.consent.marketing = true`.
+  - That same consent value becomes the first NexReach eligibility gate downstream.
+
+### NexCam new-client handoff
+- The NexCam `New Client` path routes into this same request-form surface instead of a second intake system.
+- Captured photo ids preload into the request's `request_images` field when that field exists on the selected form.
+- On successful submit:
+  - the request saves normally through the request foundation
+  - the originating capture batch attaches to the new request/client context
+  - the operator returns directly to capture mode instead of staying on a form-confirmation page
 
 ### Lead backfill
 - `POST /api/crm/requests/backfill-leads`
@@ -94,6 +105,10 @@ Build piece: Request foundation
   - `intake.fieldValues`
   - `intake.fieldIndex`
 - Trade-specific fields like `pool_configuration`, `gate_code`, `pet_present`, `pet_name`, and `water_loss_rate` are queryable from the saved request object.
+- `request_images` is a first-class intake field for photo-backed intake:
+  - it can be filled by office upload directly in the request form
+  - it can be preloaded from a NexCam capture batch
+  - later photos from that same assigned capture session continue merging into the same request field until the session is explicitly closed
 
 ### Downstream propagation
 - Every intake field carries a per-surface visibility map:
@@ -109,6 +124,7 @@ Build piece: Request foundation
   - job receives `requestId` plus the full `intake` snapshot
   - invoice receives `requestId` plus the same `intake` snapshot when it is later created from the quote
 - Visit is modeled in the visibility contract now, but visit-specific UI/workflow is still part of later lifecycle pieces.
+- `marketing_consent` now propagates as part of the request's stored intake snapshot as well as the normalized `request.consent` object.
 
 ### Client and property matching
 - Auto-match only happens on:
@@ -127,12 +143,20 @@ Build piece: Request foundation
   - a client confirmation email is queued/sent if the request includes an email and the comms rail is available
 - Notification timestamps are stored back onto the request under `notifications`.
 
+### Marketing consent cascade
+- If `marketing_consent` is captured at intake, it seeds the client-level NexReach consent rail.
+- Staff can later edit the same marketing consent directly on the client record.
+- Turning that client consent OFF later:
+  - blocks future NexReach generation immediately
+  - flags any existing live showcase items for owner review instead of silently deleting them
+
 ### Review state
 - Marking a request reviewed stores `reviewedAt`.
 - Review also clears `match.reviewRequired`.
 
 ## Current deliberate limits
 
+- 2026-07-18: Removed the V2 `CompanyCam Project` / `companycam_project_link` field from request intake and downstream propagation so NexOps no longer exposes third-party media-project linkage in its own product surface.
 - Request creation itself is still a direct write when validation passes. The new chat-native approval flow currently applies to ApprovalQueue-backed writes like client creation, not to every request save.
 - Requests do not yet drive quote/job/invoice reminder state machines.
 - Direct-to-job conversion carries request narrative/context only and does not auto-create billable line items.

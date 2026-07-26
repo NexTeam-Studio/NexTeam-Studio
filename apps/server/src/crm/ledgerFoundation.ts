@@ -28,6 +28,13 @@ import {
 } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../comms/gmailRegistry.js";
+import type { MediaRepository } from "../fielddocs/mediaRepository.js";
+import { renderFieldReportPdf } from "../fielddocs/reportService.js";
+import type { ReviewSequenceService } from "./reviewSequenceService.js";
+import {
+  invoiceTemplateVariables,
+  resolveTemplateMessage
+} from "./communicationTemplates.js";
 import {
   buildInvoiceDraftFromJobs,
   calculateInvoiceTotals,
@@ -44,12 +51,14 @@ export interface RecordInvoicePaymentInput {
   tenantId: string;
   invoiceId: string;
   amount: number;
+  tipAmount?: number | undefined;
   provider: PaymentProvider;
   method: PaymentMethodKind;
   actorId: string;
   note?: string | undefined;
   savedCardId?: string | undefined;
   methodDetails?: PaymentMethodDetails | undefined;
+  cardSummary?: Payment["cardSummary"] | undefined;
   externalIds?: Payment["externalIds"] | undefined;
   status?: Payment["status"] | undefined;
 }
@@ -59,6 +68,7 @@ export interface StripeCheckoutCompleteInput {
   invoiceId: string;
   checkoutSessionId: string;
   amount: number;
+  tipAmount?: number | undefined;
   actorId?: string | undefined;
 }
 
@@ -84,8 +94,10 @@ export interface PerformLedgerActionInput {
 interface LedgerServiceDeps {
   crmRepository: NativeCrmRepository;
   ledgerRepository: LedgerRepository;
+  fieldDocsRepository?: Pick<MediaRepository, "getChecklist" | "getMedia" | "getReport" | "listReports"> | undefined;
   eventBus?: EventBus | undefined;
   commsRail?: CommsRail | undefined;
+  reviewSequenceService?: Pick<ReviewSequenceService, "maybeStartForJob"> | undefined;
 }
 
 function now(): string {
@@ -94,6 +106,10 @@ function now(): string {
 
 function roundMoney(value: number): number {
   return Number(value.toFixed(2));
+}
+
+function normalizedTipAmount(value: number | undefined): number {
+  return roundMoney(Math.max(value ?? 0, 0));
 }
 
 function emptyHistory<TStatus extends string>(status: TStatus, actorId?: string, note?: string): Array<LedgerStatusEntry<TStatus>> {
@@ -178,7 +194,46 @@ function quotePdfAttachment(quoteId: string): ReceiptReviewAttachment {
   };
 }
 
-function receiptAttachmentsForInvoice(invoice: Invoice): ReceiptReviewAttachment[] {
+function placeholderFieldReportAttachment(jobId: string): ReceiptReviewAttachment {
+  return {
+    id: `att_field_report_${jobId}`,
+    kind: "field_report",
+    label: "Field report",
+    refId: jobId,
+    storageRef: `native://jobs/${jobId}/field-report`,
+    mime: "application/pdf"
+  };
+}
+
+function fieldReportAttachment(report: { id: string; title: string; pdfRef: string }): ReceiptReviewAttachment {
+  return {
+    id: `att_field_report_${report.id}`,
+    kind: "field_report",
+    label: report.title,
+    refId: report.id,
+    storageRef: report.pdfRef,
+    mime: "application/pdf"
+  };
+}
+
+async function latestPostedFieldReport(
+  fieldDocsRepository: Pick<MediaRepository, "listReports"> | undefined,
+  tenantId: string,
+  jobId: string | undefined
+) {
+  if (!fieldDocsRepository || !jobId) {
+    return null;
+  }
+  return (await fieldDocsRepository.listReports(tenantId))
+    .filter((report) => report.jobId === jobId && report.status === "posted")
+    .sort((left, right) => (right.postedAt ?? right.createdAt).localeCompare(left.postedAt ?? left.createdAt))[0] ?? null;
+}
+
+async function receiptAttachmentsForInvoice(
+  invoice: Invoice,
+  fieldDocsRepository?: Pick<MediaRepository, "listReports"> | undefined
+): Promise<ReceiptReviewAttachment[]> {
+  const latestReport = await latestPostedFieldReport(fieldDocsRepository, invoice.tenantId, invoice.jobId);
   return [
     {
       id: `att_invoice_pdf_${invoice.id}`,
@@ -189,14 +244,7 @@ function receiptAttachmentsForInvoice(invoice: Invoice): ReceiptReviewAttachment
       mime: "application/pdf"
     },
     ...(invoice.quoteId ? [quotePdfAttachment(invoice.quoteId)] : []),
-    ...(invoice.jobId ? [{
-      id: `att_field_report_${invoice.jobId}`,
-      kind: "field_report" as const,
-      label: "Field report",
-      refId: invoice.jobId,
-      storageRef: `native://jobs/${invoice.jobId}/field-report`,
-      mime: "application/pdf"
-    }] : []),
+    ...(invoice.jobId ? [latestReport ? fieldReportAttachment(latestReport) : placeholderFieldReportAttachment(invoice.jobId)] : []),
     ...(invoice.jobId ? [{
       id: `att_job_photos_${invoice.jobId}`,
       kind: "photo" as const,
@@ -289,7 +337,7 @@ function attachmentFilename(attachment: ReceiptReviewAttachment): string {
     case "quote_pdf":
       return "quote.pdf";
     case "field_report":
-      return "field-report.txt";
+      return "field-report.pdf";
     case "photo":
       return "photos.txt";
     case "job_file":
@@ -299,13 +347,40 @@ function attachmentFilename(attachment: ReceiptReviewAttachment): string {
   }
 }
 
-function attachmentPayloadBase64(attachment: ReceiptReviewAttachment, invoice?: Invoice | undefined): { filename: string; mime: string; contentBase64: string } {
+async function attachmentPayloadBase64(
+  attachment: ReceiptReviewAttachment,
+  tenantId: string,
+  invoice?: Invoice | undefined,
+  fieldDocsRepository?: Pick<MediaRepository, "getChecklist" | "getMedia" | "getReport"> | undefined
+): Promise<{ filename: string; mime: string; contentBase64: string }> {
   if (attachment.kind === "invoice_pdf" && invoice) {
     return {
       filename: attachmentFilename(attachment),
       mime: "application/pdf",
       contentBase64: renderInvoicePdf(invoice).toString("base64")
     };
+  }
+  if (attachment.kind === "field_report" && fieldDocsRepository && attachment.refId) {
+    const report = await fieldDocsRepository.getReport(tenantId, attachment.refId);
+    if (report) {
+      const media = (await Promise.all(report.mediaIds.map((id) => fieldDocsRepository.getMedia(tenantId, id))))
+        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+      const checklist = report.checklistId ? await fieldDocsRepository.getChecklist(tenantId, report.checklistId) : undefined;
+      return {
+        filename: attachmentFilename(attachment),
+        mime: "application/pdf",
+        contentBase64: renderFieldReportPdf({
+          tenantId,
+          jobId: report.jobId,
+          propertyId: report.propertyId,
+          visitId: report.visitId,
+          title: report.title,
+          findings: report.findings,
+          media,
+          ...(checklist ? { checklist } : {})
+        }).toString("base64")
+      };
+    }
   }
   return {
     filename: attachmentFilename(attachment),
@@ -431,17 +506,44 @@ export class LedgerService {
       .find((review) => review.kind === "payment" && review.paymentId === input.payment.id);
     const timestamp = now();
     const attachments = input.invoice
-      ? receiptAttachmentsForInvoice(input.invoice)
+      ? await receiptAttachmentsForInvoice(input.invoice, this.deps.fieldDocsRepository)
       : input.quote
         ? receiptAttachmentsForQuoteDeposit(input.quote)
         : [];
     const reviewId = existing?.id ?? `receipt_review_${input.payment.id}`;
     const recipients = await this.receiptRecipients(input.payment.tenantId, input.payment.clientId);
+    const [settings, clients] = await Promise.all([
+      this.deps.crmRepository.getCrmSettings(input.payment.tenantId),
+      this.deps.crmRepository.listClients(input.payment.tenantId)
+    ]);
+    const client = clients.find((record) => record.id === input.payment.clientId);
     const hostedLink = receiptHostedLink({
       tenantId: input.payment.tenantId,
       reviewId,
       ...(input.invoice ? { invoiceId: input.invoice.id } : {}),
       ...(input.quote ? { quoteId: input.quote.id } : {})
+    });
+    const receiptTemplate = resolveTemplateMessage({
+      settings,
+      category: "payment_receipt",
+      channel: "email",
+      fallbackSubject: defaultReceiptSubject({ kind: "payment", invoice: input.invoice, quote: input.quote }),
+      fallbackBodyText: defaultReceiptBodyText({ kind: "payment", hostedLink }),
+      variables: invoiceTemplateVariables({
+        invoice: input.invoice ?? ({
+          id: input.quote?.id ?? input.payment.id,
+          tenantId: input.payment.tenantId,
+          clientId: input.payment.clientId,
+          title: input.quote?.title ?? "Payment receipt",
+          status: "paid",
+          lineItems: [],
+          totals: { subtotal: input.payment.amount, tax: 0, total: input.payment.amount },
+          ledger: { depositApplied: 0, creditApplied: 0, paymentApplied: input.payment.amount, refundedAmount: 0, balanceDue: 0, overdue: false }
+        } as Invoice),
+        client,
+        portalUrl: hostedLink,
+        paymentAmount: input.payment.amount
+      })
     });
     const review: ReceiptReview = existing ?? {
       id: reviewId,
@@ -454,8 +556,8 @@ export class LedgerService {
       ...(input.invoice?.jobId ? { jobId: input.invoice.jobId } : input.quote?.jobId ? { jobId: input.quote.jobId } : {}),
       status: "draft",
       attachments,
-      subject: defaultReceiptSubject({ kind: "payment", invoice: input.invoice, quote: input.quote }),
-      bodyText: defaultReceiptBodyText({ kind: "payment", hostedLink }),
+      subject: receiptTemplate.subject,
+      bodyText: receiptTemplate.bodyText,
       emailRecipients: recipients.emailRecipients,
       smsRecipients: recipients.smsRecipients,
       sendChannels: recipients.emailRecipients.length ? ["email"] : recipients.smsRecipients.length ? ["sms"] : ["email"],
@@ -467,8 +569,8 @@ export class LedgerService {
     const saved = await this.deps.ledgerRepository.upsertReceiptReview({
       ...review,
       attachments,
-      subject: review.subject || defaultReceiptSubject({ kind: "payment", invoice: input.invoice, quote: input.quote }),
-      bodyText: review.bodyText || defaultReceiptBodyText({ kind: "payment", hostedLink }),
+      subject: review.subject || receiptTemplate.subject,
+      bodyText: review.bodyText || receiptTemplate.bodyText,
       emailRecipients: review.emailRecipients?.length ? review.emailRecipients : recipients.emailRecipients,
       smsRecipients: review.smsRecipients?.length ? review.smsRecipients : recipients.smsRecipients,
       sendChannels: review.sendChannels?.length ? review.sendChannels : recipients.emailRecipients.length ? ["email"] : recipients.smsRecipients.length ? ["sms"] : ["email"],
@@ -489,14 +591,41 @@ export class LedgerService {
     const existing = (await this.deps.ledgerRepository.listReceiptReviews(input.refund.tenantId))
       .find((review) => review.kind === "refund" && review.refundId === input.refund.id);
     const timestamp = now();
-    const attachments = input.invoice ? receiptAttachmentsForInvoice(input.invoice) : [];
+    const attachments = input.invoice ? await receiptAttachmentsForInvoice(input.invoice, this.deps.fieldDocsRepository) : [];
     const reviewId = existing?.id ?? `receipt_review_${input.refund.id}`;
     const recipients = await this.receiptRecipients(input.refund.tenantId, input.refund.clientId);
+    const [settings, clients] = await Promise.all([
+      this.deps.crmRepository.getCrmSettings(input.refund.tenantId),
+      this.deps.crmRepository.listClients(input.refund.tenantId)
+    ]);
+    const client = clients.find((record) => record.id === input.refund.clientId);
     const hostedLink = receiptHostedLink({
       tenantId: input.refund.tenantId,
       reviewId,
       ...(input.invoice ? { invoiceId: input.invoice.id } : {}),
       ...(input.payment?.quoteId ? { quoteId: input.payment.quoteId } : {})
+    });
+    const receiptTemplate = resolveTemplateMessage({
+      settings,
+      category: "payment_receipt",
+      channel: "email",
+      fallbackSubject: defaultReceiptSubject({ kind: "refund", invoice: input.invoice }),
+      fallbackBodyText: defaultReceiptBodyText({ kind: "refund", hostedLink }),
+      variables: invoiceTemplateVariables({
+        invoice: input.invoice ?? ({
+          id: input.payment?.quoteId ?? input.refund.id,
+          tenantId: input.refund.tenantId,
+          clientId: input.refund.clientId,
+          title: "Refund receipt",
+          status: "paid",
+          lineItems: [],
+          totals: { subtotal: input.refund.amount, tax: 0, total: input.refund.amount },
+          ledger: { depositApplied: 0, creditApplied: 0, paymentApplied: 0, refundedAmount: input.refund.amount, balanceDue: 0, overdue: false }
+        } as Invoice),
+        client,
+        portalUrl: hostedLink,
+        paymentAmount: input.refund.amount
+      })
     });
     const review: ReceiptReview = existing ?? {
       id: reviewId,
@@ -510,8 +639,8 @@ export class LedgerService {
       ...(input.invoice?.jobId ? { jobId: input.invoice.jobId } : {}),
       status: "draft",
       attachments,
-      subject: defaultReceiptSubject({ kind: "refund", invoice: input.invoice }),
-      bodyText: defaultReceiptBodyText({ kind: "refund", hostedLink }),
+      subject: receiptTemplate.subject,
+      bodyText: receiptTemplate.bodyText,
       emailRecipients: recipients.emailRecipients,
       smsRecipients: recipients.smsRecipients,
       sendChannels: recipients.emailRecipients.length ? ["email"] : recipients.smsRecipients.length ? ["sms"] : ["email"],
@@ -523,8 +652,8 @@ export class LedgerService {
     return this.deps.ledgerRepository.upsertReceiptReview({
       ...review,
       attachments,
-      subject: review.subject || defaultReceiptSubject({ kind: "refund", invoice: input.invoice }),
-      bodyText: review.bodyText || defaultReceiptBodyText({ kind: "refund", hostedLink }),
+      subject: review.subject || receiptTemplate.subject,
+      bodyText: review.bodyText || receiptTemplate.bodyText,
       emailRecipients: review.emailRecipients?.length ? review.emailRecipients : recipients.emailRecipients,
       smsRecipients: review.smsRecipients?.length ? review.smsRecipients : recipients.smsRecipients,
       sendChannels: review.sendChannels?.length ? review.sendChannels : recipients.emailRecipients.length ? ["email"] : recipients.smsRecipients.length ? ["sms"] : ["email"],
@@ -653,7 +782,15 @@ export class LedgerService {
       ledger: nextLedger,
       statusHistory: nextStatus === invoice.status ? invoice.statusHistory : invoiceStatusHistory(invoice, nextStatus, undefined, "Ledger reconciliation updated invoice status.")
     };
-    return this.deps.crmRepository.updateInvoice(invoice.id, patch);
+    const saved = await this.deps.crmRepository.updateInvoice(invoice.id, patch);
+    if (invoice.status !== "paid" && saved.status === "paid" && saved.jobId) {
+      await this.deps.reviewSequenceService?.maybeStartForJob({
+        tenantId: saved.tenantId,
+        jobId: saved.jobId,
+        source: "automatic"
+      });
+    }
+    return saved;
   }
 
   private async releaseInvoiceApplications(tenantId: string, invoiceId: string, actorId: string, note: string): Promise<void> {
@@ -942,6 +1079,7 @@ export class LedgerService {
     target?: string | undefined;
     note?: string | undefined;
     subject?: string | undefined;
+    bodyText?: string | undefined;
     includePdf?: boolean | undefined;
     includeSummary?: boolean | undefined;
     includePayLink?: boolean | undefined;
@@ -949,17 +1087,38 @@ export class LedgerService {
     publicBaseUrl: string;
   }): Promise<{ invoice: Invoice; portalUrl: string; delivery: InvoiceDeliveryRecord }> {
     const invoice = requireLedgerRecord(await this.getInvoice(input.tenantId, input.invoiceId), `Invoice ${input.invoiceId} was not found.`, "sendInvoice");
-    const deliveryDefaults = deliveryDefaultsForInvoice(await this.deps.crmRepository.getCrmSettings(input.tenantId), invoice.deliveryDefaults);
+    const settings = await this.deps.crmRepository.getCrmSettings(input.tenantId);
+    const deliveryDefaults = deliveryDefaultsForInvoice(settings, invoice.deliveryDefaults);
     const client = (await this.deps.crmRepository.listClients(input.tenantId)).find((record) => record.id === invoice.clientId);
     const portalToken = createInvoicePortalToken();
     const portalPath = invoicePortalUrlForInvoice(invoice, portalToken);
     const portalUrl = absolutePortalUrl(input.publicBaseUrl, portalPath);
-    const message = invoiceDeliveryMessage({
+    const fallback = invoiceDeliveryMessage({
       invoice,
       mode: input.mode === "mark_sent" ? "email" : input.mode,
       portalUrl,
       deliveryDefaults
     });
+    const rendered = resolveTemplateMessage({
+      settings,
+      category: "invoice_send",
+      channel: input.mode === "sms" ? "sms" : "email",
+      fallbackSubject: fallback.subject,
+      fallbackBodyText: fallback.bodyText,
+      variables: invoiceTemplateVariables({
+        invoice,
+        client,
+        portalUrl,
+        includePayLink: input.includePayLink ?? (input.mode === "sms" ? deliveryDefaults.smsIncludePayLink : deliveryDefaults.emailIncludePayLink),
+        includeHostedLink: input.includeHostedLink ?? (input.mode === "sms" ? deliveryDefaults.smsIncludeHostedLink : true),
+        includeSummaryLine: input.includeSummary ?? (input.mode === "sms" ? deliveryDefaults.smsIncludeSummary : deliveryDefaults.emailIncludeSummary)
+      })
+    });
+    if (input.mode !== "mark_sent" && !rendered.enabled) {
+      throw new RailError(`The invoice ${input.mode} channel is disabled in Settings.`, { provider: "native", op: "sendInvoice", status: 409 });
+    }
+    const subject = input.subject?.trim() || rendered.subject;
+    const bodyText = input.bodyText?.trim() || rendered.bodyText;
     const sentAt = now();
     const delivery: InvoiceDeliveryRecord = {
       id: `invoice_delivery_${randomUUID()}`,
@@ -967,7 +1126,7 @@ export class LedgerService {
       sentAt,
       ...(input.target ? { target: input.target } : {}),
       sentBy: input.actorId,
-      ...(input.subject?.trim() ? { subject: input.subject.trim() } : { subject: message.subject }),
+      ...(subject ? { subject } : {}),
       ...(input.note?.trim() ? { note: input.note.trim() } : {}),
       includePdf: input.includePdf ?? deliveryDefaults.emailIncludePdf,
       includeSummary: input.includeSummary ?? (input.mode === "sms" ? deliveryDefaults.smsIncludeSummary : deliveryDefaults.emailIncludeSummary),
@@ -986,8 +1145,8 @@ export class LedgerService {
         tenantId: invoice.tenantId,
         mailbox: this.deps.commsRail.sendAdapter.mailbox,
         to: [target],
-        subject: delivery.subject ?? message.subject,
-        bodyText: message.bodyText,
+        subject,
+        bodyText,
         attachments: delivery.includePdf ? [{
           filename: "invoice.pdf",
           mime: "application/pdf",
@@ -1007,7 +1166,7 @@ export class LedgerService {
       const receipt = await this.deps.commsRail.sendSms({
         tenantId: invoice.tenantId,
         to: target,
-        body: message.bodyText
+        body: bodyText
       });
       delivery.target = target;
       delivery.receiptId = receipt.id;
@@ -1028,7 +1187,7 @@ export class LedgerService {
     });
     await emitEvent(this.deps.eventBus, {
       tenantId: saved.tenantId,
-      type: "quote.sent",
+      type: "invoice.sent",
       payload: {
         invoiceId: saved.id,
         mode: input.mode,
@@ -1100,13 +1259,18 @@ export class LedgerService {
         throw new RailError("Email delivery is not configured for this tenant.", { provider: "native", op: "sendReceiptReview", status: 501 });
       }
       for (const target of review.emailRecipients) {
+        const attachments = await Promise.all(
+          review.attachments.map((attachment) =>
+            attachmentPayloadBase64(attachment, input.tenantId, invoice ?? undefined, this.deps.fieldDocsRepository)
+          )
+        );
         const receipt = await this.deps.commsRail.sendAdapter.sendEmail({
           tenantId: input.tenantId,
           mailbox: this.deps.commsRail.sendAdapter.mailbox,
           to: [target],
           subject: review.subject,
           bodyText: `${review.bodyText}\n\nSecure receipt link: ${absolutePortalUrl(input.publicBaseUrl, review.hostedLink)}`,
-          attachments: review.attachments.map((attachment) => attachmentPayloadBase64(attachment, invoice ?? undefined))
+          attachments
         });
         sendHistory.push({
           id: `receipt_send_${randomUUID()}`,
@@ -1213,6 +1377,10 @@ export class LedgerService {
     if (input.amount <= 0) {
       throw new RailError("Payment amount must be greater than zero.", { provider: "native", op: "recordInvoicePayment", status: 400 });
     }
+    const tipAmount = normalizedTipAmount(input.tipAmount);
+    if (tipAmount > input.amount) {
+      throw new RailError("Tip amount cannot exceed the total payment amount.", { provider: "native", op: "recordInvoicePayment", status: 400 });
+    }
 
     await this.reconcileTenant(input.tenantId);
     const refreshedInvoice = (await this.deps.crmRepository.listInvoices(input.tenantId)).find((record) => record.id === input.invoiceId) ?? invoice;
@@ -1225,8 +1393,9 @@ export class LedgerService {
     }
     const settled = (input.status ?? "succeeded") === "succeeded";
     const outstanding = refreshedInvoice.ledger?.balanceDue ?? invoiceTotal(refreshedInvoice);
-    const appliedAmount = settled ? roundMoney(Math.min(input.amount, outstanding)) : 0;
-    const excessCreditAmount = settled ? roundMoney(Math.max(input.amount - appliedAmount, 0)) : 0;
+    const invoicePortion = roundMoney(input.amount - tipAmount);
+    const appliedAmount = settled ? roundMoney(Math.min(invoicePortion, outstanding)) : 0;
+    const excessCreditAmount = settled ? roundMoney(Math.max(invoicePortion - appliedAmount, 0)) : 0;
     const timestamp = now();
     const payment: Payment = {
       id: `payment_${randomUUID()}`,
@@ -1238,6 +1407,7 @@ export class LedgerService {
       status: input.status ?? "succeeded",
       amount: roundMoney(input.amount),
       appliedAmount,
+      ...(tipAmount > 0 ? { tipAmount } : {}),
       ...(excessCreditAmount > 0 ? { excessCreditAmount } : {}),
       currency: "usd",
       ...(input.note ? { note: input.note } : {}),
@@ -1250,7 +1420,7 @@ export class LedgerService {
           ...(selectedCard.brand ? { brand: selectedCard.brand } : {}),
           ...(selectedCard.last4 ? { last4: selectedCard.last4 } : {})
         }
-      } : {}),
+      } : input.cardSummary ? { cardSummary: input.cardSummary } : {}),
       ...(input.externalIds ? { externalIds: input.externalIds } : {}),
       statusHistory: emptyHistory(
         input.status ?? "succeeded",
@@ -1267,7 +1437,14 @@ export class LedgerService {
       await emitEvent(this.deps.eventBus, {
         tenantId: input.tenantId,
         type: "payment.created",
-        payload: { paymentId: payment.id, invoiceId: refreshedInvoice.id, clientId: refreshedInvoice.clientId, amount: payment.amount, provider: payment.provider }
+        payload: {
+          paymentId: payment.id,
+          invoiceId: refreshedInvoice.id,
+          clientId: refreshedInvoice.clientId,
+          amount: payment.amount,
+          provider: payment.provider,
+          ...(payment.tipAmount ? { tipAmount: payment.tipAmount } : {})
+        }
       });
     } else if (payment.status === "failed") {
       await emitEvent(this.deps.eventBus, {
@@ -1314,7 +1491,7 @@ export class LedgerService {
     return { payment, invoice: invoiceAfter, ...(credit ? { credit } : {}), receiptReview };
   }
 
-  async createPendingStripeCheckout(input: { tenantId: string; invoiceId: string; checkoutSessionId: string; amount: number }): Promise<Payment> {
+  async createPendingStripeCheckout(input: { tenantId: string; invoiceId: string; checkoutSessionId: string; amount: number; tipAmount?: number | undefined }): Promise<Payment> {
     await this.reconcileTenant(input.tenantId);
     const existing = (await this.deps.ledgerRepository.listPayments(input.tenantId))
       .find((payment) => payment.externalIds?.stripeCheckoutSessionId === input.checkoutSessionId);
@@ -1334,6 +1511,7 @@ export class LedgerService {
       method: "card",
       status: "pending",
       amount: roundMoney(input.amount),
+      ...(normalizedTipAmount(input.tipAmount) > 0 ? { tipAmount: normalizedTipAmount(input.tipAmount) } : {}),
       appliedAmount: 0,
       currency: "usd",
       externalIds: { stripeCheckoutSessionId: input.checkoutSessionId },
@@ -1351,19 +1529,26 @@ export class LedgerService {
         tenantId: input.tenantId,
         invoiceId: input.invoiceId,
         checkoutSessionId: input.checkoutSessionId,
-        amount: input.amount
+        amount: input.amount,
+        ...(input.tipAmount !== undefined ? { tipAmount: input.tipAmount } : {})
       });
     const invoice = await this.getInvoice(input.tenantId, input.invoiceId);
     if (!invoice) {
       throw new RailError(`Invoice ${input.invoiceId} was not found.`, { provider: "stripe", op: "markStripeCheckoutPaid", status: 404 });
     }
     const outstanding = invoice.ledger?.balanceDue ?? invoiceTotal(invoice);
-    const appliedAmount = roundMoney(Math.min(input.amount, outstanding));
-    const excessCreditAmount = roundMoney(Math.max(input.amount - appliedAmount, 0));
+    const tipAmount = normalizedTipAmount(input.tipAmount ?? payment.tipAmount);
+    if (tipAmount > input.amount) {
+      throw new RailError("Tip amount cannot exceed the Stripe checkout total.", { provider: "stripe", op: "markStripeCheckoutPaid", status: 400 });
+    }
+    const invoicePortion = roundMoney(input.amount - tipAmount);
+    const appliedAmount = roundMoney(Math.min(invoicePortion, outstanding));
+    const excessCreditAmount = roundMoney(Math.max(invoicePortion - appliedAmount, 0));
     const updatedPayment = await this.deps.ledgerRepository.upsertPayment({
       ...payment,
       status: "succeeded",
       appliedAmount,
+      ...(tipAmount > 0 ? { tipAmount } : {}),
       ...(excessCreditAmount > 0 ? { excessCreditAmount } : {}),
       capturedAt: now(),
       updatedAt: now(),
@@ -1376,7 +1561,14 @@ export class LedgerService {
     await emitEvent(this.deps.eventBus, {
       tenantId: input.tenantId,
       type: "payment.created",
-      payload: { paymentId: updatedPayment.id, invoiceId: invoice.id, clientId: invoice.clientId, amount: updatedPayment.amount, provider: "stripe" }
+      payload: {
+        paymentId: updatedPayment.id,
+        invoiceId: invoice.id,
+        clientId: invoice.clientId,
+        amount: updatedPayment.amount,
+        provider: "stripe",
+        ...(updatedPayment.tipAmount ? { tipAmount: updatedPayment.tipAmount } : {})
+      }
     });
     let credit: Credit | undefined;
     if (excessCreditAmount > 0) {

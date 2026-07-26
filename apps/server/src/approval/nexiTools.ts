@@ -11,6 +11,7 @@ import {
   type Source,
   type TenantUserRole
 } from "@nexteam/core";
+import { extractCreateClientInput } from "@nexteam/nexi";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import {
   clientSaveClarification,
@@ -23,7 +24,7 @@ import type { LedgerService } from "../crm/ledgerFoundation.js";
 import { materializeQuoteRecord, quotePreviewBody } from "../crm/quoteFoundation.js";
 
 const approvalActionSchema = z.object({
-  approvalId: z.string().min(1).optional()
+  approvalId: z.string().min(1)
 });
 
 const revisePendingClientCreateApprovalSchema = z.object({
@@ -42,6 +43,16 @@ const revisePendingJobCreateApprovalSchema = z.object({
 });
 
 const revisePendingJobActionApprovalSchema = z.object({
+  approvalId: z.string().min(1),
+  changeRequest: z.string().min(1)
+});
+
+const revisePendingJobVisitSeriesApprovalSchema = z.object({
+  approvalId: z.string().min(1),
+  changeRequest: z.string().min(1)
+});
+
+const revisePendingVisitShiftApprovalSchema = z.object({
   approvalId: z.string().min(1),
   changeRequest: z.string().min(1)
 });
@@ -183,7 +194,7 @@ const clientApprovalArgsSchema = z.object({
     communicationSettings: clientCommunicationSettingsSchema.optional(),
     emails: z.array(z.string()),
     phones: z.array(z.string()),
-    consent: z.object({ email: z.boolean(), sms: z.boolean() })
+    consent: z.object({ email: z.boolean(), sms: z.boolean(), marketing: z.boolean().default(false) })
   }),
   addressNote: z.string().optional()
 });
@@ -226,6 +237,26 @@ const jobActionApprovalArgsSchema = z.object({
   jobId: z.string().min(1),
   action: z.enum(["close", "invoice", "close_and_invoice", "dismiss_invoice_reminder"]),
   actorId: z.string().optional()
+});
+
+const scheduleJobVisitSeriesApprovalArgsSchema = z.object({
+  tenantId: z.string().min(1),
+  jobId: z.string().min(1),
+  visits: z.array(z.object({
+    title: z.string().optional(),
+    start: z.string().min(1),
+    end: z.string().min(1),
+    assignedTo: z.array(z.string().min(1)).optional(),
+    details: z.string().optional()
+  })).min(1)
+});
+
+const moveJobVisitSeriesApprovalArgsSchema = z.object({
+  tenantId: z.string().min(1),
+  visitId: z.string().min(1),
+  start: z.string().min(1),
+  end: z.string().min(1),
+  shiftRemaining: z.boolean().optional()
 });
 
 const ledgerActionApprovalArgsSchema = z.object({
@@ -341,12 +372,45 @@ function addressFromText(text: string): string | undefined {
     ?? text.match(/\b\d{1,6}\s+[A-Za-z0-9.' -]+,\s*[^,]+,\s*[A-Za-z]{2}\s+\d{5}(?:-\d{4})?\b/i)?.[0]?.trim();
 }
 
+function streetPhraseFromText(text: string): string | undefined {
+  return text.match(/\b([A-Za-z0-9.'-]+(?:\s+[A-Za-z0-9.'-]+){0,4}\s+(?:street|st|road|rd|drive|dr|lane|ln|avenue|ave|court|ct|boulevard|blvd|trail|trl|way|circle|cir|highway|hwy|place|pl))\b/i)?.[1]?.trim();
+}
+
+function mergeStreetCorrectionIntoAddress(text: string, baselineAddress?: string): string | undefined {
+  if (!baselineAddress?.trim()) {
+    return undefined;
+  }
+  const replacementStreet = streetPhraseFromText(text);
+  if (!replacementStreet) {
+    return undefined;
+  }
+  const baselineMatch = baselineAddress.match(/^\s*(\d{1,6})\s+(.+?\b(?:street|st|road|rd|drive|dr|lane|ln|avenue|ave|court|ct|boulevard|blvd|trail|trl|way|circle|cir|highway|hwy|place|pl)\b)([\s,].*)?$/i);
+  if (!baselineMatch) {
+    return undefined;
+  }
+  const streetNumber = baselineMatch[1]?.trim();
+  const suffix = baselineMatch[3] ?? "";
+  if (!streetNumber) {
+    return undefined;
+  }
+  return `${streetNumber} ${replacementStreet}${suffix}`.replace(/\s+,/g, ",").replace(/\s{2,}/g, " ").trim();
+}
+
 function nameFromChangeRequest(text: string): string | undefined {
   return text.match(/\b(?:name|client)\s*(?:is|=|:|to)\s*([a-z][a-z' -]+?)(?=\s+(?:address|email|phone|telephone|mobile|cell|number)\b|[?.!]|$)/i)?.[1]?.trim()
     ?? text.match(/\buse\s+([a-z][a-z' -]+?)(?=\s+instead\b|[?.!]|$)/i)?.[1]?.trim();
 }
 
-function clientChangePatch(text: string): Partial<CreateClientInput> {
+function looksLikeRestatedClientDetails(text: string): boolean {
+  const compact = text.trim();
+  if (!compact) {
+    return false;
+  }
+  return compact.split(/\s+/).length >= 6
+    && (Boolean(firstEmailAddress(text)) || Boolean(firstPhoneNumber(text)) || /\b\d{1,6}\s+[A-Za-z]/.test(text));
+}
+
+async function clientChangePatch(text: string, baseline: CreateClientInput): Promise<Partial<CreateClientInput>> {
   const lower = text.toLowerCase();
   const patch: Partial<CreateClientInput> = {};
   const email = firstEmailAddress(text);
@@ -358,6 +422,11 @@ function clientChangePatch(text: string): Partial<CreateClientInput> {
   }
   if (address) {
     patch.address = address;
+  } else {
+    const mergedAddress = mergeStreetCorrectionIntoAddress(text, baseline.address);
+    if (mergedAddress) {
+      patch.address = mergedAddress;
+    }
   }
   if (email && /\bemail\b/i.test(lower)) {
     patch.emails = [email];
@@ -365,6 +434,26 @@ function clientChangePatch(text: string): Partial<CreateClientInput> {
   }
   if (phone && /\b(?:phone|telephone|mobile|cell|number|text)\b/i.test(lower)) {
     patch.phones = [phone];
+  }
+  if (!hasPatch(patch) && looksLikeRestatedClientDetails(text)) {
+    const extracted = await extractCreateClientInput({ text, env: process.env });
+    if (extracted.name?.trim()) {
+      patch.name = extracted.name.trim();
+    }
+    if (extracted.address?.trim()) {
+      patch.address = extracted.address.trim();
+    }
+    if (extracted.emails.length > 0) {
+      patch.emails = extracted.emails;
+      patch.consent = {
+        email: extracted.consent.email ?? baseline.consent.email,
+        sms: extracted.consent.sms ?? baseline.consent.sms,
+        ...(baseline.consent.marketing !== undefined ? { marketing: baseline.consent.marketing } : {})
+      };
+    }
+    if (extracted.phones.length > 0) {
+      patch.phones = extracted.phones;
+    }
   }
   return patch;
 }
@@ -461,6 +550,55 @@ function jobActionChangePatch(text: string): { action?: "close" | "invoice" | "c
     return { action: "close" };
   }
   return {};
+}
+
+function shiftIso(value: string, deltaMs: number): string {
+  return new Date(new Date(value).getTime() + deltaMs).toISOString();
+}
+
+function visitMomentLabel(start: string, end: string): string {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  return `${startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })} ${startDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}-${endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+}
+
+function shiftDeltaFromText(text: string): number | undefined {
+  let deltaMs = 0;
+  let matched = false;
+  for (const match of text.matchAll(/\b(?:back|later|forward)\s+(\d+)\s+days?\b/ig)) {
+    deltaMs += Number(match[1]) * 24 * 60 * 60 * 1000;
+    matched = true;
+  }
+  for (const match of text.matchAll(/\b(?:earlier|sooner)\s+(\d+)\s+days?\b/ig)) {
+    deltaMs -= Number(match[1]) * 24 * 60 * 60 * 1000;
+    matched = true;
+  }
+  for (const match of text.matchAll(/\b(?:back|later|forward)\s+(\d+)\s+hours?\b/ig)) {
+    deltaMs += Number(match[1]) * 60 * 60 * 1000;
+    matched = true;
+  }
+  for (const match of text.matchAll(/\b(?:earlier|sooner)\s+(\d+)\s+hours?\b/ig)) {
+    deltaMs -= Number(match[1]) * 60 * 60 * 1000;
+    matched = true;
+  }
+  return matched ? deltaMs : undefined;
+}
+
+function scheduleVisitSeriesPreviewBody(visits: Array<{ title?: string | undefined; start: string; end: string; assignedTo?: string[] | undefined; details?: string | undefined }>): string {
+  return [
+    `Visit count: ${visits.length}`,
+    ...visits.map((visit, index) => `${index + 1}. ${visitMomentLabel(visit.start, visit.end)}${visit.title ? ` | ${visit.title}` : ""}${visit.assignedTo?.length ? ` | assigned: ${visit.assignedTo.join(", ")}` : ""}${visit.details ? ` | ${visit.details}` : ""}`)
+  ].join("\n");
+}
+
+function shiftRemainingChoiceFromText(text: string, current: boolean | undefined): boolean {
+  if (/\b(?:just this one|only this visit|do not shift remaining|don't shift remaining)\b/i.test(text)) {
+    return false;
+  }
+  if (/\bshift(?:ing)? all remaining\b/i.test(text) || /\bmove all remaining\b/i.test(text)) {
+    return true;
+  }
+  return current ?? true;
 }
 
 function normalizeLedgerText(value: string): string {
@@ -718,18 +856,10 @@ function receiptReviewChangePatch(text: string): {
   };
 }
 
-async function loadPendingApproval(approvalQueue: ApprovalQueueService, tenantId: string, approvalId?: string) {
-  if (approvalId) {
-    const item = await approvalQueue.get(approvalId);
-    if (!item || item.tenantId !== tenantId) {
-      throw new RailError(`Approval item ${approvalId} was not found for this tenant.`, { provider: "approval", op: "get", status: 404 });
-    }
-    return item;
-  }
-  const pending = await approvalQueue.listPending(tenantId);
-  const item = pending.at(-1);
-  if (!item) {
-    throw new RailError("No pending approval item was found.", { provider: "approval", op: "listPending", status: 404 });
+async function loadPendingApproval(approvalQueue: ApprovalQueueService, tenantId: string, approvalId: string) {
+  const item = await approvalQueue.get(approvalId);
+  if (!item || item.tenantId !== tenantId) {
+    throw new RailError(`Approval item ${approvalId} was not found for this tenant.`, { provider: "approval", op: "get", status: 404 });
   }
   return item;
 }
@@ -1420,7 +1550,7 @@ export function createApprovalNexiTools(input: {
           phones: approvalArgs.client.phones,
           consent: approvalArgs.client.consent
         };
-        const patch = clientChangePatch(parsed.changeRequest);
+        const patch = await clientChangePatch(parsed.changeRequest, baseline);
         if (!hasPatch(patch)) {
           return {
             result: {
@@ -1437,7 +1567,8 @@ export function createApprovalNexiTools(input: {
           phones: patch.phones ?? baseline.phones,
           consent: patch.consent ? {
             email: patch.consent.email ?? baseline.consent.email,
-            sms: patch.consent.sms ?? baseline.consent.sms
+            sms: patch.consent.sms ?? baseline.consent.sms,
+            marketing: patch.consent.marketing ?? baseline.consent.marketing
           } : baseline.consent
         };
         const missingFields = clientSaveMissingFields(revised);
@@ -1682,6 +1813,130 @@ export function createApprovalNexiTools(input: {
             replacedApprovalId: item.id
           },
           sources: [source(approval.id, `ApprovalQueue job action ${approval.id}`)]
+        };
+      }
+    },
+    {
+      name: "revisePendingJobVisitSeriesApproval",
+      description: "Revise a queued visit-series draft from chat, then restate the updated schedule before anything is booked.",
+      inputSchema: revisePendingJobVisitSeriesApprovalSchema,
+      handler: async (tenant, args) => {
+        const parsed = revisePendingJobVisitSeriesApprovalSchema.parse(args);
+        const item = await loadPendingApproval(input.approvalQueue, tenant.id, parsed.approvalId);
+        if (item.execute.service !== "crm" || item.execute.op !== "scheduleJobVisitSeries" || item.kind !== "job") {
+          throw new RailError("That pending approval is not a visit-series draft I can revise in chat yet.", {
+            provider: "approval",
+            op: "revisePendingJobVisitSeriesApproval",
+            status: 409
+          });
+        }
+        const approvalArgs = scheduleJobVisitSeriesApprovalArgsSchema.parse(item.execute.args);
+        const deltaMs = shiftDeltaFromText(parsed.changeRequest);
+        if (deltaMs === undefined) {
+          return {
+            result: {
+              needsClarification: "Tell me how far to push the drafted visits, like back two days or forward three hours, and I'll restate the schedule before I book it.",
+              approval: item
+            },
+            sources: [source(item.id, `ApprovalQueue visit series ${item.id}`)]
+          };
+        }
+        const revisedVisits = approvalArgs.visits.map((visit) => ({
+          ...visit,
+          start: shiftIso(visit.start, deltaMs),
+          end: shiftIso(visit.end, deltaMs)
+        }));
+        const jobTitle = item.preview.title.replace(/^Schedule job visits:\s*/i, "") || "Job";
+        await input.approvalQueue.reject(item.id, input.actorId);
+        const approval = await input.approvalQueue.create({
+          tenantId: tenant.id,
+          kind: "job",
+          preview: {
+            title: `Schedule job visits: ${jobTitle}`,
+            body: scheduleVisitSeriesPreviewBody(revisedVisits)
+          },
+          execute: {
+            service: "crm",
+            op: "scheduleJobVisitSeries",
+            args: {
+              tenantId: tenant.id,
+              jobId: approvalArgs.jobId,
+              visits: jsonClone(revisedVisits)
+            }
+          },
+          createdBy: "nexi"
+        });
+        return {
+          result: {
+            approval,
+            pendingVisits: revisedVisits,
+            writesAreApprovalQueuedOnly: true,
+            replacedApprovalId: item.id
+          },
+          sources: [source(approval.id, `ApprovalQueue visit series ${approval.id}`)]
+        };
+      }
+    },
+    {
+      name: "revisePendingVisitShiftApproval",
+      description: "Revise a queued visit shift from chat, then restate the updated move before it executes.",
+      inputSchema: revisePendingVisitShiftApprovalSchema,
+      handler: async (tenant, args) => {
+        const parsed = revisePendingVisitShiftApprovalSchema.parse(args);
+        const item = await loadPendingApproval(input.approvalQueue, tenant.id, parsed.approvalId);
+        if (item.execute.service !== "crm" || item.execute.op !== "moveJobVisitSeries" || item.kind !== "job") {
+          throw new RailError("That pending approval is not a visit-shift draft I can revise in chat yet.", {
+            provider: "approval",
+            op: "revisePendingVisitShiftApproval",
+            status: 409
+          });
+        }
+        const approvalArgs = moveJobVisitSeriesApprovalArgsSchema.parse(item.execute.args);
+        const deltaMs = shiftDeltaFromText(parsed.changeRequest);
+        if (deltaMs === undefined && !/\b(?:just this one|only this visit|do not shift remaining|don't shift remaining|shift all remaining)\b/i.test(parsed.changeRequest)) {
+          return {
+            result: {
+              needsClarification: "Tell me how far to move that visit, like back two days or forward four hours, and whether the remaining visits should move too.",
+              approval: item
+            },
+            sources: [source(item.id, `ApprovalQueue visit shift ${item.id}`)]
+          };
+        }
+        const revisedStart = deltaMs === undefined ? approvalArgs.start : shiftIso(approvalArgs.start, deltaMs);
+        const revisedEnd = deltaMs === undefined ? approvalArgs.end : shiftIso(approvalArgs.end, deltaMs);
+        const shiftRemaining = shiftRemainingChoiceFromText(parsed.changeRequest, approvalArgs.shiftRemaining);
+        const jobTitle = item.preview.title.replace(/^Shift job visit series:\s*/i, "") || "Job";
+        await input.approvalQueue.reject(item.id, input.actorId);
+        const approval = await input.approvalQueue.create({
+          tenantId: tenant.id,
+          kind: "job",
+          preview: {
+            title: `Shift job visit series: ${jobTitle}`,
+            body: [
+              `New anchor window: ${visitMomentLabel(revisedStart, revisedEnd)}`,
+              `Shift remaining visits: ${shiftRemaining ? "yes" : "no"}`
+            ].join("\n")
+          },
+          execute: {
+            service: "crm",
+            op: "moveJobVisitSeries",
+            args: {
+              tenantId: tenant.id,
+              visitId: approvalArgs.visitId,
+              start: revisedStart,
+              end: revisedEnd,
+              shiftRemaining
+            }
+          },
+          createdBy: "nexi"
+        });
+        return {
+          result: {
+            approval,
+            writesAreApprovalQueuedOnly: true,
+            replacedApprovalId: item.id
+          },
+          sources: [source(approval.id, `ApprovalQueue visit shift ${approval.id}`)]
         };
       }
     },

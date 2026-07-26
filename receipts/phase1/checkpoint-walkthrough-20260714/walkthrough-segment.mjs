@@ -16,8 +16,8 @@ const segment = process.argv[2];
 const record = process.argv.includes("--record");
 const headless = !process.argv.includes("--headed");
 
-if (!segment || !["request-to-quote", "quote-to-job", "job-to-payment"].includes(segment)) {
-  console.error("Usage: node walkthrough-segment.mjs <request-to-quote|quote-to-job|job-to-payment> [--record] [--headed]");
+if (!segment || !["request-to-quote", "quote-to-job", "job-to-payment", "home-dashboard"].includes(segment)) {
+  console.error("Usage: node walkthrough-segment.mjs <request-to-quote|quote-to-job|job-to-payment|home-dashboard> [--record] [--headed]");
   process.exit(1);
 }
 
@@ -286,8 +286,9 @@ async function requestToQuote() {
     stamp("Request detail opened", "Piece 1 § review");
     await sleep(1000);
 
-    const reviewedButton = page.getByRole("button", { name: "Mark reviewed" });
-    if (await reviewedButton.count()) {
+const reviewedButtons = page.getByRole("button", { name: "Mark reviewed" });
+    if (await reviewedButtons.count()) {
+      const reviewedButton = reviewedButtons.first();
       await reviewedButton.click();
       await reviewedButton.waitFor({ state: "detached" });
       stamp("Match review marked complete", "Piece 1 § review");
@@ -300,7 +301,7 @@ async function requestToQuote() {
     await sleep(1200);
     await maybeShot(page, "request-propagation");
 
-    await page.getByRole("button", { name: "Convert to quote" }).click();
+    await page.getByRole("button", { name: "Convert to quote" }).first().click();
     const quote = await poll("converted quote", latestQuote);
     stamp("Request converted to quote", "Pieces 1-2 handoff", quote.number ?? quote.id);
     await sleep(1000);
@@ -437,7 +438,7 @@ async function quoteToJob() {
     stamp("Approved quote visible in NexOps", "Piece 2 § status");
     await sleep(1000);
 
-    await page.getByRole("button", { name: "Convert to job" }).click();
+    await page.getByRole("button", { name: "Convert to job" }).first().click();
     const job = await poll("converted job", latestJob);
     stamp("Quote converted to job", "Pieces 2-3 handoff", job.number ?? job.id);
     await sleep(1000);
@@ -467,7 +468,7 @@ async function quoteToJob() {
     await sleep(1600);
     await maybeShot(page, "job-reminders");
 
-    await page.getByRole("button", { name: "Complete" }).click();
+    await page.getByRole("button", { name: "Complete" }).first().click();
     await page.waitForFunction(() => document.body.innerText.includes("Owner or office admin must close, invoice, or both."));
     const jobDetail = await poll("job action alert after visit complete", async () => {
       const detail = await apiGet(`/api/crm/jobs/${encodeURIComponent(job.id)}?tenantId=aquatrace`);
@@ -505,7 +506,7 @@ async function jobToPayment() {
     stamp("Job reopened for closeout", "Piece 5 § job close");
     await sleep(900);
 
-    await page.getByRole("button", { name: "Close and Invoice" }).click();
+    await page.getByRole("button", { name: "Close and Invoice" }).first().click();
     const invoice = await poll("created invoice", latestInvoice);
     stamp("Close and Invoice created draft invoice", "Piece 5 § close/invoice", invoice.number ?? invoice.id);
     await sleep(1200);
@@ -522,7 +523,7 @@ async function jobToPayment() {
     if (await titleInput.isEnabled()) {
       await titleInput.fill(`${invoice.title} final`);
     await draftEditor.locator('textarea').first().fill("Final invoice adjusted before send after pressure test review.");
-    await page.getByRole("button", { name: "Save invoice" }).click();
+    await page.getByRole("button", { name: "Save invoice" }).first().click();
     stamp("Invoice draft edited before send", "Piece 5 § invoice draft");
     await sleep(1200);
       await maybeShot(page, "invoice-edited");
@@ -536,7 +537,7 @@ async function jobToPayment() {
     await sendPanel.scrollIntoViewIfNeeded();
     await sendPanel.locator('label:has-text("Mode") select').selectOption("mark_sent");
     await sendPanel.locator('label:has-text("Subject") input').fill("Leak detection invoice ready for payment");
-    await page.getByRole("button", { name: "Send invoice" }).click();
+    await page.getByRole("button", { name: "Send invoice" }).first().click();
     await page.waitForFunction(() => document.body.innerText.toLowerCase().includes("awaiting payment") || document.body.innerText.toLowerCase().includes("sent"));
     stamp("Invoice sent via mark-sent path", "Piece 5 § send", "Local comms rail is unconfigured, so this segment uses the built-in mark-sent delivery mode.");
     await sleep(1400);
@@ -550,7 +551,7 @@ async function jobToPayment() {
       throw new Error("No saved card was available on the invoice after quote approval.");
     }
     await savedCardSelect.selectOption(realCardValue);
-    await page.getByRole("button", { name: "Collect payment" }).click();
+    await page.getByRole("button", { name: "Collect payment" }).first().click();
     const paidInvoice = await poll("paid invoice", async () => {
       const latest = await latestInvoice();
       return latest?.status === "paid" ? latest : null;
@@ -570,8 +571,8 @@ async function jobToPayment() {
       await otherFilesAttachment.uncheck();
     }
     await receiptPanel.locator('label:has-text("Subject") input').fill(state.scenario.receiptSubject);
-    await page.getByRole("button", { name: "Save receipt review" }).click();
-    await page.getByRole("button", { name: "Send receipt" }).click();
+    await page.getByRole("button", { name: "Save receipt review" }).first().click();
+    await page.getByRole("button", { name: "Send receipt" }).first().click();
     await sleep(1800);
     const receiptDetail = await apiGet(`/api/crm/invoices/${encodeURIComponent(invoice.id)}?tenantId=aquatrace`);
     const latestReceiptReview = receiptDetail.receiptReviews?.[0];
@@ -611,12 +612,54 @@ async function jobToPayment() {
   }
 }
 
+async function homeDashboard() {
+  const state = await readState();
+  const { browser, context, page, video } = await newVideoPage();
+  let videoFiles = null;
+  try {
+    await page.goto(`${baseWeb}/nexops`, { waitUntil: "networkidle" });
+    await page.getByRole("heading", { name: "Today in NexOps" }).waitFor();
+    stamp("Home dashboard opened", "Track 2 Â§ home shell", "Now, Needs attention, Upcoming, and Business overview are live.");
+    await sleep(1200);
+
+    const nowCard = page.locator(".nexops-kit-home-zone").nth(0);
+    await nowCard.scrollIntoViewIfNeeded();
+    stamp("Now zone reflects live queue state", "Track 2 Â§ home shell", await nowCard.textContent() ?? "");
+    await sleep(1200);
+
+    const attentionCard = page.locator(".nexops-kit-home-zone").nth(1);
+    await attentionCard.scrollIntoViewIfNeeded();
+    stamp("Needs attention zone reflects quote or payment drift", "Track 2 Â§ home shell", await attentionCard.textContent() ?? "");
+    await sleep(1200);
+
+    const upcomingCard = page.locator(".nexops-kit-home-zone").nth(2);
+    await upcomingCard.scrollIntoViewIfNeeded();
+    stamp("Upcoming zone reflects scheduling pressure", "Track 2 Â§ home shell", await upcomingCard.textContent() ?? "");
+    await sleep(1200);
+
+    const operationsQueue = page.getByRole("heading", { name: "What still needs a move" });
+    await operationsQueue.scrollIntoViewIfNeeded();
+    stamp("Operations queue lists real request and billing follow-ups", "Track 2 Â§ home shell", "Queue now routes straight to requests and payments instead of placeholder build-map copy.");
+    await sleep(1600);
+    await maybeShot(page, "home-dashboard");
+
+    await writeMarkers({ statePath, walkthroughState: state });
+  } finally {
+    videoFiles = await finalizeVideo(browser, context, video, "04-home-dashboard");
+    if (videoFiles) {
+      await writeMarkers({ statePath, videoFiles });
+    }
+  }
+}
+
 await ensureDirs();
 
 if (segment === "request-to-quote") {
   await requestToQuote();
 } else if (segment === "quote-to-job") {
   await quoteToJob();
+} else if (segment === "home-dashboard") {
+  await homeDashboard();
 } else {
   await jobToPayment();
 }

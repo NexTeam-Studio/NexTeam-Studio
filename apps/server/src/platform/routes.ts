@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
-import { RailError, type JobAccessScope, type Tenant, type TenantAdapterStatus, type TenantPlan } from "@nexteam/core";
+import { RailError, addressSchema, type JobAccessScope, type Tenant, type TenantAdapterStatus, type TenantPlan } from "@nexteam/core";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
 import { getAdminAuth } from "../firebase.js";
@@ -21,8 +21,8 @@ const tenantBodySchema = z.object({
     colors: z.record(z.string()).optional()
   }).optional(),
   adapters: z.object({
-    crm: z.enum(["jobber", "native"]),
-    media: z.enum(["companycam", "native"]),
+    crm: z.literal("native"),
+    media: z.literal("native"),
     email: z.enum(["gmail_relay", "sendgrid"]),
     sms: z.enum(["twilio"]).optional()
   }).optional(),
@@ -67,6 +67,8 @@ const tenantUserBodySchema = z.object({
   id: z.string().min(1).optional(),
   authUid: z.string().min(1).optional(),
   email: z.string().email().optional(),
+  phones: z.array(z.string().min(1)).optional(),
+  address: addressSchema.optional(),
   displayName: z.string().min(1),
   role: z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]),
   active: z.boolean().optional()
@@ -148,8 +150,8 @@ function status(tenant: Tenant, adapter: TenantAdapterStatus["adapter"], provide
 
 function runtimeAdapterStatuses(tenant: Tenant, env: NodeJS.ProcessEnv): TenantAdapterStatus[] {
   return [
-    status(tenant, "crm", tenant.adapters.crm, tenant.adapters.crm === "native" || Boolean(env.JOBBER_API_BASE_URL && env.JOBBER_ACCESS_TOKEN)),
-    status(tenant, "media", tenant.adapters.media, tenant.adapters.media === "native" || Boolean(env.COMPANYCAM_ACCESS_TOKEN)),
+    status(tenant, "crm", tenant.adapters.crm, tenant.adapters.crm === "native"),
+    status(tenant, "media", tenant.adapters.media, tenant.adapters.media === "native"),
     status(tenant, "email", tenant.adapters.email, Boolean(env.GMAIL_READONLY_MAILBOX_1_REFRESH_TOKEN || env.GMAIL_NEXI_REFRESH_TOKEN)),
     status(tenant, "maps", "google_maps", Boolean(env.GOOGLE_MAPS_API_KEY)),
     status(tenant, "llm", "anthropic", Boolean(env.ANTHROPIC_API_KEY)),

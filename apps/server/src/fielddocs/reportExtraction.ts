@@ -117,12 +117,12 @@ export type AquatraceDocumentExtraction =
   | AquatraceEvapExtraction
   | UnknownAquatraceDocumentExtraction;
 
-export interface JobberHierarchyCandidate {
+export interface ImportedHierarchyCandidate {
   clientName: string;
   propertyName?: string;
   tierPath?: string[];
-  jobberClientId?: string;
-  jobberPropertyId?: string;
+  legacyCrmClientId?: string;
+  legacyCrmPropertyId?: string;
 }
 
 export interface AquatraceVisitExtraction {
@@ -130,7 +130,7 @@ export interface AquatraceVisitExtraction {
   clientDisplayName?: string;
   serviceDateKey?: string;
   sourceDocumentIds: string[];
-  hierarchy?: JobberHierarchyCandidate;
+  hierarchy?: ImportedHierarchyCandidate;
   jobReport?: AquatraceJobReportExtraction;
   moasure?: AquatraceMoasureExtraction;
   evap?: AquatraceEvapExtraction;
@@ -537,7 +537,7 @@ export function extractJobReport(source: AquatraceSourceDocument): AquatraceJobR
   const flags: string[] = [];
   const summary = extractSummaryFields(text);
   if (/^Exported - Current/i.test(source.label) && !/Client Name/i.test(source.label)) {
-    flags.push("companycam_generated_filename_without_client");
+    flags.push("legacy_export_generated_filename_without_client");
   }
   if (!summary.clientDisplayName) {
     flags.push("client_name_not_found_in_summary");
@@ -669,7 +669,7 @@ export function extractAquatraceDocument(source: AquatraceSourceDocument): Aquat
   };
 }
 
-function matchesHierarchy(clientDisplayName: string | undefined, candidate: JobberHierarchyCandidate): boolean {
+function matchesHierarchy(clientDisplayName: string | undefined, candidate: ImportedHierarchyCandidate): boolean {
   if (!clientDisplayName) return false;
   const haystack = [
     candidate.clientName,
@@ -684,7 +684,7 @@ function flattenVisitFields(input: {
   jobReport?: AquatraceJobReportExtraction;
   moasure?: AquatraceMoasureExtraction;
   evap?: AquatraceEvapExtraction;
-  hierarchy?: JobberHierarchyCandidate;
+  hierarchy?: ImportedHierarchyCandidate;
   flags: string[];
 }): Record<string, string | number> {
   const fields: Record<string, string | number> = {};
@@ -774,8 +774,8 @@ function flattenVisitFields(input: {
     fields.parentClientName = input.hierarchy.clientName;
     assignString(fields, "propertyName", input.hierarchy.propertyName);
     if (input.hierarchy.tierPath?.length) fields.propertyTierPath = input.hierarchy.tierPath.join(" > ");
-    assignString(fields, "jobberClientId", input.hierarchy.jobberClientId);
-    assignString(fields, "jobberPropertyId", input.hierarchy.jobberPropertyId);
+    assignString(fields, "legacyCrmClientId", input.hierarchy.legacyCrmClientId);
+    assignString(fields, "legacyCrmPropertyId", input.hierarchy.legacyCrmPropertyId);
   }
   fields.extractionFlags = input.flags.join(",");
   return fields;
@@ -795,7 +795,7 @@ export function extractAquatraceReportFields(text: string): Record<string, strin
 
 export function ingestAquatraceReportSet(input: {
   documents: AquatraceSourceDocument[];
-  jobberHierarchyCandidates?: JobberHierarchyCandidate[];
+  importedHierarchyCandidates?: ImportedHierarchyCandidate[];
 }): AquatraceReportSetExtraction {
   const parsedDocuments = input.documents.map((document) => extractAquatraceDocument(document));
   const jobReports = parsedDocuments.filter((document): document is AquatraceJobReportExtraction => document.documentType === "job_report");
@@ -830,8 +830,8 @@ export function ingestAquatraceReportSet(input: {
         }
       }
     }
-    const hierarchy = input.jobberHierarchyCandidates?.find((candidate) => matchesHierarchy(jobReport.clientDisplayName, candidate));
-    if (hierarchy) flags.push("jobber_hierarchy_candidate_attached");
+    const hierarchy = input.importedHierarchyCandidates?.find((candidate) => matchesHierarchy(jobReport.clientDisplayName, candidate));
+    if (hierarchy) flags.push("import_hierarchy_candidate_attached");
     const sourceDocumentIds = [jobReport.source.id];
     if (moasure) sourceDocumentIds.push(moasure.source.id);
     if (evap) sourceDocumentIds.push(evap.source.id);
@@ -843,7 +843,7 @@ export function ingestAquatraceReportSet(input: {
       jobReport?: AquatraceJobReportExtraction;
       moasure?: AquatraceMoasureExtraction;
       evap?: AquatraceEvapExtraction;
-      hierarchy?: JobberHierarchyCandidate;
+      hierarchy?: ImportedHierarchyCandidate;
       flags: string[];
     } = { jobReport, flags };
     if (moasure) flattenInput.moasure = moasure;
@@ -870,7 +870,7 @@ export function ingestAquatraceReportSet(input: {
         documentId: moasure.source.id,
         label: moasure.source.label,
         documentType: "moasure_export",
-        reason: "No CompanyCam checklist visit matched this Moasure created date."
+        reason: "No imported checklist visit matched this Moasure created date."
       });
     }
   }
@@ -880,7 +880,7 @@ export function ingestAquatraceReportSet(input: {
         documentId: evap.source.id,
         label: evap.source.label,
         documentType: "evap_calc",
-        reason: "No CompanyCam checklist visit matched this evaporation report generated date."
+        reason: "No imported checklist visit matched this evaporation report generated date."
       });
     }
   }

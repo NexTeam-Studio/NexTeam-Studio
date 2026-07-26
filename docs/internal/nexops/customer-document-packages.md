@@ -43,7 +43,7 @@ Build piece: Canonical source foundation (Track 2)
 
 ### D11 final bundle rule
 - OWNER or OFFICE_ADMIN approves the report and controls final outbound delivery.
-- Technician-submitted field docs are not customer-final until office approval.
+- Technician-submitted NexCam / NexDocs material is not customer-final until office approval.
 
 ### D14 attachment rule
 - Invoice sending is not gated by report approval.

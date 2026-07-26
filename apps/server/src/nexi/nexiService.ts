@@ -1,7 +1,9 @@
-import type { NexiTool, Source, Tenant, UsageLogRecord } from "@nexteam/core";
+import type { Address, ConversationRecord, NexiTool, Source, Tenant, UsageLogRecord } from "@nexteam/core";
 import { RailError } from "@nexteam/core";
 import {
+  extractCreateClientInput,
   runNexiToolLoop,
+  type PendingApprovalContext,
   type ToolLoopRequest,
   type ToolLoopResponse,
   type UsageLogWriter
@@ -12,11 +14,23 @@ export interface NexiMessageInput {
   tenant: Tenant;
   message: string;
   conversationId?: string | undefined;
+  actorDisplayName?: string | undefined;
+  requestorContext?: NexiRequestorContext | undefined;
+  pendingApproval?: PendingApprovalContext | null | undefined;
   tools: NexiTool[];
   repository: NexiRepository;
   usageLog?: UsageLogWriter | undefined;
   env?: NodeJS.ProcessEnv | undefined;
   gateway?: ((request: ToolLoopRequest) => Promise<ToolLoopResponse>) | undefined;
+}
+
+export interface NexiRequestorContext {
+  tenantUserId?: string | undefined;
+  displayName?: string | undefined;
+  email?: string | undefined;
+  phones?: string[] | undefined;
+  address?: Address | undefined;
+  origin?: string | undefined;
 }
 
 export interface NexiMessageResult {
@@ -26,6 +40,7 @@ export interface NexiMessageResult {
   failureId?: string | undefined;
   usage: UsageLogRecord["usage"];
   toolRuns: ToolLoopResponse["toolRuns"];
+  pendingApproval?: PendingApprovalContext | null;
 }
 
 type JsonRecord = Record<string, unknown>;
@@ -80,7 +95,7 @@ function buildNexiSystemPrompt(tenant: Tenant): string {
     `You are ${tenant.branding.assistantName}, the NexTeam Job Desk assistant for ${tenant.name}.`,
     "Check the connected work records before answering job, schedule, photo, report, and saved site-note questions.",
     "Never invent job data. If you cannot find it in the connected records, say plainly that you do not have it written down.",
-    "For schedule answers, use schedule.localSummary when present and do not describe tenant-local Jobber all-day windows as UTC appointments.",
+    "For schedule answers, use schedule.localSummary when present and do not describe tenant-local all-day windows as UTC appointments.",
     "Answer only what was asked in a scannable format: short lead sentence, compact bullets only when useful, no extra menu of options unless the user asks.",
     "For email summaries and triage, group by priority when available and format each item as sender - subject - one-line ask. Leave internal IDs out unless the owner asks. Sign-in tests and account welcomes are not client inquiries.",
     "Talk like a sharp, reliable employee for trade owners and field workers. Avoid user-facing jargon such as API, endpoint, tool call, source, query, rail, and schema.",
@@ -88,6 +103,59 @@ function buildNexiSystemPrompt(tenant: Tenant): string {
     "For tenant onboarding requests, run the intake interview, capture current app-stack choices, and queue provisioning for owner approval only. Never claim external accounts, publishing, emails, or domains are set up.",
     "Keep phone answers short, direct, and operational. Ask at most one clarifying question."
   ].join("\n");
+}
+
+function requestorPhone(context: NexiRequestorContext | undefined): string | undefined {
+  return context?.phones?.map((value) => value.replace(/[^\d+]/g, "").trim()).find(Boolean);
+}
+
+function requestorAddressString(address: Address | undefined): string | undefined {
+  if (!address) {
+    return undefined;
+  }
+  const streetLine = [address.street1, address.street2].filter(Boolean).join(" ").trim();
+  const locality = [address.city, address.province].filter(Boolean).join(", ").trim();
+  const postalLine = [locality, address.postalCode].filter(Boolean).join(" ").trim();
+  return [
+    streetLine,
+    postalLine,
+    address.country && address.country !== "US" ? address.country : ""
+  ].filter(Boolean).join(", ").replace(/\s+/g, " ").trim() || undefined;
+}
+
+function requestorOrigin(context: NexiRequestorContext | undefined): string | undefined {
+  return context?.origin?.trim() || requestorAddressString(context?.address);
+}
+
+function messageTargetsRequestor(text: string): boolean {
+  return /\b(?:to|for|send|share|email|mail|text|sms|call|draft|compose|write)\s+me\b/i.test(text)
+    || /\bto\s+my\s+(?:email|mail|phone|cell|mobile|text|sms)\b/i.test(text)
+    || /\b(?:my\s+(?:house|home)|from\s+here|from\s+me)\b/i.test(text);
+}
+
+function requestorTargetForChannel(
+  context: NexiRequestorContext | undefined,
+  message: string,
+  preferredChannel?: "email" | "sms" | undefined
+): string | undefined {
+  if (!messageTargetsRequestor(message)) {
+    return undefined;
+  }
+  const email = context?.email?.trim();
+  const phone = requestorPhone(context);
+  if (preferredChannel === "sms") {
+    return phone;
+  }
+  if (preferredChannel === "email") {
+    return email;
+  }
+  return email || phone;
+}
+
+function requestorOriginForMessage(context: NexiRequestorContext | undefined, message: string): string | undefined {
+  return /\b(?:from\s+here|from\s+my\s+(?:house|home)|from\s+me)\b/i.test(message)
+    ? requestorOrigin(context)
+    : undefined;
 }
 
 function approvalIdFromText(text: string): string | undefined {
@@ -126,17 +194,77 @@ function hasReceiptReviewChangeDetails(text: string): boolean {
   return /\b(?:subject|body|email|text|sms|recipient|send to|attachment|invoice pdf|field report|photos|job files)\b/i.test(text);
 }
 
-function approvalContextFromMessages(messages: ToolLoopRequest["messages"]): {
-  approvalId: string;
-  awaitingChanges: boolean;
-  revisableJobCreate: boolean;
-  revisableJobAction: boolean;
-  revisableLedgerAction: boolean;
-  revisableInvoiceCompose: boolean;
-  revisableInvoiceSend: boolean;
-  revisableCollectPayment: boolean;
-  revisableReceiptReview: boolean;
-} | null {
+function hasContentDraftChangeDetails(text: string): boolean {
+  return /\b(?:change|fix|update|rewrite|revise|title|body|caption|short caption|long caption)\b/i.test(text);
+}
+
+function emptyPendingApprovalContext(
+  approvalId: string,
+  overrides: Partial<PendingApprovalContext> = {}
+): PendingApprovalContext {
+  return {
+    approvalId,
+    awaitingChanges: false,
+    revisableClientCreate: false,
+    revisableQuoteCreate: false,
+    revisableJobCreate: false,
+    revisableJobAction: false,
+    revisableJobVisitSeries: false,
+    revisableVisitShift: false,
+    revisableLedgerAction: false,
+    revisableInvoiceCompose: false,
+    revisableInvoiceSend: false,
+    revisableCollectPayment: false,
+    revisableReceiptReview: false,
+    revisableContentDraft: false,
+    ...overrides
+  };
+}
+
+function pendingApprovalFlagsForToolName(toolName: string): Partial<PendingApprovalContext> {
+  switch (toolName) {
+    case "createClient":
+    case "revisePendingClientCreateApproval":
+      return { revisableClientCreate: true };
+    case "createQuote":
+    case "revisePendingQuoteCreateApproval":
+      return { revisableQuoteCreate: true };
+    case "createJob":
+    case "revisePendingJobCreateApproval":
+      return { revisableJobCreate: true };
+    case "queueJobAction":
+    case "revisePendingJobActionApproval":
+      return { revisableJobAction: true };
+    case "scheduleJobVisits":
+    case "revisePendingJobVisitSeriesApproval":
+      return { revisableJobVisitSeries: true };
+    case "shiftJobVisitSeries":
+    case "revisePendingVisitShiftApproval":
+      return { revisableVisitShift: true };
+    case "queueLedgerAction":
+    case "revisePendingLedgerActionApproval":
+      return { revisableLedgerAction: true };
+    case "queueInvoiceCompose":
+    case "revisePendingInvoiceComposeApproval":
+      return { revisableInvoiceCompose: true };
+    case "queueInvoiceSend":
+    case "revisePendingInvoiceSendApproval":
+      return { revisableInvoiceSend: true };
+    case "queueCollectPayment":
+    case "revisePendingCollectPaymentApproval":
+      return { revisableCollectPayment: true };
+    case "queueReceiptReviewSend":
+    case "revisePendingReceiptReviewApproval":
+      return { revisableReceiptReview: true };
+    case "generateJobContent":
+    case "revisePendingDraftApproval":
+      return { revisableContentDraft: true };
+    default:
+      return {};
+  }
+}
+
+function approvalContextFromMessages(messages: ToolLoopRequest["messages"]): PendingApprovalContext | null {
   for (const message of [...messages].reverse()) {
     if (message.role !== "assistant") {
       continue;
@@ -147,44 +275,223 @@ function approvalContextFromMessages(messages: ToolLoopRequest["messages"]): {
       continue;
     }
     if (/tell me what to change/i.test(content)) {
-      return {
-        approvalId,
+      return emptyPendingApprovalContext(approvalId, {
         awaitingChanges: true,
+        revisableClientCreate: /create client:/i.test(content),
+        revisableQuoteCreate: /create quote:/i.test(content),
         revisableJobCreate: /create job:/i.test(content),
         revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:/i.test(content),
+        revisableJobVisitSeries: /schedule job visits:/i.test(content),
+        revisableVisitShift: /shift job visit series:/i.test(content),
         revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:/i.test(content),
         revisableInvoiceCompose: /combine invoice:/i.test(content),
         revisableInvoiceSend: /send invoice:/i.test(content),
         revisableCollectPayment: /collect payment:/i.test(content),
-        revisableReceiptReview: /send receipt review:/i.test(content)
-      };
+        revisableReceiptReview: /send receipt review:/i.test(content),
+        revisableContentDraft: /marketing draft ready|updated marketing draft ready/i.test(content)
+      });
     }
-    if (/approve this\?\s*yes\s*\/\s*no\s*\/\s*make changes/i.test(content)) {
-      return {
-        approvalId,
+    if (/approve this\?\s*yes\s*\/\s*no(?:\s*\/\s*make changes)?/i.test(content)) {
+      return emptyPendingApprovalContext(approvalId, {
         awaitingChanges: false,
+        revisableClientCreate: /create client:/i.test(content),
+        revisableQuoteCreate: /create quote:/i.test(content),
         revisableJobCreate: /create job:/i.test(content),
         revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:/i.test(content),
+        revisableJobVisitSeries: /schedule job visits:/i.test(content),
+        revisableVisitShift: /shift job visit series:/i.test(content),
         revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:/i.test(content),
         revisableInvoiceCompose: /combine invoice:/i.test(content),
         revisableInvoiceSend: /send invoice:/i.test(content),
         revisableCollectPayment: /collect payment:/i.test(content),
-        revisableReceiptReview: /send receipt review:/i.test(content)
-      };
+        revisableReceiptReview: /send receipt review:/i.test(content),
+        revisableContentDraft: /marketing draft ready|updated marketing draft ready/i.test(content)
+      });
     }
   }
   return null;
 }
 
-function approvalPromptFromResult(result: unknown, intro: string): string | undefined {
-  const record = result && typeof result === "object" ? result as { approval?: { id?: unknown; preview?: { title?: unknown; body?: unknown } } } : {};
-  const approvalId = typeof record.approval?.id === "string" ? record.approval.id : "";
-  const title = typeof record.approval?.preview?.title === "string" ? record.approval.preview.title : "";
-  const body = typeof record.approval?.preview?.body === "string" ? record.approval.preview.body : "";
-  if (!approvalId || !title || !body) {
+function approvalRequestSummary(title: string): string {
+  const [action, subject] = title.split(":");
+  if (!action || !subject) {
+    return title.trim();
+  }
+  return `${action.trim().toLowerCase()} for ${subject.trim()}`;
+}
+
+function labeledEmailAddress(text: string): string | undefined {
+  const candidate = text.match(/\b(?:email|e-mail)(?:\s+address)?\s*(?:is|=|:)?\s+([A-Za-z0-9@._%+\- ]+)/i)?.[1];
+  if (!candidate) {
     return undefined;
   }
-  return `${intro}\n\n${title}\n${body}\n\nApprove this? yes / no / make changes.\nApproval id: ${approvalId}`;
+  const trimmed = candidate
+    .split(/[?!,]/)[0]
+    ?.replace(/\b(?:to|at|for)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const tokens = trimmed.split(" ");
+  const atIndex = tokens.findIndex((token) => token.includes("@"));
+  if (atIndex === -1) {
+    return undefined;
+  }
+  const firstStart = Math.max(0, atIndex - 2);
+  for (let start = firstStart; start <= atIndex; start += 1) {
+    const combined = tokens.slice(start, atIndex + 1).join("");
+    const matched = combined.match(/^[\w.+-]+@[\w.-]+\.\w+$/i)?.[0];
+    if (matched) {
+      return matched;
+    }
+  }
+  return tokens[atIndex]?.match(/[\w.+-]+@[\w.-]+\.\w+/i)?.[0];
+}
+
+function adjacentTokenEmailAddress(text: string): string | undefined {
+  const tokens = text
+    .replace(/[<>"'`()[\],!?;:]+/g, " ")
+    .split(/\s+/)
+    .map((token) => token.replace(/^[^\w.+-]+|[^\w.+-@]+$/g, ""))
+    .filter(Boolean);
+  let best: string | undefined;
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index] ?? "";
+    if (!token.includes("@")) {
+      continue;
+    }
+    for (let start = Math.max(0, index - 2); start <= index; start += 1) {
+      const prefix = tokens.slice(start, index);
+      if (prefix.some((part) => /^(?:to|at|for|is|my|me|email|e-mail)$/i.test(part))) {
+        continue;
+      }
+      const combined = tokens.slice(start, index + 1).join("");
+      const matched = combined.match(/^[\w.+-]+@[\w.-]+\.\w+$/i)?.[0];
+      if (matched && (!best || matched.length > best.length)) {
+        best = matched;
+      }
+    }
+    const direct = token.match(/^[\w.+-]+@[\w.-]+\.\w+$/i)?.[0];
+    if (direct && (!best || direct.length > best.length)) {
+      best = direct;
+    }
+  }
+  return best;
+}
+
+function firstEmailAddress(text: string): string | undefined {
+  return labeledEmailAddress(text)
+    ?? adjacentTokenEmailAddress(text)
+    ?? text.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
+}
+
+function firstPhoneNumber(text: string): string | undefined {
+  return text.match(/\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/)?.[0];
+}
+
+function looksLikeCreateClientAction(lower: string): boolean {
+  return /\b(?:add|create|set\s+up|make)\b.{0,40}\b(?:new\s+)?client\b/.test(lower)
+    || /\b(?:new\s+client|client\s+create)\b/.test(lower);
+}
+
+function previewFieldValue(body: string, label: string): string | undefined {
+  return body
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.toLowerCase().startsWith(`${label.toLowerCase()}:`))
+    ?.split(":")
+    .slice(1)
+    .join(":")
+    .trim();
+}
+
+function formatConfirmationPhone(phone: string | undefined): string | undefined {
+  if (!phone) {
+    return undefined;
+  }
+  const digits = phone.replace(/[^\d]/g, "");
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return phone.trim();
+}
+
+function cleanClientPreviewName(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const cleaned = trimmed.replace(/^[.\s,:;-]+|[.\s,:;-]+$/g, "").replace(/\s+/g, " ").trim();
+  return /[a-z0-9]/i.test(cleaned) ? cleaned : undefined;
+}
+
+function missingClientNamePrompt(): string {
+  return "I still need the client's full name before I can queue this. What should I save as the client name?";
+}
+
+function normalizedApprovalTitle(title: string | undefined): string | undefined {
+  const trimmed = title?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const [action, ...subjectParts] = trimmed.split(":");
+  const cleanedAction = action?.trim();
+  const cleanedSubject = cleanClientPreviewName(subjectParts.join(":"));
+  if (cleanedAction && cleanedSubject) {
+    return `${cleanedAction}: ${cleanedSubject}`;
+  }
+  if (cleanedAction && subjectParts.length > 0) {
+    return cleanedAction;
+  }
+  return cleanClientPreviewName(trimmed);
+}
+
+function clientApprovalPromptFromPreview(title: string, body: string): string {
+  const fallbackName = cleanClientPreviewName(title.split(":").slice(1).join(":"));
+  const name = cleanClientPreviewName(previewFieldValue(body, "Name")) ?? fallbackName;
+  if (!name) {
+    return missingClientNamePrompt();
+  }
+  const street = previewFieldValue(body, "Address");
+  const city = previewFieldValue(body, "City");
+  const state = previewFieldValue(body, "State");
+  const zip = previewFieldValue(body, "ZIP");
+  const addressLine = [street, city, [state, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  const phone = formatConfirmationPhone(previewFieldValue(body, "Phone"));
+  const email = previewFieldValue(body, "Email");
+  return [
+    name,
+    addressLine,
+    phone,
+    email && !/not provided/i.test(email) ? email : "Email not provided",
+    "",
+    "Do the Client Details look correct?"
+  ].filter((line, index, lines) => line || index >= lines.length - 2).join("\n");
+}
+
+function approvalPromptFromResult(
+  result: unknown,
+  actorDisplayName: string | undefined,
+  options: { allowChanges?: boolean } = {}
+): string | undefined {
+  const record = result && typeof result === "object" ? result as { approval?: { id?: unknown; preview?: { title?: unknown; body?: unknown } } } : {};
+  const title = typeof record.approval?.preview?.title === "string" ? record.approval.preview.title : "";
+  const body = typeof record.approval?.preview?.body === "string" ? record.approval.preview.body : "";
+  if (!title || !body) {
+    return undefined;
+  }
+  if (/^(?:create|revise) client:/i.test(title)) {
+    return clientApprovalPromptFromPreview(title, body);
+  }
+  const approvalLine = options.allowChanges === false
+    ? "Is this correct?\nReply yes / no."
+    : "Is this correct?\nReply yes / no / make changes.";
+  const displayName = actorDisplayName?.trim() || "Operator";
+  return `Here is your request, ${displayName}.\n\nYou requested ${approvalRequestSummary(title)} with the following details:\n${body}\n\n${approvalLine}`;
 }
 
 function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown } | null {
@@ -201,10 +508,22 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
     .reverse()
     .find((entry) => entry.role === "assistant");
   const lastAssistantMessage = messageText(lastAssistantText?.content);
-  const approvalContext = approvalContextFromMessages(request.messages);
+  const approvalContext = request.pendingApproval ?? approvalContextFromMessages(request.messages);
+  const requestorContext = request.requestorEmail || request.requestorPhones?.length || request.requestorOrigin
+    ? {
+        email: request.requestorEmail,
+        phones: request.requestorPhones,
+        origin: request.requestorOrigin
+      }
+    : undefined;
   const today = new Date();
   const from = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
   const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+  const propertyId = message.match(/\bproperty_[a-z0-9_-]+\b/i)?.[0];
+  const jobId = message.match(/\bjob_[a-z0-9_-]+\b/i)?.[0];
+  const visitId = message.match(/\bvisit_[a-z0-9_-]+\b/i)?.[0];
+  const checklistId = message.match(/\bchecklist_[a-z0-9_-]+\b/i)?.[0];
+  const clientId = message.match(/\bclient_[a-z0-9_-]+\b/i)?.[0];
   const emailAttachmentRef = message.match(/\bemail:([^:\s]+):([^:\s]+):([^:\s]+)/i);
   if (emailAttachmentRef) {
     const tool = tools.find((candidate) => candidate.name === "getEmailAttachment");
@@ -223,12 +542,28 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
     const tool = tools.find((candidate) => candidate.name === "rejectPendingApproval");
     return tool ? { tool, args: { approvalId: approvalContext.approvalId } } : null;
   }
+  if (approvalContext?.revisableClientCreate && (approvalContext.awaitingChanges || firstEmailAddress(message) || firstPhoneNumber(message) || /\b(?:name|client|address|street|road|drive|lane|court|avenue|boulevard|suite|unit|apt)\b/i.test(lower))) {
+    const tool = tools.find((candidate) => candidate.name === "revisePendingClientCreateApproval");
+    return tool ? { tool, args: { approvalId: approvalContext.approvalId, changeRequest: message } } : null;
+  }
+  if (approvalContext?.revisableQuoteCreate && (approvalContext.awaitingChanges || /\b(?:change|fix|update|rename|title|discount|deposit|signature|card on file|terms|price|amount)\b/i.test(lower))) {
+    const tool = tools.find((candidate) => candidate.name === "revisePendingQuoteCreateApproval");
+    return tool ? { tool, args: { approvalId: approvalContext.approvalId, changeRequest: message } } : null;
+  }
   if (approvalContext?.revisableJobCreate && (approvalContext.awaitingChanges || /\b(?:change|fix|update|rename|title)\b/i.test(lower))) {
     const tool = tools.find((candidate) => candidate.name === "revisePendingJobCreateApproval");
     return tool ? { tool, args: { approvalId: approvalContext.approvalId, changeRequest: message } } : null;
   }
   if (approvalContext?.revisableJobAction && (approvalContext.awaitingChanges || hasJobActionChangeDetails(message))) {
     const tool = tools.find((candidate) => candidate.name === "revisePendingJobActionApproval");
+    return tool ? { tool, args: { approvalId: approvalContext.approvalId, changeRequest: message } } : null;
+  }
+  if (approvalContext?.revisableJobVisitSeries && (approvalContext.awaitingChanges || /\b(?:back|later|forward|earlier|sooner|visit)\b/i.test(lower))) {
+    const tool = tools.find((candidate) => candidate.name === "revisePendingJobVisitSeriesApproval");
+    return tool ? { tool, args: { approvalId: approvalContext.approvalId, changeRequest: message } } : null;
+  }
+  if (approvalContext?.revisableVisitShift && (approvalContext.awaitingChanges || /\b(?:back|later|forward|earlier|sooner|remaining|just this one|only this visit)\b/i.test(lower))) {
+    const tool = tools.find((candidate) => candidate.name === "revisePendingVisitShiftApproval");
     return tool ? { tool, args: { approvalId: approvalContext.approvalId, changeRequest: message } } : null;
   }
   if (approvalContext?.revisableLedgerAction && (approvalContext.awaitingChanges || hasLedgerActionChangeDetails(message))) {
@@ -251,17 +586,107 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
     const tool = tools.find((candidate) => candidate.name === "revisePendingReceiptReviewApproval");
     return tool ? { tool, args: { approvalId: approvalContext.approvalId, changeRequest: message } } : null;
   }
-  if (/\b(?:send|draft|compose|write)\s+(?:an?\s+)?email\b/i.test(lower) && !/\b(?:review\s+request|ask\s+for\s+a\s+review|request\s+a\s+review)\b/i.test(lower)) {
+  if (approvalContext?.revisableContentDraft && (approvalContext.awaitingChanges || hasContentDraftChangeDetails(message))) {
+    const tool = tools.find((candidate) => candidate.name === "revisePendingDraftApproval");
+    return tool ? { tool, args: { approvalId: approvalContext.approvalId, changeRequest: message } } : null;
+  }
+  if (/\b(?:generate|draft|create|make|write)\b.*\b(?:marketing content|content draft|content|article|social post|social draft|post)\b/i.test(lower) && jobId) {
+    const tool = tools.find((candidate) => candidate.name === "generateJobContent");
+    return tool ? { tool, args: { jobId } } : null;
+  }
+  if (/\b(?:show|list|open|check)\b.*\b(?:pending drafts|draft queue|content queue|marketing queue|pending content)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "listPendingDrafts");
+    return tool ? { tool, args: {} } : null;
+  }
+  const marketingDraftId = message.match(/\bcontent_(?:article|social_post|gbp_post)_[a-z0-9-]+\b/i)?.[0];
+  if (/\b(?:approve|ready)\b.*\bdraft\b/i.test(lower) && marketingDraftId) {
+    const tool = tools.find((candidate) => candidate.name === "approveDraft");
+    return tool ? { tool, args: { draftId: marketingDraftId } } : null;
+  }
+  if (/\b(?:discard|reject|delete)\b.*\bdraft\b/i.test(lower) && marketingDraftId) {
+    const tool = tools.find((candidate) => candidate.name === "discardDraft");
+    return tool ? { tool, args: { draftId: marketingDraftId } } : null;
+  }
+  if (/\b(?:show|list|open|export|check)\b.*\b(?:consented clients|marketing audience|audience pool|campaign audience)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "listConsentedClients");
+    const serviceType = message.match(/\bservice\s*(?:type)?\s*(?:is|=|:)?\s*([a-z][a-z0-9 /&-]+)/i)?.[1]?.trim();
+    const locality = message.match(/\blocality\s*(?:is|=|:)?\s*([a-z][a-z0-9 ,.-]+)/i)?.[1]?.trim();
+    const closedSince = message.match(/\b(?:since|closed since)\s+(\d{4}-\d{2}-\d{2})\b/i)?.[1];
+    return tool ? {
+      tool,
+      args: {
+        ...(serviceType ? { serviceType } : {}),
+        ...(locality ? { locality } : {}),
+        ...(closedSince ? { closedSince } : {})
+      }
+    } : null;
+  }
+  if ((/\b(?:send|draft|compose|write)\s+(?:me\s+)?(?:an?\s+)?email\b/i.test(lower) || /\b(?:email|mail)\s+me\b/i.test(lower)) && !/\b(?:review\s+request|ask\s+for\s+a\s+review|request\s+a\s+review)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "draftEmail");
-    const recipient = message.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
+    const recipient = message.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0]
+      ?? requestorTargetForChannel(requestorContext, message, "email");
     const bodyText = message.match(/\b(?:saying|that says|to say|with message|message)\b\s*:?\s*([\s\S]+)$/i)?.[1]?.trim() || "Please see the note from Aquatrace.";
     const subject = bodyText.split(/[.!?]\s/)[0]?.trim().replace(/[.!?]+$/g, "").slice(0, 72) || "Aquatrace follow-up";
     return tool && recipient ? { tool, args: { to: [recipient], subject, bodyText } } : null;
   }
+  if (/\b(?:send|share|email|text|sms)\b.*\b(?:portal|hub)\b.*\blink\b/i.test(lower) || /\bportal\s+link\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "sendPortalLink");
+    const clientQuery = entityQueryFromText(message)
+      || message.match(/\b(?:send|share|email|text|sms)\s+([a-z][a-z' -]+?)\s+(?:an?\s+|the\s+)?(?:portal|hub)\s+link\b/i)?.[1]?.trim()
+      || message.match(/\bportal\s+link\s+(?:for|to)\s+([a-z][a-z' -]+?)(?=\s+(?:by|via|through|at|using)\b|[?.!]|$)/i)?.[1]?.trim();
+    const preferredChannel = /\b(?:text|sms)\b/i.test(lower) ? "sms" : /\b(?:email|mail)\b/i.test(lower) ? "email" : undefined;
+    const target = message.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0]
+      ?? message.match(/\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/)?.[0]?.replace(/[^\d+]/g, "")
+      ?? requestorTargetForChannel(requestorContext, message, preferredChannel);
+    const propertyId = message.match(/\bproperty_[a-z0-9-]+\b/i)?.[0];
+    return tool && clientQuery
+      ? {
+          tool,
+          args: {
+            clientQuery,
+            ...(target ? { target } : {}),
+            ...(preferredChannel ? { preferredChannel } : {}),
+            ...(propertyId ? { propertyId } : {})
+          }
+        }
+      : null;
+  }
+  if (/\b(?:portal|hub)\s+activity\b/i.test(lower) || /\bwhat\s+did\b.*\bportal\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "getClientPortalActivity");
+    const clientQuery = entityQueryFromText(message)
+      || message.match(/\b(?:show|list|read|open)\s+([a-z][a-z' -]+?)\s+(?:portal|hub)\s+activity\b/i)?.[1]?.trim()
+      || message.match(/\bwhat\s+did\s+([a-z][a-z' -]+?)\s+do\s+in\s+the\s+portal\b/i)?.[1]?.trim();
+    const propertyId = message.match(/\bproperty_[a-z0-9-]+\b/i)?.[0];
+    return tool && clientQuery ? { tool, args: { clientQuery, ...(propertyId ? { propertyId } : {}) } } : null;
+  }
+  if (/\bsend\b.*\bstatement\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "sendStatement");
+    const clientQuery = entityQueryFromText(message)
+      || message.match(/\bsend\s+([a-z][a-z' -]+?)\s+(?:an?\s+)?statement\b/i)?.[1]?.trim()
+      || message.match(/\bstatement\s+(?:for|to)\s+([a-z][a-z' -]+?)(?=\s+(?:to|at|from)\b|[?.!]|$)/i)?.[1]?.trim();
+    const target = message.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0]
+      ?? message.match(/\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/)?.[0]?.replace(/[^\d+]/g, "")
+      ?? requestorTargetForChannel(requestorContext, message, /\b(?:text|sms)\b/i.test(lower) ? "sms" : "email");
+    return tool && clientQuery ? { tool, args: { clientQuery, ...(target ? { target } : {}) } } : null;
+  }
+  if (/\b(?:generate|preview|show|download|build)\b.*\bstatement\b/i.test(lower) || /\bclient\s+statement\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "generateStatement");
+    const clientQuery = entityQueryFromText(message)
+      || message.match(/\b(?:generate|preview|show|download|build)\s+(?:an?\s+)?statement\s+(?:for\s+)?([a-z][a-z' -]+?)(?=\s+(?:from|to)\b|[?.!]|$)/i)?.[1]?.trim()
+      || message.match(/\bclient\s+statement\s+(?:for\s+)?([a-z][a-z' -]+?)(?=\s+(?:from|to)\b|[?.!]|$)/i)?.[1]?.trim();
+    const from = message.match(/\bfrom\s+(\d{4}-\d{2}-\d{2})\b/i)?.[1];
+    const to = message.match(/\bto\s+(\d{4}-\d{2}-\d{2})\b/i)?.[1];
+    return tool && clientQuery ? { tool, args: { clientQuery, ...(from ? { from } : {}), ...(to ? { to } : {}) } } : null;
+  }
+  if (looksLikeCreateClientAction(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "createClient");
+    return tool ? { tool, args: {} } : null;
+  }
   if (/\b(?:how\s+far|distance|miles?|drive\s+time|travel\s+time)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "getDistance");
     const destination = distanceDestinationFromText(message);
-    return tool && destination ? { tool, args: { destination } } : null;
+    const origin = requestorOriginForMessage(requestorContext, message);
+    return tool && destination ? { tool, args: { destination, ...(origin ? { origin } : {}) } } : null;
   }
   if (
     /\b(?:create|add|new)\b.*\brequest\b/i.test(lower)
@@ -269,6 +694,16 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
   ) {
     const tool = tools.find((candidate) => candidate.name === "createRequest");
     return tool ? { tool, args: { rawText: allUserText || message } } : null;
+  }
+  if (/\b(?:push|move|shift|reschedule)\b/i.test(lower) && /\bremaining\s+visits?\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "shiftJobVisitSeries");
+    const parsed = buildVisitShiftArgsFromText(message);
+    return tool && parsed ? { tool, args: parsed } : null;
+  }
+  if (/\b(?:schedule|book|add)\b/i.test(lower) && /\bvisits?\b/i.test(lower)) {
+    const parsed = buildVisitSeriesArgsFromText(message);
+    const tool = tools.find((candidate) => candidate.name === "scheduleJobVisits");
+    return tool && parsed ? { tool, args: parsed } : null;
   }
   if (/\b(?:create|add|draft|new)\b.*\bquote\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "createQuote");
@@ -301,6 +736,60 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
         title: explicitTitle || (clientQuery ? `${clientQuery} job` : "Job draft")
       }
     } : null;
+  }
+  if (/\b(?:mark|set)\b.*\breview(?:\s+(?:sequence|follow[\s-]?up))?\b.*\b(?:complete|completed|reviewed)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "markReviewed");
+    const reviewSequenceId = message.match(/\breview_sequence_[a-z0-9-]+\b/i)?.[0];
+    const jobId = message.match(/\bjob_[a-z0-9-]+\b/i)?.[0];
+    const clientQuery = entityQueryFromText(message);
+    return tool
+      ? {
+          tool,
+          args: {
+            ...(reviewSequenceId ? { reviewSequenceId } : {}),
+            ...(jobId ? { jobId } : {}),
+            ...(!reviewSequenceId && !jobId && clientQuery ? { clientQuery } : {})
+          }
+        }
+      : null;
+  }
+  if (/\b(?:stop|pause|cancel|end)\b.*\breview(?:\s+(?:sequence|follow[\s-]?up))\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "stopReviewSequence");
+    const reviewSequenceId = message.match(/\breview_sequence_[a-z0-9-]+\b/i)?.[0];
+    const jobId = message.match(/\bjob_[a-z0-9-]+\b/i)?.[0];
+    const clientQuery = entityQueryFromText(message);
+    return tool
+      ? {
+          tool,
+          args: {
+            ...(reviewSequenceId ? { reviewSequenceId } : {}),
+            ...(jobId ? { jobId } : {}),
+            ...(!reviewSequenceId && !jobId && clientQuery ? { clientQuery } : {})
+          }
+        }
+      : null;
+  }
+  if (/\b(?:start|restart|resume|kick\s+off)\b.*\breview(?:\s+(?:sequence|follow[\s-]?up))\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "startReviewSequence");
+    const jobId = message.match(/\bjob_[a-z0-9-]+\b/i)?.[0];
+    const clientQuery = entityQueryFromText(message);
+    return tool ? { tool, args: jobId ? { jobId } : clientQuery ? { clientQuery } : {} } : null;
+  }
+  if (/\breview(?:\s+(?:sequence|follow[\s-]?up))\b.*\b(?:status|state)\b/i.test(lower) || /\bwhat\s+is\s+the\s+review\s+sequence\s+status\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "getReviewSequenceStatus");
+    const reviewSequenceId = message.match(/\breview_sequence_[a-z0-9-]+\b/i)?.[0];
+    const jobId = message.match(/\bjob_[a-z0-9-]+\b/i)?.[0];
+    const clientQuery = entityQueryFromText(message);
+    return tool
+      ? {
+          tool,
+          args: {
+            ...(reviewSequenceId ? { reviewSequenceId } : {}),
+            ...(jobId ? { jobId } : {}),
+            ...(!reviewSequenceId && !jobId && clientQuery ? { clientQuery } : {})
+          }
+        }
+      : null;
   }
   if (/\b(?:show|list|find|open)\b.*\bjobs?\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "listJobs");
@@ -377,13 +866,14 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
     const subject = message.match(/\bsubject\s*(?:is|to|=|:)\s*([^.!?\n]+)/i)?.[1]?.trim();
     const note = message.match(/\bnote\s*(?:is|to|=|:)\s*([\s\S]+)$/i)?.[1]?.trim();
     const mode = /\bmark\s+sent\b/i.test(lower) ? "mark_sent" : /\b(?:text|sms)\b/i.test(lower) ? "sms" : "email";
+    const requestorTarget = requestorTargetForChannel(requestorContext, message, mode === "sms" ? "sms" : "email");
     return tool ? {
       tool,
       args: {
         ...(invoiceId ? { invoiceId } : { query: entityQueryFromText(message) || message }),
         mode,
-        ...(mode === "email" && email ? { target: email } : {}),
-        ...(mode === "sms" && phone ? { target: phone } : {}),
+        ...(mode === "email" && (email || requestorTarget) ? { target: email ?? requestorTarget } : {}),
+        ...(mode === "sms" && (phone || requestorTarget) ? { target: (phone ?? requestorTarget)?.replace(/[^\d+]/g, "") } : {}),
         ...(subject ? { subject } : {}),
         ...(note ? { note } : {}),
         ...(/\b(?:no|without|skip)\b.*\bpdf\b/i.test(lower) ? { includePdf: false } : /\binclude\b.*\bpdf\b/i.test(lower) ? { includePdf: true } : {}),
@@ -433,8 +923,10 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
     const tool = tools.find((candidate) => candidate.name === "queueReceiptReviewSend");
     const receiptReviewId = message.match(/\breceipt_[a-z0-9_-]+\b/i)?.[0];
     const invoiceId = message.match(/\b(?:invoice_[a-z0-9_-]+|INV-\d{2,}|[A-Z]+-\d{2,})\b/i)?.[0];
-    const email = message.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0];
-    const phone = message.match(/\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/)?.[0];
+    const email = message.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0]
+      ?? requestorTargetForChannel(requestorContext, message, "email");
+    const phone = message.match(/\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/)?.[0]
+      ?? requestorTargetForChannel(requestorContext, message, "sms");
     const subject = message.match(/\bsubject\s*(?:is|to|=|:)\s*([^.!?\n]+)/i)?.[1]?.trim();
     const bodyText = message.match(/\bbody\s*(?:is|to|=|:)\s*([\s\S]+)$/i)?.[1]?.trim();
     const sendChannels = /\bemail\b/i.test(lower) && /\b(?:text|sms)\b/i.test(lower)
@@ -507,6 +999,150 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
   if (/\b(?:show|list|find|open)\b.*\brequests?\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "listRequests");
     return tool ? { tool, args: { q: entityQueryFromText(message) || "" } } : null;
+  }
+  if (/\bbefore\s*(?:\/|-|and)?\s*after\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "beforeAfterPairs");
+    return tool ? { tool, args: { ...(jobId ? { jobId } : {}) } } : null;
+  }
+  if (/\b(?:generate|build|create|make)\b.*\b(?:visit\s+)?report\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "generateVisitReport");
+    const title = message.match(/\btitle\s*(?:is|to|=|:)\s*([^.!?\n]+)/i)?.[1]?.trim();
+    return tool && jobId
+      ? {
+          tool,
+          args: {
+            jobId,
+            ...(propertyId ? { propertyId } : {}),
+            ...(visitId ? { visitId } : {}),
+            ...(checklistId ? { checklistId } : {}),
+            ...(title ? { title } : {})
+          }
+        }
+      : null;
+  }
+  if ((/\b(?:show|open|get|fetch|latest)\b.*\breport\b/i.test(lower) || /\bvisit\s+report\b/i.test(lower)) && !/\b(?:generate|build|create|make)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "getVisitReport");
+    return tool && (jobId || visitId)
+      ? {
+          tool,
+          args: {
+            ...(jobId ? { jobId } : {}),
+            ...(visitId ? { visitId } : {})
+          }
+        }
+      : null;
+  }
+  if (
+    (/\b(?:history|last\s+time|previous|carry(?:\s|-)?forward)\b/i.test(lower) && /\b(?:property|gallon|gallons|field|pool)\b/i.test(lower))
+    || (/\bgallon/i.test(lower) && Boolean(tools.find((candidate) => candidate.name === "getPropertyHistory")))
+  ) {
+    const tool = tools.find((candidate) => candidate.name === "getPropertyHistory");
+    const fieldId = /\bgallon/i.test(lower)
+      ? "item_17"
+      : /\bgate\s+code|\bsite\s+note|\bconvention/i.test(lower)
+        ? "item_7"
+        : undefined;
+    return tool && propertyId
+      ? {
+          tool,
+          args: {
+            propertyId,
+            ...(fieldId ? { fieldId } : {})
+          }
+        }
+      : null;
+  }
+  if (/\b(?:recent|latest|last)\b.*\b(?:photos?|pictures?|images?|media)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "listRecentPhotos");
+    return tool
+      ? {
+          tool,
+          args: {
+            ...(clientId ? { clientId } : {}),
+            ...(propertyId ? { propertyId } : {}),
+            ...(jobId ? { jobId } : {}),
+            ...(visitId ? { visitId } : {}),
+            limit: 12
+          }
+        }
+      : null;
+  }
+  if (/\b(?:unassigned|decide later|capture inbox)\b/i.test(lower) && /\b(?:photos?|pictures?|images?|media|batches?)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "listUnassignedPhotoBatches");
+    return tool ? { tool, args: { limit: 12 } } : null;
+  }
+  if (/\b(?:assign|attach|route|move)\b.*\b(?:capture\s+batch|photo\s+batch|batch)\b/i.test(lower) && /\bclient\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "assignPhotoBatch");
+    const batchId = message.match(/\bcapture_batch_[a-z0-9_-]+\b/i)?.[0];
+    const clientName = message.match(/\bto\s+(?:existing\s+)?client\s+([a-z][\w .'-]+)$/i)?.[1]?.trim()
+      ?? message.match(/\bto\s+([a-z][\w .'-]+)$/i)?.[1]?.trim();
+    return tool && batchId
+      ? {
+          tool,
+          args: {
+            batchId,
+            ...(clientName ? { clientName } : {})
+          }
+        }
+      : null;
+  }
+  if (/\b(?:documents?|docs?|folders?|files?|permits?|blueprints?|certificates?|receipts?|statements?|pdfs?)\b/i.test(lower)) {
+    if (/\b(?:create|add|new)\b.*\bfolder\b/i.test(lower)) {
+      const tool = tools.find((candidate) => candidate.name === "createFolder");
+      const label = message.match(/\bfolder\s+(?:called|named)?\s*["â€œ]?([^"â€\n]+?)["â€]?(?=\s+(?:for|to|on)\b|[?.!]|$)/i)?.[1]?.trim();
+      const clientQuery = entityQueryFromText(message);
+      return tool && label ? { tool, args: { label, ...(clientQuery ? { clientQuery } : {}) } } : null;
+    }
+    if (/\b(?:list|show|open|read)\b.*\bfolders?\b/i.test(lower)) {
+      const tool = tools.find((candidate) => candidate.name === "listClientFolders");
+      const clientQuery = entityQueryFromText(message);
+      return tool ? { tool, args: clientQuery ? { clientQuery } : {} } : null;
+    }
+    if (/\b(?:upload|attach|add)\b.*\b(?:document|doc|file|permit|blueprint|certificate|receipt|statement|pdf|txt|docx?|xlsx?|csv)\b/i.test(lower)) {
+      const tool = tools.find((candidate) => candidate.name === "uploadDocumentToFolder");
+      const clientQuery = entityQueryFromText(message);
+      const fileName = message.match(/\b([a-z0-9][\w.-]+\.(?:pdf|txt|docx?|xlsx?|csv|png|jpe?g|mp4))\b/i)?.[1]
+        ?? (/\bpermit\b/i.test(lower) ? "pool-permit.txt" : undefined);
+      const folderLabel = message.match(/\binto\s+(?:the\s+)?["â€œ]?([^"â€\n]+?)["â€]?\s+folder\b/i)?.[1]?.trim()
+        ?? message.match(/\bfolder\s+(?:called|named)?\s*["â€œ]?([^"â€\n]+?)["â€]?(?=\s+(?:for|to|with|and)\b|[?.!]|$)/i)?.[1]?.trim();
+      const textContent = message.match(/\b(?:text|content|contents|saying|body)\s*(?:is|=|:)?\s*["â€œ]?([\s\S]+?)["â€]?(?=$)/i)?.[1]?.trim();
+      const label = message.match(/\blabel\s*(?:is|=|:)?\s*["â€œ]?([^"â€\n]+?)["â€]?(?=\s+(?:for|to|with|and)\b|[?.!]|$)/i)?.[1]?.trim();
+      const cleanedLabel = label?.replace(/\s+(?:text|content|contents|saying|body)\b[\s\S]*$/i, "").trim() || label;
+      return tool && fileName
+        ? {
+            tool,
+            args: {
+              fileName,
+              ...(cleanedLabel ? { label: cleanedLabel } : {}),
+              ...(folderLabel ? { folderLabel } : {}),
+              ...(clientQuery ? { clientQuery } : {}),
+              ...(textContent ? { textContent } : { textContent: `Uploaded from chat: ${message}` })
+            }
+          }
+        : null;
+    }
+    if (/\b(?:find|search|look\s+up|show|open|pull)\b.*\b(?:document|doc|file|permit|blueprint|certificate|receipt|statement|pdf)\b/i.test(lower) || /\bfind\s+the\s+pool\s+permit\b/i.test(lower)) {
+      const tool = tools.find((candidate) => candidate.name === "searchDocuments");
+      const clientQuery = entityQueryFromText(message);
+      const query = message
+        .replace(/\b(?:find|search|look\s+up|show|open|pull)\b/gi, " ")
+        .replace(/\b(?:the|a|an|for|from|in|document|documents|doc|docs|file|files)\b/gi, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      return tool && query ? { tool, args: { query, ...(clientQuery ? { clientQuery } : {}) } } : null;
+    }
+  }
+  if (/\b(?:photos?|pictures?|images?|media)\b/i.test(lower)) {
+    const query = message
+      .replace(/\b(?:show|find|search|look\s+up|pull|open)\b/gi, " ")
+      .replace(/\b(?:me|the|a|an|for|from|of|at|on)\b/gi, " ")
+      .replace(/\b(?:photos?|pictures?|images?|media)\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const photoSearchTool = tools.find((candidate) => candidate.name === "photoSearch");
+    if (photoSearchTool && query) {
+      return { tool: photoSearchTool, args: { query, limit: 8 } };
+    }
   }
   if (
     (
@@ -601,6 +1237,27 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
           : "aquatrace";
     return tool ? { tool, args: { preset, plainRequest: message } } : null;
   }
+  if (/\b(?:needs? my attention|what needs attention|what needs my attention|home queues|home dashboard)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "getHomeQueues");
+    if (tool) {
+      return { tool, args: {} };
+    }
+  }
+  if (/\b(?:what happened|recent activity|activity feed|latest activity|did .+ approve|did .+ pay)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "getActivityFeed");
+    const objectType = /\brequest\b/i.test(lower)
+      ? "requests"
+      : /\bquote\b/i.test(lower)
+        ? "quotes"
+        : /\bpayment\b|\brefund\b/i.test(lower)
+          ? "payments"
+          : /\binvoice\b/i.test(lower)
+            ? "invoices"
+            : /\bjob\b|\bvisit\b/i.test(lower)
+              ? "jobs"
+              : undefined;
+    return tool ? { tool, args: { ...(objectType ? { objectType } : {}), limit: 10 } } : null;
+  }
   if (/\b(?:needs? my attention|what needs attention|triage|urgent|important)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "triageInbox");
     return tool ? { tool, args: { date: today.toISOString(), maxResults: 25 } } : null;
@@ -611,7 +1268,10 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
   }
   if (lower.includes("schedule") || lower.includes("today")) {
     const tool = tools.find((candidate) => candidate.name === "getSchedule");
-    return tool ? { tool, args: { from, to } } : null;
+    const day = lower.includes("today") ? today.toISOString().slice(0, 10) : calendarDayFromText(message);
+    const teamMemberQuery = message.match(/\bwhat(?:'| i)?s\s+([a-z][a-z' -]+?)'s\s+day\b/i)?.[1]?.trim()
+      ?? message.match(/\bfor\s+([a-z][a-z' -]+?)\s+(?:today|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{4}-\d{2}-\d{2})\b/i)?.[1]?.trim();
+    return tool ? { tool, args: day ? { day, ...(teamMemberQuery ? { teamMemberQuery } : {}) } : { from, to } } : null;
   }
   if (lower.includes("photo") || lower.includes("picture") || lower.includes("image")) {
     const tool = tools.find((candidate) => candidate.name === "getPhotos");
@@ -651,7 +1311,159 @@ function entityQueryFromText(text: string): string {
     .trim();
 }
 
-function summarizeResult(toolName: string, result: unknown): string {
+function countFromText(text: string): number | undefined {
+  const explicit = text.match(/\b(\d+)\s+visits?\b/i)?.[1];
+  if (explicit) {
+    return Number(explicit);
+  }
+  const words: Record<string, number> = {
+    one: 1,
+    two: 2,
+    three: 3,
+    four: 4,
+    five: 5,
+    six: 6,
+    seven: 7,
+    eight: 8,
+    nine: 9,
+    ten: 10
+  };
+  const word = text.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten)\s+visits?\b/i)?.[1]?.toLowerCase();
+  return word ? words[word] : undefined;
+}
+
+function nextWeekdayDate(weekdayName: string): string | undefined {
+  const weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const target = weekdays.indexOf(weekdayName.toLowerCase());
+  if (target < 0) {
+    return undefined;
+  }
+  const current = new Date("2026-07-16T12:00:00.000-04:00");
+  const result = new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth(), current.getUTCDate()));
+  const today = current.getUTCDay();
+  let delta = target - today;
+  if (delta <= 0) {
+    delta += 7;
+  }
+  result.setUTCDate(result.getUTCDate() + delta);
+  return result.toISOString().slice(0, 10);
+}
+
+function scheduleStartDateFromText(text: string): string | undefined {
+  const explicit = text.match(/\b(?:starting|on)\s+(\d{4}-\d{2}-\d{2})\b/i)?.[1] ?? text.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1];
+  if (explicit) {
+    return explicit;
+  }
+  const weekday = text.match(/\bstarting\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i)?.[1];
+  return weekday ? nextWeekdayDate(weekday) : undefined;
+}
+
+function calendarDayFromText(text: string): string | undefined {
+  const explicit = text.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1];
+  if (explicit) {
+    return explicit;
+  }
+  const weekday = text.match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i)?.[1];
+  return weekday ? nextWeekdayDate(weekday) : undefined;
+}
+
+function scheduleStartTimeFromText(text: string): { hour: number; minute: number } {
+  const match = text.match(/\bat\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i);
+  if (!match) {
+    return { hour: 9, minute: 0 };
+  }
+  let hour = Number(match[1]);
+  const minute = Number(match[2] ?? "0");
+  const meridiem = (match[3] ?? "").toLowerCase();
+  if (meridiem === "pm" && hour < 12) {
+    hour += 12;
+  }
+  if (meridiem === "am" && hour === 12) {
+    hour = 0;
+  }
+  return { hour, minute };
+}
+
+function durationHoursFromText(text: string): number {
+  const hours = Number(text.match(/\bfor\s+(\d+(?:\.\d+)?)\s+hours?\b/i)?.[1] ?? "2");
+  return Number.isFinite(hours) && hours > 0 ? hours : 2;
+}
+
+function intervalDaysFromText(text: string): number {
+  const explicit = Number(text.match(/\bevery\s+(\d+)\s+days?\b/i)?.[1] ?? "");
+  if (Number.isFinite(explicit) && explicit > 0) {
+    return explicit;
+  }
+  if (/\b(?:weekly|one per week|every week)\b/i.test(text)) {
+    return 7;
+  }
+  return 1;
+}
+
+function isoWithLocalParts(date: string, hour: number, minute: number): string {
+  return new Date(`${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`).toISOString();
+}
+
+function buildVisitSeriesArgsFromText(message: string): { query: string; visits: Array<{ start: string; end: string; assignedTeamQuery?: string }> } | null {
+  if (!/\b(?:schedule|book|add)\b/i.test(message) || !/\bvisit\b/i.test(message)) {
+    return null;
+  }
+  const count = countFromText(message) ?? 1;
+  const startDate = scheduleStartDateFromText(message);
+  if (!startDate) {
+    return null;
+  }
+  const { hour, minute } = scheduleStartTimeFromText(message);
+  const durationHours = durationHoursFromText(message);
+  const intervalDays = intervalDaysFromText(message);
+  const assignedTeamQuery = message.match(/\b(?:with|assign(?:ed)? to)\s+([a-z][a-z' -]+?)(?=\s+(?:starting|on|at|for|every)\b|[?.!]|$)/i)?.[1]?.trim();
+  const query = entityQueryFromText(message) || message;
+  const visits = Array.from({ length: count }, (_, index) => {
+    const currentDate = new Date(`${startDate}T00:00:00.000Z`);
+    currentDate.setUTCDate(currentDate.getUTCDate() + (intervalDays * index));
+    const visitDate = currentDate.toISOString().slice(0, 10);
+    const start = isoWithLocalParts(visitDate, hour, minute);
+    const end = new Date(new Date(start).getTime() + (durationHours * 60 * 60 * 1000)).toISOString();
+    return {
+      start,
+      end,
+      ...(assignedTeamQuery ? { assignedTeamQuery } : {})
+    };
+  });
+  return { query, visits };
+}
+
+function buildVisitShiftArgsFromText(message: string): { query: string; shiftDays?: number; shiftHours?: number; shiftRemaining: boolean } | null {
+  if (!/\b(?:push|move|shift|reschedule)\b/i.test(message) || !/\bvisit\b/i.test(message)) {
+    return null;
+  }
+  const query = entityQueryFromText(message) || message;
+  const backDays = Number(message.match(/\b(?:back|later|forward)\s+(\d+)\s+days?\b/i)?.[1] ?? "");
+  const earlierDays = Number(message.match(/\b(?:earlier|sooner)\s+(\d+)\s+days?\b/i)?.[1] ?? "");
+  const backHours = Number(message.match(/\b(?:back|later|forward)\s+(\d+)\s+hours?\b/i)?.[1] ?? "");
+  const earlierHours = Number(message.match(/\b(?:earlier|sooner)\s+(\d+)\s+hours?\b/i)?.[1] ?? "");
+  const shiftDays = Number.isFinite(backDays) && backDays > 0
+    ? backDays
+    : Number.isFinite(earlierDays) && earlierDays > 0
+      ? -earlierDays
+      : undefined;
+  const shiftHours = Number.isFinite(backHours) && backHours > 0
+    ? backHours
+    : Number.isFinite(earlierHours) && earlierHours > 0
+      ? -earlierHours
+      : undefined;
+  if (shiftDays === undefined && shiftHours === undefined) {
+    return null;
+  }
+  return {
+    query,
+    ...(shiftDays !== undefined ? { shiftDays } : {}),
+    ...(shiftHours !== undefined ? { shiftHours } : {}),
+    shiftRemaining: !/\b(?:just this one|only this visit|do not shift remaining|don't shift remaining)\b/i.test(message)
+  };
+}
+
+function summarizeResult(toolName: string, result: unknown, actorDisplayName?: string): string {
   if (toolName === "createRequest" && result && typeof result === "object") {
     const record = result as { request?: { clientName?: unknown; id?: unknown; subject?: unknown }; needsClarification?: unknown };
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
@@ -659,20 +1471,70 @@ function summarizeResult(toolName: string, result: unknown): string {
     }
     return `I created the request${record.request?.clientName ? ` for ${String(record.request.clientName)}` : ""}${record.request?.id ? ` as ${String(record.request.id)}` : ""}.`;
   }
+  if (toolName === "createClient" && result && typeof result === "object") {
+    const record = result as { needsClarification?: unknown };
+    if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
+      return record.needsClarification;
+    }
+    return approvalPromptFromResult(result, actorDisplayName)
+      ?? "Client draft ready for approval.";
+  }
   if (toolName === "createQuote" && result && typeof result === "object") {
     const record = result as { approval?: { id?: unknown; preview?: { title?: unknown } }; needsClarification?: unknown };
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
       return record.needsClarification;
     }
-    return `Quote draft ready for approval${record.approval?.id ? ` as ${String(record.approval.id)}` : ""}.`;
+    return approvalPromptFromResult(result, actorDisplayName)
+      ?? "Quote draft ready for approval.";
   }
   if (toolName === "createJob" && result && typeof result === "object") {
     const record = result as { needsClarification?: unknown };
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
       return record.needsClarification;
     }
-    return approvalPromptFromResult(result, "Job draft ready. I read it back below before anything gets created.")
+    return approvalPromptFromResult(result, actorDisplayName)
       ?? "Job draft ready for approval.";
+  }
+  if (toolName === "generateJobContent" && result && typeof result === "object") {
+    const record = result as { draftCount?: unknown; drafts?: unknown[] };
+    const count = typeof record.draftCount === "number"
+      ? record.draftCount
+      : Array.isArray(record.drafts)
+        ? record.drafts.length
+        : 0;
+    return `I drafted ${count} marketing item${count === 1 ? "" : "s"} for owner approval. Nothing is public yet.`;
+  }
+  if (toolName === "listPendingDrafts" && result && typeof result === "object") {
+    const drafts = Array.isArray((result as { drafts?: unknown[] }).drafts) ? (result as { drafts: unknown[] }).drafts : [];
+    return `I found ${drafts.length} NexReach draft${drafts.length === 1 ? "" : "s"} waiting for approval.`;
+  }
+  if (toolName === "approveDraft" && result && typeof result === "object") {
+    return approvalPromptFromResult(result, actorDisplayName)
+      ?? "Marketing draft ready for approval.";
+  }
+  if (toolName === "discardDraft" && result && typeof result === "object") {
+    const draft = (result as { draft?: { title?: unknown } }).draft;
+    return `I discarded ${String(draft?.title ?? "that marketing draft")}. Nothing will be used from it.`;
+  }
+  if (toolName === "listConsentedClients" && result && typeof result === "object") {
+    const audience = Array.isArray((result as { audience?: unknown[] }).audience) ? (result as { audience: unknown[] }).audience : [];
+    return `I found ${audience.length} consented client${audience.length === 1 ? "" : "s"} in the NexReach audience pool.`;
+  }
+  if ((toolName === "scheduleJobVisits" || toolName === "scheduleUnscheduledJob") && result && typeof result === "object") {
+    const record = result as { needsClarification?: unknown };
+    if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
+      return record.needsClarification;
+    }
+    return approvalPromptFromResult(result, actorDisplayName)
+      ?? "Visit schedule ready for approval.";
+  }
+  if (toolName === "shiftJobVisitSeries" && result && typeof result === "object") {
+    const record = result as { needsClarification?: unknown };
+    if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
+      return record.needsClarification;
+    }
+    return approvalPromptFromResult(result, actorDisplayName)
+      ?? "Visit move ready for approval.";
   }
   if (toolName === "listQuotes" && result && typeof result === "object") {
     const quotes = Array.isArray((result as { quotes?: unknown[] }).quotes) ? (result as { quotes: unknown[] }).quotes : [];
@@ -699,7 +1561,7 @@ function summarizeResult(toolName: string, result: unknown): string {
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
       return record.needsClarification;
     }
-    return approvalPromptFromResult(result, "Job action ready. I read the action back below before anything executes.")
+    return approvalPromptFromResult(result, actorDisplayName)
       ?? "Job action ready for approval.";
   }
   if (toolName === "queueLedgerAction" && result && typeof result === "object") {
@@ -707,13 +1569,18 @@ function summarizeResult(toolName: string, result: unknown): string {
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
       return record.needsClarification;
     }
-    return approvalPromptFromResult(result, "Billing action ready. I read the action back below before anything executes.")
+    return approvalPromptFromResult(result, actorDisplayName)
       ?? "Billing action ready for approval.";
   }
   if (toolName === "approvePendingApproval" && result && typeof result === "object") {
     const execution = (result as {
       execution?: {
         job?: { title?: unknown } | undefined;
+        visit?: { id?: unknown } | undefined;
+        visits?: Array<{ id?: unknown }> | undefined;
+        shiftedVisits?: Array<{ id?: unknown }> | undefined;
+        folder?: { label?: unknown } | undefined;
+        document?: { label?: unknown } | undefined;
         invoice?: { number?: unknown; id?: unknown; status?: unknown; ledger?: { balanceDue?: unknown } } | undefined;
         payment?: { id?: unknown; status?: unknown; amount?: unknown } | undefined;
         refund?: { id?: unknown } | undefined;
@@ -723,6 +1590,22 @@ function summarizeResult(toolName: string, result: unknown): string {
     }).execution;
     if (execution?.job && typeof execution.job.title === "string") {
       return `Approved and executed ${execution.job.title}.`;
+    }
+    if (execution?.folder && typeof execution.folder.label === "string") {
+      return `Approved and created the ${String(execution.folder.label)} folder.`;
+    }
+    if (execution?.document && typeof execution.document.label === "string") {
+      return `Approved and uploaded ${String(execution.document.label)} into NexDocs.`;
+    }
+    if (execution && typeof execution === "object" && "draft" in execution) {
+      const draft = (execution as { draft?: { title?: unknown; status?: unknown } }).draft;
+      return `Approved and marked ${String(draft?.title ?? "that marketing draft")} ${String(draft?.status ?? "ready for use")}.`;
+    }
+    if (Array.isArray(execution?.visits)) {
+      return `Approved and booked ${execution.visits.length} visit${execution.visits.length === 1 ? "" : "s"}.`;
+    }
+    if (execution?.visit && Array.isArray(execution.shiftedVisits)) {
+      return `Approved and moved the anchor visit${execution.shiftedVisits.length ? `, shifting ${execution.shiftedVisits.length} remaining visit${execution.shiftedVisits.length === 1 ? "" : "s"}` : ""}.`;
     }
     if (execution?.invoice?.id && Array.isArray(execution.jobs) && execution.jobs.length > 0) {
       return `Approved and built invoice ${String(execution.invoice.number ?? execution.invoice.id)} from ${execution.jobs.length} selected job${execution.jobs.length === 1 ? "" : "s"}.`;
@@ -751,23 +1634,42 @@ function summarizeResult(toolName: string, result: unknown): string {
     return "Approved and executed the pending item.";
   }
   if (toolName === "rejectPendingApproval" && result && typeof result === "object") {
-    const approval = (result as { approval?: { id?: unknown } }).approval;
-    return `Rejected ${approval?.id ? String(approval.id) : "the pending item"}. Nothing was created.`;
+    const approval = (result as { approval?: { preview?: { title?: unknown } } }).approval;
+    const title = normalizedApprovalTitle(typeof approval?.preview?.title === "string" ? approval.preview.title : undefined);
+    return title
+      ? `Rejected ${title}. Nothing was created.`
+      : "Rejected the pending item. Nothing was created.";
   }
-  if ((toolName === "revisePendingJobCreateApproval" || toolName === "revisePendingJobActionApproval") && result && typeof result === "object") {
+  if ((toolName === "revisePendingClientCreateApproval" || toolName === "revisePendingQuoteCreateApproval" || toolName === "revisePendingJobCreateApproval" || toolName === "revisePendingJobActionApproval") && result && typeof result === "object") {
     const record = result as { needsClarification?: unknown };
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
       return record.needsClarification;
     }
-    return approvalPromptFromResult(result, "Updated draft ready. Please check the revised record below before I run it.")
+    return approvalPromptFromResult(result, actorDisplayName)
       ?? "Updated draft ready for approval.";
+  }
+  if (toolName === "revisePendingDraftApproval" && result && typeof result === "object") {
+    const record = result as { needsClarification?: unknown };
+    if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
+      return record.needsClarification;
+    }
+    return approvalPromptFromResult(result, actorDisplayName)
+      ?? "Updated marketing draft ready for approval.";
+  }
+  if ((toolName === "revisePendingJobVisitSeriesApproval" || toolName === "revisePendingVisitShiftApproval") && result && typeof result === "object") {
+    const record = result as { needsClarification?: unknown };
+    if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
+      return record.needsClarification;
+    }
+    return approvalPromptFromResult(result, actorDisplayName)
+      ?? "Updated schedule draft ready for approval.";
   }
   if (toolName === "revisePendingLedgerActionApproval" && result && typeof result === "object") {
     const record = result as { needsClarification?: unknown };
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
       return record.needsClarification;
     }
-    return approvalPromptFromResult(result, "Updated billing action ready. Please check the revised action below before I run it.")
+    return approvalPromptFromResult(result, actorDisplayName)
       ?? "Updated billing action ready for approval.";
   }
   if (toolName === "getQuoteDetail" && result && typeof result === "object") {
@@ -792,7 +1694,7 @@ function summarizeResult(toolName: string, result: unknown): string {
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
       return record.needsClarification;
     }
-    return approvalPromptFromResult(result, "Combined invoice draft ready. I read the selected jobs and totals back below before I build it.")
+    return approvalPromptFromResult(result, actorDisplayName)
       ?? "Combined invoice draft ready for approval.";
   }
   if (toolName === "queueInvoiceSend" && result && typeof result === "object") {
@@ -800,7 +1702,7 @@ function summarizeResult(toolName: string, result: unknown): string {
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
       return record.needsClarification;
     }
-    return approvalPromptFromResult(result, "Invoice delivery is ready. I read the channel, target, and payload back below before I send it.")
+    return approvalPromptFromResult(result, actorDisplayName)
       ?? "Invoice delivery is ready for approval.";
   }
   if (toolName === "queueCollectPayment" && result && typeof result === "object") {
@@ -808,7 +1710,7 @@ function summarizeResult(toolName: string, result: unknown): string {
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
       return record.needsClarification;
     }
-    return approvalPromptFromResult(result, "Payment collection is ready. I read the amount, method, and card back below before I run it.")
+    return approvalPromptFromResult(result, actorDisplayName)
       ?? "Payment collection is ready for approval.";
   }
   if (toolName === "queueReceiptReviewSend" && result && typeof result === "object") {
@@ -816,7 +1718,7 @@ function summarizeResult(toolName: string, result: unknown): string {
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
       return record.needsClarification;
     }
-    return approvalPromptFromResult(result, "Receipt review is ready. I read the recipients, channels, and attachments back below before I send it.")
+    return approvalPromptFromResult(result, actorDisplayName)
       ?? "Receipt review is ready for approval.";
   }
   if (
@@ -832,7 +1734,7 @@ function summarizeResult(toolName: string, result: unknown): string {
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
       return record.needsClarification;
     }
-    return approvalPromptFromResult(result, "Updated draft ready. Please check the revised details below before I run it.")
+    return approvalPromptFromResult(result, actorDisplayName)
       ?? "Updated draft ready for approval.";
   }
   if (toolName === "listRequests" && result && typeof result === "object") {
@@ -886,9 +1788,56 @@ function summarizeResult(toolName: string, result: unknown): string {
     }
     return "I do not have a saved request for that search yet.";
   }
+  if (toolName === "sendPortalLink" && result && typeof result === "object") {
+    const record = result as { url?: unknown; delivery?: unknown; target?: unknown };
+    return `I sent the NexPortal link${record.target ? ` to ${String(record.target)}` : ""}${record.delivery ? ` by ${String(record.delivery)}` : ""}${record.url ? `.\n${String(record.url)}` : "."}`;
+  }
+  if (toolName === "getClientPortalActivity" && result && typeof result === "object") {
+    const activity = Array.isArray((result as { activity?: unknown[] }).activity) ? (result as { activity: Array<{ title?: unknown }> }).activity : [];
+    const latest = activity[0];
+    return `I found ${activity.length} client portal activit${activity.length === 1 ? "y" : "ies"}${latest?.title ? `. Latest: ${String(latest.title)}.` : "."}`;
+  }
+  if (toolName === "generateStatement" && result && typeof result === "object") {
+    const statement = (result as { statement?: { clientName?: unknown; lines?: unknown[]; runningBalance?: unknown } }).statement;
+    const lineCount = Array.isArray(statement?.lines) ? statement.lines.length : 0;
+    return `${String(statement?.clientName ?? "That client")} statement is ready with ${lineCount} ledger line${lineCount === 1 ? "" : "s"} and a running balance of $${String(statement?.runningBalance ?? "0")}.`;
+  }
+  if (toolName === "sendStatement" && result && typeof result === "object") {
+    const record = result as { target?: unknown; url?: unknown };
+    return `I sent the client statement${record.target ? ` to ${String(record.target)}` : ""}${record.url ? `.\n${String(record.url)}` : "."}`;
+  }
+  if (toolName === "getReviewSequenceStatus" && result && typeof result === "object") {
+    const status = result as { activeCount?: unknown; sequences?: Array<{ status?: unknown; stopReason?: unknown; nextSendAt?: unknown }> };
+    const first = Array.isArray(status.sequences) ? status.sequences[0] : undefined;
+    return `I found ${String(status.activeCount ?? 0)} active review follow-up sequence${status.activeCount === 1 ? "" : "s"}${first ? `. First sequence is ${String(first.status ?? "unknown")}${first.stopReason ? ` (${String(first.stopReason)})` : first.nextSendAt ? ` with the next send at ${String(first.nextSendAt)}` : ""}.` : "."}`;
+  }
+  if (toolName === "startReviewSequence" && result && typeof result === "object") {
+    const record = result as { started?: unknown; note?: unknown; sequence?: { nextSendAt?: unknown } | null };
+    if (record.started !== true) {
+      return typeof record.note === "string" && record.note.trim() ? record.note : "I couldn't start that review follow-up yet.";
+    }
+    return `I started the review follow-up sequence${record.sequence?.nextSendAt ? `.\nNext send: ${String(record.sequence.nextSendAt)}` : "."}`;
+  }
+  if (toolName === "stopReviewSequence" && result && typeof result === "object") {
+    const sequence = (result as { sequence?: { stopReason?: unknown; status?: unknown } }).sequence;
+    return `I stopped the review follow-up sequence${sequence?.stopReason ? ` as ${String(sequence.stopReason)}` : ""}. Current status: ${String(sequence?.status ?? "unknown")}.`;
+  }
+  if (toolName === "markReviewed" && result && typeof result === "object") {
+    const sequence = (result as { sequence?: { stopReason?: unknown; status?: unknown } }).sequence;
+    return `I marked that review follow-up complete${sequence?.stopReason ? ` as ${String(sequence.stopReason)}` : ""}. Current status: ${String(sequence?.status ?? "unknown")}.`;
+  }
   if (toolName === "getSchedule" && result && typeof result === "object") {
-    const jobs = Array.isArray((result as { jobs?: unknown[] }).jobs) ? (result as { jobs: unknown[] }).jobs : [];
-    return `I found ${jobs.length} Jobber job${jobs.length === 1 ? "" : "s"} for that schedule window.`;
+    const visits = Array.isArray((result as { visits?: unknown[] }).visits) ? (result as { visits: unknown[] }).visits : [];
+    const unscheduledJobs = Array.isArray((result as { unscheduledJobs?: unknown[] }).unscheduledJobs) ? (result as { unscheduledJobs: unknown[] }).unscheduledJobs : [];
+    return `I found ${visits.length} scheduled visit${visits.length === 1 ? "" : "s"}${unscheduledJobs.length ? ` and ${unscheduledJobs.length} unscheduled job${unscheduledJobs.length === 1 ? "" : "s"}` : ""} in that window.`;
+  }
+  if (toolName === "getHomeQueues" && result && typeof result === "object") {
+    const queues = Array.isArray((result as { queues?: unknown[] }).queues) ? (result as { queues: unknown[] }).queues : [];
+    return `Home is showing ${queues.length} live queue${queues.length === 1 ? "" : "s"} right now.`;
+  }
+  if ((toolName === "getActivityFeed" || toolName === "listRecentActivity") && result && typeof result === "object") {
+    const activity = Array.isArray((result as { activity?: unknown[] }).activity) ? (result as { activity: unknown[] }).activity : [];
+    return `I found ${activity.length} recent activity entr${activity.length === 1 ? "y" : "ies"}.`;
   }
   if (toolName === "completeVisit" && result && typeof result === "object") {
     const visit = (result as { visit?: { title?: unknown } }).visit;
@@ -897,7 +1846,72 @@ function summarizeResult(toolName: string, result: unknown): string {
   }
   if (toolName === "getPhotos" && result && typeof result === "object") {
     const media = Array.isArray((result as { media?: unknown[] }).media) ? (result as { media: unknown[] }).media : [];
-    return `I found ${media.length} CompanyCam media item${media.length === 1 ? "" : "s"}; thumbnails must be served through /api/media/:id.`;
+    return `I found ${media.length} media item${media.length === 1 ? "" : "s"}; thumbnails must be served through /api/media/:id.`;
+  }
+  if (toolName === "photoSearch" && result && typeof result === "object") {
+    const hits = Array.isArray((result as { hits?: unknown[] }).hits) ? (result as { hits: Array<{ media?: { aiCaption?: unknown; id?: unknown } }> }).hits : [];
+    const first = hits[0]?.media;
+    return `I found ${hits.length} NexCam photo hit${hits.length === 1 ? "" : "s"}${first ? `. First match: ${String(first.aiCaption ?? first.id ?? "photo")}.` : "."}`;
+  }
+  if (toolName === "searchDocuments" && result && typeof result === "object") {
+    const hits = Array.isArray((result as { hits?: unknown[] }).hits) ? (result as { hits: Array<{ entry?: { label?: unknown; propertyLabel?: unknown } }> }).hits : [];
+    const first = hits[0]?.entry;
+    return `I found ${hits.length} document hit${hits.length === 1 ? "" : "s"}${first ? `. First match: ${String(first.label ?? "document")} on ${String(first.propertyLabel ?? "the client rail")}.` : "."}`;
+  }
+  if (toolName === "listClientFolders" && result && typeof result === "object") {
+    const folders = Array.isArray((result as { folders?: unknown[] }).folders) ? (result as { folders: Array<{ label?: unknown; documentCount?: unknown }> }).folders : [];
+    const unfiledCount = typeof (result as { unfiledCount?: unknown }).unfiledCount === "number" ? (result as { unfiledCount: number }).unfiledCount : 0;
+    return `I found ${folders.length} NexDocs folder${folders.length === 1 ? "" : "s"}${folders[0]?.label ? `. First folder: ${String(folders[0].label)}.` : "."}${unfiledCount ? ` ${unfiledCount} file${unfiledCount === 1 ? "" : "s"} are still unfiled.` : ""}`;
+  }
+  if (toolName === "createFolder" && result && typeof result === "object") {
+    return approvalPromptFromResult(result, actorDisplayName, { allowChanges: false })
+      ?? "Folder draft ready for approval.";
+  }
+  if (toolName === "uploadDocumentToFolder" && result && typeof result === "object") {
+    return approvalPromptFromResult(result, actorDisplayName, { allowChanges: false })
+      ?? "Document upload draft ready for approval.";
+  }
+  if (toolName === "beforeAfterPairs" && result && typeof result === "object") {
+    const pairs = Array.isArray((result as { pairs?: unknown[] }).pairs) ? (result as { pairs: unknown[] }).pairs : [];
+    return `I found ${pairs.length} before/after pair${pairs.length === 1 ? "" : "s"}.`;
+  }
+  if (toolName === "listRecentPhotos" && result && typeof result === "object") {
+    const media = Array.isArray((result as { media?: unknown[] }).media) ? (result as { media: Array<{ aiCaption?: unknown; id?: unknown }> }).media : [];
+    const first = media[0];
+    return `I found ${media.length} recent NexCam photo${media.length === 1 ? "" : "s"}${first ? `. Latest: ${String(first.aiCaption ?? first.id ?? "photo")}.` : "."}`;
+  }
+  if (toolName === "listUnassignedPhotoBatches" && result && typeof result === "object") {
+    const batches = Array.isArray((result as { batches?: unknown[] }).batches)
+      ? (result as { batches: Array<{ id?: unknown; assignedClientId?: unknown; media?: unknown[]; latestGps?: { lat?: unknown; lng?: unknown } | null }> }).batches
+      : [];
+    const first = batches[0];
+    const gps = first?.latestGps && typeof first.latestGps.lat === "number" && typeof first.latestGps.lng === "number"
+      ? ` Latest GPS: ${first.latestGps.lat.toFixed(4)}, ${first.latestGps.lng.toFixed(4)}.`
+      : "";
+    return `I found ${batches.length} unassigned NexCam capture batch${batches.length === 1 ? "" : "es"}${first?.id ? `; first batch is ${String(first.id)}` : ""}.${gps}`;
+  }
+  if (toolName === "assignPhotoBatch" && result && typeof result === "object") {
+    const batch = (result as { batch?: { id?: unknown; assignedClientId?: unknown; assignedRequestId?: unknown; media?: unknown[] } }).batch;
+    const mediaCount = Array.isArray(batch?.media) ? batch.media.length : 0;
+    if (batch?.assignedRequestId) {
+      return `I attached capture batch ${String(batch.id ?? "unknown")} to request ${String(batch.assignedRequestId)} and its client context. ${mediaCount} photo${mediaCount === 1 ? "" : "s"} now ride that client rail.`;
+    }
+    return `I attached capture batch ${String(batch?.id ?? "unknown")} to client ${String(batch?.assignedClientId ?? "unknown")}. ${mediaCount} photo${mediaCount === 1 ? "" : "s"} now sit on that client rail.`;
+  }
+  if (toolName === "getPropertyHistory" && result && typeof result === "object") {
+    const history = Array.isArray((result as { history?: unknown[] }).history) ? (result as { history: Array<{ id?: unknown; fields?: Array<{ numberValue?: unknown; note?: unknown; multiValue?: unknown[] }> }> }).history : [];
+    const firstField = history[0]?.fields?.find((field) => field.numberValue !== undefined || field.note !== undefined || (Array.isArray(field.multiValue) && field.multiValue.length > 0));
+    const value = firstField?.numberValue ?? firstField?.note ?? (Array.isArray(firstField?.multiValue) ? firstField?.multiValue?.join(", ") : undefined);
+    return `I found ${history.length} completed checklist histor${history.length === 1 ? "y entry" : "y entries"}${value !== undefined ? `. Latest saved value: ${String(value)}.` : "."}`;
+  }
+  if (toolName === "getVisitReport" && result && typeof result === "object") {
+    const report = (result as { report?: { title?: unknown; id?: unknown } | null }).report;
+    return report ? `I found the NexCam report ${String(report.title ?? report.id ?? "report")}.` : "I don't have a NexCam visit report for that search yet.";
+  }
+  if (toolName === "generateVisitReport" && result && typeof result === "object") {
+    const report = (result as { report?: { title?: unknown; id?: unknown } }).report;
+    const pdfUrl = (result as { pdfUrl?: unknown }).pdfUrl;
+    return `I generated the NexCam visit report${report?.title ? ` ${String(report.title)}` : report?.id ? ` ${String(report.id)}` : ""}${pdfUrl ? `.\n${String(pdfUrl)}` : "."}`;
   }
   if (toolName === "triageInbox" && result && typeof result === "object") {
     const items = Array.isArray((result as { items?: unknown[] }).items) ? (result as { items: unknown[] }).items : [];
@@ -968,6 +1982,52 @@ function summarizeResult(toolName: string, result: unknown): string {
   return "I found a sourced record for that question.";
 }
 
+function approvalIdFromToolResult(result: unknown): string | undefined {
+  if (!result || typeof result !== "object") {
+    return undefined;
+  }
+  const approval = (result as { approval?: { id?: unknown } }).approval;
+  return typeof approval?.id === "string" && approval.id.trim() ? approval.id.trim() : undefined;
+}
+
+function pendingApprovalFromToolRun(
+  toolRun: NonNullable<ToolLoopResponse["toolRuns"]>[number],
+  awaitingChanges = false
+): PendingApprovalContext | null {
+  const approvalId = approvalIdFromToolResult(toolRun.result);
+  if (!approvalId) {
+    return null;
+  }
+  return emptyPendingApprovalContext(approvalId, {
+    awaitingChanges,
+    ...pendingApprovalFlagsForToolName(toolRun.name)
+  });
+}
+
+function approvalResolvedByToolRuns(toolRuns: NonNullable<ToolLoopResponse["toolRuns"]>): boolean {
+  return toolRuns.some((run) => run.name === "approvePendingApproval" || run.name === "rejectPendingApproval");
+}
+
+export function pendingApprovalFromConversationRecords(
+  records: ConversationRecord[],
+  fallback: PendingApprovalContext | null = null
+): PendingApprovalContext | null {
+  const toolRuns = records.flatMap((record) => record.toolRuns ?? []);
+  if (toolRuns.length === 0) {
+    return fallback;
+  }
+  if (approvalResolvedByToolRuns(toolRuns)) {
+    return null;
+  }
+  for (const toolRun of [...toolRuns].reverse()) {
+    const pending = pendingApprovalFromToolRun(toolRun);
+    if (pending) {
+      return pending;
+    }
+  }
+  return fallback;
+}
+
 export async function runExplicitLocalToolLoop(request: ToolLoopRequest): Promise<ToolLoopResponse> {
   const chosen = chooseTool(request);
   const usage = {
@@ -984,16 +2044,36 @@ export async function runExplicitLocalToolLoop(request: ToolLoopRequest): Promis
       usage,
       raw: { local: true },
       failureReason: "no_tool_selected",
-      toolRuns: []
+      toolRuns: [],
+      pendingApproval: request.pendingApproval ?? null
     };
   }
-  const toolResult = await chosen.tool.handler(request.tenant, chosen.args);
+  const chosenArgs = chosen.tool.name === "createClient"
+    ? await extractCreateClientInput({
+        text: messageText(request.messages.at(-1)?.content),
+        env: request.env,
+        fetchFn: request.fetchFn
+      })
+    : chosen.args;
+  const parsedArgs = chosen.tool.inputSchema.parse(chosenArgs);
+  const toolResult = await chosen.tool.handler(request.tenant, parsedArgs);
+  const toolRuns = [{ name: chosen.tool.name, result: toolResult.result, sources: toolResult.sources }];
   return {
-    answer: summarizeResult(chosen.tool.name, toolResult.result),
+    answer: summarizeResult(chosen.tool.name, toolResult.result, request.actorDisplayName),
     sources: toolResult.sources,
     usage,
     raw: { local: true },
-    toolRuns: [{ name: chosen.tool.name, result: toolResult.result, sources: toolResult.sources }]
+    toolRuns,
+    pendingApproval: pendingApprovalFromConversationRecords([{
+      id: "local",
+      tenantId: request.tenant.id,
+      conversationId: "local",
+      userText: messageText(request.messages.at(-1)?.content),
+      assistantText: "",
+      sources: toolResult.sources,
+      toolRuns,
+      createdAt: new Date().toISOString()
+    }], request.pendingApproval ?? null)
   };
 }
 
@@ -1019,6 +2099,14 @@ function emptyUsage(): UsageLogRecord["usage"] {
     cacheReadInputTokens: 0,
     totalTokens: 0
   };
+}
+
+const NEXI_USER_SAFE_FAILURE_MESSAGE = "I couldn't pull that up just now - the check failed on my end and I've logged it to fix. Give me a moment and try again.";
+
+function sanitizeNexiAnswer(answer: string): { answer: string; sanitized: boolean } {
+  return /tool names must be unique|duplicate nexi tool registration|unknown tool:|anthropic_api_key|typeerror:|referenceerror:|syntaxerror:|cannot read properties of/i.test(answer)
+    ? { answer: NEXI_USER_SAFE_FAILURE_MESSAGE, sanitized: true }
+    : { answer, sanitized: false };
 }
 
 function stableConversationId(input: NexiMessageInput): string {
@@ -1055,7 +2143,8 @@ async function answerUserFlaggedIncorrect(input: NexiMessageInput): Promise<Nexi
     conversationId: saved.conversationId ?? saved.id,
     failureId: failure.id,
     usage: emptyUsage(),
-    toolRuns: []
+    toolRuns: [],
+    pendingApproval: null
   };
 }
 
@@ -1065,6 +2154,7 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
   }
   const conversationId = stableConversationId(input);
   const recent = await input.repository.loadRecentConversations(input.tenant.id, conversationId, 8);
+  const pendingApproval = input.pendingApproval ?? pendingApprovalFromConversationRecords(recent, null);
   const history = recent.flatMap((record) => [
     { role: "user" as const, content: record.userText },
     { role: "assistant" as const, content: record.assistantText }
@@ -1076,6 +2166,11 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
       tenant: input.tenant,
       system: buildNexiSystemPrompt(input.tenant),
       messages: [...history, { role: "user", content: input.message }],
+      actorDisplayName: input.actorDisplayName,
+      requestorEmail: input.requestorContext?.email,
+      requestorPhones: input.requestorContext?.phones,
+      requestorOrigin: requestorOrigin(input.requestorContext),
+      pendingApproval,
       tools: input.tools,
       cachedToolRuns,
       routeActionName: "/api/nexi/message",
@@ -1083,32 +2178,37 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
       usageLog: input.usageLog,
       env: input.env
     });
+    const sanitized = sanitizeNexiAnswer(result.answer);
     const saved = await input.repository.saveConversation({
       tenantId: input.tenant.id,
       conversationId,
       userText: input.message,
-      assistantText: result.answer,
+      assistantText: sanitized.answer,
       sources: result.sources,
       toolRuns: persistableToolRuns(result.toolRuns)
     });
     let failureId: string | undefined;
-    if (result.failureReason) {
+    if (result.failureReason || sanitized.sanitized) {
+      const failureReason = sanitized.sanitized
+        ? "nexi_user_safe_error_wrapped"
+        : result.failureReason ?? "nexi_message_failed";
       const failure = await input.repository.saveFailure({
         tenantId: input.tenant.id,
         op: "message",
         question: input.message,
-        reason: result.failureReason,
+        reason: failureReason,
         sources: result.sources
       });
       failureId = failure.id;
     }
     return {
-      answer: result.answer,
+      answer: sanitized.answer,
       sources: result.sources,
       conversationId: saved.conversationId ?? saved.id,
       failureId,
       usage: result.usage,
-      toolRuns: result.toolRuns
+      toolRuns: result.toolRuns,
+      pendingApproval: result.pendingApproval ?? pendingApprovalFromConversationRecords([...recent, saved], pendingApproval)
     };
   } catch (error) {
     const failure = await input.repository.saveFailure({

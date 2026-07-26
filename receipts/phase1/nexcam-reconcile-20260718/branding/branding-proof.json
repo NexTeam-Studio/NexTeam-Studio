@@ -1,0 +1,67 @@
+[
+  {
+    "name": "nexi-root",
+    "url": "http://127.0.0.1:4275/",
+    "ok": true,
+    "selectors": {
+      ".nexi-identity-mark": 1,
+      "img[src=\"/assets/brand/nexi-logo.png\"]": 1
+    },
+    "screenshot": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\nightly-integration-20260709\\receipts\\phase1\\nexcam-reconcile-20260718\\branding\\nexi-root.png",
+    "status": 200,
+    "bodySnippet": "Nexi Job Desk\n\nlocal-owner@aquatrace.test\n\nEnable voice\nHands-free\nSign out\n\nNexi Job Desk is ready. Ask about schedule, job details, photos, or the Camp Mikell SiteJobBlueprint.\n\nVoice off\n📎 Attach file\nMic\nSend\n\nNEXOP",
+    "title": ""
+  },
+  {
+    "name": "nexops-shell",
+    "url": "http://127.0.0.1:4275/nexops",
+    "ok": true,
+    "selectors": {
+      ".nexops-web-brand img[src=\"/assets/brand/nexops-logo.png\"]": 1,
+      ".nexops-web-brand-copy strong": 1
+    },
+    "screenshot": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\nightly-integration-20260709\\receipts\\phase1\\nexcam-reconcile-20260718\\branding\\nexops-shell.png",
+    "status": 200,
+    "bodySnippet": "OPERATIONS WORKSPACE\nAquatrace\nCreate\nHome\nClients\nRequests\nQuotes\nSchedule\nJobs\nInvoices\nPayments\nImport & Sync\nApprovals\nNexOps\nAquatrace\nGlobal search\nHome\n1\nlocal-owner@aquatrace.test\nSign out\nHome\n\nLive queues, rece",
+    "title": ""
+  },
+  {
+    "name": "nexcam-shell",
+    "url": "http://127.0.0.1:4275/nexcam",
+    "ok": true,
+    "selectors": {
+      ".nexops-web-brand img[src=\"/assets/brand/nexcam-logo.png\"]": 1,
+      ".nexops-web-brand-copy strong": 1
+    },
+    "screenshot": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\nightly-integration-20260709\\receipts\\phase1\\nexcam-reconcile-20260718\\branding\\nexcam-shell.png",
+    "status": 200,
+    "bodySnippet": "FIELD CAPTURE\nAquatrace\nStart Checklist\nOverview\nChecklist Templates\nPhotos & Media\nReports\nNexCam\nAquatrace\n1 checklist template ready.\nlocal-owner@aquatrace.test\nSign out\n\nTemplate-driven field capture, visit media, pr",
+    "title": ""
+  },
+  {
+    "name": "nexportal-hub",
+    "url": "http://127.0.0.1:3001/nexportal/session/portal_session_4897de12-383d-43cb-b168-613f1af5388f?tenantId=aquatrace&token=b4f80011edefe8f9ca33fff3caa55d1b9ca8",
+    "ok": true,
+    "selectors": {
+      ".portal-brand-lockup img[src=\"/assets/brand/nexportal-logo.png\"]": 1,
+      ".portal-brand-lockup": 1
+    },
+    "screenshot": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\nightly-integration-20260709\\receipts\\phase1\\nexcam-reconcile-20260718\\branding\\nexportal-hub.png",
+    "status": 200,
+    "bodySnippet": "A\n\nNEXPORTAL\n\nClient hub\nBrand Proof Client\nOverview\nQuotes\n2\nInvoices\n0\nAppointments\n0\nDocuments\n3\nClient hub\n\nOne secure place to review quotes, invoices, appointments, and shared documents for your work with this tena",
+    "title": "Client hub"
+  },
+  {
+    "name": "nexportal-quote",
+    "url": "http://127.0.0.1:3001/portal/quotes/quote_59ed12e5-a966-4882-a591-62a062143117?tenantId=aquatrace&token=78f9929904b7c24d98813fdfec3ca050360b",
+    "ok": true,
+    "selectors": {
+      "img[src=\"/assets/brand/nexportal-logo.png\"]": 1,
+      "text=Approve quote": 2
+    },
+    "screenshot": "C:\\Users\\Peyto\\NexTeam-Studio-worktrees\\nightly-integration-20260709\\receipts\\phase1\\nexcam-reconcile-20260718\\branding\\nexportal-quote.png",
+    "status": 200,
+    "bodySnippet": "NexPortal quote review\n\nBrand proof quote\n\nReview the scope, totals, and approval requirements below. Once you approve, this quote locks and the office can convert it into work.\n\nQuote Q-0002\nSent\nSent 7/18/2026, 12:28:3",
+    "title": "Brand proof quote"
+  }
+]

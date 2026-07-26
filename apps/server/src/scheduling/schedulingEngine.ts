@@ -15,9 +15,13 @@ export interface ScheduledVisit extends Visit {
   title: string;
   location: ScheduleLocation;
   status: "scheduled" | "pending_approval" | "complete" | "cancelled";
+  details?: string | undefined;
+  confirmedAt?: string | undefined;
+  confirmedBy?: string | undefined;
+  confirmedVia?: "portal" | "office" | undefined;
   completedAt?: string | undefined;
   completedBy?: string | undefined;
-  source?: "native" | "jobber" | undefined;
+  source?: string | undefined;
   readOnly?: boolean | undefined;
 }
 

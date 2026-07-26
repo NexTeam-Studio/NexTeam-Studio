@@ -1,0 +1,621 @@
+{
+  "generatedAt": "2026-07-20T15:28:39.655Z",
+  "tenantId": "aquatrace",
+  "conversationId": "thread_2789ebce-9c73-479c-b6c0-4a0615de5ead",
+  "draftIdApproved": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+  "transcript": [
+    {
+      "user": "generate marketing content for job job_closed_ok",
+      "assistant": "I drafted 2 marketing items for owner approval. Nothing is public yet.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "job_closed_ok",
+          "label": "Closed job job_closed_ok"
+        },
+        {
+          "rail": "native",
+          "ref": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+          "label": "NexReach draft How pool leak detection works in Fair Play, SC"
+        },
+        {
+          "rail": "native",
+          "ref": "content_social_post_2c251b36-7046-4242-9cfd-9204d1e84a26",
+          "label": "NexReach draft Field note: Fair Play, SC leak detection"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "generateJobContent",
+          "result": {
+            "eligibility": {
+              "id": "content_eligibility_job_closed_ok",
+              "tenantId": "aquatrace",
+              "jobId": "job_closed_ok",
+              "clientId": "client_marketing_yes",
+              "status": "drafted",
+              "locality": "Fair Play, SC",
+              "serviceType": "Leak isolation at Fair Play, SC",
+              "closedAt": "2026-07-19T16:00:00.000Z",
+              "createdAt": "2026-07-20T15:28:39.642Z",
+              "updatedAt": "2026-07-20T15:28:39.650Z",
+              "draftIds": [
+                "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+                "content_social_post_2c251b36-7046-4242-9cfd-9204d1e84a26"
+              ]
+            },
+            "drafts": [
+              {
+                "id": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+                "tenantId": "aquatrace",
+                "kind": "article",
+                "title": "How pool leak detection works in Fair Play, SC",
+                "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nFor pool owners in Serving Western North Carolina and Upstate South Carolina., the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+                "mediaRefs": [
+                  "media_before_1",
+                  "media_after_1"
+                ],
+                "jobId": "job_closed_ok",
+                "clientId": "client_marketing_yes",
+                "clientName": "Rachel Payne",
+                "locality": "Fair Play, SC",
+                "serviceType": "Leak isolation at Fair Play, SC",
+                "status": "approval_pending",
+                "sources": [
+                  {
+                    "rail": "native",
+                    "ref": "job_closed_ok",
+                    "label": "Native completed job Leak detection - return line"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "media_before_1",
+                    "label": "Native content media media_before_1"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "media_after_1",
+                    "label": "Native content media media_after_1"
+                  }
+                ],
+                "createdAt": "2026-07-20T15:28:39.649Z",
+                "updatedAt": "2026-07-20T15:28:39.649Z",
+                "approvalId": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+                "watermarkLabel": "Aquatrace | NexCam",
+                "selectionNotes": [
+                  "Before/after pair prioritized when available.",
+                  "Locality kept at city/state only."
+                ]
+              },
+              {
+                "id": "content_social_post_2c251b36-7046-4242-9cfd-9204d1e84a26",
+                "tenantId": "aquatrace",
+                "kind": "social_post",
+                "title": "Field note: Fair Play, SC leak detection",
+                "body": "Field note from Aquatrace: not every leak is obvious from the surface.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nA documented inspection gives owners a cleaner next step than guessing with water bills and buckets.",
+                "mediaRefs": [
+                  "media_before_1",
+                  "media_after_1"
+                ],
+                "jobId": "job_closed_ok",
+                "clientId": "client_marketing_yes",
+                "clientName": "Rachel Payne",
+                "locality": "Fair Play, SC",
+                "serviceType": "Leak isolation at Fair Play, SC",
+                "status": "approval_pending",
+                "sources": [
+                  {
+                    "rail": "native",
+                    "ref": "job_closed_ok",
+                    "label": "Native completed job Leak detection - return line"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "media_before_1",
+                    "label": "Native content media media_before_1"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "media_after_1",
+                    "label": "Native content media media_after_1"
+                  }
+                ],
+                "createdAt": "2026-07-20T15:28:39.649Z",
+                "updatedAt": "2026-07-20T15:28:39.649Z",
+                "shortCaption": "Aquatrace wrapped another documented leak call in Fair Play, SC.",
+                "longCaption": "Field note from Aquatrace: not every leak is obvious from the surface.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nA documented inspection gives owners a cleaner next step than guessing with water bills and buckets.",
+                "approvalId": "appr_c6896c39-6c5e-408e-ab60-0768d6211339",
+                "watermarkLabel": "Aquatrace | NexCam",
+                "selectionNotes": [
+                  "Before/after pair prioritized when available.",
+                  "Locality kept at city/state only."
+                ]
+              }
+            ],
+            "cadence": "owner_on_demand",
+            "selectedMedia": [
+              {
+                "id": "media_before_1",
+                "tenantId": "aquatrace",
+                "clientId": "client_marketing_yes",
+                "jobId": "job_closed_ok",
+                "propertyId": "property_1",
+                "type": "photo",
+                "storageRef": "native://tenants/aquatrace/media/media_before_1.jpg",
+                "aiTags": [
+                  "before",
+                  "return-line",
+                  "pool"
+                ]
+              },
+              {
+                "id": "media_after_1",
+                "tenantId": "aquatrace",
+                "clientId": "client_marketing_yes",
+                "jobId": "job_closed_ok",
+                "propertyId": "property_1",
+                "type": "photo",
+                "storageRef": "native://tenants/aquatrace/media/media_after_1.jpg",
+                "aiTags": [
+                  "after",
+                  "return-line",
+                  "pool"
+                ]
+              }
+            ],
+            "publishingDeferred": true,
+            "draftCount": 2
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "job_closed_ok",
+              "label": "Closed job job_closed_ok"
+            },
+            {
+              "rail": "native",
+              "ref": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+              "label": "NexReach draft How pool leak detection works in Fair Play, SC"
+            },
+            {
+              "rail": "native",
+              "ref": "content_social_post_2c251b36-7046-4242-9cfd-9204d1e84a26",
+              "label": "NexReach draft Field note: Fair Play, SC leak detection"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "show pending drafts",
+      "assistant": "I found 2 NexReach drafts waiting for approval.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+          "label": "NexReach pending draft How pool leak detection works in Fair Play, SC"
+        },
+        {
+          "rail": "native",
+          "ref": "content_social_post_2c251b36-7046-4242-9cfd-9204d1e84a26",
+          "label": "NexReach pending draft Field note: Fair Play, SC leak detection"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "listPendingDrafts",
+          "result": {
+            "drafts": [
+              {
+                "id": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+                "tenantId": "aquatrace",
+                "kind": "article",
+                "title": "How pool leak detection works in Fair Play, SC",
+                "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nFor pool owners in Serving Western North Carolina and Upstate South Carolina., the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+                "mediaRefs": [
+                  "media_before_1",
+                  "media_after_1"
+                ],
+                "jobId": "job_closed_ok",
+                "clientId": "client_marketing_yes",
+                "clientName": "Rachel Payne",
+                "locality": "Fair Play, SC",
+                "serviceType": "Leak isolation at Fair Play, SC",
+                "status": "approval_pending",
+                "sources": [
+                  {
+                    "rail": "native",
+                    "ref": "job_closed_ok",
+                    "label": "Native completed job Leak detection - return line"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "media_before_1",
+                    "label": "Native content media media_before_1"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "media_after_1",
+                    "label": "Native content media media_after_1"
+                  }
+                ],
+                "createdAt": "2026-07-20T15:28:39.649Z",
+                "updatedAt": "2026-07-20T15:28:39.649Z",
+                "approvalId": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+                "watermarkLabel": "Aquatrace | NexCam",
+                "selectionNotes": [
+                  "Before/after pair prioritized when available.",
+                  "Locality kept at city/state only."
+                ],
+                "approval": {
+                  "id": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+                  "tenantId": "aquatrace",
+                  "kind": "article",
+                  "preview": {
+                    "title": "How pool leak detection works in Fair Play, SC",
+                    "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nFor pool owners in Serving Western North Carolina and Upstate South Carolina., the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+                    "mediaRefs": [
+                      "media_before_1",
+                      "media_after_1"
+                    ]
+                  },
+                  "execute": {
+                    "service": "content",
+                    "op": "publishSeoArticle",
+                    "args": {
+                      "draftId": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+                      "tenantId": "aquatrace",
+                      "publishingDeferredUntilCredentials": true
+                    }
+                  },
+                  "status": "pending",
+                  "createdBy": "nexi"
+                }
+              },
+              {
+                "id": "content_social_post_2c251b36-7046-4242-9cfd-9204d1e84a26",
+                "tenantId": "aquatrace",
+                "kind": "social_post",
+                "title": "Field note: Fair Play, SC leak detection",
+                "body": "Field note from Aquatrace: not every leak is obvious from the surface.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nA documented inspection gives owners a cleaner next step than guessing with water bills and buckets.",
+                "mediaRefs": [
+                  "media_before_1",
+                  "media_after_1"
+                ],
+                "jobId": "job_closed_ok",
+                "clientId": "client_marketing_yes",
+                "clientName": "Rachel Payne",
+                "locality": "Fair Play, SC",
+                "serviceType": "Leak isolation at Fair Play, SC",
+                "status": "approval_pending",
+                "sources": [
+                  {
+                    "rail": "native",
+                    "ref": "job_closed_ok",
+                    "label": "Native completed job Leak detection - return line"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "media_before_1",
+                    "label": "Native content media media_before_1"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "media_after_1",
+                    "label": "Native content media media_after_1"
+                  }
+                ],
+                "createdAt": "2026-07-20T15:28:39.649Z",
+                "updatedAt": "2026-07-20T15:28:39.649Z",
+                "shortCaption": "Aquatrace wrapped another documented leak call in Fair Play, SC.",
+                "longCaption": "Field note from Aquatrace: not every leak is obvious from the surface.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nA documented inspection gives owners a cleaner next step than guessing with water bills and buckets.",
+                "approvalId": "appr_c6896c39-6c5e-408e-ab60-0768d6211339",
+                "watermarkLabel": "Aquatrace | NexCam",
+                "selectionNotes": [
+                  "Before/after pair prioritized when available.",
+                  "Locality kept at city/state only."
+                ],
+                "approval": {
+                  "id": "appr_c6896c39-6c5e-408e-ab60-0768d6211339",
+                  "tenantId": "aquatrace",
+                  "kind": "social_post",
+                  "preview": {
+                    "title": "Field note: Fair Play, SC leak detection",
+                    "body": "Field note from Aquatrace: not every leak is obvious from the surface.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nA documented inspection gives owners a cleaner next step than guessing with water bills and buckets.",
+                    "mediaRefs": [
+                      "media_before_1",
+                      "media_after_1"
+                    ]
+                  },
+                  "execute": {
+                    "service": "content",
+                    "op": "publishSocialPost",
+                    "args": {
+                      "draftId": "content_social_post_2c251b36-7046-4242-9cfd-9204d1e84a26",
+                      "tenantId": "aquatrace",
+                      "publishingDeferredUntilCredentials": true
+                    }
+                  },
+                  "status": "pending",
+                  "createdBy": "nexi"
+                }
+              }
+            ],
+            "publishingDeferred": true
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+              "label": "NexReach pending draft How pool leak detection works in Fair Play, SC"
+            },
+            {
+              "rail": "native",
+              "ref": "content_social_post_2c251b36-7046-4242-9cfd-9204d1e84a26",
+              "label": "NexReach pending draft Field note: Fair Play, SC leak detection"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "approve draft content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+      "assistant": "Marketing draft ready. I read the content back below before I mark it ready for use.\n\nHow pool leak detection works in Fair Play, SC\n# How pool leak detection works in Fair Play, SC\n\nAquatrace uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nFor pool owners in Serving Western North Carolina and Upstate South Carolina., the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.\n\nApprove this? yes / no / make changes.\nApproval id: appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+          "label": "ApprovalQueue marketing draft appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "approveDraft",
+          "result": {
+            "draft": {
+              "id": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+              "tenantId": "aquatrace",
+              "kind": "article",
+              "title": "How pool leak detection works in Fair Play, SC",
+              "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nFor pool owners in Serving Western North Carolina and Upstate South Carolina., the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+              "mediaRefs": [
+                "media_before_1",
+                "media_after_1"
+              ],
+              "jobId": "job_closed_ok",
+              "clientId": "client_marketing_yes",
+              "clientName": "Rachel Payne",
+              "locality": "Fair Play, SC",
+              "serviceType": "Leak isolation at Fair Play, SC",
+              "status": "approval_pending",
+              "sources": [
+                {
+                  "rail": "native",
+                  "ref": "job_closed_ok",
+                  "label": "Native completed job Leak detection - return line"
+                },
+                {
+                  "rail": "native",
+                  "ref": "media_before_1",
+                  "label": "Native content media media_before_1"
+                },
+                {
+                  "rail": "native",
+                  "ref": "media_after_1",
+                  "label": "Native content media media_after_1"
+                }
+              ],
+              "createdAt": "2026-07-20T15:28:39.649Z",
+              "updatedAt": "2026-07-20T15:28:39.649Z",
+              "approvalId": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+              "watermarkLabel": "Aquatrace | NexCam",
+              "selectionNotes": [
+                "Before/after pair prioritized when available.",
+                "Locality kept at city/state only."
+              ]
+            },
+            "approval": {
+              "id": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+              "tenantId": "aquatrace",
+              "kind": "article",
+              "preview": {
+                "title": "How pool leak detection works in Fair Play, SC",
+                "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nFor pool owners in Serving Western North Carolina and Upstate South Carolina., the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+                "mediaRefs": [
+                  "media_before_1",
+                  "media_after_1"
+                ]
+              },
+              "execute": {
+                "service": "content",
+                "op": "publishSeoArticle",
+                "args": {
+                  "draftId": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+                  "tenantId": "aquatrace",
+                  "publishingDeferredUntilCredentials": true
+                }
+              },
+              "status": "pending",
+              "createdBy": "nexi"
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+              "label": "ApprovalQueue marketing draft appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "yes",
+      "assistant": "Approved and marked How pool leak detection works in Fair Play, SC publish_ready.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+          "label": "ApprovalQueue approval appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "approvePendingApproval",
+          "result": {
+            "approval": {
+              "id": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+              "tenantId": "aquatrace",
+              "kind": "article",
+              "preview": {
+                "title": "How pool leak detection works in Fair Play, SC",
+                "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nFor pool owners in Serving Western North Carolina and Upstate South Carolina., the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+                "mediaRefs": [
+                  "media_before_1",
+                  "media_after_1"
+                ]
+              },
+              "execute": {
+                "service": "content",
+                "op": "publishSeoArticle",
+                "args": {
+                  "draftId": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+                  "tenantId": "aquatrace",
+                  "publishingDeferredUntilCredentials": true
+                }
+              },
+              "status": "approved",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-20T15:28:39.653Z",
+              "decidedBy": "internal:owner_chris"
+            },
+            "executedApproval": {
+              "id": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+              "tenantId": "aquatrace",
+              "kind": "article",
+              "preview": {
+                "title": "How pool leak detection works in Fair Play, SC",
+                "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nFor pool owners in Serving Western North Carolina and Upstate South Carolina., the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+                "mediaRefs": [
+                  "media_before_1",
+                  "media_after_1"
+                ]
+              },
+              "execute": {
+                "service": "content",
+                "op": "publishSeoArticle",
+                "args": {
+                  "draftId": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+                  "tenantId": "aquatrace",
+                  "publishingDeferredUntilCredentials": true
+                }
+              },
+              "status": "executed",
+              "createdBy": "nexi",
+              "decidedAt": "2026-07-20T15:28:39.653Z",
+              "decidedBy": "internal:owner_chris",
+              "executedAt": "2026-07-20T15:28:39.653Z",
+              "executedBy": "internal:owner_chris"
+            },
+            "execution": {
+              "draft": {
+                "id": "content_article_46768647-5153-46ec-af18-432bdf7e53ec",
+                "tenantId": "aquatrace",
+                "kind": "article",
+                "title": "How pool leak detection works in Fair Play, SC",
+                "body": "# How pool leak detection works in Fair Play, SC\n\nAquatrace uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nFor pool owners in Serving Western North Carolina and Upstate South Carolina., the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.",
+                "mediaRefs": [
+                  "media_before_1",
+                  "media_after_1"
+                ],
+                "jobId": "job_closed_ok",
+                "clientId": "client_marketing_yes",
+                "clientName": "Rachel Payne",
+                "locality": "Fair Play, SC",
+                "serviceType": "Leak isolation at Fair Play, SC",
+                "status": "publish_ready",
+                "sources": [
+                  {
+                    "rail": "native",
+                    "ref": "job_closed_ok",
+                    "label": "Native completed job Leak detection - return line"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "media_before_1",
+                    "label": "Native content media media_before_1"
+                  },
+                  {
+                    "rail": "native",
+                    "ref": "media_after_1",
+                    "label": "Native content media media_after_1"
+                  }
+                ],
+                "createdAt": "2026-07-20T15:28:39.649Z",
+                "updatedAt": "2026-07-20T15:28:39.653Z",
+                "approvalId": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+                "watermarkLabel": "Aquatrace | NexCam",
+                "selectionNotes": [
+                  "Before/after pair prioritized when available.",
+                  "Locality kept at city/state only."
+                ]
+              },
+              "action": "ready_for_use"
+            }
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920",
+              "label": "ApprovalQueue approval appr_5e1b8c07-8040-4ffe-8db2-579d72bb0920"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "show the marketing audience pool",
+      "assistant": "I found 1 consented client in the NexReach audience pool.",
+      "sources": [
+        {
+          "rail": "native",
+          "ref": "client_marketing_yes",
+          "label": "Consented client Rachel Payne"
+        }
+      ],
+      "toolRuns": [
+        {
+          "name": "listConsentedClients",
+          "result": {
+            "audience": [
+              {
+                "clientId": "client_marketing_yes",
+                "clientName": "Rachel Payne",
+                "locality": "Fair Play, SC",
+                "serviceType": "Leak isolation at Fair Play, SC",
+                "lastClosedJobAt": "2026-07-19T16:00:00.000Z",
+                "email": "rachel@example.test",
+                "phone": "8645551100",
+                "marketingConsent": true
+              }
+            ]
+          },
+          "sources": [
+            {
+              "rail": "native",
+              "ref": "client_marketing_yes",
+              "label": "Consented client Rachel Payne"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user": "generate marketing content for job job_closed_blocked",
+      "assistant": "I can't generate marketing content for that job yet because the client has not opted into marketing use.",
+      "sources": [],
+      "toolRuns": [],
+      "error": true
+    }
+  ]
+}

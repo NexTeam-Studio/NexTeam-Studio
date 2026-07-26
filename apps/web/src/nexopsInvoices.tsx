@@ -7,13 +7,42 @@ import {
   type PaymentScheduleDraft,
   type PaymentScheduleRecord
 } from "./nexopsPaymentSchedule";
+import {
+  NexOpsCatalogEditorModal,
+  NexOpsCatalogPicker,
+  blankCatalogItemDraft,
+  catalogItemFromDraft,
+  type CatalogItemDraft,
+  type ProductServiceCatalogItem
+} from "./nexopsCatalog";
+import {
+  invoiceTemplateVariables,
+  type CommunicationTemplateRecord,
+  resolveTemplateDraft
+} from "./nexopsCommunications";
+import {
+  intakeDetailFacts,
+  prominentIntakeFacts
+} from "./nexopsIntake";
 
 type InvoiceStatus = "draft" | "sent" | "awaiting_payment" | "partial_pay" | "paid" | "void" | "bad_debt";
+type InvoiceFilter = "all" | "draft" | "awaiting" | "partial_pay" | "paid" | "void" | "bad_debt" | "past_due";
 type InvoiceDeliveryMode = "email" | "sms" | "mark_sent";
 type PaymentProvider = "stripe" | "paypal" | "manual" | "quote_bridge";
 type PaymentMethodKind = "card" | "ach" | "cash" | "check" | "bank_transfer" | "other" | "paypal" | "venmo";
 type PaymentStatus = "pending" | "failed" | "succeeded" | "refunded" | "partially_refunded";
 type ReceiptReviewChannel = "email" | "sms";
+
+const INVOICE_FILTERS: Array<{ value: InvoiceFilter; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "draft", label: "Draft" },
+  { value: "awaiting", label: "Awaiting" },
+  { value: "partial_pay", label: "Partial" },
+  { value: "paid", label: "Paid" },
+  { value: "past_due", label: "Past due" },
+  { value: "void", label: "Void" },
+  { value: "bad_debt", label: "Bad debt" }
+];
 
 interface ClientOption {
   id: string;
@@ -23,6 +52,13 @@ interface ClientOption {
   displayNamePreference?: "person" | "company";
   emails: string[];
   phones: string[];
+  billingAddress?: {
+    street1?: string;
+    street2?: string;
+    city?: string;
+    province?: string;
+    postalCode?: string;
+  };
 }
 
 interface InvoiceLineItem {
@@ -225,6 +261,26 @@ interface JobsResponse {
   error?: string;
 }
 
+interface CrmSettingsRecord {
+  tenantId: string;
+  catalogItems: ProductServiceCatalogItem[];
+  communicationTemplates: CommunicationTemplateRecord[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CrmSettingsResponse {
+  ok: boolean;
+  settings?: CrmSettingsRecord;
+  error?: string;
+}
+
+interface SettingsMutationResponse {
+  ok: boolean;
+  settings?: CrmSettingsRecord;
+  error?: string;
+}
+
 interface InvoiceMutationResponse {
   ok: boolean;
   invoice?: InvoiceRecord;
@@ -277,6 +333,7 @@ interface SendDraftState {
   mode: InvoiceDeliveryMode;
   target: string;
   subject: string;
+  bodyText: string;
   note: string;
   includePdf: boolean;
   includeSummary: boolean;
@@ -327,6 +384,7 @@ interface NexOpsInvoicesPageProps {
   clients: ClientOption[];
   entryPoint: "invoices" | "payments";
   focusedInvoiceId?: string;
+  initialFilter?: InvoiceFilter;
   onCrmMutation?: () => void;
 }
 
@@ -563,7 +621,26 @@ function receiptReviewDraftFromRecord(review: ReceiptReviewRecord, client?: Clie
   };
 }
 
-function defaultSendDraft(invoice: InvoiceRecord, client?: ClientOption): SendDraftState {
+function invoiceMatchesFilter(invoice: InvoiceRecord, filter: InvoiceFilter): boolean {
+  if (filter === "all") {
+    return true;
+  }
+  if (filter === "awaiting") {
+    return invoice.status === "sent" || invoice.status === "awaiting_payment";
+  }
+  if (filter === "past_due") {
+    return Boolean(invoice.ledger?.overdue);
+  }
+  return invoice.status === filter;
+}
+
+function defaultSendDraft(
+  invoice: InvoiceRecord,
+  client: ClientOption | undefined,
+  settings?: CrmSettingsRecord | null,
+  portalUrl?: string | undefined,
+  mode: InvoiceDeliveryMode = "email"
+): SendDraftState {
   const defaults = invoice.deliveryDefaults ?? {
     emailIncludePdf: true,
     emailIncludeSummary: true,
@@ -572,15 +649,41 @@ function defaultSendDraft(invoice: InvoiceRecord, client?: ClientOption): SendDr
     smsIncludePayLink: true,
     smsIncludeHostedLink: true
   };
+  const rendered = resolveTemplateDraft({
+    templates: settings?.communicationTemplates ?? [],
+    category: "invoice_send",
+    channel: mode === "sms" ? "sms" : "email",
+    fallbackSubject: invoice.number ? `Invoice ${invoice.number}` : invoice.title,
+    fallbackBodyText: [
+      `Hi ${clientDisplayName(client)},`,
+      "",
+      `Invoice ${invoice.number ?? invoice.id} is ready.`,
+      portalUrl ?? "",
+      "",
+      `Balance due: ${money(invoice.ledger?.balanceDue ?? invoice.totals.total)}`
+    ].filter(Boolean).join("\n"),
+    variables: invoiceTemplateVariables({
+      invoice,
+      client: client ? {
+        id: client.id,
+        name: clientDisplayName(client),
+        emails: client.emails,
+        phones: client.phones,
+        billingAddress: client.billingAddress
+      } : undefined,
+      portalUrl
+    })
+  });
   return {
-    mode: "email",
-    target: client?.emails[0] ?? "",
-    subject: invoice.number ? `Invoice ${invoice.number}` : invoice.title,
+    mode,
+    target: mode === "sms" ? (client?.phones[0] ?? "") : (client?.emails[0] ?? ""),
+    subject: mode === "sms" ? "" : rendered.subject,
+    bodyText: rendered.bodyText,
     note: "",
-    includePdf: defaults.emailIncludePdf,
-    includeSummary: defaults.emailIncludeSummary,
-    includePayLink: defaults.emailIncludePayLink,
-    includeHostedLink: true
+    includePdf: mode === "sms" ? false : defaults.emailIncludePdf,
+    includeSummary: mode === "sms" ? defaults.smsIncludeSummary : defaults.emailIncludeSummary,
+    includePayLink: mode === "sms" ? defaults.smsIncludePayLink : defaults.emailIncludePayLink,
+    includeHostedLink: mode === "sms" ? defaults.smsIncludeHostedLink : true
   };
 }
 
@@ -617,8 +720,10 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
   const [refunds, setRefunds] = useState<RefundRecord[]>([]);
   const [credits, setCredits] = useState<CreditRecord[]>([]);
   const [jobs, setJobs] = useState<JobSummary[]>([]);
+  const [settingsRecord, setSettingsRecord] = useState<CrmSettingsRecord | null>(null);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState("");
   const [invoiceSearch, setInvoiceSearch] = useState("");
+  const [invoiceFilter, setInvoiceFilter] = useState<InvoiceFilter>("all");
   const [statusMessage, setStatusMessage] = useState("Loading billing workspace...");
   const [detailStatus, setDetailStatus] = useState("Pick an invoice to review draft edits, payments, and receipt review.");
   const [busy, setBusy] = useState("");
@@ -633,13 +738,20 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
   const [refundDraft, setRefundDraft] = useState<RefundDraftState>({ paymentId: "", amount: 0, reason: "" });
   const [lastHostedCheckoutUrl, setLastHostedCheckoutUrl] = useState("");
   const [recoveryHint, setRecoveryHint] = useState("");
+  const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [catalogEditorOpen, setCatalogEditorOpen] = useState(false);
+  const [catalogDraft, setCatalogDraft] = useState<CatalogItemDraft>(blankCatalogItemDraft());
 
   const filteredInvoices = useMemo(() => {
     const needle = invoiceSearch.trim().toLowerCase();
-    if (!needle) {
-      return invoices;
-    }
     return invoices.filter((invoice) => {
+      if (!invoiceMatchesFilter(invoice, invoiceFilter)) {
+        return false;
+      }
+      if (!needle) {
+        return true;
+      }
       const client = props.clients.find((candidate) => candidate.id === invoice.clientId);
       return [
         invoice.number,
@@ -648,7 +760,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
         clientDisplayName(client)
       ].some((value) => String(value ?? "").toLowerCase().includes(needle));
     });
-  }, [invoiceSearch, invoices, props.clients]);
+  }, [invoiceFilter, invoiceSearch, invoices, props.clients]);
 
   const combineCandidates = useMemo(
     () => jobs.filter((job) => job.status === "Requires Invoicing" || job.status === "Action Required"),
@@ -663,6 +775,9 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
   const selectedPayment = detail?.payments?.find((payment) => payment.id === refundDraft.paymentId)
     ?? detail?.payments?.find((payment) => payment.status === "succeeded");
   const totalsPreview = invoiceDraft ? invoiceTotalsPreview(invoiceDraft) : null;
+  const visibleCatalogItems = (settingsRecord?.catalogItems ?? [])
+    .filter((item) => item.visible)
+    .sort((left, right) => left.name.localeCompare(right.name));
   const invoiceDimensions = detail?.invoice ? deriveInvoiceDimensions(detail.invoice) : null;
   const packagePreview = detail?.invoice ? closeoutPackageCopy({
     invoice: detail.invoice,
@@ -673,15 +788,28 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
     payments: detail.payments ?? [],
     receiptReviews: detail.receiptReviews ?? []
   }) : null;
+  const invoiceCounts = {
+    all: invoices.length,
+    draft: invoices.filter((invoice) => invoice.status === "draft").length,
+    awaiting: invoices.filter((invoice) => invoice.status === "sent" || invoice.status === "awaiting_payment").length,
+    partial_pay: invoices.filter((invoice) => invoice.status === "partial_pay").length,
+    paid: invoices.filter((invoice) => invoice.status === "paid").length,
+    past_due: invoices.filter((invoice) => Boolean(invoice.ledger?.overdue)).length,
+    void: invoices.filter((invoice) => invoice.status === "void").length,
+    bad_debt: invoices.filter((invoice) => invoice.status === "bad_debt").length
+  };
+  const selectedInvoiceProminentFacts = prominentIntakeFacts(detail?.invoice?.intake, "invoice");
+  const selectedInvoiceCarryForwardFacts = intakeDetailFacts(detail?.invoice?.intake, "invoice", 10);
 
   async function loadWorkspace(preferredInvoiceId?: string): Promise<void> {
     try {
-      const [invoicesBody, paymentsBody, refundsBody, creditsBody, jobsBody] = await Promise.all([
+      const [invoicesBody, paymentsBody, refundsBody, creditsBody, jobsBody, settingsBody] = await Promise.all([
         fetch(`/api/crm/invoices?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<InvoicesResponse>),
         fetch(`/api/crm/payments?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<PaymentsResponse>),
         fetch(`/api/crm/refunds?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<RefundsResponse>),
         fetch(`/api/crm/credits?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<CreditsResponse>),
-        fetch(`/api/crm/jobs?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<JobsResponse>)
+        fetch(`/api/crm/jobs?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<JobsResponse>),
+        fetch(`/api/crm/settings?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<CrmSettingsResponse>)
       ]);
       if (!invoicesBody.ok) {
         setStatusMessage(invoicesBody.error ?? "Invoices are unavailable right now.");
@@ -693,6 +821,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
       setRefunds(refundsBody.ok ? refundsBody.refunds ?? [] : []);
       setCredits(creditsBody.ok ? creditsBody.credits ?? [] : []);
       setJobs(jobsBody.ok ? jobsBody.jobs ?? [] : []);
+      setSettingsRecord(settingsBody.ok ? settingsBody.settings ?? null : null);
       const nextSelected = preferredInvoiceId && (invoicesBody.invoices ?? []).some((invoice) => invoice.id === preferredInvoiceId)
         ? preferredInvoiceId
         : selectedInvoiceId && (invoicesBody.invoices ?? []).some((invoice) => invoice.id === selectedInvoiceId)
@@ -704,6 +833,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
         : "No invoices yet. Use Close and Invoice from Jobs or combine ready jobs here.");
     } catch {
       setInvoices([]);
+      setSettingsRecord(null);
       setStatusMessage("Billing APIs are unreachable.");
     }
   }
@@ -725,7 +855,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
       }
       setDetail(body);
       setInvoiceDraft(invoiceDraftFromRecord(body.invoice));
-      setSendDraft(defaultSendDraft(body.invoice, body.client));
+      setSendDraft(defaultSendDraft(body.invoice, body.client, settingsRecord, lastHostedCheckoutUrl));
       setPaymentDraft(defaultPaymentDraft(body.invoice, body.billingProfile?.savedCards ?? []));
       const review = body.receiptReviews?.[0];
       setSelectedReceiptReviewId(review?.id ?? "");
@@ -743,12 +873,75 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
     }
   }
 
+  function addCatalogLine(item: ProductServiceCatalogItem): void {
+    setInvoiceDraft((current) => current ? {
+      ...current,
+      lineItems: [...current.lineItems, {
+        id: `invoice_line_${Math.random().toString(36).slice(2, 10)}`,
+        code: item.code,
+        name: item.name,
+        description: item.description ?? "",
+        quantity: 1,
+        unitPrice: roundMoney(item.price),
+        total: roundMoney(item.price)
+      }]
+    } : current);
+    setCatalogPickerOpen(false);
+    setCatalogSearch("");
+  }
+
+  async function saveCatalogItem(): Promise<void> {
+    if (!settingsRecord || !catalogDraft.name.trim()) {
+      setDetailStatus("Catalog items need a name before they can be saved.");
+      return;
+    }
+    const existing = settingsRecord.catalogItems.find((item) => item.id === catalogDraft.id);
+    const nextItem = catalogItemFromDraft(props.tenantId, catalogDraft, existing);
+    const nextCatalog = existing
+      ? settingsRecord.catalogItems.map((item) => item.id === existing.id ? nextItem : item)
+      : [...settingsRecord.catalogItems, nextItem];
+    setBusy("save-catalog");
+    setDetailStatus(existing ? "Saving catalog item..." : "Creating catalog item...");
+    try {
+      const body = await fetch("/api/crm/settings", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: props.tenantId,
+          catalogItems: nextCatalog
+        })
+      }).then((response) => response.json() as Promise<SettingsMutationResponse>);
+      if (!body.ok || !body.settings) {
+        setDetailStatus(body.error ?? "Catalog item could not be saved.");
+        return;
+      }
+      setSettingsRecord(body.settings);
+      setCatalogEditorOpen(false);
+      setCatalogPickerOpen(false);
+      setCatalogSearch("");
+      setCatalogDraft(blankCatalogItemDraft());
+      addCatalogLine(nextItem);
+      setDetailStatus(`${nextItem.name} saved to Products & Services.`);
+      props.onCrmMutation?.();
+    } catch {
+      setDetailStatus("Catalog item save failed.");
+    } finally {
+      setBusy("");
+    }
+  }
+
   useEffect(() => {
     void loadWorkspace(props.focusedInvoiceId);
     const handleMutation = () => void loadWorkspace();
     window.addEventListener("nexops:crm-mutated", handleMutation);
     return () => window.removeEventListener("nexops:crm-mutated", handleMutation);
   }, [props.tenantId]);
+
+  useEffect(() => {
+    if (props.initialFilter) {
+      setInvoiceFilter(props.initialFilter);
+    }
+  }, [props.initialFilter]);
 
   useEffect(() => {
     if (!props.focusedInvoiceId) {
@@ -763,8 +956,27 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
   }, [props.focusedInvoiceId, invoices, selectedInvoiceId]);
 
   useEffect(() => {
+    if (!filteredInvoices.length) {
+      if (selectedInvoiceId) {
+        setSelectedInvoiceId("");
+      }
+      return;
+    }
+    if (!filteredInvoices.some((invoice) => invoice.id === selectedInvoiceId)) {
+      setSelectedInvoiceId(filteredInvoices[0]?.id ?? "");
+    }
+  }, [filteredInvoices, selectedInvoiceId]);
+
+  useEffect(() => {
     void loadDetail(selectedInvoiceId);
   }, [selectedInvoiceId]);
+
+  useEffect(() => {
+    if (!detail?.invoice) {
+      return;
+    }
+    setSendDraft(defaultSendDraft(detail.invoice, selectedClient, settingsRecord, lastHostedCheckoutUrl, sendDraft?.mode ?? "email"));
+  }, [detail?.invoice?.id, selectedClient?.id, settingsRecord, lastHostedCheckoutUrl]);
 
   useEffect(() => {
     if (!selectedReview) {
@@ -828,6 +1040,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
           mode: sendDraft.mode,
           ...(sendDraft.target.trim() ? { target: sendDraft.target.trim() } : {}),
           ...(sendDraft.subject.trim() ? { subject: sendDraft.subject.trim() } : {}),
+          ...(sendDraft.bodyText.trim() ? { bodyText: sendDraft.bodyText.trim() } : {}),
           ...(sendDraft.note.trim() ? { note: sendDraft.note.trim() } : {}),
           includePdf: sendDraft.includePdf,
           includeSummary: sendDraft.includeSummary,
@@ -1159,6 +1372,19 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
             </div>
             <input placeholder="Search invoices" value={invoiceSearch} onChange={(event) => setInvoiceSearch(event.target.value)} />
           </div>
+          <div className="nexops-jobs-filter-row" aria-label="Invoice status filters">
+            {INVOICE_FILTERS.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                className={`nexops-jobs-filter-pill${invoiceFilter === filter.value ? " active" : ""}`}
+                onClick={() => setInvoiceFilter(filter.value)}
+              >
+                <span>{filter.label}</span>
+                <small>{invoiceCounts[filter.value]}</small>
+              </button>
+            ))}
+          </div>
           <p>{statusMessage}</p>
           <ul className="nexops-record-list">
             {filteredInvoices.map((invoice) => {
@@ -1260,6 +1486,19 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                 <span className={`nexops-job-status status-${detail.invoice.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{detail.invoice.status.replaceAll("_", " ")}</span>
               </div>
             </div>
+            <div className="nexops-jobs-filter-row" aria-label="Invoice detail filters">
+              {INVOICE_FILTERS.map((filter) => (
+                <button
+                  key={`detail-${filter.value}`}
+                  type="button"
+                  className={`nexops-jobs-filter-pill${invoiceFilter === filter.value ? " active" : ""}`}
+                  onClick={() => setInvoiceFilter(filter.value)}
+                >
+                  <span>{filter.label}</span>
+                  <small>{invoiceCounts[filter.value]}</small>
+                </button>
+              ))}
+            </div>
             <p>{detailStatus}</p>
 
             {workspaceRail ? (
@@ -1289,89 +1528,137 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
               </section>
             ) : null}
 
-            <div className="nexops-request-summary-grid">
+            <div className="nexops-density-inline-facts">
               <article><h3>Client</h3><p>{clientDisplayName(selectedClient)}</p><small>{selectedClient?.emails[0] ?? "No email"} | {selectedClient?.phones[0] ?? "No phone"}</small></article>
               <article><h3>Balance due</h3><p>{money(detail.invoice.ledger?.balanceDue ?? detail.invoice.totals.total)}</p><small>Paid applied {money(detail.invoice.ledger?.paymentApplied)}</small></article>
               <article><h3>Due</h3><p>{detail.invoice.dueAt ? new Date(detail.invoice.dueAt).toLocaleDateString() : "Immediate"}</p><small>Updated {formatTimestamp(detail.invoice.updatedAt)}</small></article>
               <article><h3>Receipt review</h3><p>{detail.receiptReviews?.length ?? 0}</p><small>{selectedReview ? `Latest ${selectedReview.status}` : "Created after payment/refund"}</small></article>
             </div>
 
+            {selectedInvoiceProminentFacts.length ? (
+              <div className="nexops-request-alert-strip">
+                {selectedInvoiceProminentFacts.map((fact) => (
+                  <span key={`${detail.invoice.id}-${fact.key}`}>{fact.label}: {fact.text}</span>
+                ))}
+              </div>
+            ) : null}
+
+            <details className="nexops-quote-panel nexops-density-disclosure-panel">
+              <summary>
+                <div className="nexops-density-disclosure-copy">
+                  <h3>Request carry-forward</h3>
+                  <small>Open for site-contact, referral, access, and problem context still visible on the invoice rail.</small>
+                </div>
+                <span className="nexops-density-disclosure-caret">Open</span>
+              </summary>
+              <div className="nexops-density-disclosure-body">
+                {selectedInvoiceCarryForwardFacts.length ? (
+                  <div className="nexops-density-inline-facts">
+                    {selectedInvoiceCarryForwardFacts.map((fact) => (
+                      <article key={`${detail.invoice.id}-carry-${fact.key}`}>
+                        <h3>{fact.label}</h3>
+                        <p>{fact.text}</p>
+                        <small>Inherited from the request snapshot.</small>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="nexops-empty-copy">No request-specific intake fields are attached to this invoice.</p>
+                )}
+              </div>
+            </details>
+
             {invoiceDimensions ? (
-              <section className="nexops-quote-panel">
-                <div className="nexops-quote-section-head">
-                  <h3>Invoice dimensions</h3>
-                  <span>Derived rail, never a single flattened status.</span>
+              <details className="nexops-quote-panel nexops-density-disclosure-panel">
+                <summary>
+                  <div className="nexops-density-disclosure-copy">
+                    <h3>Invoice dimensions</h3>
+                    <small>Open when you need the full lifecycle, delivery, balance, and due-state breakdown.</small>
+                  </div>
+                  <span className="nexops-density-disclosure-caret">Open</span>
+                </summary>
+                <div className="nexops-density-disclosure-body">
+                  <div className="nexops-density-inline-facts">
+                    <article><h3>Lifecycle</h3><p>{invoiceDimensions.lifecycle.replaceAll("_", " ")}</p><small>Open, draft, void, or written off</small></article>
+                    <article><h3>Delivery</h3><p>{invoiceDimensions.delivery.replaceAll("_", " ")}</p><small>From send and delivery history</small></article>
+                    <article><h3>Balance</h3><p>{invoiceDimensions.balance.replaceAll("_", " ")}</p><small>Derived from ledger balance</small></article>
+                    <article><h3>Due</h3><p>{invoiceDimensions.due.replaceAll("_", " ")}</p><small>Overdue stays separate</small></article>
+                    <article><h3>Customer view</h3><p>{invoiceDimensions.customerView.replaceAll("_", " ")}</p><small>What the customer currently sees</small></article>
+                    <article><h3>Payment schedule</h3><p>{detail.invoice.paymentSchedule?.enabled ? "Active" : "None"}</p><small>{paymentScheduleRailCopy(detail.invoice.paymentSchedule)}</small></article>
+                  </div>
                 </div>
-                <div className="nexops-request-summary-grid">
-                  <article><h3>Lifecycle</h3><p>{invoiceDimensions.lifecycle.replaceAll("_", " ")}</p><small>Open, draft, void, or written off.</small></article>
-                  <article><h3>Delivery</h3><p>{invoiceDimensions.delivery.replaceAll("_", " ")}</p><small>From send and delivery history.</small></article>
-                  <article><h3>Balance</h3><p>{invoiceDimensions.balance.replaceAll("_", " ")}</p><small>Derived from ledger balance.</small></article>
-                  <article><h3>Due</h3><p>{invoiceDimensions.due.replaceAll("_", " ")}</p><small>Overdue lives separately from money state.</small></article>
-                  <article><h3>Customer view</h3><p>{invoiceDimensions.customerView.replaceAll("_", " ")}</p><small>Current record infers this from delivery and payment activity.</small></article>
-                  <article><h3>Payment schedule</h3><p>{detail.invoice.paymentSchedule?.enabled ? "Active" : "None"}</p><small>{paymentScheduleRailCopy(detail.invoice.paymentSchedule)}</small></article>
-                </div>
-              </section>
+              </details>
             ) : null}
 
             {packagePreview ? (
-              <section className="nexops-quote-panel">
-                <div className="nexops-quote-section-head">
-                  <h3>Customer document package</h3>
-                  <span>{packagePreview.stage}</span>
-                </div>
-                <div className="nexops-mini-list">
-                  <div className="nexops-quote-detail-line">
-                    <span>
-                      <strong>Closeout package state</strong>
-                      <small>{packagePreview.detail}</small>
-                    </span>
-                    <mark>{detail.invoice.jobReferences?.length ?? 0} jobs</mark>
+              <details className="nexops-quote-panel nexops-density-disclosure-panel">
+                <summary>
+                  <div className="nexops-density-disclosure-copy">
+                    <h3>Customer document package</h3>
+                    <small>Open for package stage, covered jobs, and attached artifact counts.</small>
                   </div>
-                  <div className="nexops-quote-detail-line">
-                    <span>
-                      <strong>Invoice artifact</strong>
-                      <small>{detail.invoice.number ?? detail.invoice.id}</small>
-                    </span>
-                    <mark>{detail.invoice.status.replaceAll("_", " ")}</mark>
-                  </div>
-                  <div className="nexops-quote-detail-line">
-                    <span>
-                      <strong>Receipt artifact</strong>
-                      <small>{selectedReview ? `Latest review ${selectedReview.status}` : "No receipt review yet"}</small>
-                    </span>
-                    <mark>{selectedReview?.attachments.length ?? 0} files</mark>
-                  </div>
-                </div>
-              </section>
-            ) : null}
-
-            {detail.invoice.jobReferences?.length ? (
-              <section className="nexops-quote-panel">
-                <div className="nexops-quote-section-head">
-                  <h3>Jobs covered by this invoice</h3>
-                  <span>Combined receipts keep each source job visible.</span>
-                </div>
-                <div className="nexops-mini-list">
-                  {detail.invoice.jobReferences.map((reference) => (
-                    <div className="nexops-quote-detail-line" key={reference.jobId}>
+                  <span className="nexops-density-disclosure-caret">Open</span>
+                </summary>
+                <div className="nexops-density-disclosure-body">
+                  <div className="nexops-mini-list">
+                    <div className="nexops-quote-detail-line">
                       <span>
-                        <strong>{reference.number ?? reference.jobId}</strong>
-                        <small>{reference.title}</small>
+                        <strong>Closeout package state</strong>
+                        <small>{packagePreview.detail}</small>
                       </span>
-                      <mark>{money(reference.amount)}</mark>
+                      <mark>{detail.invoice.jobReferences?.length ?? 0} jobs</mark>
                     </div>
-                  ))}
+                    <div className="nexops-quote-detail-line">
+                      <span>
+                        <strong>Invoice artifact</strong>
+                        <small>{detail.invoice.number ?? detail.invoice.id}</small>
+                      </span>
+                      <mark>{detail.invoice.status.replaceAll("_", " ")}</mark>
+                    </div>
+                    <div className="nexops-quote-detail-line">
+                      <span>
+                        <strong>Receipt artifact</strong>
+                        <small>{selectedReview ? `Latest review ${selectedReview.status}` : "No receipt review yet"}</small>
+                      </span>
+                      <mark>{selectedReview?.attachments.length ?? 0} files</mark>
+                    </div>
+                  </div>
+                  {detail.invoice.jobReferences?.length ? (
+                    <div className="nexops-mini-list">
+                      {detail.invoice.jobReferences.map((reference) => (
+                        <div className="nexops-quote-detail-line" key={reference.jobId}>
+                          <span>
+                            <strong>{reference.number ?? reference.jobId}</strong>
+                            <small>{reference.title}</small>
+                          </span>
+                          <mark>{money(reference.amount)}</mark>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
-              </section>
+              </details>
             ) : null}
 
+            <details className="nexops-quote-panel nexops-density-disclosure-panel" open={detail.invoice.status === "draft"}>
+              <summary>
+                <div className="nexops-density-disclosure-copy">
+                  <h3>Prepare and send</h3>
+                  <small>Open for draft edits, send mode, recipients, and delivery options.</small>
+                </div>
+                <span className="nexops-density-disclosure-caret">Open</span>
+              </summary>
+              <div className="nexops-density-disclosure-body">
             <div className="nexops-two-column">
               <section className="nexops-quote-panel">
                 <div className="nexops-quote-section-head">
                   <h3>Draft invoice editor</h3>
-                  <button type="button" onClick={() => void saveInvoiceDraft()} disabled={Boolean(busy) || detail.invoice.status !== "draft"}>
-                    {busy === "save-invoice" ? "Saving..." : "Save invoice"}
-                  </button>
+                  <div className="nexops-inline-actions">
+                    <button type="button" onClick={() => setCatalogPickerOpen(true)} disabled={detail.invoice.status !== "draft"}>Add line item</button>
+                    <button type="button" onClick={() => void saveInvoiceDraft()} disabled={Boolean(busy) || detail.invoice.status !== "draft"}>
+                      {busy === "save-invoice" ? "Saving..." : "Save invoice"}
+                    </button>
+                  </div>
                 </div>
                 <div className="nexops-request-builder-grid">
                   <label className="nexops-field">
@@ -1383,6 +1670,12 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                     <input type="date" value={invoiceDraft.dueAt} onChange={(event) => setInvoiceDraft((current) => current ? { ...current, dueAt: event.target.value } : current)} />
                   </label>
                 </div>
+                {!invoiceDraft.lineItems.length ? (
+                  <div className="nexops-catalog-picker-empty">
+                    <strong>No line items yet</strong>
+                    <small>Pick from Products &amp; Services or create a new reusable item first.</small>
+                  </div>
+                ) : null}
                 <div className="nexops-quote-line-list">
                   {invoiceDraft.lineItems.map((item) => (
                     <div className="nexops-quote-line-card" key={item.id}>
@@ -1476,7 +1769,18 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                 <div className="nexops-request-builder-grid">
                   <label className="nexops-field">
                     <span>Mode</span>
-                    <select value={sendDraft.mode} onChange={(event) => setSendDraft((current) => current ? { ...current, mode: event.target.value as InvoiceDeliveryMode, target: event.target.value === "sms" ? (selectedClient?.phones[0] ?? current.target) : (selectedClient?.emails[0] ?? current.target) } : current)}>
+                    <select
+                      value={sendDraft.mode}
+                      onChange={(event) => setSendDraft((current) => current && detail?.invoice
+                        ? defaultSendDraft(
+                          detail.invoice,
+                          selectedClient,
+                          settingsRecord,
+                          lastHostedCheckoutUrl,
+                          event.target.value as InvoiceDeliveryMode
+                        )
+                        : current)}
+                    >
                       <option value="email">Email</option>
                       <option value="sms">SMS</option>
                       <option value="mark_sent">Mark sent</option>
@@ -1492,8 +1796,12 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                   <input value={sendDraft.subject} onChange={(event) => setSendDraft((current) => current ? { ...current, subject: event.target.value } : current)} />
                 </label>
                 <label className="nexops-field">
-                  <span>Note</span>
-                  <textarea rows={3} value={sendDraft.note} onChange={(event) => setSendDraft((current) => current ? { ...current, note: event.target.value } : current)} />
+                  <span>Message body</span>
+                  <textarea rows={4} value={sendDraft.bodyText} onChange={(event) => setSendDraft((current) => current ? { ...current, bodyText: event.target.value } : current)} />
+                </label>
+                <label className="nexops-field">
+                  <span>Office note</span>
+                  <textarea rows={2} value={sendDraft.note} onChange={(event) => setSendDraft((current) => current ? { ...current, note: event.target.value } : current)} />
                 </label>
                 <div className="nexops-quote-toggle-grid">
                   <label className="nexops-check-field inline"><input type="checkbox" checked={sendDraft.includePdf} onChange={(event) => setSendDraft((current) => current ? { ...current, includePdf: event.target.checked } : current)} /> PDF attachment</label>
@@ -1504,7 +1812,18 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                 {lastHostedCheckoutUrl ? <small>{lastHostedCheckoutUrl}</small> : null}
               </section>
             </div>
+              </div>
+            </details>
 
+            <details className="nexops-quote-panel nexops-density-disclosure-panel" open={detail.invoice.status !== "paid" || Boolean(recoveryHint)}>
+              <summary>
+                <div className="nexops-density-disclosure-copy">
+                  <h3>Collect and recover</h3>
+                  <small>Open for saved-card collection, hosted checkout, refunds, and recovery paths.</small>
+                </div>
+                <span className="nexops-density-disclosure-caret">Open</span>
+              </summary>
+              <div className="nexops-density-disclosure-body">
             <div className="nexops-two-column">
               <section className="nexops-quote-panel">
                 <div className="nexops-quote-section-head">
@@ -1654,6 +1973,8 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                 </div>
               </section>
             </div>
+              </div>
+            </details>
 
             <section className="nexops-quote-panel">
               <div className="nexops-quote-section-head">
@@ -1742,6 +2063,36 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
           </div>
         )}
       </article>
+      <NexOpsCatalogPicker
+        open={catalogPickerOpen}
+        search={catalogSearch}
+        catalogItems={visibleCatalogItems}
+        title="Add invoice line item"
+        onSearchChange={setCatalogSearch}
+        onClose={() => {
+          setCatalogPickerOpen(false);
+          setCatalogSearch("");
+        }}
+        onSelect={addCatalogLine}
+        onCreateRequested={(seed) => {
+          setCatalogPickerOpen(false);
+          setCatalogDraft(blankCatalogItemDraft(seed));
+          setCatalogEditorOpen(true);
+        }}
+      />
+      <NexOpsCatalogEditorModal
+        open={catalogEditorOpen}
+        title={catalogDraft.id ? "Edit catalog item" : "Add catalog item"}
+        saveLabel={busy === "save-catalog" ? "Saving..." : "Save item"}
+        busy={busy === "save-catalog"}
+        draft={catalogDraft}
+        onDraftChange={setCatalogDraft}
+        onClose={() => {
+          setCatalogEditorOpen(false);
+          setCatalogDraft(blankCatalogItemDraft());
+        }}
+        onSave={() => void saveCatalogItem()}
+      />
     </section>
   );
 }

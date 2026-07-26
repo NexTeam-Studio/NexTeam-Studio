@@ -14,7 +14,7 @@ function tenant() {
     name: "Aquatrace",
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
-    adapters: { crm: "native", media: "companycam", email: "gmail_relay" },
+    adapters: { crm: "native", media: "native", email: "gmail_relay" },
     approval: {},
     timezone: "America/New_York",
     plan: "suite"
@@ -62,6 +62,7 @@ test("request routes create, update, convert, archive, and reopen while preservi
           { key: "client_name", value: "Logan Sears" },
           { key: "email", value: "logan@example.test" },
           { key: "phone", value: "8645551212" },
+          { key: "marketing_consent", value: true },
           { key: "property_street1", value: "102 Kate Lane" },
           { key: "property_city", value: "Fair Play" },
           { key: "property_province", value: "SC" },
@@ -76,7 +77,9 @@ test("request routes create, update, convert, archive, and reopen while preservi
     });
     const requestBody = await requestResponse.json();
     assert.equal(requestBody.ok, true);
+    assert.equal(requestBody.request.consent.marketing, true);
     assert.equal(requestBody.request.intake.fieldIndex.gate_code, "4421");
+    assert.equal(requestBody.request.intake.fieldIndex.marketing_consent, true);
     assert.equal(requestBody.request.intake.fieldValues.find((field) => field.key === "gate_code").visibility.invoice, false);
 
     const updatedResponse = await fetch(`${base}/api/crm/requests/${requestBody.request.id}`, {
@@ -102,6 +105,7 @@ test("request routes create, update, convert, archive, and reopen while preservi
     assert.equal(quoteBody.ok, true);
     assert.equal(quoteBody.quote.requestId, requestBody.request.id);
     assert.equal(quoteBody.quote.intake.fieldIndex.pool_configuration, "pool_and_spa");
+    assert.equal(quoteBody.quote.intake.fieldIndex.marketing_consent, true);
     assert.equal(quoteBody.quote.intake.fieldValues.find((field) => field.key === "gate_code").visibility.quote, false);
 
     const archiveResponse = await fetch(`${base}/api/crm/requests/${requestBody.request.id}/archive`, {
@@ -207,7 +211,7 @@ test("local Nexi request tools clarify missing intake data, then create and reca
     env: {}
   });
   assert.equal(recallTurn.toolRuns[0].name, "getRequestDetail");
-  assert.match(recallTurn.answer, /pool or pool plus spa: pool and spa/i);
+  assert.match(recallTurn.answer, /spa integration: pool and spa/i);
   assert.equal(recallTurn.sources[0].rail, "native");
 
   const gateCodeTurn = await runExplicitLocalToolLoop({
@@ -234,4 +238,66 @@ test("local Nexi request tools clarify missing intake data, then create and reca
   });
   assert.equal(listTurn.toolRuns[0].name, "listRequests");
   assert.match(listTurn.answer, /found 1 request/i);
+});
+
+test("client record route toggles marketing consent and forwards the NexReach revocation hook", async () => {
+  const repository = new MemoryNativeCrmRepository({
+    clients: [{
+      id: "client_marketing_toggle",
+      tenantId: "aquatrace",
+      name: "Rachel Payne",
+      emails: ["rachel@example.test"],
+      phones: ["8645551100"],
+      tags: [],
+      consent: { email: true, sms: true, marketing: true }
+    }]
+  });
+  const adapter = new NativeAdapter(repository, "aquatrace");
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CrmApprovalExecutor(adapter));
+  const calls = [];
+  const app = express();
+  app.use(express.json());
+  registerCrmRoutes(app, {
+    approvalQueue,
+    memoryRepository: repository,
+    nexReachService: {
+      async handleConsentChange(input) {
+        calls.push(input);
+        return { flaggedShowcases: [] };
+      }
+    },
+    platformRepository: {
+      listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
+    },
+    env: { TENANT_ID: "aquatrace" }
+  });
+
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const base = `http://127.0.0.1:${address.port}`;
+
+    const response = await fetch(`${base}/api/crm/clients/client_marketing_toggle`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        consent: { marketing: false }
+      })
+    });
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.client.consent.marketing, false);
+    assert.deepEqual(calls, [{
+      tenantId: "aquatrace",
+      clientId: "client_marketing_toggle",
+      marketingConsent: false
+    }]);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
 });
