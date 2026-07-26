@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { InMemoryEventBus, RailError, type ApprovalQueueService, type EventBus } from "@nexteam/core";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import { summarizeContentStats, type ContentDraftKind, type ContentPerformanceSnapshot, type TenantBrandVoice } from "./contentEngine.js";
 import type { ContentRepository } from "./repository.js";
 import { draftContentForJob } from "./workflow.js";
@@ -72,7 +73,7 @@ export interface ContentRouteDeps {
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {
-  return env.TENANT_ID || "aquatrace";
+  return configuredTenantId(env, "contentRoute");
 }
 
 function sendRouteError(res: Response, error: unknown): void {

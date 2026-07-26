@@ -173,7 +173,7 @@ export async function loadTenantFromPlatform(repository: PlatformRepository, ten
   }
   const configuredPlan = env.TENANT_PLAN === "nexi" || env.TENANT_PLAN === "marketing" || env.TENANT_PLAN === "suite"
     ? env.TENANT_PLAN
-    : tenantId === "aquatrace" ? "suite" : "nexi";
+    : "nexi";
   const tenant = defaultTenant(tenantId, configuredPlan as TenantPlan);
   return repository.upsertTenant(tenant);
 }

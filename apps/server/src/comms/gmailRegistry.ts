@@ -1,5 +1,6 @@
 import type { EmailReadProvider, EmailSendProvider, OutboundSms, SendReceipt } from "@nexteam/core";
 import { GmailReadOnlyAdapter, GmailSendAdapter, type GmailMailboxConfig } from "@nexteam/providers";
+import { configuredTenantId } from "../core/tenantConfig.js";
 
 export interface CommsRail {
   tenantId: string;
@@ -77,7 +78,7 @@ async function sendSmsViaTwilio(env: NodeJS.ProcessEnv, message: OutboundSms): P
 }
 
 export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
-  const tenantId = value(env, "TENANT_ID") || "aquatrace";
+  const tenantId = configuredTenantId(env, "createCommsRail");
   const readAdapters = new Map<string, EmailReadProvider>();
   for (const [prefix, fallbackAlias] of [
     ["GMAIL_READONLY_MAILBOX_1", "READONLY_1"],

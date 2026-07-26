@@ -13,6 +13,8 @@ const files = explicitFiles.length
 const collectionPattern = /\.collection\(["']([^"']+)["']\)([\s\S]{0,260})/g;
 const platformAdminCollections = new Set(["tenants"]);
 const tenantEvidencePattern = /tenantId|\.where\(["']tenantId["']\s*,/;
+const directDocumentReadPattern = /\.doc\([^)]*\)\.get\(\)/;
+const tenantBoundaryPattern = /requireTenantMatch|tenantId\s*===\s*|tenantId\s*!==\s*/;
 const operationPattern = /\.(?:add|get|set|update|delete|doc|batch)\s*\(/;
 const failures = [];
 
@@ -34,7 +36,9 @@ for (const file of files) {
       continue;
     }
     if (tenantEvidencePattern.test(chain) || text.includes(`tenantId: ${collection}`) || text.includes("tenantId")) {
-      continue;
+      if (!directDocumentReadPattern.test(chain) || tenantBoundaryPattern.test(text)) {
+        continue;
+      }
     }
     failures.push(`${file}: Firestore collection "${collection}" lacks tenantId evidence`);
   }

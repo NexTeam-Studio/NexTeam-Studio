@@ -1,0 +1,35 @@
+.settings-surface {
+  width: min(880px, 100%);
+  display: grid;
+  gap: 14px;
+  margin: 0 auto;
+  padding: 32px;
+  border: 1px solid rgba(38, 53, 44, 0.12);
+  border-radius: 34px;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 240, 0.96), rgba(245, 235, 248, 0.9)),
+    radial-gradient(circle at 0% 0%, rgba(109, 40, 217, 0.12), transparent 34%);
+  box-shadow: 0 28px 90px rgba(48, 44, 32, 0.14);
+}
+
+.settings-surface h1,
+.settings-surface p {
+  margin: 0;
+}
+
+.settings-surface h1 {
+  color: var(--ink-900);
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  line-height: 0.94;
+}
+
+.settings-surface p {
+  color: var(--ink-600);
+  line-height: 1.5;
+}
+
+.settings-surface__meta {
+  color: #6d28d9 !important;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+}

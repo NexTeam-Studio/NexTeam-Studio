@@ -13,6 +13,8 @@ import {
 } from "../dist/platform/accessManagement.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository, defaultTenant, defaultTenantBranding, subscriptionFromStripe } from "../dist/platform/repository.js";
 import { registerPlatformRoutes } from "../dist/platform/routes.js";
+import { createServerRuntime } from "../dist/app/runtime.js";
+import { resolveNexiStores } from "../dist/nexi/stores.js";
 
 function tool(name) {
   return {
@@ -401,4 +403,13 @@ test("tenancy scanner catches the planted unscoped query fixture", () => {
     () => execFileSync("node", ["scripts/check-tenancy.mjs", "tests/fixtures/tenancy/unscoped-query.fixture.ts"], { encoding: "utf8" }),
     /Tenancy check failed/
   );
+});
+
+test("runtime defaults to durable persistence and allows memory only by explicit local override", () => {
+  assert.throws(
+    () => createServerRuntime({}),
+    /Durable persistence is required/
+  );
+  assert.throws(() => resolveNexiStores({}), /Firestore persistence is required/);
+  assert.doesNotThrow(() => createServerRuntime({ ALLOW_IN_MEMORY_PERSISTENCE: "true", TENANT_ID: "test-tenant" }));
 });

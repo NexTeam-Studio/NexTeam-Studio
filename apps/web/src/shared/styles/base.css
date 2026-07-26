@@ -1,0 +1,46 @@
+:root {
+  color: #1f211c;
+  background: #ede2cf;
+  font-family: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --paper: #fff8ea;
+  --surface: #fffdf7;
+  --ink-900: #26352c;
+  --ink-700: #315f58;
+  --ink-600: #526055;
+  --accent-500: #e4bf73;
+  --accent-700: #b06b34;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: #1f211c;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
