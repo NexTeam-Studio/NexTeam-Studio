@@ -17,6 +17,7 @@ Hard rule: completely isolated from Aquatrace — no shared anything, ever.
 
 ## Internal Guardrails
 - No secrets in git. Never commit `.env`, tokens, API keys, refresh tokens, or credential files.
+- Secrets may exist only in gitignored local `.env` files or the deployment secret manager. Only the narrow runtime adapter that requires a secret may read it. Never place, copy, echo, or request a real secret in source, tests, scripts, fixtures, receipts, prompts, or reference documentation; stop and flag any task that appears to require that.
 - No live publishing, scheduling, bulk sends, or campaign sends without explicit approval.
 - CompanyCam must remain read-only from repo-controlled workflows.
 - Do not mix unrelated dirty worktree files into a commit.
