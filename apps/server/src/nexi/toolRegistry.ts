@@ -1,4 +1,13 @@
-import { RailError, type NexiTool } from "@nexteam/core";
+import type { Request } from "express";
+import { RailError, type NexiTool, type Tenant } from "@nexteam/core";
+
+export interface NexiToolProviderContext {
+  env: NodeJS.ProcessEnv;
+  req: Request;
+  tenant: Tenant;
+}
+
+export type NexiToolProvider = (context: NexiToolProviderContext) => Promise<NexiTool[]> | NexiTool[];
 
 export interface NexiToolGroup {
   label: string;
@@ -26,4 +35,14 @@ export function mergeNexiToolSets(groups: NexiToolGroup[]): NexiTool[] {
     }
   }
   return merged;
+}
+
+export async function resolveNexiTools(
+  providers: NexiToolProvider[] | undefined,
+  context: NexiToolProviderContext
+): Promise<NexiTool[]> {
+  if (!providers?.length) {
+    return [];
+  }
+  return (await Promise.all(providers.map((provider) => provider(context)))).flat();
 }

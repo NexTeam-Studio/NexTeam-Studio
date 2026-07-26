@@ -877,7 +877,9 @@ export class NativeAdapter implements CRMProvider {
   }
 
   async updateQuote(id: string, patch: Partial<Quote>): Promise<Quote> {
-    return this.repository.updateQuote(id, patch);
+    await this.requireOwnedRecord(this.repository.listQuotes(this.tenantId), id, "quote", "updateQuote");
+    this.assertTenantPatch(patch, "quote", "updateQuote");
+    return this.repository.updateQuote(id, { ...patch, tenantId: this.tenantId });
   }
 
   async createInvoice(invoice: Invoice): Promise<Invoice> {
@@ -888,26 +890,38 @@ export class NativeAdapter implements CRMProvider {
   }
 
   async updateInvoice(id: string, patch: Partial<Invoice>): Promise<Invoice> {
-    const invoice = await this.repository.updateInvoice(id, patch);
-    if (invoice.tenantId !== this.tenantId) {
-      throw new RailError("Native invoice tenant mismatch.", { provider: "native", op: "updateInvoice", status: 403 });
-    }
-    return invoice;
+    await this.requireOwnedRecord(this.repository.listInvoices(this.tenantId), id, "invoice", "updateInvoice");
+    this.assertTenantPatch(patch, "invoice", "updateInvoice");
+    return this.repository.updateInvoice(id, { ...patch, tenantId: this.tenantId });
   }
 
   async updateJob(id: string, patch: Partial<Job>): Promise<Job> {
-    const job = await this.repository.updateJob(id, patch);
-    if (job.tenantId !== this.tenantId) {
-      throw new RailError("Native job tenant mismatch.", { provider: "native", op: "updateJob", status: 403 });
-    }
-    return job;
+    await this.requireOwnedRecord(this.repository.listJobs(this.tenantId), id, "job", "updateJob");
+    this.assertTenantPatch(patch, "job", "updateJob");
+    return this.repository.updateJob(id, { ...patch, tenantId: this.tenantId });
   }
 
   async updateJobStatus(id: string, s: JobStatus): Promise<Job> {
-    const job = await this.repository.updateJob(id, { status: s });
-    if (job.tenantId !== this.tenantId) {
-      throw new RailError("Native job tenant mismatch.", { provider: "native", op: "updateJobStatus", status: 403 });
+    await this.requireOwnedRecord(this.repository.listJobs(this.tenantId), id, "job", "updateJobStatus");
+    return this.repository.updateJob(id, { status: s, tenantId: this.tenantId });
+  }
+
+  private async requireOwnedRecord<T extends { id: string }>(
+    records: Promise<T[]>,
+    id: string,
+    kind: string,
+    op: string
+  ): Promise<void> {
+    const record = (await records).find((candidate) => candidate.id === id);
+    if (!record) {
+      // Do not reveal whether another tenant owns the requested record.
+      throw new RailError(`Native ${kind} ${id} was not found.`, { provider: "native", op, status: 404 });
     }
-    return job;
+  }
+
+  private assertTenantPatch<T extends { tenantId: string }>(patch: Partial<T>, kind: string, op: string): void {
+    if (patch.tenantId !== undefined && patch.tenantId !== this.tenantId) {
+      throw new RailError(`Native ${kind} tenant mismatch.`, { provider: "native", op, status: 403 });
+    }
   }
 }

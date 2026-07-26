@@ -7,7 +7,7 @@ import { FirestoreNexiRepository, MemoryNexiRepository, type NexiRepository } fr
 import { createNexiLookupTools } from "./nexiTools.js";
 import { answerNexiMessage, pendingApprovalFromConversationRecords, type NexiRequestorContext } from "./nexiService.js";
 import { ingestSiteJobBlueprint } from "./siteJobBlueprintIngest.js";
-import { mergeNexiToolSets } from "./toolRegistry.js";
+import { mergeNexiToolSets, resolveNexiTools, type NexiToolProvider } from "./toolRegistry.js";
 
 const memoryRepository = new MemoryNexiRepository();
 const memoryUsageLog = new MemoryUsageLogWriter();
@@ -92,6 +92,7 @@ async function requireNexiOperator(req: Request, env: NodeJS.ProcessEnv): Promis
 export interface NexiRouterDeps {
   extraTools?: NexiTool[] | undefined;
   extraToolsForRequest?: ((req: Request, tenant: Tenant) => Promise<NexiTool[]> | NexiTool[]) | undefined;
+  toolProviders?: NexiToolProvider[] | undefined;
   loadTenant?: ((req: Request) => Promise<Tenant> | Tenant) | undefined;
   loadRequestorContext?: ((req: Request, tenant: Tenant) => Promise<NexiRequestorContext | null> | NexiRequestorContext | null) | undefined;
   filterTools?: ((tenant: Tenant, tools: NexiTool[]) => NexiTool[]) | undefined;
@@ -124,9 +125,11 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: Nex
       const requestorContext = deps.loadRequestorContext ? await deps.loadRequestorContext(req, tenant) : null;
       const stores = runtimeStores(env);
       const requestTools = deps.extraToolsForRequest ? await deps.extraToolsForRequest(req, tenant) : [];
+      const moduleTools = await resolveNexiTools(deps.toolProviders, { env, req, tenant });
       const rawTools = mergeNexiToolSets([
         { label: "lookup", tools: createNexiLookupTools(stores.repository) },
         { label: "static-extra", tools: deps.extraTools ?? [] },
+        { label: "module", tools: moduleTools },
         { label: "request-scoped", tools: requestTools }
       ]);
       const tools = deps.filterTools ? deps.filterTools(tenant, rawTools) : rawTools;
