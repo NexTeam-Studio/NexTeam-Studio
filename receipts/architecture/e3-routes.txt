@@ -1,0 +1,29 @@
+E3 CRM route choke-point receipt
+Date: 2026-07-26
+
+Scope
+- Moved all 116 existing Express CRM and NexPortal route registrations into 11 feature/component registrars.
+- Reduced apps/server/src/crm/routes.ts from 4,457 lines to a 28-line composition entrypoint.
+- Kept handler bodies intact; no facade registrar delegates back to the old monolith.
+- Added a typed routeRuntime context as a temporary dependency seam for E4 narrowing.
+
+Ownership counts
+- Request Core: 14
+- Contact: 9
+- Operations Hub: 7
+- Job Core: 7
+- Visit Core: 8
+- Tenant Config: 2
+- Quote Templates: 3
+- Quote Engine: 19
+- Invoice Structure: 23
+- Payment Rails: 11
+- Portal Core: 13
+- Total: 116
+
+Verification
+- Server typecheck: pass.
+- Production build: pass; Vite transformed 72 modules.
+- Focused CRM/request/job/ledger route tests: 42/42 pass.
+- Full suite: 341/349 pass, with exactly the eight unrelated E1 known-red tests and no new failures.
+- Browser verification: not run, per the standing no-browser constraint.
