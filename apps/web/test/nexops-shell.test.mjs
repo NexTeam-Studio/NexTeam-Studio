@@ -107,10 +107,10 @@ test("internal operator modules reuse one local session token while NexPortal st
 });
 
 test("client workspace exposes a confirmation-backed delete action instead of leaving duplicate cleanup to raw data edits", () => {
-  const mainSource = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8");
+  const workspaceSource = readFileSync(new URL("../src/features/nexopsShell/NexOpsWorkspace.tsx", import.meta.url), "utf8");
 
-  assert.match(mainSource, /async function deleteClientRecord\(clientId: string\): Promise<void>/);
-  assert.match(mainSource, /window\.confirm\(\s*`Delete \$\{clientDisplayName\(client\)\}\?/);
-  assert.match(mainSource, /fetch\(`\/api\/crm\/clients\/\$\{encodeURIComponent\(clientId\)\}\?tenantId=\$\{encodeURIComponent\(operatorContext\.tenantId\)\}`,\s*\{\s*method:\s*"DELETE"/);
-  assert.match(mainSource, /Delete client/);
+  assert.match(workspaceSource, /async function deleteClientRecord\(clientId: string\): Promise<void>/);
+  assert.match(workspaceSource, /window\.confirm\(\s*`Delete \$\{clientDisplayName\(client\)\}\?/);
+  assert.match(workspaceSource, /fetch\(`\/api\/crm\/clients\/\$\{encodeURIComponent\(clientId\)\}\?tenantId=\$\{encodeURIComponent\(operatorContext\.tenantId\)\}`,\s*\{\s*method:\s*"DELETE"/);
+  assert.match(workspaceSource, /Delete client/);
 });

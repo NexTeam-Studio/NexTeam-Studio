@@ -1,0 +1,19 @@
+E4 web app-shell boundary checkpoint
+Date: 2026-07-27
+
+Change:
+- Removed the 3,820-line NexOps workspace implementation from apps/web/src/main.tsx.
+- Added apps/web/src/features/nexopsShell/NexOpsWorkspace.tsx.
+- The /nexops AuthGate branch delegates to NexOpsWorkspace.
+- Moved the Contact mobile test under the Contact component test folder.
+
+Verification (non-browser):
+- npm run build: PASS (73 modules)
+- nexops-shell.test.mjs and contact-mobile.test.mjs: PASS (16/16)
+- npm test: 341/349 passing; exactly the eight established unrelated known-red tests remain.
+- Browser verification: not run, per the standing no-browser constraint.
+
+Honest boundary:
+- The app-shell move preserves the existing implementation intact.
+- Contact-specific rendering and shell-level state still coexist in NexOpsWorkspace and remain to split.
+- Contact styles remain in apps/web/src/styles.css.

@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { NexOpsCreateClientPanel } from "../src/nexopsDeferredUi.tsx";
-import { CLIENT_PROFILE_TABS } from "../src/nexopsShell.ts";
+import { NexOpsCreateClientPanel } from "../../../../../nexopsDeferredUi.tsx";
+import { CLIENT_PROFILE_TABS } from "../../../../../nexopsShell.ts";
 import {
   buildLeadSourceOptions,
   CLIENT_CUSTOM_FIELD_RESERVED_LABELS,
@@ -16,7 +16,7 @@ import {
   mobileTabsForBucket,
   primaryClientPhoneValue,
   validateCustomFieldDraftRows
-} from "../src/features/clients/components/contact/domain/clientProfile.ts";
+} from "../domain/clientProfile.ts";
 
 function blankDraft() {
   return {
