@@ -1,5 +1,5 @@
 {
-  "name": "@nexteam/core",
+  "name": "@nexteam/shared",
   "version": "0.0.0",
   "type": "module",
   "main": "dist/index.js",
@@ -13,12 +13,5 @@
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc -b --pretty false"
-  },
-  "dependencies": {
-    "@nexteam/shared": "0.0.0",
-    "firebase-admin": "^14.1.0",
-    "pino": "^9.6.0",
-    "zod": "^3.25.76"
   }
 }
-

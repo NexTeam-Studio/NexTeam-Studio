@@ -1,0 +1,91 @@
+E2 SHARED ADDRESS/LOCATION RECEIPT
+Date: 2026-07-26
+Scope: shared contract, parsing, Google geocoding/suggestions, formatting, distance seam, and map links
+
+BUILD
+Command: npm run build
+Result: PASS
+Server: TypeScript project references clean
+Web: Vite production build clean, 71 modules transformed
+Main browser chunk: 247.60 kB (60.04 kB gzip)
+E1 main browser chunk: 247.39 kB (59.93 kB gzip)
+
+FOCUSED TESTS
+Command: node --import tsx --test packages/shared/address-location.test.mjs apps/server/test/crm-address-suggestions.test.mjs apps/server/test/request-foundation.test.mjs apps/server/test/nexi-job-desk.test.mjs apps/web/test/nexi-standalone-ui.test.mjs
+Result: PASS, 58/58
+
+1. CRM address suggestions route normalizes geocode results into UI-ready fields
+2. CRM client create route persists property coordinates when address autocomplete provides them
+3. Camp Mikell fixture extracts 101000 gallons
+4. source check blocks factual answers without sources
+5. source check does not block meta or feedback turns
+6. source check does not block email action commands or honest tool failures
+7. Nexi meta/help turns answer without source stonewalls
+8. Nexi tool loop preloads obvious tools and records cache metrics
+9. Nexi tool registry rejects duplicate tool names before the model call
+10. CRM-style prompts send a unique Nexi tool list even when content tools are enabled
+11. local Nexi fallback routes email-today prompts to summarizeInbox before schedule
+12. local Nexi fallback routes attention prompts to triageInbox
+13. local Nexi fallback routes email source refs to getEmailMessage
+14. Nexi Anthropic gateway answers draftEmail action commands from the approval result
+15. personal email and text requests resolve to the logged-in user's own contact details for owner and technician seats
+16. personal directions prefer live requestor coordinates, fall back to the logged-in user's profile address, and leave shop questions on the tenant base path
+17. lookupSiteJobBlueprintField returns stored fields for the requested entity
+18. SiteJobBlueprint field lookup reads section-scoped counts from pooled JSON fields
+19. Nexi service persists failureLog for source-enforced failures
+20. Nexi service sanitizes raw internal answers before they reach chat history
+21. Nexi service formats client approvals as clean field-list confirmations without raw ids
+22. freeform client create parsing preserves short email prefixes both inline and split before the @ token
+23. client approvals ask for a missing full name instead of rendering punctuation placeholders
+24. freeform client create approval preserves the parsed name and full email, saves the approved address, and honors typed yes replies
+25. fresh create-client phrasing with an article and sentence break still routes into createClient
+26. approval actions require an explicit approval id and never silently approve the newest pending client
+27. fresh single client records without a zip still save address data, answer email lookups, and resolve possessive short-form references
+28. pending client confirmations accept natural-language corrections and restate the updated address before approval
+29. client lookup follow-ups resolve both his and her pronouns to the active conversation entity
+30. contact-card delivery requests report the same honest capability gap across email, text, and follow-up phrasing
+31. post-approval client edit requests return the honest saved-record capability gap across natural phrasings
+32. post-approval edit follow-ups using pronouns after a lookup still return the honest saved-record capability gap
+33. approval rejections omit stray punctuation when the pending title is empty or malformed
+34. Nexi service answers phone lookups directly from matched client records
+35. Nexi service answers address lookups directly from matched client property records
+36. Nexi client lookup misses stay on the native rail and never mention dormant vendors
+37. client approval preview keeps the parsed zip separate from the phone number
+38. Nexi message route wraps duplicate tool registration failures in the friendly fallback
+39. Nexi message history route restores the same conversation and clears pending approval after approval
+40. Nexi message route wraps request-scoped tool factory failures in the friendly fallback
+41. Nexi service persists tool runs for conversation reuse
+42. Nexi service returns the stable conversation id, not the Firestore record id
+43. Firestore conversation history reads are scoped to one conversation
+44. request routes create, update, convert, archive, and reopen while preserving intake fields
+45. local Nexi request tools clarify missing intake data, then create and recall real requests
+46. client record route toggles marketing consent and forwards the NexReach revocation hook
+47. standalone Nexi layout renders exactly one unified composer row
+48. standalone Nexi layout does not render unrelated NexOps widgets, a floating FAB, or a permanent greeting by default
+49. standalone Nexi sanitizes multiple raw internal error strings
+50. standalone Nexi auto-scroll helper only sticks near the bottom
+51. standalone Nexi helpers derive display names, hide approval pills, and build conversational phone/maps actions
+52. standalone Nexi binds approval replies to the latest visible approval prompt instead of a stale fallback
+53. standalone Nexi shell keeps the header and composer pinned while the thread really scrolls
+54. standalone Nexi mobile header keeps the tenant mark clear of the voice-toggle rail at phone widths
+55. standalone Nexi styling keeps the route-specific bubble, shell, and voice treatments aligned with the live shell
+56. shared Address/Location parses, formats, and keys one canonical address contract
+57. shared Address/Location builds intake and Google suggestion contracts
+58. shared Address/Location chooses the native mobile maps URL without owning UI
+
+FULL SUITE
+Command: npm test
+Result: KNOWN-RED BASELINE, 334/342 passing and exactly 8 unrelated failures
+
+1. campaign routes expose template, test-run, tracking, unsubscribe, and stats
+2. local Nexi chat can search documents, queue a folder, approve it, queue an upload, and approve it
+3. M10 routes are owner/admin gated and queue tenant provisioning approval
+4. M8 operator UI customization is tenant-scoped and owner/admin gated
+5. NexReach local Nexi loop accepts underscore ids through generate, approve, and refusal flow
+6. platform routes expose tenants, test subscription, backup, and export
+7. platform routes manage tenant users and job links without leaking token hashes by default
+8. tenant users seed Aquatrace roles and produce Firebase custom claims
+
+No browser was opened. Phone-facing behavior was verified through the Vite build,
+static bundle sizes, and the standalone Nexi map-link tests as required by the
+no-browser rule.

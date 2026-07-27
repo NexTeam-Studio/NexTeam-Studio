@@ -1,3 +1,5 @@
+import { formatAddress, type AddressLike } from "@nexteam/shared";
+
 export interface CommunicationTemplateRecord {
   id: string;
   tenantId: string;
@@ -11,14 +13,6 @@ export interface CommunicationTemplateRecord {
   smsBody?: string;
   createdAt: string;
   updatedAt: string;
-}
-
-interface AddressLike {
-  street1?: string;
-  street2?: string;
-  city?: string;
-  province?: string;
-  postalCode?: string;
 }
 
 interface ClientLike {
@@ -96,10 +90,7 @@ function intakeAddress(snapshot?: { fieldIndex: Record<string, string | number |
 }
 
 function addressLine(address?: AddressLike | undefined): string {
-  if (!address) {
-    return "";
-  }
-  return [address.street1, address.street2, [address.city, address.province, address.postalCode].filter(Boolean).join(", ")].filter(Boolean).join(", ");
+  return formatAddress(address);
 }
 
 function visitWindowLabel(visit: VisitLike): string {

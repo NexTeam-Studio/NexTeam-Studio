@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import type { Address } from "@nexteam/shared";
 import {
   PaymentScheduleEditor,
   blankPaymentSchedule,
@@ -34,14 +35,6 @@ interface ClientOption {
   displayNamePreference?: "person" | "company";
   emails: string[];
   phones: string[];
-}
-
-interface Address {
-  street1: string;
-  city: string;
-  province: string;
-  postalCode: string;
-  country: string;
 }
 
 interface InlineJobClientDraft {

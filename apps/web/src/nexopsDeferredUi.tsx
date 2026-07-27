@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import type { AddressSuggestion as CrmAddressSuggestion } from "@nexteam/shared";
 import { NEXOPS_SHARED_CREATE_MENU_ID } from "./nexopsMobileCreateFab";
 import { ProductLogo } from "./productBranding";
 import { NEXOPS_CREATE_OPTIONS, type NexOpsCreateOption } from "./nexopsShell";
@@ -89,17 +90,6 @@ interface NexOpsCreateClientPanelProps {
   surface?: "client" | "contact" | "property";
   onClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void> | void;
-}
-
-interface CrmAddressSuggestion {
-  label: string;
-  street1: string;
-  city: string;
-  province: string;
-  postalCode: string;
-  country: string;
-  lat: number;
-  lng: number;
 }
 
 interface NexOpsNotificationPanelProps {

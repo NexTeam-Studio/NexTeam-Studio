@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { mapsHref } from "@nexteam/shared";
 import { PlatformMark } from "./productBranding";
 
 export interface NexiStandaloneSource {
@@ -145,12 +146,8 @@ export function nexiAddressActionValue(text: string): string | undefined {
 }
 
 export function nexiMapsHref(address: string, userAgent?: string): string {
-  const encoded = encodeURIComponent(address.trim());
   const ua = userAgent ?? (typeof navigator !== "undefined" ? navigator.userAgent : "");
-  const useAppleMaps = /\b(iPhone|iPad|iPod)\b/i.test(ua);
-  return useAppleMaps
-    ? `https://maps.apple.com/?q=${encoded}`
-    : `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+  return mapsHref(address, ua);
 }
 
 export interface NexiConversationOffer {

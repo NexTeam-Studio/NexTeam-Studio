@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
 
 type RequestStatus = "new" | "archived" | "converted_to_quote" | "converted_to_job";
 const REQUEST_FILTERS: Array<{ value: "all" | RequestStatus; label: string }> = [
@@ -13,15 +14,6 @@ type RequestSurface = "request" | "quote" | "job" | "visit" | "invoice";
 type IntakeFieldType = "text" | "email" | "phone" | "textarea" | "select" | "boolean" | "multi_image";
 type IntakeFieldGroup = "contact" | "property" | "pool" | "safety" | "service" | "notes";
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
-
-interface CrmAddress {
-  street1: string;
-  street2?: string;
-  city: string;
-  province: string;
-  postalCode: string;
-  country: string;
-}
 
 interface ClientOption {
   id: string;
@@ -202,17 +194,6 @@ function clientDisplayName(client: ClientOption): string {
     return client.company;
   }
   return person || client.name;
-}
-
-function formatAddress(address?: CrmAddress): string {
-  if (!address) {
-    return "";
-  }
-  return [
-    address.street1,
-    address.street2,
-    [address.city, address.province, address.postalCode].filter(Boolean).join(", ")
-  ].filter(Boolean).join(", ");
 }
 
 function requestStatusLabel(status: RequestStatus): string {

@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type Auth, type User } from "firebase/auth";
 import "./styles.css";
@@ -306,15 +307,6 @@ interface CrmContact {
   phones?: CrmPhone[];
   emails?: CrmEmail[];
   channelPreference?: ContactChannel;
-}
-
-interface CrmAddress {
-  street1: string;
-  street2?: string;
-  city: string;
-  province: string;
-  postalCode: string;
-  country: string;
 }
 
 interface CrmIntakeFieldValue {
@@ -1458,17 +1450,6 @@ function clientContactDisplayName(client: CrmClient, primaryContact?: CrmContact
     return "";
   }
   return fallback.trim().toLowerCase() === clientDisplayName(client).trim().toLowerCase() ? "" : fallback;
-}
-
-function formatAddress(address?: CrmAddress): string {
-  if (!address) {
-    return "";
-  }
-  return [
-    address.street1,
-    address.street2,
-    [address.city, address.province, address.postalCode].filter(Boolean).join(", ")
-  ].filter(Boolean).join(", ");
 }
 
 function clientPrimaryAddress(client: CrmClient): string {

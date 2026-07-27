@@ -16,6 +16,7 @@
     "@nexteam/mobile": "0.0.0",
     "@nexteam/nexi": "0.0.0",
     "@nexteam/providers": "0.0.0",
+    "@nexteam/shared": "0.0.0",
     "express": "^4.19.2",
     "firebase-admin": "^14.1.0"
   }

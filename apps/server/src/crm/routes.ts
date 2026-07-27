@@ -36,6 +36,7 @@ import type { CommsRail } from "../comms/gmailRegistry.js";
 import type { NexReachService } from "../content/nexreachService.js";
 import { defaultTenantBranding, type PlatformRepository } from "../platform/repository.js";
 import type { SitesRepository } from "../sites/repository.js";
+import { fetchAddressSuggestions } from "../shared/addressLocation/geocodingService.js";
 import { ensureDocumentNumbers, reserveDocumentNumber } from "./documentNumbering.js";
 import {
   bookingTemplateVariables,
@@ -574,85 +575,6 @@ function sanitizeFieldVisibility(visibility?: {
     ...(visibility.invoice !== undefined ? { invoice: visibility.invoice } : {})
   };
   return Object.keys(next).length ? next : undefined;
-}
-
-export interface CrmAddressSuggestion {
-  label: string;
-  street1: string;
-  city: string;
-  province: string;
-  postalCode: string;
-  country: string;
-  lat: number;
-  lng: number;
-}
-
-function googleComponent(components: Array<{ long_name?: string; short_name?: string; types?: string[] }>, type: string, short = false): string {
-  const match = components.find((component) => component.types?.includes(type));
-  if (!match) {
-    return "";
-  }
-  return (short ? match.short_name : match.long_name) ?? "";
-}
-
-export function mapGoogleGeocodeSuggestion(result: {
-  formatted_address?: string;
-  geometry?: { location?: { lat?: number; lng?: number } };
-  address_components?: Array<{ long_name?: string; short_name?: string; types?: string[] }>;
-}): CrmAddressSuggestion | null {
-  const components = result.address_components ?? [];
-  const streetNumber = googleComponent(components, "street_number");
-  const route = googleComponent(components, "route");
-  const city = googleComponent(components, "locality") || googleComponent(components, "postal_town") || googleComponent(components, "administrative_area_level_2");
-  const province = googleComponent(components, "administrative_area_level_1", true);
-  const postalCode = googleComponent(components, "postal_code");
-  const country = googleComponent(components, "country", true) || googleComponent(components, "country");
-  const lat = result.geometry?.location?.lat;
-  const lng = result.geometry?.location?.lng;
-  const street1 = [streetNumber, route].filter(Boolean).join(" ").trim();
-  if (!street1 || !city || !province || !postalCode || !country || typeof lat !== "number" || typeof lng !== "number") {
-    return null;
-  }
-  return {
-    label: result.formatted_address ?? `${street1}, ${city}, ${province} ${postalCode}`,
-    street1,
-    city,
-    province,
-    postalCode,
-    country,
-    lat,
-    lng
-  };
-}
-
-async function fetchAddressSuggestions(query: string, apiKey: string, fetchFn: typeof fetch = fetch): Promise<CrmAddressSuggestion[]> {
-  if (query.trim().length < 3 || !apiKey.trim()) {
-    return [];
-  }
-  const params = new URLSearchParams({
-    address: query.trim(),
-    key: apiKey.trim()
-  });
-  const response = await fetchFn(`https://maps.googleapis.com/maps/api/geocode/json?${params.toString()}`);
-  const body = await response.json() as {
-    status?: string;
-    results?: Array<{
-      formatted_address?: string;
-      geometry?: { location?: { lat?: number; lng?: number } };
-      address_components?: Array<{ long_name?: string; short_name?: string; types?: string[] }>;
-    }>;
-    error_message?: string;
-  };
-  if (!response.ok) {
-    throw new RailError(body.error_message ?? "Address suggestions are unavailable right now.", { provider: "native", op: "addressSuggestions", status: response.status });
-  }
-  if (body.status && !["OK", "ZERO_RESULTS"].includes(body.status)) {
-    throw new RailError(body.error_message ?? `Google geocode returned ${body.status}.`, { provider: "native", op: "addressSuggestions", status: 502 });
-  }
-  return (body.results ?? [])
-    .map((result) => mapGoogleGeocodeSuggestion(result))
-    .filter((result): result is CrmAddressSuggestion => Boolean(result))
-    .slice(0, 5);
 }
 
 export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import type { AddressLike } from "@nexteam/shared";
 import {
   PaymentScheduleEditor,
   blankPaymentSchedule,
@@ -52,13 +53,7 @@ interface ClientOption {
   displayNamePreference?: "person" | "company";
   emails: string[];
   phones: string[];
-  billingAddress?: {
-    street1?: string;
-    street2?: string;
-    city?: string;
-    province?: string;
-    postalCode?: string;
-  };
+  billingAddress?: AddressLike;
 }
 
 interface InvoiceLineItem {

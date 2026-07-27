@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
+  addressFromIntakeFields,
+  addressStorageKey,
   RailError,
   type Address,
   type ApprovalQueueService,
@@ -382,22 +384,7 @@ function valueAsStringArray(fieldIndex: IntakeSnapshot["fieldIndex"], key: strin
 }
 
 function propertyAddressFromFields(fieldIndex: IntakeSnapshot["fieldIndex"]): Address | undefined {
-  const street1 = valueAsString(fieldIndex, "property_street1");
-  const city = valueAsString(fieldIndex, "property_city");
-  const province = valueAsString(fieldIndex, "property_province");
-  const postalCode = valueAsString(fieldIndex, "property_postal_code");
-  if (!street1 || !city || !province || !postalCode) {
-    return undefined;
-  }
-  const street2 = valueAsString(fieldIndex, "property_street2");
-  return {
-    street1,
-    ...(street2 ? { street2 } : {}),
-    city,
-    province,
-    postalCode,
-    country: "US"
-  };
+  return addressFromIntakeFields(fieldIndex);
 }
 
 function requestSubject(input: RequestBuildInput, fieldIndex: IntakeSnapshot["fieldIndex"]): string {
@@ -680,12 +667,7 @@ export function updateServiceRequestShape(
 }
 
 function propertyAddressKey(address: Address): string {
-  return [
-    normalizeEmail(address.street1),
-    normalizeEmail(address.city),
-    normalizeEmail(address.province),
-    normalizePhone(address.postalCode)
-  ].join("|");
+  return addressStorageKey(address);
 }
 
 async function resolveExistingClient(repository: NativeCrmRepository, request: ServiceRequest): Promise<Client | null> {

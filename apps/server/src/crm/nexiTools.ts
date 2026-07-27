@@ -3,7 +3,9 @@ import {
   addressSchema,
   clientCommunicationSettingsSchema,
   clientContactSchema,
+  parseAddress,
   RailError,
+  sanitizeAddressText,
   personNameSchema,
   type ApprovalQueueService,
   type Client,
@@ -428,148 +430,17 @@ function catalogCodeSeed(value: string): string {
     || "CUSTOM";
 }
 
-function sanitizeRequestAddress(value: string): string {
-  return value
-    .replace(/\b(?:telephone|phone|mobile|cell|text|email|e-mail)\b[\s\S]*$/i, "")
-    .replace(/(?:,?\s*(?:\+?1[\s.-]*)?(?:\(\d{3}\)|\d{3})[\s.-]*\d{3}[\s.-]*\d{4})\s*$/i, "")
-    .replace(/[?.!]+$/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-const US_STATE_ABBREVIATIONS: Record<string, string> = {
-  alabama: "AL",
-  alaska: "AK",
-  arizona: "AZ",
-  arkansas: "AR",
-  california: "CA",
-  colorado: "CO",
-  connecticut: "CT",
-  delaware: "DE",
-  florida: "FL",
-  georgia: "GA",
-  hawaii: "HI",
-  idaho: "ID",
-  illinois: "IL",
-  indiana: "IN",
-  iowa: "IA",
-  kansas: "KS",
-  kentucky: "KY",
-  louisiana: "LA",
-  maine: "ME",
-  maryland: "MD",
-  massachusetts: "MA",
-  michigan: "MI",
-  minnesota: "MN",
-  mississippi: "MS",
-  missouri: "MO",
-  montana: "MT",
-  nebraska: "NE",
-  nevada: "NV",
-  "new hampshire": "NH",
-  "new jersey": "NJ",
-  "new mexico": "NM",
-  "new york": "NY",
-  "north carolina": "NC",
-  "north dakota": "ND",
-  ohio: "OH",
-  oklahoma: "OK",
-  oregon: "OR",
-  pennsylvania: "PA",
-  "rhode island": "RI",
-  "south carolina": "SC",
-  "south dakota": "SD",
-  tennessee: "TN",
-  texas: "TX",
-  utah: "UT",
-  vermont: "VT",
-  virginia: "VA",
-  washington: "WA",
-  "west virginia": "WV",
-  wisconsin: "WI",
-  wyoming: "WY",
-  "district of columbia": "DC"
-};
-
-function normalizeStateProvince(value: string): string | null {
-  const normalized = value.trim().replace(/\./g, "").replace(/\s+/g, " ").toLowerCase();
-  if (!normalized) {
-    return null;
-  }
-  if (/^[a-z]{2}$/i.test(normalized)) {
-    return normalized.toUpperCase();
-  }
-  return US_STATE_ABBREVIATIONS[normalized] ?? null;
-}
-
-function titleCaseAddressText(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/\b([a-z])/g, (_match, letter: string) => letter.toUpperCase());
-}
-
-function parseTrailingStateAndPostalCode(value: string): { head: string; province: string; postalCode: string } | null {
-  const zipMatch = value.match(/\s+(\d{5}(?:-\d{4})?)$/);
-  const postalCode = zipMatch?.[1]?.trim() ?? "";
-  const withoutZip = (zipMatch ? value.slice(0, zipMatch.index) : value).trim().replace(/,\s*$/, "");
-  const stateCandidates = Object.keys(US_STATE_ABBREVIATIONS)
-    .concat(Object.values(US_STATE_ABBREVIATIONS))
-    .sort((left, right) => right.length - left.length);
-  const lower = withoutZip.toLowerCase();
-  for (const candidate of stateCandidates) {
-    const normalizedCandidate = candidate.toLowerCase();
-    if (!lower.endsWith(` ${normalizedCandidate}`) && lower !== normalizedCandidate) {
-      continue;
-    }
-    const province = normalizeStateProvince(candidate);
-    if (!province) {
-      continue;
-    }
-    const head = withoutZip.slice(0, withoutZip.length - candidate.length).trim().replace(/,\s*$/, "");
-    if (!head) {
-      return null;
-    }
-    return { head, province, postalCode };
-  }
-  return null;
-}
-
 function parseRequestAddress(value: string): { street1: string; city: string; province: string; postalCode: string } | null {
-  const sanitized = sanitizeRequestAddress(value);
-  const match = sanitized.match(
-    /^(.+?\b(?:road|rd|drive|dr|lane|ln|street|st|avenue|ave|court|ct|trail|trl|way|circle|cir|boulevard|blvd|highway|hwy|place|pl|parkway|pkwy))\.?,?\s+([^,]+?),?\s+([A-Za-z]{2}|[A-Za-z]+(?:\s+[A-Za-z]+)*)(?:\s+(\d{5}(?:-\d{4})?))?$/i
-  );
-  if (match) {
-    const street1 = match[1]!;
-    const city = match[2]!;
-    const province = normalizeStateProvince(match[3]!);
-    const postalCode = match[4]?.trim() ?? "";
-    if (province) {
-      return {
-        street1: titleCaseAddressText(street1.trim()),
-        city: titleCaseAddressText(city.trim()),
-        province,
-        postalCode
-      };
-    }
+  const parsed = parseAddress(value);
+  if (!parsed) {
+    return null;
   }
+  const { country: _country, street2: _street2, ...address } = parsed;
+  return address;
+}
 
-  const trailing = parseTrailingStateAndPostalCode(sanitized);
-  if (!trailing) {
-    return null;
-  }
-  const streetAndCity = trailing.head.match(
-    /^(.+?\b(?:road|rd|drive|dr|lane|ln|street|st|avenue|ave|court|ct|trail|trl|way|circle|cir|boulevard|blvd|highway|hwy|place|pl|parkway|pkwy))\.?,?\s+(.+)$/i
-  );
-  if (!streetAndCity?.[1] || !streetAndCity[2]) {
-    return null;
-  }
-  return {
-    street1: titleCaseAddressText(streetAndCity[1].trim()),
-    city: titleCaseAddressText(streetAndCity[2].trim().replace(/,\s*$/, "")),
-    province: trailing.province,
-    postalCode: trailing.postalCode
-  };
+function sanitizeRequestAddress(value: string): string {
+  return sanitizeAddressText(value);
 }
 
 function hasClientSavePhone(input: CreateClientInput): boolean {

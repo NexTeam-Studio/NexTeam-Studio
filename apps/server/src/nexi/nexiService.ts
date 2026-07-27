@@ -1,4 +1,4 @@
-import type { Address, ConversationRecord, NexiTool, Source, Tenant, UsageLogRecord } from "@nexteam/core";
+import { formatNavigationAddress, type Address, type ConversationRecord, type NexiTool, type Source, type Tenant, type UsageLogRecord } from "@nexteam/core";
 import { RailError } from "@nexteam/core";
 import {
   extractCreateClientInput,
@@ -110,17 +110,7 @@ function requestorPhone(context: NexiRequestorContext | undefined): string | und
 }
 
 function requestorAddressString(address: Address | undefined): string | undefined {
-  if (!address) {
-    return undefined;
-  }
-  const streetLine = [address.street1, address.street2].filter(Boolean).join(" ").trim();
-  const locality = [address.city, address.province].filter(Boolean).join(", ").trim();
-  const postalLine = [locality, address.postalCode].filter(Boolean).join(" ").trim();
-  return [
-    streetLine,
-    postalLine,
-    address.country && address.country !== "US" ? address.country : ""
-  ].filter(Boolean).join(", ").replace(/\s+/g, " ").trim() || undefined;
+  return formatNavigationAddress(address);
 }
 
 function requestorOrigin(context: NexiRequestorContext | undefined): string | undefined {

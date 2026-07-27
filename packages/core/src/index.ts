@@ -6,4 +6,5 @@ export * from "./eventBus.js";
 export * from "./approvalQueue.js";
 export * from "./lifecycle.js";
 export * from "./lifecycleSchemas.js";
+export * from "./addressLocation.js";
 
