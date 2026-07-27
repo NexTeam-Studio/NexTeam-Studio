@@ -4,6 +4,7 @@ import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type Auth, type User } from "firebase/auth";
 import "./styles.css";
+import "./features/quotes/components/quoteTemplates/quoteTemplates.css";
 import { NexiIdentityMark, PlatformMark, ProductInlineLabel, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "./productBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./nexopsHeader";
 import { NexDocsClientWorkspace } from "./nexopsNexDocs";

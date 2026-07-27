@@ -1,0 +1,21 @@
+E4 Contact completion checkpoint
+Date: 2026-07-27
+
+Owned implementation:
+- Contact server routes, Nexi tools, persistence, approvals, and lifecycle contracts
+- ContactRoster.tsx
+- ContactEditorSurface.tsx
+- ContactProfileSurface.tsx (mobile and desktop profile/client rails)
+- contact.css
+- Contact domain and component tests
+
+Shell boundary:
+- NexOpsWorkspace supplies state and cross-area navigation callbacks only.
+- Contact profile JSX no longer lives in the shell.
+- The unreachable legacy renderClientDetail function was removed.
+
+Verification (non-browser):
+- npm run build: PASS (79 modules)
+- Contact/shell tests: PASS (17/17)
+- npm test: 343/351; exactly the established eight unrelated known-red tests remain.
+- Browser verification: not run, per the standing no-browser constraint.
