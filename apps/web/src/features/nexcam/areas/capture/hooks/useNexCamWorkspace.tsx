@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { Address as CrmAddress } from "@nexteam/shared";
 import type { Auth, User } from "firebase/auth";
-import { fallbackOperatorContext, loadOperatorContext } from "../../../../nexopsShell/NexOpsWorkspace";
+import { fallbackOperatorContext, loadOperatorContext } from "../../../../operatorContext/resolveOperatorContext";
 
 interface FieldDocsMediaCommentRecord {
   id: string;

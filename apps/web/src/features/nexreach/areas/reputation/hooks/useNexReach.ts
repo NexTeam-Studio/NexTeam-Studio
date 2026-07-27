@@ -1,20 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { signOut, type Auth, type User } from "firebase/auth";
 import type { TenantBranding } from "@nexteam/core";
-
-const CONFIGURED_TENANT_ID = (import.meta.env.VITE_TENANT_ID as string | undefined)?.trim() ?? "";
-
-
-
-type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
-
-
-
-interface OperatorContext {
-  tenantId: string;
-  tenantUserId: string;
-  role: TenantRole;
-}
+import { fallbackOperatorContext, loadOperatorContext, type ResolvedOperatorContext as OperatorContext } from "../../../../operatorContext/resolveOperatorContext";
 
 
 
@@ -125,51 +112,6 @@ interface NexReachApiResponse {
   showcase?: NexReachShowcase;
   token?: string;
   url?: string;
-}
-
-
-
-function claimString(claims: Record<string, unknown>, key: string): string | null {
-  const value = claims[key];
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
-
-
-function claimRole(claims: Record<string, unknown>): TenantRole {
-  const explicit = claimString(claims, "tenantRole") ?? claimString(claims, "role");
-  const roles = Array.isArray(claims.roles) ? claims.roles.map((role) => String(role).toUpperCase()) : [];
-  const candidates = [explicit, ...roles].filter(Boolean).map((role) => String(role).toUpperCase());
-  if (candidates.includes("OFFICE_ADMIN") || candidates.includes("OFFICE") || candidates.includes("ADMIN")) {
-    return "OFFICE_ADMIN";
-  }
-  if (candidates.includes("TECHNICIAN") || candidates.includes("TECH")) {
-    return "TECHNICIAN";
-  }
-  return "OWNER";
-}
-
-
-
-function fallbackOperatorContext(user: User): OperatorContext {
-  return { tenantId: CONFIGURED_TENANT_ID, tenantUserId: user.uid, role: "OWNER" };
-}
-
-
-
-async function loadOperatorContext(user: User): Promise<OperatorContext> {
-  const token = await user.getIdTokenResult();
-  const claims = token.claims as Record<string, unknown>;
-  const claimedTenantId = claimString(claims, "tenantId") ?? claimString(claims, "tenant_id");
-  const tenantId = claimedTenantId || CONFIGURED_TENANT_ID;
-  if (!tenantId) {
-    throw new Error("This sign-in is missing a tenant assignment.");
-  }
-  return {
-    tenantId,
-    tenantUserId: claimString(claims, "tenantUserId") ?? user.uid,
-    role: claimRole(claims)
-  };
 }
 
 

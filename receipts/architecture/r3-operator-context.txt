@@ -1,0 +1,20 @@
+R3 shared operator-context ownership receipt
+Timestamp: 2026-07-27T09:46:14-04:00
+
+Change
+- Moved Firebase tenant/user/role claim resolution out of NexOpsWorkspace.tsx and NexReach's hook into features/operatorContext/resolveOperatorContext.ts.
+- Repointed NexOps, Nexi, NexCam, and NexReach to the single resolver.
+- Removed the unused legacy useOperatorContext hook, which had no callers and duplicated claim parsing.
+
+Verification
+- npm run lint: exit 0, zero errors
+- npm run typecheck: exit 0
+- npm run build: exit 0, 143 modules transformed
+- Non-browser aggregate: 350 tests; 347 pass; 3 fail; 0 skipped
+- Failures are the unchanged known-red assertions in content-engine.test.mjs:487, fielddocs-nexi-tools.test.mjs:358, and platform.test.mjs:316.
+- No browser was opened.
+
+Central shell line counts after change
+- apps/web/src/main.tsx: 18
+- apps/web/src/styles.css: 4,468
+- apps/web/src/features/nexopsShell/NexOpsWorkspace.tsx: 3,373

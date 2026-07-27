@@ -5,7 +5,8 @@ import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "../../../../../nex
 import { buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, NEXTEAM_WORKSPACE_OPTIONS, type NexOpsCreateOption } from "../../../../../nexopsShell";
 import { nexiActiveApprovalPrompt, nexiConversationOffer, nexiConversationOfferReplyAction, NEXI_FRIENDLY_FAILURE_MESSAGE, formatNexiOperatorDisplayName, nexiIsApprovalPrompt, nexiAddressActionValue, nexiMapsHref, nexiPhoneActionValue, nexiShouldHideRenderedSource, NexiStandaloneLayout, nexiStoredSessionKey, parseNexiStoredSession, sanitizeNexiRenderedText, stringifyNexiStoredSession, type NexiStandalonePendingApproval } from "../../../../../nexiStandalone";
 import { resolveRequestorOriginForNexiMessage } from "../../../../../nexiRequestContext";
-import { NexOpsCreateMenu, NexOpsNavGlyph, NexOpsNotificationPanel, fallbackOperatorContext, fileToBase64, formatPhoneActionLabel, loadOperatorContext, mediaUrl, sourceIsPhoto } from "../../../../nexopsShell/NexOpsWorkspace";
+import { NexOpsCreateMenu, NexOpsNavGlyph, NexOpsNotificationPanel, fileToBase64, formatPhoneActionLabel, mediaUrl, sourceIsPhoto } from "../../../../nexopsShell/NexOpsWorkspace";
+import { fallbackOperatorContext, loadOperatorContext } from "../../../../operatorContext/resolveOperatorContext";
 import { signOutOperator } from "../../../../../shared/auth/authBootstrap";
 import { useNexiVoice } from "../../voice/hooks/useNexiVoice";
 import "../styles/chat.css";
