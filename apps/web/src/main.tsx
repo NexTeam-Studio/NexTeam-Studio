@@ -7,6 +7,7 @@ import "./styles.css";
 import "./features/quotes/components/quoteTemplates/quoteTemplates.css";
 import "./features/jobs/components/jobCore/jobCore.css";
 import "./features/visits/components/visitCore/visitCore.css";
+import "./features/invoices/components/invoiceStructure/invoiceStructure.css";
 import { NexiIdentityMark, PlatformMark, ProductInlineLabel, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "./productBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./nexopsHeader";
 import { NexDocsClientWorkspace } from "./nexopsNexDocs";

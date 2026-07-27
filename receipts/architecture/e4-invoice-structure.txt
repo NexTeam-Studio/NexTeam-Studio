@@ -1,0 +1,22 @@
+E4 Invoice Structure checkpoint
+Date: 2026-07-27
+
+Canonical ownership:
+- Invoice construction, totals, editable-line normalization, collection eligibility, and status-history policy
+- Invoice statement, PDF wording, customer portal HTML, and payment-schedule definition/editor
+- Real NexOps invoice workspace, invoice/payment-schedule CSS, and component tests
+- Invoice routes, Nexi tools, persistence, approvals, lifecycle contracts, and dominant action
+- Shared portal chrome is consumed from Document Rendering
+
+Compatibility:
+- crm/quotePdf.ts re-exports invoice document functions but contains no invoice renderer body.
+- Payment Rails imports invoice PDF and policy directly from Invoice Structure.
+
+Verification (non-browser):
+- npm run build: PASS (82 modules)
+- Invoice/close-payment/read/document/component tests: PASS (39/39)
+- npm test: 346/354; exactly the established eight unrelated known-red tests remain.
+- Browser verification: not run, per the standing no-browser constraint.
+
+Open before E4 Invoice Structure can be marked done:
+- Move provider/payment execution controls out of NexOpsInvoicesPage into a Payment Rails-owned web component.

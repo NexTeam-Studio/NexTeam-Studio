@@ -9,7 +9,6 @@ import {
   type Invoice,
   type InvoiceDeliveryMode,
   type InvoiceDeliveryRecord,
-  type InvoiceStatus,
   type Job,
   type LedgerApplication,
   type LedgerStatusEntry,
@@ -44,8 +43,14 @@ import {
   invoiceDeliveryMessage,
   invoicePortalUrlForInvoice
 } from "../../invoiceStructure/domain/invoiceFoundation.js";
+import {
+  invoiceOpenForCollections,
+  invoiceTotal,
+  nextInvoiceStatusHistory,
+  normalizeInvoiceLineItems
+} from "../../invoiceStructure/domain/invoicePolicy.js";
 import type { LedgerRepository } from "./ledgerRepository.js";
-import { renderInvoicePdf } from "../../../../../../../crm/quotePdf.js";
+import { renderInvoicePdf } from "../../invoiceStructure/server/invoiceDocument.js";
 
 export interface RecordInvoicePaymentInput {
   tenantId: string;
@@ -148,14 +153,6 @@ function requireLedgerRecord<T>(value: T | null | undefined, message: string, op
   return value;
 }
 
-function invoiceStatusHistory(invoice: Invoice, status: InvoiceStatus, actorId?: string, note?: string) {
-  return appendHistory(invoice.statusHistory, status, actorId, note);
-}
-
-function openInvoiceForCollections(invoice: Invoice): boolean {
-  return invoice.status !== "void" && invoice.status !== "bad_debt" && invoice.status !== "paid";
-}
-
 function releasedApplication(application: LedgerApplication): boolean {
   return Boolean(application.releasedAt);
 }
@@ -166,17 +163,6 @@ function activeApplications(applications: LedgerApplication[], invoiceId: string
 
 function sumApplications(applications: LedgerApplication[]): number {
   return roundMoney(applications.reduce((sum, application) => sum + application.amount, 0));
-}
-
-function invoiceTotal(invoice: Invoice): number {
-  return roundMoney(invoice.totals.total);
-}
-
-function normalizedLineItems(lineItems: LineItem[]): LineItem[] {
-  return lineItems.map((item) => ({
-    ...item,
-    total: roundMoney(item.quantity * item.unitPrice)
-  }));
 }
 
 function invoiceCreatedAt(invoice: Invoice): string {
@@ -786,7 +772,7 @@ export class LedgerService {
       status: nextStatus,
       ...(nextStatus === "paid" ? { paidAt: invoice.paidAt ?? now() } : {}),
       ledger: nextLedger,
-      statusHistory: nextStatus === invoice.status ? invoice.statusHistory : invoiceStatusHistory(invoice, nextStatus, undefined, "Ledger reconciliation updated invoice status.")
+      statusHistory: nextStatus === invoice.status ? invoice.statusHistory : nextInvoiceStatusHistory(invoice, nextStatus, undefined, "Ledger reconciliation updated invoice status.")
     };
     const saved = await this.deps.crmRepository.updateInvoice(invoice.id, patch);
     if (invoice.status !== "paid" && saved.status === "paid" && saved.jobId) {
@@ -852,11 +838,11 @@ export class LedgerService {
     }
     const freshInvoices = (await this.deps.crmRepository.listInvoices(tenantId))
       .sort((left, right) => invoiceCreatedAt(left).localeCompare(invoiceCreatedAt(right)));
-    for (const invoice of freshInvoices.filter(openInvoiceForCollections)) {
+    for (const invoice of freshInvoices.filter(invoiceOpenForCollections)) {
       await this.applyAvailableDepositsAndCredits(invoice);
       await this.recalculateInvoice(invoice);
     }
-    for (const invoice of freshInvoices.filter((record) => !openInvoiceForCollections(record) || record.status === "paid")) {
+    for (const invoice of freshInvoices.filter((record) => !invoiceOpenForCollections(record) || record.status === "paid")) {
       await this.recalculateInvoice(invoice);
     }
   }
@@ -1054,7 +1040,7 @@ export class LedgerService {
     if (invoice.status !== "draft" && input.lineItems) {
       throw new RailError("Line items can only be edited while the invoice is still a draft.", { provider: "native", op: "updateInvoiceDraft", status: 409 });
     }
-    const nextLineItems = input.lineItems ? normalizedLineItems(input.lineItems) : invoice.lineItems;
+    const nextLineItems = input.lineItems ? normalizeInvoiceLineItems(input.lineItems) : invoice.lineItems;
     const totals = calculateInvoiceTotals(nextLineItems, input.discount ?? invoice.discount, input.taxRate ?? invoice.totals.taxRate ?? 0);
     const saved = await this.deps.crmRepository.updateInvoice(invoice.id, {
       ...(input.title?.trim() ? { title: input.title.trim() } : {}),
@@ -1071,7 +1057,7 @@ export class LedgerService {
         balanceDue: totals.total,
         overdue: false
       },
-      statusHistory: invoiceStatusHistory(invoice, invoice.status, input.actorId, "Invoice draft updated.")
+      statusHistory: nextInvoiceStatusHistory(invoice, invoice.status, input.actorId, "Invoice draft updated.")
     });
     await this.applyAvailableDepositsAndCredits(saved);
     return this.recalculateInvoice(saved);
@@ -1189,7 +1175,7 @@ export class LedgerService {
       },
       deliveryDefaults,
       delivery: [...(invoice.delivery ?? []), delivery],
-      statusHistory: invoiceStatusHistory(invoice, nextStatus, input.actorId, "Invoice delivered.")
+      statusHistory: nextInvoiceStatusHistory(invoice, nextStatus, input.actorId, "Invoice delivered.")
     });
     await emitEvent(this.deps.eventBus, {
       tenantId: saved.tenantId,
@@ -1755,7 +1741,7 @@ export class LedgerService {
           balanceDue: 0,
           overdue: false
         },
-        statusHistory: invoiceStatusHistory(invoice, "void", input.actorId, "Invoice voided from ledger action.")
+        statusHistory: nextInvoiceStatusHistory(invoice, "void", input.actorId, "Invoice voided from ledger action.")
       });
       await emitEvent(this.deps.eventBus, {
         tenantId: input.tenantId,
@@ -1775,7 +1761,7 @@ export class LedgerService {
         overdue: false,
         writtenOffAmount: invoice.ledger?.balanceDue ?? invoiceTotal(invoice)
       },
-      statusHistory: invoiceStatusHistory(invoice, "bad_debt", input.actorId, "Invoice marked bad debt from ledger action.")
+      statusHistory: nextInvoiceStatusHistory(invoice, "bad_debt", input.actorId, "Invoice marked bad debt from ledger action.")
     });
     await emitEvent(this.deps.eventBus, {
       tenantId: input.tenantId,

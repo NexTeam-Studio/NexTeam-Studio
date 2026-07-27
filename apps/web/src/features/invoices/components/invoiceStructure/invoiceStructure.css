@@ -1,0 +1,90 @@
+
+
+.nexops-payment-schedule {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 18px;
+  background: rgba(8, 33, 49, 0.03);
+}
+
+.nexops-payment-schedule-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #082131;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.nexops-payment-schedule-list {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-payment-schedule-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.nexops-payment-schedule-row label {
+  display: grid;
+  gap: 6px;
+}
+
+.nexops-payment-schedule-row label span {
+  color: #526675;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.nexops-payment-schedule-row input,
+.nexops-payment-schedule-row select {
+  width: 100%;
+  min-width: 0;
+}
+
+.nexops-payment-schedule-row button,
+.nexops-payment-schedule-add {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 999px;
+  padding: 10px 13px;
+  color: #082131;
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nexops-payment-schedule-add {
+  justify-self: start;
+}
+
+.nexops-payment-schedule-spacer {
+  min-height: 1px;
+}
+
+.nexops-billing-detail {
+  display: grid;
+  gap: 20px;
+}
+
+.nexops-invoice-inline-total {
+  color: #082131;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+@media (max-width: 880px) {
+
+  .nexops-payment-schedule-row {
+    grid-template-columns: 1fr;
+  }
+}
