@@ -1,7 +1,6 @@
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
-import { initializeApp, getApps } from "firebase/app";
-import { getAuth, signOut, type Auth, type User } from "firebase/auth";
+import { type Auth, type User } from "firebase/auth";
 import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "../../productBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "../../nexopsHeader";
 
@@ -12,6 +11,7 @@ import { ContactRoster } from "../clients/components/contact/ContactRoster";
 import { ContactEditorSurface } from "../clients/components/contact/ContactEditorSurface";
 import { ContactProfileSurface } from "../clients/components/contact/ContactProfileSurface";
 import "../clients/components/contact/contact.css";
+import { signOutOperator } from "../../shared/auth/authBootstrap";
 
 const NexOpsHomePage = React.lazy(async () => ({ default: (await import("../../nexopsHome")).NexOpsHomePage }));
 const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("../../features/invoices/components/invoiceStructure/NexOpsInvoicesPage")).NexOpsInvoicesPage }));
@@ -563,53 +563,7 @@ interface SignedDocumentsResponse {
   error?: string;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-interface FirebasePublicConfig {
-  apiKey: string;
-  authDomain: string;
-  projectId: string;
-  storageBucket: string;
-  messagingSenderId: string;
-  appId: string;
-}
-
-interface RuntimeConfigResponse {
-  ok: boolean;
-  firebase: FirebasePublicConfig;
-  firebaseConfigured: boolean;
-  authRequired?: boolean;
-  localAuthEnabled?: boolean;
-  localProfiles?: LocalAuthProfileSummary[];
-}
-
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
-
-interface LocalAuthProfileSummary {
-  id: string;
-  tenantId: string;
-  tenantUserId: string;
-  role: TenantRole;
-  email: string;
-  displayName: string;
-  label: string;
-}
-
-interface LocalAuthSessionResponse {
-  ok: boolean;
-  token?: string;
-  profile?: LocalAuthProfileSummary;
-  error?: string;
-}
 
 interface TenantUserRecord {
   id: string;
@@ -701,30 +655,7 @@ interface NexOpsNotificationsResponse {
   error?: string;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-const buildTimeFirebaseConfig: FirebasePublicConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string || "",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string || "",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string || "",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string || "",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string || "",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID as string || ""
-};
-
 export const CONFIGURED_TENANT_ID = (import.meta.env.VITE_TENANT_ID as string | undefined)?.trim() ?? "";
-const LOCAL_SESSION_TOKEN_KEY = "nexops.local-auth-token";
 
 function claimString(claims: Record<string, unknown>, key: string): string | undefined {
   const value = claims[key];
@@ -756,199 +687,6 @@ export async function loadOperatorContext(user: User): Promise<OperatorContext> 
     tenantId,
     tenantUserId: claimString(claims, "tenantUserId") ?? user.uid,
     role: claimRole(claims)
-  };
-}
-
-function completeFirebaseConfig(config: FirebasePublicConfig): boolean {
-  return Object.values(config).every((value) => value.length > 0);
-}
-
-function createFirebaseAuth(config: FirebasePublicConfig): Auth | null {
-  if (!completeFirebaseConfig(config)) {
-    return null;
-  }
-  const existingApp = getApps()[0];
-  const app = existingApp ?? initializeApp(config);
-  return getAuth(app);
-}
-
-function readLocalSessionToken(): string | null {
-  try {
-    return window.localStorage.getItem(LOCAL_SESSION_TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeLocalSessionToken(token: string): void {
-  try {
-    window.localStorage.setItem(LOCAL_SESSION_TOKEN_KEY, token);
-  } catch {
-    // Ignore local-storage failures in dev mode.
-  }
-}
-
-function clearLocalSessionToken(): void {
-  try {
-    window.localStorage.removeItem(LOCAL_SESSION_TOKEN_KEY);
-  } catch {
-    // Ignore local-storage failures in dev mode.
-  }
-}
-
-function installLocalSessionFetchBridge(): void {
-  const bridgeWindow = window as Window & {
-    __nexopsLocalFetchBridgeInstalled?: boolean;
-    __nexopsOriginalFetch?: typeof window.fetch;
-  };
-  if (bridgeWindow.__nexopsLocalFetchBridgeInstalled) {
-    return;
-  }
-  const originalFetch = window.fetch.bind(window);
-  bridgeWindow.__nexopsOriginalFetch = originalFetch;
-  bridgeWindow.__nexopsLocalFetchBridgeInstalled = true;
-  window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
-    const token = readLocalSessionToken();
-    if (!token) {
-      return originalFetch(input, init);
-    }
-    const requestUrl = typeof input === "string"
-      ? input
-      : input instanceof URL
-        ? input.toString()
-        : input.url;
-    const isSameOrigin = requestUrl.startsWith("/") || requestUrl.startsWith(window.location.origin);
-    if (!isSameOrigin) {
-      return originalFetch(input, init);
-    }
-    const headers = new Headers(input instanceof Request ? input.headers : init?.headers);
-    if (!headers.has("authorization")) {
-      headers.set("authorization", `Bearer ${token}`);
-    }
-    return originalFetch(input, {
-      ...init,
-      headers
-    });
-  }) as typeof window.fetch;
-}
-
-function localSessionUser(token: string, profile: LocalAuthProfileSummary): User {
-  return {
-    uid: profile.tenantUserId,
-    email: profile.email,
-    async getIdToken() {
-      return token;
-    },
-    async getIdTokenResult() {
-      return {
-        token,
-        authTime: "",
-        issuedAtTime: "",
-        expirationTime: "",
-        signInProvider: "custom",
-        signInSecondFactor: null,
-        claims: {
-          tenantId: profile.tenantId,
-          tenantUserId: profile.tenantUserId,
-          tenantRole: profile.role,
-          role: profile.role
-        }
-      };
-    }
-  } as unknown as User;
-}
-
-async function restoreLocalSession(tenantId: string): Promise<User | null> {
-  const token = readLocalSessionToken();
-  if (!token) {
-    return null;
-  }
-  try {
-    const response = await fetch(`/api/public/local-auth/session?tenantId=${encodeURIComponent(tenantId)}`, {
-      headers: {
-        authorization: `Bearer ${token}`
-      }
-    });
-    if (!response.ok) {
-      clearLocalSessionToken();
-      return null;
-    }
-    const body = await response.json() as LocalAuthSessionResponse;
-    if (!body.ok || !body.token || !body.profile) {
-      clearLocalSessionToken();
-      return null;
-    }
-    writeLocalSessionToken(body.token);
-    return localSessionUser(body.token, body.profile);
-  } catch {
-    clearLocalSessionToken();
-    return null;
-  }
-}
-
-export async function signInWithLocalCredentials(email: string, tenantId: string): Promise<User> {
-  const response = await fetch("/api/public/local-auth/sign-in", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
-      email,
-      tenantId
-    })
-  });
-  const body = await response.json() as LocalAuthSessionResponse;
-  if (!response.ok || !body.ok || !body.token || !body.profile) {
-    throw new Error(body.error || "Local sign-in failed.");
-  }
-  writeLocalSessionToken(body.token);
-  return localSessionUser(body.token, body.profile);
-}
-
-export async function signOutOperator(auth: Auth | null): Promise<void> {
-  clearLocalSessionToken();
-  if (auth) {
-    await signOut(auth);
-    window.location.assign("/nexops/sign-in");
-    return;
-  }
-  window.location.assign("/nexops/sign-in");
-}
-
-export async function loadAuthBootstrap(): Promise<{
-  auth: Auth | null;
-  authRequired: boolean;
-  localUser: User | null;
-  localAuthEnabled: boolean;
-  localTenantId: string;
-  localProfiles: LocalAuthProfileSummary[];
-}> {
-  let runtime: RuntimeConfigResponse | null = null;
-  try {
-    const response = await fetch("/api/public/runtime-config");
-    runtime = await response.json() as RuntimeConfigResponse;
-  } catch {
-    runtime = null;
-  }
-  const config = completeFirebaseConfig(buildTimeFirebaseConfig)
-    ? buildTimeFirebaseConfig
-    : runtime?.ok && runtime.firebaseConfigured
-      ? runtime.firebase
-      : buildTimeFirebaseConfig;
-  const authRequired = runtime?.ok ? runtime.authRequired !== false : true;
-  const localAuthEnabled = runtime?.ok && runtime.localAuthEnabled === true;
-  const localProfiles = runtime?.ok ? runtime.localProfiles ?? [] : [];
-  const localTenantId = localProfiles[0]?.tenantId ?? CONFIGURED_TENANT_ID;
-  if (localAuthEnabled) {
-    installLocalSessionFetchBridge();
-  }
-  return {
-    auth: createFirebaseAuth(config),
-    authRequired,
-    localAuthEnabled,
-    localProfiles,
-    localTenantId,
-    localUser: localAuthEnabled ? await restoreLocalSession(localTenantId) : null
   };
 }
 

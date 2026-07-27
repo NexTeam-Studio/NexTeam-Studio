@@ -2,7 +2,7 @@ import React, { Suspense, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { type Address as CrmAddress } from "@nexteam/shared";
 
-import { onAuthStateChanged, signInWithEmailAndPassword, type Auth, type User } from "firebase/auth";
+import { type Auth, type User } from "firebase/auth";
 import "./styles.css";
 import "./features/quotes/components/quoteTemplates/quoteTemplates.css";
 import "./features/jobs/components/jobCore/jobCore.css";
@@ -13,7 +13,7 @@ import "./features/nexopsShell/documentPrimitives.css";
 import "./features/quotes/components/quoteEngine/quoteEngine.css";
 import "./features/settings/components/catalog/catalog.css";
 import "./features/settings/components/tenantConfig/tenantConfig.css";
-import { NexiIdentityMark, PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "./productBranding";
+import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "./productBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./nexopsHeader";
 
 import { buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, NEXTEAM_WORKSPACE_OPTIONS, type NexOpsCreateOption } from "./nexopsShell";
@@ -21,7 +21,9 @@ import { buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMe
 
 import { nexiActiveApprovalPrompt, nexiConversationOffer, nexiConversationOfferReplyAction, NEXI_FRIENDLY_FAILURE_MESSAGE, formatNexiOperatorDisplayName, nexiIsApprovalPrompt, nexiAddressActionValue, nexiMapsHref, nexiPhoneActionValue, nexiShouldHideRenderedSource, NexiStandaloneLayout, nexiStoredSessionKey, parseNexiStoredSession, sanitizeNexiRenderedText, stringifyNexiStoredSession, type NexiStandalonePendingApproval } from "./nexiStandalone";
 import { resolveRequestorOriginForNexiMessage } from "./nexiRequestContext";
-import { NexOpsWorkspace, CONFIGURED_TENANT_ID, NexOpsCreateMenu, NexOpsNavGlyph, NexOpsNotificationPanel, clientDisplayName, fallbackOperatorContext, fileToBase64, formatPhoneActionLabel, loadAuthBootstrap, loadOperatorContext, mediaUrl, signInWithLocalCredentials, signOutOperator, sourceIsPhoto } from "./features/nexopsShell/NexOpsWorkspace";
+import { NexOpsWorkspace, NexOpsCreateMenu, NexOpsNavGlyph, NexOpsNotificationPanel, clientDisplayName, fallbackOperatorContext, fileToBase64, formatPhoneActionLabel, loadOperatorContext, mediaUrl, sourceIsPhoto } from "./features/nexopsShell/NexOpsWorkspace";
+import { AppBootstrap } from "./shared/app/AppBootstrap";
+import { signOutOperator } from "./shared/auth/authBootstrap";
 
 
 
@@ -492,16 +494,6 @@ interface PlatformPlansResponse {
 
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
-
-interface LocalAuthProfileSummary {
-  id: string;
-  tenantId: string;
-  tenantUserId: string;
-  role: TenantRole;
-  email: string;
-  displayName: string;
-  label: string;
-}
 
 
 
@@ -2673,151 +2665,6 @@ function responseQueuedApproval(sources: Source[] | undefined): boolean {
   return (sources ?? []).some((source) => source.ref.startsWith("appr_") || source.label.startsWith("ApprovalQueue "));
 }
 
-
-
-
-
-
-
-function AuthGate(props: {
-  auth: Auth | null;
-  user: User | null;
-  authReady: boolean;
-  localAuthEnabled: boolean;
-  localTenantId: string;
-  localProfiles: LocalAuthProfileSummary[];
-  onSignedIn: (user: User | null) => void;
-}): React.ReactElement {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [working, setWorking] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    if (working) {
-      return;
-    }
-    setWorking(true);
-    setError("");
-    try {
-      if (props.localAuthEnabled) {
-        const result = await signInWithLocalCredentials(email.trim(), props.localTenantId);
-        props.onSignedIn(result);
-      } else if (props.auth) {
-        const result = await signInWithEmailAndPassword(props.auth, email.trim(), password);
-        props.onSignedIn(result.user);
-      }
-    } catch (authError) {
-      setError(authError instanceof Error ? authError.message : props.localAuthEnabled ? "Local sign-in failed." : "Firebase sign-in failed.");
-    } finally {
-      setWorking(false);
-    }
-  }
-
-  if (!props.authReady) {
-    return (
-      <main className="shell">
-        <section className="auth-card">
-          <NexiIdentityMark className="auth-card-brand" caption="Nexi" />
-          <p className="eyebrow">Nexi access</p>
-          <h1>Checking session</h1>
-          <p>Loading operator access.</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (props.user) {
-    if (window.location.pathname.startsWith("/platform")) {
-      return <PlatformConsole auth={props.auth} user={props.user} />;
-    }
-    if (window.location.pathname.startsWith("/nexcam")) {
-      return <NexCamPage auth={props.auth} user={props.user} />;
-    }
-    if (window.location.pathname.startsWith("/nexreach")) {
-      return (
-        <Suspense fallback={<main className="shell"><section className="auth-card"><h1>Loading NexReach</h1></section></main>}>
-          <NexReachPage auth={props.auth} user={props.user} />
-        </Suspense>
-      );
-    }
-    if (window.location.pathname.startsWith("/nexops")) {
-      return <NexOpsWorkspace auth={props.auth} user={props.user} />;
-    }
-    return <NexiStandaloneChat auth={props.auth} user={props.user} />;
-  }
-
-  if (props.localAuthEnabled) {
-    return (
-      <main className="shell">
-        <section className="auth-card">
-          <ProductLogo product="nexops" className="auth-card-brand" alt="NexOps" />
-          <p className="eyebrow">Tenant staff access</p>
-          <h1>NexOps Sign-In</h1>
-          <p>Use a configured local staff profile to unlock this tenant workspace for testing. Owner, office-admin, and technician sessions stay role-scoped after sign-in.</p>
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <label>
-              Email
-              <input autoComplete="email" inputMode="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-            </label>
-            {error ? <p className="auth-error">{error}</p> : null}
-            <button type="submit" disabled={working || !email.trim()}>
-              {working ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
-          <div className="auth-profile-hints" aria-label="Available local role accounts">
-            {props.localProfiles.map((profile) => (
-              <article key={profile.id}>
-                <strong>{profile.label}</strong>
-                <span>{profile.email}</span>
-              </article>
-            ))}
-          </div>
-        </section>
-      </main>
-    );
-  }
-
-  if (!props.auth) {
-    return (
-      <main className="shell">
-        <section className="auth-card">
-          <NexiIdentityMark className="auth-card-brand" caption="Nexi" />
-          <p className="eyebrow">Nexi access</p>
-          <h1>Firebase config missing</h1>
-          <p>The chat is locked until the Firebase web config is present in staging runtime variables.</p>
-        </section>
-      </main>
-    );
-  }
-
-  return (
-    <main className="shell">
-      <section className="auth-card">
-        <NexiIdentityMark className="auth-card-brand" caption="Nexi" />
-        <p className="eyebrow">Tenant operations</p>
-        <h1>Nexi Sign-In</h1>
-        <p>Use your Firebase operator account to unlock the Job Desk.</p>
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <label>
-            Email
-            <input autoComplete="email" inputMode="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-          </label>
-          <label>
-            Password
-            <input autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-          </label>
-          {error ? <p className="auth-error">{error}</p> : null}
-          <button type="submit" disabled={working || !email.trim() || !password}>
-            {working ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-      </section>
-    </main>
-  );
-}
-
 function PlatformConsole(props: { auth: Auth | null; user: User }): React.ReactElement {
   const [rows, setRows] = useState<PlatformTenantRow[]>([]);
   const [plans, setPlans] = useState<PlatformPlan[]>([]);
@@ -4020,58 +3867,20 @@ function NexiStandaloneChat(props: { auth: Auth | null; user: User }): React.Rea
   );
 }
 
-
-
-function App(): React.ReactElement {
-  const [auth, setAuth] = useState<Auth | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [authReady, setAuthReady] = useState(false);
-  const [localAuthEnabled, setLocalAuthEnabled] = useState(false);
-  const [localTenantId, setLocalTenantId] = useState(CONFIGURED_TENANT_ID);
-  const [localProfiles, setLocalProfiles] = useState<LocalAuthProfileSummary[]>([]);
-
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    let cancelled = false;
-    loadAuthBootstrap()
-      .then(({ auth: nextAuth, localUser, localAuthEnabled: nextLocalAuthEnabled, localTenantId: nextLocalTenantId, localProfiles: nextLocalProfiles }) => {
-        if (cancelled) {
-          return;
-        }
-        setAuth(nextAuth);
-        setLocalAuthEnabled(nextLocalAuthEnabled);
-        setLocalTenantId(nextLocalTenantId);
-        setLocalProfiles(nextLocalProfiles);
-        if (localUser) {
-          setUser(localUser);
-          setAuthReady(true);
-          return;
-        }
-        if (nextLocalAuthEnabled || !nextAuth) {
-          setAuthReady(true);
-          return;
-        }
-        unsubscribe = onAuthStateChanged(nextAuth, (nextUser) => {
-          setUser(nextUser);
-          setAuthReady(true);
-        });
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAuthReady(true);
-        }
-      });
-    return () => {
-      cancelled = true;
-      unsubscribe?.();
-    };
-  }, []);
-
-  return <AuthGate auth={auth} user={user} authReady={authReady} localAuthEnabled={localAuthEnabled} localTenantId={localTenantId} localProfiles={localProfiles} onSignedIn={setUser} />;
-}
-
 const root = document.getElementById("root");
 if (root) {
-  createRoot(root).render(<App />);
+  createRoot(root).render(
+    <AppBootstrap
+      renderAuthenticated={({ auth, user }) => {
+        if (window.location.pathname.startsWith("/platform")) return <PlatformConsole auth={auth} user={user} />;
+        if (window.location.pathname.startsWith("/nexcam")) return <NexCamPage auth={auth} user={user} />;
+        if (window.location.pathname.startsWith("/nexreach")) {
+          return <Suspense fallback={<main className="shell"><section className="auth-card"><h1>Loading NexReach</h1></section></main>}><NexReachPage auth={auth} user={user} /></Suspense>;
+        }
+        if (window.location.pathname.startsWith("/nexops")) return <NexOpsWorkspace auth={auth} user={user} />;
+        return <NexiStandaloneChat auth={auth} user={user} />;
+      }}
+    />
+  );
 }
 

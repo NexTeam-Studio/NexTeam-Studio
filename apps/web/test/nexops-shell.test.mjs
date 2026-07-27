@@ -93,7 +93,7 @@ test("workspace switch targets stay explicit across NexOps modules", () => {
 });
 
 test("internal operator modules reuse one local session token while NexPortal stays on its separate client route", () => {
-  const sessionOwnerSource = readFileSync(new URL("../src/features/nexopsShell/NexOpsWorkspace.tsx", import.meta.url), "utf8");
+  const sessionOwnerSource = readFileSync(new URL("../src/shared/auth/authBootstrap.ts", import.meta.url), "utf8");
 
   assert.match(sessionOwnerSource, /const LOCAL_SESSION_TOKEN_KEY = "nexops\.local-auth-token";/);
   assert.match(sessionOwnerSource, /window\.localStorage\.getItem\(LOCAL_SESSION_TOKEN_KEY\)/);

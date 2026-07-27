@@ -1,0 +1,29 @@
+R3 AUTH / SESSION EXTRACTION
+Baseline: 72b8189
+
+OWNERSHIP
+- Firebase/runtime bootstrap: apps/web/src/shared/auth/authBootstrap.ts
+- Firebase and explicit local-development session state: shared/auth/AuthSessionProvider.tsx
+- Sign-in gate and local profile selector: shared/auth/AuthGate.tsx
+- Root composition: shared/app/AppBootstrap.tsx
+- main.tsx now supplies only the temporary signed-in product route callback.
+- NexOpsWorkspace imports sign-out and no longer declares auth/session persistence.
+
+REAL REMOVAL PROOF
+- main.tsx: 4,077 -> 3,886 lines (-191)
+- NexOpsWorkspace.tsx: 3,668 -> 3,406 lines (-262)
+- styles.css: 5,871 -> 5,776 lines (-95)
+- shared auth owner files: authBootstrap 198, AuthGate 84, AuthSessionProvider 88 lines
+- net diff before receipt/docs: 148 insertions, 737 deletions across existing files
+
+VERIFICATION
+- npm run lint: pass, 0 errors
+- npm run typecheck: pass
+- npm run build: pass, Vite transformed 93 modules
+- npm test: 357 total, 354 pass, 3 fail
+- Current reds are exactly the three pre-existing unrelated tests:
+  apps/server/test/content-engine.test.mjs:487
+  apps/server/test/fielddocs-nexi-tools.test.mjs:358
+  apps/server/test/platform.test.mjs:316
+- The source-ownership test was repointed from NexOpsWorkspace to authBootstrap; no assertion was removed.
+- No browser, tunnel, deploy, or live service was used.
