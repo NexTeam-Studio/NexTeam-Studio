@@ -20,6 +20,7 @@ import { signOutOperator } from "../../shared/auth/authBootstrap";
 import { ApprovalQueuePanel } from "../approvalQueue/areas/queue/components/ApprovalQueuePanel";
 import { fallbackOperatorContext, loadOperatorContext } from "../operatorContext/resolveOperatorContext";
 import { useNexOpsCaptureController } from "../nexcam/areas/capture/hooks/useNexOpsCaptureController";
+import { useNexOpsNotifications } from "./hooks/useNexOpsNotifications";
 
 const NexOpsHomePage = React.lazy(async () => ({ default: (await import("../home/components/operationsHome/NexOpsHomePage")).NexOpsHomePage }));
 const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("../../features/invoices/components/invoiceStructure/NexOpsInvoicesPage")).NexOpsInvoicesPage }));
@@ -32,7 +33,7 @@ const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("../
 const NexOpsCaptureWorkspace = React.lazy(async () => ({ default: (await import("../nexcam/areas/capture/components/NexOpsCaptureWorkspace")).NexOpsCaptureWorkspace }));
 
 
-import type { ClientPhoneDraft, ClientEmailDraft, ClientFormMode, CrmContact, CrmClient, CrmProperty, CrmJob, CrmQuote, CrmInvoice, CrmRequestSummary, CrmPaymentSummary, CrmReceiptReviewSummary, ClientPortalActivityEntry, ReviewSequenceRecord, CrmClientsResponse, CrmRecordsResponse, CrmRequestsResponse, CrmPaymentsResponse, CrmReceiptReviewsResponse, ClientPortalActivityResponse, ReviewSequenceStatusResponse, SendPortalLinkResponse, CrmClientCreateResponse, FieldDocsMediaListResponse, FieldDocsReportsListResponse, SignedDocumentRecord, SignedDocumentsResponse, TenantUserRecord, OperatorContext, TenantBranding, TenantBrandingResponse, TenantUsersResponse, ScheduleScope, WorkspaceTarget, NexOpsNotificationEntry, NexOpsNotificationsResponse } from "./contracts/workspaceContracts";
+import type { ClientPhoneDraft, ClientEmailDraft, ClientFormMode, CrmContact, CrmClient, CrmProperty, CrmJob, CrmQuote, CrmInvoice, CrmRequestSummary, CrmPaymentSummary, CrmReceiptReviewSummary, ClientPortalActivityEntry, ReviewSequenceRecord, CrmClientsResponse, CrmRecordsResponse, CrmRequestsResponse, CrmPaymentsResponse, CrmReceiptReviewsResponse, ClientPortalActivityResponse, ReviewSequenceStatusResponse, SendPortalLinkResponse, CrmClientCreateResponse, FieldDocsMediaListResponse, FieldDocsReportsListResponse, SignedDocumentRecord, SignedDocumentsResponse, TenantUserRecord, OperatorContext, TenantBranding, TenantBrandingResponse, TenantUsersResponse, ScheduleScope, WorkspaceTarget } from "./contracts/workspaceContracts";
 import { formatPhoneDisplay, personDisplayName, clientDisplayName, clientContactDisplayName, clientPrimaryAddress, clientStatusLabel, contactSummary, clientHasTextReadyContact, NexOpsNavGlyph, MobileClientSummaryGlyph, MobileClientEditGlyph, blankNewClientDraft, draftFromExistingClient, MOBILE_CLIENT_VIEWPORT_MAX } from "./workspaceSupport";
 export type * from "./contracts/workspaceContracts";
 export * from "./workspaceSupport";
@@ -73,10 +74,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
   const [jobFilterIntent, setJobFilterIntent] = useState<"All" | "Upcoming" | "Today" | "Late" | "Unscheduled" | "Action Required" | "Requires Invoicing" | "Archived" | undefined>();
   const [invoiceFilterIntent, setInvoiceFilterIntent] = useState<"all" | "draft" | "awaiting" | "partial_pay" | "paid" | "void" | "bad_debt" | "past_due" | undefined>();
   const [scheduleScopeIntent, setScheduleScopeIntent] = useState<ScheduleScope | undefined>();
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NexOpsNotificationEntry[]>([]);
-  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
-  const [notificationStatus, setNotificationStatus] = useState("");
   const [moduleSwitcherOpen, setModuleSwitcherOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [mobileCreateFabCollapsed, setMobileCreateFabCollapsed] = useState(false);
@@ -141,6 +138,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     setCaptureSelectedJobId,
     setCaptureSelectedVisitId,
     setCaptureSelectedMediaId,
+    setCaptureWorkspaceView,
     setCaptureSessionMode,
     setCaptureStatus,
     setCaptureSession,
@@ -184,6 +182,19 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     onEmitMutation: emitCrmMutation,
     onRefreshClientRails: (clientId) => refreshClientRails(clientId),
     onSelectClient: setSelectedClientId
+  });
+
+  const {
+    notificationsOpen,
+    notifications,
+    notificationUnreadCount,
+    notificationStatus,
+    setNotificationsOpen,
+    openNotification,
+    markAllNotificationsRead
+  } = useNexOpsNotifications({
+    tenantId: operatorContext.tenantId,
+    onOpenTarget: openWorkspaceTarget
   });
 
   useEffect(() => {
@@ -578,26 +589,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
 
 
 
-  async function loadNotifications(): Promise<void> {
-    try {
-      const body = await fetch(`/api/crm/notifications?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
-        .then((response) => response.json() as Promise<NexOpsNotificationsResponse>);
-      if (!body.ok) {
-        setNotifications([]);
-        setNotificationUnreadCount(0);
-        setNotificationStatus(body.error ?? "Notifications are unavailable right now.");
-        return;
-      }
-      setNotifications(body.notifications ?? []);
-      setNotificationUnreadCount(body.unreadCount ?? 0);
-      setNotificationStatus("");
-    } catch {
-      setNotifications([]);
-      setNotificationUnreadCount(0);
-      setNotificationStatus("Notifications API unreachable.");
-    }
-  }
-
   function clearWorkspaceTargets(): void {
     setFocusedRequestId("");
     setFocusedQuoteId("");
@@ -858,30 +849,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
       default:
         return;
     }
-  }
-
-  async function openNotification(entry: NexOpsNotificationEntry): Promise<void> {
-    try {
-      if (entry.unread) {
-        await fetch("/api/crm/notifications/read", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ tenantId: operatorContext.tenantId, notificationId: entry.id })
-        });
-      }
-    } finally {
-      openWorkspaceTarget({ module: entry.target.module, objectId: entry.target.objectId });
-      void loadNotifications();
-    }
-  }
-
-  async function markAllNotificationsRead(): Promise<void> {
-    await fetch("/api/crm/notifications/read-all", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tenantId: operatorContext.tenantId })
-    });
-    void loadNotifications();
   }
 
   async function createClientFromForm(event: React.FormEvent<HTMLFormElement>): Promise<void> {
@@ -1161,13 +1128,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
   useEffect(() => {
     void refresh();
     const onCrmMutation = () => void refresh();
-    window.addEventListener("nexops:crm-mutated", onCrmMutation);
-    return () => window.removeEventListener("nexops:crm-mutated", onCrmMutation);
-  }, [operatorContext.tenantId]);
-
-  useEffect(() => {
-    void loadNotifications();
-    const onCrmMutation = () => void loadNotifications();
     window.addEventListener("nexops:crm-mutated", onCrmMutation);
     return () => window.removeEventListener("nexops:crm-mutated", onCrmMutation);
   }, [operatorContext.tenantId]);

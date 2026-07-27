@@ -1,0 +1,18 @@
+NEXOPS NOTIFICATION CONTROLLER EXTRACTION
+Date: 2026-07-27
+
+Before and after
+- `NexOpsWorkspace.tsx`: 1,827 lines before, 1,787 lines after.
+- `useNexOpsNotifications.ts`: 77 lines of notification state, loading, mutations, and event refresh.
+- Notification target routing remains an injected workspace callback; no business-area target logic moved into the controller.
+- The NexCam controller now explicitly exports its capture-view setter used by workspace-target deep links.
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 170 modules; aggregate CSS remains 120.86 kB.
+- Focused shell tests: 31 tests, 31 pass, 0 fail.
+- npm run check:collisions: 39 components, 741 pairs, zero overlaps.
+- npm test: no-browser guard passed across 62 default test files; 363 tests, 360 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- No browser was launched.

@@ -354,7 +354,7 @@ export function useNexOpsCaptureController(options: CaptureControllerOptions) {
       && (captureSession.originGps.lat !== captureSession.latestGps.lat || captureSession.originGps.lng !== captureSession.latestGps.lng)),
     visibleCaptureVisits: captureTargets.visits.filter((visit) => !captureSelectedJobId || visit.jobId === captureSelectedJobId),
     setCaptureClientQuery, setCaptureSelectedClientId, setCaptureSelectedJobId, setCaptureSelectedVisitId,
-    setCaptureSelectedMediaId, setCaptureSessionMode, setCaptureStatus, setCaptureSession, setCaptureSessionOrigin,
+    setCaptureSelectedMediaId, setCaptureWorkspaceView, setCaptureSessionMode, setCaptureStatus, setCaptureSession, setCaptureSessionOrigin,
     startCaptureSession, openCaptureWorkspace, finishCaptureSession, uploadCapturePhotos,
     routeCaptureToNewRequest, markCaptureDecideLater, loadCaptureTargets, assignCaptureToExistingClient,
     reopenCaptureBatch, handleCaptureRequestCreated
