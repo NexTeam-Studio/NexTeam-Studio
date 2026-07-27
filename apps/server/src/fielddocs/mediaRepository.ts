@@ -27,11 +27,11 @@ export interface MediaRepository {
   listMedia(tenantId: string): Promise<Media[]>;
   getMedia(tenantId: string, id: string): Promise<Media | null>;
   saveMedia(media: Media): Promise<Media>;
-  updateMedia(id: string, patch: Partial<Media>): Promise<Media>;
+  updateMedia(tenantId: string, id: string, patch: Partial<Media>): Promise<Media>;
   listCaptureBatches(tenantId: string): Promise<CaptureBatch[]>;
   getCaptureBatch(tenantId: string, id: string): Promise<CaptureBatch | null>;
   saveCaptureBatch(batch: CaptureBatch): Promise<CaptureBatch>;
-  updateCaptureBatch(id: string, patch: Partial<CaptureBatch>): Promise<CaptureBatch>;
+  updateCaptureBatch(tenantId: string, id: string, patch: Partial<CaptureBatch>): Promise<CaptureBatch>;
   listChecklistTemplates(tenantId: string): Promise<ChecklistTemplate[]>;
   getChecklistTemplate(tenantId: string, id: string): Promise<ChecklistTemplate | null>;
   upsertChecklistTemplate(template: ChecklistTemplate): Promise<ChecklistTemplate>;
@@ -60,7 +60,7 @@ export interface MediaRepository {
   listNexDocsDocuments(tenantId: string): Promise<NexDocsDocument[]>;
   getNexDocsDocument(tenantId: string, id: string): Promise<NexDocsDocument | null>;
   saveNexDocsDocument(document: NexDocsDocument): Promise<NexDocsDocument>;
-  updateNexDocsDocument(id: string, patch: Partial<NexDocsDocument>): Promise<NexDocsDocument>;
+  updateNexDocsDocument(tenantId: string, id: string, patch: Partial<NexDocsDocument>): Promise<NexDocsDocument>;
   deleteNexDocsDocument(tenantId: string, id: string): Promise<void>;
 }
 
@@ -132,8 +132,8 @@ export class MemoryMediaRepository implements MediaRepository {
     return media;
   }
 
-  async updateMedia(id: string, patch: Partial<Media>): Promise<Media> {
-    const index = this.records.findIndex((record) => record.id === id);
+  async updateMedia(tenantId: string, id: string, patch: Partial<Media>): Promise<Media> {
+    const index = this.records.findIndex((record) => record.id === id && record.tenantId === tenantId);
     if (index === -1) {
       throw new RailError(`Native media ${id} was not found.`, { provider: "native", op: "updateMedia", status: 404 });
     }
@@ -141,7 +141,7 @@ export class MemoryMediaRepository implements MediaRepository {
     if (!existing) {
       throw new RailError(`Native media ${id} was not found.`, { provider: "native", op: "updateMedia", status: 404 });
     }
-    const next = mediaSchema.parse({ ...existing, ...patch }) as Media;
+    const next = mediaSchema.parse({ ...existing, ...patch, tenantId }) as Media;
     this.records[index] = next;
     return next;
   }
@@ -167,8 +167,8 @@ export class MemoryMediaRepository implements MediaRepository {
     return parsed;
   }
 
-  async updateCaptureBatch(id: string, patch: Partial<CaptureBatch>): Promise<CaptureBatch> {
-    const index = this.captureBatches.findIndex((record) => record.id === id);
+  async updateCaptureBatch(tenantId: string, id: string, patch: Partial<CaptureBatch>): Promise<CaptureBatch> {
+    const index = this.captureBatches.findIndex((record) => record.id === id && record.tenantId === tenantId);
     if (index === -1) {
       throw new RailError(`Capture batch ${id} was not found.`, { provider: "native", op: "updateCaptureBatch", status: 404 });
     }
@@ -176,7 +176,7 @@ export class MemoryMediaRepository implements MediaRepository {
     if (!existing) {
       throw new RailError(`Capture batch ${id} was not found.`, { provider: "native", op: "updateCaptureBatch", status: 404 });
     }
-    const next = captureBatchSchema.parse({ ...existing, ...patch }) as CaptureBatch;
+    const next = captureBatchSchema.parse({ ...existing, ...patch, tenantId }) as CaptureBatch;
     this.captureBatches[index] = next;
     return next;
   }
@@ -364,8 +364,8 @@ export class MemoryMediaRepository implements MediaRepository {
     return parsed;
   }
 
-  async updateNexDocsDocument(id: string, patch: Partial<NexDocsDocument>): Promise<NexDocsDocument> {
-    const index = this.nexDocsDocuments.findIndex((record) => record.id === id);
+  async updateNexDocsDocument(tenantId: string, id: string, patch: Partial<NexDocsDocument>): Promise<NexDocsDocument> {
+    const index = this.nexDocsDocuments.findIndex((record) => record.id === id && record.tenantId === tenantId);
     if (index === -1) {
       throw new RailError(`NexDocs document ${id} was not found.`, { provider: "native", op: "updateNexDocsDocument", status: 404 });
     }
@@ -373,7 +373,7 @@ export class MemoryMediaRepository implements MediaRepository {
     if (!existing) {
       throw new RailError(`NexDocs document ${id} was not found.`, { provider: "native", op: "updateNexDocsDocument", status: 404 });
     }
-    const next = nexDocsDocumentSchema.parse({ ...existing, ...patch }) as NexDocsDocument;
+    const next = nexDocsDocumentSchema.parse({ ...existing, ...patch, tenantId }) as NexDocsDocument;
     this.nexDocsDocuments[index] = next;
     return next;
   }
@@ -408,6 +408,24 @@ function asDocumentData(value: object): DocumentData {
 export class FirestoreMediaRepository implements MediaRepository {
   constructor(private readonly db: Firestore) {}
 
+  private async writeTenantRecord(collection: string, id: string, tenantId: string, value: object, merge = false): Promise<void> {
+    const ref = this.db.collection(collection).doc(id);
+    await this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (snapshot.exists) {
+        const storedTenantId = snapshot.data()?.tenantId;
+        if (storedTenantId !== tenantId) {
+          throw new RailError(`${collection} ${id} belongs to another tenant.`, { provider: "native", op: "tenantWrite", status: 403 });
+        }
+      }
+      if (merge) {
+        transaction.set(ref, asDocumentData(value), { merge: true });
+      } else {
+        transaction.set(ref, asDocumentData(value));
+      }
+    });
+  }
+
   async listMedia(tenantId: string): Promise<Media[]> {
     const snapshot = await this.db.collection("media").where("tenantId", "==", tenantId).get();
     return snapshot.docs.map((doc) => mediaSchema.parse(doc.data()) as Media);
@@ -423,19 +441,26 @@ export class FirestoreMediaRepository implements MediaRepository {
   }
 
   async saveMedia(media: Media): Promise<Media> {
-    await this.db.collection("media").doc(media.id).set(asDocumentData(media));
-    return mediaSchema.parse(media) as Media;
+    const parsed = mediaSchema.parse(media) as Media;
+    await this.writeTenantRecord("media", parsed.id, parsed.tenantId, parsed);
+    return parsed;
   }
 
-  async updateMedia(id: string, patch: Partial<Media>): Promise<Media> {
+  async updateMedia(tenantId: string, id: string, patch: Partial<Media>): Promise<Media> {
     const ref = this.db.collection("media").doc(id);
-    const snapshot = await ref.get();
-    if (!snapshot.exists) {
-      throw new RailError(`Native media ${id} was not found.`, { provider: "native", op: "updateMedia", status: 404 });
-    }
-    const next = mediaSchema.parse({ ...snapshot.data(), ...patch }) as Media;
-    await ref.set(asDocumentData(next));
-    return next;
+    return this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) {
+        throw new RailError(`Native media ${id} was not found.`, { provider: "native", op: "updateMedia", status: 404 });
+      }
+      const existing = mediaSchema.parse(snapshot.data()) as Media;
+      if (existing.tenantId !== tenantId) {
+        throw new RailError(`Native media ${id} was not found.`, { provider: "native", op: "updateMedia", status: 404 });
+      }
+      const next = mediaSchema.parse({ ...existing, ...patch, tenantId }) as Media;
+      transaction.set(ref, asDocumentData(next));
+      return next;
+    });
   }
 
   async listCaptureBatches(tenantId: string): Promise<CaptureBatch[]> {
@@ -456,19 +481,25 @@ export class FirestoreMediaRepository implements MediaRepository {
 
   async saveCaptureBatch(batch: CaptureBatch): Promise<CaptureBatch> {
     const parsed = captureBatchSchema.parse(batch) as CaptureBatch;
-    await this.db.collection("captureBatches").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await this.writeTenantRecord("captureBatches", parsed.id, parsed.tenantId, parsed, true);
     return parsed;
   }
 
-  async updateCaptureBatch(id: string, patch: Partial<CaptureBatch>): Promise<CaptureBatch> {
+  async updateCaptureBatch(tenantId: string, id: string, patch: Partial<CaptureBatch>): Promise<CaptureBatch> {
     const ref = this.db.collection("captureBatches").doc(id);
-    const snapshot = await ref.get();
-    if (!snapshot.exists) {
-      throw new RailError(`Capture batch ${id} was not found.`, { provider: "native", op: "updateCaptureBatch", status: 404 });
-    }
-    const next = captureBatchSchema.parse({ ...snapshot.data(), ...patch }) as CaptureBatch;
-    await ref.set(asDocumentData(next), { merge: true });
-    return next;
+    return this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) {
+        throw new RailError(`Capture batch ${id} was not found.`, { provider: "native", op: "updateCaptureBatch", status: 404 });
+      }
+      const existing = captureBatchSchema.parse(snapshot.data()) as CaptureBatch;
+      if (existing.tenantId !== tenantId) {
+        throw new RailError(`Capture batch ${id} was not found.`, { provider: "native", op: "updateCaptureBatch", status: 404 });
+      }
+      const next = captureBatchSchema.parse({ ...existing, ...patch, tenantId }) as CaptureBatch;
+      transaction.set(ref, asDocumentData(next), { merge: true });
+      return next;
+    });
   }
 
   async listChecklistTemplates(tenantId: string): Promise<ChecklistTemplate[]> {
@@ -487,7 +518,7 @@ export class FirestoreMediaRepository implements MediaRepository {
 
   async upsertChecklistTemplate(template: ChecklistTemplate): Promise<ChecklistTemplate> {
     const parsed = checklistTemplateSchema.parse(template) as ChecklistTemplate;
-    await this.db.collection("fieldDocsTemplates").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await this.writeTenantRecord("fieldDocsTemplates", parsed.id, parsed.tenantId, parsed, true);
     return parsed;
   }
 
@@ -497,8 +528,9 @@ export class FirestoreMediaRepository implements MediaRepository {
   }
 
   async saveChecklist(checklist: ChecklistInstance): Promise<ChecklistInstance> {
-    await this.db.collection("checklists").doc(checklist.id).set(asDocumentData(checklist));
-    return checklistInstanceSchema.parse(checklist) as ChecklistInstance;
+    const parsed = checklistInstanceSchema.parse(checklist) as ChecklistInstance;
+    await this.writeTenantRecord("checklists", parsed.id, parsed.tenantId, parsed);
+    return parsed;
   }
 
   async getChecklist(tenantId: string, id: string): Promise<ChecklistInstance | null> {
@@ -516,8 +548,9 @@ export class FirestoreMediaRepository implements MediaRepository {
   }
 
   async saveReport(report: FieldReportRecord): Promise<FieldReportRecord> {
-    await this.db.collection("fieldReports").doc(report.id).set(asDocumentData(report));
-    return fieldReportRecordSchema.parse(report) as FieldReportRecord;
+    const parsed = fieldReportRecordSchema.parse(report) as FieldReportRecord;
+    await this.writeTenantRecord("fieldReports", parsed.id, parsed.tenantId, parsed);
+    return parsed;
   }
 
   async getReport(tenantId: string, id: string): Promise<FieldReportRecord | null> {
@@ -536,7 +569,7 @@ export class FirestoreMediaRepository implements MediaRepository {
 
   async upsertReportTemplate(template: FieldReportTemplate): Promise<FieldReportTemplate> {
     const parsed = fieldReportTemplateSchema.parse(template) as FieldReportTemplate;
-    await this.db.collection("fieldReportTemplates").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await this.writeTenantRecord("fieldReportTemplates", parsed.id, parsed.tenantId, parsed, true);
     return parsed;
   }
 
@@ -556,7 +589,7 @@ export class FirestoreMediaRepository implements MediaRepository {
 
   async upsertBundle(bundle: FieldDocsBundle): Promise<FieldDocsBundle> {
     const parsed = fieldDocsBundleSchema.parse(bundle) as FieldDocsBundle;
-    await this.db.collection("fieldDocsBundles").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await this.writeTenantRecord("fieldDocsBundles", parsed.id, parsed.tenantId, parsed, true);
     return parsed;
   }
 
@@ -576,7 +609,7 @@ export class FirestoreMediaRepository implements MediaRepository {
 
   async upsertTextSnippet(snippet: FieldDocsTextSnippet): Promise<FieldDocsTextSnippet> {
     const parsed = fieldDocsTextSnippetSchema.parse(snippet) as FieldDocsTextSnippet;
-    await this.db.collection("fieldDocsTextSnippets").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await this.writeTenantRecord("fieldDocsTextSnippets", parsed.id, parsed.tenantId, parsed, true);
     return parsed;
   }
 
@@ -596,7 +629,7 @@ export class FirestoreMediaRepository implements MediaRepository {
 
   async saveSignedDocument(record: SignedDocumentRecord): Promise<SignedDocumentRecord> {
     const parsed = signedDocumentRecordSchema.parse(record) as SignedDocumentRecord;
-    await this.db.collection("signedDocuments").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await this.writeTenantRecord("signedDocuments", parsed.id, parsed.tenantId, parsed, true);
     return parsed;
   }
 
@@ -627,7 +660,7 @@ export class FirestoreMediaRepository implements MediaRepository {
 
   async saveNexDocsFolder(folder: NexDocsFolder): Promise<NexDocsFolder> {
     const parsed = nexDocsFolderSchema.parse(folder) as NexDocsFolder;
-    await this.db.collection("nexDocsFolders").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await this.writeTenantRecord("nexDocsFolders", parsed.id, parsed.tenantId, parsed, true);
     return parsed;
   }
 
@@ -657,26 +690,39 @@ export class FirestoreMediaRepository implements MediaRepository {
 
   async saveNexDocsDocument(document: NexDocsDocument): Promise<NexDocsDocument> {
     const parsed = nexDocsDocumentSchema.parse(document) as NexDocsDocument;
-    await this.db.collection("nexDocsDocuments").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await this.writeTenantRecord("nexDocsDocuments", parsed.id, parsed.tenantId, parsed, true);
     return parsed;
   }
 
-  async updateNexDocsDocument(id: string, patch: Partial<NexDocsDocument>): Promise<NexDocsDocument> {
+  async updateNexDocsDocument(tenantId: string, id: string, patch: Partial<NexDocsDocument>): Promise<NexDocsDocument> {
     const ref = this.db.collection("nexDocsDocuments").doc(id);
-    const snapshot = await ref.get();
-    if (!snapshot.exists) {
-      throw new RailError(`NexDocs document ${id} was not found.`, { provider: "native", op: "updateNexDocsDocument", status: 404 });
-    }
-    const next = nexDocsDocumentSchema.parse({ ...snapshot.data(), ...patch }) as NexDocsDocument;
-    await ref.set(asDocumentData(next), { merge: true });
-    return next;
+    return this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) {
+        throw new RailError(`NexDocs document ${id} was not found.`, { provider: "native", op: "updateNexDocsDocument", status: 404 });
+      }
+      const existing = nexDocsDocumentSchema.parse(snapshot.data()) as NexDocsDocument;
+      if (existing.tenantId !== tenantId) {
+        throw new RailError(`NexDocs document ${id} was not found.`, { provider: "native", op: "updateNexDocsDocument", status: 404 });
+      }
+      const next = nexDocsDocumentSchema.parse({ ...existing, ...patch, tenantId }) as NexDocsDocument;
+      transaction.set(ref, asDocumentData(next), { merge: true });
+      return next;
+    });
   }
 
   async deleteNexDocsDocument(tenantId: string, id: string): Promise<void> {
-    const existing = await this.getNexDocsDocument(tenantId, id);
-    if (!existing) {
-      throw new RailError(`NexDocs document ${id} was not found.`, { provider: "native", op: "deleteNexDocsDocument", status: 404 });
-    }
-    await this.db.collection("nexDocsDocuments").doc(id).delete();
+    const ref = this.db.collection("nexDocsDocuments").doc(id);
+    await this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) {
+        throw new RailError(`NexDocs document ${id} was not found.`, { provider: "native", op: "deleteNexDocsDocument", status: 404 });
+      }
+      const existing = nexDocsDocumentSchema.parse(snapshot.data()) as NexDocsDocument;
+      if (existing.tenantId !== tenantId) {
+        throw new RailError(`NexDocs document ${id} was not found.`, { provider: "native", op: "deleteNexDocsDocument", status: 404 });
+      }
+      transaction.delete(ref);
+    });
   }
 }

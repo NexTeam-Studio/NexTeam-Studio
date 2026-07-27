@@ -1,0 +1,25 @@
+FIELD DOCS ADMIN SDK TENANT ISOLATION
+Date: 2026-07-27
+
+Scope
+- FirestoreMediaRepository create/upsert paths use one transaction to read ownership and write the record.
+- A document ID already owned by another tenant is rejected with 403.
+- media, capture-batch, and NexDocs-document updates plus NexDocs deletion read ownership and mutate inside one transaction.
+- Updates require tenantId, reject stored tenant mismatch, and force the authenticated tenant into the persisted record.
+- All production callers pass access/request tenant context explicitly.
+
+Focused verification
+Command: node --import ./tests/setup.mjs --import tsx --test apps/server/test/fielddocs-tenant-boundary.test.mjs apps/server/test/fielddocs-read-side.test.mjs apps/server/test/fielddocs-vision-survey.test.mjs
+Result: 23 tests, 23 pass, 0 fail.
+
+Repository verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 143 modules.
+- npm test: no-browser guard passed across 61 default test files; 361 tests, 358 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions and do not exercise these repository changes.
+
+Honest remaining boundary
+- The new cross-tenant tests execute the real repository against a deterministic fake Firestore transaction API.
+- Emulator-backed Admin SDK proof and tenant enforcement for remaining Admin repositories are still open in BUILDSTATE.md.
+- No browser was launched.

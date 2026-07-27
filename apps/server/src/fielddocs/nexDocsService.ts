@@ -690,7 +690,7 @@ export class NexDocsService {
         throw new RailError(`NexDocs folder ${input.folderId} was not found for this client.`, { provider: "native", op: "updateNexDocsDocument", status: 404 });
       }
     }
-    return this.deps.mediaRepository.updateNexDocsDocument(input.documentId, {
+    return this.deps.mediaRepository.updateNexDocsDocument(input.tenantId, input.documentId, {
       ...(input.folderId === null ? { folderId: undefined } : input.folderId ? { folderId: input.folderId } : {}),
       ...(input.label?.trim() ? { label: input.label.trim() } : {}),
       ...(input.hiddenFromClient !== undefined ? { hiddenFromClient: input.hiddenFromClient } : {}),

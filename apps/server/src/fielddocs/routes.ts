@@ -646,7 +646,7 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
       const vision = await maybeRunVision(stored, env, image);
       const saved = await repo.saveMedia(vision.media);
       if (captureBatch) {
-        await repo.updateCaptureBatch(captureBatch.id, {
+        await repo.updateCaptureBatch(input.tenantId, captureBatch.id, {
           mediaIds: uniqueIds([...captureBatch.mediaIds, saved.id]),
           latestCapturedAt: saved.exif?.ts ?? captureBatch.latestCapturedAt,
           originGps: captureBatch.originGps ?? saved.exif?.gps,
@@ -880,7 +880,7 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
             ...(input.visitId ? { visitId: input.visitId } : {})
           })
         : {};
-      const media = await repository().updateMedia(mediaId, {
+      const media = await repository().updateMedia(input.tenantId, mediaId, {
         ...(input.aiTags ? { aiTags: input.aiTags.map((tag) => tag.trim().toLowerCase()).filter(Boolean) } : {}),
         ...(input.manualTags ? { manualTags: input.manualTags.map((tag) => tag.trim().toLowerCase()).filter(Boolean) } : {}),
         ...(nextComments ? { comments: nextComments } : {}),
@@ -930,7 +930,7 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
 
       if (input.mode === "decide_later") {
         for (const record of media) {
-          await repo.updateMedia(record.id, {
+          await repo.updateMedia(access.tenantId, record.id, {
             clientId: undefined,
             jobId: undefined,
             visitId: undefined,
@@ -950,7 +950,7 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         assignmentJobId = assignment.jobId;
         assignmentVisitId = assignment.visitId;
         for (const record of media) {
-          await repo.updateMedia(record.id, {
+          await repo.updateMedia(access.tenantId, record.id, {
             clientId: assignment.clientId,
             jobId: assignment.jobId,
             visitId: assignment.visitId,
@@ -970,7 +970,7 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         requestRecord = materialized.request;
         assignmentClientId = materialized.client.id;
         for (const record of media) {
-          await repo.updateMedia(record.id, {
+          await repo.updateMedia(access.tenantId, record.id, {
             clientId: materialized.client.id,
             jobId: undefined,
             visitId: undefined,
@@ -979,7 +979,7 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         }
       }
 
-      const nextBatch = await repo.updateCaptureBatch(batch.id, {
+      const nextBatch = await repo.updateCaptureBatch(access.tenantId, batch.id, {
         status: input.mode === "decide_later" ? "unassigned" : "assigned",
         assignmentMode: input.mode,
         assignedClientId: input.mode === "decide_later" ? undefined : assignmentClientId,
@@ -1016,7 +1016,7 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
       if (!existing) {
         throw new RailError(`Media ${mediaId} was not found.`, { provider: "native", op: "trashFieldDocsMedia", status: 404 });
       }
-      const media = await repository().updateMedia(mediaId, {
+      const media = await repository().updateMedia(access.tenantId, mediaId, {
         trashedAt: nowIso(),
         trashedBy: access.tenantUserId,
         purgeAfter: plusDaysIso(30)
@@ -1042,7 +1042,7 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
       if (!existing) {
         throw new RailError(`Media ${mediaId} was not found.`, { provider: "native", op: "restoreFieldDocsMedia", status: 404 });
       }
-      const media = await repository().updateMedia(mediaId, {
+      const media = await repository().updateMedia(input.tenantId, mediaId, {
         trashedAt: undefined,
         trashedBy: undefined,
         purgeAfter: undefined

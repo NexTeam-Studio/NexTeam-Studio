@@ -552,13 +552,13 @@ export function createFieldDocsTools(
             throw new RailError("Selected job does not belong to that client.", { provider: "native", op: "assignPhotoBatch", status: 409 });
           }
           for (const record of media) {
-            await deps.mediaRepository.updateMedia(record.id, {
+            await deps.mediaRepository.updateMedia(tenant.id, record.id, {
               clientId,
               ...(targetJob ? { jobId: targetJob.id, propertyId: targetJob.propertyId } : { jobId: undefined, propertyId: undefined }),
               ...(input.visitId ? { visitId: input.visitId } : { visitId: undefined })
             });
           }
-          const saved = await deps.mediaRepository.updateCaptureBatch(batch.id, {
+          const saved = await deps.mediaRepository.updateCaptureBatch(tenant.id, batch.id, {
             status: "assigned",
             assignmentMode: "existing_client",
             assignedClientId: clientId,
@@ -582,14 +582,14 @@ export function createFieldDocsTools(
         }
         const materialized = await materializeRequestCaptureContext(deps.crmRepository, request, batch.mediaIds);
         for (const record of media) {
-          await deps.mediaRepository.updateMedia(record.id, {
+          await deps.mediaRepository.updateMedia(tenant.id, record.id, {
             clientId: materialized.client.id,
             jobId: undefined,
             visitId: undefined,
             propertyId: undefined
           });
         }
-        const saved = await deps.mediaRepository.updateCaptureBatch(batch.id, {
+        const saved = await deps.mediaRepository.updateCaptureBatch(tenant.id, batch.id, {
           status: "assigned",
           assignmentMode: "request",
           assignedClientId: materialized.client.id,

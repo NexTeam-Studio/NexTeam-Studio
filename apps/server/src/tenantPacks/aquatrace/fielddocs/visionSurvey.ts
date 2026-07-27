@@ -355,7 +355,7 @@ export async function runVisionSurveyBatch(
     for (const media of photos) {
       const review = reviews.find((candidate) => candidate.mediaId === media.id);
       if (!review) continue;
-      await repository.updateMedia(media.id, {
+      await repository.updateMedia(tenantId, media.id, {
         aiTags: unique([...media.aiTags, ...review.tags])
       });
       updatedMediaIds.push(media.id);
@@ -394,7 +394,7 @@ export async function applyVisionSurveyCorrection(
     ...input.tags.map((tag) => `human:${tag}`)
   ]);
   const note = input.note ? `Human correction: ${input.note}` : media.aiCaption;
-  return repository.updateMedia(media.id, {
+  return repository.updateMedia(tenantId, media.id, {
     aiCaption: note,
     aiTags: unique([...media.aiTags, ...correctionTags])
   });
