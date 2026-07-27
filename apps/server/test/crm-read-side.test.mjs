@@ -379,8 +379,8 @@ test("CRM write nexi-tools cover client create, quote draft, catalog/template se
   assert.equal(queued.result.approval.kind, "client");
   assert.equal(queued.result.writesAreApprovalQueuedOnly, true);
   assert.equal((await toolAdapter.getClients("Portal Client")).length, 0);
-  await toolApprovalQueue.approve(queued.result.approval.id);
-  const executed = await toolApprovalQueue.executeApproved(queued.result.approval.id);
+  await toolApprovalQueue.approve("aquatrace", queued.result.approval.id);
+  const executed = await toolApprovalQueue.executeApproved("aquatrace", queued.result.approval.id);
   assert.equal(executed.result.client.tenantId, "aquatrace");
   assert.equal(executed.result.client.displayNamePreference, "person");
   assert.equal(executed.result.client.contacts[0].channelPreference, "both");
@@ -404,8 +404,8 @@ test("CRM write nexi-tools cover client create, quote draft, catalog/template se
   assert.equal(drafted.sources.some((source) => source.ref === "native-quote-config"), true);
   assert.equal(drafted.result.pendingQuote.templateId, standardTemplate.id);
   assert.equal(drafted.result.pendingQuote.salespersonUserId, "office_1");
-  await toolApprovalQueue.approve(drafted.result.approval.id);
-  await toolApprovalQueue.executeApproved(drafted.result.approval.id);
+  await toolApprovalQueue.approve("aquatrace", drafted.result.approval.id);
+  await toolApprovalQueue.executeApproved("aquatrace", drafted.result.approval.id);
 
   const listed = await listQuotes.handler(tenant, { q: "Approval-gated" });
   assert.equal(listed.result.quotes.length, 1);
@@ -567,8 +567,8 @@ test("CRM routes read clients created by ApprovalQueue execution from the shared
     createdBy: "user"
   });
 
-  await approvalQueue.approve(approval.id);
-  await approvalQueue.executeApproved(approval.id);
+  await approvalQueue.approve("aquatrace", approval.id);
+  await approvalQueue.executeApproved("aquatrace", approval.id);
 
   const app = express();
   app.use(express.json());

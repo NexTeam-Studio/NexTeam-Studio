@@ -103,7 +103,8 @@ export function registerCoreRoutes(app: Express, runtime: ServerRuntime): void {
       if (!approvalId) {
         throw new RailError("Approval id is required.", { provider: "approval", op: "approve", status: 400 });
       }
-      const item = await runtime.approvalQueue.approve(approvalId);
+      const tenantId = configuredTenantId(runtime.env, "approveApprovalQueueItem");
+      const item = await runtime.approvalQueue.approve(tenantId, approvalId);
       res.json({ ok: true, item });
     } catch (error) {
       sendError(res, error);
@@ -116,7 +117,8 @@ export function registerCoreRoutes(app: Express, runtime: ServerRuntime): void {
       if (!approvalId) {
         throw new RailError("Approval id is required.", { provider: "approval", op: "execute", status: 400 });
       }
-      const result = await runtime.approvalQueue.executeApproved(approvalId);
+      const tenantId = configuredTenantId(runtime.env, "executeApprovalQueueItem");
+      const result = await runtime.approvalQueue.executeApproved(tenantId, approvalId);
       res.json({ ok: true, ...result });
     } catch (error) {
       sendError(res, error);

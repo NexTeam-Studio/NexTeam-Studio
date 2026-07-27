@@ -135,7 +135,7 @@ export class SeoService {
     slug: string;
     approvalId: string;
   }): Promise<{ approval: ApprovalItem; site: GeneratedSite; remainingAudit: SeoAudit }> {
-    const approval = await this.input.approvalQueue.approve(input.approvalId);
+    const approval = await this.input.approvalQueue.approve(input.tenantId, input.approvalId);
     const site = await this.input.sitesRepository.getSiteBySlug(input.tenantId, input.slug);
     if (!site) {
       throw new RailError(`Site ${input.slug} was not found.`, { provider: "native", op: "seoApplyFix", status: 404 });

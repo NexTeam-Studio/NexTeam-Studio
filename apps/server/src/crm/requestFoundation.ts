@@ -948,8 +948,8 @@ async function queueEmail(input: {
     },
     createdBy: "system"
   });
-  await input.approvalQueue.approve(created.id);
-  await input.approvalQueue.executeApproved(created.id);
+  await input.approvalQueue.approve(input.tenantId, created.id);
+  await input.approvalQueue.executeApproved(input.tenantId, created.id);
   return { approvalId: created.id, sentAt: now() };
 }
 

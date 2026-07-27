@@ -12,8 +12,8 @@ export interface CreateApprovalItemInput {
 
 export interface ApprovalQueueRepository {
   create(item: ApprovalItem): Promise<ApprovalItem>;
-  get(id: ID): Promise<ApprovalItem | null>;
-  update(id: ID, patch: Partial<ApprovalItem>): Promise<ApprovalItem>;
+  get(tenantId: ID, id: ID): Promise<ApprovalItem | null>;
+  update(tenantId: ID, id: ID, patch: Partial<ApprovalItem>): Promise<ApprovalItem>;
   listPending(tenantId: ID): Promise<ApprovalItem[]>;
   listByTenant(tenantId: ID): Promise<ApprovalItem[]>;
 }
@@ -26,20 +26,25 @@ export class InMemoryApprovalQueueRepository implements ApprovalQueueRepository 
   private readonly items = new Map<ID, ApprovalItem>();
 
   async create(item: ApprovalItem): Promise<ApprovalItem> {
+    const existing = this.items.get(item.id);
+    if (existing && existing.tenantId !== item.tenantId) {
+      throw new RailError(`Approval item ${item.id} belongs to another tenant.`, { provider: "approval", op: "create", status: 409 });
+    }
     this.items.set(item.id, item);
     return item;
   }
 
-  async get(id: ID): Promise<ApprovalItem | null> {
-    return this.items.get(id) ?? null;
+  async get(tenantId: ID, id: ID): Promise<ApprovalItem | null> {
+    const item = this.items.get(id);
+    return item?.tenantId === tenantId ? item : null;
   }
 
-  async update(id: ID, patch: Partial<ApprovalItem>): Promise<ApprovalItem> {
+  async update(tenantId: ID, id: ID, patch: Partial<ApprovalItem>): Promise<ApprovalItem> {
     const existing = this.items.get(id);
-    if (!existing) {
+    if (!existing || existing.tenantId !== tenantId) {
       throw new RailError(`Approval item ${id} was not found.`, { provider: "approval", op: "update", status: 404 });
     }
-    const next = approvalItemSchema.parse({ ...existing, ...patch }) as ApprovalItem;
+    const next = approvalItemSchema.parse({ ...existing, ...patch, id, tenantId }) as ApprovalItem;
     this.items.set(id, next);
     return next;
   }
@@ -72,8 +77,8 @@ export class ApprovalQueueService {
     private readonly executor: ApprovalExecutor = new DryRunApprovalExecutor()
   ) {}
 
-  get(id: ID): Promise<ApprovalItem | null> {
-    return this.repository.get(id);
+  get(tenantId: ID, id: ID): Promise<ApprovalItem | null> {
+    return this.repository.get(tenantId, id);
   }
 
   async create(input: CreateApprovalItemInput): Promise<ApprovalItem> {
@@ -89,37 +94,37 @@ export class ApprovalQueueService {
     return this.repository.create(item);
   }
 
-  async approve(id: ID, actorId?: string): Promise<ApprovalItem> {
-    const item = await this.repository.get(id);
+  async approve(tenantId: ID, id: ID, actorId?: string): Promise<ApprovalItem> {
+    const item = await this.repository.get(tenantId, id);
     if (!item) {
       throw new RailError(`Approval item ${id} was not found.`, { provider: "approval", op: "approve", status: 404 });
     }
-    return this.repository.update(id, {
+    return this.repository.update(tenantId, id, {
       status: "approved",
       decidedAt: new Date().toISOString(),
       ...(actorId ? { decidedBy: actorId } : {})
     });
   }
 
-  async reject(id: ID, actorId?: string): Promise<ApprovalItem> {
-    const item = await this.repository.get(id);
+  async reject(tenantId: ID, id: ID, actorId?: string): Promise<ApprovalItem> {
+    const item = await this.repository.get(tenantId, id);
     if (!item) {
       throw new RailError(`Approval item ${id} was not found.`, { provider: "approval", op: "reject", status: 404 });
     }
-    return this.repository.update(id, {
+    return this.repository.update(tenantId, id, {
       status: "rejected",
       decidedAt: new Date().toISOString(),
       ...(actorId ? { decidedBy: actorId } : {})
     });
   }
 
-  async executeApproved(id: ID, actorId?: string): Promise<{ item: ApprovalItem; result: unknown }> {
-    const item = await this.repository.get(id);
+  async executeApproved(tenantId: ID, id: ID, actorId?: string): Promise<{ item: ApprovalItem; result: unknown }> {
+    const item = await this.repository.get(tenantId, id);
     if (!item || item.status !== "approved") {
       throw new RailError(`Approval item ${id} is not approved.`, { provider: "approval", op: "execute", status: 409 });
     }
     const result = await this.executor.execute(item);
-    const executed = await this.repository.update(id, {
+    const executed = await this.repository.update(tenantId, id, {
       status: "executed",
       executedAt: new Date().toISOString(),
       ...(actorId ? { executedBy: actorId } : {})

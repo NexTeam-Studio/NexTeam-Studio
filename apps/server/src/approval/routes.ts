@@ -11,7 +11,15 @@ export function registerApprovalQueueRoutes(
   const { approvalQueue } = input;
   app.post("/api/approval-queue", async (req: Request, res: Response) => {
     try {
-      const item = await approvalQueue.create(req.body as Parameters<typeof approvalQueue.create>[0]);
+      const requestedTenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : input.tenantId;
+      const access = await requireTenantRole(req, input.env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId,
+        op: "approvalQueueCreate"
+      });
+      const item = await approvalQueue.create({
+        ...(req.body as Parameters<typeof approvalQueue.create>[0]),
+        tenantId: access.tenantId
+      });
       res.status(201).json(approvalItemSchema.parse(item));
     } catch (error) {
       sendHttpError(res, error);
@@ -20,7 +28,12 @@ export function registerApprovalQueueRoutes(
 
   app.get("/api/approval-queue", async (req: Request, res: Response) => {
     try {
-      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : input.tenantId;
+      const requestedTenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : input.tenantId;
+      const access = await requireTenantRole(req, input.env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId,
+        op: "approvalQueueList"
+      });
+      const tenantId = access.tenantId;
       const includeHistory = String(req.query.includeHistory ?? "").toLowerCase() === "true";
       const items = includeHistory ? await approvalQueue.listByTenant(tenantId) : await approvalQueue.listPending(tenantId);
       res.json({ ok: true, items });
@@ -36,7 +49,12 @@ export function registerApprovalQueueRoutes(
         if (!approvalId) {
           throw new RailError("Approval id is required.", { provider: "approval", op: operation, status: 400 });
         }
-        const pending = await approvalQueue.get(approvalId);
+        const requestedTenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : input.tenantId;
+        const access = await requireTenantRole(req, input.env, ["OWNER", "OFFICE_ADMIN"], {
+          requestedTenantId,
+          op: `approvalQueue${operation.charAt(0).toUpperCase()}${operation.slice(1)}`
+        });
+        const pending = await approvalQueue.get(access.tenantId, approvalId);
         if (!pending) {
           throw new RailError(`Approval item ${approvalId} was not found.`, {
             provider: "approval",
@@ -44,19 +62,15 @@ export function registerApprovalQueueRoutes(
             status: 404
           });
         }
-        const access = await requireTenantRole(req, input.env, ["OWNER", "OFFICE_ADMIN"], {
-          requestedTenantId: pending.tenantId,
-          op: `approvalQueue${operation.charAt(0).toUpperCase()}${operation.slice(1)}`
-        });
         const actorId = actorIdForAccess(access);
         if (operation === "execute") {
-          const result = await approvalQueue.executeApproved(approvalId, actorId);
+          const result = await approvalQueue.executeApproved(access.tenantId, approvalId, actorId);
           res.json({ ok: true, ...result });
           return;
         }
         const item = operation === "approve"
-          ? await approvalQueue.approve(approvalId, actorId)
-          : await approvalQueue.reject(approvalId, actorId);
+          ? await approvalQueue.approve(access.tenantId, approvalId, actorId)
+          : await approvalQueue.reject(access.tenantId, approvalId, actorId);
         res.json({ ok: true, item });
       } catch (error) {
         sendHttpError(res, error);

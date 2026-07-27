@@ -1,0 +1,20 @@
+ADMIN SDK ISOLATION - APPROVAL QUEUE
+Date: 2026-07-27
+
+Contract and enforcement
+- ApprovalQueue repository and service reads/mutations now require both tenantId and approval id.
+- HTTP routes authorize the requested tenant before loading an approval; an item id is no longer used to discover tenant context.
+- Nexi, Content, SEO, Request, and legacy core callers pass their known tenant through approve, reject, and execute operations.
+- Firestore create/update paths check existing ownership and write transactionally; update patches cannot replace id or tenantId.
+- Memory persistence enforces the same tenant-scoped read and mutation behavior.
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 173 modules.
+- Approval/Comms/CRM/Intake focused tests: 50 tests, 50 pass, 0 fail.
+- New tenant-boundary tests: 2 tests, 2 pass, 0 fail.
+- npm test: no-browser guard passed; 369 tests, 366 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- Tenancy check: 386 files passed. Collision gate: 39 components, 741/741 pair intersections zero.
+- The deterministic Firestore transaction harness is not the still-open emulator-backed proof. No browser was launched.

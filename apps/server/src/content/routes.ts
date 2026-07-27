@@ -165,7 +165,7 @@ export function registerContentRoutes(app: Express, deps: ContentRouteDeps): voi
       if (!draft) {
         throw new RailError(`Content draft ${draftId} was not found.`, { provider: "native", op: "approveContentDraft", status: 404 });
       }
-      const approval = draft.approvalId ? await deps.approvalQueue.approve(draft.approvalId) : null;
+      const approval = draft.approvalId ? await deps.approvalQueue.approve(tenantId, draft.approvalId) : null;
       const updated = await deps.repository.updateDraft(tenantId, draft.id, {
         status: "publish_ready"
       });
@@ -186,7 +186,7 @@ export function registerContentRoutes(app: Express, deps: ContentRouteDeps): voi
       if (!draft) {
         throw new RailError(`Content draft ${draftId} was not found.`, { provider: "native", op: "rejectContentDraft", status: 404 });
       }
-      const approval = draft.approvalId ? await deps.approvalQueue.reject(draft.approvalId) : null;
+      const approval = draft.approvalId ? await deps.approvalQueue.reject(tenantId, draft.approvalId) : null;
       const updated = await deps.repository.updateDraft(tenantId, draft.id, {
         status: "rejected"
       });

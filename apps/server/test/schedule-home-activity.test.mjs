@@ -1111,8 +1111,8 @@ test("CRM scheduling tools queue unscheduled jobs, create 25-visit series, shift
     }]
   });
   const unscheduledApprovalId = scheduleResult.result.approval.id;
-  await fixture.approvalQueue.approve(unscheduledApprovalId, "owner_1");
-  const executedUnscheduled = await fixture.approvalQueue.executeApproved(unscheduledApprovalId, "owner_1");
+  await fixture.approvalQueue.approve("aquatrace", unscheduledApprovalId, "owner_1");
+  const executedUnscheduled = await fixture.approvalQueue.executeApproved("aquatrace", unscheduledApprovalId, "owner_1");
   assert.equal(executedUnscheduled.result.visits.length, 1);
 
   const multiVisitTool = toolByName(tools, "scheduleJobVisits");
@@ -1133,8 +1133,8 @@ test("CRM scheduling tools queue unscheduled jobs, create 25-visit series, shift
     })
   });
   const multiVisitApprovalId = multiVisitDraft.result.approval.id;
-  await fixture.approvalQueue.approve(multiVisitApprovalId, "owner_1");
-  const executedSeries = await fixture.approvalQueue.executeApproved(multiVisitApprovalId, "owner_1");
+  await fixture.approvalQueue.approve("aquatrace", multiVisitApprovalId, "owner_1");
+  const executedSeries = await fixture.approvalQueue.executeApproved("aquatrace", multiVisitApprovalId, "owner_1");
   assert.equal(executedSeries.result.visits.length, 25);
   const allVisits = await fixture.schedulingRepository.listVisits("aquatrace", {
     from: "2026-07-20T00:00:00.000Z",
@@ -1151,8 +1151,8 @@ test("CRM scheduling tools queue unscheduled jobs, create 25-visit series, shift
     shiftRemaining: true
   });
   const shiftApprovalId = shiftDraft.result.approval.id;
-  await fixture.approvalQueue.approve(shiftApprovalId, "owner_1");
-  const executedShift = await fixture.approvalQueue.executeApproved(shiftApprovalId, "owner_1");
+  await fixture.approvalQueue.approve("aquatrace", shiftApprovalId, "owner_1");
+  const executedShift = await fixture.approvalQueue.executeApproved("aquatrace", shiftApprovalId, "owner_1");
   assert.equal(executedShift.result.shiftedVisits.length, 24);
   const shiftedAnchor = await fixture.schedulingRepository.getVisit("aquatrace", anchorVisit.id);
   assert.equal(shiftedAnchor.start.slice(0, 10), "2026-07-22");

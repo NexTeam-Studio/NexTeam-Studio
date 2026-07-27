@@ -509,8 +509,8 @@ test("CommsApprovalExecutor sends only approved dedicated-mailbox artifacts", as
     },
     createdBy: "nexi"
   });
-  await approvalQueue.approve(item.id);
-  const executed = await approvalQueue.executeApproved(item.id);
+  await approvalQueue.approve("aquatrace", item.id);
+  const executed = await approvalQueue.executeApproved("aquatrace", item.id);
   assert.equal(executed.item.status, "executed");
   assert.equal(sentMessages.length, 1);
   assert.equal(sentMessages[0].mailbox, "nexi-send");
@@ -552,8 +552,8 @@ test("CommsApprovalExecutor preserves approved email attachments for dedicated s
     },
     createdBy: "nexi"
   });
-  await approvalQueue.approve(item.id);
-  const executed = await approvalQueue.executeApproved(item.id);
+  await approvalQueue.approve("aquatrace", item.id);
+  const executed = await approvalQueue.executeApproved("aquatrace", item.id);
   assert.equal(executed.item.status, "executed");
   assert.equal(sentMessages[0].attachments[0].filename, "report.pdf");
   assert.equal(sentMessages[0].attachments[0].contentBase64, attachmentBase64);
@@ -618,8 +618,8 @@ test("CommsApprovalExecutor rejects artifacts targeting read-only mailbox aliase
     },
     createdBy: "nexi"
   });
-  await approvalQueue.approve(item.id);
-  await assert.rejects(() => approvalQueue.executeApproved(item.id), /not the dedicated send mailbox/);
+  await approvalQueue.approve("aquatrace", item.id);
+  await assert.rejects(() => approvalQueue.executeApproved("aquatrace", item.id), /not the dedicated send mailbox/);
 });
 
 test("CommsApprovalExecutor rejects approved email artifacts from unbound tenants", async () => {
@@ -656,8 +656,8 @@ test("CommsApprovalExecutor rejects approved email artifacts from unbound tenant
     },
     createdBy: "nexi"
   });
-  await approvalQueue.approve(item.id);
-  await assert.rejects(() => approvalQueue.executeApproved(item.id), /tenant that is not bound/);
+  await approvalQueue.approve("other-tenant", item.id);
+  await assert.rejects(() => approvalQueue.executeApproved("other-tenant", item.id), /tenant that is not bound/);
   assert.equal(sent, false);
 });
 

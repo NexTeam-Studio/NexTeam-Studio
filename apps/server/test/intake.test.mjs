@@ -92,8 +92,8 @@ test("M10 service drafts Demo Pool Co blueprint, queues approval, and provisions
   assert.equal(pending[0].kind, "tenant_provisioning");
   assert.equal(pending[0].execute.args.externalProvisioningDeferred, true);
 
-  await approvalQueue.approve(finalized.approvalId);
-  const executed = await approvalQueue.executeApproved(finalized.approvalId);
+  await approvalQueue.approve("aquatrace", finalized.approvalId);
+  const executed = await approvalQueue.executeApproved("aquatrace", finalized.approvalId);
   assert.equal(executed.result.nativeWritesOnly, true);
   assert.equal(executed.result.externalProvisioningDeferred, true);
   const tenantRecord = await platformRepository.getTenant("demo-pool-co");

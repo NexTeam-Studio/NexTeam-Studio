@@ -314,8 +314,8 @@ export class NexReachService {
     if (!draft.approvalId) {
       throw new RailError(`Draft ${draft.id} does not have a pending approval to act on.`, { provider: "native", op: "loadDraftApproval", status: 409 });
     }
-    const approval = await this.deps.approvalQueue.get(draft.approvalId);
-    if (!approval || approval.tenantId !== tenantId) {
+    const approval = await this.deps.approvalQueue.get(tenantId, draft.approvalId);
+    if (!approval) {
       throw new RailError(`Approval ${draft.approvalId} was not found for draft ${draft.id}.`, { provider: "native", op: "loadDraftApproval", status: 404 });
     }
     return approval;
@@ -325,7 +325,7 @@ export class NexReachService {
     const drafts = (await this.deps.repository.listDrafts(tenantId)).filter((draft) => draft.status === "approval_pending");
     return Promise.all(drafts.map(async (draft) => ({
       ...draft,
-      approval: draft.approvalId ? await this.deps.approvalQueue.get(draft.approvalId) : null
+      approval: draft.approvalId ? await this.deps.approvalQueue.get(tenantId, draft.approvalId) : null
     })));
   }
 
@@ -351,9 +351,9 @@ export class NexReachService {
     const draft = await this.requireDraft(input.tenantId, input.draftId);
     const approval = await this.loadDraftApproval(input.tenantId, draft);
     if (approval.status === "pending") {
-      await this.deps.approvalQueue.approve(approval.id, input.actorId);
+      await this.deps.approvalQueue.approve(input.tenantId, approval.id, input.actorId);
     }
-    await this.deps.approvalQueue.executeApproved(approval.id, input.actorId);
+    await this.deps.approvalQueue.executeApproved(input.tenantId, approval.id, input.actorId);
     const updated = await this.requireDraft(input.tenantId, input.draftId);
     return { approval: { ...approval, status: "approved" }, draft: updated };
   }
@@ -373,7 +373,7 @@ export class NexReachService {
     }
     const priorApproval = await this.loadDraftApproval(input.tenantId, draft);
     if (priorApproval.status === "pending") {
-      await this.deps.approvalQueue.reject(priorApproval.id, input.actorId ?? "system:nexreach-revise");
+      await this.deps.approvalQueue.reject(input.tenantId, priorApproval.id, input.actorId ?? "system:nexreach-revise");
     }
     const locality = draft.locality ?? "Local service area";
     const updatedDraft: ContentDraft = {
@@ -402,9 +402,9 @@ export class NexReachService {
     const draft = await this.requireDraft(input.tenantId, input.draftId);
     let approval: ApprovalItem | undefined;
     if (draft.approvalId) {
-      const existing = await this.deps.approvalQueue.get(draft.approvalId);
+      const existing = await this.deps.approvalQueue.get(input.tenantId, draft.approvalId);
       if (existing?.status === "pending") {
-        approval = await this.deps.approvalQueue.reject(existing.id, input.actorId);
+        approval = await this.deps.approvalQueue.reject(input.tenantId, existing.id, input.actorId);
       }
     }
     const updated = await this.deps.repository.updateDraft(input.tenantId, draft.id, {

@@ -857,8 +857,8 @@ function receiptReviewChangePatch(text: string): {
 }
 
 async function loadPendingApproval(approvalQueue: ApprovalQueueService, tenantId: string, approvalId: string) {
-  const item = await approvalQueue.get(approvalId);
-  if (!item || item.tenantId !== tenantId) {
+  const item = await approvalQueue.get(tenantId, approvalId);
+  if (!item) {
     throw new RailError(`Approval item ${approvalId} was not found for this tenant.`, { provider: "approval", op: "get", status: 404 });
   }
   return item;
@@ -1493,8 +1493,8 @@ export function createApprovalNexiTools(input: {
       handler: async (tenant, args) => {
         const parsed = approvalActionSchema.parse(args);
         const item = await loadPendingApproval(input.approvalQueue, tenant.id, parsed.approvalId);
-        const approved = await input.approvalQueue.approve(item.id, input.actorId);
-        const executed = await input.approvalQueue.executeApproved(item.id, input.actorId);
+        const approved = await input.approvalQueue.approve(tenant.id, item.id, input.actorId);
+        const executed = await input.approvalQueue.executeApproved(tenant.id, item.id, input.actorId);
         return {
           result: {
             approval: approved,
@@ -1512,7 +1512,7 @@ export function createApprovalNexiTools(input: {
       handler: async (tenant, args) => {
         const parsed = approvalActionSchema.parse(args);
         const item = await loadPendingApproval(input.approvalQueue, tenant.id, parsed.approvalId);
-        const rejected = await input.approvalQueue.reject(item.id, input.actorId);
+        const rejected = await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         return {
           result: {
             approval: rejected
@@ -1583,7 +1583,7 @@ export function createApprovalNexiTools(input: {
             sources: [source(item.id, `ApprovalQueue client create ${item.id}`)]
           };
         }
-        await input.approvalQueue.reject(item.id, input.actorId);
+        await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         const queued = await queueClientCreateApproval(tenant, revised, input.approvalQueue);
         return {
           result: {
@@ -1654,7 +1654,7 @@ export function createApprovalNexiTools(input: {
           intake: baselineQuote.intake,
           version: baselineQuote.version
         });
-        await input.approvalQueue.reject(item.id, input.actorId);
+        await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         const approval = await input.approvalQueue.create({
           tenantId: tenant.id,
           kind: "quote",
@@ -1716,7 +1716,7 @@ export function createApprovalNexiTools(input: {
           ...approvalArgs.input,
           ...(patch.title ? { title: patch.title } : {})
         };
-        await input.approvalQueue.reject(item.id, input.actorId);
+        await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         const approval = await input.approvalQueue.create({
           tenantId: tenant.id,
           kind: "job",
@@ -1786,7 +1786,7 @@ export function createApprovalNexiTools(input: {
           };
         }
         const preview = await input.jobLifecycleService.prepareJobActionPreview(tenant.id, approvalArgs.jobId, patch.action);
-        await input.approvalQueue.reject(item.id, input.actorId);
+        await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         const approval = await input.approvalQueue.create({
           tenantId: tenant.id,
           kind: "job",
@@ -1847,7 +1847,7 @@ export function createApprovalNexiTools(input: {
           end: shiftIso(visit.end, deltaMs)
         }));
         const jobTitle = item.preview.title.replace(/^Schedule job visits:\s*/i, "") || "Job";
-        await input.approvalQueue.reject(item.id, input.actorId);
+        await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         const approval = await input.approvalQueue.create({
           tenantId: tenant.id,
           kind: "job",
@@ -1906,7 +1906,7 @@ export function createApprovalNexiTools(input: {
         const revisedEnd = deltaMs === undefined ? approvalArgs.end : shiftIso(approvalArgs.end, deltaMs);
         const shiftRemaining = shiftRemainingChoiceFromText(parsed.changeRequest, approvalArgs.shiftRemaining);
         const jobTitle = item.preview.title.replace(/^Shift job visit series:\s*/i, "") || "Job";
-        await input.approvalQueue.reject(item.id, input.actorId);
+        await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         const approval = await input.approvalQueue.create({
           tenantId: tenant.id,
           kind: "job",
@@ -1999,7 +1999,7 @@ export function createApprovalNexiTools(input: {
             `Draft total: $${(taxable + taxAmount).toFixed(2)}`
           ].filter(Boolean).join("\n")
         };
-        await input.approvalQueue.reject(item.id, input.actorId);
+        await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         const approval = await input.approvalQueue.create({
           tenantId: tenant.id,
           kind: "invoice",
@@ -2066,7 +2066,7 @@ export function createApprovalNexiTools(input: {
             nextArgs.mode === "sms" ? `Include hosted link: ${String(nextArgs.includeHostedLink ?? true)}` : ""
           ].filter(Boolean).join("\n")
         };
-        await input.approvalQueue.reject(item.id, input.actorId);
+        await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         const approval = await input.approvalQueue.create({
           tenantId: tenant.id,
           kind: "invoice",
@@ -2152,7 +2152,7 @@ export function createApprovalNexiTools(input: {
             nextArgs.status === "failed" ? "This logs a failed charge only. No money will be applied." : ""
           ].filter(Boolean).join("\n")
         };
-        await input.approvalQueue.reject(item.id, input.actorId);
+        await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         const approval = await input.approvalQueue.create({
           tenantId: tenant.id,
           kind: "payment",
@@ -2226,7 +2226,7 @@ export function createApprovalNexiTools(input: {
             `Attachments: ${review.attachments.filter((attachment) => (nextArgs.attachmentIds ?? review.attachments.map((candidate) => candidate.id)).includes(attachment.id)).map((attachment) => attachment.label).join(", ")}`
           ].filter(Boolean).join("\n")
         };
-        await input.approvalQueue.reject(item.id, input.actorId);
+        await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         const approval = await input.approvalQueue.create({
           tenantId: tenant.id,
           kind: "invoice",
@@ -2318,7 +2318,7 @@ export function createApprovalNexiTools(input: {
           ...(invoiceId ? { invoiceId } : {}),
           ...(nextAction === "refund_payment" && (patch.amount ?? approvalArgs.amount) !== undefined ? { amount: patch.amount ?? approvalArgs.amount } : {})
         });
-        await input.approvalQueue.reject(item.id, input.actorId);
+        await input.approvalQueue.reject(tenant.id, item.id, input.actorId);
         const approval = await input.approvalQueue.create({
           tenantId: tenant.id,
           kind: nextAction === "refund_payment" ? "payment" : "invoice",

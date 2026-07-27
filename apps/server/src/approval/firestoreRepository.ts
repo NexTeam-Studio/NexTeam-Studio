@@ -6,6 +6,7 @@ import {
   type ApprovalQueueRepository,
   type ID
 } from "@nexteam/core";
+import { assertTenantDocumentOwner, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 function removeUndefined(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -30,24 +31,37 @@ export class FirestoreApprovalQueueRepository implements ApprovalQueueRepository
 
   async create(item: ApprovalItem): Promise<ApprovalItem> {
     const parsed = approvalItemSchema.parse(item) as ApprovalItem;
-    // @tenant-doc:approvalQueue approvalItemSchema requires tenantId before write.
-    await this.db.collection("approvalQueue").doc(parsed.id).set(asDocumentData(parsed));
+    await setTenantOwnedDocument({
+      db: this.db,
+      collection: "approvalQueue",
+      id: parsed.id,
+      tenantId: parsed.tenantId,
+      data: asDocumentData(parsed),
+      label: `Approval item ${parsed.id}`
+    });
     return parsed;
   }
 
-  async get(id: ID): Promise<ApprovalItem | null> {
+  async get(tenantId: ID, id: ID): Promise<ApprovalItem | null> {
     const doc = await this.db.collection("approvalQueue").doc(id).get();
-    return doc.exists ? (approvalItemSchema.parse(doc.data()) as ApprovalItem) : null;
+    if (!doc.exists) return null;
+    const item = approvalItemSchema.parse(doc.data()) as ApprovalItem;
+    return item.tenantId === tenantId ? item : null;
   }
 
-  async update(id: ID, patch: Partial<ApprovalItem>): Promise<ApprovalItem> {
-    const existing = await this.get(id);
-    if (!existing) {
-      throw new RailError(`Approval item ${id} was not found.`, { provider: "approval", op: "update", status: 404 });
-    }
-    const next = approvalItemSchema.parse({ ...existing, ...patch }) as ApprovalItem;
-    await this.db.collection("approvalQueue").doc(id).set(asDocumentData(next), { merge: false });
-    return next;
+  async update(tenantId: ID, id: ID, patch: Partial<ApprovalItem>): Promise<ApprovalItem> {
+    const ref = this.db.collection("approvalQueue").doc(id);
+    return this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) {
+        throw new RailError(`Approval item ${id} was not found.`, { provider: "approval", op: "update", status: 404 });
+      }
+      assertTenantDocumentOwner(snapshot.data(), tenantId, `Approval item ${id}`);
+      const existing = approvalItemSchema.parse(snapshot.data()) as ApprovalItem;
+      const next = approvalItemSchema.parse({ ...existing, ...patch, id, tenantId }) as ApprovalItem;
+      transaction.set(ref, asDocumentData(next));
+      return next;
+    });
   }
 
   async listPending(tenantId: ID): Promise<ApprovalItem[]> {
