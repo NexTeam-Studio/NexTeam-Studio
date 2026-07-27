@@ -93,13 +93,13 @@ test("workspace switch targets stay explicit across NexOps modules", () => {
 });
 
 test("internal operator modules reuse one local session token while NexPortal stays on its separate client route", () => {
-  const mainSource = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8");
+  const sessionOwnerSource = readFileSync(new URL("../src/features/nexopsShell/NexOpsWorkspace.tsx", import.meta.url), "utf8");
 
-  assert.match(mainSource, /const LOCAL_SESSION_TOKEN_KEY = "nexops\.local-auth-token";/);
-  assert.match(mainSource, /window\.localStorage\.getItem\(LOCAL_SESSION_TOKEN_KEY\)/);
-  assert.match(mainSource, /window\.localStorage\.setItem\(LOCAL_SESSION_TOKEN_KEY,\s*token\)/);
-  assert.match(mainSource, /window\.localStorage\.removeItem\(LOCAL_SESSION_TOKEN_KEY\)/);
-  assert.match(mainSource, /localUser:\s*localAuthEnabled \? await restoreLocalSession\(localTenantId\) : null/);
+  assert.match(sessionOwnerSource, /const LOCAL_SESSION_TOKEN_KEY = "nexops\.local-auth-token";/);
+  assert.match(sessionOwnerSource, /window\.localStorage\.getItem\(LOCAL_SESSION_TOKEN_KEY\)/);
+  assert.match(sessionOwnerSource, /window\.localStorage\.setItem\(LOCAL_SESSION_TOKEN_KEY,\s*token\)/);
+  assert.match(sessionOwnerSource, /window\.localStorage\.removeItem\(LOCAL_SESSION_TOKEN_KEY\)/);
+  assert.match(sessionOwnerSource, /localUser:\s*localAuthEnabled \? await restoreLocalSession\(localTenantId\) : null/);
   assert.equal(buildWorkspaceSwitchPath("nexops", "aquatrace"), "/nexops");
   assert.equal(buildWorkspaceSwitchPath("nexcam", "aquatrace"), "/nexcam");
   assert.equal(buildWorkspaceSwitchPath("nexreach", "aquatrace"), "/nexreach");

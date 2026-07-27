@@ -83,10 +83,10 @@ const NexOpsRequestsPage = React.lazy(async () => ({ default: (await import("../
 const NexOpsSchedulePage = React.lazy(async () => ({ default: (await import("../../features/visits/components/visitCore/NexOpsSchedulePage")).NexOpsSchedulePage }));
 const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("../../features/settings/components/tenantConfig/NexOpsSettingsPage")).NexOpsSettingsPage }));
 const NexOpsCaptureWorkspace = React.lazy(async () => ({ default: (await import("../../nexopsDeferredUi")).NexOpsCaptureWorkspace }));
-const NexOpsCreateMenu = React.lazy(async () => ({ default: (await import("../../nexopsDeferredUi")).NexOpsCreateMenu }));
+export const NexOpsCreateMenu = React.lazy(async () => ({ default: (await import("../../nexopsDeferredUi")).NexOpsCreateMenu }));
 const NexOpsCreateClientPanel = React.lazy(async () => ({ default: (await import("../../nexopsDeferredUi")).NexOpsCreateClientPanel }));
-const NexOpsNotificationPanel = React.lazy(async () => ({ default: (await import("../../nexopsDeferredUi")).NexOpsNotificationPanel }));
-const NexReachPage = React.lazy(async () => ({ default: (await import("../../nexreach")).NexReachPage }));
+export const NexOpsNotificationPanel = React.lazy(async () => ({ default: (await import("../../nexopsDeferredUi")).NexOpsNotificationPanel }));
+
 
 interface Source {
   rail: string;
@@ -1092,7 +1092,7 @@ const buildTimeFirebaseConfig: FirebasePublicConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID as string || ""
 };
 
-const CONFIGURED_TENANT_ID = (import.meta.env.VITE_TENANT_ID as string | undefined)?.trim() ?? "";
+export const CONFIGURED_TENANT_ID = (import.meta.env.VITE_TENANT_ID as string | undefined)?.trim() ?? "";
 const LOCAL_SESSION_TOKEN_KEY = "nexops.local-auth-token";
 
 function claimString(claims: Record<string, unknown>, key: string): string | undefined {
@@ -1109,11 +1109,11 @@ function claimRole(claims: Record<string, unknown>): TenantRole {
   return "OWNER";
 }
 
-function fallbackOperatorContext(user: User): OperatorContext {
+export function fallbackOperatorContext(user: User): OperatorContext {
   return { tenantId: CONFIGURED_TENANT_ID, tenantUserId: user.uid, role: "OWNER" };
 }
 
-async function loadOperatorContext(user: User): Promise<OperatorContext> {
+export async function loadOperatorContext(user: User): Promise<OperatorContext> {
   const token = await user.getIdTokenResult();
   const claims = token.claims as Record<string, unknown>;
   const claimedTenantId = claimString(claims, "tenantId") ?? claimString(claims, "tenant_id");
@@ -1255,7 +1255,7 @@ async function restoreLocalSession(tenantId: string): Promise<User | null> {
   }
 }
 
-async function signInWithLocalCredentials(email: string, tenantId: string): Promise<User> {
+export async function signInWithLocalCredentials(email: string, tenantId: string): Promise<User> {
   const response = await fetch("/api/public/local-auth/sign-in", {
     method: "POST",
     headers: {
@@ -1274,7 +1274,7 @@ async function signInWithLocalCredentials(email: string, tenantId: string): Prom
   return localSessionUser(body.token, body.profile);
 }
 
-async function signOutOperator(auth: Auth | null): Promise<void> {
+export async function signOutOperator(auth: Auth | null): Promise<void> {
   clearLocalSessionToken();
   if (auth) {
     await signOut(auth);
@@ -1284,7 +1284,7 @@ async function signOutOperator(auth: Auth | null): Promise<void> {
   window.location.assign("/nexops/sign-in");
 }
 
-async function loadAuthBootstrap(): Promise<{
+export async function loadAuthBootstrap(): Promise<{
   auth: Auth | null;
   authRequired: boolean;
   localUser: User | null;
@@ -1321,24 +1321,16 @@ async function loadAuthBootstrap(): Promise<{
   };
 }
 
-function sourceThumb(source: Source, tenantId?: string): React.ReactElement | null {
-  if (!sourceIsPhoto(source)) {
-    return null;
-  }
-  return <img className="photo-tile-image" src={mediaUrl(source, tenantId)} alt={source.label} loading="lazy" />;
-}
 
-function mediaUrl(source: Source, tenantId?: string): string {
+
+export function mediaUrl(source: Source, tenantId?: string): string {
   const base = `/api/media/${encodeURIComponent(source.ref)}`;
   return source.rail === "native" && tenantId ? `${base}?tenantId=${encodeURIComponent(tenantId)}` : base;
 }
 
-function mediaDownloadUrl(source: Source, tenantId?: string): string {
-  const url = mediaUrl(source, tenantId);
-  return `${url}${url.includes("?") ? "&" : "?"}download=1`;
-}
 
-function sourceIsPhoto(source: Source): boolean {
+
+export function sourceIsPhoto(source: Source): boolean {
   const label = source.label.toLowerCase();
   if (/\b(pdf|document|report)\b/.test(label)) {
     return false;
@@ -1346,7 +1338,7 @@ function sourceIsPhoto(source: Source): boolean {
   return source.rail === "native" && /\b(photo|media|before|after|upload)/.test(label);
 }
 
-function formatPhoneActionLabel(phone: string): string {
+export function formatPhoneActionLabel(phone: string): string {
   const digits = phone.replace(/[^\d]/g, "");
   if (digits.length === 10) {
     return `Call (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
@@ -1368,39 +1360,13 @@ function formatPhoneDisplay(phone: string): string {
   return phone;
 }
 
-function messageQuickActions(text: string): Array<{ kind: "call" | "maps"; href: string; label: string }> {
-  if (nexiIsApprovalPrompt(text)) {
-    return [];
-  }
-  const actions: Array<{ kind: "call" | "maps"; href: string; label: string }> = [];
-  const phone = nexiPhoneActionValue(text);
-  if (phone) {
-    actions.push({
-      kind: "call",
-      href: `tel:${phone}`,
-      label: formatPhoneActionLabel(phone)
-    });
-  }
-  const address = nexiAddressActionValue(text);
-  if (address) {
-    actions.push({
-      kind: "maps",
-      href: nexiMapsHref(address),
-      label: "Open in Maps"
-    });
-  }
-  return actions;
-}
 
-function mediaDownloadName(source: Source): string {
-  return `${source.rail}-${source.ref.replace(/[^a-z0-9_-]/gi, "_")}.jpg`;
-}
 
-function isOwnerCustomizedOperatorTheme(theme: OperatorUiTheme | null): theme is OperatorUiTheme {
-  return Boolean(theme && theme.updatedBy && theme.updatedBy !== "system");
-}
 
-function fileToBase64(file: File): Promise<string> {
+
+
+
+export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -1413,26 +1379,17 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-function dayRange(day: string, view: "day" | "week" | "map"): { from: string; to: string } {
-  const from = new Date(`${day}T00:00:00.000Z`);
-  const to = new Date(from);
-  to.setUTCDate(to.getUTCDate() + (view === "week" ? 7 : 1));
-  return { from: from.toISOString(), to: to.toISOString() };
-}
 
-function formatVisitTime(value: string): string {
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
-}
 
-function visitStatusLabel(visit: ScheduledVisit): string {
-  return visit.readOnly ? "Read-only" : visit.status;
-}
+
+
+
 
 function personDisplayName(person?: { firstName?: string; lastName?: string }): string {
   return [person?.firstName, person?.lastName].filter(Boolean).join(" ").trim();
 }
 
-function clientDisplayName(client: CrmClient): string {
+export function clientDisplayName(client: CrmClient): string {
   const personName = personDisplayName(client.personName);
   if (client.company && client.displayNamePreference !== "person") {
     return client.company;
@@ -1477,33 +1434,11 @@ function intakeSurfaceSummary(intake: CrmIntakeSnapshot | undefined, surface: "q
   return summary.join(" · ");
 }
 
-function channelLabel(channel: ContactChannel | undefined): string {
-  if (channel === "both") {
-    return "Email + one-way text";
-  }
-  if (channel === "sms") {
-    return "One-way text";
-  }
-  if (channel === "none") {
-    return "Off";
-  }
-  return "Email";
-}
 
-function smsEligibilityLabel(phone: CrmPhone): string {
-  if (!phone.receivesMessages) {
-    return "Text off";
-  }
-  if (phone.smsCapability === "mobile") {
-    return phone.smsMode === "two_way" ? "Text on, two-way" : "Text on, one-way";
-  }
-  if (phone.smsCapability === "landline" || phone.smsCapability === "fax" || phone.smsCapability === "invalid") {
-    return "Needs prompt before text";
-  }
-  return "Text on, confirm mobile";
-}
 
-function contactSummary(client: CrmClient): string {
+
+
+export function contactSummary(client: CrmClient): string {
   const primaryContact = client.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? client.contacts?.[0];
   const name = personDisplayName(primaryContact?.personName) || primaryContact?.company || personDisplayName(client.personName);
   const email = primaryContact?.emails?.find((entry) => entry.primary)?.value ?? primaryContact?.emails?.[0]?.value ?? client.emails[0];
@@ -1517,12 +1452,9 @@ function clientHasTextReadyContact(client: CrmClient): boolean {
   return Boolean(phone?.receivesMessages && phone.smsCapability === "mobile");
 }
 
-function preferredChannelForClient(client: CrmClient): ContactChannel {
-  const primaryContact = client.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? client.contacts?.[0];
-  return primaryContact?.channelPreference ?? (client.consent.email && client.consent.sms ? "both" : client.consent.sms ? "sms" : "email");
-}
 
-function NexOpsNavGlyph(props: { module: NexOpsModule }): React.ReactElement {
+
+export function NexOpsNavGlyph(props: { module: NexOpsModule }): React.ReactElement {
   switch (props.module) {
     case "home":
       return (
