@@ -1,0 +1,75 @@
+import type { Firestore } from "firebase-admin/firestore";
+import {
+  clientSchema, crmSettingsSchema, invoiceSchema, jobSchema, propertySchema, quoteSchema, quoteTemplateSchema, requestFormSchema, serviceRequestSchema, RailError,
+  type Client, type CrmSettings, type DocumentSequenceKind, type Invoice, type Job, type Property, type Quote, type QuoteTemplate, type RequestForm, type ServiceRequest
+} from "@nexteam/core";
+import { defaultCrmSettings, defaultQuoteTemplates } from "@nexteam/providers";
+import { advanceDocumentNumber } from "@nexteam/shared";
+import { asDocumentData, createTenantFirestoreReader } from "../../../../../../../crm/firestoreRepositoryBase.js";
+
+export function createRequestFirestoreRepository(db: Firestore) {
+  const { listByTenant } = createTenantFirestoreReader(db);
+  return {
+    async listRequests(tenantId: string): Promise<ServiceRequest[]> {
+        return (await listByTenant("requests", tenantId, serviceRequestSchema))
+          .sort((left, right) => right.createdAt.localeCompare(left.createdAt)) as ServiceRequest[];
+      },
+
+    async getRequest(tenantId: string, id: string): Promise<ServiceRequest | null> {
+        const snapshot = await db.collection("requests").doc(id).get();
+        if (!snapshot.exists) {
+          return null;
+        }
+        const parsed = serviceRequestSchema.parse(snapshot.data()) as ServiceRequest;
+        return parsed.tenantId === tenantId ? parsed : null;
+      },
+
+    async createRequest(request: ServiceRequest): Promise<ServiceRequest> {
+        const parsed = serviceRequestSchema.parse(request) as ServiceRequest;
+        await db.collection("requests").doc(parsed.id).set(asDocumentData(parsed));
+        return parsed;
+      },
+
+    async updateRequest(id: string, patch: Partial<ServiceRequest>): Promise<ServiceRequest> {
+        const ref = db.collection("requests").doc(id);
+        const snapshot = await ref.get();
+        if (!snapshot.exists) {
+          throw new RailError(`Native request ${id} was not found.`, { provider: "native", op: "updateRequest", status: 404 });
+        }
+        const next = serviceRequestSchema.parse({ ...snapshot.data(), ...patch }) as ServiceRequest;
+        await ref.set(asDocumentData(next));
+        return next;
+      },
+
+    async listRequestForms(tenantId: string): Promise<RequestForm[]> {
+        return (await listByTenant("requestForms", tenantId, requestFormSchema))
+          .sort((left, right) => left.title.localeCompare(right.title)) as RequestForm[];
+      },
+
+    async getRequestForm(tenantId: string, id: string): Promise<RequestForm | null> {
+        const snapshot = await db.collection("requestForms").doc(id).get();
+        if (!snapshot.exists) {
+          return null;
+        }
+        const parsed = requestFormSchema.parse(snapshot.data()) as RequestForm;
+        return parsed.tenantId === tenantId ? parsed : null;
+      },
+
+    async getRequestFormBySlug(tenantId: string, slug: string): Promise<RequestForm | null> {
+        const snapshot = await db
+          .collection("requestForms")
+          .where("tenantId", "==", tenantId)
+          .where("slug", "==", slug)
+          .limit(1)
+          .get();
+        const doc = snapshot.docs[0];
+        return doc ? (requestFormSchema.parse(doc.data()) as RequestForm) : null;
+      },
+
+    async upsertRequestForm(form: RequestForm): Promise<RequestForm> {
+        const parsed = requestFormSchema.parse(form) as RequestForm;
+        await db.collection("requestForms").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+        return parsed;
+      }
+  };
+}

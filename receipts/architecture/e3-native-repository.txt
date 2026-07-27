@@ -1,0 +1,15 @@
+E3 native CRM Firestore repository choke-point receipt
+Date: 2026-07-27
+
+Scope
+- Moved 31 repository method bodies from crm/nativeRepository.ts into eight component/shared stores.
+- Kept the FirestoreNativeCrmRepository constructor and NativeCrmRepository contract stable.
+- Centralized only generic tenant-query and undefined-value serialization helpers.
+- The root repository file now composes stores and contains no collection operation bodies.
+
+Verification
+- Server typecheck: pass.
+- Production build: pass; Vite transformed 72 modules.
+- Focused CRM/request/job/ledger repository tests: 39/39 pass.
+- Full suite: 341/349 pass, with exactly the eight unrelated E1 known-red tests and no new failures.
+- Browser verification: not run, per the standing no-browser constraint.
