@@ -1,0 +1,18 @@
+CONTACT FORM AND RAIL CONTROLLERS
+Date: 2026-07-27
+
+Separation
+- `NexOpsWorkspace.tsx` fell from 1,723 lines to 1,269 lines.
+- Contact rail, custom-field, portal, review, NexDocs, statement, consent, and guarded-delete orchestration moved into the 232-line `useContactClientRails.ts` owner.
+- Contact create/edit state, validation, payload construction, persistence, and lead-source options moved into the 294-line `useContactFormController.ts` owner.
+- The workspace retains cross-module route transitions and composes the Contact-owned controllers; the removed implementation was not copied or retained in the shell.
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 173 modules.
+- Contact/NexOps focused tests: 10 tests, 10 pass, 0 fail.
+- npm test: no-browser guard passed; 367 tests, 364 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- Collision gate: 39 components, 741/741 pair intersections zero; Contact owns 14 files.
+- Tenancy and no-browser structural guards pass. No browser was launched.

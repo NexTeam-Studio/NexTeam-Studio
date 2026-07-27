@@ -9,7 +9,7 @@ import { NexOpsLegacyLifecyclePage } from "./components/NexOpsLegacyLifecyclePag
 import { NexOpsModuleSwitcher } from "./components/NexOpsModuleSwitcher";
 
 import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "./domain/nexopsNavigation";
-import { buildLeadSourceOptions, CLIENT_CUSTOM_FIELD_RESERVED_LABELS, customFieldRecordToDraftRows, customFieldDraftRowsToRecord, PROPERTY_CUSTOM_FIELD_RESERVED_LABELS, primaryClientPhoneValue, type ClientProfileMobileBucket, type CustomFieldDraftRow, validateCustomFieldDraftRows } from "../../features/clients/components/contact/domain/clientProfile";
+import { CLIENT_CUSTOM_FIELD_RESERVED_LABELS, customFieldRecordToDraftRows, primaryClientPhoneValue, type ClientProfileMobileBucket } from "../../features/clients/components/contact/domain/clientProfile";
 import { getMobileCreateFabScrollIntent, mobileFabShouldHideOverlays, mobileFabVisibleForViewport, NEXOPS_MOBILE_CREATE_FAB_IDLE_MS, NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY, NEXOPS_SHARED_CREATE_MENU_ID, NexOpsMobileCreateFab, shouldPulseMobileCreateFab } from "./components/NexOpsMobileCreateFab";
 import { ContactRoster } from "../clients/components/contact/ContactRoster";
 import { ContactEditorSurface } from "../clients/components/contact/ContactEditorSurface";
@@ -22,6 +22,8 @@ import { fallbackOperatorContext, loadOperatorContext } from "../operatorContext
 import { useNexOpsCaptureController } from "../nexcam/areas/capture/hooks/useNexOpsCaptureController";
 import { useNexOpsNotifications } from "./hooks/useNexOpsNotifications";
 import { useNexOpsWorkspaceRecords } from "./hooks/useNexOpsWorkspaceRecords";
+import { useContactClientRails } from "../clients/components/contact/hooks/useContactClientRails";
+import { useContactFormController } from "../clients/components/contact/hooks/useContactFormController";
 
 const NexOpsHomePage = React.lazy(async () => ({ default: (await import("../home/components/operationsHome/NexOpsHomePage")).NexOpsHomePage }));
 const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("../../features/invoices/components/invoiceStructure/NexOpsInvoicesPage")).NexOpsInvoicesPage }));
@@ -34,8 +36,8 @@ const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("../
 const NexOpsCaptureWorkspace = React.lazy(async () => ({ default: (await import("../nexcam/areas/capture/components/NexOpsCaptureWorkspace")).NexOpsCaptureWorkspace }));
 
 
-import type { ClientPhoneDraft, ClientEmailDraft, ClientFormMode, CrmContact, ClientPortalActivityEntry, ReviewSequenceRecord, ClientPortalActivityResponse, ReviewSequenceStatusResponse, SendPortalLinkResponse, CrmClientCreateResponse, FieldDocsMediaListResponse, FieldDocsReportsListResponse, SignedDocumentRecord, SignedDocumentsResponse, OperatorContext, TenantBranding, TenantBrandingResponse, ScheduleScope, WorkspaceTarget } from "./contracts/workspaceContracts";
-import { formatPhoneDisplay, personDisplayName, clientDisplayName, clientContactDisplayName, clientPrimaryAddress, clientStatusLabel, contactSummary, clientHasTextReadyContact, NexOpsNavGlyph, MobileClientSummaryGlyph, MobileClientEditGlyph, blankNewClientDraft, draftFromExistingClient, MOBILE_CLIENT_VIEWPORT_MAX } from "./workspaceSupport";
+import type { OperatorContext, TenantBranding, TenantBrandingResponse, ScheduleScope, WorkspaceTarget } from "./contracts/workspaceContracts";
+import { formatPhoneDisplay, personDisplayName, clientDisplayName, clientContactDisplayName, clientPrimaryAddress, clientStatusLabel, contactSummary, clientHasTextReadyContact, NexOpsNavGlyph, MobileClientSummaryGlyph, MobileClientEditGlyph, MOBILE_CLIENT_VIEWPORT_MAX } from "./workspaceSupport";
 export type * from "./contracts/workspaceContracts";
 export * from "./workspaceSupport";
 
@@ -43,14 +45,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
   const initialPathState = parseNexOpsLocation(window.location.pathname);
   const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
   const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
-  const [clientPortalActivity, setClientPortalActivity] = useState<ClientPortalActivityEntry[]>([]);
-  const [clientReviewSequences, setClientReviewSequences] = useState<ReviewSequenceRecord[]>([]);
-  const [clientFieldMedia, setClientFieldMedia] = useState<NonNullable<FieldDocsMediaListResponse["media"]>>([]);
-  const [clientFieldReports, setClientFieldReports] = useState<NonNullable<FieldDocsReportsListResponse["reports"]>>([]);
-  const [clientSignedDocuments, setClientSignedDocuments] = useState<SignedDocumentRecord[]>([]);
-  const [clientRailStatus, setClientRailStatus] = useState("Portal activity and review follow-up will load when a client is selected.");
-  const [clientRailBusy, setClientRailBusy] = useState("");
-  const [lastPortalLink, setLastPortalLink] = useState("");
   const [query, setQuery] = useState("");
   const [selectedClientId, setSelectedClientId] = useState(initialPathState.clientId ?? "");
   const [activeClientProfileTab, setActiveClientProfileTab] = useState<ClientProfileTab | null>(initialPathState.clientTab);
@@ -87,39 +81,43 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [mobileCreateFabCollapsed, setMobileCreateFabCollapsed] = useState(false);
   const [mobileCreateFabPulse, setMobileCreateFabPulse] = useState(false);
-  const [showCreateClient, setShowCreateClient] = useState(false);
   const [creatingClientPage, setCreatingClientPage] = useState(initialPathState.clientDraft === "new");
-  const [clientFormMode, setClientFormMode] = useState<ClientFormMode>("create");
-  const [createClientSurface, setCreateClientSurface] = useState<"client" | "contact" | "property">("client");
-  const [createStatus, setCreateStatus] = useState("");
   const [csvStatus, setCsvStatus] = useState("No CSV selected yet.");
-  const [newClient, setNewClient] = useState(() => blankNewClientDraft());
   const [mobileClientViewport, setMobileClientViewport] = useState(() => typeof window !== "undefined" && window.innerWidth <= MOBILE_CLIENT_VIEWPORT_MAX);
   const [mobileClientExpandedBucket, setMobileClientExpandedBucket] = useState<ClientProfileMobileBucket | null>(null);
-  const [clientOverviewCustomFieldsDraft, setClientOverviewCustomFieldsDraft] = useState<CustomFieldDraftRow[]>([]);
-  const [clientOverviewCustomFieldsOpen, setClientOverviewCustomFieldsOpen] = useState(false);
-  const draftDisplayName = [newClient.firstName.trim(), newClient.lastName.trim()].filter(Boolean).join(" ") || newClient.company.trim();
-  const newClientHasName = draftDisplayName.length > 0;
-  const newClientHasPhone = newClient.phone.trim().length > 0;
-  const newClientHasAddress = [
-    newClient.street1.trim(),
-    newClient.city.trim(),
-    newClient.province.trim()
-  ].every(Boolean);
-  const clientCustomFieldValidation = validateCustomFieldDraftRows(newClient.clientCustomFieldsDraft ?? [], CLIENT_CUSTOM_FIELD_RESERVED_LABELS);
-  const propertyCustomFieldValidation = validateCustomFieldDraftRows(newClient.propertyCustomFieldsDraft ?? [], PROPERTY_CUSTOM_FIELD_RESERVED_LABELS);
-  const createClientMissingFields = [
-    ...(newClientHasName ? [] : ["name"]),
-    ...(newClientHasAddress ? [] : ["address"]),
-    ...(newClientHasPhone ? [] : ["telephone"])
-  ];
-  const createClientCanSave = createClientMissingFields.length === 0
-    && !clientCustomFieldValidation.hasBlockingIssues
-    && !propertyCustomFieldValidation.hasBlockingIssues;
-  const leadSourceOptions = buildLeadSourceOptions(clients);
   function emitCrmMutation(): void {
     window.dispatchEvent(new Event("nexops:crm-mutated"));
   }
+
+  const {
+    clientPortalActivity,
+    clientReviewSequences,
+    clientFieldReports,
+    clientSignedDocuments,
+    orderedClientFieldMedia,
+    clientRailStatus,
+    clientRailBusy,
+    lastPortalLink,
+    clientOverviewCustomFieldsDraft,
+    setClientOverviewCustomFieldsDraft,
+    clientOverviewCustomFieldsOpen,
+    setClientOverviewCustomFieldsOpen,
+    clientOverviewCustomFieldValidation,
+    refreshClientRails,
+    sendClientPortalLink,
+    sendClientStatement,
+    deleteClientRecord,
+    saveClientMarketingConsent,
+    saveClientOverviewCustomFields
+  } = useContactClientRails({
+    tenantId: operatorContext.tenantId,
+    selectedClientId,
+    clients,
+    setClients,
+    onReturnToRoster: returnToClientRoster,
+    onRefreshAll: refresh,
+    onMutation: emitCrmMutation
+  });
 
   const {
     captureInputRef,
@@ -305,233 +303,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     }
   }, [createMenuOpen, mobileNavOpen, moduleSwitcherOpen, notificationsOpen]);
 
-  async function refreshClientRails(clientId = selectedClientId, tenantId = operatorContext.tenantId): Promise<void> {
-    if (!clientId) {
-      setClientPortalActivity([]);
-      setClientReviewSequences([]);
-      setClientFieldMedia([]);
-      setClientFieldReports([]);
-      setClientSignedDocuments([]);
-      setClientRailStatus("Portal activity and review follow-up will load when a client is selected.");
-      return;
-    }
-    setClientRailStatus("Loading portal activity, review follow-up, and NexCam rails...");
-    try {
-      const [activityBody, reviewBody, mediaBody, reportsBody, signedDocsBody] = await Promise.all([
-        fetch(`/api/crm/clients/${encodeURIComponent(clientId)}/portal-activity?tenantId=${encodeURIComponent(tenantId)}`)
-          .then((response) => response.json() as Promise<ClientPortalActivityResponse>),
-        fetch(`/api/crm/review-sequences?tenantId=${encodeURIComponent(tenantId)}&clientId=${encodeURIComponent(clientId)}`)
-          .then((response) => response.json() as Promise<ReviewSequenceStatusResponse>),
-        fetch(`/api/fielddocs/media?tenantId=${encodeURIComponent(tenantId)}&clientId=${encodeURIComponent(clientId)}&limit=8`)
-          .then((response) => response.json() as Promise<FieldDocsMediaListResponse>),
-        fetch(`/api/fielddocs/reports?tenantId=${encodeURIComponent(tenantId)}&clientId=${encodeURIComponent(clientId)}&limit=6`)
-          .then((response) => response.json() as Promise<FieldDocsReportsListResponse>),
-        fetch(`/api/fielddocs/signed-documents?tenantId=${encodeURIComponent(tenantId)}&clientId=${encodeURIComponent(clientId)}`)
-          .then((response) => response.json() as Promise<SignedDocumentsResponse>)
-      ]);
-      const nextActivity = activityBody.ok ? activityBody.activity ?? [] : [];
-      const nextSequences = reviewBody.ok ? reviewBody.sequences ?? [] : [];
-      const nextMedia = mediaBody.ok ? mediaBody.media ?? [] : [];
-      const nextReports = reportsBody.ok ? reportsBody.reports ?? [] : [];
-      const nextSignedDocs = signedDocsBody.ok ? (signedDocsBody.records ?? []) : [];
-      setClientPortalActivity(nextActivity);
-      setClientReviewSequences(nextSequences);
-      setClientFieldMedia(nextMedia);
-      setClientFieldReports(nextReports);
-      setClientSignedDocuments(nextSignedDocs);
-      if (!activityBody.ok || !reviewBody.ok || !mediaBody.ok || !reportsBody.ok || !signedDocsBody.ok) {
-        setClientRailStatus(activityBody.error ?? reviewBody.error ?? mediaBody.error ?? reportsBody.error ?? signedDocsBody.error ?? "Client portal rails are unavailable right now.");
-        return;
-      }
-      setClientRailStatus(
-        nextSequences.length
-          ? `${nextActivity.length} portal event${nextActivity.length === 1 ? "" : "s"}, ${nextSequences.length} review sequence${nextSequences.length === 1 ? "" : "s"}, ${nextMedia.length} media item${nextMedia.length === 1 ? "" : "s"}, ${nextReports.length} report${nextReports.length === 1 ? "" : "s"}, and ${nextSignedDocs.length} signed doc${nextSignedDocs.length === 1 ? "" : "s"} loaded.`
-          : nextActivity.length
-            ? `${nextActivity.length} portal event${nextActivity.length === 1 ? "" : "s"} loaded. No review follow-up is active for this client. ${nextMedia.length} media item${nextMedia.length === 1 ? "" : "s"}, ${nextReports.length} report${nextReports.length === 1 ? "" : "s"}, and ${nextSignedDocs.length} signed doc${nextSignedDocs.length === 1 ? "" : "s"} are on the rail.`
-            : nextMedia.length || nextReports.length || nextSignedDocs.length
-              ? `No portal activity or review follow-up is recorded yet. NexCam already has ${nextMedia.length} media item${nextMedia.length === 1 ? "" : "s"}, ${nextReports.length} report${nextReports.length === 1 ? "" : "s"}, and ${nextSignedDocs.length} signed doc${nextSignedDocs.length === 1 ? "" : "s"} for this client.`
-              : "No portal activity, review follow-up, or NexCam media is recorded for this client yet."
-      );
-    } catch {
-      setClientPortalActivity([]);
-      setClientReviewSequences([]);
-      setClientFieldMedia([]);
-      setClientFieldReports([]);
-      setClientSignedDocuments([]);
-      setClientRailStatus("Client portal rails are unavailable right now.");
-    }
-  }
-
-
-
-
-
-  useEffect(() => {
-    void refreshClientRails(selectedClientId, operatorContext.tenantId);
-  }, [selectedClientId, operatorContext.tenantId]);
-
-  async function sendClientPortalLink(clientId: string, propertyId?: string): Promise<void> {
-    setClientRailBusy(propertyId ? `portal-link-${propertyId}` : "portal-link");
-    setClientRailStatus("Sending portal link...");
-    try {
-      const body = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}/portal-link`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tenantId: operatorContext.tenantId,
-          ...(propertyId ? { propertyId } : {})
-        })
-      }).then((response) => response.json() as Promise<SendPortalLinkResponse>);
-      if (!body.ok || !body.portalLink) {
-        setClientRailStatus(body.error ?? "Portal link could not be sent.");
-        return;
-      }
-      setLastPortalLink(body.portalLink);
-      setClientRailStatus(`Portal link sent by ${body.delivery ?? "direct"} to ${body.target ?? "the saved client destination"}.`);
-      await refreshClientRails(clientId, operatorContext.tenantId);
-    } catch {
-      setClientRailStatus("Portal link could not be sent.");
-    } finally {
-      setClientRailBusy("");
-    }
-  }
-
-
-
-  async function sendClientStatement(clientId: string): Promise<void> {
-    setClientRailBusy("send-statement");
-    setClientRailStatus("Sending client statement...");
-    try {
-      const body = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}/statements/send`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: operatorContext.tenantId })
-      }).then((response) => response.json() as Promise<{ ok: boolean; target?: string; error?: string }>);
-      if (!body.ok) {
-        setClientRailStatus(body.error ?? "Statement send failed.");
-        return;
-      }
-      setClientRailStatus(`Statement sent to ${body.target ?? "the saved client destination"}.`);
-      await refreshClientRails(clientId, operatorContext.tenantId);
-    } catch {
-      setClientRailStatus("Statement send failed.");
-    } finally {
-      setClientRailBusy("");
-    }
-  }
-
-  async function deleteClientRecord(clientId: string): Promise<void> {
-    const client = clients.find((entry) => entry.id === clientId);
-    if (!client) {
-      setClientRailStatus("That client is no longer on the rail.");
-      return;
-    }
-    const confirmed = window.confirm(
-      `Delete ${clientDisplayName(client)}? This removes the client and any linked properties only when there is no saved request, quote, job, or invoice history.`
-    );
-    if (!confirmed) {
-      return;
-    }
-    setClientRailBusy("delete-client");
-    setClientRailStatus(`Deleting ${clientDisplayName(client)}...`);
-    try {
-      const response = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}?tenantId=${encodeURIComponent(operatorContext.tenantId)}`, {
-        method: "DELETE"
-      });
-      const body = await response.json() as { ok: boolean; error?: string; deletedPropertyIds?: string[] };
-      if (!response.ok || !body.ok) {
-        setClientRailStatus(body.error ?? "Client delete failed.");
-        return;
-      }
-      emitCrmMutation();
-      returnToClientRoster();
-      await refresh();
-      setClientRailStatus(`${clientDisplayName(client)} deleted${body.deletedPropertyIds?.length ? ` with ${body.deletedPropertyIds.length} linked propert${body.deletedPropertyIds.length === 1 ? "y" : "ies"}` : ""}.`);
-    } catch {
-      setClientRailStatus("Client delete failed.");
-    } finally {
-      setClientRailBusy("");
-    }
-  }
-
-
-
-  async function saveClientMarketingConsent(clientId: string, marketing: boolean): Promise<void> {
-    setClientRailBusy("marketing-consent");
-    setClientRailStatus(marketing
-      ? "Turning marketing consent on..."
-      : "Turning marketing consent off and checking live showcases...");
-    try {
-      const body = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tenantId: operatorContext.tenantId,
-          consent: {
-            ...(selectedClient?.consent.email !== undefined ? { email: selectedClient.consent.email } : {}),
-            ...(selectedClient?.consent.sms !== undefined ? { sms: selectedClient.consent.sms } : {}),
-            marketing
-          }
-        })
-      }).then((response) => response.json() as Promise<CrmClientCreateResponse>);
-      if (!body.ok || !body.client) {
-        setClientRailStatus(body.error ?? "Marketing consent could not be updated.");
-        return;
-      }
-      setClients((current) => current.map((client) => client.id === body.client?.id ? body.client : client));
-      setClientRailStatus(marketing
-        ? "Marketing consent is on for this client."
-        : "Marketing consent is off. Future NexReach generation is blocked and any live showcase is flagged for review.");
-    } catch {
-      setClientRailStatus("Marketing consent could not be updated.");
-    } finally {
-      setClientRailBusy("");
-    }
-  }
-
-  async function saveClientOverviewCustomFields(clientId: string): Promise<void> {
-    if (!selectedClient) {
-      return;
-    }
-    if (clientOverviewCustomFieldValidation.hasBlockingIssues) {
-      setClientRailStatus("Custom field labels must be unique and cannot reuse built-in labels.");
-      return;
-    }
-    setClientRailBusy("custom-fields");
-    setClientRailStatus("Saving custom fields...");
-    try {
-      const body = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tenantId: operatorContext.tenantId,
-          customFields: {
-            ...(selectedClient.customFields ?? {}),
-            ...customFieldDraftRowsToRecord(clientOverviewCustomFieldsDraft, CLIENT_CUSTOM_FIELD_RESERVED_LABELS)
-          }
-        })
-      }).then((response) => response.json() as Promise<CrmClientCreateResponse>);
-      if (!body.ok || !body.client) {
-        setClientRailStatus(body.error ?? "Custom fields could not be saved.");
-        return;
-      }
-      setClients((current) => current.map((client) => client.id === body.client?.id ? body.client : client));
-      setClientOverviewCustomFieldsDraft(
-        customFieldRecordToDraftRows(body.client.customFields, CLIENT_CUSTOM_FIELD_RESERVED_LABELS, "client_profile")
-      );
-      setClientOverviewCustomFieldsOpen(false);
-      setClientRailStatus("Custom fields saved.");
-    } catch {
-      setClientRailStatus("Custom fields could not be saved.");
-    } finally {
-      setClientRailBusy("");
-    }
-  }
-
-
-
-
-
   function clearWorkspaceTargets(): void {
     setFocusedRequestId("");
     setFocusedQuoteId("");
@@ -593,7 +364,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     clearWorkspaceFilters();
     closeHeaderPanels();
     setCreatingClientPage(false);
-    setShowCreateClient(false);
+    contactForm.closeDrawer();
     setSelectedClientId("");
     setActiveClientProfileTab(null);
     setActiveModule("home");
@@ -605,7 +376,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     clearWorkspaceFilters();
     closeHeaderPanels();
     setCreatingClientPage(false);
-    setShowCreateClient(false);
+    contactForm.closeDrawer();
     setSelectedClientId(clientId);
     setActiveModule("clients");
     setActiveClientProfileTab(tab);
@@ -615,8 +386,8 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
   function returnToClientRoster(): void {
     closeHeaderPanels();
     setCreatingClientPage(false);
-    setShowCreateClient(false);
-    setClientFormMode("create");
+    contactForm.closeDrawer();
+    contactForm.resetForm();
     setSelectedClientId("");
     setActiveModule("clients");
     setActiveClientProfileTab(null);
@@ -638,11 +409,8 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     clearWorkspaceTargets();
     clearWorkspaceFilters();
     closeHeaderPanels();
-    setShowCreateClient(false);
     setCreatingClientPage(true);
-    setClientFormMode("create");
-    setCreateStatus("");
-    setNewClient(blankNewClientDraft());
+    contactForm.openCreate("client");
     setSelectedClientId("");
     setActiveModule("clients");
     setActiveClientProfileTab(null);
@@ -650,12 +418,8 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
   }
 
   function openCreateClientDrawer(surface: "client" | "contact" | "property" = "client"): void {
-    setCreateClientSurface(surface);
-    setClientFormMode("create");
-    setCreateStatus("");
-    setNewClient(blankNewClientDraft());
     closeHeaderPanels();
-    setShowCreateClient(true);
+    contactForm.openCreate(surface, true);
   }
 
   function openEditClientWorkspace(): void {
@@ -665,21 +429,20 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     clearWorkspaceTargets();
     clearWorkspaceFilters();
     closeHeaderPanels();
-    setShowCreateClient(false);
+    if (!contactForm.openEdit()) {
+      return;
+    }
     setCreatingClientPage(true);
-    setClientFormMode("edit");
-    setCreateStatus("");
-    setNewClient(draftFromExistingClient(selectedClient, selectedProperties[0] ?? null));
     setActiveModule("clients");
   }
 
   function closeClientFormWorkspace(): void {
-    if (clientFormMode === "edit" && selectedClientId) {
-      setClientFormMode("create");
+    if (contactForm.clientFormMode === "edit" && selectedClientId) {
+      contactForm.resetForm();
       openClientProfile(selectedClientId, activeClientProfileTab ?? "overview");
       return;
     }
-    setClientFormMode("create");
+    contactForm.resetForm();
     returnToClientRoster();
   }
 
@@ -794,243 +557,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     }
   }
 
-  async function createClientFromForm(event: React.FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    if (!createClientCanSave) {
-      if (clientCustomFieldValidation.hasBlockingIssues) {
-        setCreateStatus("Resolve duplicate or reserved client custom field labels before saving.");
-        return;
-      }
-      if (propertyCustomFieldValidation.hasBlockingIssues) {
-        setCreateStatus("Resolve duplicate or reserved property custom field labels before saving.");
-        return;
-      }
-      setCreateStatus(`Add ${createClientMissingFields.join(", ")} before this client can be saved. Email is recommended, but it is optional.`);
-      return;
-    }
-    const editing = clientFormMode === "edit";
-    if (editing && !selectedClientId) {
-      setCreateStatus("Open a saved client record before trying to edit it.");
-      return;
-    }
-    setCreateStatus(editing ? "Saving client changes..." : "Creating client...");
-    const personName = {
-      ...(newClient.title && newClient.title !== "No title" ? { title: newClient.title } : {}),
-      firstName: newClient.firstName.trim(),
-      lastName: newClient.lastName.trim()
-    };
-    const company = newClient.company.trim();
-    const displayName = company && newClient.displayNamePreference === "company"
-      ? company
-      : personDisplayName(personName) || company;
-    if (!displayName) {
-      setCreateStatus("Add a client name or company name first.");
-      return;
-    }
-    const phoneValue = newClient.phone.trim();
-    const emailValue = newClient.email.trim();
-    const additionalPhones = (newClient.additionalPhones ?? [])
-      .filter((entry: ClientPhoneDraft) => entry.value.trim())
-      .map((entry: ClientPhoneDraft) => ({
-        label: entry.label,
-        value: entry.value.trim(),
-        primary: false,
-        receivesMessages: entry.receivesMessages,
-        smsCapability: entry.smsCapability,
-        smsMode: "one_way" as const
-      }));
-    const additionalEmails = (newClient.additionalEmails ?? [])
-      .filter((entry: ClientEmailDraft) => entry.value.trim())
-      .map((entry: ClientEmailDraft) => ({
-        label: entry.label,
-        value: entry.value.trim(),
-        primary: false
-      }));
-    const allContactPhones = [
-      ...(phoneValue ? [{
-        label: newClient.phoneLabel,
-        value: phoneValue,
-        primary: true,
-        receivesMessages: newClient.phoneReceivesMessages,
-        smsCapability: newClient.smsCapability,
-        smsMode: "one_way" as const
-      }] : []),
-      ...additionalPhones
-    ];
-    const allContactEmails = [
-      ...(emailValue ? [{
-        label: newClient.emailLabel,
-        value: emailValue,
-        primary: true
-      }] : []),
-      ...additionalEmails
-    ];
-    const contact: CrmContact = {
-      personName,
-      ...(company ? { company } : {}),
-      ...(newClient.role.trim() ? { role: newClient.role.trim() } : {}),
-      correspondenceContact: true,
-      billingContact: true,
-      phones: allContactPhones,
-      emails: allContactEmails,
-      channelPreference: allContactEmails.length && newClient.phoneReceivesMessages ? "both" : newClient.phoneReceivesMessages ? "sms" : "email"
-    };
-    const propertyAddress = newClient.street1.trim() ? {
-      street1: newClient.street1.trim(),
-      ...(newClient.street2.trim() ? { street2: newClient.street2.trim() } : {}),
-      city: newClient.city.trim(),
-      province: newClient.province.trim(),
-      postalCode: newClient.postalCode.trim(),
-      country: "USA"
-    } : undefined;
-    const separateBillingAddress = newClient.billingStreet1.trim() ? {
-      street1: newClient.billingStreet1.trim(),
-      ...(newClient.billingStreet2.trim() ? { street2: newClient.billingStreet2.trim() } : {}),
-      city: newClient.billingCity.trim(),
-      province: newClient.billingProvince.trim(),
-      postalCode: newClient.billingPostalCode.trim(),
-      country: "USA"
-    } : undefined;
-    const billingAddress = newClient.billingSameAsPrimaryProperty ? propertyAddress : separateBillingAddress;
-    const additionalContacts: CrmContact[] = [];
-    if (newClient.additionalContactName.trim() || newClient.additionalContactPhone.trim() || newClient.additionalContactEmail.trim()) {
-      additionalContacts.push({
-        ...(newClient.additionalContactName.trim() ? { company: newClient.additionalContactName.trim() } : {}),
-        role: newClient.additionalContactRole.trim() || "Additional contact",
-        correspondenceContact: false,
-        billingContact: false,
-        phones: newClient.additionalContactPhone.trim() ? [{
-          label: "Other",
-          value: newClient.additionalContactPhone.trim(),
-          primary: false,
-          receivesMessages: false,
-          smsCapability: "unknown",
-          smsMode: "one_way"
-        }] : [],
-        emails: newClient.additionalContactEmail.trim() ? [{
-          label: "Other",
-          value: newClient.additionalContactEmail.trim(),
-          primary: false
-        }] : [],
-        channelPreference: "none"
-      });
-    }
-    const clientCustomFields: Record<string, string | number | boolean> = {};
-    if (newClient.leadSource.trim()) {
-      clientCustomFields.leadSource = newClient.leadSource.trim();
-    }
-    if (newClient.paymentTerms.trim()) {
-      clientCustomFields.paymentTerms = newClient.paymentTerms.trim();
-    }
-    if (newClient.referredBy.trim()) {
-      clientCustomFields.referredBy = newClient.referredBy.trim();
-    }
-    if (newClient.promoCode.trim()) {
-      clientCustomFields.promoCode = newClient.promoCode.trim();
-    }
-    clientCustomFields.askForReview = newClient.askForReview;
-    Object.assign(
-      clientCustomFields,
-      customFieldDraftRowsToRecord(newClient.clientCustomFieldsDraft ?? [], CLIENT_CUSTOM_FIELD_RESERVED_LABELS)
-    );
-    const propertyCustomFields: Record<string, string | number | boolean> = {};
-    propertyCustomFields.gatedEntry = newClient.propertyGatedEntry;
-    if (newClient.propertyClientName.trim()) {
-      propertyCustomFields.propertyClientName = newClient.propertyClientName.trim();
-    }
-    if (newClient.propertyClientPhone.trim()) {
-      propertyCustomFields.propertyClientPhone = newClient.propertyClientPhone.trim();
-    }
-    if (newClient.propertyClientEmail.trim()) {
-      propertyCustomFields.propertyClientEmail = newClient.propertyClientEmail.trim();
-    }
-    Object.assign(
-      propertyCustomFields,
-      customFieldDraftRowsToRecord(newClient.propertyCustomFieldsDraft ?? [], PROPERTY_CUSTOM_FIELD_RESERVED_LABELS)
-    );
-    const propertyContacts: CrmContact[] = [];
-    if (newClient.propertyClientName.trim() || newClient.propertyClientPhone.trim() || newClient.propertyClientEmail.trim()) {
-      propertyContacts.push({
-        ...(newClient.propertyClientName.trim() ? { company: newClient.propertyClientName.trim() } : {}),
-        role: "Property contact",
-        correspondenceContact: false,
-        billingContact: false,
-        phones: newClient.propertyClientPhone.trim() ? [{
-          label: "Other",
-          value: newClient.propertyClientPhone.trim(),
-          primary: true,
-          receivesMessages: false,
-          smsCapability: "unknown",
-          smsMode: "one_way"
-        }] : [],
-        emails: newClient.propertyClientEmail.trim() ? [{
-          label: "Other",
-          value: newClient.propertyClientEmail.trim(),
-          primary: true
-        }] : [],
-        channelPreference: "none"
-      });
-    }
-    try {
-      const payload = {
-        tenantId: operatorContext.tenantId,
-        name: displayName,
-        ...(company ? { company } : editing ? { company: null } : {}),
-        personName,
-        displayNamePreference: company ? newClient.displayNamePreference : "person",
-        ...(billingAddress ? { billingAddress } : editing ? { billingAddress: null } : {}),
-        billingSameAsPrimaryProperty: newClient.billingSameAsPrimaryProperty,
-        contacts: [contact, ...additionalContacts],
-        communicationSettings: {
-          quotesAndInvoices: contact.channelPreference,
-          jobReminders: contact.channelPreference,
-          jobClosureFollowUps: "email" as const,
-          reviewRequests: contact.channelPreference,
-          smsDefaultMode: "one_way" as const
-        },
-        emails: allContactEmails.map((entry) => entry.value),
-        phones: allContactPhones.map((entry) => entry.value),
-        consent: { email: Boolean(emailValue), sms: newClient.phoneReceivesMessages, marketing: selectedClient?.consent.marketing ?? false },
-        customFields: clientCustomFields,
-        ...(propertyAddress ? {
-          primaryProperty: {
-            siteName: newClient.siteName.trim() || undefined,
-            label: newClient.siteName.trim() || propertyAddress.street1,
-            address: propertyAddress,
-            ...(typeof newClient.propertyGeoLat === "number" && typeof newClient.propertyGeoLng === "number"
-              ? { geo: { lat: newClient.propertyGeoLat, lng: newClient.propertyGeoLng } }
-              : {}),
-            billingAddressSameAsClient: newClient.billingSameAsPrimaryProperty,
-            access: {
-              gateCode: newClient.propertyGateCodes.trim() || undefined,
-              accessNotes: newClient.propertyAccessNotes.trim() || (newClient.propertyGatedEntry ? "Gated entry enabled" : undefined)
-            },
-            contacts: propertyContacts,
-            customFields: propertyCustomFields
-          }
-        } : {})
-      };
-      const body = await fetch(editing ? `/api/crm/clients/${encodeURIComponent(selectedClientId)}` : "/api/crm/clients", {
-        method: editing ? "PATCH" : "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload)
-      }).then((response) => response.json() as Promise<CrmClientCreateResponse>);
-      if (!body.ok || !body.client) {
-        setCreateStatus(body.error ?? (editing ? "Client could not be updated." : "Client could not be created."));
-        return;
-      }
-      setCreateStatus(`${editing ? "Saved" : "Created"} ${clientDisplayName(body.client)}.`);
-      setShowCreateClient(false);
-      setCreatingClientPage(false);
-      setClientFormMode("create");
-      setNewClient(blankNewClientDraft());
-      await refresh();
-      openClientProfile(body.client.id, "overview");
-    } catch {
-      setCreateStatus(editing ? "Client update request failed." : "Client create request failed.");
-    }
-  }
-
   useEffect(() => {
     let cancelled = false;
     loadOperatorContext(props.user)
@@ -1106,6 +632,30 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     : "";
   const selectedEmail = selectedContact?.emails?.find((email) => email.primary)?.value ?? selectedContact?.emails?.[0]?.value ?? selectedClient?.emails[0];
   const selectedProperties = selectedClient ? properties.filter((property) => property.clientId === selectedClient.id) : [];
+  const contactForm = useContactFormController({
+    tenantId: operatorContext.tenantId,
+    clients,
+    selectedClientId,
+    selectedClient: selectedClient ?? undefined,
+    selectedProperty: selectedProperties[0] ?? null,
+    onRefresh: refresh,
+    onSaved: (clientId) => {
+      setCreatingClientPage(false);
+      openClientProfile(clientId, "overview");
+    }
+  });
+  const {
+    showCreateClient,
+    clientFormMode,
+    createClientSurface,
+    createStatus,
+    newClient,
+    setNewClient,
+    createClientCanSave,
+    createClientMissingFields,
+    leadSourceOptions,
+    submit: createClientFromForm
+  } = contactForm;
   const selectedRequests = selectedClient ? requests.filter((request) => request.selectedClientId === selectedClient.id) : [];
   const selectedJobs = selectedClient ? jobs.filter((job) => job.clientId === selectedClient.id) : [];
   const selectedQuotes = selectedClient ? quotes.filter((quote) => quote.clientId === selectedClient.id) : [];
@@ -1114,13 +664,9 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
   const selectedReceiptReviewSummaries = selectedClient
     ? receiptReviews.filter((review) => review.clientId === selectedClient.id || selectedInvoices.some((invoice) => invoice.id === review.invoiceId))
     : [];
-  const directClientMedia = clientFieldMedia.filter((media) => !media.jobId && !media.visitId);
-  const workScopedClientMedia = clientFieldMedia.filter((media) => Boolean(media.jobId || media.visitId));
-  const orderedClientFieldMedia = [...directClientMedia, ...workScopedClientMedia];
   const activeCount = clients.filter((client) => clientStatusLabel(client) === "Active").length;
   const leadCount = clients.filter((client) => clientStatusLabel(client) === "Lead").length;
   const textReadyCount = clients.filter((client) => clientHasTextReadyContact(client)).length;
-  const clientOverviewCustomFieldValidation = validateCustomFieldDraftRows(clientOverviewCustomFieldsDraft, CLIENT_CUSTOM_FIELD_RESERVED_LABELS);
   const style = {
     "--nexops-brand-primary": "#0c1118",
     "--nexops-brand-accent": "#A8E600",
@@ -1341,7 +887,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
           createClientMissingFields={createClientMissingFields}
           leadSourceOptions={leadSourceOptions}
           surface={createClientSurface}
-          onClose={() => setShowCreateClient(false)}
+          onClose={contactForm.closeDrawer}
           onSubmit={createClientFromForm}
         />
       </Suspense>
