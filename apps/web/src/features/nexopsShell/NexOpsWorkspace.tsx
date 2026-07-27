@@ -4,8 +4,11 @@ import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDi
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./components/NexOpsHeader";
 import { NexOpsCreateMenu } from "./components/NexOpsCreateMenu";
 import { NexOpsNotificationPanel } from "./components/NexOpsNotificationPanel";
+import { NexOpsImportPage } from "./components/NexOpsImportPage";
+import { NexOpsLegacyLifecyclePage } from "./components/NexOpsLegacyLifecyclePage";
+import { NexOpsModuleSwitcher } from "./components/NexOpsModuleSwitcher";
 
-import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, NEXTEAM_WORKSPACE_OPTIONS, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "./domain/nexopsNavigation";
+import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "./domain/nexopsNavigation";
 import { buildLeadSourceOptions, CLIENT_CUSTOM_FIELD_RESERVED_LABELS, customFieldRecordToDraftRows, customFieldDraftRowsToRecord, PROPERTY_CUSTOM_FIELD_RESERVED_LABELS, primaryClientPhoneValue, type ClientProfileMobileBucket, type CustomFieldDraftRow, validateCustomFieldDraftRows } from "../../features/clients/components/contact/domain/clientProfile";
 import { getMobileCreateFabScrollIntent, mobileFabShouldHideOverlays, mobileFabVisibleForViewport, NEXOPS_MOBILE_CREATE_FAB_IDLE_MS, NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY, NEXOPS_SHARED_CREATE_MENU_ID, NexOpsMobileCreateFab, shouldPulseMobileCreateFab } from "./components/NexOpsMobileCreateFab";
 import { ContactRoster } from "../clients/components/contact/ContactRoster";
@@ -29,7 +32,7 @@ const NexOpsCaptureWorkspace = React.lazy(async () => ({ default: (await import(
 
 
 import type { FieldDocsMediaRecord, UploadMediaResponse, ClientPhoneDraft, ClientEmailDraft, ClientFormMode, CrmContact, CrmClient, CrmProperty, CrmJob, CrmQuote, CrmInvoice, CrmRequestSummary, CrmPaymentSummary, CrmReceiptReviewSummary, ClientPortalActivityEntry, ReviewSequenceRecord, CrmClientsResponse, CrmRecordsResponse, CrmRequestsResponse, CrmPaymentsResponse, CrmReceiptReviewsResponse, ClientPortalActivityResponse, ReviewSequenceStatusResponse, SendPortalLinkResponse, CrmClientCreateResponse, FieldDocsMediaListResponse, CaptureBatchRecord, CaptureBatchListResponse, CaptureBatchMutationResponse, CaptureClientTargetJob, CaptureClientTargetVisit, CaptureClientTargetsResponse, CaptureWorkspaceView, CaptureSessionMode, CaptureSessionOrigin, CaptureRequestIntent, FieldDocsReportsListResponse, SignedDocumentRecord, SignedDocumentsResponse, TenantUserRecord, OperatorContext, TenantBranding, TenantBrandingResponse, TenantUsersResponse, ScheduleScope, WorkspaceTarget, NexOpsNotificationEntry, NexOpsNotificationsResponse } from "./contracts/workspaceContracts";
-import { formatPhoneDisplay, fileToBase64, personDisplayName, clientDisplayName, clientContactDisplayName, clientPrimaryAddress, clientStatusLabel, intakeSurfaceSummary, contactSummary, clientHasTextReadyContact, NexOpsNavGlyph, MobileClientSummaryGlyph, MobileClientEditGlyph, parseCsvPreview, blankNewClientDraft, draftFromExistingClient, MOBILE_CLIENT_VIEWPORT_MAX } from "./workspaceSupport";
+import { formatPhoneDisplay, fileToBase64, personDisplayName, clientDisplayName, clientContactDisplayName, clientPrimaryAddress, clientStatusLabel, contactSummary, clientHasTextReadyContact, NexOpsNavGlyph, MobileClientSummaryGlyph, MobileClientEditGlyph, blankNewClientDraft, draftFromExistingClient, MOBILE_CLIENT_VIEWPORT_MAX } from "./workspaceSupport";
 export type * from "./contracts/workspaceContracts";
 export * from "./workspaceSupport";
 
@@ -1716,173 +1719,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     );
   }
 
-  function renderLifecycle(module: NexOpsModule): React.ReactElement {
-    const money = (value?: number) => `$${(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-    const clientName = (clientId: string) => clientDisplayName(clients.find((client) => client.id === clientId) ?? {
-      id: clientId,
-      tenantId: operatorContext.tenantId,
-      name: clientId,
-      emails: [],
-      phones: [],
-      consent: { email: false, sms: false }
-    });
-    const labels: Record<string, { title: string; subtitle: string; primaryAction: string; items: string[]; records: Array<{ id: string; title: string; detail: string; status: string; amount?: string }> }> = {
-      requests: {
-        title: "Requests",
-        subtitle: "Lead and client request intake",
-        primaryAction: "New request",
-        items: ["Manual request creation", "Embeddable form target", "Convert request to quote/job"],
-        records: clients
-          .filter((client) => clientStatusLabel(client).toLowerCase().includes("lead"))
-          .map((client) => ({
-            id: client.id,
-            title: clientDisplayName(client),
-            detail: clientPrimaryAddress(client) || contactSummary(client),
-            status: "Lead"
-          }))
-      },
-      quotes: {
-        title: "Quotes",
-        subtitle: "Catalog, templates, approval links, and expiry",
-        primaryAction: "Draft quote",
-        items: ["Draft quote from catalog", "Send by email/text/both through ApprovalQueue", "Client approval through NexPortal"],
-        records: quotes.map((quote) => ({
-          id: quote.id,
-          title: quote.title,
-          detail: [clientName(quote.clientId), intakeSurfaceSummary(quote.intake, "quote")].filter(Boolean).join(" - "),
-          status: quote.status,
-          amount: money(quote.totals.total)
-        }))
-      },
-      jobs: {
-        title: "Jobs",
-        subtitle: "Approved work, visits, closeout, and field handoff",
-        primaryAction: "New job",
-        items: ["Quote-to-job conversion", "Assigned visits", "NexCam report rollup"],
-        records: jobs.map((job) => ({
-          id: job.id,
-          title: job.title,
-          detail: [clientName(job.clientId), job.startAt ? new Date(job.startAt).toLocaleString() : "", intakeSurfaceSummary(job.intake, "job")].filter(Boolean).join(" - "),
-          status: job.status.replace("_", " "),
-          amount: money(job.totals?.total)
-        }))
-      },
-      invoices: {
-        title: "Invoices",
-        subtitle: "Billing, PDF invoices, checkout, and receipts",
-        primaryAction: "Create invoice",
-        items: ["Invoice from signed quote", "Stripe test checkout", "Attach NexCam report PDF on receipt"],
-        records: invoices.map((invoice) => ({
-          id: invoice.id,
-          title: invoice.title,
-          detail: [clientName(invoice.clientId), intakeSurfaceSummary(invoice.intake, "invoice")].filter(Boolean).join(" - "),
-          status: invoice.status,
-          amount: money(invoice.totals.total)
-        }))
-      },
-      payments: {
-        title: "Payments",
-        subtitle: "Payment state, deposits, balances, and methods",
-        primaryAction: "Record payment",
-        items: ["Stripe test-mode receipts", "Deposit/payment schedule scaffold", "No live charges without approval"],
-        records: invoices
-          .filter((invoice) => invoice.status === "paid" || invoice.status === "partial_pay")
-          .map((invoice) => ({
-            id: invoice.id,
-            title: invoice.title,
-            detail: clientName(invoice.clientId),
-            status: invoice.status,
-            amount: money(invoice.totals.total)
-          }))
-      }
-    };
-    const page = labels[module] ?? {
-      title: "NexOps",
-      subtitle: "Module scaffold",
-      primaryAction: "Create",
-      items: [],
-      records: []
-    };
-    return (
-      <section className="nexops-module-page">
-        <div className="nexops-page-heading">
-          <div>
-            <h1>{page.title}</h1>
-            <p>{page.subtitle}</p>
-          </div>
-          <button type="button">{page.primaryAction}</button>
-        </div>
-        <div className="nexops-module-grid nexops-module-grid-wide">
-          <article className="nexops-module-card">
-            <p className="eyebrow">Live native records</p>
-            <h2>{page.records.length} visible</h2>
-            {page.records.length ? (
-              <ul className="nexops-record-list">
-                {page.records.slice(0, 12).map((record) => (
-                  <li key={record.id}>
-                    <span>
-                      <strong>{record.title}</strong>
-                      <small>{record.detail}</small>
-                    </span>
-                    <mark>{record.status}</mark>
-                    {record.amount ? <b>{record.amount}</b> : null}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No native {page.title.toLowerCase()} are loaded yet. Use create/import/sync, then refresh this page.</p>
-            )}
-          </article>
-          <article className="nexops-module-card">
-            <p className="eyebrow">Next build receipts</p>
-            <h2>What lands here</h2>
-            <ul className="nexops-checklist">
-              {page.items.map((item) => <li key={item}>{item}</li>)}
-            </ul>
-          </article>
-        </div>
-      </section>
-    );
-  }
-
-  function renderImports(): React.ReactElement {
-    return (
-      <section className="nexops-module-page">
-        <div className="nexops-page-heading">
-          <div>
-            <h1>Import & Sync</h1>
-            <p>CSV import for every tenant. Third-party adapters stay dormant unless a future tenant explicitly opts in.</p>
-          </div>
-        </div>
-        <div className="nexops-module-grid">
-          <article className="nexops-module-card">
-            <p className="eyebrow">CSV import</p>
-            <h2>Preview before write</h2>
-            <p>{csvStatus}</p>
-            <input
-              aria-label="CSV import file"
-              type="file"
-              accept=".csv,text/csv"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (!file) {
-                  setCsvStatus("No CSV selected yet.");
-                  return;
-                }
-                file.text()
-                  .then((text) => {
-                    const preview = parseCsvPreview(text);
-                    setCsvStatus(`${preview.rows} row${preview.rows === 1 ? "" : "s"} detected. Columns: ${preview.columns.join(", ") || "none"}. Commit endpoint remains approval-gated.`);
-                  })
-                  .catch(() => setCsvStatus("Could not read that CSV file."));
-              }}
-            />
-          </article>
-        </div>
-      </section>
-    );
-  }
-
   function renderSettings(): React.ReactElement {
     return (
       <NexOpsSettingsPage
@@ -1894,7 +1730,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
       />
     );
   }
-
   function renderCreateClientPanel(): React.ReactElement | null {
     if (!showCreateClient) {
       return null;
@@ -2007,7 +1842,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
       );
     }
     if (activeModule === "imports") {
-      return renderImports();
+      return <NexOpsImportPage csvStatus={csvStatus} setCsvStatus={setCsvStatus} />;
     }
     if (activeModule === "approvals") {
       return <div className="nexops-embedded-panel"><ApprovalQueuePanel tenantId={operatorContext.tenantId} /></div>;
@@ -2021,7 +1856,16 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     if (activeModule === "patterns") {
       return <NexOpsPatternLibraryPage />;
     }
-    return renderLifecycle(activeModule);
+    return (
+      <NexOpsLegacyLifecyclePage
+        module={activeModule}
+        clients={clients}
+        quotes={quotes}
+        jobs={jobs}
+        invoices={invoices}
+        tenantId={operatorContext.tenantId}
+      />
+    );
   }
 
   function renderNotificationPanel(): React.ReactElement | null {
@@ -2041,42 +1885,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
           />
         </>
       </Suspense>
-    );
-  }
-
-  function renderModuleSwitcher(): React.ReactElement | null {
-    if (!moduleSwitcherOpen) {
-      return null;
-    }
-    return (
-      <>
-        <button className="nexops-overlay-backdrop" type="button" aria-label="Close module switcher" onClick={() => setModuleSwitcherOpen(false)} />
-        <section className="nexops-workspace-switcher" role="dialog" aria-label="Switch NexTeam modules">
-          <div className="nexops-workspace-switcher-head">
-            <div>
-              <p className="eyebrow">Modules</p>
-              <h2>Move across the platform</h2>
-            </div>
-            <button type="button" onClick={() => setModuleSwitcherOpen(false)}>Close</button>
-          </div>
-          <div className="nexops-workspace-switcher-grid">
-            {NEXTEAM_WORKSPACE_OPTIONS.map((option) => (
-              <button
-                className={option.id === "nexops" ? "active" : ""}
-                key={option.id}
-                type="button"
-                onClick={() => openWorkspaceProduct(option.id)}
-              >
-                <ProductLogo product={option.id === "nexportal" ? "nexportal" : option.id} className="nexops-workspace-switcher-logo" alt={option.label} />
-                <div>
-                  <strong>{option.label}</strong>
-                  <p>{option.detail}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-      </>
     );
   }
 
@@ -2301,7 +2109,11 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
           pulse={mobileCreateFabPulse}
           onClick={toggleCreateMenu}
         />
-        {renderModuleSwitcher()}
+        <NexOpsModuleSwitcher
+          open={moduleSwitcherOpen}
+          onClose={() => setModuleSwitcherOpen(false)}
+          onOpenProduct={openWorkspaceProduct}
+        />
         {renderCreateMenu()}
         {renderNotificationPanel()}
 
