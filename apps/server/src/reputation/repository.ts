@@ -5,6 +5,8 @@ import {
   type ReputationProfile,
   type ReputationReview
 } from "./schemas.js";
+import { RailError } from "@nexteam/core";
+import { setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 export interface ReputationRepository {
   upsertReview(review: ReputationReview): Promise<ReputationReview>;
@@ -21,6 +23,10 @@ export class InMemoryReputationRepository implements ReputationRepository {
 
   async upsertReview(review: ReputationReview): Promise<ReputationReview> {
     const parsed = reputationReviewSchema.parse(review) as ReputationReview;
+    const existing = this.reviews.get(parsed.id);
+    if (existing && existing.tenantId !== parsed.tenantId) {
+      throw new RailError(`Reputation review ${parsed.id} belongs to another tenant.`, { provider: "native", op: "saveReputation", status: 409 });
+    }
     this.reviews.set(parsed.id, parsed);
     return parsed;
   }
@@ -38,6 +44,10 @@ export class InMemoryReputationRepository implements ReputationRepository {
 
   async saveProfile(profile: ReputationProfile): Promise<ReputationProfile> {
     const parsed = reputationProfileSchema.parse(profile) as ReputationProfile;
+    const existing = this.profiles.get(parsed.id);
+    if (existing && existing.tenantId !== parsed.tenantId) {
+      throw new RailError(`Reputation profile ${parsed.id} belongs to another tenant.`, { provider: "native", op: "saveReputation", status: 409 });
+    }
     this.profiles.set(parsed.id, parsed);
     return parsed;
   }
@@ -77,8 +87,14 @@ export class FirestoreReputationRepository implements ReputationRepository {
 
   async upsertReview(review: ReputationReview): Promise<ReputationReview> {
     const parsed = reputationReviewSchema.parse(review) as ReputationReview;
-    // @tenant-doc:reputationReviews reputationReviewSchema requires tenantId before write.
-    await this.db.collection("reputationReviews").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({
+      db: this.db,
+      collection: "reputationReviews",
+      id: parsed.id,
+      tenantId: parsed.tenantId,
+      data: asDocumentData(parsed),
+      label: `Reputation review ${parsed.id}`
+    });
     return parsed;
   }
 
@@ -100,8 +116,14 @@ export class FirestoreReputationRepository implements ReputationRepository {
 
   async saveProfile(profile: ReputationProfile): Promise<ReputationProfile> {
     const parsed = reputationProfileSchema.parse(profile) as ReputationProfile;
-    // @tenant-doc:reputationProfiles reputationProfileSchema requires tenantId before write.
-    await this.db.collection("reputationProfiles").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({
+      db: this.db,
+      collection: "reputationProfiles",
+      id: parsed.id,
+      tenantId: parsed.tenantId,
+      data: asDocumentData(parsed),
+      label: `Reputation profile ${parsed.id}`
+    });
     return parsed;
   }
 

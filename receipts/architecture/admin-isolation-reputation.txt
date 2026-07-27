@@ -1,0 +1,18 @@
+ADMIN SDK ISOLATION - REPUTATION
+Date: 2026-07-27
+
+Enforcement
+- Firestore review and profile writes use `core/tenantOwnedWrite.ts`.
+- Existing same-ID records owned by another tenant are rejected before mutation.
+- Ownership check and replacement execute in one transaction.
+- Memory review/profile stores enforce matching collision behavior.
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 171 modules.
+- Focused reputation/boundary tests: 5 tests, 5 pass, 0 fail.
+- npm test: no-browser guard passed across 64 default test files; 367 tests, 364 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- Firebase emulator-backed Admin SDK proof remains open.
+- No browser was launched.
