@@ -14,6 +14,7 @@ import {
 import { FirestorePlatformRepository, InMemoryPlatformRepository, defaultTenant, defaultTenantBranding, subscriptionFromStripe } from "../dist/platform/repository.js";
 import { registerPlatformRoutes } from "../dist/platform/routes.js";
 import { createServerRuntime } from "../dist/app/runtime.js";
+import { assertRequiredPersistence } from "../dist/app/persistencePolicy.js";
 import { resolveNexiStores } from "../dist/nexi/stores.js";
 
 function tool(name) {
@@ -410,4 +411,19 @@ test("runtime defaults to durable persistence and allows memory only by explicit
   );
   assert.throws(() => resolveNexiStores({}), /Firestore persistence is required/);
   assert.doesNotThrow(() => createServerRuntime({ ALLOW_IN_MEMORY_PERSISTENCE: "true", TENANT_ID: "test-tenant" }));
+  assert.doesNotThrow(() => assertRequiredPersistence({}, {
+    ApprovalQueue: true,
+    Content: true,
+    Scheduling: true
+  }));
+  assert.throws(() => assertRequiredPersistence({}, {
+    ApprovalQueue: true,
+    Content: false,
+    Scheduling: true
+  }), /Content/);
+  assert.doesNotThrow(() => assertRequiredPersistence({ ALLOW_IN_MEMORY_PERSISTENCE: "true" }, {
+    ApprovalQueue: false,
+    Content: false,
+    Scheduling: false
+  }));
 });

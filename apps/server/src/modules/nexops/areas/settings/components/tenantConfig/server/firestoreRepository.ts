@@ -1,22 +1,23 @@
 import type { Firestore } from "firebase-admin/firestore";
-import {
-  clientSchema, crmSettingsSchema, invoiceSchema, jobSchema, propertySchema, quoteSchema, quoteTemplateSchema, requestFormSchema, serviceRequestSchema, RailError,
-  type Client, type CrmSettings, type DocumentSequenceKind, type Invoice, type Job, type Property, type Quote, type QuoteTemplate, type RequestForm, type ServiceRequest
-} from "@nexteam/core";
-import { defaultCrmSettings, defaultQuoteTemplates } from "@nexteam/providers";
-import { advanceDocumentNumber } from "@nexteam/shared";
-import { asDocumentData, createTenantFirestoreReader } from "../../../../../../../crm/firestoreRepositoryBase.js";
+import { crmSettingsSchema, type CrmSettings } from "@nexteam/core";
+import { defaultCrmSettings } from "@nexteam/providers";
+import { asDocumentData } from "../../../../../../../crm/firestoreRepositoryBase.js";
+import { requireTenantMatch } from "../../../../../../../core/tenantConfig.js";
 
 export function createTenantConfigFirestoreRepository(db: Firestore) {
-  const { listByTenant } = createTenantFirestoreReader(db);
   return {
     async getCrmSettings(tenantId: string): Promise<CrmSettings> {
+        // @tenant-doc:crmSettings - the tenant id is the document id and is validated again after parsing.
         const snapshot = await db.collection("crmSettings").doc(tenantId).get();
         if (!snapshot.exists) {
           return defaultCrmSettings(tenantId);
         }
         const parsed = crmSettingsSchema.safeParse(snapshot.data());
-        return parsed.success ? parsed.data as CrmSettings : defaultCrmSettings(tenantId);
+        if (!parsed.success) {
+          return defaultCrmSettings(tenantId);
+        }
+        requireTenantMatch(tenantId, parsed.data.tenantId, "getCrmSettings");
+        return parsed.data as CrmSettings;
       },
 
     async saveCrmSettings(settings: CrmSettings): Promise<CrmSettings> {

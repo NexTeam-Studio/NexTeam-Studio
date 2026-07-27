@@ -11,7 +11,7 @@ export function ClientsSurface(): React.ReactElement {
         longer has to edit the shared platform overview to land here.
       </p>
       <p className="clients-surface__meta">
-        Current backend ownership: native CRM clients, Jobber-backed imports, and tenant-scoped client lookup.
+        Current backend ownership: native CRM clients, legacy CRM imports, and tenant-scoped client lookup.
       </p>
     </section>
   );

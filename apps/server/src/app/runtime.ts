@@ -11,13 +11,15 @@ import { MemoryNativeCrmRepository, type NativeCrmRepository } from "@nexteam/pr
 import type { Firestore } from "firebase-admin/firestore";
 import { CommsApprovalExecutor } from "../comms/approvalExecutor.js";
 import { createCommsRailFromEnv, type CommsRail } from "../comms/gmailRegistry.js";
-import { InMemoryContentRepository, type ContentRepository } from "../content/repository.js";
+import { FirestoreApprovalQueueRepository } from "../approval/firestoreRepository.js";
+import { FirestoreContentRepository, InMemoryContentRepository, type ContentRepository } from "../content/repository.js";
 import { FirestoreNativeCrmRepository } from "../crm/nativeRepository.js";
 import { getAdminDb } from "../firebase.js";
 import { MemoryStorageWriter, type StorageWriter } from "../platform/backup.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository, type PlatformRepository } from "../platform/repository.js";
 import { FirebaseStorageWriter } from "../platform/storage.js";
-import { InMemorySchedulingRepository, type SchedulingRepository } from "../scheduling/repository.js";
+import { FirestoreSchedulingRepository, InMemorySchedulingRepository, type SchedulingRepository } from "../scheduling/repository.js";
+import { assertRequiredPersistence } from "./persistencePolicy.js";
 
 export interface ServerRuntime {
   env: NodeJS.ProcessEnv;
@@ -34,17 +36,19 @@ export interface ServerRuntime {
 }
 
 export function createServerRuntime(env: NodeJS.ProcessEnv = process.env): ServerRuntime {
-  if (env.ALLOW_IN_MEMORY_PERSISTENCE?.trim().toLowerCase() !== "true") {
-    throw new Error("Durable persistence is required. Set ALLOW_IN_MEMORY_PERSISTENCE=true only for local or staging development.");
-  }
   const adminDb = getAdminDb(env);
+  assertRequiredPersistence(env, {
+    ApprovalQueue: Boolean(adminDb),
+    Content: Boolean(adminDb),
+    Scheduling: Boolean(adminDb)
+  });
   const commsRail = createCommsRailFromEnv(env);
   const approvalQueue = new ApprovalQueueService(
-    new InMemoryApprovalQueueRepository(),
+    adminDb ? new FirestoreApprovalQueueRepository(adminDb) : new InMemoryApprovalQueueRepository(),
     new CommsApprovalExecutor(commsRail)
   );
-  const contentRepository = new InMemoryContentRepository();
-  const schedulingRepository = new InMemorySchedulingRepository();
+  const contentRepository = adminDb ? new FirestoreContentRepository(adminDb) : new InMemoryContentRepository();
+  const schedulingRepository = adminDb ? new FirestoreSchedulingRepository(adminDb) : new InMemorySchedulingRepository();
   const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../web/dist");
   const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
   const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();

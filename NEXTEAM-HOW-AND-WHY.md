@@ -79,7 +79,7 @@ Some early modules still store information only in memory while running locally.
 
 ### How It Works
 
-The server now refuses to start by default until durable repositories exist for ApprovalQueue, Content, and Scheduling. Local development and staging must explicitly set `ALLOW_IN_MEMORY_PERSISTENCE=true` while they use the temporary in-memory stores. True production must not set that override.
+ApprovalQueue, Content, and Scheduling use Firebase storage when Firebase Admin is configured. If that durable storage is unavailable, the server refuses to start by default. A local or staging environment may deliberately opt into temporary memory storage with `ALLOW_IN_MEMORY_PERSISTENCE=true`; true production must omit that override.
 
 ### Why It Is This Way
 
@@ -99,4 +99,4 @@ It keeps changes small, reviewable, and safe to merge with parallel work. It als
 
 ## What Is Still Coming
 
-ApprovalQueue, Content, and Scheduling need durable database repositories before true production mode can be enabled. Field Docs also needs the same tenant-bound server-side write protection already applied to CRM. These are tracked in [BUILDSTATE.md](BUILDSTATE.md); the detailed engineering follow-up is in [ARCHITECTURE.md](ARCHITECTURE.md).
+Field Docs still needs the same complete tenant-bound server-side write proof already applied to the highest-risk CRM paths, including emulator-backed Admin SDK boundary tests. This is tracked in [BUILDSTATE.md](BUILDSTATE.md); the detailed engineering follow-up is in [ARCHITECTURE.md](ARCHITECTURE.md).

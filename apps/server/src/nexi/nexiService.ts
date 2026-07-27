@@ -1076,7 +1076,7 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
         }
       : null;
   }
-  if (/\b(?:documents?|docs?|folders?|files?|permits?|blueprints?|certificates?|receipts?|statements?|pdfs?)\b/i.test(lower)) {
+  if (/\b(?:documents?|docs?|folders?|files?|permits?|plans?|certificates?|receipts?|statements?|pdfs?)\b/i.test(lower)) {
     if (/\b(?:create|add|new)\b.*\bfolder\b/i.test(lower)) {
       const tool = tools.find((candidate) => candidate.name === "createFolder");
       const label = message.match(/\bfolder\s+(?:called|named)?\s*["â€œ]?([^"â€\n]+?)["â€]?(?=\s+(?:for|to|on)\b|[?.!]|$)/i)?.[1]?.trim();
@@ -1088,7 +1088,7 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
       const clientQuery = entityQueryFromText(message);
       return tool ? { tool, args: clientQuery ? { clientQuery } : {} } : null;
     }
-    if (/\b(?:upload|attach|add)\b.*\b(?:document|doc|file|permit|blueprint|certificate|receipt|statement|pdf|txt|docx?|xlsx?|csv)\b/i.test(lower)) {
+    if (/\b(?:upload|attach|add)\b.*\b(?:document|doc|file|permit|plan|certificate|receipt|statement|pdf|txt|docx?|xlsx?|csv)\b/i.test(lower)) {
       const tool = tools.find((candidate) => candidate.name === "uploadDocumentToFolder");
       const clientQuery = entityQueryFromText(message);
       const fileName = message.match(/\b([a-z0-9][\w.-]+\.(?:pdf|txt|docx?|xlsx?|csv|png|jpe?g|mp4))\b/i)?.[1]
@@ -1111,7 +1111,7 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
           }
         : null;
     }
-    if (/\b(?:find|search|look\s+up|show|open|pull)\b.*\b(?:document|doc|file|permit|blueprint|certificate|receipt|statement|pdf)\b/i.test(lower) || /\bfind\s+the\s+pool\s+permit\b/i.test(lower)) {
+    if (/\b(?:find|search|look\s+up|show|open|pull)\b.*\b(?:document|doc|file|permit|plan|certificate|receipt|statement|pdf)\b/i.test(lower) || /\bfind\s+the\s+pool\s+permit\b/i.test(lower)) {
       const tool = tools.find((candidate) => candidate.name === "searchDocuments");
       const clientQuery = entityQueryFromText(message);
       const query = message

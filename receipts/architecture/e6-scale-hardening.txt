@@ -1,0 +1,39 @@
+E6 SCALE HARDENING RECEIPT
+Date: 2026-07-27
+
+Composition
+- apps/server/src/server.ts is listener-only.
+- apps/server/src/composeServerApp.ts is the dependency composition root.
+- System, local-auth, native-media, ApprovalQueue, feature routes, and integrated Nexi/tool wiring are registrar-owned.
+- Duplicate self-repair route registration was removed.
+
+Persistence
+- ApprovalQueue, Content, and Scheduling select Firestore repositories when Firebase Admin is available.
+- Missing required durability fails startup by default.
+- ALLOW_IN_MEMORY_PERSISTENCE=true is the only explicit non-production override.
+- Policy tests cover durable availability, default failure, and explicit memory opt-in.
+
+Tenant isolation
+- Tenant Config validates the tenant stored in a direct Firestore document against the requested tenant.
+- Cross-tenant settings read test passes.
+- check:tenancy passes: 366 source files.
+
+Firestore indexes
+- firestore.indexes.json covers 10 compound query shapes.
+- check:indexes passes: 10/10 contracts.
+
+Verification
+- Server TypeScript build: pass.
+- Web production build: pass, 88 modules.
+- Full tests: 354/357 pass.
+- Known-red tests unchanged from E5:
+  1. NexReach local Nexi wording expects "Marketing draft ready".
+  2. NexDocs local Nexi wording expects "Approve this? yes / no.".
+  3. Platform job-link fixture uses an expired timestamp and expects verification true.
+- Provider boundary: pass, 436 files.
+- Blueprint naming: pass, 366 files.
+- Current-tree secret scan: pass, 1377 tracked non-document files.
+- Reachable-history scan: not claimed; the known WordPress credential history item remains deferred and open in BUILDSTATE.md.
+
+Verification method
+- No browser was opened. Verification used build output, Node test suites, static boundary checks, and source inspection.
