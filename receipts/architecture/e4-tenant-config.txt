@@ -1,0 +1,24 @@
+E4 Tenant Config checkpoint
+Date: 2026-07-27
+
+Canonical implementation:
+- apps/web/src/features/settings/components/tenantConfig/NexOpsSettingsPage.tsx
+- apps/server/src/modules/nexops/areas/settings/components/tenantConfig/domain/crmSettingsPatchSchema.ts
+- apps/server/src/modules/nexops/areas/settings/components/tenantConfig/server/communicationTemplates.ts
+
+Compatibility:
+- apps/server/src/crm/communicationTemplates.ts
+
+Boundary correction:
+- CRM settings patch validation no longer lives in Quote Engine.
+- Communication-template rendering no longer lives in the shared crm directory.
+
+Verification (non-browser):
+- npm run build: PASS (72 modules)
+- crm-read-side.test.mjs: PASS
+- close-invoice-payment-flow.test.mjs: PASS
+- focused total: 31/31 passing
+
+Open boundary work:
+- Catalog and quote-template arrays still persist inside the CRM settings document.
+- Settings styles remain in apps/web/src/styles.css.

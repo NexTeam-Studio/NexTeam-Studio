@@ -79,7 +79,7 @@ const NexOpsPatternLibraryPage = React.lazy(async () => ({ default: (await impor
 const NexOpsQuotesPage = React.lazy(async () => ({ default: (await import("./features/quotes/components/quoteEngine/NexOpsQuotesPage")).NexOpsQuotesPage }));
 const NexOpsRequestsPage = React.lazy(async () => ({ default: (await import("./nexopsRequests")).NexOpsRequestsPage }));
 const NexOpsSchedulePage = React.lazy(async () => ({ default: (await import("./features/visits/components/visitCore/NexOpsSchedulePage")).NexOpsSchedulePage }));
-const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("./nexopsSettings")).NexOpsSettingsPage }));
+const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("./features/settings/components/tenantConfig/NexOpsSettingsPage")).NexOpsSettingsPage }));
 const NexOpsCaptureWorkspace = React.lazy(async () => ({ default: (await import("./nexopsDeferredUi")).NexOpsCaptureWorkspace }));
 const NexOpsCreateMenu = React.lazy(async () => ({ default: (await import("./nexopsDeferredUi")).NexOpsCreateMenu }));
 const NexOpsCreateClientPanel = React.lazy(async () => ({ default: (await import("./nexopsDeferredUi")).NexOpsCreateClientPanel }));

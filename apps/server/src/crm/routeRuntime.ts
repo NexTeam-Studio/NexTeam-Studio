@@ -66,7 +66,6 @@ import { FirestoreNativeCrmRepository } from "./nativeRepository.js";
 import {
   archiveQuoteVersion,
   createPortalToken,
-  crmSettingsPatchSchema,
   ensureQuoteConfiguration,
   hashPortalToken,
   materializeQuoteRecord,
@@ -81,6 +80,7 @@ import {
   quoteTemplateInputSchema,
   syncExpiredQuote
 } from "./quoteFoundation.js";
+import { crmSettingsPatchSchema } from "../modules/nexops/areas/settings/components/tenantConfig/domain/crmSettingsPatchSchema.js";
 import { buildInvoiceDraftFromJobs, buildInvoiceDraftFromQuote, buildQuickPaymentRequestInvoice } from "./invoiceFoundation.js";
 import {
   availableRequestFields,
