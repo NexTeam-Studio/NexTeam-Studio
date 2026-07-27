@@ -183,7 +183,7 @@ test("standalone Nexi binds approval replies to the latest visible approval prom
 });
 
 test("standalone Nexi shell keeps the header and composer pinned while the thread really scrolls", async () => {
-  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../src/features/nexi/areas/chat/styles/chat.css", import.meta.url), "utf8");
   const markup = renderToStaticMarkup(
     React.createElement(NexiStandaloneLayout, {
       header: React.createElement("header", { className: "nexops-mobile-bar" }, "Shared header"),
@@ -344,8 +344,12 @@ test("standalone Nexi mobile header keeps the tenant mark clear of the voice-tog
 });
 
 test("standalone Nexi styling keeps the route-specific bubble, shell, and voice treatments aligned with the live shell", () => {
-  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
-  const mainSource = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8");
+  const styles = [
+    readFileSync(new URL("../src/features/nexi/areas/chat/styles/chat.css", import.meta.url), "utf8"),
+    readFileSync(new URL("../src/features/nexi/areas/voice/styles/voice.css", import.meta.url), "utf8")
+  ].join("\n");
+  const mainSource = readFileSync(new URL("../src/features/nexi/areas/chat/components/NexiStandaloneChat.tsx", import.meta.url), "utf8");
+  const voiceSource = readFileSync(new URL("../src/features/nexi/areas/voice/hooks/useNexiVoice.ts", import.meta.url), "utf8");
 
   assert.match(styles, /\.nexi-standalone-app\s*\{[\s\S]*height:\s*100dvh;/);
   assert.match(styles, /\.nexi-standalone-app\s*\{[\s\S]*position:\s*fixed;[\s\S]*inset:\s*0;/);
@@ -394,5 +398,5 @@ test("standalone Nexi styling keeps the route-specific bubble, shell, and voice 
   assert.doesNotMatch(mainSource, /<span>Voice<\/span>/);
   assert.match(mainSource, /voiceEnabled \? "✓" : "✕"/);
   assert.match(mainSource, /onClick=\{\(\) => void toggleVoice\(\)\}/);
-  assert.match(mainSource, /await startVoiceSession\(\);\s*if \(speechSupported\)\s*\{\s*startDictation\(false\);/);
+  assert.match(voiceSource, /await startVoiceSession\(\);\s*if \(speechSupported\) startDictation\(false\);/);
 });

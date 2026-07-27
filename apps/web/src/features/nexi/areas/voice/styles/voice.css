@@ -1,0 +1,99 @@
+.nexi-voice-toggle {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  justify-self: center;
+  gap: 8px;
+  min-width: 74px;
+  max-width: 82px;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px;
+  color: #101010;
+  background: linear-gradient(135deg, rgba(212, 255, 32, 0.88), rgba(37, 210, 56, 0.74));
+  box-shadow: 0 14px 30px rgba(37, 210, 56, 0.2);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.nexi-voice-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.nexi-voice-toggle-label svg {
+  width: 20px;
+  height: 20px;
+  color: #133118;
+}
+
+.nexi-voice-toggle-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(21, 24, 23, 0.18);
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.nexi-voice-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(21, 24, 23, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms ease;
+}
+
+.nexi-voice-toggle-mark {
+  font-size: 0;
+  line-height: 1;
+  color: transparent;
+}
+
+.nexi-voice-toggle-mark::before {
+  content: "\2715";
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  color: #3d4542;
+}
+
+.nexi-voice-toggle.on {
+  background: linear-gradient(135deg, #D4FF20 0%, #8EF236 50%, #25D238 100%);
+  border-color: rgba(37, 210, 56, 0.28);
+  box-shadow: 0 16px 34px rgba(37, 210, 56, 0.26);
+}
+
+.nexi-voice-toggle.on .nexi-voice-toggle-switch {
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(21, 24, 23, 0.06);
+}
+
+.nexi-voice-toggle.on .nexi-voice-toggle-thumb {
+  transform: translateX(20px);
+}
+
+.nexi-voice-toggle.on .nexi-voice-toggle-mark::before {
+  content: "\2713";
+  color: #1f5e24;
+}
+
+@media (max-width: 960px) {
+
+  .nexi-voice-toggle {
+    max-width: 100%;
+  }
+}

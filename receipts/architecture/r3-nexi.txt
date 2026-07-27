@@ -1,0 +1,35 @@
+R3 NEXI WEB EXTRACTION
+Baseline: c29648f
+
+OWNERSHIP
+- Chat/runtime surface: features/nexi/areas/chat/components/NexiStandaloneChat.tsx
+- Chat/source/media styles: features/nexi/areas/chat/styles/chat.css
+- Voice state, browser/server speech, telemetry, and hands-free behavior:
+  features/nexi/areas/voice/hooks/useNexiVoice.ts
+- Voice-only styles: features/nexi/areas/voice/styles/voice.css
+- Existing nexiStandalone.tsx remains a presentation primitive imported by the chat surface.
+- Shared NexOps header/menu/notification chrome is composed, not copied.
+
+REAL REMOVAL PROOF
+- main.tsx: 3,886 -> 2,544 lines (-1,342)
+- styles.css: 5,776 -> 5,195 lines (-581)
+- chat owner: 1,161 TSX + 482 CSS lines
+- voice owner: 292 TS + 99 CSS lines
+- Existing-file diff before receipt/docs: 40 insertions, 1,959 deletions.
+
+VERIFICATION
+- npm run lint: pass, 0 errors
+- npm run typecheck: pass
+- npm run build: pass, Vite transformed 98 modules
+- non-Playwright repository tests: 348 total, 345 pass, 3 known unrelated fail
+- explicitly selected static Nexi tests: 7/7 pass
+- non-browser proof total: 355 tests, 352 pass, 3 known unrelated fail
+- omitted from the final proof: two Playwright geometry/scroll tests in nexi-standalone-ui.test.mjs
+- During test-filter setup, one negative name filter unexpectedly invoked those two headless tests once.
+  It was not used as proof and was replaced by an explicit positive static-test filter.
+- No interactive browser, tunnel, deploy, or live service was used.
+
+KNOWN REDS
+- apps/server/test/content-engine.test.mjs:487
+- apps/server/test/fielddocs-nexi-tools.test.mjs:358
+- apps/server/test/platform.test.mjs:316
