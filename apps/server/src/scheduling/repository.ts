@@ -65,6 +65,10 @@ export class InMemorySchedulingRepository implements SchedulingRepository {
   }
 
   async saveVisit(visit: ScheduledVisit): Promise<ScheduledVisit> {
+    const existing = this.visits.get(visit.id);
+    if (existing && existing.tenantId !== visit.tenantId) {
+      throw new RailError(`Scheduled visit ${visit.id} belongs to another tenant.`, { provider: "native", op: "saveScheduledVisit", status: 409 });
+    }
     this.visits.set(visit.id, visit);
     return visit;
   }
@@ -91,7 +95,20 @@ export class FirestoreSchedulingRepository implements SchedulingRepository {
 
   async saveVisit(visit: ScheduledVisit): Promise<ScheduledVisit> {
     const parsed = scheduledVisitSchema.parse(visit) as ScheduledVisit;
-    await this.db.collection("scheduledVisits").doc(parsed.id).set(removeUndefined(parsed) as FirebaseFirestore.WithFieldValue<FirebaseFirestore.DocumentData>);
+    const ref = this.db.collection("scheduledVisits").doc(parsed.id);
+    await this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (snapshot.exists) {
+        const existing = scheduledVisitSchema.safeParse(snapshot.data());
+        if (!existing.success) {
+          throw new RailError(`Scheduled visit ${parsed.id} could not be parsed.`, { provider: "firebase", op: "saveScheduledVisit", status: 500 });
+        }
+        if (existing.data.tenantId !== parsed.tenantId) {
+          throw new RailError(`Scheduled visit ${parsed.id} belongs to another tenant.`, { provider: "firebase", op: "saveScheduledVisit", status: 409 });
+        }
+      }
+      transaction.set(ref, removeUndefined(parsed) as FirebaseFirestore.WithFieldValue<FirebaseFirestore.DocumentData>);
+    });
     return parsed;
   }
 

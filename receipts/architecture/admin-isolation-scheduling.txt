@@ -1,0 +1,19 @@
+ADMIN SDK ISOLATION - SCHEDULING
+Date: 2026-07-27
+
+Enforcement
+- Firestore `saveVisit` reads an existing `scheduledVisits/{id}` document inside a transaction.
+- An existing record with another tenant ID is rejected before mutation.
+- An existing malformed record fails closed instead of being overwritten.
+- The tenant check and write execute in the same transaction.
+- In-memory behavior has matching cross-tenant collision rejection.
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 169 modules.
+- Focused scheduling and boundary tests: 9 tests, 9 pass, 0 fail.
+- npm test: no-browser guard passed across 62 default test files; 363 tests, 360 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- This is deterministic repository-boundary proof. Firebase emulator-backed Admin SDK proof remains open.
+- No browser was launched.
