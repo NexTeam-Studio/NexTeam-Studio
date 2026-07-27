@@ -104,6 +104,22 @@ const sharedAllowlist = [
   "apps/web/src/shared/app/",
   "apps/web/src/shared/router/",
   "apps/web/src/features/nexopsShell/",
+  "apps/web/src/nexiRequestContext.ts",
+  "apps/web/src/nexiStandalone.tsx",
+  "apps/web/src/nexopsCommunications.ts",
+  "apps/web/src/nexopsDeferredUi.tsx",
+  "apps/web/src/nexopsHeader.tsx",
+  "apps/web/src/nexopsHome.tsx",
+  "apps/web/src/nexopsHomeState.ts",
+  "apps/web/src/nexopsIntake.ts",
+  "apps/web/src/nexopsMobileCreateFab.tsx",
+  "apps/web/src/nexopsNexDocs.tsx",
+  "apps/web/src/nexopsPatternLibrary.tsx",
+  "apps/web/src/nexopsRequests.tsx",
+  "apps/web/src/nexopsShell.ts",
+  "apps/web/src/nexopsSignatureCapture.tsx",
+  "apps/web/src/nexopsUiKit.tsx",
+  "apps/web/src/productBranding.tsx",
   "apps/server/src/app/",
   "apps/server/src/composeServerApp.ts",
   "apps/server/src/server.ts",
@@ -123,6 +139,14 @@ const owned = new Map(components.map(([name, roots]) => [
 
 const failures = [];
 console.log(`Shared allowlist: ${sharedAllowlist.join(", ")}`);
+
+const rootWebFiles = trackedFiles.filter((file) => /^apps\/web\/src\/[^/]+\.(css|ts|tsx)$/.test(file));
+const unclassifiedRootWebFiles = rootWebFiles.filter((file) => !sharedAllowlist.includes(file));
+console.log(`Root web allowlist coverage: ${rootWebFiles.length - unclassifiedRootWebFiles.length}/${rootWebFiles.length}`);
+if (unclassifiedRootWebFiles.length > 0) {
+  failures.push(`unclassified root web files: ${unclassifiedRootWebFiles.join(", ")}`);
+}
+
 for (const [name, files] of owned) {
   if (files.size === 0) failures.push(`${name} owns no tracked implementation files`);
   console.log(`${name}: ${files.size} files`);

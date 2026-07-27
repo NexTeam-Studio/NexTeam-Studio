@@ -28,6 +28,7 @@ These are the files and layers that are allowed to be shared on purpose.
 - Design tokens and primitives: `apps/web/src/shared/styles/*`, `apps/web/src/shared/ui/*`
 - Telemetry seam: `apps/web/src/shared/telemetry/*`
 - Typed contracts: `apps/web/src/shared/contracts/*`
+- Legacy root-level NexOps composition/helpers: the exact files printed by `scripts/check-component-collisions.mjs`; these include Home, Requests, deferred overlays, navigation/header, branding, intake, communications, NexDocs composition, and UI-kit files. This allowlist is debt, not a destination, and the gate fails if a new root-level web file is added without classification.
 
 If a UI change does not belong to one of those buckets, it should usually live inside a feature folder.
 

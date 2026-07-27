@@ -991,3 +991,422 @@ apps/web/src/features/nexopsShell/NexOpsWorkspace.tsx: 3,373 lines
 apps/web/src/styles.css: 4,468 lines
 Extracted owner-prefix scan in styles.css: zero matches for Nexi, NexCam, NexReach, Approval, Content Queue, Platform, and Tenant Overview families.
 Top-level implementation declaration scan in main.tsx and NexOpsWorkspace.tsx: zero Nexi/NexCam/NexReach/Platform/Approval/Content/Schedule declarations.
+
+R4 ALLOWLIST COMPLETENESS CORRECTION
+The initial pair matrix was correct, but the printed allowlist omitted 16 legacy root-level NexOps composition/helper files. The corrected gate below classifies every root web file and fails when a new root file is unclassified.
+
+COMMAND: npm run check:collisions
+
+> check:collisions
+> node scripts/check-component-collisions.mjs
+
+Shared allowlist: apps/web/src/main.tsx, apps/web/src/styles.css, apps/web/src/shared/app/, apps/web/src/shared/router/, apps/web/src/features/nexopsShell/, apps/web/src/nexiRequestContext.ts, apps/web/src/nexiStandalone.tsx, apps/web/src/nexopsCommunications.ts, apps/web/src/nexopsDeferredUi.tsx, apps/web/src/nexopsHeader.tsx, apps/web/src/nexopsHome.tsx, apps/web/src/nexopsHomeState.ts, apps/web/src/nexopsIntake.ts, apps/web/src/nexopsMobileCreateFab.tsx, apps/web/src/nexopsNexDocs.tsx, apps/web/src/nexopsPatternLibrary.tsx, apps/web/src/nexopsRequests.tsx, apps/web/src/nexopsShell.ts, apps/web/src/nexopsSignatureCapture.tsx, apps/web/src/nexopsUiKit.tsx, apps/web/src/productBranding.tsx, apps/server/src/app/, apps/server/src/composeServerApp.ts, apps/server/src/server.ts, apps/server/src/fielddocs/, apps/server/src/nexi/
+Root web allowlist coverage: 18/18
+Contact: 11 files
+Quote Templates: 7 files
+Quote Engine: 13 files
+Job Core: 10 files
+Visit Core: 10 files
+Invoice Structure: 16 files
+Payment Rails: 10 files
+Catalog: 4 files
+Tenant Config: 7 files
+Address/Location: 3 files
+Document Rendering: 4 files
+Numbering: 3 files
+Auth/Session: 6 files
+Operator Context: 2 files
+Nexi Chat: 2 files
+Nexi Voice: 2 files
+NexCam Capture: 3 files
+NexCam Overview: 1 files
+NexDocs Checklists: 1 files
+NexDocs Media: 2 files
+NexDocs Reports: 1 files
+Platform Routing: 4 files
+Platform Overview: 6 files
+Tenant Overview: 4 files
+NexReach Reputation: 3 files
+Approval Queue: 3 files
+Content Queue: 3 files
+Queue Primitives: 1 files
+Contact intersect Quote Templates: 0
+Contact intersect Quote Engine: 0
+Contact intersect Job Core: 0
+Contact intersect Visit Core: 0
+Contact intersect Invoice Structure: 0
+Contact intersect Payment Rails: 0
+Contact intersect Catalog: 0
+Contact intersect Tenant Config: 0
+Contact intersect Address/Location: 0
+Contact intersect Document Rendering: 0
+Contact intersect Numbering: 0
+Contact intersect Auth/Session: 0
+Contact intersect Operator Context: 0
+Contact intersect Nexi Chat: 0
+Contact intersect Nexi Voice: 0
+Contact intersect NexCam Capture: 0
+Contact intersect NexCam Overview: 0
+Contact intersect NexDocs Checklists: 0
+Contact intersect NexDocs Media: 0
+Contact intersect NexDocs Reports: 0
+Contact intersect Platform Routing: 0
+Contact intersect Platform Overview: 0
+Contact intersect Tenant Overview: 0
+Contact intersect NexReach Reputation: 0
+Contact intersect Approval Queue: 0
+Contact intersect Content Queue: 0
+Contact intersect Queue Primitives: 0
+Quote Templates intersect Quote Engine: 0
+Quote Templates intersect Job Core: 0
+Quote Templates intersect Visit Core: 0
+Quote Templates intersect Invoice Structure: 0
+Quote Templates intersect Payment Rails: 0
+Quote Templates intersect Catalog: 0
+Quote Templates intersect Tenant Config: 0
+Quote Templates intersect Address/Location: 0
+Quote Templates intersect Document Rendering: 0
+Quote Templates intersect Numbering: 0
+Quote Templates intersect Auth/Session: 0
+Quote Templates intersect Operator Context: 0
+Quote Templates intersect Nexi Chat: 0
+Quote Templates intersect Nexi Voice: 0
+Quote Templates intersect NexCam Capture: 0
+Quote Templates intersect NexCam Overview: 0
+Quote Templates intersect NexDocs Checklists: 0
+Quote Templates intersect NexDocs Media: 0
+Quote Templates intersect NexDocs Reports: 0
+Quote Templates intersect Platform Routing: 0
+Quote Templates intersect Platform Overview: 0
+Quote Templates intersect Tenant Overview: 0
+Quote Templates intersect NexReach Reputation: 0
+Quote Templates intersect Approval Queue: 0
+Quote Templates intersect Content Queue: 0
+Quote Templates intersect Queue Primitives: 0
+Quote Engine intersect Job Core: 0
+Quote Engine intersect Visit Core: 0
+Quote Engine intersect Invoice Structure: 0
+Quote Engine intersect Payment Rails: 0
+Quote Engine intersect Catalog: 0
+Quote Engine intersect Tenant Config: 0
+Quote Engine intersect Address/Location: 0
+Quote Engine intersect Document Rendering: 0
+Quote Engine intersect Numbering: 0
+Quote Engine intersect Auth/Session: 0
+Quote Engine intersect Operator Context: 0
+Quote Engine intersect Nexi Chat: 0
+Quote Engine intersect Nexi Voice: 0
+Quote Engine intersect NexCam Capture: 0
+Quote Engine intersect NexCam Overview: 0
+Quote Engine intersect NexDocs Checklists: 0
+Quote Engine intersect NexDocs Media: 0
+Quote Engine intersect NexDocs Reports: 0
+Quote Engine intersect Platform Routing: 0
+Quote Engine intersect Platform Overview: 0
+Quote Engine intersect Tenant Overview: 0
+Quote Engine intersect NexReach Reputation: 0
+Quote Engine intersect Approval Queue: 0
+Quote Engine intersect Content Queue: 0
+Quote Engine intersect Queue Primitives: 0
+Job Core intersect Visit Core: 0
+Job Core intersect Invoice Structure: 0
+Job Core intersect Payment Rails: 0
+Job Core intersect Catalog: 0
+Job Core intersect Tenant Config: 0
+Job Core intersect Address/Location: 0
+Job Core intersect Document Rendering: 0
+Job Core intersect Numbering: 0
+Job Core intersect Auth/Session: 0
+Job Core intersect Operator Context: 0
+Job Core intersect Nexi Chat: 0
+Job Core intersect Nexi Voice: 0
+Job Core intersect NexCam Capture: 0
+Job Core intersect NexCam Overview: 0
+Job Core intersect NexDocs Checklists: 0
+Job Core intersect NexDocs Media: 0
+Job Core intersect NexDocs Reports: 0
+Job Core intersect Platform Routing: 0
+Job Core intersect Platform Overview: 0
+Job Core intersect Tenant Overview: 0
+Job Core intersect NexReach Reputation: 0
+Job Core intersect Approval Queue: 0
+Job Core intersect Content Queue: 0
+Job Core intersect Queue Primitives: 0
+Visit Core intersect Invoice Structure: 0
+Visit Core intersect Payment Rails: 0
+Visit Core intersect Catalog: 0
+Visit Core intersect Tenant Config: 0
+Visit Core intersect Address/Location: 0
+Visit Core intersect Document Rendering: 0
+Visit Core intersect Numbering: 0
+Visit Core intersect Auth/Session: 0
+Visit Core intersect Operator Context: 0
+Visit Core intersect Nexi Chat: 0
+Visit Core intersect Nexi Voice: 0
+Visit Core intersect NexCam Capture: 0
+Visit Core intersect NexCam Overview: 0
+Visit Core intersect NexDocs Checklists: 0
+Visit Core intersect NexDocs Media: 0
+Visit Core intersect NexDocs Reports: 0
+Visit Core intersect Platform Routing: 0
+Visit Core intersect Platform Overview: 0
+Visit Core intersect Tenant Overview: 0
+Visit Core intersect NexReach Reputation: 0
+Visit Core intersect Approval Queue: 0
+Visit Core intersect Content Queue: 0
+Visit Core intersect Queue Primitives: 0
+Invoice Structure intersect Payment Rails: 0
+Invoice Structure intersect Catalog: 0
+Invoice Structure intersect Tenant Config: 0
+Invoice Structure intersect Address/Location: 0
+Invoice Structure intersect Document Rendering: 0
+Invoice Structure intersect Numbering: 0
+Invoice Structure intersect Auth/Session: 0
+Invoice Structure intersect Operator Context: 0
+Invoice Structure intersect Nexi Chat: 0
+Invoice Structure intersect Nexi Voice: 0
+Invoice Structure intersect NexCam Capture: 0
+Invoice Structure intersect NexCam Overview: 0
+Invoice Structure intersect NexDocs Checklists: 0
+Invoice Structure intersect NexDocs Media: 0
+Invoice Structure intersect NexDocs Reports: 0
+Invoice Structure intersect Platform Routing: 0
+Invoice Structure intersect Platform Overview: 0
+Invoice Structure intersect Tenant Overview: 0
+Invoice Structure intersect NexReach Reputation: 0
+Invoice Structure intersect Approval Queue: 0
+Invoice Structure intersect Content Queue: 0
+Invoice Structure intersect Queue Primitives: 0
+Payment Rails intersect Catalog: 0
+Payment Rails intersect Tenant Config: 0
+Payment Rails intersect Address/Location: 0
+Payment Rails intersect Document Rendering: 0
+Payment Rails intersect Numbering: 0
+Payment Rails intersect Auth/Session: 0
+Payment Rails intersect Operator Context: 0
+Payment Rails intersect Nexi Chat: 0
+Payment Rails intersect Nexi Voice: 0
+Payment Rails intersect NexCam Capture: 0
+Payment Rails intersect NexCam Overview: 0
+Payment Rails intersect NexDocs Checklists: 0
+Payment Rails intersect NexDocs Media: 0
+Payment Rails intersect NexDocs Reports: 0
+Payment Rails intersect Platform Routing: 0
+Payment Rails intersect Platform Overview: 0
+Payment Rails intersect Tenant Overview: 0
+Payment Rails intersect NexReach Reputation: 0
+Payment Rails intersect Approval Queue: 0
+Payment Rails intersect Content Queue: 0
+Payment Rails intersect Queue Primitives: 0
+Catalog intersect Tenant Config: 0
+Catalog intersect Address/Location: 0
+Catalog intersect Document Rendering: 0
+Catalog intersect Numbering: 0
+Catalog intersect Auth/Session: 0
+Catalog intersect Operator Context: 0
+Catalog intersect Nexi Chat: 0
+Catalog intersect Nexi Voice: 0
+Catalog intersect NexCam Capture: 0
+Catalog intersect NexCam Overview: 0
+Catalog intersect NexDocs Checklists: 0
+Catalog intersect NexDocs Media: 0
+Catalog intersect NexDocs Reports: 0
+Catalog intersect Platform Routing: 0
+Catalog intersect Platform Overview: 0
+Catalog intersect Tenant Overview: 0
+Catalog intersect NexReach Reputation: 0
+Catalog intersect Approval Queue: 0
+Catalog intersect Content Queue: 0
+Catalog intersect Queue Primitives: 0
+Tenant Config intersect Address/Location: 0
+Tenant Config intersect Document Rendering: 0
+Tenant Config intersect Numbering: 0
+Tenant Config intersect Auth/Session: 0
+Tenant Config intersect Operator Context: 0
+Tenant Config intersect Nexi Chat: 0
+Tenant Config intersect Nexi Voice: 0
+Tenant Config intersect NexCam Capture: 0
+Tenant Config intersect NexCam Overview: 0
+Tenant Config intersect NexDocs Checklists: 0
+Tenant Config intersect NexDocs Media: 0
+Tenant Config intersect NexDocs Reports: 0
+Tenant Config intersect Platform Routing: 0
+Tenant Config intersect Platform Overview: 0
+Tenant Config intersect Tenant Overview: 0
+Tenant Config intersect NexReach Reputation: 0
+Tenant Config intersect Approval Queue: 0
+Tenant Config intersect Content Queue: 0
+Tenant Config intersect Queue Primitives: 0
+Address/Location intersect Document Rendering: 0
+Address/Location intersect Numbering: 0
+Address/Location intersect Auth/Session: 0
+Address/Location intersect Operator Context: 0
+Address/Location intersect Nexi Chat: 0
+Address/Location intersect Nexi Voice: 0
+Address/Location intersect NexCam Capture: 0
+Address/Location intersect NexCam Overview: 0
+Address/Location intersect NexDocs Checklists: 0
+Address/Location intersect NexDocs Media: 0
+Address/Location intersect NexDocs Reports: 0
+Address/Location intersect Platform Routing: 0
+Address/Location intersect Platform Overview: 0
+Address/Location intersect Tenant Overview: 0
+Address/Location intersect NexReach Reputation: 0
+Address/Location intersect Approval Queue: 0
+Address/Location intersect Content Queue: 0
+Address/Location intersect Queue Primitives: 0
+Document Rendering intersect Numbering: 0
+Document Rendering intersect Auth/Session: 0
+Document Rendering intersect Operator Context: 0
+Document Rendering intersect Nexi Chat: 0
+Document Rendering intersect Nexi Voice: 0
+Document Rendering intersect NexCam Capture: 0
+Document Rendering intersect NexCam Overview: 0
+Document Rendering intersect NexDocs Checklists: 0
+Document Rendering intersect NexDocs Media: 0
+Document Rendering intersect NexDocs Reports: 0
+Document Rendering intersect Platform Routing: 0
+Document Rendering intersect Platform Overview: 0
+Document Rendering intersect Tenant Overview: 0
+Document Rendering intersect NexReach Reputation: 0
+Document Rendering intersect Approval Queue: 0
+Document Rendering intersect Content Queue: 0
+Document Rendering intersect Queue Primitives: 0
+Numbering intersect Auth/Session: 0
+Numbering intersect Operator Context: 0
+Numbering intersect Nexi Chat: 0
+Numbering intersect Nexi Voice: 0
+Numbering intersect NexCam Capture: 0
+Numbering intersect NexCam Overview: 0
+Numbering intersect NexDocs Checklists: 0
+Numbering intersect NexDocs Media: 0
+Numbering intersect NexDocs Reports: 0
+Numbering intersect Platform Routing: 0
+Numbering intersect Platform Overview: 0
+Numbering intersect Tenant Overview: 0
+Numbering intersect NexReach Reputation: 0
+Numbering intersect Approval Queue: 0
+Numbering intersect Content Queue: 0
+Numbering intersect Queue Primitives: 0
+Auth/Session intersect Operator Context: 0
+Auth/Session intersect Nexi Chat: 0
+Auth/Session intersect Nexi Voice: 0
+Auth/Session intersect NexCam Capture: 0
+Auth/Session intersect NexCam Overview: 0
+Auth/Session intersect NexDocs Checklists: 0
+Auth/Session intersect NexDocs Media: 0
+Auth/Session intersect NexDocs Reports: 0
+Auth/Session intersect Platform Routing: 0
+Auth/Session intersect Platform Overview: 0
+Auth/Session intersect Tenant Overview: 0
+Auth/Session intersect NexReach Reputation: 0
+Auth/Session intersect Approval Queue: 0
+Auth/Session intersect Content Queue: 0
+Auth/Session intersect Queue Primitives: 0
+Operator Context intersect Nexi Chat: 0
+Operator Context intersect Nexi Voice: 0
+Operator Context intersect NexCam Capture: 0
+Operator Context intersect NexCam Overview: 0
+Operator Context intersect NexDocs Checklists: 0
+Operator Context intersect NexDocs Media: 0
+Operator Context intersect NexDocs Reports: 0
+Operator Context intersect Platform Routing: 0
+Operator Context intersect Platform Overview: 0
+Operator Context intersect Tenant Overview: 0
+Operator Context intersect NexReach Reputation: 0
+Operator Context intersect Approval Queue: 0
+Operator Context intersect Content Queue: 0
+Operator Context intersect Queue Primitives: 0
+Nexi Chat intersect Nexi Voice: 0
+Nexi Chat intersect NexCam Capture: 0
+Nexi Chat intersect NexCam Overview: 0
+Nexi Chat intersect NexDocs Checklists: 0
+Nexi Chat intersect NexDocs Media: 0
+Nexi Chat intersect NexDocs Reports: 0
+Nexi Chat intersect Platform Routing: 0
+Nexi Chat intersect Platform Overview: 0
+Nexi Chat intersect Tenant Overview: 0
+Nexi Chat intersect NexReach Reputation: 0
+Nexi Chat intersect Approval Queue: 0
+Nexi Chat intersect Content Queue: 0
+Nexi Chat intersect Queue Primitives: 0
+Nexi Voice intersect NexCam Capture: 0
+Nexi Voice intersect NexCam Overview: 0
+Nexi Voice intersect NexDocs Checklists: 0
+Nexi Voice intersect NexDocs Media: 0
+Nexi Voice intersect NexDocs Reports: 0
+Nexi Voice intersect Platform Routing: 0
+Nexi Voice intersect Platform Overview: 0
+Nexi Voice intersect Tenant Overview: 0
+Nexi Voice intersect NexReach Reputation: 0
+Nexi Voice intersect Approval Queue: 0
+Nexi Voice intersect Content Queue: 0
+Nexi Voice intersect Queue Primitives: 0
+NexCam Capture intersect NexCam Overview: 0
+NexCam Capture intersect NexDocs Checklists: 0
+NexCam Capture intersect NexDocs Media: 0
+NexCam Capture intersect NexDocs Reports: 0
+NexCam Capture intersect Platform Routing: 0
+NexCam Capture intersect Platform Overview: 0
+NexCam Capture intersect Tenant Overview: 0
+NexCam Capture intersect NexReach Reputation: 0
+NexCam Capture intersect Approval Queue: 0
+NexCam Capture intersect Content Queue: 0
+NexCam Capture intersect Queue Primitives: 0
+NexCam Overview intersect NexDocs Checklists: 0
+NexCam Overview intersect NexDocs Media: 0
+NexCam Overview intersect NexDocs Reports: 0
+NexCam Overview intersect Platform Routing: 0
+NexCam Overview intersect Platform Overview: 0
+NexCam Overview intersect Tenant Overview: 0
+NexCam Overview intersect NexReach Reputation: 0
+NexCam Overview intersect Approval Queue: 0
+NexCam Overview intersect Content Queue: 0
+NexCam Overview intersect Queue Primitives: 0
+NexDocs Checklists intersect NexDocs Media: 0
+NexDocs Checklists intersect NexDocs Reports: 0
+NexDocs Checklists intersect Platform Routing: 0
+NexDocs Checklists intersect Platform Overview: 0
+NexDocs Checklists intersect Tenant Overview: 0
+NexDocs Checklists intersect NexReach Reputation: 0
+NexDocs Checklists intersect Approval Queue: 0
+NexDocs Checklists intersect Content Queue: 0
+NexDocs Checklists intersect Queue Primitives: 0
+NexDocs Media intersect NexDocs Reports: 0
+NexDocs Media intersect Platform Routing: 0
+NexDocs Media intersect Platform Overview: 0
+NexDocs Media intersect Tenant Overview: 0
+NexDocs Media intersect NexReach Reputation: 0
+NexDocs Media intersect Approval Queue: 0
+NexDocs Media intersect Content Queue: 0
+NexDocs Media intersect Queue Primitives: 0
+NexDocs Reports intersect Platform Routing: 0
+NexDocs Reports intersect Platform Overview: 0
+NexDocs Reports intersect Tenant Overview: 0
+NexDocs Reports intersect NexReach Reputation: 0
+NexDocs Reports intersect Approval Queue: 0
+NexDocs Reports intersect Content Queue: 0
+NexDocs Reports intersect Queue Primitives: 0
+Platform Routing intersect Platform Overview: 0
+Platform Routing intersect Tenant Overview: 0
+Platform Routing intersect NexReach Reputation: 0
+Platform Routing intersect Approval Queue: 0
+Platform Routing intersect Content Queue: 0
+Platform Routing intersect Queue Primitives: 0
+Platform Overview intersect Tenant Overview: 0
+Platform Overview intersect NexReach Reputation: 0
+Platform Overview intersect Approval Queue: 0
+Platform Overview intersect Content Queue: 0
+Platform Overview intersect Queue Primitives: 0
+Tenant Overview intersect NexReach Reputation: 0
+Tenant Overview intersect Approval Queue: 0
+Tenant Overview intersect Content Queue: 0
+Tenant Overview intersect Queue Primitives: 0
+NexReach Reputation intersect Approval Queue: 0
+NexReach Reputation intersect Content Queue: 0
+NexReach Reputation intersect Queue Primitives: 0
+Approval Queue intersect Content Queue: 0
+Approval Queue intersect Queue Primitives: 0
+Content Queue intersect Queue Primitives: 0
+Component collision check passed (28 components, 378 pairs, zero overlaps).
+EXIT: 0
