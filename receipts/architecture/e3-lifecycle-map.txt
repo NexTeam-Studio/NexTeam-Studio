@@ -1,0 +1,14 @@
+E3 lifecycle command-map choke-point receipt
+Date: 2026-07-27
+
+Scope
+- Moved 43 lifecycle command contracts and 12 communication contracts into eight owner manifests.
+- Moved quote, visit, invoice, and client-schedule dominant-action derivation into owner domain files.
+- Kept D1-D19, permission IDs, and the portal authorization profile in shared lifecycle policy.
+- Kept lifecycleCommandMap.ts as the stable aggregate registry and query API.
+
+Verification
+- Server typecheck and production build: pass; Vite transformed 72 modules.
+- Lifecycle policy, registry integrity, decision trace, and dominant-action tests: 8/8 pass.
+- Full suite: 341/349 pass, with exactly the eight unrelated E1 known-red tests and no new failures.
+- Browser verification: not run, per the standing no-browser constraint.

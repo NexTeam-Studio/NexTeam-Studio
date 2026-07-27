@@ -1,0 +1,71 @@
+import { decisionRecordSchema, type DecisionRecord } from "@nexteam/core";
+
+export const PERMISSION_IDS = [
+  "request.contact",
+  "request.convert_to_quote",
+  "request.convert_to_job",
+  "request.merge",
+  "quote.send",
+  "quote.revise",
+  "quote.decline",
+  "quote.renew",
+  "deposit.collect",
+  "deposit.waive",
+  "deposit.refund",
+  "job.create",
+  "job.schedule",
+  "job.reschedule",
+  "job.reassign",
+  "job.cancel",
+  "job.close",
+  "job.reopen",
+  "job.activate",
+  "visit.start",
+  "visit.complete",
+  "visit.reschedule",
+  "visit.cancel",
+  "visit.report_edit",
+  "invoice.create",
+  "invoice.send",
+  "invoice.void",
+  "invoice.write_off",
+  "payment.collect",
+  "payment.refund",
+  "payment.retry",
+  "report.approve",
+  "schedule_request.manage",
+  "client.contact_view",
+  "client.call",
+  "client.message",
+  "job.financials_view",
+  "job.access_notes_view",
+  "media.capture",
+  "media.delete",
+  "schedule.view_team"
+] as const;
+
+export const PORTAL_AUTHORIZATION_PROFILE_ID = "portal_customer_resource_access";
+
+const DECISION_REGISTRY_RAW: DecisionRecord[] = [
+  { decisionId: "D1", question: "Deposit fails after approval — does approval survive?", confirmedDecision: "Atomic. A failed deposit means the quote is not accepted, no QuoteAcceptance record exists, and the client must fully re-approve on retry." },
+  { decisionId: "D2", question: "Who can waive a deposit?", confirmedDecision: "OWNER-only by default; OFFICE_ADMIN can only waive if explicitly granted deposit.waive." },
+  { decisionId: "D3", question: "What happens when no card is available for a required deposit?", confirmedDecision: "Do not authorize the work package. The missing deposit remains a named blocker until collected or waived." },
+  { decisionId: "D4", question: "Are deposits ever partial?", confirmedDecision: "No. Deposits are always collected in full." },
+  { decisionId: "D5", question: "What happens to a deposit when a quote is revised?", confirmedDecision: "Deposits carry forward, percentage deposits recalculate, shortfalls block authorization and scheduling, and any excess becomes account credit instead of a silent refund." },
+  { decisionId: "D6", question: "How should voids and deposit disposition work?", confirmedDecision: "Void and bad debt remain distinct paths, and deposit disposition on void stays a manual review step rather than an automatic release." },
+  { decisionId: "D7", question: "Can customers choose reschedule windows directly?", confirmedDecision: "Customers can request changes, but staff remains the actor that accepts, declines, or counter-proposes schedule changes." },
+  { decisionId: "D8", question: "How does report status affect closeout?", confirmedDecision: "Approved reports can bundle into closeout, but sending an invoice is never blocked by report approval." },
+  { decisionId: "D9", question: "How is the dominant action determined?", confirmedDecision: "It is derived from orthogonal lifecycle dimensions and blockers, never stored as a flattened status label." },
+  { decisionId: "D10", question: "Should follow-up work become a new job?", confirmedDecision: "Superseded by D18." },
+  { decisionId: "D11", question: "Who approves and sends the final report?", confirmedDecision: "Technicians submit field documentation through NexCam, then OWNER or OFFICE_ADMIN approves and sends the final customer package." },
+  { decisionId: "D12", question: "Do manual calls suppress reminders?", confirmedDecision: "No. Automated reminders always fire on schedule; staff only gets visibility into the next reminder time." },
+  { decisionId: "D13", question: "How are unable-to-complete outcomes handled?", confirmedDecision: "Every named outcome is tracked explicitly and can add a fee line item, but never auto-charges a payment method." },
+  { decisionId: "D14", question: "Can invoices go out before the report is approved?", confirmedDecision: "Yes. Invoice send is independent, but only approved documents may ever attach to outbound sends." },
+  { decisionId: "D15", question: "Who can close billable work without an invoice?", confirmedDecision: "Any OFFICE_ADMIN can do it; a reason is still required and audited." },
+  { decisionId: "D16", question: "What works offline?", confirmedDecision: "Technicians get offline access for their own day-of work; admins get team schedule and contact visibility; financial actions and final sends still require connection." },
+  { decisionId: "D17", question: "How do portal reschedule and cancellation requests behave?", confirmedDecision: "The client can submit the request only. Nothing changes until staff acts." },
+  { decisionId: "D18", question: "Where does follow-up work live?", confirmedDecision: "All follow-up work stays on the same job. Closed jobs reopen for follow-up rather than silently creating a new job." },
+  { decisionId: "D19", question: "When are partial final payments allowed?", confirmedDecision: "Only when a payment schedule exists on the related work package; otherwise each payment attempt must cover the full remaining balance." }
+];
+
+export const DECISION_REGISTRY = decisionRecordSchema.array().parse(DECISION_REGISTRY_RAW);
