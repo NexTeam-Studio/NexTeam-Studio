@@ -6,6 +6,8 @@ North-star / founder-context anchor: [docs/internal/NEXTEAM_NORTH_STAR_AND_FOUND
 
 ## Active Reference Docs
 
+- [NEXTEAM-HOW-AND-WHY.md](./NEXTEAM-HOW-AND-WHY.md) - Plain-language guide to the Module, Area, Component, and Surface architecture and the reason each ownership boundary exists.
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Technical ownership map, extension rules, tenant isolation, persistence policy, and migration notes.
 - [MASTER_ASSET_INVENTORY.md](./MASTER_ASSET_INVENTORY.md) - Standing external-service access/login map. Check this before builds that touch third-party accounts, auth, hosting, DNS, publishing rails, or deploy credentials.
 - [docs/internal/NEXTEAM_CANONICAL_HANDOFF.md](./docs/internal/NEXTEAM_CANONICAL_HANDOFF.md) - Corrected single-source handoff for fresh sessions; now includes the 2026-07-01 live readiness delta, the proven Clawdia/Atlas and Nexi/Clawdia/CompanyCam loops, the server-backed operator registry/workspace proof, and the explicit public-Anthropic credit blocker so future work does not drift on false assumptions.
 - [docs/internal/NEXTEAM_NORTH_STAR_AND_FOUNDER_CONTEXT.md](./docs/internal/NEXTEAM_NORTH_STAR_AND_FOUNDER_CONTEXT.md) - North-star / founder-context anchor; check this before deciding what to build next.

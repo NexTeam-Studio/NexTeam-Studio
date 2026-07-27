@@ -1,0 +1,19 @@
+E8 ARCHITECTURE DOCUMENTATION
+Date: 2026-07-27
+
+Technical reference
+- ARCHITECTURE.md identifies the actual integrated server listener, composition root, registrars, component manifests, persistence policy, and shared layers.
+- It maps all 12 migrated components to their real implementation roots.
+- It explicitly records that integrated main.tsx is not yet bootstrap-only and must not be hidden behind a facade.
+
+Plain-language companion
+- NEXTEAM-HOW-AND-WHY.md defines Module, Area, Component, and Surface without assuming engineering vocabulary.
+- It contains separate HOW and WHY sections for Contact, Quote Templates, Quote Engine, Job Core, Visit Core, Invoice Structure, Payment Rails, Catalog, Tenant Config, Address/Location, Document Rendering, and Numbering.
+- It explains server registrars, tenant isolation, and fail-closed persistence in operational language.
+
+Discoverability
+- NEXTEAM_DOC_INDEX.md links both the plain-language and technical architecture references.
+
+Honest exceptions
+- Integrated web entry residual, lint cleanup, and remaining Admin SDK isolation work are explicit open BUILDSTATE items.
+- No browser, deployment, tunnel, or live external service was used.

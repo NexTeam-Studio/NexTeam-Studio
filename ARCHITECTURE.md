@@ -1,16 +1,16 @@
 # ARCHITECTURE
 
-This document explains the current modular architecture for the platform worktree and the rules that keep parallel feature work from colliding.
+This document explains the current modular architecture for the target integration worktree and the rules that keep parallel feature work from colliding.
 
 ## Intent [tag: intent]
 
 The prime directive for this refactor is simple: three people should be able to work in three different product areas without all touching the same central files.
 
-Phase A establishes that rule by shrinking the top-level entry files and pushing feature logic back into feature-owned folders.
+Phase A established that rule on the platform stream. The target integration branch now applies it to the server and the twelve migrated business/shared components. The integrated web entry remains a documented exception because it still contains active Nexi, NexCam, Platform, auth, and route-dispatch code from the live baseline.
 
 ## Phase A Shape [tag: phase-a]
 
-- `apps/web/src/main.tsx` is bootstrap-only.
+- Target rule: `apps/web/src/main.tsx` becomes bootstrap-only after its remaining live surfaces are extracted.
 - `apps/server/src/server.ts` is bootstrap-only.
 - Web features live under `apps/web/src/features/<feature>/...`.
 - Server features register themselves through feature-owned `module.ts` files.
@@ -33,11 +33,12 @@ If a UI change does not belong to one of those buckets, it should usually live i
 
 ### Server shared layers [tag: server-shared]
 
-- App bootstrap: `apps/server/src/app/createServerApp.ts`
-- Runtime assembly: `apps/server/src/app/runtime.ts`
-- Core non-feature routes: `apps/server/src/core/registerCoreRoutes.ts`
-- Module manifest: `apps/server/src/modules/*`
-- Nexi tool registry seam: `apps/server/src/nexi/toolRegistry.ts`
+- Executable listener: `apps/server/src/server.ts`
+- Integrated dependency composition: `apps/server/src/composeServerApp.ts`
+- Persistence policy and reusable runtime assembly: `apps/server/src/app/*`
+- Core non-feature registrars: `apps/server/src/core/*`, `apps/server/src/auth/localDevRoutes.ts`
+- Component route/tool manifests: `apps/server/src/modules/nexops/areas/*/components/*/server/*`
+- Integrated Nexi registration: `apps/server/src/nexi/integratedRoutes.ts`
 
 If a route or tool belongs to a product area, the code should live in that product area's folder and connect through its `module.ts`.
 
@@ -45,13 +46,13 @@ If a route or tool belongs to a product area, the code should live in that produ
 
 ### Entry flow [tag: web-entry]
 
-`apps/web/src/main.tsx` now does only three things:
+The intended `apps/web/src/main.tsx` flow does only three things:
 
 1. Load shared base CSS and primitives.
 2. Render `AppBootstrap`.
 3. Hand off to shared auth and routing.
 
-This matches the intended thin-shell pattern and removes feature logic from the entry file.
+The platform-only stream reached this shape. The integrated branch has not: its `main.tsx` is still 6,593 lines and owns active auth/top-level dispatch plus Nexi, NexCam, and Platform implementations. E4 removed the real NexOps business surfaces from that file, but a later extraction must move the remaining live surfaces before the entrypoint is genuinely thin. Moving the file wholesale behind a facade does not satisfy this rule.
 
 ### Feature convention [tag: web-features]
 
@@ -72,7 +73,7 @@ Current Phase A features:
 - `features/platformOverview/` owns the platform hero and plan cards.
 - `features/tenantOverview/` owns tenant rows, adapter badges, export links, and backup actions.
 - `features/opsWorkspace/` owns the composed workspace route for the operations screen.
-- `features/clients/`, `features/quotes/`, `features/jobs/`, `features/settings/`, and `features/invoices/` are now the dedicated browser landing seams for the NexOps surfaces that will follow.
+- `features/clients/`, `features/quotes/`, `features/jobs/`, `features/visits/`, `features/settings/`, and `features/invoices/` now contain the real migrated NexOps component surfaces, not placeholder landings.
 
 ### Phase B route ownership [tag: web-phase-b-routes]
 
@@ -104,15 +105,15 @@ That means a Nexi visual change lives in `features/nexi/styles/nexi.css`, not in
 
 `apps/server/src/server.ts` now only:
 
-1. creates the app through `createServerApp`
+1. imports the composed app
 2. exports the app for tests
 3. starts the listener outside test mode
 
-All assembly logic moved out of the entry file.
+`apps/server/src/composeServerApp.ts` constructs dependencies and invokes registrars. It does not own feature handler bodies.
 
 ### Runtime assembly [tag: server-runtime]
 
-`apps/server/src/app/runtime.ts` builds the long-lived runtime pieces in one place:
+The integrated composition root builds the long-lived runtime pieces in one place. `apps/server/src/app/persistencePolicy.ts` is the shared fail-closed policy, while `apps/server/src/app/runtime.ts` remains the reusable smaller runtime for manifest-driven surfaces and tests.
 
 - approval queue
 - comms rail
@@ -125,7 +126,7 @@ This keeps construction concerns separate from feature registration concerns.
 
 ### Module manifest [tag: server-modules]
 
-`apps/server/src/modules/manifest.ts` is now the additive registry for server features.
+`apps/server/src/modules/manifest.ts` is the additive registry for the smaller manifest-driven server surface. The integrated composition root invokes feature registrars directly because it carries the complete dependency graph. CRM itself is further decomposed through component manifests, so route, tool, repository, approval, and lifecycle implementations remain component-owned.
 
 Each feature owns a `module.ts` file that can do two things:
 
@@ -143,13 +144,13 @@ Current server modules:
 
 ### Nexi tool registration [tag: nexi-tools]
 
-`apps/server/src/nexi/nexiRoutes.ts` no longer carries a hardcoded `extraTools` list.
+`apps/server/src/nexi/nexiRoutes.ts` no longer carries feature tool implementations or the integrated tool list.
 
 Instead:
 
-- `modules/manifest.ts` collects feature-owned tool providers
-- `nexi/toolRegistry.ts` resolves them per request and tenant
-- `nexiRoutes.ts` focuses on auth, tenant load, message handling, and final tool filtering
+- CRM component manifests collect component-owned tools.
+- `nexi/integratedRoutes.ts` assembles feature providers for each authorized request.
+- `nexiRoutes.ts` focuses on message handling and final tool execution.
 
 This is the key change that stops `nexiRoutes.ts` from becoming the permanent choke point for every new capability.
 
@@ -171,7 +172,19 @@ Use this section when deciding where code belongs.
 - Job browser surface: `apps/web/src/features/jobs/*`
 - Settings browser surface: `apps/web/src/features/settings/*`
 - Invoice browser surface: `apps/web/src/features/invoices/*`
-- Server bootstrap and middleware assembly: `apps/server/src/app/*`
+- Contact implementation: `apps/{web,server}/src/**/components/contact/*`
+- Quote Templates implementation: `apps/{web,server}/src/**/components/quoteTemplates/*`
+- Quote Engine implementation: `apps/{web,server}/src/**/components/quoteEngine/*`
+- Job Core implementation: `apps/{web,server}/src/**/components/jobCore/*`
+- Visit Core implementation: `apps/{web,server}/src/**/components/visitCore/*`
+- Invoice Structure implementation: `apps/{web,server}/src/**/components/invoiceStructure/*`
+- Payment Rails implementation: `apps/{web,server}/src/**/components/paymentRails/*`
+- Catalog implementation: `apps/{web,server}/src/**/components/catalog/*`
+- Tenant Config implementation: `apps/{web,server}/src/**/components/tenantConfig/*`
+- Shared Address/Location: `packages/shared/src/addressLocation.ts`, `apps/server/src/shared/addressLocation/*`
+- Shared Document Rendering: `apps/server/src/shared/documentRendering/*`
+- Shared Numbering: `packages/shared/src/numbering.ts`, `apps/server/src/shared/numbering/*`
+- Server executable and composition: `apps/server/src/server.ts`, `apps/server/src/composeServerApp.ts`
 - Non-feature server utility endpoints: `apps/server/src/core/*`
 - Feature routes and Nexi tool attachments: the owning server feature folder plus its `module.ts`
 
@@ -182,7 +195,7 @@ Use this section when deciding where code belongs.
 1. Create `apps/web/src/features/<feature>/`.
 2. Put fetches, hooks, components, and styles inside that folder.
 3. Add a route or composition point through `shared/router` or an owning feature route.
-4. Avoid adding new behavior to `main.tsx`.
+4. Do not add new behavior to `main.tsx`; extract the owning live surface when touching its remaining legacy code.
 
 ### Add a new server feature
 
@@ -205,7 +218,7 @@ Do not hardcode new tool arrays in `nexiRoutes.ts`.
 - The hardcoded workspace tenant is no longer chosen inside `features/opsWorkspace/routes/OpsWorkspaceRoute.tsx`; that route now reads from `features/operatorContext/hooks/useOperatorContext.ts`.
 - Scheduling is now mounted through `features/scheduling/routes/SchedulingWorkspaceRoute.tsx` so schedule routing changes do not reopen the ops workspace file.
 - The old single `features/platform/components/PlatformConsole.tsx` file is gone. Platform overview and tenant overview now live in separate features with separate fetch hooks.
-- The NexOps browser routes exist now as ownership seams even though the richer CRUD UIs have not been merged into this worktree yet. That is intentional. The goal is to stop future Clients, Quotes, Jobs, Settings, and Invoices work from converging back into the shared platform overview code.
+- Historical note: Phase B first created placeholder ownership seams. E4 has now replaced those placeholders with the integrated CRM surfaces for Contact, Quotes, Jobs, Visits, Settings, and Invoices.
 - Voice UI itself still lives only in the sibling `voice` worktree today. Phase B established the operator-context seam here first so a future voice merge lands in feature-owned files instead of shared shell code.
 
 ## Phase C Notes [tag: phase-c-notes]

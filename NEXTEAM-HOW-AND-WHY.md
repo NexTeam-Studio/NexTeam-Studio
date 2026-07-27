@@ -29,7 +29,7 @@ The web app groups visible product areas under `apps/web/src/features/`.
 - Tenant Overview owns tenant rows, service status, exports, and backups.
 - The Ops Workspace places Nexi and Scheduling together without owning either product area itself.
 
-Each feature can have its own components, data calls, local state, routes, and styling. The app entry point only starts the application; it is not where new product behavior should be added.
+Each feature can have its own components, data calls, local state, routes, and styling. The intended app entry point only starts the application. In the integrated branch, the entry file still contains older active Nexi, NexCam, Platform, sign-in, and route-switching code. New behavior must not be added there; work in one of those areas should move the touched behavior into its feature home.
 
 ### Why It Is This Way
 
@@ -41,11 +41,11 @@ Clients, Quotes, Jobs, Settings, and Invoices each have their own web feature ho
 
 ### How It Works
 
-Each area has a dedicated route, component, and style file. These are landing seams: clear places for the richer browser interfaces to arrive when that work is merged from the CRM stream. They do not yet replace the full CRM user interfaces.
+Each area now contains its real browser interface and its matching server behavior. Large business areas are divided again into components when two kinds of work change for different reasons. For example, invoice wording belongs to Invoice Structure, while taking and refunding payments belongs to Payment Rails.
 
 ### Why It Is This Way
 
-The next person building client, quote, or job screens will not need to edit a shared platform overview file. That keeps five independently changing areas from colliding with one another.
+The next person changing clients, quotes, jobs, visits, settings, or invoices starts in the owning component instead of a shared platform overview or app entry file. The checked collision gate proves those implementation file sets do not overlap.
 
 ## Server Features and Registrars
 
@@ -53,11 +53,145 @@ The server has a small startup file and a list of feature registrars.
 
 ### How It Works
 
-The startup file creates the app and begins listening. Each server feature, such as CRM, scheduling, content, field documents, communications, or platform administration, has a small registrar that attaches its own routes and optional Nexi tools. A manifest gathers those registrars in one intentional list.
+The startup file only begins listening. A separate composition file creates repositories and services, then calls each feature registrar. System, local sign-in, media, approvals, business routes, and Nexi tool assembly have named registrars. Inside NexOps, each component supplies its own routes, assistant tools, database methods, approval operations, and lifecycle rules when it needs them.
 
 ### Why It Is This Way
 
 Adding a new capability should be additive. A new feature should bring its own wiring instead of growing a central server file that everyone has to touch.
+
+The server has reached this target. The web entry has not fully reached it yet, which is why its remaining extraction is tracked rather than described as complete.
+
+## The Four Ownership Levels
+
+The migration uses four levels to describe where work belongs: Module, Area, Component, and Surface.
+
+### How It Works
+
+A module is a product people recognize, such as NexOps. An area is a major workspace inside it, such as Quotes or Invoices. A component is one independently changing responsibility, such as Quote Engine or Payment Rails. A surface is the actual screen, route, assistant tool, database store, document, or test through which that responsibility appears.
+
+### Why It Is This Way
+
+The levels prevent a folder move from being mistaken for real separation. A component is considered separated only when its visible UI and its supporting server behavior have the same owner.
+
+## Contact
+
+### How It Works
+
+Contact owns client records, properties, the roster, create/edit screens, mobile and desktop profiles, its routes, assistant tools, database methods, approval handling, styles, and tests.
+
+### Why It Is This Way
+
+Changing a customer profile should not require touching quote, job, or billing implementation files. Shared navigation can open a contact, but Contact owns what the person sees and edits there.
+
+## Quote Templates
+
+### How It Works
+
+Quote Templates owns reusable quote layouts, defaults, validation, its editor, and the server methods that load and save templates. Quote Engine consumes templates through a small typed contract.
+
+### Why It Is This Way
+
+A template is reusable configuration, while a quote is a customer transaction. Separating them lets one person improve template setup while another changes the quote workflow.
+
+## Quote Engine
+
+### How It Works
+
+Quote Engine owns quote drafting, totals, status changes, approvals, customer wording, PDF and portal output, the real quote workspace, routes, assistant tools, and tests.
+
+### Why It Is This Way
+
+The full life of a quote belongs together, but reusable catalog items and template editing do not. Those enter through typed, limited seams instead of being reimplemented inside Quotes.
+
+## Job Core
+
+### How It Works
+
+Job Core owns job records, job status, job actions, the Jobs workspace, approval and lifecycle policy, and job persistence. It asks Visit Core to perform scheduling work through a stable service boundary.
+
+### Why It Is This Way
+
+A job can exist without a scheduled visit, and visits can move many times without changing the job's core meaning. Keeping those responsibilities separate prevents calendar work from destabilizing job policy.
+
+## Visit Core
+
+### How It Works
+
+Visit Core owns the Schedule workspace, visit creation and movement, completion, reminders, technician timing, visit storage, routes, tools, styles, and tests.
+
+### Why It Is This Way
+
+Scheduling changes frequently and has its own timing and assignment rules. It should be possible to improve the calendar or reminders without editing Job Core.
+
+## Invoice Structure
+
+### How It Works
+
+Invoice Structure owns invoice lines, totals, discounts, tax, terms, payment schedules, invoice status policy, customer documents, the invoice workspace, and its server lifecycle.
+
+### Why It Is This Way
+
+An invoice defines what is owed and what the customer receives. The mechanics of collecting that money are a separate risk area and belong to Payment Rails.
+
+## Payment Rails
+
+### How It Works
+
+Payment Rails owns Stripe, PayPal and Venmo seams, Tap to Pay, saved cards, refunds, deposits, credits, receipts, recovery actions, payment records, and payment-specific controls.
+
+### Why It Is This Way
+
+Provider integrations and money movement carry different risk from invoice wording or layout. A payment-provider change should not require editing the invoice document implementation.
+
+## Catalog
+
+### How It Works
+
+Catalog owns reusable service and product items, their normalization, and the picker/editor components. Settings can edit the catalog; Quotes and Invoices receive a read-only picker.
+
+### Why It Is This Way
+
+There must be one source of reusable items. Limiting writes to Settings prevents quote and invoice screens from creating competing catalog behavior.
+
+## Tenant Config
+
+### How It Works
+
+Tenant Config owns the Settings workspace, numbering preferences, communication templates, tenant settings routes, assistant tools, and settings storage. It composes the Catalog and Quote Templates editors as children.
+
+### Why It Is This Way
+
+Tenant-wide choices need one accountable home. Child editors can change independently while Tenant Config remains responsible for saving the combined tenant settings record safely.
+
+## Address and Location
+
+### How It Works
+
+The shared Address/Location component defines one address shape, parsing and formatting, map links, geocoding results, and distance-provider seams. Business components consume it without owning duplicate address logic.
+
+### Why It Is This Way
+
+An address must mean the same thing in Contact, intake, jobs, visits, and mobile capture. This is intentional shared infrastructure, not an accidental shared business file.
+
+## Document Rendering
+
+### How It Works
+
+Document Rendering provides safe HTML, PDF writing, and shared portal framing. Quote Engine and Invoice Structure still own their own customer wording and line layouts.
+
+### Why It Is This Way
+
+The low-level rendering machinery should be reused, but sharing business wording would couple quotes and invoices again. The boundary shares the engine, not the meaning.
+
+## Numbering
+
+### How It Works
+
+Numbering safely reserves and formats tenant-specific request, quote, job, invoice, and receipt numbers. Tenant Config supplies prefixes and widths; Numbering owns concurrency and sequence advancement.
+
+### Why It Is This Way
+
+Parallel work must never issue duplicate customer-facing numbers. One shared sequence service solves that cross-area rule without making it the owner of each document.
 
 ## Tenant Isolation
 
