@@ -1150,14 +1150,6 @@ body.nexops-mobile-nav-open {
   align-items: start;
 }
 
-.nexops-module-grid,
-.nexcam-template-grid,
-.nexcam-media-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
 .nexops-module-grid-wide {
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
 }
@@ -1186,25 +1178,6 @@ body.nexops-mobile-nav-open {
   margin: 0;
   color: #526675;
   line-height: 1.45;
-}
-
-.nexops-checklist,
-.nexcam-item-list,
-.nexops-mini-list {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.nexops-checklist li,
-.nexcam-item-list li,
-.nexops-mini-list li {
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(8, 33, 49, 0.05);
-  color: #082131;
 }
 
 .nexops-mini-list li {
@@ -2030,91 +2003,6 @@ body.nexops-mobile-nav-open {
   backdrop-filter: blur(12px);
 }
 
-.nexcam-app .nexops-create-button,
-.nexcam-app .nexops-page-heading button,
-.nexcam-app .nexops-inline-actions button {
-  color: #081a1a;
-  background: var(--nexops-brand-accent, #00f0f0);
-}
-
-.nexcam-app .nexops-page-heading .nexops-link-button,
-.nexcam-app .nexops-inline-actions .nexops-link-button,
-.nexcam-app .nexops-module-card .nexops-link-button,
-.nexcam-app .nexops-record-list .nexops-link-button {
-  border: 1px solid rgba(16, 24, 34, 0.12);
-  color: #101822;
-  background: #fff;
-  box-shadow: none;
-}
-
-.nexcam-item-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.nexcam-history-values {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.nexcam-history-values li {
-  display: grid;
-  gap: 4px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(8, 33, 49, 0.05);
-}
-
-.nexcam-history-values strong,
-.nexcam-history-values span {
-  margin: 0;
-}
-
-.nexcam-field-note {
-  color: #526675;
-  font-size: 0.82rem;
-}
-
-.nexcam-section-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.nexcam-section-pills button {
-  border: 1px solid rgba(8, 33, 49, 0.12);
-  border-radius: 999px;
-  padding: 10px 12px;
-  color: #082131;
-  background: #fff;
-  font-weight: 850;
-  cursor: pointer;
-}
-
-.nexcam-section-pills button.active {
-  color: #08100c;
-  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
-}
-
-.nexcam-checkbox-field {
-  align-content: start;
-}
-
-.nexcam-checkbox-field input {
-  width: 18px;
-  height: 18px;
-}
-
-.nexcam-template-draft-fields li {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px 12px;
-}
-
 .nexops-web-main {
   min-width: 0;
   background: #fff;
@@ -2591,12 +2479,6 @@ body.nexops-mobile-nav-open {
   margin: 8px 0 0;
   color: rgba(248, 255, 252, 0.72);
   font-size: 0.82rem;
-}
-
-.nexcam-heading-logo {
-  width: min(220px, 100%);
-  max-height: 56px;
-  margin-bottom: 10px;
 }
 
 .sign-out {
@@ -3412,20 +3294,6 @@ h1 {
 
   .nexops-web-account-tools {
     justify-content: space-between;
-  }
-
-  .nexops-workflow-strip,
-.nexops-two-column,
-.nexops-module-grid,
-.nexops-module-grid-wide,
-.nexops-request-builder-grid,
-.nexops-request-form-fields,
-.nexops-request-library-field-groups,
-.nexops-request-summary-grid,
-.nexcam-template-grid,
-.nexcam-media-grid,
-.nexcam-item-columns {
-    grid-template-columns: 1fr;
   }
 
   .nexops-record-list li {
@@ -4529,61 +4397,6 @@ h1 {
   line-height: 1.45;
 }
 
-.nexcam-review-panel {
-  width: min(1100px, calc(100vw - 32px));
-}
-
-.nexcam-review-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.75fr);
-  gap: 18px;
-}
-
-.nexcam-review-stage-card,
-.nexcam-review-sidebar {
-  display: grid;
-  gap: 14px;
-}
-
-.nexcam-review-stage {
-  position: relative;
-  overflow: hidden;
-  min-height: 360px;
-  border: 1px solid rgba(12, 17, 24, 0.08);
-  border-radius: 18px;
-  background: #eef4f2;
-}
-
-.nexcam-review-stage.draw-mode {
-  cursor: crosshair;
-}
-
-.nexcam-review-image {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: 68vh;
-  object-fit: contain;
-  background: #dfe9e4;
-}
-
-.nexcam-review-overlay {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.nexcam-comment-list li {
-  display: grid;
-  gap: 4px;
-}
-
-.nexcam-comment-list span {
-  color: #243235;
-}
-
 .nexops-overlay-form {
   display: grid;
   gap: 14px;
@@ -4755,10 +4568,6 @@ h1 {
 
 @media (max-width: 1080px) {
   .nexops-home-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .nexcam-review-layout {
     grid-template-columns: 1fr;
   }
 }

@@ -1,0 +1,37 @@
+R3 NEXCAM / NEXDOCS WEB EXTRACTION
+Baseline: 79cd077
+
+OWNERSHIP
+- NexCam route/capture surface: features/nexcam/areas/capture/components/NexCamPage.tsx
+- Cross-tab capture controller: features/nexcam/areas/capture/hooks/useNexCamWorkspace.tsx
+- NexCam overview: features/nexcam/areas/overview/components/NexCamOverviewSurface.tsx
+- NexDocs checklist templates/runs: features/nexdocs/areas/checklists/components/ChecklistTemplatesSurface.tsx
+- NexDocs media library/review: features/nexdocs/areas/media/components/*
+- NexDocs reports/bundles/snippets: features/nexdocs/areas/reports/components/ReportsSurface.tsx
+
+BOUNDARY
+The capture controller is the explicit shared orchestration allowlist for the four route tabs. It owns
+the single loaded tenant/context model and API command set. Each area owns its render implementation;
+no area surface delegates its JSX back to NexCamPage. The shell composes exported area surfaces.
+
+REAL REMOVAL PROOF
+- main.tsx: 2,544 -> 203 lines (-2,341)
+- styles.css: 5,195 -> 5,004 lines (-191)
+- NexCamPage route shell: 85 lines
+- capture controller: 1,761 lines
+- NexCam overview surface: 187 lines
+- NexDocs checklist surface: 358 lines
+- NexDocs media surfaces: 94 + 145 lines
+- NexDocs reports surface: 153 lines
+
+VERIFICATION
+- npm run lint: pass, 0 errors
+- npm run typecheck: pass
+- npm run build: pass, Vite transformed 105 modules
+- non-Playwright repository tests: 348 total, 345 pass, 3 known unrelated fail
+- no browser test, tunnel, deploy, or live service used for final checkpoint proof
+
+KNOWN REDS
+- apps/server/test/content-engine.test.mjs:487
+- apps/server/test/fielddocs-nexi-tools.test.mjs:358
+- apps/server/test/platform.test.mjs:316
