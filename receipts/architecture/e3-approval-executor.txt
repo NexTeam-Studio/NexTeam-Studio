@@ -1,0 +1,14 @@
+E3 CRM ApprovalExecutor choke-point receipt
+Date: 2026-07-27
+
+Scope
+- Moved 11 approved operation bodies into six component handlers.
+- Root CrmApprovalExecutor now validates the CRM service, resolves an allow-listed handler, and dispatches.
+- Component handlers retain schema parsing, tenant equality checks, and write execution.
+- Existing constructor and ApprovalExecutor interface remain stable.
+
+Verification
+- Server typecheck and production build: pass; Vite transformed 72 modules.
+- Focused approval/job/visit/invoice/payment/Nexi tests: 94/94 pass.
+- Full suite: 341/349 pass, with exactly the eight unrelated E1 known-red tests and no new failures.
+- Browser verification: not run, per the standing no-browser constraint.
