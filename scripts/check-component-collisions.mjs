@@ -1,0 +1,87 @@
+import { execFileSync } from "node:child_process";
+
+const components = [
+  ["Contact", [
+    "apps/server/src/modules/nexops/areas/clients/components/contact/",
+    "apps/web/src/features/clients/components/contact/"
+  ]],
+  ["Quote Templates", [
+    "apps/server/src/modules/nexops/areas/quotes/components/quoteTemplates/",
+    "apps/web/src/features/quotes/components/quoteTemplates/"
+  ]],
+  ["Quote Engine", [
+    "apps/server/src/modules/nexops/areas/quotes/components/quoteEngine/",
+    "apps/web/src/features/quotes/components/quoteEngine/"
+  ]],
+  ["Job Core", [
+    "apps/server/src/modules/nexops/areas/jobs/components/jobCore/",
+    "apps/web/src/features/jobs/components/jobCore/"
+  ]],
+  ["Visit Core", [
+    "apps/server/src/modules/nexops/areas/visits/components/visitCore/",
+    "apps/web/src/features/visits/components/visitCore/"
+  ]],
+  ["Invoice Structure", [
+    "apps/server/src/modules/nexops/areas/invoices/components/invoiceStructure/",
+    "apps/web/src/features/invoices/components/invoiceStructure/"
+  ]],
+  ["Payment Rails", [
+    "apps/server/src/modules/nexops/areas/invoices/components/paymentRails/",
+    "apps/web/src/features/invoices/components/paymentRails/"
+  ]],
+  ["Catalog", [
+    "apps/server/src/modules/nexops/areas/settings/components/catalog/",
+    "apps/web/src/features/settings/components/catalog/"
+  ]],
+  ["Tenant Config", [
+    "apps/server/src/modules/nexops/areas/settings/components/tenantConfig/",
+    "apps/web/src/features/settings/components/tenantConfig/"
+  ]],
+  ["Address/Location", [
+    "apps/server/src/shared/addressLocation/",
+    "packages/shared/src/addressLocation.ts"
+  ]],
+  ["Document Rendering", [
+    "apps/server/src/shared/documentRendering/"
+  ]],
+  ["Numbering", [
+    "apps/server/src/shared/numbering/",
+    "packages/shared/src/numbering.ts"
+  ]]
+];
+
+const trackedFiles = execFileSync("git", ["ls-files"], { encoding: "utf8" })
+  .split(/\r?\n/)
+  .map((file) => file.trim().replaceAll("\\", "/"))
+  .filter(Boolean);
+
+const owned = new Map(components.map(([name, roots]) => [
+  name,
+  new Set(trackedFiles.filter((file) => roots.some((root) => root.endsWith("/") ? file.startsWith(root) : file === root)))
+]));
+
+const failures = [];
+for (const [name, files] of owned) {
+  if (files.size === 0) failures.push(`${name} owns no tracked implementation files`);
+  console.log(`${name}: ${files.size} files`);
+}
+
+let pairCount = 0;
+for (let leftIndex = 0; leftIndex < components.length; leftIndex += 1) {
+  for (let rightIndex = leftIndex + 1; rightIndex < components.length; rightIndex += 1) {
+    pairCount += 1;
+    const leftName = components[leftIndex][0];
+    const rightName = components[rightIndex][0];
+    const overlap = [...owned.get(leftName)].filter((file) => owned.get(rightName).has(file));
+    console.log(`${leftName} intersect ${rightName}: ${overlap.length}`);
+    if (overlap.length > 0) failures.push(`${leftName} / ${rightName}: ${overlap.join(", ")}`);
+  }
+}
+
+if (failures.length > 0) {
+  console.error("Component collision check failed:");
+  for (const failure of failures) console.error(`- ${failure}`);
+  process.exit(1);
+}
+
+console.log(`Component collision check passed (${components.length} components, ${pairCount} pairs, zero overlaps).`);

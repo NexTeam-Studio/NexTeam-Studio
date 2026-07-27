@@ -1,0 +1,104 @@
+E7 INTEGRATION PROOF
+Date: 2026-07-27
+
+Ownership sets
+- Contact: 11 files
+- Quote Templates: 7 files
+- Quote Engine: 13 files
+- Job Core: 10 files
+- Visit Core: 10 files
+- Invoice Structure: 16 files
+- Payment Rails: 10 files
+- Catalog: 4 files
+- Tenant Config: 7 files
+- Address/Location: 3 files
+- Document Rendering: 4 files
+- Numbering: 3 files
+
+Pairwise file-collision map
+- Contact / Quote Templates: 0
+- Contact / Quote Engine: 0
+- Contact / Job Core: 0
+- Contact / Visit Core: 0
+- Contact / Invoice Structure: 0
+- Contact / Payment Rails: 0
+- Contact / Catalog: 0
+- Contact / Tenant Config: 0
+- Contact / Address/Location: 0
+- Contact / Document Rendering: 0
+- Contact / Numbering: 0
+- Quote Templates / Quote Engine: 0
+- Quote Templates / Job Core: 0
+- Quote Templates / Visit Core: 0
+- Quote Templates / Invoice Structure: 0
+- Quote Templates / Payment Rails: 0
+- Quote Templates / Catalog: 0
+- Quote Templates / Tenant Config: 0
+- Quote Templates / Address/Location: 0
+- Quote Templates / Document Rendering: 0
+- Quote Templates / Numbering: 0
+- Quote Engine / Job Core: 0
+- Quote Engine / Visit Core: 0
+- Quote Engine / Invoice Structure: 0
+- Quote Engine / Payment Rails: 0
+- Quote Engine / Catalog: 0
+- Quote Engine / Tenant Config: 0
+- Quote Engine / Address/Location: 0
+- Quote Engine / Document Rendering: 0
+- Quote Engine / Numbering: 0
+- Job Core / Visit Core: 0
+- Job Core / Invoice Structure: 0
+- Job Core / Payment Rails: 0
+- Job Core / Catalog: 0
+- Job Core / Tenant Config: 0
+- Job Core / Address/Location: 0
+- Job Core / Document Rendering: 0
+- Job Core / Numbering: 0
+- Visit Core / Invoice Structure: 0
+- Visit Core / Payment Rails: 0
+- Visit Core / Catalog: 0
+- Visit Core / Tenant Config: 0
+- Visit Core / Address/Location: 0
+- Visit Core / Document Rendering: 0
+- Visit Core / Numbering: 0
+- Invoice Structure / Payment Rails: 0
+- Invoice Structure / Catalog: 0
+- Invoice Structure / Tenant Config: 0
+- Invoice Structure / Address/Location: 0
+- Invoice Structure / Document Rendering: 0
+- Invoice Structure / Numbering: 0
+- Payment Rails / Catalog: 0
+- Payment Rails / Tenant Config: 0
+- Payment Rails / Address/Location: 0
+- Payment Rails / Document Rendering: 0
+- Payment Rails / Numbering: 0
+- Catalog / Tenant Config: 0
+- Catalog / Address/Location: 0
+- Catalog / Document Rendering: 0
+- Catalog / Numbering: 0
+- Tenant Config / Address/Location: 0
+- Tenant Config / Document Rendering: 0
+- Tenant Config / Numbering: 0
+- Address/Location / Document Rendering: 0
+- Address/Location / Numbering: 0
+- Document Rendering / Numbering: 0
+
+Required verification
+- check:collisions: pass, 12 components / 66 pairs / zero overlaps.
+- server TypeScript build: pass.
+- web production build: pass, 88 modules.
+- full tests: 354/357 pass.
+- known-red set unchanged: NexReach approval wording, NexDocs approval wording, expired platform job-link fixture.
+- check:tenancy: pass, 366 files.
+- check:indexes: pass, 10 compound query shapes.
+- check:provider-imports: pass, 436 files.
+- check:blueprints: pass, 366 files.
+- check:secrets: pass, 1377 tracked non-document files.
+
+Additional audit
+- Repository-wide lint: fail, 3170 errors.
+- Dominant classes are unused imports/symbols left in legacy compatibility/runtime files after extraction and explicit-any debt in nexopsDeferredUi.tsx.
+- No lint suppression or mass rewrite was used. This remains explicit cleanup work and does not change the required E7 build/test/collision result.
+
+Verification method
+- No browser was opened. No deployment, tunnel, or live external service was used.
