@@ -126,6 +126,9 @@ const components = [
   ]],
   ["Visual Foundation", [
     "apps/web/src/shared/styles/"
+  ]],
+  ["File Encoding", [
+    "apps/web/src/shared/files/"
   ]]
 ];
 

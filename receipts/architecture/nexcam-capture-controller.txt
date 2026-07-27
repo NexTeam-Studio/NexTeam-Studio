@@ -1,0 +1,19 @@
+NEXCAM CAPTURE CONTROLLER EXTRACTION
+Date: 2026-07-27
+
+Before and after
+- `NexOpsWorkspace.tsx`: 2,127 lines before, 1,827 lines after.
+- `useNexOpsCaptureController.ts`: 362 lines of capture-owned state, API mutation, inbox, assignment, and derived-media behavior.
+- `captureContracts.ts`: 69 lines of capture-owned contracts removed from the workspace aggregate implementation.
+- `fileEncoding.ts`: 11 lines under a separate shared owner; NexCam and Nexi import it directly.
+- The shell retains only navigation, mutation-event, client-refresh, and client-selection callbacks. It contains no duplicate capture API/controller body.
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 169 modules; aggregate CSS remains 120.86 kB.
+- Focused capture/mobile/tenant tests: 15 tests, 15 pass, 0 fail.
+- npm run check:collisions: 39 components, 741 pairs, zero overlaps.
+- npm test: no-browser guard passed across 61 default test files; 361 tests, 358 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- No browser was launched.

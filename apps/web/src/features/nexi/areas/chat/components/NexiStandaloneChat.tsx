@@ -7,7 +7,8 @@ import { nexiActiveApprovalPrompt, nexiConversationOffer, nexiConversationOfferR
 import { resolveRequestorOriginForNexiMessage } from "../utils/nexiRequestContext";
 import { NexOpsCreateMenu } from "../../../../nexopsShell/components/NexOpsCreateMenu";
 import { NexOpsNotificationPanel } from "../../../../nexopsShell/components/NexOpsNotificationPanel";
-import { NexOpsNavGlyph, fileToBase64, formatPhoneActionLabel, mediaUrl, sourceIsPhoto } from "../../../../nexopsShell/NexOpsWorkspace";
+import { NexOpsNavGlyph, formatPhoneActionLabel, mediaUrl, sourceIsPhoto } from "../../../../nexopsShell/workspaceSupport";
+import { fileToBase64 } from "../../../../../shared/files/fileEncoding";
 import { fallbackOperatorContext, loadOperatorContext } from "../../../../operatorContext/resolveOperatorContext";
 import { signOutOperator } from "../../../../../shared/auth/authBootstrap";
 import { useNexiVoice } from "../../voice/hooks/useNexiVoice";

@@ -9,6 +9,7 @@ import {
 } from "../clients/components/contact/domain/clientProfile";
 import type { NexOpsModule } from "./domain/nexopsNavigation";
 import type { Source, SmsCapability, CrmPhone, CrmEmail, ClientPhoneDraft, ClientEmailDraft, CrmContact, CrmIntakeSnapshot, CrmClient, CrmProperty } from "./contracts/workspaceContracts";
+export { fileToBase64 } from "../../shared/files/fileEncoding";
 
 export function mediaUrl(source: Source, tenantId?: string): string {
   const base = `/api/media/${encodeURIComponent(source.ref)}`;
@@ -45,25 +46,6 @@ export function formatPhoneDisplay(phone: string): string {
     return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
   }
   return phone;
-}
-
-
-
-
-
-
-
-export function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      const encoded = result.includes(",") ? result.slice(result.indexOf(",") + 1) : result;
-      resolve(encoded);
-    };
-    reader.onerror = () => reject(new Error("File read failed"));
-    reader.readAsDataURL(file);
-  });
 }
 
 
@@ -441,4 +423,3 @@ export function draftFromExistingClient(client: CrmClient, property: CrmProperty
 }
 
 export const MOBILE_CLIENT_VIEWPORT_MAX = 860;
-

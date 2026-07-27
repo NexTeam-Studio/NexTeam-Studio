@@ -1,15 +1,16 @@
 import React from "react";
 import type {
+  CrmClient,
+  FieldDocsMediaRecord
+} from "../../../../nexopsShell/contracts/workspaceContracts";
+import type {
   CaptureBatchRecord,
   CaptureClientTargetJob,
   CaptureClientTargetVisit,
   CaptureSessionMode,
   CaptureSessionOrigin,
-  CrmClient,
-  FieldDocsMediaRecord
-} from "../../../../nexopsShell/NexOpsWorkspace";
-
-type CaptureWorkspaceView = "session" | "unassigned";
+  CaptureWorkspaceView
+} from "../contracts/captureContracts";
 
 interface NexOpsCaptureWorkspaceProps {
   operatorTenantId: string;
@@ -671,4 +672,3 @@ export function NexOpsCaptureWorkspace(props: NexOpsCaptureWorkspaceProps): Reac
     </>
   );
 }
-
