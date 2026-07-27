@@ -89,7 +89,7 @@ This means deeper product routes can move without editing `shared/router/AppRout
 
 ### Styling rule [tag: web-styles]
 
-The old global `apps/web/src/styles.css` file is gone.
+The target is to remove the global `apps/web/src/styles.css` file.
 
 The replacement strategy is:
 
@@ -97,7 +97,7 @@ The replacement strategy is:
 - tiny shared primitives for repeated atoms
 - feature CSS imported by the feature that owns it
 
-That means a Nexi visual change lives in `features/nexi/styles/nexi.css`, not in a global style bucket that every feature has to edit.
+The twelve migrated components now own their component-specific CSS, but the integrated branch still carries 5,871 lines of legacy global styling in `styles.css`. New component styling belongs in the owner folder; the remaining global rules must be classified and moved incrementally rather than expanded.
 
 ## Server Composition [tag: server]
 

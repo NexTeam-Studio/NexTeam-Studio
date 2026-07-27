@@ -1,0 +1,30 @@
+E9 HONEST STATUS
+Date: 2026-07-27
+Branch: codex/target-architecture-integration
+
+True and proven
+- Contact, Quote Templates, Quote Engine, Job Core, Visit Core, Invoice Structure, Payment Rails, Catalog, Tenant Config, Address/Location, Document Rendering, and Numbering have named implementation ownership.
+- The 12 ownership sets contain 98 tracked files and all 66 pairwise intersections are zero.
+- Server startup is 18 lines and listener-only; dependency composition and route/tool registrars are separate.
+- Generic runtime code does not invent a tenant.
+- Required durable persistence fails closed unless memory storage is explicitly allowed for a non-production runtime.
+- Tenant Config has a runtime cross-tenant read rejection test; the tenancy scanner passes 366 files.
+- Ten compound Firestore query shapes are checked into deployment indexes and contract-tested.
+- Production build passes at 88 web modules.
+- Full suite is stable at 354/357.
+- Provider, blueprint naming, tenancy, index, collision, and current-tree secret gates pass.
+- Technical and plain-language architecture documentation is current for the migrated scope.
+
+Not complete
+- apps/web/src/main.tsx is 6593 lines and still owns active auth/top-level dispatch plus Nexi, NexCam, and Platform surfaces.
+- apps/web/src/styles.css is 5871 lines and remains a global styling collision point.
+- apps/web/src/features/nexopsShell/NexOpsWorkspace.tsx is 4245 lines and remains a cross-area state/callback collision point.
+- Repository-wide lint is red with 3170 errors.
+- Three tests remain red: NexReach approval wording, NexDocs approval wording, and an expired platform job-link fixture.
+- Admin SDK isolation is not emulator-proven across every repository; Field Docs is the next named boundary.
+- The known WordPress credential remains reachable in Git history pending the deferred rotation and all-ref history purge.
+- No browser, phone, deployment, tunnel, or live external-service verification was performed or claimed.
+
+Conclusion
+- E1-E9 completed the named component migration and its proof package.
+- The whole-repository target architecture is still in progress and must not be described as fully modular or fully clean.
