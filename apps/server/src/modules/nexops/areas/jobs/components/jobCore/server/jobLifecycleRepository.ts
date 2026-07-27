@@ -2,9 +2,20 @@ import { randomUUID } from "node:crypto";
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
 import { RailError, eventTypeSchema, type EventType } from "@nexteam/core";
 import { z } from "zod";
+import {
+  FirestoreVisitReminderRepository,
+  MemoryVisitReminderRepository,
+  type VisitReminderRecord,
+  type VisitReminderRepository
+} from "../../../../visits/components/visitCore/server/visitReminderRepository.js";
+
+export {
+  pendingVisitRemindersForVisit,
+  type VisitReminderRecord,
+  type VisitReminderStatus
+} from "../../../../visits/components/visitCore/server/visitReminderRepository.js";
 
 export type InvoiceReminderStatus = "pending" | "resolved" | "dismissed";
-export type VisitReminderStatus = "pending" | "sent" | "cancelled";
 export type JobActionAlertStatus = "pending" | "resolved";
 
 export interface InvoiceReminderRecord {
@@ -21,20 +32,6 @@ export interface InvoiceReminderRecord {
   lastTriggeredAt?: string | undefined;
   resolvedAt?: string | undefined;
   resolvedByAction?: string | undefined;
-}
-
-export interface VisitReminderRecord {
-  id: string;
-  tenantId: string;
-  jobId: string;
-  visitId: string;
-  channel: "email" | "sms";
-  trigger: "day_before_email" | "hour_before_sms";
-  dueAt: string;
-  status: VisitReminderStatus;
-  createdAt: string;
-  sentAt?: string | undefined;
-  cancelledAt?: string | undefined;
 }
 
 export interface JobActionAlertRecord {
@@ -72,20 +69,6 @@ const invoiceReminderSchema = z.object({
   lastTriggeredAt: z.string().optional(),
   resolvedAt: z.string().optional(),
   resolvedByAction: z.string().optional()
-});
-
-const visitReminderSchema = z.object({
-  id: z.string().min(1),
-  tenantId: z.string().min(1),
-  jobId: z.string().min(1),
-  visitId: z.string().min(1),
-  channel: z.enum(["email", "sms"]),
-  trigger: z.enum(["day_before_email", "hour_before_sms"]),
-  dueAt: z.string().min(1),
-  status: z.enum(["pending", "sent", "cancelled"]),
-  createdAt: z.string().min(1),
-  sentAt: z.string().optional(),
-  cancelledAt: z.string().optional()
 });
 
 const jobActionAlertSchema = z.object({
@@ -127,11 +110,9 @@ function asDocumentData(value: object): DocumentData {
   return removeUndefined(value) as DocumentData;
 }
 
-export interface JobLifecycleRepository {
+export interface JobLifecycleRepository extends VisitReminderRepository {
   listInvoiceReminders(tenantId: string): Promise<InvoiceReminderRecord[]>;
   upsertInvoiceReminder(record: InvoiceReminderRecord): Promise<InvoiceReminderRecord>;
-  listVisitReminders(tenantId: string): Promise<VisitReminderRecord[]>;
-  upsertVisitReminder(record: VisitReminderRecord): Promise<VisitReminderRecord>;
   listJobActionAlerts(tenantId: string): Promise<JobActionAlertRecord[]>;
   upsertJobActionAlert(record: JobActionAlertRecord): Promise<JobActionAlertRecord>;
   listLifecycleEvents(tenantId: string, jobId?: string): Promise<JobLifecycleEventRecord[]>;
@@ -140,7 +121,7 @@ export interface JobLifecycleRepository {
 
 export class MemoryJobLifecycleRepository implements JobLifecycleRepository {
   private readonly invoiceReminders = new Map<string, InvoiceReminderRecord>();
-  private readonly visitReminders = new Map<string, VisitReminderRecord>();
+  private readonly visitReminders = new MemoryVisitReminderRepository();
   private readonly jobActionAlerts = new Map<string, JobActionAlertRecord>();
   private readonly lifecycleEvents = new Map<string, JobLifecycleEventRecord>();
 
@@ -155,13 +136,11 @@ export class MemoryJobLifecycleRepository implements JobLifecycleRepository {
   }
 
   async listVisitReminders(tenantId: string): Promise<VisitReminderRecord[]> {
-    return [...this.visitReminders.values()].filter((record) => record.tenantId === tenantId);
+    return this.visitReminders.listVisitReminders(tenantId);
   }
 
   async upsertVisitReminder(record: VisitReminderRecord): Promise<VisitReminderRecord> {
-    const parsed = visitReminderSchema.parse(record) as VisitReminderRecord;
-    this.visitReminders.set(parsed.id, parsed);
-    return parsed;
+    return this.visitReminders.upsertVisitReminder(record);
   }
 
   async listJobActionAlerts(tenantId: string): Promise<JobActionAlertRecord[]> {
@@ -189,7 +168,11 @@ export class MemoryJobLifecycleRepository implements JobLifecycleRepository {
 }
 
 export class FirestoreJobLifecycleRepository implements JobLifecycleRepository {
-  constructor(private readonly db: Firestore) {}
+  private readonly visitReminders: FirestoreVisitReminderRepository;
+
+  constructor(private readonly db: Firestore) {
+    this.visitReminders = new FirestoreVisitReminderRepository(db);
+  }
 
   private async listByTenant<T>(collectionName: string, tenantId: string, schema: z.ZodSchema<T>): Promise<T[]> {
     const snapshot = await this.db.collection(collectionName).where("tenantId", "==", tenantId).get();
@@ -207,13 +190,11 @@ export class FirestoreJobLifecycleRepository implements JobLifecycleRepository {
   }
 
   async listVisitReminders(tenantId: string): Promise<VisitReminderRecord[]> {
-    return this.listByTenant("jobVisitReminders", tenantId, visitReminderSchema) as Promise<VisitReminderRecord[]>;
+    return this.visitReminders.listVisitReminders(tenantId);
   }
 
   async upsertVisitReminder(record: VisitReminderRecord): Promise<VisitReminderRecord> {
-    const parsed = visitReminderSchema.parse(record) as VisitReminderRecord;
-    await this.db.collection("jobVisitReminders").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
-    return parsed;
+    return this.visitReminders.upsertVisitReminder(record);
   }
 
   async listJobActionAlerts(tenantId: string): Promise<JobActionAlertRecord[]> {
@@ -250,12 +231,6 @@ export function pendingJobAlertForJob(alerts: JobActionAlertRecord[], jobId: str
   return alerts
     .filter((record) => record.jobId === jobId && record.status === "pending")
     .sort((left, right) => left.createdAt.localeCompare(right.createdAt))[0];
-}
-
-export function pendingVisitRemindersForVisit(reminders: VisitReminderRecord[], visitId: string): VisitReminderRecord[] {
-  return reminders
-    .filter((record) => record.visitId === visitId && record.status === "pending")
-    .sort((left, right) => left.dueAt.localeCompare(right.dueAt));
 }
 
 export function requireJobLifecycleRecord<T>(value: T | null | undefined, message: string, op: string): T {

@@ -1,0 +1,23 @@
+E4 Job Core and Visit Core completion checkpoint
+Date: 2026-07-27
+
+Job Core owns:
+- Real NexOps Jobs page and Job-only stylesheet/tests
+- Job creation, hydration, status derivation, office actions, routes, tools, persistence, approvals, and lifecycle policy
+- Compatibility methods that orchestrate the typed Visit Core service
+
+Visit Core owns:
+- Real NexOps Schedule page and Visit-only stylesheet/tests
+- Visit scheduling, series scheduling, movement, series shifting, and completion method bodies
+- Visit reminder generation, due-reminder delivery decisions, cancellation, and memory/Firestore persistence
+- Existing Visit routes, tools, approvals, lifecycle contracts, and dominant-action policy
+
+Boundary correction:
+- Due-reminder processing resolves job context through a non-reentrant detail callback.
+- This avoids recursively invoking reminder processing while keeping job hydration in Job Core.
+
+Verification (non-browser):
+- npm run build: PASS (81 modules)
+- Job lifecycle + schedule/home/activity + Visit UI tests: PASS (15/15)
+- npm test: 345/353; exactly the established eight unrelated known-red tests remain.
+- Browser verification: not run, per the standing no-browser constraint.

@@ -33,9 +33,24 @@ import {
   type VisitReminderRecord,
   pendingInvoiceReminderForJob,
   pendingJobAlertForJob,
-  pendingVisitRemindersForVisit,
   requireJobLifecycleRecord
 } from "./jobLifecycleRepository.js";
+import {
+  VisitCoreService,
+  type CompleteJobVisitInput,
+  type MoveJobVisitInput,
+  type MoveJobVisitSeriesInput,
+  type ScheduleJobVisitInput,
+  type ScheduleJobVisitSeriesInput
+} from "../../../../visits/components/visitCore/server/visitCoreService.js";
+
+export type {
+  CompleteJobVisitInput,
+  MoveJobVisitInput,
+  MoveJobVisitSeriesInput,
+  ScheduleJobVisitInput,
+  ScheduleJobVisitSeriesInput
+} from "../../../../visits/components/visitCore/server/visitCoreService.js";
 
 export interface JobSummaryRecord extends Job {
   client?: Client | undefined;
@@ -72,45 +87,6 @@ export interface CreateJobInput {
   paymentSchedule?: Job["paymentSchedule"] | undefined;
   intake?: Job["intake"] | undefined;
   createdBy?: string | undefined;
-}
-
-export interface ScheduleJobVisitInput {
-  tenantId: string;
-  jobId: string;
-  title?: string | undefined;
-  start: string;
-  end: string;
-  assignedTo?: string[] | undefined;
-  details?: string | undefined;
-}
-
-export interface ScheduleJobVisitSeriesInput {
-  tenantId: string;
-  jobId: string;
-  visits: Array<{
-    title?: string | undefined;
-    start: string;
-    end: string;
-    assignedTo?: string[] | undefined;
-    details?: string | undefined;
-  }>;
-}
-
-export interface MoveJobVisitInput {
-  tenantId: string;
-  visitId: string;
-  start: string;
-  end: string;
-}
-
-export interface MoveJobVisitSeriesInput extends MoveJobVisitInput {
-  shiftRemaining?: boolean | undefined;
-}
-
-export interface CompleteJobVisitInput {
-  tenantId: string;
-  visitId: string;
-  actorId: string;
 }
 
 export interface PerformJobActionInput {
@@ -196,11 +172,6 @@ function defaultEnd(start: string): string {
 
 function roundMoney(value: number): number {
   return Number(value.toFixed(2));
-}
-
-function shiftIso(value: string, deltaMs: number): string {
-  const parsed = new Date(value);
-  return new Date(parsed.getTime() + deltaMs).toISOString();
 }
 
 function buildTotals(lineItems: LineItem[]): Job["totals"] {
@@ -321,14 +292,6 @@ function reminderAccessNote(job: Job, property?: Property | undefined): string |
     return `Gate code ${gateCode}.`;
   }
   return accessNotes;
-}
-
-function reminderChannelsAllowed(client?: Client | undefined): { email: boolean; sms: boolean } {
-  const channel = client?.communicationSettings?.jobReminders ?? "both";
-  return {
-    email: client?.consent.email !== false && (channel === "email" || channel === "both"),
-    sms: client?.consent.sms !== false && (channel === "sms" || channel === "both")
-  };
 }
 
 function invoiceReminderActive(reminder?: InvoiceReminderRecord | undefined, referenceTime = now()): boolean {
@@ -454,7 +417,19 @@ function bookingCalendarAttachment(visit: ScheduledVisit, title: string, locatio
 }
 
 export class JobLifecycleService {
-  constructor(private readonly deps: JobLifecycleDeps) {}
+  private readonly visitCoreService: VisitCoreService;
+
+  constructor(private readonly deps: JobLifecycleDeps) {
+    this.visitCoreService = new VisitCoreService({
+      schedulingRepository: deps.schedulingRepository,
+      lifecycleRepository: deps.lifecycleRepository,
+      ...(deps.commsRail ? { commsRail: deps.commsRail } : {}),
+      getJobDetail: (tenantId, jobId, referenceTime) => this.getJobDetail(tenantId, jobId, referenceTime),
+      getReminderJobDetail: (tenantId, jobId, referenceTime) => this.getJobDetailWithoutReminderProcessing(tenantId, jobId, referenceTime),
+      tenantUsers: (tenantId) => this.tenantUsers(tenantId),
+      emitLifecycleEvent: (record) => this.emitLifecycleEvent(record)
+    });
+  }
 
   private async emitLifecycleEvent(record: Omit<JobLifecycleEventRecord, "id">): Promise<JobLifecycleEventRecord> {
     const appended = await this.deps.lifecycleRepository.appendLifecycleEvent(record);
@@ -568,102 +543,8 @@ export class JobLifecycleService {
     });
   }
 
-  private async regenerateVisitReminders(tenantId: string, jobId: string, visit: ScheduledVisit): Promise<VisitReminderRecord[]> {
-    const existing = (await this.deps.lifecycleRepository.listVisitReminders(tenantId))
-      .filter((record) => record.visitId === visit.id && record.status === "pending");
-    const cancelledAt = now();
-    for (const reminder of existing) {
-      await this.deps.lifecycleRepository.upsertVisitReminder({
-        ...reminder,
-        status: "cancelled",
-        cancelledAt
-      });
-    }
-    if (!activeVisit(visit)) {
-      return [];
-    }
-    const visitStart = new Date(visit.start).getTime();
-    const next: VisitReminderRecord[] = [
-      {
-        id: `visit_reminder_${randomUUID()}`,
-        tenantId,
-        jobId,
-        visitId: visit.id,
-        channel: "email",
-        trigger: "day_before_email",
-        dueAt: new Date(visitStart - 24 * 60 * 60 * 1000).toISOString(),
-        status: "pending",
-        createdAt: now()
-      },
-      {
-        id: `visit_reminder_${randomUUID()}`,
-        tenantId,
-        jobId,
-        visitId: visit.id,
-        channel: "sms",
-        trigger: "hour_before_sms",
-        dueAt: new Date(visitStart - 60 * 60 * 1000).toISOString(),
-        status: "pending",
-        createdAt: now()
-      }
-    ];
-    for (const reminder of next) {
-      await this.deps.lifecycleRepository.upsertVisitReminder(reminder);
-    }
-    return next;
-  }
-
   private async processDueVisitReminders(tenantId: string, referenceTime = now()): Promise<void> {
-    const state = await this.hydratedState(tenantId);
-    const users = await this.tenantUsers(tenantId);
-    for (const reminder of state.visitReminders.filter((record) => record.status === "pending" && record.dueAt <= referenceTime)) {
-      const visit = state.visits.find((candidate) => candidate.id === reminder.visitId);
-      const job = state.jobs.find((candidate) => candidate.id === reminder.jobId);
-      if (!visit || !job || !activeVisit(visit)) {
-        await this.deps.lifecycleRepository.upsertVisitReminder({
-          ...reminder,
-          status: "cancelled",
-          cancelledAt: referenceTime
-        });
-        continue;
-      }
-      const client = state.clients.find((candidate) => candidate.id === job.clientId);
-      const property = job.propertyId ? state.properties.find((candidate) => candidate.id === job.propertyId) : undefined;
-      const allowed = reminderChannelsAllowed(client);
-      const location = jobLocationLabel(property, client);
-      const accessNote = reminderAccessNote(job, property);
-      const techSummary = technicianNames(users, visit.assignedTo);
-      if (reminder.channel === "email" && allowed.email && client?.emails[0]) {
-        await sendLifecycleEmail(this.deps.commsRail, {
-          tenantId,
-          to: [client.emails[0]],
-          subject: `Visit reminder for ${job.title}`,
-          bodyText: [
-            `Your visit for ${job.title} is scheduled for ${new Date(visit.start).toLocaleString()}.`,
-            `Arrival window: ${new Date(visit.start).toLocaleTimeString()} to ${new Date(visit.end).toLocaleTimeString()}.`,
-            `Technician: ${techSummary}.`,
-            `Location: ${location}.`,
-            accessNote ? `Access note: ${accessNote}` : ""
-          ].filter(Boolean).join("\n")
-        });
-      }
-      if (reminder.channel === "sms" && allowed.sms && client?.phones[0]) {
-        await sendLifecycleSms(this.deps.commsRail, {
-          tenantId,
-          to: client.phones[0],
-          body: [
-            `${job.title} arrival window: ${new Date(visit.start).toLocaleTimeString()}-${new Date(visit.end).toLocaleTimeString()}.`,
-            `Tech: ${techSummary}.`,
-            accessNote ? accessNote : ""
-          ].filter(Boolean).join(" ")
-        });
-      }
-      await this.deps.lifecycleRepository.upsertVisitReminder({
-        ...reminder,
-        status: "sent",
-        sentAt: referenceTime
-      });
-    }
+    await this.visitCoreService.processDueVisitReminders(tenantId, referenceTime);
   }
 
   private async processRecurringInvoiceReminders(tenantId: string, referenceTime = now()): Promise<void> {
@@ -733,6 +614,10 @@ export class JobLifecycleService {
   async getJobDetail(tenantId: string, jobId: string, referenceTime = now()): Promise<JobDetailRecord | null> {
     await this.processDueVisitReminders(tenantId, referenceTime);
     await this.processRecurringInvoiceReminders(tenantId, referenceTime);
+    return this.getJobDetailWithoutReminderProcessing(tenantId, jobId, referenceTime);
+  }
+
+  private async getJobDetailWithoutReminderProcessing(tenantId: string, jobId: string, referenceTime: string): Promise<JobDetailRecord | null> {
     const state = await this.hydratedState(tenantId, jobId);
     const rawJob = state.jobs.find((candidate) => candidate.id === jobId);
     if (!rawJob) {
@@ -972,187 +857,23 @@ export class JobLifecycleService {
   }
 
   async scheduleVisit(input: ScheduleJobVisitInput): Promise<ScheduledVisit> {
-    const detail = await this.getJobDetail(input.tenantId, input.jobId);
-    const job = requireJobLifecycleRecord(detail, `Native job ${input.jobId} was not found.`, "scheduleVisit");
-    const visit: ScheduledVisit = {
-      id: `visit_${randomUUID()}`,
-      tenantId: input.tenantId,
-      jobId: input.jobId,
-      requestId: job.requestId,
-      title: input.title?.trim() || job.title,
-      start: input.start,
-      end: input.end,
-      assignedTo: input.assignedTo ?? [],
-      location: {
-        label: jobLocationLabel(job.property, job.client),
-        ...(job.property?.address ? { address: job.property.address } : {})
-      },
-      status: "scheduled",
-      ...(job.intake ? { intake: job.intake } : {}),
-      ...(input.details?.trim() ? { details: input.details.trim() } : {})
-    };
-    const saved = await this.deps.schedulingRepository.saveVisit(visit);
-    await this.regenerateVisitReminders(input.tenantId, input.jobId, saved);
-    await this.emitLifecycleEvent({
-      tenantId: input.tenantId,
-      jobId: input.jobId,
-      type: "visit.booked",
-      createdAt: now(),
-      payload: {
-        visitId: saved.id,
-        start: saved.start,
-        end: saved.end
-      }
-    });
-    return saved;
+    return this.visitCoreService.scheduleVisit(input);
   }
 
   async scheduleVisitSeries(input: ScheduleJobVisitSeriesInput): Promise<ScheduledVisit[]> {
-    const created: ScheduledVisit[] = [];
-    for (const visitInput of input.visits) {
-      created.push(await this.scheduleVisit({
-        tenantId: input.tenantId,
-        jobId: input.jobId,
-        ...(visitInput.title ? { title: visitInput.title } : {}),
-        start: visitInput.start,
-        end: visitInput.end,
-        ...(visitInput.assignedTo ? { assignedTo: visitInput.assignedTo } : {}),
-        ...(visitInput.details ? { details: visitInput.details } : {})
-      }));
-    }
-    return created;
+    return this.visitCoreService.scheduleVisitSeries(input);
   }
 
   async moveVisit(input: MoveJobVisitInput): Promise<ScheduledVisit> {
-    const existing = await this.deps.schedulingRepository.getVisit(input.tenantId, input.visitId);
-    const visit = requireJobLifecycleRecord(existing, `Visit ${input.visitId} was not found.`, "moveVisit");
-    const moved = await this.deps.schedulingRepository.saveVisit({
-      ...visit,
-      start: input.start,
-      end: input.end
-    });
-    await this.regenerateVisitReminders(input.tenantId, moved.jobId, moved);
-    await this.emitLifecycleEvent({
-      tenantId: input.tenantId,
-      jobId: moved.jobId,
-      type: "job.state_changed",
-      createdAt: now(),
-      payload: {
-        reason: "visit_rescheduled",
-        visitId: moved.id,
-        start: moved.start,
-        end: moved.end
-      }
-    });
-    return moved;
+    return this.visitCoreService.moveVisit(input);
   }
 
   async moveVisitSeries(input: MoveJobVisitSeriesInput): Promise<{ visit: ScheduledVisit; shiftedVisits: ScheduledVisit[] }> {
-    const existing = await this.deps.schedulingRepository.getVisit(input.tenantId, input.visitId);
-    const visit = requireJobLifecycleRecord(existing, `Visit ${input.visitId} was not found.`, "moveVisitSeries");
-    const moved = await this.moveVisit(input);
-    if (!input.shiftRemaining) {
-      return { visit: moved, shiftedVisits: [] };
-    }
-    const deltaMs = new Date(input.start).getTime() - new Date(visit.start).getTime();
-    if (!Number.isFinite(deltaMs) || deltaMs === 0) {
-      return { visit: moved, shiftedVisits: [] };
-    }
-    const following = (await this.deps.schedulingRepository.listVisits(input.tenantId, { from: visit.start }))
-      .filter((candidate) =>
-        candidate.jobId === visit.jobId
-        && candidate.id !== visit.id
-        && activeVisit(candidate)
-        && candidate.start >= visit.start
-      )
-      .sort((left, right) => left.start.localeCompare(right.start));
-    const shiftedVisits: ScheduledVisit[] = [];
-    for (const candidate of following) {
-      const shifted = await this.deps.schedulingRepository.saveVisit({
-        ...candidate,
-        start: shiftIso(candidate.start, deltaMs),
-        end: shiftIso(candidate.end, deltaMs)
-      });
-      await this.regenerateVisitReminders(input.tenantId, shifted.jobId, shifted);
-      await this.emitLifecycleEvent({
-        tenantId: input.tenantId,
-        jobId: shifted.jobId,
-        type: "job.state_changed",
-        createdAt: now(),
-        payload: {
-          reason: "visit_shifted_with_series",
-          visitId: shifted.id,
-          anchorVisitId: moved.id,
-          offsetMinutes: Math.round(deltaMs / 60000),
-          start: shifted.start,
-          end: shifted.end
-        }
-      });
-      shiftedVisits.push(shifted);
-    }
-    return { visit: moved, shiftedVisits };
+    return this.visitCoreService.moveVisitSeries(input);
   }
 
   async completeVisit(input: CompleteJobVisitInput): Promise<{ visit: ScheduledVisit; job: JobDetailRecord; actionAlert?: JobActionAlertRecord | undefined }> {
-    const existing = await this.deps.schedulingRepository.getVisit(input.tenantId, input.visitId);
-    const visit = requireJobLifecycleRecord(existing, `Visit ${input.visitId} was not found.`, "completeVisit");
-    const completedAt = now();
-    const savedVisit = await this.deps.schedulingRepository.saveVisit({
-      ...visit,
-      status: "complete",
-      completedAt,
-      completedBy: input.actorId
-    });
-    for (const reminder of pendingVisitRemindersForVisit(await this.deps.lifecycleRepository.listVisitReminders(input.tenantId), savedVisit.id)) {
-      await this.deps.lifecycleRepository.upsertVisitReminder({
-        ...reminder,
-        status: "cancelled",
-        cancelledAt: completedAt
-      });
-    }
-    await this.emitLifecycleEvent({
-      tenantId: input.tenantId,
-      jobId: savedVisit.jobId,
-      type: "visit.completed",
-      createdAt: completedAt,
-      payload: {
-        visitId: savedVisit.id,
-        completedBy: input.actorId
-      }
-    });
-    const detail = requireJobLifecycleRecord(await this.getJobDetail(input.tenantId, savedVisit.jobId, completedAt), `Native job ${savedVisit.jobId} was not found.`, "completeVisit");
-    const remainingActiveVisits = detail.visits.filter((candidate) => activeVisit(candidate));
-    let actionAlert: JobActionAlertRecord | undefined;
-    if (remainingActiveVisits.length === 0 && !detail.reminders.invoice) {
-      const existingAlert = detail.reminders.actionAlert;
-      actionAlert = await this.deps.lifecycleRepository.upsertJobActionAlert(existingAlert ?? {
-        id: `job_alert_${randomUUID()}`,
-        tenantId: input.tenantId,
-        jobId: detail.id,
-        kind: "close_or_invoice_review",
-        status: "pending",
-        createdAt: completedAt,
-        note: "Last scheduled visit completed. Owner or office admin must close, invoice, or both."
-      });
-      const users = await this.tenantUsers(input.tenantId);
-      const recipients = [...new Set(
-        users
-          .filter((user) => user.active && (user.role === "OWNER" || user.role === "OFFICE_ADMIN"))
-          .flatMap((user) => user.email ? [user.email.trim().toLowerCase()] : [])
-          .filter(Boolean)
-      )];
-      await sendLifecycleEmail(this.deps.commsRail, {
-        tenantId: input.tenantId,
-        to: recipients,
-        subject: `Job ready for office review: ${detail.title}`,
-        bodyText: [
-          `${detail.title} has no remaining scheduled visits.`,
-          "Choose Close, Invoice, or Close and Invoice from the job screen or in chat."
-        ].join("\n")
-      });
-    }
-    const refreshed = requireJobLifecycleRecord(await this.getJobDetail(input.tenantId, savedVisit.jobId, completedAt), `Native job ${savedVisit.jobId} was not found.`, "completeVisit");
-    return { visit: savedVisit, job: refreshed, actionAlert };
+    return this.visitCoreService.completeVisit(input);
   }
 
   private async createInvoiceFromJob(job: Job, existingInvoices?: Invoice[]): Promise<Invoice> {

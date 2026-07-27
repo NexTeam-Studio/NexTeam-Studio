@@ -171,7 +171,7 @@ function addDays(date: string, days: number): string {
   return cursor.toISOString().slice(0, 10);
 }
 
-function dateRange(date: string, view: ScheduleView, scope: ScheduleScope): { from: string; to: string } {
+export function dateRange(date: string, view: ScheduleView, scope: ScheduleScope): { from: string; to: string } {
   if (scope === "today") {
     return { from: startOfDay(date), to: endOfDay(date) };
   }
@@ -231,7 +231,7 @@ function formatTime(value: string): string {
     : value;
 }
 
-function visitToneClass(tone: ScheduleWorkspaceVisit["statusTone"]): string {
+export function visitToneClass(tone: ScheduleWorkspaceVisit["statusTone"]): string {
   switch (tone) {
     case "success":
       return "success";

@@ -5136,8 +5136,7 @@ h1 {
   font-weight: 800;
 }
 
-.nexops-home-surface,
-.nexops-schedule-surface {
+.nexops-home-surface {
   display: grid;
   gap: 20px;
 }
@@ -5180,10 +5179,7 @@ h1 {
 .nexops-home-queue-list,
 .nexops-home-technician-rail,
 .nexops-home-visit-list,
-.nexops-activity-feed,
-.nexops-schedule-list,
-.nexops-schedule-unscheduled-list,
-.nexops-schedule-draft-list {
+.nexops-activity-feed {
   display: grid;
   gap: 12px;
 }
@@ -5206,7 +5202,6 @@ h1 {
 .nexops-home-queue-row,
 .nexops-home-visit-row,
 .nexops-activity-row,
-.nexops-schedule-unscheduled-row,
 .nexops-notification-row {
   width: 100%;
   display: flex;
@@ -5229,7 +5224,6 @@ h1 {
 .nexops-home-queue-row strong,
 .nexops-home-visit-row strong,
 .nexops-activity-row strong,
-.nexops-schedule-unscheduled-row strong,
 .nexops-notification-row strong {
   color: #0c1825;
   font-size: 1rem;
@@ -5238,7 +5232,6 @@ h1 {
 .nexops-home-queue-row p,
 .nexops-home-visit-row p,
 .nexops-activity-row p,
-.nexops-schedule-unscheduled-row p,
 .nexops-notification-row p {
   margin: 0;
   color: #586170;
@@ -5247,24 +5240,21 @@ h1 {
 
 .nexops-home-queue-row-stats,
 .nexops-home-visit-row span,
-.nexops-activity-meta,
-.nexops-schedule-unscheduled-meta {
+.nexops-activity-meta {
   display: grid;
   justify-items: end;
   gap: 4px;
   color: #0c1825;
 }
 
-.nexops-home-queue-row-stats span,
-.nexops-schedule-unscheduled-meta span {
+.nexops-home-queue-row-stats span {
   font-size: 1.35rem;
   font-weight: 800;
 }
 
 .nexops-home-queue-row-stats small,
 .nexops-home-visit-row small,
-.nexops-activity-meta small,
-.nexops-schedule-unscheduled-meta small {
+.nexops-activity-meta small {
   color: #6b7380;
 }
 
@@ -5360,217 +5350,23 @@ h1 {
   background: rgba(233, 248, 244, 0.96);
 }
 
-.nexops-schedule-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  flex-wrap: wrap;
-}
-
-.nexops-schedule-toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.nexops-schedule-toolbar-actions input,
 .nexops-overlay-form input,
 .nexops-overlay-form select,
-.nexops-overlay-form textarea,
-.nexops-schedule-team-filter summary {
+.nexops-overlay-form textarea {
   border: 1px solid rgba(12, 17, 24, 0.1);
   border-radius: 14px;
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.84);
 }
 
-.nexops-schedule-team-filter {
-  position: relative;
-}
-
-.nexops-schedule-team-filter summary {
-  cursor: pointer;
-  list-style: none;
-}
-
-.nexops-schedule-team-options {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 220px;
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid rgba(12, 17, 24, 0.1);
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 18px 42px rgba(12, 17, 24, 0.14);
-  z-index: 6;
-}
-
-.nexops-schedule-team-options label,
 .nexops-inline-checkbox {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.nexops-schedule-team-options button {
-  justify-self: start;
-  border: 1px solid rgba(12, 17, 24, 0.1);
-  border-radius: 999px;
-  padding: 8px 12px;
-  background: #f4f7f2;
-}
-
-.nexops-schedule-unscheduled {
-  display: grid;
-  gap: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(12, 17, 24, 0.08);
-}
-
-.nexops-schedule-week-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.nexops-schedule-week-day,
-.nexops-schedule-slot,
-.nexops-schedule-month-cell {
-  border: 1px solid rgba(12, 17, 24, 0.08);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.nexops-schedule-week-day header,
-.nexops-schedule-month-day {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
-}
-
-.nexops-schedule-week-day header button,
-.nexops-schedule-month-day,
-.nexops-schedule-slot-label,
-.nexops-schedule-week-slot-label {
-  border: 0;
-  background: none;
-  text-align: left;
-}
-
-.nexops-schedule-week-slots,
-.nexops-schedule-day-grid,
-.nexops-schedule-slot-visits,
-.nexops-schedule-week-slot {
-  display: grid;
-  gap: 8px;
-}
-
-.nexops-schedule-week-slot,
-.nexops-schedule-slot {
-  padding: 12px;
-}
-
-.nexops-schedule-slot-label,
-.nexops-schedule-week-slot-label {
-  color: #6b7380;
-  font-size: 0.85rem;
-}
-
-.nexops-schedule-month-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.nexops-schedule-month-day {
-  width: 100%;
-}
-
-.nexops-schedule-month-day strong {
-  font-size: 1.2rem;
-}
-
-.nexops-schedule-month-day span {
-  color: #6b7380;
-  font-size: 0.85rem;
-}
-
-.nexops-schedule-month-visits {
-  display: grid;
-  gap: 8px;
-  padding: 0 12px 12px;
-}
-
-.nexops-schedule-visit {
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid rgba(12, 17, 24, 0.08);
-  border-left-width: 4px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
-}
-
-.nexops-schedule-visit.compact {
-  padding: 12px;
-}
-
-.nexops-schedule-visit.read-only {
-  opacity: 0.74;
-}
-
-.nexops-schedule-visit-main,
-.nexops-schedule-visit-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.nexops-schedule-visit-main {
-  align-items: start;
-  width: 100%;
-  border: 0;
-  background: none;
-  text-align: left;
-  padding: 0;
-}
-
-.nexops-schedule-visit-main strong,
-.nexops-schedule-visit-main p,
-.nexops-schedule-visit-main small {
-  display: block;
-  margin: 0;
-}
-
-.nexops-schedule-visit-main p {
-  color: #0c1825;
-  margin-top: 4px;
-}
-
-.nexops-schedule-visit-main small,
-.nexops-schedule-visit-meta {
-  color: #6b7380;
-}
-
-.nexops-schedule-visit-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-  font-size: 0.84rem;
-}
-
-.nexops-schedule-visit-actions button,
 .nexops-overlay-head button,
-.nexops-overlay-actions button,
-.nexops-schedule-draft-head button {
+.nexops-overlay-actions button {
   border: 1px solid rgba(12, 17, 24, 0.1);
   border-radius: 999px;
   padding: 8px 12px;
@@ -5831,46 +5627,17 @@ h1 {
   color: #243235;
 }
 
-.nexops-overlay-form,
-.nexops-schedule-draft-card,
-.nexops-schedule-assignment-grid {
+.nexops-overlay-form {
   display: grid;
   gap: 14px;
 }
 
 .nexops-overlay-head,
-.nexops-schedule-draft-head,
 .nexops-overlay-actions {
   display: flex;
   align-items: start;
   justify-content: space-between;
   gap: 12px;
-}
-
-.nexops-schedule-draft-card {
-  padding: 16px;
-  border: 1px solid rgba(12, 17, 24, 0.08);
-  border-radius: 18px;
-  background: #fbfcfb;
-}
-
-.nexops-schedule-assignment-grid {
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-}
-
-.nexops-schedule-assignment-grid label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid rgba(12, 17, 24, 0.08);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.88);
-}
-
-.nexops-schedule-assignment-grid label.active {
-  border-color: rgba(15, 106, 103, 0.28);
-  background: rgba(233, 248, 244, 0.96);
 }
 
 .nexops-field-row.three-up {
@@ -6030,9 +5797,7 @@ h1 {
 }
 
 @media (max-width: 1080px) {
-  .nexops-home-layout,
-  .nexops-schedule-month-grid,
-  .nexops-schedule-week-grid {
+  .nexops-home-layout {
     grid-template-columns: 1fr;
   }
 
@@ -6053,20 +5818,10 @@ h1 {
     width: calc(100% - 24px);
   }
 
-  .nexops-schedule-toolbar,
   .nexops-overlay-head,
-  .nexops-overlay-actions {
+.nexops-overlay-actions {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .nexops-schedule-toolbar-actions {
-    width: 100%;
-  }
-
-  .nexops-schedule-team-options {
-    right: auto;
-    left: 0;
   }
 
   .nexops-capture-carousel {

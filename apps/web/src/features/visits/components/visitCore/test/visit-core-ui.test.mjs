@@ -1,0 +1,21 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import { dateRange, visitToneClass } from "../NexOpsSchedulePage.tsx";
+
+test("schedule ranges keep day and month reads tenant-query bounded", () => {
+  assert.deepEqual(dateRange("2026-07-26", "day", "all"), {
+    from: "2026-07-26T00:00:00.000Z",
+    to: "2026-07-26T23:59:59.999Z"
+  });
+  assert.deepEqual(dateRange("2026-07-26", "month", "all"), {
+    from: "2026-07-01T00:00:00.000Z",
+    to: "2026-07-31T23:59:59.999Z"
+  });
+});
+
+test("visit status tones map to stable component-owned style tokens", () => {
+  assert.equal(visitToneClass("warning"), "warning");
+  assert.equal(visitToneClass("success"), "success");
+  assert.equal(visitToneClass("neutral"), "secondary");
+});
