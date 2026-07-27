@@ -1,0 +1,22 @@
+DEFAULT TEST BROWSER-ISOLATION RECEIPT
+
+STRUCTURE
+- Seven pure/static Nexi tests remain in apps/web/test/nexi-standalone-ui.test.mjs.
+- Two Chromium geometry tests moved to apps/web/browser-tests/nexi-standalone-ui.playwright.mjs.
+- The default test glob matches *.test.mjs and cannot match *.playwright.mjs.
+- npm run test:browser is the only package command that targets the Playwright file.
+- npm test first runs scripts/check-no-browser-tests.mjs. The guard fails before tests start if a default *.test.mjs file imports a browser runner or calls a browser launch API.
+
+VERIFICATION
+- npm run check:no-browser-tests: pass; 60 default test files checked.
+- Static search: no Playwright or browser-launch markers in default *.test.mjs files.
+- npm test: 357 tests; 354 pass; 3 unchanged known-red assertions; 0 skipped.
+- npm run lint: pass, zero errors.
+- npm run typecheck: pass.
+- npm run build: pass, 143 modules transformed.
+- npm run test:browser was deliberately not run. No browser was launched.
+
+KNOWN REDS
+- apps/server/test/content-engine.test.mjs:487
+- apps/server/test/fielddocs-nexi-tools.test.mjs:358
+- apps/server/test/platform.test.mjs:316
