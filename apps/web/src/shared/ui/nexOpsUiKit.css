@@ -1,0 +1,460 @@
+.nexops-kit-card,
+.nexops-kit-banner,
+.nexops-kit-confirm,
+.nexops-kit-conflict,
+.nexops-kit-modal-demo,
+.nexops-kit-drawer-demo,
+.nexops-kit-field-header,
+.nexops-kit-home-card,
+.nexops-home-mini-metric {
+  border: 1px solid rgba(16, 24, 34, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 48px rgba(16, 24, 34, 0.08);
+}
+
+.nexops-pattern-page {
+  display: grid;
+  gap: 20px;
+}
+
+.nexops-pattern-grid,
+.nexops-pattern-empty-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nexops-pattern-empty-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nexops-pattern-stack,
+.nexops-home-overview-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.nexops-kit-card,
+.nexops-kit-modal-demo,
+.nexops-kit-drawer-demo {
+  padding: 20px;
+}
+
+.nexops-kit-card-header,
+.nexops-kit-banner,
+.nexops-kit-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+}
+
+.nexops-kit-card-header h2,
+.nexops-kit-empty h3,
+.nexops-kit-confirm h3,
+.nexops-kit-conflict h3,
+.nexops-kit-modal-demo h3,
+.nexops-kit-drawer-demo h3,
+.nexops-kit-home-card h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.nexops-kit-card-detail,
+.nexops-kit-banner p,
+.nexops-kit-confirm p,
+.nexops-kit-conflict p,
+.nexops-kit-empty p,
+.nexops-kit-home-card p,
+.nexops-home-mini-metric p {
+  margin: 6px 0 0;
+  color: var(--nexops-brand-muted, #68717c);
+}
+
+.nexops-kit-eyebrow {
+  margin: 0 0 8px;
+  color: #00c6d7;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.nexops-kit-action-rail,
+.nexops-kit-confirm-actions,
+.nexops-kit-conflict-actions,
+.nexops-kit-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nexops-kit-action {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 48px;
+  padding: 11px 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.nexops-kit-action small {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.nexops-kit-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(16, 24, 34, 0.12);
+}
+
+.nexops-kit-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.nexops-kit-action-dominant,
+.nexops-kit-action-success {
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%));
+  color: #0c1118;
+}
+
+.nexops-kit-action-secondary {
+  background: rgba(212, 255, 32, 0.12);
+  border-color: rgba(37, 210, 56, 0.2);
+  color: #0c1118;
+}
+
+.nexops-kit-action-quiet {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(16, 24, 34, 0.12);
+  color: #102129;
+}
+
+.nexops-kit-action-danger,
+.nexops-kit-action-blocked {
+  background: rgba(255, 229, 229, 0.96);
+  border-color: rgba(198, 71, 71, 0.2);
+  color: #8a1f1f;
+}
+
+.nexops-kit-action-warning {
+  background: rgba(255, 242, 205, 0.98);
+  border-color: rgba(201, 158, 0, 0.18);
+  color: #694f00;
+}
+
+.nexops-kit-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.nexops-kit-pill-success {
+  background: rgba(37, 210, 56, 0.12);
+  color: #187d23;
+}
+
+.nexops-kit-pill-warning {
+  background: rgba(255, 242, 205, 0.96);
+  color: #735800;
+}
+
+.nexops-kit-pill-blocked,
+.nexops-kit-pill-danger {
+  background: rgba(255, 229, 229, 0.96);
+  color: #922727;
+}
+
+.nexops-kit-pill-secondary {
+  background: rgba(212, 255, 32, 0.12);
+  color: #3d6b04;
+}
+
+.nexops-kit-pill-quiet {
+  background: rgba(16, 24, 34, 0.08);
+  color: #34414c;
+}
+
+.nexops-kit-banner,
+.nexops-kit-confirm,
+.nexops-kit-conflict,
+.nexops-kit-empty {
+  padding: 18px 20px;
+}
+
+.nexops-kit-banner-warning,
+.nexops-kit-empty-offline {
+  background: rgba(255, 248, 224, 0.96);
+}
+
+.nexops-kit-banner-blocked,
+.nexops-kit-empty-blocked,
+.nexops-kit-empty-error {
+  background: rgba(255, 239, 239, 0.96);
+}
+
+.nexops-kit-banner-success,
+.nexops-kit-empty-completed {
+  background: rgba(242, 255, 243, 0.96);
+}
+
+.nexops-kit-progress,
+.nexops-kit-upload-row {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-kit-progress-copy,
+.nexops-kit-upload-row,
+.nexops-kit-conflict-columns,
+.nexops-kit-home-shell,
+.nexops-kit-list,
+.nexops-pattern-form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-kit-progress-track,
+.nexops-kit-upload-track {
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(16, 24, 34, 0.08);
+}
+
+.nexops-kit-progress-fill,
+.nexops-kit-upload-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%));
+}
+
+.nexops-kit-upload-row {
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 220px);
+  align-items: center;
+}
+
+.nexops-kit-upload-meta {
+  display: grid;
+  gap: 8px;
+}
+
+.nexops-kit-conflict-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 14px 0;
+}
+
+.nexops-kit-conflict-columns article,
+.nexops-kit-home-card,
+.nexops-home-mini-metric {
+  padding: 16px;
+}
+
+.nexops-kit-field-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 16px 18px;
+  background:
+    linear-gradient(180deg, rgba(12, 17, 24, 0.96), rgba(17, 42, 34, 0.92)),
+    var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%));
+  color: #f8fffd;
+}
+
+.nexops-kit-field-header-copy {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  flex: 1 1 auto;
+}
+
+.nexops-kit-field-header-copy span {
+  display: block;
+  color: rgba(248, 255, 253, 0.7);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.nexops-kit-field-header-copy strong {
+  display: block;
+  margin-top: 4px;
+}
+
+.nexops-kit-field-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 10px;
+}
+
+.nexops-kit-modal-demo header,
+.nexops-kit-drawer-demo header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.nexops-kit-close-button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid rgba(16, 24, 34, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  cursor: pointer;
+}
+
+.nexops-kit-list article {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(16, 24, 34, 0.08);
+  border-radius: 18px;
+  background: rgba(247, 252, 249, 0.96);
+}
+
+.nexops-kit-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nexops-kit-tabs button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid rgba(16, 24, 34, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.nexops-kit-tabs button.active {
+  background: rgba(212, 255, 32, 0.2);
+  border-color: rgba(37, 210, 56, 0.24);
+}
+
+.nexops-pattern-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nexops-pattern-form-grid label {
+  display: grid;
+  gap: 8px;
+}
+
+.nexops-pattern-form-grid label span {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.nexops-pattern-form-grid label.wide {
+  grid-column: 1 / -1;
+}
+
+.nexops-pattern-form-grid input {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(16, 24, 34, 0.12);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.nexops-kit-empty {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.nexops-kit-empty-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(16, 24, 34, 0.08);
+  font-weight: 900;
+}
+
+.nexops-kit-home-shell {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nexops-kit-home-zone {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-kit-home-card {
+  display: grid;
+  gap: 14px;
+  min-height: 150px;
+}
+
+.nexops-home-overview-stack {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nexops-home-mini-metric span {
+  display: block;
+  color: var(--nexops-brand-muted, #68717c);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.nexops-home-mini-metric strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+@media (max-width: 1080px) {
+  .nexops-pattern-grid,
+.nexops-pattern-empty-grid,
+.nexops-kit-home-shell,
+.nexops-home-overview-stack {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .nexops-kit-field-header,
+.nexops-kit-card-header,
+.nexops-kit-banner,
+.nexops-kit-upload-row,
+.nexops-kit-list article,
+.nexops-kit-modal-demo header,
+.nexops-kit-drawer-demo header {
+    flex-direction: column;
+  }
+
+  .nexops-kit-field-header-copy,
+.nexops-pattern-form-grid,
+.nexops-kit-conflict-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-kit-field-header-actions {
+    justify-content: start;
+  }
+}
+
+

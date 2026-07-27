@@ -1,0 +1,51 @@
+.nexops-empty-copy {
+  margin: 0;
+  color: #526675;
+}
+
+.nexops-home-overview-compact {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-home-overview-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(8, 33, 49, 0.08);
+}
+
+.nexops-home-overview-line:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.nexops-home-overview-line span {
+  color: #526675;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.nexops-home-overview-line strong {
+  color: #082131;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.nexops-recovery-box {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 16px;
+  background: rgba(168, 230, 0, 0.1);
+}
+
+.nexops-recovery-box strong,
+.nexops-recovery-box p {
+  margin: 0;
+}
+
+

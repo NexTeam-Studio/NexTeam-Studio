@@ -1,0 +1,121 @@
+@media (max-width: 1080px) {
+  .nexops-home-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .nexops-home-health-strip,
+.nexops-field-row.three-up {
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-notification-panel {
+    top: 72px;
+    right: 12px;
+    width: calc(100% - 24px);
+  }
+
+  .nexops-overlay-head,
+.nexops-overlay-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nexops-capture-carousel {
+    grid-auto-columns: minmax(110px, 132px);
+  }
+}
+
+@media (max-width: 560px) {
+  .nexops-mobile-bar {
+    gap: 10px;
+    padding: 14px 12px;
+    overflow-x: clip;
+  }
+
+  .nexops-mobile-header-grid {
+    column-gap: 8px;
+  }
+
+  .nexops-mobile-brand-lockup {
+    gap: 4px;
+  }
+
+  .nexops-mobile-platform-mark {
+    width: 52px;
+    height: 52px;
+  }
+
+  .nexops-mobile-product-logo {
+    width: 94px;
+    max-height: 24px;
+  }
+
+  .nexops-mobile-tenant-mark.tenant-logo {
+    max-width: 128px;
+    max-height: 34px;
+  }
+
+  .nexops-mobile-tenant-mark.tenant-wordmark {
+    max-width: 128px;
+    font-size: 0.8rem;
+  }
+
+  .nexops-mobile-icon-button,
+.nexops-mobile-menu-button {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+  }
+
+  .nexops-mobile-create-fab {
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    min-width: 60px;
+    height: 60px;
+    padding: 0 18px;
+    font-size: 0.9rem;
+  }
+
+  .nexops-mobile-create-fab.collapsed {
+    width: 60px;
+    min-width: 60px;
+  }
+
+  .nexops-mobile-nav-sheet {
+    width: min(320px, calc(100vw - 20px));
+    margin: 10px;
+    padding: 18px 16px 16px;
+  }
+}
+
+@media (max-width: 720px) {
+  .nexops-create-menu-sheet {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    max-width: calc(100vw - 16px);
+    padding: 16px;
+    border-radius: 26px;
+  }
+
+  .nexops-create-menu-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nexops-create-menu-head button {
+    align-self: flex-start;
+  }
+
+  .nexops-create-menu-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-create-menu-option {
+    min-height: 0;
+    padding: 16px 14px;
+  }
+}
+

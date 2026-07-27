@@ -1,0 +1,307 @@
+.nexops-notification-button {
+  position: relative;
+}
+
+.nexops-notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #d7263d;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.nexops-notification-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.nexops-notification-panel {
+  position: absolute;
+  top: 92px;
+  right: 24px;
+  width: min(420px, calc(100% - 24px));
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 60px rgba(12, 17, 24, 0.18);
+  z-index: 12;
+}
+
+.nexops-notification-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-notification-head button {
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #f4f7f2;
+}
+
+.nexops-notification-list {
+  display: grid;
+  gap: 10px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.nexops-notification-row.unread {
+  border-color: rgba(15, 106, 103, 0.24);
+  background: rgba(233, 248, 244, 0.96);
+}
+
+.nexops-overlay-form input,
+.nexops-overlay-form select,
+.nexops-overlay-form textarea {
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.nexops-inline-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nexops-overlay-head button,
+.nexops-overlay-actions button {
+  border: 1px solid rgba(12, 17, 24, 0.1);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #f4f7f2;
+}
+
+.nexops-tone-success {
+  border-left-color: #2a9d5b;
+}
+
+.nexops-tone-warning {
+  border-left-color: #c88318;
+}
+
+.nexops-tone-danger {
+  border-left-color: #c54545;
+}
+
+.nexops-tone-secondary {
+  border-left-color: #7a8795;
+}
+
+.nexops-overlay-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.nexops-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(12, 17, 24, 0.42);
+}
+
+.nexops-overlay-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(840px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  transform: translate(-50%, -50%);
+  padding: 22px;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 28px 80px rgba(12, 17, 24, 0.28);
+}
+
+.nexops-overlay-panel.compact {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.nexops-create-menu-backdrop {
+  cursor: pointer;
+}
+
+.nexops-create-menu {
+  position: fixed;
+  z-index: 31;
+  display: grid;
+  gap: 20px;
+  box-sizing: border-box;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 28px 80px rgba(12, 17, 24, 0.22);
+}
+
+.nexops-create-menu-flyout {
+  top: 92px;
+  left: 50%;
+  width: min(980px, calc(100vw - 48px));
+  max-height: calc(100vh - 124px);
+  overflow: auto;
+  transform: translateX(-50%);
+  padding: 24px;
+  border-radius: 28px;
+}
+
+.nexops-create-menu-sheet {
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  width: auto;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  padding: 18px;
+  border-radius: 32px;
+}
+
+.nexops-create-menu-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid rgba(8, 33, 49, 0.08);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(213, 255, 47, 0.16), rgba(37, 210, 56, 0.08) 55%, rgba(255, 255, 255, 0.96));
+}
+
+.nexops-create-menu-head > div {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.nexops-create-menu-head .eyebrow,
+.nexops-create-menu-head h2,
+.nexops-create-menu-head p {
+  margin: 0;
+}
+
+.nexops-create-menu-head h2 {
+  color: #082131;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  line-height: 1;
+}
+
+.nexops-create-menu-head p:last-child {
+  color: #526675;
+  line-height: 1.5;
+}
+
+.nexops-create-menu-head button {
+  flex: 0 0 auto;
+  border: 1px solid rgba(8, 33, 49, 0.14);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: #082131;
+  background: #f7faf7;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nexops-create-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.nexops-create-menu-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+  min-height: 104px;
+  padding: 18px 16px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 22px;
+  color: #082131;
+  background: linear-gradient(180deg, #ffffff, #f6faf6);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.nexops-create-menu-option:hover,
+.nexops-create-menu-option:focus-visible {
+  border-color: rgba(37, 210, 56, 0.28);
+  box-shadow: 0 16px 28px rgba(12, 17, 24, 0.08);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.nexops-create-menu-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  color: #0d3d44;
+  background: linear-gradient(135deg, rgba(212, 255, 32, 0.22), rgba(37, 210, 56, 0.2));
+}
+
+.nexops-create-menu-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.nexops-create-menu-copy {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.nexops-create-menu-copy strong,
+.nexops-create-menu-copy small {
+  display: block;
+}
+
+.nexops-create-menu-copy strong {
+  color: #082131;
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.nexops-create-menu-copy small {
+  color: #526675;
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+.nexops-overlay-form {
+  display: grid;
+  gap: 14px;
+}
+
+.nexops-overlay-head,
+.nexops-overlay-actions {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-field-row.three-up {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+

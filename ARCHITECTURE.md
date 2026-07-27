@@ -232,7 +232,8 @@ Do not hardcode new tool arrays in `nexiRoutes.ts`.
 - The old single `features/platform/components/PlatformConsole.tsx` file is gone. Platform overview and tenant overview now live in separate features with separate fetch hooks.
 - Historical note: Phase B first created placeholder ownership seams. E4 has now replaced those placeholders with the integrated CRM surfaces for Contact, Quotes, Jobs, Visits, Settings, and Invoices.
 - Nexi voice behavior now lives under `features/nexi/areas/voice/` and is composed by chat without sharing implementation files.
-- Root-level web helpers are no longer an informal ownership tier. Navigation/header/FAB/pattern-library/create-menu/notification code belongs to NexOps Shell; Home, Request Core, Contact creation, NexCam capture, and the NexDocs client workspace have feature owners; branding, UI primitives, communication templates, intake presentation, and signature capture live in named shared components. Web root now contains only the application bootstrap and global stylesheet.
+- Root-level web helpers are no longer an informal ownership tier. Navigation/header/FAB/pattern-library/create-menu/notification code belongs to NexOps Shell; Home, Request Core, Contact creation, NexCam capture, and the NexDocs client workspace have feature owners; branding, UI primitives, communication templates, intake presentation, and signature capture live in named shared components. Web root now contains only the application bootstrap.
+- Global CSS follows the same ownership model. Component selectors live beside Request, Home, Contact, Visit, Nexi, Signature, UI Kit, Capture, Branding, or Shell; only cross-product foundation and responsive composition rules live under `shared/styles`. `shared/app/globalStyles.ts` is an order-only manifest and contains no selectors.
 
 ## Phase C Notes [tag: phase-c-notes]
 

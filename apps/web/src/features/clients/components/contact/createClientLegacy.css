@@ -1,0 +1,293 @@
+.nexops-embedded-panel {
+  padding: 28px;
+}
+
+.nexops-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: stretch;
+  background:
+    radial-gradient(circle at 14% 8%, rgba(212, 255, 32, 0.22), transparent 28%),
+    rgba(12, 17, 24, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.nexops-drawer {
+  width: min(1120px, calc(100% - 48px));
+  height: min(100%, 980px);
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  align-content: start;
+  gap: 30px;
+  justify-self: center;
+  margin: 22px 0;
+  padding: 0 0 104px;
+  overflow: auto;
+  border: 1px solid rgba(212, 255, 32, 0.28);
+  border-radius: 30px;
+  background: #f7f9f4;
+  box-shadow: 0 32px 110px rgba(0, 0, 0, 0.34);
+}
+
+.nexops-drawer-heading,
+.nexops-drawer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.nexops-form-principles {
+  position: relative;
+  z-index: 1;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nexops-form-principles li {
+  border: 1px solid rgba(212, 255, 32, 0.2);
+  border-radius: 999px;
+  padding: 9px 13px;
+  color: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.nexops-drawer-heading h2 {
+  margin: 0;
+  color: inherit;
+  font-size: clamp(2.6rem, 6vw, 4.8rem);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 0.9;
+}
+
+.nexops-drawer-actions button:nth-child(2) {
+  border: 1px solid rgba(16, 24, 34, 0.12);
+  color: #101822;
+  background: #fff;
+  box-shadow: none;
+}
+
+.nexops-form-section {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.32fr) minmax(0, 0.68fr);
+  gap: 36px;
+  margin: 0 34px;
+  padding: 26px;
+  border: 1px solid rgba(16, 24, 34, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 60px rgba(16, 24, 34, 0.08);
+}
+
+.nexops-section-copy {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.nexops-section-copy h3,
+.nexops-section-fields h4,
+.nexops-subsection h4 {
+  margin: 0;
+  color: #101822;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.nexops-section-copy p,
+.nexops-extra-panel p {
+  margin: 0;
+  color: var(--nexops-brand-muted, #68717c);
+  font-size: 0.92rem;
+  line-height: 1.42;
+}
+
+.nexops-section-copy button,
+.nexops-extra-panel button,
+.nexops-link-button {
+  width: max-content;
+  border: 1px solid rgba(16, 24, 34, 0.12);
+  border-radius: 999px;
+  padding: 10px 16px;
+  color: #101822;
+  background: #fff;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.nexops-link-button {
+  color: #08100c;
+  background: rgba(168, 230, 0, 0.16);
+}
+
+.nexops-section-fields,
+.nexops-subsection {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-section-fields h4 {
+  margin-top: 8px;
+}
+
+.nexops-field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+}
+
+.nexops-field-row.title-row {
+  grid-template-columns: minmax(110px, 0.42fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.nexops-field {
+  min-height: 58px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  margin: 0;
+  border: 1px solid rgba(16, 24, 34, 0.12);
+  border-radius: 16px;
+  padding: 10px 15px;
+  color: var(--nexops-brand-muted, #68717c);
+  background: linear-gradient(180deg, #fff, #fbfcf8);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.nexops-field-row .nexops-field {
+  border-radius: 0;
+  margin-left: -1px;
+}
+
+.nexops-field-row .nexops-field:first-child {
+  margin-left: 0;
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+}
+
+.nexops-field-row .nexops-field:last-child {
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.nexops-field span {
+  color: var(--nexops-brand-muted, #68717c);
+}
+
+.nexops-field input,
+.nexops-field select {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #101822;
+  background: transparent;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.nexops-field:focus-within {
+  border-color: var(--nexteam-flat-green);
+  box-shadow: 0 0 0 4px rgba(168, 230, 0, 0.18);
+}
+
+.nexops-toggle-row {
+  display: grid;
+  gap: 10px;
+  color: #082131;
+}
+
+.nexops-check-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #101822;
+  font-weight: 650;
+}
+
+.nexops-check-field.inline {
+  min-height: 58px;
+  padding: 0 14px;
+  border: 1px solid rgba(16, 24, 34, 0.12);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.nexops-check-field input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--nexteam-flat-green);
+}
+
+.nexops-form-note {
+  margin: 0;
+  color: var(--nexops-brand-muted, #68717c);
+}
+
+.nexops-extra-panel {
+  overflow: hidden;
+  border: 1px solid rgba(16, 24, 34, 0.08);
+  border-radius: 18px;
+  background: #f3f6ef;
+}
+
+.nexops-extra-panel summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 17px 18px;
+  color: #101822;
+  font-weight: 900;
+  cursor: pointer;
+  list-style: none;
+}
+
+.nexops-extra-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.nexops-extra-panel summary::after {
+  content: "v";
+  color: var(--nexteam-green);
+  font-weight: 950;
+}
+
+.nexops-extra-panel[open] summary::after {
+  content: "^";
+}
+
+.nexops-extra-panel-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 18px 18px;
+}
+
+.nexops-extra-panel-body.single-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.nexops-drawer-actions {
+  position: sticky;
+  bottom: -104px;
+  margin: 12px 0 -104px;
+  padding: 20px 34px;
+  border-top: 1px solid rgba(16, 24, 34, 0.1);
+  background: rgba(247, 249, 244, 0.94);
+  backdrop-filter: blur(12px);
+}
+
+

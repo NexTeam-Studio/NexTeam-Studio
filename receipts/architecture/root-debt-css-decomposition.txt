@@ -1,0 +1,25 @@
+ROOT DEBT: GLOBAL CSS DECOMPOSITION
+Date: 2026-07-27
+
+Before and after
+- Before: `apps/web/src/styles.css`, 4,468 lines.
+- After: old root stylesheet deleted; 17 owner stylesheets plus an implementation-free import manifest.
+- Owner files total 4,485 physical lines because each split file receives one trailing boundary blank.
+- Removing whitespace from the old stylesheet and the ordered owner concatenation produces an exact match: no selector, declaration, value, or rule order changed.
+- Root web files: `main.tsx` only.
+
+Ownership
+- Request Core, Operations Home, Contact, Visit Core, Nexi Chat, Signature Capture, NexOps UI Kit, NexCam Capture, Product Branding, and NexOps Shell own their selector families.
+- Shared Visual Foundation owns base document primitives and the small cross-component responsive composition seam.
+- `shared/app/globalStyles.ts` preserves the original cascade order and contains imports only.
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 163 modules.
+- Built aggregate CSS before and after: 120.86 kB, 21.70 kB gzip.
+- Main JavaScript chunk before and after: 298.47 kB, 70.81 kB gzip.
+- npm run check:collisions: 38 components, 703 pairs, zero overlaps; root allowlist coverage 1/1.
+- npm test: no-browser guard passed across 61 default test files; 361 tests, 358 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- No browser was launched; CSS equivalence used static content comparison plus production build output instead of live visual browser proof.

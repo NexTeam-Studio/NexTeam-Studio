@@ -123,12 +123,14 @@ const components = [
   ]],
   ["Signature Capture", [
     "apps/web/src/shared/signature/"
+  ]],
+  ["Visual Foundation", [
+    "apps/web/src/shared/styles/"
   ]]
 ];
 
 const sharedAllowlist = [
   "apps/web/src/main.tsx",
-  "apps/web/src/styles.css",
   "apps/web/src/shared/app/",
   "apps/web/src/shared/router/",
   "apps/server/src/app/",

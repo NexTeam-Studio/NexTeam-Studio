@@ -1,0 +1,43 @@
+.nexops-signature-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.nexops-signature-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nexops-signature-tabs button {
+  border: 1px solid rgba(10, 39, 64, 0.14);
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-strong);
+  font: inherit;
+  font-weight: 700;
+}
+
+.nexops-signature-tabs button.active {
+  border-color: rgba(28, 177, 94, 0.34);
+  background: rgba(232, 255, 237, 0.94);
+  box-shadow: 0 10px 22px rgba(28, 177, 94, 0.12);
+}
+
+.nexops-signature-drawn {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-signature-canvas {
+  width: 100%;
+  max-width: 720px;
+  min-height: 180px;
+  border: 1px dashed rgba(10, 39, 64, 0.2);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff, #f4fbfb);
+  touch-action: none;
+}
+
+

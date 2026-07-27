@@ -1,0 +1,28 @@
+import "../../shared/styles/visualFoundation.css";
+import "../../features/nexopsShell/styles/shellCore.css";
+import "../../features/requests/components/requestCore/requestCoreLegacy.css";
+import "../../features/home/components/operationsHome/operationsHomeLegacy.css";
+import "../../features/clients/components/contact/createClientLegacy.css";
+import "../../features/nexopsShell/styles/shellHeader.css";
+import "../../features/visits/components/visitCore/visitCoreLegacy.css";
+import "../../features/nexi/areas/chat/styles/legacyWorkspace.css";
+import "../../features/clients/components/contact/contactMobileLegacy.css";
+import "../../features/nexopsShell/styles/shellResponsiveLegacy.css";
+import "../../shared/signature/signature.css";
+import "../../shared/ui/nexOpsUiKit.css";
+import "../../features/home/components/operationsHome/operationsHome.css";
+import "../../features/nexopsShell/styles/overlays.css";
+import "../../features/nexcam/areas/capture/styles/captureWorkspace.css";
+import "../../shared/styles/responsiveComposition.css";
+import "../../shared/branding/productBranding.css";
+
+import "../../features/quotes/components/quoteTemplates/quoteTemplates.css";
+import "../../features/jobs/components/jobCore/jobCore.css";
+import "../../features/visits/components/visitCore/visitCore.css";
+import "../../features/invoices/components/invoiceStructure/invoiceStructure.css";
+import "../../features/invoices/components/paymentRails/paymentRails.css";
+import "../../features/nexopsShell/documentPrimitives.css";
+import "../../features/quotes/components/quoteEngine/quoteEngine.css";
+import "../../features/settings/components/catalog/catalog.css";
+import "../../features/settings/components/tenantConfig/tenantConfig.css";
+

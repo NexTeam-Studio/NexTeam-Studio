@@ -1,0 +1,386 @@
+.nexops-mobile-icon-button.active,
+.nexops-web-icon-button.active {
+  border-color: rgba(37, 210, 56, 0.48);
+  background: rgba(37, 210, 56, 0.16);
+  color: #123b20;
+}
+
+.nexops-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #173344;
+  background: rgba(212, 255, 32, 0.22);
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.nexops-mobile-filter-button {
+  width: 100%;
+  padding: 18px 20px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 18px;
+  background: #ffffff;
+  color: #397d1f;
+  text-align: left;
+  font-size: 1.03rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nexops-mobile-inline-panel {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid rgba(8, 33, 49, 0.08);
+  box-shadow: 0 12px 30px rgba(10, 24, 17, 0.05);
+}
+
+.nexops-mobile-inline-panel.nested {
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid rgba(8, 33, 49, 0.08);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.nexops-mobile-key-value dt,
+.nexops-mobile-question-answer-list small,
+.nexops-mobile-custom-field-readonly small {
+  color: #677785;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.nexops-mobile-custom-field-editor-row input {
+  width: 100%;
+  min-width: 0;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(8, 33, 49, 0.14);
+  background: #ffffff;
+  color: #10202c;
+  font: inherit;
+}
+
+.nexops-mobile-custom-field-editor-row input:focus {
+  outline: none;
+  border-color: #58b726;
+  box-shadow: 0 0 0 3px rgba(88, 183, 38, 0.14);
+}
+
+.nexops-mobile-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #173344;
+  font-weight: 600;
+}
+
+.nexops-mobile-toggle-row input {
+  width: 22px;
+  height: 22px;
+}
+
+.nexops-mobile-inline-link {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #4d991f;
+  font-size: 0.98rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nexops-mobile-inline-link.danger {
+  color: #b23b2c;
+}
+
+.nexops-mobile-helper-note,
+.nexops-mobile-validation-note {
+  margin: 0;
+  color: #62717a;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.nexops-mobile-validation-note {
+  color: #a33c2a;
+}
+
+.nexops-mobile-two-up {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.nexops-mobile-custom-field-list,
+.nexops-mobile-work-list,
+.nexops-mobile-question-answer-list,
+.nexops-mobile-custom-field-readonly {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-mobile-custom-field-row,
+.nexops-mobile-custom-field-editor-row {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-mobile-work-row {
+  width: 100%;
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  background: #ffffff;
+  color: inherit;
+  text-align: left;
+}
+
+.nexops-mobile-work-row strong,
+.nexops-mobile-question-answer-list strong,
+.nexops-mobile-custom-field-readonly strong {
+  color: #132a39;
+}
+
+.nexops-mobile-work-row small {
+  color: #6a7986;
+}
+
+.nexops-mobile-create-button,
+.nexops-mobile-note-actions button:first-child {
+  width: 100%;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #D4FF20 0%, #25D238 100%));
+  color: #0f1e14;
+  font-size: 1.06rem;
+  font-weight: 800;
+  box-shadow: 0 18px 34px rgba(37, 210, 56, 0.18);
+}
+
+.nexops-mobile-balance-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  color: #263e4d;
+}
+
+.nexops-mobile-balance-row strong {
+  font-size: 1.8rem;
+}
+
+.nexops-mobile-bucket-tabs,
+.nexops-mobile-subsection-tabs,
+.nexops-mobile-filter-pills {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.nexops-mobile-bucket-tabs button,
+.nexops-mobile-filter-pills button {
+  flex: 0 0 auto;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #e8ebe4;
+  color: #243746;
+  font-weight: 700;
+}
+
+.nexops-mobile-bucket-tabs button.active,
+.nexops-mobile-filter-pills button.active {
+  background: #113248;
+  color: #ffffff;
+}
+
+.nexops-mobile-subsection-tabs button {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #4d5c68;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.nexops-mobile-subsection-tabs button.active {
+  border-color: rgba(37, 210, 56, 0.28);
+  background: rgba(212, 255, 32, 0.24);
+  color: #133340;
+  box-shadow: 0 10px 24px rgba(37, 210, 56, 0.12);
+}
+
+.nexops-mobile-subsection-shell {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 4px 16px;
+  margin-left: 6px;
+  border-left: 3px solid rgba(37, 210, 56, 0.22);
+  border-radius: 0 18px 18px 0;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.nexops-mobile-subsection-shell small {
+  color: #667784;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nexops-mobile-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.nexops-mobile-section-banner {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at right center, rgba(74, 195, 170, 0.2), transparent 32%),
+    linear-gradient(135deg, #081a27 0%, #0d2830 54%, #13595a 100%);
+  box-shadow: 0 14px 28px rgba(7, 20, 27, 0.18);
+}
+
+.nexops-mobile-section-banner .eyebrow {
+  margin-bottom: 6px;
+}
+
+.nexops-mobile-section-head h2 {
+  margin: 0;
+  color: #173344;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.nexops-mobile-section-head .nexops-mobile-section-banner h2 {
+  display: inline-block;
+  background: linear-gradient(135deg, #f3ffbf 0%, #d4ff20 42%, #25d238 100%);
+  background-size: 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+}
+
+.nexops-mobile-section-head button {
+  border: 0;
+  background: none;
+  color: #4b991e;
+  font-size: 1.25rem;
+}
+
+.nexops-mobile-key-value {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.nexops-mobile-key-value div {
+  display: grid;
+  gap: 3px;
+}
+
+.nexops-mobile-key-value dd {
+  margin: 0;
+  color: #172d3b;
+  font-weight: 600;
+}
+
+.nexops-mobile-address-block {
+  color: #172d3b;
+  line-height: 1.5;
+}
+
+.nexops-mobile-work-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.nexops-mobile-work-row span {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #425564;
+  font-size: 0.93rem;
+  font-weight: 700;
+}
+
+.nexops-mobile-work-row span::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--status-dot, #4d991f);
+}
+
+.nexops-mobile-note-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  gap: 12px;
+}
+
+.nexops-mobile-note-actions button:last-child {
+  border: 1px solid rgba(8, 33, 49, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  font-size: 1.35rem;
+}
+
+.nexops-mobile-file-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.nexops-mobile-file-tile {
+  min-height: 96px;
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 18px;
+  background: #f2f4ef;
+  border: 1px solid rgba(8, 33, 49, 0.08);
+}
+
+.nexops-mobile-file-tile.document {
+  background: #ffffff;
+}
+
+.nexops-mobile-file-tile span {
+  color: #6a7986;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.nexops-mobile-file-tile strong {
+  color: #173344;
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+
+

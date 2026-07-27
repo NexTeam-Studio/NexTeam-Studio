@@ -1,0 +1,30 @@
+.nexi-identity-mark {
+  display: inline-grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.nexi-avatar-stage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  min-height: 88px;
+}
+
+.nexi-avatar-fallback {
+  width: min(184px, 36vw);
+  max-height: 74px;
+}
+
+.nexi-signature-mark {
+  width: 86px;
+  max-height: 24px;
+}
+
+.nexi-identity-caption {
+  color: rgba(248, 255, 252, 0.74);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
