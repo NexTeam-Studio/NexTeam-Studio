@@ -1,0 +1,17 @@
+E4 Contact roster checkpoint
+Date: 2026-07-27
+
+Canonical surface:
+- apps/web/src/features/clients/components/contact/ContactRoster.tsx
+
+Shell responsibility:
+- The app shell supplies roster data and navigation callbacks through typed props.
+- Client-row rendering, metrics, search controls, and empty state are Contact-owned.
+
+Verification (non-browser):
+- npm run build: PASS (74 modules)
+- Contact/shell focused tests: PASS (16/16)
+
+Open Contact work:
+- Client profile, mobile profile, editor, and client rails remain in NexOpsWorkspace.
+- Contact CSS remains in apps/web/src/styles.css.

@@ -69,6 +69,7 @@ import {
   type NexiStandalonePendingApproval
 } from "../../nexiStandalone";
 import { resolveRequestorOriginForNexiMessage } from "../../nexiRequestContext";
+import { ContactRoster } from "../clients/components/contact/ContactRoster";
 
 const NexOpsHomePage = React.lazy(async () => ({ default: (await import("../../nexopsHome")).NexOpsHomePage }));
 const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("../../features/invoices/components/invoiceStructure/NexOpsInvoicesPage")).NexOpsInvoicesPage }));
@@ -3470,90 +3471,25 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
       return renderClientProfile();
     }
 
-    return (
-      <section className="nexops-clients-workspace">
-        <div className="nexops-clients-heading">
-          <div>
-            <h1>Clients</h1>
-            <p>{status} Open any row to move into the full client workspace.</p>
-          </div>
-          <div className="nexops-client-actions">
-            <button type="button" onClick={openNewClientWorkspace}>New Client</button>
-            <button type="button" onClick={() => setModule("imports")}>Import CSV</button>
-            <button type="button" onClick={() => void refresh()}>Refresh</button>
-          </div>
-        </div>
-
-        <div className="nexops-client-stats" aria-label="Client metrics">
-          <article>
-            <span>Active clients</span>
-            <strong>{activeCount}</strong>
-            <small>Native NexOps</small>
-          </article>
-          <article>
-            <span>Leads</span>
-            <strong>{leadCount}</strong>
-            <small>Ready for follow-up</small>
-          </article>
-          <article>
-            <span>Text-ready</span>
-            <strong>{textReadyCount}</strong>
-            <small>Mobile confirmed</small>
-          </article>
-          <article>
-            <span>Sites</span>
-            <strong>{properties.length}</strong>
-            <small>Multi-site hierarchy</small>
-          </article>
-        </div>
-
-        <div className="nexops-client-controls">
-          <button type="button">Filter by tag +</button>
-          <button type="button">Status | Leads and Active</button>
-          <label>
-            <span className="sr-only">Search clients</span>
-            <input value={query} placeholder="Search clients..." onChange={(event) => setQuery(event.target.value)} />
-          </label>
-        </div>
-
-        <div className={options?.compact ? "nexops-client-layout compact" : "nexops-client-layout compact"}>
-          <section className="nexops-client-table-card" aria-label="Client list">
-            <div className="nexops-client-table">
-              <div className="nexops-client-table-head">
-                <span>Name</span>
-                <span>Primary address</span>
-                <span>Contact</span>
-                <span>Status</span>
-                <span>Last activity</span>
-              </div>
-              {filteredClients.map((client) => (
-                <button
-                  className={`nexops-client-table-row ${selectedClientId === client.id ? "selected" : ""}`}
-                  key={client.id}
-                  type="button"
-                  onClick={() => openClientProfile(client.id)}
-                >
-                  <span>
-                    <strong>{clientDisplayName(client)}</strong>
-                    <small>{client.company?.trim() ? client.company : contactSummary(client)}</small>
-                  </span>
-                  <span>{clientPrimaryAddress(client)}</span>
-                  <span>{selectedClientId === client.id ? "Open now" : (client.phones[0] ?? client.emails[0] ?? "No contact saved")}</span>
-                  <span><mark>{clientStatusLabel(client)}</mark></span>
-                  <span>{client.tags?.[0] ?? "Native record"}</span>
-                </button>
-              ))}
-              {!filteredClients.length ? (
-                <div className="nexops-client-empty">
-                  <h2>No clients match this view yet</h2>
-                  <p>Create one, import a CSV, or start from a native request.</p>
-                </div>
-              ) : null}
-            </div>
-          </section>
-        </div>
-      </section>
-    );
+    return <ContactRoster
+      status={status}
+      activeCount={activeCount}
+      leadCount={leadCount}
+      textReadyCount={textReadyCount}
+      propertyCount={properties.length}
+      query={query}
+      clients={filteredClients}
+      selectedClientId={selectedClientId}
+      clientDisplayName={clientDisplayName}
+      contactSummary={contactSummary}
+      clientPrimaryAddress={clientPrimaryAddress}
+      clientStatusLabel={clientStatusLabel}
+      onQueryChange={setQuery}
+      onOpenClient={openClientProfile}
+      onNewClient={openNewClientWorkspace}
+      onImport={() => setModule("imports")}
+      onRefresh={() => void refresh()}
+    />;
   }
 
   function renderNewClientWorkspace(): React.ReactElement {
