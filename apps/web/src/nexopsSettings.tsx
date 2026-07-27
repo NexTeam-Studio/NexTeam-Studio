@@ -6,7 +6,7 @@ import {
   catalogItemFromDraft,
   type CatalogItemDraft,
   type ProductServiceCatalogItem
-} from "./nexopsCatalog";
+} from "./features/settings/components/catalog/NexOpsCatalog";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 

@@ -15,7 +15,7 @@ import {
   catalogItemFromDraft,
   type CatalogItemDraft,
   type ProductServiceCatalogItem
-} from "../../../../nexopsCatalog";
+} from "../../../settings/components/catalog/NexOpsCatalog";
 import {
   invoiceTemplateVariables,
   type CommunicationTemplateRecord,
