@@ -1,31 +1,10 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { getPoolLeakCatalogItem } from "@nexteam/industry-packs";
-import {
-  RailError,
-  quoteApprovalRulesSchema,
-  quoteDiscountSchema,
-  paymentSchedulePlanSchema,
-  quoteSchema,
-  quoteTemplateSchema,
-  type CrmSettings,
-  type DocumentSequenceKind,
-  type IntakeSnapshot,
-  type LineItem,
-  type Quote,
-  type QuoteApprovalRules,
-  type QuoteDepositBridge,
-  type QuoteDiscount,
-  type QuoteStatus,
-  type QuoteTemplate,
-  type QuoteTotals
-} from "@nexteam/core";
+import { RailError, quoteApprovalRulesSchema, quoteDiscountSchema, paymentSchedulePlanSchema, quoteSchema, type CrmSettings, type IntakeSnapshot, type LineItem, type Quote, type QuoteApprovalRules, type QuoteDepositBridge, type QuoteDiscount, type QuoteStatus, type QuoteTemplate, type QuoteTotals } from "@nexteam/core";
 import { z } from "zod";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import { reserveDocumentNumber } from "../../../../../../../crm/documentNumbering.js";
-import {
-  ensureQuoteConfiguration,
-  quoteTemplateInputSchema
-} from "../../quoteTemplates/server/quoteTemplateService.js";
+import { ensureQuoteConfiguration } from "../../quoteTemplates/server/quoteTemplateService.js";
 
 export { ensureQuoteConfiguration, quoteTemplateInputSchema } from "../../quoteTemplates/server/quoteTemplateService.js";
 

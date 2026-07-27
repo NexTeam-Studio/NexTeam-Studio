@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
-import { ApprovalQueueService, RailError, approvalItemSchema } from "@nexteam/core";
+import type { ApprovalQueueService} from "@nexteam/core";
+import { RailError, approvalItemSchema } from "@nexteam/core";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
 import { sendHttpError } from "../core/httpError.js";
 

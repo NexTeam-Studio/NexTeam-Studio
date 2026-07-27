@@ -4,7 +4,7 @@ import {
   type ApprovalExecutor,
   type ApprovalItem
 } from "@nexteam/core";
-import { NexDocsService } from "./nexDocsService.js";
+import type { NexDocsService } from "./nexDocsService.js";
 
 const createFolderApprovalArgsSchema = z.object({
   tenantId: z.string().min(1),

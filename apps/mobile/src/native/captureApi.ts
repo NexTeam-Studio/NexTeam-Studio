@@ -1,17 +1,6 @@
 import { z } from "zod";
 import { ServiceAddressSchema } from "../offline/schemas.js";
-import {
-  captureAnnotationSchema,
-  captureChecklistFieldUpdateSchema,
-  captureChecklistSectionStateUpdateSchema,
-  mobileRoleSchema,
-  mobileServerAccessSchema,
-  type CaptureAnnotation,
-  type CaptureChecklistFieldUpdate,
-  type CaptureChecklistSectionStateUpdate,
-  type CaptureRequestDraft,
-  type MobileRole
-} from "./captureModels.js";
+import { captureAnnotationSchema, captureChecklistFieldUpdateSchema, captureChecklistSectionStateUpdateSchema, mobileRoleSchema, mobileServerAccessSchema, type CaptureAnnotation, type CaptureChecklistFieldUpdate, type CaptureChecklistSectionStateUpdate, type CaptureRequestDraft } from "./captureModels.js";
 import { requestDraftFieldValues } from "./captureHelpers.js";
 
 export interface CaptureApiClientOptions {

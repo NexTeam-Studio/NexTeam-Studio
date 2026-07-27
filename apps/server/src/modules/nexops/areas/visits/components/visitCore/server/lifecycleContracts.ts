@@ -1,5 +1,5 @@
 import type { CommunicationTemplate, LifecycleCommandContract } from "@nexteam/core";
-import { PORTAL_AUTHORIZATION_PROFILE_ID } from "../../../../../../../crm/lifecyclePolicy.js";
+
 
 export const VISIT_CORE_COMMANDS: LifecycleCommandContract[] = [
   {

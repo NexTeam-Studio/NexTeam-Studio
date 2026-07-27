@@ -1,10 +1,7 @@
 import type { Firestore } from "firebase-admin/firestore";
-import {
-  clientSchema, crmSettingsSchema, invoiceSchema, jobSchema, propertySchema, quoteSchema, quoteTemplateSchema, requestFormSchema, serviceRequestSchema, RailError,
-  type Client, type CrmSettings, type DocumentSequenceKind, type Invoice, type Job, type Property, type Quote, type QuoteTemplate, type RequestForm, type ServiceRequest
-} from "@nexteam/core";
-import { defaultCrmSettings, defaultQuoteTemplates } from "@nexteam/providers";
-import { advanceDocumentNumber } from "@nexteam/shared";
+import { quoteSchema, RailError, type Quote } from "@nexteam/core";
+
+
 import { asDocumentData, createTenantFirestoreReader } from "../../../../../../../crm/firestoreRepositoryBase.js";
 
 export function createQuoteFirestoreRepository(db: Firestore) {

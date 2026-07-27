@@ -3,11 +3,7 @@ import { RailError, type Client, type EventBus, type Invoice, type Job, type Pro
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../comms/gmailRegistry.js";
 import type { LedgerRepository } from "./ledgerRepository.js";
-import {
-  type ReviewSequenceRecord,
-  type ReviewSequenceRepository,
-  type ReviewSequenceStopReason
-} from "./reviewSequenceRepository.js";
+import { type ReviewSequenceRecord, type ReviewSequenceRepository, type ReviewSequenceStopReason } from "./reviewSequenceRepository.js";
 import { communicationChannelEnabled, resolveTemplateMessage, reviewTemplateVariables } from "./communicationTemplates.js";
 
 function now(): string {
@@ -26,9 +22,7 @@ function maxIso(values: Array<string | undefined>): string {
     .sort((left, right) => right.localeCompare(left))[0] ?? now();
 }
 
-function normalizedPhone(value: string | undefined): string {
-  return (value ?? "").replace(/\D+/g, "");
-}
+
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");

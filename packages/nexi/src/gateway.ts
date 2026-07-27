@@ -3474,7 +3474,6 @@ function approvalPromptAnswer(
 
 function approvalExecutionAnswer(result: unknown): string | undefined {
   const record = objectRecord(result);
-  const approval = objectRecord(record?.executedApproval) ?? objectRecord(record?.approval);
   const execution = objectRecord(record?.execution);
   const client = objectRecord(execution?.client);
   const quote = objectRecord(execution?.quote);

@@ -1,23 +1,8 @@
-import { randomUUID } from "node:crypto";
+
 import { z } from "zod";
-import {
-  addressSchema,
-  clientCommunicationSettingsSchema,
-  clientContactSchema,
-  paymentSchedulePlanSchema,
-  personNameSchema,
-  quoteSchema,
-  receiptReviewChannelSchema,
-  RailError,
-  type ApprovalExecutor,
-  type ApprovalItem,
-  type CRMProvider,
-  type LineItem,
-  type NewClient,
-  type Property
-} from "@nexteam/core";
-import type { JobLifecycleService } from "./jobLifecycle.js";
-import type { LedgerService } from "./ledgerFoundation.js";
+import { addressSchema, clientCommunicationSettingsSchema, clientContactSchema, paymentSchedulePlanSchema, personNameSchema, quoteSchema, receiptReviewChannelSchema } from "@nexteam/core";
+
+
 
 export const createClientApprovalArgsSchema = z.object({
   tenantId: z.string().min(1),

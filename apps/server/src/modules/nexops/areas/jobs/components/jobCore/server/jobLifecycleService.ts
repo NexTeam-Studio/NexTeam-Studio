@@ -1,48 +1,15 @@
 import { randomUUID } from "node:crypto";
-import {
-  RailError,
-  type Client,
-  type EventBus,
-  type Invoice,
-  type Job,
-  type JobDetail,
-  type JobStatus,
-  type LineItem,
-  type Property,
-  type Quote,
-  type ServiceRequest,
-  type TenantUser
-} from "@nexteam/core";
+import { RailError, type Client, type EventBus, type Invoice, type Job, type JobDetail, type JobStatus, type LineItem, type Property, type Quote, type ServiceRequest, type TenantUser } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../../../../../../../comms/gmailRegistry.js";
 import type { PlatformRepository } from "../../../../../../../platform/repository.js";
 import type { SchedulingRepository } from "../../../../../../../scheduling/repository.js";
 import type { ScheduledVisit } from "../../../../../../../scheduling/schedulingEngine.js";
-import {
-  bookingTemplateVariables,
-  communicationChannelEnabled,
-  resolveTemplateMessage
-} from "../../../../../../../crm/communicationTemplates.js";
+import { bookingTemplateVariables, communicationChannelEnabled, resolveTemplateMessage } from "../../../../../../../crm/communicationTemplates.js";
 import type { LedgerService } from "../../../../../../../crm/ledgerFoundation.js";
 import { buildInvoiceDraftFromJobs } from "../../../../../../../crm/invoiceFoundation.js";
-import {
-  type InvoiceReminderRecord,
-  type JobActionAlertRecord,
-  type JobLifecycleEventRecord,
-  type JobLifecycleRepository,
-  type VisitReminderRecord,
-  pendingInvoiceReminderForJob,
-  pendingJobAlertForJob,
-  requireJobLifecycleRecord
-} from "./jobLifecycleRepository.js";
-import {
-  VisitCoreService,
-  type CompleteJobVisitInput,
-  type MoveJobVisitInput,
-  type MoveJobVisitSeriesInput,
-  type ScheduleJobVisitInput,
-  type ScheduleJobVisitSeriesInput
-} from "../../../../visits/components/visitCore/server/visitCoreService.js";
+import { type InvoiceReminderRecord, type JobActionAlertRecord, type JobLifecycleEventRecord, type JobLifecycleRepository, type VisitReminderRecord, pendingInvoiceReminderForJob, pendingJobAlertForJob, requireJobLifecycleRecord } from "./jobLifecycleRepository.js";
+import { VisitCoreService, type CompleteJobVisitInput, type MoveJobVisitInput, type MoveJobVisitSeriesInput, type ScheduleJobVisitInput, type ScheduleJobVisitSeriesInput } from "../../../../visits/components/visitCore/server/visitCoreService.js";
 
 export type {
   CompleteJobVisitInput,
@@ -195,13 +162,9 @@ function dayKey(value: string): string {
   return value.slice(0, 10);
 }
 
-function startOfDayIso(value: string): string {
-  return `${dayKey(value)}T00:00:00.000Z`;
-}
 
-function endOfDayIso(value: string): string {
-  return `${dayKey(value)}T23:59:59.999Z`;
-}
+
+
 
 function compareIso(left: string, right: string): number {
   return left.localeCompare(right);
@@ -340,21 +303,7 @@ function deriveStatus(input: {
   return "Upcoming";
 }
 
-async function sendLifecycleEmail(
-  commsRail: CommsRail | undefined,
-  outbound: { tenantId: string; to: string[]; subject: string; bodyText: string }
-): Promise<void> {
-  if (!commsRail?.sendAdapter || !outbound.to.length) {
-    return;
-  }
-  await commsRail.sendAdapter.sendEmail({
-    tenantId: outbound.tenantId,
-    mailbox: commsRail.sendAdapter.mailbox,
-    to: outbound.to,
-    subject: outbound.subject,
-    bodyText: outbound.bodyText
-  });
-}
+
 
 async function sendLifecycleSms(
   commsRail: CommsRail | undefined,

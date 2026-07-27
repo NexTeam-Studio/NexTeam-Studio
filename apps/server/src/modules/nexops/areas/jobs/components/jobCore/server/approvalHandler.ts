@@ -1,12 +1,11 @@
-import { randomUUID } from "node:crypto";
-import { RailError, type LineItem, type NewClient, type Property } from "@nexteam/core";
+
+import { RailError, type LineItem } from "@nexteam/core";
 import * as contracts from "../../../../../../../crm/approvalContracts.js";
-import { requireJobLifecycleService, requireLedgerService, type CrmApprovalHandler } from "../../../../../../../crm/approvalHandler.js";
+import { requireJobLifecycleService, type CrmApprovalHandler } from "../../../../../../../crm/approvalHandler.js";
 
 const {
-  createClientApprovalArgsSchema, createQuoteApprovalArgsSchema, createJobApprovalArgsSchema, performJobActionApprovalArgsSchema,
-  scheduleJobVisitSeriesApprovalArgsSchema, moveJobVisitSeriesApprovalArgsSchema, performLedgerActionApprovalArgsSchema,
-  composeInvoiceFromJobsApprovalArgsSchema, sendInvoiceApprovalArgsSchema, collectInvoicePaymentApprovalArgsSchema, sendReceiptReviewApprovalArgsSchema
+  createJobApprovalArgsSchema,
+  performJobActionApprovalArgsSchema
 } = contracts;
 
 export const jobCoreApprovalHandler: CrmApprovalHandler = {

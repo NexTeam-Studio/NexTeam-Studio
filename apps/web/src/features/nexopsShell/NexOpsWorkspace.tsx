@@ -1,74 +1,13 @@
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type Auth, type User } from "firebase/auth";
-import { NexiIdentityMark, PlatformMark, ProductInlineLabel, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "../../productBranding";
+import { getAuth, signOut, type Auth, type User } from "firebase/auth";
+import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "../../productBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "../../nexopsHeader";
-import { NexDocsClientWorkspace } from "../../nexopsNexDocs";
-import {
-  buildClientProfilePath,
-  buildNewClientPath,
-  buildModulePath,
-  buildWorkspaceSwitchPath,
-  CLIENT_PROFILE_TABS,
-  createMenuPresentation,
-  isDismissKey,
-  NEXOPS_MOBILE_NAV_GROUPS,
-  NEXOPS_MODULES,
-  NEXTEAM_WORKSPACE_OPTIONS,
-  nexOpsModuleFromPath,
-  parseClientProfilePath,
-  parseNexOpsLocation,
-  type ClientProfileTab,
-  type NexOpsCreateOption,
-  type NexOpsModule
-} from "../../nexopsShell";
-import {
-  buildLeadSourceOptions,
-  CLIENT_CUSTOM_FIELD_RESERVED_LABELS,
-  CLIENT_PROFILE_MOBILE_BUCKET_LABELS,
-  customFieldRecordToDraftRows,
-  createCustomFieldDraftRow,
-  customFieldDraftRowsToRecord,
-  draftNameFieldsFromClientRecord,
-  mobileBucketForClientTab,
-  mobileTabsForBucket,
-  PROPERTY_CUSTOM_FIELD_RESERVED_LABELS,
-  primaryClientPhoneValue,
-  type ClientProfileMobileBucket,
-  type CustomFieldDraftRow,
-  validateCustomFieldDraftRows,
-  visibleCustomFields
-} from "../../features/clients/components/contact/domain/clientProfile";
-import {
-  getMobileCreateFabScrollIntent,
-  mobileFabShouldHideOverlays,
-  mobileFabVisibleForViewport,
-  NEXOPS_MOBILE_CREATE_FAB_IDLE_MS,
-  NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY,
-  NEXOPS_SHARED_CREATE_MENU_ID,
-  NexOpsMobileCreateFab,
-  shouldPulseMobileCreateFab
-} from "../../nexopsMobileCreateFab";
-import {
-  nexiActiveApprovalPrompt,
-  nexiConversationOffer,
-  nexiConversationOfferReplyAction,
-  NEXI_FRIENDLY_FAILURE_MESSAGE,
-  formatNexiOperatorDisplayName,
-  nexiIsApprovalPrompt,
-  nexiAddressActionValue,
-  nexiMapsHref,
-  nexiPhoneActionValue,
-  nexiShouldHideRenderedSource,
-  NexiStandaloneLayout,
-  nexiStoredSessionKey,
-  parseNexiStoredSession,
-  sanitizeNexiRenderedText,
-  stringifyNexiStoredSession,
-  type NexiStandalonePendingApproval
-} from "../../nexiStandalone";
-import { resolveRequestorOriginForNexiMessage } from "../../nexiRequestContext";
+
+import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, NEXTEAM_WORKSPACE_OPTIONS, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "../../nexopsShell";
+import { buildLeadSourceOptions, CLIENT_CUSTOM_FIELD_RESERVED_LABELS, customFieldRecordToDraftRows, customFieldDraftRowsToRecord, draftNameFieldsFromClientRecord, PROPERTY_CUSTOM_FIELD_RESERVED_LABELS, primaryClientPhoneValue, type ClientProfileMobileBucket, type CustomFieldDraftRow, validateCustomFieldDraftRows } from "../../features/clients/components/contact/domain/clientProfile";
+import { getMobileCreateFabScrollIntent, mobileFabShouldHideOverlays, mobileFabVisibleForViewport, NEXOPS_MOBILE_CREATE_FAB_IDLE_MS, NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY, NEXOPS_SHARED_CREATE_MENU_ID, NexOpsMobileCreateFab, shouldPulseMobileCreateFab } from "../../nexopsMobileCreateFab";
 import { ContactRoster } from "../clients/components/contact/ContactRoster";
 import { ContactEditorSurface } from "../clients/components/contact/ContactEditorSurface";
 import { ContactProfileSurface } from "../clients/components/contact/ContactProfileSurface";
@@ -94,30 +33,11 @@ interface Source {
   label: string;
 }
 
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  sources: Source[];
-  pendingApproval?: NexiStandalonePendingApproval | null;
-}
 
-interface NexiResponse {
-  ok: boolean;
-  answer?: string;
-  sources?: Source[];
-  conversationId?: string;
-  pendingApproval?: NexiStandalonePendingApproval | null;
-  error?: string;
-}
 
-interface NexiHistoryResponse {
-  ok: boolean;
-  conversationId?: string;
-  pendingApproval?: NexiStandalonePendingApproval | null;
-  messages?: ChatMessage[];
-  error?: string;
-}
+
+
+
 
 interface FieldDocsMediaCommentRecord {
   id: string;
@@ -134,7 +54,7 @@ interface FieldDocsMediaAnnotationRecord {
   points: Array<{ x: number; y: number }>;
 }
 
-interface FieldDocsMediaRecord {
+export interface FieldDocsMediaRecord {
   id: string;
   type: "photo" | "video" | "pdf";
   clientId?: string;
@@ -162,114 +82,30 @@ interface UploadMediaResponse {
   error?: string;
 }
 
-interface ScheduledVisit {
-  id: string;
-  jobId: string;
-  title: string;
-  start: string;
-  end: string;
-  assignedTo: string[];
-  status: string;
-  source?: string;
-  readOnly?: boolean;
-  location?: {
-    label: string;
-    geo?: { lat: number; lng: number };
-    address?: {
-      street1: string;
-      city: string;
-      province: string;
-      postalCode: string;
-      country: string;
-    };
-  };
-}
 
-interface CalendarResponse {
-  ok: boolean;
-  visits?: ScheduledVisit[];
-  sourceCounts?: { native: number };
-  warnings?: string[];
-  error?: string;
-}
 
-interface ContentDraft {
-  id: string;
-  kind: "gbp_post" | "social_post" | "article";
-  title: string;
-  body: string;
-  status: "draft" | "approval_pending" | "publish_ready" | "published_deferred" | "rejected";
-  createdAt: string;
-  mediaRefs: string[];
-}
 
-interface ContentQueueResponse {
-  ok: boolean;
-  drafts?: ContentDraft[];
-  error?: string;
-}
 
-interface ApprovalQueueItem {
-  id: string;
-  tenantId: string;
-  kind: string;
-  preview: {
-    title: string;
-    body: string;
-    mediaRefs?: string[];
-  };
-  execute: {
-    service: string;
-    op: string;
-    args?: unknown;
-  };
-  status: "pending" | "approved" | "rejected" | "executed" | "failed";
-  createdBy: "nexi" | "system" | "user";
-  decidedAt?: string;
-}
 
-interface ApprovalQueueResponse {
-  ok: boolean;
-  items?: ApprovalQueueItem[];
-  error?: string;
-}
 
-interface ApprovalActionResponse {
-  ok: boolean;
-  item?: ApprovalQueueItem;
-  result?: unknown;
-  error?: string;
-}
 
-interface ReputationReview {
-  id: string;
-  authorName: string;
-  rating: number;
-  comment: string;
-  reviewedAt: string;
-  replyStatus: "none" | "drafted" | "approved" | "published_deferred";
-}
 
-interface ReputationProfile {
-  id: string;
-  locationId: string;
-  status: "draft" | "approval_pending" | "publish_ready" | "published_deferred";
-}
 
-interface ReputationQueueResponse {
-  ok: boolean;
-  reviews?: ReputationReview[];
-  profiles?: ReputationProfile[];
-  pendingReplies?: ReputationReview[];
-  error?: string;
-  blocker?: string;
-  imported?: ReputationReview[];
-}
+
+
+
+
+
+
+
+
+
+
 
 type ContactChannel = "email" | "sms" | "both" | "none";
-type SmsCapability = "mobile" | "landline" | "fax" | "invalid" | "unknown";
+export type SmsCapability = "mobile" | "landline" | "fax" | "invalid" | "unknown";
 
-interface CrmPhone {
+export interface CrmPhone {
   label: "Main" | "Work" | "Mobile" | "Home" | "Fax" | "Other";
   value: string;
   primary?: boolean;
@@ -278,7 +114,7 @@ interface CrmPhone {
   smsMode?: "one_way" | "two_way";
 }
 
-interface CrmEmail {
+export interface CrmEmail {
   label: "Main" | "Work" | "Personal" | "Other";
   value: string;
   primary?: boolean;
@@ -300,7 +136,7 @@ interface ClientEmailDraft {
 
 type ClientFormMode = "create" | "edit";
 
-interface CrmContact {
+export interface CrmContact {
   personName?: { title?: string; firstName?: string; lastName?: string };
   company?: string;
   role?: string;
@@ -331,7 +167,7 @@ interface CrmIntakeSnapshot {
   fieldIndex: Record<string, string | number | boolean>;
 }
 
-interface CrmClient {
+export interface CrmClient {
   id: string;
   tenantId: string;
   name: string;
@@ -355,7 +191,7 @@ interface CrmClient {
   customFields?: Record<string, string | number | boolean>;
 }
 
-interface CrmProperty {
+export interface CrmProperty {
   id: string;
   tenantId: string;
   clientId: string;
@@ -374,7 +210,7 @@ interface CrmProperty {
   externalIds?: Record<string, string>;
 }
 
-interface CrmJob {
+export interface CrmJob {
   id: string;
   tenantId: string;
   number?: string;
@@ -394,7 +230,7 @@ interface CrmJob {
   externalIds?: Record<string, string>;
 }
 
-interface CrmQuote {
+export interface CrmQuote {
   id: string;
   tenantId: string;
   clientId: string;
@@ -411,7 +247,7 @@ interface CrmQuote {
   updatedAt?: string;
 }
 
-interface CrmInvoice {
+export interface CrmInvoice {
   id: string;
   tenantId: string;
   clientId: string;
@@ -428,7 +264,7 @@ interface CrmInvoice {
   updatedAt?: string;
 }
 
-interface CrmRequestSummary {
+export interface CrmRequestSummary {
   id: string;
   status: "new" | "archived" | "converted_to_quote" | "converted_to_job";
   subject?: string;
@@ -440,7 +276,7 @@ interface CrmRequestSummary {
   reviewedAt?: string;
 }
 
-interface CrmPaymentSummary {
+export interface CrmPaymentSummary {
   id: string;
   clientId?: string;
   invoiceId?: string;
@@ -451,7 +287,7 @@ interface CrmPaymentSummary {
   createdAt?: string;
 }
 
-interface CrmReceiptReviewSummary {
+export interface CrmReceiptReviewSummary {
   id: string;
   clientId?: string;
   invoiceId?: string;
@@ -460,7 +296,7 @@ interface CrmReceiptReviewSummary {
   updatedAt?: string;
 }
 
-interface ClientPortalActivityEntry {
+export interface ClientPortalActivityEntry {
   id: string;
   occurredAt: string;
   title: string;
@@ -480,7 +316,7 @@ interface ReviewSequenceStepRecord {
   sentAt?: string;
 }
 
-interface ReviewSequenceRecord {
+export interface ReviewSequenceRecord {
   id: string;
   tenantId: string;
   clientId: string;
@@ -561,89 +397,17 @@ interface CrmClientCreateResponse {
   error?: string;
 }
 
-interface FieldDocsTemplateField {
-  id: string;
-  label: string;
-  section: string;
-  type: "multi_select" | "count" | "measurement" | "pass_fail" | "free_text" | "photo_attachment";
-  memory: "property" | "visit";
-  required: boolean;
-  photoRequiredDefault?: boolean;
-  helpText?: string;
-  options?: string[];
-  unit?: string;
-}
 
-interface FieldDocsTemplateSection {
-  id: string;
-  title: string;
-  allowNa: boolean;
-}
 
-interface FieldDocsTemplate {
-  id: string;
-  slug: string;
-  title: string;
-  description?: string;
-  active: boolean;
-  version: number;
-  appliesTo: "job" | "visit" | "job_or_visit";
-  system?: boolean;
-  sections: FieldDocsTemplateSection[];
-  itemCount: number;
-  propertyPersistentCount: number;
-  visitFreshCount: number;
-  fieldTypes?: string[];
-  fields: FieldDocsTemplateField[];
-}
 
-interface FieldDocsTemplatesResponse {
-  ok: boolean;
-  templates?: FieldDocsTemplate[];
-  error?: string;
-}
 
-interface FieldDocsChecklistResponse {
-  ok: boolean;
-  checklist?: {
-    id: string;
-    title: string;
-    templateId: string;
-    propertyId?: string;
-    jobId?: string;
-    visitId?: string;
-    status: "draft" | "completed";
-    sectionStates: Array<{
-      section: string;
-      status: "active" | "not_applicable";
-      updatedAt: string;
-      updatedBy?: string;
-    }>;
-    fields: Array<{
-      fieldId: string;
-      label: string;
-      section: string;
-      type: "multi_select" | "count" | "measurement" | "pass_fail" | "free_text" | "photo_attachment";
-      memory: "property" | "visit";
-      required: boolean;
-      photoRequired?: boolean;
-      status: "pending" | "pass" | "fail" | "not_applicable";
-      note?: string;
-      numberValue?: number;
-      multiValue?: string[];
-      mediaIds?: string[];
-      unit?: string;
-      options?: string[];
-    }>;
-  };
-  error?: string;
-}
 
-interface FieldDocsChecklistListResponse {
-  ok: boolean;
-  checklists?: NonNullable<FieldDocsChecklistResponse["checklist"]>[];
-  error?: string;
-}
+
+
+
+
+
+
 
 interface FieldDocsSearchResponse {
   ok: boolean;
@@ -660,7 +424,7 @@ interface FieldDocsMediaListResponse {
   error?: string;
 }
 
-interface CaptureBatchRecord {
+export interface CaptureBatchRecord {
   id: string;
   tenantId: string;
   status: "draft" | "unassigned" | "assigned";
@@ -695,7 +459,7 @@ interface CaptureBatchMutationResponse {
   error?: string;
 }
 
-interface CaptureClientTargetJob {
+export interface CaptureClientTargetJob {
   id: string;
   number?: string;
   title: string;
@@ -703,7 +467,7 @@ interface CaptureClientTargetJob {
   propertyId?: string;
 }
 
-interface CaptureClientTargetVisit {
+export interface CaptureClientTargetVisit {
   id: string;
   jobId: string;
   title: string;
@@ -720,8 +484,8 @@ interface CaptureClientTargetsResponse {
 }
 
 type CaptureWorkspaceView = "session" | "unassigned";
-type CaptureSessionMode = "fresh" | "choose" | "new-client" | "existing-client" | "continued" | "unassigned";
-type CaptureSessionOrigin = "new" | "reopened";
+export type CaptureSessionMode = "fresh" | "choose" | "new-client" | "existing-client" | "continued" | "unassigned";
+export type CaptureSessionOrigin = "new" | "reopened";
 
 interface CaptureRequestIntent {
   batchId: string;
@@ -755,63 +519,21 @@ interface FieldDocsReportsListResponse {
   error?: string;
 }
 
-interface FieldDocsPropertyHistoryResponse {
-  ok: boolean;
-  history?: NonNullable<FieldDocsChecklistListResponse["checklists"]>;
-  error?: string;
-}
 
-interface FieldReportTemplate {
-  id: string;
-  tenantId: string;
-  title: string;
-  defaultReportTitle: string;
-  sections: Array<{ id: string; label: string; defaultText?: string; snippetIds: string[] }>;
-  watermarkByDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
 
-interface FieldReportTemplatesResponse {
-  ok: boolean;
-  templates?: FieldReportTemplate[];
-  error?: string;
-}
 
-interface FieldDocsBundleRecord {
-  id: string;
-  tenantId: string;
-  jobTypeKey: string;
-  label: string;
-  checklistTemplateId: string;
-  reportTemplateId: string;
-  active: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
 
-interface FieldDocsBundlesResponse {
-  ok: boolean;
-  bundles?: FieldDocsBundleRecord[];
-  error?: string;
-}
 
-interface FieldDocsTextSnippetRecord {
-  id: string;
-  tenantId: string;
-  label: string;
-  bodyText: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
-interface FieldDocsTextSnippetsResponse {
-  ok: boolean;
-  snippets?: FieldDocsTextSnippetRecord[];
-  error?: string;
-}
 
-interface SignedDocumentRecord {
+
+
+
+
+
+
+
+export interface SignedDocumentRecord {
   id: string;
   tenantId: string;
   clientId: string;
@@ -841,52 +563,16 @@ interface SignedDocumentsResponse {
   error?: string;
 }
 
-type FieldDocsMediaHit = NonNullable<FieldDocsSearchResponse["hits"]>[number];
-type FieldDocsMediaAnnotation = NonNullable<FieldDocsMediaHit["annotations"]>[number];
 
-interface PlatformPlan {
-  id: "nexi" | "marketing" | "suite";
-  name: string;
-  monthlyUsd: number;
-  modules: string[];
-}
 
-interface PlatformTenantRow {
-  tenant: {
-    id: string;
-    name: string;
-    plan: "nexi" | "marketing" | "suite";
-  };
-  plan: PlatformPlan;
-  modules: string[];
-  subscription?: {
-    status: string;
-    stripeSubscriptionId?: string;
-  } | null;
-  adapterStatuses: Array<{
-    adapter: string;
-    provider: string;
-    configured: boolean;
-    ok: boolean;
-    detail?: string;
-  }>;
-  cost: {
-    estimatedCostUsd: number;
-    usageLogCount: number;
-  };
-}
 
-interface PlatformTenantResponse {
-  ok: boolean;
-  tenants?: PlatformTenantRow[];
-  error?: string;
-}
 
-interface PlatformPlansResponse {
-  ok: boolean;
-  plans?: PlatformPlan[];
-  error?: string;
-}
+
+
+
+
+
+
 
 interface FirebasePublicConfig {
   apiKey: string;
@@ -934,35 +620,15 @@ interface TenantUserRecord {
   active: boolean;
 }
 
-interface OperatorContext {
+export interface OperatorContext {
   tenantId: string;
   tenantUserId: string;
   role: TenantRole;
 }
 
-interface OperatorUiTheme {
-  tenantId: string;
-  name: string;
-  colors: {
-    shellBackground?: string;
-    panelBackground?: string;
-    headerBackground?: string;
-    accent?: string;
-    accentText?: string;
-    userBubble?: string;
-    assistantBubble?: string;
-    text?: string;
-  };
-  density: "comfortable" | "compact";
-  updatedBy?: string;
-  updatedAt: string;
-}
 
-interface OperatorUiThemeResponse {
-  ok: boolean;
-  theme?: OperatorUiTheme;
-  error?: string;
-}
+
+
 
 interface TenantBranding {
   tenantId: string;
@@ -1009,14 +675,14 @@ interface TenantUsersResponse {
 type WorkspaceFilterTargetModule = "requests" | "quotes" | "jobs" | "invoices" | "payments" | "schedule" | "capture";
 type ScheduleScope = "all" | "today" | "upcoming";
 
-interface WorkspaceTarget {
+export interface WorkspaceTarget {
   module: WorkspaceFilterTargetModule;
   objectId?: string;
   filterKey?: string;
   filterValue?: string;
 }
 
-interface NexOpsNotificationEntry {
+export interface NexOpsNotificationEntry {
   id: string;
   unread: boolean;
   title: string;
@@ -1035,53 +701,18 @@ interface NexOpsNotificationsResponse {
   error?: string;
 }
 
-interface VoiceSession {
-  id: string;
-  tenantId: string;
-  tenantUserId?: string;
-  state: "listening" | "thinking" | "speaking" | "interrupted" | "ended";
-  targetFirstAudioMs: number;
-  avatarProviderSlot: "provider_agnostic";
-  turnCount: number;
-  interruptionCount: number;
-  lastFirstAudioLatencyMs?: number;
-  lastEstimatedCostUsd?: number;
-  lastCharacterCount?: number;
-  lastAudioBytes?: number;
-}
 
-interface VoiceSessionResponse {
-  ok: boolean;
-  session?: VoiceSession;
-  error?: string;
-}
 
-interface BrowserSpeechRecognitionResult {
-  0: { transcript: string };
-  isFinal?: boolean;
-}
 
-interface BrowserSpeechRecognitionEvent {
-  resultIndex?: number;
-  results: ArrayLike<BrowserSpeechRecognitionResult>;
-}
 
-interface BrowserSpeechRecognition {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null;
-  onerror: (() => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-}
 
-type BrowserSpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
-type VoiceWindow = Window & {
-  SpeechRecognition?: BrowserSpeechRecognitionConstructor;
-  webkitSpeechRecognition?: BrowserSpeechRecognitionConstructor;
-};
+
+
+
+
+
+
+
 
 const buildTimeFirebaseConfig: FirebasePublicConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string || "",
@@ -1643,6 +1274,8 @@ function blankNewClientDraft() {
   };
 }
 
+export type NexOpsClientDraft = ReturnType<typeof blankNewClientDraft>;
+
 function draftPhoneFromRecord(phone: CrmPhone, index: number): ClientPhoneDraft {
   return {
     id: `phone_edit_${index}_${Math.random().toString(36).slice(2, 8)}`,
@@ -1771,13 +1404,8 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
   const [clientFieldMedia, setClientFieldMedia] = useState<NonNullable<FieldDocsMediaListResponse["media"]>>([]);
   const [clientFieldReports, setClientFieldReports] = useState<NonNullable<FieldDocsReportsListResponse["reports"]>>([]);
   const [clientSignedDocuments, setClientSignedDocuments] = useState<SignedDocumentRecord[]>([]);
-  const [clientQuickRequestDraft, setClientQuickRequestDraft] = useState({ title: "Quick payment request", amount: "0.00", memo: "" });
   const [clientRailStatus, setClientRailStatus] = useState("Portal activity and review follow-up will load when a client is selected.");
   const [clientRailBusy, setClientRailBusy] = useState("");
-  const [clientMediaMoveId, setClientMediaMoveId] = useState("");
-  const [clientMediaMoveJobId, setClientMediaMoveJobId] = useState("");
-  const [clientMediaMoveVisitId, setClientMediaMoveVisitId] = useState("");
-  const [clientMediaMoveTargets, setClientMediaMoveTargets] = useState<{ jobs: CaptureClientTargetJob[]; visits: CaptureClientTargetVisit[] }>({ jobs: [], visits: [] });
   const [lastPortalLink, setLastPortalLink] = useState("");
   const [status, setStatus] = useState("Loading clients...");
   const [query, setQuery] = useState("");
@@ -2369,10 +1997,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
       setClientFieldMedia([]);
       setClientFieldReports([]);
       setClientSignedDocuments([]);
-      setClientMediaMoveId("");
-      setClientMediaMoveJobId("");
-      setClientMediaMoveVisitId("");
-      setClientMediaMoveTargets({ jobs: [], visits: [] });
       setClientRailStatus("Portal activity and review follow-up will load when a client is selected.");
       return;
     }
@@ -2423,68 +2047,9 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     }
   }
 
-  async function beginClientMediaMove(mediaId: string): Promise<void> {
-    if (!selectedClientId) {
-      return;
-    }
-    setClientRailBusy(`media-targets-${mediaId}`);
-    setClientMediaMoveId(mediaId);
-    setClientMediaMoveJobId("");
-    setClientMediaMoveVisitId("");
-    try {
-      const body = await fetch(`/api/fielddocs/clients/${encodeURIComponent(selectedClientId)}/targets?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
-        .then((response) => response.json() as Promise<CaptureClientTargetsResponse>);
-      if (!body.ok) {
-        setClientMediaMoveTargets({ jobs: [], visits: [] });
-        setClientRailStatus(body.error ?? "Could not load job and visit targets for this media item.");
-        return;
-      }
-      setClientMediaMoveTargets({ jobs: body.jobs ?? [], visits: body.visits ?? [] });
-      setClientRailStatus("Choose a job or visit to move this client-level media onto the work rail.");
-    } catch {
-      setClientMediaMoveTargets({ jobs: [], visits: [] });
-      setClientRailStatus("Could not load job and visit targets for this media item.");
-    } finally {
-      setClientRailBusy("");
-    }
-  }
 
-  async function saveClientMediaMove(): Promise<void> {
-    if (!selectedClientId || !clientMediaMoveId || (!clientMediaMoveJobId && !clientMediaMoveVisitId)) {
-      return;
-    }
-    setClientRailBusy(`media-move-${clientMediaMoveId}`);
-    setClientRailStatus("Moving media onto the selected work rail...");
-    try {
-      const visit = clientMediaMoveTargets.visits.find((entry) => entry.id === clientMediaMoveVisitId);
-      const response = await fetch(`/api/fielddocs/media/${encodeURIComponent(clientMediaMoveId)}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tenantId: operatorContext.tenantId,
-          clientId: selectedClientId,
-          ...(clientMediaMoveJobId || visit?.jobId ? { jobId: clientMediaMoveJobId || visit?.jobId } : {}),
-          ...(clientMediaMoveVisitId ? { visitId: clientMediaMoveVisitId } : {})
-        })
-      });
-      const body = await response.json() as { ok: boolean; media?: FieldDocsMediaRecord; error?: string };
-      if (!response.ok || !body.ok || !body.media) {
-        setClientRailStatus(body.error ?? "Could not move this media item.");
-        return;
-      }
-      setClientMediaMoveId("");
-      setClientMediaMoveJobId("");
-      setClientMediaMoveVisitId("");
-      setClientMediaMoveTargets({ jobs: [], visits: [] });
-      setClientRailStatus("Media moved onto the selected job/visit rail.");
-      emitCrmMutation();
-      await refreshClientRails(selectedClientId);
-    } catch {
-      setClientRailStatus("Could not move this media item.");
-    } finally {
-      setClientRailBusy("");
-    }
-  }
+
+
 
   useEffect(() => {
     void refreshClientRails(selectedClientId, operatorContext.tenantId);
@@ -2516,11 +2081,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     }
   }
 
-  function openClientStatementPdf(clientId: string): void {
-    const url = `/api/crm/clients/${encodeURIComponent(clientId)}/statement.pdf?tenantId=${encodeURIComponent(operatorContext.tenantId)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-    setClientRailStatus("Statement PDF opened in a new tab.");
-  }
+
 
   async function sendClientStatement(clientId: string): Promise<void> {
     setClientRailBusy("send-statement");
@@ -2578,37 +2139,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     }
   }
 
-  async function createClientQuickPaymentRequest(clientId: string): Promise<void> {
-    if (!clientQuickRequestDraft.title.trim() || Number(clientQuickRequestDraft.amount) <= 0) {
-      setClientRailStatus("Quick payment requests need a title and amount.");
-      return;
-    }
-    setClientRailBusy("quick-payment");
-    setClientRailStatus("Creating quick payment request...");
-    try {
-      const body = await fetch(`/api/crm/clients/${encodeURIComponent(clientId)}/quick-payment-request`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tenantId: operatorContext.tenantId,
-          title: clientQuickRequestDraft.title.trim(),
-          amount: Number(clientQuickRequestDraft.amount),
-          ...(clientQuickRequestDraft.memo.trim() ? { memo: clientQuickRequestDraft.memo.trim() } : {})
-        })
-      }).then((response) => response.json() as Promise<{ ok: boolean; invoice?: { id: string; title: string }; error?: string }>);
-      if (!body.ok || !body.invoice) {
-        setClientRailStatus(body.error ?? "Quick payment request failed.");
-        return;
-      }
-      setClientRailStatus(`Quick payment request created as real invoice ${body.invoice.id}.`);
-      await loadClients(selectedClientId || clientId);
-      openInvoiceWorkspace(body.invoice.id);
-    } catch {
-      setClientRailStatus("Quick payment request failed.");
-    } finally {
-      setClientRailBusy("");
-    }
-  }
+
 
   async function saveClientMarketingConsent(clientId: string, marketing: boolean): Promise<void> {
     setClientRailBusy("marketing-consent");
@@ -2682,49 +2213,9 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     }
   }
 
-  async function stopClientReviewSequence(reviewSequenceId: string): Promise<void> {
-    setClientRailBusy(`stop-review-${reviewSequenceId}`);
-    setClientRailStatus("Stopping review follow-up...");
-    try {
-      const body = await fetch(`/api/crm/review-sequences/${encodeURIComponent(reviewSequenceId)}/stop`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: operatorContext.tenantId })
-      }).then((response) => response.json() as Promise<{ ok: boolean; error?: string }>);
-      if (!body.ok) {
-        setClientRailStatus(body.error ?? "Review sequence could not be stopped.");
-        return;
-      }
-      await refreshClientRails(selectedClientId, operatorContext.tenantId);
-      setClientRailStatus("Review follow-up stopped.");
-    } catch {
-      setClientRailStatus("Review sequence could not be stopped.");
-    } finally {
-      setClientRailBusy("");
-    }
-  }
 
-  async function markClientReviewComplete(reviewSequenceId: string): Promise<void> {
-    setClientRailBusy(`mark-reviewed-${reviewSequenceId}`);
-    setClientRailStatus("Marking review complete...");
-    try {
-      const body = await fetch(`/api/crm/review-sequences/${encodeURIComponent(reviewSequenceId)}/mark-reviewed`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: operatorContext.tenantId })
-      }).then((response) => response.json() as Promise<{ ok: boolean; error?: string }>);
-      if (!body.ok) {
-        setClientRailStatus(body.error ?? "Review completion could not be recorded.");
-        return;
-      }
-      await refreshClientRails(selectedClientId, operatorContext.tenantId);
-      setClientRailStatus("Review completion recorded.");
-    } catch {
-      setClientRailStatus("Review completion could not be recorded.");
-    } finally {
-      setClientRailBusy("");
-    }
-  }
+
+
 
   async function loadNotifications(): Promise<void> {
     try {

@@ -92,7 +92,7 @@ interface NexReachAudienceMember {
   marketingConsent: boolean;
 }
 
-interface NexReachApiResponse<T> {
+interface NexReachApiResponse {
   ok: boolean;
   error?: string;
   drafts?: NexReachDraft[];
@@ -236,12 +236,12 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
   }
 
   async function refreshEligibility(): Promise<void> {
-    const body = await fetchJson<NexReachApiResponse<NexReachEligibilityRecord[]>>(`/api/nexreach/eligibility?tenantId=${encodeURIComponent(operatorContext.tenantId)}`);
+    const body = await fetchJson<NexReachApiResponse>(`/api/nexreach/eligibility?tenantId=${encodeURIComponent(operatorContext.tenantId)}`);
     setEligibility(body.records ?? []);
   }
 
   async function refreshPendingDrafts(): Promise<void> {
-    const body = await fetchJson<NexReachApiResponse<NexReachDraft[]>>(`/api/nexreach/drafts?tenantId=${encodeURIComponent(operatorContext.tenantId)}&status=approval_pending`);
+    const body = await fetchJson<NexReachApiResponse>(`/api/nexreach/drafts?tenantId=${encodeURIComponent(operatorContext.tenantId)}&status=approval_pending`);
     const drafts = body.drafts ?? [];
     setPendingDrafts(drafts);
     setDraftEdits((current) => {
@@ -259,22 +259,22 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
   }
 
   async function refreshReadyDrafts(): Promise<void> {
-    const body = await fetchJson<NexReachApiResponse<NexReachDraft[]>>(`/api/nexreach/drafts?tenantId=${encodeURIComponent(operatorContext.tenantId)}&status=publish_ready`);
+    const body = await fetchJson<NexReachApiResponse>(`/api/nexreach/drafts?tenantId=${encodeURIComponent(operatorContext.tenantId)}&status=publish_ready`);
     setReadyDrafts(body.drafts ?? []);
   }
 
   async function refreshShowcases(): Promise<void> {
-    const body = await fetchJson<NexReachApiResponse<NexReachShowcase[]>>(`/api/nexreach/showcases?tenantId=${encodeURIComponent(operatorContext.tenantId)}`);
+    const body = await fetchJson<NexReachApiResponse>(`/api/nexreach/showcases?tenantId=${encodeURIComponent(operatorContext.tenantId)}`);
     setShowcases(body.showcases ?? []);
   }
 
   async function refreshReviews(): Promise<void> {
-    const body = await fetchJson<NexReachApiResponse<NexReachReview[]>>(`/api/nexreach/reviews?tenantId=${encodeURIComponent(operatorContext.tenantId)}`);
+    const body = await fetchJson<NexReachApiResponse>(`/api/nexreach/reviews?tenantId=${encodeURIComponent(operatorContext.tenantId)}`);
     setReviews(body.reviews ?? []);
   }
 
   async function refreshSettings(): Promise<void> {
-    const body = await fetchJson<NexReachApiResponse<NexReachSettings>>(`/api/nexreach/settings?tenantId=${encodeURIComponent(operatorContext.tenantId)}`);
+    const body = await fetchJson<NexReachApiResponse>(`/api/nexreach/settings?tenantId=${encodeURIComponent(operatorContext.tenantId)}`);
     if (body.settings) {
       setSettings(body.settings);
     }
@@ -291,7 +291,7 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
     if (nextFilters.closedSince.trim()) {
       params.set("closedSince", nextFilters.closedSince.trim());
     }
-    const body = await fetchJson<NexReachApiResponse<NexReachAudienceMember[]>>(`/api/nexreach/audience?${params.toString()}`);
+    const body = await fetchJson<NexReachApiResponse>(`/api/nexreach/audience?${params.toString()}`);
     setAudience(body.audience ?? []);
   }
 
@@ -315,7 +315,6 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
 
   useEffect(() => {
     void refreshAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [operatorContext.tenantId]);
 
   const audienceExportHref = useMemo(() => {
@@ -433,7 +432,7 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
   async function issuePortfolioLink(): Promise<void> {
     setStatus("Issuing portfolio link...");
     try {
-      const body = await fetchJson<NexReachApiResponse<never>>(`/api/nexreach/portfolio-link`, {
+      const body = await fetchJson<NexReachApiResponse>(`/api/nexreach/portfolio-link`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ tenantId: operatorContext.tenantId })

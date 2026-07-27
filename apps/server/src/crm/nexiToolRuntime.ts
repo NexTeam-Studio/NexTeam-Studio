@@ -1,24 +1,5 @@
 import { z } from "zod";
-import {
-  addressSchema,
-  clientCommunicationSettingsSchema,
-  clientContactSchema,
-  parseAddress,
-  RailError,
-  sanitizeAddressText,
-  personNameSchema,
-  type ApprovalQueueService,
-  type Client,
-  type CRMProvider,
-  type Invoice,
-  type Job,
-  type NexiTool,
-  type Quote,
-  type RequestForm,
-  type ServiceRequest,
-  type Source,
-  type Tenant
-} from "@nexteam/core";
+import { addressSchema, clientCommunicationSettingsSchema, clientContactSchema, parseAddress, RailError, sanitizeAddressText, personNameSchema, type ApprovalQueueService, type Client, type CRMProvider, type Invoice, type Job, type Quote, type ServiceRequest, type Source, type Tenant } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../comms/gmailRegistry.js";
 import type { AccessContext } from "../auth/accessContext.js";
@@ -28,13 +9,7 @@ import type { LedgerService } from "./ledgerFoundation.js";
 import type { OperationsHubService } from "./operationsHub.js";
 import type { PortalHubService } from "./portalHubService.js";
 import type { ReviewSequenceService } from "./reviewSequenceService.js";
-import {
-  availableRequestFields,
-  buildServiceRequest,
-  defaultRequestForms,
-  ensureRequestForms,
-  notifyRequestCreated
-} from "./requestFoundation.js";
+import { availableRequestFields, buildServiceRequest, defaultRequestForms, ensureRequestForms, notifyRequestCreated } from "./requestFoundation.js";
 import { ensureQuoteConfiguration, materializeQuoteRecord, quoteComposerInputSchema, quotePreviewBody } from "./quoteFoundation.js";
 
 const clientLookupInputSchema = z.object({ q: z.string().default("") });
@@ -435,7 +410,9 @@ function parseRequestAddress(value: string): { street1: string; city: string; pr
   if (!parsed) {
     return null;
   }
-  const { country: _country, street2: _street2, ...address } = parsed;
+  const {
+    ...address
+  } = parsed;
   return address;
 }
 

@@ -3,72 +3,14 @@ import AsyncStorageModule, { type AsyncStorageStatic } from "@react-native-async
 import NetInfo from "@react-native-community/netinfo";
 import { Audio } from "expo-av";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import {
-  EncodingType,
-  copyAsync,
-  documentDirectory,
-  makeDirectoryAsync,
-  readAsStringAsync
-} from "expo-file-system/legacy";
+import { EncodingType, copyAsync, documentDirectory, makeDirectoryAsync, readAsStringAsync } from "expo-file-system/legacy";
 import * as Location from "expo-location";
-import {
-  ActivityIndicator,
-  Alert,
-  AppState,
-  FlatList,
-  Image,
-  Modal,
-  PanResponder,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View
-} from "react-native";
+import { ActivityIndicator, Alert, AppState, Image, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  LOCAL_DEV_PROFILES,
-  createLocalDevSession,
-  currentMobileIdToken,
-  mobileSessionFromAccess,
-  restoreLocalDevSession,
-  saveLocalDevSession,
-  signInMobileFirebase,
-  signOutMobileFirebase,
-  type DevHeaderProfile
-} from "./auth.js";
-import {
-  CaptureApiClient,
-  type MobileDayBoard,
-  type MobileDayBoardSuggestionCandidate,
-  type MobileDayBoardVisit,
-  type MobileLocalProfile,
-  type MobileSessionBootstrap,
-  type MobileVisitContext
-} from "./captureApi.js";
-import {
-  TODAY_VISIT_SUGGEST_RADIUS_METERS,
-  KNOWN_PROPERTY_SUGGEST_RADIUS_METERS,
-  deriveSessionSyncStatus,
-  findCaptureSuggestion,
-  sessionHasQueuedWork,
-  shouldReauthenticate
-} from "./captureHelpers.js";
-import {
-  captureNarrationDraftSchema,
-  capturePhotoDraftSchema,
-  captureSessionDraftSchema,
-  type CaptureAnnotation,
-  type CaptureChecklistDraft,
-  type CaptureChecklistFieldUpdate,
-  type CaptureNarrationDraft,
-  type CapturePhotoDraft,
-  type CaptureRequestDraft,
-  type CaptureSessionDraft,
-  type MobileRuntimeConfig,
-  type MobileSession
-} from "./captureModels.js";
+import { LOCAL_DEV_PROFILES, createLocalDevSession, currentMobileIdToken, mobileSessionFromAccess, restoreLocalDevSession, saveLocalDevSession, signInMobileFirebase, signOutMobileFirebase, type DevHeaderProfile } from "./auth.js";
+import { CaptureApiClient, type MobileDayBoard, type MobileDayBoardVisit, type MobileLocalProfile, type MobileSessionBootstrap, type MobileVisitContext } from "./captureApi.js";
+import { deriveSessionSyncStatus, findCaptureSuggestion, sessionHasQueuedWork, shouldReauthenticate } from "./captureHelpers.js";
+import { captureNarrationDraftSchema, capturePhotoDraftSchema, captureSessionDraftSchema, type CaptureAnnotation, type CaptureChecklistDraft, type CaptureChecklistFieldUpdate, type CapturePhotoDraft, type CaptureRequestDraft, type CaptureSessionDraft, type MobileRuntimeConfig, type MobileSession } from "./captureModels.js";
 import { queueSummary, syncQueuedSessions } from "./captureQueue.js";
 import { AsyncStorageCaptureSessionStore } from "./captureSessionStore.js";
 import { fetchMobileRuntimeConfig } from "./runtimeConfig.js";
@@ -220,16 +162,7 @@ function existingAssignmentFromVisit(visit: MobileDayBoardVisit): CaptureSession
   };
 }
 
-function captureSuggestionCandidates(board: MobileDayBoard | null): CapturePhotoDraft["gps"][] {
-  return board?.suggestionCandidates
-    .map((candidate) => candidate.serviceAddress.geo)
-    .filter((geo): geo is NonNullable<MobileDayBoardSuggestionCandidate["serviceAddress"]["geo"]> => Boolean(geo))
-    .map((geo) => ({
-      latitude: geo.latitude,
-      longitude: geo.longitude,
-      accuracyMeters: geo.accuracyMeters
-    })) ?? [];
-}
+
 
 function selectedProfileId(session: MobileSession | null): string {
   return session?.tenantUserId ?? DEFAULT_LOCAL_PROFILE_ID;
@@ -637,12 +570,7 @@ export default function MobileCaptureApp(): React.ReactElement {
     return parsed;
   }
 
-  async function updateActiveSession(updater: (session: CaptureSessionDraft) => CaptureSessionDraft): Promise<void> {
-    if (!activeSession) {
-      return;
-    }
-    await persistAndHydrate(updater(activeSession));
-  }
+
 
   async function switchLocalProfile(profileId: string): Promise<void> {
     if (!runtime) {

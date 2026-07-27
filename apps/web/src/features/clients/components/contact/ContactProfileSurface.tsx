@@ -1,7 +1,7 @@
 import React from "react";
 import { formatAddress } from "@nexteam/shared";
 import { NexDocsClientWorkspace } from "../../../../nexopsNexDocs";
-import { CLIENT_PROFILE_TABS } from "../../../../nexopsShell";
+import { CLIENT_PROFILE_TABS, type ClientProfileTab, type NexOpsModule } from "../../../../nexopsShell";
 import { nexiMapsHref } from "../../../../nexiStandalone";
 import {
   CLIENT_CUSTOM_FIELD_RESERVED_LABELS,
@@ -10,61 +10,81 @@ import {
   createCustomFieldDraftRow,
   mobileBucketForClientTab,
   mobileTabsForBucket,
-  visibleCustomFields
+  visibleCustomFields,
+  type ClientProfileMobileBucket,
+  type CustomFieldDraftRow
 } from "./domain/clientProfile";
+import type {
+  ClientPortalActivityEntry,
+  CrmClient,
+  CrmContact,
+  CrmInvoice,
+  CrmJob,
+  CrmPaymentSummary,
+  CrmPhone,
+  CrmProperty,
+  CrmQuote,
+  CrmReceiptReviewSummary,
+  CrmRequestSummary,
+  FieldDocsMediaRecord,
+  OperatorContext,
+  ReviewSequenceRecord,
+  SignedDocumentRecord,
+  WorkspaceTarget
+} from "../../../nexopsShell/NexOpsWorkspace";
 
 export interface ContactProfileBindings {
-  activeClientProfileTab: any;
-  clientContactDisplayName: any;
-  clientDisplayName: any;
-  clientFieldMedia: any;
-  clientFieldReports: any;
-  clientOverviewCustomFieldValidation: any;
-  clientOverviewCustomFieldsDraft: any;
-  clientOverviewCustomFieldsOpen: any;
-  clientPortalActivity: any;
-  clientPrimaryAddress: any;
-  clientRailBusy: any;
-  clientRailStatus: any;
-  clientReviewSequences: any;
-  clientSignedDocuments: any;
-  clientStatusLabel: any;
-  deleteClientRecord: any;
-  formatPhoneDisplay: any;
-  lastPortalLink: any;
-  mobileClientExpandedBucket: any;
-  mobileClientViewport: any;
-  MobileClientEditGlyph: any;
-  MobileClientSummaryGlyph: any;
-  openCreateClientDrawer: any;
-  openEditClientWorkspace: any;
-  openWorkspaceTarget: any;
-  operatorContext: any;
-  orderedClientFieldMedia: any;
-  personDisplayName: any;
-  returnToClientRoster: any;
-  saveClientMarketingConsent: any;
-  saveClientOverviewCustomFields: any;
-  selectedClient: any;
-  selectedContact: any;
-  selectedEmail: any;
-  selectedInvoices: any;
-  selectedJobs: any;
-  selectedPayments: any;
-  selectedPhone: any;
-  selectedPhoneValue: any;
-  selectedProperties: any;
-  selectedQuotes: any;
-  selectedReceiptReviewSummaries: any;
-  selectedRequests: any;
-  sendClientPortalLink: any;
-  sendClientStatement: any;
-  setClientOverviewCustomFieldsDraft: any;
-  setClientOverviewCustomFieldsOpen: any;
-  setClientProfileTabRoute: any;
-  setMobileClientExpandedBucket: any;
-  setModule: any;
-  toggleCreateMenu: any;
+  activeClientProfileTab: ClientProfileTab;
+  clientContactDisplayName: (client: CrmClient, primaryContact?: CrmContact) => string;
+  clientDisplayName: (client: CrmClient) => string;
+  clientFieldMedia: FieldDocsMediaRecord[];
+  clientFieldReports: Array<{ id: string; title: string; pdfRef: string; status: string; jobId: string; propertyId?: string; visitId?: string; kind?: "field_report" | "ai_recap"; templateId?: string; snippetIds?: string[]; watermarkEnabled?: boolean; createdAt?: string; postedAt?: string }>;
+  clientOverviewCustomFieldValidation: { duplicateLabels: string[]; reservedConflicts: string[]; hasBlockingIssues: boolean };
+  clientOverviewCustomFieldsDraft: CustomFieldDraftRow[];
+  clientOverviewCustomFieldsOpen: boolean;
+  clientPortalActivity: ClientPortalActivityEntry[];
+  clientPrimaryAddress: (client: CrmClient) => string;
+  clientRailBusy: string;
+  clientRailStatus: string;
+  clientReviewSequences: ReviewSequenceRecord[];
+  clientSignedDocuments: SignedDocumentRecord[];
+  clientStatusLabel: (client: CrmClient) => string;
+  deleteClientRecord: (clientId: string) => Promise<void>;
+  formatPhoneDisplay: (phone: string) => string;
+  lastPortalLink: string;
+  mobileClientExpandedBucket: ClientProfileMobileBucket | null;
+  mobileClientViewport: boolean;
+  MobileClientEditGlyph: () => React.ReactElement;
+  MobileClientSummaryGlyph: (props: { kind: "phone" | "email" | "directions" }) => React.ReactElement;
+  openCreateClientDrawer: (surface?: "client" | "contact" | "property") => void;
+  openEditClientWorkspace: () => void;
+  openWorkspaceTarget: (target: WorkspaceTarget) => void;
+  operatorContext: OperatorContext;
+  orderedClientFieldMedia: Array<FieldDocsMediaRecord & { score?: number; matched?: string[] }>;
+  personDisplayName: (person?: { firstName?: string; lastName?: string }) => string;
+  returnToClientRoster: () => void;
+  saveClientMarketingConsent: (clientId: string, marketing: boolean) => Promise<void>;
+  saveClientOverviewCustomFields: (clientId: string) => Promise<void>;
+  selectedClient: CrmClient | null;
+  selectedContact: CrmContact | undefined;
+  selectedEmail: string | undefined;
+  selectedInvoices: CrmInvoice[];
+  selectedJobs: CrmJob[];
+  selectedPayments: CrmPaymentSummary[];
+  selectedPhone: CrmPhone | undefined;
+  selectedPhoneValue: string;
+  selectedProperties: CrmProperty[];
+  selectedQuotes: CrmQuote[];
+  selectedReceiptReviewSummaries: CrmReceiptReviewSummary[];
+  selectedRequests: CrmRequestSummary[];
+  sendClientPortalLink: (clientId: string, propertyId?: string) => Promise<void>;
+  sendClientStatement: (clientId: string) => Promise<void>;
+  setClientOverviewCustomFieldsDraft: React.Dispatch<React.SetStateAction<CustomFieldDraftRow[]>>;
+  setClientOverviewCustomFieldsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setClientProfileTabRoute: (tab: ClientProfileTab) => void;
+  setMobileClientExpandedBucket: React.Dispatch<React.SetStateAction<ClientProfileMobileBucket | null>>;
+  setModule: (module: NexOpsModule) => void;
+  toggleCreateMenu: () => void;
 }
 
 export function ContactProfileSurface({ bindings }: { bindings: ContactProfileBindings }): React.ReactElement {

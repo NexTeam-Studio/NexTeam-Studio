@@ -1,17 +1,5 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import {
-  RailError,
-  type BusEvent,
-  type Client,
-  type EventBus,
-  type Invoice,
-  type Job,
-  type Payment,
-  type Property,
-  type Quote,
-  type ReceiptReview,
-  type TenantBranding
-} from "@nexteam/core";
+import { RailError, type BusEvent, type Client, type EventBus, type Invoice, type Job, type Property, type Quote, type ReceiptReview, type TenantBranding } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../comms/gmailRegistry.js";
 import type { MediaRepository } from "../fielddocs/mediaRepository.js";
@@ -20,13 +8,8 @@ import type { SchedulingRepository } from "../scheduling/repository.js";
 import type { ScheduledVisit } from "../scheduling/schedulingEngine.js";
 import { resolveTemplateMessage, statementTemplateVariables } from "./communicationTemplates.js";
 import type { LedgerRepository } from "./ledgerRepository.js";
-import {
-  type PortalSessionRecord,
-  type PortalHubRepository,
-  type PortalSessionScope,
-  type PortalVerificationMethod
-} from "./portalHubRepository.js";
-import { renderInvoicePdf, renderQuotePdf } from "./quotePdf.js";
+import { type PortalSessionRecord, type PortalHubRepository, type PortalSessionScope, type PortalVerificationMethod } from "./portalHubRepository.js";
+
 import { renderClientStatementPdf, type ClientStatementLine, type ClientStatementSnapshot } from "./statementPdf.js";
 
 export const CLIENT_PORTAL_COOKIE = "nexportal_session";

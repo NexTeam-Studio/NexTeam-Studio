@@ -1,8 +1,8 @@
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
-import { initializeApp, getApps } from "firebase/app";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, type Auth, type User } from "firebase/auth";
+import { type Address as CrmAddress } from "@nexteam/shared";
+
+import { onAuthStateChanged, signInWithEmailAndPassword, type Auth, type User } from "firebase/auth";
 import "./styles.css";
 import "./features/quotes/components/quoteTemplates/quoteTemplates.css";
 import "./features/jobs/components/jobCore/jobCore.css";
@@ -13,91 +13,15 @@ import "./features/nexopsShell/documentPrimitives.css";
 import "./features/quotes/components/quoteEngine/quoteEngine.css";
 import "./features/settings/components/catalog/catalog.css";
 import "./features/settings/components/tenantConfig/tenantConfig.css";
-import { NexiIdentityMark, PlatformMark, ProductInlineLabel, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "./productBranding";
+import { NexiIdentityMark, PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "./productBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./nexopsHeader";
-import { NexDocsClientWorkspace } from "./nexopsNexDocs";
-import {
-  buildClientProfilePath,
-  buildNewClientPath,
-  buildModulePath,
-  buildWorkspaceSwitchPath,
-  CLIENT_PROFILE_TABS,
-  createMenuPresentation,
-  isDismissKey,
-  NEXOPS_MOBILE_NAV_GROUPS,
-  NEXOPS_MODULES,
-  NEXTEAM_WORKSPACE_OPTIONS,
-  nexOpsModuleFromPath,
-  parseClientProfilePath,
-  parseNexOpsLocation,
-  type ClientProfileTab,
-  type NexOpsCreateOption,
-  type NexOpsModule
-} from "./nexopsShell";
-import {
-  buildLeadSourceOptions,
-  CLIENT_CUSTOM_FIELD_RESERVED_LABELS,
-  CLIENT_PROFILE_MOBILE_BUCKET_LABELS,
-  customFieldRecordToDraftRows,
-  createCustomFieldDraftRow,
-  customFieldDraftRowsToRecord,
-  draftNameFieldsFromClientRecord,
-  mobileBucketForClientTab,
-  mobileTabsForBucket,
-  PROPERTY_CUSTOM_FIELD_RESERVED_LABELS,
-  primaryClientPhoneValue,
-  type ClientProfileMobileBucket,
-  type CustomFieldDraftRow,
-  validateCustomFieldDraftRows,
-  visibleCustomFields
-} from "./features/clients/components/contact/domain/clientProfile";
-import {
-  getMobileCreateFabScrollIntent,
-  mobileFabShouldHideOverlays,
-  mobileFabVisibleForViewport,
-  NEXOPS_MOBILE_CREATE_FAB_IDLE_MS,
-  NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY,
-  NEXOPS_SHARED_CREATE_MENU_ID,
-  NexOpsMobileCreateFab,
-  shouldPulseMobileCreateFab
-} from "./nexopsMobileCreateFab";
-import {
-  nexiActiveApprovalPrompt,
-  nexiConversationOffer,
-  nexiConversationOfferReplyAction,
-  NEXI_FRIENDLY_FAILURE_MESSAGE,
-  formatNexiOperatorDisplayName,
-  nexiIsApprovalPrompt,
-  nexiAddressActionValue,
-  nexiMapsHref,
-  nexiPhoneActionValue,
-  nexiShouldHideRenderedSource,
-  NexiStandaloneLayout,
-  nexiStoredSessionKey,
-  parseNexiStoredSession,
-  sanitizeNexiRenderedText,
-  stringifyNexiStoredSession,
-  type NexiStandalonePendingApproval
-} from "./nexiStandalone";
+
+import { buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, NEXTEAM_WORKSPACE_OPTIONS, type NexOpsCreateOption } from "./nexopsShell";
+
+
+import { nexiActiveApprovalPrompt, nexiConversationOffer, nexiConversationOfferReplyAction, NEXI_FRIENDLY_FAILURE_MESSAGE, formatNexiOperatorDisplayName, nexiIsApprovalPrompt, nexiAddressActionValue, nexiMapsHref, nexiPhoneActionValue, nexiShouldHideRenderedSource, NexiStandaloneLayout, nexiStoredSessionKey, parseNexiStoredSession, sanitizeNexiRenderedText, stringifyNexiStoredSession, type NexiStandalonePendingApproval } from "./nexiStandalone";
 import { resolveRequestorOriginForNexiMessage } from "./nexiRequestContext";
-import {
-  NexOpsWorkspace,
-  CONFIGURED_TENANT_ID,
-  NexOpsCreateMenu,
-  NexOpsNavGlyph,
-  NexOpsNotificationPanel,
-  clientDisplayName,
-  contactSummary,
-  fallbackOperatorContext,
-  fileToBase64,
-  formatPhoneActionLabel,
-  loadAuthBootstrap,
-  loadOperatorContext,
-  mediaUrl,
-  signInWithLocalCredentials,
-  signOutOperator,
-  sourceIsPhoto
-} from "./features/nexopsShell/NexOpsWorkspace";
+import { NexOpsWorkspace, CONFIGURED_TENANT_ID, NexOpsCreateMenu, NexOpsNavGlyph, NexOpsNotificationPanel, clientDisplayName, fallbackOperatorContext, fileToBase64, formatPhoneActionLabel, loadAuthBootstrap, loadOperatorContext, mediaUrl, signInWithLocalCredentials, signOutOperator, sourceIsPhoto } from "./features/nexopsShell/NexOpsWorkspace";
 
 
 
@@ -187,109 +111,25 @@ interface UploadMediaResponse {
   error?: string;
 }
 
-interface ScheduledVisit {
-  id: string;
-  jobId: string;
-  title: string;
-  start: string;
-  end: string;
-  assignedTo: string[];
-  status: string;
-  source?: string;
-  readOnly?: boolean;
-  location?: {
-    label: string;
-    geo?: { lat: number; lng: number };
-    address?: {
-      street1: string;
-      city: string;
-      province: string;
-      postalCode: string;
-      country: string;
-    };
-  };
-}
 
-interface CalendarResponse {
-  ok: boolean;
-  visits?: ScheduledVisit[];
-  sourceCounts?: { native: number };
-  warnings?: string[];
-  error?: string;
-}
 
-interface ContentDraft {
-  id: string;
-  kind: "gbp_post" | "social_post" | "article";
-  title: string;
-  body: string;
-  status: "draft" | "approval_pending" | "publish_ready" | "published_deferred" | "rejected";
-  createdAt: string;
-  mediaRefs: string[];
-}
 
-interface ContentQueueResponse {
-  ok: boolean;
-  drafts?: ContentDraft[];
-  error?: string;
-}
 
-interface ApprovalQueueItem {
-  id: string;
-  tenantId: string;
-  kind: string;
-  preview: {
-    title: string;
-    body: string;
-    mediaRefs?: string[];
-  };
-  execute: {
-    service: string;
-    op: string;
-    args?: unknown;
-  };
-  status: "pending" | "approved" | "rejected" | "executed" | "failed";
-  createdBy: "nexi" | "system" | "user";
-  decidedAt?: string;
-}
 
-interface ApprovalQueueResponse {
-  ok: boolean;
-  items?: ApprovalQueueItem[];
-  error?: string;
-}
 
-interface ApprovalActionResponse {
-  ok: boolean;
-  item?: ApprovalQueueItem;
-  result?: unknown;
-  error?: string;
-}
 
-interface ReputationReview {
-  id: string;
-  authorName: string;
-  rating: number;
-  comment: string;
-  reviewedAt: string;
-  replyStatus: "none" | "drafted" | "approved" | "published_deferred";
-}
 
-interface ReputationProfile {
-  id: string;
-  locationId: string;
-  status: "draft" | "approval_pending" | "publish_ready" | "published_deferred";
-}
 
-interface ReputationQueueResponse {
-  ok: boolean;
-  reviews?: ReputationReview[];
-  profiles?: ReputationProfile[];
-  pendingReplies?: ReputationReview[];
-  error?: string;
-  blocker?: string;
-  imported?: ReputationReview[];
-}
+
+
+
+
+
+
+
+
+
+
 
 type ContactChannel = "email" | "sms" | "both" | "none";
 type SmsCapability = "mobile" | "landline" | "fax" | "invalid" | "unknown";
@@ -309,21 +149,11 @@ interface CrmEmail {
   primary?: boolean;
 }
 
-interface ClientPhoneDraft {
-  id: string;
-  label: CrmPhone["label"];
-  value: string;
-  receivesMessages: boolean;
-  smsCapability: SmsCapability;
-}
 
-interface ClientEmailDraft {
-  id: string;
-  label: CrmEmail["label"];
-  value: string;
-}
 
-type ClientFormMode = "create" | "edit";
+
+
+
 
 interface CrmContact {
   personName?: { title?: string; firstName?: string; lastName?: string };
@@ -336,25 +166,9 @@ interface CrmContact {
   channelPreference?: ContactChannel;
 }
 
-interface CrmIntakeFieldValue {
-  key: string;
-  label: string;
-  value: string | number | boolean;
-  prominent?: boolean;
-  visibility: {
-    request: boolean;
-    quote: boolean;
-    job: boolean;
-    visit: boolean;
-    invoice: boolean;
-  };
-}
 
-interface CrmIntakeSnapshot {
-  narrative: string;
-  fieldValues: CrmIntakeFieldValue[];
-  fieldIndex: Record<string, string | number | boolean>;
-}
+
+
 
 interface CrmClient {
   id: string;
@@ -380,150 +194,25 @@ interface CrmClient {
   customFields?: Record<string, string | number | boolean>;
 }
 
-interface CrmProperty {
-  id: string;
-  tenantId: string;
-  clientId: string;
-  parentSiteId?: string;
-  siteName?: string;
-  label?: string;
-  address: CrmAddress;
-  billingAddressSameAsClient?: boolean;
-  access?: {
-    gateCode?: string;
-    accessNotes?: string;
-  };
-  contacts?: CrmContact[];
-  assets?: Array<{ id: string; kind: string; label: string; fields: Record<string, string | number | boolean> }>;
-  customFields?: Record<string, string | number | boolean>;
-  externalIds?: Record<string, string>;
-}
 
-interface CrmJob {
-  id: string;
-  tenantId: string;
-  number?: string;
-  clientId: string;
-  propertyId?: string;
-  requestId?: string;
-  quoteId?: string;
-  status: "Upcoming" | "Today" | "Late" | "Unscheduled" | "Action Required" | "Requires Invoicing" | "Archived";
-  title: string;
-  startAt?: string;
-  endAt?: string;
-  lineItems?: Array<{ id: string; code: string; name: string; quantity: number; unitPrice: number; total: number }>;
-  totals?: { subtotal: number; tax: number; total: number };
-  intake?: CrmIntakeSnapshot;
-  createdAt?: string;
-  updatedAt?: string;
-  externalIds?: Record<string, string>;
-}
 
-interface CrmQuote {
-  id: string;
-  tenantId: string;
-  clientId: string;
-  jobId?: string;
-  requestId?: string;
-  number?: string;
-  status: string;
-  title: string;
-  totals: { subtotal: number; tax: number; total: number };
-  intake?: CrmIntakeSnapshot;
-  convertedJobId?: string;
-  expiresAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
 
-interface CrmInvoice {
-  id: string;
-  tenantId: string;
-  clientId: string;
-  jobId?: string;
-  quoteId?: string;
-  requestId?: string;
-  number?: string;
-  status: string;
-  title: string;
-  totals: { subtotal: number; tax: number; total: number };
-  intake?: CrmIntakeSnapshot;
-  dueAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
 
-interface CrmRequestSummary {
-  id: string;
-  status: "new" | "archived" | "converted_to_quote" | "converted_to_job";
-  subject?: string;
-  clientName?: string;
-  selectedClientId?: string;
-  convertedQuoteId?: string;
-  convertedJobId?: string;
-  createdAt?: string;
-  reviewedAt?: string;
-}
 
-interface CrmPaymentSummary {
-  id: string;
-  clientId?: string;
-  invoiceId?: string;
-  status: "pending" | "failed" | "succeeded" | "refunded" | "partially_refunded";
-  provider?: string;
-  method?: string;
-  amount?: number;
-  createdAt?: string;
-}
 
-interface CrmReceiptReviewSummary {
-  id: string;
-  clientId?: string;
-  invoiceId?: string;
-  status: "draft" | "ready_to_send" | "sent";
-  subject?: string;
-  updatedAt?: string;
-}
 
-interface ClientPortalActivityEntry {
-  id: string;
-  occurredAt: string;
-  title: string;
-  detail: string;
-  objectType: "quote" | "invoice" | "visit" | "statement" | "payment" | "portal";
-  objectId?: string;
-}
 
-interface ReviewSequenceStepRecord {
-  id: string;
-  label: string;
-  offsetDays: number;
-  channels: "email" | "sms" | "both";
-  templateCategory: "review_request_initial" | "review_request_nudge";
-  dueAt: string;
-  status: "pending" | "sent" | "stopped";
-  sentAt?: string;
-}
 
-interface ReviewSequenceRecord {
-  id: string;
-  tenantId: string;
-  clientId: string;
-  jobId: string;
-  invoiceId?: string;
-  source: "automatic" | "manual";
-  providerState: "manual_only" | "gbp_pending";
-  status: "active" | "stopped" | "completed";
-  activeStepId?: string;
-  nextSendAt?: string;
-  stopReason?: "reviewed" | "opt_out" | "exhausted" | "manual";
-  reviewedAt?: string;
-  optOutAt?: string;
-  stoppedAt?: string;
-  steps: ReviewSequenceStepRecord[];
-  createdAt: string;
-  updatedAt: string;
-}
+
+
+
+
+
+
+
+
+
+
 
 interface CrmClientsResponse {
   ok: boolean;
@@ -531,60 +220,21 @@ interface CrmClientsResponse {
   error?: string;
 }
 
-interface CrmRecordsResponse {
-  ok: boolean;
-  properties?: CrmProperty[];
-  jobs?: CrmJob[];
-  quotes?: CrmQuote[];
-  invoices?: CrmInvoice[];
-  error?: string;
-}
 
-interface CrmRequestsResponse {
-  ok: boolean;
-  requests?: CrmRequestSummary[];
-  error?: string;
-}
 
-interface CrmPaymentsResponse {
-  ok: boolean;
-  payments?: CrmPaymentSummary[];
-  error?: string;
-}
 
-interface CrmReceiptReviewsResponse {
-  ok: boolean;
-  receiptReviews?: CrmReceiptReviewSummary[];
-  error?: string;
-}
 
-interface ClientPortalActivityResponse {
-  ok: boolean;
-  activity?: ClientPortalActivityEntry[];
-  error?: string;
-}
 
-interface ReviewSequenceStatusResponse {
-  ok: boolean;
-  sequences?: ReviewSequenceRecord[];
-  activeCount?: number;
-  error?: string;
-}
 
-interface SendPortalLinkResponse {
-  ok: boolean;
-  portalLink?: string;
-  target?: string;
-  delivery?: "email" | "sms" | "direct";
-  error?: string;
-}
 
-interface CrmClientCreateResponse {
-  ok: boolean;
-  client?: CrmClient;
-  property?: CrmProperty;
-  error?: string;
-}
+
+
+
+
+
+
+
+
 
 interface FieldDocsTemplateField {
   id: string;
@@ -685,73 +335,23 @@ interface FieldDocsMediaListResponse {
   error?: string;
 }
 
-interface CaptureBatchRecord {
-  id: string;
-  tenantId: string;
-  status: "draft" | "unassigned" | "assigned";
-  createdAt: string;
-  updatedAt: string;
-  createdBy?: string;
-  mediaIds: string[];
-  latestCapturedAt?: string;
-  originGps?: { lat: number; lng: number };
-  latestGps?: { lat: number; lng: number };
-  assignedClientId?: string;
-  assignedJobId?: string;
-  assignedVisitId?: string;
-  assignedRequestId?: string;
-  assignmentMode?: "existing_client" | "request" | "decide_later";
-  assignedAt?: string;
-  media: FieldDocsMediaRecord[];
-}
 
-interface CaptureBatchListResponse {
-  ok: boolean;
-  batches?: CaptureBatchRecord[];
-  error?: string;
-}
 
-interface CaptureBatchMutationResponse {
-  ok: boolean;
-  batch?: CaptureBatchRecord;
-  media?: FieldDocsMediaRecord[];
-  requestId?: string;
-  clientId?: string;
-  error?: string;
-}
 
-interface CaptureClientTargetJob {
-  id: string;
-  number?: string;
-  title: string;
-  status: string;
-  propertyId?: string;
-}
 
-interface CaptureClientTargetVisit {
-  id: string;
-  jobId: string;
-  title: string;
-  status: string;
-  start: string;
-  end: string;
-}
 
-interface CaptureClientTargetsResponse {
-  ok: boolean;
-  jobs?: CaptureClientTargetJob[];
-  visits?: CaptureClientTargetVisit[];
-  error?: string;
-}
 
-type CaptureWorkspaceView = "session" | "unassigned";
-type CaptureSessionMode = "fresh" | "choose" | "new-client" | "existing-client" | "continued" | "unassigned";
-type CaptureSessionOrigin = "new" | "reopened";
 
-interface CaptureRequestIntent {
-  batchId: string;
-  mediaIds: string[];
-}
+
+
+
+
+
+
+
+
+
+
 
 interface FieldDocsReportResponse {
   ok: boolean;
@@ -836,35 +436,9 @@ interface FieldDocsTextSnippetsResponse {
   error?: string;
 }
 
-interface SignedDocumentRecord {
-  id: string;
-  tenantId: string;
-  clientId: string;
-  jobId?: string;
-  propertyId?: string;
-  visitId?: string;
-  kind: "completion_signoff" | "waiver" | "change_order" | "custom";
-  title: string;
-  bodyText: string;
-  status: "pending_signature" | "signed";
-  signature?: {
-    mode: "typed" | "drawn";
-    typedName?: string;
-    drawnDataUrl?: string;
-    signedAt: string;
-    ipAddress: string;
-  };
-  createdBy?: string;
-  createdAt: string;
-  updatedAt: string;
-  signedAt?: string;
-}
 
-interface SignedDocumentsResponse {
-  ok: boolean;
-  records?: SignedDocumentRecord[];
-  error?: string;
-}
+
+
 
 type FieldDocsMediaHit = NonNullable<FieldDocsSearchResponse["hits"]>[number];
 type FieldDocsMediaAnnotation = NonNullable<FieldDocsMediaHit["annotations"]>[number];
@@ -913,23 +487,9 @@ interface PlatformPlansResponse {
   error?: string;
 }
 
-interface FirebasePublicConfig {
-  apiKey: string;
-  authDomain: string;
-  projectId: string;
-  storageBucket: string;
-  messagingSenderId: string;
-  appId: string;
-}
 
-interface RuntimeConfigResponse {
-  ok: boolean;
-  firebase: FirebasePublicConfig;
-  firebaseConfigured: boolean;
-  authRequired?: boolean;
-  localAuthEnabled?: boolean;
-  localProfiles?: LocalAuthProfileSummary[];
-}
+
+
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 
@@ -943,21 +503,9 @@ interface LocalAuthProfileSummary {
   label: string;
 }
 
-interface LocalAuthSessionResponse {
-  ok: boolean;
-  token?: string;
-  profile?: LocalAuthProfileSummary;
-  error?: string;
-}
 
-interface TenantUserRecord {
-  id: string;
-  tenantId: string;
-  email?: string;
-  displayName: string;
-  role: TenantRole;
-  active: boolean;
-}
+
+
 
 interface OperatorContext {
   tenantId: string;
@@ -1024,22 +572,12 @@ interface TenantBrandingResponse {
   error?: string;
 }
 
-interface TenantUsersResponse {
-  ok: boolean;
-  tenantId?: string;
-  users?: TenantUserRecord[];
-  error?: string;
-}
 
-type WorkspaceFilterTargetModule = "requests" | "quotes" | "jobs" | "invoices" | "payments" | "schedule" | "capture";
-type ScheduleScope = "all" | "today" | "upcoming";
 
-interface WorkspaceTarget {
-  module: WorkspaceFilterTargetModule;
-  objectId?: string;
-  filterKey?: string;
-  filterValue?: string;
-}
+
+
+
+
 
 interface NexOpsNotificationEntry {
   id: string;
@@ -1197,20 +735,6 @@ function isOwnerCustomizedOperatorTheme(theme: OperatorUiTheme | null): theme is
 
 
 
-function dayRange(day: string, view: "day" | "week" | "map"): { from: string; to: string } {
-  const from = new Date(`${day}T00:00:00.000Z`);
-  const to = new Date(from);
-  to.setUTCDate(to.getUTCDate() + (view === "week" ? 7 : 1));
-  return { from: from.toISOString(), to: to.toISOString() };
-}
-
-function formatVisitTime(value: string): string {
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
-}
-
-function visitStatusLabel(visit: ScheduledVisit): string {
-  return visit.readOnly ? "Read-only" : visit.status;
-}
 
 
 
@@ -1224,189 +748,22 @@ function visitStatusLabel(visit: ScheduledVisit): string {
 
 
 
-function channelLabel(channel: ContactChannel | undefined): string {
-  if (channel === "both") {
-    return "Email + one-way text";
-  }
-  if (channel === "sms") {
-    return "One-way text";
-  }
-  if (channel === "none") {
-    return "Off";
-  }
-  return "Email";
-}
-
-function smsEligibilityLabel(phone: CrmPhone): string {
-  if (!phone.receivesMessages) {
-    return "Text off";
-  }
-  if (phone.smsCapability === "mobile") {
-    return phone.smsMode === "two_way" ? "Text on, two-way" : "Text on, one-way";
-  }
-  if (phone.smsCapability === "landline" || phone.smsCapability === "fax" || phone.smsCapability === "invalid") {
-    return "Needs prompt before text";
-  }
-  return "Text on, confirm mobile";
-}
 
 
 
 
 
-function preferredChannelForClient(client: CrmClient): ContactChannel {
-  const primaryContact = client.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? client.contacts?.[0];
-  return primaryContact?.channelPreference ?? (client.consent.email && client.consent.sms ? "both" : client.consent.sms ? "sms" : "email");
-}
 
-function NexOpsCrmPanel(props: { tenantId: string }): React.ReactElement {
-  const [clients, setClients] = useState<CrmClient[]>([]);
-  const [status, setStatus] = useState("Loading NexOps clients...");
 
-  async function refresh(): Promise<void> {
-    setStatus("Loading NexOps clients...");
-    try {
-      const body = await fetch(`/api/crm/clients?tenantId=${encodeURIComponent(props.tenantId)}`)
-        .then((response) => response.json() as Promise<CrmClientsResponse>);
-      if (!body.ok) {
-        setClients([]);
-        setStatus(body.error ?? "NexOps CRM unavailable.");
-        return;
-      }
-      const nextClients = body.clients ?? [];
-      setClients(nextClients);
-      setStatus(nextClients.length ? `${nextClients.length} client${nextClients.length === 1 ? "" : "s"} visible.` : "No native NexOps clients yet.");
-    } catch {
-      setClients([]);
-      setStatus("NexOps CRM API unreachable.");
-    }
-  }
 
-  useEffect(() => {
-    void refresh();
-    const onCrmMutation = () => void refresh();
-    window.addEventListener("nexops:crm-mutated", onCrmMutation);
-    return () => window.removeEventListener("nexops:crm-mutated", onCrmMutation);
-  }, [props.tenantId]);
 
-  const richRecords = clients.filter((client) => (client.contacts?.length ?? 0) > 0 || client.displayNamePreference || client.communicationSettings);
-  const previewClients = clients.slice(0, 6);
-  const selectedClient = previewClients[0];
-  const totalContacts = clients.reduce((count, client) => count + (client.contacts?.length ?? 0), 0);
-  const textReadyCount = clients.filter((client) => {
-    const contact = client.contacts?.find((entry) => entry.correspondenceContact) ?? client.contacts?.[0];
-    const phone = contact?.phones?.find((entry) => entry.receivesMessages) ?? contact?.phones?.[0];
-    return phone?.receivesMessages && phone.smsCapability === "mobile";
-  }).length;
 
-  return (
-    <aside className="nexops-card nexops-crm-workspace">
-      <div className="nexops-topline">
-        <div>
-          <p className="eyebrow">NexOps</p>
-          <h2>Clients</h2>
-          <p>{status}</p>
-        </div>
-        <div className="nexops-actions" aria-label="Client actions">
-          <button type="button">New client</button>
-          <button type="button">CSV import</button>
-          <button type="button" onClick={() => void refresh()}>Refresh</button>
-        </div>
-      </div>
 
-      <div className="nexops-metrics" aria-label="Client snapshot">
-        <article>
-          <span>Clients</span>
-          <strong>{clients.length}</strong>
-          <small>{richRecords.length} NexOps-ready</small>
-        </article>
-        <article>
-          <span>Contacts</span>
-          <strong>{totalContacts}</strong>
-          <small>Parent correspondence</small>
-        </article>
-        <article>
-          <span>Text-ready</span>
-          <strong>{textReadyCount}</strong>
-          <small>One-way unless upgraded</small>
-        </article>
-      </div>
 
-      <div className="nexops-board">
-        <section className="nexops-list-pane" aria-label="Client list">
-          <div className="nexops-search-row">
-            <input aria-label="Search clients" placeholder="Search clients, sites, phone, email" />
-            <button type="button">Filter</button>
-          </div>
-          <div className="nexops-tabs" aria-label="Client filters">
-            <button type="button" className="active">All</button>
-            <button type="button">Needs review</button>
-            <button type="button">Text setup</button>
-          </div>
-          <div className="nexops-client-list">
-            {previewClients.map((client) => {
-              const primaryContact = client.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? client.contacts?.[0];
-              const primaryPhone = primaryContact?.phones?.find((phone) => phone.primary) ?? primaryContact?.phones?.[0];
-              return (
-                <article className="nexops-client-row" key={client.id}>
-                  <div>
-                    <h3>{clientDisplayName(client)}</h3>
-                    <p>{contactSummary(client)}</p>
-                  </div>
-                  <span>{primaryPhone ? smsEligibilityLabel(primaryPhone) : client.consent.sms ? "Confirm mobile" : "Email only"}</span>
-                </article>
-              );
-            })}
-            {!previewClients.length ? (
-              <article className="nexops-empty-list">
-                <h3>No native clients loaded yet</h3>
-                <p>Import by CSV for any tenant, or start with a native intake request.</p>
-              </article>
-            ) : null}
-          </div>
-        </section>
 
-        <section className="nexops-detail-pane" aria-label="Client detail preview">
-          <div className="nexops-detail-header">
-            <div>
-              <p className="eyebrow">{selectedClient ? "Client record" : "CRM workspace"}</p>
-              <h3>{selectedClient ? clientDisplayName(selectedClient) : "Client detail will open here"}</h3>
-              <p>{selectedClient ? contactSummary(selectedClient) : "Built around parent client, sites, contacts, work, billing, and files."}</p>
-            </div>
-            <button type="button">Edit</button>
-          </div>
 
-          <div className="nexops-detail-sections">
-            <article>
-              <h4>Primary contact</h4>
-              <p>{selectedClient ? channelLabel(preferredChannelForClient(selectedClient)) : "Email, text, or both per client. SMS prompts when number type is unknown."}</p>
-            </article>
-            <article>
-              <h4>Properties & sites</h4>
-              <p>{selectedClient ? "Site hierarchy ready for parent client -> site -> address." : "Supports named site/facility plus address. Billing can stay on parent client."}</p>
-            </article>
-            <article>
-              <h4>Work overview</h4>
-              <p>Requests, quotes, jobs, invoices, and visit history will roll up here.</p>
-            </article>
-            <article>
-              <h4>Billing</h4>
-              <p>Parent billing contact by default, separate billing address when unchecked.</p>
-            </article>
-            <article>
-              <h4>Files & media</h4>
-              <p>NexCam photos, PDFs, reports, and uploads attach to client/site/job.</p>
-            </article>
-            <article>
-              <h4>Import status</h4>
-              <p>{clients.length ? `${clients.length} native records loaded.` : "CSV import and native intake are the current receipt paths."}</p>
-            </article>
-          </div>
-        </section>
-      </div>
-    </aside>
-  );
-}
+
+
 
 
 
@@ -2132,8 +1489,6 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
   const checklistTemplate = checklist
     ? templates.find((item) => item.id === checklist.templateId) ?? template
     : template;
-  const propertyItems = template?.fields.filter((item) => item.memory === "property") ?? [];
-  const visitItems = template?.fields.filter((item) => item.memory === "visit") ?? [];
   const activeSectionRecord = checklist?.sectionStates.find((section) => section.section === activeChecklistSection);
   const activeSectionTemplate = checklistTemplate?.sections.find((section) => section.title === activeChecklistSection);
   const activeSectionAllowsNa = activeSectionTemplate?.allowNa === true;
@@ -2625,214 +1980,11 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
     );
   }
 
-  function renderTemplates(): React.ReactElement {
-    return (
-      <section className="nexops-module-page">
-        <div className="nexops-page-heading">
-          <div>
-            <h1>Checklist Templates</h1>
-            <p>{status}</p>
-          </div>
-          <div className="nexops-inline-actions">
-            <button type="button" onClick={() => void refreshTemplates()}>Refresh</button>
-            <button type="button" onClick={() => void createChecklist()}>Create visit checklist</button>
-          </div>
-        </div>
-        <article className="nexops-module-card wide nexops-request-builder-card">
-          <p className="eyebrow">New reusable template</p>
-          <div className="nexops-request-builder-grid">
-            <label className="nexops-field">
-              <span>Title</span>
-              <input value={templateDraft.title} onChange={(event) => setTemplateDraft((current) => ({ ...current, title: event.target.value }))} />
-            </label>
-            <label className="nexops-field">
-              <span>Slug</span>
-              <input value={templateDraft.slug} onChange={(event) => setTemplateDraft((current) => ({ ...current, slug: event.target.value }))} />
-            </label>
-            <label className="nexops-field">
-              <span>Applies to</span>
-              <select value={templateDraft.appliesTo} onChange={(event) => setTemplateDraft((current) => ({ ...current, appliesTo: event.target.value as typeof current.appliesTo }))}>
-                <option value="visit">Visit</option>
-                <option value="job">Job</option>
-                <option value="job_or_visit">Job or visit</option>
-              </select>
-            </label>
-            <label className="nexops-field">
-              <span>Description</span>
-              <input value={templateDraft.description} onChange={(event) => setTemplateDraft((current) => ({ ...current, description: event.target.value }))} />
-            </label>
-          </div>
-          <div className="nexops-request-builder-grid">
-            <label className="nexops-field">
-              <span>Field label</span>
-              <input value={draftField.label} onChange={(event) => setDraftField((current) => ({ ...current, label: event.target.value }))} />
-            </label>
-            <label className="nexops-field">
-              <span>Section</span>
-              <input value={draftField.section} onChange={(event) => setDraftField((current) => ({ ...current, section: event.target.value }))} />
-            </label>
-            <label className="nexops-field">
-              <span>Field type</span>
-              <select value={draftField.type} onChange={(event) => setDraftField((current) => ({ ...current, type: event.target.value as typeof current.type }))}>
-                <option value="free_text">Free text</option>
-                <option value="pass_fail">Pass / fail</option>
-                <option value="count">Count</option>
-                <option value="measurement">Measurement</option>
-                <option value="multi_select">Multi-select</option>
-                <option value="photo_attachment">Photo attachment</option>
-              </select>
-            </label>
-            <label className="nexops-field">
-              <span>Memory rail</span>
-              <select value={draftField.memory} onChange={(event) => setDraftField((current) => ({ ...current, memory: event.target.value as typeof current.memory }))}>
-                <option value="visit">Visit field</option>
-                <option value="property">Property field</option>
-              </select>
-            </label>
-            <label className="nexops-field">
-              <span>Unit (optional)</span>
-              <input value={draftField.unit} onChange={(event) => setDraftField((current) => ({ ...current, unit: event.target.value }))} />
-            </label>
-            <label className="nexops-field">
-              <span>Options (comma separated)</span>
-              <input value={draftField.optionsText} onChange={(event) => setDraftField((current) => ({ ...current, optionsText: event.target.value }))} />
-            </label>
-          </div>
-          <div className="nexops-inline-actions">
-            <button type="button" onClick={addDraftField}>Add field</button>
-            <button type="button" onClick={() => void saveTemplate()}>Save template</button>
-          </div>
-          <ul className="nexops-mini-list">
-            {draftFields.map((field) => (
-              <li key={field.id}>
-                <strong>{field.label}</strong>
-                <span>{field.section} · {field.type} · {field.memory}</span>
-              </li>
-            ))}
-          </ul>
-        </article>
-        <div className="nexcam-template-grid">
-          {templates.map((item) => (
-            <article className="nexops-module-card wide" key={item.id}>
-              <p className="eyebrow">Owner-editable template</p>
-              <h2>{item.title}</h2>
-              <p>{item.itemCount} fields across {item.sections.length} sections. {item.propertyPersistentCount} property-persistent, {item.visitFreshCount} visit-fresh.</p>
-              <div className="nexcam-item-columns">
-                <div>
-                  <h3>Property-persistent</h3>
-                  <ul className="nexcam-item-list">
-                    {item.fields.filter((field) => field.memory === "property").slice(0, 10).map((field) => <li key={`${field.id}`}>{field.section}: {field.label}</li>)}
-                  </ul>
-                </div>
-                <div>
-                  <h3>Visit-fresh</h3>
-                  <ul className="nexcam-item-list">
-                    {item.fields.filter((field) => field.memory === "visit").slice(0, 10).map((field) => <li key={`${field.id}`}>{field.section}: {field.label}</li>)}
-                  </ul>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-        {checklist ? (
-          <section className="nexops-module-page">
-            <div className="nexops-page-heading">
-              <div>
-                <h1>Checklist Editor</h1>
-                <p>{checklist.status === "completed" ? "Completed" : "Draft"} for {checklist.visitId ?? checklist.jobId ?? "current context"}.</p>
-              </div>
-              <div className="nexops-inline-actions">
-                <button type="button" onClick={() => void saveChecklist(false)}>Save draft</button>
-                <button type="button" onClick={() => void saveChecklist(true)}>Complete checklist</button>
-              </div>
-            </div>
-            <div className="nexcam-media-grid">
-              {checklist.fields.map((field) => renderChecklistField(field))}
-            </div>
-          </section>
-        ) : null}
-      </section>
-    );
-  }
 
-  function renderPhotos(): React.ReactElement {
-    return (
-      <section className="nexops-module-page">
-        <div className="nexops-page-heading">
-          <div>
-            <h1>Photos & Media</h1>
-            <p>Search native NexCam media by client/job/visit terms.</p>
-          </div>
-          <div className="nexops-inline-actions">
-            <input value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} placeholder="Deborah Justice" />
-            <button type="button" onClick={() => void refreshRecentMedia()}>Refresh recent</button>
-            <button type="button" onClick={() => void searchMedia()}>Search media</button>
-          </div>
-        </div>
-        <div className="nexcam-media-grid">
-          {recentMedia.map((hit) => (
-            <article className="nexops-module-card" key={`recent-${hit.id}`}>
-              <p className="eyebrow">Recent {hit.type}</p>
-              <h2>{hit.aiCaption || hit.storageRef}</h2>
-              <p>{hit.aiTags.length ? hit.aiTags.join(", ") : "No tags yet"}</p>
-              <small>{hit.visitId ? `Visit ${hit.visitId}` : hit.jobId ? `Job ${hit.jobId}` : "Unassigned review queue"}</small>
-            </article>
-          ))}
-          {mediaHits.map((hit) => (
-            <article className="nexops-module-card" key={hit.id}>
-              <p className="eyebrow">{hit.type}</p>
-              <h2>{hit.aiCaption || hit.storageRef}</h2>
-              <p>{hit.aiTags.length ? hit.aiTags.join(", ") : "No tags yet"}</p>
-              <small>{hit.visitId ? `Visit ${hit.visitId}` : hit.jobId ? `Job ${hit.jobId}` : "Unassigned review queue"}</small>
-            </article>
-          ))}
-          {!mediaHits.length && !recentMedia.length ? (
-            <article className="nexops-module-card">
-              <p className="eyebrow">Unresolved queue</p>
-              <h2>No media loaded in this view yet</h2>
-              <p>Search a real client or job after native uploads populate the media repository.</p>
-            </article>
-          ) : null}
-        </div>
-      </section>
-    );
-  }
 
-  function renderReports(): React.ReactElement {
-    return (
-      <section className="nexops-module-page">
-        <div className="nexops-page-heading">
-          <div>
-            <h1>Reports</h1>
-            <p>Checklist to branded PDF, ready for closeout receipt attachments.</p>
-          </div>
-          <div className="nexops-inline-actions">
-            <input value={reportTitle} onChange={(event) => setReportTitle(event.target.value)} />
-            <button type="button" onClick={() => void refreshReports()}>Refresh reports</button>
-            <button type="button" onClick={() => void createReport()}>Generate report</button>
-          </div>
-        </div>
-        <article className="nexops-module-card wide">
-          <p className="eyebrow">Latest report</p>
-          <h2>{report?.title ?? "No report generated in this session yet"}</h2>
-          <p>{report ? `${report.status} report ${report.id}` : "Create a checklist, search media, then generate a report."}</p>
-          {reportUrl ? <a href={reportUrl} target="_blank" rel="noreferrer">Open PDF</a> : null}
-        </article>
-        <ul className="nexops-record-list">
-          {reports.map((entry) => (
-            <li key={entry.id}>
-              <div>
-                <strong>{entry.title}</strong>
-                <small>{entry.visitId ? `Visit ${entry.visitId}` : `Job ${entry.jobId}`}</small>
-              </div>
-              <mark>{entry.status}</mark>
-              <a href={`/api/fielddocs/reports/${encodeURIComponent(entry.id)}/pdf?tenantId=${encodeURIComponent(operatorContext.tenantId)}`} target="_blank" rel="noreferrer">PDF</a>
-            </li>
-          ))}
-        </ul>
-      </section>
-    );
-  }
+
+
+
 
   function renderTemplatesPanel(): React.ReactElement {
     return (
@@ -3507,457 +2659,25 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
   );
 }
 
-function SchedulePanel(props: { tenantId: string }): React.ReactElement {
-  const [view, setView] = useState<"day" | "week" | "map">("day");
-  const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10));
-  const [visits, setVisits] = useState<ScheduledVisit[]>([]);
-  const [status, setStatus] = useState("Loading schedule...");
 
-  useEffect(() => {
-    let cancelled = false;
-    const range = dayRange(day, view);
-    setStatus("Loading schedule...");
-    fetch(`/api/scheduling/calendar?tenantId=${encodeURIComponent(props.tenantId)}&from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`)
-      .then((response) => response.json() as Promise<CalendarResponse>)
-      .then((body) => {
-        if (cancelled) {
-          return;
-        }
-        if (!body.ok) {
-          setStatus(body.error ?? "Schedule unavailable.");
-          setVisits([]);
-          return;
-        }
-        setVisits(body.visits ?? []);
-        if (!(body.visits ?? []).length) {
-          setStatus("No visits in this window yet.");
-          return;
-        }
-        setStatus("");
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setStatus("Schedule API unreachable.");
-          setVisits([]);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [day, props.tenantId, view]);
 
-  return (
-    <aside className="schedule-card">
-      <div className="schedule-heading">
-        <div>
-          <p className="eyebrow">M3 Scheduling</p>
-          <h2>Calendar Board</h2>
-        </div>
-        <input aria-label="Schedule date" type="date" value={day} onChange={(event) => setDay(event.target.value)} />
-      </div>
-      <div className="view-tabs" aria-label="Calendar views">
-        {(["day", "week", "map"] as const).map((candidate) => (
-          <button
-            className={candidate === view ? "active" : ""}
-            key={candidate}
-            type="button"
-            onClick={() => setView(candidate)}
-          >
-            {candidate}
-          </button>
-        ))}
-      </div>
-      {status ? <p className="schedule-status">{status}</p> : null}
-      <div className={`visit-list ${view}`}>
-        {visits.map((visit) => (
-          <article className="visit-card" key={visit.id}>
-            <div>
-              <p className="visit-time">{formatVisitTime(visit.start)} - {formatVisitTime(visit.end)}</p>
-              <h3>{visit.title}</h3>
-              <p>{visit.location?.label ?? "No location label"} - {visit.assignedTo.join(", ") || "Unassigned"}</p>
-            </div>
-            <span className="visit-status">{visitStatusLabel(visit)}</span>
-            {view === "map" ? (
-              <p className="map-line">
-                {visit.location?.geo ? `${visit.location.geo.lat.toFixed(4)}, ${visit.location.geo.lng.toFixed(4)}` : "No coordinates yet"}
-              </p>
-            ) : null}
-          </article>
-        ))}
-      </div>
-    </aside>
-  );
-}
 
-function ContentQueuePanel(props: { tenantId: string }): React.ReactElement {
-  const [drafts, setDrafts] = useState<ContentDraft[]>([]);
-  const [status, setStatus] = useState("Loading content queue...");
-  const [workingId, setWorkingId] = useState("");
 
-  async function refresh(): Promise<void> {
-    setStatus("Loading content queue...");
-    try {
-      const body = await fetch(`/api/content/queue?tenantId=${encodeURIComponent(props.tenantId)}`)
-        .then((response) => response.json() as Promise<ContentQueueResponse>);
-      if (!body.ok) {
-        setDrafts([]);
-        setStatus(body.error ?? "Content queue unavailable.");
-        return;
-      }
-      const pending = (body.drafts ?? []).filter((draft) => draft.status === "approval_pending");
-      setDrafts(pending);
-      setStatus(pending.length ? "Publishing stays parked until you approve it." : "No content drafts are waiting right now.");
-    } catch {
-      setDrafts([]);
-      setStatus("Content queue API unreachable.");
-    }
-  }
 
-  async function decide(draftId: string, action: "approve" | "reject"): Promise<void> {
-    setWorkingId(draftId);
-    setStatus(action === "approve" ? "Approving draft..." : "Rejecting draft...");
-    try {
-      const body = await fetch(`/api/content/drafts/${encodeURIComponent(draftId)}/${action}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: props.tenantId })
-      }).then((response) => response.json() as Promise<{ ok: boolean; error?: string }>);
-      setStatus(body.ok ? `Draft ${action === "approve" ? "approved" : "rejected"}.` : body.error ?? "Content decision failed.");
-      await refresh();
-    } catch {
-      setStatus("Content decision request failed.");
-    } finally {
-      setWorkingId("");
-    }
-  }
 
-  useEffect(() => {
-    void refresh();
-  }, [props.tenantId]);
 
-  return (
-    <aside className="content-card">
-      <div className="schedule-heading">
-        <div>
-          <p className="eyebrow">M5 Content</p>
-          <h2>Content Queue</h2>
-        </div>
-        <button className="refresh-button" type="button" onClick={() => void refresh()}>Refresh</button>
-      </div>
-      <p className="schedule-status">{status}</p>
-      <div className="content-list">
-        {drafts.map((draft) => (
-          <article className="content-draft" key={draft.id}>
-            <div className="content-draft-head">
-              <span>{draft.kind.replace("_", " ")}</span>
-              <span>{new Date(draft.createdAt).toLocaleDateString()}</span>
-            </div>
-            <h3>{draft.title}</h3>
-            <p>{draft.body.split(/\n+/)[0]}</p>
-            <div className="content-actions">
-              <button type="button" disabled={workingId === draft.id} onClick={() => void decide(draft.id, "approve")}>Approve</button>
-              <button className="secondary" type="button" disabled={workingId === draft.id} onClick={() => void decide(draft.id, "reject")}>Reject</button>
-            </div>
-          </article>
-        ))}
-      </div>
-    </aside>
-  );
-}
 
-function canExecuteApproval(item: ApprovalQueueItem): boolean {
-  return (item.execute.service === "comms" && item.execute.op === "sendEmail")
-    || (item.execute.service === "crm" && item.execute.op === "createClient")
-    || (item.execute.service === "intake" && item.execute.op === "provisionTenant");
-}
 
-function approvalPrimaryLabel(item: ApprovalQueueItem): string {
-  if (item.execute.service === "comms" && item.execute.op === "sendEmail") {
-    return "Approve & send";
-  }
-  if (item.execute.service === "crm" && item.execute.op === "createClient") {
-    return "Approve & create";
-  }
-  if (item.execute.service === "intake" && item.execute.op === "provisionTenant") {
-    return "Approve & provision";
-  }
-  return "Approve";
-}
-
-function approvalKindLabel(item: ApprovalQueueItem): string {
-  return item.kind.replaceAll("_", " ");
-}
 
 function responseQueuedApproval(sources: Source[] | undefined): boolean {
   return (sources ?? []).some((source) => source.ref.startsWith("appr_") || source.label.startsWith("ApprovalQueue "));
 }
 
-function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElement {
-  const [items, setItems] = useState<ApprovalQueueItem[]>([]);
-  const [status, setStatus] = useState("Loading approvals...");
-  const [workingId, setWorkingId] = useState("");
 
-  async function refresh(): Promise<void> {
-    setStatus("Loading approvals...");
-    try {
-      const body = await fetch(`/api/approval-queue?tenantId=${encodeURIComponent(props.tenantId)}&includeHistory=true`)
-        .then((response) => response.json() as Promise<ApprovalQueueResponse>);
-      if (!body.ok) {
-        setItems([]);
-        setStatus(body.error ?? "Approval queue unavailable.");
-        return;
-      }
-      const nextItems = body.items ?? [];
-      const pending = nextItems.filter((item) => item.status === "pending");
-      const history = nextItems.filter((item) => item.status !== "pending");
-      setItems(nextItems);
-      setStatus(`${pending.length} pending. ${history.length} historical.`);
-    } catch {
-      setItems([]);
-      setStatus("Approval queue API unreachable.");
-    }
-  }
 
-  async function approve(item: ApprovalQueueItem): Promise<void> {
-    setWorkingId(item.id);
-    setStatus(canExecuteApproval(item) ? "Approving and running..." : "Approving...");
-    try {
-      const approved = await fetch(`/api/approval-queue/${encodeURIComponent(item.id)}/approve`, {
-        method: "POST"
-      }).then((response) => response.json() as Promise<ApprovalActionResponse>);
-      if (!approved.ok) {
-        setStatus(approved.error ?? "Approval failed.");
-        return;
-      }
-      if (canExecuteApproval(item)) {
-        const executed = await fetch(`/api/approval-queue/${encodeURIComponent(item.id)}/execute`, {
-          method: "POST"
-        }).then((response) => response.json() as Promise<ApprovalActionResponse>);
-        setStatus(executed.ok ? "Approved and completed." : executed.error ?? "Approved, but running it failed.");
-        if (executed.ok && item.execute.service === "crm" && item.execute.op === "createClient") {
-          window.dispatchEvent(new CustomEvent("nexops:crm-mutated"));
-        }
-      } else {
-        setStatus("Approved.");
-      }
-      await refresh();
-    } catch {
-      setStatus("Approval request failed.");
-    } finally {
-      setWorkingId("");
-    }
-  }
 
-  async function reject(item: ApprovalQueueItem): Promise<void> {
-    setWorkingId(item.id);
-    setStatus("Rejecting...");
-    try {
-      const body = await fetch(`/api/approval-queue/${encodeURIComponent(item.id)}/reject`, {
-        method: "POST"
-      }).then((response) => response.json() as Promise<ApprovalActionResponse>);
-      setStatus(body.ok ? "Rejected." : body.error ?? "Reject failed.");
-      await refresh();
-    } catch {
-      setStatus("Reject request failed.");
-    } finally {
-      setWorkingId("");
-    }
-  }
 
-  useEffect(() => {
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), 15000);
-    const handleQueued = () => void refresh();
-    window.addEventListener("nexops:approval-queued", handleQueued);
-    return () => {
-      window.clearInterval(timer);
-      window.removeEventListener("nexops:approval-queued", handleQueued);
-    };
-  }, [props.tenantId]);
 
-  const pendingItems = items.filter((item) => item.status === "pending");
-  const historicalItems = items.filter((item) => item.status !== "pending");
-
-  function renderApprovalItem(item: ApprovalQueueItem): React.ReactElement {
-    const isPending = item.status === "pending";
-    return (
-      <article className="content-draft approval-item" key={item.id}>
-        <div className="content-draft-head">
-          <span>{approvalKindLabel(item)}</span>
-          <span>{isPending ? item.createdBy : item.status}</span>
-        </div>
-        <h3>{item.preview.title}</h3>
-        <p>{item.preview.body.split(/\n+/).filter(Boolean).slice(0, 3).join(" ")}</p>
-        {item.preview.mediaRefs?.length ? (
-          <div className="approval-attachments">
-            {item.preview.mediaRefs.map((ref) => <span key={ref}>{ref}</span>)}
-          </div>
-        ) : null}
-        {item.decidedAt ? <p className="approval-decided">Decided {new Date(item.decidedAt).toLocaleString()}</p> : null}
-        {isPending ? (
-          <div className="content-actions">
-            <button type="button" disabled={workingId === item.id} onClick={() => void approve(item)}>{approvalPrimaryLabel(item)}</button>
-            <button className="secondary" type="button" disabled={workingId === item.id} onClick={() => void reject(item)}>Reject</button>
-          </div>
-        ) : null}
-      </article>
-    );
-  }
-
-  return (
-    <aside className="approval-card">
-      <div className="schedule-heading">
-        <div>
-          <p className="eyebrow">ApprovalQueue</p>
-          <h2>Approvals</h2>
-        </div>
-        <button className="refresh-button" type="button" onClick={() => void refresh()}>Refresh</button>
-      </div>
-      <p className="schedule-status">{status}</p>
-      <h3 className="queue-section-heading">Pending</h3>
-      <div className="content-list">
-        {pendingItems.length ? pendingItems.map(renderApprovalItem) : <p className="empty-state">No approvals are waiting right now.</p>}
-      </div>
-      <h3 className="queue-section-heading">Approved / Rejected History</h3>
-      <div className="content-list">
-        {historicalItems.length ? historicalItems.map(renderApprovalItem) : <p className="empty-state">No approval history yet.</p>}
-      </div>
-    </aside>
-  );
-}
-
-function reputationUserMessage(error?: string): string {
-  const message = error ?? "";
-  if (/not allowed for this tenant|missing a tenant|missing a tenant role|role cannot perform|sign in is required/i.test(message)) {
-    return "Reviews are not connected for this sign-in yet. This user needs an owner or office-admin tenant role and a connected Google Business Profile.";
-  }
-  if (/GBP OAuth|location identifiers|not configured|credential/i.test(message)) {
-    return "Google reviews are not connected yet. Once your Google Business Profile is connected, this panel will show reviews and draft replies for approval.";
-  }
-  return message || "Review queue unavailable.";
-}
-
-function ReputationPanel(props: { tenantId: string; user: User }): React.ReactElement {
-  const [reviews, setReviews] = useState<ReputationReview[]>([]);
-  const [profiles, setProfiles] = useState<ReputationProfile[]>([]);
-  const [status, setStatus] = useState("Loading review queue...");
-  const [working, setWorking] = useState("");
-
-  async function headers(): Promise<HeadersInit> {
-    const token = await props.user.getIdToken();
-    return { authorization: `Bearer ${token}`, "content-type": "application/json" };
-  }
-
-  async function refresh(): Promise<void> {
-    setStatus("Loading review queue...");
-    try {
-      const body = await fetch(`/api/reputation/queue?tenantId=${encodeURIComponent(props.tenantId)}`, {
-        headers: await headers()
-      }).then((response) => response.json() as Promise<ReputationQueueResponse>);
-      if (!body.ok) {
-        setReviews([]);
-        setProfiles([]);
-        setStatus(reputationUserMessage(body.error));
-        return;
-      }
-      setReviews(body.reviews ?? []);
-      setProfiles(body.profiles ?? []);
-      setStatus((body.reviews ?? []).length ? "Review replies stay parked until you approve them." : "No reviews are waiting right now.");
-    } catch {
-      setReviews([]);
-      setProfiles([]);
-      setStatus("Review queue API unreachable.");
-    }
-  }
-
-  async function pollReviews(): Promise<void> {
-    setWorking("poll");
-    setStatus("Checking Google reviews...");
-    try {
-      const body = await fetch("/api/reputation/gbp/poll", {
-        method: "POST",
-        headers: await headers(),
-        body: JSON.stringify({ tenantId: props.tenantId })
-      }).then((response) => response.json() as Promise<ReputationQueueResponse>);
-      if (!body.ok) {
-        setStatus(reputationUserMessage(body.error));
-        return;
-      }
-      const count = body.imported?.length ?? 0;
-      setStatus(count ? `Imported ${count} review${count === 1 ? "" : "s"}.` : body.blocker ?? "No new reviews found.");
-      await refresh();
-    } catch {
-      setStatus("Review check request failed.");
-    } finally {
-      setWorking("");
-    }
-  }
-
-  async function draftReply(reviewId: string): Promise<void> {
-    setWorking(reviewId);
-    setStatus("Drafting reply...");
-    try {
-      const body = await fetch(`/api/reputation/reviews/${encodeURIComponent(reviewId)}/reply/draft`, {
-        method: "POST",
-        headers: await headers(),
-        body: JSON.stringify({ tenantId: props.tenantId })
-      }).then((response) => response.json() as Promise<{ ok: boolean; error?: string }>);
-      setStatus(body.ok ? "Reply drafted and parked for approval." : body.error ?? "Reply draft failed.");
-      await refresh();
-    } catch {
-      setStatus("Reply draft request failed.");
-    } finally {
-      setWorking("");
-    }
-  }
-
-  useEffect(() => {
-    void refresh();
-  }, [props.tenantId, props.user]);
-
-  return (
-    <aside className="content-card reputation-card">
-      <div className="schedule-heading">
-        <div>
-          <p className="eyebrow">M7 Reputation</p>
-          <h2>Reviews</h2>
-        </div>
-        <button className="refresh-button" type="button" disabled={working === "poll"} onClick={() => void pollReviews()}>
-          Check reviews
-        </button>
-      </div>
-      <p className="schedule-status">{status}</p>
-      <div className="content-list">
-        {reviews.map((review) => (
-          <article className="content-draft" key={review.id}>
-            <div className="content-draft-head">
-              <span>{review.rating}/5 stars</span>
-              <span>{new Date(review.reviewedAt).toLocaleDateString()}</span>
-            </div>
-            <h3>{review.authorName}</h3>
-            <p>{review.comment || "No public review text."}</p>
-            <p className="review-state">Reply: {review.replyStatus.replace("_", " ")}</p>
-            <div className="content-actions">
-              <button type="button" disabled={working === review.id || review.replyStatus === "drafted"} onClick={() => void draftReply(review.id)}>
-                Draft reply
-              </button>
-            </div>
-          </article>
-        ))}
-        {profiles.map((profile) => (
-          <article className="content-draft" key={profile.id}>
-            <div className="content-draft-head">
-              <span>Profile update</span>
-              <span>{profile.status.replace("_", " ")}</span>
-            </div>
-            <h3>{profile.locationId}</h3>
-            <p>Google Business Profile changes are approval-gated before publishing.</p>
-          </article>
-        ))}
-      </div>
-    </aside>
-  );
-}
 
 function AuthGate(props: {
   auth: Auth | null;
@@ -4686,12 +3406,7 @@ function NexiStandaloneChat(props: { auth: Auth | null; user: User }): React.Rea
     window.location.assign(path);
   }
 
-  function toggleCreateMenu(): void {
-    setMobileNavOpen(false);
-    setNotificationsOpen(false);
-    setModuleSwitcherOpen(false);
-    setCreateMenuOpen((current) => !current);
-  }
+
 
   function toggleNotifications(): void {
     setMobileNavOpen(false);
@@ -5305,688 +4020,7 @@ function NexiStandaloneChat(props: { auth: Auth | null; user: User }): React.Rea
   );
 }
 
-function Chat(props: { auth: Auth | null; user: User }): React.ReactElement {
-  const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
-  const [operatorTheme, setOperatorTheme] = useState<OperatorUiTheme | null>(null);
-  const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      text: "Nexi Job Desk is ready. Ask about schedule, job details, photos, or the Camp Mikell SiteJobBlueprint.",
-      sources: []
-    }
-  ]);
-  const [draft, setDraft] = useState("");
-  const [conversationId] = useState(() => `web-${crypto.randomUUID()}`);
-  const [working, setWorking] = useState(false);
-  const [health, setHealth] = useState<"checking" | "green" | "red">("checking");
-  const [activeMedia, setActiveMedia] = useState<Source | null>(null);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
-  const [handsFree, setHandsFree] = useState(false);
-  const [listening, setListening] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState("Voice off");
-  const [interimTranscript, setInterimTranscript] = useState("");
-  const [voiceSessionId, setVoiceSessionId] = useState<string | null>(null);
-  const [lastVoiceLatencyMs, setLastVoiceLatencyMs] = useState<number | null>(null);
-  const [uploadTarget, setUploadTarget] = useState("");
-  const [uploadStatus, setUploadStatus] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
-  const ttsAbortRef = useRef<AbortController | null>(null);
-  const handsFreeRef = useRef(false);
-  const voiceSessionRef = useRef<string | null>(null);
-  const voiceWindow = window as VoiceWindow;
-  const SpeechRecognition = voiceWindow.SpeechRecognition ?? voiceWindow.webkitSpeechRecognition;
-  const speechSupported = Boolean(SpeechRecognition);
 
-  useEffect(() => {
-    handsFreeRef.current = handsFree;
-  }, [handsFree]);
-
-  useEffect(() => {
-    voiceSessionRef.current = voiceSessionId;
-  }, [voiceSessionId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadOperatorContext(props.user)
-      .then((context) => {
-        if (!cancelled) {
-          setOperatorContext(context);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setOperatorContext(fallbackOperatorContext(props.user));
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [props.user]);
-
-  useEffect(() => {
-    let cancelled = false;
-    props.user.getIdToken()
-      .then((idToken) => fetch(`/api/sites/operator-ui?tenantId=${encodeURIComponent(operatorContext.tenantId)}`, {
-        headers: { authorization: `Bearer ${idToken}` }
-      }))
-      .then((response) => response.json() as Promise<OperatorUiThemeResponse>)
-      .then((body) => {
-        if (!cancelled && body.ok && body.theme) {
-          setOperatorTheme(body.theme);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setOperatorTheme(null);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [operatorContext.tenantId, props.user]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/public/tenant-branding?tenantId=${encodeURIComponent(operatorContext.tenantId)}`)
-      .then((response) => response.json() as Promise<TenantBrandingResponse>)
-      .then((body) => {
-        if (!cancelled && body.ok && body.branding) {
-          setTenantBranding(body.branding);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setTenantBranding(null);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [operatorContext.tenantId, props.user]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/health")
-      .then((response) => response.json() as Promise<{ ok?: boolean }>)
-      .then((body) => {
-        if (!cancelled) {
-          setHealth(body.ok ? "green" : "red");
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setHealth("red");
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => () => {
-    recognitionRef.current?.stop();
-    audioRef.current?.pause();
-    ttsAbortRef.current?.abort();
-  }, []);
-
-  async function startVoiceSession(): Promise<string | null> {
-    if (voiceSessionRef.current) {
-      return voiceSessionRef.current;
-    }
-    try {
-      const response = await fetch("/api/voice/session/start", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tenantId: operatorContext.tenantId,
-          tenantUserId: operatorContext.tenantUserId
-        })
-      });
-      const body = await response.json() as VoiceSessionResponse;
-      if (!body.ok || !body.session) {
-        throw new Error(body.error ?? "Voice session did not start.");
-      }
-      setVoiceSessionId(body.session.id);
-      voiceSessionRef.current = body.session.id;
-      return body.session.id;
-    } catch {
-      setVoiceStatus("Voice session did not start. Basic voice still works.");
-      return null;
-    }
-  }
-
-  async function updateVoiceSession(path: string, body?: unknown): Promise<void> {
-    const sessionId = voiceSessionRef.current;
-    if (!sessionId) {
-      return;
-    }
-    await fetch(`/api/voice/session/${encodeURIComponent(sessionId)}${path}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: body === undefined ? "{}" : JSON.stringify(body)
-    }).catch(() => undefined);
-  }
-
-  function finishSpokenReply(status = "Voice ready"): void {
-    setSpeaking(false);
-    ttsAbortRef.current = null;
-    if (handsFreeRef.current) {
-      void updateVoiceSession("/listen");
-      setVoiceStatus("Listening for the next question");
-      startDictation(true);
-      return;
-    }
-    setVoiceStatus(status);
-  }
-
-  async function speakAssistantWithBrowserVoice(text: string): Promise<boolean> {
-    if (typeof window === "undefined" || typeof SpeechSynthesisUtterance === "undefined" || !window.speechSynthesis) {
-      return false;
-    }
-    return await new Promise<boolean>((resolve) => {
-      try {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "en-US";
-        utterance.rate = 1;
-        utterance.pitch = 1;
-        const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find((voice) => /aria|samantha|jenny|ava|zira/i.test(voice.name))
-          ?? voices.find((voice) => /^en(?:-|_)/i.test(voice.lang))
-          ?? voices[0];
-        if (preferredVoice) {
-          utterance.voice = preferredVoice;
-        }
-        utterance.onend = () => {
-          finishSpokenReply("Voice ready (device voice)");
-          resolve(true);
-        };
-        utterance.onerror = () => {
-          setSpeaking(false);
-          ttsAbortRef.current = null;
-          setVoiceStatus("Voice playback blocked");
-          resolve(false);
-        };
-        window.speechSynthesis.speak(utterance);
-      } catch {
-        resolve(false);
-      }
-    });
-  }
-
-  function stopVoicePlayback(): void {
-    ttsAbortRef.current?.abort();
-    ttsAbortRef.current = null;
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    setSpeaking(false);
-  }
-
-  async function interruptVoice(reason = "operator_started_talking"): Promise<void> {
-    stopVoicePlayback();
-    await updateVoiceSession("/interrupt", { reason });
-    setVoiceStatus("Stopped. Listening.");
-    if (handsFreeRef.current) {
-      startDictation(true);
-    }
-  }
-
-  async function speakAssistant(text: string): Promise<void> {
-    if (!voiceEnabled || !text.trim()) {
-      return;
-    }
-    setSpeaking(true);
-    setVoiceStatus("Nexi is speaking");
-    const startedAt = performance.now();
-    const controller = new AbortController();
-    ttsAbortRef.current?.abort();
-    ttsAbortRef.current = controller;
-    try {
-      audioRef.current?.pause();
-      recognitionRef.current?.stop();
-      const response = await fetch("/api/voice/tts", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: operatorContext.tenantId, text }),
-        signal: controller.signal
-      });
-      if (!response.ok) {
-        throw new Error("TTS unavailable");
-      }
-      const audioBlob = await response.blob();
-      const firstAudioLatencyMs = Math.round(performance.now() - startedAt);
-      setLastVoiceLatencyMs(firstAudioLatencyMs);
-      await updateVoiceSession("/turn", {
-        firstAudioLatencyMs,
-        estimatedCostUsd: Number(response.headers.get("x-voice-estimated-cost-usd") ?? 0),
-        characterCount: Number(response.headers.get("x-voice-character-count") ?? 0),
-        audioBytes: Number(response.headers.get("x-voice-audio-bytes") ?? audioBlob.size)
-      });
-      const url = URL.createObjectURL(audioBlob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        finishSpokenReply();
-      };
-      audio.onerror = () => {
-        URL.revokeObjectURL(url);
-        setSpeaking(false);
-        ttsAbortRef.current = null;
-        setVoiceStatus("Voice playback failed");
-      };
-      await audio.play();
-    } catch (error) {
-      if (!(error instanceof DOMException && error.name === "AbortError")) {
-        const fellBackToDeviceVoice = await speakAssistantWithBrowserVoice(text);
-        if (fellBackToDeviceVoice) {
-          return;
-        }
-      }
-      setSpeaking(false);
-      ttsAbortRef.current = null;
-      setVoiceStatus(error instanceof DOMException && error.name === "AbortError" ? "Stopped." : "Voice playback blocked");
-    }
-  }
-
-  async function toggleVoice(): Promise<void> {
-    const next = !voiceEnabled;
-    setVoiceEnabled(next);
-    setVoiceStatus(next ? "Voice ready" : "Voice off");
-    if (!next) {
-      stopVoicePlayback();
-      recognitionRef.current?.stop();
-      setListening(false);
-      setHandsFree(false);
-      setInterimTranscript("");
-      setSpeaking(false);
-      return;
-    }
-    await startVoiceSession();
-  }
-
-  async function toggleHandsFree(): Promise<void> {
-    if (handsFree) {
-      setHandsFree(false);
-      handsFreeRef.current = false;
-      recognitionRef.current?.stop();
-      setListening(false);
-      setInterimTranscript("");
-      setVoiceStatus("Hands-free paused.");
-      return;
-    }
-    if (!speechSupported) {
-      setVoiceStatus("Mic not supported here");
-      return;
-    }
-    setVoiceEnabled(true);
-    setHandsFree(true);
-    handsFreeRef.current = true;
-    await startVoiceSession();
-    startDictation(true);
-  }
-
-  function startDictation(fullDuplex = false): void {
-    if (!SpeechRecognition || listening) {
-      setVoiceStatus("Mic not supported here");
-      return;
-    }
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.continuous = fullDuplex;
-    recognition.interimResults = fullDuplex;
-    recognition.onresult = (event) => {
-      const startIndex = event.resultIndex ?? 0;
-      const finalParts: string[] = [];
-      const interimParts: string[] = [];
-      for (let index = startIndex; index < event.results.length; index += 1) {
-        const result = event.results[index];
-        const transcript = result?.[0]?.transcript?.trim() ?? "";
-        if (!transcript) {
-          continue;
-        }
-        if (result?.isFinal || !fullDuplex) {
-          finalParts.push(transcript);
-        } else {
-          interimParts.push(transcript);
-        }
-      }
-      setInterimTranscript(interimParts.join(" "));
-      const transcript = finalParts.join(" ").trim();
-      if (!transcript) {
-        return;
-      }
-      if (fullDuplex) {
-        recognition.stop();
-        setListening(false);
-        setInterimTranscript("");
-        setVoiceStatus("Heard you. Checking now.");
-        void sendTextMessage(transcript);
-        return;
-      }
-      setDraft((current) => [current, transcript].filter(Boolean).join(" ").trim());
-      setVoiceStatus("Dictation captured");
-    };
-    recognition.onerror = () => {
-      setListening(false);
-      setVoiceStatus("Mic capture failed");
-    };
-    recognition.onend = () => {
-      setListening(false);
-      recognitionRef.current = null;
-    };
-    recognitionRef.current = recognition;
-    setListening(true);
-    setVoiceStatus("Listening");
-    recognition.start();
-  }
-
-  async function sendTextMessage(rawText: string): Promise<void> {
-    const text = rawText.trim();
-    if (!text || working) {
-      return;
-    }
-    const requestorOrigin = await resolveRequestorOriginForNexiMessage(
-      text,
-      typeof navigator !== "undefined" ? navigator.geolocation : undefined
-    );
-    setDraft("");
-    setWorking(true);
-    setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", text, sources: [] }]);
-    try {
-      const idToken = await props.user.getIdToken();
-      const response = await fetch("/api/nexi/message", {
-        method: "POST",
-        headers: { "content-type": "application/json", authorization: `Bearer ${idToken}` },
-        body: JSON.stringify({
-          tenantId: operatorContext.tenantId,
-          conversationId,
-          ...(requestorOrigin ? { requestorOrigin } : {}),
-          message: text
-        })
-      });
-      const body = await response.json() as NexiResponse;
-      const assistantText = body.ok ? body.answer ?? "I do not have an answer yet." : body.error ?? "Nexi could not answer that.";
-      setMessages((current) => [
-        ...current,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          text: assistantText,
-          sources: body.sources ?? []
-        }
-      ]);
-      if (body.ok && responseQueuedApproval(body.sources)) {
-        window.dispatchEvent(new CustomEvent("nexops:approval-queued"));
-      }
-      void speakAssistant(assistantText);
-    } catch {
-      const fallback = "Nexi could not reach the authenticated Job Desk API.";
-      setMessages((current) => [
-        ...current,
-        { id: crypto.randomUUID(), role: "assistant", text: fallback, sources: [] }
-      ]);
-      void speakAssistant(fallback);
-    } finally {
-      setWorking(false);
-    }
-  }
-
-  async function sendMessage(event: React.FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    await sendTextMessage(draft);
-  }
-
-  async function uploadJobDeskFile(event: React.ChangeEvent<HTMLInputElement>): Promise<void> {
-    const file = event.target.files?.[0];
-    event.currentTarget.value = "";
-    if (!file || uploading) {
-      return;
-    }
-    const linkTarget = uploadTarget.trim().slice(0, 120);
-    setUploading(true);
-    setUploadStatus(`Uploading ${file.name}...`);
-    setMessages((current) => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
-        role: "user",
-        text: `Upload ${file.name}${linkTarget ? ` for ${linkTarget}` : ""}`,
-        sources: []
-      }
-    ]);
-    try {
-      const fileBase64 = await fileToBase64(file);
-      const mime = file.type || "application/octet-stream";
-      const isImage = mime.startsWith("image/");
-      const response = await fetch("/api/fielddocs/uploads", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tenantId: operatorContext.tenantId,
-          ...(linkTarget ? { jobId: linkTarget } : {}),
-          filename: file.name,
-          mime,
-          fileBase64,
-          tags: ["job-desk-upload", ...(linkTarget ? [`linked:${linkTarget}`] : [])],
-          capturedBy: operatorContext.tenantUserId,
-          ...(isImage ? { imageBase64: fileBase64, imageMime: mime } : {})
-        })
-      });
-      const body = await response.json() as UploadMediaResponse;
-      if (!response.ok || !body.ok || !body.media) {
-        throw new Error(body.error ?? "Upload failed");
-      }
-      const mediaSource: Source = {
-        rail: "native",
-        ref: body.media.id,
-        label: `Uploaded ${body.media.type} ${file.name}`
-      };
-      const assistantText = linkTarget
-        ? `Uploaded ${file.name} and linked it to ${linkTarget}.`
-        : `Uploaded ${file.name} to the Job Desk media file.`;
-      setMessages((current) => [
-        ...current,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          text: assistantText,
-          sources: [mediaSource]
-        }
-      ]);
-      setUploadStatus("Upload saved.");
-      void speakAssistant(assistantText);
-    } catch {
-      const failure = "I couldn't upload that file yet. I wrote it down so we can fix the upload path instead of losing it.";
-      setMessages((current) => [...current, { id: crypto.randomUUID(), role: "assistant", text: failure, sources: [] }]);
-      setUploadStatus("Upload failed.");
-      void speakAssistant(failure);
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  const brandColors = tenantBranding?.colors;
-  const customOperatorTheme = isOwnerCustomizedOperatorTheme(operatorTheme) ? operatorTheme : null;
-  const themeStyle = {
-    "--jobdesk-shell-background": customOperatorTheme?.colors.shellBackground ?? brandColors?.background,
-    "--jobdesk-panel-background": customOperatorTheme?.colors.panelBackground ?? brandColors?.surface,
-    "--jobdesk-header-background": customOperatorTheme?.colors.headerBackground ?? brandColors?.primary,
-    "--jobdesk-accent": customOperatorTheme?.colors.accent ?? brandColors?.accent,
-    "--jobdesk-accent-text": customOperatorTheme?.colors.accentText ?? brandColors?.accentText,
-    "--jobdesk-user-bubble": customOperatorTheme?.colors.userBubble ?? brandColors?.userBubble,
-    "--jobdesk-assistant-bubble": customOperatorTheme?.colors.assistantBubble ?? brandColors?.assistantBubble,
-    "--jobdesk-text": customOperatorTheme?.colors.text ?? brandColors?.text,
-    "--jobdesk-muted-text": brandColors?.mutedText,
-    "--jobdesk-font-family": tenantBranding?.fontFamily
-  } as React.CSSProperties;
-
-  return (
-    <main className={`shell ops-shell density-${customOperatorTheme?.density ?? "comfortable"}`} style={themeStyle}>
-      <div className="ops-grid">
-      <section className="phone">
-        <header className="topbar">
-          <div className="brand-stack">
-            <div className="brand-stack-row">
-              <NexiIdentityMark className="brand-stack-nexi" />
-              <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} />
-            </div>
-            <h1>Nexi Job Desk</h1>
-            <p className="signed-in">{props.user.email ?? "Firebase operator"}</p>
-          </div>
-          <div className="top-actions">
-            <span className={`health ${health}`} aria-label={`Health ${health}`} />
-            <button className={`voice-toggle ${voiceEnabled ? "on" : ""}`} type="button" onClick={() => void toggleVoice()}>
-              {voiceEnabled ? "Voice on" : "Enable voice"}
-            </button>
-            <button
-              className={`voice-toggle ${handsFree ? "on" : ""}`}
-              disabled={!speechSupported}
-              type="button"
-              onClick={() => void toggleHandsFree()}
-            >
-              {handsFree ? "Hands-free on" : "Hands-free"}
-            </button>
-            <button className="sign-out" type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
-          </div>
-        </header>
-
-        <div className="thread" aria-live="polite">
-          {messages.map((message) => {
-            const photoSources = message.sources.filter(sourceIsPhoto);
-            const textSources = message.sources.filter((source) => !sourceIsPhoto(source));
-            return (
-            <article className={`bubble ${message.role}`} key={message.id}>
-              <p>{message.text}</p>
-              {photoSources.length > 0 ? (
-                <div className="photo-strip" aria-label="Photos from this answer">
-                  {photoSources.map((source) => (
-                    <figure className="photo-tile" key={`${source.rail}:${source.ref}`}>
-                      <button
-                        aria-label={`Open full-size ${source.label}`}
-                        className="photo-open"
-                        type="button"
-                        onClick={() => setActiveMedia(source)}
-                      >
-                        {sourceThumb(source)}
-                      </button>
-                      <figcaption className="photo-caption">
-                        <span>{source.label}</span>
-                        <a href={mediaDownloadUrl(source)} download={mediaDownloadName(source)}>
-                          Save
-                        </a>
-                      </figcaption>
-                    </figure>
-                  ))}
-                </div>
-              ) : null}
-              {textSources.length > 0 ? (
-                <div className="sources">
-                  {textSources.map((source) => (
-                    <span className="source" key={`${source.rail}:${source.ref}`}>
-                      <span>{source.label}</span>
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-            </article>
-          );
-          })}
-          {working ? <div className="typing">Nexi is checking...</div> : null}
-        </div>
-
-        <div className="voice-strip" aria-live="polite">
-          <span className={`voice-dot ${listening ? "listening" : speaking ? "speaking" : voiceEnabled ? "ready" : ""}`} />
-          <span>{voiceStatus}</span>
-          {lastVoiceLatencyMs !== null ? <span className="latency-chip">audio start {(lastVoiceLatencyMs / 1000).toFixed(1)}s</span> : null}
-          {interimTranscript ? <span className="interim-text">"{interimTranscript}"</span> : null}
-          {speaking ? (
-            <button className="voice-action" type="button" onClick={() => void interruptVoice()}>
-              Stop Nexi
-            </button>
-          ) : null}
-          {!speechSupported ? <span className="voice-note">Speech input unsupported in this browser</span> : null}
-        </div>
-
-        <div className="upload-strip" aria-live="polite">
-          <label className={`upload-button ${uploading ? "disabled" : ""}`}>
-            <span>{uploading ? "Uploading..." : "📎 Attach file"}</span>
-            <input
-              disabled={uploading}
-              type="file"
-              onChange={(event) => void uploadJobDeskFile(event)}
-            />
-          </label>
-          <input
-            aria-label="Optional job or client link for upload"
-            className="upload-target"
-            disabled={uploading}
-            placeholder="Job/client link"
-            value={uploadTarget}
-            onChange={(event) => setUploadTarget(event.target.value)}
-          />
-          {uploadStatus ? <span className="upload-status">{uploadStatus}</span> : null}
-        </div>
-
-        <form className="composer" onSubmit={sendMessage}>
-          <button
-            aria-label="Dictate message"
-            className={`mic ${listening ? "active" : ""}`}
-            disabled={!speechSupported || working}
-            type="button"
-            onClick={() => {
-              if (speaking) {
-                void interruptVoice();
-                return;
-              }
-              startDictation(handsFree);
-            }}
-          >
-            {speaking ? "Stop" : "Mic"}
-          </button>
-          <input
-            aria-label="Message Nexi"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder="Ask: What is on today's schedule?"
-          />
-          <button type="submit" disabled={working || !draft.trim()}>Send</button>
-        </form>
-      </section>
-      <div className="side-panels">
-        <NexOpsCrmPanel tenantId={operatorContext.tenantId} />
-        <SchedulePanel tenantId={operatorContext.tenantId} />
-        <ApprovalQueuePanel tenantId={operatorContext.tenantId} />
-        <ContentQueuePanel tenantId={operatorContext.tenantId} />
-        <ReputationPanel tenantId={operatorContext.tenantId} user={props.user} />
-      </div>
-      </div>
-      {activeMedia ? (
-        <div className="lightbox" role="dialog" aria-modal="true" aria-label={activeMedia.label} onClick={() => setActiveMedia(null)}>
-          <div className="lightbox-card" onClick={(event) => event.stopPropagation()}>
-            <img src={mediaUrl(activeMedia)} alt={activeMedia.label} />
-            <div className="lightbox-actions">
-              <a href={mediaDownloadUrl(activeMedia)} download={mediaDownloadName(activeMedia)}>
-                Save full-size
-              </a>
-              <button type="button" onClick={() => setActiveMedia(null)}>Close</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </main>
-  );
-}
 
 function App(): React.ReactElement {
   const [auth, setAuth] = useState<Auth | null>(null);

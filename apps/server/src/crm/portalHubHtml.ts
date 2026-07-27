@@ -162,14 +162,7 @@ function pageFrame(input: {
 </html>`;
 }
 
-function propertyLabel(snapshot: PortalHubSnapshot, propertyId?: string | undefined): string {
-  if (!propertyId) {
-    return "Client-wide";
-  }
-  return snapshot.properties.find((property) => property.id === propertyId)?.label
-    ?? snapshot.properties.find((property) => property.id === propertyId)?.siteName
-    ?? "Property";
-}
+
 
 function assignedFirstNames(input: string[]): string {
   if (!input.length) {

@@ -1,4 +1,4 @@
-import { healthResponseSchema, type RailError } from "@nexteam/core";
+import { healthResponseSchema } from "@nexteam/core";
 import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
 
 interface HealthRail {
@@ -11,32 +11,7 @@ interface HealthRail {
   detail?: string;
 }
 
-async function timeRail(provider: string, op: string, configured: boolean, run: () => Promise<{ ok: boolean; detail: string }>): Promise<HealthRail> {
-  const startedAt = Date.now();
-  try {
-    const result = await run();
-    return {
-      ok: result.ok,
-      configured,
-      provider,
-      op,
-      latencyMs: Date.now() - startedAt,
-      detail: result.detail
-    };
-  } catch (error) {
-    const maybeRail = error as Partial<RailError>;
-    const status = typeof maybeRail.status === "number" ? maybeRail.status : 500;
-    return {
-      ok: false,
-      configured,
-      provider,
-      op,
-      latencyMs: Date.now() - startedAt,
-      status,
-      detail: error instanceof Error ? error.message : "Unknown health error"
-    };
-  }
-}
+
 
 export async function buildHealth(env: NodeJS.ProcessEnv = process.env): Promise<unknown> {
   const comms = createCommsRailFromEnv(env);

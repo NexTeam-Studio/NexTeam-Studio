@@ -1,37 +1,20 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
-import { type ApprovalQueueService, RailError, type CaptureBatch, type Media, type Property } from "@nexteam/core";
+import { type ApprovalQueueService, RailError, type CaptureBatch, type Property } from "@nexteam/core";
 import type { UsageLogWriter } from "@nexteam/nexi";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import { MobilePushRegistrationSchema, MobileSyncRequestSchema, OfflineOperationSchema } from "@nexteam/mobile";
-import {
-  LOCAL_DEV_PROFILE_HEADER,
-  actorIdForAccess,
-  listLocalDevWebProfiles,
-  requireAccessContext,
-  requireTenantRole,
-  type AccessContext
-} from "../auth/accessContext.js";
+import { LOCAL_DEV_PROFILE_HEADER, actorIdForAccess, listLocalDevWebProfiles, requireAccessContext, requireTenantRole, type AccessContext } from "../auth/accessContext.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 import type { LedgerService } from "../crm/ledgerFoundation.js";
-import {
-  createStripeTerminalConnectionToken,
-  createStripeTerminalPaymentIntent,
-  retrieveStripeTerminalPaymentIntent,
-  stripeTerminalLocationForTenant,
-  stripeTerminalMerchantDisplayNameForTenant,
-  stripeTerminalSimulatedForTenant
-} from "../crm/stripe.js";
+import { createStripeTerminalConnectionToken, createStripeTerminalPaymentIntent, retrieveStripeTerminalPaymentIntent, stripeTerminalLocationForTenant, stripeTerminalMerchantDisplayNameForTenant, stripeTerminalSimulatedForTenant } from "../crm/stripe.js";
 import type { FieldDocsService } from "../fielddocs/fieldDocsService.js";
 import type { MediaRepository } from "../fielddocs/mediaRepository.js";
 import type { PlatformRepository } from "../platform/repository.js";
 import type { SchedulingRepository } from "../scheduling/repository.js";
 import { assertMobileDayScheduleAccess, assertMobileJobAccess } from "./access.js";
 import type { InMemoryMobileRepository } from "./repository.js";
-import {
-  maybeTranscribeMobileNarration,
-  type MobileTranscriptionFetch
-} from "./transcription.js";
+import { maybeTranscribeMobileNarration, type MobileTranscriptionFetch } from "./transcription.js";
 
 const dayScheduleQuerySchema = z.object({
   tenantId: z.string().optional(),

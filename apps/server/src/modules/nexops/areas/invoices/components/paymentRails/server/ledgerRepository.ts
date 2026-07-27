@@ -15,7 +15,7 @@ import {
   type ReceiptReview,
   type Refund
 } from "@nexteam/core";
-import { z } from "zod";
+import type { z } from "zod";
 
 function removeUndefined(value: unknown): unknown {
   if (Array.isArray(value)) {

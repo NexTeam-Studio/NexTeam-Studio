@@ -1,34 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { AddressLike } from "@nexteam/shared";
-import {
-  PaymentScheduleEditor,
-  blankPaymentSchedule,
-  paymentScheduleFromRecord,
-  paymentScheduleToPayload,
-  type PaymentScheduleDraft,
-  type PaymentScheduleRecord
-} from "./PaymentScheduleEditor";
-import {
-  NexOpsCatalogPicker,
-  type ProductServiceCatalogItem
-} from "../../../settings/components/catalog/NexOpsCatalog";
-import {
-  invoiceTemplateVariables,
-  type CommunicationTemplateRecord,
-  resolveTemplateDraft
-} from "../../../../nexopsCommunications";
-import {
-  intakeDetailFacts,
-  prominentIntakeFacts
-} from "../../../../nexopsIntake";
-import {
-  PaymentRailsPanel,
-  type PaymentDraftState,
-  type PaymentMethodKind,
-  type PaymentProvider,
-  type PaymentStatus,
-  type RefundDraftState
-} from "../paymentRails/PaymentRailsPanel";
+import { PaymentScheduleEditor, blankPaymentSchedule, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "./PaymentScheduleEditor";
+import { NexOpsCatalogPicker, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";
+import { invoiceTemplateVariables, type CommunicationTemplateRecord, resolveTemplateDraft } from "../../../../nexopsCommunications";
+import { intakeDetailFacts, prominentIntakeFacts } from "../../../../nexopsIntake";
+import { PaymentRailsPanel, type PaymentDraftState, type PaymentMethodKind, type PaymentProvider, type PaymentStatus, type RefundDraftState } from "../paymentRails/PaymentRailsPanel";
 
 type InvoiceStatus = "draft" | "sent" | "awaiting_payment" | "partial_pay" | "paid" | "void" | "bad_debt";
 type InvoiceFilter = "all" | "draft" | "awaiting" | "partial_pay" | "paid" | "void" | "bad_debt" | "past_due";
@@ -271,11 +247,7 @@ interface CrmSettingsResponse {
   error?: string;
 }
 
-interface SettingsMutationResponse {
-  ok: boolean;
-  settings?: CrmSettingsRecord;
-  error?: string;
-}
+
 
 interface InvoiceMutationResponse {
   ok: boolean;
@@ -692,7 +664,7 @@ function emptyCombineDraft(): CombineDraftState {
 
 export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactElement {
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
-  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [, setPayments] = useState<PaymentRecord[]>([]);
   const [refunds, setRefunds] = useState<RefundRecord[]>([]);
   const [credits, setCredits] = useState<CreditRecord[]>([]);
   const [jobs, setJobs] = useState<JobSummary[]>([]);
@@ -741,7 +713,6 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
     [jobs]
   );
 
-  const selectedInvoice = invoices.find((invoice) => invoice.id === selectedInvoiceId);
   const selectedClient = props.clients.find((client) => client.id === detail?.invoice?.clientId);
   const selectedReview = detail?.receiptReviews?.find((review) => review.id === selectedReceiptReviewId)
     ?? detail?.receiptReviews?.[0];

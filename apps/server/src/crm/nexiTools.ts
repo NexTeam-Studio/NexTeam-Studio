@@ -15,19 +15,7 @@ import { createPortalCoreNexiTools } from "../modules/nexportal/components/porta
 export type { CreateClientInput, CrmReadToolOptions } from "./nexiToolRuntime.js";
 export { clientSaveClarification, clientSaveMissingFields, queueClientCreateApproval } from "./nexiToolRuntime.js";
 
-const componentToolFactories = [
-  createOperationsHubNexiTools,
-  createRequestCoreNexiTools,
-  createContactNexiTools,
-  createJobCoreNexiTools,
-  createVisitCoreNexiTools,
-  createQuoteEngineNexiTools,
-  createQuoteTemplateNexiTools,
-  createCatalogNexiTools,
-  createTenantConfigNexiTools,
-  createInvoiceStructureNexiTools,
-  createPortalCoreNexiTools,
-] as const;
+
 
 function collectCrmTools(provider: CRMProvider, approvalQueue: ApprovalQueueService | undefined, options: CrmReadToolOptions, includeWrites: boolean): NexiTool[] {
   const context = createCrmToolContext(provider, approvalQueue, options);

@@ -1,21 +1,5 @@
 import { randomUUID } from "node:crypto";
-import {
-  addressFromIntakeFields,
-  addressStorageKey,
-  RailError,
-  type Address,
-  type ApprovalQueueService,
-  type Client,
-  type IntakeFieldDefinition,
-  type IntakeFieldValue,
-  type IntakeSnapshot,
-  type Property,
-  type Quote,
-  type RequestForm,
-  type ServiceRequest,
-  type ServiceRequestMatch,
-  type TenantUser
-} from "@nexteam/core";
+import { addressFromIntakeFields, addressStorageKey, RailError, type Address, type ApprovalQueueService, type Client, type IntakeFieldDefinition, type IntakeFieldValue, type IntakeSnapshot, type Property, type Quote, type RequestForm, type ServiceRequest, type ServiceRequestMatch, type TenantUser } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../comms/gmailRegistry.js";
 import type { PlatformRepository } from "../platform/repository.js";
@@ -215,9 +199,7 @@ function now(): string {
   return new Date().toISOString();
 }
 
-function slugify(value: string): string {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "request-form";
-}
+
 
 export function requestFormSharePath(form: Pick<RequestForm, "tenantId" | "slug">): string {
   return `/request-forms/${encodeURIComponent(form.tenantId)}/${encodeURIComponent(form.slug)}`;

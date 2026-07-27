@@ -1,33 +1,11 @@
 import React, { useEffect, useState } from "react";
 import type { AddressLike } from "@nexteam/shared";
-import {
-  PaymentScheduleEditor,
-  paymentScheduleFromRecord,
-  paymentScheduleToPayload,
-  type PaymentScheduleDraft,
-  type PaymentScheduleRecord
-} from "../../../../features/invoices/components/invoiceStructure/PaymentScheduleEditor";
-import {
-  NexOpsCatalogPicker,
-  type ProductServiceCatalogItem
-} from "../../../settings/components/catalog/NexOpsCatalog";
+import { PaymentScheduleEditor, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "../../../../features/invoices/components/invoiceStructure/PaymentScheduleEditor";
+import { NexOpsCatalogPicker, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";
 import { QuoteTemplateEditor } from "../quoteTemplates/QuoteTemplateEditor";
-import {
-  NexopsActionButton,
-  NexopsActionRail,
-  NexopsBanner,
-  NexopsProgressStrip,
-  NexopsSectionCard,
-  NexopsStatusPill
-} from "../../../../nexopsUiKit";
-import {
-  quoteTemplateVariables,
-  resolveTemplateDraft
-} from "../../../../nexopsCommunications";
-import {
-  intakeDetailFacts,
-  prominentIntakeFacts
-} from "../../../../nexopsIntake";
+import { NexopsActionButton, NexopsActionRail, NexopsBanner, NexopsProgressStrip, NexopsSectionCard, NexopsStatusPill } from "../../../../nexopsUiKit";
+import { quoteTemplateVariables, resolveTemplateDraft } from "../../../../nexopsCommunications";
+import { intakeDetailFacts, prominentIntakeFacts } from "../../../../nexopsIntake";
 
 type QuoteStatus =
   | "draft"
@@ -707,20 +685,7 @@ function lineDraftFromCatalogItem(item: ProductServiceCatalogItem): QuoteLineDra
   };
 }
 
-function blankCustomLine(): QuoteLineDraft {
-  return {
-    rowId: rowId("custom"),
-    kind: "custom",
-    catalogCode: "",
-    code: "",
-    name: "",
-    description: "",
-    quantity: 1,
-    unitPrice: 0,
-    clientSelectable: false,
-    defaultSelected: true
-  };
-}
+
 
 function lineDraftFromQuoteItem(item: QuoteLineItem): QuoteLineDraft {
   return {

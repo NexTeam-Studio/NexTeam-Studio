@@ -11,6 +11,17 @@ import {
   validateCustomFieldDraftRows,
   type CustomFieldDraftRow
 } from "./features/clients/components/contact/domain/clientProfile";
+import type {
+  CaptureBatchRecord,
+  CaptureClientTargetJob,
+  CaptureClientTargetVisit,
+  CaptureSessionMode,
+  CaptureSessionOrigin,
+  CrmClient,
+  FieldDocsMediaRecord,
+  NexOpsClientDraft,
+  NexOpsNotificationEntry
+} from "./features/nexopsShell/NexOpsWorkspace";
 
 type CaptureWorkspaceView = "session" | "unassigned";
 type CreateClientPhoneLabel = "Main" | "Work" | "Mobile" | "Home" | "Fax" | "Other";
@@ -36,18 +47,18 @@ interface NexOpsCaptureWorkspaceProps {
   captureBusy: string;
   captureStatus: string;
   captureWorkspaceView: CaptureWorkspaceView;
-  captureSession: any | null;
-  captureSessionOrigin: string;
-  captureSessionMode: string;
-  captureInbox: any[];
+  captureSession: CaptureBatchRecord | null;
+  captureSessionOrigin: CaptureSessionOrigin;
+  captureSessionMode: CaptureSessionMode;
+  captureInbox: CaptureBatchRecord[];
   captureInboxStatus: string;
-  activeCaptureMedia: any | null;
-  captureSessionMedia: any[];
-  captureAnchorGps: { lat: number; lng: number } | null;
+  activeCaptureMedia: FieldDocsMediaRecord | null;
+  captureSessionMedia: FieldDocsMediaRecord[];
+  captureAnchorGps: { lat: number; lng: number } | null | undefined;
   captureGpsMoved: boolean;
-  filteredClients: any[];
-  selectedCaptureClient: any | undefined;
-  assignedCaptureClient: any | undefined;
+  filteredClients: CrmClient[];
+  selectedCaptureClient: CrmClient | undefined;
+  assignedCaptureClient: CrmClient | undefined;
   captureClientQuery: string;
   setCaptureClientQuery: React.Dispatch<React.SetStateAction<string>>;
   captureSelectedClientId: string;
@@ -56,31 +67,31 @@ interface NexOpsCaptureWorkspaceProps {
   setCaptureSelectedJobId: React.Dispatch<React.SetStateAction<string>>;
   captureSelectedVisitId: string;
   setCaptureSelectedVisitId: React.Dispatch<React.SetStateAction<string>>;
-  captureTargets: { jobs: any[]; visits: any[] };
-  visibleCaptureVisits: any[];
-  onStartCaptureSession: () => Promise<any> | void;
+  captureTargets: { jobs: CaptureClientTargetJob[]; visits: CaptureClientTargetVisit[] };
+  visibleCaptureVisits: CaptureClientTargetVisit[];
+  onStartCaptureSession: () => Promise<CaptureBatchRecord | null> | void;
   onOpenCaptureWorkspace: (view: CaptureWorkspaceView) => void;
   onFinishCaptureSession: () => void;
   onUploadCapturePhotos: (files: FileList | null) => Promise<void> | void;
   onSetCaptureSelectedMediaId: React.Dispatch<React.SetStateAction<string>>;
-  onRouteCaptureToNewRequest: (batch?: any) => void;
+  onRouteCaptureToNewRequest: (batch?: CaptureBatchRecord | null) => void;
   onMarkCaptureDecideLater: () => Promise<void> | void;
-  onSetCaptureSessionMode: React.Dispatch<React.SetStateAction<any>>;
+  onSetCaptureSessionMode: React.Dispatch<React.SetStateAction<CaptureSessionMode>>;
   onSetCaptureStatus: React.Dispatch<React.SetStateAction<string>>;
   onLoadCaptureTargets: (clientId: string) => Promise<void> | void;
   onAssignCaptureToExistingClient: () => Promise<void> | void;
-  onReopenCaptureBatch: (batch: any, nextMode: any, statusText: string) => void;
-  onSetCaptureSession: React.Dispatch<React.SetStateAction<any>>;
-  onSetCaptureSessionOrigin: React.Dispatch<React.SetStateAction<any>>;
-  clientDisplayName: (client: any) => string;
-  clientPrimaryAddress: (client: any) => string;
-  contactSummary: (client: any) => string;
+  onReopenCaptureBatch: (batch: CaptureBatchRecord, nextMode: CaptureSessionMode, statusText: string) => void;
+  onSetCaptureSession: React.Dispatch<React.SetStateAction<CaptureBatchRecord | null>>;
+  onSetCaptureSessionOrigin: React.Dispatch<React.SetStateAction<CaptureSessionOrigin>>;
+  clientDisplayName: (client: CrmClient) => string;
+  clientPrimaryAddress: (client: CrmClient) => string;
+  contactSummary: (client: CrmClient) => string;
 }
 
 interface NexOpsCreateClientPanelProps {
   tenantId: string;
-  newClient: any;
-  setNewClient: React.Dispatch<React.SetStateAction<any>>;
+  newClient: NexOpsClientDraft;
+  setNewClient: React.Dispatch<React.SetStateAction<NexOpsClientDraft>>;
   createStatus: string;
   createClientCanSave: boolean;
   createClientMissingFields: string[];
@@ -96,7 +107,7 @@ interface NexOpsNotificationPanelProps {
   notificationStatus: string;
   notifications: Array<{ id: string; title: string; body: string; relativeTime: string; unread?: boolean }>;
   onMarkAllRead: () => Promise<void> | void;
-  onOpenNotification: (entry: any) => Promise<void> | void;
+  onOpenNotification: (entry: NexOpsNotificationEntry) => Promise<void> | void;
   onClose?: () => void;
 }
 
@@ -219,27 +230,27 @@ export function NexOpsCaptureWorkspace(props: NexOpsCaptureWorkspaceProps): Reac
     clientPrimaryAddress,
     contactSummary
   } = props;
-  const [reviewMedia, setReviewMedia] = React.useState<any | null>(null);
+  const [reviewMedia, setReviewMedia] = React.useState<FieldDocsMediaRecord | null>(null);
   const [reviewCommentDraft, setReviewCommentDraft] = React.useState("");
   const [reviewManualTagsDraft, setReviewManualTagsDraft] = React.useState("");
   const [reviewHiddenFromClientDraft, setReviewHiddenFromClientDraft] = React.useState(false);
-  const [reviewAnnotationsDraft, setReviewAnnotationsDraft] = React.useState<any[]>([]);
+  const [reviewAnnotationsDraft, setReviewAnnotationsDraft] = React.useState<NonNullable<FieldDocsMediaRecord["annotations"]>>([]);
   const [reviewSaving, setReviewSaving] = React.useState(false);
   const [drawMode, setDrawMode] = React.useState(false);
   const [drawingPath, setDrawingPath] = React.useState<Array<{ x: number; y: number }> | null>(null);
   const reviewStageRef = React.useRef<HTMLDivElement | null>(null);
 
-  function syncCaptureMediaRecord(nextMedia: any): void {
+  function syncCaptureMediaRecord(nextMedia: FieldDocsMediaRecord): void {
     setReviewMedia(nextMedia);
-    onSetCaptureSession((current) => current && current.media.some((item: any) => item.id === nextMedia.id)
+    onSetCaptureSession((current) => current && current.media.some((item) => item.id === nextMedia.id)
       ? {
           ...current,
-          media: current.media.map((item: any) => item.id === nextMedia.id ? { ...item, ...nextMedia } : item)
+          media: current.media.map((item) => item.id === nextMedia.id ? { ...item, ...nextMedia } : item)
         }
       : current);
   }
 
-  function openCaptureMediaReview(media: any): void {
+  function openCaptureMediaReview(media: FieldDocsMediaRecord): void {
     setReviewMedia(media);
     setReviewCommentDraft("");
     setReviewManualTagsDraft((media.manualTags ?? []).join(", "));
@@ -343,7 +354,7 @@ export function NexOpsCaptureWorkspace(props: NexOpsCaptureWorkspaceProps): Reac
           annotations: reviewAnnotationsDraft
         })
       });
-      const body = await response.json() as { ok: boolean; media?: any; error?: string };
+      const body = await response.json() as { ok: boolean; media?: FieldDocsMediaRecord; error?: string };
       if (!response.ok || !body.ok || !body.media) {
         throw new Error(body.error ?? "Photo review save failed.");
       }
@@ -375,7 +386,7 @@ export function NexOpsCaptureWorkspace(props: NexOpsCaptureWorkspaceProps): Reac
           purgeAfter: trashed ? new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)).toISOString() : null
         })
       });
-      const body = await response.json() as { ok: boolean; media?: any; error?: string };
+      const body = await response.json() as { ok: boolean; media?: FieldDocsMediaRecord; error?: string };
       if (!response.ok || !body.ok || !body.media) {
         throw new Error(body.error ?? "Photo trash update failed.");
       }
@@ -388,7 +399,7 @@ export function NexOpsCaptureWorkspace(props: NexOpsCaptureWorkspaceProps): Reac
     }
   }
 
-  function mediaContextLabel(media: any): string {
+  function mediaContextLabel(media: FieldDocsMediaRecord): string {
     if (media.visitId) return `Visit ${media.visitId}`;
     if (media.jobId) return `Job ${media.jobId}`;
     if (media.propertyId) return `Property ${media.propertyId}`;
@@ -753,7 +764,7 @@ export function NexOpsCaptureWorkspace(props: NexOpsCaptureWorkspaceProps): Reac
                 <article className="nexops-module-card wide">
                   <p className="eyebrow">Comments</p>
                   <ul className="nexops-mini-list nexcam-comment-list">
-                    {(reviewMedia.comments ?? []).map((entry: any) => (
+                    {(reviewMedia.comments ?? []).map((entry) => (
                       <li key={entry.id}>
                         <strong>{entry.author ?? "Field note"}</strong>
                         <span>{entry.text}</span>

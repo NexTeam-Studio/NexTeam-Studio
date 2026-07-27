@@ -1,4 +1,4 @@
-import { signedDocumentRecordSchema } from "@nexteam/core";
+import type { signedDocumentRecordSchema } from "@nexteam/core";
 import { z } from "zod";
 
 export const fieldDocsTextSnippetSchema = z.object({

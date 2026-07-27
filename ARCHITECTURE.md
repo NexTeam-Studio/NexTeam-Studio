@@ -111,6 +111,8 @@ The twelve migrated components now own their component-specific CSS, but the int
 
 `apps/server/src/composeServerApp.ts` constructs dependencies and invokes registrars. It does not own feature handler bodies.
 
+Each component registrar accepts the shared runtime context type but destructures only the dependencies used by that component's handlers. The context is the composition boundary; it is not permission to copy the complete dependency list into every registrar. This keeps local coupling visible and repository lint clean.
+
 ### Runtime assembly [tag: server-runtime]
 
 The integrated composition root builds the long-lived runtime pieces in one place. `apps/server/src/app/persistencePolicy.ts` is the shared fail-closed policy, while `apps/server/src/app/runtime.ts` remains the reusable smaller runtime for manifest-driven surfaces and tests.

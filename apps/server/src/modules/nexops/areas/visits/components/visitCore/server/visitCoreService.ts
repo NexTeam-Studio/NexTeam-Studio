@@ -1,17 +1,10 @@
 import { randomUUID } from "node:crypto";
-import type { Job, TenantUser } from "@nexteam/core";
+import type { TenantUser } from "@nexteam/core";
 import type { SchedulingRepository } from "../../../../../../../scheduling/repository.js";
 import type { ScheduledVisit } from "../../../../../../../scheduling/schedulingEngine.js";
 import type { CommsRail } from "../../../../../../../comms/gmailRegistry.js";
 import type { JobDetailRecord } from "../../../../jobs/components/jobCore/server/jobLifecycleService.js";
-import {
-  pendingVisitRemindersForVisit,
-  requireJobLifecycleRecord,
-  type JobActionAlertRecord,
-  type JobLifecycleEventRecord,
-  type JobLifecycleRepository,
-  type VisitReminderRecord
-} from "../../../../jobs/components/jobCore/server/jobLifecycleRepository.js";
+import { pendingVisitRemindersForVisit, requireJobLifecycleRecord, type JobActionAlertRecord, type JobLifecycleEventRecord, type JobLifecycleRepository, type VisitReminderRecord } from "../../../../jobs/components/jobCore/server/jobLifecycleRepository.js";
 
 export interface ScheduleJobVisitInput {
   tenantId: string;

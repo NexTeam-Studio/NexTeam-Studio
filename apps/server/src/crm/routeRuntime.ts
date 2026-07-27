@@ -1,31 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
-import {
-  addressSchema,
-  clientCommunicationSettingsSchema,
-  clientContactSchema,
-  intakeSnapshotSchema,
-  InMemoryEventBus,
-  invoiceDeliveryPreferencesSchema,
-  lineItemSchema,
-  paymentSchedulePlanSchema,
-  personNameSchema,
-  quoteDiscountSchema,
-  RailError,
-  receiptReviewChannelSchema,
-  type ApprovalQueueService,
-  type Client,
-  type CrmSettings,
-  type EventBus,
-  type Invoice,
-  type QuoteDeliveryRecord,
-  type QuoteTemplate,
-  type Property,
-  type Quote,
-  type RequestForm,
-  type ServiceRequest
-} from "@nexteam/core";
+import { addressSchema, clientCommunicationSettingsSchema, clientContactSchema, intakeSnapshotSchema, InMemoryEventBus, invoiceDeliveryPreferencesSchema, lineItemSchema, paymentSchedulePlanSchema, personNameSchema, quoteDiscountSchema, RailError, receiptReviewChannelSchema, type ApprovalQueueService, type Client, type CrmSettings, type EventBus, type Invoice, type QuoteDeliveryRecord, type Quote, type RequestForm, type ServiceRequest } from "@nexteam/core";
 import { MemoryNativeCrmRepository, NativeAdapter, type NativeCrmRepository } from "@nexteam/providers";
 import { actorIdForAccess, requireAccessContext, requireTenantRole } from "../auth/accessContext.js";
 import { getAdminDb, getAdminStorageBucket } from "../firebase.js";
@@ -39,65 +15,18 @@ import type { SitesRepository } from "../sites/repository.js";
 import { fetchAddressSuggestions } from "../shared/addressLocation/geocodingService.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 import { ensureDocumentNumbers, reserveDocumentNumber } from "./documentNumbering.js";
-import {
-  bookingTemplateVariables,
-  communicationChannelEnabled,
-  invoiceTemplateVariables,
-  quoteTemplateVariables,
-  renderTemplateText,
-  resolveTemplateMessage
-} from "./communicationTemplates.js";
+import { bookingTemplateVariables, communicationChannelEnabled, invoiceTemplateVariables, quoteTemplateVariables, renderTemplateText, resolveTemplateMessage } from "./communicationTemplates.js";
 import type { LedgerService } from "./ledgerFoundation.js";
 import type { OperationsHubService } from "./operationsHub.js";
-import {
-  renderPortalAppointmentsHtml,
-  renderPortalDocumentsHtml,
-  renderPortalHomeHtml,
-  renderPortalInvoicesHtml,
-  renderPortalOptOutHtml,
-  renderPortalQuotesHtml,
-  renderUnifiedPortalDocumentsHtml,
-  renderPortalReviewLandingHtml,
-  renderPortalReverifyHtml
-} from "./portalHubHtml.js";
+import { renderPortalAppointmentsHtml, renderPortalDocumentsHtml, renderPortalHomeHtml, renderPortalInvoicesHtml, renderPortalOptOutHtml, renderPortalQuotesHtml, renderUnifiedPortalDocumentsHtml, renderPortalReviewLandingHtml, renderPortalReverifyHtml } from "./portalHubHtml.js";
 import type { PortalHubService } from "./portalHubService.js";
 import type { PortalSessionRecord } from "./portalHubRepository.js";
 import type { ReviewSequenceService } from "./reviewSequenceService.js";
 import { FirestoreNativeCrmRepository } from "./nativeRepository.js";
-import {
-  archiveQuoteVersion,
-  createPortalToken,
-  ensureQuoteConfiguration,
-  hashPortalToken,
-  materializeQuoteRecord,
-  portalQuoteApprovalInputSchema,
-  portalQuoteChangeRequestInputSchema,
-  portalUrlForQuote,
-  quoteApprovalBlockedReason,
-  quoteComposerInputSchema,
-  quoteDeliveryMessage,
-  quoteLocked,
-  quoteRenewInputSchema,
-  quoteTemplateInputSchema,
-  syncExpiredQuote
-} from "./quoteFoundation.js";
+import { archiveQuoteVersion, createPortalToken, ensureQuoteConfiguration, hashPortalToken, materializeQuoteRecord, portalQuoteApprovalInputSchema, portalQuoteChangeRequestInputSchema, portalUrlForQuote, quoteApprovalBlockedReason, quoteComposerInputSchema, quoteDeliveryMessage, quoteLocked, quoteRenewInputSchema, quoteTemplateInputSchema, syncExpiredQuote } from "./quoteFoundation.js";
 import { crmSettingsPatchSchema } from "../modules/nexops/areas/settings/components/tenantConfig/domain/crmSettingsPatchSchema.js";
 import { buildInvoiceDraftFromJobs, buildInvoiceDraftFromQuote, buildQuickPaymentRequestInvoice } from "./invoiceFoundation.js";
-import {
-  availableRequestFields,
-  backfillLegacyLeads,
-  buildServiceRequest,
-  convertRequestToJob,
-  convertRequestToQuote,
-  ensureRequestForms,
-  notifyRequestCreated,
-  publicFormSubmissionValues,
-  renderPublicRequestForm,
-  requestFormEmbedCode,
-  requestFormSharePath,
-  selectRequestFields,
-  updateServiceRequestShape
-} from "./requestFoundation.js";
+import { availableRequestFields, backfillLegacyLeads, buildServiceRequest, convertRequestToJob, convertRequestToQuote, ensureRequestForms, notifyRequestCreated, publicFormSubmissionValues, renderPublicRequestForm, requestFormEmbedCode, requestFormSharePath, selectRequestFields, updateServiceRequestShape } from "./requestFoundation.js";
 import type { JobLifecycleService } from "./jobLifecycle.js";
 import { renderInvoicePdf, renderInvoicePortalHtml, renderQuotePdf, renderQuotePortalHtml } from "./quotePdf.js";
 import { capturePaypalCheckoutOrder, createPaypalCheckoutOrder } from "./paypal.js";

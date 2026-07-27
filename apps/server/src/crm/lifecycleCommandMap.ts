@@ -1,5 +1,5 @@
 import { communicationTemplateSchema, lifecycleCommandContractSchema, type DecisionId, type LifecycleCommandContract } from "@nexteam/core";
-import { PERMISSION_IDS } from "./lifecyclePolicy.js";
+import type { PERMISSION_IDS } from "./lifecyclePolicy.js";
 import { REQUEST_CORE_COMMANDS, REQUEST_CORE_COMMUNICATIONS } from "../modules/nexops/areas/requests/components/requestCore/server/lifecycleContracts.js";
 import { QUOTE_ENGINE_COMMANDS, QUOTE_ENGINE_COMMUNICATIONS } from "../modules/nexops/areas/quotes/components/quoteEngine/server/lifecycleContracts.js";
 import { JOB_CORE_COMMANDS, JOB_CORE_COMMUNICATIONS } from "../modules/nexops/areas/jobs/components/jobCore/server/lifecycleContracts.js";
