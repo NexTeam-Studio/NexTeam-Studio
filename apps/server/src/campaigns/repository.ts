@@ -14,6 +14,9 @@ import {
   type CampaignTemplate,
   type CampaignTrackingEvent
 } from "./schemas.js";
+import { aquatraceCampaignContacts, vgbHotelGmTemplate } from "../tenantPacks/aquatrace/campaignFixtures.js";
+
+export { vgbHotelGmTemplate } from "../tenantPacks/aquatrace/campaignFixtures.js";
 
 export interface CampaignRepository {
   listContacts(tenantId: ID): Promise<CampaignContact[]>;
@@ -35,96 +38,6 @@ function now(): string {
   return new Date().toISOString();
 }
 
-export function vgbHotelGmTemplate(tenantId: ID): CampaignTemplate {
-  return campaignTemplateSchema.parse({
-    id: "vgb-hotel-gm-outreach",
-    tenantId,
-    name: "VGB Hotel GM Outreach",
-    description: "Approval-gated starter sequence for commercial pool operators who may need VGB drain-cover help.",
-    audience: {
-      tenantId,
-      channel: "email",
-      tagsAny: ["vgb", "commercial", "hotel"],
-      consentRequired: true,
-      excludeSuppressed: true,
-      maxResults: 100
-    },
-    sequence: [
-      {
-        id: "step_1_intro",
-        channel: "email",
-        delayHours: 0,
-        subject: "Quick VGB safety check for {{companyOrName}}",
-        body: "Hi {{name}},\n\nAquatrace helps commercial pool operators confirm whether their drain covers and documentation are ready before inspection season. If you want a quick review, reply here and we can point you in the right direction.\n\n{{unsubscribeLink}}",
-        stopOnReply: true,
-        stopOnUnsubscribe: true
-      },
-      {
-        id: "step_2_followup",
-        channel: "email",
-        delayHours: 72,
-        subject: "Following up on VGB drain-cover readiness",
-        body: "Hi {{name}},\n\nJust closing the loop. If VGB documentation is already handled, no action needed. If not, Aquatrace can help verify the pool and map the next steps.\n\n{{unsubscribeLink}}",
-        stopOnReply: true,
-        stopOnUnsubscribe: true
-      }
-    ],
-    variables: [
-      {
-        key: "companyOrName",
-        label: "Company or contact name",
-        description: "Defaults to company name when present, otherwise the contact name.",
-        required: true
-      },
-      {
-        key: "businessName",
-        label: "Tenant business name",
-        required: true
-      }
-    ],
-    complianceNotes: [
-      "Existing-contact or explicit opt-in only.",
-      "One-click unsubscribe must be present before queueing.",
-      "Bulk/list execution is blocked until SPF, DKIM, and DMARC are confirmed."
-    ]
-  });
-}
-
-function seedContacts(tenantId: ID): CampaignContact[] {
-  return [
-    {
-      id: "contact_chris_owner",
-      tenantId,
-      name: "Chris Owner Test",
-      company: "Aquatrace",
-      emails: ["chris1bata@gmail.com"],
-      phones: [],
-      tags: ["vgb", "commercial", "hotel", "test"],
-      consent: { email: true, sms: false }
-    },
-    {
-      id: "contact_nexi_sender",
-      tenantId,
-      name: "Nexi Mailbox Test",
-      company: "Aquatrace",
-      emails: ["nexi@aquatraceleak.com"],
-      phones: [],
-      tags: ["vgb", "commercial", "test"],
-      consent: { email: true, sms: false }
-    },
-    {
-      id: "contact_no_email_consent",
-      tenantId,
-      name: "No Consent Example",
-      company: "Do Not Send",
-      emails: ["nosend@example.test"],
-      phones: [],
-      tags: ["vgb", "commercial"],
-      consent: { email: false, sms: false }
-    }
-  ].map((contact) => campaignContactSchema.parse(contact));
-}
-
 export class InMemoryCampaignRepository implements CampaignRepository {
   private readonly contacts = new Map<ID, CampaignContact>();
   private readonly templates = new Map<ID, CampaignTemplate>();
@@ -132,8 +45,14 @@ export class InMemoryCampaignRepository implements CampaignRepository {
   private readonly suppressions = new Map<ID, CampaignSuppression>();
   private readonly tracking = new Map<ID, CampaignTrackingEvent>();
 
-  constructor(private readonly defaultTenantId = "aquatrace") {
-    for (const contact of seedContacts(defaultTenantId)) {
+  constructor(private readonly defaultTenantId: string, seedFixtureData = true) {
+    if (!defaultTenantId.trim()) {
+      throw new Error("InMemoryCampaignRepository requires an explicit tenantId.");
+    }
+    if (!seedFixtureData) {
+      return;
+    }
+    for (const contact of aquatraceCampaignContacts(defaultTenantId)) {
       this.contacts.set(contact.id, contact);
     }
     const template = vgbHotelGmTemplate(defaultTenantId);
@@ -145,7 +64,7 @@ export class InMemoryCampaignRepository implements CampaignRepository {
     if (seeded.length > 0 || tenantId === this.defaultTenantId) {
       return seeded;
     }
-    return seedContacts(tenantId);
+    return [];
   }
 
   async upsertContact(contact: CampaignContact): Promise<CampaignContact> {
@@ -156,7 +75,7 @@ export class InMemoryCampaignRepository implements CampaignRepository {
 
   async listTemplates(tenantId: ID): Promise<CampaignTemplate[]> {
     const templates = [...this.templates.values()].filter((template) => template.tenantId === tenantId);
-    return templates.length ? templates : [vgbHotelGmTemplate(tenantId)];
+    return templates;
   }
 
   async getTemplate(tenantId: ID, templateId: ID): Promise<CampaignTemplate | null> {
@@ -164,8 +83,7 @@ export class InMemoryCampaignRepository implements CampaignRepository {
     if (template?.tenantId === tenantId) {
       return template;
     }
-    const fallback = vgbHotelGmTemplate(tenantId);
-    return fallback.id === templateId ? fallback : null;
+    return null;
   }
 
   async saveTemplate(template: CampaignTemplate): Promise<CampaignTemplate> {

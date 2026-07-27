@@ -26,7 +26,7 @@ export function NexiChatFeature(props: { tenantId: string }): React.ReactElement
       <section className="nexi-chat">
         <header className="nexi-chat__topbar">
           <div>
-            <p className="ui-eyebrow">Aquatrace ops</p>
+            <p className="ui-eyebrow">Tenant operations</p>
             <h1>Nexi Job Desk</h1>
             <p className="nexi-chat__signed-in">{user?.email ?? "Firebase operator"}</p>
           </div>

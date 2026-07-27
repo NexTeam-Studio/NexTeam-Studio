@@ -162,5 +162,5 @@ Norse roles are client-facing and must be deployed with client-specific memory.
 - `docs/internal/CLAWDIA_GENERAL_CONTRACTOR_RUNBOOK.md`
 - `docs/internal/tmnt/TMNT_AGENT_INDEX.md`
 - `docs/internal/tmnt/**`
-- `docs/BRAGI_SOUL.md`
-- `docs/AQUATRACE_WEBSITE_AGENTS.md`
+- `docs/tenants/aquatrace/operations/BRAGI_SOUL.md`
+- `docs/tenants/aquatrace/operations/AQUATRACE_WEBSITE_AGENTS.md`

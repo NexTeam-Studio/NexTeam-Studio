@@ -188,7 +188,7 @@ Before Clawdia approves, routes, or recommends meaningful build work, she must s
   - accepted: yes
 - 2026-05-03:
   - task: Permanent Aquatrace tone standard lock
-  - artifact: `docs/BRAGI_SOUL.md` and `docs/clients/aquatrace/bragi/AQUATRACE_BRAGI_MEMORY.md`
+  - artifact: `docs/tenants/aquatrace/operations/BRAGI_SOUL.md` and `docs/clients/aquatrace/bragi/AQUATRACE_BRAGI_MEMORY.md`
   - accepted: yes
   - note: all future Aquatrace and Bragi articles, web copy, landing pages, service pages, social posts, emails, and campaign content must follow the saved tone standard and VGB guardrails
 - 2026-05-03:
@@ -212,7 +212,7 @@ Before Clawdia approves, routes, or recommends meaningful build work, she must s
 ## AQUATRACE CONTENT RULES
 
 - Permanent Aquatrace tone standard is locked.
-- All future Aquatrace and Bragi articles, web copy, landing pages, service pages, social posts, emails, and campaign content must follow the saved tone standard in `docs/BRAGI_SOUL.md` and `docs/clients/aquatrace/bragi/AQUATRACE_BRAGI_MEMORY.md`.
+- All future Aquatrace and Bragi articles, web copy, landing pages, service pages, social posts, emails, and campaign content must follow the saved tone standard in `docs/tenants/aquatrace/operations/BRAGI_SOUL.md` and `docs/clients/aquatrace/bragi/AQUATRACE_BRAGI_MEMORY.md`.
 - Aquatrace copy must stay plain-English, field-based, calm, practical, sales-aware, and non-legalistic.
 - Aquatrace may position itself as the specialist but must not imply compliance certification, legal advice, engineering determination, regulatory determination, guaranteed approval, or drain-cover replacement as part of the documentation service.
 

@@ -67,8 +67,6 @@ const draftEmailInputSchema = z.object({
   attachments: z.array(draftEmailAttachmentSchema).max(10).optional()
 });
 
-const AQUATRACE_SIGNATURE = "Nexi\nAquatrace Swimming Pool Leak Detection";
-
 function emailSource(message: EmailMessageSummary): Source {
   return {
     rail: "email",
@@ -199,14 +197,15 @@ function cleanBodyParagraphs(bodyText: string): string[] {
     .filter(Boolean);
 }
 
-function hasAquatraceSignature(bodyText: string): boolean {
-  return /Aquatrace Swimming Pool Leak Detection/i.test(bodyText);
+function hasTenantSignature(bodyText: string, businessName: string): boolean {
+  return bodyText.toLowerCase().includes(businessName.toLowerCase());
 }
 
-function brandedEmailBody(bodyText: string): { bodyText: string; bodyHtml: string } {
+function brandedEmailBody(bodyText: string, businessName: string): { bodyText: string; bodyHtml: string } {
   const paragraphs = cleanBodyParagraphs(bodyText);
   const baseBody = paragraphs.join("\n\n");
-  const text = hasAquatraceSignature(baseBody) ? baseBody : `${baseBody}\n\n${AQUATRACE_SIGNATURE}`;
+  const signature = `Nexi\n${businessName}`;
+  const text = hasTenantSignature(baseBody, businessName) ? baseBody : `${baseBody}\n\n${signature}`;
   const htmlParagraphs = text
     .split(/\n{2,}/)
     .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
@@ -240,7 +239,7 @@ async function queueEmailApproval(input: {
     throw new RailError("The dedicated Nexi send mailbox is not configured.", { provider: "gmail", op: "draftEmail", status: 503 });
   }
   const subject = cleanSubject(input.subject);
-  const body = brandedEmailBody(input.bodyText);
+  const body = brandedEmailBody(input.bodyText, input.tenant.name);
   const attachments = input.attachments?.map((attachment) => ({
     filename: attachment.filename,
     mime: attachment.mime,
@@ -377,7 +376,7 @@ function triageCategory(message: EmailMessageSummary): { category: TriageCategor
   if (/\b(?:stripe|railway|firebase|google cloud|wordpress|domain|billing|subscription|receipt|security|alert|audit|failed|action required|verification)\b/i.test(text)) {
     return { category: "service_notice", rank: 30, reason: "Legitimate service, billing, security, or audit notice." };
   }
-  return { category: "other", rank: 90, reason: "Not classified as urgent Aquatrace work." };
+  return { category: "other", rank: 90, reason: "Not classified as urgent tenant work." };
 }
 
 function triagePriority(rank: number): TriageItem["priority"] {
@@ -420,7 +419,7 @@ export function createCommsNexiTools(
   return [
     {
       name: "searchEmail",
-      description: "Search read-only Aquatrace Gmail mailboxes by sender, subject, date, and keywords. Sources are email:<mailbox>:<messageId>.",
+      description: "Search read-only tenant Gmail mailboxes by sender, subject, date, and keywords. Sources are email:<mailbox>:<messageId>.",
       inputSchema: searchEmailInputSchema,
       handler: async (tenant: Tenant, args: unknown) => {
         assertCommsTenant(rail, tenant, "searchEmail");
@@ -507,7 +506,7 @@ export function createCommsNexiTools(
     },
     {
       name: "summarizeInbox",
-      description: "Summarize emails received on a date across read-only Aquatrace Gmail mailboxes. Sources are email:<mailbox>:<messageId>.",
+      description: "Summarize emails received on a date across read-only tenant Gmail mailboxes. Sources are email:<mailbox>:<messageId>.",
       inputSchema: summarizeInboxInputSchema,
       handler: async (tenant: Tenant, args: unknown) => {
         assertCommsTenant(rail, tenant, "summarizeInbox");
@@ -543,7 +542,7 @@ export function createCommsNexiTools(
     },
     {
       name: "triageInbox",
-      description: "Rank what needs attention in Aquatrace email. Excludes spam/promos and prioritizes client inquiries, form submissions, and legitimate service/audit notices. Sources are email:<mailbox>:<messageId>.",
+      description: "Rank what needs attention in tenant email. Excludes spam/promos and prioritizes client inquiries, form submissions, and legitimate service/audit notices. Sources are email:<mailbox>:<messageId>.",
       inputSchema: triageInboxInputSchema,
       handler: async (tenant: Tenant, args: unknown) => {
         assertCommsTenant(rail, tenant, "triageInbox");

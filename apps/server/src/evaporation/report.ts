@@ -14,7 +14,7 @@ function line(label: string, value: string | number | null | undefined): string 
 function reportLines(report: EvaporationReportRecord): string[] {
   const result = report.result;
   return [
-    "Aquatrace Swimming Pool Evaporation Report",
+    "Swimming Pool Evaporation Report",
     line("Report ID", report.id),
     line("Client", report.clientName),
     line("Address", report.address),
@@ -115,7 +115,7 @@ export async function createEvaporationReport(input: {
 export function evaporationAttachmentFor(report: EvaporationReportRecord): { filename: string; mime: "application/pdf"; storageRef: string } {
   const name = report.clientName?.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || report.id;
   return {
-    filename: `aquatrace-evaporation-${name}.pdf`,
+    filename: `evaporation-${name}.pdf`,
     mime: "application/pdf",
     storageRef: report.pdfRef
   };

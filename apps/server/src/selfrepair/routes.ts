@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { RailError } from "@nexteam/core";
 import { requireTenantRole } from "../auth/accessContext.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import type { SelfRepairService } from "./service.js";
 
 export interface SelfRepairRouteDeps {
@@ -10,7 +11,7 @@ export interface SelfRepairRouteDeps {
 }
 
 const listQuerySchema = z.object({
-  tenantId: z.string().min(1).default("aquatrace"),
+  tenantId: z.string().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(60).default(14)
 });
 
@@ -27,7 +28,7 @@ export function registerSelfRepairRoutes(app: Express, deps: SelfRepairRouteDeps
     try {
       const tenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim()
         ? req.body.tenantId.trim()
-        : env.TENANT_ID || "aquatrace";
+        : configuredTenantId(env, "selfRepairRun");
       const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
         requestedTenantId: tenantId,
         op: "selfRepairRun"
@@ -43,7 +44,7 @@ export function registerSelfRepairRoutes(app: Express, deps: SelfRepairRouteDeps
     try {
       const query = listQuerySchema.parse(req.query);
       const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
-        requestedTenantId: query.tenantId,
+        requestedTenantId: query.tenantId ?? configuredTenantId(env, "selfRepairList"),
         op: "selfRepairList"
       });
       res.json({ ok: true, logs: await deps.service.listLogs(access.tenantId, query.limit) });
@@ -56,7 +57,7 @@ export function registerSelfRepairRoutes(app: Express, deps: SelfRepairRouteDeps
     try {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
         ? req.query.tenantId.trim()
-        : env.TENANT_ID || "aquatrace";
+        : configuredTenantId(env, "selfRepairGet");
       const date = req.params.date;
       if (!date) {
         throw new RailError("Self-repair log date is required.", { provider: "platform", op: "getSelfRepairLog", status: 400 });

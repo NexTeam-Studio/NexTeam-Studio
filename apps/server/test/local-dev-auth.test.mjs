@@ -23,32 +23,32 @@ function requestWithBearer(token) {
 }
 
 test("local credential sessions cover owner, office admin, and technician roles", () => {
-  const owner = createLocalDevSession("chris@aquatraceleak.com", "", "aquatrace", env);
-  const office = createLocalDevSession("catherine@local.dev", "", "aquatrace", env);
-  const technician = createLocalDevSession("logan@aquatraceleak.com", "", "aquatrace", env);
+  const owner = createLocalDevSession("owner@local.dev", "", "aquatrace", env);
+  const office = createLocalDevSession("office@local.dev", "", "aquatrace", env);
+  const technician = createLocalDevSession("technician@local.dev", "", "aquatrace", env);
 
   assert.match(owner.token, /^localdev\./);
   assert.equal(owner.profile.role, "OWNER");
-  assert.equal(owner.profile.displayName, "Chris");
+  assert.equal(owner.profile.displayName, "Local Owner");
   assert.equal(office.profile.role, "OFFICE_ADMIN");
-  assert.equal(office.profile.displayName, "Catherine");
+  assert.equal(office.profile.displayName, "Local Office");
   assert.equal(technician.profile.role, "TECHNICIAN");
-  assert.equal(technician.profile.displayName, "Logan");
+  assert.equal(technician.profile.displayName, "Local Technician");
 
   const ownerSession = readLocalDevSession(owner.token, "aquatrace", env, "testOwner");
   const officeSession = readLocalDevSession(office.token, "aquatrace", env, "testOffice");
   const technicianSession = readLocalDevSession(technician.token, "aquatrace", env, "testTechnician");
 
-  assert.equal(ownerSession?.access.tenantUserId, "tenant_user_chris");
+  assert.equal(ownerSession?.access.tenantUserId, "local-owner");
   assert.equal(ownerSession?.access.role, "OWNER");
-  assert.equal(officeSession?.access.tenantUserId, "office_catherine");
+  assert.equal(officeSession?.access.tenantUserId, "local-office");
   assert.equal(officeSession?.access.role, "OFFICE_ADMIN");
-  assert.equal(technicianSession?.access.tenantUserId, "tech_logan");
+  assert.equal(technicianSession?.access.tenantUserId, "local-technician");
   assert.equal(technicianSession?.access.role, "TECHNICIAN");
 });
 
 test("local credential sign-in accepts email-only local sessions and rejects unknown addresses", () => {
-  const owner = createLocalDevSession("chris@aquatraceleak.com", "ignored-password", "aquatrace", env);
+  const owner = createLocalDevSession("owner@local.dev", "ignored-password", "aquatrace", env);
   assert.equal(owner.profile.role, "OWNER");
 
   assert.throws(
@@ -58,13 +58,13 @@ test("local credential sign-in accepts email-only local sessions and rejects unk
 });
 
 test("local bearer sessions feed the access-context role gate and refuse cross-tenant reuse", async () => {
-  const office = createLocalDevSession("catherine@local.dev", "", "aquatrace", env);
+  const office = createLocalDevSession("office@local.dev", "", "aquatrace", env);
   const access = await requireAccessContext(requestWithBearer(office.token), env, {
     requestedTenantId: "aquatrace",
     op: "localAuthRoleGate"
   });
 
-  assert.equal(access.tenantUserId, "office_catherine");
+  assert.equal(access.tenantUserId, "local-office");
   assert.equal(access.role, "OFFICE_ADMIN");
 
   assert.throws(
@@ -74,12 +74,12 @@ test("local bearer sessions feed the access-context role gate and refuse cross-t
 });
 
 test("the same local session token keeps the same seat across internal module rails for owner and office admin", async () => {
-  const owner = createLocalDevSession("chris@aquatraceleak.com", "", "aquatrace", env);
-  const office = createLocalDevSession("catherine@local.dev", "", "aquatrace", env);
+  const owner = createLocalDevSession("owner@local.dev", "", "aquatrace", env);
+  const office = createLocalDevSession("office@local.dev", "", "aquatrace", env);
 
   for (const [label, token, expectedTenantUserId, expectedRole] of [
-    ["owner", owner.token, "tenant_user_chris", "OWNER"],
-    ["office", office.token, "office_catherine", "OFFICE_ADMIN"]
+    ["owner", owner.token, "local-owner", "OWNER"],
+    ["office", office.token, "local-office", "OFFICE_ADMIN"]
   ]) {
     for (const op of [
       "nexopsClients",

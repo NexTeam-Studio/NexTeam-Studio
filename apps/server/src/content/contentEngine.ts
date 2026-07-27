@@ -179,11 +179,11 @@ export function contentMediaFactFromMedia(media: Media): ContentMediaFact {
 
 function defaultBrandVoice(input?: Partial<TenantBrandVoice>): TenantBrandVoice {
   return {
-    businessName: input?.businessName ?? "Aquatrace Swimming Pool Leak Detection",
+    businessName: input?.businessName ?? "Service business",
     assistantName: input?.assistantName ?? "Nexi",
-    serviceArea: input?.serviceArea ?? ["Western North Carolina", "Upstate South Carolina"],
+    serviceArea: input?.serviceArea ?? [],
     tone: input?.tone ?? "clear, helpful, evidence-first, and never alarmist",
-    softCta: input?.softCta ?? "If your pool is losing more water than evaporation explains, schedule a professional leak detection."
+    softCta: input?.softCta ?? "Contact the team when you are ready to discuss the next step."
   };
 }
 

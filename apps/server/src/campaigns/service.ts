@@ -365,7 +365,7 @@ export class CampaignService {
       kind: "email",
       preview: {
         title: `Report delivery: ${input.reportTitle}`,
-        body: `Subject: ${input.reportTitle}\n\nYour Aquatrace report is ready for review.\n\nReport: ${input.reportRef}`
+        body: `Subject: ${input.reportTitle}\n\nYour ${tenant.name} report is ready for review.\n\nReport: ${input.reportRef}`
       },
       execute: {
         service: "campaigns",
@@ -376,7 +376,7 @@ export class CampaignService {
             tenantId: tenant.id,
             to: [input.to],
             subject: input.reportTitle,
-            bodyText: `Your Aquatrace report is ready for review.\n\nReport: ${input.reportRef}`
+            bodyText: `Your ${tenant.name} report is ready for review.\n\nReport: ${input.reportRef}`
           }
         }
       },
@@ -394,7 +394,7 @@ export class CampaignService {
       kind: "email",
       preview: {
         title: `Review request queued for ${input.clientName}`,
-        body: `Subject: Thank you from Aquatrace\n\nThanks again for trusting Aquatrace. If the service helped, a short review would mean a lot. This is queued with a 2-day delay after invoice ${input.invoiceId}.`
+        body: `Subject: Thank you from ${tenant.name}\n\nThanks again for trusting ${tenant.name}. If the service helped, a short review would mean a lot. This is queued with a 2-day delay after invoice ${input.invoiceId}.`
       },
       execute: {
         service: "campaigns",
@@ -406,8 +406,8 @@ export class CampaignService {
           outbound: {
             tenantId: tenant.id,
             to: [input.to],
-            subject: "Thank you from Aquatrace",
-            bodyText: "Thanks again for trusting Aquatrace. If the service helped, a short review would mean a lot."
+            subject: `Thank you from ${tenant.name}`,
+            bodyText: `Thanks again for trusting ${tenant.name}. If the service helped, a short review would mean a lot.`
           }
         }
       },

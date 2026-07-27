@@ -34,7 +34,11 @@ function now(): string {
 }
 
 function defaultTargetDomain(env: NodeJS.ProcessEnv): string {
-  return env.M9_TARGET_DOMAIN || "aquatraceleak.com";
+  const domain = env.M9_TARGET_DOMAIN?.trim();
+  if (!domain) {
+    throw new RailError("M9_TARGET_DOMAIN is required for SEO operations.", { provider: "native", op: "seoTargetDomain", status: 400 });
+  }
+  return domain;
 }
 
 function defaultPeriod(): { start: string; end: string } {
@@ -160,7 +164,7 @@ export class SeoService {
     const outline = [
       `What ${input.keyword} means for pool owners in ${input.geo}`,
       "Signs that point to a real leak instead of normal evaporation",
-      "What Aquatrace checks during a visit",
+      "What the service team checks during a visit",
       "When to schedule a professional leak detection"
     ];
     const createdAt = now();

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { RailError } from "@nexteam/core";
 import type { UsageLogWriter } from "@nexteam/nexi";
 import { getAdminDb } from "../firebase.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import { FirestoreUsageLogWriter, MemoryUsageLogWriter } from "../usageLog.js";
 import { buildElevenLabsUsageLogRecord, synthesizeElevenLabsSpeech } from "./elevenLabs.js";
 import {
@@ -112,7 +113,7 @@ export function createVoiceRouter(env: NodeJS.ProcessEnv = process.env, fetchImp
       input = ttsRequestSchema.parse(req.body);
       const result = await synthesizeElevenLabsSpeech(input, env, fetchImpl);
       await usageLog.write(buildElevenLabsUsageLogRecord({
-        tenantId: input.tenantId ?? env.TENANT_ID ?? "aquatrace",
+        tenantId: input.tenantId ?? configuredTenantId(env, "voiceTts"),
         routeActionName: "/api/voice/tts",
         taskType: "voice_tts",
         model: result.model,
@@ -134,7 +135,7 @@ export function createVoiceRouter(env: NodeJS.ProcessEnv = process.env, fetchImp
     } catch (error) {
       if (input) {
         await usageLog.write(buildElevenLabsUsageLogRecord({
-          tenantId: input.tenantId ?? env.TENANT_ID ?? "aquatrace",
+          tenantId: input.tenantId ?? configuredTenantId(env, "voiceTtsFailure"),
           routeActionName: "/api/voice/tts",
           taskType: "voice_tts",
           model: env.ELEVENLABS_MODEL_ID?.trim() || "eleven_multilingual_v2",

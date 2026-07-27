@@ -147,7 +147,7 @@ export const operatorUiThemeSchema = z.object({
 export const operatorUiThemeInputSchema = z.object({
   tenantId: z.string().min(1).optional(),
   name: z.string().min(1).optional(),
-  preset: z.enum(["aquatrace", "deep_water", "high_contrast", "sandbar"]).optional(),
+  preset: z.enum(["tenant_default", "deep_water", "high_contrast", "sandbar"]).optional(),
   colors: operatorUiColorsSchema.default({}),
   density: z.enum(["comfortable", "compact"]).optional()
 });

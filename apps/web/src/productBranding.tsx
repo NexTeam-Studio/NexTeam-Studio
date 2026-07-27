@@ -2,10 +2,6 @@ import React from "react";
 import type { TenantBranding } from "@nexteam/core";
 
 export type ProductBrand = "nexops" | "nexcam" | "nexportal" | "nexreach" | "nexdocs" | "nexi";
-const DEFAULT_TENANT_ID = "aquatrace";
-const DEFAULT_TENANT_LOGO_SRC: Record<string, string> = {
-  [DEFAULT_TENANT_ID]: "/tenants/aquatrace/aquatrace-banner-logo.png"
-};
 
 const PRODUCT_LOGO_SRC: Record<ProductBrand, string> = {
   nexops: "/assets/brand/nexops-logo.png",
@@ -36,7 +32,7 @@ export function productLabel(product: ProductBrand): string {
 }
 
 export function tenantDisplayName(branding: TenantBranding | null, tenantId: string): string {
-  return branding?.displayName ?? (tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : tenantId);
+  return branding?.displayName ?? tenantId;
 }
 
 export function tenantLogoSrc(branding: TenantBranding | null, tenantId: string): string | null {
@@ -46,7 +42,7 @@ export function tenantLogoSrc(branding: TenantBranding | null, tenantId: string)
   if (branding?.logo?.mediaId) {
     return `/api/media/${encodeURIComponent(branding.logo.mediaId)}?tenantId=${encodeURIComponent(tenantId)}`;
   }
-  return DEFAULT_TENANT_LOGO_SRC[tenantId] ?? null;
+  return null;
 }
 
 export function ProductLogo(props: {

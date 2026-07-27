@@ -5,7 +5,7 @@ import type { EvaporationRepository } from "./repository.js";
 import { OpenWeatherMapProvider, type EvaporationWeatherProvider } from "./weather.js";
 
 function source(reportId: string): Source {
-  return { rail: "native", ref: reportId, label: `Aquatrace evaporation report ${reportId}` };
+  return { rail: "native", ref: reportId, label: `Evaporation report ${reportId}` };
 }
 
 export function createEvaporationNexiTools(input: {
@@ -16,7 +16,7 @@ export function createEvaporationNexiTools(input: {
   return [
     {
       name: "runEvaporation",
-      description: "Run the Aquatrace v20 evaporation calculator from address and pool specs, using OpenWeather weather and forecast data, then generate a branded PDF report.",
+      description: "Run the configured evaporation calculator from address and pool specs, using OpenWeather weather and forecast data, then generate a branded PDF report.",
       inputSchema: evaporationRunInputSchema,
       handler: async (tenant: Tenant, args: unknown) => {
         const report = await createEvaporationReport({
@@ -30,7 +30,7 @@ export function createEvaporationNexiTools(input: {
             report,
             pdfUrl: `/api/evaporation/reports/${encodeURIComponent(report.id)}/pdf?tenantId=${encodeURIComponent(report.tenantId)}`,
             attachment: evaporationAttachmentFor(report),
-            formula: "Aquatrace v20 evaporation calculator"
+            formula: "configured evaporation calculator"
           },
           sources: [source(report.id)]
         };

@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { InMemoryEventBus, RailError, type EventBus } from "@nexteam/core";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import type { NexReachService } from "./nexreachService.js";
 import { nexReachBundleFileName } from "./nexreachService.js";
 import { renderDraftBundleHtml, renderPortfolioHtml } from "./portfolioHtml.js";
@@ -51,7 +52,7 @@ const draftsQuerySchema = z.object({
 });
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {
-  return env.TENANT_ID || "aquatrace";
+  return configuredTenantId(env, "nexReachRoute");
 }
 
 function sendRouteError(res: Response, error: unknown): void {

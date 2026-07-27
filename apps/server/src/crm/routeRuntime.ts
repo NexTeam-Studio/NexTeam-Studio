@@ -37,6 +37,7 @@ import type { NexReachService } from "../content/nexreachService.js";
 import { defaultTenantBranding, type PlatformRepository } from "../platform/repository.js";
 import type { SitesRepository } from "../sites/repository.js";
 import { fetchAddressSuggestions } from "../shared/addressLocation/geocodingService.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import { ensureDocumentNumbers, reserveDocumentNumber } from "./documentNumbering.js";
 import {
   bookingTemplateVariables,
@@ -529,7 +530,7 @@ export interface CrmRouteDeps {
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {
-  return env.TENANT_ID || "aquatrace";
+  return configuredTenantId(env, "crmRoute");
 }
 
 function publicOrigin(req: Request): string {

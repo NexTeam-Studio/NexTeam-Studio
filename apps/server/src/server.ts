@@ -91,14 +91,16 @@ import { SelfRepairService } from "./selfrepair/service.js";
 import { FirestoreUsageLogWriter, MemoryUsageLogWriter } from "./usageLog.js";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { createVoiceRouter } from "./voice/routes.js";
+import { configuredTenantId } from "./core/tenantConfig.js";
 
 const app = express();
+const runtimeTenantId = configuredTenantId(process.env, "serverBootstrap");
 const commsRail = createCommsRailFromEnv(process.env);
 const adminDb = getAdminDb();
 const fieldDocsUsageLog = adminDb ? new FirestoreUsageLogWriter(adminDb) : new MemoryUsageLogWriter();
 const contentRepository = adminDb ? new FirestoreContentRepository(adminDb) : new InMemoryContentRepository();
 const schedulingRepository = adminDb ? new FirestoreSchedulingRepository(adminDb) : new InMemorySchedulingRepository();
-const campaignRepository = new InMemoryCampaignRepository(process.env.TENANT_ID || "aquatrace");
+const campaignRepository = new InMemoryCampaignRepository(runtimeTenantId, false);
 const gbpReviewProvider = new EnvGbpReviewProvider(process.env);
 const webDistDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const eventBus = adminDb ? new FirestoreEventBus(adminDb) : new InMemoryEventBus();
@@ -106,7 +108,7 @@ const fallbackMediaRepository = new MemoryMediaRepository();
 const mediaRepository: MediaRepository = adminDb ? new FirestoreMediaRepository(adminDb) : fallbackMediaRepository;
 const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) : new MemoryNativeCrmRepository();
 const fieldDocsService = new FieldDocsService({ mediaRepository, crmRepository: nativeCrmRepository });
-const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, process.env.TENANT_ID || "aquatrace");
+const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, runtimeTenantId);
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 const intakeRepository = adminDb ? new FirestoreIntakeRepository(adminDb) : new InMemoryIntakeRepository();
@@ -255,7 +257,7 @@ async function resolveNexiOperatorAccess(req: Request, tenantId: string) {
 app.use("/api/nexi", createNexiRouter(process.env, {
   loadTenant: async (req) => {
     const body = req.body as { tenantId?: unknown };
-    const tenantId = typeof body?.tenantId === "string" && body.tenantId.trim() ? body.tenantId.trim() : process.env.TENANT_ID || "aquatrace";
+    const tenantId = typeof body?.tenantId === "string" && body.tenantId.trim() ? body.tenantId.trim() : runtimeTenantId;
     return loadTenantFromPlatform(platformRepository, tenantId, process.env);
   },
   loadRequestorContext: async (req, tenant) => {
@@ -383,7 +385,7 @@ app.post("/api/public/local-auth/sign-in", (req: Request, res: Response) => {
     const body = req.body as { email?: unknown; password?: unknown; tenantId?: unknown };
     const email = typeof body.email === "string" ? body.email.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
-    const tenantId = typeof body.tenantId === "string" && body.tenantId.trim() ? body.tenantId.trim() : process.env.TENANT_ID || "aquatrace";
+    const tenantId = typeof body.tenantId === "string" && body.tenantId.trim() ? body.tenantId.trim() : runtimeTenantId;
     if (!email) {
       throw new RailError("Email is required.", {
         provider: "native",
@@ -409,7 +411,7 @@ app.get("/api/public/local-auth/session", (req: Request, res: Response) => {
         status: 401
       });
     }
-    const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim() ? req.query.tenantId.trim() : process.env.TENANT_ID || "aquatrace";
+    const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim() ? req.query.tenantId.trim() : runtimeTenantId;
     const session = readLocalDevSession(token, tenantId, process.env, "localAuthSession");
     if (!session) {
       throw new RailError("That session is not a local sign-in.", {
@@ -439,7 +441,7 @@ app.get("/api/public/runtime-config", (_req: Request, res: Response) => {
     firebaseConfigured: Object.values(firebase).every((value) => value.length > 0),
     authRequired: process.env.NEXI_FIREBASE_AUTH_REQUIRED !== "false",
     localAuthEnabled: process.env.NEXI_FIREBASE_AUTH_REQUIRED === "false",
-    localProfiles: listLocalDevWebProfiles(process.env.TENANT_ID || "aquatrace")
+    localProfiles: listLocalDevWebProfiles(runtimeTenantId)
   });
 });
 
@@ -462,7 +464,7 @@ function nativeMediaContentType(type: string): string {
 }
 
 async function trySendNativeMedia(req: Request, res: Response, mediaId: string): Promise<boolean> {
-  const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : process.env.TENANT_ID || "aquatrace";
+  const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : runtimeTenantId;
   const media = await mediaRepository.getMedia(tenantId, mediaId);
   if (!media) {
     return false;
@@ -518,7 +520,7 @@ app.post("/api/approval-queue", async (req: Request, res: Response) => {
 
 app.get("/api/approval-queue", async (req: Request, res: Response) => {
   try {
-    const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : process.env.TENANT_ID || "aquatrace";
+    const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : runtimeTenantId;
     const includeHistory = String(req.query.includeHistory ?? "").toLowerCase() === "true";
     const items = includeHistory ? await approvalQueue.listByTenant(tenantId) : await approvalQueue.listPending(tenantId);
     res.json({ ok: true, items });

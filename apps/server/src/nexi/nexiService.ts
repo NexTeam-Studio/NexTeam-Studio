@@ -615,8 +615,8 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
     const tool = tools.find((candidate) => candidate.name === "draftEmail");
     const recipient = message.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)?.[0]
       ?? requestorTargetForChannel(requestorContext, message, "email");
-    const bodyText = message.match(/\b(?:saying|that says|to say|with message|message)\b\s*:?\s*([\s\S]+)$/i)?.[1]?.trim() || "Please see the note from Aquatrace.";
-    const subject = bodyText.split(/[.!?]\s/)[0]?.trim().replace(/[.!?]+$/g, "").slice(0, 72) || "Aquatrace follow-up";
+    const bodyText = message.match(/\b(?:saying|that says|to say|with message|message)\b\s*:?\s*([\s\S]+)$/i)?.[1]?.trim() || "Please see the note from the service team.";
+    const subject = bodyText.split(/[.!?]\s/)[0]?.trim().replace(/[.!?]+$/g, "").slice(0, 72) || "Service follow-up";
     return tool && recipient ? { tool, args: { to: [recipient], subject, bodyText } } : null;
   }
   if (/\b(?:send|share|email|text|sms)\b.*\b(?:portal|hub)\b.*\blink\b/i.test(lower) || /\bportal\s+link\b/i.test(lower)) {
@@ -1191,7 +1191,7 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
   }
   if (/\b(?:draft|queue|sync|update|change)\b.*\b(?:gbp|google\s+business|business\s+profile)\b.*\b(?:profile|hours|services?|q\s*&\s*a|q&a|questions?)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "draftGbpProfileSync");
-    return tool ? { tool, args: { locationId: "aquatrace-primary" } } : null;
+    return tool ? { tool, args: { locationId: "primary" } } : null;
   }
   if (/\b(?:reviews?|reputation|google\s+reviews?|gbp\s+reviews?)\b/i.test(lower)) {
     const pollTool = tools.find((candidate) => candidate.name === "pollGbpReviews");
@@ -1224,7 +1224,7 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
         ? "high_contrast"
         : /\b(?:sand|warm|tan|gold)\b/i.test(lower)
           ? "sandbar"
-          : "aquatrace";
+          : "site";
     return tool ? { tool, args: { preset, plainRequest: message } } : null;
   }
   if (/\b(?:needs? my attention|what needs attention|what needs my attention|home queues|home dashboard)\b/i.test(lower)) {
@@ -1277,7 +1277,7 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
 
 function distanceDestinationFromText(text: string): string | undefined {
   const match = text.match(
-    /\b(?:how\s+far(?:\s+is)?|distance\s+(?:to|for)|drive\s+time\s+(?:to|for)|travel\s+time\s+(?:to|for)|miles?\s+(?:to|from))\s+(.+?)(?=\s+from\s+(?:my\s+house|the\s+shop|here|102\s+kate|aquatrace)|[?.!]|$)/i
+    /\b(?:how\s+far(?:\s+is)?|distance\s+(?:to|for)|drive\s+time\s+(?:to|for)|travel\s+time\s+(?:to|for)|miles?\s+(?:to|from))\s+(.+?)(?=\s+from\s+(?:my\s+house|the\s+shop|here)|[?.!]|$)/i
   )?.[1]?.trim();
   return match?.replace(/^is\s+/i, "").trim();
 }
@@ -1914,7 +1914,7 @@ function summarizeResult(toolName: string, result: unknown, actorDisplayName?: s
   if (toolName === "runEvaporation" && result && typeof result === "object") {
     const report = (result as { report?: { calculation?: { evapInchesPerDay?: unknown; leakInchesPerDay?: unknown } } }).report;
     const calculation = report?.calculation;
-    return `I ran the Aquatrace evaporation report. Estimated evaporation is ${String(calculation?.evapInchesPerDay ?? "unknown")} inches/day; leak loss after evaporation is ${String(calculation?.leakInchesPerDay ?? "unknown")} inches/day.`;
+    return `I ran the evaporation report. Estimated evaporation is ${String(calculation?.evapInchesPerDay ?? "unknown")} inches/day; leak loss after evaporation is ${String(calculation?.leakInchesPerDay ?? "unknown")} inches/day.`;
   }
   if (toolName === "customizeOperatorUi" && result && typeof result === "object") {
     const theme = (result as { theme?: { name?: unknown; density?: unknown } }).theme;

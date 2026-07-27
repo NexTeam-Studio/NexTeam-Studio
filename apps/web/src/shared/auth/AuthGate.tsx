@@ -56,7 +56,7 @@ export function AuthGate(props: { children: React.ReactNode }): React.ReactEleme
   return (
     <main className="auth-gate">
       <section className="auth-gate__card">
-        <p className="ui-eyebrow">Aquatrace ops</p>
+        <p className="ui-eyebrow">Tenant operations</p>
         <h1>Nexi Sign-In</h1>
         <p>Use your Firebase operator account to unlock the Job Desk.</p>
         <form className="auth-gate__form" onSubmit={handleSubmit}>

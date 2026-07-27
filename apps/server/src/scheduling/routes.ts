@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { type ApprovalQueueService, RailError } from "@nexteam/core";
 import type { JobLifecycleService } from "../crm/jobLifecycle.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import { detectConflicts, driveTimeProviderFromEnv, suggestSlots, type ScheduledVisit, type ScheduleLocation } from "./schedulingEngine.js";
 import type { SchedulingRepository } from "./repository.js";
 import { queueScheduleNotification } from "./notifications.js";
@@ -20,7 +21,7 @@ const locationSchema = z.object({
 });
 
 const findSlotSchema = z.object({
-  tenantId: z.string().default("aquatrace"),
+  tenantId: z.string().optional(),
   jobId: z.string(),
   title: z.string(),
   location: locationSchema,
@@ -31,7 +32,7 @@ const findSlotSchema = z.object({
 });
 
 const bookVisitSchema = z.object({
-  tenantId: z.string().default("aquatrace"),
+  tenantId: z.string().optional(),
   jobId: z.string(),
   title: z.string(),
   location: locationSchema,
@@ -42,7 +43,7 @@ const bookVisitSchema = z.object({
 });
 
 const queueVisitMessageSchema = z.object({
-  tenantId: z.string().default("aquatrace"),
+  tenantId: z.string().optional(),
   channel: z.enum(["email", "sms"]).default("email"),
   notifyTo: z.string().optional(),
   etaMinutes: z.number().int().positive().max(480).optional()
@@ -54,6 +55,9 @@ function sendError(res: Response, error: unknown): void {
 }
 
 function visitFromInput(input: z.infer<typeof bookVisitSchema>): ScheduledVisit {
+  if (!input.tenantId) {
+    throw new RailError("tenantId is required to book a visit.", { provider: "native", op: "bookVisit", status: 400 });
+  }
   return {
     id: `visit_${crypto.randomUUID()}`,
     tenantId: input.tenantId,
@@ -77,7 +81,8 @@ export interface SchedulingRouteDeps {
 export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps): void {
   app.get("/api/scheduling/calendar", async (req: Request, res: Response) => {
     try {
-      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : process.env.TENANT_ID || "aquatrace";
+      const env = deps.env ?? process.env;
+      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : configuredTenantId(env, "schedulingCalendar");
       const from = typeof req.query.from === "string" ? req.query.from : undefined;
       const to = typeof req.query.to === "string" ? req.query.to : undefined;
       const range: { from?: string; to?: string } = {};
@@ -101,7 +106,10 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
 
   app.post("/api/scheduling/find-slot", async (req: Request, res: Response) => {
     try {
-      const input = findSlotSchema.parse(req.body);
+      const input = findSlotSchema.parse({
+        ...req.body,
+        tenantId: req.body?.tenantId ?? configuredTenantId(deps.env ?? process.env, "schedulingFindSlot")
+      }) as z.infer<typeof findSlotSchema> & { tenantId: string };
       const existingVisits = await deps.repository.listVisits(input.tenantId, { from: input.from, to: input.to });
       const suggestions = await suggestSlots({
         ...input,
@@ -116,7 +124,10 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
 
   app.post("/api/scheduling/book-visit", async (req: Request, res: Response) => {
     try {
-      const input = bookVisitSchema.parse(req.body);
+      const input = bookVisitSchema.parse({
+        ...req.body,
+        tenantId: req.body?.tenantId ?? configuredTenantId(deps.env ?? process.env, "schedulingBookVisit")
+      }) as z.infer<typeof bookVisitSchema> & { tenantId: string };
       const visit = visitFromInput(input);
       const conflicts = detectConflicts(await deps.repository.listVisits(input.tenantId, { from: input.start, to: input.end }), visit);
       const saved = deps.jobLifecycleService
@@ -144,7 +155,10 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
 
   app.post("/api/scheduling/visits/:id/reminder", async (req: Request, res: Response) => {
     try {
-      const input = queueVisitMessageSchema.parse(req.body);
+      const input = queueVisitMessageSchema.parse({
+        ...req.body,
+        tenantId: req.body?.tenantId ?? configuredTenantId(deps.env ?? process.env, "schedulingReminder")
+      }) as z.infer<typeof queueVisitMessageSchema> & { tenantId: string };
       const visitId = req.params.id;
       if (!visitId) {
         throw new RailError("Visit id is required.", { provider: "native", op: "queueReminder", status: 400 });
@@ -169,7 +183,10 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
 
   app.post("/api/scheduling/visits/:id/on-my-way", async (req: Request, res: Response) => {
     try {
-      const input = queueVisitMessageSchema.parse(req.body);
+      const input = queueVisitMessageSchema.parse({
+        ...req.body,
+        tenantId: req.body?.tenantId ?? configuredTenantId(deps.env ?? process.env, "schedulingOnMyWay")
+      }) as z.infer<typeof queueVisitMessageSchema> & { tenantId: string };
       const visitId = req.params.id;
       if (!visitId) {
         throw new RailError("Visit id is required.", { provider: "native", op: "queueOnMyWay", status: 400 });

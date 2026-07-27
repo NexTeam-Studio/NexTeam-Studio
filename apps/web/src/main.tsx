@@ -1100,7 +1100,7 @@ const buildTimeFirebaseConfig: FirebasePublicConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID as string || ""
 };
 
-const DEFAULT_TENANT_ID = "aquatrace";
+const CONFIGURED_TENANT_ID = (import.meta.env.VITE_TENANT_ID as string | undefined)?.trim() ?? "";
 const LOCAL_SESSION_TOKEN_KEY = "nexops.local-auth-token";
 
 function claimString(claims: Record<string, unknown>, key: string): string | undefined {
@@ -1118,17 +1118,17 @@ function claimRole(claims: Record<string, unknown>): TenantRole {
 }
 
 function fallbackOperatorContext(user: User): OperatorContext {
-  return { tenantId: DEFAULT_TENANT_ID, tenantUserId: user.uid, role: "OWNER" };
+  return { tenantId: CONFIGURED_TENANT_ID, tenantUserId: user.uid, role: "OWNER" };
 }
 
 async function loadOperatorContext(user: User): Promise<OperatorContext> {
   const token = await user.getIdTokenResult();
   const claims = token.claims as Record<string, unknown>;
   const claimedTenantId = claimString(claims, "tenantId") ?? claimString(claims, "tenant_id");
-  // This Job Desk build is the Aquatrace operator surface. Platform-level Firebase
-  // claims can be "nexteam-studio"; do not let that silently move Aquatrace tools
-  // onto the wrong tenant until a real tenant switcher exists.
-  const tenantId = claimedTenantId && claimedTenantId !== "nexteam-studio" ? claimedTenantId : DEFAULT_TENANT_ID;
+  const tenantId = claimedTenantId || CONFIGURED_TENANT_ID;
+  if (!tenantId) {
+    throw new Error("This sign-in is missing a tenant assignment.");
+  }
   return {
     tenantId,
     tenantUserId: claimString(claims, "tenantUserId") ?? user.uid,
@@ -1315,7 +1315,7 @@ async function loadAuthBootstrap(): Promise<{
   const authRequired = runtime?.ok ? runtime.authRequired !== false : true;
   const localAuthEnabled = runtime?.ok && runtime.localAuthEnabled === true;
   const localProfiles = runtime?.ok ? runtime.localProfiles ?? [] : [];
-  const localTenantId = localProfiles[0]?.tenantId ?? DEFAULT_TENANT_ID;
+  const localTenantId = localProfiles[0]?.tenantId ?? CONFIGURED_TENANT_ID;
   if (localAuthEnabled) {
     installLocalSessionFetchBridge();
   }
@@ -2032,7 +2032,7 @@ function NexCamPage(props: { auth: Auth | null; user: User }): React.ReactElemen
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [includeTrashed, setIncludeTrashed] = useState(false);
-  const [reportTitle, setReportTitle] = useState("Aquatrace Leak Detection Report");
+  const [reportTitle, setReportTitle] = useState("Field Documentation Report");
   const [reportKind, setReportKind] = useState<"field_report" | "ai_recap">("field_report");
   const [selectedReportTemplateId, setSelectedReportTemplateId] = useState("");
   const [selectedSnippetIds, setSelectedSnippetIds] = useState<string[]>([]);
@@ -4379,7 +4379,7 @@ function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElement {
 function reputationUserMessage(error?: string): string {
   const message = error ?? "";
   if (/not allowed for this tenant|missing a tenant|missing a tenant role|role cannot perform|sign in is required/i.test(message)) {
-    return "Reviews are not connected for this sign-in yet. I need this user set up as an Aquatrace owner or office admin, then your Google Business Profile connected, before I can pull reviews.";
+    return "Reviews are not connected for this sign-in yet. This user needs an owner or office-admin tenant role and a connected Google Business Profile.";
   }
   if (/GBP OAuth|location identifiers|not configured|credential/i.test(message)) {
     return "Google reviews are not connected yet. Once your Google Business Profile is connected, this panel will show reviews and draft replies for approval.";
@@ -4583,9 +4583,9 @@ function AuthGate(props: {
       <main className="shell">
         <section className="auth-card">
           <ProductLogo product="nexops" className="auth-card-brand" alt="NexOps" />
-          <p className="eyebrow">Aquatrace staff access</p>
+          <p className="eyebrow">Tenant staff access</p>
           <h1>NexOps Sign-In</h1>
-          <p>Use a local staff email to unlock the Aquatrace workspace for testing. Owner, office admin, and technician sessions stay role-scoped after sign-in.</p>
+          <p>Use a configured local staff profile to unlock this tenant workspace for testing. Owner, office-admin, and technician sessions stay role-scoped after sign-in.</p>
           <form className="auth-form" onSubmit={handleSubmit}>
             <label>
               Email
@@ -4626,7 +4626,7 @@ function AuthGate(props: {
     <main className="shell">
       <section className="auth-card">
         <NexiIdentityMark className="auth-card-brand" caption="Nexi" />
-        <p className="eyebrow">Aquatrace ops</p>
+        <p className="eyebrow">Tenant operations</p>
         <h1>Nexi Sign-In</h1>
         <p>Use your Firebase operator account to unlock the Job Desk.</p>
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -6543,7 +6543,7 @@ function App(): React.ReactElement {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [localAuthEnabled, setLocalAuthEnabled] = useState(false);
-  const [localTenantId, setLocalTenantId] = useState(DEFAULT_TENANT_ID);
+  const [localTenantId, setLocalTenantId] = useState(CONFIGURED_TENANT_ID);
   const [localProfiles, setLocalProfiles] = useState<LocalAuthProfileSummary[]>([]);
 
   useEffect(() => {

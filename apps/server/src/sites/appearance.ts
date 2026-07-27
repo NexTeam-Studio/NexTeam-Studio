@@ -6,7 +6,7 @@ import {
 } from "./schemas.js";
 
 const palettes: Record<NonNullable<OperatorUiThemeInput["preset"]>, Required<OperatorUiThemeInput["colors"]>> = {
-  aquatrace: {
+  tenant_default: {
     shellBackground: "#dde7df",
     panelBackground: "#f8fffc",
     headerBackground: "#181c1c",
@@ -53,8 +53,8 @@ export function defaultOperatorUiTheme(tenantId: string, updatedBy = "system", n
     id: `${tenantId}_job_desk`,
     tenantId,
     surface: "job_desk",
-    name: "Aquatrace Job Desk",
-    colors: palettes.aquatrace,
+    name: `${tenantId} Job Desk`,
+    colors: palettes.tenant_default,
     density: "comfortable",
     updatedBy,
     updatedAt: now

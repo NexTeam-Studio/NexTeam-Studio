@@ -59,7 +59,7 @@ export function defaultFieldReportTemplates(tenantId: string): FieldReportTempla
       id: DEFAULT_FIELD_REPORT_TEMPLATE_ID,
       tenantId,
       title: "Leak detection report",
-      defaultReportTitle: "Aquatrace Leak Detection Report",
+      defaultReportTitle: "Leak Detection Report",
       sections: [
         { id: "summary", label: "Summary", defaultText: "Scope, findings, and closeout timing." },
         { id: "findings", label: "Findings", defaultText: "Document where loss was confirmed or ruled out." },

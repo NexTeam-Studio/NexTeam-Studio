@@ -12,6 +12,7 @@ import {
   requireTenantRole,
   type AccessContext
 } from "../auth/accessContext.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import type { LedgerService } from "../crm/ledgerFoundation.js";
 import {
   createStripeTerminalConnectionToken,
@@ -33,7 +34,7 @@ import {
 } from "./transcription.js";
 
 const dayScheduleQuerySchema = z.object({
-  tenantId: z.string().default("aquatrace"),
+  tenantId: z.string().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   technicianId: z.string().optional()
 });
@@ -43,23 +44,23 @@ const sessionQuerySchema = z.object({
 });
 
 const dayBoardQuerySchema = z.object({
-  tenantId: z.string().default("aquatrace"),
+  tenantId: z.string().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   technicianId: z.string().optional()
 });
 
 const visitContextQuerySchema = z.object({
-  tenantId: z.string().default("aquatrace")
+  tenantId: z.string().optional()
 });
 
 const visitNarrationBodySchema = z.object({
-  tenantId: z.string().default("aquatrace"),
+  tenantId: z.string().optional(),
   text: z.string().trim().min(1).max(8_000),
   append: z.boolean().default(true)
 });
 
 const transcriptionBodySchema = z.object({
-  tenantId: z.string().default("aquatrace"),
+  tenantId: z.string().optional(),
   fileName: z.string().min(1),
   mimeType: z.string().min(1),
   audioBase64: z.string().min(1),
@@ -67,24 +68,24 @@ const transcriptionBodySchema = z.object({
 });
 
 const pushRegistrationSchema = z.object({
-  tenantId: z.string().default("aquatrace"),
+  tenantId: z.string().optional(),
   expoPushToken: z.string().min(1),
   deviceId: z.string().min(1),
   platform: z.enum(["ios", "android", "web", "unknown"]).default("unknown")
 });
 
 const tapToPayConnectionTokenBodySchema = z.object({
-  tenantId: z.string().default("aquatrace")
+  tenantId: z.string().optional()
 });
 
 const tapToPayStartBodySchema = z.object({
-  tenantId: z.string().default("aquatrace"),
+  tenantId: z.string().optional(),
   invoiceId: z.string().min(1),
   tipAmount: z.number().min(0).optional()
 });
 
 const tapToPayCompleteBodySchema = z.object({
-  tenantId: z.string().default("aquatrace"),
+  tenantId: z.string().optional(),
   invoiceId: z.string().min(1),
   paymentIntentId: z.string().min(1),
   deviceLabel: z.string().optional(),
@@ -92,7 +93,7 @@ const tapToPayCompleteBodySchema = z.object({
 });
 
 const tapToPayFailureBodySchema = z.object({
-  tenantId: z.string().default("aquatrace"),
+  tenantId: z.string().optional(),
   invoiceId: z.string().min(1),
   paymentIntentId: z.string().min(1),
   failureMessage: z.string().min(1),
@@ -120,7 +121,7 @@ function sendError(res: Response, error: unknown): void {
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {
-  return env.TENANT_ID || "aquatrace";
+  return configuredTenantId(env, "mobileRoute");
 }
 
 function tapToPayLedger(deps: MobileRouteDeps): Pick<LedgerService, "getInvoice" | "recordInvoicePayment"> {
@@ -546,12 +547,13 @@ export function registerMobileRoutes(app: Express, deps: MobileRouteDeps): void 
   app.post("/api/mobile/transcribe", async (req: Request, res: Response) => {
     try {
       const input = transcriptionBodySchema.parse(req.body ?? {});
+      const tenantId = input.tenantId ?? defaultTenantId(env);
       await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
-        requestedTenantId: input.tenantId,
+        requestedTenantId: tenantId,
         op: "mobileTranscribe"
       });
       const result = await maybeTranscribeMobileNarration({
-        tenantId: input.tenantId,
+        tenantId,
         fileName: input.fileName,
         mimeType: input.mimeType,
         audioBase64: input.audioBase64,
@@ -583,7 +585,7 @@ export function registerMobileRoutes(app: Express, deps: MobileRouteDeps): void 
 
   app.get("/api/mobile/jobs/:jobId", async (req: Request, res: Response) => {
     try {
-      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : env.TENANT_ID || "aquatrace";
+      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
       const access = await requireAccessContext(req, env, { requestedTenantId: tenantId, op: "mobileJob" });
       const jobId = req.params.jobId;
       if (!jobId) {
@@ -601,7 +603,7 @@ export function registerMobileRoutes(app: Express, deps: MobileRouteDeps): void 
 
   app.post("/api/mobile/sync", async (req: Request, res: Response) => {
     try {
-      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : env.TENANT_ID || "aquatrace";
+      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
       const access = await requireAccessContext(req, env, { requestedTenantId: tenantId, op: "mobileSync" });
       const input = MobileSyncRequestSchema.parse(req.body);
       const results = input.operations.map((candidate) => {
@@ -657,7 +659,7 @@ export function registerMobileRoutes(app: Express, deps: MobileRouteDeps): void 
 
   app.get("/api/mobile/approvals", async (req: Request, res: Response) => {
     try {
-      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : env.TENANT_ID || "aquatrace";
+      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
       const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
         requestedTenantId: tenantId,
         op: "mobileApprovals"

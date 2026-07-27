@@ -45,7 +45,11 @@ export function mobileApiBaseUrl(): string {
 
 export function mobileTenantId(): string {
   const extra = (expoConstants.expoConfig?.extra ?? {}) as { tenantId?: string };
-  return extra.tenantId?.trim() || "aquatrace";
+  const tenantId = extra.tenantId?.trim();
+  if (!tenantId) {
+    throw new Error("Mobile tenantId must be configured in the Expo runtime.");
+  }
+  return tenantId;
 }
 
 export async function fetchMobileRuntimeConfig(): Promise<MobileRuntimeConfig> {

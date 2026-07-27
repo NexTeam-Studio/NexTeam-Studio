@@ -866,7 +866,7 @@ function distanceDestinationFromText(text: string): string | undefined {
     return undefined;
   }
   const direct = text.match(
-    /\b(?:how\s+far(?:\s+is)?|distance\s+(?:to|for)|drive\s+time\s+(?:to|for)|travel\s+time\s+(?:to|for)|miles?\s+(?:to|from))\s+(.+?)(?=\s+from\s+(?:my\s+house|the\s+shop|here|102\s+kate|aquatrace)|[?.!]|$)/i
+    /\b(?:how\s+far(?:\s+is)?|distance\s+(?:to|for)|drive\s+time\s+(?:to|for)|travel\s+time\s+(?:to|for)|miles?\s+(?:to|from))\s+(.+?)(?=\s+from\s+(?:my\s+house|the\s+shop|here)|[?.!]|$)/i
   )?.[1]?.trim();
   if (direct) {
     return direct.replace(/^is\s+/i, "").trim();
@@ -876,7 +876,7 @@ function distanceDestinationFromText(text: string): string | undefined {
 
 function distanceOriginFromText(text: string): string | undefined {
   const match = text.match(/\bfrom\s+(.+?)(?:[?.!]|$)/i)?.[1]?.trim();
-  if (!match || /^(?:my\s+house|the\s+shop|here|aquatrace)$/i.test(match)) {
+  if (!match || /^(?:my\s+house|the\s+shop|here)$/i.test(match)) {
     return undefined;
   }
   return match;
@@ -1205,7 +1205,7 @@ async function normalizeToolInput(
     record.clientName ??= reviewRequestClientFromText(userText) || entityQueryFromText(userText) || "client";
   }
   if (toolName === "draftGbpProfileSync") {
-    record.locationId ??= "aquatrace-primary";
+    record.locationId ??= "primary";
   }
   if (toolName === "rankSnapshot") {
     record.keywords ??= seoKeywordsFromText(userText);
@@ -1462,7 +1462,7 @@ function looksLikeSeoRankQuestion(lower: string): boolean {
 function looksLikeSeoAuditQuestion(lower: string): boolean {
   return /\b(?:seo|search|on-page|schema|json-ld|meta|title)\b/.test(lower)
     && /\b(?:audit|check|scan|fix|repair)\b/.test(lower)
-    && /\b(?:site|website|page|aquatrace)\b/.test(lower);
+    && /\b(?:site|website|page|business)\b/.test(lower);
 }
 
 function looksLikeSeoQueueQuestion(lower: string): boolean {
@@ -1555,7 +1555,7 @@ function seoTargetDomainFromText(text: string): string | undefined {
 function seoSiteSlugFromText(text: string): string {
   const slug = text.match(/\bsite\s+([a-z0-9-]+)\b/i)?.[1]
     ?? text.match(/\bwebsite\s+([a-z0-9-]+)\b/i)?.[1];
-  return slug?.toLowerCase() ?? "aquatrace";
+  return slug?.toLowerCase() ?? "site";
 }
 
 function cleanSeoKeyword(value: string): string {
@@ -1573,7 +1573,7 @@ function seoGeoFromText(text: string): string {
 }
 
 function seoKeywordsFromText(text: string): Array<{ keyword: string; geo: string; device: "desktop" }> {
-  if (/\b(?:10|ten)\s+(?:real\s+)?(?:aquatrace\s+)?keywords\b/i.test(text)) {
+  if (/\b(?:10|ten)\s+(?:real\s+)?keywords\b/i.test(text)) {
     return [
       "pool leak detection",
       "swimming pool leak detection",
@@ -2132,7 +2132,7 @@ function intakeTargetTenantIdFromBusinessName(name: string | undefined): string 
 function intakeStartInputFromText(text: string): { businessName?: string | undefined; targetTenantId?: string | undefined; industryPack: string; plan: string } {
   const businessName = intakeBusinessNameFromText(text);
   const lower = text.toLowerCase();
-  const industryPack = /\b(?:pool|leak|aquatrace)\b/.test(lower)
+  const industryPack = /\b(?:pool|leak)\b/.test(lower)
     ? "pool_leak"
     : /\b(?:hvac|heating|air\s+conditioning)\b/.test(lower)
       ? "hvac"
@@ -2460,13 +2460,13 @@ function mailboxAliasFromEmailAddress(email: string | undefined): string | undef
 
 function draftBodyFromText(text: string): string {
   const match = text.match(/\b(?:saying|that says|to say|with message|message|tell(?:ing)?\s+(?:them|him|her|me)?)\b\s*:?\s*([\s\S]+)$/i);
-  return (match?.[1] ?? "Please see the note from Aquatrace.").trim().replace(/^["']|["']$/g, "");
+  return (match?.[1] ?? "Please see the note from the service team.").trim().replace(/^["']|["']$/g, "");
 }
 
 function draftSubjectFromBody(bodyText: string): string {
-  const firstSentence = bodyText.split(/[.!?]\s/)[0]?.trim() || "Aquatrace follow-up";
+  const firstSentence = bodyText.split(/[.!?]\s/)[0]?.trim() || "Service follow-up";
   const compact = firstSentence.replace(/[.!?]+$/g, "").replace(/\s+/g, " ").slice(0, 72).trim();
-  return compact.length >= 8 ? compact : "Aquatrace follow-up";
+  return compact.length >= 8 ? compact : "Service follow-up";
 }
 
 function draftEmailInputFromText(text: string, requestorEmail?: string): { to: string[]; subject: string; bodyText: string } {
@@ -2506,11 +2506,11 @@ function draftReportEmailInputFromText(text: string): {
   return {
     to: to ? [to] : [],
     clientName,
-    reportTitle: `${clientName} Aquatrace report`,
-    bodyText: `Attached is the Aquatrace report PDF for ${clientName}. Please review it and let us know if you have any questions.`,
+    reportTitle: `${clientName} field report`,
+    bodyText: `Attached is the field report PDF for ${clientName}. Please review it and let us know if you have any questions.`,
     findings: [
       `Report delivery requested for ${clientName}.`,
-      "PDF generated by the Aquatrace field documentation rail and parked for approval before sending."
+      "PDF generated by the field documentation rail and parked for approval before sending."
     ]
   };
 }
@@ -3105,7 +3105,7 @@ function diagnosticForToolFailure(toolName: string, error?: unknown): { diagnost
     if (maybeRail.status === 403) {
       return {
         diagnosticCategory: "tenant_context_mismatch",
-        diagnosticSummary: "I got to the email-draft step, but this request is attached to the wrong Aquatrace workspace. Most likely break point: workspace sign-in, not Gmail."
+        diagnosticSummary: "I got to the email-draft step, but this request is attached to the wrong tenant workspace. Most likely break point: workspace sign-in, not Gmail."
       };
     }
     if (maybeRail.status === 503) {

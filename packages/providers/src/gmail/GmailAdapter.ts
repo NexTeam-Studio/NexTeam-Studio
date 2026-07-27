@@ -23,6 +23,14 @@ export interface GmailMailboxConfig {
   tenantId?: string | undefined;
 }
 
+function mailboxTenantId(config: GmailMailboxConfig): string {
+  const tenantId = config.tenantId?.trim();
+  if (!tenantId) {
+    throw new RailError("Gmail mailbox tenantId is required.", { provider: "gmail", op: "mailboxTenant", status: 400 });
+  }
+  return tenantId;
+}
+
 interface GmailListResponse {
   messages: Array<{ id: string; threadId: string }>;
 }
@@ -168,7 +176,7 @@ function buildGmailQuery(query: EmailSearchQuery): string {
 function messageSummary(config: GmailMailboxConfig, message: GmailMessagePayload): EmailMessageSummary {
   return {
     id: message.id,
-    tenantId: config.tenantId ?? "aquatrace",
+    tenantId: mailboxTenantId(config),
     mailbox: config.mailbox,
     threadId: message.threadId,
     from: header(message, "From"),
@@ -187,7 +195,7 @@ function attachmentSummaries(config: GmailMailboxConfig, message: GmailMessagePa
       const contentDisposition = partHeader(part, "Content-Disposition")?.toLowerCase() ?? "";
       return {
         id: part.body?.attachmentId ?? "",
-        tenantId: config.tenantId ?? "aquatrace",
+        tenantId: mailboxTenantId(config),
         mailbox: config.mailbox,
         messageId: message.id,
         filename: part.filename || "attachment",
@@ -412,7 +420,7 @@ export class GmailReadOnlyAdapter extends GmailBaseAdapter implements EmailReadP
     const thread = await this.gmailGet(`threads/${encodeURIComponent(threadId)}?${params.toString()}`, "threads_get_metadata", parseThread);
     return {
       id: thread.id,
-      tenantId: this.config.tenantId ?? "aquatrace",
+      tenantId: mailboxTenantId(this.config),
       mailbox: this.config.mailbox,
       messages: thread.messages.map((message) => messageDetail(this.config, message))
     };

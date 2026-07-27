@@ -45,7 +45,7 @@ export const gbpReviewInputSchema = z.object({
 
 export const profileSyncInputSchema = z.object({
   tenantId: z.string().min(1).optional(),
-  locationId: z.string().min(1).default("aquatrace-primary"),
+  locationId: z.string().min(1).default("primary"),
   hours: z.record(z.string()).default({
     monday: "8:00 AM-5:00 PM",
     tuesday: "8:00 AM-5:00 PM",
@@ -64,7 +64,7 @@ export const profileSyncInputSchema = z.object({
   })).default([
     {
       question: "Do you service residential and commercial pools?",
-      answer: "Yes. Aquatrace works on residential pools, pool/spa combinations, and commercial documentation jobs."
+      answer: "Yes. We work on residential pools, pool/spa combinations, and commercial documentation jobs."
     }
   ])
 });

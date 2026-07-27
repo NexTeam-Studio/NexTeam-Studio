@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { RailError, type ArtifactKind, type NexiTool, type Tenant } from "@nexteam/core";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { getAdminAuth, getAdminDb } from "../firebase.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import { FirestoreUsageLogWriter, MemoryUsageLogWriter } from "../usageLog.js";
 import { FirestoreNexiRepository, MemoryNexiRepository, type NexiRepository } from "./nexiRepository.js";
 import { createNexiLookupTools } from "./nexiTools.js";
@@ -18,13 +19,13 @@ function defaultApproval(): Tenant["approval"] {
   return Object.fromEntries(kinds.map((kind) => [kind, { autoApprove: false, cleanStreak: 0 }])) as Tenant["approval"];
 }
 
-function loadDefaultTenant(req: Request): Tenant {
+function loadDefaultTenant(req: Request, env: NodeJS.ProcessEnv): Tenant {
   const bodyTenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim() ? req.body.tenantId.trim() : "";
   const queryTenantId = typeof req.query?.tenantId === "string" && req.query.tenantId.trim() ? req.query.tenantId.trim() : "";
-  const tenantId = bodyTenantId || queryTenantId || process.env.TENANT_ID || "aquatrace";
+  const tenantId = bodyTenantId || queryTenantId || configuredTenantId(env, "nexiRoute");
   return {
     id: tenantId,
-    name: tenantId === "aquatrace" ? "Aquatrace" : tenantId,
+    name: env.TENANT_NAME?.trim() || tenantId,
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
     adapters: { crm: "native", media: "native", email: "gmail_relay" },
@@ -121,7 +122,7 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: Nex
       const pendingApproval = req.body?.pendingApproval && typeof req.body.pendingApproval === "object"
         ? req.body.pendingApproval
         : undefined;
-      const tenant = deps.loadTenant ? await deps.loadTenant(req) : loadDefaultTenant(req);
+      const tenant = deps.loadTenant ? await deps.loadTenant(req) : loadDefaultTenant(req, env);
       const requestorContext = deps.loadRequestorContext ? await deps.loadRequestorContext(req, tenant) : null;
       const stores = runtimeStores(env);
       const requestTools = deps.extraToolsForRequest ? await deps.extraToolsForRequest(req, tenant) : [];
@@ -168,7 +169,7 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: Nex
         res.status(400).json({ ok: false, error: "conversationId is required" });
         return;
       }
-      const tenant = deps.loadTenant ? await deps.loadTenant(req) : loadDefaultTenant(req);
+      const tenant = deps.loadTenant ? await deps.loadTenant(req) : loadDefaultTenant(req, env);
       const stores = runtimeStores(env);
       const recent = await stores.repository.loadRecentConversations(tenant.id, conversationId, 100);
       res.json({
@@ -202,7 +203,7 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: Nex
   router.post("/site-job-blueprints/ingest", async (req: Request, res: Response) => {
     try {
       await requireNexiOperator(req, env);
-      const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : process.env.TENANT_ID || "aquatrace";
+      const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : configuredTenantId(env, "siteJobBlueprintIngest");
       const sourceId = typeof req.body?.sourceId === "string" ? req.body.sourceId : "inline";
       const text = typeof req.body?.text === "string" ? req.body.text : "";
       const jobId = typeof req.body?.jobId === "string" ? req.body.jobId : undefined;

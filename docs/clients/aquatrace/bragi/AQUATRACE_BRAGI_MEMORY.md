@@ -6,7 +6,7 @@
 
 ## Verified Status
 
-- `docs/BRAGI_SOUL.md` is complete and remains the governing Bragi identity file.
+- `docs/tenants/aquatrace/operations/BRAGI_SOUL.md` is complete and remains the governing Bragi identity file.
 - Bragi cron foundation exists and is dry-run safe by default.
 - Bragi can create WordPress drafts through the existing draft-only execution path.
 - First proof-of-life draft exists at `https://aquatraceleak.com/?p=3307` with post ID `3307`.

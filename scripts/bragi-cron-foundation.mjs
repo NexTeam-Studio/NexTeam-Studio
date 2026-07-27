@@ -8,7 +8,7 @@ import {
   selectBragiTopic,
 } from "../src/features/missioncontrol/services/bragiContinuityService.js";
 
-const SOUL_PATH = join(process.cwd(), "docs", "BRAGI_SOUL.md");
+const SOUL_PATH = join(process.cwd(), "docs", "tenants", "aquatrace", "operations", "BRAGI_SOUL.md");
 const LOG_DIR = join(process.cwd(), "tmp-proof");
 const LOG_PATH = join(LOG_DIR, "bragi-cron-dry-run.json");
 const DEFAULT_INTERVAL_MINUTES = 1440;
@@ -37,7 +37,7 @@ function normalizeBaseUrl(value) {
 function loadBragiSoul() {
   const soul = readFileSync(SOUL_PATH, "utf8");
   return {
-    sourcePath: "docs/BRAGI_SOUL.md",
+    sourcePath: "docs/tenants/aquatrace/operations/BRAGI_SOUL.md",
     sourceLoaded: true,
     mentionsLockedBuildOrder: soul.includes("## Locked Build Order"),
     mentionsFirstProofOfLife: soul.includes("## First Proof of Life"),
@@ -76,7 +76,7 @@ function buildPlannedArticleJob(topicOverride = "") {
     lane: "Bragi Content Exception",
     mode: "dry-run",
     generatedAt: now.toISOString(),
-    identitySource: "docs/BRAGI_SOUL.md",
+    identitySource: "docs/tenants/aquatrace/operations/BRAGI_SOUL.md",
     workflowStage: "cron-foundation",
     action: "planned-article-job-created",
     publishAction: "disabled",

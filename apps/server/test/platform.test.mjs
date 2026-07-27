@@ -169,12 +169,10 @@ test("platform repository stores tenant branding with text fallback and actor at
   assert.equal(updated.updatedBy, "internal:tenant_user_chris");
 });
 
-test("tenant users seed Aquatrace roles and produce Firebase custom claims", async () => {
+test("tenant users are provisioned explicitly and produce Firebase custom claims", async () => {
   const repository = new InMemoryPlatformRepository([defaultTenant("aquatrace", "suite")]);
   const users = await repository.listTenantUsers("aquatrace");
-  assert.equal(users.find((user) => user.id === "tenant_user_chris")?.role, "OWNER");
-  assert.equal(users.find((user) => user.id === "tech_catherine")?.role, "TECHNICIAN");
-  assert.equal(users.find((user) => user.id === "tech_logan")?.role, "TECHNICIAN");
+  assert.deepEqual(users, []);
 
   const office = await upsertTenantUser(repository, {
     tenantId: "aquatrace",
@@ -330,7 +328,7 @@ test("platform routes manage tenant users and job links without leaking token ha
     const base = `http://127.0.0.1:${port}`;
     const users = await fetch(`${base}/api/platform/tenants/aquatrace/users`).then((response) => response.json());
     assert.equal(users.ok, true);
-    assert.equal(users.users.some((user) => user.id === "tenant_user_chris" && user.role === "OWNER"), true);
+    assert.deepEqual(users.users, []);
 
     const createdUser = await fetch(`${base}/api/platform/tenants/aquatrace/users`, {
       method: "POST",

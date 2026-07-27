@@ -32,28 +32,28 @@ export type DevHeaderProfile = {
 
 export const LOCAL_DEV_PROFILES: DevHeaderProfile[] = [
   {
-    tenantUserId: "tenant_user_chris",
+    tenantUserId: "local-owner",
     role: "OWNER",
     email: "owner@local.dev",
     label: "Owner"
   },
   {
-    tenantUserId: "office_catherine",
+    tenantUserId: "local-office",
     role: "OFFICE_ADMIN",
-    email: "catherine@local.dev",
-    label: "Catherine Office"
+    email: "office@local.dev",
+    label: "Office Admin"
   },
   {
-    tenantUserId: "tech_chris",
+    tenantUserId: "local-technician",
     role: "TECHNICIAN",
-    email: "chris@aquatraceleak.com",
-    label: "Chris Tech"
+    email: "technician@local.dev",
+    label: "Technician"
   },
   {
-    tenantUserId: "tech_logan",
+    tenantUserId: "local-technician-2",
     role: "TECHNICIAN",
-    email: "logan@aquatraceleak.com",
-    label: "Logan Tech"
+    email: "technician2@local.dev",
+    label: "Technician 2"
   }
 ];
 

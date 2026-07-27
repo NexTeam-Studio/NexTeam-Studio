@@ -53,7 +53,7 @@ export const selfRepairFixBriefSchema = z.object({
 });
 
 export const selfRepairRunInputSchema = z.object({
-  tenantId: z.string().min(1).default("aquatrace"),
+  tenantId: z.string().min(1),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   ownerEmail: z.string().email().optional()
 });

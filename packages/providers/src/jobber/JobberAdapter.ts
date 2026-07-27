@@ -279,7 +279,10 @@ export class JobberAdapter implements CRMProvider {
       : DEFAULT_JOBBER_MAX_PAGES;
   }
 
-  static fromEnv(env: NodeJS.ProcessEnv, tenantId = env.TENANT_ID || "aquatrace"): JobberAdapter {
+  static fromEnv(env: NodeJS.ProcessEnv, tenantId = env.TENANT_ID?.trim()): JobberAdapter {
+    if (!tenantId) {
+      throw new RailError("TENANT_ID is required to configure Jobber.", { provider: "jobber", op: "fromEnv", status: 400 });
+    }
     return new JobberAdapter({
       tenantId,
       clientId: env.JOBBER_CLIENT_ID,

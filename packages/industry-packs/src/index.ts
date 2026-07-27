@@ -1,1 +1,1 @@
-export * from "./poolLeakVgbCatalog.js";
+export * from "./tenantPacks/aquatrace/poolLeakVgbCatalog.js";

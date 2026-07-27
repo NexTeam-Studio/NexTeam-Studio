@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { RailError } from "@nexteam/core";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import { createEvaporationReport, evaporationAttachmentFor, renderEvaporationReportPdf } from "./report.js";
 import { MemoryEvaporationRepository, type EvaporationRepository } from "./repository.js";
 import { OpenWeatherMapProvider, type EvaporationWeatherProvider } from "./weather.js";
@@ -11,7 +12,7 @@ export interface EvaporationRouteDeps {
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {
-  return env.TENANT_ID || "aquatrace";
+  return configuredTenantId(env, "evaporationRoute");
 }
 
 function sendRouteError(res: Response, error: unknown): void {

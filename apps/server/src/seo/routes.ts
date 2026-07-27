@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { RailError, type ApprovalQueueService } from "@nexteam/core";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import type { SitesRepository } from "../sites/repository.js";
 import { DataForSeoRankProvider } from "./dataForSeoProvider.js";
 import type { SeoRepository } from "./repository.js";
@@ -21,7 +22,7 @@ export interface SeoRouteDeps {
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {
-  return env.TENANT_ID || "aquatrace";
+  return configuredTenantId(env, "seoRoute");
 }
 
 function sendRouteError(res: Response, error: unknown): void {
@@ -61,7 +62,7 @@ export function registerSeoRoutes(app: Express, deps: SeoRouteDeps): void {
 
   app.post("/api/seo/sites/:slug/audit", async (req: Request, res: Response) => {
     try {
-      const input = auditSiteInputSchema.parse({ ...req.body, slug: req.params.slug ?? "aquatrace" });
+      const input = auditSiteInputSchema.parse({ ...req.body, slug: req.params.slug });
       const requestedTenantId = input.tenantId ?? defaultTenantId(env);
       const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
         requestedTenantId,
@@ -77,7 +78,7 @@ export function registerSeoRoutes(app: Express, deps: SeoRouteDeps): void {
   app.post("/api/seo/sites/:slug/fix", async (req: Request, res: Response) => {
     try {
       const input = auditSiteInputSchema.extend({ issueCode: auditSiteInputSchema.shape.slug.optional() })
-        .parse({ ...req.body, slug: req.params.slug ?? "aquatrace" });
+        .parse({ ...req.body, slug: req.params.slug });
       const requestedTenantId = input.tenantId ?? defaultTenantId(env);
       const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
         requestedTenantId,
@@ -97,7 +98,7 @@ export function registerSeoRoutes(app: Express, deps: SeoRouteDeps): void {
 
   app.post("/api/seo/sites/:slug/fixes/:approvalId/approve-apply", async (req: Request, res: Response) => {
     try {
-      const input = auditSiteInputSchema.parse({ ...req.body, slug: req.params.slug ?? "aquatrace" });
+      const input = auditSiteInputSchema.parse({ ...req.body, slug: req.params.slug });
       const requestedTenantId = input.tenantId ?? defaultTenantId(env);
       const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
         requestedTenantId,

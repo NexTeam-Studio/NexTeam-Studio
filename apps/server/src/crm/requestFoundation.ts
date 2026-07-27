@@ -1056,7 +1056,11 @@ export async function backfillLegacyLeads(input: {
   leads: SiteLead[];
   automation: RequestAutomationDeps;
 }): Promise<{ created: ServiceRequest[]; skippedLeadIds: string[] }> {
-  const existing = await input.repository.listRequests(input.leads[0]?.tenantId ?? "aquatrace");
+  const tenantId = input.leads[0]?.tenantId;
+  if (!tenantId) {
+    return { created: [], skippedLeadIds: [] };
+  }
+  const existing = await input.repository.listRequests(tenantId);
   const existingLeadIds = new Set(existing.map((request) => request.sourceLeadId).filter(Boolean));
   const created: ServiceRequest[] = [];
   const skippedLeadIds: string[] = [];

@@ -49,7 +49,7 @@ function localTime(now: Date, timezone: string): string {
 }
 
 function homeBaseAddress(env: NodeJS.ProcessEnv | undefined): string {
-  return env?.AQUATRACE_HOME_BASE_ADDRESS
+  return env?.TENANT_HOME_BASE_ADDRESS
     || env?.TENANT_HOME_BASE_ADDRESS
     || env?.M6_PHYSICAL_ADDRESS
     || "102 Kate Lane, Fair Play, SC 29643";

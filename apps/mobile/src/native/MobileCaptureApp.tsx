@@ -1147,7 +1147,7 @@ export default function MobileCaptureApp(): React.ReactElement {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.brandEyebrow}>{sessionBootstrap?.branding.displayName ?? "Aquatrace"}</Text>
+          <Text style={styles.brandEyebrow}>{sessionBootstrap?.branding.displayName ?? "Tenant workspace"}</Text>
           <Text style={styles.screenTitle}>{activeSession ? "Capture session" : "Field board"}</Text>
           <Text style={styles.mutedCopy}>{mobileSession?.label ?? "Field user"} · {roleSummary(mobileSession)} · {networkOnline ? "online" : "offline"}</Text>
         </View>
@@ -1210,8 +1210,8 @@ export default function MobileCaptureApp(): React.ReactElement {
                     <Pressable style={styles.secondaryButtonCompact} onPress={async () => {
                       await ensureVisitContext(visit.id);
                       const draftSession = emptySession({
-                        tenantId: runtime?.tenantId ?? "aquatrace",
-                        actorTenantUserId: mobileSession?.tenantUserId ?? "tech_chris",
+                        tenantId: runtime?.tenantId ?? mobileSession?.tenantId ?? "",
+                        actorTenantUserId: mobileSession?.tenantUserId ?? "local-technician",
                         visit,
                         assignment: existingAssignmentFromVisit(visit),
                         checklists: visitContexts[visit.id] ? checklistDraftsFromContext(visitContexts[visit.id]!) : [],

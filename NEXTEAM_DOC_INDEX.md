@@ -17,8 +17,8 @@ North-star / founder-context anchor: [docs/internal/NEXTEAM_NORTH_STAR_AND_FOUND
 - [docs/internal/blueprints/Aquatrace_App_Project_Plan_v4.docx](./docs/internal/blueprints/Aquatrace_App_Project_Plan_v4.docx) - Recovered NexTeam multi-tenant SaaS blueprint from the 2026-03-07 Claude chat. Covers tenant-isolated Firestore architecture, Aquatrace as Tenant Zero, onboarding, subscription tiers, per-tenant branding, revenue model, and the 16-phase build timeline.
 Classification note: RECOVERED BLUEPRINT - the APP/SaaS version of NexTeam (multi-tenant field-inspector app as a Jobber-marketplace subscription product). This is a SEPARATE, MUCH LARGER floor than the current Bragi content/marketing engine work (26-34 week build). Related (both NexTeam, both multi-tenant, Aquatrace = customer zero) but NOT the current target. Keep as a reference/aim; do NOT pivot to it before Bragi/Mode B ships. Per the north-star decision filter: finish the current floor first.
 
-- [AQUATRACE_AGENT_MAP.md](./AQUATRACE_AGENT_MAP.md) - Standing Aquatrace workflow roadmap, including the saved GBP location/service-area strategy.
-- [docs/BRAGI_SOUL.md](./docs/BRAGI_SOUL.md) - Governing identity and boundaries for Bragi as Aquatrace's content agent.
+- [AQUATRACE_AGENT_MAP.md](./docs/tenants/aquatrace/operations/AQUATRACE_AGENT_MAP.md) - Standing Aquatrace workflow roadmap, including the saved GBP location/service-area strategy.
+- [docs/tenants/aquatrace/operations/BRAGI_SOUL.md](./docs/tenants/aquatrace/operations/BRAGI_SOUL.md) - Governing identity and boundaries for Bragi as Aquatrace's content agent.
 - [docs/clients/aquatrace/bragi/AQUATRACE_BRAGI_MEMORY.md](./docs/clients/aquatrace/bragi/AQUATRACE_BRAGI_MEMORY.md) - Current verified operating truth, guardrails, and standing status for Bragi.
 - [docs/internal/LOCAL_RAIL_API_CONTRACT.md](./docs/internal/LOCAL_RAIL_API_CONTRACT.md) - Localhost rail API contract for WordPress and CompanyCam operations.
 - [docs/internal/NEXTEAM_CLIENT_ONBOARDING_AUTOMATION_PLAYBOOK.md](./docs/internal/NEXTEAM_CLIENT_ONBOARDING_AUTOMATION_PLAYBOOK.md) - Design-only onboarding sequence showing what is automatable, what needs a human, and what stays a Chris decision.
@@ -26,7 +26,7 @@ Classification note: RECOVERED BLUEPRINT - the APP/SaaS version of NexTeam (mult
 - [docs/internal/NEXTEAM_ROLE_MAP.md](./docs/internal/NEXTEAM_ROLE_MAP.md) - Permanent role authority for internal, client-facing, and consult-only agent structure.
 - [docs/PHASE1_ROADMAP.md](./docs/PHASE1_ROADMAP.md) - Documentation-first roadmap for the Aquatrace agent workflow system.
 - [AGENTS.md](./AGENTS.md) - Repo-level roadmap, stack, guardrails, and operating constraints for NexTeam-Studio.
-- [docs/AQUATRACE_WEBSITE_AGENTS.md](./docs/AQUATRACE_WEBSITE_AGENTS.md) - Website-oriented agent structure and execution notes for Aquatrace work.
+- [docs/tenants/aquatrace/operations/AQUATRACE_WEBSITE_AGENTS.md](./docs/tenants/aquatrace/operations/AQUATRACE_WEBSITE_AGENTS.md) - Website-oriented agent structure and execution notes for Aquatrace work.
 - [docs/clients/aquatrace/bragi/AQUATRACE_CONTENT_KNOWLEDGE.md](./docs/clients/aquatrace/bragi/AQUATRACE_CONTENT_KNOWLEDGE.md) - Core factual knowledge base for Aquatrace article generation.
 - [docs/clients/aquatrace/bragi/AQUATRACE_INTERNAL_LINK_MAP.md](./docs/clients/aquatrace/bragi/AQUATRACE_INTERNAL_LINK_MAP.md) - Internal-linking reference for Bragi article packages.
 - [docs/clients/aquatrace/bragi/AQUATRACE_TOPIC_BANK.md](./docs/clients/aquatrace/bragi/AQUATRACE_TOPIC_BANK.md) - Parked and active topic inventory for Aquatrace content.
@@ -51,7 +51,7 @@ Automating new-client spin-up: domain (Namecheap), hosting (InMotion), DNS/CDN (
 
 ### GBP Location Strategy
 
-Already saved in [AQUATRACE_AGENT_MAP.md](./AQUATRACE_AGENT_MAP.md) under `## GBP Location & Service-Area Strategy`. Use that section as the authority for service-area vs branch-profile rules, the "staffed branch only" test, the "do not burst-create profiles" rule, and the instruction to leave the working Gainesville profile undisturbed.
+Already saved in [AQUATRACE_AGENT_MAP.md](./docs/tenants/aquatrace/operations/AQUATRACE_AGENT_MAP.md) under `## GBP Location & Service-Area Strategy`. Use that section as the authority for service-area vs branch-profile rules, the "staffed branch only" test, the "do not burst-create profiles" rule, and the instruction to leave the working Gainesville profile undisturbed.
 
 ### VPS migration for Slade (live trading agent)
 

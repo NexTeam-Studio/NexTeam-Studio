@@ -12,8 +12,8 @@ This document tracks which agent specs currently exist so Agent Architect and hu
 | agt_system_planner_v1 | Planner Agent | defined | Agent Architect | system / planning / workflow preparation | docs/AGENT_PLANNER.md | 2026-03-25 |
 | agt_system_qa-review_v1 | QA / Review Agent | defined | Agent Architect | system / review / quality control | docs/AGENT_QA_REVIEW.md | 2026-03-25 |
 | agt_system_documentation_v1 | Documentation Agent | defined | Agent Architect | system / documentation / knowledge maintenance | docs/AGENT_DOCUMENTATION.md | 2026-03-25 |
-| agt_aquatrace_brokk_v1 | Brokk | defined | none | aquatrace / wordpress / build | docs/AQUATRACE_WEBSITE_AGENTS.md | 2026-04-17 |
-| agt_aquatrace_bragi_v1 | Bragi | defined | none | aquatrace / content / seo | docs/AQUATRACE_WEBSITE_AGENTS.md | 2026-04-17 |
+| agt_aquatrace_brokk_v1 | Brokk | defined | none | aquatrace / wordpress / build | docs/tenants/aquatrace/operations/AQUATRACE_WEBSITE_AGENTS.md | 2026-04-17 |
+| agt_aquatrace_bragi_v1 | Bragi | defined | none | aquatrace / content / seo | docs/tenants/aquatrace/operations/AQUATRACE_WEBSITE_AGENTS.md | 2026-04-17 |
 
 ## Notes
 

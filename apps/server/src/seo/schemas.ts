@@ -71,7 +71,7 @@ export const rankSnapshotInputSchema = z.object({
 
 export const auditSiteInputSchema = z.object({
   tenantId: z.string().min(1).optional(),
-  slug: z.string().min(1).default("aquatrace")
+  slug: z.string().min(1)
 });
 
 export const seoFixInputSchema = auditSiteInputSchema.extend({

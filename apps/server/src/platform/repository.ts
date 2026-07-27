@@ -22,8 +22,7 @@ import {
   type UsageLogRecord
 } from "@nexteam/core";
 import { PLATFORM_PLANS } from "./plans.js";
-
-const DEFAULT_TENANT_ID = "aquatrace";
+import { configuredTenantId } from "../core/tenantConfig.js";
 
 function defaultApproval(): Tenant["approval"] {
   return {
@@ -46,10 +45,11 @@ function defaultApproval(): Tenant["approval"] {
   };
 }
 
-export function defaultTenant(tenantId = DEFAULT_TENANT_ID, plan: TenantPlan = "suite"): Tenant {
+export function defaultTenant(tenantId = configuredTenantId(process.env, "defaultTenant"), plan: TenantPlan = "suite"): Tenant {
+  const configuredId = process.env.TENANT_ID?.trim();
   return {
     id: tenantId,
-    name: tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : tenantId,
+    name: tenantId === configuredId ? process.env.TENANT_NAME?.trim() || tenantId : tenantId,
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
     adapters: { crm: "native", media: "native", email: "gmail_relay" },
@@ -61,30 +61,8 @@ export function defaultTenant(tenantId = DEFAULT_TENANT_ID, plan: TenantPlan = "
 
 export function defaultTenantBranding(tenant: Tenant | string = defaultTenant()): TenantBranding {
   const tenantId = typeof tenant === "string" ? tenant : tenant.id;
-  const displayName = typeof tenant === "string" ? (tenantId === DEFAULT_TENANT_ID ? "Aquatrace" : tenantId) : tenant.name;
+  const displayName = typeof tenant === "string" ? tenantId : tenant.name;
   const updatedAt = "2026-07-10T00:00:00.000Z";
-  if (tenantId === DEFAULT_TENANT_ID) {
-    return {
-      tenantId,
-      displayName: "Aquatrace",
-      colors: {
-        primary: "#181c1c",
-        secondary: "#585858",
-        accent: "#00ffff",
-        accentText: "#101010",
-        background: "#dde7df",
-        surface: "#f8fffc",
-        text: "#151817",
-        mutedText: "#586466",
-        userBubble: "#106060",
-        assistantBubble: "#f8fffc"
-      },
-      fontFamily: "Montserrat, Aptos, Segoe UI, Helvetica Neue, sans-serif",
-      source: "extracted",
-      updatedBy: "system",
-      updatedAt
-    };
-  }
   return {
     tenantId,
     displayName,
@@ -141,67 +119,8 @@ export interface PlatformRepository {
   listBackups(tenantId: string): Promise<PlatformBackupRecord[]>;
 }
 
-export function defaultTenantUsers(tenantId = DEFAULT_TENANT_ID): TenantUser[] {
-  const createdAt = "2026-07-08T00:00:00.000Z";
-  if (tenantId !== DEFAULT_TENANT_ID) {
-    return [];
-  }
-  return [
-    {
-      id: "tenant_user_chris",
-      tenantId,
-      email: "chris@aquatraceleak.com",
-      phones: ["8648737082"],
-      address: {
-        street1: "102 Kate Lane",
-        city: "Fair Play",
-        province: "SC",
-        postalCode: "29643",
-        country: "US"
-      },
-      displayName: "Chris",
-      role: "OWNER",
-      active: true,
-      createdAt,
-      updatedAt: createdAt
-    },
-    {
-      id: "office_catherine",
-      tenantId,
-      email: "catherine@local.dev",
-      phones: ["8646171838"],
-      address: {
-        street1: "102 Kate Lane",
-        city: "Fair Play",
-        province: "SC",
-        postalCode: "29643",
-        country: "US"
-      },
-      displayName: "Catherine",
-      role: "OFFICE_ADMIN",
-      active: true,
-      createdAt,
-      updatedAt: createdAt
-    },
-    {
-      id: "tech_logan",
-      tenantId,
-      email: "logan@aquatraceleak.com",
-      phones: ["8645581725"],
-      address: {
-        street1: "6020 Frest Dr",
-        city: "Seneca",
-        province: "SC",
-        postalCode: "29672",
-        country: "US"
-      },
-      displayName: "Logan",
-      role: "TECHNICIAN",
-      active: true,
-      createdAt,
-      updatedAt: createdAt
-    }
-  ];
+export function defaultTenantUsers(_tenantId = configuredTenantId(process.env, "defaultTenantUsers")): TenantUser[] {
+  return [];
 }
 
 function starterSubscription(tenant: Tenant): TenantSubscription {
@@ -411,7 +330,8 @@ export class FirestorePlatformRepository implements PlatformRepository {
       }
     }
 
-    return tenantId === DEFAULT_TENANT_ID ? defaultTenant() : null;
+    const configuredId = configuredTenantId(process.env, "platformTenantLookup");
+    return tenantId === configuredId ? defaultTenant(configuredId) : null;
   }
 
   async upsertTenant(tenant: Tenant): Promise<Tenant> {

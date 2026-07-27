@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { RailError, type ApprovalQueueService, type ArtifactKind, type EventBus, type Tenant } from "@nexteam/core";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import { EnvGbpReviewProvider, type GbpReviewProvider } from "./gbpProvider.js";
 import type { ReputationRepository } from "./repository.js";
 import { ReputationService } from "./service.js";
@@ -14,7 +15,7 @@ export interface ReputationRouteDeps {
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {
-  return env.TENANT_ID || "aquatrace";
+  return configuredTenantId(env, "reputationRoute");
 }
 
 function defaultApproval(): Tenant["approval"] {
@@ -25,7 +26,7 @@ function defaultApproval(): Tenant["approval"] {
 function tenantFrom(tenantId: string, env: NodeJS.ProcessEnv): Tenant {
   return {
     id: tenantId,
-    name: tenantId === "aquatrace" ? "Aquatrace" : tenantId,
+    name: env.TENANT_NAME?.trim() || tenantId,
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
     adapters: { crm: "native", media: "native", email: "gmail_relay" },

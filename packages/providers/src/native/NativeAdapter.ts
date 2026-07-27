@@ -401,7 +401,7 @@ export function defaultQuoteTemplates(tenantId: string): QuoteTemplate[] {
       id: `quote_template_standard_${tenantId}`,
       tenantId,
       name: "Standard leak detection",
-      description: "Aquatrace starter template for standard leak-detection quoting. Pricing stays editable until tenant confirmation.",
+      description: "Starter template for standard leak-detection quoting. Pricing stays editable until tenant confirmation.",
       titlePrefix: "Leak Detection Quote",
       defaultLineItems: [
         {

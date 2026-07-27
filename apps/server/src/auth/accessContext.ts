@@ -3,6 +3,7 @@ import type { Request } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { RailError } from "@nexteam/core";
 import { getAdminAuth } from "../firebase.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 
 export type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 export type AccessKind = "internal" | "job_link";
@@ -44,8 +45,6 @@ export interface LocalDevWebProfileSummary {
 interface LocalDevWebCredentialProfile {
   id: keyof typeof LOCAL_DEV_ACCESS_PROFILES;
   label: string;
-  passwordEnv: string;
-  defaultPassword: string;
 }
 
 interface LocalDevSessionPayload {
@@ -63,49 +62,47 @@ export const LOCAL_DEV_PROFILE_HEADER = "x-nexteam-local-profile";
 
 export const LOCAL_DEV_ACCESS_PROFILES = {
   "local-owner": {
-    tenantUserId: "tenant_user_chris",
+    tenantUserId: "local-owner",
     role: "OWNER" as const,
-    email: "chris@aquatraceleak.com",
-    displayName: "Chris"
+    email: "owner@local.dev",
+    displayName: "Local Owner"
   },
-  "office_catherine": {
-    tenantUserId: "office_catherine",
+  "local-office": {
+    tenantUserId: "local-office",
     role: "OFFICE_ADMIN" as const,
-    email: "catherine@local.dev",
-    displayName: "Catherine"
+    email: "office@local.dev",
+    displayName: "Local Office"
   },
-  "tech_chris": {
-    tenantUserId: "tech_chris",
+  "local-technician": {
+    tenantUserId: "local-technician",
     role: "TECHNICIAN" as const,
-    email: "chris-tech@local.dev",
-    displayName: "Chris"
+    email: "technician@local.dev",
+    displayName: "Local Technician"
   },
-  "tech_logan": {
-    tenantUserId: "tech_logan",
+  "local-technician-2": {
+    tenantUserId: "local-technician-2",
     role: "TECHNICIAN" as const,
-    email: "logan@aquatraceleak.com",
-    displayName: "Logan"
+    email: "technician2@local.dev",
+    displayName: "Local Technician 2"
   }
 } satisfies Record<string, LocalDevAccessProfile>;
 
 const LOCAL_DEV_WEB_CREDENTIAL_PROFILES = [
   {
     id: "local-owner",
-    label: "Chris - Owner",
-    passwordEnv: "LOCAL_DEV_OWNER_PASSWORD",
-    defaultPassword: "ChrisOwner!2026"
+    label: "Local Owner"
   },
   {
-    id: "office_catherine",
-    label: "Catherine - Office Admin",
-    passwordEnv: "LOCAL_DEV_OFFICE_PASSWORD",
-    defaultPassword: "CatherineOffice!2026"
+    id: "local-office",
+    label: "Local Office Admin"
   },
   {
-    id: "tech_logan",
-    label: "Logan - Technician",
-    passwordEnv: "LOCAL_DEV_TECH_PASSWORD",
-    defaultPassword: "LoganTech!2026"
+    id: "local-technician",
+    label: "Local Technician"
+  },
+  {
+    id: "local-technician-2",
+    label: "Local Technician 2"
   }
 ] satisfies readonly LocalDevWebCredentialProfile[];
 
@@ -113,7 +110,7 @@ const LOCAL_DEV_SESSION_PREFIX = "localdev";
 const LOCAL_DEV_SESSION_LIFETIME_SECONDS = 60 * 60 * 12;
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {
-  return env.TENANT_ID || "aquatrace";
+  return configuredTenantId(env, "accessContext");
 }
 
 function envList(value: string | undefined): string[] {
@@ -369,9 +366,7 @@ export function readLocalDevSession(
       LOCAL_DEV_WEB_CREDENTIAL_PROFILES.find((profile) => profile.id === payload.profileId)
         ?? {
           id: payload.profileId,
-          label: accessProfile.displayName,
-          passwordEnv: "LOCAL_DEV_UNUSED_PASSWORD",
-          defaultPassword: ""
+          label: accessProfile.displayName
         },
       tenantId
     )
@@ -398,13 +393,13 @@ export async function requireAccessContext(
 
   if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") {
     return localDevAccessContext(req, tenantId, options.op ?? "accessContext")
-      ?? { tenantId, tenantUserId: "tenant_user_chris", role: "OWNER", accessKind: "internal" };
+      ?? { tenantId, tenantUserId: "local-owner", role: "OWNER", accessKind: "internal" };
   }
 
   const auth = getAdminAuth(env);
   if (!auth) {
     return localDevAccessContext(req, tenantId, options.op ?? "accessContext")
-      ?? { tenantId, tenantUserId: "tenant_user_chris", role: "OWNER", accessKind: "internal" };
+      ?? { tenantId, tenantUserId: "local-owner", role: "OWNER", accessKind: "internal" };
   }
 
   if (!token) {

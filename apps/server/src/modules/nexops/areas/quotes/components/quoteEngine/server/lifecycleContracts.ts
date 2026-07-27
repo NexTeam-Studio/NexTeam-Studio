@@ -71,7 +71,7 @@ export const QUOTE_ENGINE_COMMANDS: LifecycleCommandContract[] = [
     dominantLabel: "View quote",
     secondaryActions: ["Approve quote", "Request changes"],
     requiredFields: [],
-    blockingConditions: [{ code: "authorization_missing", when: "portal token missing or expired", blockerCopy: "This quote link is no longer valid. Ask Aquatrace for a fresh one." }],
+    blockingConditions: [{ code: "authorization_missing", when: "portal token missing or expired", blockerCopy: "This quote link is no longer valid. Ask the service team for a fresh one." }],
     transitionResult: "Returns the current quote portal payload without mutating state.",
     createdEntities: [],
     sideEffects: [{ kind: "audit", detail: "portal.quote_viewed" }],

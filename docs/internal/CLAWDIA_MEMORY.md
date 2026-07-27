@@ -54,7 +54,7 @@ Hard rules:
 ## 4. Verified Completed Milestones
 
 ### Bragi
-- `docs/BRAGI_SOUL.md` complete
+- `docs/tenants/aquatrace/operations/BRAGI_SOUL.md` complete
 - cron foundation complete
 - WordPress draft skill complete
 - proof-of-life WordPress draft created

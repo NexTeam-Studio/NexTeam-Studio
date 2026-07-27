@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { RailError, type ApprovalQueueService, type ArtifactKind, type Tenant } from "@nexteam/core";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import type { CampaignRepository } from "./repository.js";
 import { campaignTemplateSchema, unsubscribeInputSchema } from "./schemas.js";
 import { CampaignService } from "./service.js";
@@ -13,8 +14,8 @@ export interface CampaignRouteDeps {
 }
 
 const tenantSchema = z.object({
-  tenantId: z.string().min(1).default("aquatrace"),
-  tenantName: z.string().default("Aquatrace")
+  tenantId: z.string().min(1).optional(),
+  tenantName: z.string().optional()
 });
 
 const trackInputSchema = z.object({
@@ -46,14 +47,14 @@ const invoicePaidSchema = z.object({
 });
 
 function tenantFrom(input: { tenantId?: string | undefined; tenantName?: string | undefined }, env: NodeJS.ProcessEnv): Tenant {
-  const tenantId = input.tenantId || env.TENANT_ID || "aquatrace";
+  const tenantId = input.tenantId || configuredTenantId(env, "campaignTenant");
   const approval = Object.fromEntries(
     (["client", "email", "sms", "gbp_post", "social_post", "article", "quote", "invoice", "site_publish", "review_reply"] satisfies ArtifactKind[])
       .map((kind) => [kind, { autoApprove: false, cleanStreak: 0 }])
   ) as Tenant["approval"];
   return {
     id: tenantId,
-    name: input.tenantName || (tenantId === "aquatrace" ? "Aquatrace" : tenantId),
+    name: input.tenantName || env.TENANT_NAME?.trim() || tenantId,
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
     adapters: { crm: "native", media: "native", email: "gmail_relay" },
@@ -75,7 +76,7 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
 
   app.get("/api/campaigns/templates", async (req: Request, res: Response) => {
     try {
-      const requestedTenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : env.TENANT_ID || "aquatrace";
+      const requestedTenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : configuredTenantId(env, "campaignList");
       const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
         requestedTenantId,
         op: "campaignTemplates"
@@ -134,7 +135,7 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
     try {
       const input = queueStepInputSchema.parse(req.body ?? {});
       const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
-        requestedTenantId: input.tenantId ?? env.TENANT_ID ?? "aquatrace",
+        requestedTenantId: input.tenantId ?? configuredTenantId(env, "campaignQueueStep"),
         op: "campaignQueueStep"
       });
       const tenant = tenantFrom({ tenantId: access.tenantId }, env);
@@ -187,7 +188,7 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
     try {
       const input = reportDeliverySchema.parse(req.body ?? {});
       const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
-        requestedTenantId: input.tenantId ?? env.TENANT_ID ?? "aquatrace",
+        requestedTenantId: input.tenantId ?? configuredTenantId(env, "campaignReportDelivery"),
         op: "campaignReportDelivery"
       });
       const tenant = tenantFrom({ tenantId: access.tenantId }, env);
@@ -202,7 +203,7 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
     try {
       const input = invoicePaidSchema.parse(req.body ?? {});
       const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
-        requestedTenantId: input.tenantId ?? env.TENANT_ID ?? "aquatrace",
+        requestedTenantId: input.tenantId ?? configuredTenantId(env, "campaignInvoicePaid"),
         op: "campaignInvoicePaid"
       });
       const tenant = tenantFrom({ tenantId: access.tenantId }, env);
@@ -215,7 +216,7 @@ export function registerCampaignRoutes(app: Express, deps: CampaignRouteDeps): v
 
   app.get("/api/campaigns/stats", async (req: Request, res: Response) => {
     try {
-      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : env.TENANT_ID || "aquatrace";
+      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : configuredTenantId(env, "campaignStats");
       const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
         requestedTenantId: tenantId,
         op: "campaignStats"

@@ -4,6 +4,7 @@ import { RailError, addressSchema, type JobAccessScope, type Tenant, type Tenant
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
 import { getAdminAuth } from "../firebase.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import { createJobAccessLink, customClaimsForTenantUser, upsertTenantUser, verifyJobAccessToken } from "./accessManagement.js";
 import { runTenantBackup, type StorageWriter } from "./backup.js";
 import { createStripeTestSubscription } from "./billing.js";
@@ -237,7 +238,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
     try {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
         ? req.query.tenantId.trim()
-        : env.TENANT_ID || "aquatrace";
+        : configuredTenantId(env, "publicTenantBranding");
       const tenant = await loadTenantFromPlatform(deps.repository, tenantId, env);
       const branding = await deps.repository.getTenantBranding(tenantId) ?? defaultTenantBranding(tenant);
       res.json({ ok: true, tenantId, branding });

@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { executeBragiWordpressDraft } from "../src/features/missioncontrol/services/bragiWordpressService.js";
 
-const soul = readFileSync("docs/BRAGI_SOUL.md", "utf8");
+const soul = readFileSync("docs/tenants/aquatrace/operations/BRAGI_SOUL.md", "utf8");
 if (!soul.includes("## Locked Build Order") || !soul.includes("## First Proof of Life")) {
   throw new Error("BRAGI_SOUL.md is missing required governing sections.");
 }

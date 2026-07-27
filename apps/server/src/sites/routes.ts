@@ -8,6 +8,7 @@ import {
 } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import type { CommsRail } from "../comms/gmailRegistry.js";
 import type { PlatformRepository } from "../platform/repository.js";
 import { buildServiceRequest, notifyRequestCreated } from "../crm/requestFoundation.js";
@@ -27,7 +28,7 @@ export interface SitesRouteDeps {
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv) {
-  return env.TENANT_ID || "aquatrace";
+  return configuredTenantId(env, "sitesRoute");
 }
 
 function sendRouteError(res: Response, error: unknown): void {

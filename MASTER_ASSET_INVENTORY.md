@@ -198,7 +198,7 @@ Naming themes:
 | `Mimir` | Knowledge/research specialist inside Njord | Routed inside the Njord workspace | `wired specialist profile inside live shell; not separate executor` | Same Njord Anthropic path / same stale model string |
 | `Freyja` | Relationship/engagement specialist inside Njord | Routed inside the Njord workspace | `wired specialist profile inside live shell; not separate executor` | Same Njord Anthropic path / same stale model string |
 | `Bragi` | Articles, SEO, metadata, content workflow | NexTeam-Studio Mission Control + WordPress/CompanyCam rail + local rail API | `partially live`: rails are proven, but autonomous writing/vision have never completed a real successful run yet | Direct Anthropic Mode B path currently blocked by retired model string; also appears as the Norse content prompt in Njord |
-| `Brokk` | Client website/page-builder specialist; duplicate of Donatello's site-build skill for client work | `docs/AQUATRACE_WEBSITE_AGENTS.md`; Website Requests lane in Aquatrace workspace | `defined/framework-only; no proven separate autonomous runtime` | `n/a` |
+| `Brokk` | Client website/page-builder specialist; duplicate of Donatello's site-build skill for client work | `docs/tenants/aquatrace/operations/AQUATRACE_WEBSITE_AGENTS.md`; Website Requests lane in Aquatrace workspace | `defined/framework-only; no proven separate autonomous runtime` | `n/a` |
 
 ### Consult-Only Advisory Bench
 

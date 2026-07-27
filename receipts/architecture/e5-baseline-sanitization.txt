@@ -1,0 +1,30 @@
+E5 BASELINE SANITIZATION CHECKPOINT
+Date: 2026-07-27
+
+Tenant resolution
+- Removed literal Aquatrace/default-tenant fallbacks from generic server, web, mobile, and provider runtime code.
+- Server unauthenticated rails require configured TENANT_ID when no authenticated/request tenant exists.
+- Web requires Firebase tenant claims or explicit VITE_TENANT_ID.
+- Mobile requires an explicit Expo tenantId.
+- Tests explicitly set TENANT_ID=aquatrace and ALLOW_IN_MEMORY_PERSISTENCE=true in tests/setup.mjs.
+
+Tenant-owned material
+- Field-document parser/checklist/vision logic: apps/server/src/tenantPacks/aquatrace/fielddocs.
+- Campaign fixtures: apps/server/src/tenantPacks/aquatrace/campaignFixtures.ts.
+- Site generator: apps/server/src/tenantPacks/aquatrace/sites.
+- Mobile fixture repository: apps/server/src/tenantPacks/aquatrace/mobile.
+- Catalog pack: packages/industry-packs/src/tenantPacks/aquatrace.
+- Logo asset: apps/web/public/tenant-packs/aquatrace/assets; no shell fallback remains.
+- Operations docs: docs/tenants/aquatrace/operations.
+
+Artifact cleanup
+- Removed tracked .expo state, tunnel PID/receipts, named screenshots, local captures, temporary output, and tmp backup trees.
+- Preserved only tmp_test_wp_auth.mjs, tmp_check_post_auth.mjs, and tmp_run_bragi_service.mjs as evidence for the deferred full-history credential purge.
+- WordPress credential remediation remains open in BUILDSTATE.md.
+
+Verification
+- Server + web production build: PASS; web transformed 88 modules.
+- Full repository suite: 353/356 passing.
+- Remaining failures are three previously known tests: NexReach confirmation wording, NexDocs confirmation wording, and an expired platform job-link fixture.
+- Five prior known-red tests became green through explicit local-owner identity and no implicit tenant-user seeding.
+- Browser: not opened.

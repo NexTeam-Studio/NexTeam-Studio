@@ -9,6 +9,7 @@ import { FirestoreNativeCrmRepository } from "../crm/nativeRepository.js";
 import type { LedgerService } from "../crm/ledgerFoundation.js";
 import { materializeRequestCaptureContext } from "../crm/requestFoundation.js";
 import { getAdminDb, getAdminStorageBucket } from "../firebase.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import type { PlatformRepository } from "../platform/repository.js";
 import { FirestoreSchedulingRepository, type SchedulingRepository } from "../scheduling/repository.js";
 import { checklistTemplateSchema, createLeakDetectionChecklist, summarizeChecklistTemplate } from "./checklists.js";
@@ -22,7 +23,7 @@ import { createFieldReportRecord, renderFieldReportPdf, renderSignedDocumentPdf 
 import { createNativeMediaFromUpload, storeUploadedMediaBytes, uploadMediaInputSchema } from "./uploadService.js";
 import { maybeRunVision } from "./visionPipeline.js";
 import {
-  AQUATRACE_VISION_TAG_TAXONOMY,
+  POOL_LEAK_VISION_TAG_TAXONOMY,
   applyVisionSurveyCorrection,
   runVisionSurveyBatch,
   visionSurveyBatchInputSchema,
@@ -304,7 +305,7 @@ export interface FieldDocsRouteDeps {
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {
-  return env.TENANT_ID || "aquatrace";
+  return configuredTenantId(env, "fieldDocsRoute");
 }
 
 function nowIso(): string {
@@ -1133,7 +1134,7 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         requestedTenantId: tenantId,
         op: "fielddocsVisionTaxonomy"
       });
-      res.json({ ok: true, tenantId: access.tenantId, taxonomy: AQUATRACE_VISION_TAG_TAXONOMY });
+      res.json({ ok: true, tenantId: access.tenantId, taxonomy: POOL_LEAK_VISION_TAG_TAXONOMY });
     } catch (error) {
       sendRouteError(res, error);
     }

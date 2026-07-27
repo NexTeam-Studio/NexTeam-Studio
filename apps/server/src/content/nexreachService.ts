@@ -182,8 +182,8 @@ export class NexReachService {
     };
     return this.deps.repository.saveSettings({
       ...seeded,
-      toneNotes: tenant?.name === "Aquatrace"
-        ? "Aquatrace default: plainspoken, local, evidence-first, never hype."
+      toneNotes: tenant?.name
+        ? `${tenant.name}: plainspoken, local, evidence-first, never hype.`
         : seeded.toneNotes
     });
   }

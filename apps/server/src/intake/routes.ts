@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { RailError, type ApprovalQueueService } from "@nexteam/core";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
+import { configuredTenantId } from "../core/tenantConfig.js";
 import type { IntakeService } from "./service.js";
 
 export interface IntakeRouteDeps {
@@ -10,7 +11,7 @@ export interface IntakeRouteDeps {
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv) {
-  return env.TENANT_ID || "aquatrace";
+  return configuredTenantId(env, "intakeRoute");
 }
 
 function sendRouteError(res: Response, error: unknown): void {

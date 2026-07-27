@@ -123,7 +123,7 @@ test("runEvaporation Nexi tool returns report, PDF URL, and native source", asyn
     observedLoss: { inches: 1, observationDays: 1 }
   });
   assert.equal(result.sources[0].rail, "native");
-  assert.equal(result.result.formula, "Aquatrace v20 evaporation calculator");
+  assert.equal(result.result.formula, "configured evaporation calculator");
   assert.match(result.result.pdfUrl, /\/api\/evaporation\/reports\/evap_/);
 });
 

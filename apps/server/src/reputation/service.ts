@@ -28,7 +28,7 @@ function reviewDocId(tenantId: string, gbpReviewId: string): string {
 }
 
 function reviewReplyText(tenant: Tenant, review: ReputationReview): string {
-  const business = tenant.name === "Aquatrace" ? "Aquatrace Swimming Pool Leak Detection" : tenant.name;
+  const business = tenant.name;
   if (review.rating >= 4) {
     return [
       `${review.authorName}, thank you for trusting ${business}.`,

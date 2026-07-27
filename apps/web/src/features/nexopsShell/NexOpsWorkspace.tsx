@@ -1092,7 +1092,7 @@ const buildTimeFirebaseConfig: FirebasePublicConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID as string || ""
 };
 
-const DEFAULT_TENANT_ID = "aquatrace";
+const CONFIGURED_TENANT_ID = (import.meta.env.VITE_TENANT_ID as string | undefined)?.trim() ?? "";
 const LOCAL_SESSION_TOKEN_KEY = "nexops.local-auth-token";
 
 function claimString(claims: Record<string, unknown>, key: string): string | undefined {
@@ -1110,17 +1110,17 @@ function claimRole(claims: Record<string, unknown>): TenantRole {
 }
 
 function fallbackOperatorContext(user: User): OperatorContext {
-  return { tenantId: DEFAULT_TENANT_ID, tenantUserId: user.uid, role: "OWNER" };
+  return { tenantId: CONFIGURED_TENANT_ID, tenantUserId: user.uid, role: "OWNER" };
 }
 
 async function loadOperatorContext(user: User): Promise<OperatorContext> {
   const token = await user.getIdTokenResult();
   const claims = token.claims as Record<string, unknown>;
   const claimedTenantId = claimString(claims, "tenantId") ?? claimString(claims, "tenant_id");
-  // This Job Desk build is the Aquatrace operator surface. Platform-level Firebase
-  // claims can be "nexteam-studio"; do not let that silently move Aquatrace tools
-  // onto the wrong tenant until a real tenant switcher exists.
-  const tenantId = claimedTenantId && claimedTenantId !== "nexteam-studio" ? claimedTenantId : DEFAULT_TENANT_ID;
+  const tenantId = claimedTenantId || CONFIGURED_TENANT_ID;
+  if (!tenantId) {
+    throw new Error("This sign-in is missing a tenant assignment.");
+  }
   return {
     tenantId,
     tenantUserId: claimString(claims, "tenantUserId") ?? user.uid,
@@ -1307,7 +1307,7 @@ async function loadAuthBootstrap(): Promise<{
   const authRequired = runtime?.ok ? runtime.authRequired !== false : true;
   const localAuthEnabled = runtime?.ok && runtime.localAuthEnabled === true;
   const localProfiles = runtime?.ok ? runtime.localProfiles ?? [] : [];
-  const localTenantId = localProfiles[0]?.tenantId ?? DEFAULT_TENANT_ID;
+  const localTenantId = localProfiles[0]?.tenantId ?? CONFIGURED_TENANT_ID;
   if (localAuthEnabled) {
     installLocalSessionFetchBridge();
   }

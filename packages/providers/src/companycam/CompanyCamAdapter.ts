@@ -138,7 +138,10 @@ function documentId(value: string): string {
 export class CompanyCamAdapter implements MediaProvider {
   constructor(private readonly config: CompanyCamAdapterConfig) {}
 
-  static fromEnv(env: NodeJS.ProcessEnv, tenantId = env.TENANT_ID || "aquatrace"): CompanyCamAdapter {
+  static fromEnv(env: NodeJS.ProcessEnv, tenantId = env.TENANT_ID?.trim()): CompanyCamAdapter {
+    if (!tenantId) {
+      throw new RailError("TENANT_ID is required to configure CompanyCam.", { provider: "companycam", op: "fromEnv", status: 400 });
+    }
     return new CompanyCamAdapter({ tenantId, token: env.COMPANYCAM_API_TOKEN, healthQuery: env.COMPANYCAM_HEALTH_QUERY });
   }
 

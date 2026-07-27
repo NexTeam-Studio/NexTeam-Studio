@@ -137,7 +137,7 @@ async function makeServer(options = {}) {
     jobId: "job_1",
     start: "2026-07-20T14:00:00.000Z",
     end: "2026-07-20T16:00:00.000Z",
-    assignedTo: ["tech_chris"],
+    assignedTo: ["local-technician"],
     checklistRef: "aquatrace-leak-detection",
     title: "Leak detection visit",
     location: {
@@ -163,7 +163,7 @@ async function makeServer(options = {}) {
     jobId: "job_1",
     start: "2026-07-20T17:00:00.000Z",
     end: "2026-07-20T18:00:00.000Z",
-    assignedTo: ["tech_logan"],
+    assignedTo: ["local-technician-2"],
     checklistRef: "aquatrace-leak-detection",
     title: "Different tech visit",
     location: {
@@ -198,7 +198,7 @@ async function makeServer(options = {}) {
             id: "comment_1",
             text: "Voice note: skimmer crack confirmed.",
             createdAt: "2026-07-20T13:56:00.000Z",
-            author: "tech_chris"
+            author: "local-technician"
           }
         ],
         exif: {
@@ -226,7 +226,7 @@ async function makeServer(options = {}) {
         status: "unassigned",
         createdAt: "2026-07-20T13:50:00.000Z",
         updatedAt: "2026-07-20T13:55:00.000Z",
-        createdBy: "tech_chris",
+        createdBy: "local-technician",
         mediaIds: []
       },
       {
@@ -235,7 +235,7 @@ async function makeServer(options = {}) {
         status: "unassigned",
         createdAt: "2026-07-20T13:51:00.000Z",
         updatedAt: "2026-07-20T13:56:00.000Z",
-        createdBy: "tech_logan",
+        createdBy: "local-technician-2",
         mediaIds: []
       }
     ]
@@ -333,20 +333,20 @@ test("M11 mobile session bootstrap returns tenant branding plus the reusable loc
   const { app } = await makeServer();
   await withServer(app, async (base) => {
     const response = await fetch(`${base}/api/mobile/session?tenantId=aquatrace`, {
-      headers: localProfileHeaders("tech_chris")
+      headers: localProfileHeaders("local-technician")
     });
     const body = await response.json();
 
     assert.equal(response.status, 200);
     assert.equal(body.ok, true);
-    assert.equal(body.access.tenantUserId, "tech_chris");
+    assert.equal(body.access.tenantUserId, "local-technician");
     assert.equal(body.access.role, "TECHNICIAN");
     assert.equal(body.branding.displayName, "Aquatrace");
     assert.equal(body.branding.logoUrl, "https://example.test/aquatrace-logo.png");
     assert.equal(body.authRequired, false);
     assert.equal(body.firebaseConfigured, false);
     assert.equal(body.localProfiles.some((profile) => profile.id === "local-owner"), true);
-    assert.equal(body.localProfiles.some((profile) => profile.id === "tech_logan"), true);
+    assert.equal(body.localProfiles.some((profile) => profile.id === "local-technician"), true);
   });
 });
 
@@ -354,7 +354,7 @@ test("M11 day board stays technician-scoped while exposing GPS suggestions, gate
   const { app } = await makeServer();
   await withServer(app, async (base) => {
     const response = await fetch(`${base}/api/mobile/day-board?tenantId=aquatrace&date=2026-07-20`, {
-      headers: localProfileHeaders("tech_chris")
+      headers: localProfileHeaders("local-technician")
     });
     const body = await response.json();
 
@@ -375,7 +375,7 @@ test("M11 visit context returns checklist and before/after candidates, and unass
   const { app } = await makeServer();
   await withServer(app, async (base) => {
     const assigned = await fetch(`${base}/api/mobile/visits/visit_1/context?tenantId=aquatrace`, {
-      headers: localProfileHeaders("tech_chris")
+      headers: localProfileHeaders("local-technician")
     });
     const assignedBody = await assigned.json();
 
@@ -389,7 +389,7 @@ test("M11 visit context returns checklist and before/after candidates, and unass
       method: "PUT",
       headers: {
         "content-type": "application/json",
-        ...localProfileHeaders("tech_chris")
+        ...localProfileHeaders("local-technician")
       },
       body: JSON.stringify({
         tenantId: "aquatrace",
@@ -402,7 +402,7 @@ test("M11 visit context returns checklist and before/after candidates, and unass
     assert.match(narratedBody.visit.details, /suction-side leak/i);
 
     const blocked = await fetch(`${base}/api/mobile/visits/visit_1/context?tenantId=aquatrace`, {
-      headers: localProfileHeaders("tech_logan")
+      headers: localProfileHeaders("local-technician-2")
     });
     const blockedBody = await blocked.json();
     assert.equal(blocked.status, 403);
@@ -417,7 +417,7 @@ test("M11 typed and voice narration both flow into the shared field report rail"
       method: "PUT",
       headers: {
         "content-type": "application/json",
-        ...localProfileHeaders("tech_chris")
+        ...localProfileHeaders("local-technician")
       },
       body: JSON.stringify({
         tenantId: "aquatrace",
@@ -463,7 +463,7 @@ test("M11 transcription blocks over-cap narration before provider fetch and writ
       method: "POST",
       headers: {
         "content-type": "application/json",
-        ...localProfileHeaders("tech_chris")
+        ...localProfileHeaders("local-technician")
       },
       body: JSON.stringify({
         tenantId: "aquatrace",

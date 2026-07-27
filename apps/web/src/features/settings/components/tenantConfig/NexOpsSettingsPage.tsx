@@ -393,7 +393,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                 <article>
                   <h3>Tipping</h3>
                   <p>{settings.invoiceDefaults.tippingEnabled ? "Enabled" : "Off"}</p>
-                  <small>Aquatrace stays off by default until a tenant turns it on here.</small>
+                  <small>This integration stays off until the tenant turns it on here.</small>
                 </article>
                 <article>
                   <h3>Business address</h3>
@@ -484,7 +484,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                 />
                 Enable post-closeout review follow-up by default
               </label>
-              <p className="nexops-form-note">Current seeded Aquatrace cadence stays 1 / 4 / 10 days until Chris confirms a different default. Channels and spacing can still be tuned here per tenant.</p>
+              <p className="nexops-form-note">The seeded cadence is 1 / 4 / 10 days. Channels and spacing can be tuned here per tenant.</p>
               <div className="nexops-mini-list">
                 {settings.reviewDefaults.steps
                   .slice()

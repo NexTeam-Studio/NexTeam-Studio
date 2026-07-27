@@ -13,7 +13,7 @@
     "dev": "npm --workspace @nexteam/server run dev",
     "dev:web": "npm --workspace @nexteam/web run dev",
     "dev:server": "npm --workspace @nexteam/server run dev",
-    "test": "node --import tsx --test \"packages/**/*.test.mjs\" \"apps/**/*.test.mjs\"",
+    "test": "node --import ./tests/setup.mjs --import tsx --test \"packages/**/*.test.mjs\" \"apps/**/*.test.mjs\"",
     "test:legacy": "node --test \"src/**/*.test.mjs\"",
     "typecheck": "tsc -b",
     "lint": "eslint \"apps/**/*.{ts,tsx}\" \"packages/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/check-*.mjs\"",

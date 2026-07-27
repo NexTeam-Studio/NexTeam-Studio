@@ -460,9 +460,9 @@ test("draftEmail applies branded template and preserves attachments for approval
   const approval = result.result.approval;
   assert.equal(approval.status, "pending");
   assert.equal(approval.preview.title, "Leak report follow-up");
-  assert.match(approval.preview.body, /Nexi\nAquatrace Swimming Pool Leak Detection/);
+  assert.match(approval.preview.body, /Nexi\nAquatrace/);
   assert.deepEqual(approval.preview.mediaRefs, ["attachment:leak-report.pdf"]);
-  assert.equal(approval.execute.args.outbound.bodyHtml.includes("Aquatrace Swimming Pool Leak Detection"), true);
+  assert.equal(approval.execute.args.outbound.bodyHtml.includes("Aquatrace"), true);
   assert.equal(approval.execute.args.outbound.attachments[0].filename, "leak-report.pdf");
   assert.equal(approval.execute.args.outbound.attachments[0].contentBase64, attachmentBase64);
 });

@@ -3,7 +3,7 @@ import { signOut, type Auth, type User } from "firebase/auth";
 import type { TenantBranding } from "@nexteam/core";
 import { ProductInlineLabel, SidebarBrandStack, tenantDisplayName } from "./productBranding";
 
-const DEFAULT_TENANT_ID = "aquatrace";
+const CONFIGURED_TENANT_ID = (import.meta.env.VITE_TENANT_ID as string | undefined)?.trim() ?? "";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 
@@ -125,14 +125,17 @@ function claimRole(claims: Record<string, unknown>): TenantRole {
 }
 
 function fallbackOperatorContext(user: User): OperatorContext {
-  return { tenantId: DEFAULT_TENANT_ID, tenantUserId: user.uid, role: "OWNER" };
+  return { tenantId: CONFIGURED_TENANT_ID, tenantUserId: user.uid, role: "OWNER" };
 }
 
 async function loadOperatorContext(user: User): Promise<OperatorContext> {
   const token = await user.getIdTokenResult();
   const claims = token.claims as Record<string, unknown>;
   const claimedTenantId = claimString(claims, "tenantId") ?? claimString(claims, "tenant_id");
-  const tenantId = claimedTenantId && claimedTenantId !== "nexteam-studio" ? claimedTenantId : DEFAULT_TENANT_ID;
+  const tenantId = claimedTenantId || CONFIGURED_TENANT_ID;
+  if (!tenantId) {
+    throw new Error("This sign-in is missing a tenant assignment.");
+  }
   return {
     tenantId,
     tenantUserId: claimString(claims, "tenantUserId") ?? user.uid,
