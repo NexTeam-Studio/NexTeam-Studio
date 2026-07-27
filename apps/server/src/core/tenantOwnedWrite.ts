@@ -31,3 +31,13 @@ export async function setTenantOwnedDocument(input: {
     transaction.set(ref, input.data);
   });
 }
+
+export function assertMemoryTenantOwner(
+  existing: { tenantId: string } | undefined,
+  tenantId: string,
+  label: string
+): void {
+  if (existing && existing.tenantId !== tenantId) {
+    throw new RailError(`${label} belongs to another tenant.`, { provider: "native", op: "tenantOwnedWrite", status: 409 });
+  }
+}

@@ -8,6 +8,7 @@ import {
   type SiteJobBlueprint
 } from "@nexteam/core";
 import type { GatewayMessage } from "@nexteam/nexi";
+import { setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 export interface NexiRepository {
   loadHistory(tenantId: string, conversationId: string | undefined, limit: number): Promise<GatewayMessage[]>;
@@ -123,7 +124,7 @@ export class FirestoreNexiRepository implements NexiRepository {
 
   async saveConversation(record: Omit<ConversationRecord, "id" | "createdAt">): Promise<ConversationRecord> {
     const saved = conversationRecordSchema.parse({ ...record, id: newId("conv"), createdAt: new Date().toISOString() });
-    await this.db.collection("conversations").doc(saved.id).set(firestoreDoc(saved));
+    await setTenantOwnedDocument({ db: this.db, collection: "conversations", id: saved.id, tenantId: saved.tenantId, data: firestoreDoc(saved), label: `Nexi conversation ${saved.id}` });
     return saved;
   }
 
@@ -134,13 +135,13 @@ export class FirestoreNexiRepository implements NexiRepository {
       module: "nexi",
       createdAt: new Date().toISOString()
     });
-    await this.db.collection("failureLog").doc(saved.id).set(firestoreDoc(saved));
+    await setTenantOwnedDocument({ db: this.db, collection: "failureLog", id: saved.id, tenantId: saved.tenantId, data: firestoreDoc(saved), label: `Nexi failure ${saved.id}` });
     return saved;
   }
 
   async saveSiteJobBlueprint(record: SiteJobBlueprint): Promise<SiteJobBlueprint> {
     const saved = siteJobBlueprintSchema.parse(record) as SiteJobBlueprint;
-    await this.db.collection("siteJobBlueprints").doc(saved.id).set(firestoreDoc(saved));
+    await setTenantOwnedDocument({ db: this.db, collection: "siteJobBlueprints", id: saved.id, tenantId: saved.tenantId, data: firestoreDoc(saved), label: `Site job blueprint ${saved.id}` });
     return saved;
   }
 }

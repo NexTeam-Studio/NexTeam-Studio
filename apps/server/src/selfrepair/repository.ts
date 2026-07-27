@@ -1,5 +1,6 @@
 import type { Firestore } from "firebase-admin/firestore";
 import { selfRepairLogSchema, type SelfRepairLog } from "./schemas.js";
+import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 function firestoreDoc<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -20,6 +21,7 @@ export class InMemorySelfRepairRepository implements SelfRepairRepository {
 
   async saveLog(log: SelfRepairLog): Promise<SelfRepairLog> {
     const parsed = selfRepairLogSchema.parse(log);
+    assertMemoryTenantOwner(this.logs.get(parsed.id), parsed.tenantId, `Self-repair log ${parsed.id}`);
     this.logs.set(parsed.id, parsed);
     return parsed;
   }
@@ -41,13 +43,15 @@ export class FirestoreSelfRepairRepository implements SelfRepairRepository {
 
   async saveLog(log: SelfRepairLog): Promise<SelfRepairLog> {
     const parsed = selfRepairLogSchema.parse(log);
-    await this.db.collection("selfRepairLog").doc(parsed.id).set(firestoreDoc(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "selfRepairLog", id: parsed.id, tenantId: parsed.tenantId, data: firestoreDoc(parsed), label: `Self-repair log ${parsed.id}` });
     return parsed;
   }
 
   async getLog(tenantId: string, date: string): Promise<SelfRepairLog | null> {
     const doc = await this.db.collection("selfRepairLog").doc(docId(tenantId, date)).get();
-    return doc.exists ? selfRepairLogSchema.parse(doc.data()) : null;
+    if (!doc.exists) return null;
+    const parsed = selfRepairLogSchema.parse(doc.data());
+    return parsed.tenantId === tenantId ? parsed : null;
   }
 
   async listRecentLogs(tenantId: string, limit: number): Promise<SelfRepairLog[]> {

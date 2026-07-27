@@ -1,0 +1,16 @@
+ADMIN SDK ISOLATION - OPERATIONAL REPOSITORIES
+Date: 2026-07-27
+
+Enforcement
+- Intake sessions, generated Sites/leads/operator themes, SEO snapshots/audits/briefs/reports, Self-Repair logs, Nexi conversations/failures/blueprints, notification reads, portal sessions, and review sequences now use the shared transactional tenant-owned-write seam.
+- In-memory keyed stores reject cross-tenant ID collisions for the same repository set where records can replace an existing ID.
+- Self-Repair direct reads now verify the parsed document tenant instead of trusting only a tenant-derived document ID.
+- UsageLog remains append-only with Firestore-generated document IDs and schema-required tenantId, so it has no caller-selected ID overwrite path.
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 173 modules.
+- Affected Intake/Sites/SEO/Self-Repair/Nexi/portal/review tests: 78 tests, 78 pass, 0 fail.
+- npm test: 369 tests, 366 pass, 3 fail; the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- No browser was launched. Emulator-backed proof remains a later explicit checkpoint.

@@ -1,5 +1,6 @@
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
 import { intakeSessionSchema, type IntakeSession } from "./schemas.js";
+import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 export interface IntakeRepository {
   save(session: IntakeSession): Promise<IntakeSession>;
@@ -30,6 +31,7 @@ export class InMemoryIntakeRepository implements IntakeRepository {
 
   async save(session: IntakeSession): Promise<IntakeSession> {
     const parsed = intakeSessionSchema.parse(session) as IntakeSession;
+    assertMemoryTenantOwner(this.sessions.get(parsed.id), parsed.tenantId, `Intake session ${parsed.id}`);
     this.sessions.set(parsed.id, parsed);
     return parsed;
   }
@@ -51,8 +53,7 @@ export class FirestoreIntakeRepository implements IntakeRepository {
 
   async save(session: IntakeSession): Promise<IntakeSession> {
     const parsed = intakeSessionSchema.parse(session) as IntakeSession;
-    // @tenant-doc:intakeSessions intakeSessionSchema requires tenantId before write.
-    await this.db.collection("intakeSessions").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "intakeSessions", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Intake session ${parsed.id}` });
     return parsed;
   }
 

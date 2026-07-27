@@ -1,5 +1,6 @@
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
 import { z } from "zod";
+import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 export type ReviewSequenceStatus = "active" | "stopped" | "completed";
 export type ReviewSequenceStopReason = "reviewed" | "opt_out" | "exhausted" | "manual";
@@ -109,6 +110,7 @@ export class InMemoryReviewSequenceRepository implements ReviewSequenceRepositor
 
   async upsertReviewSequence(record: ReviewSequenceRecord): Promise<ReviewSequenceRecord> {
     const parsed = reviewSequenceSchema.parse(record) as ReviewSequenceRecord;
+    assertMemoryTenantOwner(this.sequences.get(parsed.id), parsed.tenantId, `Review sequence ${parsed.id}`);
     this.sequences.set(parsed.id, parsed);
     return parsed;
   }
@@ -137,7 +139,7 @@ export class FirestoreReviewSequenceRepository implements ReviewSequenceReposito
 
   async upsertReviewSequence(record: ReviewSequenceRecord): Promise<ReviewSequenceRecord> {
     const parsed = reviewSequenceSchema.parse(record) as ReviewSequenceRecord;
-    await this.db.collection("reviewSequences").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "reviewSequences", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Review sequence ${parsed.id}` });
     return parsed;
   }
 }

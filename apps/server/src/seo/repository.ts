@@ -9,6 +9,7 @@ import {
   type SeoRankSnapshot,
   type SeoReport
 } from "./schemas.js";
+import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 export interface SeoRepository {
   saveRankSnapshots(snapshots: SeoRankSnapshot[]): Promise<SeoRankSnapshot[]>;
@@ -31,6 +32,7 @@ export class InMemorySeoRepository implements SeoRepository {
   async saveRankSnapshots(snapshots: SeoRankSnapshot[]): Promise<SeoRankSnapshot[]> {
     const parsed = snapshots.map((snapshot) => seoRankSnapshotSchema.parse(snapshot) as SeoRankSnapshot);
     for (const snapshot of parsed) {
+      assertMemoryTenantOwner(this.rankSnapshots.get(snapshot.id), snapshot.tenantId, `SEO rank snapshot ${snapshot.id}`);
       this.rankSnapshots.set(snapshot.id, snapshot);
     }
     return parsed;
@@ -44,6 +46,7 @@ export class InMemorySeoRepository implements SeoRepository {
 
   async saveAudit(audit: SeoAudit): Promise<SeoAudit> {
     const parsed = seoAuditSchema.parse(audit) as SeoAudit;
+    assertMemoryTenantOwner(this.audits.get(parsed.id), parsed.tenantId, `SEO audit ${parsed.id}`);
     this.audits.set(parsed.id, parsed);
     return parsed;
   }
@@ -61,6 +64,7 @@ export class InMemorySeoRepository implements SeoRepository {
 
   async saveArticleBrief(brief: SeoArticleBrief): Promise<SeoArticleBrief> {
     const parsed = seoArticleBriefSchema.parse(brief) as SeoArticleBrief;
+    assertMemoryTenantOwner(this.articleBriefs.get(parsed.id), parsed.tenantId, `SEO article brief ${parsed.id}`);
     this.articleBriefs.set(parsed.id, parsed);
     return parsed;
   }
@@ -73,6 +77,7 @@ export class InMemorySeoRepository implements SeoRepository {
 
   async saveReport(report: SeoReport): Promise<SeoReport> {
     const parsed = seoReportSchema.parse(report) as SeoReport;
+    assertMemoryTenantOwner(this.reports.get(parsed.id), parsed.tenantId, `SEO report ${parsed.id}`);
     this.reports.set(parsed.id, parsed);
     return parsed;
   }
@@ -107,12 +112,14 @@ export class FirestoreSeoRepository implements SeoRepository {
 
   async saveRankSnapshots(snapshots: SeoRankSnapshot[]): Promise<SeoRankSnapshot[]> {
     const parsed = snapshots.map((snapshot) => seoRankSnapshotSchema.parse(snapshot) as SeoRankSnapshot);
-    const batch = this.db.batch();
-    for (const snapshot of parsed) {
-      // @tenant-doc:seoRankSnapshots seoRankSnapshotSchema requires tenantId before write.
-      batch.set(this.db.collection("seoRankSnapshots").doc(snapshot.id), asDocumentData(snapshot), { merge: true });
-    }
-    await batch.commit();
+    await Promise.all(parsed.map((snapshot) => setTenantOwnedDocument({
+      db: this.db,
+      collection: "seoRankSnapshots",
+      id: snapshot.id,
+      tenantId: snapshot.tenantId,
+      data: asDocumentData(snapshot),
+      label: `SEO rank snapshot ${snapshot.id}`
+    })));
     return parsed;
   }
 
@@ -125,8 +132,7 @@ export class FirestoreSeoRepository implements SeoRepository {
 
   async saveAudit(audit: SeoAudit): Promise<SeoAudit> {
     const parsed = seoAuditSchema.parse(audit) as SeoAudit;
-    // @tenant-doc:seoAudits seoAuditSchema requires tenantId before write.
-    await this.db.collection("seoAudits").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "seoAudits", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `SEO audit ${parsed.id}` });
     return parsed;
   }
 
@@ -148,8 +154,7 @@ export class FirestoreSeoRepository implements SeoRepository {
 
   async saveArticleBrief(brief: SeoArticleBrief): Promise<SeoArticleBrief> {
     const parsed = seoArticleBriefSchema.parse(brief) as SeoArticleBrief;
-    // @tenant-doc:seoArticleBriefs seoArticleBriefSchema requires tenantId before write.
-    await this.db.collection("seoArticleBriefs").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "seoArticleBriefs", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `SEO article brief ${parsed.id}` });
     return parsed;
   }
 
@@ -162,8 +167,7 @@ export class FirestoreSeoRepository implements SeoRepository {
 
   async saveReport(report: SeoReport): Promise<SeoReport> {
     const parsed = seoReportSchema.parse(report) as SeoReport;
-    // @tenant-doc:seoReports seoReportSchema requires tenantId before write.
-    await this.db.collection("seoReports").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "seoReports", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `SEO report ${parsed.id}` });
     return parsed;
   }
 

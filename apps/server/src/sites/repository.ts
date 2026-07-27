@@ -7,6 +7,7 @@ import {
   type OperatorUiTheme,
   type SiteLead
 } from "./schemas.js";
+import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 export interface SitesRepository {
   saveSite(site: GeneratedSite): Promise<GeneratedSite>;
@@ -25,6 +26,7 @@ export class InMemorySitesRepository implements SitesRepository {
 
   async saveSite(site: GeneratedSite): Promise<GeneratedSite> {
     const parsed = generatedSiteSchema.parse(site) as GeneratedSite;
+    assertMemoryTenantOwner(this.sites.get(parsed.id), parsed.tenantId, `Site ${parsed.id}`);
     this.sites.set(parsed.id, parsed);
     return parsed;
   }
@@ -39,6 +41,7 @@ export class InMemorySitesRepository implements SitesRepository {
 
   async saveLead(lead: SiteLead): Promise<SiteLead> {
     const parsed = siteLeadSchema.parse(lead) as SiteLead;
+    assertMemoryTenantOwner(this.leads.get(parsed.id), parsed.tenantId, `Site lead ${parsed.id}`);
     this.leads.set(parsed.id, parsed);
     return parsed;
   }
@@ -51,6 +54,7 @@ export class InMemorySitesRepository implements SitesRepository {
 
   async saveOperatorUiTheme(theme: OperatorUiTheme): Promise<OperatorUiTheme> {
     const parsed = operatorUiThemeSchema.parse(theme) as OperatorUiTheme;
+    assertMemoryTenantOwner(this.operatorUiThemes.get(parsed.tenantId), parsed.tenantId, `Operator UI theme ${parsed.tenantId}`);
     this.operatorUiThemes.set(parsed.tenantId, parsed);
     return parsed;
   }
@@ -83,8 +87,7 @@ export class FirestoreSitesRepository implements SitesRepository {
 
   async saveSite(site: GeneratedSite): Promise<GeneratedSite> {
     const parsed = generatedSiteSchema.parse(site) as GeneratedSite;
-    // @tenant-doc:sitePages generatedSiteSchema requires tenantId before write.
-    await this.db.collection("sitePages").doc(parsed.id).set(asDocumentData(parsed));
+    await setTenantOwnedDocument({ db: this.db, collection: "sitePages", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Site ${parsed.id}` });
     return parsed;
   }
 
@@ -106,8 +109,7 @@ export class FirestoreSitesRepository implements SitesRepository {
 
   async saveLead(lead: SiteLead): Promise<SiteLead> {
     const parsed = siteLeadSchema.parse(lead) as SiteLead;
-    // @tenant-doc:leads siteLeadSchema requires tenantId before write.
-    await this.db.collection("leads").doc(parsed.id).set(asDocumentData(parsed));
+    await setTenantOwnedDocument({ db: this.db, collection: "leads", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Site lead ${parsed.id}` });
     return parsed;
   }
 
@@ -124,8 +126,7 @@ export class FirestoreSitesRepository implements SitesRepository {
 
   async saveOperatorUiTheme(theme: OperatorUiTheme): Promise<OperatorUiTheme> {
     const parsed = operatorUiThemeSchema.parse(theme) as OperatorUiTheme;
-    // @tenant-doc:operatorUiPreferences operatorUiThemeSchema requires tenantId before write.
-    await this.db.collection("operatorUiPreferences").doc(`${parsed.tenantId}_job_desk`).set(asDocumentData(parsed));
+    await setTenantOwnedDocument({ db: this.db, collection: "operatorUiPreferences", id: `${parsed.tenantId}_job_desk`, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Operator UI theme ${parsed.tenantId}` });
     return parsed;
   }
 

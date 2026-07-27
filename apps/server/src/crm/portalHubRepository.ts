@@ -1,5 +1,6 @@
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
 import { z } from "zod";
+import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 export type PortalSessionScope = "client" | "property";
 export type PortalVerificationMethod = "magic_link" | "phone_last4";
@@ -84,6 +85,7 @@ export class InMemoryPortalHubRepository implements PortalHubRepository {
 
   async upsertPortalSession(session: PortalSessionRecord): Promise<PortalSessionRecord> {
     const parsed = portalSessionSchema.parse(session) as PortalSessionRecord;
+    assertMemoryTenantOwner(this.sessions.get(parsed.id), parsed.tenantId, `Portal session ${parsed.id}`);
     this.sessions.set(parsed.id, parsed);
     return parsed;
   }
@@ -112,7 +114,7 @@ export class FirestorePortalHubRepository implements PortalHubRepository {
 
   async upsertPortalSession(session: PortalSessionRecord): Promise<PortalSessionRecord> {
     const parsed = portalSessionSchema.parse(session) as PortalSessionRecord;
-    await this.db.collection("portalSessions").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "portalSessions", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Portal session ${parsed.id}` });
     return parsed;
   }
 }

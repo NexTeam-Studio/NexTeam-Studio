@@ -1,6 +1,7 @@
 import type { Firestore } from "firebase-admin/firestore";
 import { RailError } from "@nexteam/core";
 import { z } from "zod";
+import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 const notificationReadStateSchema = z.object({
   id: z.string().min(1),
@@ -59,6 +60,7 @@ export class InMemoryNotificationStateRepository implements NotificationStateRep
       notificationId: input.notificationId,
       readAt: input.readAt
     };
+    assertMemoryTenantOwner(this.records.get(record.id), record.tenantId, `Notification read ${record.id}`);
     this.records.set(record.id, record);
     return record;
   }
@@ -102,7 +104,14 @@ export class FirestoreNotificationStateRepository implements NotificationStateRe
       notificationId: input.notificationId,
       readAt: input.readAt
     });
-    await this.db.collection("notificationReads").doc(record.id).set(removeUndefined(record) as FirebaseFirestore.WithFieldValue<FirebaseFirestore.DocumentData>);
+    await setTenantOwnedDocument({
+      db: this.db,
+      collection: "notificationReads",
+      id: record.id,
+      tenantId: record.tenantId,
+      data: removeUndefined(record) as FirebaseFirestore.WithFieldValue<FirebaseFirestore.DocumentData>,
+      label: `Notification read ${record.id}`
+    });
     return record;
   }
 
