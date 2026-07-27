@@ -1,0 +1,113 @@
+R1/R2 REMAINING WEB BOUNDARY MAP
+Captured: 2026-07-27
+Baseline: 2f97425
+
+RAW INVENTORY
+apps/web/src/main.tsx: 4,077 source lines (4,078 including terminal split)
+apps/web/src/features/nexopsShell/NexOpsWorkspace.tsx: 3,668 source lines (3,669 including terminal split)
+apps/web/src/styles.css: 5,871 source lines
+
+Top-level live declaration ranges in main.tsx:
+- NexCamPage: 809-2660 (1,852 lines)
+- AuthGate: 2682-2819 (138 lines)
+- PlatformConsole: 2821-2927 (107 lines)
+- NexiStandaloneChat: 2929-4021 (1,093 lines)
+- App: 4025-4071 (47 lines)
+
+AUTH / SESSION (shared boundary)
+Current real code:
+- main.tsx: App, AuthGate
+- features/nexopsShell/NexOpsWorkspace.tsx: Firebase/local bootstrap, local-session bridge,
+  operator claim parsing, sign-in/sign-out helpers
+Earlier seam status:
+- shared/auth/* exists, but its provider/gate supports only Firebase and is not the live entry path.
+Target:
+- shared/auth owns session bootstrap, local-development session support, and the sign-in gate.
+- shared/router owns signed-in route selection. Auth does not own a product route.
+
+NEXI
+Current real code:
+- main.tsx: NexiStandaloneChat, message/source contracts, message source rendering helpers,
+  history/session restoration, approval continuation UI, media upload, notification integration,
+  browser/server TTS, speech recognition, hands-free mode, and workspace switch/create chrome
+- nexiStandalone.tsx: stable presentation helpers and NexiStandaloneLayout
+- nexiRequestContext.ts: requestor-origin resolution
+- features/nexi/*: earlier simplified scaffold; not feature-parity with the live surface
+Target:
+- Nexi chat/runtime owns conversation, history, approval continuation, source/media, and upload.
+- Nexi voice area owns speech recognition and TTS state.
+- shared operator context owns tenant/operator claim resolution.
+- shared NexOps chrome remains imported composition, not copied Nexi implementation.
+
+NEXCAM + NEXDOCS BOUNDARY CONFLICT
+Current real code:
+- main.tsx: NexCamPage and all FieldDocs contracts/renderers
+- NexCamPage contains four route tabs: Overview, Checklist Templates, Photos & Media, Reports.
+- nested handlers cover checklist runs, template authoring, media search/review/annotation/trash,
+  report templates, text snippets, bundles, and report creation.
+Target:
+- NexCam owns the capture/workspace shell and route navigation.
+- NexDocs owns checklist templates/runs, media library/review, and reports/bundles/snippets.
+- shared contracts may be imported by both; implementation files may not be shared.
+Reason:
+- assigning all FieldDocs document behavior to NexCam would preserve the current hidden monolith.
+
+PLATFORM / TENANT OVERVIEW
+Current real code:
+- main.tsx: PlatformConsole, platform contracts, plans/tenants fetch, backup action, full JSX
+- features/platformOverview/* and features/tenantOverview/*: earlier seams already match most live behavior
+Target:
+- Platform Overview owns hero/plans.
+- Tenant Overview owns tenant rows, adapters, export, and backup.
+- shared platform route composes both.
+
+SCHEDULE
+Current real code:
+- features/visits/components/visitCore/NexOpsSchedulePage.tsx is the live NexOps schedule.
+- features/scheduling/* is an earlier smaller seam not mounted by the live root.
+- no SchedulePanel declaration remains in main.tsx after D2 removed the unreachable copy.
+Target:
+- Visit Core remains the authoritative schedule implementation.
+- route composition points to that owner; no duplicate Schedule implementation is created.
+
+NEXREACH / REPUTATION
+Current real code:
+- nexreach.tsx: one live 600+ line page containing API operations, state, and every surface
+- main.tsx: lazy route only
+Target:
+- NexReach owns eligibility, drafts/approvals, showcase/reviews, audience, and settings areas.
+- the route composes area-owned API/hooks/surfaces; shared shell owns only route selection.
+
+APPROVAL QUEUE
+Current real code:
+- server ApprovalQueue routes/repository/execution remain live and component registrars use them.
+- NexOpsWorkspace.tsx routes activeModule=approvals to ApprovalQueuePanel.
+- no ApprovalQueuePanel declaration/import exists in current web source.
+Finding:
+- this is a real current runtime ReferenceError hidden by transpile-only Vite build/lint.
+Target:
+- restore the last real server-backed panel from repository history into an Approval Queue owner
+  folder, then import it into the NexOps shell.
+
+CONTENT QUEUE
+Current real code:
+- server Content routes/repository remain live.
+- the prior web ContentQueuePanel was unreachable and D2 removed it; no current web route calls it.
+Target:
+- recover the real server-backed panel into a Content Queue owner folder.
+- do not invent navigation/product policy; expose the owned surface for an explicit future route.
+
+SHARED ALLOWLIST
+- Auth/session and route composition
+- Operator identity/tenant context contracts
+- Product branding and app-shell navigation primitives
+- Cross-module primitive contracts only (no fetches, mutations, or feature render bodies)
+- Address/Location, Document Rendering, and Numbering shared engines already proven in E2
+
+R2 DECISIONS
+1. Earlier Phase B scaffolds are seams, not proof of parity. Real implementations replace or extend them.
+2. A module shell may compose another module's exported surface but may not own its implementation.
+3. Schedule is confirmed, not duplicated.
+4. Approval Queue is repaired because its route is already product-visible.
+5. Content Queue is extracted without inventing a route decision.
+6. The final collision inventory includes every new owner root and rejects empty owner roots.
