@@ -1,0 +1,29 @@
+E4 Payment Rails checkpoint
+Date: 2026-07-27
+
+Canonical server implementation:
+- apps/server/src/modules/nexops/areas/invoices/components/paymentRails/server/ledgerService.ts
+- apps/server/src/modules/nexops/areas/invoices/components/paymentRails/server/ledgerRepository.ts
+- apps/server/src/modules/nexops/areas/invoices/components/paymentRails/server/stripe.ts
+- apps/server/src/modules/nexops/areas/invoices/components/paymentRails/server/paypal.ts
+
+Canonical payment-schedule ownership:
+- apps/web/src/features/invoices/components/invoiceStructure/PaymentScheduleEditor.tsx
+
+Compatibility:
+- apps/server/src/crm/ledgerFoundation.ts
+- apps/server/src/crm/ledgerRepository.ts
+- apps/server/src/crm/stripe.ts
+- apps/server/src/crm/paypal.ts
+
+Verification (non-browser):
+- npm run build: PASS (72 modules)
+- ledger-foundation.test.mjs: PASS
+- tap-to-pay.test.mjs: PASS
+- close-invoice-payment-flow.test.mjs: PASS
+- focused total: 22/22 passing
+
+Open boundary work:
+- Invoice-specific ledger orchestration still shares the Payment Rails service.
+- Payment controls remain composed inside the Invoice Structure page.
+- Component CSS remains in apps/web/src/styles.css.

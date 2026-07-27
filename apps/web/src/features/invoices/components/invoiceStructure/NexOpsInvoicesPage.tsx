@@ -7,7 +7,7 @@ import {
   paymentScheduleToPayload,
   type PaymentScheduleDraft,
   type PaymentScheduleRecord
-} from "../../../../nexopsPaymentSchedule";
+} from "./PaymentScheduleEditor";
 import {
   NexOpsCatalogEditorModal,
   NexOpsCatalogPicker,

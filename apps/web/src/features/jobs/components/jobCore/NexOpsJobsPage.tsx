@@ -7,7 +7,7 @@ import {
   paymentScheduleToPayload,
   type PaymentScheduleDraft,
   type PaymentScheduleRecord
-} from "../../../../nexopsPaymentSchedule";
+} from "../../../../features/invoices/components/invoiceStructure/PaymentScheduleEditor";
 import {
   intakeDetailFacts,
   prominentIntakeFacts,
