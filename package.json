@@ -43,6 +43,7 @@
     "verify": "npm run lint && npm run typecheck && npm run test && npm run check:tenancy && npm run check:admin-tenant-writes && npm run check:indexes && npm run check:collisions && npm run check:secrets && npm run check:secret-history && npm run check:provider-imports && npm run check:blueprints",
     "test:firestore-rules:emulator": "node scripts/run-firestore-rules-emulator-tests.mjs",
     "test:firebase-auth-admin:emulator": "node scripts/run-firebase-auth-admin-emulator-tests.mjs",
+    "test:admin-tenant-isolation:emulator": "node scripts/run-admin-tenant-isolation-emulator-tests.mjs",
     "dev:gbp": "node scripts/run-gbp-local-dev.mjs",
     "rail:local-api": "node scripts/run-rail-local-api.mjs",
     "server": "npm --workspace @nexteam/server run start",
