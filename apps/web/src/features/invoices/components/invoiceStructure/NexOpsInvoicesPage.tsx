@@ -7,7 +7,7 @@ import {
   paymentScheduleToPayload,
   type PaymentScheduleDraft,
   type PaymentScheduleRecord
-} from "./nexopsPaymentSchedule";
+} from "../../../../nexopsPaymentSchedule";
 import {
   NexOpsCatalogEditorModal,
   NexOpsCatalogPicker,
@@ -15,16 +15,16 @@ import {
   catalogItemFromDraft,
   type CatalogItemDraft,
   type ProductServiceCatalogItem
-} from "./nexopsCatalog";
+} from "../../../../nexopsCatalog";
 import {
   invoiceTemplateVariables,
   type CommunicationTemplateRecord,
   resolveTemplateDraft
-} from "./nexopsCommunications";
+} from "../../../../nexopsCommunications";
 import {
   intakeDetailFacts,
   prominentIntakeFacts
-} from "./nexopsIntake";
+} from "../../../../nexopsIntake";
 
 type InvoiceStatus = "draft" | "sent" | "awaiting_payment" | "partial_pay" | "paid" | "void" | "bad_debt";
 type InvoiceFilter = "all" | "draft" | "awaiting" | "partial_pay" | "paid" | "void" | "bad_debt" | "past_due";

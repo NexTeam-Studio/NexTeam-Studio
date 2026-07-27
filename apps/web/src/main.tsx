@@ -73,7 +73,7 @@ import {
 import { resolveRequestorOriginForNexiMessage } from "./nexiRequestContext";
 
 const NexOpsHomePage = React.lazy(async () => ({ default: (await import("./nexopsHome")).NexOpsHomePage }));
-const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("./nexopsInvoices")).NexOpsInvoicesPage }));
+const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("./features/invoices/components/invoiceStructure/NexOpsInvoicesPage")).NexOpsInvoicesPage }));
 const NexOpsJobsPage = React.lazy(async () => ({ default: (await import("./features/jobs/components/jobCore/NexOpsJobsPage")).NexOpsJobsPage }));
 const NexOpsPatternLibraryPage = React.lazy(async () => ({ default: (await import("./nexopsPatternLibrary")).NexOpsPatternLibraryPage }));
 const NexOpsQuotesPage = React.lazy(async () => ({ default: (await import("./features/quotes/components/quoteEngine/NexOpsQuotesPage")).NexOpsQuotesPage }));

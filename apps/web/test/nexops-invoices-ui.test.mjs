@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { invoiceWorkspaceRail } from "../src/nexopsInvoices.tsx";
+import { invoiceWorkspaceRail } from "../src/features/invoices/components/invoiceStructure/NexOpsInvoicesPage.tsx";
 
 function makeInvoice(overrides = {}) {
   return {
