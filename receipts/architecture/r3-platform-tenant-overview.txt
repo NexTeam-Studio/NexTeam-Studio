@@ -1,0 +1,25 @@
+R3 PLATFORM / TENANT OVERVIEW EXTRACTION
+Baseline: d60e89f
+
+OWNERSHIP
+- Platform route composition: features/platform/routes/*
+- Platform hero/plans: features/platformOverview/*
+- Tenant rows/adapters/export/backup: features/tenantOverview/*
+- Shared contracts: shared/contracts/platform.ts
+
+REAL REMOVAL PROOF
+- main.tsx: 203 -> 49 lines (-154)
+- styles.css: 5,004 -> 4,859 lines (-145)
+- PlatformOverviewRoute: 43 lines
+- TenantOverviewPanel: 57 lines
+- Existing-file checkpoint diff: 3 insertions, 302 deletions
+
+The earlier feature seams were checked against the inline implementation before route replacement:
+plans, tenant listing, authenticated backup, export links, status handling, and sign-out remain present.
+
+VERIFICATION
+- npm run lint: pass, 0 errors
+- npm run typecheck: pass
+- npm run build: pass, Vite transformed 136 modules
+- non-Playwright repository tests: 348 total, 345 pass, 3 known unrelated fail
+- no browser, tunnel, deploy, or live service used
