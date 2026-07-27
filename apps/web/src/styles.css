@@ -1751,8 +1751,7 @@ body.nexops-mobile-nav-open {
   background: rgba(8, 33, 49, 0.03);
 }
 
-.nexops-quote-panel .nexops-field textarea,
-.nexops-quote-template-editor .nexops-field textarea {
+.nexops-quote-panel .nexops-field textarea {
   width: 100%;
   min-width: 0;
   border: 0;
@@ -1777,7 +1776,6 @@ body.nexops-mobile-nav-open {
 }
 
 .nexops-quote-section-head span,
-.nexops-quote-template-chip small,
 .nexops-quote-history-list small,
 .nexops-quote-summary-pills span {
   color: #526675;
@@ -1842,8 +1840,7 @@ body.nexops-mobile-nav-open {
 
 .nexops-quote-line-footer button,
 .nexops-quote-section-head button,
-.nexops-quote-detail a,
-.nexops-quote-template-chip {
+.nexops-quote-detail a {
   border: 1px solid rgba(8, 33, 49, 0.12);
   border-radius: 999px;
   padding: 10px 13px;
@@ -1869,25 +1866,6 @@ body.nexops-mobile-nav-open {
   color: #8a1f1f;
   font-size: 0.88rem;
   line-height: 1.4;
-}
-
-.nexops-quote-template-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.nexops-quote-template-chip {
-  display: grid;
-  gap: 3px;
-  text-align: left;
-}
-
-.nexops-quote-template-editor {
-  display: grid;
-  gap: 12px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(8, 33, 49, 0.12);
 }
 
 .nexops-payment-schedule {

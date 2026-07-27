@@ -1,0 +1,20 @@
+E4 Quote Templates completion checkpoint
+Date: 2026-07-27
+
+Owned implementation:
+- Server validation/configuration service
+- Component route, Nexi-tool, and repository registrars
+- Real QuoteTemplateEditor web surface
+- quoteTemplates.css
+- Component-owned render contract test
+
+Intentional data relationship:
+- Template records remain in the tenant-scoped CRM settings document.
+- This does not create a shared implementation-file collision; Quote Templates owns its repository methods and Tenant Config owns settings composition.
+
+Verification (non-browser):
+- npm run build: PASS (76 modules)
+- quote-template-editor.test.mjs: PASS (1/1)
+- crm-read-side.test.mjs: PASS (21/21)
+- latest npm test: 341/349, with exactly the established eight unrelated known-red tests.
+- Browser verification: not run, per the standing no-browser constraint.

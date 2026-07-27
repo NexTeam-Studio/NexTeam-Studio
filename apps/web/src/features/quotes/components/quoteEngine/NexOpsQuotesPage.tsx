@@ -16,6 +16,7 @@ import {
   type ProductServiceCatalogItem
 } from "../../../settings/components/catalog/NexOpsCatalog";
 import { QuoteTemplateEditor } from "../quoteTemplates/QuoteTemplateEditor";
+import "../quoteTemplates/quoteTemplates.css";
 import {
   NexopsActionButton,
   NexopsActionRail,
