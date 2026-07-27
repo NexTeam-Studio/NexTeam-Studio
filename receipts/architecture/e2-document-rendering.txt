@@ -1,0 +1,79 @@
+E2 SHARED DOCUMENT RENDERING RECEIPT
+Date: 2026-07-26
+Scope: generic PDF/HTML engines with component-owned quote and invoice PDF templates
+
+BUILD
+Command: npm run build
+Result: PASS
+Server: TypeScript project references clean
+Web: Vite production build clean, 71 modules transformed
+Main browser chunk: 247.60 kB (60.04 kB gzip), unchanged from Address checkpoint
+
+FOCUSED TESTS
+Command: node --import tsx --test apps/server/test/document-rendering.test.mjs apps/server/test/crm-read-side.test.mjs apps/server/test/close-invoice-payment-flow.test.mjs apps/server/test/client-hub-review-followup.test.mjs
+Result: PASS, 42/42
+
+1. client hub sessions authenticate, reverify after 14 days, and keep property-scoped viewers isolated
+2. client hub shows NexCam visit documents by default and removes them when the job rail is opted out
+3. portal client uploads land directly, stay visible to staff immediately, and absorb office records into the unified NexDocs rail
+4. portal appointment confirmation stamps the visit and surfaces the event to client and staff rails
+5. client statements keep tips separate from invoice balance and can be delivered from the hub
+6. review sequences honor exhaustion, opt-out, and manual stop without auto-restarting closed jobs
+7. Nexi client-hub and review tools send portal links, read activity, generate statements, and restart then complete review rails
+8. local Nexi chat routes portal and review intents through the new client-hub tools
+9. draft invoices stay fully editable through line items, discount, tax, and terms until delivery locks them
+10. closing without invoicing creates a recurring 9AM reminder that advances until dismissal
+11. combining a selected subset of jobs keeps per-job references and carries the chosen payment schedule
+12. invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads
+13. default invoice delivery templates keep labeled pay-link and hosted-link content at the shared template layer
+14. saved-card reuse defaults to the newest card, supports alternate selection, and keeps manual/failed branches distinct
+15. receipt review sends email attachments and an SMS hosted link from the same paused review
+16. receipt review sends a real field report PDF attachment when NexCam already generated one for the job
+17. PayPal and Venmo checkout helpers create sandbox orders and capture completed payments
+18. Nexi billing tools run combine, send, partial collect, failed recovery, and receipt review approval loops in chat
+19. CRM quote and invoice native schemas parse
+20. NativeAdapter exposes CRM read methods
+21. native import upserts remain idempotent by legacy CRM external ids
+22. NativeAdapter writes native clients and approval-gated quote drafts
+23. NexOps 3.2 client records preserve display, billing, and one-way SMS settings
+24. CRM read nexi-tools expose pipeline and client lookup
+25. CRM clientLookup stays unmatched and never calls a dormant fallback on native misses
+26. CRM write nexi-tools cover client create, quote draft, catalog/template settings, and invoice reads
+27. seeded catalog UTF-8 punctuation survives native settings round-trip
+28. CRM createClient tool blocks approval when telephone is missing
+29. CRM client route rejects incomplete saves before a client record is created
+30. CRM routes read clients created by ApprovalQueue execution from the shared native repository
+31. CRM client delete route removes property-only duplicates and blocks clients with linked work
+32. CRM quick payment request routes create minimal ledger-backed invoices from job and client fast paths
+33. CRM quote routes create, send, approve, convert, invoice, and renew quotes
+34. CRM quote change requests store per-line comments plus a freeform note
+35. Quote materialization preserves custom lines and future client-selectable fields
+36. Quote terms resolve tenant default, then template override, then per-quote override
+37. TECHNICIAN role is blocked from manual quote approval authority
+38. NativeAdapter writes invoices and renders invoice PDFs
+39. Stripe rail refuses live keys and verifies webhook signatures
+40. shared Document Rendering escapes HTML and PDF payload text
+41. shared Document Rendering writes a valid text PDF without owning document wording
+42. Quote Engine and Invoice Structure own distinct PDF templates
+
+FULL SUITE
+Command: npm test
+Result: KNOWN-RED BASELINE, 337/345 passing and exactly 8 unrelated failures
+
+1. campaign routes expose template, test-run, tracking, unsubscribe, and stats
+2. local Nexi chat can search documents, queue a folder, approve it, queue an upload, and approve it
+3. M10 routes are owner/admin gated and queue tenant provisioning approval
+4. M8 operator UI customization is tenant-scoped and owner/admin gated
+5. NexReach local Nexi loop accepts underscore ids through generate, approve, and refusal flow
+6. platform routes expose tenants, test subscription, backup, and export
+7. platform routes manage tenant users and job links without leaking token hashes by default
+8. tenant users seed Aquatrace roles and produce Firebase custom claims
+
+BOUNDARY NOTE
+The compatibility file apps/server/src/crm/quotePdf.ts still contains both portal HTML
+templates. This is tracked migration work, not claimed separation. E4 Quote Engine and
+Invoice Structure must move those portal templates into their respective component
+folders while preserving this facade only for old import paths.
+
+No browser was opened. PDF and portal behavior was verified by builds and automated
+tests under the standing no-browser rule.

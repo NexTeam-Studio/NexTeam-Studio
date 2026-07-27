@@ -1,17 +1,8 @@
 import type { Client, Invoice, Quote, ReceiptReview } from "@nexteam/core";
-
-function escapePdfText(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+import { invoicePdfLines } from "../modules/nexops/areas/invoices/components/invoiceStructure/server/invoicePdfTemplate.js";
+import { quotePdfLines } from "../modules/nexops/areas/quotes/components/quoteEngine/server/quotePdfTemplate.js";
+import { escapeDocumentHtml as escapeHtml } from "../shared/documentRendering/htmlEngine.js";
+import { renderTextPdf } from "../shared/documentRendering/pdfEngine.js";
 
 function money(value: number): string {
   return `$${value.toFixed(2)}`;
@@ -100,103 +91,11 @@ function portalChromeStyles(): string {
 }
 
 export function renderQuotePdf(quote: Quote, client?: Client): Buffer {
-  const textLines = [
-    "NexTeam Studio Quote",
-    quote.number ? `Quote Number: ${quote.number}` : "",
-    `Quote: ${quote.title}`,
-    `Quote ID: ${quote.id}`,
-    `Tenant: ${quote.tenantId}`,
-    `Client: ${client?.name ?? quote.clientId}`,
-    `Status: ${quote.status}`,
-    quote.expiresAt ? `Expires: ${quote.expiresAt}` : "",
-    "",
-    ...quote.lineItems.map((item) => `${item.code} ${item.name} x${item.quantity}: ${money(item.total)}`),
-    "",
-    `Subtotal: ${money(quote.totals.subtotal)}`,
-    quote.totals.discount ? `Discount: ${money(quote.totals.discount)}` : "",
-    `Tax: ${money(quote.totals.tax)}`,
-    `Total: ${money(quote.totals.total)}`,
-    "",
-    `Approval rules: ${[
-      quote.approvalRules.requireSignature ? "signature required" : "signature optional",
-      quote.approvalRules.requireDeposit ? "deposit required" : "deposit optional",
-      quote.approvalRules.requireCardOnFile ? "card on file required" : "card on file optional"
-    ].join(", ")}`,
-    quote.terms ? `Terms: ${quote.terms}` : "",
-    "",
-    "This PDF is generated before outbound delivery and remains approval-gated."
-  ].filter(Boolean);
-  const content = textLines
-    .map((line, index) => {
-      const y = 750 - index * 18;
-      return `BT /F1 11 Tf 50 ${y} Td (${escapePdfText(line)}) Tj ET`;
-    })
-    .join("\n");
-  const objects = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    `<< /Length ${Buffer.byteLength(content, "utf8")} >>\nstream\n${content}\nendstream`
-  ];
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-  objects.forEach((object, index) => {
-    offsets.push(Buffer.byteLength(pdf, "utf8"));
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-  });
-  const xrefStart = Buffer.byteLength(pdf, "utf8");
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (let index = 1; index < offsets.length; index += 1) {
-    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
-  }
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
-  return Buffer.from(pdf, "utf8");
+  return renderTextPdf(quotePdfLines(quote, client));
 }
 
 export function renderInvoicePdf(invoice: Invoice, client?: Client): Buffer {
-  const textLines = [
-    "NexTeam Studio Invoice",
-    `Invoice: ${invoice.title}`,
-    `Invoice ID: ${invoice.id}`,
-    `Tenant: ${invoice.tenantId}`,
-    `Client: ${client?.name ?? invoice.clientId}`,
-    `Status: ${invoice.status}`,
-    "",
-    ...invoice.lineItems.map((item) => `${item.code} ${item.name} x${item.quantity}: ${money(item.total)}`),
-    "",
-    `Subtotal: ${money(invoice.totals.subtotal)}`,
-    `Tax: ${money(invoice.totals.tax)}`,
-    `Total: ${money(invoice.totals.total)}`,
-    "",
-    "Card processing is handled by Stripe. NexTeam does not store card data."
-  ];
-  const content = textLines
-    .map((line, index) => {
-      const y = 750 - index * 18;
-      return `BT /F1 11 Tf 50 ${y} Td (${escapePdfText(line)}) Tj ET`;
-    })
-    .join("\n");
-  const objects = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    `<< /Length ${Buffer.byteLength(content, "utf8")} >>\nstream\n${content}\nendstream`
-  ];
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-  objects.forEach((object, index) => {
-    offsets.push(Buffer.byteLength(pdf, "utf8"));
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-  });
-  const xrefStart = Buffer.byteLength(pdf, "utf8");
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (let index = 1; index < offsets.length; index += 1) {
-    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
-  }
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
-  return Buffer.from(pdf, "utf8");
+  return renderTextPdf(invoicePdfLines(invoice, client));
 }
 
 export function renderInvoicePortalHtml(
