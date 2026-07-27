@@ -7,18 +7,18 @@ import {
   paymentScheduleToPayload,
   type PaymentScheduleDraft,
   type PaymentScheduleRecord
-} from "./nexopsPaymentSchedule";
+} from "../../../../nexopsPaymentSchedule";
 import {
   intakeDetailFacts,
   prominentIntakeFacts,
   type IntakeSnapshotLike
-} from "./nexopsIntake";
+} from "../../../../nexopsIntake";
 import {
   blankSignatureCaptureValue,
   NexOpsSignatureCapture,
   type SignatureCaptureValue
-} from "./nexopsSignatureCapture";
-import { ProductInlineLabel } from "./productBranding";
+} from "../../../../nexopsSignatureCapture";
+import { ProductInlineLabel } from "../../../../productBranding";
 
 type JobStatus = "Upcoming" | "Today" | "Late" | "Unscheduled" | "Action Required" | "Requires Invoicing" | "Archived";
 type JobAction = "close" | "invoice" | "close_and_invoice" | "dismiss_invoice_reminder";
