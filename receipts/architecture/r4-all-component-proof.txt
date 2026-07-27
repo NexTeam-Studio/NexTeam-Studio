@@ -445,20 +445,20 @@ COMMAND: npm run build
 transforming...
 [32m✓[39m 143 modules transformed.
 rendering chunks...
-node.exe : [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+node.exe : [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter]
 At line:1 char:1
 + & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
 + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: ([1m[33m[plugi...vite:reporter] :String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
- 
-(!) C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/web/src/nexopsDeferredUi.tsx is 
+
+(!) C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/web/src/nexopsDeferredUi.tsx is
 dynamically imported by C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/web/src/features/n
 exopsShell/NexOpsWorkspace.tsx, C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/web/src/fe
 atures/nexopsShell/NexOpsWorkspace.tsx, C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/we
 b/src/features/nexopsShell/NexOpsWorkspace.tsx, C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration
 /apps/web/src/features/nexopsShell/NexOpsWorkspace.tsx but also statically imported by C:/Users/Peyto/NexTeam-Studio-wo
-rktrees/target-architecture-integration/apps/web/src/features/clients/components/contact/ContactEditorSurface.tsx, 
+rktrees/target-architecture-integration/apps/web/src/features/clients/components/contact/ContactEditorSurface.tsx,
 dynamic import will not move module into another chunk.
 [39m
 computing gzip size...
@@ -850,7 +850,7 @@ Tenancy check failed:
 test at apps\server\test\content-engine.test.mjs:487:1
 ✖ NexReach local Nexi loop accepts underscore ids through generate, approve, and refusal flow (14.9029ms)
   AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Marketing draft ready/i. Input:
-  
+
   'Here is your request, Operator.\n' +
     '\n' +
     'You requested How pool leak detection works in Fair Play, SC with the following details:\n' +
@@ -866,7 +866,7 @@ test at apps\server\test\content-engine.test.mjs:487:1
     '\n' +
     'Is this correct?\n' +
     'Reply yes / no / make changes.'
-  
+
       at TestContext.<anonymous> (file:///C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/server/test/content-engine.test.mjs:528:10)
       at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
       at async Test.run (node:internal/test_runner/test:1125:7)
@@ -882,7 +882,7 @@ test at apps\server\test\content-engine.test.mjs:487:1
 test at apps\server\test\fielddocs-nexi-tools.test.mjs:358:1
 ✖ local Nexi chat can search documents, queue a folder, approve it, queue an upload, and approve it (27.7672ms)
   AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Approve this\? yes \/ no\./i. Input:
-  
+
   'Here is your request, Operator.\n' +
     '\n' +
     'You requested create folder for Permit packet with the following details:\n' +
@@ -893,7 +893,7 @@ test at apps\server\test\fielddocs-nexi-tools.test.mjs:358:1
     '\n' +
     'Is this correct?\n' +
     'Reply yes / no.'
-  
+
       at TestContext.<anonymous> (file:///C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/server/test/fielddocs-nexi-tools.test.mjs:429:10)
       at async Test.run (node:internal/test_runner/test:1125:7)
       at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
@@ -908,9 +908,9 @@ test at apps\server\test\fielddocs-nexi-tools.test.mjs:358:1
 test at apps\server\test\platform.test.mjs:316:1
 ✖ platform routes manage tenant users and job links without leaking token hashes by default (46.6048ms)
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
-  
+
   false !== true
-  
+
       at TestContext.<anonymous> (file:///C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/server/test/platform.test.mjs:382:12)
       at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
       at async Test.run (node:internal/test_runner/test:1125:7)
