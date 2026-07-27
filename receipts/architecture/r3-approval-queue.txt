@@ -1,0 +1,18 @@
+R3 APPROVAL QUEUE WEB EXTRACTION
+Baseline: 10f2cbd
+
+RESULT
+- Recovered the last real server-backed panel from pre-D2 history into
+  features/approvalQueue/areas/queue/components/ApprovalQueuePanel.tsx.
+- NexOpsWorkspace imports that owner for activeModule=approvals.
+- The prior undefined ApprovalQueuePanel runtime reference is eliminated.
+- Approval owner: 204 TSX + 48 CSS lines.
+- Shared queue visual primitives: 63 CSS lines.
+
+VERIFICATION
+- Approval Queue ownership test: 1/1 pass
+- npm run lint: pass, 0 errors
+- npm run typecheck: pass
+- npm run build: pass, Vite transformed 142 modules
+- non-Playwright repository tests: 350 total, 347 pass, 3 known unrelated fail
+- no browser, tunnel, deploy, or live service used

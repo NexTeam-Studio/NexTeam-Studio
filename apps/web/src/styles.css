@@ -79,9 +79,7 @@ input {
 }
 
 .schedule-card,
-.approval-card,
-.nexops-card,
-.content-card {
+.nexops-card {
   padding: 24px;
   overflow: auto;
   border: 1px solid rgba(21, 24, 23, 0.16);
@@ -94,10 +92,6 @@ input {
 
 .schedule-card {
   min-height: min(520px, calc(100vh - 36px));
-}
-
-.approval-card {
-  min-height: 0;
 }
 
 .nexops-card {
@@ -2298,70 +2292,6 @@ body.nexops-mobile-nav-open {
   font-size: 0.88rem;
 }
 
-.content-list {
-  display: grid;
-  gap: 12px;
-  margin-top: 14px;
-}
-
-.content-draft {
-  display: grid;
-  gap: 10px;
-  padding: 16px;
-  border: 1px solid rgba(21, 24, 23, 0.11);
-  border-radius: 24px;
-  background: rgba(248, 255, 252, 0.86);
-}
-
-.content-draft h3,
-.content-draft p {
-  margin: 0;
-}
-
-.content-draft h3 {
-  color: #151817;
-  font-size: 1.08rem;
-}
-
-.content-draft p {
-  color: #526055;
-  line-height: 1.36;
-}
-
-.approval-item p {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-}
-
-.approval-attachments {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.approval-attachments span {
-  border-radius: 999px;
-  padding: 7px 10px;
-  color: #101010;
-  background: rgba(0, 255, 255, 0.2);
-  font-size: 0.78rem;
-}
-
-.approval-decided {
-  color: #69766d !important;
-  font-size: 0.78rem;
-}
-
-.queue-section-heading {
-  margin: 16px 0 8px;
-  color: #1a2a20;
-  font-size: 0.88rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .empty-state {
   margin: 0;
   color: #69766d;
@@ -2376,40 +2306,6 @@ body.nexops-mobile-nav-open {
   background: rgba(16, 96, 96, 0.12);
   font-size: 0.82rem;
   font-weight: 850;
-}
-
-.content-draft-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  color: #106060;
-  font-size: 0.76rem;
-  font-weight: 850;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.content-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.content-actions button {
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 13px;
-  color: #f8fffc;
-  background: #106060;
-  font-weight: 850;
-}
-
-.content-actions button.secondary {
-  color: #101010;
-  background: rgba(0, 255, 255, 0.22);
-}
-
-.content-actions button:disabled {
-  opacity: 0.48;
 }
 
 .topbar {
@@ -3147,7 +3043,7 @@ h1 {
   }
 
   .nexops-dashboard,
-  .nexops-module-page {
+.nexops-module-page {
     gap: 18px;
     padding: 22px 16px 34px;
   }
@@ -3196,9 +3092,9 @@ h1 {
   }
 
   .nexops-page-heading > button,
-  .nexops-page-heading .nexops-inline-actions button,
-  .refresh-button,
-  .nexops-web-tools button {
+.nexops-page-heading .nexops-inline-actions button,
+.refresh-button,
+.nexops-web-tools button {
     border: 1px solid rgba(8, 33, 49, 0.14);
     color: #173344;
     background: #fff;
@@ -3236,9 +3132,9 @@ h1 {
   }
 
   .nexops-kit-action-secondary,
-  .nexops-kit-action-quiet,
-  .nexops-kit-action-warning,
-  .nexops-kit-action-blocked {
+.nexops-kit-action-quiet,
+.nexops-kit-action-warning,
+.nexops-kit-action-blocked {
     border-color: rgba(8, 33, 49, 0.14);
     color: #173344;
     background: #fff;
@@ -3246,7 +3142,7 @@ h1 {
   }
 
   .nexops-kit-action-dominant,
-  .nexops-kit-action-success {
+.nexops-kit-action-success {
     color: #08100c;
     background: var(--nexops-brand-gradient, var(--nexteam-gradient));
     box-shadow: 0 12px 24px rgba(37, 210, 56, 0.18);
@@ -3262,9 +3158,9 @@ h1 {
   }
 
   .nexops-form-section,
-  .nexops-field-row,
-  .nexops-field-row.title-row,
-  .nexops-extra-panel-body.single-row {
+.nexops-field-row,
+.nexops-field-row.title-row,
+.nexops-extra-panel-body.single-row {
     grid-template-columns: 1fr;
   }
 
@@ -3274,8 +3170,8 @@ h1 {
   }
 
   .nexops-field-row .nexops-field,
-  .nexops-field-row .nexops-field:first-child,
-  .nexops-field-row .nexops-field:last-child {
+.nexops-field-row .nexops-field:first-child,
+.nexops-field-row .nexops-field:last-child {
     margin-left: 0;
     border-radius: 16px;
   }
@@ -3292,7 +3188,7 @@ h1 {
   }
 
   .phone,
-  .schedule-card {
+.schedule-card {
     min-height: auto;
   }
 }
@@ -3769,27 +3665,27 @@ h1 {
 
 @media (max-width: 1080px) {
   .nexops-pattern-grid,
-  .nexops-pattern-empty-grid,
-  .nexops-kit-home-shell,
-  .nexops-home-overview-stack {
+.nexops-pattern-empty-grid,
+.nexops-kit-home-shell,
+.nexops-home-overview-stack {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 800px) {
   .nexops-kit-field-header,
-  .nexops-kit-card-header,
-  .nexops-kit-banner,
-  .nexops-kit-upload-row,
-  .nexops-kit-list article,
-  .nexops-kit-modal-demo header,
-  .nexops-kit-drawer-demo header {
+.nexops-kit-card-header,
+.nexops-kit-banner,
+.nexops-kit-upload-row,
+.nexops-kit-list article,
+.nexops-kit-modal-demo header,
+.nexops-kit-drawer-demo header {
     flex-direction: column;
   }
 
   .nexops-kit-field-header-copy,
-  .nexops-pattern-form-grid,
-  .nexops-kit-conflict-columns {
+.nexops-pattern-form-grid,
+.nexops-kit-conflict-columns {
     grid-template-columns: 1fr;
   }
 
@@ -4429,7 +4325,7 @@ h1 {
 
 @media (max-width: 800px) {
   .nexops-home-health-strip,
-  .nexops-field-row.three-up {
+.nexops-field-row.three-up {
     grid-template-columns: 1fr;
   }
 
@@ -4486,7 +4382,7 @@ h1 {
   }
 
   .nexops-mobile-icon-button,
-  .nexops-mobile-menu-button {
+.nexops-mobile-menu-button {
     width: 34px;
     height: 34px;
     min-width: 34px;

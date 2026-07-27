@@ -12,6 +12,7 @@ import { ContactEditorSurface } from "../clients/components/contact/ContactEdito
 import { ContactProfileSurface } from "../clients/components/contact/ContactProfileSurface";
 import "../clients/components/contact/contact.css";
 import { signOutOperator } from "../../shared/auth/authBootstrap";
+import { ApprovalQueuePanel } from "../approvalQueue/areas/queue/components/ApprovalQueuePanel";
 
 const NexOpsHomePage = React.lazy(async () => ({ default: (await import("../../nexopsHome")).NexOpsHomePage }));
 const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("../../features/invoices/components/invoiceStructure/NexOpsInvoicesPage")).NexOpsInvoicesPage }));
