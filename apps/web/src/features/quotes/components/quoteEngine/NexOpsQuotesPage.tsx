@@ -8,11 +8,7 @@ import {
   type PaymentScheduleRecord
 } from "../../../../features/invoices/components/invoiceStructure/PaymentScheduleEditor";
 import {
-  NexOpsCatalogEditorModal,
   NexOpsCatalogPicker,
-  blankCatalogItemDraft,
-  catalogItemFromDraft,
-  type CatalogItemDraft,
   type ProductServiceCatalogItem
 } from "../../../settings/components/catalog/NexOpsCatalog";
 import { QuoteTemplateEditor } from "../quoteTemplates/QuoteTemplateEditor";
@@ -1051,8 +1047,6 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [sendDraft, setSendDraft] = useState<SendDraft>({ mode: "email", target: "", subject: "", bodyText: "", note: "" });
   const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState("");
-  const [catalogEditorOpen, setCatalogEditorOpen] = useState(false);
-  const [catalogDraft, setCatalogDraft] = useState<CatalogItemDraft>(blankCatalogItemDraft());
 
   const selectedQuote = quotes.find((quote) => quote.id === selectedQuoteId);
   const selectedClient = props.clients.find((client) => client.id === selectedQuote?.clientId);
@@ -1234,46 +1228,6 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
     setCatalogSearch("");
   }
 
-  async function saveCatalogItem(): Promise<void> {
-    if (!settingsRecord || !catalogDraft.name.trim()) {
-      setStatusMessage("Catalog items need a name before they can be saved.");
-      return;
-    }
-    const existing = settingsRecord.catalogItems.find((item) => item.id === catalogDraft.id);
-    const nextItem = catalogItemFromDraft(props.tenantId, catalogDraft, existing);
-    const nextCatalog = existing
-      ? settingsRecord.catalogItems.map((item) => item.id === existing.id ? nextItem : item)
-      : [...settingsRecord.catalogItems, nextItem];
-    setBusy("save-catalog");
-    setStatusMessage(existing ? "Saving catalog item..." : "Creating catalog item...");
-    try {
-      const body = await fetch("/api/crm/settings", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tenantId: props.tenantId,
-          catalogItems: nextCatalog
-        })
-      }).then((response) => response.json() as Promise<SettingsMutationResponse>);
-      if (!body.ok || !body.settings) {
-        setStatusMessage(body.error ?? "Catalog item could not be saved.");
-        return;
-      }
-      setSettingsRecord(body.settings);
-      setSettingsDraft((current) => current ? settingsDraftFromRecord(body.settings!) : current);
-      setCatalogEditorOpen(false);
-      setCatalogPickerOpen(false);
-      setCatalogSearch("");
-      setCatalogDraft(blankCatalogItemDraft());
-      addCatalogLine(nextItem);
-      setStatusMessage(`${nextItem.name} saved to Products & Services.`);
-      props.onCrmMutation?.();
-    } catch {
-      setStatusMessage("Catalog item save failed.");
-    } finally {
-      setBusy("");
-    }
-  }
 
   async function saveSettings(): Promise<void> {
     if (!settingsDraft) {
@@ -1561,7 +1515,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const selectedQuoteCarryForwardFacts = intakeDetailFacts(selectedQuote?.intake, "quote", 10);
 
   return (
-    <section className="nexops-module-page">
+    <section className="nexops-module-page quote-engine-page">
       <div className="nexops-page-heading">
         <div>
           <h1>Quotes</h1>
@@ -2408,24 +2362,11 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           setCatalogSearch("");
         }}
         onSelect={addCatalogLine}
-        onCreateRequested={(seed) => {
+        onCreateRequested={() => {
           setCatalogPickerOpen(false);
-          setCatalogDraft(blankCatalogItemDraft(seed));
-          setCatalogEditorOpen(true);
+          setCatalogSearch("");
+          setStatusMessage("Add reusable catalog items in Settings > Catalog, then return to select them here.");
         }}
-      />
-      <NexOpsCatalogEditorModal
-        open={catalogEditorOpen}
-        title={catalogDraft.id ? "Edit catalog item" : "Add catalog item"}
-        saveLabel={busy === "save-catalog" ? "Saving..." : "Save item"}
-        busy={busy === "save-catalog"}
-        draft={catalogDraft}
-        onDraftChange={setCatalogDraft}
-        onClose={() => {
-          setCatalogEditorOpen(false);
-          setCatalogDraft(blankCatalogItemDraft());
-        }}
-        onSave={() => void saveCatalogItem()}
       />
     </section>
   );

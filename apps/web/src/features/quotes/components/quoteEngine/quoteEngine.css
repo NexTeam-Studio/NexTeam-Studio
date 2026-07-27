@@ -1,0 +1,8 @@
+.quote-engine-page {
+  container-type: inline-size;
+}
+
+.quote-engine-page > .nexops-page-heading {
+  border-bottom: 1px solid color-mix(in srgb, var(--accent-700) 24%, transparent);
+  padding-bottom: 18px;
+}

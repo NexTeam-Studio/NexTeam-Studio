@@ -1,0 +1,17 @@
+E4 QUOTE ENGINE, CATALOG, AND TENANT CONFIG CHECKPOINT
+Date: 2026-07-27
+
+Ownership completed
+- Quote Engine owns quote workflow UI, server policy, lifecycle, persistence, PDF, and portal rendering.
+- Catalog owns its model, picker/editor, routes/tools, CSS, and focused test.
+- Tenant Config owns the Settings workspace, settings validation, communication templates, persistence orchestration, and CSS.
+- Quotes and Invoices use Catalog read-only. Catalog writes are available only from Settings.
+- crm/quotePdf.ts is an export-only compatibility facade.
+- Shared quote/invoice layout selectors moved from the root stylesheet into the shared document-design primitive stylesheet.
+
+Verification
+- Web production build: PASS, 88 modules transformed.
+- Focused CRM/document/Quote Templates/Quote Engine/Catalog tests: PASS, 30/30.
+- Full repository suite: 348/356 passing.
+- Failures: exactly the eight unrelated known-red tests established at E1; no E4 regression.
+- Browser: not opened, per task constraint.

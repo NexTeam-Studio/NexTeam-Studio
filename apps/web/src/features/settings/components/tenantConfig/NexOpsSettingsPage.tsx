@@ -345,7 +345,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   const activeUsers = props.tenantUsers.filter((user) => user.active);
 
   return (
-    <section className="nexops-module-page">
+    <section className="nexops-module-page tenant-config-page">
       <div className="nexops-page-heading">
         <div>
           <h1>Settings</h1>

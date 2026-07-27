@@ -1,0 +1,33 @@
+.nexops-catalog-picker-list {
+  display: grid;
+  gap: 10px;
+  max-height: min(52vh, 520px);
+  overflow: auto;
+}
+
+.nexops-catalog-picker-item,
+.nexops-catalog-settings-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+
+.nexops-catalog-picker-item span,
+.nexops-catalog-settings-row > div {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.nexops-catalog-picker-item mark {
+  background: transparent;
+  color: var(--ink-900);
+  font-weight: 800;
+}
+
+.nexops-catalog-picker-empty,
+.nexops-catalog-create-button {
+  padding: 16px;
+  border-radius: 18px;
+}

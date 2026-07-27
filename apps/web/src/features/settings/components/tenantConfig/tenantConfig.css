@@ -1,0 +1,21 @@
+.tenant-config-page {
+  container-type: inline-size;
+}
+
+.nexops-settings-template-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, .72fr) minmax(0, 1.4fr);
+  gap: 18px;
+}
+
+.nexops-settings-template-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+@container (max-width: 760px) {
+  .nexops-settings-template-layout {
+    grid-template-columns: 1fr;
+  }
+}
