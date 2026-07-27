@@ -1,0 +1,18 @@
+R3 SCHEDULE / SHARED ROUTER CHECKPOINT
+Baseline: 28a2548
+
+RESULT
+- The live NexOps schedule remains Visit Core-owned at
+  features/visits/components/visitCore/NexOpsSchedulePage.tsx.
+- shared/router/AppRouter.tsx is now the sole signed-in product router.
+- main.tsx is bootstrap-only at 18 lines.
+- The unused Phase B opsWorkspace/scheduling mini-app was removed.
+- The unused simplified Nexi scaffold reachable only from that mini-app was removed.
+- No duplicate Schedule implementation or role fallback was introduced.
+
+VERIFICATION
+- npm run lint: pass, 0 errors
+- npm run typecheck: pass
+- npm run build: pass, Vite transformed 137 modules
+- non-Playwright repository tests: 348 total, 345 pass, 3 known unrelated fail
+- no browser, tunnel, deploy, or live service used
