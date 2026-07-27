@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { createTenantConfigFirestoreRepository } from "../dist/modules/nexops/areas/settings/components/tenantConfig/server/firestoreRepository.js";
 import { createQuoteFirestoreRepository } from "../dist/modules/nexops/areas/quotes/components/quoteEngine/server/firestoreRepository.js";
+import { FirestorePlatformRepository } from "../dist/platform/repository.js";
 
 const tenantA = "tenant-a";
 const tenantB = "tenant-b";
@@ -91,4 +92,25 @@ test("tenant settings rejects a document whose stored tenant differs from the re
 
   const repository = createTenantConfigFirestoreRepository(db);
   await assert.rejects(() => repository.getCrmSettings(tenantA), /Cross-tenant persistence access was rejected/);
+});
+
+test("platform persistence rejects a tenant user ID already owned by another tenant", async () => {
+  const existing = {
+    id: "shared-user",
+    tenantId: tenantB,
+    displayName: "Tenant B User",
+    role: "OFFICE_ADMIN",
+    active: true,
+    createdAt: "2026-07-27T00:00:00.000Z",
+    updatedAt: "2026-07-27T00:00:00.000Z"
+  };
+  const db = new FakeFirestore({ "tenantUsers/shared-user": existing });
+  const repository = new FirestorePlatformRepository(db);
+
+  await assert.rejects(() => repository.upsertTenantUser({
+    ...existing,
+    tenantId: tenantA,
+    displayName: "Cross-tenant overwrite"
+  }), /belongs to another tenant/i);
+  assert.deepEqual(db.store.get("tenantUsers/shared-user"), existing);
 });

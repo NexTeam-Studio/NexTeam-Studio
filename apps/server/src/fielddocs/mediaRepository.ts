@@ -665,11 +665,18 @@ export class FirestoreMediaRepository implements MediaRepository {
   }
 
   async deleteNexDocsFolder(tenantId: string, id: string): Promise<void> {
-    const existing = await this.getNexDocsFolder(tenantId, id);
-    if (!existing) {
-      throw new RailError(`NexDocs folder ${id} was not found.`, { provider: "native", op: "deleteNexDocsFolder", status: 404 });
-    }
-    await this.db.collection("nexDocsFolders").doc(id).delete();
+    const ref = this.db.collection("nexDocsFolders").doc(id);
+    await this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) {
+        throw new RailError(`NexDocs folder ${id} was not found.`, { provider: "native", op: "deleteNexDocsFolder", status: 404 });
+      }
+      const existing = nexDocsFolderSchema.parse(snapshot.data()) as NexDocsFolder;
+      if (existing.tenantId !== tenantId) {
+        throw new RailError(`NexDocs folder ${id} was not found.`, { provider: "native", op: "deleteNexDocsFolder", status: 404 });
+      }
+      transaction.delete(ref);
+    });
   }
 
   async listNexDocsDocuments(tenantId: string): Promise<NexDocsDocument[]> {

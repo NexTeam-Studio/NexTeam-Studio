@@ -23,6 +23,7 @@ import {
 } from "@nexteam/core";
 import { PLATFORM_PLANS } from "./plans.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
+import { setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 function defaultApproval(): Tenant["approval"] {
   return {
@@ -336,7 +337,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
   async upsertTenant(tenant: Tenant): Promise<Tenant> {
     const parsed = tenantSchema.parse(tenant) as Tenant;
-    await this.db.collection("tenants").doc(parsed.id).set({ ...docData(parsed), tenantId: parsed.id }, { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "tenants", id: parsed.id, tenantId: parsed.id, data: { ...docData(parsed), tenantId: parsed.id }, label: `Tenant ${parsed.id}` });
     return parsed;
   }
 
@@ -354,7 +355,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
   async saveTenantBranding(branding: TenantBranding): Promise<TenantBranding> {
     const parsed = tenantBrandingSchema.parse(branding) as TenantBranding;
-    await this.db.collection("tenantBranding").doc(parsed.tenantId).set(docData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "tenantBranding", id: parsed.tenantId, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant branding ${parsed.tenantId}` });
     return parsed;
   }
 
@@ -375,7 +376,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
   async upsertTenantUser(user: TenantUser): Promise<TenantUser> {
     const parsed = tenantUserSchema.parse(user) as TenantUser;
-    await this.db.collection("tenantUsers").doc(parsed.id).set(docData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "tenantUsers", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant user ${parsed.id}` });
     return parsed;
   }
 
@@ -390,7 +391,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
   async saveJobAccessLink(link: JobAccessLink): Promise<JobAccessLink> {
     const parsed = jobAccessLinkSchema.parse(link) as JobAccessLink;
-    await this.db.collection("jobAccessLinks").doc(parsed.id).set(docData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "jobAccessLinks", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Job access link ${parsed.id}` });
     return parsed;
   }
 
@@ -414,7 +415,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
   async saveSubscription(subscription: TenantSubscription): Promise<TenantSubscription> {
     const parsed = tenantSubscriptionSchema.parse(subscription) as TenantSubscription;
-    await this.db.collection("tenantSubscriptions").doc(parsed.id).set(docData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "tenantSubscriptions", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant subscription ${parsed.id}` });
     const tenant = await this.getTenant(parsed.tenantId);
     if (tenant) {
       await this.upsertTenant({ ...tenant, plan: parsed.plan });
@@ -428,11 +429,10 @@ export class FirestorePlatformRepository implements PlatformRepository {
   }
 
   async saveAdapterStatuses(statuses: TenantAdapterStatus[]): Promise<void> {
-    const batch = this.db.batch();
-    for (const status of statuses.map((entry) => tenantAdapterStatusSchema.parse(entry) as TenantAdapterStatus)) {
-      batch.set(this.db.collection("tenantAdapterStatuses").doc(`${status.tenantId}_${status.adapter}`), docData(status), { merge: true });
-    }
-    await batch.commit();
+    await Promise.all(statuses.map((entry) => tenantAdapterStatusSchema.parse(entry) as TenantAdapterStatus).map((status) => {
+      const id = `${status.tenantId}_${status.adapter}`;
+      return setTenantOwnedDocument({ db: this.db, collection: "tenantAdapterStatuses", id, tenantId: status.tenantId, data: docData(status), label: `Tenant adapter status ${id}` });
+    }));
   }
 
   async summarizeCost(tenantId: string, period: { start: string; end: string }): Promise<TenantCostSummary> {
@@ -462,7 +462,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
   async recordBackup(record: PlatformBackupRecord): Promise<PlatformBackupRecord> {
     const parsed = platformBackupRecordSchema.parse(record) as PlatformBackupRecord;
-    await this.db.collection("platformBackups").doc(parsed.id).set(docData(parsed));
+    await setTenantOwnedDocument({ db: this.db, collection: "platformBackups", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Platform backup ${parsed.id}` });
     return parsed;
   }
 

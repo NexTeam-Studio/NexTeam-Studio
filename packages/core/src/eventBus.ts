@@ -57,8 +57,17 @@ export class FirestoreEventBus implements EventBus {
       ts: new Date().toISOString(),
       processedBy: []
     }) as BusEvent;
-    // @tenant-doc:events busEventSchema requires tenantId before write.
-    await this.db.collection("events").doc(event.id).set(event);
+    const ref = this.db.collection("events").doc(event.id);
+    await this.db.runTransaction(async (transaction) => {
+      const existing = await transaction.get(ref);
+      if (existing.exists) {
+        const current = busEventSchema.parse(existing.data()) as BusEvent;
+        if (current.tenantId !== event.tenantId) {
+          throw new Error(`Event ${event.id} belongs to another tenant.`);
+        }
+      }
+      transaction.set(ref, event);
+    });
   }
 
   subscribe(type: EventType, handlerName: string, h: (e: BusEvent) => Promise<void>): void {
@@ -76,8 +85,17 @@ export class FirestoreEventBus implements EventBus {
           continue;
         }
         void h(event).then(async () => {
-          await change.doc.ref.update({
-            processedBy: [...event.processedBy, handlerName]
+          await this.db.runTransaction(async (transaction) => {
+            const latest = await transaction.get(change.doc.ref);
+            if (!latest.exists) return;
+            const current = busEventSchema.parse(latest.data()) as BusEvent;
+            if (current.tenantId !== event.tenantId) {
+              throw new Error(`Event ${event.id} tenant changed before acknowledgement.`);
+            }
+            transaction.set(change.doc.ref, {
+              ...current,
+              processedBy: [...new Set([...current.processedBy, handlerName])]
+            });
           });
         });
       }
