@@ -1,0 +1,29 @@
+E3 CRM Nexi tool choke-point receipt
+Date: 2026-07-27
+
+Scope
+- Moved all 36 CRM Nexi tool definitions into 11 component-owned manifests.
+- Kept the public createCrmReadTools/createCrmTools APIs stable.
+- Reduced crm/nexiTools.ts to composition and compatibility exports.
+- Kept shared parsing/lookup helpers in a typed transitional runtime seam for E4 narrowing.
+
+Ownership
+- Operations Hub: 6
+- Request Core: 3
+- Contact: 2
+- Job Core: 4
+- Visit Core: 3
+- Quote Engine: 3
+- Quote Templates: 1
+- Catalog: 2
+- Tenant Config: 3
+- Invoice Structure: 1
+- Portal Core: 8
+- Total: 36
+
+Verification
+- Server typecheck: pass.
+- Production build: pass; Vite transformed 72 modules.
+- Focused CRM/Nexi/request/job/schedule/portal tests: 86/86 pass.
+- Full suite: 341/349 pass, with exactly the eight unrelated E1 known-red tests and no new failures.
+- Browser verification: not run, per the standing no-browser constraint.
