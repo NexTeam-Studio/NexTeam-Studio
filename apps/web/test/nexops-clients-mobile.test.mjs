@@ -16,7 +16,7 @@ import {
   mobileTabsForBucket,
   primaryClientPhoneValue,
   validateCustomFieldDraftRows
-} from "../src/nexopsClientsMobile.ts";
+} from "../src/features/clients/components/contact/domain/clientProfile.ts";
 
 function blankDraft() {
   return {

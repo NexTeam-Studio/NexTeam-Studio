@@ -10,7 +10,7 @@ import {
   PROPERTY_CUSTOM_FIELD_RESERVED_LABELS,
   validateCustomFieldDraftRows,
   type CustomFieldDraftRow
-} from "./nexopsClientsMobile";
+} from "./features/clients/components/contact/domain/clientProfile";
 
 type CaptureWorkspaceView = "session" | "unassigned";
 type CreateClientPhoneLabel = "Main" | "Work" | "Mobile" | "Home" | "Fax" | "Other";

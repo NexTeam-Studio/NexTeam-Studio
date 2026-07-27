@@ -41,7 +41,7 @@ import {
   type CustomFieldDraftRow,
   validateCustomFieldDraftRows,
   visibleCustomFields
-} from "./nexopsClientsMobile";
+} from "./features/clients/components/contact/domain/clientProfile";
 import {
   getMobileCreateFabScrollIntent,
   mobileFabShouldHideOverlays,

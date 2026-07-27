@@ -1,0 +1,17 @@
+E4 Contact domain checkpoint
+Date: 2026-07-27
+
+Moved
+- Real client profile/mobile domain helpers moved from the web root into the Contact component.
+- Main workspace and deferred client UI imports now consume the component-owned domain module.
+- Existing Contact server route, tool, persistence, approval, and lifecycle files remain component-owned from E3.
+
+Still open
+- The live client workspace rendering body remains in apps/web/src/main.tsx.
+- Contact-owned CSS remains mixed in apps/web/src/styles.css.
+- This is an incremental checkpoint, not a completed Contact extraction.
+
+Verification
+- Production build: pass; Vite transformed 72 modules.
+- Focused Contact/address/client tests: 15/15 pass.
+- Browser verification: not run, per the standing no-browser constraint.
