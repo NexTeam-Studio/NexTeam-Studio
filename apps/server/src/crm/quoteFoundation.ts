@@ -24,6 +24,12 @@ import {
 import { z } from "zod";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import { reserveDocumentNumber } from "./documentNumbering.js";
+import {
+  ensureQuoteConfiguration,
+  quoteTemplateInputSchema
+} from "../modules/nexops/areas/quotes/components/quoteTemplates/server/quoteTemplateService.js";
+
+export { ensureQuoteConfiguration, quoteTemplateInputSchema } from "../modules/nexops/areas/quotes/components/quoteTemplates/server/quoteTemplateService.js";
 
 const EMPTY_LINE_ITEMS: LineItem[] = [];
 
@@ -75,14 +81,6 @@ export const quoteComposerInputSchema = z.object({
   paymentSchedule: paymentSchedulePlanSchema.optional(),
   delivery: quoteDeliverySelectionSchema.optional(),
   intake: z.custom<IntakeSnapshot>().optional()
-});
-
-export const quoteTemplateInputSchema = quoteTemplateSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-}).extend({
-  id: z.string().min(1).optional()
 });
 
 export const crmSettingsPatchSchema = z.object({
@@ -309,19 +307,6 @@ function quoteDepositFromRules(totals: QuoteTotals, rules: QuoteApprovalRules): 
     kind,
     amount: roundMoney(rawAmount)
   };
-}
-
-export async function ensureQuoteConfiguration(
-  repository: Pick<NativeCrmRepository, "getCrmSettings" | "saveCrmSettings" | "listQuoteTemplates" | "upsertQuoteTemplate">,
-  tenantId: string
-): Promise<{ settings: CrmSettings; templates: QuoteTemplate[] }> {
-  const settings = await repository.getCrmSettings(tenantId);
-  await repository.saveCrmSettings(settings);
-  const templates = await repository.listQuoteTemplates(tenantId);
-  for (const template of templates) {
-    await repository.upsertQuoteTemplate(template);
-  }
-  return { settings, templates };
 }
 
 function selectedTemplate(templates: QuoteTemplate[], templateId?: string | undefined): QuoteTemplate | undefined {
