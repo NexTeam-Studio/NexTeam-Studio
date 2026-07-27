@@ -11,7 +11,7 @@ import {
   quoteInvoiceBlockedReason,
   quoteManualApproveBlockedReason,
   quoteSendBlockedReason
-} from "../src/nexopsQuotes.tsx";
+} from "../src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx";
 
 function makeQuote(overrides = {}) {
   return {

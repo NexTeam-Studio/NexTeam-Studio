@@ -76,7 +76,7 @@ const NexOpsHomePage = React.lazy(async () => ({ default: (await import("./nexop
 const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("./nexopsInvoices")).NexOpsInvoicesPage }));
 const NexOpsJobsPage = React.lazy(async () => ({ default: (await import("./nexopsJobs")).NexOpsJobsPage }));
 const NexOpsPatternLibraryPage = React.lazy(async () => ({ default: (await import("./nexopsPatternLibrary")).NexOpsPatternLibraryPage }));
-const NexOpsQuotesPage = React.lazy(async () => ({ default: (await import("./nexopsQuotes")).NexOpsQuotesPage }));
+const NexOpsQuotesPage = React.lazy(async () => ({ default: (await import("./features/quotes/components/quoteEngine/NexOpsQuotesPage")).NexOpsQuotesPage }));
 const NexOpsRequestsPage = React.lazy(async () => ({ default: (await import("./nexopsRequests")).NexOpsRequestsPage }));
 const NexOpsSchedulePage = React.lazy(async () => ({ default: (await import("./nexopsSchedule")).NexOpsSchedulePage }));
 const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("./nexopsSettings")).NexOpsSettingsPage }));

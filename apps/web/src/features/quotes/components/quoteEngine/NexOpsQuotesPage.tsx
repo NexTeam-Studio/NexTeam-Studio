@@ -6,7 +6,7 @@ import {
   paymentScheduleToPayload,
   type PaymentScheduleDraft,
   type PaymentScheduleRecord
-} from "./nexopsPaymentSchedule";
+} from "../../../../nexopsPaymentSchedule";
 import {
   NexOpsCatalogEditorModal,
   NexOpsCatalogPicker,
@@ -14,7 +14,7 @@ import {
   catalogItemFromDraft,
   type CatalogItemDraft,
   type ProductServiceCatalogItem
-} from "./nexopsCatalog";
+} from "../../../../nexopsCatalog";
 import {
   NexopsActionButton,
   NexopsActionRail,
@@ -22,15 +22,15 @@ import {
   NexopsProgressStrip,
   NexopsSectionCard,
   NexopsStatusPill
-} from "./nexopsUiKit";
+} from "../../../../nexopsUiKit";
 import {
   quoteTemplateVariables,
   resolveTemplateDraft
-} from "./nexopsCommunications";
+} from "../../../../nexopsCommunications";
 import {
   intakeDetailFacts,
   prominentIntakeFacts
-} from "./nexopsIntake";
+} from "../../../../nexopsIntake";
 
 type QuoteStatus =
   | "draft"
