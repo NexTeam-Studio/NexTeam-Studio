@@ -1,0 +1,19 @@
+E4 Payment Rails completion checkpoint
+Date: 2026-07-27
+
+Owned execution:
+- Ledger service/repository, Stripe, PayPal/Venmo, Tap to Pay, refunds, receipts, approvals, and lifecycle commands
+- Provider/method type contract
+- Real collect/recover, hosted checkout, payment history, refund, void, and bad-debt UI
+- Payment Rails component stylesheet and provider-method test
+
+Composition:
+- Invoice Structure passes invoice/payment state and action callbacks to PaymentRailsPanel.
+- Payment provider JSX no longer lives in NexOpsInvoicesPage.
+- Payment schedule definition and invoice status policy remain Invoice Structure-owned.
+
+Verification (non-browser):
+- npm run build: PASS (84 modules)
+- Invoice/Payment Rails focused tests: PASS (28/28)
+- npm test: 347/355; exactly the established eight unrelated known-red tests remain.
+- Browser verification: not run, per the standing no-browser constraint.

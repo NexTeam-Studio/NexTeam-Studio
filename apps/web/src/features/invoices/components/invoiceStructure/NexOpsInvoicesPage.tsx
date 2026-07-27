@@ -25,13 +25,18 @@ import {
   intakeDetailFacts,
   prominentIntakeFacts
 } from "../../../../nexopsIntake";
+import {
+  PaymentRailsPanel,
+  type PaymentDraftState,
+  type PaymentMethodKind,
+  type PaymentProvider,
+  type PaymentStatus,
+  type RefundDraftState
+} from "../paymentRails/PaymentRailsPanel";
 
 type InvoiceStatus = "draft" | "sent" | "awaiting_payment" | "partial_pay" | "paid" | "void" | "bad_debt";
 type InvoiceFilter = "all" | "draft" | "awaiting" | "partial_pay" | "paid" | "void" | "bad_debt" | "past_due";
 type InvoiceDeliveryMode = "email" | "sms" | "mark_sent";
-type PaymentProvider = "stripe" | "paypal" | "manual" | "quote_bridge";
-type PaymentMethodKind = "card" | "ach" | "cash" | "check" | "bank_transfer" | "other" | "paypal" | "venmo";
-type PaymentStatus = "pending" | "failed" | "succeeded" | "refunded" | "partially_refunded";
 type ReceiptReviewChannel = "email" | "sms";
 
 const INVOICE_FILTERS: Array<{ value: InvoiceFilter; label: string }> = [
@@ -336,20 +341,6 @@ interface SendDraftState {
   includeHostedLink: boolean;
 }
 
-interface PaymentDraftState {
-  amount: number;
-  provider: PaymentProvider;
-  method: PaymentMethodKind;
-  note: string;
-  savedCardId: string;
-  payerName: string;
-  checkNumber: string;
-  bankTransferReference: string;
-  otherReference: string;
-  failureMessage: string;
-  status: "succeeded" | "failed";
-}
-
 interface ReceiptReviewDraftState {
   subject: string;
   bodyText: string;
@@ -366,12 +357,6 @@ interface CombineDraftState {
   taxRate: number;
   terms: string;
   paymentSchedule: PaymentScheduleDraft;
-}
-
-interface RefundDraftState {
-  paymentId: string;
-  amount: number;
-  reason: string;
 }
 
 interface NexOpsInvoicesPageProps {
@@ -1810,166 +1795,25 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
               </div>
             </details>
 
-            <details className="nexops-quote-panel nexops-density-disclosure-panel" open={detail.invoice.status !== "paid" || Boolean(recoveryHint)}>
-              <summary>
-                <div className="nexops-density-disclosure-copy">
-                  <h3>Collect and recover</h3>
-                  <small>Open for saved-card collection, hosted checkout, refunds, and recovery paths.</small>
-                </div>
-                <span className="nexops-density-disclosure-caret">Open</span>
-              </summary>
-              <div className="nexops-density-disclosure-body">
-            <div className="nexops-two-column">
-              <section className="nexops-quote-panel">
-                <div className="nexops-quote-section-head">
-                  <h3>Collect payment</h3>
-                  <button type="button" onClick={() => void collectPayment()} disabled={Boolean(busy)}>
-                    {busy === "collect-payment" || busy === "checkout" ? "Processing..." : "Collect payment"}
-                  </button>
-                </div>
-                <div className="nexops-request-builder-grid">
-                  <label className="nexops-field">
-                    <span>Amount</span>
-                    <input type="number" min="0.01" step="0.01" value={paymentDraft.amount} onChange={(event) => setPaymentDraft((current) => current ? { ...current, amount: Math.max(0.01, Number(event.target.value || 0.01)) } : current)} />
-                  </label>
-                  <label className="nexops-field">
-                    <span>Provider</span>
-                    <select value={paymentDraft.provider} onChange={(event) => setPaymentDraft((current) => current ? { ...current, provider: event.target.value as PaymentProvider } : current)}>
-                      <option value="stripe">Stripe</option>
-                      <option value="paypal">PayPal / Venmo</option>
-                      <option value="manual">Manual / offline</option>
-                    </select>
-                  </label>
-                  <label className="nexops-field">
-                    <span>Method</span>
-                    <select value={paymentDraft.method} onChange={(event) => setPaymentDraft((current) => current ? { ...current, method: event.target.value as PaymentMethodKind } : current)}>
-                      {paymentDraft.provider === "paypal" ? (
-                        <>
-                          <option value="paypal">PayPal</option>
-                          <option value="venmo">Venmo</option>
-                        </>
-                      ) : paymentDraft.provider === "stripe" ? (
-                        <>
-                          <option value="card">Saved card</option>
-                          <option value="ach">ACH</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="cash">Cash</option>
-                          <option value="check">Check</option>
-                          <option value="bank_transfer">Bank transfer</option>
-                          <option value="other">Other</option>
-                        </>
-                      )}
-                    </select>
-                  </label>
-                </div>
-                {paymentDraft.provider === "stripe" && paymentDraft.method === "card" ? (
-                  <label className="nexops-field">
-                    <span>Saved card</span>
-                    <select value={paymentDraft.savedCardId} onChange={(event) => setPaymentDraft((current) => current ? { ...current, savedCardId: event.target.value } : current)}>
-                      <option value="">Use hosted checkout instead</option>
-                      {sortedCards.map((card) => (
-                        <option value={card.id} key={card.id}>{card.label}{card.last4 ? ` •••• ${card.last4}` : ""}</option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
-                <div className="nexops-request-builder-grid">
-                  <label className="nexops-field">
-                    <span>Payer name</span>
-                    <input value={paymentDraft.payerName} onChange={(event) => setPaymentDraft((current) => current ? { ...current, payerName: event.target.value } : current)} />
-                  </label>
-                  {paymentDraft.method === "check" ? (
-                    <label className="nexops-field">
-                      <span>Check number</span>
-                      <input value={paymentDraft.checkNumber} onChange={(event) => setPaymentDraft((current) => current ? { ...current, checkNumber: event.target.value } : current)} />
-                    </label>
-                  ) : paymentDraft.method === "bank_transfer" ? (
-                    <label className="nexops-field">
-                      <span>Reference number</span>
-                      <input value={paymentDraft.bankTransferReference} onChange={(event) => setPaymentDraft((current) => current ? { ...current, bankTransferReference: event.target.value } : current)} />
-                    </label>
-                  ) : paymentDraft.method === "other" ? (
-                    <label className="nexops-field">
-                      <span>Reference</span>
-                      <input value={paymentDraft.otherReference} onChange={(event) => setPaymentDraft((current) => current ? { ...current, otherReference: event.target.value } : current)} />
-                    </label>
-                  ) : <div className="nexops-payment-schedule-spacer" />}
-                </div>
-                <label className="nexops-field">
-                  <span>Internal note</span>
-                  <input value={paymentDraft.note} onChange={(event) => setPaymentDraft((current) => current ? { ...current, note: event.target.value } : current)} />
-                </label>
-                <div className="nexops-quote-toggle-grid">
-                  <label className="nexops-check-field inline"><input type="radio" name="payment-status" checked={paymentDraft.status === "succeeded"} onChange={() => setPaymentDraft((current) => current ? { ...current, status: "succeeded" } : current)} /> Succeeded</label>
-                  <label className="nexops-check-field inline"><input type="radio" name="payment-status" checked={paymentDraft.status === "failed"} onChange={() => setPaymentDraft((current) => current ? { ...current, status: "failed" } : current)} /> Failed charge</label>
-                </div>
-                {paymentDraft.status === "failed" ? (
-                  <label className="nexops-field">
-                    <span>Failure message</span>
-                    <input value={paymentDraft.failureMessage} onChange={(event) => setPaymentDraft((current) => current ? { ...current, failureMessage: event.target.value } : current)} placeholder="Card declined, insufficient funds, etc." />
-                  </label>
-                ) : null}
-                <div className="nexops-inline-actions">
-                  <button type="button" onClick={() => void launchHostedCheckout("stripe", "card")} disabled={Boolean(busy)}>Open Stripe checkout</button>
-                  <button type="button" onClick={() => void launchHostedCheckout("paypal", "paypal")} disabled={Boolean(busy)}>Open PayPal</button>
-                  <button type="button" onClick={() => void launchHostedCheckout("paypal", "venmo")} disabled={Boolean(busy)}>Open Venmo</button>
-                </div>
-                {recoveryHint ? (
-                  <div className="nexops-recovery-box">
-                    <strong>Recovery path</strong>
-                    <p>{recoveryHint}</p>
-                    <div className="nexops-inline-actions">
-                      <button type="button" onClick={() => setPaymentDraft((current) => current ? { ...current, status: "succeeded" } : current)}>Retry same card</button>
-                      <button type="button" onClick={() => setPaymentDraft((current) => current ? { ...current, provider: "stripe", method: "card", savedCardId: sortedCards[1]?.id ?? current.savedCardId } : current)}>Switch saved card</button>
-                      <button type="button" onClick={() => setPaymentDraft((current) => current ? { ...current, provider: "manual", method: "cash" } : current)}>Take manual payment</button>
-                      <button type="button" onClick={() => setSendDraft((current) => current ? { ...current, mode: "email", target: selectedClient?.emails[0] ?? current.target } : current)}>Send pay link</button>
-                    </div>
-                  </div>
-                ) : null}
-              </section>
-
-              <section className="nexops-quote-panel">
-                <div className="nexops-quote-section-head">
-                  <h3>Payment history</h3>
-                  <span>{detail.payments?.length ?? 0} payments / {detail.refunds?.length ?? 0} refunds</span>
-                </div>
-                <div className="nexops-jobs-sublist">
-                  {(detail.payments ?? []).map((payment) => (
-                    <label className="nexops-jobs-sublist-item" key={payment.id}>
-                      <div>
-                        <strong>{payment.provider} {payment.method}</strong>
-                        <span>{formatTimestamp(payment.createdAt)}</span>
-                      </div>
-                      <div>
-                        <span className={`nexops-job-status status-${payment.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{payment.status.replaceAll("_", " ")}</span>
-                        <small>{money(payment.amount)}</small>
-                        <input type="radio" name="refund-payment" checked={refundDraft.paymentId === payment.id} onChange={() => setRefundDraft({ paymentId: payment.id, amount: payment.appliedAmount || payment.amount, reason: "" })} />
-                      </div>
-                    </label>
-                  ))}
-                  {!(detail.payments ?? []).length ? <p className="nexops-empty-copy">No payments recorded yet.</p> : null}
-                </div>
-                <div className="nexops-request-builder-grid">
-                  <label className="nexops-field">
-                    <span>Refund amount</span>
-                    <input type="number" min="0.01" step="0.01" value={refundDraft.amount} onChange={(event) => setRefundDraft((current) => ({ ...current, amount: Math.max(0.01, Number(event.target.value || 0.01)) }))} />
-                  </label>
-                  <label className="nexops-field">
-                    <span>Refund reason</span>
-                    <input value={refundDraft.reason} onChange={(event) => setRefundDraft((current) => ({ ...current, reason: event.target.value }))} />
-                  </label>
-                </div>
-                <div className="nexops-inline-actions">
-                  <button type="button" onClick={() => void refundPayment()} disabled={Boolean(busy) || !selectedPayment}>{busy === "refund" ? "Refunding..." : "Refund selected payment"}</button>
-                  <button type="button" onClick={() => void runInvoiceLedgerAction("void")} disabled={Boolean(busy) || detail.invoice.status === "paid"}>{busy === "void" ? "Voiding..." : "Void invoice"}</button>
-                  <button type="button" onClick={() => void runInvoiceLedgerAction("bad_debt")} disabled={Boolean(busy) || detail.invoice.status === "paid"}>{busy === "bad_debt" ? "Writing off..." : "Mark bad debt"}</button>
-                </div>
-              </section>
-            </div>
-              </div>
-            </details>
+            <PaymentRailsPanel
+              invoiceStatus={detail.invoice.status}
+              paymentDraft={paymentDraft}
+              setPaymentDraft={setPaymentDraft}
+              refundDraft={refundDraft}
+              setRefundDraft={setRefundDraft}
+              cards={sortedCards}
+              payments={detail.payments ?? []}
+              refundCount={detail.refunds?.length ?? 0}
+              busy={busy}
+              recoveryHint={recoveryHint}
+              selectedPayment={selectedPayment}
+              onCollect={() => void collectPayment()}
+              onLaunchCheckout={(provider, method) => void launchHostedCheckout(provider, method)}
+              onSendPayLink={() => setSendDraft((current) => current ? { ...current, mode: "email", target: selectedClient?.emails[0] ?? current.target } : current)}
+              onRefund={() => void refundPayment()}
+              onVoid={() => void runInvoiceLedgerAction("void")}
+              onBadDebt={() => void runInvoiceLedgerAction("bad_debt")}
+            />
 
             <section className="nexops-quote-panel">
               <div className="nexops-quote-section-head">

@@ -1,0 +1,13 @@
+.payment-rails-panel {
+  container-type: inline-size;
+}
+
+.payment-rails-spacer {
+  min-height: 1px;
+}
+
+@container (max-width: 720px) {
+  .payment-rails-panel .nexops-two-column {
+    grid-template-columns: 1fr;
+  }
+}
