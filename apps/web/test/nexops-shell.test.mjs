@@ -13,7 +13,7 @@ import {
   NEXOPS_CREATE_OPTIONS,
   NEXTEAM_WORKSPACE_OPTIONS,
   parseNexOpsLocation
-} from "../src/nexopsShell.ts";
+} from "../src/features/nexopsShell/domain/nexopsNavigation.ts";
 import { NexOpsCreateMenu } from "../src/nexopsDeferredUi.tsx";
 
 test("client profile paths round-trip through the NexOps location parser", () => {

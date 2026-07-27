@@ -1,5 +1,5 @@
-import React from "react";
 import type { TenantBranding } from "@nexteam/core";
+import React from "react";
 
 export type ProductBrand = "nexops" | "nexcam" | "nexportal" | "nexreach" | "nexdocs" | "nexi";
 

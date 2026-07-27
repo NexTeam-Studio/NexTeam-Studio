@@ -1,0 +1,32 @@
+ROOT DEBT: SINGLE-OWNER WEB FILES
+Date: 2026-07-27
+
+Before and after
+- Root web files before: 16.
+- Root web files after: 3 (`main.tsx`, `styles.css`, `nexopsDeferredUi.tsx`).
+- Thirteen root implementation files moved into canonical owners.
+- Pre-move implementation lines removed from root paths: 4,540.
+- Post-move implementation lines left at the old root paths: 0.
+- Git reports the implementation files as renames; no compatibility copies were retained.
+- `NexOpsWorkspace.tsx` remains 3,373 lines and `styles.css` remains 4,468 lines for the next decomposition checkpoint.
+
+Owners added to the collision gate
+- NexOps Shell
+- Operations Home
+- Request Core (web plus existing server owner)
+- NexDocs Client Workspace
+- Product Branding
+- NexOps UI Kit
+- Communication Templates
+- Intake Presentation
+- Signature Capture
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 143 modules.
+- Focused web tests: 31 tests, 31 pass, 0 fail.
+- npm run check:collisions: 37 components, 666 pairs, zero overlaps; root allowlist coverage 3/3.
+- npm test: no-browser guard passed across 61 default test files; 361 tests, 358 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- No browser was launched.

@@ -12,13 +12,13 @@ import {
   intakeDetailFacts,
   prominentIntakeFacts,
   type IntakeSnapshotLike
-} from "../../../../nexopsIntake";
+} from "../../../../shared/intake/intakePresentation";
 import {
   blankSignatureCaptureValue,
   NexOpsSignatureCapture,
   type SignatureCaptureValue
-} from "../../../../nexopsSignatureCapture";
-import { ProductInlineLabel } from "../../../../productBranding";
+} from "../../../../shared/signature/NexOpsSignatureCapture";
+import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
 
 type JobStatus = "Upcoming" | "Today" | "Late" | "Unscheduled" | "Action Required" | "Requires Invoicing" | "Archived";
 type JobAction = "close" | "invoice" | "close_and_invoice" | "dismiss_invoice_reminder";

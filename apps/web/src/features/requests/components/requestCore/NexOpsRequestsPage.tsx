@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
 import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
+import React, { useEffect, useMemo, useState } from "react";
 
 type RequestStatus = "new" | "archived" | "converted_to_quote" | "converted_to_job";
 const REQUEST_FILTERS: Array<{ value: "all" | RequestStatus; label: string }> = [

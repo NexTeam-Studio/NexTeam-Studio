@@ -1,4 +1,11 @@
-export type NexopsHomeTarget = "requests" | "quotes" | "jobs" | "payments" | "schedule" | "clients" | "approvals";
+export type NexopsHomeTarget =
+  | "requests"
+  | "quotes"
+  | "jobs"
+  | "payments"
+  | "schedule"
+  | "clients"
+  | "approvals";
 
 export interface NexopsHomeClientSummary {
   statusLabel: "Active" | "Lead" | string;

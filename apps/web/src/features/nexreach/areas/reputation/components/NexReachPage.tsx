@@ -1,6 +1,6 @@
 import React from "react";
 import type { Auth, User } from "firebase/auth";
-import { ProductInlineLabel, SidebarBrandStack, tenantDisplayName } from "../../../../../productBranding";
+import { ProductInlineLabel, SidebarBrandStack, tenantDisplayName } from "../../../../../shared/branding/ProductBranding";
 import { useNexReach } from "../hooks/useNexReach";
 import "../styles/nexreach.css";
 

@@ -1,6 +1,6 @@
 import React from "react";
 import type { Auth, User } from "firebase/auth";
-import { ProductLogo, SidebarBrandStack, tenantDisplayName } from "../../../../../productBranding";
+import { ProductLogo, SidebarBrandStack, tenantDisplayName } from "../../../../../shared/branding/ProductBranding";
 import { signOutOperator } from "../../../../../shared/auth/authBootstrap";
 import { NexCamOverviewSurface } from "../../overview/components/NexCamOverviewSurface";
 import { ChecklistTemplatesSurface } from "../../../../nexdocs/areas/checklists/components/ChecklistTemplatesSurface";

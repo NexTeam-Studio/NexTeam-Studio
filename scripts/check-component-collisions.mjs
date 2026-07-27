@@ -95,6 +95,34 @@ const components = [
   ]],
   ["Queue Primitives", [
     "apps/web/src/features/queueShared/"
+  ]],
+  ["NexOps Shell", [
+    "apps/web/src/features/nexopsShell/"
+  ]],
+  ["Operations Home", [
+    "apps/web/src/features/home/components/operationsHome/"
+  ]],
+  ["Request Core", [
+    "apps/server/src/modules/nexops/areas/requests/components/requestCore/",
+    "apps/web/src/features/requests/components/requestCore/"
+  ]],
+  ["NexDocs Client Workspace", [
+    "apps/web/src/features/nexdocs/areas/clientWorkspace/"
+  ]],
+  ["Product Branding", [
+    "apps/web/src/shared/branding/"
+  ]],
+  ["NexOps UI Kit", [
+    "apps/web/src/shared/ui/"
+  ]],
+  ["Communication Templates", [
+    "apps/web/src/shared/communications/"
+  ]],
+  ["Intake Presentation", [
+    "apps/web/src/shared/intake/"
+  ]],
+  ["Signature Capture", [
+    "apps/web/src/shared/signature/"
   ]]
 ];
 
@@ -103,21 +131,7 @@ const sharedAllowlist = [
   "apps/web/src/styles.css",
   "apps/web/src/shared/app/",
   "apps/web/src/shared/router/",
-  "apps/web/src/features/nexopsShell/",
-  "apps/web/src/nexopsCommunications.ts",
   "apps/web/src/nexopsDeferredUi.tsx",
-  "apps/web/src/nexopsHeader.tsx",
-  "apps/web/src/nexopsHome.tsx",
-  "apps/web/src/nexopsHomeState.ts",
-  "apps/web/src/nexopsIntake.ts",
-  "apps/web/src/nexopsMobileCreateFab.tsx",
-  "apps/web/src/nexopsNexDocs.tsx",
-  "apps/web/src/nexopsPatternLibrary.tsx",
-  "apps/web/src/nexopsRequests.tsx",
-  "apps/web/src/nexopsShell.ts",
-  "apps/web/src/nexopsSignatureCapture.tsx",
-  "apps/web/src/nexopsUiKit.tsx",
-  "apps/web/src/productBranding.tsx",
   "apps/server/src/app/",
   "apps/server/src/composeServerApp.ts",
   "apps/server/src/server.ts",

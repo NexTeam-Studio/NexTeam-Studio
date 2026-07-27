@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { AddressLike } from "@nexteam/shared";
 import { PaymentScheduleEditor, blankPaymentSchedule, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "./PaymentScheduleEditor";
 import { NexOpsCatalogPicker, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";
-import { invoiceTemplateVariables, type CommunicationTemplateRecord, resolveTemplateDraft } from "../../../../nexopsCommunications";
-import { intakeDetailFacts, prominentIntakeFacts } from "../../../../nexopsIntake";
+import { invoiceTemplateVariables, type CommunicationTemplateRecord, resolveTemplateDraft } from "../../../../shared/communications/communicationTemplates";
+import { intakeDetailFacts, prominentIntakeFacts } from "../../../../shared/intake/intakePresentation";
 import { PaymentRailsPanel, type PaymentDraftState, type PaymentMethodKind, type PaymentProvider, type PaymentStatus, type RefundDraftState } from "../paymentRails/PaymentRailsPanel";
 
 type InvoiceStatus = "draft" | "sent" | "awaiting_payment" | "partial_pay" | "paid" | "void" | "bad_debt";

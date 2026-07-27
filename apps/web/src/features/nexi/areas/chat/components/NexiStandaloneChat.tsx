@@ -1,8 +1,8 @@
 import React, { Suspense, useEffect, useState } from "react";
 import type { Auth, User } from "firebase/auth";
-import { PlatformMark, ProductLogo, TenantBrandMark, tenantDisplayName } from "../../../../../productBranding";
-import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "../../../../../nexopsHeader";
-import { buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, NEXTEAM_WORKSPACE_OPTIONS, type NexOpsCreateOption } from "../../../../../nexopsShell";
+import { PlatformMark, ProductLogo, TenantBrandMark, tenantDisplayName } from "../../../../../shared/branding/ProductBranding";
+import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "../../../../nexopsShell/components/NexOpsHeader";
+import { buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, NEXTEAM_WORKSPACE_OPTIONS, type NexOpsCreateOption } from "../../../../nexopsShell/domain/nexopsNavigation";
 import { nexiActiveApprovalPrompt, nexiConversationOffer, nexiConversationOfferReplyAction, NEXI_FRIENDLY_FAILURE_MESSAGE, formatNexiOperatorDisplayName, nexiIsApprovalPrompt, nexiAddressActionValue, nexiMapsHref, nexiPhoneActionValue, nexiShouldHideRenderedSource, NexiStandaloneLayout, nexiStoredSessionKey, parseNexiStoredSession, sanitizeNexiRenderedText, stringifyNexiStoredSession, type NexiStandalonePendingApproval } from "./NexiStandalonePrimitives";
 import { resolveRequestorOriginForNexiMessage } from "../utils/nexiRequestContext";
 import { NexOpsCreateMenu, NexOpsNavGlyph, NexOpsNotificationPanel, fileToBase64, formatPhoneActionLabel, mediaUrl, sourceIsPhoto } from "../../../../nexopsShell/NexOpsWorkspace";

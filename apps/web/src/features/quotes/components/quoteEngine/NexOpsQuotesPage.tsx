@@ -3,9 +3,9 @@ import type { AddressLike } from "@nexteam/shared";
 import { PaymentScheduleEditor, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "../../../../features/invoices/components/invoiceStructure/PaymentScheduleEditor";
 import { NexOpsCatalogPicker, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";
 import { QuoteTemplateEditor } from "../quoteTemplates/QuoteTemplateEditor";
-import { NexopsActionButton, NexopsActionRail, NexopsBanner, NexopsProgressStrip, NexopsSectionCard, NexopsStatusPill } from "../../../../nexopsUiKit";
-import { quoteTemplateVariables, resolveTemplateDraft } from "../../../../nexopsCommunications";
-import { intakeDetailFacts, prominentIntakeFacts } from "../../../../nexopsIntake";
+import { NexopsActionButton, NexopsActionRail, NexopsBanner, NexopsProgressStrip, NexopsSectionCard, NexopsStatusPill } from "../../../../shared/ui/NexOpsUiKit";
+import { quoteTemplateVariables, resolveTemplateDraft } from "../../../../shared/communications/communicationTemplates";
+import { intakeDetailFacts, prominentIntakeFacts } from "../../../../shared/intake/intakePresentation";
 
 type QuoteStatus =
   | "draft"

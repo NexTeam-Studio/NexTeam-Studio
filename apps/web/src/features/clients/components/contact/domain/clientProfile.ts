@@ -1,4 +1,4 @@
-import type { ClientProfileTab } from "./nexopsShell";
+import type { ClientProfileTab } from "../../../../nexopsShell/domain/nexopsNavigation";
 
 export type ClientProfileMobileBucket = "client" | "work" | "notes" | "files";
 

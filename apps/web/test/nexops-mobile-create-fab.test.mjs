@@ -12,8 +12,8 @@ import {
   NEXOPS_SHARED_CREATE_MENU_ID,
   NexOpsMobileCreateFab,
   shouldPulseMobileCreateFab
-} from "../src/nexopsMobileCreateFab.tsx";
-import { isDismissKey } from "../src/nexopsShell.ts";
+} from "../src/features/nexopsShell/components/NexOpsMobileCreateFab.tsx";
+import { isDismissKey } from "../src/features/nexopsShell/domain/nexopsNavigation.ts";
 
 test("mobile create fab renders only at the mobile breakpoint", () => {
   assert.equal(mobileFabVisibleForViewport(880), true);

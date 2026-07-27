@@ -6,7 +6,7 @@ import {
   requestNeedsReview,
   requestReadyToConvert,
   summarizeRequestQueue
-} from "../src/nexopsRequests.tsx";
+} from "../src/features/requests/components/requestCore/NexOpsRequestsPage.tsx";
 
 function makeRequest(overrides = {}) {
   return {

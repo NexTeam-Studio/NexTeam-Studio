@@ -1,12 +1,12 @@
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
 import { type Auth, type User } from "firebase/auth";
-import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "../../productBranding";
-import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "../../nexopsHeader";
+import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "../../shared/branding/ProductBranding";
+import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./components/NexOpsHeader";
 
-import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, NEXTEAM_WORKSPACE_OPTIONS, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "../../nexopsShell";
+import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, NEXTEAM_WORKSPACE_OPTIONS, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "./domain/nexopsNavigation";
 import { buildLeadSourceOptions, CLIENT_CUSTOM_FIELD_RESERVED_LABELS, customFieldRecordToDraftRows, customFieldDraftRowsToRecord, draftNameFieldsFromClientRecord, PROPERTY_CUSTOM_FIELD_RESERVED_LABELS, primaryClientPhoneValue, type ClientProfileMobileBucket, type CustomFieldDraftRow, validateCustomFieldDraftRows } from "../../features/clients/components/contact/domain/clientProfile";
-import { getMobileCreateFabScrollIntent, mobileFabShouldHideOverlays, mobileFabVisibleForViewport, NEXOPS_MOBILE_CREATE_FAB_IDLE_MS, NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY, NEXOPS_SHARED_CREATE_MENU_ID, NexOpsMobileCreateFab, shouldPulseMobileCreateFab } from "../../nexopsMobileCreateFab";
+import { getMobileCreateFabScrollIntent, mobileFabShouldHideOverlays, mobileFabVisibleForViewport, NEXOPS_MOBILE_CREATE_FAB_IDLE_MS, NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY, NEXOPS_SHARED_CREATE_MENU_ID, NexOpsMobileCreateFab, shouldPulseMobileCreateFab } from "./components/NexOpsMobileCreateFab";
 import { ContactRoster } from "../clients/components/contact/ContactRoster";
 import { ContactEditorSurface } from "../clients/components/contact/ContactEditorSurface";
 import { ContactProfileSurface } from "../clients/components/contact/ContactProfileSurface";
@@ -15,12 +15,12 @@ import { signOutOperator } from "../../shared/auth/authBootstrap";
 import { ApprovalQueuePanel } from "../approvalQueue/areas/queue/components/ApprovalQueuePanel";
 import { fallbackOperatorContext, loadOperatorContext } from "../operatorContext/resolveOperatorContext";
 
-const NexOpsHomePage = React.lazy(async () => ({ default: (await import("../../nexopsHome")).NexOpsHomePage }));
+const NexOpsHomePage = React.lazy(async () => ({ default: (await import("../home/components/operationsHome/NexOpsHomePage")).NexOpsHomePage }));
 const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("../../features/invoices/components/invoiceStructure/NexOpsInvoicesPage")).NexOpsInvoicesPage }));
 const NexOpsJobsPage = React.lazy(async () => ({ default: (await import("../../features/jobs/components/jobCore/NexOpsJobsPage")).NexOpsJobsPage }));
-const NexOpsPatternLibraryPage = React.lazy(async () => ({ default: (await import("../../nexopsPatternLibrary")).NexOpsPatternLibraryPage }));
+const NexOpsPatternLibraryPage = React.lazy(async () => ({ default: (await import("./components/NexOpsPatternLibraryPage")).NexOpsPatternLibraryPage }));
 const NexOpsQuotesPage = React.lazy(async () => ({ default: (await import("../../features/quotes/components/quoteEngine/NexOpsQuotesPage")).NexOpsQuotesPage }));
-const NexOpsRequestsPage = React.lazy(async () => ({ default: (await import("../../nexopsRequests")).NexOpsRequestsPage }));
+const NexOpsRequestsPage = React.lazy(async () => ({ default: (await import("../requests/components/requestCore/NexOpsRequestsPage")).NexOpsRequestsPage }));
 const NexOpsSchedulePage = React.lazy(async () => ({ default: (await import("../../features/visits/components/visitCore/NexOpsSchedulePage")).NexOpsSchedulePage }));
 const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("../../features/settings/components/tenantConfig/NexOpsSettingsPage")).NexOpsSettingsPage }));
 const NexOpsCaptureWorkspace = React.lazy(async () => ({ default: (await import("../../nexopsDeferredUi")).NexOpsCaptureWorkspace }));

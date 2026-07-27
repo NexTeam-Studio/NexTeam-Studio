@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ProductInlineLabel } from "../../../../productBranding";
+import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 type ScheduleView = "day" | "week" | "month" | "list";

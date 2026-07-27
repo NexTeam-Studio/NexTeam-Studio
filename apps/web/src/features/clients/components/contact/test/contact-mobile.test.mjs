@@ -4,7 +4,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { NexOpsCreateClientPanel } from "../../../../../nexopsDeferredUi.tsx";
-import { CLIENT_PROFILE_TABS } from "../../../../../nexopsShell.ts";
+import { CLIENT_PROFILE_TABS } from "../../../../nexopsShell/domain/nexopsNavigation.ts";
 import {
   buildLeadSourceOptions,
   CLIENT_CUSTOM_FIELD_RESERVED_LABELS,

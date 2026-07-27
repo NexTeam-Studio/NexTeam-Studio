@@ -1,6 +1,6 @@
 import React from "react";
 import type { TenantBranding } from "@nexteam/core";
-import { PlatformMark, ProductLogo, TenantBrandMark, productLabel, type ProductBrand } from "./productBranding";
+import { PlatformMark, ProductLogo, TenantBrandMark, productLabel, type ProductBrand } from "../../../shared/branding/ProductBranding";
 
 export function NexOpsSharedMobileBar(props: {
   tenantBranding: TenantBranding | null;

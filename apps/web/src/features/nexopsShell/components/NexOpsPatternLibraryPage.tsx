@@ -17,7 +17,7 @@ import {
   NexopsStatusPill,
   NexopsTabSet,
   NexopsUploadQueue
-} from "./nexopsUiKit";
+} from "../../../shared/ui/NexOpsUiKit";
 
 export function NexOpsPatternLibraryPage(): React.ReactElement {
   return (

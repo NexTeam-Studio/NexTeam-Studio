@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildNexopsHomeState } from "../src/nexopsHomeState.ts";
+import { buildNexopsHomeState } from "../src/features/home/components/operationsHome/nexopsHomeState.ts";
 
 function buildState(overrides = {}) {
   return buildNexopsHomeState({

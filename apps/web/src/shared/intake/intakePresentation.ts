@@ -1,4 +1,9 @@
-export type IntakeSurface = "request" | "quote" | "job" | "visit" | "invoice";
+export type IntakeSurface =
+  | "request"
+  | "quote"
+  | "job"
+  | "visit"
+  | "invoice";
 
 export interface IntakeFieldVisibilityLike {
   request: boolean;

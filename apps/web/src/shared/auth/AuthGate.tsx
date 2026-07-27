@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NexiIdentityMark, ProductLogo } from "../../productBranding";
+import { NexiIdentityMark, ProductLogo } from "../branding/ProductBranding";
 import { useAuthSession } from "./AuthSessionProvider";
 import "./auth.css";
 
