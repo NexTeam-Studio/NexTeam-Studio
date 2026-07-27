@@ -5,7 +5,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { chromium } from "playwright";
 
-import { NexiStandaloneLayout } from "../src/nexiStandalone.tsx";
+import { NexiStandaloneLayout } from "../src/features/nexi/areas/chat/components/NexiStandalonePrimitives.tsx";
 
 test("standalone Nexi shell keeps the header and composer pinned while the thread really scrolls", async () => {
   const styles = readFileSync(new URL("../src/features/nexi/areas/chat/styles/chat.css", import.meta.url), "utf8");

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { mapsHref } from "@nexteam/shared";
-import { PlatformMark } from "./productBranding";
+import { PlatformMark } from "../../../../../productBranding";
 
 export interface NexiStandaloneSource {
   rail: string;

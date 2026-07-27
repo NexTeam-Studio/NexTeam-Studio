@@ -104,8 +104,6 @@ const sharedAllowlist = [
   "apps/web/src/shared/app/",
   "apps/web/src/shared/router/",
   "apps/web/src/features/nexopsShell/",
-  "apps/web/src/nexiRequestContext.ts",
-  "apps/web/src/nexiStandalone.tsx",
   "apps/web/src/nexopsCommunications.ts",
   "apps/web/src/nexopsDeferredUi.tsx",
   "apps/web/src/nexopsHeader.tsx",

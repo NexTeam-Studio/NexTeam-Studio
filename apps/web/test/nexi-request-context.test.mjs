@@ -5,7 +5,7 @@ import {
   requestorOriginFromCoordinates,
   resolveRequestorOriginForNexiMessage,
   shouldUseRequestorOriginForNexiMessage
-} from "../src/nexiRequestContext.ts";
+} from "../src/features/nexi/areas/chat/utils/nexiRequestContext.ts";
 
 test("Nexi personal-origin helper only activates for personal direction prompts", () => {
   assert.equal(shouldUseRequestorOriginForNexiMessage("How far is 6020 Frest Dr from here?"), true);

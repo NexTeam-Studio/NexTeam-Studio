@@ -18,7 +18,7 @@ import {
   NexiStandaloneLayout,
   sanitizeNexiRenderedText,
   shouldAutoScrollNexiThread
-} from "../src/nexiStandalone.tsx";
+} from "../src/features/nexi/areas/chat/components/NexiStandalonePrimitives.tsx";
 
 test("standalone Nexi layout renders exactly one unified composer row", () => {
   const html = renderToStaticMarkup(

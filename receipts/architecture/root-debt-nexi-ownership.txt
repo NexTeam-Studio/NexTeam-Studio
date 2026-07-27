@@ -1,0 +1,17 @@
+ROOT WEB DEBT - NEXI OWNERSHIP CHECKPOINT
+
+CHANGE
+- Moved nexiStandalone.tsx into features/nexi/areas/chat/components/NexiStandalonePrimitives.tsx.
+- Moved nexiRequestContext.ts into features/nexi/areas/chat/utils/nexiRequestContext.ts.
+- Repointed the live chat, Contact maps helper, pure tests, and explicit browser-only tests.
+- Removed both files from the root shared allowlist.
+
+PROOF
+- Root web allowlist coverage: 16/16, down from 18/18.
+- Nexi Chat ownership: 4 files, up from 2.
+- Collision proof: 28 components, all 378 pairs zero.
+- Focused pure tests: 11/11 pass.
+- Default no-browser guard: 60 test files pass inspection.
+- Standard npm test: 357 tests; 354 pass; the same 3 known reds.
+- Lint: zero errors; typecheck: pass; build: pass at 143 modules.
+- Browser-only tests were not run and no browser was launched.

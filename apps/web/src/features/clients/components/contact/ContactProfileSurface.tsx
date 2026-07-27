@@ -2,7 +2,7 @@ import React from "react";
 import { formatAddress } from "@nexteam/shared";
 import { NexDocsClientWorkspace } from "../../../../nexopsNexDocs";
 import { CLIENT_PROFILE_TABS, type ClientProfileTab, type NexOpsModule } from "../../../../nexopsShell";
-import { nexiMapsHref } from "../../../../nexiStandalone";
+import { nexiMapsHref } from "../../../nexi/areas/chat/components/NexiStandalonePrimitives";
 import {
   CLIENT_CUSTOM_FIELD_RESERVED_LABELS,
   CLIENT_PROFILE_MOBILE_BUCKET_LABELS,
