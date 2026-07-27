@@ -290,7 +290,7 @@ test("client record route toggles marketing consent and forwards the NexReach re
       })
     });
     const body = await response.json();
-    assert.equal(body.ok, true);
+    assert.equal(body.ok, true, JSON.stringify(body));
     assert.equal(body.client.consent.marketing, false);
     assert.deepEqual(calls, [{
       tenantId: "aquatrace",

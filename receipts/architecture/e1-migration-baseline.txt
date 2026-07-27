@@ -1,0 +1,68 @@
+E1 MIGRATION BASELINE RECEIPT
+Date: 2026-07-26
+Scope: repair the seven migration-relevant baseline failures before extraction
+
+BUILD
+Command: npm run build
+Result: PASS
+Server: TypeScript build clean
+Web: Vite production build clean (69 modules transformed)
+
+FOCUSED COMPONENT TESTS
+Command: node --import tsx --test apps/server/test/close-invoice-payment-flow.test.mjs apps/server/test/ledger-foundation.test.mjs apps/server/test/job-lifecycle.test.mjs apps/server/test/request-foundation.test.mjs apps/server/test/schedule-home-activity.test.mjs
+Result: PASS, 35/35
+
+1. draft invoices stay fully editable through line items, discount, tax, and terms until delivery locks them
+2. closing without invoicing creates a recurring 9AM reminder that advances until dismissal
+3. combining a selected subset of jobs keeps per-job references and carries the chosen payment schedule
+4. invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads
+5. default invoice delivery templates keep labeled pay-link and hosted-link content at the shared template layer
+6. saved-card reuse defaults to the newest card, supports alternate selection, and keeps manual/failed branches distinct
+7. receipt review sends email attachments and an SMS hosted link from the same paused review
+8. receipt review sends a real field report PDF attachment when NexCam already generated one for the job
+9. PayPal and Venmo checkout helpers create sandbox orders and capture completed payments
+10. Nexi billing tools run combine, send, partial collect, failed recovery, and receipt review approval loops in chat
+11. legacy job schema and in-memory native repository normalize stored jobs onto the new lifecycle rail
+12. request and quote conversions land as Unscheduled and invoice reminders clear only by invoice or dismissal
+13. moving a visit cancels old reminder timers and creates a fresh pair for the new slot
+14. due visit reminders auto-send email and sms with technician and access-note context
+15. technicians can complete visits but stay blocked from office-only close and invoice authority
+16. Nexi job tools create, read, revise, and execute lifecycle actions through chat-native approvals
+17. quote deposit bridge migrates into first-class payment, deposit, receipt review, and saved card records without rewriting the quote snapshot
+18. invoice sync auto-applies deposits and credits, and overdue only marks awaiting-payment invoices
+19. Stripe checkout uses tenant Connect headers with zero application fee and charges only the current balance due
+20. payment states progress through pending, succeeded, partially_refunded, and refunded with separate refund and receipt-review records
+21. invoice and refund receipt reviews carry the default invoice, quote, report, photo, and job-file attachments
+22. one payment stays on one invoice and overpayment rolls forward as credit instead of splitting across invoices
+23. the ledger model already accepts PayPal and Venmo slots even though the live adapter is deferred
+24. draft invoices stay draft and failed payments do not settle the invoice
+25. void and bad debt stay distinct, and ledger chat tools require OWNER or OFFICE_ADMIN for execution
+26. request routes create, update, convert, archive, and reopen while preserving intake fields
+27. local Nexi request tools clarify missing intake data, then create and recall real requests
+28. client record route toggles marketing consent and forwards the NexReach revocation hook
+29. operations hub activity feed renders every currently-defined lifecycle event type with deep-link targets
+30. documentation activity counts photo uploads and checklist completions with owner-wide and technician-self fencing
+31. operations hub schedule, home queues, and activity stay role-aware for owner and technician
+32. home queues keep zero states, non-zero counts, exact filter targets, and Today/Upcoming/Unscheduled routing for the office rail
+33. CRM schedule, home, activity, and notification routes expose live workspace data and unread-state changes
+34. CRM scheduling tools queue unscheduled jobs, create 25-visit series, shift remaining visits, and read role-aware queues
+35. Nexi conversational scheduling, shifting, schedule lookup, and home triage use the new Job 6/7 tools through chat-native approvals
+
+FULL SUITE
+Command: npm test
+Result: KNOWN-RED BASELINE, 331/339 passing and exactly 8 unrelated failures
+
+1. campaign routes expose template, test-run, tracking, unsubscribe, and stats
+2. local Nexi chat can search documents, queue a folder, approve it, queue an upload, and approve it
+3. M10 routes are owner/admin gated and queue tenant provisioning approval
+4. M8 operator UI customization is tenant-scoped and owner/admin gated
+5. NexReach local Nexi loop accepts underscore ids through generate, approve, and refusal flow
+6. platform routes expose tenants, test subscription, backup, and export
+7. platform routes manage tenant users and job links without leaking token hashes by default
+8. tenant users seed Aquatrace roles and produce Firebase custom claims
+
+BOUNDARY NOTE
+The eight remaining failures do not exercise Contact, Quote, Job, Visit, Invoice,
+Settings, Catalog, Address/Location, Document Rendering, Numbering, or Payment Rails
+code being moved in the next extraction slices. They remain visible and tracked; they
+were not hidden, skipped, or converted to expected failures.

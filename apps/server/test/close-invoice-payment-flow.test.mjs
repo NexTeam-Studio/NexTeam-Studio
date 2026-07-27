@@ -256,11 +256,12 @@ async function createApprovedDepositQuote(fixture, overrides = {}) {
   });
 }
 
-async function runLocalToolTurn(fixture, messages) {
+async function runLocalToolTurn(fixture, messages, pendingApproval) {
   return runExplicitLocalToolLoop({
     tenant: tenant(),
     system: "Use tools.",
     messages,
+    pendingApproval,
     tools: fixture.approvalTools,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
@@ -520,14 +521,14 @@ test("saved-card reuse defaults to the newest card, supports alternate selection
 
   const queueLatest = await runLocalToolTurn(fixture, [{ role: "user", content: `collect payment on ${synced.id} for $100` }]);
   assert.equal(queueLatest.toolRuns[0].name, "queueCollectPayment");
-  assert.match(queueLatest.answer, /Payment collection is ready/i);
+  assert.match(queueLatest.answer, /You requested collect payment/i);
   assert.match(queueLatest.answer, /Office backup card ending 1111/i);
 
   const approvePartial = await runLocalToolTurn(fixture, [
     { role: "user", content: `collect payment on ${synced.id} for $100` },
     { role: "assistant", content: queueLatest.answer },
     { role: "user", content: "yes" }
-  ]);
+  ], queueLatest.pendingApproval);
   assert.equal(approvePartial.toolRuns[0].name, "approvePendingApproval");
   assert.match(approvePartial.answer, /partial payment/i);
   assert.match(approvePartial.answer, /\$100\.00 remains/i);
@@ -543,7 +544,7 @@ test("saved-card reuse defaults to the newest card, supports alternate selection
     { role: "user", content: `collect payment on ${synced.id} for $200 on card 4242 failed reason card declined` },
     { role: "assistant", content: queueFailed.answer },
     { role: "user", content: "yes" }
-  ]);
+  ], queueFailed.pendingApproval);
   assert.equal(approveFailed.toolRuns[0].name, "approvePendingApproval");
   assert.match(approveFailed.answer, /Recovery is still open/i);
 
@@ -766,13 +767,13 @@ test("Nexi billing tools run combine, send, partial collect, failed recovery, an
 
   const composeTurn = await runLocalToolTurn(fixture, [{ role: "user", content: `combine jobs into one invoice ${first.id} ${second.id} tax 7.5` }]);
   assert.equal(composeTurn.toolRuns[0].name, "queueInvoiceCompose");
-  assert.match(composeTurn.answer, /Combined invoice draft ready/i);
+  assert.match(composeTurn.answer, /You requested combine invoice/i);
 
   const approveComposeTurn = await runLocalToolTurn(fixture, [
     { role: "user", content: `combine jobs into one invoice ${first.id} ${second.id} tax 7.5` },
     { role: "assistant", content: composeTurn.answer },
     { role: "user", content: "yes" }
-  ]);
+  ], composeTurn.pendingApproval);
   assert.equal(approveComposeTurn.toolRuns[0].name, "approvePendingApproval");
   assert.match(approveComposeTurn.answer, /built invoice/i);
 
@@ -785,7 +786,7 @@ test("Nexi billing tools run combine, send, partial collect, failed recovery, an
     { role: "user", content: `send invoice ${invoice.id} to deborah@example.test` },
     { role: "assistant", content: sendTurn.answer },
     { role: "user", content: "yes" }
-  ]);
+  ], sendTurn.pendingApproval);
   assert.equal(approveSendTurn.toolRuns[0].name, "approvePendingApproval");
   assert.match(approveSendTurn.answer, /updated invoice/i);
 
@@ -795,7 +796,7 @@ test("Nexi billing tools run combine, send, partial collect, failed recovery, an
     { role: "user", content: `collect payment on ${invoice.id} for $75` },
     { role: "assistant", content: partialTurn.answer },
     { role: "user", content: "yes" }
-  ]);
+  ], partialTurn.pendingApproval);
   assert.equal(approvePartialTurn.toolRuns[0].name, "approvePendingApproval");
   assert.match(approvePartialTurn.answer, /partial payment/i);
 
@@ -805,7 +806,7 @@ test("Nexi billing tools run combine, send, partial collect, failed recovery, an
     { role: "user", content: `collect payment on ${invoice.id} for $225 failed reason insufficient funds` },
     { role: "assistant", content: failedTurn.answer },
     { role: "user", content: "yes" }
-  ]);
+  ], failedTurn.pendingApproval);
   assert.equal(approveFailedTurn.toolRuns[0].name, "approvePendingApproval");
   assert.match(approveFailedTurn.answer, /Recovery is still open/i);
 
@@ -816,7 +817,7 @@ test("Nexi billing tools run combine, send, partial collect, failed recovery, an
     { role: "user", content: `send receipt review ${review.id} by email and sms to deborah@example.test 8645551212` },
     { role: "assistant", content: receiptTurn.answer },
     { role: "user", content: "yes" }
-  ]);
+  ], receiptTurn.pendingApproval);
   assert.equal(approveReceiptTurn.toolRuns[0].name, "approvePendingApproval");
   assert.match(approveReceiptTurn.answer, /sent receipt review/i);
 });

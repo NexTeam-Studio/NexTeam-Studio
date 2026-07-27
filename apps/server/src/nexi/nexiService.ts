@@ -159,7 +159,7 @@ function requestorOriginForMessage(context: NexiRequestorContext | undefined, me
 }
 
 function approvalIdFromText(text: string): string | undefined {
-  return text.match(/\b(appr_[a-z0-9-]+)\b/i)?.[1];
+  return text.match(/\b(appr_[a-z0-9_-]+)\b/i)?.[1];
 }
 
 function looksLikeApprovalYes(text: string): boolean {
@@ -277,34 +277,34 @@ function approvalContextFromMessages(messages: ToolLoopRequest["messages"]): Pen
     if (/tell me what to change/i.test(content)) {
       return emptyPendingApprovalContext(approvalId, {
         awaitingChanges: true,
-        revisableClientCreate: /create client:/i.test(content),
-        revisableQuoteCreate: /create quote:/i.test(content),
-        revisableJobCreate: /create job:/i.test(content),
-        revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:/i.test(content),
-        revisableJobVisitSeries: /schedule job visits:/i.test(content),
-        revisableVisitShift: /shift job visit series:/i.test(content),
-        revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:/i.test(content),
-        revisableInvoiceCompose: /combine invoice:/i.test(content),
-        revisableInvoiceSend: /send invoice:/i.test(content),
-        revisableCollectPayment: /collect payment:/i.test(content),
-        revisableReceiptReview: /send receipt review:/i.test(content),
+        revisableClientCreate: /create client:|you requested create client for/i.test(content),
+        revisableQuoteCreate: /create quote:|you requested create quote for/i.test(content),
+        revisableJobCreate: /create job:|you requested create job for/i.test(content),
+        revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:|you requested (?:close|invoice|close and invoice|dismiss invoice reminder) job for/i.test(content),
+        revisableJobVisitSeries: /schedule job visits:|you requested schedule job visits for/i.test(content),
+        revisableVisitShift: /shift job visit series:|you requested shift job visit series for/i.test(content),
+        revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:|you requested (?:refund payment|void invoice|mark bad debt) for/i.test(content),
+        revisableInvoiceCompose: /combine invoice:|you requested combine invoice for/i.test(content),
+        revisableInvoiceSend: /send invoice:|you requested send invoice for/i.test(content),
+        revisableCollectPayment: /collect payment:|you requested collect payment for/i.test(content),
+        revisableReceiptReview: /send receipt review:|you requested send receipt review for/i.test(content),
         revisableContentDraft: /marketing draft ready|updated marketing draft ready/i.test(content)
       });
     }
-    if (/approve this\?\s*yes\s*\/\s*no(?:\s*\/\s*make changes)?/i.test(content)) {
+    if (/(?:approve this|is this correct)\?\s*(?:reply\s+)?yes\s*\/\s*no(?:\s*\/\s*make changes)?/i.test(content)) {
       return emptyPendingApprovalContext(approvalId, {
         awaitingChanges: false,
-        revisableClientCreate: /create client:/i.test(content),
-        revisableQuoteCreate: /create quote:/i.test(content),
-        revisableJobCreate: /create job:/i.test(content),
-        revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:/i.test(content),
-        revisableJobVisitSeries: /schedule job visits:/i.test(content),
-        revisableVisitShift: /shift job visit series:/i.test(content),
-        revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:/i.test(content),
-        revisableInvoiceCompose: /combine invoice:/i.test(content),
-        revisableInvoiceSend: /send invoice:/i.test(content),
-        revisableCollectPayment: /collect payment:/i.test(content),
-        revisableReceiptReview: /send receipt review:/i.test(content),
+        revisableClientCreate: /create client:|you requested create client for/i.test(content),
+        revisableQuoteCreate: /create quote:|you requested create quote for/i.test(content),
+        revisableJobCreate: /create job:|you requested create job for/i.test(content),
+        revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:|you requested (?:close|invoice|close and invoice|dismiss invoice reminder) job for/i.test(content),
+        revisableJobVisitSeries: /schedule job visits:|you requested schedule job visits for/i.test(content),
+        revisableVisitShift: /shift job visit series:|you requested shift job visit series for/i.test(content),
+        revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:|you requested (?:refund payment|void invoice|mark bad debt) for/i.test(content),
+        revisableInvoiceCompose: /combine invoice:|you requested combine invoice for/i.test(content),
+        revisableInvoiceSend: /send invoice:|you requested send invoice for/i.test(content),
+        revisableCollectPayment: /collect payment:|you requested collect payment for/i.test(content),
+        revisableReceiptReview: /send receipt review:|you requested send receipt review for/i.test(content),
         revisableContentDraft: /marketing draft ready|updated marketing draft ready/i.test(content)
       });
     }

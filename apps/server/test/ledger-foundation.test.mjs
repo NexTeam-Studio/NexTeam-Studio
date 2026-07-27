@@ -554,7 +554,7 @@ test("void and bad debt stay distinct, and ledger chat tools require OWNER or OF
     env: {}
   });
   assert.equal(queuedTurn.toolRuns[0].name, "queueLedgerAction");
-  assert.match(queuedTurn.answer, /billing action ready/i);
+  assert.match(queuedTurn.answer, /You requested refund payment/i);
   assert.match(queuedTurn.answer, /refund/i);
 
   const revisedTurn = await runExplicitLocalToolLoop({
@@ -565,13 +565,14 @@ test("void and bad debt stay distinct, and ledger chat tools require OWNER or OF
       { role: "assistant", content: queuedTurn.answer },
       { role: "user", content: "make changes. refund 35 instead" }
     ],
+    pendingApproval: queuedTurn.pendingApproval,
     tools: officeTools,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
     env: {}
   });
   assert.equal(revisedTurn.toolRuns[0].name, "revisePendingLedgerActionApproval");
-  assert.match(revisedTurn.answer, /updated billing action ready/i);
+  assert.match(revisedTurn.answer, /You requested refund payment/i);
   assert.match(revisedTurn.answer, /35.00/);
 
   const approvedTurn = await runExplicitLocalToolLoop({
@@ -582,6 +583,7 @@ test("void and bad debt stay distinct, and ledger chat tools require OWNER or OF
       { role: "assistant", content: revisedTurn.answer },
       { role: "user", content: "yes" }
     ],
+    pendingApproval: revisedTurn.pendingApproval,
     tools: officeTools,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",

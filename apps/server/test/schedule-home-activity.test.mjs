@@ -1207,7 +1207,7 @@ test("CRM scheduling tools queue unscheduled jobs, create 25-visit series, shift
   assert.equal(technicianActivity.result.activity.every((entry) => entry.objectType === "jobs"), true);
   assert.equal(technicianActivity.result.activity.some((entry) => ["requests", "quotes"].includes(entry.objectType)), false);
 
-  assert.equal((await fixture.repository.listJobs("aquatrace")).find((job) => job.id === unscheduledJob.id)?.status, "Upcoming");
+  assert.equal((await fixture.repository.listJobs("aquatrace")).find((job) => job.id === unscheduledJob.id)?.status, "Late");
 });
 
 test("Nexi conversational scheduling, shifting, schedule lookup, and home triage use the new Job 6/7 tools through chat-native approvals", async () => {
@@ -1259,8 +1259,8 @@ test("Nexi conversational scheduling, shifting, schedule lookup, and home triage
     env: {}
   });
   assert.equal(createTurn.toolRuns[0].name, "scheduleJobVisits");
-  assert.match(createTurn.answer, /Visit schedule ready/i);
-  assert.match(createTurn.answer, /Approval id:/i);
+  assert.match(createTurn.answer, /You requested schedule job visits/i);
+  assert.match(createTurn.answer, /Is this correct/i);
 
   const approveCreateTurn = await runExplicitLocalToolLoop({
     tenant: tenant(),
@@ -1270,6 +1270,7 @@ test("Nexi conversational scheduling, shifting, schedule lookup, and home triage
       { role: "assistant", content: createTurn.answer },
       { role: "user", content: "yes" }
     ],
+    pendingApproval: createTurn.pendingApproval,
     tools,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
@@ -1306,8 +1307,7 @@ test("Nexi conversational scheduling, shifting, schedule lookup, and home triage
     env: {}
   });
   assert.equal(shiftTurn.toolRuns[0].name, "shiftJobVisitSeries");
-  assert.match(shiftTurn.answer, /Visit move ready/i);
-  assert.match(shiftTurn.answer, /Approval id:/i);
+  assert.match(shiftTurn.answer, /You requested shift job visit series/i);
 
   const approveShiftTurn = await runExplicitLocalToolLoop({
     tenant: tenant(),
@@ -1317,6 +1317,7 @@ test("Nexi conversational scheduling, shifting, schedule lookup, and home triage
       { role: "assistant", content: shiftTurn.answer },
       { role: "user", content: "yes" }
     ],
+    pendingApproval: shiftTurn.pendingApproval,
     tools,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",

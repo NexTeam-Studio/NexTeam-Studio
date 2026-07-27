@@ -2027,21 +2027,21 @@ function approvalContextFromMessages(messages: GatewayMessage[]): PendingApprova
     if (/tell me what to change/i.test(message.content)) {
       return {
         ...emptyPendingApprovalContext(approvalId, true),
-        revisableClientCreate: /create client:/i.test(message.content),
-        revisableQuoteCreate: /create quote:/i.test(message.content),
-        revisableJobCreate: /create job:/i.test(message.content),
-        revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:/i.test(message.content),
-        revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:/i.test(message.content)
+        revisableClientCreate: /create client:|you requested create client for/i.test(message.content),
+        revisableQuoteCreate: /create quote:|you requested create quote for/i.test(message.content),
+        revisableJobCreate: /create job:|you requested create job for/i.test(message.content),
+        revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:|you requested (?:close|invoice|close and invoice|dismiss invoice reminder) job for/i.test(message.content),
+        revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:|you requested (?:refund payment|void invoice|mark bad debt) for/i.test(message.content)
       };
     }
-    if (/approve this\?\s*yes\s*\/\s*no\s*\/\s*make changes/i.test(message.content)) {
+    if (/(?:approve this|is this correct)\?\s*(?:reply\s+)?yes\s*\/\s*no(?:\s*\/\s*make changes)?/i.test(message.content)) {
       return {
         ...emptyPendingApprovalContext(approvalId, false),
-        revisableClientCreate: /create client:/i.test(message.content),
-        revisableQuoteCreate: /create quote:/i.test(message.content),
-        revisableJobCreate: /create job:/i.test(message.content),
-        revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:/i.test(message.content),
-        revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:/i.test(message.content)
+        revisableClientCreate: /create client:|you requested create client for/i.test(message.content),
+        revisableQuoteCreate: /create quote:|you requested create quote for/i.test(message.content),
+        revisableJobCreate: /create job:|you requested create job for/i.test(message.content),
+        revisableJobAction: /close job:|invoice job:|close and invoice job:|dismiss invoice reminder:|you requested (?:close|invoice|close and invoice|dismiss invoice reminder) job for/i.test(message.content),
+        revisableLedgerAction: /refund payment:|void invoice:|mark bad debt:|you requested (?:refund payment|void invoice|mark bad debt) for/i.test(message.content)
       };
     }
   }

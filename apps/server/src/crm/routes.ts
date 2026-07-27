@@ -2396,7 +2396,8 @@ export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {
       if (!hasClientCreatePhone({ phones: nextPhones, contacts: nextContacts })) {
         throw new RailError("Telephone is required before a client can be saved.", { provider: "native", op: "updateClient", status: 400 });
       }
-      if (!hasClientCreateAddress({ billingAddress: nextBillingAddress, primaryProperty: nextPropertyAddress ? { address: nextPropertyAddress } : undefined })) {
+      const updatesAddress = input.billingAddress !== undefined || input.primaryProperty !== undefined;
+      if (updatesAddress && !hasClientCreateAddress({ billingAddress: nextBillingAddress, primaryProperty: nextPropertyAddress ? { address: nextPropertyAddress } : undefined })) {
         throw new RailError("Address is required before a client can be saved.", { provider: "native", op: "updateClient", status: 400 });
       }
       const nextClient: Client = {

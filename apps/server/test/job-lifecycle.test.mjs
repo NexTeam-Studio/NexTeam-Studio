@@ -362,8 +362,8 @@ test("Nexi job tools create, read, revise, and execute lifecycle actions through
     env: {}
   });
   assert.equal(createTurn.toolRuns[0].name, "createJob");
-  assert.match(createTurn.answer, /Job draft ready/i);
-  assert.match(createTurn.answer, /Approval id:/i);
+  assert.match(createTurn.answer, /You requested create job/i);
+  assert.match(createTurn.answer, /Is this correct/i);
 
   const reviseTurn = await runExplicitLocalToolLoop({
     tenant: tenant(),
@@ -373,12 +373,13 @@ test("Nexi job tools create, read, revise, and execute lifecycle actions through
       { role: "assistant", content: createTurn.answer },
       { role: "user", content: "make changes. change the title to Leak follow-up revised" }
     ],
+    pendingApproval: createTurn.pendingApproval,
     tools,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
     env: {}
   });
-  assert.match(reviseTurn.answer, /Updated draft ready/i);
+  assert.match(reviseTurn.answer, /You requested create job/i);
   assert.match(reviseTurn.answer, /Leak follow-up revised/i);
 
   const approveCreateTurn = await runExplicitLocalToolLoop({
@@ -389,6 +390,7 @@ test("Nexi job tools create, read, revise, and execute lifecycle actions through
       { role: "assistant", content: reviseTurn.answer },
       { role: "user", content: "yes" }
     ],
+    pendingApproval: reviseTurn.pendingApproval,
     tools,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
@@ -433,8 +435,8 @@ test("Nexi job tools create, read, revise, and execute lifecycle actions through
     env: {}
   });
   assert.equal(actionTurn.toolRuns[0].name, "queueJobAction");
-  assert.match(actionTurn.answer, /Job action ready/i);
-  assert.match(actionTurn.answer, /Close and invoice job: Leak follow-up revised/i);
+  assert.match(actionTurn.answer, /You requested close and invoice job/i);
+  assert.match(actionTurn.answer, /Job: Leak follow-up revised/i);
 
   const approveActionTurn = await runExplicitLocalToolLoop({
     tenant: tenant(),
@@ -444,6 +446,7 @@ test("Nexi job tools create, read, revise, and execute lifecycle actions through
       { role: "assistant", content: actionTurn.answer },
       { role: "user", content: "yes" }
     ],
+    pendingApproval: actionTurn.pendingApproval,
     tools,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
