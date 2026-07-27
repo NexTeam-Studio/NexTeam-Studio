@@ -6,7 +6,7 @@ import { PlatformRoute } from "../../features/platform/routes/PlatformRoute";
 import { useAuthSession } from "../auth/AuthSessionProvider";
 import { usePathname } from "./usePathname";
 
-const NexReachPage = React.lazy(async () => ({ default: (await import("../../nexreach")).NexReachPage }));
+const NexReachPage = React.lazy(async () => ({ default: (await import("../../features/nexreach/areas/reputation/components/NexReachPage")).NexReachPage }));
 
 export function AppRouter(): React.ReactElement | null {
   const { auth, user } = useAuthSession();

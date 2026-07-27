@@ -1,0 +1,23 @@
+R3 NEXREACH WEB EXTRACTION
+Baseline: 69757ee
+
+OWNERSHIP
+- Reputation/audience surface: features/nexreach/areas/reputation/components/NexReachPage.tsx
+- Tenant context, API operations, state, approvals, showcase, audience, settings:
+  features/nexreach/areas/reputation/hooks/useNexReach.ts
+- Route-specific styling: features/nexreach/areas/reputation/styles/nexreach.css
+- Shared router lazy-loads the owner path; root-level nexreach.tsx was removed.
+
+REAL REMOVAL PROOF
+- root nexreach.tsx: 750 -> deleted
+- global styles.css: 4,859 -> 4,572 lines (-287)
+- owner surface: 325 lines
+- owner state/API hook: 544 lines
+- owner CSS: 290 lines
+
+VERIFICATION
+- npm run lint: pass, 0 errors
+- npm run typecheck: pass
+- npm run build: pass, Vite transformed 139 modules
+- non-Playwright repository tests: 348 total, 345 pass, 3 known unrelated fail
+- no browser, tunnel, deploy, or live service used
