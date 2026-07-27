@@ -1,0 +1,15 @@
+R3 CONTENT QUEUE WEB EXTRACTION
+Baseline: 35941c2
+
+RESULT
+- Recovered the last real server-backed panel from pre-D2 history into
+  features/contentQueue/areas/queue/components/ContentQueuePanel.tsx.
+- Content Queue owner: 99 TSX + 10 CSS lines.
+- Shared queue primitives are consumed from features/queueShared.
+- No product route was added; shared/router/AppRouter has no ContentQueuePanel reference.
+
+VERIFICATION
+- Content Queue ownership test: 1/1 pass
+- latest combined lint/typecheck/build: pass, Vite transformed 142 modules
+- latest non-Playwright repository tests: 350 total, 347 pass, 3 known unrelated fail
+- no browser, tunnel, deploy, or live service used
