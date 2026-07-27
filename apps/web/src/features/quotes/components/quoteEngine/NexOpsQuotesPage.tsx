@@ -15,6 +15,7 @@ import {
   type CatalogItemDraft,
   type ProductServiceCatalogItem
 } from "../../../settings/components/catalog/NexOpsCatalog";
+import { QuoteTemplateEditor } from "../quoteTemplates/QuoteTemplateEditor";
 import {
   NexopsActionButton,
   NexopsActionRail,
@@ -1946,81 +1947,17 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                 <button type="button" onClick={() => void saveSettings()} disabled={Boolean(busy)}>{busy === "save-settings" ? "Saving..." : "Save quote settings"}</button>
               </div>
 
-              <div className="nexops-quote-template-list">
-                {templates.map((template) => (
-                  <button className="nexops-quote-template-chip" key={template.id} type="button" onClick={() => setTemplateDraft(templateDraftFromRecord(template))}>
-                    <strong>{template.name}</strong>
-                    <small>{template.defaultLineItems?.length ?? 0} default lines</small>
-                  </button>
-                ))}
-              </div>
-
-              <div className="nexops-quote-template-editor">
-                <div className="nexops-quote-section-head">
-                  <h3>{templateDraft.id ? "Edit template" : "New template"}</h3>
-                  {templateDraft.id ? <button type="button" onClick={() => setTemplateDraft(emptyTemplateDraft(settingsDraft))}>Clear</button> : null}
-                </div>
-                <div className="nexops-request-builder-grid">
-                  <label className="nexops-field">
-                    <span>Name</span>
-                    <input value={templateDraft.name} onChange={(event) => setTemplateDraft((current) => ({ ...current, name: event.target.value }))} />
-                  </label>
-                  <label className="nexops-field">
-                    <span>Title prefix</span>
-                    <input value={templateDraft.titlePrefix} onChange={(event) => setTemplateDraft((current) => ({ ...current, titlePrefix: event.target.value }))} />
-                  </label>
-                </div>
-                <label className="nexops-field">
-                  <span>Description</span>
-                  <input value={templateDraft.description} onChange={(event) => setTemplateDraft((current) => ({ ...current, description: event.target.value }))} />
-                </label>
-                <div className="nexops-request-builder-grid">
-                  <label className="nexops-field">
-                    <span>Expiry days override</span>
-                    <input value={templateDraft.expiryDays} onChange={(event) => setTemplateDraft((current) => ({ ...current, expiryDays: event.target.value }))} />
-                  </label>
-                  <label className="nexops-check-field inline">
-                    <input type="checkbox" checked={captureComposerLinesInTemplate} onChange={(event) => setCaptureComposerLinesInTemplate(event.target.checked)} />
-                    Save current composer lines into this template
-                  </label>
-                </div>
-                <div className="nexops-quote-toggle-grid">
-                  <label className="nexops-check-field inline">
-                    <input type="checkbox" checked={templateDraft.requireSignature} onChange={(event) => setTemplateDraft((current) => ({ ...current, requireSignature: event.target.checked }))} />
-                    Signature
-                  </label>
-                  <label className="nexops-check-field inline">
-                    <input type="checkbox" checked={templateDraft.requireDeposit} onChange={(event) => setTemplateDraft((current) => ({ ...current, requireDeposit: event.target.checked }))} />
-                    Deposit
-                  </label>
-                  <label className="nexops-check-field inline">
-                    <input type="checkbox" checked={templateDraft.requireCardOnFile} onChange={(event) => setTemplateDraft((current) => ({ ...current, requireCardOnFile: event.target.checked }))} />
-                    Card on file
-                  </label>
-                </div>
-                {(templateDraft.requireDeposit || templateDraft.requireCardOnFile) ? (
-                  <div className="nexops-request-builder-grid">
-                    <label className="nexops-field">
-                      <span>Deposit type</span>
-                      <select value={templateDraft.depositKind} onChange={(event) => setTemplateDraft((current) => ({ ...current, depositKind: event.target.value as DepositKind }))}>
-                        <option value="amount">Flat amount</option>
-                        <option value="percent">Percent</option>
-                      </select>
-                    </label>
-                    <label className="nexops-field">
-                      <span>Deposit value</span>
-                      <input type="number" min="0" step="0.01" value={templateDraft.depositValue} onChange={(event) => setTemplateDraft((current) => ({ ...current, depositValue: Math.max(0, Number(event.target.value || 0)) }))} />
-                    </label>
-                  </div>
-                ) : null}
-                <label className="nexops-field">
-                  <span>Template terms override</span>
-                  <textarea rows={4} value={templateDraft.terms} onChange={(event) => setTemplateDraft((current) => ({ ...current, terms: event.target.value }))} />
-                </label>
-                <div className="nexops-inline-actions">
-                  <button type="button" onClick={() => void saveTemplate()} disabled={Boolean(busy)}>{busy === "save-template" ? "Saving..." : templateDraft.id ? "Save template" : "Create template"}</button>
-                </div>
-              </div>
+              <QuoteTemplateEditor
+                templates={templates}
+                draft={templateDraft}
+                captureComposerLines={captureComposerLinesInTemplate}
+                busy={busy === "save-template"}
+                onSelect={(template) => setTemplateDraft(templateDraftFromRecord(template))}
+                onClear={() => setTemplateDraft(emptyTemplateDraft(settingsDraft))}
+                onDraftChange={setTemplateDraft}
+                onCaptureComposerLinesChange={setCaptureComposerLinesInTemplate}
+                onSave={() => void saveTemplate()}
+              />
             </>
           ) : (
             <p>Quote defaults are still loading.</p>

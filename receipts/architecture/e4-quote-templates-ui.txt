@@ -1,0 +1,17 @@
+E4 Quote Templates UI checkpoint
+Date: 2026-07-27
+
+Canonical surface:
+- apps/web/src/features/quotes/components/quoteTemplates/QuoteTemplateEditor.tsx
+
+Integration:
+- Quote Engine supplies templates, draft state, and save callbacks through a typed contract.
+- Template list/editor JSX no longer lives in the Quote Engine page.
+
+Verification (non-browser):
+- npm run build: PASS (75 modules)
+- quote/settings focused tests: PASS (21/21)
+
+Open boundary work:
+- Quote templates still persist inside the CRM settings document.
+- Quote-template styles remain in apps/web/src/styles.css.
