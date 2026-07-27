@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { NexOpsCreateMenu } from "../src/nexopsDeferredUi.tsx";
+import { NexOpsCreateMenu } from "../src/features/nexopsShell/components/NexOpsCreateMenu.tsx";
 import {
   getMobileCreateFabScrollIntent,
   mobileFabCanFitViewport,

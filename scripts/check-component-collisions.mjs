@@ -131,7 +131,6 @@ const sharedAllowlist = [
   "apps/web/src/styles.css",
   "apps/web/src/shared/app/",
   "apps/web/src/shared/router/",
-  "apps/web/src/nexopsDeferredUi.tsx",
   "apps/server/src/app/",
   "apps/server/src/composeServerApp.ts",
   "apps/server/src/server.ts",

@@ -3,6 +3,8 @@ import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
 import { type Auth, type User } from "firebase/auth";
 import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "../../shared/branding/ProductBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./components/NexOpsHeader";
+import { NexOpsCreateMenu } from "./components/NexOpsCreateMenu";
+import { NexOpsNotificationPanel } from "./components/NexOpsNotificationPanel";
 
 import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, NEXTEAM_WORKSPACE_OPTIONS, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "./domain/nexopsNavigation";
 import { buildLeadSourceOptions, CLIENT_CUSTOM_FIELD_RESERVED_LABELS, customFieldRecordToDraftRows, customFieldDraftRowsToRecord, draftNameFieldsFromClientRecord, PROPERTY_CUSTOM_FIELD_RESERVED_LABELS, primaryClientPhoneValue, type ClientProfileMobileBucket, type CustomFieldDraftRow, validateCustomFieldDraftRows } from "../../features/clients/components/contact/domain/clientProfile";
@@ -10,6 +12,7 @@ import { getMobileCreateFabScrollIntent, mobileFabShouldHideOverlays, mobileFabV
 import { ContactRoster } from "../clients/components/contact/ContactRoster";
 import { ContactEditorSurface } from "../clients/components/contact/ContactEditorSurface";
 import { ContactProfileSurface } from "../clients/components/contact/ContactProfileSurface";
+import { NexOpsCreateClientPanel } from "../clients/components/contact/NexOpsCreateClientPanel";
 import "../clients/components/contact/contact.css";
 import { signOutOperator } from "../../shared/auth/authBootstrap";
 import { ApprovalQueuePanel } from "../approvalQueue/areas/queue/components/ApprovalQueuePanel";
@@ -23,10 +26,7 @@ const NexOpsQuotesPage = React.lazy(async () => ({ default: (await import("../..
 const NexOpsRequestsPage = React.lazy(async () => ({ default: (await import("../requests/components/requestCore/NexOpsRequestsPage")).NexOpsRequestsPage }));
 const NexOpsSchedulePage = React.lazy(async () => ({ default: (await import("../../features/visits/components/visitCore/NexOpsSchedulePage")).NexOpsSchedulePage }));
 const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("../../features/settings/components/tenantConfig/NexOpsSettingsPage")).NexOpsSettingsPage }));
-const NexOpsCaptureWorkspace = React.lazy(async () => ({ default: (await import("../../nexopsDeferredUi")).NexOpsCaptureWorkspace }));
-export const NexOpsCreateMenu = React.lazy(async () => ({ default: (await import("../../nexopsDeferredUi")).NexOpsCreateMenu }));
-const NexOpsCreateClientPanel = React.lazy(async () => ({ default: (await import("../../nexopsDeferredUi")).NexOpsCreateClientPanel }));
-export const NexOpsNotificationPanel = React.lazy(async () => ({ default: (await import("../../nexopsDeferredUi")).NexOpsNotificationPanel }));
+const NexOpsCaptureWorkspace = React.lazy(async () => ({ default: (await import("../nexcam/areas/capture/components/NexOpsCaptureWorkspace")).NexOpsCaptureWorkspace }));
 
 
 interface Source {

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { NexOpsCreateClientPanel } from "../../../../../nexopsDeferredUi.tsx";
+import { NexOpsCreateClientPanel } from "../NexOpsCreateClientPanel.tsx";
 import { CLIENT_PROFILE_TABS } from "../../../../nexopsShell/domain/nexopsNavigation.ts";
 import {
   buildLeadSourceOptions,

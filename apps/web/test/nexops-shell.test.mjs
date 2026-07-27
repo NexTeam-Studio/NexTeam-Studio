@@ -14,7 +14,7 @@ import {
   NEXTEAM_WORKSPACE_OPTIONS,
   parseNexOpsLocation
 } from "../src/features/nexopsShell/domain/nexopsNavigation.ts";
-import { NexOpsCreateMenu } from "../src/nexopsDeferredUi.tsx";
+import { NexOpsCreateMenu } from "../src/features/nexopsShell/components/NexOpsCreateMenu.tsx";
 
 test("client profile paths round-trip through the NexOps location parser", () => {
   const overviewPath = buildClientProfilePath("client_123");

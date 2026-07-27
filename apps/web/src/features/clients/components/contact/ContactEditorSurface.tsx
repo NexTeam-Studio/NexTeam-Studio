@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { NexOpsCreateClientPanel } from "../../../../nexopsDeferredUi";
+import { NexOpsCreateClientPanel } from "./NexOpsCreateClientPanel";
 
 type CreateClientPanelProps = React.ComponentProps<typeof NexOpsCreateClientPanel>;
 

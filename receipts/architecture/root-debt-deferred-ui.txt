@@ -1,0 +1,22 @@
+ROOT DEBT: DEFERRED UI OWNER SPLIT
+Date: 2026-07-27
+
+Before and after
+- Before: `apps/web/src/nexopsDeferredUi.tsx`, 1,605 lines, four unrelated surfaces.
+- After: old root path deleted, 0 lines and no compatibility facade.
+- NexCam Capture: `NexOpsCaptureWorkspace.tsx`, 674 lines.
+- Contact: `NexOpsCreateClientPanel.tsx`, 789 lines.
+- NexOps Shell create menu: `NexOpsCreateMenu.tsx`, 107 lines.
+- NexOps Shell notifications: `NexOpsNotificationPanel.tsx`, 43 lines.
+- The four owner files total 1,613 lines because each now carries its explicit independent imports.
+- Root web files are now only `main.tsx` (18 lines) and `styles.css` (4,468 lines).
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 146 modules with no mixed static/dynamic import warning.
+- Focused shell/Contact tests: 24 tests, 24 pass, 0 fail.
+- npm run check:collisions: 37 components, 666 pairs, zero overlaps; root allowlist coverage 2/2.
+- npm test: no-browser guard passed across 61 default test files; 361 tests, 358 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- No browser was launched.
