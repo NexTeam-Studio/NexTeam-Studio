@@ -78,7 +78,7 @@ const NexOpsJobsPage = React.lazy(async () => ({ default: (await import("./featu
 const NexOpsPatternLibraryPage = React.lazy(async () => ({ default: (await import("./nexopsPatternLibrary")).NexOpsPatternLibraryPage }));
 const NexOpsQuotesPage = React.lazy(async () => ({ default: (await import("./features/quotes/components/quoteEngine/NexOpsQuotesPage")).NexOpsQuotesPage }));
 const NexOpsRequestsPage = React.lazy(async () => ({ default: (await import("./nexopsRequests")).NexOpsRequestsPage }));
-const NexOpsSchedulePage = React.lazy(async () => ({ default: (await import("./nexopsSchedule")).NexOpsSchedulePage }));
+const NexOpsSchedulePage = React.lazy(async () => ({ default: (await import("./features/visits/components/visitCore/NexOpsSchedulePage")).NexOpsSchedulePage }));
 const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("./nexopsSettings")).NexOpsSettingsPage }));
 const NexOpsCaptureWorkspace = React.lazy(async () => ({ default: (await import("./nexopsDeferredUi")).NexOpsCaptureWorkspace }));
 const NexOpsCreateMenu = React.lazy(async () => ({ default: (await import("./nexopsDeferredUi")).NexOpsCreateMenu }));
