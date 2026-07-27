@@ -50,7 +50,7 @@ interface ReviewSequenceStepSetting {
 
 interface CrmSettingsRecord {
   tenantId: string;
-  documentNumbering: Record<"request" | "quote" | "job" | "invoice", DocumentNumberingRule>;
+  documentNumbering: Record<"request" | "quote" | "job" | "invoice" | "receipt", DocumentNumberingRule>;
   quoteDefaults: {
     expiryDays: number;
     autoSaveCardOnDeposit: boolean;

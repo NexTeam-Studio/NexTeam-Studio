@@ -19,6 +19,7 @@ import {
   jobSchema
 } from "@nexteam/core";
 import { VGB_LINE_ITEM_CATALOG } from "@nexteam/industry-packs";
+import { advanceDocumentNumber } from "@nexteam/shared";
 
 export interface NativeCrmRepository {
   listClients(tenantId: string): Promise<Client[]>;
@@ -327,7 +328,8 @@ export function defaultCrmSettings(tenantId: string): CrmSettings {
       request: { prefix: "REQ", separator: "-", padWidth: 4, nextValue: 1 },
       quote: { prefix: "Q", separator: "-", padWidth: 4, nextValue: 1 },
       job: { prefix: "JOB", separator: "-", padWidth: 4, nextValue: 1 },
-      invoice: { prefix: "INV", separator: "-", padWidth: 4, nextValue: 1 }
+      invoice: { prefix: "INV", separator: "-", padWidth: 4, nextValue: 1 },
+      receipt: { prefix: "RCT", separator: "-", padWidth: 4, nextValue: 1 }
     },
     quoteDefaults: {
       expiryDays: 30,
@@ -479,17 +481,13 @@ export function defaultQuoteTemplates(tenantId: string): QuoteTemplate[] {
   ];
 }
 
-function formatDocumentNumber(prefix: string, separator: string, padWidth: number, nextValue: number): string {
-  const serial = String(nextValue).padStart(padWidth, "0");
-  return prefix.trim() ? `${prefix}${separator}${serial}` : serial;
-}
-
 function normalizeJobRecord(job: Job): Job {
   return jobSchema.parse(job) as Job;
 }
 
 export class MemoryNativeCrmRepository implements NativeCrmRepository {
   private readonly records: Required<NativeCrmRecords>;
+  private readonly numberingQueues = new Map<string, Promise<void>>();
 
   constructor(records: NativeCrmRecords = {}) {
     this.records = {
@@ -726,21 +724,28 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
   }
 
   async reserveDocumentNumber(tenantId: string, kind: DocumentSequenceKind): Promise<string> {
-    const settings = await this.getCrmSettings(tenantId);
-    const rule = settings.documentNumbering[kind];
-    const number = formatDocumentNumber(rule.prefix, rule.separator, rule.padWidth, rule.nextValue);
-    await this.saveCrmSettings({
-      ...settings,
-      documentNumbering: {
-        ...settings.documentNumbering,
-        [kind]: {
-          ...rule,
-          nextValue: rule.nextValue + 1
-        }
-      },
-      updatedAt: new Date().toISOString()
+    const key = tenantId;
+    const previous = this.numberingQueues.get(key) ?? Promise.resolve();
+    const operation = previous.then(async () => {
+      const settings = await this.getCrmSettings(tenantId);
+      const rule = settings.documentNumbering[kind];
+      const reservation = advanceDocumentNumber(rule);
+      await this.saveCrmSettings({
+        ...settings,
+        documentNumbering: { ...settings.documentNumbering, [kind]: reservation.nextRule },
+        updatedAt: new Date().toISOString()
+      });
+      return reservation.number;
     });
-    return number;
+    const settled = operation.then(() => undefined, () => undefined);
+    this.numberingQueues.set(key, settled);
+    try {
+      return await operation;
+    } finally {
+      if (this.numberingQueues.get(key) === settled) {
+        this.numberingQueues.delete(key);
+      }
+    }
   }
 }
 

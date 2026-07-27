@@ -186,7 +186,7 @@ export type ReviewSequenceChannel = "email" | "sms" | "both";
 export type PhoneLabel = "Main" | "Work" | "Mobile" | "Home" | "Fax" | "Other";
 export type EmailLabel = "Main" | "Work" | "Personal" | "Other";
 export type SmsCapability = "mobile" | "landline" | "fax" | "invalid" | "unknown";
-export type DocumentSequenceKind = "request" | "quote" | "job" | "invoice";
+export type DocumentSequenceKind = "request" | "quote" | "job" | "invoice" | "receipt";
 export type InvoiceStatus = "draft" | "sent" | "awaiting_payment" | "partial_pay" | "paid" | "void" | "bad_debt";
 export type QuoteStatus =
   | "draft"
@@ -219,6 +219,7 @@ export interface DocumentNumberingSettings {
   quote: DocumentNumberingRule;
   job: DocumentNumberingRule;
   invoice: DocumentNumberingRule;
+  receipt: DocumentNumberingRule;
 }
 
 export interface QuoteDiscount {
@@ -1092,6 +1093,7 @@ export interface ReceiptReviewSendRecord {
 export interface ReceiptReview {
   id: ID;
   tenantId: ID;
+  number?: string | undefined;
   clientId: ID;
   kind: ReceiptReviewKind;
   paymentId?: ID | undefined;

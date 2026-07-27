@@ -46,7 +46,7 @@ type QuoteStatus =
 type DeliveryMode = "draft" | "email" | "sms" | "mark_sent";
 type DiscountKind = "amount" | "percent";
 type DepositKind = "amount" | "percent";
-type DocumentKind = "request" | "quote" | "job" | "invoice";
+type DocumentKind = "request" | "quote" | "job" | "invoice" | "receipt";
 type QuoteFilter = "all" | "draft" | "sent" | "change_requested" | "approved" | "approved_pending_conversion" | "expired";
 type QuoteUiTone = "dominant" | "secondary" | "quiet" | "danger" | "success" | "warning" | "blocked";
 type QuoteSurfaceAction = "send" | "manual-approve" | "renew" | "convert-to-job" | "invoice" | "copy-portal" | "edit" | "none";
@@ -791,6 +791,11 @@ function settingsDraftFromRecord(settings: CrmSettingsRecord): SettingsDraft {
         prefix: settings.documentNumbering.invoice.prefix,
         separator: settings.documentNumbering.invoice.separator,
         padWidth: settings.documentNumbering.invoice.padWidth
+      },
+      receipt: {
+        prefix: settings.documentNumbering.receipt.prefix,
+        separator: settings.documentNumbering.receipt.separator,
+        padWidth: settings.documentNumbering.receipt.padWidth
       }
     },
     expiryDays: settings.quoteDefaults.expiryDays,
@@ -1285,7 +1290,8 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             request: settingsDraft.documentNumbering.request,
             quote: settingsDraft.documentNumbering.quote,
             job: settingsDraft.documentNumbering.job,
-            invoice: settingsDraft.documentNumbering.invoice
+            invoice: settingsDraft.documentNumbering.invoice,
+            receipt: settingsDraft.documentNumbering.receipt
           },
           quoteDefaults: {
             expiryDays: settingsDraft.expiryDays,
@@ -1855,7 +1861,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           {settingsDraft ? (
             <>
               <div className="nexops-quote-numbering-grid">
-                {(["request", "quote", "job", "invoice"] as DocumentKind[]).map((kind) => (
+                {(["request", "quote", "job", "invoice", "receipt"] as DocumentKind[]).map((kind) => (
                   <section key={kind}>
                     <h3>{kind}</h3>
                     <label className="nexops-field">

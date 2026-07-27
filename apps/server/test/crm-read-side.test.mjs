@@ -864,7 +864,7 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     const settingsResponse = await fetch(`${base}/api/crm/settings?tenantId=aquatrace`);
     const settingsBody = await settingsResponse.json();
     assert.equal(settingsBody.ok, true);
-    assert.deepEqual(Object.keys(settingsBody.settings.documentNumbering).sort(), ["invoice", "job", "quote", "request"]);
+    assert.deepEqual(Object.keys(settingsBody.settings.documentNumbering).sort(), ["invoice", "job", "quote", "receipt", "request"]);
 
     const templatesResponse = await fetch(`${base}/api/crm/quote-templates?tenantId=aquatrace`);
     const templatesBody = await templatesResponse.json();

@@ -165,6 +165,7 @@ test("quote deposit bridge migrates into first-class payment, deposit, receipt r
   assert.equal(bridged.deposit?.availableAmount, 100);
   assert.equal(receiptReviews[0].kind, "payment");
   assert.equal(receiptReviews[0].status, "draft");
+  assert.match(receiptReviews[0].number, /^RCT-\d{4}$/);
   assert.equal(receiptReviews[0].attachments.some((attachment) => attachment.kind === "quote_pdf"), true);
   assert.equal(billingProfile?.savedCards.length, 1);
   assert.equal(billingProfile?.savedCards[0].sourceQuoteId, approvedQuote.id);
@@ -314,6 +315,7 @@ test("payment states progress through pending, succeeded, partially_refunded, an
   assert.equal(settled.invoice.status, "paid");
   assert.equal(settled.receiptReview.kind, "payment");
   assert.equal(settled.receiptReview.status, "draft");
+  assert.match(settled.receiptReview.number, /^RCT-\d{4}$/);
 
   const partialRefund = await fixture.ledgerService.performLedgerAction({
     tenantId: "aquatrace",
@@ -327,6 +329,8 @@ test("payment states progress through pending, succeeded, partially_refunded, an
   assert.equal(partialRefund.refund?.status, "succeeded");
   assert.equal(partialRefund.receiptReview?.kind, "refund");
   assert.equal(partialRefund.receiptReview?.status, "draft");
+  assert.match(partialRefund.receiptReview?.number, /^RCT-\d{4}$/);
+  assert.notEqual(partialRefund.receiptReview?.number, settled.receiptReview.number);
 
   const fullRefund = await fixture.ledgerService.performLedgerAction({
     tenantId: "aquatrace",

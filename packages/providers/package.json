@@ -15,7 +15,8 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@nexteam/core": "0.0.0"
+    "@nexteam/core": "0.0.0",
+    "@nexteam/shared": "0.0.0"
   }
 }
 

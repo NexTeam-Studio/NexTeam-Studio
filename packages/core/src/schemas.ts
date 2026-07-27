@@ -199,7 +199,7 @@ export const contactChannelSchema = z.enum(["email", "sms", "both", "none"]);
 export const phoneLabelSchema = z.enum(["Main", "Work", "Mobile", "Home", "Fax", "Other"]);
 export const emailLabelSchema = z.enum(["Main", "Work", "Personal", "Other"]);
 export const smsCapabilitySchema = z.enum(["mobile", "landline", "fax", "invalid", "unknown"]);
-export const documentSequenceKindSchema = z.enum(["request", "quote", "job", "invoice"]);
+export const documentSequenceKindSchema = z.enum(["request", "quote", "job", "invoice", "receipt"]);
 export const invoiceStatusSchema = z.enum(["draft", "sent", "awaiting_payment", "partial_pay", "paid", "void", "bad_debt"]);
 export const quoteStatusSchema = z.enum(["draft", "pending_approval", "sent", "change_requested", "approved", "approved_internal", "declined", "expired", "archived"]);
 export const quoteDeliveryModeSchema = z.enum(["email", "sms", "mark_sent"]);
@@ -222,7 +222,8 @@ export const documentNumberingSettingsSchema = z.object({
   request: documentNumberingRuleSchema,
   quote: documentNumberingRuleSchema,
   job: documentNumberingRuleSchema,
-  invoice: documentNumberingRuleSchema
+  invoice: documentNumberingRuleSchema,
+  receipt: documentNumberingRuleSchema.default({ prefix: "RCT", separator: "-", padWidth: 4, nextValue: 1 })
 });
 
 export const quoteDiscountSchema = z.object({
@@ -978,6 +979,7 @@ export const receiptReviewSendRecordSchema = z.object({
 export const receiptReviewSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
+  number: z.string().min(1).optional(),
   clientId: idSchema,
   kind: receiptReviewKindSchema,
   paymentId: idSchema.optional(),

@@ -22,6 +22,7 @@ import {
 } from "@nexteam/core";
 import { RailError } from "@nexteam/core";
 import { defaultCrmSettings, defaultQuoteTemplates, type NativeCrmRepository } from "@nexteam/providers";
+import { advanceDocumentNumber } from "@nexteam/shared";
 import type { ZodSchema } from "zod";
 
 type CollectionName = "clients" | "properties" | "requests" | "requestForms" | "crmSettings" | "quoteTemplates" | "jobs" | "quotes" | "invoices";
@@ -278,21 +279,22 @@ export class FirestoreNativeCrmRepository implements NativeCrmRepository {
   }
 
   async reserveDocumentNumber(tenantId: string, kind: DocumentSequenceKind): Promise<string> {
-    const current = await this.getCrmSettings(tenantId);
-    const rule = current.documentNumbering[kind];
-    const serial = String(rule.nextValue).padStart(rule.padWidth, "0");
-    const number = rule.prefix.trim() ? `${rule.prefix}${rule.separator}${serial}` : serial;
-    await this.saveCrmSettings({
-      ...current,
-      documentNumbering: {
-        ...current.documentNumbering,
-        [kind]: {
-          ...rule,
-          nextValue: rule.nextValue + 1
-        }
-      },
-      updatedAt: new Date().toISOString()
+    const ref = this.db.collection("crmSettings").doc(tenantId);
+    return this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      const parsed = snapshot.exists ? crmSettingsSchema.safeParse(snapshot.data()) : null;
+      const current = parsed?.success ? parsed.data as CrmSettings : defaultCrmSettings(tenantId);
+      if (current.tenantId !== tenantId) {
+        throw new RailError("Numbering settings do not belong to the requested tenant.", { provider: "native", op: "reserveDocumentNumber", status: 403 });
+      }
+      const reservation = advanceDocumentNumber(current.documentNumbering[kind]);
+      const next = crmSettingsSchema.parse({
+        ...current,
+        documentNumbering: { ...current.documentNumbering, [kind]: reservation.nextRule },
+        updatedAt: new Date().toISOString()
+      }) as CrmSettings;
+      transaction.set(ref, asDocumentData(next), { merge: true });
+      return reservation.number;
     });
-    return number;
   }
 }

@@ -1,0 +1,91 @@
+E2 SHARED NUMBERING RECEIPT
+Date: 2026-07-26
+Scope: tenant-scoped sequential numbering for requests, quotes, jobs, invoices, and receipts
+
+BUILD
+Command: npm run build
+Result: PASS
+Server: TypeScript project references clean
+Web: Vite production build clean, 72 modules transformed
+Main browser chunk: 247.60 kB (60.03 kB gzip)
+
+FOCUSED TESTS
+Command: node --import tsx --test apps/server/test/numbering-service.test.mjs apps/server/test/crm-read-side.test.mjs apps/server/test/ledger-foundation.test.mjs apps/server/test/close-invoice-payment-flow.test.mjs apps/server/test/job-lifecycle.test.mjs apps/server/test/request-foundation.test.mjs
+Result: PASS, 53/53
+
+1. draft invoices stay fully editable through line items, discount, tax, and terms until delivery locks them
+2. closing without invoicing creates a recurring 9AM reminder that advances until dismissal
+3. combining a selected subset of jobs keeps per-job references and carries the chosen payment schedule
+4. invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads
+5. default invoice delivery templates keep labeled pay-link and hosted-link content at the shared template layer
+6. saved-card reuse defaults to the newest card, supports alternate selection, and keeps manual/failed branches distinct
+7. receipt review sends email attachments and an SMS hosted link from the same paused review
+8. receipt review sends a real field report PDF attachment when NexCam already generated one for the job
+9. PayPal and Venmo checkout helpers create sandbox orders and capture completed payments
+10. Nexi billing tools run combine, send, partial collect, failed recovery, and receipt review approval loops in chat
+11. CRM quote and invoice native schemas parse
+12. NativeAdapter exposes CRM read methods
+13. native import upserts remain idempotent by legacy CRM external ids
+14. NativeAdapter writes native clients and approval-gated quote drafts
+15. NexOps 3.2 client records preserve display, billing, and one-way SMS settings
+16. CRM read nexi-tools expose pipeline and client lookup
+17. CRM clientLookup stays unmatched and never calls a dormant fallback on native misses
+18. CRM write nexi-tools cover client create, quote draft, catalog/template settings, and invoice reads
+19. seeded catalog UTF-8 punctuation survives native settings round-trip
+20. CRM createClient tool blocks approval when telephone is missing
+21. CRM client route rejects incomplete saves before a client record is created
+22. CRM routes read clients created by ApprovalQueue execution from the shared native repository
+23. CRM client delete route removes property-only duplicates and blocks clients with linked work
+24. CRM quick payment request routes create minimal ledger-backed invoices from job and client fast paths
+25. CRM quote routes create, send, approve, convert, invoice, and renew quotes
+26. CRM quote change requests store per-line comments plus a freeform note
+27. Quote materialization preserves custom lines and future client-selectable fields
+28. Quote terms resolve tenant default, then template override, then per-quote override
+29. TECHNICIAN role is blocked from manual quote approval authority
+30. NativeAdapter writes invoices and renders invoice PDFs
+31. Stripe rail refuses live keys and verifies webhook signatures
+32. legacy job schema and in-memory native repository normalize stored jobs onto the new lifecycle rail
+33. request and quote conversions land as Unscheduled and invoice reminders clear only by invoice or dismissal
+34. moving a visit cancels old reminder timers and creates a fresh pair for the new slot
+35. due visit reminders auto-send email and sms with technician and access-note context
+36. technicians can complete visits but stay blocked from office-only close and invoice authority
+37. Nexi job tools create, read, revise, and execute lifecycle actions through chat-native approvals
+38. quote deposit bridge migrates into first-class payment, deposit, receipt review, and saved card records without rewriting the quote snapshot
+39. invoice sync auto-applies deposits and credits, and overdue only marks awaiting-payment invoices
+40. Stripe checkout uses tenant Connect headers with zero application fee and charges only the current balance due
+41. payment states progress through pending, succeeded, partially_refunded, and refunded with separate refund and receipt-review records
+42. invoice and refund receipt reviews carry the default invoice, quote, report, photo, and job-file attachments
+43. one payment stays on one invoice and overpayment rolls forward as credit instead of splitting across invoices
+44. the ledger model already accepts PayPal and Venmo slots even though the live adapter is deferred
+45. draft invoices stay draft and failed payments do not settle the invoice
+46. void and bad debt stay distinct, and ledger chat tools require OWNER or OFFICE_ADMIN for execution
+47. shared Numbering formats and advances without owning component prefixes
+48. shared Numbering backfills the receipt format on legacy four-sequence settings
+49. memory Numbering reserves unique parallel sequences independently per tenant and kind
+50. Numbering preview rejects settings from another tenant
+51. request routes create, update, convert, archive, and reopen while preserving intake fields
+52. local Nexi request tools clarify missing intake data, then create and recall real requests
+53. client record route toggles marketing consent and forwards the NexReach revocation hook
+
+FULL SUITE
+Command: npm test
+Result: KNOWN-RED BASELINE, 341/349 passing and exactly 8 unrelated failures
+
+1. campaign routes expose template, test-run, tracking, unsubscribe, and stats
+2. local Nexi chat can search documents, queue a folder, approve it, queue an upload, and approve it
+3. M10 routes are owner/admin gated and queue tenant provisioning approval
+4. M8 operator UI customization is tenant-scoped and owner/admin gated
+5. NexReach local Nexi loop accepts underscore ids through generate, approve, and refusal flow
+6. platform routes expose tenants, test subscription, backup, and export
+7. platform routes manage tenant users and job links without leaking token hashes by default
+8. tenant users seed Aquatrace roles and produce Firebase custom claims
+
+ATOMICITY PROOF
+- FirestoreNativeCrmRepository uses Firestore runTransaction on crmSettings/{tenantId}.
+- MemoryNativeCrmRepository serializes all sequence-kind mutations per tenant because
+  every kind shares the same settings record.
+- The focused parallel test reserves two receipts plus a quote for one tenant and a
+  receipt for another tenant, proving unique values and no cross-tenant sequence use.
+
+No browser was opened. Settings/UI compatibility was verified by the Vite build and
+server/web automated tests under the standing no-browser rule.

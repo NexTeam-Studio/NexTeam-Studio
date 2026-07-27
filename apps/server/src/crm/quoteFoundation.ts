@@ -91,7 +91,8 @@ export const crmSettingsPatchSchema = z.object({
     request: z.object({ prefix: z.string().optional(), separator: z.string().optional(), padWidth: z.number().int().min(1).optional() }).optional(),
     quote: z.object({ prefix: z.string().optional(), separator: z.string().optional(), padWidth: z.number().int().min(1).optional() }).optional(),
     job: z.object({ prefix: z.string().optional(), separator: z.string().optional(), padWidth: z.number().int().min(1).optional() }).optional(),
-    invoice: z.object({ prefix: z.string().optional(), separator: z.string().optional(), padWidth: z.number().int().min(1).optional() }).optional()
+    invoice: z.object({ prefix: z.string().optional(), separator: z.string().optional(), padWidth: z.number().int().min(1).optional() }).optional(),
+    receipt: z.object({ prefix: z.string().optional(), separator: z.string().optional(), padWidth: z.number().int().min(1).optional() }).optional()
   }).optional(),
   quoteDefaults: z.object({
     expiryDays: z.number().int().min(1).optional(),

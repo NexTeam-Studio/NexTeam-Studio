@@ -1923,6 +1923,12 @@ export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {
             prefix: input.documentNumbering?.invoice?.prefix ?? current.documentNumbering.invoice.prefix,
             separator: input.documentNumbering?.invoice?.separator ?? current.documentNumbering.invoice.separator,
             padWidth: input.documentNumbering?.invoice?.padWidth ?? current.documentNumbering.invoice.padWidth
+          },
+          receipt: {
+            ...current.documentNumbering.receipt,
+            prefix: input.documentNumbering?.receipt?.prefix ?? current.documentNumbering.receipt.prefix,
+            separator: input.documentNumbering?.receipt?.separator ?? current.documentNumbering.receipt.separator,
+            padWidth: input.documentNumbering?.receipt?.padWidth ?? current.documentNumbering.receipt.padWidth
           }
         },
         quoteDefaults: {

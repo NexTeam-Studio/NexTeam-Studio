@@ -504,6 +504,7 @@ export class LedgerService {
   }): Promise<ReceiptReview> {
     const existing = (await this.deps.ledgerRepository.listReceiptReviews(input.payment.tenantId))
       .find((review) => review.kind === "payment" && review.paymentId === input.payment.id);
+    const receiptNumber = existing?.number ?? await this.deps.crmRepository.reserveDocumentNumber(input.payment.tenantId, "receipt");
     const timestamp = now();
     const attachments = input.invoice
       ? await receiptAttachmentsForInvoice(input.invoice, this.deps.fieldDocsRepository)
@@ -548,6 +549,7 @@ export class LedgerService {
     const review: ReceiptReview = existing ?? {
       id: reviewId,
       tenantId: input.payment.tenantId,
+      number: receiptNumber,
       clientId: input.payment.clientId,
       kind: "payment",
       paymentId: input.payment.id,
@@ -568,6 +570,7 @@ export class LedgerService {
     };
     const saved = await this.deps.ledgerRepository.upsertReceiptReview({
       ...review,
+      number: review.number ?? receiptNumber,
       attachments,
       subject: review.subject || receiptTemplate.subject,
       bodyText: review.bodyText || receiptTemplate.bodyText,
@@ -590,6 +593,7 @@ export class LedgerService {
   private async createReceiptReviewForRefund(input: { refund: Refund; invoice?: Invoice | undefined; payment?: Payment | undefined }): Promise<ReceiptReview> {
     const existing = (await this.deps.ledgerRepository.listReceiptReviews(input.refund.tenantId))
       .find((review) => review.kind === "refund" && review.refundId === input.refund.id);
+    const receiptNumber = existing?.number ?? await this.deps.crmRepository.reserveDocumentNumber(input.refund.tenantId, "receipt");
     const timestamp = now();
     const attachments = input.invoice ? await receiptAttachmentsForInvoice(input.invoice, this.deps.fieldDocsRepository) : [];
     const reviewId = existing?.id ?? `receipt_review_${input.refund.id}`;
@@ -630,6 +634,7 @@ export class LedgerService {
     const review: ReceiptReview = existing ?? {
       id: reviewId,
       tenantId: input.refund.tenantId,
+      number: receiptNumber,
       clientId: input.refund.clientId,
       kind: "refund",
       ...(input.payment?.id ? { paymentId: input.payment.id } : {}),
@@ -651,6 +656,7 @@ export class LedgerService {
     };
     return this.deps.ledgerRepository.upsertReceiptReview({
       ...review,
+      number: review.number ?? receiptNumber,
       attachments,
       subject: review.subject || receiptTemplate.subject,
       bodyText: review.bodyText || receiptTemplate.bodyText,
