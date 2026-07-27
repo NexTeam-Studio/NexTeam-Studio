@@ -1,4 +1,4 @@
-import type { ID } from "@nexteam/core";
+import { RailError, type ID } from "@nexteam/core";
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
 import type {
   ContentCalendarItem,
@@ -8,6 +8,7 @@ import type {
   ContentSettings,
   ContentShowcase
 } from "./contentEngine.js";
+import { assertTenantDocumentOwner, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 export interface ContentRepository {
   saveDraft(draft: ContentDraft): Promise<ContentDraft>;
@@ -28,6 +29,14 @@ export interface ContentRepository {
   listPerformance(tenantId: ID): Promise<ContentPerformanceSnapshot[]>;
 }
 
+function saveMemoryOwned<T extends { tenantId: ID }>(map: Map<ID, T>, id: ID, value: T, label: string): void {
+  const existing = map.get(id);
+  if (existing && existing.tenantId !== value.tenantId) {
+    throw new RailError(`${label} belongs to another tenant.`, { provider: "native", op: "saveContent", status: 409 });
+  }
+  map.set(id, value);
+}
+
 export class InMemoryContentRepository implements ContentRepository {
   private readonly drafts = new Map<ID, ContentDraft>();
   private readonly eligibility = new Map<ID, ContentEligibilityRecord>();
@@ -37,7 +46,7 @@ export class InMemoryContentRepository implements ContentRepository {
   private readonly performance = new Map<ID, ContentPerformanceSnapshot>();
 
   async saveDraft(draft: ContentDraft): Promise<ContentDraft> {
-    this.drafts.set(draft.id, draft);
+    saveMemoryOwned(this.drafts, draft.id, draft, `Content draft ${draft.id}`);
     return draft;
   }
 
@@ -46,7 +55,7 @@ export class InMemoryContentRepository implements ContentRepository {
     if (!existing || existing.tenantId !== tenantId) {
       return null;
     }
-    const updated = { ...existing, ...patch };
+    const updated = { ...existing, ...patch, id: existing.id, tenantId: existing.tenantId };
     this.drafts.set(draftId, updated);
     return updated;
   }
@@ -63,7 +72,7 @@ export class InMemoryContentRepository implements ContentRepository {
   }
 
   async saveEligibility(record: ContentEligibilityRecord): Promise<ContentEligibilityRecord> {
-    this.eligibility.set(record.id, record);
+    saveMemoryOwned(this.eligibility, record.id, record, `Content eligibility ${record.id}`);
     return record;
   }
 
@@ -78,7 +87,7 @@ export class InMemoryContentRepository implements ContentRepository {
   }
 
   async saveSettings(settings: ContentSettings): Promise<ContentSettings> {
-    this.settings.set(settings.tenantId, settings);
+    saveMemoryOwned(this.settings, settings.tenantId, settings, `Content settings ${settings.tenantId}`);
     return settings;
   }
 
@@ -87,7 +96,7 @@ export class InMemoryContentRepository implements ContentRepository {
   }
 
   async saveShowcase(showcase: ContentShowcase): Promise<ContentShowcase> {
-    this.showcases.set(showcase.id, showcase);
+    saveMemoryOwned(this.showcases, showcase.id, showcase, `Content showcase ${showcase.id}`);
     return showcase;
   }
 
@@ -104,7 +113,7 @@ export class InMemoryContentRepository implements ContentRepository {
 
   async saveCalendarItems(items: ContentCalendarItem[]): Promise<ContentCalendarItem[]> {
     for (const item of items) {
-      this.calendar.set(item.id, item);
+      saveMemoryOwned(this.calendar, item.id, item, `Content calendar item ${item.id}`);
     }
     return items;
   }
@@ -116,7 +125,7 @@ export class InMemoryContentRepository implements ContentRepository {
   }
 
   async savePerformance(snapshot: ContentPerformanceSnapshot): Promise<ContentPerformanceSnapshot> {
-    this.performance.set(snapshot.id, snapshot);
+    saveMemoryOwned(this.performance, snapshot.id, snapshot, `Content performance ${snapshot.id}`);
     return snapshot;
   }
 
@@ -172,19 +181,33 @@ function asContentPerformanceSnapshot(value: DocumentData): ContentPerformanceSn
 export class FirestoreContentRepository implements ContentRepository {
   constructor(private readonly db: Firestore) {}
 
+  private saveOwned(collection: string, id: string, tenantId: string, value: object, label: string): Promise<void> {
+    return setTenantOwnedDocument({
+      db: this.db,
+      collection,
+      id,
+      tenantId,
+      data: asDocumentData(value),
+      label
+    });
+  }
+
   async saveDraft(draft: ContentDraft): Promise<ContentDraft> {
-    await this.db.collection("contentDrafts").doc(draft.id).set(asDocumentData(draft));
+    await this.saveOwned("contentDrafts", draft.id, draft.tenantId, draft, `Content draft ${draft.id}`);
     return draft;
   }
 
   async updateDraft(tenantId: ID, draftId: ID, patch: Partial<ContentDraft>): Promise<ContentDraft | null> {
-    const existing = await this.getDraft(tenantId, draftId);
-    if (!existing) {
-      return null;
-    }
-    const updated = { ...existing, ...patch };
-    await this.db.collection("contentDrafts").doc(draftId).set(asDocumentData(updated));
-    return updated;
+    const ref = this.db.collection("contentDrafts").doc(draftId);
+    return this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) return null;
+      assertTenantDocumentOwner(snapshot.data(), tenantId, `Content draft ${draftId}`);
+      const existing = asContentDraft(snapshot.data() ?? {});
+      const updated = { ...existing, ...patch, id: existing.id, tenantId: existing.tenantId };
+      transaction.set(ref, asDocumentData(updated));
+      return updated;
+    });
   }
 
   async getDraft(tenantId: ID, draftId: ID): Promise<ContentDraft | null> {
@@ -204,7 +227,7 @@ export class FirestoreContentRepository implements ContentRepository {
   }
 
   async saveEligibility(record: ContentEligibilityRecord): Promise<ContentEligibilityRecord> {
-    await this.db.collection("contentEligibility").doc(record.id).set(asDocumentData(record));
+    await this.saveOwned("contentEligibility", record.id, record.tenantId, record, `Content eligibility ${record.id}`);
     return record;
   }
 
@@ -226,7 +249,7 @@ export class FirestoreContentRepository implements ContentRepository {
   }
 
   async saveSettings(settings: ContentSettings): Promise<ContentSettings> {
-    await this.db.collection("contentSettings").doc(settings.tenantId).set(asDocumentData(settings));
+    await this.saveOwned("contentSettings", settings.tenantId, settings.tenantId, settings, `Content settings ${settings.tenantId}`);
     return settings;
   }
 
@@ -236,7 +259,7 @@ export class FirestoreContentRepository implements ContentRepository {
   }
 
   async saveShowcase(showcase: ContentShowcase): Promise<ContentShowcase> {
-    await this.db.collection("contentShowcases").doc(showcase.id).set(asDocumentData(showcase));
+    await this.saveOwned("contentShowcases", showcase.id, showcase.tenantId, showcase, `Content showcase ${showcase.id}`);
     return showcase;
   }
 
@@ -258,7 +281,7 @@ export class FirestoreContentRepository implements ContentRepository {
 
   async saveCalendarItems(items: ContentCalendarItem[]): Promise<ContentCalendarItem[]> {
     for (const item of items) {
-      await this.db.collection("contentCalendar").doc(item.id).set(asDocumentData(item));
+      await this.saveOwned("contentCalendar", item.id, item.tenantId, item, `Content calendar item ${item.id}`);
     }
     return items;
   }
@@ -271,7 +294,7 @@ export class FirestoreContentRepository implements ContentRepository {
   }
 
   async savePerformance(snapshot: ContentPerformanceSnapshot): Promise<ContentPerformanceSnapshot> {
-    await this.db.collection("contentPerformance").doc(snapshot.id).set(asDocumentData(snapshot));
+    await this.saveOwned("contentPerformance", snapshot.id, snapshot.tenantId, snapshot, `Content performance ${snapshot.id}`);
     return snapshot;
   }
 

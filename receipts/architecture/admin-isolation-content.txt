@@ -1,0 +1,20 @@
+ADMIN SDK ISOLATION - CONTENT
+Date: 2026-07-27
+
+Enforcement
+- `core/tenantOwnedWrite.ts` checks existing tenant ownership and writes in one Firestore transaction.
+- Content drafts, eligibility, settings, showcases, calendar items, and performance snapshots use the seam.
+- Draft updates read, verify, preserve `id` and `tenantId`, and write in one transaction.
+- Existing records without a valid tenant owner fail closed.
+- In-memory stores reject the same cross-tenant collisions and preserve tenant identity.
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 170 modules.
+- Focused Content boundary tests: 3 tests, 3 pass, 0 fail.
+- Adjacent Content suite: 7/8, with only the known-red NexReach response-wording assertion.
+- npm test: no-browser guard passed across 63 default test files; 366 tests, 363 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- Firebase emulator-backed Admin SDK proof remains open.
+- No browser was launched.
