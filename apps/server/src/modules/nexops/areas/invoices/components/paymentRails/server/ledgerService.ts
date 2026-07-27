@@ -25,7 +25,7 @@ import {
   type ReceiptReviewChannel,
   type Refund
 } from "@nexteam/core";
-import type { NativeCrmRepository } from "@nexteam/providers";
+import type { NativeCrmRepository, TenantOwnedPatch } from "@nexteam/providers";
 import type { CommsRail } from "../../../../../../../comms/gmailRegistry.js";
 import type { MediaRepository } from "../../../../../../../fielddocs/mediaRepository.js";
 import { renderFieldReportPdf } from "../../../../../../../fielddocs/reportService.js";
@@ -768,7 +768,8 @@ export class LedgerService {
       overdue,
       ...(invoice.status === "bad_debt" ? { writtenOffAmount } : {})
     };
-    const patch: Partial<Invoice> = {
+    const patch: TenantOwnedPatch<Invoice> = {
+      tenantId: invoice.tenantId,
       status: nextStatus,
       ...(nextStatus === "paid" ? { paidAt: invoice.paidAt ?? now() } : {}),
       ledger: nextLedger,
@@ -1043,6 +1044,7 @@ export class LedgerService {
     const nextLineItems = input.lineItems ? normalizeInvoiceLineItems(input.lineItems) : invoice.lineItems;
     const totals = calculateInvoiceTotals(nextLineItems, input.discount ?? invoice.discount, input.taxRate ?? invoice.totals.taxRate ?? 0);
     const saved = await this.deps.crmRepository.updateInvoice(invoice.id, {
+      tenantId: invoice.tenantId,
       ...(input.title?.trim() ? { title: input.title.trim() } : {}),
       ...(input.lineItems ? { lineItems: nextLineItems } : {}),
       totals,
@@ -1165,6 +1167,7 @@ export class LedgerService {
     }
     const nextStatus = invoice.status === "draft" ? "sent" : invoice.status === "partial_pay" ? "partial_pay" : invoice.status === "paid" ? "paid" : "awaiting_payment";
     const saved = await this.deps.crmRepository.updateInvoice(invoice.id, {
+      tenantId: invoice.tenantId,
       status: nextStatus,
       sentAt,
       updatedAt: sentAt,
@@ -1733,6 +1736,7 @@ export class LedgerService {
       }
       await this.releaseInvoiceApplications(input.tenantId, invoice.id, input.actorId, "Released because the invoice was voided.");
       const updated = await this.deps.crmRepository.updateInvoice(invoice.id, {
+        tenantId: input.tenantId,
         status: "void",
         voidedAt: now(),
         voidedBy: input.actorId,
@@ -1752,6 +1756,7 @@ export class LedgerService {
     }
 
     const updated = await this.deps.crmRepository.updateInvoice(invoice.id, {
+      tenantId: input.tenantId,
       status: "bad_debt",
       badDebtAt: now(),
       badDebtBy: input.actorId,

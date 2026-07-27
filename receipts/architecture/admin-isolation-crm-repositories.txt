@@ -1,0 +1,18 @@
+ADMIN SDK ISOLATION - CRM REPOSITORIES
+Date: 2026-07-27
+
+Enforcement
+- Contact clients/properties, Requests/forms, Quote Templates, Quotes, Jobs, Invoices, CRM settings, ledger records, billing profiles, invoice/visit reminders, action alerts, and lifecycle events use transactional tenant-owned writes.
+- Client/property deletion verifies tenant ownership in the same transaction as deletion.
+- Request, Quote, Job, and Invoice update contracts require tenantId at compile time and at runtime; persistence verifies the stored owner and preserves id/tenantId in the transaction.
+- Twenty raw repository callers now pass tenant context explicitly. Provider-facing CRM methods remain ergonomic because NativeAdapter verifies ownership and injects its bound tenant.
+- Number reservations already used a tenant-checked Firestore transaction and remain unchanged.
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass after tenant context was supplied to every raw update caller.
+- npm run build: pass, Vite transformed 173 modules.
+- CRM/Job/Ledger/Request focused tests: 52 tests, 52 pass, 0 fail.
+- Firestore CRM boundary test rejects cross-tenant same-ID create/update and preserves tenant identity.
+- npm test: 370 tests, 367 pass, 3 fail; the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- No browser was launched. Emulator-backed proof remains a separate checkpoint.

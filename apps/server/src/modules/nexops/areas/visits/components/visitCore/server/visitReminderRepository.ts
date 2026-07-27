@@ -1,5 +1,6 @@
 import type { DocumentData, Firestore } from "firebase-admin/firestore";
 import { z } from "zod";
+import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export type VisitReminderStatus = "pending" | "sent" | "cancelled";
 
@@ -57,6 +58,7 @@ export class MemoryVisitReminderRepository implements VisitReminderRepository {
 
   async upsertVisitReminder(record: VisitReminderRecord): Promise<VisitReminderRecord> {
     const parsed = visitReminderSchema.parse(record) as VisitReminderRecord;
+    assertMemoryTenantOwner(this.records.get(parsed.id), parsed.tenantId, `Visit reminder ${parsed.id}`);
     this.records.set(parsed.id, parsed);
     return parsed;
   }
@@ -72,7 +74,7 @@ export class FirestoreVisitReminderRepository implements VisitReminderRepository
 
   async upsertVisitReminder(record: VisitReminderRecord): Promise<VisitReminderRecord> {
     const parsed = visitReminderSchema.parse(record) as VisitReminderRecord;
-    await this.db.collection("jobVisitReminders").doc(parsed.id).set(removeUndefined(parsed) as DocumentData, { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "jobVisitReminders", id: parsed.id, tenantId: parsed.tenantId, data: removeUndefined(parsed) as DocumentData, label: `Visit reminder ${parsed.id}` });
     return parsed;
   }
 }

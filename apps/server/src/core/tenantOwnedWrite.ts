@@ -41,3 +41,42 @@ export function assertMemoryTenantOwner(
     throw new RailError(`${label} belongs to another tenant.`, { provider: "native", op: "tenantOwnedWrite", status: 409 });
   }
 }
+
+export async function updateTenantOwnedDocument<T extends DocumentData>(input: {
+  db: Firestore;
+  collection: string;
+  id: string;
+  tenantId: string;
+  label: string;
+  update: (existing: DocumentData) => T;
+}): Promise<T> {
+  const ref = input.db.collection(input.collection).doc(input.id);
+  return input.db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) {
+      throw new RailError(`${input.label} was not found.`, { provider: "native", op: "tenantOwnedWrite", status: 404 });
+    }
+    const existing = snapshot.data();
+    assertTenantDocumentOwner(existing, input.tenantId, input.label);
+    const next = input.update(existing ?? {});
+    transaction.set(ref, next);
+    return next;
+  });
+}
+
+export async function deleteTenantOwnedDocument(input: {
+  db: Firestore;
+  collection: string;
+  id: string;
+  tenantId: string;
+  label: string;
+}): Promise<boolean> {
+  const ref = input.db.collection(input.collection).doc(input.id);
+  return input.db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) return false;
+    assertTenantDocumentOwner(snapshot.data(), input.tenantId, input.label);
+    transaction.delete(ref);
+    return true;
+  });
+}

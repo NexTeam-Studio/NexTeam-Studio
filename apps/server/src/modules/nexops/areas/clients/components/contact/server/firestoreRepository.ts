@@ -1,8 +1,9 @@
 import type { Firestore } from "firebase-admin/firestore";
-import { clientSchema, propertySchema, RailError, type Client, type Property } from "@nexteam/core";
+import { clientSchema, propertySchema, type Client, type Property } from "@nexteam/core";
 
 
 import { asDocumentData, createTenantFirestoreReader } from "../../../../../../../crm/firestoreRepositoryBase.js";
+import { deleteTenantOwnedDocument, setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createContactFirestoreRepository(db: Firestore) {
   const { listByTenant } = createTenantFirestoreReader(db);
@@ -16,16 +17,7 @@ export function createContactFirestoreRepository(db: Firestore) {
       },
 
     async deleteClient(tenantId: string, clientId: string): Promise<void> {
-        const ref = db.collection("clients").doc(clientId);
-        const snapshot = await ref.get();
-        if (!snapshot.exists) {
-          return;
-        }
-        const parsed = clientSchema.parse(snapshot.data()) as Client;
-        if (parsed.tenantId !== tenantId) {
-          throw new RailError(`Client ${clientId} was not found for tenant ${tenantId}.`, { provider: "native", op: "deleteClient", status: 404 });
-        }
-        await ref.delete();
+        await deleteTenantOwnedDocument({ db, collection: "clients", id: clientId, tenantId, label: `Client ${clientId}` });
       },
 
     async deletePropertiesForClient(tenantId: string, clientId: string): Promise<string[]> {
@@ -37,30 +29,29 @@ export function createContactFirestoreRepository(db: Firestore) {
         if (snapshot.empty) {
           return [];
         }
-        const batch = db.batch();
         const deletedIds: string[] = [];
         for (const doc of snapshot.docs) {
-          deletedIds.push(doc.id);
-          batch.delete(doc.ref);
+          const deleted = await deleteTenantOwnedDocument({ db, collection: "properties", id: doc.id, tenantId, label: `Property ${doc.id}` });
+          if (deleted) deletedIds.push(doc.id);
         }
-        await batch.commit();
         return deletedIds;
       },
 
     async createClient(client: Client): Promise<Client> {
-        await db.collection("clients").doc(client.id).set(asDocumentData(client));
-        return clientSchema.parse(client);
+        const parsed = clientSchema.parse(client) as Client;
+        await setTenantOwnedDocument({ db, collection: "clients", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Client ${parsed.id}` });
+        return parsed;
       },
 
     async upsertClient(client: Client): Promise<Client> {
         const parsed = clientSchema.parse(client) as Client;
-        await db.collection("clients").doc(parsed.id).set(asDocumentData(parsed), { merge: false });
+        await setTenantOwnedDocument({ db, collection: "clients", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Client ${parsed.id}` });
         return parsed;
       },
 
     async upsertProperty(property: Property): Promise<Property> {
         const parsed = propertySchema.parse(property) as Property;
-        await db.collection("properties").doc(parsed.id).set(asDocumentData(parsed), { merge: false });
+        await setTenantOwnedDocument({ db, collection: "properties", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Property ${parsed.id}` });
         return parsed;
       }
   };

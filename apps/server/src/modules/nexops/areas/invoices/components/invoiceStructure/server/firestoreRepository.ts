@@ -3,6 +3,7 @@ import { invoiceSchema, RailError, type Invoice } from "@nexteam/core";
 
 
 import { asDocumentData, createTenantFirestoreReader } from "../../../../../../../crm/firestoreRepositoryBase.js";
+import { setTenantOwnedDocument, updateTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createInvoiceFirestoreRepository(db: Firestore) {
   const { listByTenant } = createTenantFirestoreReader(db);
@@ -12,19 +13,18 @@ export function createInvoiceFirestoreRepository(db: Firestore) {
       },
 
     async createInvoice(invoice: Invoice): Promise<Invoice> {
-        await db.collection("invoices").doc(invoice.id).set(asDocumentData(invoice));
-        return invoiceSchema.parse(invoice) as Invoice;
+        const parsed = invoiceSchema.parse(invoice) as Invoice;
+        await setTenantOwnedDocument({ db, collection: "invoices", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Invoice ${parsed.id}` });
+        return parsed;
       },
 
     async updateInvoice(id: string, patch: Partial<Invoice>): Promise<Invoice> {
-        const ref = db.collection("invoices").doc(id);
-        const snapshot = await ref.get();
-        if (!snapshot.exists) {
-          throw new RailError(`Native invoice ${id} was not found.`, { provider: "native", op: "updateInvoice", status: 404 });
-        }
-        const next = invoiceSchema.parse({ ...snapshot.data(), ...patch }) as Invoice;
-        await ref.set(asDocumentData(next));
-        return next;
+        if (!patch.tenantId) throw new RailError("Invoice update requires tenant context.", { provider: "native", op: "updateInvoice", status: 400 });
+        const next = await updateTenantOwnedDocument({
+          db, collection: "invoices", id, tenantId: patch.tenantId, label: `Native invoice ${id}`,
+          update: (existing) => asDocumentData(invoiceSchema.parse({ ...existing, ...patch, id, tenantId: patch.tenantId }) as Invoice)
+        });
+        return invoiceSchema.parse(next) as Invoice;
       }
   };
 }

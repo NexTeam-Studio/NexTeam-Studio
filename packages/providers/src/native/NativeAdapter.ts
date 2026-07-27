@@ -21,6 +21,8 @@ import {
 import { VGB_LINE_ITEM_CATALOG } from "@nexteam/industry-packs";
 import { advanceDocumentNumber } from "@nexteam/shared";
 
+export type TenantOwnedPatch<T extends { tenantId: string }> = Partial<T> & Pick<T, "tenantId">;
+
 export interface NativeCrmRepository {
   listClients(tenantId: string): Promise<Client[]>;
   listProperties(tenantId: string): Promise<Property[]>;
@@ -29,7 +31,7 @@ export interface NativeCrmRepository {
   listRequests(tenantId: string): Promise<ServiceRequest[]>;
   getRequest(tenantId: string, id: string): Promise<ServiceRequest | null>;
   createRequest(request: ServiceRequest): Promise<ServiceRequest>;
-  updateRequest(id: string, patch: Partial<ServiceRequest>): Promise<ServiceRequest>;
+  updateRequest(id: string, patch: TenantOwnedPatch<ServiceRequest>): Promise<ServiceRequest>;
   listRequestForms(tenantId: string): Promise<RequestForm[]>;
   getRequestForm(tenantId: string, id: string): Promise<RequestForm | null>;
   getRequestFormBySlug(tenantId: string, slug: string): Promise<RequestForm | null>;
@@ -49,9 +51,9 @@ export interface NativeCrmRepository {
   upsertJob(job: Job): Promise<Job>;
   createQuote(quote: Quote): Promise<Quote>;
   createInvoice(invoice: Invoice): Promise<Invoice>;
-  updateQuote(id: string, patch: Partial<Quote>): Promise<Quote>;
-  updateInvoice(id: string, patch: Partial<Invoice>): Promise<Invoice>;
-  updateJob(id: string, patch: Partial<Job>): Promise<Job>;
+  updateQuote(id: string, patch: TenantOwnedPatch<Quote>): Promise<Quote>;
+  updateInvoice(id: string, patch: TenantOwnedPatch<Invoice>): Promise<Invoice>;
+  updateJob(id: string, patch: TenantOwnedPatch<Job>): Promise<Job>;
   reserveDocumentNumber(tenantId: string, kind: DocumentSequenceKind): Promise<string>;
 }
 
@@ -538,7 +540,7 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
     return request;
   }
 
-  async updateRequest(id: string, patch: Partial<ServiceRequest>): Promise<ServiceRequest> {
+  async updateRequest(id: string, patch: TenantOwnedPatch<ServiceRequest>): Promise<ServiceRequest> {
     const index = this.records.requests.findIndex((request) => request.id === id);
     if (index === -1) {
       throw new RailError(`Native request ${id} was not found.`, { provider: "native", op: "updateRequest", status: 404 });

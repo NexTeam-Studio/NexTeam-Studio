@@ -833,6 +833,7 @@ export async function materializeRequestCaptureContext(
   const requestWithMedia = upsertRequestImageFieldValues(request, mediaIds);
   const materialized = await materializeRequestClient(repository, requestWithMedia);
   const persisted = await repository.updateRequest(request.id, {
+    tenantId: request.tenantId,
     intake: requestWithMedia.intake,
     narrative: requestWithMedia.narrative,
     clientName: requestWithMedia.clientName,
@@ -865,6 +866,7 @@ export async function convertRequestToQuote(repository: NativeCrmRepository, req
   });
   const quote = await repository.createQuote(draft);
   const updatedRequest = await repository.updateRequest(request.id, {
+    tenantId: request.tenantId,
     status: "converted_to_quote",
     convertedQuoteId: quote.id,
     selectedClientId: materialized.client.id,
@@ -894,6 +896,7 @@ export async function convertRequestToJob(repository: NativeCrmRepository, reque
     updatedAt: timestamp
   });
   const updatedRequest = await repository.updateRequest(request.id, {
+    tenantId: request.tenantId,
     status: "converted_to_job",
     convertedJobId: job.id,
     selectedClientId: materialized.client.id,
@@ -1055,7 +1058,7 @@ export async function backfillLegacyLeads(input: {
     const saved = await input.repository.createRequest(built);
     const notified = await notifyRequestCreated(saved, input.automation);
     if (notified !== saved) {
-      await input.repository.updateRequest(saved.id, { notifications: notified.notifications, updatedAt: notified.updatedAt });
+      await input.repository.updateRequest(saved.id, { tenantId: saved.tenantId, notifications: notified.notifications, updatedAt: notified.updatedAt });
     }
     created.push(notified);
   }

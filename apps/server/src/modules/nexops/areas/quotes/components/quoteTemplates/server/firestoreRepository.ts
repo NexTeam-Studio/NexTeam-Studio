@@ -3,6 +3,7 @@ import { quoteTemplateSchema, type QuoteTemplate } from "@nexteam/core";
 import { defaultQuoteTemplates } from "@nexteam/providers";
 
 import { asDocumentData, createTenantFirestoreReader } from "../../../../../../../crm/firestoreRepositoryBase.js";
+import { setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createQuoteTemplateFirestoreRepository(db: Firestore) {
   const { listByTenant } = createTenantFirestoreReader(db);
@@ -24,7 +25,7 @@ export function createQuoteTemplateFirestoreRepository(db: Firestore) {
 
     async upsertQuoteTemplate(template: QuoteTemplate): Promise<QuoteTemplate> {
         const parsed = quoteTemplateSchema.parse(template) as QuoteTemplate;
-        await db.collection("quoteTemplates").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+        await setTenantOwnedDocument({ db, collection: "quoteTemplates", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Quote template ${parsed.id}` });
         return parsed;
       }
   };

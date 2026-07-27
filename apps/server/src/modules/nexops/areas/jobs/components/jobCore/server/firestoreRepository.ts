@@ -3,6 +3,7 @@ import { jobSchema, RailError, type Job } from "@nexteam/core";
 
 
 import { asDocumentData, createTenantFirestoreReader } from "../../../../../../../crm/firestoreRepositoryBase.js";
+import { setTenantOwnedDocument, updateTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createJobFirestoreRepository(db: Firestore) {
   const { listByTenant } = createTenantFirestoreReader(db);
@@ -13,19 +14,17 @@ export function createJobFirestoreRepository(db: Firestore) {
 
     async upsertJob(job: Job): Promise<Job> {
         const parsed = jobSchema.parse(job) as Job;
-        await db.collection("jobs").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+        await setTenantOwnedDocument({ db, collection: "jobs", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Job ${parsed.id}` });
         return parsed;
       },
 
     async updateJob(id: string, patch: Partial<Job>): Promise<Job> {
-        const ref = db.collection("jobs").doc(id);
-        const snapshot = await ref.get();
-        if (!snapshot.exists) {
-          throw new RailError(`Native job ${id} was not found.`, { provider: "native", op: "updateJob", status: 404 });
-        }
-        const next = jobSchema.parse({ ...snapshot.data(), ...patch }) as Job;
-        await ref.set(asDocumentData(next));
-        return next;
+        if (!patch.tenantId) throw new RailError("Job update requires tenant context.", { provider: "native", op: "updateJob", status: 400 });
+        const next = await updateTenantOwnedDocument({
+          db, collection: "jobs", id, tenantId: patch.tenantId, label: `Native job ${id}`,
+          update: (existing) => asDocumentData(jobSchema.parse({ ...existing, ...patch, id, tenantId: patch.tenantId }) as Job)
+        });
+        return jobSchema.parse(next) as Job;
       }
   };
 }

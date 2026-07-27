@@ -3,6 +3,7 @@ import { crmSettingsSchema, type CrmSettings } from "@nexteam/core";
 import { defaultCrmSettings } from "@nexteam/providers";
 import { asDocumentData } from "../../../../../../../crm/firestoreRepositoryBase.js";
 import { requireTenantMatch } from "../../../../../../../core/tenantConfig.js";
+import { setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createTenantConfigFirestoreRepository(db: Firestore) {
   return {
@@ -22,7 +23,7 @@ export function createTenantConfigFirestoreRepository(db: Firestore) {
 
     async saveCrmSettings(settings: CrmSettings): Promise<CrmSettings> {
         const parsed = crmSettingsSchema.parse(settings) as CrmSettings;
-        await db.collection("crmSettings").doc(parsed.tenantId).set(asDocumentData(parsed), { merge: true });
+        await setTenantOwnedDocument({ db, collection: "crmSettings", id: parsed.tenantId, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `CRM settings ${parsed.tenantId}` });
         return parsed;
       }
   };

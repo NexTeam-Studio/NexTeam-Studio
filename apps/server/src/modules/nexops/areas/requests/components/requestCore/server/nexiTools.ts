@@ -141,6 +141,7 @@ export function createRequestCoreNexiTools(context: CrmToolContext, includeWrite
           });
           const request = notified.notifications
             ? await options.requestRepository.updateRequest(created.id, {
+              tenantId: created.tenantId,
               notifications: notified.notifications,
               updatedAt: notified.updatedAt
             })

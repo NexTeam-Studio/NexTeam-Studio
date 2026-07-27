@@ -402,7 +402,7 @@ export async function syncExpiredQuote(
   if (status === quote.status) {
     return quote;
   }
-  return repository.updateQuote(quote.id, { status, updatedAt: timestamp });
+  return repository.updateQuote(quote.id, { tenantId: quote.tenantId, status, updatedAt: timestamp });
 }
 
 export function archiveQuoteVersion(quote: Quote, reason: "renewed" | "edited_before_send", timestamp = now()) {

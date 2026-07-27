@@ -16,6 +16,7 @@ import {
   type Refund
 } from "@nexteam/core";
 import type { z } from "zod";
+import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 function removeUndefined(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -76,6 +77,7 @@ export class MemoryLedgerRepository implements LedgerRepository {
 
   async upsertPayment(payment: Payment): Promise<Payment> {
     const parsed = paymentSchema.parse(payment) as Payment;
+    assertMemoryTenantOwner(this.payments.get(parsed.id), parsed.tenantId, `Payment ${parsed.id}`);
     this.payments.set(parsed.id, parsed);
     return parsed;
   }
@@ -93,6 +95,7 @@ export class MemoryLedgerRepository implements LedgerRepository {
 
   async upsertDeposit(deposit: Deposit): Promise<Deposit> {
     const parsed = depositSchema.parse(deposit) as Deposit;
+    assertMemoryTenantOwner(this.deposits.get(parsed.id), parsed.tenantId, `Deposit ${parsed.id}`);
     this.deposits.set(parsed.id, parsed);
     return parsed;
   }
@@ -110,6 +113,7 @@ export class MemoryLedgerRepository implements LedgerRepository {
 
   async upsertRefund(refund: Refund): Promise<Refund> {
     const parsed = refundSchema.parse(refund) as Refund;
+    assertMemoryTenantOwner(this.refunds.get(parsed.id), parsed.tenantId, `Refund ${parsed.id}`);
     this.refunds.set(parsed.id, parsed);
     return parsed;
   }
@@ -127,6 +131,7 @@ export class MemoryLedgerRepository implements LedgerRepository {
 
   async upsertCredit(credit: Credit): Promise<Credit> {
     const parsed = creditSchema.parse(credit) as Credit;
+    assertMemoryTenantOwner(this.credits.get(parsed.id), parsed.tenantId, `Credit ${parsed.id}`);
     this.credits.set(parsed.id, parsed);
     return parsed;
   }
@@ -144,6 +149,7 @@ export class MemoryLedgerRepository implements LedgerRepository {
 
   async upsertReceiptReview(review: ReceiptReview): Promise<ReceiptReview> {
     const parsed = receiptReviewSchema.parse(review) as ReceiptReview;
+    assertMemoryTenantOwner(this.receiptReviews.get(parsed.id), parsed.tenantId, `Receipt review ${parsed.id}`);
     this.receiptReviews.set(parsed.id, parsed);
     return parsed;
   }
@@ -154,7 +160,9 @@ export class MemoryLedgerRepository implements LedgerRepository {
 
   async upsertClientBillingProfile(profile: ClientBillingProfile): Promise<ClientBillingProfile> {
     const parsed = clientBillingProfileSchema.parse(profile) as ClientBillingProfile;
-    this.billingProfiles.set(`${parsed.tenantId}:${parsed.clientId}`, parsed);
+    const id = `${parsed.tenantId}:${parsed.clientId}`;
+    assertMemoryTenantOwner(this.billingProfiles.get(id), parsed.tenantId, `Client billing profile ${id}`);
+    this.billingProfiles.set(id, parsed);
     return parsed;
   }
 }
@@ -183,7 +191,7 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
   async upsertPayment(payment: Payment): Promise<Payment> {
     const parsed = paymentSchema.parse(payment) as Payment;
-    await this.db.collection("ledgerPayments").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "ledgerPayments", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Payment ${parsed.id}` });
     return parsed;
   }
 
@@ -203,7 +211,7 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
   async upsertDeposit(deposit: Deposit): Promise<Deposit> {
     const parsed = depositSchema.parse(deposit) as Deposit;
-    await this.db.collection("ledgerDeposits").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "ledgerDeposits", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Deposit ${parsed.id}` });
     return parsed;
   }
 
@@ -223,7 +231,7 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
   async upsertRefund(refund: Refund): Promise<Refund> {
     const parsed = refundSchema.parse(refund) as Refund;
-    await this.db.collection("ledgerRefunds").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "ledgerRefunds", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Refund ${parsed.id}` });
     return parsed;
   }
 
@@ -243,7 +251,7 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
   async upsertCredit(credit: Credit): Promise<Credit> {
     const parsed = creditSchema.parse(credit) as Credit;
-    await this.db.collection("ledgerCredits").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "ledgerCredits", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Credit ${parsed.id}` });
     return parsed;
   }
 
@@ -263,7 +271,7 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
   async upsertReceiptReview(review: ReceiptReview): Promise<ReceiptReview> {
     const parsed = receiptReviewSchema.parse(review) as ReceiptReview;
-    await this.db.collection("ledgerReceiptReviews").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "ledgerReceiptReviews", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Receipt review ${parsed.id}` });
     return parsed;
   }
 
@@ -278,7 +286,8 @@ export class FirestoreLedgerRepository implements LedgerRepository {
 
   async upsertClientBillingProfile(profile: ClientBillingProfile): Promise<ClientBillingProfile> {
     const parsed = clientBillingProfileSchema.parse(profile) as ClientBillingProfile;
-    await this.db.collection("clientBillingProfiles").doc(`${parsed.tenantId}_${parsed.clientId}`).set(asDocumentData(parsed), { merge: true });
+    const id = `${parsed.tenantId}_${parsed.clientId}`;
+    await setTenantOwnedDocument({ db: this.db, collection: "clientBillingProfiles", id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Client billing profile ${id}` });
     return parsed;
   }
 }

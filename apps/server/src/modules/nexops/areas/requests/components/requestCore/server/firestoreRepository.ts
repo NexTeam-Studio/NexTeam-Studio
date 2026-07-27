@@ -3,6 +3,7 @@ import { requestFormSchema, serviceRequestSchema, RailError, type RequestForm, t
 
 
 import { asDocumentData, createTenantFirestoreReader } from "../../../../../../../crm/firestoreRepositoryBase.js";
+import { setTenantOwnedDocument, updateTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createRequestFirestoreRepository(db: Firestore) {
   const { listByTenant } = createTenantFirestoreReader(db);
@@ -23,19 +24,17 @@ export function createRequestFirestoreRepository(db: Firestore) {
 
     async createRequest(request: ServiceRequest): Promise<ServiceRequest> {
         const parsed = serviceRequestSchema.parse(request) as ServiceRequest;
-        await db.collection("requests").doc(parsed.id).set(asDocumentData(parsed));
+        await setTenantOwnedDocument({ db, collection: "requests", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Request ${parsed.id}` });
         return parsed;
       },
 
     async updateRequest(id: string, patch: Partial<ServiceRequest>): Promise<ServiceRequest> {
-        const ref = db.collection("requests").doc(id);
-        const snapshot = await ref.get();
-        if (!snapshot.exists) {
-          throw new RailError(`Native request ${id} was not found.`, { provider: "native", op: "updateRequest", status: 404 });
-        }
-        const next = serviceRequestSchema.parse({ ...snapshot.data(), ...patch }) as ServiceRequest;
-        await ref.set(asDocumentData(next));
-        return next;
+        if (!patch.tenantId) throw new RailError("Request update requires tenant context.", { provider: "native", op: "updateRequest", status: 400 });
+        const next = await updateTenantOwnedDocument({
+          db, collection: "requests", id, tenantId: patch.tenantId, label: `Native request ${id}`,
+          update: (existing) => asDocumentData(serviceRequestSchema.parse({ ...existing, ...patch, id, tenantId: patch.tenantId }) as ServiceRequest)
+        });
+        return serviceRequestSchema.parse(next) as ServiceRequest;
       },
 
     async listRequestForms(tenantId: string): Promise<RequestForm[]> {
@@ -65,7 +64,7 @@ export function createRequestFirestoreRepository(db: Firestore) {
 
     async upsertRequestForm(form: RequestForm): Promise<RequestForm> {
         const parsed = requestFormSchema.parse(form) as RequestForm;
-        await db.collection("requestForms").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+        await setTenantOwnedDocument({ db, collection: "requestForms", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Request form ${parsed.id}` });
         return parsed;
       }
   };

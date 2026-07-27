@@ -836,6 +836,7 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
       || notified.notifications.clientConfirmationAt !== created.notifications?.clientConfirmationAt
     )) {
       return repository.updateRequest(created.id, {
+        tenantId: created.tenantId,
         notifications: notified.notifications,
         updatedAt: notified.updatedAt
       });

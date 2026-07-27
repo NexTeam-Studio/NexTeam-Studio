@@ -66,7 +66,7 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         tenantId,
         kind: "quote",
         reserve: (targetTenantId, kind) => reserveDocumentNumber(repository, targetTenantId, kind),
-        update: (id, patch) => repository.updateQuote(id, patch)
+        update: (id, patch) => repository.updateQuote(id, { ...patch, tenantId })
       });
       const quotes: Quote[] = [];
       for (const quote of numbered) {

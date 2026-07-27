@@ -456,6 +456,7 @@ export class JobLifecycleService {
       return job;
     }
     const updated = await this.deps.crmRepository.updateJob(job.id, {
+      tenantId: job.tenantId,
       status: derived,
       updatedAt: context.referenceTime
     });
@@ -486,6 +487,7 @@ export class JobLifecycleService {
       return job;
     }
     return this.deps.crmRepository.updateJob(job.id, {
+      tenantId: job.tenantId,
       startAt: first.start,
       endAt: last.end,
       updatedAt: now()
@@ -895,6 +897,7 @@ export class JobLifecycleService {
         resolvedByAction: "dismissed"
       });
       await this.deps.crmRepository.updateJob(job.id, {
+        tenantId: input.tenantId,
         archivedAt: timestamp,
         archivedBy: input.actorId,
         updatedAt: timestamp
@@ -916,6 +919,7 @@ export class JobLifecycleService {
     let updatedJob = job;
     if (input.action === "close" || input.action === "close_and_invoice") {
       updatedJob = await this.deps.crmRepository.updateJob(job.id, {
+        tenantId: input.tenantId,
         closedAt: timestamp,
         closedBy: input.actorId,
         updatedAt: timestamp
@@ -958,6 +962,7 @@ export class JobLifecycleService {
     if (input.action === "close" && !invoice) {
       if (state.invoices.some((candidate) => candidate.jobId === job.id && candidate.status !== "void")) {
         await this.deps.crmRepository.updateJob(job.id, {
+          tenantId: input.tenantId,
           archivedAt: timestamp,
           archivedBy: input.actorId,
           updatedAt: timestamp

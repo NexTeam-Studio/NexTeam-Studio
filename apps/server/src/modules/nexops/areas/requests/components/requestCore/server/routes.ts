@@ -228,6 +228,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         : defaultTenantId(env);
       const request = await getRequestOrThrow(tenantId, requestId);
       const saved = await repositoryForTenant().updateRequest(requestId, {
+        tenantId,
         status: "archived",
         archivedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -250,6 +251,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         : defaultTenantId(env);
       await getRequestOrThrow(tenantId, requestId);
       const saved = await repositoryForTenant().updateRequest(requestId, {
+        tenantId,
         status: "new",
         reopenedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

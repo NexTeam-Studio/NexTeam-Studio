@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
 import { RailError, eventTypeSchema, type EventType } from "@nexteam/core";
 import { z } from "zod";
+import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 import {
   FirestoreVisitReminderRepository,
   MemoryVisitReminderRepository,
@@ -131,6 +132,7 @@ export class MemoryJobLifecycleRepository implements JobLifecycleRepository {
 
   async upsertInvoiceReminder(record: InvoiceReminderRecord): Promise<InvoiceReminderRecord> {
     const parsed = invoiceReminderSchema.parse(record) as InvoiceReminderRecord;
+    assertMemoryTenantOwner(this.invoiceReminders.get(parsed.id), parsed.tenantId, `Invoice reminder ${parsed.id}`);
     this.invoiceReminders.set(parsed.id, parsed);
     return parsed;
   }
@@ -149,6 +151,7 @@ export class MemoryJobLifecycleRepository implements JobLifecycleRepository {
 
   async upsertJobActionAlert(record: JobActionAlertRecord): Promise<JobActionAlertRecord> {
     const parsed = jobActionAlertSchema.parse(record) as JobActionAlertRecord;
+    assertMemoryTenantOwner(this.jobActionAlerts.get(parsed.id), parsed.tenantId, `Job action alert ${parsed.id}`);
     this.jobActionAlerts.set(parsed.id, parsed);
     return parsed;
   }
@@ -185,7 +188,7 @@ export class FirestoreJobLifecycleRepository implements JobLifecycleRepository {
 
   async upsertInvoiceReminder(record: InvoiceReminderRecord): Promise<InvoiceReminderRecord> {
     const parsed = invoiceReminderSchema.parse(record) as InvoiceReminderRecord;
-    await this.db.collection("jobInvoiceReminders").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "jobInvoiceReminders", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Invoice reminder ${parsed.id}` });
     return parsed;
   }
 
@@ -203,7 +206,7 @@ export class FirestoreJobLifecycleRepository implements JobLifecycleRepository {
 
   async upsertJobActionAlert(record: JobActionAlertRecord): Promise<JobActionAlertRecord> {
     const parsed = jobActionAlertSchema.parse(record) as JobActionAlertRecord;
-    await this.db.collection("jobActionAlerts").doc(parsed.id).set(asDocumentData(parsed), { merge: true });
+    await setTenantOwnedDocument({ db: this.db, collection: "jobActionAlerts", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Job action alert ${parsed.id}` });
     return parsed;
   }
 
@@ -216,7 +219,7 @@ export class FirestoreJobLifecycleRepository implements JobLifecycleRepository {
 
   async appendLifecycleEvent(record: Omit<JobLifecycleEventRecord, "id">): Promise<JobLifecycleEventRecord> {
     const parsed = lifecycleEventSchema.parse({ ...record, id: `job_evt_${randomUUID()}` }) as JobLifecycleEventRecord;
-    await this.db.collection("jobLifecycleEvents").doc(parsed.id).set(asDocumentData(parsed));
+    await setTenantOwnedDocument({ db: this.db, collection: "jobLifecycleEvents", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Job lifecycle event ${parsed.id}` });
     return parsed;
   }
 }

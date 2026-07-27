@@ -251,6 +251,7 @@ export function registerSitesRoutes(app: Express, deps: SitesRouteDeps): void {
         });
         request = notified.notifications
           ? await deps.crmRepository.updateRequest(created.id, {
+            tenantId: created.tenantId,
             notifications: notified.notifications,
             updatedAt: notified.updatedAt
           })
