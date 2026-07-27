@@ -234,6 +234,7 @@ Do not hardcode new tool arrays in `nexiRoutes.ts`.
 - Nexi voice behavior now lives under `features/nexi/areas/voice/` and is composed by chat without sharing implementation files.
 - Root-level web helpers are no longer an informal ownership tier. Navigation/header/FAB/pattern-library/create-menu/notification code belongs to NexOps Shell; Home, Request Core, Contact creation, NexCam capture, and the NexDocs client workspace have feature owners; branding, UI primitives, communication templates, intake presentation, and signature capture live in named shared components. Web root now contains only the application bootstrap.
 - Global CSS follows the same ownership model. Component selectors live beside Request, Home, Contact, Visit, Nexi, Signature, UI Kit, Capture, Branding, or Shell; only cross-product foundation and responsive composition rules live under `shared/styles`. `shared/app/globalStyles.ts` is an order-only manifest and contains no selectors.
+- NexOps shell contracts and pure support are separate from stateful orchestration. `contracts/workspaceContracts.ts` defines the current composition/API shapes; `workspaceSupport.tsx` owns deterministic formatting, draft materialization, and shell glyphs. `NexOpsWorkspace.tsx` forwards their public exports for import compatibility but does not duplicate their implementation.
 
 ## Phase C Notes [tag: phase-c-notes]
 

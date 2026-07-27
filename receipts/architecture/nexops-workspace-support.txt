@@ -1,0 +1,19 @@
+NEXOPS WORKSPACE CONTRACT AND SUPPORT EXTRACTION
+Date: 2026-07-27
+
+Before and after
+- `NexOpsWorkspace.tsx`: 3,373 lines before, 2,315 lines after.
+- `contracts/workspaceContracts.ts`: 630 lines of explicit record, response, routing, capture, operator, and notification shapes.
+- `workspaceSupport.tsx`: 444 lines of pure media/phone/client/intake/draft/CSV/glyph behavior.
+- Implementations were removed from the workspace. Its export statements forward the owner files and contain no duplicate body.
+- Remaining workspace content is stateful orchestration, API mutation coordination, route transitions, and top-level composition; further controller extraction remains tracked by the target migration row.
+
+Verification
+- npm run lint: pass, 0 errors.
+- npm run typecheck: pass.
+- npm run build: pass, Vite transformed 164 modules; aggregate CSS remains 120.86 kB.
+- Focused web tests: 31 tests, 31 pass, 0 fail.
+- npm run check:collisions: 38 components, 703 pairs, zero overlaps.
+- npm test: no-browser guard passed across 61 default test files; 361 tests, 358 pass, 3 fail.
+- The three failures are the same known-red content-engine, fielddocs-nexi-tools, and platform assertions.
+- No browser was launched.
