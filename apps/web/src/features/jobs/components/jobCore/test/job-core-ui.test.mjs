@@ -5,7 +5,7 @@ import {
   inlineJobClientDraftCanSave,
   inlineJobClientDraftMissingFields,
   mergeJobClientOptions
-} from "../src/features/jobs/components/jobCore/NexOpsJobsPage.tsx";
+} from "../NexOpsJobsPage.tsx";
 
 test("inline job client draft requires name, telephone, and address before save", () => {
   assert.deepEqual(

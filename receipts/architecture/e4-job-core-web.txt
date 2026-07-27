@@ -1,0 +1,16 @@
+E4 Job Core web checkpoint
+Date: 2026-07-27
+
+Owned:
+- Real NexOpsJobsPage
+- jobCore.css extracted from root styles
+- Job Core UI tests moved under the component
+- Existing Job routes, tools, repository, approvals, and lifecycle policy
+
+Verification (non-browser):
+- npm run build: PASS (80 modules)
+- Job UI + lifecycle tests: PASS (9/9)
+
+Open:
+- Visit methods and reminder persistence still share JobLifecycleService/Repository until the next Visit Core checkpoint.
+- The older platform-subroute JobsSurface remains reachable and must be reconciled at router integration rather than deleted blindly.
