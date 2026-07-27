@@ -47,7 +47,68 @@ const components = [
   ["Numbering", [
     "apps/server/src/shared/numbering/",
     "packages/shared/src/numbering.ts"
+  ]],
+  ["Auth/Session", [
+    "apps/web/src/shared/auth/"
+  ]],
+  ["Operator Context", [
+    "apps/web/src/features/operatorContext/"
+  ]],
+  ["Nexi Chat", [
+    "apps/web/src/features/nexi/areas/chat/"
+  ]],
+  ["Nexi Voice", [
+    "apps/web/src/features/nexi/areas/voice/"
+  ]],
+  ["NexCam Capture", [
+    "apps/web/src/features/nexcam/areas/capture/"
+  ]],
+  ["NexCam Overview", [
+    "apps/web/src/features/nexcam/areas/overview/"
+  ]],
+  ["NexDocs Checklists", [
+    "apps/web/src/features/nexdocs/areas/checklists/"
+  ]],
+  ["NexDocs Media", [
+    "apps/web/src/features/nexdocs/areas/media/"
+  ]],
+  ["NexDocs Reports", [
+    "apps/web/src/features/nexdocs/areas/reports/"
+  ]],
+  ["Platform Routing", [
+    "apps/web/src/features/platform/"
+  ]],
+  ["Platform Overview", [
+    "apps/web/src/features/platformOverview/"
+  ]],
+  ["Tenant Overview", [
+    "apps/web/src/features/tenantOverview/"
+  ]],
+  ["NexReach Reputation", [
+    "apps/web/src/features/nexreach/areas/reputation/"
+  ]],
+  ["Approval Queue", [
+    "apps/web/src/features/approvalQueue/"
+  ]],
+  ["Content Queue", [
+    "apps/web/src/features/contentQueue/"
+  ]],
+  ["Queue Primitives", [
+    "apps/web/src/features/queueShared/"
   ]]
+];
+
+const sharedAllowlist = [
+  "apps/web/src/main.tsx",
+  "apps/web/src/styles.css",
+  "apps/web/src/shared/app/",
+  "apps/web/src/shared/router/",
+  "apps/web/src/features/nexopsShell/",
+  "apps/server/src/app/",
+  "apps/server/src/composeServerApp.ts",
+  "apps/server/src/server.ts",
+  "apps/server/src/fielddocs/",
+  "apps/server/src/nexi/"
 ];
 
 const trackedFiles = execFileSync("git", ["ls-files"], { encoding: "utf8" })
@@ -61,6 +122,7 @@ const owned = new Map(components.map(([name, roots]) => [
 ]));
 
 const failures = [];
+console.log(`Shared allowlist: ${sharedAllowlist.join(", ")}`);
 for (const [name, files] of owned) {
   if (files.size === 0) failures.push(`${name} owns no tracked implementation files`);
   console.log(`${name}: ${files.size} files`);

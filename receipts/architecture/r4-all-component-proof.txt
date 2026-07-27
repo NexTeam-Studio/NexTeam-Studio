@@ -1,0 +1,993 @@
+﻿R4 all-component collision and final verification proof
+Timestamp: 2026-07-27T09:50:47.9032672-04:00
+
+COMMAND: npm run check:collisions
+
+> check:collisions
+> node scripts/check-component-collisions.mjs
+
+Shared allowlist: apps/web/src/main.tsx, apps/web/src/styles.css, apps/web/src/shared/app/, apps/web/src/shared/router/, apps/web/src/features/nexopsShell/, apps/server/src/app/, apps/server/src/composeServerApp.ts, apps/server/src/server.ts, apps/server/src/fielddocs/, apps/server/src/nexi/
+Contact: 11 files
+Quote Templates: 7 files
+Quote Engine: 13 files
+Job Core: 10 files
+Visit Core: 10 files
+Invoice Structure: 16 files
+Payment Rails: 10 files
+Catalog: 4 files
+Tenant Config: 7 files
+Address/Location: 3 files
+Document Rendering: 4 files
+Numbering: 3 files
+Auth/Session: 6 files
+Operator Context: 2 files
+Nexi Chat: 2 files
+Nexi Voice: 2 files
+NexCam Capture: 3 files
+NexCam Overview: 1 files
+NexDocs Checklists: 1 files
+NexDocs Media: 2 files
+NexDocs Reports: 1 files
+Platform Routing: 4 files
+Platform Overview: 6 files
+Tenant Overview: 4 files
+NexReach Reputation: 3 files
+Approval Queue: 3 files
+Content Queue: 3 files
+Queue Primitives: 1 files
+Contact intersect Quote Templates: 0
+Contact intersect Quote Engine: 0
+Contact intersect Job Core: 0
+Contact intersect Visit Core: 0
+Contact intersect Invoice Structure: 0
+Contact intersect Payment Rails: 0
+Contact intersect Catalog: 0
+Contact intersect Tenant Config: 0
+Contact intersect Address/Location: 0
+Contact intersect Document Rendering: 0
+Contact intersect Numbering: 0
+Contact intersect Auth/Session: 0
+Contact intersect Operator Context: 0
+Contact intersect Nexi Chat: 0
+Contact intersect Nexi Voice: 0
+Contact intersect NexCam Capture: 0
+Contact intersect NexCam Overview: 0
+Contact intersect NexDocs Checklists: 0
+Contact intersect NexDocs Media: 0
+Contact intersect NexDocs Reports: 0
+Contact intersect Platform Routing: 0
+Contact intersect Platform Overview: 0
+Contact intersect Tenant Overview: 0
+Contact intersect NexReach Reputation: 0
+Contact intersect Approval Queue: 0
+Contact intersect Content Queue: 0
+Contact intersect Queue Primitives: 0
+Quote Templates intersect Quote Engine: 0
+Quote Templates intersect Job Core: 0
+Quote Templates intersect Visit Core: 0
+Quote Templates intersect Invoice Structure: 0
+Quote Templates intersect Payment Rails: 0
+Quote Templates intersect Catalog: 0
+Quote Templates intersect Tenant Config: 0
+Quote Templates intersect Address/Location: 0
+Quote Templates intersect Document Rendering: 0
+Quote Templates intersect Numbering: 0
+Quote Templates intersect Auth/Session: 0
+Quote Templates intersect Operator Context: 0
+Quote Templates intersect Nexi Chat: 0
+Quote Templates intersect Nexi Voice: 0
+Quote Templates intersect NexCam Capture: 0
+Quote Templates intersect NexCam Overview: 0
+Quote Templates intersect NexDocs Checklists: 0
+Quote Templates intersect NexDocs Media: 0
+Quote Templates intersect NexDocs Reports: 0
+Quote Templates intersect Platform Routing: 0
+Quote Templates intersect Platform Overview: 0
+Quote Templates intersect Tenant Overview: 0
+Quote Templates intersect NexReach Reputation: 0
+Quote Templates intersect Approval Queue: 0
+Quote Templates intersect Content Queue: 0
+Quote Templates intersect Queue Primitives: 0
+Quote Engine intersect Job Core: 0
+Quote Engine intersect Visit Core: 0
+Quote Engine intersect Invoice Structure: 0
+Quote Engine intersect Payment Rails: 0
+Quote Engine intersect Catalog: 0
+Quote Engine intersect Tenant Config: 0
+Quote Engine intersect Address/Location: 0
+Quote Engine intersect Document Rendering: 0
+Quote Engine intersect Numbering: 0
+Quote Engine intersect Auth/Session: 0
+Quote Engine intersect Operator Context: 0
+Quote Engine intersect Nexi Chat: 0
+Quote Engine intersect Nexi Voice: 0
+Quote Engine intersect NexCam Capture: 0
+Quote Engine intersect NexCam Overview: 0
+Quote Engine intersect NexDocs Checklists: 0
+Quote Engine intersect NexDocs Media: 0
+Quote Engine intersect NexDocs Reports: 0
+Quote Engine intersect Platform Routing: 0
+Quote Engine intersect Platform Overview: 0
+Quote Engine intersect Tenant Overview: 0
+Quote Engine intersect NexReach Reputation: 0
+Quote Engine intersect Approval Queue: 0
+Quote Engine intersect Content Queue: 0
+Quote Engine intersect Queue Primitives: 0
+Job Core intersect Visit Core: 0
+Job Core intersect Invoice Structure: 0
+Job Core intersect Payment Rails: 0
+Job Core intersect Catalog: 0
+Job Core intersect Tenant Config: 0
+Job Core intersect Address/Location: 0
+Job Core intersect Document Rendering: 0
+Job Core intersect Numbering: 0
+Job Core intersect Auth/Session: 0
+Job Core intersect Operator Context: 0
+Job Core intersect Nexi Chat: 0
+Job Core intersect Nexi Voice: 0
+Job Core intersect NexCam Capture: 0
+Job Core intersect NexCam Overview: 0
+Job Core intersect NexDocs Checklists: 0
+Job Core intersect NexDocs Media: 0
+Job Core intersect NexDocs Reports: 0
+Job Core intersect Platform Routing: 0
+Job Core intersect Platform Overview: 0
+Job Core intersect Tenant Overview: 0
+Job Core intersect NexReach Reputation: 0
+Job Core intersect Approval Queue: 0
+Job Core intersect Content Queue: 0
+Job Core intersect Queue Primitives: 0
+Visit Core intersect Invoice Structure: 0
+Visit Core intersect Payment Rails: 0
+Visit Core intersect Catalog: 0
+Visit Core intersect Tenant Config: 0
+Visit Core intersect Address/Location: 0
+Visit Core intersect Document Rendering: 0
+Visit Core intersect Numbering: 0
+Visit Core intersect Auth/Session: 0
+Visit Core intersect Operator Context: 0
+Visit Core intersect Nexi Chat: 0
+Visit Core intersect Nexi Voice: 0
+Visit Core intersect NexCam Capture: 0
+Visit Core intersect NexCam Overview: 0
+Visit Core intersect NexDocs Checklists: 0
+Visit Core intersect NexDocs Media: 0
+Visit Core intersect NexDocs Reports: 0
+Visit Core intersect Platform Routing: 0
+Visit Core intersect Platform Overview: 0
+Visit Core intersect Tenant Overview: 0
+Visit Core intersect NexReach Reputation: 0
+Visit Core intersect Approval Queue: 0
+Visit Core intersect Content Queue: 0
+Visit Core intersect Queue Primitives: 0
+Invoice Structure intersect Payment Rails: 0
+Invoice Structure intersect Catalog: 0
+Invoice Structure intersect Tenant Config: 0
+Invoice Structure intersect Address/Location: 0
+Invoice Structure intersect Document Rendering: 0
+Invoice Structure intersect Numbering: 0
+Invoice Structure intersect Auth/Session: 0
+Invoice Structure intersect Operator Context: 0
+Invoice Structure intersect Nexi Chat: 0
+Invoice Structure intersect Nexi Voice: 0
+Invoice Structure intersect NexCam Capture: 0
+Invoice Structure intersect NexCam Overview: 0
+Invoice Structure intersect NexDocs Checklists: 0
+Invoice Structure intersect NexDocs Media: 0
+Invoice Structure intersect NexDocs Reports: 0
+Invoice Structure intersect Platform Routing: 0
+Invoice Structure intersect Platform Overview: 0
+Invoice Structure intersect Tenant Overview: 0
+Invoice Structure intersect NexReach Reputation: 0
+Invoice Structure intersect Approval Queue: 0
+Invoice Structure intersect Content Queue: 0
+Invoice Structure intersect Queue Primitives: 0
+Payment Rails intersect Catalog: 0
+Payment Rails intersect Tenant Config: 0
+Payment Rails intersect Address/Location: 0
+Payment Rails intersect Document Rendering: 0
+Payment Rails intersect Numbering: 0
+Payment Rails intersect Auth/Session: 0
+Payment Rails intersect Operator Context: 0
+Payment Rails intersect Nexi Chat: 0
+Payment Rails intersect Nexi Voice: 0
+Payment Rails intersect NexCam Capture: 0
+Payment Rails intersect NexCam Overview: 0
+Payment Rails intersect NexDocs Checklists: 0
+Payment Rails intersect NexDocs Media: 0
+Payment Rails intersect NexDocs Reports: 0
+Payment Rails intersect Platform Routing: 0
+Payment Rails intersect Platform Overview: 0
+Payment Rails intersect Tenant Overview: 0
+Payment Rails intersect NexReach Reputation: 0
+Payment Rails intersect Approval Queue: 0
+Payment Rails intersect Content Queue: 0
+Payment Rails intersect Queue Primitives: 0
+Catalog intersect Tenant Config: 0
+Catalog intersect Address/Location: 0
+Catalog intersect Document Rendering: 0
+Catalog intersect Numbering: 0
+Catalog intersect Auth/Session: 0
+Catalog intersect Operator Context: 0
+Catalog intersect Nexi Chat: 0
+Catalog intersect Nexi Voice: 0
+Catalog intersect NexCam Capture: 0
+Catalog intersect NexCam Overview: 0
+Catalog intersect NexDocs Checklists: 0
+Catalog intersect NexDocs Media: 0
+Catalog intersect NexDocs Reports: 0
+Catalog intersect Platform Routing: 0
+Catalog intersect Platform Overview: 0
+Catalog intersect Tenant Overview: 0
+Catalog intersect NexReach Reputation: 0
+Catalog intersect Approval Queue: 0
+Catalog intersect Content Queue: 0
+Catalog intersect Queue Primitives: 0
+Tenant Config intersect Address/Location: 0
+Tenant Config intersect Document Rendering: 0
+Tenant Config intersect Numbering: 0
+Tenant Config intersect Auth/Session: 0
+Tenant Config intersect Operator Context: 0
+Tenant Config intersect Nexi Chat: 0
+Tenant Config intersect Nexi Voice: 0
+Tenant Config intersect NexCam Capture: 0
+Tenant Config intersect NexCam Overview: 0
+Tenant Config intersect NexDocs Checklists: 0
+Tenant Config intersect NexDocs Media: 0
+Tenant Config intersect NexDocs Reports: 0
+Tenant Config intersect Platform Routing: 0
+Tenant Config intersect Platform Overview: 0
+Tenant Config intersect Tenant Overview: 0
+Tenant Config intersect NexReach Reputation: 0
+Tenant Config intersect Approval Queue: 0
+Tenant Config intersect Content Queue: 0
+Tenant Config intersect Queue Primitives: 0
+Address/Location intersect Document Rendering: 0
+Address/Location intersect Numbering: 0
+Address/Location intersect Auth/Session: 0
+Address/Location intersect Operator Context: 0
+Address/Location intersect Nexi Chat: 0
+Address/Location intersect Nexi Voice: 0
+Address/Location intersect NexCam Capture: 0
+Address/Location intersect NexCam Overview: 0
+Address/Location intersect NexDocs Checklists: 0
+Address/Location intersect NexDocs Media: 0
+Address/Location intersect NexDocs Reports: 0
+Address/Location intersect Platform Routing: 0
+Address/Location intersect Platform Overview: 0
+Address/Location intersect Tenant Overview: 0
+Address/Location intersect NexReach Reputation: 0
+Address/Location intersect Approval Queue: 0
+Address/Location intersect Content Queue: 0
+Address/Location intersect Queue Primitives: 0
+Document Rendering intersect Numbering: 0
+Document Rendering intersect Auth/Session: 0
+Document Rendering intersect Operator Context: 0
+Document Rendering intersect Nexi Chat: 0
+Document Rendering intersect Nexi Voice: 0
+Document Rendering intersect NexCam Capture: 0
+Document Rendering intersect NexCam Overview: 0
+Document Rendering intersect NexDocs Checklists: 0
+Document Rendering intersect NexDocs Media: 0
+Document Rendering intersect NexDocs Reports: 0
+Document Rendering intersect Platform Routing: 0
+Document Rendering intersect Platform Overview: 0
+Document Rendering intersect Tenant Overview: 0
+Document Rendering intersect NexReach Reputation: 0
+Document Rendering intersect Approval Queue: 0
+Document Rendering intersect Content Queue: 0
+Document Rendering intersect Queue Primitives: 0
+Numbering intersect Auth/Session: 0
+Numbering intersect Operator Context: 0
+Numbering intersect Nexi Chat: 0
+Numbering intersect Nexi Voice: 0
+Numbering intersect NexCam Capture: 0
+Numbering intersect NexCam Overview: 0
+Numbering intersect NexDocs Checklists: 0
+Numbering intersect NexDocs Media: 0
+Numbering intersect NexDocs Reports: 0
+Numbering intersect Platform Routing: 0
+Numbering intersect Platform Overview: 0
+Numbering intersect Tenant Overview: 0
+Numbering intersect NexReach Reputation: 0
+Numbering intersect Approval Queue: 0
+Numbering intersect Content Queue: 0
+Numbering intersect Queue Primitives: 0
+Auth/Session intersect Operator Context: 0
+Auth/Session intersect Nexi Chat: 0
+Auth/Session intersect Nexi Voice: 0
+Auth/Session intersect NexCam Capture: 0
+Auth/Session intersect NexCam Overview: 0
+Auth/Session intersect NexDocs Checklists: 0
+Auth/Session intersect NexDocs Media: 0
+Auth/Session intersect NexDocs Reports: 0
+Auth/Session intersect Platform Routing: 0
+Auth/Session intersect Platform Overview: 0
+Auth/Session intersect Tenant Overview: 0
+Auth/Session intersect NexReach Reputation: 0
+Auth/Session intersect Approval Queue: 0
+Auth/Session intersect Content Queue: 0
+Auth/Session intersect Queue Primitives: 0
+Operator Context intersect Nexi Chat: 0
+Operator Context intersect Nexi Voice: 0
+Operator Context intersect NexCam Capture: 0
+Operator Context intersect NexCam Overview: 0
+Operator Context intersect NexDocs Checklists: 0
+Operator Context intersect NexDocs Media: 0
+Operator Context intersect NexDocs Reports: 0
+Operator Context intersect Platform Routing: 0
+Operator Context intersect Platform Overview: 0
+Operator Context intersect Tenant Overview: 0
+Operator Context intersect NexReach Reputation: 0
+Operator Context intersect Approval Queue: 0
+Operator Context intersect Content Queue: 0
+Operator Context intersect Queue Primitives: 0
+Nexi Chat intersect Nexi Voice: 0
+Nexi Chat intersect NexCam Capture: 0
+Nexi Chat intersect NexCam Overview: 0
+Nexi Chat intersect NexDocs Checklists: 0
+Nexi Chat intersect NexDocs Media: 0
+Nexi Chat intersect NexDocs Reports: 0
+Nexi Chat intersect Platform Routing: 0
+Nexi Chat intersect Platform Overview: 0
+Nexi Chat intersect Tenant Overview: 0
+Nexi Chat intersect NexReach Reputation: 0
+Nexi Chat intersect Approval Queue: 0
+Nexi Chat intersect Content Queue: 0
+Nexi Chat intersect Queue Primitives: 0
+Nexi Voice intersect NexCam Capture: 0
+Nexi Voice intersect NexCam Overview: 0
+Nexi Voice intersect NexDocs Checklists: 0
+Nexi Voice intersect NexDocs Media: 0
+Nexi Voice intersect NexDocs Reports: 0
+Nexi Voice intersect Platform Routing: 0
+Nexi Voice intersect Platform Overview: 0
+Nexi Voice intersect Tenant Overview: 0
+Nexi Voice intersect NexReach Reputation: 0
+Nexi Voice intersect Approval Queue: 0
+Nexi Voice intersect Content Queue: 0
+Nexi Voice intersect Queue Primitives: 0
+NexCam Capture intersect NexCam Overview: 0
+NexCam Capture intersect NexDocs Checklists: 0
+NexCam Capture intersect NexDocs Media: 0
+NexCam Capture intersect NexDocs Reports: 0
+NexCam Capture intersect Platform Routing: 0
+NexCam Capture intersect Platform Overview: 0
+NexCam Capture intersect Tenant Overview: 0
+NexCam Capture intersect NexReach Reputation: 0
+NexCam Capture intersect Approval Queue: 0
+NexCam Capture intersect Content Queue: 0
+NexCam Capture intersect Queue Primitives: 0
+NexCam Overview intersect NexDocs Checklists: 0
+NexCam Overview intersect NexDocs Media: 0
+NexCam Overview intersect NexDocs Reports: 0
+NexCam Overview intersect Platform Routing: 0
+NexCam Overview intersect Platform Overview: 0
+NexCam Overview intersect Tenant Overview: 0
+NexCam Overview intersect NexReach Reputation: 0
+NexCam Overview intersect Approval Queue: 0
+NexCam Overview intersect Content Queue: 0
+NexCam Overview intersect Queue Primitives: 0
+NexDocs Checklists intersect NexDocs Media: 0
+NexDocs Checklists intersect NexDocs Reports: 0
+NexDocs Checklists intersect Platform Routing: 0
+NexDocs Checklists intersect Platform Overview: 0
+NexDocs Checklists intersect Tenant Overview: 0
+NexDocs Checklists intersect NexReach Reputation: 0
+NexDocs Checklists intersect Approval Queue: 0
+NexDocs Checklists intersect Content Queue: 0
+NexDocs Checklists intersect Queue Primitives: 0
+NexDocs Media intersect NexDocs Reports: 0
+NexDocs Media intersect Platform Routing: 0
+NexDocs Media intersect Platform Overview: 0
+NexDocs Media intersect Tenant Overview: 0
+NexDocs Media intersect NexReach Reputation: 0
+NexDocs Media intersect Approval Queue: 0
+NexDocs Media intersect Content Queue: 0
+NexDocs Media intersect Queue Primitives: 0
+NexDocs Reports intersect Platform Routing: 0
+NexDocs Reports intersect Platform Overview: 0
+NexDocs Reports intersect Tenant Overview: 0
+NexDocs Reports intersect NexReach Reputation: 0
+NexDocs Reports intersect Approval Queue: 0
+NexDocs Reports intersect Content Queue: 0
+NexDocs Reports intersect Queue Primitives: 0
+Platform Routing intersect Platform Overview: 0
+Platform Routing intersect Tenant Overview: 0
+Platform Routing intersect NexReach Reputation: 0
+Platform Routing intersect Approval Queue: 0
+Platform Routing intersect Content Queue: 0
+Platform Routing intersect Queue Primitives: 0
+Platform Overview intersect Tenant Overview: 0
+Platform Overview intersect NexReach Reputation: 0
+Platform Overview intersect Approval Queue: 0
+Platform Overview intersect Content Queue: 0
+Platform Overview intersect Queue Primitives: 0
+Tenant Overview intersect NexReach Reputation: 0
+Tenant Overview intersect Approval Queue: 0
+Tenant Overview intersect Content Queue: 0
+Tenant Overview intersect Queue Primitives: 0
+NexReach Reputation intersect Approval Queue: 0
+NexReach Reputation intersect Content Queue: 0
+NexReach Reputation intersect Queue Primitives: 0
+Approval Queue intersect Content Queue: 0
+Approval Queue intersect Queue Primitives: 0
+Content Queue intersect Queue Primitives: 0
+Component collision check passed (28 components, 378 pairs, zero overlaps).
+EXIT: 0
+
+COMMAND: npm run lint
+
+> lint
+> eslint "apps/**/*.{ts,tsx}" "packages/**/*.{ts,tsx}" "tests/**/*.ts" "scripts/check-*.mjs"
+EXIT: 0
+
+COMMAND: npm run typecheck
+
+> typecheck
+> tsc -b
+EXIT: 0
+
+COMMAND: npm run build
+
+> build
+> npm --workspace @nexteam/server run build && npm --workspace @nexteam/web run build
+
+
+> @nexteam/server@0.0.0 build
+> tsc -b
+
+
+> @nexteam/web@0.0.0 build
+> vite build
+
+[36mvite v5.4.11 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 143 modules transformed.
+rendering chunks...
+node.exe : [1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([1m[33m[plugi...vite:reporter] :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(!) C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/web/src/nexopsDeferredUi.tsx is 
+dynamically imported by C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/web/src/features/n
+exopsShell/NexOpsWorkspace.tsx, C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/web/src/fe
+atures/nexopsShell/NexOpsWorkspace.tsx, C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/we
+b/src/features/nexopsShell/NexOpsWorkspace.tsx, C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration
+/apps/web/src/features/nexopsShell/NexOpsWorkspace.tsx but also statically imported by C:/Users/Peyto/NexTeam-Studio-wo
+rktrees/target-architecture-integration/apps/web/src/features/clients/components/contact/ContactEditorSurface.tsx, 
+dynamic import will not move module into another chunk.
+[39m
+computing gzip size...
+[2mdist/[22m[32mindex.html                               [39m[1m[2m  0.51 kB[22m[1m[22m[2m │ gzip:  0.28 kB[22m
+[2mdist/[22m[35massets/NexReachPage-C_piEDhS.css         [39m[1m[2m  4.05 kB[22m[1m[22m[2m │ gzip:  1.35 kB[22m
+[2mdist/[22m[35massets/index-DYqL-PbP.css                [39m[1m[2m120.86 kB[22m[1m[22m[2m │ gzip: 21.70 kB[22m
+[2mdist/[22m[36massets/nexopsCommunications-Dxx9rlpT.js  [39m[1m[2m  2.66 kB[22m[1m[22m[2m │ gzip:  1.02 kB[22m
+[2mdist/[22m[36massets/nexopsIntake-DRa0ECOA.js          [39m[1m[2m  4.73 kB[22m[1m[22m[2m │ gzip:  1.74 kB[22m
+[2mdist/[22m[36massets/NexOpsCatalog-wDmmbH3D.js         [39m[1m[2m  5.71 kB[22m[1m[22m[2m │ gzip:  1.71 kB[22m
+[2mdist/[22m[36massets/nexopsHome-t3OD_dWe.js            [39m[1m[2m  7.89 kB[22m[1m[22m[2m │ gzip:  2.37 kB[22m
+[2mdist/[22m[36massets/nexopsPatternLibrary-B4yoMh72.js  [39m[1m[2m  8.23 kB[22m[1m[22m[2m │ gzip:  2.90 kB[22m
+[2mdist/[22m[36massets/NexOpsSettingsPage-BEdakv6k.js    [39m[1m[2m 14.84 kB[22m[1m[22m[2m │ gzip:  3.94 kB[22m
+[2mdist/[22m[36massets/NexReachPage-DUMLTHtK.js          [39m[1m[2m 17.45 kB[22m[1m[22m[2m │ gzip:  4.31 kB[22m
+[2mdist/[22m[36massets/NexOpsSchedulePage-aZplCjap.js    [39m[1m[2m 21.38 kB[22m[1m[22m[2m │ gzip:  5.62 kB[22m
+[2mdist/[22m[36massets/nexopsRequests-REO8nXb6.js        [39m[1m[2m 29.38 kB[22m[1m[22m[2m │ gzip:  8.06 kB[22m
+[2mdist/[22m[36massets/NexOpsJobsPage-CNaXWN21.js        [39m[1m[2m 52.55 kB[22m[1m[22m[2m │ gzip: 12.22 kB[22m
+[2mdist/[22m[36massets/NexOpsInvoicesPage-DF3koLsg.js    [39m[1m[2m 54.89 kB[22m[1m[22m[2m │ gzip: 12.11 kB[22m
+[2mdist/[22m[36massets/NexOpsQuotesPage-Co6A1lwo.js      [39m[1m[2m 61.77 kB[22m[1m[22m[2m │ gzip: 14.08 kB[22m
+[2mdist/[22m[36massets/vendor-firebase-ZgNqzCDn.js       [39m[1m[2m163.96 kB[22m[1m[22m[2m │ gzip: 33.36 kB[22m
+[2mdist/[22m[36massets/vendor-react-CZpsmpkd.js          [39m[1m[2m192.69 kB[22m[1m[22m[2m │ gzip: 60.11 kB[22m
+[2mdist/[22m[36massets/index-BHbojkT1.js                 [39m[1m[2m316.73 kB[22m[1m[22m[2m │ gzip: 75.55 kB[22m
+[32m✓ built in 1.62s[39m
+EXIT: 0
+
+COMMAND: non-browser aggregate (Playwright file excluded)
+✔ M11 local session re-auth waits seven days and GPS suggestions prefer today's assigned visit (1.5492ms)
+✔ M11 syncCaptureSession creates the request route, uploads media, transcribes voice, and maps checklist photo ids (13.0214ms)
+✔ M11 syncQueuedSessions marks failed batches for retry and keeps the queue visibly failed until backoff clears (6.2553ms)
+✔ M11 airplane-mode job flow syncs after reconnect with conflict flags (35.1412ms)
+✔ M11 mobile rejects unassigned cached job writes (1.0908ms)
+✔ Tap to Pay decline mapping stays staff-readable instead of surfacing raw Stripe jargon (1.6367ms)
+✔ Tap to Pay disconnect mapping calls out the reader drop explicitly (0.2776ms)
+✔ Tap to Pay finalize mapping explains the ledger handoff seam when Stripe succeeds first (0.3431ms)
+✔ Tap to Pay helper labels keep device metadata stable for the shared payment object (0.1994ms)
+✔ Invoice Structure owns the customer portal document and payment schedule wording (1.7229ms)
+✔ multi-shot capture batches stay draft until routed, materialize request images, and keep later uploads auto-scoped (344.01ms)
+✔ existing-client capture routing supports decide-later inbox, target lookup, mixed client rail, and later move-to-job (70.3748ms)
+✔ same-day decide-later sessions stay as separate batches with their own GPS anchor (78.2493ms)
+✔ reopened unassigned batches keep the original GPS anchor while tracking the newest capture location (30.4512ms)
+✔ unassigned batch Nexi tools and Home queue stay tenant-wide for office and scoped for technicians (47.9292ms)
+✔ local Nexi routes assign an unassigned capture batch to an existing client by exact name (5.3481ms)
+✔ audience builder honors consent and suppression (6.2311ms)
+✔ XState sequence plans delayed sends and reaches approvalQueued (4.9628ms)
+✔ campaign queueing parks approvals only and marks DNS boundary blocked (23.3697ms)
+✔ open, click, unsubscribe, and second-step suppression are recorded (6.6018ms)
+✔ configurable tenant templates render variables and physical address compliance text (3.1807ms)
+✔ transactional report and review emails are approval queued, including 48-hour review delay (3.5625ms)
+✔ campaign Nexi tools expose approval-gated campaign operations (4.9543ms)
+✔ campaign routes expose template, test-run, tracking, unsubscribe, and stats (154.9185ms)
+✔ campaign AccessContext gate blocks technician and job-link contexts (0.9262ms)
+✔ DNS boundary stays blocked until SPF, DKIM, and DMARC are confirmed (0.3574ms)
+✔ client route saves and replaces editable custom fields on an existing client (122.9551ms)
+✔ client route updates mobile editor client details and the linked primary property together without creating a duplicate property (25.1132ms)
+✔ client edit route rejects blank required name, phone, and address values (38.0004ms)
+✔ client edit route preserves untouched fields when only one field is changed (28.14ms)
+✔ client hub sessions authenticate, reverify after 14 days, and keep property-scoped viewers isolated (272.2578ms)
+✔ client hub shows NexCam visit documents by default and removes them when the job rail is opted out (80.704ms)
+✔ portal client uploads land directly, stay visible to staff immediately, and absorb office records into the unified NexDocs rail (930.794ms)
+✔ portal appointment confirmation stamps the visit and surfaces the event to client and staff rails (43.2832ms)
+✔ client statements keep tips separate from invoice balance and can be delivered from the hub (42.7666ms)
+✔ review sequences honor exhaustion, opt-out, and manual stop without auto-restarting closed jobs (30.4221ms)
+✔ Nexi client-hub and review tools send portal links, read activity, generate statements, and restart then complete review rails (17.399ms)
+✔ local Nexi chat routes portal and review intents through the new client-hub tools (32.0482ms)
+✔ draft invoices stay fully editable through line items, discount, tax, and terms until delivery locks them (35.7183ms)
+✔ closing without invoicing creates a recurring 9AM reminder that advances until dismissal (15.0621ms)
+✔ combining a selected subset of jobs keeps per-job references and carries the chosen payment schedule (4.6972ms)
+✔ invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads (2.9069ms)
+✔ default invoice delivery templates keep labeled pay-link and hosted-link content at the shared template layer (1.0987ms)
+✔ saved-card reuse defaults to the newest card, supports alternate selection, and keeps manual/failed branches distinct (43.5996ms)
+✔ receipt review sends email attachments and an SMS hosted link from the same paused review (7.9703ms)
+✔ receipt review sends a real field report PDF attachment when NexCam already generated one for the job (9.7191ms)
+✔ PayPal and Venmo checkout helpers create sandbox orders and capture completed payments (53.812ms)
+✔ Nexi billing tools run combine, send, partial collect, failed recovery, and receipt review approval loops in chat (36.4956ms)
+✔ Gmail read-only adapter is structurally send-incapable (1.7984ms)
+✔ Gmail send adapter is isolated to the dedicated sender class (0.312ms)
+✔ dedicated Nexi send mailbox can opt into read tools without making legacy mailboxes send-capable (0.6032ms)
+✔ dedicated Nexi send mailbox accepts legacy GMAIL_NEXI env names (0.2313ms)
+✔ Comms Nexi searchEmail returns email source refs (2.3059ms)
+✔ Comms Nexi triageInbox ranks Aquatrace attention items and excludes noise (4.2852ms)
+✔ Comms Nexi summarizeInbox handles invalid date strings and returns sender-subject-ask items (1.4842ms)
+✔ Comms Nexi tools reject tenant contexts outside the bound email rail (0.9059ms)
+✔ Gmail read adapter parses full message bodies and attachment metadata (1.2351ms)
+✔ Gmail read adapter retrieves attachment binaries without adding send capability (3.9604ms)
+✔ Comms Nexi getEmailMessage returns body and attachment listing with email source (0.958ms)
+✔ Comms Nexi getEmailAttachment retrieves bytes but returns metadata only (1.7727ms)
+✔ draftEmail parks email in ApprovalQueue without sending (5.8041ms)
+✔ draftEmail applies branded template and preserves attachments for approval (3.1583ms)
+✔ Comms Nexi tools no longer expose the legacy report-email draft tool (0.2312ms)
+✔ CommsApprovalExecutor sends only approved dedicated-mailbox artifacts (6.0845ms)
+✔ CommsApprovalExecutor preserves approved email attachments for dedicated send adapter (2.1314ms)
+✔ Gmail send adapter encodes branded HTML and attachments as multipart MIME (1.0206ms)
+✔ CommsApprovalExecutor rejects artifacts targeting read-only mailbox aliases (1.4401ms)
+✔ CommsApprovalExecutor rejects approved email artifacts from unbound tenants (1.1615ms)
+✔ Comms tools expose zod schemas for Nexi registry (0.2535ms)
+✔ NexReach generates approval-pending article and social drafts from consented closed jobs only (32.7151ms)
+✔ NexReach consent revocation flags live showcases and keeps the audience export consent-only (10.1384ms)
+✔ NexReach routes expose bundle exports and a token-gated public portfolio page (161.2243ms)
+✔ NexReach Nexi tools keep marketing actions role-fenced and approval-gated (5.3435ms)
+✖ NexReach local Nexi loop accepts underscore ids through generate, approve, and refusal flow (14.9029ms)
+✔ CRM address suggestions route normalizes geocode results into UI-ready fields (130.3662ms)
+✔ CRM client create route persists property coordinates when address autocomplete provides them (65.7895ms)
+✔ CRM quote and invoice native schemas parse (4.6339ms)
+✔ NativeAdapter exposes CRM read methods (1.775ms)
+✔ native import upserts remain idempotent by legacy CRM external ids (0.9686ms)
+✔ NativeAdapter writes native clients and approval-gated quote drafts (3.747ms)
+✔ NexOps 3.2 client records preserve display, billing, and one-way SMS settings (1.3992ms)
+✔ CRM read nexi-tools expose pipeline and client lookup (3.9894ms)
+✔ CRM clientLookup stays unmatched and never calls a dormant fallback on native misses (1.5058ms)
+✔ CRM write nexi-tools cover client create, quote draft, catalog/template settings, and invoice reads (44.3275ms)
+✔ seeded catalog UTF-8 punctuation survives native settings round-trip (2.3107ms)
+✔ CRM createClient tool blocks approval when telephone is missing (1.2794ms)
+✔ CRM client route rejects incomplete saves before a client record is created (186.7614ms)
+✔ CRM routes read clients created by ApprovalQueue execution from the shared native repository (22.3928ms)
+✔ CRM client delete route removes property-only duplicates and blocks clients with linked work (19.8347ms)
+✔ CRM quick payment request routes create minimal ledger-backed invoices from job and client fast paths (51.3303ms)
+✔ CRM quote routes create, send, approve, convert, invoice, and renew quotes (170.4579ms)
+✔ CRM quote change requests store per-line comments plus a freeform note (23.7271ms)
+✔ Quote materialization preserves custom lines and future client-selectable fields (0.8869ms)
+✔ Quote terms resolve tenant default, then template override, then per-quote override (1.0008ms)
+✔ TECHNICIAN role is blocked from manual quote approval authority (0.6169ms)
+✔ NativeAdapter writes invoices and renders invoice PDFs (0.6408ms)
+✔ Stripe rail refuses live keys and verifies webhook signatures (1.5227ms)
+✔ shared Document Rendering escapes HTML and PDF payload text (1.1305ms)
+✔ shared Document Rendering writes a valid text PDF without owning document wording (0.5606ms)
+✔ Quote Engine and Invoice Structure own distinct PDF templates (0.5223ms)
+✔ Aquatrace v20 evaporation formula matches the legacy calculator (1.4885ms)
+✔ evaporation calculation preserves observed loss, leak loss, and forecast math (0.6691ms)
+✔ evaporation routes create a report and render a PDF (136.1318ms)
+✔ runEvaporation Nexi tool returns report, PDF URL, and native source (1.6448ms)
+✔ evaporation PDF renderer produces a PDF buffer (1.8035ms)
+✔ fielddocs Nexi tools expose property history and recent photos (32.1994ms)
+✔ fielddocs Nexi tools generate and fetch visit reports (4.1567ms)
+✔ local Nexi chat routes NexCam photo search, property history, and report generation (20.017ms)
+✔ NexDocs tools search unified content and list client folders (1230.7237ms)
+✖ local Nexi chat can search documents, queue a folder, approve it, queue an upload, and approve it (27.7672ms)
+✔ natural-language photo search matches imported metadata (1.4334ms)
+✔ vision pipeline stub is wired off by default (0.3644ms)
+✔ vision pipeline parses live Anthropic-style JSON responses with usage (1.6872ms)
+✔ upload service creates native storage refs, thumbnails, and EXIF metadata (1.3934ms)
+✔ before/after pairing and vision fallback are wired (0.7046ms)
+✔ leak checklist and report PDF render (9.8252ms)
+✔ native repository persists checklists and posted field report records (4.9738ms)
+✔ NexCam read tool searches native media repository (1.7181ms)
+✔ NexDocs accepts supported uploads, uses a 100 MB cap, and indexes PDF content for search (1084.1744ms)
+✔ NexDocs OCR blocks image OCR before estimated spend exceeds the cap (4.0969ms)
+✔ NexDocs OCR logs usage and searchable text when image OCR runs inside cap (2.6635ms)
+✔ NexDocs keeps a flat folder model and moves each document into only one folder at a time (2.7983ms)
+✔ NexDocs unified search returns uploaded docs, office records, and NexCam hits together (32.2171ms)
+✔ NexDocs technician fence stays upload-only for destructive management actions (0.6113ms)
+✔ fielddocs template library exposes seeded leak template and accepts custom templates (24.5336ms)
+✔ fielddocs persists property-memory fields on the property and keeps visit fields blank on the next visit (27.1562ms)
+✔ fielddocs media and report routes filter by client, visit, and date range (116.0827ms)
+✔ fielddocs media review saves per-photo comments and markup paths (76.8074ms)
+✔ fielddocs checklist instances honor photo-required defaults, per-instance override, and section-level N/A (5.743ms)
+✔ fielddocs media review merges manual tags into search and supports tenant trash with restore (31.4913ms)
+✔ fielddocs bundles auto-attach checklist/report rails and report routes honor snippets, watermarking, and AI recap output (29.6712ms)
+✔ fielddocs signed document routes create, capture signature, reject re-sign, and render PDF (40.358ms)
+✔ vision survey reviews known and insufficient photos without guessing (5.3641ms)
+✔ vision survey blocks batches before estimated spend exceeds the cap (0.6694ms)
+✔ vision survey correction adds human-confirmed tags (0.615ms)
+✔ vision survey helpers expose conservative cost and metadata classification (0.2718ms)
+✔ vision survey routes are AccessContext-gated and tenant-scoped (191.0896ms)
+✔ M10 XState intake interview reaches approval and provisioned states (7.5706ms)
+✔ M10 service drafts Demo Pool Co blueprint, queues approval, and provisions native tenant only after approval (36.7292ms)
+✔ M10 routes are owner/admin gated and queue tenant provisioning approval (216.3236ms)
+✔ M10 Nexi tools start intake and finalize to ApprovalQueue with actor attribution (6.6989ms)
+✔ M10 chat router sends onboarding language to intake tools instead of job lookup (22.8106ms)
+✔ M10 gateway saves intake answer turns with deterministic answerIntake args (25.8681ms)
+✔ legacy job schema and in-memory native repository normalize stored jobs onto the new lifecycle rail (4.1528ms)
+✔ request and quote conversions land as Unscheduled and invoice reminders clear only by invoice or dismissal (32.3904ms)
+✔ moving a visit cancels old reminder timers and creates a fresh pair for the new slot (1.9675ms)
+✔ due visit reminders auto-send email and sms with technician and access-note context (17.286ms)
+✔ technicians can complete visits but stay blocked from office-only close and invoice authority (0.8497ms)
+✔ Nexi job tools create, read, revise, and execute lifecycle actions through chat-native approvals (34.5956ms)
+✔ quote deposit bridge migrates into first-class payment, deposit, receipt review, and saved card records without rewriting the quote snapshot (15.3896ms)
+✔ invoice sync auto-applies deposits and credits, and overdue only marks awaiting-payment invoices (31.4708ms)
+✔ Stripe checkout uses tenant Connect headers with zero application fee and charges only the current balance due (46.1571ms)
+✔ payment states progress through pending, succeeded, partially_refunded, and refunded with separate refund and receipt-review records (11.4609ms)
+✔ invoice and refund receipt reviews carry the default invoice, quote, report, photo, and job-file attachments (4.8843ms)
+✔ one payment stays on one invoice and overpayment rolls forward as credit instead of splitting across invoices (9.5007ms)
+✔ the ledger model already accepts PayPal and Venmo slots even though the live adapter is deferred (2.0574ms)
+✔ draft invoices stay draft and failed payments do not settle the invoice (1.4969ms)
+✔ void and bad debt stay distinct, and ledger chat tools require OWNER or OFFICE_ADMIN for execution (39.2205ms)
+✔ lifecycle command map keeps the full D1-D19 decision register (2.0885ms)
+✔ lifecycle command map exposes the 12 required communication templates (2.0554ms)
+✔ every command references valid decision ids and valid communication templates (1.6245ms)
+✔ permission registry stays unique and the portal commands stay on authorization profiles (0.7316ms)
+✔ quote dominant action derives atomic approval and renewal states (0.6988ms)
+✔ D1 atomic portal approval contract keeps failed deposit attempts out of accepted quote state (0.4216ms)
+✔ visit, invoice, and client-schedule dominant actions derive from orthogonal status dimensions (0.4427ms)
+✔ decision traces expose downstream command dependencies for auditability (0.2812ms)
+✔ local credential sessions cover owner, office admin, and technician roles (2.5627ms)
+✔ local credential sign-in accepts email-only local sessions and rejects unknown addresses (1.4012ms)
+✔ local bearer sessions feed the access-context role gate and refuse cross-tenant reuse (5.2938ms)
+✔ the same local session token keeps the same seat across internal module rails for owner and office admin (4.5863ms)
+✔ M11 mobile session bootstrap returns tenant branding plus the reusable local staff profile registry (80.4228ms)
+✔ M11 day board stays technician-scoped while exposing GPS suggestions, gate notes, and visible queue state (42.5846ms)
+✔ M11 visit context returns checklist and before/after candidates, and unassigned technicians stay fenced out (105.1759ms)
+✔ M11 typed and voice narration both flow into the shared field report rail (48.7435ms)
+✔ M11 transcription blocks over-cap narration before provider fetch and writes a usage log record (11.8055ms)
+✔ M11 mobile day schedule returns assigned jobs for the requested field user (59.1064ms)
+✔ M11 mobile sync accepts airplane-mode checklist, photo, and close-out operations (96.139ms)
+✔ M11 mobile push registration and approval review stay role-gated (22.2538ms)
+✔ M11 mobile access policy blocks cross-user and unscoped job-link access (1.4983ms)
+✔ Camp Mikell fixture extracts 101000 gallons (5.4787ms)
+✔ source check blocks factual answers without sources (2.5834ms)
+✔ source check does not block meta or feedback turns (1.0365ms)
+✔ source check does not block email action commands or honest tool failures (0.7704ms)
+✔ Nexi meta/help turns answer without source stonewalls (2.8759ms)
+✔ Nexi tool loop preloads obvious tools and records cache metrics (81.6365ms)
+✔ Nexi tool registry rejects duplicate tool names before the model call (1.0208ms)
+✔ CRM-style prompts send a unique Nexi tool list even when content tools are enabled (3.7362ms)
+✔ local Nexi fallback routes email-today prompts to summarizeInbox before schedule (10.4728ms)
+✔ local Nexi fallback routes attention prompts to triageInbox (3.8068ms)
+✔ local Nexi fallback routes email source refs to getEmailMessage (0.7819ms)
+✔ Nexi Anthropic gateway answers draftEmail action commands from the approval result (5.6206ms)
+✔ personal email and text requests resolve to the logged-in user's own contact details for owner and technician seats (9.7277ms)
+✔ personal directions prefer live requestor coordinates, fall back to the logged-in user's profile address, and leave shop questions on the tenant base path (2.4132ms)
+✔ lookupSiteJobBlueprintField returns stored fields for the requested entity (0.9258ms)
+✔ SiteJobBlueprint field lookup reads section-scoped counts from pooled JSON fields (0.4142ms)
+✔ Nexi service persists failureLog for source-enforced failures (0.6838ms)
+✔ Nexi service sanitizes raw internal answers before they reach chat history (0.5049ms)
+✔ Nexi service formats client approvals as clean field-list confirmations without raw ids (11.1929ms)
+✔ freeform client create parsing preserves short email prefixes both inline and split before the @ token (42.6914ms)
+✔ client approvals ask for a missing full name instead of rendering punctuation placeholders (2.9667ms)
+✔ freeform client create approval preserves the parsed name and full email, saves the approved address, and honors typed yes replies (18.8331ms)
+✔ fresh create-client phrasing with an article and sentence break still routes into createClient (8.7169ms)
+✔ approval actions require an explicit approval id and never silently approve the newest pending client (3.5515ms)
+✔ fresh single client records without a zip still save address data, answer email lookups, and resolve possessive short-form references (13.2548ms)
+✔ pending client confirmations accept natural-language corrections and restate the updated address before approval (19.5874ms)
+✔ client lookup follow-ups resolve both his and her pronouns to the active conversation entity (3.2553ms)
+✔ contact-card delivery requests report the same honest capability gap across email, text, and follow-up phrasing (1.4188ms)
+✔ post-approval client edit requests return the honest saved-record capability gap across natural phrasings (1.5428ms)
+✔ post-approval edit follow-ups using pronouns after a lookup still return the honest saved-record capability gap (0.4649ms)
+✔ approval rejections omit stray punctuation when the pending title is empty or malformed (2.2541ms)
+✔ Nexi service answers phone lookups directly from matched client records (1.1671ms)
+✔ Nexi service answers address lookups directly from matched client property records (0.9468ms)
+✔ Nexi client lookup misses stay on the native rail and never mention dormant vendors (1.1284ms)
+✔ client approval preview keeps the parsed zip separate from the phone number (0.5161ms)
+✔ Nexi message route wraps duplicate tool registration failures in the friendly fallback (119.6323ms)
+✔ Nexi message history route restores the same conversation and clears pending approval after approval (70.08ms)
+✔ Nexi message route wraps request-scoped tool factory failures in the friendly fallback (15.0442ms)
+✔ Nexi service persists tool runs for conversation reuse (1.0351ms)
+✔ Nexi service returns the stable conversation id, not the Firestore record id (0.6549ms)
+✔ Firestore conversation history reads are scoped to one conversation (0.4429ms)
+✔ shared Numbering formats and advances without owning component prefixes (2.1157ms)
+✔ shared Numbering backfills the receipt format on legacy four-sequence settings (4.6573ms)
+✔ memory Numbering reserves unique parallel sequences independently per tenant and kind (1.3273ms)
+✔ Numbering preview rejects settings from another tenant (0.9626ms)
+✔ platform entitlement registry removes tools outside the tenant plan (15.0541ms)
+✔ suite tenant keeps scheduling and marketing tools (0.4137ms)
+✔ firestore platform repository falls back when legacy Aquatrace tenant docs are partial (3.0855ms)
+✔ platform repository summarizes cost, records backup, and exports per tenant (3.6305ms)
+✔ platform repository stores tenant branding with text fallback and actor attribution (0.9958ms)
+✔ tenant users are provisioned explicitly and produce Firebase custom claims (1.6773ms)
+✔ job access links verify only one linked job and fail closed after revoke (3.3003ms)
+✔ platform billing refuses live Stripe keys and supports fake test-mode receipt runs (0.9719ms)
+✔ platform routes expose tenants, test subscription, backup, and export (167.6289ms)
+Tenancy check failed:
+- tests/fixtures/tenancy/unscoped-query.fixture.ts: Firestore collection "jobs" lacks tenantId evidence
+✖ platform routes manage tenant users and job links without leaking token hashes by default (46.6048ms)
+✔ tenancy scanner catches the planted unscoped query fixture (107.1224ms)
+✔ runtime defaults to durable persistence and allows memory only by explicit local override (1.8216ms)
+✔ M7 imports GBP reviews, emits review.received, and drafts approval-only replies (15.0233ms)
+✔ M7 review requests and GBP profile updates park in ApprovalQueue only (7.3458ms)
+✔ M7 routes expose review queue, draft reply, profile sync, and public widget (145.2283ms)
+✔ M7 Nexi tools surface blockers honestly and park all outbound reputation work (6.848ms)
+✔ request routes create, update, convert, archive, and reopen while preserving intake fields (219.9937ms)
+✔ local Nexi request tools clarify missing intake data, then create and recall real requests (30.7171ms)
+✔ client record route toggles marketing consent and forwards the NexReach revocation hook (21.3613ms)
+✔ operations hub activity feed renders every currently-defined lifecycle event type with deep-link targets (71.6516ms)
+✔ documentation activity counts photo uploads and checklist completions with owner-wide and technician-self fencing (4.4352ms)
+✔ operations hub schedule, home queues, and activity stay role-aware for owner and technician (83.4695ms)
+✔ home queues keep zero states, non-zero counts, exact filter targets, and Today/Upcoming/Unscheduled routing for the office rail (20.8731ms)
+✔ CRM schedule, home, activity, and notification routes expose live workspace data and unread-state changes (209.8425ms)
+✔ CRM scheduling tools queue unscheduled jobs, create 25-visit series, shift remaining visits, and read role-aware queues (102.5273ms)
+✔ Nexi conversational scheduling, shifting, schedule lookup, and home triage use the new Job 6/7 tools through chat-native approvals (36.5501ms)
+✔ suggestSlots prefers the least-drive non-conflicting slot (16.1093ms)
+✔ detectConflicts only flags overlapping visits for the same assigned crew (1.173ms)
+✔ bookVisit parks the visit and queues a notification instead of sending (6.0343ms)
+✔ whatsMyDay reads native visits for the requested technician (0.6321ms)
+✔ calendar board returns native visits only even if stale overlay deps are passed in (94.4397ms)
+✔ calendar board ignores stale overlay timeout env and still serves native visits without warnings (13.3553ms)
+✔ reminder and on-my-way messages are approval queued, not sent (1.9848ms)
+✔ deterministic self-repair analysis detects the P1 email, evap, and spa rail failures (4.7666ms)
+✔ self-repair service stores log and queues a morning report approval without sending outbound mail (11.7535ms)
+✔ anthropic self-repair analyzer merges provider findings and writes usageLog cost (29.4726ms)
+✔ anthropic self-repair analyzer preserves deterministic findings when provider JSON is malformed (2.7737ms)
+✔ self-repair recurrence escalates repeated findings in later runs (4.4196ms)
+✔ self-repair routes are owner/admin gated and expose run plus log reads (138.0952ms)
+✔ M8 generated sites include LocalBusiness and Service JSON-LD by default (5.9839ms)
+✔ M9 audit drafts a site fix through ApprovalQueue and applies only after approval (17.1305ms)
+✔ M9 DataForSEO provider returns an explicit blocker when credentials are missing (0.8566ms)
+✔ M9 fixture rank snapshot stores ten Aquatrace keyword results (13.8133ms)
+✔ M9 routes expose audit, approval-gated fix, keyword brief, queue, and report (161.9652ms)
+✔ M9 Nexi tools are routeable and return sourced SEO queue data (31.9845ms)
+✔ M8 generates Aquatrace site blocks and renders static HTML (10.5393ms)
+✔ M8 lead form creates lead, event, and approval-queued owner notification only (190.9864ms)
+✔ M8 operator UI customization is tenant-scoped and owner/admin gated (20.3503ms)
+✔ M8 Nexi tool changes Job Desk appearance without touching another tenant (1.1524ms)
+✔ Tap to Pay token and payment-intent routes reuse the tenant Connect account and card_present intent model (71.1391ms)
+✔ Tap to Pay completion writes the same ledger payment object used by every other Stripe payment path (20.0809ms)
+✔ Tap to Pay failure records a failed Stripe payment without settling the invoice (10.6174ms)
+✔ native CRM rejects cross-tenant document updates and tenantId mutation (2.2126ms)
+✔ tenant settings rejects a document whose stored tenant differs from the requested tenant (4.6701ms)
+✔ ElevenLabs voice id defaults to the NexTeam voice (0.6937ms)
+✔ ElevenLabs TTS rail keeps the API key server-side and returns audio (1.055ms)
+✔ Voice route writes ElevenLabs usageLog records with cost metadata (48.5404ms)
+✔ Voice session rail tracks full-duplex state, latency, and interruption (20.4712ms)
+✔ ElevenLabs TTS rail refuses missing credentials and oversized text (0.7131ms)
+✔ Approval Queue route imports the owner panel and keeps its server-backed actions (2.2286ms)
+✔ mobile client helpers group the 13 profile tabs into the expected buckets (2.7173ms)
+✔ the two-tier mobile bucket mapping preserves all 13 client sections without merging ids (0.3275ms)
+✔ each mobile bucket auto-select target is the first real section in that bucket (0.2396ms)
+✔ lead source options stay fixed in the confirmed mobile intake order (0.2658ms)
+✔ edit drafts recover person fields from the saved client name when structured names are missing (0.4772ms)
+✔ mobile client summary phone falls back to the client phone list when no contact phone exists (0.2329ms)
+✔ custom field drafts reject reserved labels and serialize unique rows (0.5583ms)
+✔ page-mode client intake keeps phone and address visible while collapsing secondary sections (15.5255ms)
+✔ page-mode client intake only shows Referred By when Referral is selected (10.8846ms)
+✔ Contact owns its roster, editor, mobile profile, and desktop profile surfaces (2.8278ms)
+✔ Content Queue is owner-extracted without inventing a product route (3.5289ms)
+✔ draft invoices surface send as the dominant next move (1.3576ms)
+✔ open balances keep payment collection as the next move (21.9636ms)
+✔ failed payment attempts switch the rail into recovery mode (0.2989ms)
+✔ paid invoices stop at receipt review until the package is sent (0.2861ms)
+✔ Payment Rails owns provider-specific execution method choices (1.7994ms)
+✔ inline job client draft requires name, telephone, and address before save (10.634ms)
+✔ inline job client draft can save without email once required client fields exist (0.508ms)
+✔ inline-created clients merge into the job picker without duplicating existing records (2.7497ms)
+✔ quote dominant action changes across core pre-approval states (2.1828ms)
+✔ quote dominant action changes after approval based on whether a job snapshot already exists (0.3206ms)
+✔ blocked delivery state disables send and exposes the reason on approved quotes (0.2621ms)
+✔ downstream buttons stay gated with explicit reasons (1.8065ms)
+✔ Quote Templates owns the real list and editor surface through a typed save contract (12.1304ms)
+✔ Catalog owns reusable item normalization independently of consuming documents (2.313ms)
+✔ schedule ranges keep day and month reads tenant-query bounded (8.2426ms)
+✔ visit status tones map to stable component-owned style tokens (0.3761ms)
+✔ Nexi personal-origin helper only activates for personal direction prompts (1.4488ms)
+✔ Nexi personal-origin helper formats browser coordinates as a stable origin string (0.2617ms)
+✔ Nexi personal-origin helper resolves browser geolocation when available (1.4763ms)
+✔ Nexi personal-origin helper falls back cleanly when geolocation is denied or the prompt is not personal (0.4868ms)
+✔ home now card prioritizes office-action jobs ahead of other queues (1.4991ms)
+✔ home surfaces receipt review when money is in but customer delivery is paused (0.3394ms)
+✔ home needs-attention card prioritizes failed payments before quote drift (0.2752ms)
+✔ mobile create fab renders only at the mobile breakpoint (2.2285ms)
+✔ mobile create fab points at the shared create menu component (22.0832ms)
+✔ mobile create fab stays within common phone viewport widths (0.2846ms)
+✔ mobile create fab collapses on downward scroll and expands on upward return (0.2471ms)
+✔ mobile create fab pulse fires once per fresh storage marker (0.2315ms)
+✔ mobile create fab hides behind active overlays and keeps shared dismissal rules (0.2644ms)
+✔ mobile create fab supports expanded and collapsed render states (1.0144ms)
+✔ request helpers treat an unreviewed intake as review-first work (1.1853ms)
+✔ reviewed requests move onto the conversion rail (0.2517ms)
+✔ converted requests stay read-only as intake source records (0.2319ms)
+✔ request queue summary breaks out review, conversion, and archive counts (0.976ms)
+✔ client profile paths round-trip through the NexOps location parser (2.3114ms)
+✔ global create options stay mapped to the intended NexOps workflows (0.5325ms)
+✔ create menu presentation and escape dismissal stay platform-aware (0.2637ms)
+✔ create menu renders shared tile copy and keeps Job visible in the option grid (26.5573ms)
+✔ workspace switch targets stay explicit across NexOps modules (0.4623ms)
+✔ internal operator modules reuse one local session token while NexPortal stays on its separate client route (0.8128ms)
+✔ client workspace exposes a confirmation-backed delete action instead of leaving duplicate cleanup to raw data edits (1.7064ms)
+✔ Media schema rejects exposed third-party URL fields (4.7946ms)
+✔ NexiBlueprint and SiteJobBlueprint schemas remain distinct (1.6464ms)
+✔ Approval item defaults can park outbound execution (3.5629ms)
+✔ Job schema preserves scheduled visit date fields (0.6977ms)
+✔ Conversation schema preserves tool run traces for reuse (0.571ms)
+✔ Source schema accepts email rail refs (0.3064ms)
+✔ Tenant branding schema stores logo fallback metadata and actor attribution (0.4709ms)
+✔ CompanyCam health uses the configured lightweight project query (39.0412ms)
+✔ Jobber schedule filter returns only jobs overlapping the requested day (6.361ms)
+✔ Jobber full-archive import ranges preserve undated records (0.6955ms)
+✔ Jobber client lookup paginates beyond the old 25-page ceiling (2.8278ms)
+✔ shared Address/Location parses, formats, and keys one canonical address contract (4.0612ms)
+✔ shared Address/Location builds intake and Google suggestion contracts (0.8978ms)
+✔ shared Address/Location chooses the native mobile maps URL without owning UI (0.5283ms)
+ℹ tests 350
+ℹ suites 0
+ℹ pass 347
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12395.224
+
+✖ failing tests:
+
+test at apps\server\test\content-engine.test.mjs:487:1
+✖ NexReach local Nexi loop accepts underscore ids through generate, approve, and refusal flow (14.9029ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Marketing draft ready/i. Input:
+  
+  'Here is your request, Operator.\n' +
+    '\n' +
+    'You requested How pool leak detection works in Fair Play, SC with the following details:\n' +
+    '# How pool leak detection works in Fair Play, SC\n' +
+    '\n' +
+    'Aquatrace uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n' +
+    '\n' +
+    'A recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n' +
+    '\n' +
+    'Work completed included Leak isolation at Fair Play, SC.\n' +
+    '\n' +
+    'For pool owners in Serving Western North Carolina and Upstate South Carolina., the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.\n' +
+    '\n' +
+    'Is this correct?\n' +
+    'Reply yes / no / make changes.'
+  
+      at TestContext.<anonymous> (file:///C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/server/test/content-engine.test.mjs:528:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Here is your request, Operator.\n\nYou requested How pool leak detection works in Fair Play, SC with the following details:\n# How pool leak detection works in Fair Play, SC\n\nAquatrace uses a structured inspection process so pool owners can separate normal evaporation from actual water loss.\n\nA recent completed job in Fair Play, SC followed the same evidence-first workflow: confirm reported loss, inspect structure and plumbing systems, document findings, and leave the owner with a clear next step.\n\nWork completed included Leak isolation at Fair Play, SC.\n\nFor pool owners in Serving Western North Carolina and Upstate South Carolina., the useful lesson is simple: measure daily loss, compare it against evaporation, and get a professional test when the numbers do not line up.\n\nIs this correct?\nReply yes / no / make changes.',
+    expected: /Marketing draft ready/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at apps\server\test\fielddocs-nexi-tools.test.mjs:358:1
+✖ local Nexi chat can search documents, queue a folder, approve it, queue an upload, and approve it (27.7672ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Approve this\? yes \/ no\./i. Input:
+  
+  'Here is your request, Operator.\n' +
+    '\n' +
+    'You requested create folder for Permit packet with the following details:\n' +
+    'Client: Deborah Justice\n' +
+    'Folder: Permit packet\n' +
+    'Structure: Flat per-client folder\n' +
+    'Portal impact: No change until files are added\n' +
+    '\n' +
+    'Is this correct?\n' +
+    'Reply yes / no.'
+  
+      at TestContext.<anonymous> (file:///C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/server/test/fielddocs-nexi-tools.test.mjs:429:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Here is your request, Operator.\n\nYou requested create folder for Permit packet with the following details:\nClient: Deborah Justice\nFolder: Permit packet\nStructure: Flat per-client folder\nPortal impact: No change until files are added\n\nIs this correct?\nReply yes / no.',
+    expected: /Approve this\? yes \/ no\./i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at apps\server\test\platform.test.mjs:316:1
+✖ platform routes manage tenant users and job links without leaking token hashes by default (46.6048ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///C:/Users/Peyto/NexTeam-Studio-worktrees/target-architecture-integration/apps/server/test/platform.test.mjs:382:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+EXIT: 1 (expected nonzero from the same three known-red assertions)
+
+COMMAND: seven pure/static tests from nexi-standalone-ui.test.mjs
+✔ standalone Nexi layout renders exactly one unified composer row (7.8484ms)
+✔ standalone Nexi layout does not render unrelated NexOps widgets, a floating FAB, or a permanent greeting by default (0.8554ms)
+✔ standalone Nexi sanitizes multiple raw internal error strings (0.1784ms)
+✔ standalone Nexi auto-scroll helper only sticks near the bottom (0.1374ms)
+✔ standalone Nexi helpers derive display names, hide approval pills, and build conversational phone/maps actions (1.8633ms)
+✔ standalone Nexi binds approval replies to the latest visible approval prompt instead of a stale fallback (0.1928ms)
+✔ standalone Nexi styling keeps the route-specific bubble, shell, and voice treatments aligned with the live shell (2.2246ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 639.9168
+EXIT: 0
+
+TOTAL NON-BROWSER ACCOUNTING: 357 tests; 354 pass; 3 known-red; 0 skipped.
+No browser was used for this final proof.
+
+COMMAND: npm run check:tenancy
+
+> check:tenancy
+> node scripts/check-tenancy.mjs
+
+Tenancy check passed (369 files checked).
+EXIT: 0
+
+COMMAND: npm run check:indexes
+
+> check:indexes
+> node scripts/check-firestore-indexes.mjs
+
+Firestore index check passed (10 compound query shapes).
+EXIT: 0
+
+COMMAND: npm run check:secrets
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1404 tracked non-doc files checked).
+EXIT: 0
+
+COMMAND: npm run check:provider-imports
+
+> check:provider-imports
+> node scripts/check-provider-imports.mjs
+
+Provider boundary check passed (441 files checked).
+EXIT: 0
+
+COMMAND: npm run check:blueprints
+
+> check:blueprints
+> node scripts/check-blueprint-identifiers.mjs
+
+Blueprint naming check passed (369 files checked).
+EXIT: 0
+
+CENTRAL SHELL RESIDUE
+apps/web/src/main.tsx: 18 lines
+apps/web/src/features/nexopsShell/NexOpsWorkspace.tsx: 3,373 lines
+apps/web/src/styles.css: 4,468 lines
+Extracted owner-prefix scan in styles.css: zero matches for Nexi, NexCam, NexReach, Approval, Content Queue, Platform, and Tenant Overview families.
+Top-level implementation declaration scan in main.tsx and NexOpsWorkspace.tsx: zero Nexi/NexCam/NexReach/Platform/Approval/Content/Schedule declarations.

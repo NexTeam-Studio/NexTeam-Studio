@@ -6,11 +6,11 @@ This document explains the current modular architecture for the target integrati
 
 The prime directive for this refactor is simple: three people should be able to work in three different product areas without all touching the same central files.
 
-Phase A established that rule on the platform stream. The target integration branch now applies it to the server and the twelve migrated business/shared components. The integrated web entry remains a documented exception because it still contains active Nexi, NexCam, Platform, auth, and route-dispatch code from the live baseline.
+Phase A established that rule on the platform stream. The target integration branch now applies it to the server, the twelve migrated business/shared components, and the remaining live web modules. The web entry is now an 18-line bootstrap; auth, routing, Nexi, NexCam/NexDocs, Platform, NexReach, and queue surfaces have named owners.
 
 ## Phase A Shape [tag: phase-a]
 
-- Target rule: `apps/web/src/main.tsx` becomes bootstrap-only after its remaining live surfaces are extracted.
+- `apps/web/src/main.tsx` is bootstrap-only.
 - `apps/server/src/server.ts` is bootstrap-only.
 - Web features live under `apps/web/src/features/<feature>/...`.
 - Server features register themselves through feature-owned `module.ts` files.
@@ -52,7 +52,7 @@ The intended `apps/web/src/main.tsx` flow does only three things:
 2. Render `AppBootstrap`.
 3. Hand off to shared auth and routing.
 
-The platform-only stream reached this shape. The integrated branch has not: its `main.tsx` is still 6,593 lines and owns active auth/top-level dispatch plus Nexi, NexCam, and Platform implementations. E4 removed the real NexOps business surfaces from that file, but a later extraction must move the remaining live surfaces before the entrypoint is genuinely thin. Moving the file wholesale behind a facade does not satisfy this rule.
+The integrated branch now has this shape. `main.tsx` is 18 lines and contains no feature implementation. `shared/app/AppBootstrap.tsx` starts the session boundary and `shared/router/AppRouter.tsx` selects the owning route. Product subroutes stay with their product feature.
 
 ### Feature convention [tag: web-features]
 
@@ -65,23 +65,25 @@ Each web feature follows the same ownership shape:
 - `styles/` for co-located CSS
 - `utils/` for feature-local helpers
 
-Current Phase A features:
+Current web owners include:
 
-- `features/nexi/` owns chat, health state, photo handling, and lightbox UI.
-- `features/scheduling/` owns schedule fetches, date/view state, and calendar board UI.
-- `features/operatorContext/` owns the signed-in operator's tenant and role context.
-- `features/platformOverview/` owns the platform hero and plan cards.
-- `features/tenantOverview/` owns tenant rows, adapter badges, export links, and backup actions.
-- `features/opsWorkspace/` owns the composed workspace route for the operations screen.
-- `features/clients/`, `features/quotes/`, `features/jobs/`, `features/visits/`, `features/settings/`, and `features/invoices/` now contain the real migrated NexOps component surfaces, not placeholder landings.
+- `shared/auth/` owns sign-in, Firebase session loading, and access gating.
+- `features/operatorContext/` owns signed-in tenant/user/role claim resolution shared by product modules.
+- `features/nexi/areas/chat/` and `features/nexi/areas/voice/` independently own chat and voice behavior.
+- `features/nexcam/areas/*` owns capture and NexCam overview; `features/nexdocs/areas/*` owns checklist, media, and report surfaces composed into that workspace.
+- `features/visits/components/visitCore/` is the single schedule/visit owner.
+- `features/platform/`, `features/platformOverview/`, and `features/tenantOverview/` separately own routing, plan summary, and tenant administration.
+- `features/nexreach/areas/reputation/` owns the live reputation UI.
+- `features/approvalQueue/`, `features/contentQueue/`, and `features/queueShared/` own the two queue surfaces and their deliberately shared visual primitives.
+- `features/clients/`, `features/quotes/`, `features/jobs/`, `features/visits/`, `features/settings/`, and `features/invoices/` contain the real migrated NexOps component surfaces, not placeholder landings.
 
 ### Phase B route ownership [tag: web-phase-b-routes]
 
 Phase B pushes more routing responsibility down into features instead of keeping it in shared files.
 
-- `features/opsWorkspace/routes/OpsWorkspaceRoute.tsx` is now only a workspace composition shell.
-- `features/nexi/routes/NexiWorkspaceRoute.tsx` owns the Nexi workspace mount.
-- `features/scheduling/routes/SchedulingWorkspaceRoute.tsx` owns the scheduling workspace mount.
+- `shared/router/AppRouter.tsx` selects the top-level authenticated product route and contains no product implementation.
+- `features/nexi/areas/chat/components/NexiStandaloneChat.tsx` owns the Nexi workspace mount and composes the voice hook.
+- `features/visits/components/visitCore/NexOpsSchedulePage.tsx` owns the scheduling workspace mount.
 - `features/platform/routes/PlatformRoute.tsx` is only the top-level `/platform` subtree handoff.
 - `features/platform/routes/platformSubroutes.tsx` is the intentional allowlist file for choosing between `/platform`, `/platform/clients`, `/platform/quotes`, `/platform/jobs`, `/platform/settings`, and `/platform/invoices`.
 
@@ -89,7 +91,7 @@ This means deeper product routes can move without editing `shared/router/AppRout
 
 ### Styling rule [tag: web-styles]
 
-The target is to remove the global `apps/web/src/styles.css` file.
+The target is to stop product components from adding rules to the global `apps/web/src/styles.css` file and to shrink it as legacy shared shell rules are touched.
 
 The replacement strategy is:
 
@@ -97,7 +99,7 @@ The replacement strategy is:
 - tiny shared primitives for repeated atoms
 - feature CSS imported by the feature that owns it
 
-The twelve migrated components now own their component-specific CSS, but the integrated branch still carries 5,871 lines of legacy global styling in `styles.css`. New component styling belongs in the owner folder; the remaining global rules must be classified and moved incrementally rather than expanded.
+The migrated components and eight continuation areas now own their component-specific CSS. The integrated branch still carries 4,468 lines of shared/legacy NexOps shell styling, including older Request and Home rules outside this continuation's extraction list. New component styling belongs in the owner folder; the global file is an explicit shared allowlist debt, not evidence that the extracted owners share implementation files.
 
 ## Server Composition [tag: server]
 
@@ -163,12 +165,19 @@ Use this section when deciding where code belongs.
 - Sign-in, Firebase session load, or auth gate copy: `apps/web/src/shared/auth/*`
 - Route selection between ops and platform: `apps/web/src/shared/router/*`
 - Signed-in tenant and operator claim resolution: `apps/web/src/features/operatorContext/*`
-- Nexi chat UI, message flow, media lightbox: `apps/web/src/features/nexi/*`
-- Schedule board UI and fetch logic: `apps/web/src/features/scheduling/*`
+- Nexi chat UI, message flow, media lightbox: `apps/web/src/features/nexi/areas/chat/*`
+- Nexi voice state and controls: `apps/web/src/features/nexi/areas/voice/*`
+- NexCam capture and workspace controller: `apps/web/src/features/nexcam/areas/capture/*`
+- NexCam overview: `apps/web/src/features/nexcam/areas/overview/*`
+- NexDocs checklist, media, and reports: `apps/web/src/features/nexdocs/areas/{checklists,media,reports}/*`
+- Schedule board UI and fetch logic: `apps/web/src/features/visits/components/visitCore/*`
 - Platform hero and plan summary UI: `apps/web/src/features/platformOverview/*`
 - Tenant table, adapter status, export, and backup UI: `apps/web/src/features/tenantOverview/*`
-- Ops workspace composition: `apps/web/src/features/opsWorkspace/*`
+- Ops workspace composition: `apps/web/src/features/nexopsShell/*` (shared allowlist only)
 - Platform subtree route ownership: `apps/web/src/features/platform/routes/*`
+- NexReach reputation UI: `apps/web/src/features/nexreach/areas/reputation/*`
+- Approval and Content queue UI: `apps/web/src/features/{approvalQueue,contentQueue}/*`
+- Shared queue visual primitives: `apps/web/src/features/queueShared/*`
 - Client browser surface: `apps/web/src/features/clients/*`
 - Quote browser surface: `apps/web/src/features/quotes/*`
 - Job browser surface: `apps/web/src/features/jobs/*`
@@ -197,7 +206,7 @@ Use this section when deciding where code belongs.
 1. Create `apps/web/src/features/<feature>/`.
 2. Put fetches, hooks, components, and styles inside that folder.
 3. Add a route or composition point through `shared/router` or an owning feature route.
-4. Do not add new behavior to `main.tsx`; extract the owning live surface when touching its remaining legacy code.
+4. Do not add feature behavior to `main.tsx`; it is a bootstrap-only boundary.
 
 ### Add a new server feature
 
@@ -212,16 +221,16 @@ Do not hardcode new tool arrays in `nexiRoutes.ts`.
 
 ## Phase A Notes [tag: phase-a-notes]
 
-- The real end-to-end extraction proof in this phase is the Nexi chat and media UI leaving `main.tsx` and taking its styles with it.
+- The end-to-end proof includes Nexi chat/media leaving `main.tsx`, the entry shrinking to 18 lines, and all 28 component ownership sets passing 378 pairwise collision checks.
 - Any future change that expands the shared allowlist should update this document and `DECISIONS.md` in the same commit.
 
 ## Phase B Notes [tag: phase-b-notes]
 
-- The hardcoded workspace tenant is no longer chosen inside `features/opsWorkspace/routes/OpsWorkspaceRoute.tsx`; that route now reads from `features/operatorContext/hooks/useOperatorContext.ts`.
-- Scheduling is now mounted through `features/scheduling/routes/SchedulingWorkspaceRoute.tsx` so schedule routing changes do not reopen the ops workspace file.
+- Tenant and role claims are resolved once by `features/operatorContext/resolveOperatorContext.ts`; NexOps, Nexi, NexCam, and NexReach consume that shared result.
+- Scheduling is mounted through Visit Core so schedule routing changes do not reopen the ops workspace file.
 - The old single `features/platform/components/PlatformConsole.tsx` file is gone. Platform overview and tenant overview now live in separate features with separate fetch hooks.
 - Historical note: Phase B first created placeholder ownership seams. E4 has now replaced those placeholders with the integrated CRM surfaces for Contact, Quotes, Jobs, Visits, Settings, and Invoices.
-- Voice UI itself still lives only in the sibling `voice` worktree today. Phase B established the operator-context seam here first so a future voice merge lands in feature-owned files instead of shared shell code.
+- Nexi voice behavior now lives under `features/nexi/areas/voice/` and is composed by chat without sharing implementation files.
 
 ## Phase C Notes [tag: phase-c-notes]
 

@@ -22,14 +22,17 @@ The web app groups visible product areas under `apps/web/src/features/`.
 
 ### How It Works
 
-- Nexi owns the chat experience, message flow, and photo viewing.
-- Scheduling owns the calendar board and scheduling information.
-- Operator Context reads the signed-in person's tenant and role.
+- Auth/Session owns sign-in and decides when a real signed-in session is ready.
+- Nexi Chat owns the conversation, message flow, and photo viewing; Nexi Voice separately owns listening and speech behavior.
+- Visit Core owns the calendar board and scheduling information.
+- Operator Context reads the signed-in person's tenant and role once for every product area.
+- NexCam owns capture; NexDocs separately owns checklists, media, and reports displayed inside the capture workspace.
 - Platform Overview owns plan and platform summary information.
 - Tenant Overview owns tenant rows, service status, exports, and backups.
-- The Ops Workspace places Nexi and Scheduling together without owning either product area itself.
+- NexReach owns reputation work. Approval Queue and Content Queue each own their own review surface while sharing only small visual building blocks.
+- The Ops Workspace places these areas together without owning their product behavior.
 
-Each feature can have its own components, data calls, local state, routes, and styling. The intended app entry point only starts the application. In the integrated branch, the entry file still contains older active Nexi, NexCam, Platform, sign-in, and route-switching code. New behavior must not be added there; work in one of those areas should move the touched behavior into its feature home.
+Each feature can have its own components, data calls, local state, routes, and styling. The app entry point is now only 18 lines and starts the application; it no longer contains product behavior.
 
 ### Why It Is This Way
 
@@ -59,7 +62,7 @@ The startup file only begins listening. A separate composition file creates repo
 
 Adding a new capability should be additive. A new feature should bring its own wiring instead of growing a central server file that everyone has to touch.
 
-The server has reached this target. The web entry has not fully reached it yet, which is why its remaining extraction is tracked rather than described as complete.
+The server and web entry have reached this target. Some deliberately shared shell and older Request/Home styling remains on the explicit allowlist and must not be expanded by new feature work.
 
 ## The Four Ownership Levels
 
@@ -192,6 +195,66 @@ Numbering safely reserves and formats tenant-specific request, quote, job, invoi
 ### Why It Is This Way
 
 Parallel work must never issue duplicate customer-facing numbers. One shared sequence service solves that cross-area rule without making it the owner of each document.
+
+## Auth, Session, and Operator Context
+
+### How It Works
+
+Auth/Session handles sign-in and waits for Firebase to establish the user. Operator Context then reads the tenant, user, and role attached to that sign-in. NexOps, Nexi, NexCam, and NexReach all use that same answer instead of interpreting access details separately.
+
+### Why It Is This Way
+
+Sign-in is shared infrastructure, not a product module. Resolving access in one place prevents two screens from giving the same person different permissions or silently choosing different tenants.
+
+## Nexi Chat and Voice
+
+### How It Works
+
+Nexi Chat owns the conversation screen, message history, media display, and chat requests. Nexi Voice owns listening, speaking, and voice-session behavior and is composed into chat through a narrow hook.
+
+### Why It Is This Way
+
+Conversation design and voice technology can change independently. A voice-provider change should not require editing the full chat screen, and a chat-layout change should not disturb audio behavior.
+
+## NexCam and NexDocs
+
+### How It Works
+
+NexCam owns capture and the capture workspace. NexDocs owns the checklist, media-review, and report surfaces that NexCam displays. A shared workspace controller remains an explicit composition seam because those tabs coordinate one active field session.
+
+### Why It Is This Way
+
+Taking field evidence and managing documents are related user journeys but different responsibilities. Separate owners let teams improve capture, checklists, media, or reports without editing the other surfaces.
+
+## Platform and Tenant Overview
+
+### How It Works
+
+Platform Routing chooses the correct page below `/platform`. Platform Overview owns plan and product summaries. Tenant Overview owns tenant rows, connection status, backups, and exports.
+
+### Why It Is This Way
+
+Navigation, product presentation, and tenant administration change for different reasons. Keeping them separate prevents a tenant-table change from reopening the route switch or the platform landing design.
+
+## NexReach Reputation
+
+### How It Works
+
+NexReach owns its reputation screen, data-loading hook, and styling. It uses the shared operator context for access but does not import implementation from NexOps or Nexi.
+
+### Why It Is This Way
+
+Reputation work is its own product workflow. It should be safe to improve review handling without colliding with chat, scheduling, or CRM work.
+
+## Approval and Content Queues
+
+### How It Works
+
+Approval Queue owns the live approval-review screen. Content Queue owns its extracted content-review screen but remains unmounted until a product navigation decision is made. They share only a small queue-primitives stylesheet.
+
+### Why It Is This Way
+
+The queues have similar visual patterns but different records and actions. Sharing only the visual building blocks avoids duplicating design while keeping behavior independently editable. Leaving Content Queue unmounted avoids inventing a product route during an architecture refactor.
 
 ## Tenant Isolation
 
