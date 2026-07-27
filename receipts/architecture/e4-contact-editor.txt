@@ -1,0 +1,15 @@
+E4 Contact editor checkpoint
+Date: 2026-07-27
+
+Owned surface:
+- apps/web/src/features/clients/components/contact/ContactEditorSurface.tsx
+
+The desktop and mobile create/edit framing now belongs to Contact and derives its data contract from NexOpsCreateClientPanel's existing props. The app shell supplies state and callbacks only.
+
+Verification (non-browser):
+- npm run build: PASS (77 modules)
+- Contact/shell focused tests: PASS (16/16)
+
+Open:
+- Client profile and client-rail rendering remain in NexOpsWorkspace.
+- Contact CSS remains in the root stylesheet.

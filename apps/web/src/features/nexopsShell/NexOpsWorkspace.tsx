@@ -70,6 +70,7 @@ import {
 } from "../../nexiStandalone";
 import { resolveRequestorOriginForNexiMessage } from "../../nexiRequestContext";
 import { ContactRoster } from "../clients/components/contact/ContactRoster";
+import { ContactEditorSurface } from "../clients/components/contact/ContactEditorSurface";
 
 const NexOpsHomePage = React.lazy(async () => ({ default: (await import("../../nexopsHome")).NexOpsHomePage }));
 const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("../../features/invoices/components/invoiceStructure/NexOpsInvoicesPage")).NexOpsInvoicesPage }));
@@ -3493,75 +3494,19 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
   }
 
   function renderNewClientWorkspace(): React.ReactElement {
-    const editing = clientFormMode === "edit";
-    if (mobileClientViewport) {
-      return (
-        <Suspense fallback={<section className="nexops-mobile-client-screen"><p className="eyebrow">Loading</p><h2>{editing ? "Opening client editor" : "Opening new client"}</h2><p>Pulling the mobile intake form into place now.</p></section>}>
-          <NexOpsCreateClientPanel
-            tenantId={operatorContext.tenantId}
-            newClient={newClient}
-            setNewClient={setNewClient}
-            createStatus={createStatus}
-            createClientCanSave={createClientCanSave}
-            createClientMissingFields={createClientMissingFields}
-            leadSourceOptions={leadSourceOptions}
-            mode={clientFormMode}
-            surface="client"
-            layout="page"
-            onClose={closeClientFormWorkspace}
-            onSubmit={createClientFromForm}
-          />
-        </Suspense>
-      );
-    }
-
-    return (
-      <section className="nexops-client-profile">
-        <div className="nexops-client-profile-header-card">
-          <div className="nexops-client-profile-header-actions">
-            <button className="nexops-link-button" type="button" onClick={closeClientFormWorkspace}>{editing ? "Back to profile" : "Back to clients"}</button>
-            <span className="nexops-status-pill">{editing ? "Edit client" : "New client"}</span>
-          </div>
-          <div className="nexops-client-profile-heading">
-            <div>
-              <p className="eyebrow">Client workspace</p>
-              <h1>{editing ? "Edit client" : "New client"}</h1>
-              <p>{editing ? "Update the current client record in the same intake workspace used for new records." : "Start with the primary contact and service address, then save into the full client rail before adding anything else."}</p>
-            </div>
-            <div className="nexops-inline-actions wrap">
-              <span className="nexops-client-create-summary">
-                {createClientCanSave
-                  ? (editing ? "Ready to save changes. Name, address, and telephone are present." : "Ready to save. Name, address, and telephone are present.")
-                  : `Still needed: ${createClientMissingFields.join(", ")}.`}
-              </span>
-            </div>
-          </div>
-          <div className="nexops-client-profile-meta">
-            <article><span>Required</span><strong>Name, address, telephone</strong></article>
-            <article><span>Email</span><strong>Optional but recommended</strong></article>
-            <article><span>Save result</span><strong>{editing ? "Returns to the full client workspace" : "Opens the full client workspace"}</strong></article>
-            <article><span>Billing</span><strong>Lives on the parent client</strong></article>
-          </div>
-        </div>
-
-        <Suspense fallback={<section className="nexops-client-profile-panel"><p className="eyebrow">Loading</p><h2>{editing ? "Opening client editor" : "Opening new client workspace"}</h2><p>Pulling the client details form into place now.</p></section>}>
-          <NexOpsCreateClientPanel
-            tenantId={operatorContext.tenantId}
-            newClient={newClient}
-            setNewClient={setNewClient}
-            createStatus={createStatus}
-            createClientCanSave={createClientCanSave}
-            createClientMissingFields={createClientMissingFields}
-            leadSourceOptions={leadSourceOptions}
-            mode={clientFormMode}
-            surface="client"
-            layout="page"
-            onClose={closeClientFormWorkspace}
-            onSubmit={createClientFromForm}
-          />
-        </Suspense>
-      </section>
-    );
+    return <ContactEditorSurface
+      tenantId={operatorContext.tenantId}
+      newClient={newClient}
+      setNewClient={setNewClient}
+      createStatus={createStatus}
+      createClientCanSave={createClientCanSave}
+      createClientMissingFields={createClientMissingFields}
+      leadSourceOptions={leadSourceOptions}
+      mode={clientFormMode}
+      mobile={mobileClientViewport}
+      onClose={closeClientFormWorkspace}
+      onSubmit={createClientFromForm}
+    />;
   }
 
   function renderMobileClientProfile(): React.ReactElement {
