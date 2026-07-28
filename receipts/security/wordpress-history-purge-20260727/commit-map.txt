@@ -1,0 +1,117 @@
+NexTeam Studio WordPress Credential History Purge
+Date: 2026-07-27
+
+Scope
+- Both exposed WordPress credentials were rotated and confirmed invalid before rewriting.
+- git-filter-repo --invert-paths removed seven credential-bearing temporary scripts from every rewritten reachable commit.
+- The literal values are intentionally not reproduced in this receipt.
+
+Purged paths
+- fill_yoast_ui.cjs
+- tmp_check_post_auth.mjs
+- tmp_fill_verify_yoast.cjs
+- tmp_inspect_save.cjs
+- tmp_probe_yoast.cjs
+- tmp_run_bragi_service.mjs
+- tmp_test_wp_auth.mjs
+
+Step 0 checkpoint commit mapping
+platform|de1a313578b7979560f7afe35343f1076e9a353a|005fa23507a171f6e3d1d8c22a5fc4c729361f37
+crm|fb36c6e5da7893670a145f3e1dde954a0e6bff9e|0120f68cf294db2e8c80c3b6b65e43af164e6c83
+manage-team-v2|7d64a9c139b94555bac2df6713467f2a60e6b5e8|b18fe4a8dbe823d63136b6ccb2ac5812db527bad
+nightly-integration|f2fb76664afe9d0a18e4c9dc239a76f744f96d97|5340e2e61adf5920d061eee4ff7b000b3a60f1ec
+nexi-p1|5d146fbfebd94a6142fa09c2c9a2bb6fe9ab83ee|ccae18c9220e18f28cec519f495b9bbab478eea7
+
+Architecture migration commit mapping
+5112c9020b3d49601c3f1ac8d1bf181397ac8dfa|e39d5c73bb62e9374fe2c0ba04e25c1b8dec732a|2026-07-26T21:30:11-04:00|checkpoint(architecture): establish green migration baseline
+dff902347e0daabed735a02e985c85aa156905ca|9fa8f5d43ce788836df579f96ebc1e5da08c855c|2026-07-26T21:43:15-04:00|checkpoint(architecture): extract shared address location
+157ae7d0d9ba1caa0df512c770b5708f22d5b7e8|9ad3a36cd07a3c8ceef33a86c0f316edb33cdfc0|2026-07-26T21:47:09-04:00|checkpoint(architecture): extract shared document rendering
+8f4e3fe056758c3bd0c4ca62e0bc8188e6af3dc2|51f122d723f4fa0eeca944b10df217f509b5f966|2026-07-26T21:56:36-04:00|checkpoint(architecture): extract shared numbering
+9e51deb16a86f37fb0f17a196361fc92b20d1b1d|e48547ba631ab580c0fa35b35f4bcdec1689a8e0|2026-07-26T22:36:40-04:00|checkpoint(architecture): extract component route registrars
+f6a22d361063364a86db0f0820e17b7818766bc9|c5a4b2ca11bf86aef71d5fb6871226656a39cba3|2026-07-26T22:40:15-04:00|checkpoint(architecture): extract component nexi tools
+fd27b9e3d3000879580e95dc23c82f2027e8d8cc|ecb75f3f7aa147426adc74853cc9470848ac8dc1|2026-07-26T22:43:07-04:00|checkpoint(architecture): split native repository stores
+45913e72c4a23712a2d834c0c00cfb575563c839|1443154506f875004725f699c4dcf45ccd0bc9d0|2026-07-26T22:45:39-04:00|checkpoint(architecture): split approval execution handlers
+f3250395fad4ac0cd2c9dcf6252e1bd75819300d|d8e0f113aa9b573d46be0f6087b5f78695fbdec7|2026-07-26T22:47:53-04:00|checkpoint(architecture): split lifecycle command manifests
+eba9c3facb0ddd1be601b37d84bdd0770a4d5c46|cee6b956ab34ecfc4a02cf391c0bc71cba303cf1|2026-07-26T22:50:58-04:00|checkpoint(architecture): move contact profile domain
+1b1d7a749de8a6a191b5a4d01cde52b09065a0f3|21cc505b6a5bd38436e7412a84496c75934add30|2026-07-26T22:52:08-04:00|checkpoint(architecture): extract quote template service
+24e9295d50fc17cf54f92fec8ca0cd8052fec14f|5f5300933b39c94e7c35639d0eea616b648de267|2026-07-26T22:53:49-04:00|checkpoint(architecture): move real quote engine
+3737d49ea81aa5b218962b9077232250e819fae8|8387074ca4b827807cc9539eb090f2328331086d|2026-07-26T22:54:54-04:00|checkpoint(architecture): move real job core
+dd74a9bf55486173eacee01d764af8cdac50a9fc|4371586af7f3ee05a0a9c8d35d62c59b9df232d7|2026-07-26T22:56:21-04:00|checkpoint(architecture): move visit schedule surface
+3bfa63b88f22be50dcfa9d9811a01609e26a4eb2|e29e5a3cbd4f78d379c8b8cd12f3324539058224|2026-07-26T22:57:29-04:00|checkpoint(architecture): move invoice structure
+b2e4974a69a3c67629e71ef069cc9b3aa8003bf7|c5b8f0a41af6431cdfe195870909ad053012a2f7|2026-07-26T23:00:16-04:00|checkpoint(architecture): move payment rails
+0f48a1ad6dbc406925284a90bb4e71a08ae588af|877c9a15b6106b40455e67c84f3fa89689550ccd|2026-07-26T23:01:14-04:00|checkpoint(architecture): move catalog component
+f5403f3838d998cccbff3e69a12ddcd3e0ac125c|d470f0cc046647eecffda6e222472f1765e56dc8|2026-07-26T23:03:49-04:00|checkpoint(architecture): move tenant config
+0e235109bb9668961c7ce726c5f56e5a64edc53c|923625a083a2a79d730f9ebdf59f4782f67986d4|2026-07-26T23:12:50-04:00|checkpoint(architecture): extract nexops app shell
+a5af408d7ecae9a29a470657dd2883696050557f|9e2b06f15ab9a3681c4989186364c6de99b15464|2026-07-26T23:14:25-04:00|checkpoint(architecture): extract contact roster
+2583710597635218d5067aafe88afedc5644a5ea|6e0251304deb3cef8e4ec91960171b749f27745d|2026-07-26T23:17:15-04:00|checkpoint(architecture): extract quote template editor
+85704f93cc53046a6b52f5f09924e9298bd121c7|0a0905c0889aebbfeb7251de2810dd1f958a2b64|2026-07-26T23:19:23-04:00|checkpoint(architecture): complete quote templates
+1d64556a3e0cf3051af23196b9bd80f6ddb1cffc|71b47c93971a81f8fd5014d9ee2014bbf32afc71|2026-07-26T23:51:24-04:00|checkpoint(architecture): extract contact editor
+dfe583793a0d6c9acef69fa9e89594f7f574a249|ccbf926cbde4cb91e1de63f613a0d4794458d512|2026-07-26T23:57:02-04:00|checkpoint(architecture): complete contact extraction
+bee967620d37bf8a0d1a0e670ed57e56eaae562b|70b56079926b9242c934e4308052a54fd8291616|2026-07-26T23:58:19-04:00|checkpoint(architecture): isolate job core web surface
+ff0f9594f272f73b4d9c2432f44f520a889f0883|3d95d51e2429338b400ac35bf2c25fa51fda59b3|2026-07-27T00:12:51-04:00|checkpoint(architecture): complete job and visit core
+d5938d52ad958f77e888458b8ad745ad792e072a|f83676e55643f0a3eeb20faa11df5063e971bb9a|2026-07-27T00:18:22-04:00|checkpoint(architecture): extract invoice structure
+2183408a4757e31c38730f7fd255834f478196ba|47959e94283a7c5f9f75e2683cbb57d3b7675256|2026-07-27T00:22:09-04:00|checkpoint(architecture): complete payment rails
+705d1dcae9cd56deb04f73c191a893d710c07d46|a3e6216cbed51d286677c2e66973a0c0ca49d53f|2026-07-27T00:28:52-04:00|checkpoint(architecture): complete E4 component extraction
+b2d9548892221de60a19d2dbfab2229c07866362|8d79e711f2e82ec0ba64e840d87dffa5f6de6d74|2026-07-27T00:52:31-04:00|checkpoint(architecture): sanitize product baseline
+486392dd47dd6ebb0c21843601efb63bc2860747|665f7631018809f77cc741534eef45a89d2f4d6e|2026-07-27T01:08:24-04:00|checkpoint(architecture): harden integrated server
+ff9c4cb16e971493041708e5ca5a388f0818aff1|f64e49d27f06854322495dc1dd26e9cc0c8d13b5|2026-07-27T01:10:43-04:00|checkpoint(architecture): prove component isolation
+7955c74ef693e913b82713c4886760b72bd401b6|e215c5dc53d69a9872c2902e7a4a7dbb9d16d9af|2026-07-27T01:14:26-04:00|checkpoint(architecture): document component ownership
+16eb4f2e524f847020774c1c66b5a70fb11cecd8|7fd15abf2fd05e2309cbe6fda43e8bc8d3d83463|2026-07-27T01:15:40-04:00|checkpoint(architecture): record honest migration status
+f5c9ce0fb21747d84b961164582da60759657198|03097633399a98708cf0597595fb55c86bd33e82|2026-07-27T08:45:05-04:00|checkpoint(architecture): remove duplicate web declarations
+2f974255793a9fd4d45bc75378087dca3ec9092f|69e2824a0e03a93d6cf8fd051471a0217f310a49|2026-07-27T09:00:58-04:00|checkpoint(architecture): eliminate migration lint debt
+72b8189ae4e387a0fd940417e70364c069014c16|4827ae484bf2e1557f8c9556bd1a628d1d188938|2026-07-27T09:05:23-04:00|checkpoint(architecture): map remaining web boundaries
+c29648f2e4f5375e9430e210e9550457e2f71031|48f7bde42b2ea360b0c9c19d3550e0c61fc68e89|2026-07-27T09:11:51-04:00|checkpoint(architecture): extract shared auth session
+79cd077012be58380a7935a30b9f8b48da683cbe|f7b7240741729f3180242fd27eeb766542b1c4b2|2026-07-27T09:22:42-04:00|checkpoint(architecture): extract Nexi chat and voice
+d60e89f61550e6c8d0034e99360dcfb00a610d11|657afb668ea306065f5b14b139b0faaf19a1d75a|2026-07-27T09:30:56-04:00|checkpoint(architecture): extract NexCam and NexDocs surfaces
+28a254841c109515dff9294d15db267c35902947|5c32f1f3ab98bc33dcb9105f03ae591baaeef070|2026-07-27T09:32:44-04:00|checkpoint(architecture): activate platform owner routes
+57a5092440a912b5ead0ab002b845fea715da17c|e891b13077c7484328f982bef7e17ca5eaffb374|2026-07-27T09:35:08-04:00|checkpoint(architecture): make shared router authoritative
+69757ee9f91471e99e8d5d0c6f985a2fcb30a2f2|b3fb871016e0c44250a821ca6c6b68e8e8866af1|2026-07-27T09:35:20-04:00|checkpoint(architecture): complete shared route composition
+10f2cbd948a3a66beee45d16c6750a5dfc9f7166|b9e91897bfcb18089340079b6bc871268f34499a|2026-07-27T09:37:58-04:00|checkpoint(architecture): extract NexReach web area
+35941c287f327d9b88c8ac8ef7257d57f519586f|591d801cabe6120b5cc8b8199fef32c5b202877e|2026-07-27T09:41:57-04:00|checkpoint(architecture): restore Approval Queue owner
+5fd4601d4bb81ddbfc91220e7038bd34fd11a4c4|8e64a8f8cf4c90f2233c08d7ff9aed76a59e0528|2026-07-27T09:42:28-04:00|checkpoint(architecture): extract Content Queue owner
+8510ab9ff0531c0455bc66cd48e683a723810a1c|b3f3bb4c4df8f42ac3e08c8e29cd89f309180ec1|2026-07-27T09:46:42-04:00|refactor(web): centralize operator context resolution
+281ad3b6ddd993ed80a104b9d8439a9a9d556954|5386046d154a2d1caba8bb96c783fb4519510e3e|2026-07-27T09:52:04-04:00|docs(architecture): prove all web component boundaries
+8313586a0f39f6c580aa19e907b34b6fff38adac|c7041baf87e55eae8b6b0bcced834c13a95f23bd|2026-07-27T09:52:14-04:00|chore(receipts): normalize R4 proof output
+03bc6e73496264e5b691aba88512ec3613312e80|f11adf684fb1c67e2368382ceb4232d389e4c47d|2026-07-27T09:54:22-04:00|fix(architecture): classify legacy shared web files
+2b8421794df39306b57a799a8cde68bf844ecd96|b5f3650fbcdbc3551d194b5d89eff74ee2d782c9|2026-07-27T13:56:50-04:00|test(web): isolate Playwright from default suite
+dc0de442b84f89f24af10b86ecbcb4009cc0d54b|903f64056141095a6b299e5c51741ed93a9e2dfe|2026-07-27T14:00:36-04:00|refactor(web): move Nexi primitives into chat owner
+89449fc1c12504412deb2182a4164658c0c41a94|5a083ce8450dae5e22f5c1252a4f3d53a4009d42|2026-07-27T14:57:27-04:00|security(fielddocs): enforce tenant-bound Admin writes
+0cf41c32d1c1f9e8e847352446b839cfd9453fa4|053c3aed027a5c99507659d836016c80283c8995|2026-07-27T15:03:24-04:00|refactor(web): assign legacy root files to owners
+49f7e545fd4f908f9066cd186bc21e2c315bf242|6aaad0cae1d4a4d15bdeda13c2151e34e6147359|2026-07-27T15:08:45-04:00|refactor(web): split deferred UI by owner
+d1a886e1fc57a70909e7e3406c907e35becef4d4|d305cbcdd8382d4123cf95b4042b28781c6ee4e1|2026-07-27T15:12:49-04:00|refactor(web): decompose global CSS by owner
+c322befc861fa6edb762fed7bd8747bf85c8e402|1dc9056222dc837eb039d48da29f7100b2c502c9|2026-07-27T15:17:30-04:00|refactor(web): separate workspace contracts and support
+418acc4cb796d00c62f55ebccc64e57617c73c5d|951c030989cba51bcda608c8392864a66aafbbab|2026-07-27T15:23:21-04:00|refactor(web): extract workspace shell surfaces
+c7345661cf62e38314c1e0bd80fbcd7a90a5c019|260f09ed682ce6b14bc0e1f1b51cb43e4ccf1505|2026-07-27T15:34:29-04:00|refactor(nexcam): own capture controller
+445b4858d4e53070c1ff6e26809e7f1ec34a70b1|de76740611f47ae1b416fbba30a8691de9f11889|2026-07-27T15:36:49-04:00|security(scheduling): reject cross-tenant Admin writes
+87979deb7e1bbf0848f01d9cb3d5e8a3376b3e66|16b78ae9e3e15e057c323ba3a100b344071e5f51|2026-07-27T15:39:28-04:00|refactor(web): isolate notification controller
+1837409330e151c5464543bd5a22e8c44dd7a31d|0ee2a18e0729f0308d7c4d6da0d91c3d8eb3cb1c|2026-07-27T15:42:27-04:00|security(content): enforce tenant-owned Admin writes
+60762c9c426903601ccb72c0cfc32e33b63f1414|2f92fbf47df61ac7dc9c9abbe2c0b326b7e1148b|2026-07-27T15:46:07-04:00|refactor(web): isolate workspace record loading
+d744f775e4179c502b8eab7f18820d1aab965eb1|3959c45af6021613001422055bacaae8fddc932d|2026-07-27T15:48:07-04:00|security(reputation): enforce tenant-owned Admin writes
+3b4b29bbe2afe17ea847fd1d36caf83fc90b6709|fb2197955c9ba260a96da0d0baa39ea3a3809ac1|2026-07-27T16:10:10-04:00|refactor(contact): own client form and rails
+6c69110928fb9e998ae56cf7a2ea899bd8af6a49|0cec658916badbabef0946db001225d4951eeaa3|2026-07-27T16:16:22-04:00|security(approval): require tenant-aware queue access
+945b2acec967af6fb8cbc8f6b2f218e001bf2e57|1168a10e351cdf53d11c0bc25b30d1b08b8a7685|2026-07-27T16:19:16-04:00|security(admin): guard operational repository writes
+cedd83c94284ed308fd8f4274145edd2f06ba041|54f8b2f21ee122d984aacf838f9275b67f9d4932|2026-07-27T16:27:12-04:00|security(crm): enforce tenant-owned persistence
+5606cb927aa84123b359d1c32934b7e03afe4fcb|a83a5d7aef9559a0d8d153f411339ec2e825c0a0|2026-07-27T16:34:16-04:00|security(admin): close remaining repository write gaps
+487c627eea7f4951a1e2670002db5f72afae6c0b|b59aaa3ab5abe128fe2754c49fd3a0e6d7920876|2026-07-27T16:38:53-04:00|test(security): prove Admin tenant isolation in emulator
+
+Controlled remote branches rewritten (13)
+- build/comms-lite
+- build/content
+- build/core
+- build/crm
+- build/fielddocs
+- build/integration-m2-m4
+- build/nexi
+- build/nexi-p1-20260708
+- build/nightly-integration-20260709
+- build/platform
+- build/schedule
+- build/voice
+- main
+
+Verification status before final retirement
+- Rewritten reachable blobs scanned: 3,989; both old credential literals and encoded variants: 0 matches.
+- Purged paths in reachable commits: 0.
+- Sanitized mirror git fsck --full --strict --no-reflogs: exit 0.
+- Protected content verification: 75/75 commits preserved after excluding only the seven purge paths.
+- Local worktrees: 35/35 HEAD, branch/detached, and dirty-state records validated.
