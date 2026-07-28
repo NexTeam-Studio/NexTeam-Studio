@@ -1,25 +1,23 @@
 import type { Request, Response } from "express";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
+import { createJobBodySchema, jobActionSchema, updateJobBodySchema } from "./routeSchemas.js";
+import { quickPaymentRequestBodySchema } from "../../../../invoices/components/paymentRails/server/routeSchemas.js";
 
 export function registerJobCoreRoutes(context: CrmRouteContext): void {
   const {
     RailError,
     actorIdForAccess,
     app,
-    createJobBodySchema,
     createQuickPaymentRequestRecord,
     defaultTenantId,
     env,
     fieldDocsService,
-    jobActionSchema,
     jobLifecycle,
     providerForTenant,
     publicOrigin,
-    quickPaymentRequestBodySchema,
     requireBillingAccess,
     requireQuoteAccess,
     sendRouteError,
-    updateJobBodySchema
   } = context;
 
   app.get("/api/crm/jobs", async (req: Request, res: Response) => {

@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
+import { completeJobVisitBodySchema, moveJobVisitBodySchema, scheduleJobVisitBodySchema, scheduleJobVisitSeriesBodySchema, sendBookingConfirmationBodySchema } from "./routeSchemas.js";
 
 export function registerVisitCoreRoutes(context: CrmRouteContext): void {
   const {
@@ -8,20 +9,15 @@ export function registerVisitCoreRoutes(context: CrmRouteContext): void {
     app,
     assignedTechniciansByVisitId,
     buildPortalSnapshotOrRedirect,
-    completeJobVisitBodySchema,
     defaultTenantId,
     env,
     jobLifecycle,
-    moveJobVisitBodySchema,
     portalHub,
     portalPathWithTenant,
     renderPortalAppointmentsHtml,
     requirePortalSession,
     requireQuoteAccess,
     requireTenantRole,
-    scheduleJobVisitBodySchema,
-    scheduleJobVisitSeriesBodySchema,
-    sendBookingConfirmationBodySchema,
     sendRouteError
   } = context;
 

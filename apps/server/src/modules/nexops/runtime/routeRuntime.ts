@@ -32,414 +32,8 @@ import { renderInvoicePdf, renderInvoicePortalHtml } from "../areas/invoices/com
 import { renderQuotePdf, renderQuotePortalHtml } from "../areas/quotes/components/quoteEngine/server/quoteDocument.js";
 import { capturePaypalCheckoutOrder, createPaypalCheckoutOrder } from "../areas/invoices/components/paymentRails/server/paypal.js";
 import { createStripeCheckoutSession, verifyStripeWebhookEvent } from "../areas/invoices/components/paymentRails/server/stripe.js";
-
-const customFieldValueSchema = z.union([z.string(), z.number(), z.boolean()]);
-
-const createClientPrimaryPropertySchema = z.object({
-  siteName: z.string().min(1).optional(),
-  label: z.string().min(1).optional(),
-  address: addressSchema,
-  geo: z.object({ lat: z.number(), lng: z.number() }).optional(),
-  billingAddressSameAsClient: z.boolean().optional(),
-  access: z.object({
-    gateCode: z.string().optional(),
-    accessNotes: z.string().optional()
-  }).optional(),
-  contacts: z.array(clientContactSchema).optional(),
-  customFields: z.record(customFieldValueSchema).optional()
-});
-
-function hasClientCreatePhone(input: {
-  phones?: string[] | undefined;
-  contacts?: Array<{ phones?: Array<{ value?: string | undefined }> | undefined }> | undefined;
-}): boolean {
-  return (input.phones ?? []).some((phone) => phone.trim().length > 0)
-    || (input.contacts ?? []).some((contact) => (contact.phones ?? []).some((phone) => (phone.value ?? "").trim().length > 0));
-}
-
-function hasClientCreateAddress(input: {
-  billingAddress?: unknown;
-  primaryProperty?: { address?: unknown } | undefined;
-}): boolean {
-  const billingAddress = input.billingAddress as { street1?: string } | undefined;
-  const propertyAddress = input.primaryProperty?.address as { street1?: string } | undefined;
-  return Boolean(
-    billingAddress?.street1?.trim()
-    || propertyAddress?.street1?.trim()
-  );
-}
-
-const createClientBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  name: z.string().min(1),
-  company: z.string().min(1).optional(),
-  personName: personNameSchema.optional(),
-  displayNamePreference: z.enum(["person", "company"]).optional(),
-  billingAddress: addressSchema.optional(),
-  billingSameAsPrimaryProperty: z.boolean().optional(),
-  contacts: z.array(clientContactSchema).optional(),
-  communicationSettings: clientCommunicationSettingsSchema.optional(),
-  emails: z.array(z.string()).default([]),
-  phones: z.array(z.string()).default([]),
-  consent: z.object({ email: z.boolean(), sms: z.boolean(), marketing: z.boolean().default(false) }).default({ email: false, sms: false, marketing: false }),
-  customFields: z.record(customFieldValueSchema).optional(),
-  primaryProperty: createClientPrimaryPropertySchema.optional()
-}).superRefine((input, ctx) => {
-  if (!hasClientCreateAddress(input)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Address is required before a client can be saved.",
-      path: ["primaryProperty", "address"]
-    });
-  }
-  if (!hasClientCreatePhone(input)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Telephone is required before a client can be saved.",
-      path: ["phones"]
-    });
-  }
-});
-
-const updateClientBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  name: z.string().min(1).optional(),
-  company: z.string().min(1).nullable().optional(),
-  personName: personNameSchema.optional(),
-  displayNamePreference: z.enum(["person", "company"]).optional(),
-  billingAddress: addressSchema.nullable().optional(),
-  billingSameAsPrimaryProperty: z.boolean().optional(),
-  contacts: z.array(clientContactSchema).optional(),
-  communicationSettings: clientCommunicationSettingsSchema.optional(),
-  emails: z.array(z.string()).optional(),
-  phones: z.array(z.string()).optional(),
-  customFields: z.record(customFieldValueSchema).optional(),
-  consent: z.object({
-    email: z.boolean().optional(),
-    sms: z.boolean().optional(),
-    marketing: z.boolean().optional()
-  }).optional(),
-  primaryProperty: createClientPrimaryPropertySchema.optional()
-}).refine((input) => Boolean(
-  input.name
-  || input.company !== undefined
-  || input.personName
-  || input.displayNamePreference
-  || input.billingAddress !== undefined
-  || input.billingSameAsPrimaryProperty !== undefined
-  || input.contacts
-  || input.communicationSettings
-  || input.emails
-  || input.phones
-  || input.consent
-  || input.customFields
-  || input.primaryProperty
-), {
-  message: "At least one client field update is required."
-});
-
-const createQuoteRouteBodySchema = quoteComposerInputSchema.extend({
-  delivery: quoteComposerInputSchema.shape.delivery.default({ mode: "draft" })
-});
-
-const updateQuoteRouteBodySchema = quoteComposerInputSchema.partial().extend({
-  tenantId: z.string().min(1).optional()
-});
-
-const quoteSendBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  mode: z.enum(["email", "sms", "mark_sent"]),
-  target: z.string().optional(),
-  note: z.string().optional(),
-  subject: z.string().optional(),
-  bodyText: z.string().optional()
-});
-
-const quoteManualApprovalBodySchema = z.object({
-  tenantId: z.string().min(1).optional()
-});
-
-const createInvoiceFromQuoteBodySchema = z.object({
-  tenantId: z.string().min(1).optional()
-});
-const paymentMethodDetailsBodySchema = z.object({
-  checkNumber: z.string().optional(),
-  bankTransferReference: z.string().optional(),
-  otherReference: z.string().optional(),
-  payerName: z.string().optional(),
-  failureMessage: z.string().optional(),
-  collectionChannel: z.enum(["hosted_link", "saved_card", "manual_entry", "tap_to_pay", "quick_request"]).optional(),
-  deviceLabel: z.string().optional(),
-  devicePlatform: z.string().optional(),
-  requestMemo: z.string().optional()
-});
-const recordInvoicePaymentBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  amount: z.number().positive(),
-  tipAmount: z.number().min(0).optional(),
-  provider: z.enum(["stripe", "paypal", "manual", "quote_bridge"]).default("manual"),
-  method: z.enum(["card", "ach", "cash", "check", "bank_transfer", "other", "paypal", "venmo"]),
-  note: z.string().optional(),
-  savedCardId: z.string().optional(),
-  methodDetails: paymentMethodDetailsBodySchema.optional(),
-  externalIds: z.object({
-    stripeCheckoutSessionId: z.string().optional(),
-    stripePaymentIntentId: z.string().optional(),
-    paypalOrderId: z.string().optional(),
-    paypalCaptureId: z.string().optional()
-  }).optional(),
-  status: z.enum(["succeeded", "failed"]).optional()
-});
-const updateInvoiceDraftBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  title: z.string().optional(),
-  lineItems: z.array(lineItemSchema).optional(),
-  discount: quoteDiscountSchema.optional(),
-  taxRate: z.number().min(0).optional(),
-  dueAt: z.string().optional(),
-  terms: z.string().optional(),
-  paymentSchedule: paymentSchedulePlanSchema.optional(),
-  deliveryDefaults: invoiceDeliveryPreferencesSchema.optional()
-});
-const sendInvoiceBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  mode: z.enum(["email", "sms", "mark_sent"]),
-  target: z.string().optional(),
-  note: z.string().optional(),
-  subject: z.string().optional(),
-  bodyText: z.string().optional(),
-  includePdf: z.boolean().optional(),
-  includeSummary: z.boolean().optional(),
-  includePayLink: z.boolean().optional(),
-  includeHostedLink: z.boolean().optional()
-});
-const sendBookingConfirmationBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  visitId: z.string().min(1).optional(),
-  mode: z.enum(["email", "sms"]),
-  target: z.string().optional(),
-  subject: z.string().optional(),
-  bodyText: z.string().optional(),
-  sendCopy: z.boolean().optional(),
-  copyTarget: z.string().optional()
-});
-const invoiceCheckoutBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  provider: z.enum(["stripe", "paypal"]).default("stripe"),
-  method: z.enum(["card", "paypal", "venmo"]).default("card"),
-  tipAmount: z.coerce.number().min(0).optional()
-});
-const composeInvoiceFromJobsBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  jobIds: z.array(z.string().min(1)).min(1),
-  title: z.string().optional(),
-  discount: quoteDiscountSchema.optional(),
-  taxRate: z.number().min(0).optional(),
-  terms: z.string().optional(),
-  paymentSchedule: paymentSchedulePlanSchema.optional()
-});
-const quickPaymentRequestBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  clientId: z.string().min(1).optional(),
-  title: z.string().min(1),
-  amount: z.number().positive(),
-  memo: z.string().optional(),
-  delivery: z.object({
-    mode: z.enum(["draft", "email", "sms", "mark_sent"]).default("draft"),
-    target: z.string().optional(),
-    subject: z.string().optional(),
-    bodyText: z.string().optional()
-  }).optional()
-});
-const updateReceiptReviewBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  subject: z.string().optional(),
-  bodyText: z.string().optional(),
-  emailRecipients: z.array(z.string().email()).optional(),
-  smsRecipients: z.array(z.string()).optional(),
-  sendChannels: z.array(receiptReviewChannelSchema).optional(),
-  attachmentIds: z.array(z.string().min(1)).optional()
-});
-const sendPortalLinkBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  propertyId: z.string().min(1).optional(),
-  target: z.string().optional(),
-  preferredChannel: z.enum(["email", "sms"]).optional(),
-  sourceObjectType: z.enum(["quote", "invoice"]).optional(),
-  sourceObjectId: z.string().min(1).optional()
-});
-const clientStatementQuerySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  from: z.string().optional(),
-  to: z.string().optional()
-});
-const sendStatementBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  from: z.string().optional(),
-  to: z.string().optional(),
-  target: z.string().optional()
-});
-const startReviewSequenceBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  jobId: z.string().min(1),
-  source: z.enum(["automatic", "manual"]).optional()
-});
-const reviewSequenceActionBodySchema = z.object({
-  tenantId: z.string().min(1).optional()
-});
-const portalPhoneReverifyBodySchema = z.object({
-  tenantId: z.string().min(1),
-  sessionId: z.string().min(1),
-  last4: z.string().min(4).max(4),
-  returnPath: z.string().optional()
-});
-const portalSessionQuoteApprovalBodySchema = portalQuoteApprovalInputSchema.omit({
-  token: true
-});
-const portalSessionQuoteChangeRequestBodySchema = portalQuoteChangeRequestInputSchema.omit({
-  token: true
-});
-const portalNexDocsUploadBodySchema = z.object({
-  tenantId: z.string().min(1),
-  folderId: z.string().min(1).optional(),
-  label: z.string().trim().min(1).optional(),
-  fileName: z.string().min(1),
-  mimeType: z.string().min(1),
-  fileBase64: z.string().min(1)
-});
-const refundPaymentBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  amount: z.number().positive().optional(),
-  reason: z.string().optional()
-});
-const invoiceLedgerActionBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  reason: z.string().optional()
-});
-
-const requestFieldInputSchema = z.object({
-  key: z.string().min(1),
-  value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string().min(1))]),
-  visibility: z.object({
-    request: z.boolean().optional(),
-    quote: z.boolean().optional(),
-    job: z.boolean().optional(),
-    visit: z.boolean().optional(),
-    invoice: z.boolean().optional()
-  }).optional()
-});
-
-const createRequestBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  source: z.enum(["website_form", "office_existing_client", "office_new_client", "legacy_lead_backfill"]).default("office_new_client"),
-  formId: z.string().min(1).optional(),
-  formSlug: z.string().min(1).optional(),
-  subject: z.string().optional(),
-  narrative: z.string().optional(),
-  selectedClientId: z.string().min(1).optional(),
-  selectedPropertyId: z.string().min(1).optional(),
-  consent: z.object({ email: z.boolean().optional(), sms: z.boolean().optional(), marketing: z.boolean().optional() }).optional(),
-  allowIncomplete: z.boolean().optional(),
-  fieldValues: z.array(requestFieldInputSchema).default([])
-});
-
-const updateRequestBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  subject: z.string().optional(),
-  narrative: z.string().optional(),
-  selectedClientId: z.string().optional(),
-  selectedPropertyId: z.string().optional(),
-  reviewedAt: z.string().optional(),
-  fieldPatches: z.array(requestFieldInputSchema.extend({
-    visibility: z.object({
-      request: z.boolean().optional(),
-      quote: z.boolean().optional(),
-      job: z.boolean().optional(),
-      visit: z.boolean().optional(),
-      invoice: z.boolean().optional()
-    }).optional(),
-    value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string().min(1))]).optional()
-  })).optional()
-});
-
-const requestFormBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  title: z.string().min(1),
-  slug: z.string().min(1).optional(),
-  intro: z.string().optional(),
-  active: z.boolean().default(true),
-  fieldKeys: z.array(z.string().min(1)).min(1)
-});
-const createJobBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  clientId: z.string().min(1),
-  propertyId: z.string().min(1).optional(),
-  requestId: z.string().min(1).optional(),
-  quoteId: z.string().min(1).optional(),
-  title: z.string().min(1),
-  lineItems: z.array(lineItemSchema).optional(),
-  paymentSchedule: paymentSchedulePlanSchema.optional(),
-  intake: intakeSnapshotSchema.optional()
-});
-const updateJobBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  title: z.string().min(1).optional(),
-  paymentSchedule: paymentSchedulePlanSchema.optional(),
-  clientVisibility: z.object({
-    hideFieldDocsFromPortal: z.boolean().optional()
-  }).optional()
-});
-const scheduleJobVisitBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  title: z.string().min(1).optional(),
-  start: z.string().min(1),
-  end: z.string().min(1),
-  assignedTo: z.array(z.string().min(1)).optional(),
-  details: z.string().optional()
-});
-const scheduleJobVisitSeriesBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  visits: z.array(z.object({
-    title: z.string().min(1).optional(),
-    start: z.string().min(1),
-    end: z.string().min(1),
-    assignedTo: z.array(z.string().min(1)).optional(),
-    details: z.string().optional()
-  })).min(1)
-});
-const moveJobVisitBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  start: z.string().min(1),
-  end: z.string().min(1),
-  shiftRemaining: z.boolean().optional()
-});
-const completeJobVisitBodySchema = z.object({
-  tenantId: z.string().min(1).optional()
-});
-const scheduleWorkspaceQuerySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  from: z.string().optional(),
-  to: z.string().optional(),
-  team: z.string().optional()
-});
-const activityFeedQuerySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  objectType: z.enum(["requests", "quotes", "jobs", "invoices", "payments"]).optional(),
-  limit: z.coerce.number().int().min(1).max(200).optional()
-});
-const documentationActivityQuerySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  from: z.string().optional(),
-  to: z.string().optional()
-});
-const notificationActionBodySchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  notificationId: z.string().min(1).optional()
-});
-const jobActionSchema = z.object({
-  tenantId: z.string().min(1).optional(),
-  action: z.enum(["close", "invoice", "close_and_invoice", "dismiss_invoice_reminder"])
-});
+import type { quickPaymentRequestBodySchema } from "../areas/invoices/components/paymentRails/server/routeSchemas.js";
+import type { createRequestBodySchema } from "../areas/requests/components/requestCore/server/routeSchemas.js";
 
 export interface CrmRouteDeps {
   approvalQueue: ApprovalQueueService;
@@ -1001,7 +595,7 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
           ...(tipAmount > 0 ? { tipAmount } : {})
         });
       }
-      return {
+  return {
         invoice: updatedInvoice,
         checkout: {
           provider: "stripe",
@@ -1051,7 +645,6 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
     NativeAdapter,
     NexDocsService,
     RailError,
-    activityFeedQuerySchema,
     actorIdForAccess,
     addressSchema,
     app,
@@ -1068,30 +661,19 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
     capturePaypalCheckoutOrder,
     clientCommunicationSettingsSchema,
     clientContactSchema,
-    clientStatementQuerySchema,
     communicationChannelEnabled,
-    completeJobVisitBodySchema,
-    composeInvoiceFromJobsBodySchema,
     convertRequestToJob,
     convertRequestToQuote,
     createAndNotifyRequest,
-    createClientBodySchema,
-    createClientPrimaryPropertySchema,
     createInvoiceCheckout,
-    createInvoiceFromQuoteBodySchema,
-    createJobBodySchema,
     createPaypalCheckoutOrder,
     createPortalToken,
     createQuickPaymentRequestRecord,
-    createQuoteRouteBodySchema,
-    createRequestBodySchema,
     createStripeCheckoutSession,
     crmSettingsPatchSchema,
-    customFieldValueSchema,
     defaultTenantBranding,
     defaultTenantId,
     deps,
-    documentationActivityQuerySchema,
     ensureDocumentNumbers,
     ensureQuoteConfiguration,
     ensureRequestForms,
@@ -1108,58 +690,41 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
     getInvoiceAndClient,
     getQuoteAndClient,
     getRequestOrThrow,
-    hasClientCreateAddress,
-    hasClientCreatePhone,
     hashPortalToken,
     intakeSnapshotSchema,
-    invoiceCheckoutBodySchema,
     invoiceDeliveryPreferencesSchema,
-    invoiceLedgerActionBodySchema,
     invoiceTemplateVariables,
-    jobActionSchema,
     jobLifecycle,
     ledger,
     lineItemSchema,
     materializeQuoteRecord,
-    moveJobVisitBodySchema,
     nexDocsService,
-    notificationActionBodySchema,
     notifyRequestCreated,
     operationsHub,
     parseStorageRef,
-    paymentMethodDetailsBodySchema,
     paymentSchedulePlanSchema,
     personNameSchema,
     portalDocumentHref,
     portalHub,
-    portalNexDocsUploadBodySchema,
     portalPathWithTenant,
-    portalPhoneReverifyBodySchema,
     portalQuoteApprovalInputSchema,
     portalQuoteChangeRequestInputSchema,
     portalSessionDestination,
-    portalSessionQuoteApprovalBodySchema,
-    portalSessionQuoteChangeRequestBodySchema,
     portalTenantId,
     portalUrlForQuote,
     providerForTenant,
     publicFormSubmissionValues,
     publicOrigin,
-    quickPaymentRequestBodySchema,
     quoteApprovalBlockedReason,
     quoteComposerInputSchema,
     quoteDeliveryMessage,
     quoteDiscountSchema,
     quoteLocked,
-    quoteManualApprovalBodySchema,
     quoteRenewInputSchema,
-    quoteSendBodySchema,
     quoteTemplateInputSchema,
     quoteTemplateVariables,
     randomUUID,
     receiptReviewChannelSchema,
-    recordInvoicePaymentBodySchema,
-    refundPaymentBodySchema,
     renderInvoicePdf,
     renderInvoicePortalHtml,
     renderPortalAppointmentsHtml,
@@ -1176,8 +741,6 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
     renderTemplateText,
     renderUnifiedPortalDocumentsHtml,
     repositoryForTenant,
-    requestFieldInputSchema,
-    requestFormBodySchema,
     requestFormEmbedCode,
     requestFormSharePath,
     requireAccessContext,
@@ -1187,29 +750,14 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
     requireTenantRole,
     reserveDocumentNumber,
     resolveTemplateMessage,
-    reviewSequenceActionBodySchema,
     reviewSequences,
     sanitizeFieldVisibility,
-    scheduleJobVisitBodySchema,
-    scheduleJobVisitSeriesBodySchema,
-    scheduleWorkspaceQuerySchema,
     selectRequestFields,
-    sendBookingConfirmationBodySchema,
-    sendInvoiceBodySchema,
-    sendPortalLinkBodySchema,
     sendPortalNexDocsFile,
     sendQuoteDelivery,
     sendRouteError,
-    sendStatementBodySchema,
-    startReviewSequenceBodySchema,
     syncExpiredQuote,
     tenantBranding,
-    updateClientBodySchema,
-    updateInvoiceDraftBodySchema,
-    updateJobBodySchema,
-    updateQuoteRouteBodySchema,
-    updateReceiptReviewBodySchema,
-    updateRequestBodySchema,
     updateServiceRequestShape,
     verifyStripeWebhookEvent,
     z,

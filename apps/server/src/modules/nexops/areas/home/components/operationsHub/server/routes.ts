@@ -1,18 +1,15 @@
 import type { Request, Response } from "express";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
+import { activityFeedQuerySchema, documentationActivityQuerySchema, notificationActionBodySchema, scheduleWorkspaceQuerySchema } from "./routeSchemas.js";
 
 export function registerOperationsHubRoutes(context: CrmRouteContext): void {
   const {
     RailError,
-    activityFeedQuerySchema,
     app,
     defaultTenantId,
-    documentationActivityQuerySchema,
     env,
-    notificationActionBodySchema,
     operationsHub,
     requireAccessContext,
-    scheduleWorkspaceQuerySchema,
     sendRouteError
   } = context;
 

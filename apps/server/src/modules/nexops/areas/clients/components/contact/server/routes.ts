@@ -1,32 +1,29 @@
 import type { Request, Response } from "express";
 import type { Client, Property } from "@nexteam/core";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
+import { createClientBodySchema, hasClientCreateAddress, hasClientCreatePhone, updateClientBodySchema } from "./routeSchemas.js";
+import { quickPaymentRequestBodySchema } from "../../../../invoices/components/paymentRails/server/routeSchemas.js";
+import { sendPortalLinkBodySchema } from "../../../../../../nexportal/components/portalCore/server/routeSchemas.js";
 
 export function registerContactRoutes(context: CrmRouteContext): void {
   const {
     RailError,
     actorIdForAccess,
     app,
-    createClientBodySchema,
     createQuickPaymentRequestRecord,
     defaultTenantId,
     deps,
     env,
     fetchAddressSuggestions,
-    hasClientCreateAddress,
-    hasClientCreatePhone,
     portalHub,
     providerForTenant,
     publicOrigin,
-    quickPaymentRequestBodySchema,
     randomUUID,
     repositoryForTenant,
     requireBillingAccess,
     requireQuoteAccess,
     requireTenantRole,
-    sendPortalLinkBodySchema,
     sendRouteError,
-    updateClientBodySchema
   } = context;
 
   app.get("/api/crm/clients", async (req: Request, res: Response) => {

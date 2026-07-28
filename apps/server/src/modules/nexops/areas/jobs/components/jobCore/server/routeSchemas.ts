@@ -1,0 +1,27 @@
+import { z } from "zod";
+import { intakeSnapshotSchema, lineItemSchema, paymentSchedulePlanSchema } from "@nexteam/core";
+
+export const createJobBodySchema = z.object({
+  tenantId: z.string().min(1).optional(),
+  clientId: z.string().min(1),
+  propertyId: z.string().min(1).optional(),
+  requestId: z.string().min(1).optional(),
+  quoteId: z.string().min(1).optional(),
+  title: z.string().min(1),
+  lineItems: z.array(lineItemSchema).optional(),
+  paymentSchedule: paymentSchedulePlanSchema.optional(),
+  intake: intakeSnapshotSchema.optional()
+});
+export const updateJobBodySchema = z.object({
+  tenantId: z.string().min(1).optional(),
+  title: z.string().min(1).optional(),
+  paymentSchedule: paymentSchedulePlanSchema.optional(),
+  clientVisibility: z.object({
+    hideFieldDocsFromPortal: z.boolean().optional()
+  }).optional()
+});
+
+export const jobActionSchema = z.object({
+  tenantId: z.string().min(1).optional(),
+  action: z.enum(["close", "invoice", "close_and_invoice", "dismiss_invoice_reminder"])
+});

@@ -1,0 +1,27 @@
+Component-owned route contracts
+
+Before and after
+- modules/nexops/runtime/routeRuntime.ts: 1,218 lines before extraction; 767 lines after extraction.
+- Component-specific request schemas and validation helpers were removed from the shared runtime, not copied.
+
+Owners created
+- Contact: server/routeSchemas.ts for client create/update validation.
+- Quote Engine: server/routeSchemas.ts for quote create/update/send/approval validation.
+- Job Core: server/routeSchemas.ts for job create/update/action validation.
+- Visit Core: server/routeSchemas.ts for booking, scheduling, moving, and completion validation.
+- Invoice Structure: server/routeSchemas.ts for invoice draft, send, combine, statement, receipt-review, and ledger-action validation.
+- Payment Rails: server/routeSchemas.ts for payment, checkout, quick-request, and refund validation.
+- Request Core: server/routeSchemas.ts for request and request-form validation.
+- Operations Home: server/routeSchemas.ts for schedule/activity/notification query validation.
+- Portal Core: server/routeSchemas.ts for portal sessions, quote actions, uploads, and portal-link validation.
+- NexReach: reviewSequenceRouteSchemas.ts for review follow-up actions.
+
+Verification
+- npm run typecheck: pass.
+- npm run lint: pass.
+- focused affected route/service tests: 63/63 pass.
+- npm run check:worktree-coverage: 455/455 implementation files exactly owned; zero multiply-owned files.
+- npm run check:collisions: 40 components, 780 pairs, zero overlaps.
+- npm run build: pass; Vite transformed 174 modules.
+- npm test: no-browser guard passed across 67 default test files; 373 total, 369 pass, 3 unchanged known reds, 1 intentional Admin SDK emulator skip.
+- No browser was opened.

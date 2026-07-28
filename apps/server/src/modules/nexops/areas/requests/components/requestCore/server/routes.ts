@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import type { RequestForm } from "@nexteam/core";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
+import { createRequestBodySchema, requestFormBodySchema, updateRequestBodySchema } from "./routeSchemas.js";
 
 export function registerRequestCoreRoutes(context: CrmRouteContext): void {
   const {
@@ -11,7 +12,6 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
     convertRequestToJob,
     convertRequestToQuote,
     createAndNotifyRequest,
-    createRequestBodySchema,
     defaultTenantId,
     deps,
     ensureRequestForms,
@@ -23,11 +23,9 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
     randomUUID,
     renderPublicRequestForm,
     repositoryForTenant,
-    requestFormBodySchema,
     sanitizeFieldVisibility,
     selectRequestFields,
     sendRouteError,
-    updateRequestBodySchema,
     updateServiceRequestShape
   } = context;
 

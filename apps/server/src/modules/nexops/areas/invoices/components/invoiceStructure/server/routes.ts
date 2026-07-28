@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
+import { clientStatementQuerySchema, composeInvoiceFromJobsBodySchema, invoiceLedgerActionBodySchema, sendInvoiceBodySchema, sendStatementBodySchema, updateInvoiceDraftBodySchema, updateReceiptReviewBodySchema } from "./routeSchemas.js";
 
 export function registerInvoiceStructureRoutes(context: CrmRouteContext): void {
   const {
@@ -7,14 +8,11 @@ export function registerInvoiceStructureRoutes(context: CrmRouteContext): void {
     actorIdForAccess,
     app,
     buildPortalSnapshotOrRedirect,
-    clientStatementQuerySchema,
-    composeInvoiceFromJobsBodySchema,
     defaultTenantId,
     deps,
     env,
     getInvoiceAndClient,
     hashPortalToken,
-    invoiceLedgerActionBodySchema,
     jobLifecycle,
     ledger,
     portalHub,
@@ -25,11 +23,7 @@ export function registerInvoiceStructureRoutes(context: CrmRouteContext): void {
     renderPortalInvoicesHtml,
     repositoryForTenant,
     requireBillingAccess,
-    sendInvoiceBodySchema,
     sendRouteError,
-    sendStatementBodySchema,
-    updateInvoiceDraftBodySchema,
-    updateReceiptReviewBodySchema
   } = context;
 
   app.get("/api/crm/invoices", async (req: Request, res: Response) => {

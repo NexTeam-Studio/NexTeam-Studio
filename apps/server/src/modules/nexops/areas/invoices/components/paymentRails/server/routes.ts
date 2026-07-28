@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
+import { invoiceCheckoutBodySchema, recordInvoicePaymentBodySchema, refundPaymentBodySchema } from "./routeSchemas.js";
 
 export function registerPaymentRailRoutes(context: CrmRouteContext): void {
   const {
@@ -13,12 +14,9 @@ export function registerPaymentRailRoutes(context: CrmRouteContext): void {
     env,
     getInvoiceAndClient,
     hashPortalToken,
-    invoiceCheckoutBodySchema,
     ledger,
     portalHub,
     portalPathWithTenant,
-    recordInvoicePaymentBodySchema,
-    refundPaymentBodySchema,
     requireBillingAccess,
     requirePortalSession,
     sendRouteError,

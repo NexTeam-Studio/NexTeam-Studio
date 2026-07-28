@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import type { Quote } from "@nexteam/core";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
+import { createInvoiceFromQuoteBodySchema, createQuoteRouteBodySchema, quoteManualApprovalBodySchema, quoteSendBodySchema, updateQuoteRouteBodySchema } from "./routeSchemas.js";
+import { portalSessionQuoteApprovalBodySchema, portalSessionQuoteChangeRequestBodySchema } from "../../../../../../nexportal/components/portalCore/server/routeSchemas.js";
 
 export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
   const {
@@ -10,9 +12,7 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
     archiveQuoteVersion,
     buildInvoiceDraftFromQuote,
     buildPortalSnapshotOrRedirect,
-    createInvoiceFromQuoteBodySchema,
     createPortalToken,
-    createQuoteRouteBodySchema,
     defaultTenantId,
     deps,
     ensureDocumentNumbers,
@@ -28,16 +28,12 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
     portalPathWithTenant,
     portalQuoteApprovalInputSchema,
     portalQuoteChangeRequestInputSchema,
-    portalSessionQuoteApprovalBodySchema,
-    portalSessionQuoteChangeRequestBodySchema,
     portalUrlForQuote,
     providerForTenant,
     publicOrigin,
     quoteApprovalBlockedReason,
     quoteLocked,
-    quoteManualApprovalBodySchema,
     quoteRenewInputSchema,
-    quoteSendBodySchema,
     quoteTemplateVariables,
     randomUUID,
     renderPortalQuotesHtml,
@@ -52,7 +48,6 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
     sendQuoteDelivery,
     sendRouteError,
     syncExpiredQuote,
-    updateQuoteRouteBodySchema
   } = context;
 
   app.get("/api/crm/quotes", async (req: Request, res: Response) => {

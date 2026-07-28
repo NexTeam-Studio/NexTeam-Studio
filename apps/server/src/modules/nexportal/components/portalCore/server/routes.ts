@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
 import type { CrmRouteContext } from "../../../../nexops/runtime/routeRuntime.js";
+import { portalNexDocsUploadBodySchema, portalPhoneReverifyBodySchema } from "./routeSchemas.js";
+import { reviewSequenceActionBodySchema, startReviewSequenceBodySchema } from "../../../../../reputation/reviewSequenceRouteSchemas.js";
 
 export function registerPortalCoreRoutes(context: CrmRouteContext): void {
   const {
@@ -11,9 +13,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
     env,
     nexDocsService,
     portalHub,
-    portalNexDocsUploadBodySchema,
     portalPathWithTenant,
-    portalPhoneReverifyBodySchema,
     portalSessionDestination,
     portalTenantId,
     providerForTenant,
@@ -25,11 +25,9 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
     repositoryForTenant,
     requirePortalSession,
     requireQuoteAccess,
-    reviewSequenceActionBodySchema,
     reviewSequences,
     sendPortalNexDocsFile,
     sendRouteError,
-    startReviewSequenceBodySchema,
     tenantBranding
   } = context;
 
