@@ -18,6 +18,8 @@ Record plain-language user instructions, common questions, failures, and recover
 
 Record the public commands, queries, and events that other components and Nexi are allowed to use. Internal files are not public contracts.
 
+Operations Home is a global NexOps composition area. Its real service and notification-state repository live under `apps/server/src/modules/nexops/areas/home/components/operationsHub/server`; the legacy CRM paths are compatibility-only exports.
+
 ## KNOWN GOOD
 
 Initial baseline: ffe442ffebac195963cbd5e66064a264315c4c15. Replace this entry with each verified component checkpoint and its test evidence.

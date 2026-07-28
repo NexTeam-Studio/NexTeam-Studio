@@ -1,0 +1,34 @@
+Checkpoint: Operations Home extraction
+Date: 2026-07-27
+Browser opened: no
+
+BEFORE
+1183 apps/server/src/crm/operationsHub.ts
+142 apps/server/src/crm/notificationStateRepository.ts
+
+AFTER
+1183 apps/server/src/modules/nexops/areas/home/components/operationsHub/server/operationsHubService.ts
+142 apps/server/src/modules/nexops/areas/home/components/operationsHub/server/notificationStateRepository.ts
+Each former CRM path is now a one-line compatibility export.
+
+OWNERSHIP OUTPUT
+Worktree coverage check passed: 412/439 implementation files have exactly one owner.
+Known migration debt: 27 legacy CRM file(s) under apps/server/src/crm/.
+
+FOCUSED TEST OUTPUT
+tests 7
+pass 7
+fail 0
+
+BUILD OUTPUT
+server tsc -b: exit 0
+web vite build: exit 0
+modules transformed: 174
+
+FULL DEFAULT TEST OUTPUT
+No-browser test guard passed (67 default test files checked).
+tests 373
+pass 369
+fail 3
+skipped 1
+The failures are the unchanged known-red NexReach, NexDocs local Nexi, and Platform route tests.
