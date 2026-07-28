@@ -1,0 +1,31 @@
+Checkpoint: worktree ownership coverage registry
+Date: 2026-07-27
+Browser opened: no
+
+NEW MODULE LANES
+NexTeam - Mobile
+NexPortal
+NexComms
+Tenant Extensions
+Provider Integrations
+
+OWNERSHIP OUTPUT
+Worktree coverage check passed: 402/435 implementation files have exactly one owner.
+Known migration debt: 33 legacy CRM file(s) under apps/server/src/crm/.
+Multiply-owned implementation files: 0
+
+BUILD OUTPUT
+server tsc -b: exit 0
+web vite build: exit 0
+modules transformed: 174
+
+LINT OUTPUT
+eslint repository scan: exit 0
+
+FULL DEFAULT TEST OUTPUT
+No-browser test guard passed (67 default test files checked).
+tests 373
+pass 369
+fail 3
+skipped 1
+The failures are the unchanged known-red NexReach, NexDocs local Nexi, and Platform route tests.

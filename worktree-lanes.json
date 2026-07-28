@@ -16,7 +16,7 @@
       "branch": "codex/lane/nexteam-global",
       "worktreeDirectory": "nexteam-global",
       "purpose": "Owns shared auth, routing, shell, telemetry, contracts, and global platform behavior.",
-      "ownedPaths": ["apps/web/src/shared/app/**", "apps/web/src/shared/auth/**", "apps/web/src/shared/contracts/**", "apps/web/src/shared/files/**", "apps/web/src/shared/router/**", "apps/web/src/shared/shell/**", "apps/web/src/shared/telemetry/**", "apps/web/src/features/operatorContext/**", "apps/web/src/features/nexopsShell/**", "apps/server/src/auth/**", "apps/server/src/context/**", "apps/server/src/core/**", "apps/server/src/shared/documentRendering/**", "apps/server/src/shared/numbering/**", "packages/shared/src/index.ts", "packages/shared/src/numbering.ts"]
+      "ownedPaths": ["apps/web/src/main.tsx", "apps/web/vite.config.js", "apps/web/src/shared/app/**", "apps/web/src/shared/auth/**", "apps/web/src/shared/contracts/**", "apps/web/src/shared/files/**", "apps/web/src/shared/router/**", "apps/web/src/shared/shell/**", "apps/web/src/shared/telemetry/**", "apps/web/src/features/operatorContext/**", "apps/web/src/features/nexopsShell/**", "apps/web/src/features/approvalQueue/**", "apps/web/src/features/contentQueue/**", "apps/web/src/features/queueShared/**", "apps/web/src/features/home/**", "apps/server/src/app/**", "apps/server/src/approval/**", "apps/server/src/auth/**", "apps/server/src/context/**", "apps/server/src/core/**", "apps/server/src/selfrepair/**", "apps/server/src/modules/nexops/areas/home/**", "apps/server/src/buildInfo.ts", "apps/server/src/composeServerApp.ts", "apps/server/src/firebase.ts", "apps/server/src/health.ts", "apps/server/src/server.ts", "apps/server/src/usageLog.ts", "apps/server/src/modules/manifest.ts", "apps/server/src/modules/types.ts", "apps/server/src/shared/documentRendering/**", "apps/server/src/shared/numbering/**", "packages/core/**", "packages/shared/src/index.ts", "packages/shared/src/numbering.ts"]
     },
     {
       "slug": "platform-tenants",
@@ -24,7 +24,7 @@
       "branch": "codex/lane/platform-tenants",
       "worktreeDirectory": "platform-tenants",
       "purpose": "Owns platform administration, tenant overview, tenant status, and tenant controls.",
-      "ownedPaths": ["apps/web/src/features/platform/**", "apps/web/src/features/platformOverview/**", "apps/web/src/features/tenantOverview/**", "apps/server/src/platform/**", "apps/server/src/tenantPacks/**"]
+      "ownedPaths": ["apps/web/src/features/platform/**", "apps/web/src/features/platformOverview/**", "apps/web/src/features/tenantOverview/**", "apps/server/src/platform/**"]
     },
     {
       "slug": "nexsuite-design",
@@ -32,7 +32,7 @@
       "branch": "codex/lane/nexsuite-design",
       "worktreeDirectory": "nexsuite-design",
       "purpose": "Owns reusable visual design, responsive presentation, and native-app surfaces without business logic.",
-      "ownedPaths": ["apps/mobile/**", "apps/web/src/shared/branding/**", "apps/web/src/shared/styles/**", "apps/web/src/shared/ui/**"]
+      "ownedPaths": ["apps/web/src/shared/branding/**", "apps/web/src/shared/styles/**", "apps/web/src/shared/ui/**"]
     },
     {
       "slug": "nexops-clients",
@@ -40,7 +40,7 @@
       "branch": "codex/lane/nexops-clients",
       "worktreeDirectory": "nexops-clients",
       "purpose": "Owns client records, intake, directory, and client-area composition outside Client Details.",
-      "ownedPaths": ["apps/web/src/features/clients/components/contact/**", "apps/web/src/features/clients/routes/**", "apps/web/src/features/clients/styles/**", "apps/server/src/modules/nexops/areas/clients/components/contact/**"]
+      "ownedPaths": ["apps/web/src/features/clients/components/ClientsSurface.tsx", "apps/web/src/features/clients/components/contact/**", "apps/web/src/features/clients/routes/**", "apps/web/src/features/clients/styles/**", "apps/server/src/modules/nexops/areas/clients/components/contact/**"]
     },
     {
       "slug": "nexops-client-details",
@@ -56,7 +56,7 @@
       "branch": "codex/lane/nexops-requests",
       "worktreeDirectory": "nexops-requests",
       "purpose": "Owns request intake, request details, request lifecycle, and conversion contracts.",
-      "ownedPaths": ["apps/web/src/features/requests/**", "apps/server/src/modules/nexops/areas/requests/**", "apps/server/src/intake/**"]
+      "ownedPaths": ["apps/web/src/features/requests/**", "apps/web/src/shared/intake/**", "apps/server/src/modules/nexops/areas/requests/**", "apps/server/src/intake/**"]
     },
     {
       "slug": "nexops-quotes",
@@ -96,7 +96,7 @@
       "branch": "codex/lane/nexops-invoices",
       "worktreeDirectory": "nexops-invoices",
       "purpose": "Owns Invoice Structure, invoice details, invoice policy, and payment schedules.",
-      "ownedPaths": ["apps/web/src/features/invoices/components/invoiceStructure/**", "apps/web/src/features/invoices/routes/**", "apps/web/src/features/invoices/styles/**", "apps/server/src/modules/nexops/areas/invoices/components/invoiceStructure/**"]
+      "ownedPaths": ["apps/web/src/features/invoices/components/InvoicesSurface.tsx", "apps/web/src/features/invoices/components/invoiceStructure/**", "apps/web/src/features/invoices/routes/**", "apps/web/src/features/invoices/styles/**", "apps/server/src/modules/nexops/areas/invoices/components/invoiceStructure/**"]
     },
     {
       "slug": "nexops-payments",
@@ -152,15 +152,55 @@
       "branch": "codex/lane/nexdocs",
       "worktreeDirectory": "nexdocs-module",
       "purpose": "Owns document library, checklists, reports, media references, and client document workspace.",
-      "ownedPaths": ["apps/web/src/features/nexdocs/**", "apps/server/src/modules/nexdocs/**"]
+      "ownedPaths": ["apps/web/src/features/nexdocs/**", "apps/web/src/shared/signature/**", "apps/server/src/modules/nexdocs/**"]
     },
     {
       "slug": "nexreach",
       "projectName": "NexReach",
       "branch": "codex/lane/nexreach",
       "worktreeDirectory": "nexreach",
-      "purpose": "Owns reputation, consent, content, portfolio, and campaign behavior.",
-      "ownedPaths": ["apps/web/src/features/nexreach/**", "apps/server/src/reputation/**", "apps/server/src/campaigns/**", "apps/server/src/content/**"]
+      "purpose": "Owns reputation, consent, content, portfolio, campaigns, tenant sites, and search visibility.",
+      "ownedPaths": ["apps/web/src/features/nexreach/**", "apps/server/src/reputation/**", "apps/server/src/campaigns/**", "apps/server/src/content/**", "apps/server/src/seo/**", "apps/server/src/sites/**"]
+    },
+    {
+      "slug": "nexteam-mobile",
+      "projectName": "NexTeam - Mobile",
+      "branch": "codex/lane/nexteam-mobile",
+      "worktreeDirectory": "nexteam-mobile",
+      "purpose": "Owns the installable mobile application, offline sync, device capture, and mobile API boundary.",
+      "ownedPaths": ["apps/mobile/**", "apps/server/src/mobile/**"]
+    },
+    {
+      "slug": "nexportal",
+      "projectName": "NexPortal",
+      "branch": "codex/lane/nexportal",
+      "worktreeDirectory": "nexportal",
+      "purpose": "Owns the tenant-branded customer hub, portal sessions, customer actions, and portal-facing contracts.",
+      "ownedPaths": ["apps/server/src/modules/nexportal/**"]
+    },
+    {
+      "slug": "nexcomms",
+      "projectName": "NexComms",
+      "branch": "codex/lane/nexcomms",
+      "worktreeDirectory": "nexcomms",
+      "purpose": "Owns email and messaging rails, communication approvals, mailbox adapters, and communication templates.",
+      "ownedPaths": ["apps/server/src/comms/**", "apps/web/src/shared/communications/**"]
+    },
+    {
+      "slug": "tenant-extensions",
+      "projectName": "Tenant Extensions",
+      "branch": "codex/lane/tenant-extensions",
+      "worktreeDirectory": "tenant-extensions",
+      "purpose": "Owns optional tenant-specific tools and reusable industry packs without placing tenant facts in the core product.",
+      "ownedPaths": ["apps/server/src/evaporation/**", "apps/server/src/tenantPacks/**", "packages/industry-packs/**"]
+    },
+    {
+      "slug": "provider-integrations",
+      "projectName": "Provider Integrations",
+      "branch": "codex/lane/provider-integrations",
+      "worktreeDirectory": "provider-integrations",
+      "purpose": "Owns external service adapters and the narrow provider contracts used by product modules.",
+      "ownedPaths": ["packages/providers/**"]
     },
     {
       "slug": "nexi-chat",

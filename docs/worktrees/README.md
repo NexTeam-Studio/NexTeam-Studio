@@ -20,4 +20,4 @@ These records are the source material for Nexi support answers and future NexTea
 
 ## Working safely
 
-Run `npm run check:worktree-scope` before committing. A component lane should not modify another lane's files. Commit working checkpoints in the component branch, then integrate through `codex/target-architecture-integration` after build and test verification.
+Run `npm run check:worktree-scope` before committing. Run `npm run check:worktree-coverage` when changing boundaries or adding implementation files. A component lane should not modify another lane's files, and every implementation file must have exactly one owner. Commit working checkpoints in the component branch, then integrate through `codex/target-architecture-integration` after build and test verification.
