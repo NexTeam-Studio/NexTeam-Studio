@@ -1,0 +1,13 @@
+Job Core and Visit Core Nexi orchestration extraction
+
+- Job Core toolSupport.ts owns job matching, line-item materialization, exact job resolution, create approval, and lifecycle-action approval.
+- Visit Core toolSupport.ts owns team assignment resolution, visit preview formatting, schedule-series approval, and shift-series approval.
+- Visit Core and NexPortal call Job Core's exported exact-job resolver instead of owning duplicate job-resolution logic.
+- shared/tools/workspaceAccess.ts owns tenant-user and role-aware workspace access resolution used across Schedule and Home.
+- modules/nexops/runtime/nexiToolRuntime.ts fell from 791 to 320 lines; moved logic was removed, not copied.
+- Lint passes.
+- Exact worktree ownership passes at 482/482 implementation files.
+- Build passes at 174 modules.
+- Component collision proof passes for all 40 components and all 780 pairs.
+- Full guarded non-browser suite: 373 total, 369 pass, 3 unchanged known reds, 1 intentional emulator skip.
+- No browser was opened.

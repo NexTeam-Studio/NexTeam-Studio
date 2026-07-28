@@ -2,6 +2,7 @@ import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../nexops/runtime/nexiToolRuntime.js";
 import { clientPortalActivityInputSchema, sendPortalLinkInputSchema, sendStatementToolInputSchema, statementToolInputSchema } from "./toolSchemas.js";
 import { reviewSequenceActionInputSchema, reviewSequenceStatusInputSchema, startReviewSequenceToolInputSchema } from "../../../../../reputation/reviewSequenceToolSchemas.js";
+import { resolveJobForAction } from "../../../../nexops/areas/jobs/components/jobCore/server/toolSupport.js";
 
 export function createPortalCoreNexiTools(context: CrmToolContext, _includeWrites: boolean): NexiTool[] {
   const {
@@ -9,7 +10,6 @@ export function createPortalCoreNexiTools(context: CrmToolContext, _includeWrite
     options,
     provider,
     resolveExactClientId,
-    resolveJobForAction,
     resolveReviewSequenceIdForAction,
     source,
   } = context;

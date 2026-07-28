@@ -1,14 +1,13 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { scheduleJobVisitsToolInputSchema, shiftJobVisitSeriesToolInputSchema } from "./toolSchemas.js";
+import { queueScheduleJobVisitsApproval, queueShiftJobVisitSeriesApproval } from "./toolSupport.js";
 
 export function createVisitCoreNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
     RailError,
     approvalQueue,
     options,
-    queueScheduleJobVisitsApproval,
-    queueShiftJobVisitSeriesApproval,
     source
   } = context;
   return [

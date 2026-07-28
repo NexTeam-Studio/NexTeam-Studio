@@ -1,17 +1,14 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { createJobToolInputSchema, getJobDetailInputSchema, jobActionToolInputSchema, listJobsInputSchema } from "./toolSchemas.js";
+import { jobMatchesQuery, queueJobActionApproval, queueJobCreateApproval, resolveJobForAction } from "./toolSupport.js";
 
 export function createJobCoreNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
     RailError,
     approvalQueue,
-    jobMatchesQuery,
     options,
     provider,
-    queueJobActionApproval,
-    queueJobCreateApproval,
-    resolveJobForAction,
     source
   } = context;
   return [

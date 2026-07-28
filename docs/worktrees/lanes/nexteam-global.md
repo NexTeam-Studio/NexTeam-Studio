@@ -29,3 +29,5 @@ The NexOps module manifest, route registrar, Nexi-tool registrar, and their curr
 Initial baseline: ffe442ffebac195963cbd5e66064a264315c4c15. Nexi input-contract extraction: Nexi runtime `1,390 -> 1,087` lines, exact ownership `465/465`, typecheck/lint clean, focused tests `55/55`, build `174` modules, all `780/780` component pairs disjoint, full non-browser suite `369/373` with the same three known reds and one emulator skip.
 
 Quote Nexi orchestration extraction: runtime `926 -> 791` lines, exact ownership `480/480`, lint clean, build `174` modules, all `780/780` component pairs disjoint, full guarded non-browser suite `369/373` with the same three known reds and one emulator skip.
+
+Job/Visit Nexi orchestration extraction: runtime `791 -> 320` lines, exact ownership `482/482`, lint clean, build `174` modules, all `780/780` component pairs disjoint, full guarded non-browser suite `369/373` with the same three known reds and one emulator skip. Job Core's exact-job resolver is its public server contract for Visit and NexPortal; shared workspace access resolution remains global policy.
