@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "baselineBranch": "codex/target-architecture-integration",
+  "lanes": [
+    {
+      "slug": "nexteam-integration",
+      "projectName": "NexTeam Integration",
+      "branch": "codex/target-architecture-integration",
+      "worktreeDirectory": "target-architecture-integration",
+      "purpose": "Combines, verifies, and releases coordinated changes from every lane.",
+      "ownedPaths": ["**"]
+    },
+    {
+      "slug": "nexteam-global",
+      "projectName": "NexTeam Global",
+      "branch": "codex/lane/nexteam-global",
+      "worktreeDirectory": "nexteam-global",
+      "purpose": "Owns shared auth, routing, shell, telemetry, contracts, and global platform behavior.",
+      "ownedPaths": ["apps/web/src/shared/app/**", "apps/web/src/shared/auth/**", "apps/web/src/shared/contracts/**", "apps/web/src/shared/files/**", "apps/web/src/shared/router/**", "apps/web/src/shared/shell/**", "apps/web/src/shared/telemetry/**", "apps/web/src/features/operatorContext/**", "apps/web/src/features/nexopsShell/**", "apps/server/src/auth/**", "apps/server/src/context/**", "apps/server/src/core/**", "apps/server/src/shared/documentRendering/**", "apps/server/src/shared/numbering/**", "packages/shared/src/index.ts", "packages/shared/src/numbering.ts"]
+    },
+    {
+      "slug": "platform-tenants",
+      "projectName": "Platform - Tenants",
+      "branch": "codex/lane/platform-tenants",
+      "worktreeDirectory": "platform-tenants",
+      "purpose": "Owns platform administration, tenant overview, tenant status, and tenant controls.",
+      "ownedPaths": ["apps/web/src/features/platform/**", "apps/web/src/features/platformOverview/**", "apps/web/src/features/tenantOverview/**", "apps/server/src/platform/**", "apps/server/src/tenantPacks/**"]
+    },
+    {
+      "slug": "nexsuite-design",
+      "projectName": "NexSuite Design",
+      "branch": "codex/lane/nexsuite-design",
+      "worktreeDirectory": "nexsuite-design",
+      "purpose": "Owns reusable visual design, responsive presentation, and native-app surfaces without business logic.",
+      "ownedPaths": ["apps/mobile/**", "apps/web/src/shared/branding/**", "apps/web/src/shared/styles/**", "apps/web/src/shared/ui/**"]
+    },
+    {
+      "slug": "nexops-clients",
+      "projectName": "NexOps - Clients",
+      "branch": "codex/lane/nexops-clients",
+      "worktreeDirectory": "nexops-clients",
+      "purpose": "Owns client records, intake, directory, and client-area composition outside Client Details.",
+      "ownedPaths": ["apps/web/src/features/clients/components/contact/**", "apps/web/src/features/clients/routes/**", "apps/web/src/features/clients/styles/**", "apps/server/src/modules/nexops/areas/clients/components/contact/**"]
+    },
+    {
+      "slug": "nexops-client-details",
+      "projectName": "NexOps - Client Details",
+      "branch": "codex/lane/nexops-client-details",
+      "worktreeDirectory": "nexops-client-details",
+      "purpose": "Owns the detailed client profile, sections, tabs, activity, and detail-screen orchestration.",
+      "ownedPaths": ["apps/web/src/features/clients/components/clientDetails/**", "apps/server/src/modules/nexops/areas/clients/components/clientDetails/**"]
+    },
+    {
+      "slug": "nexops-requests",
+      "projectName": "NexOps - Requests",
+      "branch": "codex/lane/nexops-requests",
+      "worktreeDirectory": "nexops-requests",
+      "purpose": "Owns request intake, request details, request lifecycle, and conversion contracts.",
+      "ownedPaths": ["apps/web/src/features/requests/**", "apps/server/src/modules/nexops/areas/requests/**", "apps/server/src/intake/**"]
+    },
+    {
+      "slug": "nexops-quotes",
+      "projectName": "NexOps - Quotes",
+      "branch": "codex/lane/nexops-quotes",
+      "worktreeDirectory": "nexops-quotes",
+      "purpose": "Owns Quote Templates, Quote Engine, quote details, approval, and quote surfaces.",
+      "ownedPaths": ["apps/web/src/features/quotes/**", "apps/server/src/modules/nexops/areas/quotes/**"]
+    },
+    {
+      "slug": "nexops-jobs",
+      "projectName": "NexOps - Jobs",
+      "branch": "codex/lane/nexops-jobs",
+      "worktreeDirectory": "nexops-jobs",
+      "purpose": "Owns Job Core, job details, lifecycle, and closeout behavior.",
+      "ownedPaths": ["apps/web/src/features/jobs/**", "apps/server/src/modules/nexops/areas/jobs/**"]
+    },
+    {
+      "slug": "nexops-visits",
+      "projectName": "NexOps - Visits",
+      "branch": "codex/lane/nexops-visits",
+      "worktreeDirectory": "nexops-visits",
+      "purpose": "Owns Visit Core, visit details, assignment, and visit completion behavior.",
+      "ownedPaths": ["apps/web/src/features/visits/components/visitCore/**", "apps/server/src/modules/nexops/areas/visits/components/visitCore/**"]
+    },
+    {
+      "slug": "nexops-schedule",
+      "projectName": "NexOps - Schedule",
+      "branch": "codex/lane/nexops-schedule",
+      "worktreeDirectory": "nexops-schedule",
+      "purpose": "Owns the schedule board, calendar presentation, and scheduling coordination contracts.",
+      "ownedPaths": ["apps/web/src/features/visits/components/scheduleBoard/**", "apps/server/src/scheduling/**"]
+    },
+    {
+      "slug": "nexops-invoices",
+      "projectName": "NexOps - Invoices",
+      "branch": "codex/lane/nexops-invoices",
+      "worktreeDirectory": "nexops-invoices",
+      "purpose": "Owns Invoice Structure, invoice details, invoice policy, and payment schedules.",
+      "ownedPaths": ["apps/web/src/features/invoices/components/invoiceStructure/**", "apps/web/src/features/invoices/routes/**", "apps/web/src/features/invoices/styles/**", "apps/server/src/modules/nexops/areas/invoices/components/invoiceStructure/**"]
+    },
+    {
+      "slug": "nexops-payments",
+      "projectName": "NexOps - Payments",
+      "branch": "codex/lane/nexops-payments",
+      "worktreeDirectory": "nexops-payments",
+      "purpose": "Owns Payment Rails, provider adapters, payment execution, and refunds.",
+      "ownedPaths": ["apps/web/src/features/invoices/components/paymentRails/**", "apps/server/src/modules/nexops/areas/invoices/components/paymentRails/**"]
+    },
+    {
+      "slug": "nexops-receipts",
+      "projectName": "NexOps - Receipts",
+      "branch": "codex/lane/nexops-receipts",
+      "worktreeDirectory": "nexops-receipts",
+      "purpose": "Owns receipt generation, receipt details, delivery records, and receipt support content.",
+      "ownedPaths": ["apps/web/src/features/invoices/components/receipts/**", "apps/server/src/modules/nexops/areas/invoices/components/receipts/**"]
+    },
+    {
+      "slug": "nexops-settings",
+      "projectName": "NexOps - Settings",
+      "branch": "codex/lane/nexops-settings",
+      "worktreeDirectory": "nexops-settings",
+      "purpose": "Owns Catalog, Tenant Config, numbering configuration, and tenant-level business settings.",
+      "ownedPaths": ["apps/web/src/features/settings/**", "apps/server/src/modules/nexops/areas/settings/**"]
+    },
+    {
+      "slug": "nexops-users",
+      "projectName": "NexOps - Users",
+      "branch": "codex/lane/nexops-users",
+      "worktreeDirectory": "nexops-users",
+      "purpose": "Owns team members, invitations, roles, and permission-management surfaces.",
+      "ownedPaths": ["apps/web/src/features/users/**", "apps/server/src/modules/nexops/areas/users/**"]
+    },
+    {
+      "slug": "shared-address-location",
+      "projectName": "Shared - Address & Location",
+      "branch": "codex/lane/shared-address-location",
+      "worktreeDirectory": "shared-address-location",
+      "purpose": "Owns the reusable address, geocoding, map-link, and location contract consumed by other areas.",
+      "ownedPaths": ["packages/shared/src/addressLocation.ts", "apps/server/src/shared/addressLocation/**"]
+    },
+    {
+      "slug": "nexcam",
+      "projectName": "NexCam",
+      "branch": "codex/lane/nexcam",
+      "worktreeDirectory": "nexcam",
+      "purpose": "Owns capture, markup, media organization, and NexCam overview behavior.",
+      "ownedPaths": ["apps/web/src/features/nexcam/**", "apps/server/src/fielddocs/**"]
+    },
+    {
+      "slug": "nexdocs",
+      "projectName": "NexDocs",
+      "branch": "codex/lane/nexdocs",
+      "worktreeDirectory": "nexdocs-module",
+      "purpose": "Owns document library, checklists, reports, media references, and client document workspace.",
+      "ownedPaths": ["apps/web/src/features/nexdocs/**", "apps/server/src/modules/nexdocs/**"]
+    },
+    {
+      "slug": "nexreach",
+      "projectName": "NexReach",
+      "branch": "codex/lane/nexreach",
+      "worktreeDirectory": "nexreach",
+      "purpose": "Owns reputation, consent, content, portfolio, and campaign behavior.",
+      "ownedPaths": ["apps/web/src/features/nexreach/**", "apps/server/src/reputation/**", "apps/server/src/campaigns/**", "apps/server/src/content/**"]
+    },
+    {
+      "slug": "nexi-chat",
+      "projectName": "Nexi - Chat",
+      "branch": "codex/lane/nexi-chat",
+      "worktreeDirectory": "nexi-chat",
+      "purpose": "Owns the text and two-way chat experience, message presentation, and chat interaction state.",
+      "ownedPaths": ["apps/web/src/features/nexi/areas/chat/**"]
+    },
+    {
+      "slug": "nexi-voice",
+      "projectName": "Nexi - Voice",
+      "branch": "codex/lane/nexi-voice",
+      "worktreeDirectory": "nexi-voice",
+      "purpose": "Owns voice input, speech output, listening state, and voice presentation.",
+      "ownedPaths": ["apps/web/src/features/nexi/areas/voice/**", "apps/server/src/voice/**"]
+    },
+    {
+      "slug": "nexi-runtime",
+      "projectName": "Nexi - Runtime",
+      "branch": "codex/lane/nexi-runtime",
+      "worktreeDirectory": "nexi-runtime",
+      "purpose": "Owns agent reasoning, tool selection, approved component contracts, and tenant-aware task execution.",
+      "ownedPaths": ["apps/server/src/nexi/**", "packages/nexi/**"]
+    }
+  ]
+}
