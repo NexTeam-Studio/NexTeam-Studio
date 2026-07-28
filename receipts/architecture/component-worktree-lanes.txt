@@ -1,0 +1,28 @@
+NexTeam component worktree rollout
+Date: 2026-07-27
+
+Common source baseline: 87e7624
+Registered lanes: 23
+Physical component worktrees created: 22
+Integration worktree retained: 1
+
+Verification performed for every registered lane:
+- expected physical path exists
+- expected codex/lane branch is checked out (integration retains codex/target-architecture-integration)
+- HEAD matches the common baseline
+- git status is clean
+- lane documentation record exists
+- scripts/check-worktree-scope.mjs passes
+
+Result: VERIFIED=23/23, FAILURES=0
+
+Common baseline application verification:
+- npm run build: passed, 173 web modules transformed
+- npm test: browser guard passed across 66 default test files
+- tests: 372 total, 368 passed, 3 known-red, 1 intentionally skipped emulator test
+- no browser was launched
+
+Known-red tests were unchanged from the pre-rollout baseline:
+- NexReach local Nexi loop accepts underscore ids through generate, approve, and refusal flow
+- local Nexi chat can search documents, queue a folder, approve it, queue an upload, and approve it
+- platform routes manage tenant users and job links without leaking token hashes by default
