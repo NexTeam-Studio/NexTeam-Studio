@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RailError, type ApprovalQueueService, type Client, type CRMProvider, type Invoice, type Job, type Quote, type ServiceRequest, type Source, type Tenant } from "@nexteam/core";
+import { RailError, type ApprovalQueueService, type Client, type CRMProvider, type Invoice, type Job, type ServiceRequest, type Source, type Tenant } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../../../comms/gmailRegistry.js";
 import type { AccessContext } from "../../../auth/accessContext.js";
@@ -10,14 +10,14 @@ import type { OperationsHubService } from "../areas/home/components/operationsHu
 import type { PortalHubService } from "../../nexportal/components/portalCore/server/portalHubService.js";
 import type { ReviewSequenceService } from "../../../reputation/reviewSequenceService.js";
 import { availableRequestFields, buildServiceRequest, defaultRequestForms, ensureRequestForms, notifyRequestCreated } from "../areas/requests/components/requestCore/server/requestFoundation.js";
-import { ensureQuoteConfiguration, materializeQuoteRecord, quoteComposerInputSchema, quotePreviewBody } from "../areas/quotes/components/quoteEngine/domain/quoteFoundation.js";
-import type { createQuoteToolInputSchema } from "../areas/quotes/components/quoteEngine/server/toolSchemas.js";
+import { ensureQuoteConfiguration, quoteComposerInputSchema, quotePreviewBody } from "../areas/quotes/components/quoteEngine/domain/quoteFoundation.js";
 import { getActivityFeedInputSchema, getHomeQueuesInputSchema, getScheduleInputSchema } from "../areas/home/components/operationsHub/server/toolSchemas.js";
 import type { createRequestToolInputSchema } from "../areas/requests/components/requestCore/server/toolSchemas.js";
 import type { createJobToolInputSchema, getJobDetailInputSchema, jobActionToolInputSchema } from "../areas/jobs/components/jobCore/server/toolSchemas.js";
 import type { scheduleJobVisitsToolInputSchema, shiftJobVisitSeriesToolInputSchema } from "../areas/visits/components/visitCore/server/toolSchemas.js";
 import type { reviewSequenceActionInputSchema } from "../../../reputation/reviewSequenceToolSchemas.js";
 import type { workspaceRoleSchema } from "../shared/tools/workspaceAccessSchemas.js";
+import { resolveExactClientId } from "../shared/tools/clientResolution.js";
 
 
 interface InvoiceReadableProvider extends CRMProvider {
@@ -133,74 +133,6 @@ function catalogCodeSeed(value: string): string {
 }
 
 
-
-async function queueQuoteCreateApproval(
-  tenant: Tenant,
-  input: z.infer<typeof createQuoteToolInputSchema>,
-  provider: CRMProvider,
-  repository: NativeCrmRepository,
-  approvalQueue: ApprovalQueueService
-): Promise<{
-  approval: Awaited<ReturnType<ApprovalQueueService["create"]>>;
-  pendingQuote: Quote;
-  writesAreApprovalQueuedOnly: true;
-}> {
-  const clientId = await resolveExactClientId(provider, input.clientId, input.clientQuery, "createQuote");
-  const quote = await materializeQuoteRecord(repository, {
-    ...input,
-    tenantId: tenant.id,
-    clientId
-  });
-  const approval = await approvalQueue.create({
-    tenantId: tenant.id,
-    kind: "quote",
-    preview: {
-      title: `Create quote: ${quote.title}`,
-      body: quotePreviewBody(quote)
-    },
-    execute: {
-      service: "crm",
-      op: "createQuote",
-      args: {
-        tenantId: tenant.id,
-        quote: jsonClone(quote)
-      }
-    },
-    createdBy: "nexi"
-  });
-  return {
-    approval,
-    pendingQuote: {
-      ...quote,
-      approvalId: approval.id,
-      status: "pending_approval"
-    },
-    writesAreApprovalQueuedOnly: true
-  };
-}
-
-async function resolveExactClientId(
-  provider: CRMProvider,
-  clientId: string | undefined,
-  clientQuery: string | undefined,
-  op: string
-): Promise<string> {
-  if (clientId) {
-    return clientId;
-  }
-  if (clientQuery?.trim()) {
-    const matches = await provider.getClients(clientQuery.trim());
-    if (matches.length !== 1 || !exactOrStrongClientMatch(matches, clientQuery.trim())) {
-      throw new RailError("I need one exact client match before I can save that. Give me the saved client name or client id.", {
-        provider: "native",
-        op,
-        status: 400
-      });
-    }
-    return matches[0]!.id;
-  }
-  throw new RailError("A client match is required before I can save that.", { provider: "native", op, status: 400 });
-}
 
 async function resolveReviewSequenceIdForAction(
   tenantId: string,
@@ -578,45 +510,6 @@ function requestFieldText(request: ServiceRequest, key: string): string | undefi
   return typeof value === "boolean" ? (value ? "yes" : "no") : String(value);
 }
 
-function quoteMatchesQuery(quote: Quote, query: string, clients: Client[]): boolean {
-  const needle = normalized(query.trim());
-  if (!needle) {
-    return true;
-  }
-  const client = clients.find((candidate) => candidate.id === quote.clientId);
-  return [
-    quote.id,
-    quote.number,
-    quote.title,
-    quote.status,
-    client?.name,
-    ...(client?.emails ?? []),
-    ...(client?.phones ?? [])
-  ].some((value) => normalized(String(value ?? "")).includes(needle));
-}
-
-function quoteSummary(quote: Quote, clients: Client[]): {
-  id: string;
-  number?: string | undefined;
-  title: string;
-  clientName: string;
-  status: Quote["status"];
-  total: number;
-  expiresAt?: string | undefined;
-  requestId?: string | undefined;
-} {
-  return {
-    id: quote.id,
-    ...(quote.number ? { number: quote.number } : {}),
-    title: quote.title,
-    clientName: clients.find((candidate) => candidate.id === quote.clientId)?.name ?? quote.clientId,
-    status: quote.status,
-    total: quote.totals.total,
-    ...(quote.expiresAt ? { expiresAt: quote.expiresAt } : {}),
-    ...(quote.requestId ? { requestId: quote.requestId } : {})
-  };
-}
-
 function requestSource(ref: string, label: string): Source {
   return source(ref, label);
 }
@@ -763,30 +656,6 @@ function normalized(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
-function exactOrStrongClientMatch(clients: Client[], query: string): boolean {
-  const needle = normalized(query);
-  return !needle || clients.some((client) => {
-    const contactValues = (client.contacts ?? []).flatMap((contact) => [
-      contact.personName?.firstName,
-      contact.personName?.lastName,
-      contact.company,
-      contact.role,
-      ...contact.emails.map((email) => email.value),
-      ...contact.phones.map((phone) => phone.value)
-    ]);
-    const values = [
-      client.name,
-      client.company ?? "",
-      client.personName?.firstName ?? "",
-      client.personName?.lastName ?? "",
-      ...client.emails,
-      ...client.phones,
-      ...contactValues
-    ].filter((value): value is string => Boolean(value)).map(normalized).filter(Boolean);
-    return values.some((value) => value === needle || value.includes(needle));
-  });
-}
-
 function dedupeClients(clients: Client[]): Client[] {
   const seen = new Set<string>();
   return clients.filter((client) => {
@@ -884,7 +753,6 @@ export function createCrmToolContext(
     jobMatchesQuery,
     jsonClone,
     materializeJobLineItems,
-    materializeQuoteRecord,
     mergedCreateRequestInput,
     notifyRequestCreated,
     normalized,
@@ -893,13 +761,10 @@ export function createCrmToolContext(
     provider,
     queueJobActionApproval,
     queueJobCreateApproval,
-    queueQuoteCreateApproval,
     queueScheduleJobVisitsApproval,
     queueShiftJobVisitSeriesApproval,
     quoteComposerInputSchema,
-    quoteMatchesQuery,
     quotePreviewBody,
-    quoteSummary,
     readActivityFeed,
     readHomeQueues,
     readScheduleWorkspace,
