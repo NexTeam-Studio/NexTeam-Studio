@@ -13,7 +13,7 @@ import { CLIENT_CUSTOM_FIELD_RESERVED_LABELS, customFieldRecordToDraftRows, prim
 import { getMobileCreateFabScrollIntent, mobileFabShouldHideOverlays, mobileFabVisibleForViewport, NEXOPS_MOBILE_CREATE_FAB_IDLE_MS, NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY, NEXOPS_SHARED_CREATE_MENU_ID, NexOpsMobileCreateFab, shouldPulseMobileCreateFab } from "./components/NexOpsMobileCreateFab";
 import { ContactRoster } from "../clients/components/contact/ContactRoster";
 import { ContactEditorSurface } from "../clients/components/contact/ContactEditorSurface";
-import { ContactProfileSurface } from "../clients/components/contact/ContactProfileSurface";
+import { ClientDetailsSurface } from "../clients/components/clientDetails/ClientDetailsSurface";
 import { NexOpsCreateClientPanel } from "../clients/components/contact/NexOpsCreateClientPanel";
 import "../clients/components/contact/contact.css";
 import { signOutOperator } from "../../shared/auth/authBootstrap";
@@ -22,7 +22,7 @@ import { fallbackOperatorContext, loadOperatorContext } from "../operatorContext
 import { useNexOpsCaptureController } from "../nexcam/areas/capture/hooks/useNexOpsCaptureController";
 import { useNexOpsNotifications } from "./hooks/useNexOpsNotifications";
 import { useNexOpsWorkspaceRecords } from "./hooks/useNexOpsWorkspaceRecords";
-import { useContactClientRails } from "../clients/components/contact/hooks/useContactClientRails";
+import { useClientDetailsRails } from "../clients/components/clientDetails/hooks/useClientDetailsRails";
 import { useContactFormController } from "../clients/components/contact/hooks/useContactFormController";
 
 const NexOpsHomePage = React.lazy(async () => ({ default: (await import("../home/components/operationsHome/NexOpsHomePage")).NexOpsHomePage }));
@@ -109,7 +109,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     deleteClientRecord,
     saveClientMarketingConsent,
     saveClientOverviewCustomFields
-  } = useContactClientRails({
+  } = useClientDetailsRails({
     tenantId: operatorContext.tenantId,
     selectedClientId,
     clients,
@@ -697,7 +697,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
       return renderNewClientWorkspace();
     }
     if (activeClientProfileTab && !options?.compact) {
-      return <ContactProfileSurface bindings={{
+      return <ClientDetailsSurface bindings={{
         activeClientProfileTab,
         clientContactDisplayName,
         clientDisplayName,

@@ -5,7 +5,7 @@ import {
   customFieldRecordToDraftRows,
   type CustomFieldDraftRow,
   validateCustomFieldDraftRows
-} from "../domain/clientProfile";
+} from "../../contact/domain/clientProfile";
 import { clientDisplayName } from "../../../../nexopsShell/workspaceSupport";
 import type {
   ClientPortalActivityEntry,
@@ -21,7 +21,7 @@ import type {
   SignedDocumentsResponse
 } from "../../../../nexopsShell/contracts/workspaceContracts";
 
-export function useContactClientRails(options: {
+export function useClientDetailsRails(options: {
   tenantId: string;
   selectedClientId: string;
   clients: CrmClient[];

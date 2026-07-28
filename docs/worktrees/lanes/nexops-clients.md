@@ -1,10 +1,10 @@
 # NexOps - Clients
 
-Status: Ready for component worktree use.
+Status: Active and separated from Client Details.
 
 ## HOW
 
-Owns client records, intake, directory, and client-area composition. Its authoritative paths, branch, and worktree directory are recorded in worktree-lanes.json. Run npm run check:worktree-scope before committing.
+Owns client records, intake, directory, create/edit forms, and client-area composition. Detailed profile tabs, activity rails, and detail-screen presentation belong to NexOps - Client Details. Its authoritative paths, branch, and worktree directory are recorded in worktree-lanes.json. Run npm run check:worktree-scope before committing.
 
 ## WHY
 
@@ -16,7 +16,7 @@ Record plain-language user instructions, common questions, failures, and recover
 
 ## CONTRACTS
 
-Record the public commands, queries, and events that other components and Nexi are allowed to use. Internal files are not public contracts.
+The shared client-record helpers in `apps/web/src/features/clients/components/contact/domain/clientProfile.ts` are the current web contract consumed by Client Details. Internal roster, form, and controller files are not public contracts.
 
 ## KNOWN GOOD
 

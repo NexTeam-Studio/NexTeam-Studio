@@ -5,6 +5,10 @@ const components = [
     "apps/server/src/modules/nexops/areas/clients/components/contact/",
     "apps/web/src/features/clients/components/contact/"
   ]],
+  ["Client Details", [
+    "apps/server/src/modules/nexops/areas/clients/components/clientDetails/",
+    "apps/web/src/features/clients/components/clientDetails/"
+  ]],
   ["Quote Templates", [
     "apps/server/src/modules/nexops/areas/quotes/components/quoteTemplates/",
     "apps/web/src/features/quotes/components/quoteTemplates/"

@@ -1,10 +1,10 @@
 # NexOps - Client Details
 
-Status: Ready for component worktree use.
+Status: Active with real extracted implementation.
 
 ## HOW
 
-Owns the detailed client profile and its sections, tabs, and activity. Its authoritative paths, branch, and worktree directory are recorded in worktree-lanes.json. Run npm run check:worktree-scope before committing.
+Owns the real desktop/mobile client profile, its 13 sections and tabs, client activity/data rails, detail mutations, and detail-only presentation. The NexOps workspace composes this surface but does not own its implementation. Its authoritative paths, branch, and worktree directory are recorded in worktree-lanes.json. Run npm run check:worktree-scope before committing.
 
 ## WHY
 
@@ -16,7 +16,7 @@ Record plain-language user instructions, common questions, failures, and recover
 
 ## CONTRACTS
 
-Record the public commands, queries, and events that other components and Nexi are allowed to use. Internal files are not public contracts.
+`ClientDetailsSurface` exposes one typed `ClientDetailsBindings` composition contract. `useClientDetailsRails` owns the tenant-aware HTTP rail used by that surface. Client-record field helpers are consumed from the Clients contract; internal Client Details files are not public contracts.
 
 ## KNOWN GOOD
 

@@ -1,0 +1,45 @@
+Checkpoint: Clients / Client Details physical separation
+Date: 2026-07-27
+Browser opened: no
+
+BEFORE
+1118 apps/web/src/features/clients/components/contact/ContactProfileSurface.tsx
+232 apps/web/src/features/clients/components/contact/hooks/useContactClientRails.ts
+1035 apps/web/src/features/clients/components/contact/contact.css
+1269 apps/web/src/features/nexopsShell/NexOpsWorkspace.tsx
+
+AFTER
+1119 apps/web/src/features/clients/components/clientDetails/ClientDetailsSurface.tsx
+232 apps/web/src/features/clients/components/clientDetails/hooks/useClientDetailsRails.ts
+257 apps/web/src/features/clients/components/clientDetails/clientDetails.css
+825 apps/web/src/features/clients/components/contact/contact.css
+1269 apps/web/src/features/nexopsShell/NexOpsWorkspace.tsx
+
+FOCUSED TEST OUTPUT
+tests 11
+pass 11
+fail 0
+skipped 0
+
+BUILD OUTPUT
+server tsc -b: exit 0
+web vite build: exit 0
+modules transformed: 174
+
+LINT OUTPUT
+eslint repository scan: exit 0
+
+FULL DEFAULT TEST OUTPUT
+No-browser test guard passed (67 default test files checked).
+tests 373
+pass 369
+fail 3
+skipped 1
+The three failures are the unchanged known-red NexReach, NexDocs local Nexi, and Platform route tests.
+The skipped test is the Admin SDK tenant-isolation emulator suite, which has its explicit separate command.
+
+COLLISION OUTPUT
+Contact: 14 files
+Client Details: 4 files
+Contact intersect Client Details: 0
+Component collision check passed (40 components, 780 pairs, zero overlaps).

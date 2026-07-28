@@ -1,5 +1,6 @@
 import React from "react";
 import { formatAddress } from "@nexteam/shared";
+import "./clientDetails.css";
 import { NexDocsClientWorkspace } from "../../../nexdocs/areas/clientWorkspace/components/NexDocsClientWorkspace";
 import { CLIENT_PROFILE_TABS, type ClientProfileTab, type NexOpsModule } from "../../../nexopsShell/domain/nexopsNavigation";
 import { nexiMapsHref } from "../../../nexi/areas/chat/components/NexiStandalonePrimitives";
@@ -13,7 +14,7 @@ import {
   visibleCustomFields,
   type ClientProfileMobileBucket,
   type CustomFieldDraftRow
-} from "./domain/clientProfile";
+} from "../contact/domain/clientProfile";
 import type {
   ClientPortalActivityEntry,
   CrmClient,
@@ -33,7 +34,7 @@ import type {
   WorkspaceTarget
 } from "../../../nexopsShell/NexOpsWorkspace";
 
-export interface ContactProfileBindings {
+export interface ClientDetailsBindings {
   activeClientProfileTab: ClientProfileTab;
   clientContactDisplayName: (client: CrmClient, primaryContact?: CrmContact) => string;
   clientDisplayName: (client: CrmClient) => string;
@@ -87,7 +88,7 @@ export interface ContactProfileBindings {
   toggleCreateMenu: () => void;
 }
 
-export function ContactProfileSurface({ bindings }: { bindings: ContactProfileBindings }): React.ReactElement {
+export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBindings }): React.ReactElement {
   const {
     activeClientProfileTab,
     clientContactDisplayName,

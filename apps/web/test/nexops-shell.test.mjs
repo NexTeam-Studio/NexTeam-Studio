@@ -108,12 +108,12 @@ test("internal operator modules reuse one local session token while NexPortal st
 
 test("client workspace exposes a confirmation-backed delete action instead of leaving duplicate cleanup to raw data edits", () => {
   const workspaceSource = readFileSync(new URL("../src/features/nexopsShell/NexOpsWorkspace.tsx", import.meta.url), "utf8");
-  const contactSource = readFileSync(new URL("../src/features/clients/components/contact/ContactProfileSurface.tsx", import.meta.url), "utf8");
-  const contactRailsSource = readFileSync(new URL("../src/features/clients/components/contact/hooks/useContactClientRails.ts", import.meta.url), "utf8");
+  const clientDetailsSource = readFileSync(new URL("../src/features/clients/components/clientDetails/ClientDetailsSurface.tsx", import.meta.url), "utf8");
+  const clientDetailsRailsSource = readFileSync(new URL("../src/features/clients/components/clientDetails/hooks/useClientDetailsRails.ts", import.meta.url), "utf8");
 
-  assert.match(workspaceSource, /useContactClientRails/);
-  assert.match(contactRailsSource, /async function deleteClientRecord\(clientId: string\): Promise<void>/);
-  assert.match(contactRailsSource, /window\.confirm\(\s*`Delete \$\{clientDisplayName\(client\)\}\?/);
-  assert.match(contactRailsSource, /fetch\(`\/api\/crm\/clients\/\$\{encodeURIComponent\(clientId\)\}\?tenantId=\$\{encodeURIComponent\(options\.tenantId\)\}`/);
-  assert.match(contactSource, /Delete client/);
+  assert.match(workspaceSource, /useClientDetailsRails/);
+  assert.match(clientDetailsRailsSource, /async function deleteClientRecord\(clientId: string\): Promise<void>/);
+  assert.match(clientDetailsRailsSource, /window\.confirm\(\s*`Delete \$\{clientDisplayName\(client\)\}\?/);
+  assert.match(clientDetailsRailsSource, /fetch\(`\/api\/crm\/clients\/\$\{encodeURIComponent\(clientId\)\}\?tenantId=\$\{encodeURIComponent\(options\.tenantId\)\}`/);
+  assert.match(clientDetailsSource, /Delete client/);
 });
