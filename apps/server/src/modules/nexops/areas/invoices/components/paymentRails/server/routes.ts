@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { CrmRouteContext } from "../../../../../../../crm/routeRuntime.js";
+import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
 
 export function registerPaymentRailRoutes(context: CrmRouteContext): void {
   const {

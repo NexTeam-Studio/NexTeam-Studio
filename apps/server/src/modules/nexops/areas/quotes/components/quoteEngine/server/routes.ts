@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import type { Quote } from "@nexteam/core";
-import type { CrmRouteContext } from "../../../../../../../crm/routeRuntime.js";
+import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
 
 export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
   const {

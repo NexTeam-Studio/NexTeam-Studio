@@ -18,7 +18,7 @@ import {
   clientSaveMissingFields,
   queueClientCreateApproval,
   type CreateClientInput
-} from "../crm/nexiTools.js";
+} from "../modules/nexops/nexiTools.js";
 import type { JobLifecycleService } from "../crm/jobLifecycle.js";
 import type { LedgerService } from "../crm/ledgerFoundation.js";
 import { materializeQuoteRecord, quotePreviewBody } from "../crm/quoteFoundation.js";

@@ -1,0 +1,22 @@
+NexOps composition relocation
+
+Files moved, not copied
+- crm/module.ts: 18 lines -> modules/nexops/module.ts; old path is a compatibility export.
+- crm/routes.ts: 30 lines -> modules/nexops/routes.ts; old path is a compatibility export.
+- crm/nexiTools.ts: 51 lines -> modules/nexops/nexiTools.ts; old path is a compatibility export.
+- crm/routeRuntime.ts: 1,218 lines -> modules/nexops/runtime/routeRuntime.ts; old path is a compatibility export.
+- crm/nexiToolRuntime.ts: 1,390 lines -> modules/nexops/runtime/nexiToolRuntime.ts; old path is a compatibility export.
+- Production imports were repointed to modules/nexops; compatibility paths remain for external/tests still using the old public location.
+
+Honest boundary
+- This removes all implementation from the legacy CRM root and gives every tracked implementation file one worktree owner.
+- It does not complete internal runtime decomposition: both runtime contexts still aggregate component-specific schemas and helpers. That work remains open in BUILDSTATE.md.
+
+Verification
+- npm run typecheck: pass.
+- npm run lint: pass.
+- npm run check:worktree-coverage: 450/450 implementation files exactly owned; zero legacy CRM debt; zero multiply-owned files.
+- focused CRM, lifecycle, request, job, and invoice tests: 48/48 pass.
+- npm run build: pass; Vite transformed 174 modules.
+- npm test: no-browser guard passed across 67 default test files; 373 total, 369 pass, 3 unchanged known reds, 1 intentional Admin SDK emulator skip.
+- No browser was opened.

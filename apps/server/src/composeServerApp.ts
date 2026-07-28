@@ -25,7 +25,7 @@ import { FirestorePortalHubRepository, InMemoryPortalHubRepository } from "./crm
 import { PortalHubService } from "./crm/portalHubService.js";
 import { FirestoreReviewSequenceRepository, InMemoryReviewSequenceRepository } from "./crm/reviewSequenceRepository.js";
 import { ReviewSequenceService } from "./crm/reviewSequenceService.js";
-import { registerCrmRoutes } from "./crm/routes.js";
+import { registerCrmRoutes } from "./modules/nexops/routes.js";
 import { getAdminDb } from "./firebase.js";
 import { FieldDocsApprovalExecutor } from "./fielddocs/approvalExecutor.js";
 import { FieldDocsService } from "./fielddocs/fieldDocsService.js";

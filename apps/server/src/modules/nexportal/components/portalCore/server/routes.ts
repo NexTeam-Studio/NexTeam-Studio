@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { CrmRouteContext } from "../../../../../crm/routeRuntime.js";
+import type { CrmRouteContext } from "../../../../nexops/runtime/routeRuntime.js";
 
 export function registerPortalCoreRoutes(context: CrmRouteContext): void {
   const {

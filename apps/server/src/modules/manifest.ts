@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { commsModule } from "../comms/module.js";
 import { contentModule } from "../content/module.js";
-import { crmModule } from "../crm/module.js";
+import { crmModule } from "./nexops/module.js";
 import { fieldDocsModule } from "../fielddocs/module.js";
 import { platformModule } from "../platform/module.js";
 import { schedulingModule } from "../scheduling/module.js";

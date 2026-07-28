@@ -6,7 +6,7 @@ import { createCampaignNexiTools } from "../campaigns/nexiTools.js";
 import { createCommsNexiTools } from "../comms/nexiTools.js";
 import { createContentNexiTools } from "../content/nexiTools.js";
 import { createContextNexiTools } from "../context/nexiTools.js";
-import { createCrmToolsWithOptions } from "../crm/nexiTools.js";
+import { createCrmToolsWithOptions } from "../modules/nexops/nexiTools.js";
 import { createEvaporationNexiTools } from "../evaporation/nexiTools.js";
 import { createFieldDocsTools } from "../fielddocs/nexiTools.js";
 import { createIntakeNexiTools } from "../intake/nexiTools.js";

@@ -1,5 +1,5 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
-import type { CrmToolContext } from "../../../../../../../crm/nexiToolRuntime.js";
+import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 
 export function createQuoteEngineNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {

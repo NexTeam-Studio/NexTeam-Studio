@@ -162,4 +162,3 @@ export const sendReceiptReviewApprovalArgsSchema = z.object({
   sendChannels: z.array(receiptReviewChannelSchema).optional(),
   attachmentIds: z.array(z.string()).optional()
 });
-
