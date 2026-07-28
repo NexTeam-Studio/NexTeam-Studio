@@ -1,13 +1,10 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
+import { getActivityFeedInputSchema, getHomeQueuesInputSchema, getPipelineInputSchema, getScheduleInputSchema } from "./toolSchemas.js";
 
 export function createOperationsHubNexiTools(context: CrmToolContext, _includeWrites: boolean): NexiTool[] {
   const {
     defaultRange,
-    getActivityFeedInputSchema,
-    getHomeQueuesInputSchema,
-    getPipelineInputSchema,
-    getScheduleInputSchema,
     groupJobs,
     options,
     provider,

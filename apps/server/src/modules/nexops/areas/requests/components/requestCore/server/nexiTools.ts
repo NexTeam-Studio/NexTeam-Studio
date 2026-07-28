@@ -1,5 +1,6 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
+import { createRequestToolInputSchema, getRequestDetailInputSchema, listRequestsInputSchema } from "./toolSchemas.js";
 
 export function createRequestCoreNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
@@ -7,12 +8,9 @@ export function createRequestCoreNexiTools(context: CrmToolContext, includeWrite
     approvalQueue,
     availableRequestFields,
     buildServiceRequest,
-    createRequestToolInputSchema,
     defaultRequestForms,
     ensureRequestForms,
     findRequestFieldLabel,
-    getRequestDetailInputSchema,
-    listRequestsInputSchema,
     mergedCreateRequestInput,
     normalizedPhone,
     notifyRequestCreated,

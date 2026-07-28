@@ -1,13 +1,11 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
+import { listCommunicationTemplatesInputSchema, listTeamMembersInputSchema, saveCommunicationTemplateInputSchema } from "./toolSchemas.js";
 
 export function createTenantConfigNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
     RailError,
-    listCommunicationTemplatesInputSchema,
-    listTeamMembersInputSchema,
     options,
-    saveCommunicationTemplateInputSchema,
     slugifyToken,
     source
   } = context;

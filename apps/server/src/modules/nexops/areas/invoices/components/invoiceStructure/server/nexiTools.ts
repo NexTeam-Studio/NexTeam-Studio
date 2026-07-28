@@ -1,10 +1,10 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
+import { invoiceStatusInputSchema } from "./toolSchemas.js";
 
 export function createInvoiceStructureNexiTools(context: CrmToolContext, _includeWrites: boolean): NexiTool[] {
   const {
     RailError,
-    invoiceStatusInputSchema,
     options,
     readable,
     source

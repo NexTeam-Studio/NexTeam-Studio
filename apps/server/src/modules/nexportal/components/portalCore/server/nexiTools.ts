@@ -1,22 +1,17 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../nexops/runtime/nexiToolRuntime.js";
+import { clientPortalActivityInputSchema, sendPortalLinkInputSchema, sendStatementToolInputSchema, statementToolInputSchema } from "./toolSchemas.js";
+import { reviewSequenceActionInputSchema, reviewSequenceStatusInputSchema, startReviewSequenceToolInputSchema } from "../../../../../reputation/reviewSequenceToolSchemas.js";
 
 export function createPortalCoreNexiTools(context: CrmToolContext, _includeWrites: boolean): NexiTool[] {
   const {
     RailError,
-    clientPortalActivityInputSchema,
     options,
     provider,
     resolveExactClientId,
     resolveJobForAction,
     resolveReviewSequenceIdForAction,
-    reviewSequenceActionInputSchema,
-    reviewSequenceStatusInputSchema,
-    sendPortalLinkInputSchema,
-    sendStatementToolInputSchema,
     source,
-    startReviewSequenceToolInputSchema,
-    statementToolInputSchema
   } = context;
   return [
     ...[{

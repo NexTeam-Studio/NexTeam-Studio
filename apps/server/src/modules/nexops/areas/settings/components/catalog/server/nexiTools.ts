@@ -1,13 +1,12 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
+import { listCatalogItemsInputSchema, saveCatalogItemInputSchema } from "./toolSchemas.js";
 
 export function createCatalogNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
     RailError,
     catalogCodeSeed,
-    listCatalogItemsInputSchema,
     options,
-    saveCatalogItemInputSchema,
     slugifyToken,
     source
   } = context;

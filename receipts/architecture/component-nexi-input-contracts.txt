@@ -1,0 +1,22 @@
+Component-owned Nexi input contracts
+
+Before and after
+- modules/nexops/runtime/nexiToolRuntime.ts: 1,390 lines before extraction; 1,087 lines after extraction.
+- Component-specific command schemas were removed from the shared runtime, not copied.
+
+Owners created
+- Contact, Quote Engine, Quote Templates, Job Core, Visit Core, Invoice Structure, Request Core, Catalog, Tenant Config, and Operations Home each own server/toolSchemas.ts.
+- Portal Core owns portal command schemas in server/toolSchemas.ts.
+- NexReach owns reviewSequenceToolSchemas.ts.
+- modules/nexops/shared/tools/workspaceAccessSchemas.ts owns the reusable role/user workspace filter only.
+- Each Nexi registrar imports its own schemas directly instead of receiving them through the shared runtime context.
+
+Verification
+- npm run typecheck: pass.
+- npm run lint: pass.
+- focused Nexi/CRM/portal/schedule tests: 55/55 pass.
+- npm run check:worktree-coverage: 465/465 implementation files exactly owned; zero multiply-owned files.
+- npm run check:collisions: 40 components, 780 pairs, zero overlaps.
+- npm run build: pass; Vite transformed 174 modules.
+- npm test: no-browser guard passed across 67 default test files; 373 total, 369 pass, 3 unchanged known reds, 1 intentional Admin SDK emulator skip.
+- No browser was opened.

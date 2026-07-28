@@ -22,8 +22,8 @@ Operations Home is a global NexOps composition area. Its real service and notifi
 
 Cross-component approval contracts, lifecycle policy, tenant-scoped Firestore helpers, and the native CRM repository composer live under `apps/server/src/modules/nexops/shared`. Area components own their handlers and repositories; the global layer only defines contracts and combines them. Former CRM-root paths are compatibility exports only.
 
-The NexOps module manifest, route registrar, Nexi-tool registrar, and their current shared runtime contexts live under `apps/server/src/modules/nexops`. The CRM root contains compatibility exports only. Route validation now lives with Contact, Quote Engine, Job Core, Visit Core, Invoice Structure, Payment Rails, Request Core, Operations Home, Portal Core, and NexReach. Cross-area service helpers still present in the route runtime and component-specific schemas/helpers still present in the Nexi runtime remain tracked for extraction.
+The NexOps module manifest, route registrar, Nexi-tool registrar, and their current shared runtime contexts live under `apps/server/src/modules/nexops`. The CRM root contains compatibility exports only. Route validation and Nexi command input schemas now live with their owning components. Shared workspace-access fields are the only global Nexi input contract. Cross-area service and command-orchestration helpers still present in the two runtimes remain tracked for extraction.
 
 ## KNOWN GOOD
 
-Initial baseline: ffe442ffebac195963cbd5e66064a264315c4c15. Route-contract extraction: route runtime `1,218 -> 767` lines, exact ownership `455/455`, typecheck/lint clean, focused tests `63/63`, build `174` modules, all `780/780` component pairs disjoint, full non-browser suite `369/373` with the same three known reds and one emulator skip.
+Initial baseline: ffe442ffebac195963cbd5e66064a264315c4c15. Nexi input-contract extraction: Nexi runtime `1,390 -> 1,087` lines, exact ownership `465/465`, typecheck/lint clean, focused tests `55/55`, build `174` modules, all `780/780` component pairs disjoint, full non-browser suite `369/373` with the same three known reds and one emulator skip.

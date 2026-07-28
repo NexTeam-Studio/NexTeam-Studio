@@ -11,284 +11,16 @@ import type { PortalHubService } from "../../nexportal/components/portalCore/ser
 import type { ReviewSequenceService } from "../../../reputation/reviewSequenceService.js";
 import { availableRequestFields, buildServiceRequest, defaultRequestForms, ensureRequestForms, notifyRequestCreated } from "../areas/requests/components/requestCore/server/requestFoundation.js";
 import { ensureQuoteConfiguration, materializeQuoteRecord, quoteComposerInputSchema, quotePreviewBody } from "../areas/quotes/components/quoteEngine/domain/quoteFoundation.js";
+import type { CreateClientInput } from "../areas/clients/components/contact/server/toolSchemas.js";
+import type { createQuoteToolInputSchema } from "../areas/quotes/components/quoteEngine/server/toolSchemas.js";
+import { getActivityFeedInputSchema, getHomeQueuesInputSchema, getScheduleInputSchema } from "../areas/home/components/operationsHub/server/toolSchemas.js";
+import type { createRequestToolInputSchema } from "../areas/requests/components/requestCore/server/toolSchemas.js";
+import type { createJobToolInputSchema, getJobDetailInputSchema, jobActionToolInputSchema } from "../areas/jobs/components/jobCore/server/toolSchemas.js";
+import type { scheduleJobVisitsToolInputSchema, shiftJobVisitSeriesToolInputSchema } from "../areas/visits/components/visitCore/server/toolSchemas.js";
+import type { reviewSequenceActionInputSchema } from "../../../reputation/reviewSequenceToolSchemas.js";
+import type { workspaceRoleSchema } from "../shared/tools/workspaceAccessSchemas.js";
 
-const clientLookupInputSchema = z.object({ q: z.string().default("") });
-const createClientInputSchema = z.object({
-  name: z.string().min(1),
-  company: z.string().min(1).optional(),
-  personName: personNameSchema.optional(),
-  displayNamePreference: z.enum(["person", "company"]).optional(),
-  billingAddress: addressSchema.optional(),
-  billingSameAsPrimaryProperty: z.boolean().optional(),
-  contacts: z.array(clientContactSchema).optional(),
-  communicationSettings: clientCommunicationSettingsSchema.optional(),
-  address: z.string().min(1).optional(),
-  emails: z.array(z.string()).default([]),
-  phones: z.array(z.string()).default([]),
-  consent: z.object({ email: z.boolean(), sms: z.boolean(), marketing: z.boolean().optional() }).default({ email: false, sms: false, marketing: false })
-});
-export type CreateClientInput = z.infer<typeof createClientInputSchema>;
-const quoteStatusSchema = z.enum(["draft", "pending_approval", "sent", "change_requested", "approved", "approved_internal", "declined", "expired", "archived"]);
-const createQuoteToolInputSchema = quoteComposerInputSchema
-  .omit({ tenantId: true, clientId: true })
-  .extend({
-    clientId: z.string().min(1).optional(),
-    clientQuery: z.string().min(1).optional()
-  })
-  .superRefine((value, ctx) => {
-    if (!value.clientId && !value.clientQuery?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "clientId or clientQuery is required.", path: ["clientQuery"] });
-    }
-  });
-const listQuotesInputSchema = z.object({
-  q: z.string().default(""),
-  status: quoteStatusSchema.optional()
-});
-const getQuoteDetailInputSchema = z.object({
-  quoteId: z.string().optional(),
-  query: z.string().optional()
-});
-const listQuoteTemplatesInputSchema = z.object({
-  q: z.string().default("")
-});
-const listCatalogItemsInputSchema = z.object({
-  q: z.string().default(""),
-  visibleOnly: z.boolean().default(false)
-});
-const saveCatalogItemInputSchema = z.object({
-  id: z.string().optional(),
-  code: z.string().optional(),
-  name: z.string().min(1),
-  description: z.string().optional(),
-  price: z.number().min(0),
-  tag: z.string().default("Service"),
-  taxable: z.boolean().default(true),
-  visible: z.boolean().default(true)
-});
-const listCommunicationTemplatesInputSchema = z.object({
-  q: z.string().default(""),
-  category: z.string().optional()
-});
-const saveCommunicationTemplateInputSchema = z.object({
-  id: z.string().optional(),
-  category: z.string().min(1),
-  label: z.string().min(1),
-  description: z.string().optional(),
-  emailEnabled: z.boolean().default(true),
-  smsEnabled: z.boolean().default(false),
-  emailSubject: z.string().optional(),
-  emailBody: z.string().optional(),
-  smsBody: z.string().optional()
-});
-const listTeamMembersInputSchema = z.object({
-  q: z.string().default(""),
-  role: z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]).optional(),
-  activeOnly: z.boolean().default(true)
-});
-const getPipelineInputSchema = z.object({
-  from: z.string().optional(),
-  to: z.string().optional()
-});
-const invoiceStatusInputSchema = z.object({
-  invoiceId: z.string().optional(),
-  clientId: z.string().optional()
-});
-const listRequestsInputSchema = z.object({
-  q: z.string().default(""),
-  status: z.enum(["new", "archived", "converted_to_quote", "converted_to_job"]).optional()
-});
-const getRequestDetailInputSchema = z.object({
-  requestId: z.string().optional(),
-  query: z.string().optional(),
-  fieldKey: z.string().optional()
-});
-const listJobsInputSchema = z.object({
-  q: z.string().default(""),
-  status: z.enum(["Upcoming", "Today", "Late", "Unscheduled", "Action Required", "Requires Invoicing", "Archived"]).optional()
-});
-const getJobDetailInputSchema = z.object({
-  jobId: z.string().optional(),
-  query: z.string().optional()
-});
-const createJobToolInputSchema = z.object({
-  clientId: z.string().min(1).optional(),
-  clientQuery: z.string().min(1).optional(),
-  propertyId: z.string().min(1).optional(),
-  requestId: z.string().min(1).optional(),
-  quoteId: z.string().min(1).optional(),
-  title: z.string().min(1),
-  lineItems: z.array(z.object({
-    kind: z.enum(["catalog", "custom"]).default("custom"),
-    catalogCode: z.string().optional(),
-    code: z.string().min(1).optional(),
-    name: z.string().min(1),
-    description: z.string().optional(),
-    quantity: z.number().positive().default(1),
-    unitPrice: z.number().min(0).default(0),
-    taxable: z.boolean().optional()
-  })).optional()
-}).superRefine((value, ctx) => {
-  if (!value.clientId && !value.clientQuery?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "clientId or clientQuery is required.", path: ["clientQuery"] });
-  }
-});
-const jobActionToolInputSchema = z.object({
-  jobId: z.string().min(1).optional(),
-  query: z.string().optional(),
-  action: z.enum(["close", "invoice", "close_and_invoice", "dismiss_invoice_reminder"])
-});
-const sendPortalLinkInputSchema = z.object({
-  clientId: z.string().min(1).optional(),
-  clientQuery: z.string().min(1).optional(),
-  propertyId: z.string().min(1).optional(),
-  target: z.string().optional(),
-  preferredChannel: z.enum(["email", "sms"]).optional(),
-  sourceObjectType: z.enum(["quote", "invoice"]).optional(),
-  sourceObjectId: z.string().min(1).optional()
-}).superRefine((value, ctx) => {
-  if (!value.clientId && !value.clientQuery?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "clientId or clientQuery is required.", path: ["clientQuery"] });
-  }
-  if (value.sourceObjectType && !value.sourceObjectId?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "sourceObjectId is required when sourceObjectType is provided.", path: ["sourceObjectId"] });
-  }
-});
-const clientPortalActivityInputSchema = z.object({
-  clientId: z.string().min(1).optional(),
-  clientQuery: z.string().min(1).optional(),
-  propertyId: z.string().min(1).optional()
-}).superRefine((value, ctx) => {
-  if (!value.clientId && !value.clientQuery?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "clientId or clientQuery is required.", path: ["clientQuery"] });
-  }
-});
-const statementToolInputSchema = z.object({
-  clientId: z.string().min(1).optional(),
-  clientQuery: z.string().min(1).optional(),
-  from: z.string().optional(),
-  to: z.string().optional()
-}).superRefine((value, ctx) => {
-  if (!value.clientId && !value.clientQuery?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "clientId or clientQuery is required.", path: ["clientQuery"] });
-  }
-});
-const sendStatementToolInputSchema = z.object({
-  clientId: z.string().min(1).optional(),
-  clientQuery: z.string().min(1).optional(),
-  from: z.string().optional(),
-  to: z.string().optional(),
-  target: z.string().optional()
-}).superRefine((value, ctx) => {
-  if (!value.clientId && !value.clientQuery?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "clientId or clientQuery is required.", path: ["clientQuery"] });
-  }
-});
-const reviewSequenceStatusInputSchema = z.object({
-  clientId: z.string().min(1).optional(),
-  clientQuery: z.string().min(1).optional(),
-  jobId: z.string().min(1).optional(),
-  jobQuery: z.string().min(1).optional()
-}).superRefine((value, ctx) => {
-  if (!value.clientId && !value.clientQuery?.trim() && !value.jobId && !value.jobQuery?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Provide a client or job to inspect review status.", path: ["clientQuery"] });
-  }
-});
-const reviewSequenceActionInputSchema = z.object({
-  reviewSequenceId: z.string().min(1).optional(),
-  jobId: z.string().min(1).optional(),
-  jobQuery: z.string().min(1).optional()
-}).superRefine((value, ctx) => {
-  if (!value.reviewSequenceId && !value.jobId && !value.jobQuery?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "reviewSequenceId or an exact job match is required.", path: ["jobQuery"] });
-  }
-});
-const startReviewSequenceToolInputSchema = z.object({
-  jobId: z.string().min(1).optional(),
-  jobQuery: z.string().min(1).optional()
-}).superRefine((value, ctx) => {
-  if (!value.jobId && !value.jobQuery?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "jobId or an exact job match is required.", path: ["jobQuery"] });
-  }
-});
-const workspaceRoleSchema = z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]);
-const workspaceAccessInputFields = {
-  role: workspaceRoleSchema.optional(),
-  tenantUserId: z.string().optional(),
-  tenantUserQuery: z.string().optional()
-} as const;
-const getScheduleInputSchema = z.object({
-  from: z.string().optional(),
-  to: z.string().optional(),
-  day: z.string().optional(),
-  teamMemberIds: z.array(z.string().min(1)).optional(),
-  teamMemberQuery: z.string().optional(),
-  includeUnscheduled: z.boolean().default(true),
-  ...workspaceAccessInputFields
-});
-const getActivityFeedInputSchema = z.object({
-  objectType: z.enum(["requests", "quotes", "jobs", "invoices", "payments"]).optional(),
-  limit: z.number().int().min(1).max(100).default(25),
-  ...workspaceAccessInputFields
-});
-const getHomeQueuesInputSchema = z.object({
-  ...workspaceAccessInputFields
-});
-const scheduleJobVisitsToolInputSchema = z.object({
-  jobId: z.string().min(1).optional(),
-  query: z.string().optional(),
-  visits: z.array(z.object({
-    title: z.string().optional(),
-    start: z.string().min(1),
-    end: z.string().min(1),
-    assignedTo: z.array(z.string().min(1)).optional(),
-    assignedTeamQuery: z.string().optional(),
-    details: z.string().optional()
-  })).min(1)
-}).superRefine((value, ctx) => {
-  if (!value.jobId && !value.query?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "jobId or query is required.", path: ["query"] });
-  }
-});
-const shiftJobVisitSeriesToolInputSchema = z.object({
-  visitId: z.string().min(1).optional(),
-  jobId: z.string().min(1).optional(),
-  query: z.string().optional(),
-  anchorStart: z.string().optional(),
-  start: z.string().optional(),
-  end: z.string().optional(),
-  shiftDays: z.number().int().optional(),
-  shiftHours: z.number().int().optional(),
-  shiftRemaining: z.boolean().default(true)
-}).superRefine((value, ctx) => {
-  if (!value.visitId && !value.jobId && !value.query?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "visitId or an exact job match is required.", path: ["query"] });
-  }
-  const hasAbsoluteMove = Boolean(value.start?.trim() && value.end?.trim());
-  const hasRelativeMove = Number.isFinite(value.shiftDays) || Number.isFinite(value.shiftHours);
-  if (!hasAbsoluteMove && !hasRelativeMove) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Provide start/end or a day/hour offset.", path: ["start"] });
-  }
-  if (value.start?.trim() && !value.end?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "end is required when start is provided.", path: ["end"] });
-  }
-  if (value.end?.trim() && !value.start?.trim()) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "start is required when end is provided.", path: ["start"] });
-  }
-});
-const createRequestToolInputSchema = z.object({
-  rawText: z.string().default(""),
-  clientName: z.string().optional(),
-  email: z.string().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  poolConfiguration: z.string().optional(),
-  poolType: z.string().optional(),
-  gateCode: z.string().optional(),
-  petPresent: z.boolean().optional(),
-  petName: z.string().optional(),
-  waterLossRate: z.string().optional(),
-  issueSummary: z.string().optional()
-});
+export type { CreateClientInput };
 
 interface InvoiceReadableProvider extends CRMProvider {
   getInvoices?: () => Promise<Invoice[]>;
@@ -1155,7 +887,7 @@ function materializeJobLineItems(items: z.infer<typeof createJobToolInputSchema>
   return (items ?? []).map((item, index) => {
     const quantity = item.quantity ?? 1;
     const unitPrice = item.unitPrice ?? 0;
-    return {
+  return {
       id: `job_line_${index + 1}`,
       source: item.kind === "catalog" ? "catalog" : "custom",
       ...(item.catalogCode ? { catalogCode: item.catalogCode } : {}),
@@ -1288,14 +1020,8 @@ export function createCrmToolContext(
     catalogCodeSeed,
     clientCommunicationSettingsSchema,
     clientContactSchema,
-    clientLookupInputSchema,
-    clientPortalActivityInputSchema,
     clientSaveClarification,
     clientSaveMissingFields,
-    createClientInputSchema,
-    createJobToolInputSchema,
-    createQuoteToolInputSchema,
-    createRequestToolInputSchema,
     defaultRange,
     defaultRequestForms,
     dedupeClients,
@@ -1303,27 +1029,11 @@ export function createCrmToolContext(
     ensureRequestForms,
     findRequestFieldLabel,
     formatVisitPreviewMoment,
-    getActivityFeedInputSchema,
-    getHomeQueuesInputSchema,
-    getJobDetailInputSchema,
-    getPipelineInputSchema,
-    getQuoteDetailInputSchema,
-    getRequestDetailInputSchema,
-    getScheduleInputSchema,
     groupJobs,
     hasClientSavePhone,
-    invoiceStatusInputSchema,
     isoRangeForDay,
-    jobActionToolInputSchema,
     jobMatchesQuery,
     jsonClone,
-    listCatalogItemsInputSchema,
-    listCommunicationTemplatesInputSchema,
-    listJobsInputSchema,
-    listQuoteTemplatesInputSchema,
-    listQuotesInputSchema,
-    listRequestsInputSchema,
-    listTeamMembersInputSchema,
     materializeJobLineItems,
     materializeQuoteRecord,
     mergedCreateRequestInput,
@@ -1348,7 +1058,6 @@ export function createCrmToolContext(
     quoteComposerInputSchema,
     quoteMatchesQuery,
     quotePreviewBody,
-    quoteStatusSchema,
     quoteSummary,
     readActivityFeed,
     readHomeQueues,
@@ -1365,24 +1074,12 @@ export function createCrmToolContext(
     resolveVisitAssignmentIds,
     resolveVisitShiftAnchor,
     resolveWorkspaceAccess,
-    reviewSequenceActionInputSchema,
-    reviewSequenceStatusInputSchema,
     sanitizeAddressText,
     sanitizeRequestAddress,
-    saveCatalogItemInputSchema,
-    saveCommunicationTemplateInputSchema,
-    scheduleJobVisitsToolInputSchema,
-    sendPortalLinkInputSchema,
-    sendStatementToolInputSchema,
     shiftIso,
-    shiftJobVisitSeriesToolInputSchema,
     simplifiedRequestQuery,
     slugifyToken,
     source,
-    startReviewSequenceToolInputSchema,
-    statementToolInputSchema,
-    workspaceAccessInputFields,
-    workspaceRoleSchema,
     z,
   };
 }

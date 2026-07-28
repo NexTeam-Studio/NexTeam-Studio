@@ -1,5 +1,6 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
+import { scheduleJobVisitsToolInputSchema, shiftJobVisitSeriesToolInputSchema } from "./toolSchemas.js";
 
 export function createVisitCoreNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
@@ -8,8 +9,6 @@ export function createVisitCoreNexiTools(context: CrmToolContext, includeWrites:
     options,
     queueScheduleJobVisitsApproval,
     queueShiftJobVisitSeriesApproval,
-    scheduleJobVisitsToolInputSchema,
-    shiftJobVisitSeriesToolInputSchema,
     source
   } = context;
   return [
