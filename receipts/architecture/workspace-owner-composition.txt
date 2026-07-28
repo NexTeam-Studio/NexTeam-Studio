@@ -1,0 +1,12 @@
+Workspace owner composition boundary
+
+- Contact owns client filtering, selected-client/contact/property derivation, related job/quote/invoice/payment/request/receipt models, form setup, and custom-field selection synchronization in useContactWorkspaceModel.ts.
+- NexCam Capture owns capture client filtering and capture-workspace prop assembly in NexOpsCaptureModule.tsx.
+- NexOpsWorkspace retains shared route transitions, active-module state, and the six capture actions required by cross-module navigation and request creation.
+- NexOpsWorkspace.tsx fell from 1,215 lines at the prior commit to 1,159 lines.
+- Lint passes.
+- Build passes at 176 transformed web modules.
+- Exact ownership passes at 493/493 implementation files.
+- All 780 pairs across 40 named components have zero overlap.
+- Full guarded non-browser suite: 373 total, 369 pass, 3 unchanged known reds, 1 intentional emulator skip.
+- The no-browser guard checked 67 default test files; no browser was opened.

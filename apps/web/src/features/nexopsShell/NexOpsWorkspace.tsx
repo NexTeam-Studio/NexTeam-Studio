@@ -9,7 +9,7 @@ import { NexOpsLegacyLifecyclePage } from "./components/NexOpsLegacyLifecyclePag
 import { NexOpsModuleSwitcher } from "./components/NexOpsModuleSwitcher";
 
 import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "./domain/nexopsNavigation";
-import { CLIENT_CUSTOM_FIELD_RESERVED_LABELS, customFieldRecordToDraftRows, primaryClientPhoneValue, type ClientProfileMobileBucket } from "../../features/clients/components/contact/domain/clientProfile";
+import type { ClientProfileMobileBucket } from "../../features/clients/components/contact/domain/clientProfile";
 import { getMobileCreateFabScrollIntent, mobileFabShouldHideOverlays, mobileFabVisibleForViewport, NEXOPS_MOBILE_CREATE_FAB_IDLE_MS, NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY, NEXOPS_SHARED_CREATE_MENU_ID, NexOpsMobileCreateFab, shouldPulseMobileCreateFab } from "./components/NexOpsMobileCreateFab";
 import { ContactRoster } from "../clients/components/contact/ContactRoster";
 import { ContactEditorSurface } from "../clients/components/contact/ContactEditorSurface";
@@ -23,7 +23,8 @@ import { useNexOpsCaptureController } from "../nexcam/areas/capture/hooks/useNex
 import { useNexOpsNotifications } from "./hooks/useNexOpsNotifications";
 import { useNexOpsWorkspaceRecords } from "./hooks/useNexOpsWorkspaceRecords";
 import { useClientDetailsRails } from "../clients/components/clientDetails/hooks/useClientDetailsRails";
-import { useContactFormController } from "../clients/components/contact/hooks/useContactFormController";
+import { useContactWorkspaceModel } from "../clients/components/contact/hooks/useContactWorkspaceModel";
+import { NexOpsCaptureModule } from "../nexcam/areas/capture/components/NexOpsCaptureModule";
 
 const NexOpsHomePage = React.lazy(async () => ({ default: (await import("../home/components/operationsHome/NexOpsHomePage")).NexOpsHomePage }));
 const NexOpsInvoicesPage = React.lazy(async () => ({ default: (await import("../../features/invoices/components/invoiceStructure/NexOpsInvoicesPage")).NexOpsInvoicesPage }));
@@ -33,11 +34,10 @@ const NexOpsQuotesPage = React.lazy(async () => ({ default: (await import("../..
 const NexOpsRequestsPage = React.lazy(async () => ({ default: (await import("../requests/components/requestCore/NexOpsRequestsPage")).NexOpsRequestsPage }));
 const NexOpsSchedulePage = React.lazy(async () => ({ default: (await import("../../features/visits/components/visitCore/NexOpsSchedulePage")).NexOpsSchedulePage }));
 const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("../../features/settings/components/tenantConfig/NexOpsSettingsPage")).NexOpsSettingsPage }));
-const NexOpsCaptureWorkspace = React.lazy(async () => ({ default: (await import("../nexcam/areas/capture/components/NexOpsCaptureWorkspace")).NexOpsCaptureWorkspace }));
 
 
 import type { OperatorContext, TenantBranding, TenantBrandingResponse, ScheduleScope, WorkspaceTarget } from "./contracts/workspaceContracts";
-import { formatPhoneDisplay, personDisplayName, clientDisplayName, clientContactDisplayName, clientPrimaryAddress, clientStatusLabel, contactSummary, clientHasTextReadyContact, NexOpsNavGlyph, MobileClientSummaryGlyph, MobileClientEditGlyph, MOBILE_CLIENT_VIEWPORT_MAX } from "./workspaceSupport";
+import { formatPhoneDisplay, personDisplayName, clientDisplayName, clientContactDisplayName, clientPrimaryAddress, clientStatusLabel, contactSummary, NexOpsNavGlyph, MobileClientSummaryGlyph, MobileClientEditGlyph, MOBILE_CLIENT_VIEWPORT_MAX } from "./workspaceSupport";
 export type * from "./contracts/workspaceContracts";
 export * from "./workspaceSupport";
 
@@ -119,48 +119,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     onMutation: emitCrmMutation
   });
 
-  const {
-    captureInputRef,
-    captureBusy,
-    captureStatus,
-    captureWorkspaceView,
-    captureSession,
-    captureSessionOrigin,
-    captureSessionMode,
-    captureInbox,
-    captureInboxStatus,
-    captureRequestIntent,
-    captureClientQuery,
-    captureSelectedClientId,
-    captureSelectedJobId,
-    captureSelectedVisitId,
-    captureTargets,
-    captureSessionMedia,
-    activeCaptureMedia,
-    captureAnchorGps,
-    captureGpsMoved,
-    visibleCaptureVisits,
-    setCaptureClientQuery,
-    setCaptureSelectedClientId,
-    setCaptureSelectedJobId,
-    setCaptureSelectedVisitId,
-    setCaptureSelectedMediaId,
-    setCaptureWorkspaceView,
-    setCaptureSessionMode,
-    setCaptureStatus,
-    setCaptureSession,
-    setCaptureSessionOrigin,
-    startCaptureSession,
-    openCaptureWorkspace,
-    finishCaptureSession,
-    uploadCapturePhotos,
-    routeCaptureToNewRequest,
-    markCaptureDecideLater,
-    loadCaptureTargets,
-    assignCaptureToExistingClient,
-    reopenCaptureBatch,
-    handleCaptureRequestCreated
-  } = useNexOpsCaptureController({
+  const captureController = useNexOpsCaptureController({
     active: activeModule === "capture",
     tenantId: operatorContext.tenantId,
     tenantUserId: operatorContext.tenantUserId,
@@ -190,6 +149,14 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     onRefreshClientRails: (clientId) => refreshClientRails(clientId),
     onSelectClient: setSelectedClientId
   });
+  const {
+    captureSession,
+    captureRequestIntent,
+    setCaptureWorkspaceView,
+    startCaptureSession,
+    openCaptureWorkspace,
+    handleCaptureRequestCreated
+  } = captureController;
 
   const {
     notificationsOpen,
@@ -607,42 +574,44 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
   }, []);
 
   const tenantName = tenantDisplayName(tenantBranding, operatorContext.tenantId);
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredClients = clients.filter((client) => {
-    if (!normalizedQuery) {
-      return true;
-    }
-    return [
-      clientDisplayName(client),
-      contactSummary(client),
-      clientPrimaryAddress(client),
-      ...(client.tags ?? [])
-    ].join(" ").toLowerCase().includes(normalizedQuery);
-  });
-  const selectedClient = selectedClientId
-    ? clients.find((client) => client.id === selectedClientId) ?? null
-    : filteredClients[0] ?? null;
-  const selectedContact = selectedClient?.contacts?.find((contact) => contact.correspondenceContact || contact.billingContact) ?? selectedClient?.contacts?.[0];
-  const selectedPhone = selectedContact?.phones?.find((phone) => phone.primary) ?? selectedContact?.phones?.[0];
-  const selectedPhoneValue = selectedClient
-    ? primaryClientPhoneValue({
-      contactPhones: selectedContact?.phones,
-      clientPhones: selectedClient.phones
-    })
-    : "";
-  const selectedEmail = selectedContact?.emails?.find((email) => email.primary)?.value ?? selectedContact?.emails?.[0]?.value ?? selectedClient?.emails[0];
-  const selectedProperties = selectedClient ? properties.filter((property) => property.clientId === selectedClient.id) : [];
-  const contactForm = useContactFormController({
+  const {
+    activeCount,
+    contactForm,
+    filteredClients,
+    leadCount,
+    selectedClient,
+    selectedContact,
+    selectedEmail,
+    selectedInvoices,
+    selectedJobs,
+    selectedPayments,
+    selectedPhone,
+    selectedPhoneValue,
+    selectedProperties,
+    selectedQuotes,
+    selectedReceiptReviewSummaries,
+    selectedRequests,
+    textReadyCount
+  } = useContactWorkspaceModel({
     tenantId: operatorContext.tenantId,
     clients,
+    properties,
+    jobs,
+    quotes,
+    invoices,
+    payments,
+    receiptReviews,
+    requests,
+    query,
     selectedClientId,
-    selectedClient: selectedClient ?? undefined,
-    selectedProperty: selectedProperties[0] ?? null,
-    onRefresh: refresh,
+    refresh,
     onSaved: (clientId) => {
       setCreatingClientPage(false);
       openClientProfile(clientId, "overview");
-    }
+    },
+    setClientOverviewCustomFieldsDraft,
+    setClientOverviewCustomFieldsOpen,
+    setMobileClientExpandedBucket
   });
   const {
     showCreateClient,
@@ -656,17 +625,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     leadSourceOptions,
     submit: createClientFromForm
   } = contactForm;
-  const selectedRequests = selectedClient ? requests.filter((request) => request.selectedClientId === selectedClient.id) : [];
-  const selectedJobs = selectedClient ? jobs.filter((job) => job.clientId === selectedClient.id) : [];
-  const selectedQuotes = selectedClient ? quotes.filter((quote) => quote.clientId === selectedClient.id) : [];
-  const selectedInvoices = selectedClient ? invoices.filter((invoice) => invoice.clientId === selectedClient.id) : [];
-  const selectedPayments = selectedClient ? payments.filter((payment) => payment.clientId === selectedClient.id) : [];
-  const selectedReceiptReviewSummaries = selectedClient
-    ? receiptReviews.filter((review) => review.clientId === selectedClient.id || selectedInvoices.some((invoice) => invoice.id === review.invoiceId))
-    : [];
-  const activeCount = clients.filter((client) => clientStatusLabel(client) === "Active").length;
-  const leadCount = clients.filter((client) => clientStatusLabel(client) === "Lead").length;
-  const textReadyCount = clients.filter((client) => clientHasTextReadyContact(client)).length;
   const style = {
     "--nexops-brand-primary": "#0c1118",
     "--nexops-brand-accent": "#A8E600",
@@ -679,14 +637,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
   } as React.CSSProperties;
 
   const moduleTitle = NEXOPS_MODULES.find((module) => module.id === activeModule)?.label ?? "NexOps";
-
-  useEffect(() => {
-    setClientOverviewCustomFieldsDraft(
-      customFieldRecordToDraftRows(selectedClient?.customFields, CLIENT_CUSTOM_FIELD_RESERVED_LABELS, "client_profile")
-    );
-    setClientOverviewCustomFieldsOpen(false);
-    setMobileClientExpandedBucket(null);
-  }, [selectedClient?.id]);
 
   function renderHome(): React.ReactElement {
     return <NexOpsHomePage tenantId={operatorContext.tenantId} onOpenTarget={openWorkspaceTarget} />;
@@ -791,74 +741,14 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
 
 
   function renderCaptureWorkspace(): React.ReactElement {
-    const filteredClients = clients
-      .filter((client) => {
-        if (!captureClientQuery.trim()) {
-          return true;
-        }
-        const haystack = [
-          clientDisplayName(client),
-          ...client.emails,
-          ...client.phones,
-          clientPrimaryAddress(client)
-        ].join(" ").toLowerCase();
-        return haystack.includes(captureClientQuery.trim().toLowerCase());
-      })
-      .slice(0, 8);
-    const selectedCaptureClient = clients.find((client) => client.id === captureSelectedClientId);
-    const assignedCaptureClient = captureSession?.assignedClientId
-      ? clients.find((client) => client.id === captureSession.assignedClientId)
-      : undefined;
-    return (
-      <Suspense fallback={<section className="nexops-module-page"><div className="nexops-module-grid"><article className="nexops-module-card"><p className="eyebrow">Loading</p><h2>Opening capture workspace</h2><p>Pulling the deferred capture rail into the shell now.</p></article></div></section>}>
-        <NexOpsCaptureWorkspace
-          operatorTenantId={operatorContext.tenantId}
-          captureInputRef={captureInputRef}
-          captureBusy={captureBusy}
-          captureStatus={captureStatus}
-          captureWorkspaceView={captureWorkspaceView}
-          captureSession={captureSession}
-          captureSessionOrigin={captureSessionOrigin}
-          captureSessionMode={captureSessionMode}
-          captureInbox={captureInbox}
-          captureInboxStatus={captureInboxStatus}
-          activeCaptureMedia={activeCaptureMedia}
-          captureSessionMedia={captureSessionMedia}
-          captureAnchorGps={captureAnchorGps}
-          captureGpsMoved={captureGpsMoved}
-          filteredClients={filteredClients}
-          selectedCaptureClient={selectedCaptureClient}
-          assignedCaptureClient={assignedCaptureClient}
-          captureClientQuery={captureClientQuery}
-          setCaptureClientQuery={setCaptureClientQuery}
-          captureSelectedClientId={captureSelectedClientId}
-          setCaptureSelectedClientId={setCaptureSelectedClientId}
-          captureSelectedJobId={captureSelectedJobId}
-          setCaptureSelectedJobId={setCaptureSelectedJobId}
-          captureSelectedVisitId={captureSelectedVisitId}
-          setCaptureSelectedVisitId={setCaptureSelectedVisitId}
-          captureTargets={captureTargets}
-          visibleCaptureVisits={visibleCaptureVisits}
-          onStartCaptureSession={startCaptureSession}
-          onOpenCaptureWorkspace={openCaptureWorkspace}
-          onFinishCaptureSession={finishCaptureSession}
-          onUploadCapturePhotos={uploadCapturePhotos}
-          onSetCaptureSelectedMediaId={setCaptureSelectedMediaId}
-          onRouteCaptureToNewRequest={routeCaptureToNewRequest}
-          onMarkCaptureDecideLater={markCaptureDecideLater}
-          onSetCaptureSessionMode={setCaptureSessionMode}
-          onSetCaptureStatus={setCaptureStatus}
-          onLoadCaptureTargets={loadCaptureTargets}
-          onAssignCaptureToExistingClient={assignCaptureToExistingClient}
-          onReopenCaptureBatch={reopenCaptureBatch}
-          onSetCaptureSession={setCaptureSession}
-          onSetCaptureSessionOrigin={setCaptureSessionOrigin}
-          clientDisplayName={clientDisplayName}
-          clientPrimaryAddress={clientPrimaryAddress}
-          contactSummary={contactSummary}
-        />
-      </Suspense>
-    );
+    return <NexOpsCaptureModule
+      tenantId={operatorContext.tenantId}
+      clients={clients}
+      controller={captureController}
+      clientDisplayName={clientDisplayName}
+      clientPrimaryAddress={clientPrimaryAddress}
+      contactSummary={contactSummary}
+    />;
   }
 
   function renderSettings(): React.ReactElement {
