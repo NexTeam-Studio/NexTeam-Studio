@@ -1,10 +1,10 @@
 # NexOps - Requests
 
-Status: Ready for component worktree use.
+Status: Active with real server foundation ownership.
 
 ## HOW
 
-Owns request intake, details, lifecycle, and conversion contracts. Its authoritative paths, branch, and worktree directory are recorded in worktree-lanes.json. Run npm run check:worktree-scope before committing.
+Owns request intake, details, lifecycle, conversion contracts, and the real 1,254-line request service/foundation. The old `apps/server/src/crm/requestFoundation.ts` path is compatibility-only and contains no behavior. Its authoritative paths, branch, and worktree directory are recorded in worktree-lanes.json. Run npm run check:worktree-scope before committing.
 
 ## WHY
 

@@ -1,0 +1,33 @@
+Checkpoint: Request Core foundation extraction
+Date: 2026-07-27
+Browser opened: no
+
+BEFORE
+1254 apps/server/src/crm/requestFoundation.ts
+Request Core implementation file at target path: absent
+
+AFTER
+1254 apps/server/src/modules/nexops/areas/requests/components/requestCore/server/requestFoundation.ts
+1 apps/server/src/crm/requestFoundation.ts (compatibility export only)
+
+OWNERSHIP OUTPUT
+Worktree coverage check passed: 403/435 implementation files have exactly one owner.
+Known migration debt: 32 legacy CRM file(s) under apps/server/src/crm/.
+
+FOCUSED TEST OUTPUT
+tests 11
+pass 11
+fail 0
+
+BUILD OUTPUT
+server tsc -b: exit 0
+web vite build: exit 0
+modules transformed: 174
+
+FULL DEFAULT TEST OUTPUT
+No-browser test guard passed (67 default test files checked).
+tests 373
+pass 369
+fail 3
+skipped 1
+The failures are the unchanged known-red NexReach, NexDocs local Nexi, and Platform route tests.
