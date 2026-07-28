@@ -1,0 +1,35 @@
+Target architecture final proof
+
+Structure
+- Exact implementation ownership: 495/495 files.
+- Legacy CRM implementation debt: 0 files.
+- Component collision proof: 40 components, 780/780 pairs, zero overlaps outside the documented shared allowlist.
+- nexiToolRuntime.ts: 40 lines, dependency composition only.
+- routeRuntime.ts: 230 lines, composition and shared HTTP policy only.
+- NexOpsWorkspace.tsx: 1,159 lines, shared route/state coordination; Contact and NexCam owner-specific derivation/assembly removed.
+
+Build and static verification
+- Lint: pass.
+- Typecheck: pass.
+- Production build: pass, 176 transformed web modules.
+- Tenancy scan: pass, 446 files.
+- Admin tenant-write scan: pass, 314 source files, 16 transactional writes, 1 classified append-only generated-ID write.
+- Firestore index scan: pass, 10 compound query shapes.
+- Worktree scope: pass, nexteam-integration lane.
+- Provider boundary: pass, 526 files.
+- Blueprint naming: pass, 446 files.
+- Current-tree secret scan: pass, 1,555 tracked non-document files.
+- Reachable-history secret scan: pass, 461 commits and 9,231 objects.
+
+Tests
+- Focused final regression set: 22/22 pass.
+- Guarded default suite: 373 total, 372 pass, 0 fail, 1 intentional Admin-emulator skip.
+- Explicit Firestore Admin-isolation emulator suite: 5/5 pass.
+- No-browser guard: pass, 67 default test files checked.
+- No browser was opened.
+
+Final red-test resolution
+- NexReach and Field Docs assertions now follow the shared confirmation wording.
+- Direct local-loop approval tests carry the returned opaque pending-approval state, matching the real server conversation contract without exposing approval IDs in text.
+- Platform job-link fixtures use a stable future expiry instead of a date that became invalid on 2026-07-20.
+- No production behavior was changed to make these assertions pass.

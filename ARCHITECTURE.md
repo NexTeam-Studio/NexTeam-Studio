@@ -235,6 +235,7 @@ Do not hardcode new tool arrays in `nexiRoutes.ts`.
 - Root-level web helpers are no longer an informal ownership tier. Navigation/header/FAB/pattern-library/create-menu/notification code belongs to NexOps Shell; Home, Request Core, Contact creation, NexCam capture, and the NexDocs client workspace have feature owners; branding, UI primitives, communication templates, intake presentation, and signature capture live in named shared components. Web root now contains only the application bootstrap.
 - Global CSS follows the same ownership model. Component selectors live beside Request, Home, Contact, Visit, Nexi, Signature, UI Kit, Capture, Branding, or Shell; only cross-product foundation and responsive composition rules live under `shared/styles`. `shared/app/globalStyles.ts` is an order-only manifest and contains no selectors.
 - NexOps shell contracts and pure support are separate from stateful orchestration. `contracts/workspaceContracts.ts` defines the current composition/API shapes; `workspaceSupport.tsx` owns deterministic formatting, draft materialization, and shell glyphs. `NexOpsWorkspace.tsx` forwards their public exports for import compatibility but does not duplicate their implementation.
+- Contact owns selected-client derivation and form/rail setup; NexCam owns capture filtering and capture-surface assembly. `NexOpsWorkspace.tsx` retains only cross-area route and state coordination, so those feature changes do not reopen the shared shell.
 
 ## Phase C Notes [tag: phase-c-notes]
 
@@ -251,3 +252,12 @@ Do not hardcode new tool arrays in `nexiRoutes.ts`.
 
 - Keep the static Admin-write classifier and emulator suite in verification when new repositories are added. Firestore rules still do not constrain Admin SDK code, so every new caller-selected write must use the transaction-time tenant boundary rather than relying on rules or schema presence.
 - Existing Firebase users must be provisioned with a `tenantId` (or `tenant_id`) custom claim before they can use the operations workspace. This is an operational provisioning step, not a tenant-selection fallback.
+
+## Final Migration Proof [tag: final-migration-proof]
+
+- Exact ownership covers `495/495` implementation files and the legacy CRM root contains no implementation debt.
+- The collision gate covers 40 named components and all `780/780` pairs have zero implementation overlap outside the documented shared allowlist.
+- `nexiToolRuntime.ts` is 40 lines of dependency composition; `routeRuntime.ts` is 230 lines of composition and shared HTTP policy; `NexOpsWorkspace.tsx` is 1,159 lines of shared route/state coordination.
+- The production build transforms 176 web modules. Lint and typecheck pass.
+- The guarded default suite passes 372 tests with zero failures and one intentionally separate emulator test. The explicit Firestore Admin-isolation suite passes 5/5 without using a browser.
+- Tenancy, Admin-write classification, Firestore indexes, worktree scope/coverage, provider boundaries, blueprint naming, current-tree secrets, and reachable-history secrets all pass.

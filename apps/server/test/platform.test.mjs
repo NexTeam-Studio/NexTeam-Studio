@@ -354,7 +354,7 @@ test("platform routes manage tenant users and job links without leaking token ha
         propertyId: "property_isbell_road",
         externalName: "Subcontractor",
         externalEmail: "sub@example.test",
-        expiresAt: "2026-07-20T12:00:00.000Z"
+        expiresAt: "2099-07-20T12:00:00.000Z"
       })
     }).then((response) => response.json());
     assert.equal(link.ok, true);
@@ -367,7 +367,7 @@ test("platform routes manage tenant users and job links without leaking token ha
       body: JSON.stringify({
         jobId: "job_deborah_justice",
         externalName: "Subcontractor",
-        expiresAt: "2026-07-20T12:00:00.000Z",
+        expiresAt: "2099-07-20T12:00:00.000Z",
         returnToken: true
       })
     }).then((response) => response.json());

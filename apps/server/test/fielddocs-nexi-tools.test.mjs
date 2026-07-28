@@ -426,7 +426,7 @@ test("local Nexi chat can search documents, queue a folder, approve it, queue an
     env: {}
   });
   assert.equal(createFolderTurn.toolRuns[0].name, "createFolder");
-  assert.match(createFolderTurn.answer, /Approve this\? yes \/ no\./i);
+  assert.match(createFolderTurn.answer, /Is this correct\?\s*Reply yes \/ no\./i);
   assert.doesNotMatch(createFolderTurn.answer, /make changes/i);
 
   const approveFolderTurn = await runExplicitLocalToolLoop({
@@ -437,6 +437,7 @@ test("local Nexi chat can search documents, queue a folder, approve it, queue an
       { role: "assistant", content: createFolderTurn.answer },
       { role: "user", content: "yes" }
     ],
+    pendingApproval: createFolderTurn.pendingApproval,
     tools,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
@@ -458,7 +459,7 @@ test("local Nexi chat can search documents, queue a folder, approve it, queue an
     env: {}
   });
   assert.equal(uploadTurn.toolRuns[0].name, "uploadDocumentToFolder");
-  assert.match(uploadTurn.answer, /Approve this\? yes \/ no\./i);
+  assert.match(uploadTurn.answer, /Is this correct\?\s*Reply yes \/ no\./i);
   assert.doesNotMatch(uploadTurn.answer, /make changes/i);
   const [pendingUpload] = await approvalQueueRepository.listPending(tenant.id);
   assert.equal(pendingUpload.execute.op, "uploadNexDocsDocument");
@@ -475,6 +476,7 @@ test("local Nexi chat can search documents, queue a folder, approve it, queue an
       { role: "assistant", content: uploadTurn.answer },
       { role: "user", content: "yes" }
     ],
+    pendingApproval: uploadTurn.pendingApproval,
     tools,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",

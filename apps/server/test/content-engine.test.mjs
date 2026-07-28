@@ -525,8 +525,8 @@ test("NexReach local Nexi loop accepts underscore ids through generate, approve,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer"
   });
-  assert.match(approveTurn.answer, /Marketing draft ready/i);
-  assert.match(approveTurn.answer, /Approve this\? yes \/ no \/ make changes\./i);
+  assert.match(approveTurn.answer, /Here is your request, Operator\./i);
+  assert.match(approveTurn.answer, /Is this correct\?\s*Reply yes \/ no \/ make changes\./i);
 
   const yesTurn = await runExplicitLocalToolLoop({
     tenant: tenant(),
@@ -540,6 +540,7 @@ test("NexReach local Nexi loop accepts underscore ids through generate, approve,
     ],
     tools,
     cachedToolRuns: [...generateTurn.toolRuns, ...approveTurn.toolRuns],
+    pendingApproval: approveTurn.pendingApproval,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer"
   });

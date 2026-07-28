@@ -22,7 +22,7 @@ Operations Home is a global NexOps composition area. Its real service and notifi
 
 Cross-component approval contracts, lifecycle policy, tenant-scoped Firestore helpers, and the native CRM repository composer live under `apps/server/src/modules/nexops/shared`. Area components own their handlers and repositories; the global layer only defines contracts and combines them. Former CRM-root paths are compatibility exports only.
 
-The NexOps module manifest, route registrar, Nexi-tool registrar, and their current shared runtime contexts live under `apps/server/src/modules/nexops`. The CRM root contains compatibility exports only. Route validation and Nexi command input schemas live with their owning components. Contact and Quote Engine own their complete create-command flows; Contact and Request consume canonical address parsing from shared Address/Location, while Quote and Portal consume the shared exact-client resolver. Remaining cross-area service and command-orchestration helpers are still tracked for extraction.
+The NexOps module manifest, route registrar, Nexi-tool registrar, and their shared composition contexts live under `apps/server/src/modules/nexops`. The CRM root contains compatibility exports only. Route validation, Nexi command input, route support, and command orchestration live with their owning components. Contact and Request consume canonical address parsing from shared Address/Location, while Quote and Portal consume the shared exact-client resolver.
 
 ## KNOWN GOOD
 
@@ -39,3 +39,5 @@ Final Nexi runtime extraction: runtime `207 -> 40` lines and is dependency compo
 Route runtime extraction: `767 -> 230` lines with no feature implementation bodies. Shared runtime owns service selection and HTTP guards; Portal, Payment, Request, Quote, and Invoice own their route support. Exact ownership `486/486`, lint clean, build `174` modules, all `780/780` component pairs disjoint, full guarded non-browser suite `369/373` with the same three known reds and one emulator skip.
 
 Workspace owner composition: `NexOpsWorkspace.tsx` fell from `1,215 -> 1,159` lines. Contact owns client selection, related-record derivation, form setup, and custom-field synchronization. NexCam owns capture filtering and capture-surface assembly. The shell retains shared routing and state coordination only. Exact ownership `493/493`, lint clean, build `176` modules, all `780/780` component pairs disjoint, full guarded non-browser suite `369/373` with the same three known reds and one emulator skip.
+
+Final proof: exact ownership `495/495`; CRM implementation debt `0`; collision proof `780/780`; lint/typecheck/build green at 176 web modules; guarded default suite `372/373` with zero failures and one intentional emulator skip; explicit Firestore Admin-isolation suite `5/5`; tenancy, Admin-write, index, worktree, provider, blueprint, current-secret, and 461-commit history-secret gates green. No browser was opened.
