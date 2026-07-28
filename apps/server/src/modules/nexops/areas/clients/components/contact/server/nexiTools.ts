@@ -1,17 +1,15 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { clientLookupInputSchema, createClientInputSchema } from "./toolSchemas.js";
+import { clientSaveClarification, clientSaveMissingFields, queueClientCreateApproval } from "./toolSupport.js";
 
 export function createContactNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
     RailError,
     approvalQueue,
-    clientSaveClarification,
-    clientSaveMissingFields,
     dedupeClients,
     options,
     provider,
-    queueClientCreateApproval,
     source
   } = context;
   return [

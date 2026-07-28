@@ -22,7 +22,7 @@ Operations Home is a global NexOps composition area. Its real service and notifi
 
 Cross-component approval contracts, lifecycle policy, tenant-scoped Firestore helpers, and the native CRM repository composer live under `apps/server/src/modules/nexops/shared`. Area components own their handlers and repositories; the global layer only defines contracts and combines them. Former CRM-root paths are compatibility exports only.
 
-The NexOps module manifest, route registrar, Nexi-tool registrar, and their current shared runtime contexts live under `apps/server/src/modules/nexops`. The CRM root contains compatibility exports only. Route validation and Nexi command input schemas now live with their owning components. Shared workspace-access fields are the only global Nexi input contract. Cross-area service and command-orchestration helpers still present in the two runtimes remain tracked for extraction.
+The NexOps module manifest, route registrar, Nexi-tool registrar, and their current shared runtime contexts live under `apps/server/src/modules/nexops`. The CRM root contains compatibility exports only. Route validation and Nexi command input schemas live with their owning components. Contact owns its complete client-create command flow; Contact and Request consume canonical address parsing from shared Address/Location. Remaining cross-area service and command-orchestration helpers are still tracked for extraction.
 
 ## KNOWN GOOD
 

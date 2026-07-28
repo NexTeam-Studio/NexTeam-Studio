@@ -1,6 +1,7 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { createRequestToolInputSchema, getRequestDetailInputSchema, listRequestsInputSchema } from "./toolSchemas.js";
+import { normalizedPhone, parseRequestAddress } from "../../../../../../../shared/addressLocation/requestAddressTools.js";
 
 export function createRequestCoreNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
@@ -12,10 +13,8 @@ export function createRequestCoreNexiTools(context: CrmToolContext, includeWrite
     ensureRequestForms,
     findRequestFieldLabel,
     mergedCreateRequestInput,
-    normalizedPhone,
     notifyRequestCreated,
     options,
-    parseRequestAddress,
     requestFieldText,
     requestMatchesQuery,
     requestQueryValue,

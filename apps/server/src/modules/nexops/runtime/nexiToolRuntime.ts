@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { addressSchema, clientCommunicationSettingsSchema, clientContactSchema, parseAddress, RailError, sanitizeAddressText, personNameSchema, type ApprovalQueueService, type Client, type CRMProvider, type Invoice, type Job, type Quote, type ServiceRequest, type Source, type Tenant } from "@nexteam/core";
+import { RailError, type ApprovalQueueService, type Client, type CRMProvider, type Invoice, type Job, type Quote, type ServiceRequest, type Source, type Tenant } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../../../comms/gmailRegistry.js";
 import type { AccessContext } from "../../../auth/accessContext.js";
@@ -11,7 +11,6 @@ import type { PortalHubService } from "../../nexportal/components/portalCore/ser
 import type { ReviewSequenceService } from "../../../reputation/reviewSequenceService.js";
 import { availableRequestFields, buildServiceRequest, defaultRequestForms, ensureRequestForms, notifyRequestCreated } from "../areas/requests/components/requestCore/server/requestFoundation.js";
 import { ensureQuoteConfiguration, materializeQuoteRecord, quoteComposerInputSchema, quotePreviewBody } from "../areas/quotes/components/quoteEngine/domain/quoteFoundation.js";
-import type { CreateClientInput } from "../areas/clients/components/contact/server/toolSchemas.js";
 import type { createQuoteToolInputSchema } from "../areas/quotes/components/quoteEngine/server/toolSchemas.js";
 import { getActivityFeedInputSchema, getHomeQueuesInputSchema, getScheduleInputSchema } from "../areas/home/components/operationsHub/server/toolSchemas.js";
 import type { createRequestToolInputSchema } from "../areas/requests/components/requestCore/server/toolSchemas.js";
@@ -20,7 +19,6 @@ import type { scheduleJobVisitsToolInputSchema, shiftJobVisitSeriesToolInputSche
 import type { reviewSequenceActionInputSchema } from "../../../reputation/reviewSequenceToolSchemas.js";
 import type { workspaceRoleSchema } from "../shared/tools/workspaceAccessSchemas.js";
 
-export type { CreateClientInput };
 
 interface InvoiceReadableProvider extends CRMProvider {
   getInvoices?: () => Promise<Invoice[]>;
@@ -61,9 +59,6 @@ function shiftIso(value: string, deltaMs: number): string {
   return next.toISOString();
 }
 
-function normalizedPhone(value: string): string {
-  return value.replace(/\D+/g, "");
-}
 
 function slugifyToken(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "item";
@@ -137,147 +132,7 @@ function catalogCodeSeed(value: string): string {
     || "CUSTOM";
 }
 
-function parseRequestAddress(value: string): { street1: string; city: string; province: string; postalCode: string } | null {
-  const parsed = parseAddress(value);
-  if (!parsed) {
-    return null;
-  }
-  const {
-    ...address
-  } = parsed;
-  return address;
-}
 
-function sanitizeRequestAddress(value: string): string {
-  return sanitizeAddressText(value);
-}
-
-function hasClientSavePhone(input: CreateClientInput): boolean {
-  return input.phones.some((phone) => phone.trim().length > 0)
-    || (input.contacts ?? []).some((contact) => contact.phones.some((phone) => phone.value.trim().length > 0));
-}
-
-export function clientSaveMissingFields(input: CreateClientInput): string[] {
-  const missing: string[] = [];
-  if (!input.name.trim()) {
-    missing.push("name");
-  }
-  if (!input.address?.trim()) {
-    missing.push("address");
-  }
-  if (!hasClientSavePhone(input)) {
-    missing.push("telephone");
-  }
-  return missing;
-}
-
-export function clientSaveClarification(missing: string[]): string {
-  const summary = missing.length === 1
-    ? missing[0]
-    : `${missing.slice(0, -1).join(", ")}, and ${missing.at(-1)}`;
-  return `I still need ${summary} before I can save this client. Email is helpful, but it is not required.`;
-}
-
-function queuedClientRecord(tenantId: string, input: CreateClientInput) {
-  const parsedAddress = input.address ? parseRequestAddress(input.address) : null;
-  return {
-    tenantId,
-    name: input.name,
-    ...(input.company ? { company: input.company } : {}),
-    ...(input.personName ? { personName: input.personName } : {}),
-    ...(input.displayNamePreference ? { displayNamePreference: input.displayNamePreference } : {}),
-    ...(input.billingAddress ? { billingAddress: input.billingAddress } : parsedAddress ? {
-      billingAddress: {
-        ...parsedAddress,
-        country: "USA"
-      }
-    } : {}),
-    ...(input.billingSameAsPrimaryProperty !== undefined ? { billingSameAsPrimaryProperty: input.billingSameAsPrimaryProperty } : {}),
-    ...(input.contacts ? { contacts: input.contacts } : {}),
-    ...(input.communicationSettings ? { communicationSettings: input.communicationSettings } : {}),
-    emails: input.emails,
-    phones: input.phones,
-    consent: input.consent
-  };
-}
-
-function queuedClientPrimaryProperty(
-  tenantId: string,
-  client: ReturnType<typeof queuedClientRecord>,
-  input: CreateClientInput
-) {
-  const parsedAddress = input.address ? parseRequestAddress(input.address) : null;
-  if (!parsedAddress) {
-    return undefined;
-  }
-  return {
-    tenantId,
-    label: "Primary service address",
-    siteName: input.company?.trim() || client.name,
-    address: {
-      ...parsedAddress,
-      country: "USA"
-    },
-    billingAddressSameAsClient: true
-  };
-}
-
-function queuedClientPreviewBody(client: ReturnType<typeof queuedClientRecord>, input: CreateClientInput): string {
-  const parsedAddress = input.address ? parseRequestAddress(input.address) : null;
-  const contactSummary = (client.contacts ?? []).map((contact) => {
-    const person = [contact.personName?.firstName, contact.personName?.lastName].filter(Boolean).join(" ");
-    const channels = contact.channelPreference === "both" ? "email + one-way text" : contact.channelPreference;
-    return `${person || contact.company || "Contact"}: ${channels}`;
-  });
-  return [
-    `Name: ${client.name}`,
-    client.company ? `Company: ${client.company}` : "",
-    client.displayNamePreference ? `Display as: ${client.displayNamePreference === "company" ? "company name" : "first and last name"}` : "",
-    client.emails.length ? `Email: ${client.emails.join(", ")}` : "Email: not provided",
-    client.phones.length ? `Phone: ${client.phones.join(", ")}` : "",
-    contactSummary.length ? `Contacts: ${contactSummary.join("; ")}` : "",
-    parsedAddress ? `Address: ${parsedAddress.street1}` : "",
-    parsedAddress ? `City: ${parsedAddress.city}` : "",
-    parsedAddress ? `State: ${parsedAddress.province}` : "",
-    parsedAddress?.postalCode ? `ZIP: ${parsedAddress.postalCode}` : "",
-    client.billingSameAsPrimaryProperty === false ? "Billing address: separate address on file" : "",
-    !parsedAddress && input.address ? `Address: ${sanitizeRequestAddress(input.address)}` : ""
-  ].filter(Boolean).join("\n");
-}
-
-export async function queueClientCreateApproval(
-  tenant: Tenant,
-  input: CreateClientInput,
-  approvalQueue: ApprovalQueueService
-): Promise<{ approval: Awaited<ReturnType<ApprovalQueueService["create"]>>; pendingClient: ReturnType<typeof queuedClientRecord>; addressNote?: string | undefined; writesAreApprovalQueuedOnly: true }> {
-  const client = queuedClientRecord(tenant.id, input);
-  const primaryProperty = queuedClientPrimaryProperty(tenant.id, client, input);
-  const approval = await approvalQueue.create({
-    tenantId: tenant.id,
-    kind: "client",
-    preview: {
-      title: `Create client: ${client.name}`,
-      body: queuedClientPreviewBody(client, input)
-    },
-    execute: {
-      service: "crm",
-      op: "createClient",
-      args: {
-        tenantId: tenant.id,
-        client,
-        ...(primaryProperty ? { primaryProperty } : {}),
-        ...(input.address ? { addressNote: input.address } : {})
-      }
-    },
-    createdBy: "nexi"
-  });
-  return {
-    approval,
-    pendingClient: client,
-    addressNote: input.address,
-    writesAreApprovalQueuedOnly: true
-  };
-}
 
 async function queueQuoteCreateApproval(
   tenant: Tenant,
@@ -1013,15 +868,10 @@ export function createCrmToolContext(
   return {
     RailError,
     activeScheduledVisit,
-    addressSchema,
     approvalQueue: approvalQueue as ApprovalQueueService,
     availableRequestFields,
     buildServiceRequest,
     catalogCodeSeed,
-    clientCommunicationSettingsSchema,
-    clientContactSchema,
-    clientSaveClarification,
-    clientSaveMissingFields,
     defaultRange,
     defaultRequestForms,
     dedupeClients,
@@ -1030,31 +880,22 @@ export function createCrmToolContext(
     findRequestFieldLabel,
     formatVisitPreviewMoment,
     groupJobs,
-    hasClientSavePhone,
     isoRangeForDay,
     jobMatchesQuery,
     jsonClone,
     materializeJobLineItems,
     materializeQuoteRecord,
     mergedCreateRequestInput,
-    normalizedPhone,
     notifyRequestCreated,
     normalized,
     options,
-    parseAddress,
     parseLooseCreateRequestInput,
-    parseRequestAddress,
-    personNameSchema,
     provider,
-    queueClientCreateApproval,
     queueJobActionApproval,
     queueJobCreateApproval,
     queueQuoteCreateApproval,
     queueScheduleJobVisitsApproval,
     queueShiftJobVisitSeriesApproval,
-    queuedClientPreviewBody,
-    queuedClientPrimaryProperty,
-    queuedClientRecord,
     quoteComposerInputSchema,
     quoteMatchesQuery,
     quotePreviewBody,
@@ -1074,8 +915,6 @@ export function createCrmToolContext(
     resolveVisitAssignmentIds,
     resolveVisitShiftAnchor,
     resolveWorkspaceAccess,
-    sanitizeAddressText,
-    sanitizeRequestAddress,
     shiftIso,
     simplifiedRequestQuery,
     slugifyToken,

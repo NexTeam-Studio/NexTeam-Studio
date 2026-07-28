@@ -1,0 +1,10 @@
+Contact Nexi orchestration extraction
+
+- Contact toolSupport.ts now owns client missing-field checks, clarification text, queued record/property construction, approval preview, and ApprovalQueue creation.
+- shared/addressLocation/requestAddressTools.ts owns normalized telephone and canonical request-address parsing/sanitization used by Contact and Request.
+- modules/nexops/runtime/nexiToolRuntime.ts fell from 1,087 to 926 lines; moved logic was removed, not copied.
+- Typecheck and lint pass.
+- Focused CRM and Request tests pass 24/24.
+- Build passes at 174 modules.
+- Full guarded non-browser suite: 373 total, 369 pass, 3 unchanged known reds, 1 intentional emulator skip.
+- No browser was opened.

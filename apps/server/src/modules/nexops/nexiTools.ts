@@ -12,8 +12,9 @@ import { createTenantConfigNexiTools } from "./areas/settings/components/tenantC
 import { createInvoiceStructureNexiTools } from "./areas/invoices/components/invoiceStructure/server/nexiTools.js";
 import { createPortalCoreNexiTools } from "../nexportal/components/portalCore/server/nexiTools.js";
 
-export type { CreateClientInput, CrmReadToolOptions } from "./runtime/nexiToolRuntime.js";
-export { clientSaveClarification, clientSaveMissingFields, queueClientCreateApproval } from "./runtime/nexiToolRuntime.js";
+export type { CreateClientInput } from "./areas/clients/components/contact/server/toolSchemas.js";
+export type { CrmReadToolOptions } from "./runtime/nexiToolRuntime.js";
+export { clientSaveClarification, clientSaveMissingFields, queueClientCreateApproval } from "./areas/clients/components/contact/server/toolSupport.js";
 
 
 
