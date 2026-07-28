@@ -1,10 +1,10 @@
 # NexPortal
 
-Status: Physical worktree created and scope-verified.
+Status: Active with real portal implementation ownership.
 
 ## HOW
 
-Owns the customer-facing portal, portal sessions, branded customer views, and customer actions such as approvals, uploads, and confirmations.
+Owns the customer-facing portal, portal sessions, branded customer views, and customer actions such as approvals, uploads, and confirmations. Its real HTML, repository, and service implementations now live under Portal Core; the old `apps/server/src/crm/portalHub*` files are compatibility-only exports.
 
 ## WHY
 
@@ -20,4 +20,4 @@ NexPortal consumes tenant-scoped records through explicit server contracts. It n
 
 ## KNOWN GOOD
 
-Verified baseline: `9b2132c`. Worktree `nexportal`, branch `codex/lane/nexportal`; clean checkout and scope guard passed.
+Physical lane baseline: `9b2132c`. Real Portal Core extraction is recorded in `receipts/architecture/nexportal-core-extraction.txt`.
