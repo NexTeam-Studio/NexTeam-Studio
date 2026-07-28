@@ -1,4 +1,4 @@
-import type { NexiTool, Tenant } from "@nexteam/core";
+import type { CRMProvider, Invoice, NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { invoiceStatusInputSchema } from "./toolSchemas.js";
 
@@ -6,9 +6,10 @@ export function createInvoiceStructureNexiTools(context: CrmToolContext, _includ
   const {
     RailError,
     options,
-    readable,
+    provider,
     source
   } = context;
+  const readable = provider as CRMProvider & { getInvoices?: () => Promise<Invoice[]> };
   return [
     ...[{
       name: "invoiceStatus",

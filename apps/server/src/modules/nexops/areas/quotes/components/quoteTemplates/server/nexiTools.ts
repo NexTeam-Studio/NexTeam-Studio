@@ -1,11 +1,11 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { listQuoteTemplatesInputSchema } from "./toolSchemas.js";
+import { ensureQuoteConfiguration } from "../../quoteEngine/domain/quoteFoundation.js";
 
 export function createQuoteTemplateNexiTools(context: CrmToolContext, _includeWrites: boolean): NexiTool[] {
   const {
     RailError,
-    ensureQuoteConfiguration,
     options,
     source
   } = context;

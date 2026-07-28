@@ -1,0 +1,10 @@
+Nexi runtime composition boundary
+
+- Operations Home owns schedule, activity, home-queue, and pipeline behavior.
+- NexPortal owns review-sequence resolution and calls shared exact-client and Job Core contracts.
+- Contact, Catalog, Tenant Config, Quote Templates, and Invoice Structure own their convenience behavior directly.
+- modules/nexops/runtime/nexiToolRuntime.ts fell from 207 to 40 lines and now only types dependencies and composes context.
+- Lint passes; exact worktree ownership passes at 486/486 implementation files.
+- Build passes at 174 modules; all 40 components and 780 collision pairs remain disjoint.
+- Full guarded non-browser suite: 373 total, 369 pass, 3 unchanged known reds, 1 intentional emulator skip.
+- No browser was opened.

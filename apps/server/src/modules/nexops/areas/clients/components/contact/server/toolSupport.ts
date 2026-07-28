@@ -1,6 +1,15 @@
-import type { ApprovalQueueService, Tenant } from "@nexteam/core";
+import type { ApprovalQueueService, Client, Tenant } from "@nexteam/core";
 import { parseRequestAddress, sanitizeRequestAddress } from "../../../../../../../shared/addressLocation/requestAddressTools.js";
 import type { CreateClientInput } from "./toolSchemas.js";
+
+export function dedupeClients(clients: Client[]): Client[] {
+  const seen = new Set<string>();
+  return clients.filter((client) => {
+    if (seen.has(client.id)) return false;
+    seen.add(client.id);
+    return true;
+  });
+}
 
 export function hasClientSavePhone(input: CreateClientInput): boolean {
   return input.phones.some((phone) => phone.trim().length > 0)

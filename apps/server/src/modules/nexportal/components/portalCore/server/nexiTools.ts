@@ -1,16 +1,37 @@
-import type { NexiTool, Tenant } from "@nexteam/core";
+import { RailError, type NexiTool, type Tenant } from "@nexteam/core";
+import type { z } from "zod";
 import type { CrmToolContext } from "../../../../nexops/runtime/nexiToolRuntime.js";
 import { clientPortalActivityInputSchema, sendPortalLinkInputSchema, sendStatementToolInputSchema, statementToolInputSchema } from "./toolSchemas.js";
 import { reviewSequenceActionInputSchema, reviewSequenceStatusInputSchema, startReviewSequenceToolInputSchema } from "../../../../../reputation/reviewSequenceToolSchemas.js";
 import { resolveJobForAction } from "../../../../nexops/areas/jobs/components/jobCore/server/toolSupport.js";
+import { resolveExactClientId } from "../../../../nexops/shared/tools/clientResolution.js";
+import type { JobLifecycleService } from "../../../../nexops/areas/jobs/components/jobCore/server/jobLifecycleService.js";
+import type { ReviewSequenceService } from "../../../../../reputation/reviewSequenceService.js";
+
+async function resolveReviewSequenceIdForAction(
+  tenantId: string,
+  input: z.infer<typeof reviewSequenceActionInputSchema>,
+  reviewSequenceService: ReviewSequenceService,
+  jobLifecycleService: JobLifecycleService
+): Promise<string> {
+  if (input.reviewSequenceId?.trim()) return input.reviewSequenceId.trim();
+  const job = await resolveJobForAction(tenantId, { jobId: input.jobId, query: input.jobQuery }, jobLifecycleService);
+  const status = await reviewSequenceService.listStatus(tenantId, { jobId: job.id });
+  if (status.sequences.length !== 1) {
+    throw new RailError("I need one exact review sequence for that job before I can continue.", {
+      provider: "native",
+      op: "reviewSequenceAction",
+      status: 400
+    });
+  }
+  return status.sequences[0]!.id;
+}
 
 export function createPortalCoreNexiTools(context: CrmToolContext, _includeWrites: boolean): NexiTool[] {
   const {
     RailError,
     options,
     provider,
-    resolveExactClientId,
-    resolveReviewSequenceIdForAction,
     source,
   } = context;
   return [

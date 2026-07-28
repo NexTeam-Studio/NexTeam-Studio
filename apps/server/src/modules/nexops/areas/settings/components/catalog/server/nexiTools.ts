@@ -2,12 +2,19 @@ import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { listCatalogItemsInputSchema, saveCatalogItemInputSchema } from "./toolSchemas.js";
 
+function slugifyToken(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "item";
+}
+
+function catalogCodeSeed(value: string): string {
+  return value.toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim().split(/\s+/)
+    .slice(0, 4).map((segment) => segment.slice(0, 3)).join("-") || "CUSTOM";
+}
+
 export function createCatalogNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
     RailError,
-    catalogCodeSeed,
     options,
-    slugifyToken,
     source
   } = context;
   return [

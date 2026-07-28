@@ -2,11 +2,14 @@ import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { listCommunicationTemplatesInputSchema, listTeamMembersInputSchema, saveCommunicationTemplateInputSchema } from "./toolSchemas.js";
 
+function slugifyToken(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "item";
+}
+
 export function createTenantConfigNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
     RailError,
     options,
-    slugifyToken,
     source
   } = context;
   return [

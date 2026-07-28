@@ -33,3 +33,5 @@ Quote Nexi orchestration extraction: runtime `926 -> 791` lines, exact ownership
 Job/Visit Nexi orchestration extraction: runtime `791 -> 320` lines, exact ownership `482/482`, lint clean, build `174` modules, all `780/780` component pairs disjoint, full guarded non-browser suite `369/373` with the same three known reds and one emulator skip. Job Core's exact-job resolver is its public server contract for Visit and NexPortal; shared workspace access resolution remains global policy.
 
 Request Nexi orchestration extraction: runtime `320 -> 207` lines, focused Request tests `3/3`, exact ownership `485/485`, lint clean, build `174` modules, all `780/780` component pairs disjoint, full guarded non-browser suite `369/373` with the same three known reds and one emulator skip.
+
+Final Nexi runtime extraction: runtime `207 -> 40` lines and is dependency composition only. Home and Portal own their readers/resolvers; small convenience behavior is owner-local. Exact ownership `486/486`, lint clean, build `174` modules, all `780/780` component pairs disjoint, full guarded non-browser suite `369/373` with the same three known reds and one emulator skip.
