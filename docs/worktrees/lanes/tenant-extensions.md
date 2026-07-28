@@ -1,6 +1,6 @@
 # Tenant Extensions
 
-Status: Registered for physical worktree creation.
+Status: Physical worktree created and scope-verified.
 
 ## HOW
 
@@ -20,4 +20,4 @@ Each extension exposes a tenant-aware command/query contract and entitlement met
 
 ## KNOWN GOOD
 
-Initial registry checkpoint pending verification.
+Verified baseline: `9b2132c`. Worktree `tenant-extensions`, branch `codex/lane/tenant-extensions`; clean checkout and scope guard passed.

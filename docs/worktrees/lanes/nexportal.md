@@ -1,6 +1,6 @@
 # NexPortal
 
-Status: Registered for physical worktree creation.
+Status: Physical worktree created and scope-verified.
 
 ## HOW
 
@@ -20,4 +20,4 @@ NexPortal consumes tenant-scoped records through explicit server contracts. It n
 
 ## KNOWN GOOD
 
-Initial registry checkpoint pending verification.
+Verified baseline: `9b2132c`. Worktree `nexportal`, branch `codex/lane/nexportal`; clean checkout and scope guard passed.

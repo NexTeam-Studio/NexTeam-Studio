@@ -1,6 +1,6 @@
 # NexComms
 
-Status: Registered for physical worktree creation.
+Status: Physical worktree created and scope-verified.
 
 ## HOW
 
@@ -20,4 +20,4 @@ Other modules request approved communication through typed commands. NexComms ow
 
 ## KNOWN GOOD
 
-Initial registry checkpoint pending verification.
+Verified baseline: `9b2132c`. Worktree `nexcomms`, branch `codex/lane/nexcomms`; clean checkout and scope guard passed.

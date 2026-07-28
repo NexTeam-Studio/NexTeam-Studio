@@ -1,0 +1,23 @@
+Checkpoint: missing module physical worktrees
+Date: 2026-07-27
+Browser opened: no
+
+nexteam-mobile
+branch=codex/lane/nexteam-mobile head=9b2132c clean=True
+scope=passed, 0 changed files
+
+nexportal
+branch=codex/lane/nexportal head=9b2132c clean=True
+scope=passed, 0 changed files
+
+nexcomms
+branch=codex/lane/nexcomms head=9b2132c clean=True
+scope=passed, 0 changed files
+
+tenant-extensions
+branch=codex/lane/tenant-extensions head=9b2132c clean=True
+scope=passed, 0 changed files
+
+provider-integrations
+branch=codex/lane/provider-integrations head=9b2132c clean=True
+scope=passed, 0 changed files

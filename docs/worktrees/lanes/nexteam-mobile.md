@@ -1,6 +1,6 @@
 # NexTeam - Mobile
 
-Status: Registered for physical worktree creation.
+Status: Physical worktree created and scope-verified.
 
 ## HOW
 
@@ -20,4 +20,4 @@ Expose tenant-aware mobile session, schedule, capture, and synchronization contr
 
 ## KNOWN GOOD
 
-Initial registry checkpoint pending verification.
+Verified baseline: `9b2132c`. Worktree `nexteam-mobile`, branch `codex/lane/nexteam-mobile`; clean checkout and scope guard passed.

@@ -1,6 +1,6 @@
 # Provider Integrations
 
-Status: Registered for physical worktree creation.
+Status: Physical worktree created and scope-verified.
 
 ## HOW
 
@@ -20,4 +20,4 @@ Adapters expose the smallest capability needed by product modules. Secrets are r
 
 ## KNOWN GOOD
 
-Initial registry checkpoint pending verification.
+Verified baseline: `9b2132c`. Worktree `provider-integrations`, branch `codex/lane/provider-integrations`; clean checkout and scope guard passed.
