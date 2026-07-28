@@ -35,3 +35,5 @@ Job/Visit Nexi orchestration extraction: runtime `791 -> 320` lines, exact owner
 Request Nexi orchestration extraction: runtime `320 -> 207` lines, focused Request tests `3/3`, exact ownership `485/485`, lint clean, build `174` modules, all `780/780` component pairs disjoint, full guarded non-browser suite `369/373` with the same three known reds and one emulator skip.
 
 Final Nexi runtime extraction: runtime `207 -> 40` lines and is dependency composition only. Home and Portal own their readers/resolvers; small convenience behavior is owner-local. Exact ownership `486/486`, lint clean, build `174` modules, all `780/780` component pairs disjoint, full guarded non-browser suite `369/373` with the same three known reds and one emulator skip.
+
+Route runtime extraction: `767 -> 230` lines with no feature implementation bodies. Shared runtime owns service selection and HTTP guards; Portal, Payment, Request, Quote, and Invoice own their route support. Exact ownership `486/486`, lint clean, build `174` modules, all `780/780` component pairs disjoint, full guarded non-browser suite `369/373` with the same three known reds and one emulator skip.

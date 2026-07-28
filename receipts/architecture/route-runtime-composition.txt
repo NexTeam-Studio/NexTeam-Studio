@@ -1,0 +1,13 @@
+Route runtime composition boundary
+
+- shared/runtime/routeComposition.ts owns repository and service selection.
+- shared/runtime/routeHttpSupport.ts owns generic HTTP error, tenant, origin, and office-access policy.
+- NexPortal owns portal sessions, tenant paths, branding, technician labels, and protected-file delivery.
+- Payment Rails owns quick-payment invoice creation/delivery and Stripe/PayPal checkout orchestration.
+- Request Core owns request creation/notification, request lookup, field visibility sanitization, and form presentation.
+- Quote Engine owns quote lookup/expiry synchronization and quote delivery.
+- Invoice Structure owns invoice lookup with ledger/provider fallback.
+- modules/nexops/runtime/routeRuntime.ts fell from 767 to 230 lines and contains no feature implementation bodies.
+- Lint passes; exact ownership passes at 486/486; build passes at 174 modules; all 780 collision pairs remain zero.
+- Full guarded non-browser suite: 373 total, 369 pass, 3 unchanged known reds, 1 intentional emulator skip.
+- No browser was opened.
