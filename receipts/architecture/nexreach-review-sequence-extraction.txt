@@ -1,0 +1,17 @@
+NexReach review-sequence extraction
+
+Ownership change
+- apps/server/src/crm/reviewSequenceRepository.ts: real implementation moved; legacy path is a one-line compatibility export.
+- apps/server/src/crm/reviewSequenceService.ts: real implementation moved; legacy path is a one-line compatibility export.
+- apps/server/src/reputation/reviewSequenceRepository.ts: NexReach-owned tenant-scoped persistence implementation.
+- apps/server/src/reputation/reviewSequenceService.ts: NexReach-owned review follow-up orchestration.
+- Ledger and communication-template dependencies now import their owning NexOps components directly.
+
+Verification
+- npm run typecheck: pass.
+- focused ESLint: pass.
+- client-hub-review-followup.test.mjs + reputation.test.mjs: 12/12 pass.
+- npm run check:worktree-coverage: 416/441 implementation files exactly owned; 25 temporary legacy CRM files remain; zero multiply-owned files.
+- npm run build: pass; Vite transformed 174 modules.
+- npm test: no-browser guard passed across 67 default test files; 373 total, 369 pass, 3 known red, 1 intentional Admin SDK emulator skip.
+- No browser was opened.
