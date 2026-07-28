@@ -1,7 +1,7 @@
 import type { Firestore } from "firebase-admin/firestore";
 import { crmSettingsSchema, type CrmSettings } from "@nexteam/core";
 import { defaultCrmSettings } from "@nexteam/providers";
-import { asDocumentData } from "../../../../../../../crm/firestoreRepositoryBase.js";
+import { asDocumentData } from "../../../../../shared/persistence/firestoreRepositoryBase.js";
 import { requireTenantMatch } from "../../../../../../../core/tenantConfig.js";
 import { setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 

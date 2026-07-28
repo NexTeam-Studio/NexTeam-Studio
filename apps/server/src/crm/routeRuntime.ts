@@ -22,7 +22,7 @@ import { renderPortalAppointmentsHtml, renderPortalDocumentsHtml, renderPortalHo
 import type { PortalHubService } from "./portalHubService.js";
 import type { PortalSessionRecord } from "./portalHubRepository.js";
 import type { ReviewSequenceService } from "./reviewSequenceService.js";
-import { FirestoreNativeCrmRepository } from "./nativeRepository.js";
+import { FirestoreNativeCrmRepository } from "../modules/nexops/shared/persistence/nativeRepository.js";
 import { archiveQuoteVersion, createPortalToken, ensureQuoteConfiguration, hashPortalToken, materializeQuoteRecord, portalQuoteApprovalInputSchema, portalQuoteChangeRequestInputSchema, portalUrlForQuote, quoteApprovalBlockedReason, quoteComposerInputSchema, quoteDeliveryMessage, quoteLocked, quoteRenewInputSchema, quoteTemplateInputSchema, syncExpiredQuote } from "./quoteFoundation.js";
 import { crmSettingsPatchSchema } from "../modules/nexops/areas/settings/components/tenantConfig/domain/crmSettingsPatchSchema.js";
 import { buildInvoiceDraftFromJobs, buildInvoiceDraftFromQuote, buildQuickPaymentRequestInvoice } from "./invoiceFoundation.js";

@@ -13,7 +13,7 @@ import { CommsApprovalExecutor } from "../comms/approvalExecutor.js";
 import { createCommsRailFromEnv, type CommsRail } from "../comms/gmailRegistry.js";
 import { FirestoreApprovalQueueRepository } from "../approval/firestoreRepository.js";
 import { FirestoreContentRepository, InMemoryContentRepository, type ContentRepository } from "../content/repository.js";
-import { FirestoreNativeCrmRepository } from "../crm/nativeRepository.js";
+import { FirestoreNativeCrmRepository } from "../modules/nexops/shared/persistence/nativeRepository.js";
 import { getAdminDb } from "../firebase.js";
 import { MemoryStorageWriter, type StorageWriter } from "../platform/backup.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository, type PlatformRepository } from "../platform/repository.js";

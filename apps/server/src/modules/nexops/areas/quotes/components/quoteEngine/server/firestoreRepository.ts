@@ -2,7 +2,7 @@ import type { Firestore } from "firebase-admin/firestore";
 import { quoteSchema, RailError, type Quote } from "@nexteam/core";
 
 
-import { asDocumentData, createTenantFirestoreReader } from "../../../../../../../crm/firestoreRepositoryBase.js";
+import { asDocumentData, createTenantFirestoreReader } from "../../../../../shared/persistence/firestoreRepositoryBase.js";
 import { setTenantOwnedDocument, updateTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createQuoteFirestoreRepository(db: Firestore) {

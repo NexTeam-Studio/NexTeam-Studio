@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { RailError, type NewClient, type Property } from "@nexteam/core";
-import * as contracts from "../../../../../../../crm/approvalContracts.js";
-import { type CrmApprovalHandler } from "../../../../../../../crm/approvalHandler.js";
+import * as contracts from "../../../../../shared/approval/contracts.js";
+import { type CrmApprovalHandler } from "../../../../../shared/approval/handler.js";
 
 const {
   createClientApprovalArgsSchema

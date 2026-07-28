@@ -5,7 +5,7 @@ import { InMemoryEventBus, RailError, type CaptureBatch, type EventBus, type Med
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { UsageLogWriter } from "@nexteam/nexi";
 import { requireTenantRole } from "../auth/accessContext.js";
-import { FirestoreNativeCrmRepository } from "../crm/nativeRepository.js";
+import { FirestoreNativeCrmRepository } from "../modules/nexops/shared/persistence/nativeRepository.js";
 import type { LedgerService } from "../crm/ledgerFoundation.js";
 import { materializeRequestCaptureContext } from "../crm/requestFoundation.js";
 import { getAdminDb, getAdminStorageBucket } from "../firebase.js";

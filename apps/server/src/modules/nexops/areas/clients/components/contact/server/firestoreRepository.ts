@@ -2,7 +2,7 @@ import type { Firestore } from "firebase-admin/firestore";
 import { clientSchema, propertySchema, type Client, type Property } from "@nexteam/core";
 
 
-import { asDocumentData, createTenantFirestoreReader } from "../../../../../../../crm/firestoreRepositoryBase.js";
+import { asDocumentData, createTenantFirestoreReader } from "../../../../../shared/persistence/firestoreRepositoryBase.js";
 import { deleteTenantOwnedDocument, setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createContactFirestoreRepository(db: Firestore) {

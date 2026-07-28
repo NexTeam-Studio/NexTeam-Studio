@@ -1,7 +1,7 @@
 
 import { RailError } from "@nexteam/core";
-import * as contracts from "../../../../../../../crm/approvalContracts.js";
-import { requireJobLifecycleService, type CrmApprovalHandler } from "../../../../../../../crm/approvalHandler.js";
+import * as contracts from "../../../../../shared/approval/contracts.js";
+import { requireJobLifecycleService, type CrmApprovalHandler } from "../../../../../shared/approval/handler.js";
 
 const {
   scheduleJobVisitSeriesApprovalArgsSchema,

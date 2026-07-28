@@ -3,7 +3,7 @@ import { getPoolLeakCatalogItem } from "@nexteam/industry-packs";
 import { RailError, quoteApprovalRulesSchema, quoteDiscountSchema, paymentSchedulePlanSchema, quoteSchema, type CrmSettings, type IntakeSnapshot, type LineItem, type Quote, type QuoteApprovalRules, type QuoteDepositBridge, type QuoteDiscount, type QuoteStatus, type QuoteTemplate, type QuoteTotals } from "@nexteam/core";
 import { z } from "zod";
 import type { NativeCrmRepository } from "@nexteam/providers";
-import { reserveDocumentNumber } from "../../../../../../../crm/documentNumbering.js";
+import { reserveDocumentNumber } from "../../../../../../../shared/numbering/numberingService.js";
 import { ensureQuoteConfiguration } from "../../quoteTemplates/server/quoteTemplateService.js";
 
 export { ensureQuoteConfiguration, quoteTemplateInputSchema } from "../../quoteTemplates/server/quoteTemplateService.js";

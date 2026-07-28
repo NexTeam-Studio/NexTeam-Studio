@@ -2,7 +2,7 @@ import type { Firestore } from "firebase-admin/firestore";
 import { quoteTemplateSchema, type QuoteTemplate } from "@nexteam/core";
 import { defaultQuoteTemplates } from "@nexteam/providers";
 
-import { asDocumentData, createTenantFirestoreReader } from "../../../../../../../crm/firestoreRepositoryBase.js";
+import { asDocumentData, createTenantFirestoreReader } from "../../../../../shared/persistence/firestoreRepositoryBase.js";
 import { setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createQuoteTemplateFirestoreRepository(db: Firestore) {

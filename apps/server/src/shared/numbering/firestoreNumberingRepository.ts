@@ -2,7 +2,7 @@ import type { Firestore } from "firebase-admin/firestore";
 import { crmSettingsSchema, RailError, type CrmSettings, type DocumentSequenceKind } from "@nexteam/core";
 import { defaultCrmSettings } from "@nexteam/providers";
 import { advanceDocumentNumber } from "@nexteam/shared";
-import { asDocumentData, createTenantFirestoreReader } from "../../crm/firestoreRepositoryBase.js";
+import { asDocumentData, createTenantFirestoreReader } from "../../modules/nexops/shared/persistence/firestoreRepositoryBase.js";
 
 export function createNumberingFirestoreRepository(db: Firestore) {
   const {} = createTenantFirestoreReader(db);

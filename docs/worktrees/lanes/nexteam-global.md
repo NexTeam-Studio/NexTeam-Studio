@@ -4,7 +4,7 @@ Status: Ready for component worktree use.
 
 ## HOW
 
-Provides shared auth, routing, shell, telemetry, and global contracts. Its authoritative paths, branch, and worktree directory are recorded in worktree-lanes.json. Run npm run check:worktree-scope before committing.
+Provides shared auth, routing, shell, telemetry, global contracts, NexOps approval dispatch, lifecycle policy, and repository composition. Its authoritative paths, branch, and worktree directory are recorded in `worktree-lanes.json`. Run `npm run check:worktree-scope` before committing.
 
 ## WHY
 
@@ -20,6 +20,8 @@ Record the public commands, queries, and events that other components and Nexi a
 
 Operations Home is a global NexOps composition area. Its real service and notification-state repository live under `apps/server/src/modules/nexops/areas/home/components/operationsHub/server`; the legacy CRM paths are compatibility-only exports.
 
+Cross-component approval contracts, lifecycle policy, tenant-scoped Firestore helpers, and the native CRM repository composer live under `apps/server/src/modules/nexops/shared`. Area components own their handlers and repositories; the global layer only defines contracts and combines them. Former CRM-root paths are compatibility exports only.
+
 ## KNOWN GOOD
 
-Initial baseline: ffe442ffebac195963cbd5e66064a264315c4c15. Replace this entry with each verified component checkpoint and its test evidence.
+Initial baseline: ffe442ffebac195963cbd5e66064a264315c4c15. Shared NexOps boundary checkpoint: typecheck and lint clean, focused tests `61/61`, build `174` modules, all `780/780` component pairs disjoint, full non-browser suite `369/373` with the same three known reds and one emulator skip.

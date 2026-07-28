@@ -1,0 +1,24 @@
+Shared NexOps server-boundary extraction
+
+Real implementations moved, not copied
+- approvalContracts.ts: 165 lines -> modules/nexops/shared/approval/contracts.ts; old path is one compatibility export.
+- approvalHandler.ts: 28 lines -> modules/nexops/shared/approval/handler.ts; old path is one compatibility export.
+- approvalExecutor.ts: 38 lines -> modules/nexops/shared/approval/executor.ts; old path is one compatibility export.
+- lifecycleCommandMap.ts: 49 lines -> modules/nexops/shared/lifecycle/commandMap.ts; old path is one compatibility export.
+- lifecyclePolicy.ts: 71 lines -> modules/nexops/shared/lifecycle/policy.ts; old path is one compatibility export.
+- firestoreRepositoryBase.ts: 29 lines -> modules/nexops/shared/persistence/firestoreRepositoryBase.ts; old path is one compatibility export.
+- nativeRepository.ts: 32 lines -> modules/nexops/shared/persistence/nativeRepository.ts; old path is one compatibility export.
+
+Compatibility classification
+- Thirteen other CRM-root files were inspected and confirmed to contain only re-exports to their existing component/shared owners.
+- Only module.ts, routes.ts, routeRuntime.ts, nexiTools.ts, and nexiToolRuntime.ts remain as real CRM-root composition/runtime debt.
+
+Verification
+- npm run typecheck: pass.
+- npm run lint: pass.
+- focused lifecycle, approval, CRM, invoice, job, and request tests: 61/61 pass.
+- npm run check:worktree-coverage: 438/443 implementation files exactly owned; five temporary legacy CRM files remain; zero multiply-owned files.
+- npm run check:collisions: 40 components, 780 pairs, zero overlaps.
+- npm run build: pass; Vite transformed 174 modules.
+- npm test: no-browser guard passed across 67 default test files; 373 total, 369 pass, 3 unchanged known reds, 1 intentional Admin SDK emulator skip.
+- No browser was opened.
