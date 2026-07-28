@@ -1,0 +1,11 @@
+Request Core Nexi orchestration extraction
+
+- Request Core toolSupport.ts owns loose intake parsing, merged create input, request search, field display, and source labeling.
+- Request Core nexiTools.ts imports its own foundation functions directly instead of receiving component implementation through the global runtime context.
+- modules/nexops/runtime/nexiToolRuntime.ts fell from 320 to 207 lines; moved logic was removed, not copied.
+- Focused Request tests pass 3/3.
+- Lint and build pass; web build remains 174 modules.
+- Exact worktree ownership passes at 485/485 implementation files.
+- Component collision proof passes for all 40 components and all 780 pairs.
+- Full guarded non-browser suite: 373 total, 369 pass, 3 unchanged known reds, 1 intentional emulator skip.
+- No browser was opened.

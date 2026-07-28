@@ -2,23 +2,14 @@ import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { createRequestToolInputSchema, getRequestDetailInputSchema, listRequestsInputSchema } from "./toolSchemas.js";
 import { normalizedPhone, parseRequestAddress } from "../../../../../../../shared/addressLocation/requestAddressTools.js";
+import { availableRequestFields, buildServiceRequest, defaultRequestForms, ensureRequestForms, notifyRequestCreated } from "./requestFoundation.js";
+import { findRequestFieldLabel, mergedCreateRequestInput, requestFieldText, requestMatchesQuery, requestQueryValue, requestSource } from "./toolSupport.js";
 
 export function createRequestCoreNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
     RailError,
     approvalQueue,
-    availableRequestFields,
-    buildServiceRequest,
-    defaultRequestForms,
-    ensureRequestForms,
-    findRequestFieldLabel,
-    mergedCreateRequestInput,
-    notifyRequestCreated,
-    options,
-    requestFieldText,
-    requestMatchesQuery,
-    requestQueryValue,
-    requestSource
+    options
   } = context;
   return [
     ...[{
