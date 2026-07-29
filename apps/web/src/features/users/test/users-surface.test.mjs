@@ -23,6 +23,11 @@ test("users surface exports the signed-in-user contract and own-profile view", a
   assert.match(source, /avatarUrl\?: string/);
   assert.match(source, /initialView\?: UsersSurfaceView/);
   assert.match(source, /"own-profile"/);
+  assert.match(source, /title\?: string/);
+  assert.match(source, /First name/);
+  assert.match(source, /Middle name/);
+  assert.match(source, /Last name/);
+  assert.match(source, /function nameParts/);
   assert.match(source, /function toTeamMember/);
   assert.match(source, /function Avatar/);
 });

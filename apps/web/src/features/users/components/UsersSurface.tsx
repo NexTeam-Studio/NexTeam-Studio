@@ -8,6 +8,7 @@ export type UsersSurfaceView = "team" | "own-profile";
 export interface NexOpsSignedInUser {
   id: string;
   name: string;
+  title?: string;
   email: string;
   initials?: string;
   avatarUrl?: string;
@@ -34,16 +35,17 @@ export interface UsersSurfaceProps {
 interface TeamMember extends NexOpsTeamMember {
   id: string;
   initials: string;
+  title: string;
   phone: string;
   color: string;
 }
 
 const startingMembers: TeamMember[] = [
-  { id: "maria", initials: "MC", name: "Maria Chen", email: "maria@nexops.demo", phone: "(555) 013-2841", role: "Office Admin", lastActive: "Today, 8:42 AM", assigned: true, color: "coral" },
-  { id: "avery", initials: "AB", name: "Avery Brooks", email: "avery@nexops.demo", phone: "(555) 013-8910", role: "Owner", lastActive: "Today, 7:15 AM", assigned: true, color: "violet" },
-  { id: "nolan", initials: "NR", name: "Nolan Rivera", email: "nolan@nexops.demo", phone: "(555) 013-1664", role: "Technician", lastActive: "Yesterday", assigned: true, color: "aqua" },
-  { id: "jordan", initials: "JP", name: "Jordan Patel", email: "jordan@nexops.demo", phone: "(555) 013-2098", role: "Technician", lastActive: "Jul 24, 2026", assigned: false, color: "gold" },
-  { id: "riley", initials: "RW", name: "Riley Wilson", email: "riley@nexops.demo", phone: "(555) 013-7823", role: "Technician", lastActive: "Jul 19, 2026", assigned: false, color: "pink" },
+  { id: "maria", initials: "MC", name: "Maria Chen", title: "Office Coordinator", email: "maria@nexops.demo", phone: "(555) 013-2841", role: "Office Admin", lastActive: "Today, 8:42 AM", assigned: true, color: "coral" },
+  { id: "avery", initials: "AB", name: "Avery Brooks", title: "Founder", email: "avery@nexops.demo", phone: "(555) 013-8910", role: "Owner", lastActive: "Today, 7:15 AM", assigned: true, color: "violet" },
+  { id: "nolan", initials: "NR", name: "Nolan Rivera", title: "Field Technician", email: "nolan@nexops.demo", phone: "(555) 013-1664", role: "Technician", lastActive: "Yesterday", assigned: true, color: "aqua" },
+  { id: "jordan", initials: "JP", name: "Jordan Patel", title: "Field Technician", email: "jordan@nexops.demo", phone: "(555) 013-2098", role: "Technician", lastActive: "Jul 24, 2026", assigned: false, color: "gold" },
+  { id: "riley", initials: "RW", name: "Riley Wilson", title: "Field Technician", email: "riley@nexops.demo", phone: "(555) 013-7823", role: "Technician", lastActive: "Jul 19, 2026", assigned: false, color: "pink" },
 ];
 
 const permissionGroups = [
@@ -145,7 +147,7 @@ function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; onBack:
 
   return <main className="users-surface users-member-editor">
     <button type="button" className="users-back" onClick={props.onBack}>← Back to team</button>
-    <header className="users-editor-heading"><div><p className="users-kicker">{props.ownProfile ? "My profile" : "Team member"}</p>{props.ownProfile ? <h1 className="users-page-title"><PersonTitleIcon /> <span>My Profile</span></h1> : <h1>{props.member.name}</h1>}<p>{props.ownProfile ? `${props.member.name} · ${props.member.role}` : `${props.member.role} · Last active ${props.member.lastActive}`}</p></div><Avatar member={props.member} large /></header>
+    <header className="users-editor-heading"><div>{props.ownProfile ? null : <p className="users-kicker">Team member</p>}{props.ownProfile ? <h1 className="users-page-title"><PersonTitleIcon /> <span>My Profile</span></h1> : <h1>{props.member.name}</h1>}<p>{props.ownProfile ? `${props.member.name} — ${props.member.title}` : `${props.member.title} · Last active ${props.member.lastActive}`}</p></div><Avatar member={props.member} large /></header>
     <div className="users-tabs" role="tablist" aria-label="Team member editor"><button type="button" className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")}>Profile</button><button type="button" className={tab === "permissions" ? "active" : ""} onClick={() => setTab("permissions")}>Role & access</button><button type="button" className={tab === "preferences" ? "active" : ""} onClick={() => setTab("preferences")}>Preferences</button></div>
     {tab === "profile" ? <ProfilePanel member={props.member} /> : null}
     {tab === "permissions" ? <PermissionsPanel role={role} setRole={setRole} administrator={administrator} setAdministrator={setAdministrator} access={access} setAccess={setAccess} /> : null}
@@ -155,7 +157,8 @@ function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; onBack:
 }
 
 function ProfilePanel(props: { member: TeamMember }): React.ReactElement {
-  return <div className="users-editor-grid"><section className="users-panel"><div className="users-panel-heading"><div><p className="users-kicker">Contact details</p><h2>Personal information</h2></div><button type="button" className="users-text-button">Change photo</button></div><div className="users-form-grid"><Field label="Full name" value={props.member.name} /><Field label="Email address" value={props.member.email} /><Field label="Mobile number" value={props.member.phone} /><Field label="Street address" value="" placeholder="Add street address" /><Field label="City" value="" placeholder="Add city" /><Field label="State / province" value="" placeholder="Add state or province" /></div></section><section className="users-panel"><p className="users-kicker">Field readiness</p><h2>Working hours</h2><p className="users-panel-detail">Availability is used by scheduling and helps the office know who can be assigned.</p><div className="users-hours">{workingHours.map(([day, hours]) => <div key={day}><span>{day}</span><strong className={hours === "Unavailable" ? "muted" : ""}>{hours}</strong></div>)}</div><button className="users-secondary users-full-width" type="button">Edit working hours</button></section></div>;
+  const { firstName, middleName, lastName } = nameParts(props.member.name);
+  return <div className="users-editor-grid"><section className="users-panel"><div className="users-panel-heading"><div><p className="users-kicker">Contact details</p><h2>Personal information</h2></div><button type="button" className="users-text-button">Change photo</button></div><div className="users-form-grid"><Field label="First name" value={firstName} required /><Field label="Middle name" value={middleName} optional /><Field label="Last name" value={lastName} required /><Field label="Title" value={props.member.title} placeholder="e.g. Field Technician" /><Field label="Email address" value={props.member.email} /><Field label="Mobile number" value={props.member.phone} /><Field label="Street address" value="" placeholder="Add street address" /><Field label="City" value="" placeholder="Add city" /><Field label="State / province" value="" placeholder="Add state or province" /></div></section><section className="users-panel"><p className="users-kicker">Field readiness</p><h2>Working hours</h2><p className="users-panel-detail">Availability is used by scheduling and helps the office know who can be assigned.</p><div className="users-hours">{workingHours.map(([day, hours]) => <div key={day}><span>{day}</span><strong className={hours === "Unavailable" ? "muted" : ""}>{hours}</strong></div>)}</div><button className="users-secondary users-full-width" type="button">Edit working hours</button></section></div>;
 }
 
 function PermissionsPanel(props: { role: MemberRole; setRole: (role: MemberRole) => void; administrator: boolean; setAdministrator: (value: boolean) => void; access: Record<string, AccessLevel>; setAccess: (access: Record<string, AccessLevel>) => void }): React.ReactElement {
@@ -188,6 +191,7 @@ function normalizeMembers(members: NexOpsTeamMember[]): TeamMember[] {
   return members.map((member, index) => ({
     ...member,
     initials: member.initials ?? initialsFor(member.name),
+    title: member.title ?? member.role,
     phone: member.phone ?? "",
     color: member.color ?? colorFor(index),
   }));
@@ -197,6 +201,7 @@ function toTeamMember(user: NexOpsSignedInUser): TeamMember {
   return normalizeMembers([{
     ...user,
     initials: user.initials ?? initialsFor(user.name),
+    title: user.title ?? user.role ?? "Technician",
     phone: user.phone ?? "",
     role: user.role ?? "Technician",
     lastActive: "Signed in now",
@@ -214,7 +219,8 @@ function colorFor(index: number): string {
   return colors[index % colors.length] ?? "aqua";
 }
 
-function Field(props: { label: string; value: string; placeholder?: string }): React.ReactElement { return <label className="users-field"><span>{props.label}</span><input defaultValue={props.value} placeholder={props.placeholder} /></label>; }
+function Field(props: { label: string; value: string; placeholder?: string; required?: boolean; optional?: boolean }): React.ReactElement { return <label className="users-field"><span>{props.label}{props.required ? <b aria-label="required"> *</b> : null}{props.optional ? <em> (optional)</em> : null}</span><input defaultValue={props.value} placeholder={props.placeholder} required={props.required} /></label>; }
+function nameParts(name: string): { firstName: string; middleName: string; lastName: string } { const parts = name.trim().split(/\s+/).filter(Boolean); return { firstName: parts[0] ?? "", middleName: parts.length > 2 ? parts.slice(1, -1).join(" ") : "", lastName: parts.length > 1 ? parts.at(-1) ?? "" : "" }; }
 function filterMembers(members: TeamMember[], query: string): TeamMember[] { const term = query.trim().toLowerCase(); return term ? members.filter((member) => `${member.name} ${member.email} ${member.role}`.toLowerCase().includes(term)) : members; }
 function roleTone(role: MemberRole): string { return role === "Owner" ? "owner" : role === "Office Admin" ? "admin" : role === "Technician" ? "tech" : "custom"; }
 function roleDescription(role: MemberRole): string { return role === "Technician" ? "Field work, their schedule, and assigned jobs." : role === "Office Admin" ? "Office workflow, clients, scheduling, and billing support." : role === "Owner" ? "Full business oversight and team management." : "Build access one area at a time."; }
