@@ -934,6 +934,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
             </button>
           ))}
         </nav>
+        <button className="nexops-sidebar-sign-out" type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
       </aside>
 
       <section className="nexops-web-main">

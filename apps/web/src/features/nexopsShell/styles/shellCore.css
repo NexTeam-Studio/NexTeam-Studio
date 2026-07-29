@@ -26,8 +26,8 @@
   padding: 22px 14px;
   border-right: 1px solid rgba(212, 255, 32, 0.16);
   background:
-    radial-gradient(circle at 20% 0%, rgba(212, 255, 32, 0.14), transparent 32%),
-    linear-gradient(180deg, #101722 0%, #090d13 100%);
+    radial-gradient(circle at 88% 16%, rgba(74, 195, 170, 0.3), transparent 34%),
+    linear-gradient(135deg, #081a27 0%, #0d2830 54%, #13595a 100%);
   box-shadow: 18px 0 52px rgba(12, 17, 24, 0.18);
 }
 
@@ -695,6 +695,27 @@ body.nexops-mobile-nav-open {
   background: var(--nexops-brand-gradient, var(--nexteam-gradient));
   box-shadow: 0 10px 24px rgba(37, 210, 56, 0.18);
 }
+
+.nexops-sidebar-sign-out {
+  margin-top: auto;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  padding: 11px 12px;
+  color: #f8fffc;
+  background: rgba(255, 255, 255, 0.1);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nexops-mobile-nav-header {
+  margin: -20px -18px 0;
+  padding: 18px;
+  border-radius: 27px 27px 0 0;
+  background: linear-gradient(135deg, #081a27 0%, #0d2830 54%, #13595a 100%);
+}
+
+.nexops-mobile-nav-header .nexops-mobile-close-button { color: #f8fffc; }
 
 .nexops-dashboard,
 .nexops-module-page {
