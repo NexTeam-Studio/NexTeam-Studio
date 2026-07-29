@@ -8,7 +8,7 @@ const cssUrl = new URL("../styles/users.css", import.meta.url);
 test("users surface includes the team, profile, permission, and invite workflows", async () => {
   const [source, css] = await Promise.all([readFile(sourceUrl, "utf8"), readFile(cssUrl, "utf8")]);
 
-  for (const label of ["Invite team member", "Assigned seats", "Personal information", "Working hours", "Role & permissions", "Email preferences", "Assign seat"]) {
+  for (const label of ["Invite team member", "Assigned seats", "Personal Information", "Working Hours", "Role & access", "Email preferences", "Assign seat"]) {
     assert.match(source, new RegExp(label));
   }
   assert.match(source, /function InviteDialog/);
@@ -24,9 +24,12 @@ test("users surface exports the signed-in-user contract and own-profile view", a
   assert.match(source, /initialView\?: UsersSurfaceView/);
   assert.match(source, /"own-profile"/);
   assert.match(source, /title\?: string/);
-  assert.match(source, /First name/);
-  assert.match(source, /Middle name/);
-  assert.match(source, /Last name/);
+  assert.match(source, /First Name/);
+  assert.match(source, /Middle Name/);
+  assert.match(source, /Last Name/);
+  assert.match(source, /Zip Code/);
+  assert.match(source, /users-profile-identity/);
+  assert.match(source, /users-avatar--placeholder/);
   assert.match(source, /function nameParts/);
   assert.match(source, /users-profile-save/);
   assert.match(source, /props\.canManageTeam/);
