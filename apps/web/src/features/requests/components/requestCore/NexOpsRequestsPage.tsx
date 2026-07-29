@@ -1,5 +1,6 @@
 import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
 import React, { useEffect, useMemo, useState } from "react";
+import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
 
 type RequestStatus = "new" | "archived" | "converted_to_quote" | "converted_to_job";
 const REQUEST_FILTERS: Array<{ value: "all" | RequestStatus; label: string }> = [
@@ -842,7 +843,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
     <section className="nexops-module-page">
       <div className="nexops-page-heading">
         <div>
-          <h1>Requests</h1>
+          <NexOpsPageTitle module="requests">Requests</NexOpsPageTitle>
           <p>Real request objects, office intake, website forms, and downstream field carry-forward all live here now.</p>
         </div>
         <div className="nexops-inline-actions">
