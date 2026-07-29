@@ -512,9 +512,6 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
     return () => {
       window.removeEventListener("nexops:crm-mutated", reloadNotifications);
       window.removeEventListener("nexops:approval-queued", reloadNotifications);
-      recognitionRef.current?.stop();
-      audioRef.current?.pause();
-      ttsAbortRef.current?.abort();
     };
   }, [operatorContext.tenantId]);
 
