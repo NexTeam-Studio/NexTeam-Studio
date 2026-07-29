@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
 import type { Address } from "@nexteam/shared";
 import {
   PaymentScheduleEditor,
@@ -1301,7 +1302,7 @@ export function NexOpsJobsPage(props: {
       <header className="nexops-page-heading">
         <div>
           <p className="eyebrow">M3 Job Engine</p>
-          <h1>Jobs</h1>
+          <NexOpsPageTitle module="jobs">Jobs</NexOpsPageTitle>
           <p>Derived status, reminder state, visits, and office actions all live on one rail now.</p>
         </div>
         <div className="nexops-status-pill">{status}</div>

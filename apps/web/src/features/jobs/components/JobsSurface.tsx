@@ -1,10 +1,11 @@
 import React from "react";
+import { NexOpsPageTitle } from "../../nexopsShell/components/NexOpsPageTitle";
 
 export function JobsSurface(): React.ReactElement {
   return (
     <section className="jobs-surface">
       <p className="ui-eyebrow">NexOps Jobs</p>
-      <h1>Job pipeline work has its own route seam now.</h1>
+      <NexOpsPageTitle module="jobs">Jobs</NexOpsPageTitle>
       <p>
         This route is reserved for browser-side job pipeline, payment-state, and closeout views that are distinct from
         the scheduling board. Job changes can now land without sharing a file with client lookup, quote drafting, or
