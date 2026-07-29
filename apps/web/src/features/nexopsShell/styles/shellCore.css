@@ -724,17 +724,18 @@ body.nexops-mobile-nav-open {
 
 .nexops-mobile-nav-product-lockup {
   display: grid;
-  justify-items: start;
+  width: 108px;
+  justify-items: center;
   gap: 8px;
 }
 
 .nexops-mobile-nav-header .nexops-mobile-platform-mark {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
 }
 
 .nexops-mobile-nav-header .nexops-mobile-product-logo {
-  width: 118px;
+  width: 108px;
   max-height: 30px;
 }
 
