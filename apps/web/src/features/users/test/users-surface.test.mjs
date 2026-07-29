@@ -15,3 +15,14 @@ test("users surface includes the team, profile, permission, and invite workflows
   assert.match(source, /function PermissionsPanel/);
   assert.match(css, /@media\(max-width:760px\)/);
 });
+
+test("users surface exports the signed-in-user contract and own-profile view", async () => {
+  const source = await readFile(sourceUrl, "utf8");
+
+  assert.match(source, /export interface NexOpsSignedInUser/);
+  assert.match(source, /avatarUrl\?: string/);
+  assert.match(source, /initialView\?: UsersSurfaceView/);
+  assert.match(source, /"own-profile"/);
+  assert.match(source, /function toTeamMember/);
+  assert.match(source, /function Avatar/);
+});

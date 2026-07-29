@@ -1,18 +1,40 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../styles/users.css";
 
 type AccessLevel = "None" | "View" | "Create & edit" | "Full access";
-type MemberRole = "Owner" | "Office Admin" | "Technician" | "Custom";
+export type MemberRole = "Owner" | "Office Admin" | "Technician" | "Custom";
+export type UsersSurfaceView = "team" | "own-profile";
 
-interface TeamMember {
+export interface NexOpsSignedInUser {
   id: string;
-  initials: string;
   name: string;
   email: string;
-  phone: string;
+  initials?: string;
+  avatarUrl?: string;
+  phone?: string;
+  role?: MemberRole;
+}
+
+export interface NexOpsTeamMember extends NexOpsSignedInUser {
   role: MemberRole;
   lastActive: string;
   assigned: boolean;
+  color?: string;
+}
+
+export interface UsersSurfaceProps {
+  /** The authenticated person supplied by Global's auth/session layer. */
+  signedInUser?: NexOpsSignedInUser;
+  /** Tenant-scoped people supplied by the Users data layer. */
+  teamMembers?: NexOpsTeamMember[];
+  /** Lets Global open the signed-in person's profile without owning profile state. */
+  initialView?: UsersSurfaceView;
+}
+
+interface TeamMember extends NexOpsTeamMember {
+  id: string;
+  initials: string;
+  phone: string;
   color: string;
 }
 
@@ -39,9 +61,10 @@ const workingHours = [
   ["Wednesday", "8:00 AM – 4:30 PM"], ["Thursday", "8:00 AM – 4:30 PM"], ["Friday", "8:00 AM – 3:30 PM"], ["Saturday", "Unavailable"],
 ];
 
-export function UsersSurface(): React.ReactElement {
-  const [members, setMembers] = useState(startingMembers);
+export function UsersSurface(props: UsersSurfaceProps = {}): React.ReactElement {
+  const [members, setMembers] = useState<TeamMember[]>(() => normalizeMembers(props.teamMembers ?? startingMembers));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [view, setView] = useState<UsersSurfaceView>(props.initialView ?? "team");
   const [query, setQuery] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
@@ -52,6 +75,11 @@ export function UsersSurface(): React.ReactElement {
   const unassigned = members.filter((member) => !member.assigned);
   const filteredAssigned = filterMembers(assigned, query);
   const filteredUnassigned = filterMembers(unassigned, query);
+  const signedInMember = props.signedInUser ? toTeamMember(props.signedInUser) : undefined;
+
+  useEffect(() => {
+    setView(props.initialView ?? "team");
+  }, [props.initialView]);
 
   function selectMember(id: string): void {
     setSelectedId(id);
@@ -60,6 +88,10 @@ export function UsersSurface(): React.ReactElement {
 
   function assignSeat(id: string): void {
     setMembers((current) => current.map((member) => member.id === id ? { ...member, assigned: true } : member));
+  }
+
+  if (view === "own-profile" && signedInMember) {
+    return <MemberEditor member={signedInMember} ownProfile onBack={() => setView("team")} onSave={() => setSaved(true)} saved={saved} />;
   }
 
   if (selected) {
@@ -99,10 +131,10 @@ export function UsersSurface(): React.ReactElement {
 }
 
 function MemberTable(props: { members: TeamMember[]; onSelect: (id: string) => void; action?: { label: string; onClick: (id: string) => void } }): React.ReactElement {
-  return <div className="users-table-wrap"><table className="users-table"><thead><tr><th>Team member</th><th>Role</th><th>Last active</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{props.members.map((member) => <tr key={member.id}><td><button type="button" className="users-member" onClick={() => props.onSelect(member.id)}><span className={`users-avatar users-avatar--${member.color}`}>{member.initials}</span><span><strong>{member.name}</strong><small>{member.email}</small></span></button></td><td><span className={`users-role users-role--${roleTone(member.role)}`}>{member.role}</span></td><td>{member.lastActive}</td><td>{props.action ? <button type="button" className="users-text-button" onClick={() => props.action?.onClick(member.id)}>{props.action.label}</button> : <button type="button" className="users-row-button" aria-label={`Edit ${member.name}`} onClick={() => props.onSelect(member.id)}>Edit</button>}</td></tr>)}</tbody></table>{props.members.length === 0 ? <p className="users-empty">No team members match that search.</p> : null}</div>;
+  return <div className="users-table-wrap"><table className="users-table"><thead><tr><th>Team member</th><th>Role</th><th>Last active</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{props.members.map((member) => <tr key={member.id}><td><button type="button" className="users-member" onClick={() => props.onSelect(member.id)}><Avatar member={member} /><span><strong>{member.name}</strong><small>{member.email}</small></span></button></td><td><span className={`users-role users-role--${roleTone(member.role)}`}>{member.role}</span></td><td>{member.lastActive}</td><td>{props.action ? <button type="button" className="users-text-button" onClick={() => props.action?.onClick(member.id)}>{props.action.label}</button> : <button type="button" className="users-row-button" aria-label={`Edit ${member.name}`} onClick={() => props.onSelect(member.id)}>Edit</button>}</td></tr>)}</tbody></table>{props.members.length === 0 ? <p className="users-empty">No team members match that search.</p> : null}</div>;
 }
 
-function MemberEditor(props: { member: TeamMember; onBack: () => void; onSave: () => void; saved: boolean }): React.ReactElement {
+function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; onBack: () => void; onSave: () => void; saved: boolean }): React.ReactElement {
   const [tab, setTab] = useState<"profile" | "permissions" | "preferences">("profile");
   const [role, setRole] = useState<MemberRole>(props.member.role);
   const [administrator, setAdministrator] = useState(props.member.role === "Owner");
@@ -113,7 +145,7 @@ function MemberEditor(props: { member: TeamMember; onBack: () => void; onSave: (
 
   return <main className="users-surface users-member-editor">
     <button type="button" className="users-back" onClick={props.onBack}>← Back to team</button>
-    <header className="users-editor-heading"><div><p className="users-kicker">Team member</p><h1>{props.member.name}</h1><p>{props.member.role} · Last active {props.member.lastActive}</p></div><span className={`users-avatar users-avatar--${props.member.color} users-avatar--large`}>{props.member.initials}</span></header>
+    <header className="users-editor-heading"><div><p className="users-kicker">{props.ownProfile ? "My profile" : "Team member"}</p><h1>{props.member.name}</h1><p>{props.member.role} · Last active {props.member.lastActive}</p></div><Avatar member={props.member} large /></header>
     <div className="users-tabs" role="tablist" aria-label="Team member editor"><button type="button" className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")}>Profile</button><button type="button" className={tab === "permissions" ? "active" : ""} onClick={() => setTab("permissions")}>Role & access</button><button type="button" className={tab === "preferences" ? "active" : ""} onClick={() => setTab("preferences")}>Preferences</button></div>
     {tab === "profile" ? <ProfilePanel member={props.member} /> : null}
     {tab === "permissions" ? <PermissionsPanel role={role} setRole={setRole} administrator={administrator} setAdministrator={setAdministrator} access={access} setAccess={setAccess} /> : null}
@@ -137,6 +169,41 @@ function PreferencesPanel(props: { subscriptions: Record<string, boolean>; setSu
 
 function InviteDialog(props: { onClose: () => void; onSend: () => void; sent: boolean }): React.ReactElement {
   return <div className="users-dialog-backdrop" role="presentation"><section className="users-dialog" role="dialog" aria-modal="true" aria-labelledby="invite-title"><button type="button" className="users-dialog-close" onClick={props.onClose} aria-label="Close invite dialog">×</button>{props.sent ? <><p className="users-kicker">Invitation ready</p><h2 id="invite-title">Invite sent</h2><p>They’ll receive a secure link to join your NexOps workspace.</p><button type="button" className="users-primary" onClick={props.onClose}>Done</button></> : <><p className="users-kicker">Grow your team</p><h2 id="invite-title">Invite a team member</h2><p>They’ll choose a password and see only the tools you allow.</p><div className="users-form-grid"><Field label="Full name" value="" placeholder="e.g. Sam Carter" /><Field label="Email address" value="" placeholder="sam@company.com" /></div><label className="users-dialog-label">Starting role<select defaultValue="Technician"><option>Technician</option><option>Office Admin</option></select></label><div className="users-dialog-actions"><button type="button" className="users-secondary" onClick={props.onClose}>Cancel</button><button type="button" className="users-primary" onClick={props.onSend}>Send invite</button></div></>}</section></div>;
+}
+
+function Avatar(props: { member: TeamMember; large?: boolean }): React.ReactElement {
+  const className = `users-avatar users-avatar--${props.member.color}${props.large ? " users-avatar--large" : ""}`;
+  return <span className={className}>{props.member.avatarUrl ? <img src={props.member.avatarUrl} alt="" /> : props.member.initials}</span>;
+}
+
+function normalizeMembers(members: NexOpsTeamMember[]): TeamMember[] {
+  return members.map((member, index) => ({
+    ...member,
+    initials: member.initials ?? initialsFor(member.name),
+    phone: member.phone ?? "",
+    color: member.color ?? colorFor(index),
+  }));
+}
+
+function toTeamMember(user: NexOpsSignedInUser): TeamMember {
+  return normalizeMembers([{
+    ...user,
+    initials: user.initials ?? initialsFor(user.name),
+    phone: user.phone ?? "",
+    role: user.role ?? "Technician",
+    lastActive: "Signed in now",
+    assigned: true,
+    color: "aqua",
+  }])[0];
+}
+
+function initialsFor(name: string): string {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "?";
+}
+
+function colorFor(index: number): string {
+  const colors = ["aqua", "violet", "coral", "gold", "pink"];
+  return colors[index % colors.length] ?? "aqua";
 }
 
 function Field(props: { label: string; value: string; placeholder?: string }): React.ReactElement { return <label className="users-field"><span>{props.label}</span><input defaultValue={props.value} placeholder={props.placeholder} /></label>; }
