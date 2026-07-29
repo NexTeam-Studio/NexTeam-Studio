@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
+import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 type ActivityFilter = "requests" | "quotes" | "jobs" | "invoices" | "payments";
@@ -287,7 +287,7 @@ export function NexOpsHomePage(props: {
     <section className="nexops-dashboard nexops-home-surface">
       <div className="nexops-page-heading">
         <div>
-          <h1 className="nexops-page-title-with-icon"><NexOpsNavGlyph module="home" /><span>Home</span></h1>
+          <NexOpsPageTitle module="home">Home</NexOpsPageTitle>
           <p>Live queues, recent movement, and the next place the office needs to act.</p>
         </div>
       </div>
