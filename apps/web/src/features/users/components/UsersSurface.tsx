@@ -103,7 +103,7 @@ export function UsersSurface(props: UsersSurfaceProps = {}): React.ReactElement 
       <header className="users-hero">
         <div>
           <p className="users-kicker">NexOps / Team</p>
-          <h1>People make the work happen.</h1>
+          <h1 className="users-page-title"><TeamTitleIcon /> <span>Team</span></h1>
           <p>Invite your crew, give each person the access they need, and keep everyone ready for the day.</p>
         </div>
         <button className="users-primary" type="button" onClick={() => { setInviteOpen(true); setInviteSent(false); }}>Invite team member <span>+</span></button>
@@ -145,7 +145,7 @@ function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; onBack:
 
   return <main className="users-surface users-member-editor">
     <button type="button" className="users-back" onClick={props.onBack}>← Back to team</button>
-    <header className="users-editor-heading"><div><p className="users-kicker">{props.ownProfile ? "My profile" : "Team member"}</p><h1>{props.member.name}</h1><p>{props.member.role} · Last active {props.member.lastActive}</p></div><Avatar member={props.member} large /></header>
+    <header className="users-editor-heading"><div><p className="users-kicker">{props.ownProfile ? "My profile" : "Team member"}</p>{props.ownProfile ? <h1 className="users-page-title"><PersonTitleIcon /> <span>My Profile</span></h1> : <h1>{props.member.name}</h1>}<p>{props.ownProfile ? `${props.member.name} · ${props.member.role}` : `${props.member.role} · Last active ${props.member.lastActive}`}</p></div><Avatar member={props.member} large /></header>
     <div className="users-tabs" role="tablist" aria-label="Team member editor"><button type="button" className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")}>Profile</button><button type="button" className={tab === "permissions" ? "active" : ""} onClick={() => setTab("permissions")}>Role & access</button><button type="button" className={tab === "preferences" ? "active" : ""} onClick={() => setTab("preferences")}>Preferences</button></div>
     {tab === "profile" ? <ProfilePanel member={props.member} /> : null}
     {tab === "permissions" ? <PermissionsPanel role={role} setRole={setRole} administrator={administrator} setAdministrator={setAdministrator} access={access} setAccess={setAccess} /> : null}
@@ -169,6 +169,14 @@ function PreferencesPanel(props: { subscriptions: Record<string, boolean>; setSu
 
 function InviteDialog(props: { onClose: () => void; onSend: () => void; sent: boolean }): React.ReactElement {
   return <div className="users-dialog-backdrop" role="presentation"><section className="users-dialog" role="dialog" aria-modal="true" aria-labelledby="invite-title"><button type="button" className="users-dialog-close" onClick={props.onClose} aria-label="Close invite dialog">×</button>{props.sent ? <><p className="users-kicker">Invitation ready</p><h2 id="invite-title">Invite sent</h2><p>They’ll receive a secure link to join your NexOps workspace.</p><button type="button" className="users-primary" onClick={props.onClose}>Done</button></> : <><p className="users-kicker">Grow your team</p><h2 id="invite-title">Invite a team member</h2><p>They’ll choose a password and see only the tools you allow.</p><div className="users-form-grid"><Field label="Full name" value="" placeholder="e.g. Sam Carter" /><Field label="Email address" value="" placeholder="sam@company.com" /></div><label className="users-dialog-label">Starting role<select defaultValue="Technician"><option>Technician</option><option>Office Admin</option></select></label><div className="users-dialog-actions"><button type="button" className="users-secondary" onClick={props.onClose}>Cancel</button><button type="button" className="users-primary" onClick={props.onSend}>Send invite</button></div></>}</section></div>;
+}
+
+function TeamTitleIcon(): React.ReactElement {
+  return <svg className="users-page-title__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3" /><path d="M3.5 20v-1.5a5.5 5.5 0 0 1 11 0V20" /><path d="M16 5.5a3 3 0 0 1 0 5.7" /><path d="M18.5 20v-1.5a5.5 5.5 0 0 0-2.6-4.7" /></svg>;
+}
+
+function PersonTitleIcon(): React.ReactElement {
+  return <svg className="users-page-title__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M4.5 20a7.5 7.5 0 0 1 15 0" /></svg>;
 }
 
 function Avatar(props: { member: TeamMember; large?: boolean }): React.ReactElement {

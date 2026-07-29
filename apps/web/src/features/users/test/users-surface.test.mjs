@@ -26,3 +26,13 @@ test("users surface exports the signed-in-user contract and own-profile view", a
   assert.match(source, /function toTeamMember/);
   assert.match(source, /function Avatar/);
 });
+
+test("team and own-profile opening headers use the shared title treatment with matching icons", async () => {
+  const [source, css] = await Promise.all([readFile(sourceUrl, "utf8"), readFile(cssUrl, "utf8")]);
+
+  assert.match(source, /users-page-title.*Team/);
+  assert.match(source, /users-page-title.*My Profile/);
+  assert.match(source, /function TeamTitleIcon/);
+  assert.match(source, /function PersonTitleIcon/);
+  assert.match(css, /\.users-page-title \{ display:flex/);
+});
