@@ -1056,17 +1056,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
                   <NexOpsNavGlyph module="settings" />
                   <span>Settings</span>
                 </button>
-                <button type="button" onClick={() => {
-                  setMobileNavOpen(false);
-                  void signOutOperator(props.auth);
-                }}>
-                  <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
-                    <path d="M12 4.5h2a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 14 15.5h-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                    <path d="M9 13.5 12.5 10 9 6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12 10H4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                  </svg>
-                  <span>Sign out</span>
-                </button>
               </div>
               {NEXOPS_MOBILE_NAV_GROUPS.map((group) => (
                 <section className="nexops-mobile-nav-group" key={group.title} aria-label={group.title}>
@@ -1092,6 +1081,14 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
                   <strong>{props.user.email ?? "Operator"}</strong>
                   <span>Signed in for this tenant</span>
                 </div>
+                <button className="nexops-mobile-footer-sign-out" type="button" onClick={() => void signOutOperator(props.auth)}>
+                  <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                    <path d="M12 4.5h2a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 14 15.5h-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                    <path d="M9 13.5 12.5 10 9 6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 10H4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                  </svg>
+                  <span>Sign out</span>
+                </button>
               </div>
             </aside>
           </div>
