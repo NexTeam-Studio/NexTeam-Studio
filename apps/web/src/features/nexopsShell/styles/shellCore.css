@@ -276,15 +276,19 @@ body.nexops-mobile-nav-open {
 }
 
 .nexops-mobile-tenant-mark.tenant-wordmark {
+  width: 100%;
   max-width: 144px;
   margin: 0;
+  overflow: visible;
   color: #f8fffc;
   font-size: 0.9rem;
   font-weight: 850;
   letter-spacing: 0.08em;
-  line-height: 1;
+  line-height: 1.1;
   text-shadow: none;
   text-align: center;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .nexops-mobile-product-logo {
@@ -752,6 +756,14 @@ body.nexops-mobile-nav-open {
   margin: 0;
   color: #f8fffc;
   text-align: center;
+}
+
+.nexops-mobile-nav-header .nexops-mobile-tenant-mark.tenant-wordmark {
+  width: 100%;
+  overflow: visible;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .nexops-mobile-nav-header .nexops-mobile-close-button {
