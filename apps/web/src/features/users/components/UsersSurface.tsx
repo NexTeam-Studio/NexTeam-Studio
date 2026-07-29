@@ -34,7 +34,7 @@ export interface UsersSurfaceProps {
   getAccessToken?: () => Promise<string>;
 }
 
-interface ProfileDraft { firstName: string; middleName: string; lastName: string; title: string; email: string; phone: string; streetAddress: string; city: string; stateProvince: string; zipCode: string; }
+interface ProfileDraft { firstName: string; middleName: string; lastName: string; title: string; email: string; phone: string; streetAddress: string; city: string; stateProvince: string; zipCode: string; avatarDataUrl: string; }
 
 interface TeamMember extends NexOpsTeamMember {
   id: string;
@@ -162,9 +162,24 @@ function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; canMana
     try { const token = await props.getAccessToken(); const response = await fetch(`/api/nexops/users/${encodeURIComponent(props.member.id)}/profile`, { method: "PUT", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ tenantId: props.tenantId, profile: profileDraft }) }); const body = await response.json() as { ok: boolean; error?: string; profile?: ProfileDraft }; if (!response.ok || !body.ok) throw new Error(body.error ?? "Unable to save profile."); if (body.profile) setProfileDraft(body.profile); props.onSave(); setDirty(false); } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to save profile."); } finally { setSaving(false); }
   }
 
+  async function selectProfilePhoto(file: File | undefined): Promise<void> {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setSaveError("Choose an image file for the profile photo."); return; }
+    if (file.size > 350_000) { setSaveError("Choose a profile photo smaller than 350 KB."); return; }
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Unable to read profile photo."));
+      reader.onerror = () => reject(new Error("Unable to read profile photo."));
+      reader.readAsDataURL(file);
+    });
+    setProfileDraft((current) => ({ ...current, avatarDataUrl: dataUrl }));
+    setSaveError("");
+    setDirty(true);
+  }
+
   return <main className="users-surface users-member-editor">
     <button type="button" className="users-back" onClick={props.onBack}>← Back to team</button>
-    <header className="users-editor-heading"><div>{props.ownProfile ? null : <p className="users-kicker">Team Member</p>}{props.ownProfile ? <h1 className="users-page-title"><PersonTitleIcon /> <span>My Profile</span></h1> : <h1>{props.member.name}</h1>}<div className="users-profile-identity"><Avatar member={props.member} large /><div><strong>{props.member.name}</strong><span>{props.member.title}</span></div></div></div></header>
+    <header className="users-editor-heading"><div>{props.ownProfile ? null : <p className="users-kicker">Team Member</p>}{props.ownProfile ? <h1 className="users-page-title"><PersonTitleIcon /> <span>My Profile</span></h1> : <h1>{props.member.name}</h1>}<div className="users-profile-identity"><Avatar member={props.member} large photoUrl={profileDraft.avatarDataUrl || undefined} /><label className="users-photo-action"><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => { void selectProfilePhoto(event.target.files?.[0]); event.currentTarget.value = ""; }} />{profileDraft.avatarDataUrl ? "Change Photo" : "Add Photo"}</label><div><strong>{props.member.name}</strong><span>{props.member.title}</span></div></div></div></header>
     <div className="users-tabs" role="tablist" aria-label="Team member editor"><button type="button" className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")}>Profile</button><button type="button" className={tab === "permissions" ? "active" : ""} onClick={() => setTab("permissions")}>Role & access</button><button type="button" className={tab === "preferences" ? "active" : ""} onClick={() => setTab("preferences")}>Preferences</button></div>
     {tab === "profile" ? <ProfilePanel draft={profileDraft} onChange={(patch) => { setProfileDraft((current) => ({ ...current, ...patch })); setDirty(true); }} /> : null}
     {tab === "permissions" ? <PermissionsPanel role={role} setRole={(nextRole) => { setRole(nextRole); setDirty(true); }} administrator={administrator} setAdministrator={(value) => { setAdministrator(value); setDirty(true); }} access={access} setAccess={(nextAccess) => { setAccess(nextAccess); setDirty(true); }} /> : null}
@@ -199,9 +214,10 @@ function PersonTitleIcon(): React.ReactElement {
   return <svg className="users-page-title__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M4.5 20a7.5 7.5 0 0 1 15 0" /></svg>;
 }
 
-function Avatar(props: { member: TeamMember; large?: boolean }): React.ReactElement {
-  const className = `users-avatar users-avatar--${props.member.color}${props.large ? " users-avatar--large" : ""}${props.member.avatarUrl ? "" : " users-avatar--placeholder"}`;
-  return <span className={className}>{props.member.avatarUrl ? <img src={props.member.avatarUrl} alt="" /> : props.member.initials}</span>;
+function Avatar(props: { member: TeamMember; large?: boolean; photoUrl?: string }): React.ReactElement {
+  const photoUrl = props.photoUrl ?? props.member.avatarUrl;
+  const className = `users-avatar users-avatar--${props.member.color}${props.large ? " users-avatar--large" : ""}${photoUrl ? "" : " users-avatar--placeholder"}`;
+  return <span className={className}>{photoUrl ? <img src={photoUrl} alt="" /> : props.member.initials}</span>;
 }
 
 function normalizeMembers(members: NexOpsTeamMember[]): TeamMember[] {
@@ -237,7 +253,7 @@ function colorFor(index: number): string {
 }
 
 function Field(props: { label: string; value: string; placeholder?: string; required?: boolean; optional?: boolean; onChange?: (value: string) => void }): React.ReactElement { return <label className="users-field"><span>{props.label}{props.required ? <b aria-label="required"> *</b> : null}{props.optional ? <em> (optional)</em> : null}</span><input value={props.value} placeholder={props.placeholder} required={props.required} onChange={(event) => props.onChange?.(event.target.value)} /></label>; }
-function profileDraftFor(member: TeamMember): ProfileDraft { const { firstName, middleName, lastName } = nameParts(member.name); return { firstName, middleName, lastName, title: member.title, email: member.email, phone: member.phone, streetAddress: "", city: "", stateProvince: "", zipCode: "" }; }
+function profileDraftFor(member: TeamMember): ProfileDraft { const { firstName, middleName, lastName } = nameParts(member.name); return { firstName, middleName, lastName, title: member.title, email: member.email, phone: member.phone, streetAddress: "", city: "", stateProvince: "", zipCode: "", avatarDataUrl: "" }; }
 function nameParts(name: string): { firstName: string; middleName: string; lastName: string } { const parts = name.trim().split(/\s+/).filter(Boolean); return { firstName: parts[0] ?? "", middleName: parts.length > 2 ? parts.slice(1, -1).join(" ") : "", lastName: parts.length > 1 ? parts.at(-1) ?? "" : "" }; }
 function filterMembers(members: TeamMember[], query: string): TeamMember[] { const term = query.trim().toLowerCase(); return term ? members.filter((member) => `${member.name} ${member.email} ${member.role}`.toLowerCase().includes(term)) : members; }
 function roleTone(role: MemberRole): string { return role === "Owner" ? "owner" : role === "Office Admin" ? "admin" : role === "Technician" ? "tech" : "custom"; }

@@ -32,6 +32,9 @@ test("users surface exports the signed-in-user contract and own-profile view", a
   assert.match(source, /users-avatar--placeholder/);
   assert.match(source, /function nameParts/);
   assert.match(source, /users-profile-save/);
+  assert.match(source, /Add Photo/);
+  assert.match(source, /Change Photo/);
+  assert.match(source, /selectProfilePhoto/);
   assert.match(source, /props\.canManageTeam/);
   assert.match(source, /function toTeamMember/);
   assert.match(source, /function Avatar/);

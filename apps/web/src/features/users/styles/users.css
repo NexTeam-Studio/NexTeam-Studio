@@ -16,3 +16,7 @@
 .users-avatar--placeholder { background:linear-gradient(135deg, #d4ff20 0%, #5ae050 48%, #12bfae 100%) !important; color:#10313a; box-shadow:inset 0 0 0 1px rgba(255,255,255,.24); }
 .users-page-title { display:flex; align-items:center; gap:.28em; }
 .users-page-title__icon { flex:0 0 auto; width:.72em; height:.72em; stroke-width:2.2; }
+.users-profile-identity { justify-items:start; }
+.users-photo-action { display:inline-flex; align-items:center; min-height:34px; padding:0 12px; border:1px solid #bed8bc; border-radius:10px; color:#397d31; font-size:.82rem; font-weight:800; text-decoration:underline; text-underline-offset:3px; background:#fff; cursor:pointer; }
+.users-photo-action:hover { border-color:#6caf63; background:#f6fff2; }
+.users-photo-action input { position:absolute; width:1px; height:1px; overflow:hidden; opacity:0; }
