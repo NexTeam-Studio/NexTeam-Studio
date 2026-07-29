@@ -947,7 +947,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
       return <div className="nexops-embedded-panel"><ApprovalQueuePanel tenantId={operatorContext.tenantId} /></div>;
     }
     if (activeModule === "users") {
-      return <Suspense fallback={<div className="nexops-embedded-panel"><section className="nexops-module-card"><p className="eyebrow">Loading</p><h2>Opening your team</h2><p>Preparing your people workspace.</p></section></div>}><UsersSurface initialView="team" tenantId={operatorContext.tenantId} getAccessToken={() => props.user.getIdToken()} signedInUser={{ id: operatorContext.tenantUserId, name: profileFullName, email: props.user.email ?? "", initials: profileInitials, avatarUrl: props.user.photoURL ?? undefined, role: operatorContext.role === "OWNER" ? "Owner" : operatorContext.role === "OFFICE_ADMIN" ? "Office Admin" : "Technician" }} /></Suspense>;
+      return <Suspense fallback={<div className="nexops-embedded-panel"><section className="nexops-module-card"><p className="eyebrow">Loading</p><h2>Opening your profile</h2><p>Preparing your people workspace.</p></section></div>}><UsersSurface initialView="own-profile" tenantId={operatorContext.tenantId} getAccessToken={() => props.user.getIdToken()} signedInUser={{ id: operatorContext.tenantUserId, name: profileFullName, email: props.user.email ?? "", initials: profileInitials, avatarUrl: props.user.photoURL ?? undefined, role: operatorContext.role === "OWNER" ? "Owner" : operatorContext.role === "OFFICE_ADMIN" ? "Office Admin" : "Technician" }} /></Suspense>;
     }
     if (activeModule === "capture") {
       return renderCaptureWorkspace();
