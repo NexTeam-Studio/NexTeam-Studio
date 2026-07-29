@@ -710,12 +710,61 @@ body.nexops-mobile-nav-open {
 
 .nexops-mobile-nav-header {
   margin: -20px -18px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 38px;
+  align-items: center;
+  column-gap: 12px;
+  min-height: 96px;
   padding: 18px;
   border-radius: 27px 27px 0 0;
-  background: linear-gradient(135deg, #081a27 0%, #0d2830 54%, #13595a 100%);
+  background:
+    radial-gradient(circle at 88% 16%, rgba(74, 195, 170, 0.3), transparent 34%),
+    linear-gradient(135deg, #081a27 0%, #0d2830 54%, #13595a 100%);
 }
 
-.nexops-mobile-nav-header .nexops-mobile-close-button { color: #f8fffc; }
+.nexops-mobile-nav-product-lockup {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.nexops-mobile-nav-header .nexops-mobile-platform-mark {
+  width: 44px;
+  height: 44px;
+}
+
+.nexops-mobile-nav-header .nexops-mobile-product-logo {
+  width: 118px;
+  max-height: 30px;
+}
+
+.nexops-mobile-nav-tenant-slot {
+  display: flex;
+  min-width: 0;
+  justify-content: center;
+}
+
+.nexops-mobile-nav-header .nexops-mobile-tenant-mark {
+  width: auto;
+  max-width: 112px;
+  max-height: 56px;
+  margin: 0;
+  color: #f8fffc;
+  text-align: center;
+}
+
+.nexops-mobile-nav-header .nexops-mobile-close-button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  padding: 0;
+  color: #f8fffc;
+  font-size: 1.7rem;
+  font-weight: 400;
+  line-height: 1;
+}
 
 .nexops-dashboard,
 .nexops-module-page {

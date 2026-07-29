@@ -989,16 +989,16 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
             <button className="nexops-mobile-nav-backdrop" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />
             <aside className="nexops-mobile-nav-sheet" id="nexops-mobile-nav" role="dialog" aria-modal="true" aria-label="NexOps navigation">
               <div className="nexops-mobile-nav-header">
-                <div className="nexops-mobile-brand-stack">
-                  <div className="nexops-mobile-brand">
-                    <div className="nexops-mobile-brand-lockup">
-                      <PlatformMark className="nexops-mobile-platform-mark" alt="NexTeam" />
-                      <ProductLogo product="nexops" className="nexops-mobile-product-logo" alt="NexOps" />
-                    </div>
-                  </div>
+                <div className="nexops-mobile-nav-product-lockup">
+                  <PlatformMark className="nexops-mobile-platform-mark" alt="NexTeam" />
+                  <ProductLogo product="nexops" className="nexops-mobile-product-logo" alt="NexOps" />
+                </div>
+                <div className="nexops-mobile-nav-tenant-slot">
                   <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} className="nexops-mobile-tenant-mark" />
                 </div>
-                <button className="nexops-mobile-close-button" type="button" onClick={() => setMobileNavOpen(false)}>Close</button>
+                <button className="nexops-mobile-close-button" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)}>
+                  <span aria-hidden="true">×</span>
+                </button>
               </div>
               <div className="nexops-mobile-nav-quick-actions">
                 <button className="nexops-create-button mobile" type="button" onClick={() => {
