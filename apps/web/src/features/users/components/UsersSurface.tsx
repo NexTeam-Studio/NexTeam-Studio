@@ -78,6 +78,7 @@ export function UsersSurface(props: UsersSurfaceProps = {}): React.ReactElement 
   const filteredAssigned = filterMembers(assigned, query);
   const filteredUnassigned = filterMembers(unassigned, query);
   const signedInMember = props.signedInUser ? toTeamMember(props.signedInUser) : undefined;
+  const canManageTeam = props.signedInUser?.role === "Owner" || props.signedInUser?.role === "Office Admin";
 
   useEffect(() => {
     setView(props.initialView ?? "team");
@@ -93,11 +94,11 @@ export function UsersSurface(props: UsersSurfaceProps = {}): React.ReactElement 
   }
 
   if (view === "own-profile" && signedInMember) {
-    return <MemberEditor member={signedInMember} ownProfile onBack={() => setView("team")} onSave={() => setSaved(true)} saved={saved} />;
+    return <MemberEditor member={signedInMember} ownProfile canManageTeam={canManageTeam} onBack={() => setView("team")} onSave={() => setSaved(true)} saved={saved} />;
   }
 
   if (selected) {
-    return <MemberEditor member={selected} onBack={() => setSelectedId(null)} onSave={() => setSaved(true)} saved={saved} />;
+    return <MemberEditor member={selected} canManageTeam={canManageTeam} onBack={() => setSelectedId(null)} onSave={() => setSaved(true)} saved={saved} />;
   }
 
   return (
@@ -136,7 +137,7 @@ function MemberTable(props: { members: TeamMember[]; onSelect: (id: string) => v
   return <div className="users-table-wrap"><table className="users-table"><thead><tr><th>Team member</th><th>Role</th><th>Last active</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{props.members.map((member) => <tr key={member.id}><td><button type="button" className="users-member" onClick={() => props.onSelect(member.id)}><Avatar member={member} /><span><strong>{member.name}</strong><small>{member.email}</small></span></button></td><td><span className={`users-role users-role--${roleTone(member.role)}`}>{member.role}</span></td><td>{member.lastActive}</td><td>{props.action ? <button type="button" className="users-text-button" onClick={() => props.action?.onClick(member.id)}>{props.action.label}</button> : <button type="button" className="users-row-button" aria-label={`Edit ${member.name}`} onClick={() => props.onSelect(member.id)}>Edit</button>}</td></tr>)}</tbody></table>{props.members.length === 0 ? <p className="users-empty">No team members match that search.</p> : null}</div>;
 }
 
-function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; onBack: () => void; onSave: () => void; saved: boolean }): React.ReactElement {
+function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; canManageTeam: boolean; onBack: () => void; onSave: () => void; saved: boolean }): React.ReactElement {
   const [tab, setTab] = useState<"profile" | "permissions" | "preferences">("profile");
   const [role, setRole] = useState<MemberRole>(props.member.role);
   const [administrator, setAdministrator] = useState(props.member.role === "Owner");
@@ -144,21 +145,28 @@ function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; onBack:
     "Schedule": "Create & edit", "Clients & properties": "View", "Requests": "Create & edit", "Quotes & invoices": "None", "Jobs & visits": "Create & edit", "Files & media": "View", "Notes": "Create & edit",
   });
   const [subscriptions, setSubscriptions] = useState({ daily: true, activity: true, platform: false, marketing: false });
+  const [dirty, setDirty] = useState(false);
+
+  function saveChanges(): void {
+    props.onSave();
+    setDirty(false);
+  }
 
   return <main className="users-surface users-member-editor">
     <button type="button" className="users-back" onClick={props.onBack}>← Back to team</button>
     <header className="users-editor-heading"><div>{props.ownProfile ? null : <p className="users-kicker">Team member</p>}{props.ownProfile ? <h1 className="users-page-title"><PersonTitleIcon /> <span>My Profile</span></h1> : <h1>{props.member.name}</h1>}<p>{props.ownProfile ? `${props.member.name} — ${props.member.title}` : `${props.member.title} · Last active ${props.member.lastActive}`}</p></div><Avatar member={props.member} large /></header>
     <div className="users-tabs" role="tablist" aria-label="Team member editor"><button type="button" className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")}>Profile</button><button type="button" className={tab === "permissions" ? "active" : ""} onClick={() => setTab("permissions")}>Role & access</button><button type="button" className={tab === "preferences" ? "active" : ""} onClick={() => setTab("preferences")}>Preferences</button></div>
-    {tab === "profile" ? <ProfilePanel member={props.member} /> : null}
-    {tab === "permissions" ? <PermissionsPanel role={role} setRole={setRole} administrator={administrator} setAdministrator={setAdministrator} access={access} setAccess={setAccess} /> : null}
-    {tab === "preferences" ? <PreferencesPanel subscriptions={subscriptions} setSubscriptions={setSubscriptions} /> : null}
-    <footer className="users-save-bar"><span>{props.saved ? "Changes saved for this team member." : "Changes apply to this team member only."}</span><div><button type="button" className="users-danger">Deactivate</button><button type="button" className="users-primary" onClick={props.onSave}>{props.saved ? "Saved" : "Save changes"}</button></div></footer>
+    {tab === "profile" ? <ProfilePanel member={props.member} onEdit={() => setDirty(true)} /> : null}
+    {tab === "permissions" ? <PermissionsPanel role={role} setRole={(nextRole) => { setRole(nextRole); setDirty(true); }} administrator={administrator} setAdministrator={(value) => { setAdministrator(value); setDirty(true); }} access={access} setAccess={(nextAccess) => { setAccess(nextAccess); setDirty(true); }} /> : null}
+    {tab === "preferences" ? <PreferencesPanel subscriptions={subscriptions} setSubscriptions={(nextSubscriptions) => { setSubscriptions(nextSubscriptions); setDirty(true); }} /> : null}
+    {dirty ? <button type="button" className="users-profile-save" onClick={saveChanges} aria-label="Save changes" title="Save changes">✓</button> : null}
+    {!props.ownProfile && props.canManageTeam ? <button type="button" className="users-profile-deactivate">Deactivate user</button> : null}
   </main>;
 }
 
-function ProfilePanel(props: { member: TeamMember }): React.ReactElement {
+function ProfilePanel(props: { member: TeamMember; onEdit: () => void }): React.ReactElement {
   const { firstName, middleName, lastName } = nameParts(props.member.name);
-  return <div className="users-editor-grid"><section className="users-panel"><div className="users-panel-heading"><div><p className="users-kicker">Contact details</p><h2>Personal information</h2></div><button type="button" className="users-text-button">Change photo</button></div><div className="users-form-grid"><Field label="First name" value={firstName} required /><Field label="Middle name" value={middleName} optional /><Field label="Last name" value={lastName} required /><Field label="Title" value={props.member.title} placeholder="e.g. Field Technician" /><Field label="Email address" value={props.member.email} /><Field label="Mobile number" value={props.member.phone} /><Field label="Street address" value="" placeholder="Add street address" /><Field label="City" value="" placeholder="Add city" /><Field label="State / province" value="" placeholder="Add state or province" /></div></section><section className="users-panel"><p className="users-kicker">Field readiness</p><h2>Working hours</h2><p className="users-panel-detail">Availability is used by scheduling and helps the office know who can be assigned.</p><div className="users-hours">{workingHours.map(([day, hours]) => <div key={day}><span>{day}</span><strong className={hours === "Unavailable" ? "muted" : ""}>{hours}</strong></div>)}</div><button className="users-secondary users-full-width" type="button">Edit working hours</button></section></div>;
+  return <div className="users-editor-grid"><section className="users-panel"><div className="users-panel-heading"><div><p className="users-kicker">Contact details</p><h2>Personal information</h2></div><button type="button" className="users-text-button" onClick={props.onEdit}>Change photo</button></div><div className="users-form-grid"><Field label="First name" value={firstName} required onChange={props.onEdit} /><Field label="Middle name" value={middleName} optional onChange={props.onEdit} /><Field label="Last name" value={lastName} required onChange={props.onEdit} /><Field label="Title" value={props.member.title} placeholder="e.g. Field Technician" onChange={props.onEdit} /><Field label="Email address" value={props.member.email} onChange={props.onEdit} /><Field label="Mobile number" value={props.member.phone} onChange={props.onEdit} /><Field label="Street address" value="" placeholder="Add street address" onChange={props.onEdit} /><Field label="City" value="" placeholder="Add city" onChange={props.onEdit} /><Field label="State / province" value="" placeholder="Add state or province" onChange={props.onEdit} /></div></section><section className="users-panel"><p className="users-kicker">Field readiness</p><h2>Working hours</h2><p className="users-panel-detail">Availability is used by scheduling and helps the office know who can be assigned.</p><div className="users-hours">{workingHours.map(([day, hours]) => <div key={day}><span>{day}</span><strong className={hours === "Unavailable" ? "muted" : ""}>{hours}</strong></div>)}</div><button className="users-secondary users-full-width" type="button" onClick={props.onEdit}>Edit working hours</button></section></div>;
 }
 
 function PermissionsPanel(props: { role: MemberRole; setRole: (role: MemberRole) => void; administrator: boolean; setAdministrator: (value: boolean) => void; access: Record<string, AccessLevel>; setAccess: (access: Record<string, AccessLevel>) => void }): React.ReactElement {
@@ -219,7 +227,7 @@ function colorFor(index: number): string {
   return colors[index % colors.length] ?? "aqua";
 }
 
-function Field(props: { label: string; value: string; placeholder?: string; required?: boolean; optional?: boolean }): React.ReactElement { return <label className="users-field"><span>{props.label}{props.required ? <b aria-label="required"> *</b> : null}{props.optional ? <em> (optional)</em> : null}</span><input defaultValue={props.value} placeholder={props.placeholder} required={props.required} /></label>; }
+function Field(props: { label: string; value: string; placeholder?: string; required?: boolean; optional?: boolean; onChange?: () => void }): React.ReactElement { return <label className="users-field"><span>{props.label}{props.required ? <b aria-label="required"> *</b> : null}{props.optional ? <em> (optional)</em> : null}</span><input defaultValue={props.value} placeholder={props.placeholder} required={props.required} onChange={props.onChange} /></label>; }
 function nameParts(name: string): { firstName: string; middleName: string; lastName: string } { const parts = name.trim().split(/\s+/).filter(Boolean); return { firstName: parts[0] ?? "", middleName: parts.length > 2 ? parts.slice(1, -1).join(" ") : "", lastName: parts.length > 1 ? parts.at(-1) ?? "" : "" }; }
 function filterMembers(members: TeamMember[], query: string): TeamMember[] { const term = query.trim().toLowerCase(); return term ? members.filter((member) => `${member.name} ${member.email} ${member.role}`.toLowerCase().includes(term)) : members; }
 function roleTone(role: MemberRole): string { return role === "Owner" ? "owner" : role === "Office Admin" ? "admin" : role === "Technician" ? "tech" : "custom"; }

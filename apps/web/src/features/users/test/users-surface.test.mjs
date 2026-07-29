@@ -28,6 +28,8 @@ test("users surface exports the signed-in-user contract and own-profile view", a
   assert.match(source, /Middle name/);
   assert.match(source, /Last name/);
   assert.match(source, /function nameParts/);
+  assert.match(source, /users-profile-save/);
+  assert.match(source, /props\.canManageTeam/);
   assert.match(source, /function toTeamMember/);
   assert.match(source, /function Avatar/);
 });
