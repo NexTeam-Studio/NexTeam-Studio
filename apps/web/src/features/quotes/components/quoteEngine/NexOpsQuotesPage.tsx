@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
 import type { AddressLike } from "@nexteam/shared";
 import { PaymentScheduleEditor, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "../../../../features/invoices/components/invoiceStructure/PaymentScheduleEditor";
 import { NexOpsCatalogPicker, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";
@@ -1483,7 +1484,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
     <section className="nexops-module-page quote-engine-page">
       <div className="nexops-page-heading">
         <div>
-          <h1>Quotes</h1>
+          <NexOpsPageTitle module="quotes">Quotes</NexOpsPageTitle>
           <p>Real numbering, real templates, real delivery, and the client approval gate all live on this rail now.</p>
         </div>
         <div className="nexops-inline-actions">
