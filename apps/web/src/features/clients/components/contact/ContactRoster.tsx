@@ -1,4 +1,5 @@
 import React from "react";
+import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 
 export interface ContactRosterClient {
   id: string;
@@ -33,7 +34,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
     <section className="nexops-clients-workspace">
       <div className="nexops-clients-heading">
         <div>
-          <h1>Clients</h1>
+          <h1 className="nexops-page-title-with-icon"><NexOpsNavGlyph module="clients" /><span>Clients</span></h1>
           <p>{props.status} Open any row to move into the full client workspace.</p>
         </div>
         <div className="nexops-client-actions">
