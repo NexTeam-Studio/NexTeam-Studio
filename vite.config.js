@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
         "/api/approvals": localApiProxy,
         "/api/media": localApiProxy,
         "/api/nexi": localApiProxy,
+        "/api/nexops": localApiProxy,
         "/api/platform": localApiProxy,
         "/api/voice": localApiProxy,
         "/api/gbp": localApiProxy,
