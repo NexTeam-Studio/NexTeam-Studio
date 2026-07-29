@@ -849,6 +849,18 @@ body.nexops-mobile-nav-open {
   line-height: 1;
 }
 
+.nexops-page-title-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nexops-page-title-with-icon svg {
+  width: 0.86em;
+  height: 0.86em;
+  flex: 0 0 auto;
+}
+
 .nexops-page-heading p {
   margin: 10px 0 0;
   color: #526675;
