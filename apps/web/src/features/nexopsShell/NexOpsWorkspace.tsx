@@ -44,6 +44,7 @@ export * from "./workspaceSupport";
 
 export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React.ReactElement {
   const profileName = operatorProfileName(props.user);
+  const profileFullName = operatorProfileFullName(props.user);
   const profileInitials = operatorProfileInitials(profileName);
   const initialPathState = parseNexOpsLocation(window.location.pathname);
   const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
@@ -883,7 +884,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
       return <div className="nexops-embedded-panel"><ApprovalQueuePanel tenantId={operatorContext.tenantId} /></div>;
     }
     if (activeModule === "users") {
-      return <Suspense fallback={<div className="nexops-embedded-panel"><section className="nexops-module-card"><p className="eyebrow">Loading</p><h2>Opening team and roles</h2><p>Preparing your people workspace.</p></section></div>}><UsersSurface /></Suspense>;
+      return <Suspense fallback={<div className="nexops-embedded-panel"><section className="nexops-module-card"><p className="eyebrow">Loading</p><h2>Opening your profile</h2><p>Preparing your people workspace.</p></section></div>}><UsersSurface initialView="own-profile" signedInUser={{ id: props.user.uid, name: profileFullName, email: props.user.email ?? "", initials: profileInitials, avatarUrl: props.user.photoURL ?? undefined }} /></Suspense>;
     }
     if (activeModule === "capture") {
       return renderCaptureWorkspace();
@@ -1166,15 +1167,16 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
 }
 
 function operatorProfileName(user: User): string {
+  return operatorProfileFullName(user).split(/\s+/)[0] || "Operator";
+}
+
+function operatorProfileFullName(user: User): string {
   const displayName = user.displayName?.trim();
   if (displayName) {
-    return displayName.split(/\s+/)[0] || "Operator";
+    return displayName;
   }
   const emailName = user.email?.split("@", 1)[0]?.replace(/[._-]+/g, " ").trim();
-  if (!emailName) {
-    return "Operator";
-  }
-  return emailName.replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return emailName ? emailName.replace(/\b\w/g, (letter) => letter.toUpperCase()) : "Operator";
 }
 
 function operatorProfileInitials(name: string): string {
