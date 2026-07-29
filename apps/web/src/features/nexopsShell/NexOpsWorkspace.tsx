@@ -1190,7 +1190,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
                   <span className="nexops-mobile-profile-avatar" aria-hidden="true">{profileInitials}</span>
                   <span className="nexops-mobile-profile-copy">
                     <strong>{profileName}</strong>
-                    <span>View profile</span>
+                    <span>Signed in for this tenant</span>
                   </span>
                 </button>
                 <button className="nexops-mobile-footer-sign-out" type="button" onClick={() => void signOutOperator(props.auth)}>
