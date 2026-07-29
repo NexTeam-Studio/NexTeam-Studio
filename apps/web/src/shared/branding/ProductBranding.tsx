@@ -106,9 +106,11 @@ export function TenantBrandMark(props: {
     );
   }
   return (
-    <div className={`tenant-wordmark ${props.className ?? ""}`.trim()} aria-label={`${displayName} logo placeholder`}>
-      {displayName}
-    </div>
+    <img
+      alt={`${displayName} logo placeholder`}
+      className={`tenant-logo tenant-logo-placeholder ${props.className ?? ""}`.trim()}
+      src={SIDEBAR_STACK_TOP_LOGO_SRC}
+    />
   );
 }
 
