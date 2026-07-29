@@ -120,7 +120,13 @@ export function TenantBrandMark(props: {
       />
     );
   }
-  return null;
+  return (
+    <img
+      alt={`${displayName} logo placeholder`}
+      className={`tenant-logo tenant-logo-placeholder ${props.className ?? ""}`.trim()}
+      src={SIDEBAR_STACK_TOP_LOGO_SRC}
+    />
+  );
 }
 
 export function SidebarBrandStack(props: {
