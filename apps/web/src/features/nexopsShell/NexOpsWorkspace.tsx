@@ -1101,10 +1101,10 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
                 <div className="nexops-mobile-nav-product-lockup">
                   <PlatformMark className="nexops-mobile-platform-mark" alt="NexTeam" />
                   <ProductLogo product="nexops" className="nexops-mobile-product-logo" alt="NexOps" />
-                </div>
-                {hasTenantLogo(tenantBranding, operatorContext.tenantId) ? <div className="nexops-mobile-nav-tenant-slot">
-                  <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} className="nexops-mobile-tenant-mark" />
-                </div> : null}
+                 </div>
+                 <div className="nexops-mobile-nav-tenant-slot">
+                   <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} className="nexops-mobile-tenant-mark" />
+                 </div>
                 <button className="nexops-mobile-close-button" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)}>
                   <span aria-hidden="true">×</span>
                 </button>
