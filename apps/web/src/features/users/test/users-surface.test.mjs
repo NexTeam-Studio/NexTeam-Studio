@@ -8,7 +8,7 @@ const cssUrl = new URL("../styles/users.css", import.meta.url);
 test("users surface includes the team, profile, permission, and invite workflows", async () => {
   const [source, css] = await Promise.all([readFile(sourceUrl, "utf8"), readFile(cssUrl, "utf8")]);
 
-  for (const label of ["Invite team member", "Assigned seats", "Personal Information", "Working Hours", "Role & access", "Email preferences", "Assign seat"]) {
+  for (const label of ["Invite team member", "Assigned seats", "Personal Information", "Zip Code", "Role & access", "Email preferences", "Assign seat"]) {
     assert.match(source, new RegExp(label));
   }
   assert.match(source, /function InviteDialog/);

@@ -30,7 +30,11 @@ export interface UsersSurfaceProps {
   teamMembers?: NexOpsTeamMember[];
   /** Lets Global open the signed-in person's profile without owning profile state. */
   initialView?: UsersSurfaceView;
+  tenantId?: string;
+  getAccessToken?: () => Promise<string>;
 }
+
+interface ProfileDraft { firstName: string; middleName: string; lastName: string; title: string; email: string; phone: string; streetAddress: string; city: string; stateProvince: string; zipCode: string; }
 
 interface TeamMember extends NexOpsTeamMember {
   id: string;
@@ -94,11 +98,11 @@ export function UsersSurface(props: UsersSurfaceProps = {}): React.ReactElement 
   }
 
   if (view === "own-profile" && signedInMember) {
-    return <MemberEditor member={signedInMember} ownProfile canManageTeam={canManageTeam} onBack={() => setView("team")} onSave={() => setSaved(true)} saved={saved} />;
+    return <MemberEditor member={signedInMember} ownProfile canManageTeam={canManageTeam} tenantId={props.tenantId} getAccessToken={props.getAccessToken} onBack={() => setView("team")} onSave={() => setSaved(true)} saved={saved} />;
   }
 
   if (selected) {
-    return <MemberEditor member={selected} canManageTeam={canManageTeam} onBack={() => setSelectedId(null)} onSave={() => setSaved(true)} saved={saved} />;
+    return <MemberEditor member={selected} canManageTeam={canManageTeam} tenantId={props.tenantId} getAccessToken={props.getAccessToken} onBack={() => setSelectedId(null)} onSave={() => setSaved(true)} saved={saved} />;
   }
 
   return (
@@ -137,7 +141,7 @@ function MemberTable(props: { members: TeamMember[]; onSelect: (id: string) => v
   return <div className="users-table-wrap"><table className="users-table"><thead><tr><th>Team member</th><th>Role</th><th>Last active</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{props.members.map((member) => <tr key={member.id}><td><button type="button" className="users-member" onClick={() => props.onSelect(member.id)}><Avatar member={member} /><span><strong>{member.name}</strong><small>{member.email}</small></span></button></td><td><span className={`users-role users-role--${roleTone(member.role)}`}>{member.role}</span></td><td>{member.lastActive}</td><td>{props.action ? <button type="button" className="users-text-button" onClick={() => props.action?.onClick(member.id)}>{props.action.label}</button> : <button type="button" className="users-row-button" aria-label={`Edit ${member.name}`} onClick={() => props.onSelect(member.id)}>Edit</button>}</td></tr>)}</tbody></table>{props.members.length === 0 ? <p className="users-empty">No team members match that search.</p> : null}</div>;
 }
 
-function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; canManageTeam: boolean; onBack: () => void; onSave: () => void; saved: boolean }): React.ReactElement {
+function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; canManageTeam: boolean; tenantId?: string; getAccessToken?: () => Promise<string>; onBack: () => void; onSave: () => void; saved: boolean }): React.ReactElement {
   const [tab, setTab] = useState<"profile" | "permissions" | "preferences">("profile");
   const [role, setRole] = useState<MemberRole>(props.member.role);
   const [administrator, setAdministrator] = useState(props.member.role === "Owner");
@@ -146,27 +150,32 @@ function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; canMana
   });
   const [subscriptions, setSubscriptions] = useState({ daily: true, activity: true, platform: false, marketing: false });
   const [dirty, setDirty] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [profileDraft, setProfileDraft] = useState<ProfileDraft>(() => profileDraftFor(props.member));
 
-  function saveChanges(): void {
-    props.onSave();
-    setDirty(false);
+  useEffect(() => { let cancelled = false; if (!props.tenantId || !props.getAccessToken) return; void (async () => { try { const token = await props.getAccessToken?.(); const response = await fetch(`/api/nexops/users/${encodeURIComponent(props.member.id)}/profile?tenantId=${encodeURIComponent(props.tenantId ?? "")}`, { headers: token ? { authorization: `Bearer ${token}` } : {} }); const body = await response.json() as { ok: boolean; profile?: Partial<ProfileDraft> | null }; if (body.ok && body.profile && !cancelled) setProfileDraft((current) => ({ ...current, ...body.profile })); } catch { /* Existing identity values remain editable when initial load fails. */ } })(); return () => { cancelled = true; }; }, [props.member.id, props.tenantId, props.getAccessToken]);
+
+  async function saveChanges(): Promise<void> {
+    if (!props.tenantId || !props.getAccessToken) { setSaveError("Profile storage is not connected."); return; }
+    setSaving(true); setSaveError("");
+    try { const token = await props.getAccessToken(); const response = await fetch(`/api/nexops/users/${encodeURIComponent(props.member.id)}/profile`, { method: "PUT", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ tenantId: props.tenantId, profile: profileDraft }) }); const body = await response.json() as { ok: boolean; error?: string; profile?: ProfileDraft }; if (!response.ok || !body.ok) throw new Error(body.error ?? "Unable to save profile."); if (body.profile) setProfileDraft(body.profile); props.onSave(); setDirty(false); } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to save profile."); } finally { setSaving(false); }
   }
 
   return <main className="users-surface users-member-editor">
     <button type="button" className="users-back" onClick={props.onBack}>← Back to team</button>
     <header className="users-editor-heading"><div>{props.ownProfile ? null : <p className="users-kicker">Team Member</p>}{props.ownProfile ? <h1 className="users-page-title"><PersonTitleIcon /> <span>My Profile</span></h1> : <h1>{props.member.name}</h1>}<div className="users-profile-identity"><Avatar member={props.member} large /><div><strong>{props.member.name}</strong><span>{props.member.title}</span></div></div></div></header>
     <div className="users-tabs" role="tablist" aria-label="Team member editor"><button type="button" className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")}>Profile</button><button type="button" className={tab === "permissions" ? "active" : ""} onClick={() => setTab("permissions")}>Role & access</button><button type="button" className={tab === "preferences" ? "active" : ""} onClick={() => setTab("preferences")}>Preferences</button></div>
-    {tab === "profile" ? <ProfilePanel member={props.member} onEdit={() => setDirty(true)} /> : null}
+    {tab === "profile" ? <ProfilePanel draft={profileDraft} onChange={(patch) => { setProfileDraft((current) => ({ ...current, ...patch })); setDirty(true); }} /> : null}
     {tab === "permissions" ? <PermissionsPanel role={role} setRole={(nextRole) => { setRole(nextRole); setDirty(true); }} administrator={administrator} setAdministrator={(value) => { setAdministrator(value); setDirty(true); }} access={access} setAccess={(nextAccess) => { setAccess(nextAccess); setDirty(true); }} /> : null}
     {tab === "preferences" ? <PreferencesPanel subscriptions={subscriptions} setSubscriptions={(nextSubscriptions) => { setSubscriptions(nextSubscriptions); setDirty(true); }} /> : null}
-    {dirty ? <button type="button" className="users-profile-save" onClick={saveChanges} aria-label="Save changes" title="Save changes">✓</button> : null}
+    {saveError ? <p className="users-profile-error" role="alert">{saveError}</p> : null}{dirty ? <button type="button" className="users-profile-save" onClick={() => void saveChanges()} aria-label="Save changes" title="Save changes" disabled={saving}>{saving ? "…" : "✓"}</button> : null}
     {!props.ownProfile && props.canManageTeam ? <button type="button" className="users-profile-deactivate">Deactivate user</button> : null}
   </main>;
 }
 
-function ProfilePanel(props: { member: TeamMember; onEdit: () => void }): React.ReactElement {
-  const { firstName, middleName, lastName } = nameParts(props.member.name);
-  return <div className="users-editor-grid"><section className="users-panel"><div className="users-panel-heading"><div><p className="users-kicker">Contact Details</p><h2>Personal Information</h2></div><button type="button" className="users-text-button" onClick={props.onEdit}>Change Photo</button></div><div className="users-form-grid"><Field label="First Name" value={firstName} required onChange={props.onEdit} /><Field label="Middle Name" value={middleName} optional onChange={props.onEdit} /><Field label="Last Name" value={lastName} required onChange={props.onEdit} /><Field label="Title" value={props.member.title} placeholder="e.g. Field Technician" onChange={props.onEdit} /><Field label="Email Address" value={props.member.email} onChange={props.onEdit} /><Field label="Mobile Number" value={props.member.phone} onChange={props.onEdit} /><Field label="Street Address" value="" placeholder="Add street address" onChange={props.onEdit} /><Field label="City" value="" placeholder="Add city" onChange={props.onEdit} /><Field label="State / Province" value="" placeholder="Add state or province" onChange={props.onEdit} /><Field label="Zip Code" value="" placeholder="Add zip code" onChange={props.onEdit} /></div></section><section className="users-panel"><p className="users-kicker">Field Readiness</p><h2>Working Hours</h2><p className="users-panel-detail">Availability is used by scheduling and helps the office know who can be assigned.</p><div className="users-hours">{workingHours.map(([day, hours]) => <div key={day}><span>{day}</span><strong className={hours === "Unavailable" ? "muted" : ""}>{hours}</strong></div>)}</div><button className="users-secondary users-full-width" type="button" onClick={props.onEdit}>Edit Working Hours</button></section></div>;
+function ProfilePanel(props: { draft: ProfileDraft; onChange: (patch: Partial<ProfileDraft>) => void }): React.ReactElement {
+  return <div className="users-editor-grid"><section className="users-panel"><div className="users-panel-heading"><div><p className="users-kicker">Contact Details</p><h2>Personal Information</h2></div></div><div className="users-form-grid"><Field label="First Name" value={props.draft.firstName} required onChange={(value) => props.onChange({ firstName: value })} /><Field label="Middle Name" value={props.draft.middleName} optional onChange={(value) => props.onChange({ middleName: value })} /><Field label="Last Name" value={props.draft.lastName} required onChange={(value) => props.onChange({ lastName: value })} /><Field label="Title" value={props.draft.title} onChange={(value) => props.onChange({ title: value })} /><Field label="Email Address" value={props.draft.email} onChange={(value) => props.onChange({ email: value })} /><Field label="Mobile Number" value={props.draft.phone} onChange={(value) => props.onChange({ phone: value })} /><Field label="Street Address" value={props.draft.streetAddress} onChange={(value) => props.onChange({ streetAddress: value })} /><Field label="City" value={props.draft.city} onChange={(value) => props.onChange({ city: value })} /><Field label="State / Province" value={props.draft.stateProvince} onChange={(value) => props.onChange({ stateProvince: value })} /><Field label="Zip Code" value={props.draft.zipCode} onChange={(value) => props.onChange({ zipCode: value })} /></div></section></div>;
 }
 
 function PermissionsPanel(props: { role: MemberRole; setRole: (role: MemberRole) => void; administrator: boolean; setAdministrator: (value: boolean) => void; access: Record<string, AccessLevel>; setAccess: (access: Record<string, AccessLevel>) => void }): React.ReactElement {
@@ -227,7 +236,8 @@ function colorFor(index: number): string {
   return colors[index % colors.length] ?? "aqua";
 }
 
-function Field(props: { label: string; value: string; placeholder?: string; required?: boolean; optional?: boolean; onChange?: () => void }): React.ReactElement { return <label className="users-field"><span>{props.label}{props.required ? <b aria-label="required"> *</b> : null}{props.optional ? <em> (optional)</em> : null}</span><input defaultValue={props.value} placeholder={props.placeholder} required={props.required} onChange={props.onChange} /></label>; }
+function Field(props: { label: string; value: string; placeholder?: string; required?: boolean; optional?: boolean; onChange?: (value: string) => void }): React.ReactElement { return <label className="users-field"><span>{props.label}{props.required ? <b aria-label="required"> *</b> : null}{props.optional ? <em> (optional)</em> : null}</span><input value={props.value} placeholder={props.placeholder} required={props.required} onChange={(event) => props.onChange?.(event.target.value)} /></label>; }
+function profileDraftFor(member: TeamMember): ProfileDraft { const { firstName, middleName, lastName } = nameParts(member.name); return { firstName, middleName, lastName, title: member.title, email: member.email, phone: member.phone, streetAddress: "", city: "", stateProvince: "", zipCode: "" }; }
 function nameParts(name: string): { firstName: string; middleName: string; lastName: string } { const parts = name.trim().split(/\s+/).filter(Boolean); return { firstName: parts[0] ?? "", middleName: parts.length > 2 ? parts.slice(1, -1).join(" ") : "", lastName: parts.length > 1 ? parts.at(-1) ?? "" : "" }; }
 function filterMembers(members: TeamMember[], query: string): TeamMember[] { const term = query.trim().toLowerCase(); return term ? members.filter((member) => `${member.name} ${member.email} ${member.role}`.toLowerCase().includes(term)) : members; }
 function roleTone(role: MemberRole): string { return role === "Owner" ? "owner" : role === "Office Admin" ? "admin" : role === "Technician" ? "tech" : "custom"; }
