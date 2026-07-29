@@ -24,6 +24,7 @@ Hard rule: completely isolated from Aquatrace — no shared anything, ever.
 - CompanyCam must remain read-only from repo-controlled workflows.
 - Do not mix unrelated dirty worktree files into a commit.
 - Every completion claim must include a proof package.
+- Persistence is the default acceptance criterion for every screen that represents business data. A feature is not functional until it has: a tenant-scoped data model and storage; server-side authorization and validation; UI read/save/error handling; reload proof that saved data persists; tests proving both authorized writes and unauthorized-write denial; and a short contract recording its fields, commands, and events. Purely visual work must be labeled a prototype and followed immediately by this persistence slice before it can be called functional.
 - Before building any Phase 1 business-engine or field-documentation work, read both master specs:
   - `docs/specs/phase1/NEXTEAM-PHASE1-MASTER-SPEC.md`
   - `docs/specs/phase1/NEXTEAM-FIELDDOCS-MASTER-SPEC.md`
