@@ -13,6 +13,7 @@ const PRODUCT_LOGO_SRC: Record<ProductBrand, string> = {
 };
 
 const SIDEBAR_STACK_TOP_LOGO_SRC = "/assets/brand/nexteam-block-logo.png";
+const NEXTEAM_WORDMARK_SRC = "/assets/brand/nexteam-wordmark.png";
 
 const PRODUCT_LABEL: Record<ProductBrand, string> = {
   nexops: "NexOps",
@@ -124,7 +125,7 @@ export function TenantBrandMark(props: {
     <img
       alt={`${displayName} logo placeholder`}
       className={`tenant-logo tenant-logo-placeholder ${props.className ?? ""}`.trim()}
-      src={SIDEBAR_STACK_TOP_LOGO_SRC}
+      src={NEXTEAM_WORDMARK_SRC}
     />
   );
 }
