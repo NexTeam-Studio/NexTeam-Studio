@@ -73,6 +73,7 @@ import { configuredTenantId } from "./core/tenantConfig.js";
 import { registerSystemRoutes } from "./core/systemRoutes.js";
 import { assertRequiredPersistence } from "./app/persistencePolicy.js";
 import { registerIntegratedNexiRoutes } from "./nexi/integratedRoutes.js";
+import { registerUsersRoutes } from "./modules/nexops/areas/users/routes.js";
 
 const app = express();
 const runtimeTenantId = configuredTenantId(process.env, "serverBootstrap");
@@ -280,6 +281,7 @@ app.use("/api/voice", createVoiceRouter(process.env));
 
 registerSystemRoutes(app, { env: process.env, tenantId: runtimeTenantId, localProfiles: listLocalDevWebProfiles });
 registerLocalDevAuthRoutes(app, { env: process.env, tenantId: runtimeTenantId });
+registerUsersRoutes(app, process.env);
 registerNativeMediaRoutes(app, { env: process.env, tenantId: runtimeTenantId, repository: mediaRepository });
 registerApprovalQueueRoutes(app, { env: process.env, tenantId: runtimeTenantId, approvalQueue });
 

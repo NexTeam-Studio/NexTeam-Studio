@@ -58,6 +58,6 @@ export function registerUsersRoutes(app: import("express").Express, env: NodeJS.
 }
 
 function sendError(res: Response, error: unknown): void {
-  const status = error instanceof RailError ? error.status : 500;
+  const status = error instanceof RailError && error.status ? error.status : 500;
   res.status(status).json({ ok: false, error: error instanceof Error ? error.message : "Unable to save profile." });
 }
