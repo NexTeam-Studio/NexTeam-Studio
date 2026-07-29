@@ -632,7 +632,33 @@ body.nexops-mobile-nav-open {
   border-top: 1px solid rgba(8, 33, 49, 0.08);
 }
 
-.nexops-mobile-nav-footer > div {
+.nexops-mobile-profile-button {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nexops-mobile-profile-avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 50%;
+  color: #08100c;
+  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.nexops-mobile-profile-copy {
   min-width: 0;
   display: grid;
   gap: 2px;
