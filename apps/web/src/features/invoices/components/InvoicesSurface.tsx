@@ -1,10 +1,11 @@
 import React from "react";
+import { NexOpsPageTitle } from "../../nexopsShell/components/NexOpsPageTitle";
 
 export function InvoicesSurface(): React.ReactElement {
   return (
     <section className="invoices-surface">
       <p className="ui-eyebrow">NexOps Invoices</p>
-      <h1>Invoice UI can evolve without sharing quote or job files.</h1>
+      <NexOpsPageTitle module="invoices">Invoices</NexOpsPageTitle>
       <p>
         This route is the browser seam for invoice PDFs, checkout launch, paid-state receipts, and customer portal
         follow-through. Invoice work now has its own home instead of competing with broader platform overview changes.

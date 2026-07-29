@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { AddressLike } from "@nexteam/shared";
+import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
 import { PaymentScheduleEditor, blankPaymentSchedule, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "./PaymentScheduleEditor";
 import { NexOpsCatalogPicker, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";
 import { invoiceTemplateVariables, type CommunicationTemplateRecord, resolveTemplateDraft } from "../../../../shared/communications/communicationTemplates";
@@ -1249,7 +1250,9 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
     <section className="nexops-module-page">
       <div className="nexops-page-heading">
         <div>
-          <h1>{props.entryPoint === "payments" ? "Payments" : "Invoices"}</h1>
+          <NexOpsPageTitle module={props.entryPoint === "payments" ? "payments" : "invoices"}>
+            {props.entryPoint === "payments" ? "Payments" : "Invoices"}
+          </NexOpsPageTitle>
           <p>Draft, send, collect, recover, and pause at receipt review before anything goes out the door.</p>
         </div>
         <div className="nexops-inline-actions">
