@@ -34,6 +34,7 @@ const NexOpsQuotesPage = React.lazy(async () => ({ default: (await import("../..
 const NexOpsRequestsPage = React.lazy(async () => ({ default: (await import("../requests/components/requestCore/NexOpsRequestsPage")).NexOpsRequestsPage }));
 const NexOpsSchedulePage = React.lazy(async () => ({ default: (await import("../../features/visits/components/visitCore/NexOpsSchedulePage")).NexOpsSchedulePage }));
 const NexOpsSettingsPage = React.lazy(async () => ({ default: (await import("../../features/settings/components/tenantConfig/NexOpsSettingsPage")).NexOpsSettingsPage }));
+const UsersSurface = React.lazy(async () => ({ default: (await import("../../features/users/components/UsersSurface")).UsersSurface }));
 
 
 import type { OperatorContext, TenantBranding, TenantBrandingResponse, ScheduleScope, WorkspaceTarget } from "./contracts/workspaceContracts";
@@ -42,6 +43,8 @@ export type * from "./contracts/workspaceContracts";
 export * from "./workspaceSupport";
 
 export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React.ReactElement {
+  const profileName = operatorProfileName(props.user);
+  const profileInitials = operatorProfileInitials(profileName);
   const initialPathState = parseNexOpsLocation(window.location.pathname);
   const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
   const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
@@ -879,6 +882,9 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     if (activeModule === "approvals") {
       return <div className="nexops-embedded-panel"><ApprovalQueuePanel tenantId={operatorContext.tenantId} /></div>;
     }
+    if (activeModule === "users") {
+      return <Suspense fallback={<div className="nexops-embedded-panel"><section className="nexops-module-card"><p className="eyebrow">Loading</p><h2>Opening team and roles</h2><p>Preparing your people workspace.</p></section></div>}><UsersSurface /></Suspense>;
+    }
     if (activeModule === "capture") {
       return renderCaptureWorkspace();
     }
@@ -1077,10 +1083,13 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
                 </section>
               ))}
               <div className="nexops-mobile-nav-footer">
-                <div>
-                  <strong>{props.user.email ?? "Operator"}</strong>
-                  <span>Signed in for this tenant</span>
-                </div>
+                <button className="nexops-mobile-profile-button" type="button" onClick={() => setModule("users")} aria-label={`Open ${profileName}'s profile`}>
+                  <span className="nexops-mobile-profile-avatar" aria-hidden="true">{profileInitials}</span>
+                  <span className="nexops-mobile-profile-copy">
+                    <strong>{profileName}</strong>
+                    <span>View profile</span>
+                  </span>
+                </button>
                 <button className="nexops-mobile-footer-sign-out" type="button" onClick={() => void signOutOperator(props.auth)}>
                   <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
                     <path d="M12 4.5h2a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 14 15.5h-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -1154,4 +1163,21 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
       {renderCreateClientPanel()}
     </main>
   );
+}
+
+function operatorProfileName(user: User): string {
+  const displayName = user.displayName?.trim();
+  if (displayName) {
+    return displayName.split(/\s+/)[0] || "Operator";
+  }
+  const emailName = user.email?.split("@", 1)[0]?.replace(/[._-]+/g, " ").trim();
+  if (!emailName) {
+    return "Operator";
+  }
+  return emailName.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function operatorProfileInitials(name: string): string {
+  const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
+  return initials || "O";
 }

@@ -9,6 +9,7 @@ export type NexOpsModule =
   | "payments"
   | "imports"
   | "approvals"
+  | "users"
   | "settings"
   | "patterns"
   | "capture";
@@ -69,6 +70,7 @@ export const NEXOPS_MODULES: NexOpsModuleEntry[] = [
   { id: "payments", label: "Payments", path: "/nexops/payments" },
   { id: "imports", label: "Import & Sync", path: "/nexops/imports" },
   { id: "approvals", label: "Approvals", path: "/nexops/approvals" },
+  { id: "users", label: "Team & roles", path: "/nexops/users", hidden: true },
   { id: "capture", label: "Capture", path: "/nexops/capture", hidden: true },
   { id: "settings", label: "Settings", path: "/nexops/settings", hidden: true },
   { id: "patterns", label: "Patterns", path: "/nexops/patterns", hidden: true }
