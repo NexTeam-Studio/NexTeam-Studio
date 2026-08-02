@@ -114,17 +114,8 @@ test("request routes create, update, convert, archive, and reopen while preservi
       body: JSON.stringify({ tenantId: "aquatrace" })
     });
     const archiveBody = await archiveResponse.json();
-    assert.equal(archiveBody.ok, true);
-    assert.equal(archiveBody.request.status, "archived");
-
-    const reopenResponse = await fetch(`${base}/api/crm/requests/${requestBody.request.id}/reopen`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tenantId: "aquatrace" })
-    });
-    const reopenBody = await reopenResponse.json();
-    assert.equal(reopenBody.ok, true);
-    assert.equal(reopenBody.request.status, "new");
+    assert.equal(archiveBody.ok, false);
+    assert.equal(archiveResponse.status, 409);
 
     const secondRequestResponse = await fetch(`${base}/api/crm/requests`, {
       method: "POST",
@@ -149,6 +140,13 @@ test("request routes create, update, convert, archive, and reopen while preservi
     });
     const secondRequestBody = await secondRequestResponse.json();
     assert.equal(secondRequestBody.ok, true);
+
+    const reviewedSecondRequestResponse = await fetch(`${base}/api/crm/requests/${secondRequestBody.request.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace", reviewedAt: "2026-07-12T12:05:00.000Z" })
+    });
+    assert.equal((await reviewedSecondRequestResponse.json()).ok, true);
 
     const jobResponse = await fetch(`${base}/api/crm/requests/${secondRequestBody.request.id}/convert-to-job`, {
       method: "POST",
