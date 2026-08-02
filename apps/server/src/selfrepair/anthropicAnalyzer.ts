@@ -144,7 +144,13 @@ function buildPrompt(input: SelfRepairAnalyzeInput, deterministic: SelfRepairAna
       ...collection(input.exportData, "nexiRegressionWallRuns", input.date),
       ...collection(input.exportData, "wallStatus", input.date)
     ].map(compactRecord),
-    instruction: "Return JSON only. Identify additional unflagged Nexi defects by class A-G/UNKNOWN. Do not propose code edits as repairs. Do not include email bodies or secret values. Findings must include exact repro phrasing when present."
+    instruction: [
+      "Return one JSON object only, with no markdown or explanation outside the JSON.",
+      "Use exactly this shape:",
+      '{"findings":[{"classId":"A_SINGLE_RAIL_CONCLUSION|B_FABRICATED_TOOL_INPUT|C_INTENT_MISROUTING|D_CAPABILITY_GAP_MISCLASSIFIED|E_TOOL_EXCEPTION_LEAK|F_TENANT_OR_SOURCE_SCOPE|G_USER_FACING_REALITY_GAP|UNKNOWN","priority":"P1|P2|P3","title":"short title","evidenceRefs":["record reference"],"reproPhrasings":["exact user phrasing"],"suspectedFiles":["possible path"],"notes":"optional"}],"watchItems":["short watch item"]}',
+      "Every finding must include classId, priority, title, and at least one reproPhrasing. If you cannot classify a finding, use UNKNOWN and P3. If there are no additional findings, return {\"findings\":[],\"watchItems\":[]}.",
+      "Identify only additional unflagged Nexi defects. Do not propose code edits as repairs. Do not include email bodies or secret values."
+    ].join(" ")
   };
   return JSON.stringify(payload);
 }
@@ -172,14 +178,28 @@ function extractJson(raw: string): unknown {
   }
 }
 
+function incompleteFindingCount(value: unknown): number | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const findings = (value as { findings?: unknown }).findings;
+  return Array.isArray(findings) && findings.length > 0 ? findings.length : undefined;
+}
+
 function parseProviderAnalysis(text: string): z.infer<typeof anthropicAnalysisSchema> {
   try {
-    return anthropicAnalysisSchema.parse(extractJson(text));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown Anthropic parse error.";
+    const raw = extractJson(text);
+    const parsed = anthropicAnalysisSchema.safeParse(raw);
+    if (parsed.success) return parsed.data;
+    const findingCount = incompleteFindingCount(raw);
     return {
       findings: [],
-      watchItems: [`Anthropic self-repair response could not be parsed; deterministic findings were preserved. ${message}`]
+      watchItems: [findingCount
+        ? `Anthropic review returned ${findingCount} incomplete finding${findingCount === 1 ? "" : "s"}; deterministic findings were retained.`
+        : "Anthropic review returned an incomplete response; deterministic findings were retained."]
+    };
+  } catch {
+    return {
+      findings: [],
+      watchItems: ["Anthropic review returned an unreadable response; deterministic findings were retained."]
     };
   }
 }
