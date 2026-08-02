@@ -116,7 +116,7 @@ function buildMorningReport(log: Omit<SelfRepairLog, "morningReport" | "reportDe
       `Repair Agent: ${execution?.repairAgent ?? "Nexi Product Repair Agent"}`,
       `Resolution Performed: ${execution?.resolution ?? "No automatic repair was performed."}`,
       `Verification: ${execution?.verification ?? "A product repair task was recorded for this issue."}`,
-      `Status: ${execution?.status === "performed" ? "Repair performed and verified." : fixBrief?.title ?? "Needs product repair."}`
+      `Status: ${execution?.status === "performed" ? "Safe repair performed and receipt verified. Product-code behavior was not changed by this audit." : fixBrief?.title ?? "Needs product repair."}`
     );
   }
   if (log.watchItems.length) {
