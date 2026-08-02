@@ -18,6 +18,7 @@ import {
   validateCustomFieldDraftRows
 } from "../domain/clientProfile.ts";
 
+
 function blankDraft() {
   return {
     title: "No title",

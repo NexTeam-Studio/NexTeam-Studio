@@ -1,5 +1,6 @@
 import React from "react";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
+import { isImportedHistoryRecord } from "./domain/clientProfile";
 
 export interface ContactRosterClient {
   id: string;
@@ -7,6 +8,7 @@ export interface ContactRosterClient {
   phones: string[];
   emails: string[];
   tags?: string[];
+  customFields?: Record<string, string | number | boolean>;
 }
 
 interface ContactRosterProps<Client extends ContactRosterClient> {
@@ -73,7 +75,11 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
                 type="button"
                 onClick={() => props.onOpenClient(client.id)}
               >
-                <span><strong>{props.clientDisplayName(client)}</strong><small>{client.company?.trim() ? client.company : props.contactSummary(client)}</small></span>
+                <span>
+                  <strong>{props.clientDisplayName(client)}</strong>
+                  <small>{client.company?.trim() ? client.company : props.contactSummary(client)}</small>
+                  {isImportedHistoryRecord(client) ? <small className="nexops-client-imported-history">Imported history</small> : null}
+                </span>
                 <span>{props.clientPrimaryAddress(client)}</span>
                 <span>{props.selectedClientId === client.id ? "Open now" : (client.phones[0] ?? client.emails[0] ?? "No contact saved")}</span>
                 <span><mark>{props.clientStatusLabel(client)}</mark></span>

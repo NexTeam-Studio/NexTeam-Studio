@@ -37,6 +37,19 @@ export const CLIENT_CUSTOM_FIELD_RESERVED_LABELS = [
   "promoCode"
 ];
 
+/**
+ * A source-neutral classification for records brought forward from an older
+ * system. It is metadata, not a workflow status: imported clients remain
+ * usable for new NexOps work.
+ */
+export const IMPORTED_HISTORY_CLASSIFICATION = "imported_history";
+
+export function isImportedHistoryRecord(input: {
+  customFields?: Record<string, string | number | boolean>;
+}): boolean {
+  return input.customFields?.recordClassification === IMPORTED_HISTORY_CLASSIFICATION;
+}
+
 export const PROPERTY_CUSTOM_FIELD_RESERVED_LABELS = [
   "gatedEntry",
   "propertyClientName",
