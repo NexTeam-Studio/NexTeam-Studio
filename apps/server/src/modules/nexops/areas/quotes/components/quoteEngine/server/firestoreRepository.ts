@@ -20,7 +20,14 @@ export function createQuoteFirestoreRepository(db: Firestore) {
       const snapshot = await db.collection("quotes").where("tenantId", "==", tenantId).get();
       return Promise.all(snapshot.docs.map((doc) => normalizeStoredQuote(
         doc.data(),
-        (patch) => doc.ref.set(patch, { merge: true })
+        (patch) => updateTenantOwnedDocument({
+          db,
+          collection: "quotes",
+          id: doc.id,
+          tenantId,
+          label: `Quote ${doc.id} compatibility update`,
+          update: (existing) => asDocumentData({ ...existing, ...patch, id: doc.id, tenantId })
+        })
       )));
     },
 
@@ -33,7 +40,14 @@ export function createQuoteFirestoreRepository(db: Firestore) {
       if (record?.tenantId !== tenantId) {
         return null;
       }
-      return normalizeStoredQuote(record, (patch) => snapshot.ref.set(patch, { merge: true }));
+      return normalizeStoredQuote(record, (patch) => updateTenantOwnedDocument({
+        db,
+        collection: "quotes",
+        id,
+        tenantId,
+        label: `Quote ${id} compatibility update`,
+        update: (existing) => asDocumentData({ ...existing, ...patch, id, tenantId })
+      }));
     },
 
     async createQuote(quote: Quote): Promise<Quote> {
