@@ -946,6 +946,22 @@ async function normalizeToolInput(
     record.phones ??= parsed.phones;
     record.consent ??= parsed.consent;
   }
+  if (toolName === "updateClient") {
+    const parsed = clientUpdateInputFromText(userText, messages);
+    record.clientQuery ??= parsed.clientQuery;
+    record.name ??= parsed.name;
+    record.address ??= parsed.address;
+    record.postalCode ??= parsed.postalCode;
+    record.emails ??= parsed.emails;
+    record.phones ??= parsed.phones;
+  }
+  if (toolName === "deleteClient") {
+    const named = userText.match(/\b(?:delete|remove)\s+(?:the\s+)?(?:duplicate\s+)?(?:client\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b/i)?.[1]
+      || userText.match(/\b(?:client|customer)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b/i)?.[1]
+      || clientLookupQueryFromText(userText)
+      || entityQueryFromMessages(messages, { skipLatest: true });
+    record.clientQuery ??= named.trim();
+  }
   if (toolName === "createQuote") {
     const parsed = createQuoteInputFromText(userText);
     record.clientQuery ??= parsed.clientQuery;
@@ -2020,6 +2036,42 @@ function looksLikeSavedClientEditRequest(text: string, messages: GatewayMessage[
     || (/\b(?:this|that|it|he|him|his|she|her|hers|they|them|their|theirs)\b/.test(lower) && Boolean(referencedClient));
 }
 
+function looksLikeClientDeleteRequest(text: string): boolean {
+  const lower = text.toLowerCase();
+  return /\b(?:delete|remove)\b/.test(lower)
+    && /\b(?:client|customer|duplicate|record|entry)\b/.test(lower)
+    && !/\b(?:job|quote|invoice|payment|request|visit)\b/.test(lower);
+}
+
+function clientUpdateInputFromText(text: string, messages: GatewayMessage[]): {
+  clientQuery: string;
+  name?: string | undefined;
+  address?: string | undefined;
+  postalCode?: string | undefined;
+  emails?: string[] | undefined;
+  phones?: string[] | undefined;
+} {
+  const named = text.match(/\b(?:for|of)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})(?=\s+(?:to|zip|postal|phone|telephone|mobile|email|e-mail|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway)\b)/)?.[1]
+    ?? text.match(/\b(?:edit|change|update|fix|correct|replace)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})(?=\s+(?:zip|postal|phone|telephone|mobile|email|e-mail|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway)\b)/i)?.[1]
+    ?? text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})'s\b/)?.[1]
+    ?? clientLookupQueryFromText(text)
+    ?? entityQueryFromMessages(messages, { skipLatest: true });
+  const email = firstEmailAddress(text);
+  const phone = firstPhoneNumber(text);
+  const postalCode = text.match(/\b(?:zip(?:\s+code)?|postal(?:\s+code)?)\s*(?:to|is|=|:)?\s*(\d{5}(?:-\d{4})?)\b/i)?.[1]
+    ?? text.match(/\bto\s+(\d{5}(?:-\d{4})?)\b/i)?.[1];
+  const address = text.match(/\b(?:address|street)\s*(?:to|is|=|:)?\s*([^.!?]+)$/i)?.[1]?.trim();
+  const replacementName = text.match(/\b(?:name)\s*(?:to|is|=|:)?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b/i)?.[1]?.trim();
+  return {
+    clientQuery: named.trim(),
+    ...(replacementName ? { name: replacementName } : {}),
+    ...(address ? { address } : {}),
+    ...(postalCode ? { postalCode } : {}),
+    ...(email ? { emails: [email] } : {}),
+    ...(phone ? { phones: [phone] } : {})
+  };
+}
+
 function approvalContextFromMessages(messages: GatewayMessage[]): PendingApprovalContext | null {
   for (const message of [...messages].reverse()) {
     if (message.role !== "assistant" || typeof message.content !== "string") {
@@ -2770,6 +2822,12 @@ function deterministicToolNames(
     && (approvalContext.awaitingChanges || hasLedgerApprovalChangeDetails(userText))
   ) {
     return ["revisePendingLedgerActionApproval"];
+  }
+  if (looksLikeClientDeleteRequest(userText) && toolsByName.has("deleteClient")) {
+    return ["deleteClient"];
+  }
+  if (looksLikeSavedClientEditRequest(userText, messages) && toolsByName.has("updateClient")) {
+    return ["updateClient"];
   }
   if (looksLikeCreateClientAction(lower) && toolsByName.has("createClient")) {
     return ["createClient"];
@@ -3554,6 +3612,25 @@ function directAnswerFromDeterministicRuns(
       return clarification;
     }
     const prompt = approvalPromptAnswer(createClientRun.result, actorDisplayName);
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const updateClientRun = [...toolRuns].reverse().find((run) => run.name === "updateClient");
+  if (updateClientRun) {
+    const prompt = approvalPromptAnswer(updateClientRun.result, actorDisplayName, { allowChanges: false });
+    if (prompt) {
+      return prompt;
+    }
+  }
+  const deleteClientRun = [...toolRuns].reverse().find((run) => run.name === "deleteClient");
+  if (deleteClientRun) {
+    const record = objectRecord(deleteClientRun.result);
+    const blocked = stringValue(record?.message);
+    if (record?.deleteBlocked && blocked) {
+      return blocked;
+    }
+    const prompt = approvalPromptAnswer(deleteClientRun.result, actorDisplayName, { allowChanges: false });
     if (prompt) {
       return prompt;
     }
