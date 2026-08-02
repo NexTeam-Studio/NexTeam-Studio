@@ -105,6 +105,18 @@
   word-break: break-word;
 }
 
+.nexi-message-timestamp {
+  justify-self: end;
+  color: rgba(21, 24, 23, 0.64);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.nexi-standalone-bubble.user .nexi-message-timestamp {
+  color: rgba(21, 24, 23, 0.54);
+}
+
 .nexi-standalone-typing {
   padding: 0 12px 8px;
   color: rgba(21, 24, 23, 0.72);

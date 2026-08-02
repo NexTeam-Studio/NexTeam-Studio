@@ -13,6 +13,7 @@ export interface NexiStandaloneMessage {
   role: "user" | "assistant";
   text: string;
   sources: NexiStandaloneSource[];
+  createdAt?: string;
   pendingApproval?: NexiStandalonePendingApproval | null;
 }
 
@@ -57,6 +58,19 @@ export function nexiNeedsFriendlyFailure(text: string): boolean {
 
 export function sanitizeNexiRenderedText(text: string): string {
   return nexiNeedsFriendlyFailure(text) ? NEXI_FRIENDLY_FAILURE_MESSAGE : text;
+}
+
+export function formatNexiMessageTimestamp(value: string | undefined): string {
+  const parsed = value ? new Date(value) : new Date();
+  const date = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(date);
 }
 
 export function formatNexiOperatorDisplayName(displayName: string | null | undefined, email: string | null | undefined): string {
@@ -300,6 +314,9 @@ export function NexiStandaloneLayout(props: NexiStandaloneLayoutProps): React.Re
             <article className={`nexi-standalone-bubble ${message.role}`} key={message.id}>
               <p>{sanitizeNexiRenderedText(message.text)}</p>
               {props.renderMessageSources ? props.renderMessageSources(message) : null}
+              <time className="nexi-message-timestamp" dateTime={message.createdAt ?? undefined}>
+                {formatNexiMessageTimestamp(message.createdAt)}
+              </time>
             </article>
           ))}
           {props.working ? <div className="nexi-standalone-typing">Nexi is checking...</div> : null}

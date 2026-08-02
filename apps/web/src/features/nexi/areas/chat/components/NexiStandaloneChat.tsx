@@ -28,6 +28,7 @@ interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   sources: Source[];
+  createdAt?: string;
   pendingApproval?: NexiStandalonePendingApproval | null;
 }
 
@@ -624,8 +625,8 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
       setDraft("");
       setMessages((current) => [
         ...current,
-        { id: crypto.randomUUID(), role: "user", text, sources: [] },
-        { id: crypto.randomUUID(), role: "assistant", text: assistantText, sources: [] }
+        { id: crypto.randomUUID(), role: "user", text, sources: [], createdAt: new Date().toISOString() },
+        { id: crypto.randomUUID(), role: "assistant", text: assistantText, sources: [], createdAt: new Date().toISOString() }
       ]);
       if (offerReply === "confirm") {
         if (conversationOffer.kind === "maps") {
@@ -644,7 +645,7 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
     );
     setDraft("");
     setWorking(true);
-    setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", text, sources: [] }]);
+    setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", text, sources: [], createdAt: new Date().toISOString() }]);
     try {
       const idToken = await props.user.getIdToken();
       const response = await fetch("/api/nexi/message", {
@@ -677,6 +678,7 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
           role: "assistant",
           text: assistantText,
           sources: body.sources ?? [],
+          createdAt: new Date().toISOString(),
           pendingApproval: body.ok && nextPendingApproval && nexiIsApprovalPrompt(assistantText) ? nextPendingApproval : null
         }
       ]);
@@ -687,7 +689,7 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
     } catch {
       setMessages((current) => [
         ...current,
-        { id: crypto.randomUUID(), role: "assistant", text: NEXI_FRIENDLY_FAILURE_MESSAGE, sources: [] }
+        { id: crypto.randomUUID(), role: "assistant", text: NEXI_FRIENDLY_FAILURE_MESSAGE, sources: [], createdAt: new Date().toISOString() }
       ]);
       void speakAssistant(NEXI_FRIENDLY_FAILURE_MESSAGE);
     } finally {
