@@ -155,13 +155,15 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: Nex
             id: `${record.id}:user`,
             role: "user",
             text: record.userText,
-            sources: []
+            sources: [],
+            createdAt: record.createdAt
           },
           {
             id: `${record.id}:assistant`,
             role: "assistant",
             text: record.assistantText,
-            sources: record.sources
+            sources: record.sources,
+            createdAt: record.createdAt
           }
         ]),
         pendingApproval: pendingApprovalFromConversationRecords(recent, null)

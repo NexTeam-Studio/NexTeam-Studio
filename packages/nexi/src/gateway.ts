@@ -1949,6 +1949,11 @@ function looksLikeApprovalChangeRequest(text: string): boolean {
 }
 
 function hasClientApprovalChangeDetails(text: string): boolean {
+  // A pending create must not capture a later lookup such as "What is Logan's
+  // address?" merely because that sentence contains the word "address".
+  if (/^\s*(?:what|where|who|when|why|how|do|does|did|is|are|can|could|would)\b/i.test(text)) {
+    return false;
+  }
   return Boolean(
     firstEmailAddress(text)
     || firstPhoneNumber(text)
@@ -2062,9 +2067,9 @@ function unsupportedWriteCapabilityGap(messages: GatewayMessage[], toolsByName: 
   }
   const patterns = [
     {
-      pattern: /\b(?:delete|remove)\b.*\b(?:client|customer)(?:\s+record)?s?\b/i,
+      pattern: /\b(?:delete|remove)\b.*\b(?:client|customer|duplicate)(?:\s+record|\s+entry)?s?\b/i,
       toolName: "deleteClient",
-      answer: "I can't delete client records yet. That is a capability gap, not a missing-data issue."
+      answer: "I can't delete a client from chat yet. That is a capability gap, not a missing-data issue. Imported client history is protected; NexTeam-created clients can be deleted from the client workspace when they have no linked work."
     },
     {
       pattern: /\b(?:edit|change|update)\b.*\b(?:client|customer)(?:\s+record)?s?\b/i,
@@ -3326,6 +3331,10 @@ function clientLookupAnswer(latestText: string, messages: GatewayMessage[], resu
       company: stringValue(client.company) ?? ""
     }))
     .filter((client) => client.name || client.company);
+  if (looksLikeClientListQuestion(lower)) {
+    const nativeCount = typeof record?.nativeCount === "number" ? record.nativeCount : clients.length;
+    return `I found ${nativeCount.toLocaleString()} client${nativeCount === 1 ? "" : "s"} in the current client records.`;
+  }
   const matches = requestedNormalized
     ? clients.filter((client) => {
         const values = [client.name, client.company].map(normalizeIdentityText).filter(Boolean);
