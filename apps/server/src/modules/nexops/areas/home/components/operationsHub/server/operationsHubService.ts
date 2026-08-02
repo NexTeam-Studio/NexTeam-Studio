@@ -874,7 +874,7 @@ export class OperationsHubService {
       case "job.state_changed":
         actor = "System";
         action = stringValue(payload, "reason") === "visit_rescheduled" ? "rescheduled a visit" : "updated job state";
-        reference = job?.number ?? job?.id ?? target.objectId;
+        reference = job?.number ?? "Job";
         title = job?.title ?? "Job";
         break;
       case "job.closed":
