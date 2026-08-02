@@ -267,7 +267,7 @@ function invoiceReminderActive(reminder?: InvoiceReminderRecord | undefined, ref
   return reminder.dueAt <= referenceTime;
 }
 
-function deriveStatus(input: {
+export function deriveStatus(input: {
   job: Job;
   visits: ScheduledVisit[];
   invoiceReminder?: InvoiceReminderRecord | undefined;

@@ -13,7 +13,7 @@ import type { MediaRepository } from "../../../../../../../fielddocs/mediaReposi
 import type { PlatformRepository } from "../../../../../../../platform/repository.js";
 import type { ScheduledVisit } from "../../../../../../../scheduling/schedulingEngine.js";
 import type { SchedulingRepository } from "../../../../../../../scheduling/repository.js";
-import type { JobDetailRecord, JobLifecycleService, JobSummaryRecord } from "../../../../jobs/components/jobCore/server/jobLifecycleService.js";
+import { deriveStatus, type JobDetailRecord, type JobLifecycleService, type JobSummaryRecord } from "../../../../jobs/components/jobCore/server/jobLifecycleService.js";
 import type { JobActionAlertRecord, JobLifecycleRepository } from "../../../../jobs/components/jobCore/server/jobLifecycleRepository.js";
 import type { NotificationStateRepository } from "./notificationStateRepository.js";
 
@@ -386,16 +386,70 @@ export class OperationsHubService {
   }
 
   private async buildContext(tenantId: string, referenceTime = now()): Promise<TenantContext> {
-    const [requests, quotes, invoices, jobs, users, alerts] = await Promise.all([
+    const [requests, quotes, invoices, rawJobs, clients, properties, users, alerts, invoiceReminders, visits] = await Promise.all([
       this.deps.crmRepository.listRequests(tenantId),
       this.deps.crmRepository.listQuotes(tenantId),
       this.deps.crmRepository.listInvoices(tenantId),
-      this.deps.jobLifecycleService.listJobs(tenantId, referenceTime),
+      this.deps.crmRepository.listJobs(tenantId),
+      this.deps.crmRepository.listClients(tenantId),
+      this.deps.crmRepository.listProperties(tenantId),
       this.tenantUsers(tenantId),
-      this.deps.lifecycleRepository.listJobActionAlerts(tenantId)
+      this.deps.lifecycleRepository.listJobActionAlerts(tenantId),
+      this.deps.lifecycleRepository.listInvoiceReminders(tenantId),
+      this.deps.schedulingRepository.listVisits(tenantId, {})
     ]);
-    const visits = await this.deps.schedulingRepository.listVisits(tenantId, {});
-    const detailIds = [...new Set(jobs.map((job) => job.id).concat(visits.map((visit) => visit.jobId)))];
+    const visitsByJobId = new Map<string, ScheduledVisit[]>();
+    for (const visit of visits) {
+      const current = visitsByJobId.get(visit.jobId) ?? [];
+      current.push(visit);
+      visitsByJobId.set(visit.jobId, current);
+    }
+    const invoicesByJobId = new Map<string, Invoice[]>();
+    for (const invoice of invoices) {
+      if (!invoice.jobId) {
+        continue;
+      }
+      const current = invoicesByJobId.get(invoice.jobId) ?? [];
+      current.push(invoice);
+      invoicesByJobId.set(invoice.jobId, current);
+    }
+    const pendingAlertByJobId = new Map(
+      alerts
+        .filter((alert) => alert.status === "pending")
+        .map((alert) => [alert.jobId, alert])
+    );
+    const pendingInvoiceReminderByJobId = new Map(
+      invoiceReminders
+        .filter((reminder) => reminder.status === "pending")
+        .map((reminder) => [reminder.jobId, reminder])
+    );
+    const clientById = new Map(clients.map((client) => [client.id, client]));
+    const propertyById = new Map(properties.map((property) => [property.id, property]));
+    const jobs: JobSummaryRecord[] = rawJobs.map((job) => {
+      const jobVisits = visitsByJobId.get(job.id) ?? [];
+      const activeVisits = jobVisits
+        .filter((visit) => visit.status !== "complete" && visit.status !== "cancelled")
+        .sort((left, right) => left.start.localeCompare(right.start));
+      return {
+        ...job,
+        status: deriveStatus({
+          job,
+          visits: jobVisits,
+          invoiceReminder: pendingInvoiceReminderByJobId.get(job.id),
+          actionAlert: pendingAlertByJobId.get(job.id),
+          invoices: invoicesByJobId.get(job.id) ?? [],
+          referenceTime
+        }),
+        client: clientById.get(job.clientId),
+        ...(job.propertyId ? { property: propertyById.get(job.propertyId) } : {}),
+        ...(activeVisits[0] ? { nextVisit: activeVisits[0] } : {}),
+        visitCount: jobVisits.length,
+        completedVisitCount: jobVisits.filter((visit) => visit.status === "complete").length,
+        ...(pendingAlertByJobId.get(job.id) ? { pendingActionAlert: pendingAlertByJobId.get(job.id) } : {}),
+        invoiceCount: (invoicesByJobId.get(job.id) ?? []).length
+      };
+    });
+    const detailIds = [...new Set(visits.map((visit) => visit.jobId))];
     const details = await Promise.all(detailIds.map(async (jobId) => this.deps.jobLifecycleService.getJobDetail(tenantId, jobId, referenceTime)));
     const detailByJobId = new Map(
       details

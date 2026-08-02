@@ -118,15 +118,25 @@ export class FirestoreEventBus implements EventBus {
     if (input.limit && input.limit > 0) {
       query = query.limit(input.limit);
     }
-    const snapshot = await query.get();
+    let snapshot: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>;
+    try {
+      snapshot = await query.get();
+    } catch (error) {
+      const missingIndex = error instanceof Error
+        && (error.message.includes("requires an index") || error.message.includes("FAILED_PRECONDITION"));
+      if (!input.tenantId || !missingIndex) {
+        throw error;
+      }
+      // A newly provisioned tenant can briefly be missing the optional read index.
+      // Keep the activity surface available until the declarative index deployment catches up.
+      snapshot = await this.db.collection("events").where("tenantId", "==", input.tenantId).get();
+    }
     const parsed = snapshot.docs
       .map((doc) => busEventSchema.safeParse(doc.data()))
       .filter((result): result is { success: true; data: BusEvent } => result.success)
-      .map((result) => result.data);
-    if (!input.types?.length || input.types.length === 1) {
-      return parsed;
-    }
-    const typeSet = new Set(input.types);
-    return parsed.filter((event) => typeSet.has(event.type));
+      .map((result) => result.data)
+      .filter((event) => !input.types?.length || input.types.includes(event.type))
+      .sort((left, right) => right.ts.localeCompare(left.ts));
+    return input.limit && input.limit > 0 ? parsed.slice(0, input.limit) : parsed;
   }
 }

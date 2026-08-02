@@ -9,6 +9,14 @@
       ]
     },
     {
+      "collectionGroup": "events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "ts", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "sops",
       "queryScope": "COLLECTION",
       "fields": [
