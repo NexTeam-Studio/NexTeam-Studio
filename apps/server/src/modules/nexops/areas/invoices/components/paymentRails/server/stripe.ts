@@ -8,6 +8,27 @@ export interface StripeCheckoutSession {
   metadata?: Record<string, string> | undefined;
 }
 
+/**
+ * Public Payments contract for Platform/Tenants.  The platform creates and
+ * persists the tenant-to-Stripe account mapping; Payment Rails owns only the
+ * Stripe Connect API calls.
+ */
+export interface StripeConnectExpressAccount {
+  id: string;
+  type: "express" | string;
+  email?: string | undefined;
+  charges_enabled?: boolean | undefined;
+  payouts_enabled?: boolean | undefined;
+  details_submitted?: boolean | undefined;
+  metadata?: Record<string, string> | undefined;
+}
+
+export interface StripeConnectOnboardingLink {
+  url: string;
+  expires_at?: number | undefined;
+  object?: string | undefined;
+}
+
 export interface StripeWebhookEvent {
   id: string;
   type: string;
@@ -74,6 +95,20 @@ function stripeConnectedAccountForTenant(env: NodeJS.ProcessEnv, tenantId: strin
   return tenantScopedEnvValue(env, "STRIPE_CONNECTED_ACCOUNT", tenantId);
 }
 
+function requiredHttpsOrLocalUrl(value: string, name: string): string {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new RailError(`${name} must be an absolute URL.`, { provider: "stripe", op: "connectOnboarding", status: 400 });
+  }
+  const localHttp = url.protocol === "http:" && ["localhost", "127.0.0.1", "::1"].includes(url.hostname);
+  if (url.protocol !== "https:" && !localHttp) {
+    throw new RailError(`${name} must use HTTPS outside local development.`, { provider: "stripe", op: "connectOnboarding", status: 400 });
+  }
+  return url.toString();
+}
+
 async function stripeFormRequest<T>(env: NodeJS.ProcessEnv, path: string, body: URLSearchParams, options: StripeRequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {
     authorization: `Bearer ${requireStripeTestKey(env)}`,
@@ -123,6 +158,70 @@ async function stripeJsonRequest<T>(
     throw new RailError(data.error?.message ?? "Stripe API request failed.", { provider: "stripe", op: path, status: response.status });
   }
   return data as T;
+}
+
+export async function createStripeConnectExpressAccount(
+  env: NodeJS.ProcessEnv,
+  input: { tenantId: string; email: string; country?: string | undefined }
+): Promise<StripeConnectExpressAccount> {
+  const tenantId = input.tenantId.trim();
+  const email = input.email.trim();
+  if (!tenantId || !email) {
+    throw new RailError("A tenant id and tenant email are required to create a Stripe Connect account.", {
+      provider: "stripe",
+      op: "createConnectExpressAccount",
+      status: 400
+    });
+  }
+  return stripeFormRequest<StripeConnectExpressAccount>(env, "/accounts", new URLSearchParams({
+    type: "express",
+    country: (input.country?.trim() || "US").toUpperCase(),
+    email,
+    "capabilities[card_payments][requested]": "true",
+    "capabilities[transfers][requested]": "true",
+    "metadata[tenantId]": tenantId,
+    "metadata[platformFeePolicy]": "zero_application_fee_tenant_pays_stripe_processing"
+  }));
+}
+
+export async function createStripeConnectOnboardingLink(
+  env: NodeJS.ProcessEnv,
+  input: { accountId: string; refreshUrl: string; returnUrl: string }
+): Promise<StripeConnectOnboardingLink> {
+  const accountId = input.accountId.trim();
+  if (!accountId) {
+    throw new RailError("A Stripe Connect account id is required to create an onboarding link.", {
+      provider: "stripe",
+      op: "createConnectOnboardingLink",
+      status: 400
+    });
+  }
+  return stripeFormRequest<StripeConnectOnboardingLink>(env, "/account_links", new URLSearchParams({
+    account: accountId,
+    type: "account_onboarding",
+    refresh_url: requiredHttpsOrLocalUrl(input.refreshUrl, "Stripe Connect refresh URL"),
+    return_url: requiredHttpsOrLocalUrl(input.returnUrl, "Stripe Connect return URL")
+  }));
+}
+
+/**
+ * Read-only Connect account lookup for Platform/Tenants.  A return from
+ * Stripe-hosted onboarding is not proof that the account can take charges or
+ * receive payouts, so the platform must read the account's actual state.
+ */
+export async function retrieveStripeConnectAccount(
+  env: NodeJS.ProcessEnv,
+  input: { accountId: string }
+): Promise<StripeConnectExpressAccount> {
+  const accountId = input.accountId.trim();
+  if (!accountId) {
+    throw new RailError("A Stripe Connect account id is required to retrieve account status.", {
+      provider: "stripe",
+      op: "retrieveConnectAccount",
+      status: 400
+    });
+  }
+  return stripeJsonRequest<StripeConnectExpressAccount>(env, `/accounts/${encodeURIComponent(accountId)}`);
 }
 
 export function stripeTerminalLocationForTenant(env: NodeJS.ProcessEnv, tenantId: string): string | undefined {
