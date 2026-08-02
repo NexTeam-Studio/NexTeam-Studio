@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { paymentMethodsForProvider, reconcilePaymentDraftProvider } from "../PaymentRailsPanel.tsx";
 
@@ -37,4 +38,25 @@ test("changing provider reconciles the method and removes an unrelated saved car
     savedCardId: ""
   });
   assert.deepEqual(reconcilePaymentDraftProvider(cardDraft, "stripe"), cardDraft);
+});
+
+test("named payment interface areas use Title Case", () => {
+  const source = readFileSync(new URL("../PaymentRailsPanel.tsx", import.meta.url), "utf8");
+
+  for (const label of [
+    "Collect and Recover",
+    "Collect Payment",
+    "Saved Card",
+    "Payer Name",
+    "Check Number",
+    "Open Stripe Checkout",
+    "Recovery Path",
+    "Payment History",
+    "Refund Amount",
+    "Refund Selected Payment",
+    "Void Invoice",
+    "Mark Bad Debt"
+  ]) {
+    assert.match(source, new RegExp(label));
+  }
 });
