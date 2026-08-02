@@ -385,6 +385,19 @@ function looksLikeCreateClientAction(lower: string): boolean {
     || /\b(?:new\s+client|client\s+create)\b/.test(lower);
 }
 
+function looksLikeClientAddressUpdateAction(lower: string): boolean {
+  return /\b(?:add|update|change|fix|correct|replace)\b.{0,80}\b(?:client|address|location|zip|postal(?:\s+code)?)\b/.test(lower)
+    && /\b(?:address|location|zip|postal(?:\s+code)?)\b/.test(lower);
+}
+
+function clientQueryForAddressUpdate(message: string): string | undefined {
+  const query = message.match(/\b([a-z][a-z' -]+?)'s\s+(?:address|location|zip|postal(?:\s+code)?)\b/i)?.[1]?.trim()
+    ?? entityQueryFromText(message)
+    ?? message.match(/\b(?:client|for)\s+([a-z][a-z' -]+?)(?=\s+(?:address|location|zip|postal|to|from)\b|[?.!]|$)/i)?.[1]?.trim()
+    ?? message.match(/\b(?:update|change|fix|correct)\s+([a-z][a-z' -]+?)\s+(?:client(?:'s)?\s+)?(?:address|location|zip|postal)\b/i)?.[1]?.trim();
+  return query?.replace(/^(?:update|change|fix|correct)\s+/i, "").trim() || undefined;
+}
+
 function previewFieldValue(body: string, label: string): string | undefined {
   return body
     .split(/\r?\n/)
@@ -671,6 +684,11 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
   if (looksLikeCreateClientAction(lower)) {
     const tool = tools.find((candidate) => candidate.name === "createClient");
     return tool ? { tool, args: {} } : null;
+  }
+  if (looksLikeClientAddressUpdateAction(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "updateClient");
+    const clientQuery = clientQueryForAddressUpdate(message);
+    return tool && clientQuery ? { tool, args: { clientQuery, changeRequest: message } } : null;
   }
   if (/\b(?:how\s+far|distance|miles?|drive\s+time|travel\s+time)\b/i.test(lower)) {
     const tool = tools.find((candidate) => candidate.name === "getDistance");
@@ -1469,6 +1487,14 @@ function summarizeResult(toolName: string, result: unknown, actorDisplayName?: s
     return approvalPromptFromResult(result, actorDisplayName)
       ?? "Client draft ready for approval.";
   }
+  if (toolName === "updateClient" && result && typeof result === "object") {
+    const record = result as { needsClarification?: unknown };
+    if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
+      return record.needsClarification;
+    }
+    return approvalPromptFromResult(result, actorDisplayName)
+      ?? "Client address change ready for approval.";
+  }
   if (toolName === "createQuote" && result && typeof result === "object") {
     const record = result as { approval?: { id?: unknown; preview?: { title?: unknown } }; needsClarification?: unknown };
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
@@ -1565,6 +1591,8 @@ function summarizeResult(toolName: string, result: unknown, actorDisplayName?: s
   if (toolName === "approvePendingApproval" && result && typeof result === "object") {
     const execution = (result as {
       execution?: {
+        client?: { name?: unknown } | undefined;
+        changeSummary?: unknown;
         job?: { title?: unknown } | undefined;
         visit?: { id?: unknown } | undefined;
         visits?: Array<{ id?: unknown }> | undefined;
@@ -1578,6 +1606,9 @@ function summarizeResult(toolName: string, result: unknown, actorDisplayName?: s
         jobs?: Array<{ number?: unknown; id?: unknown }> | undefined;
       }
     }).execution;
+    if (execution?.client && typeof execution.client.name === "string" && typeof execution.changeSummary === "string") {
+      return `Approved and updated ${execution.client.name}. ${execution.changeSummary}`;
+    }
     if (execution?.job && typeof execution.job.title === "string") {
       return `Approved and executed ${execution.job.title}.`;
     }

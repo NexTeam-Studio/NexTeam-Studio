@@ -2763,6 +2763,9 @@ function deterministicToolNames(
   if (looksLikeCreateClientAction(lower) && toolsByName.has("createClient")) {
     return ["createClient"];
   }
+  if (looksLikeSavedClientEditRequest(userText, messages) && toolsByName.has("updateClient")) {
+    return ["updateClient"];
+  }
   if (/\b(?:create|add|draft|new)\b.*\bquote\b/i.test(lower) && toolsByName.has("createQuote")) {
     return ["createQuote"];
   }
@@ -3482,6 +3485,10 @@ function approvalExecutionAnswer(result: unknown): string | undefined {
   const payment = objectRecord(execution?.payment);
   const refund = objectRecord(execution?.refund);
   const receiptReview = objectRecord(execution?.receiptReview);
+  const changeSummary = stringValue(execution?.changeSummary);
+  if (client?.name && typeof client.name === "string" && changeSummary) {
+    return `Approved and updated ${client.name}. ${changeSummary}`;
+  }
   if (client?.name && typeof client.name === "string") {
     return `Approved and created ${client.name}.`;
   }

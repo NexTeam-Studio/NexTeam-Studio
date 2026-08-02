@@ -1325,6 +1325,7 @@ export interface CRMProvider {
   getJobs(range: { from: string; to: string }): Promise<Job[]>;
   getJobDetail(ref: { id?: ID; nameQuery?: string }): Promise<JobDetail>;
   createClient?(d: NewClient): Promise<Client>;
+  updateClient?(id: ID, patch: Partial<Client>): Promise<Client>;
   upsertProperty?(property: Property): Promise<Property>;
   createJob?(job: Job): Promise<Job>;
   getQuotes?(): Promise<Quote[]>;

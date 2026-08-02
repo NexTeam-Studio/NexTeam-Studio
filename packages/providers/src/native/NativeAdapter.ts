@@ -837,6 +837,16 @@ export class NativeAdapter implements CRMProvider {
     return this.repository.createClient(client);
   }
 
+  async updateClient(id: string, patch: Partial<Client>): Promise<Client> {
+    await this.requireOwnedRecord(this.repository.listClients(this.tenantId), id, "client", "updateClient");
+    this.assertTenantPatch(patch, "client", "updateClient");
+    const existing = (await this.repository.listClients(this.tenantId)).find((client) => client.id === id);
+    if (!existing) {
+      throw new RailError("Native client was not found.", { provider: "native", op: "updateClient", status: 404 });
+    }
+    return this.repository.upsertClient({ ...existing, ...patch, id, tenantId: this.tenantId });
+  }
+
   async upsertProperty(property: Property): Promise<Property> {
     if (property.tenantId !== this.tenantId) {
       throw new RailError("Native property tenant mismatch.", { provider: "native", op: "upsertProperty", status: 403 });

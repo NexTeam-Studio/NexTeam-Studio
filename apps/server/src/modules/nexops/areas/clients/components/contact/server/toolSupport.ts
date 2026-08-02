@@ -1,6 +1,7 @@
-import type { ApprovalQueueService, Client, Tenant } from "@nexteam/core";
+import type { Address, ApprovalQueueService, Client, Property, Tenant } from "@nexteam/core";
 import { parseRequestAddress, sanitizeRequestAddress } from "../../../../../../../shared/addressLocation/requestAddressTools.js";
 import type { CreateClientInput } from "./toolSchemas.js";
+import type { UpdateClientAddressInput } from "./toolSchemas.js";
 
 export function dedupeClients(clients: Client[]): Client[] {
   const seen = new Set<string>();
@@ -136,4 +137,56 @@ export async function queueClientCreateApproval(
     addressNote: input.address,
     writesAreApprovalQueuedOnly: true
   };
+}
+
+function requestedAddress(changeRequest: string, existing: Address | undefined): Address | undefined {
+  const afterAddressLabel = changeRequest.match(/\b(?:address|location|zip|postal(?:\s+code)?)\b\s*(?:to|is|=|:)?\s*([^\n.!?]+(?:[.!?]|$))/i)?.[1]?.trim();
+  const parsed = afterAddressLabel ? parseRequestAddress(afterAddressLabel) : null;
+  if (parsed) {
+    return { ...parsed, country: existing?.country ?? "USA" };
+  }
+  const postalCode = changeRequest.match(/\b(\d{5}(?:-\d{4})?)\b/)?.[1];
+  return postalCode && existing ? { ...existing, postalCode } : undefined;
+}
+
+export async function queueClientAddressUpdateApproval(
+  tenant: Tenant,
+  input: UpdateClientAddressInput,
+  client: Client,
+  property: Property | undefined,
+  approvalQueue: ApprovalQueueService
+): Promise<{ approval?: Awaited<ReturnType<ApprovalQueueService["create"]>>; needsClarification?: string; writesAreApprovalQueuedOnly?: true }> {
+  const address = requestedAddress(input.changeRequest, property?.address ?? client.billingAddress);
+  if (!address) {
+    return {
+      needsClarification: "Tell me the complete new address, or give me the new ZIP code for the address already on file. I will show the change before saving it."
+    };
+  }
+  const primaryProperty = property ? { ...property, address } : undefined;
+  const changes = [
+    `Client: ${client.name}`,
+    `New address: ${[address.street1, address.city, address.province, address.postalCode].filter(Boolean).join(", ")}`,
+    primaryProperty ? `Service property: ${primaryProperty.label ?? primaryProperty.siteName ?? "primary property"}` : "Service property: no property record will be changed"
+  ];
+  const approval = await approvalQueue.create({
+    tenantId: tenant.id,
+    kind: "client",
+    preview: {
+      title: `Update client address: ${client.name}`,
+      body: changes.join("\n")
+    },
+    execute: {
+      service: "crm",
+      op: "updateClient",
+      args: {
+        tenantId: tenant.id,
+        clientId: client.id,
+        billingAddress: address,
+        ...(primaryProperty ? { primaryProperty } : {}),
+        changeSummary: changes[1]
+      }
+    },
+    createdBy: "nexi"
+  });
+  return { approval, writesAreApprovalQueuedOnly: true };
 }

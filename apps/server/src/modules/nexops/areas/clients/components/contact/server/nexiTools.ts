@@ -1,7 +1,7 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
-import { clientLookupInputSchema, createClientInputSchema } from "./toolSchemas.js";
-import { clientSaveClarification, clientSaveMissingFields, dedupeClients, queueClientCreateApproval } from "./toolSupport.js";
+import { clientLookupInputSchema, createClientInputSchema, updateClientAddressInputSchema } from "./toolSchemas.js";
+import { clientSaveClarification, clientSaveMissingFields, dedupeClients, queueClientAddressUpdateApproval, queueClientCreateApproval } from "./toolSupport.js";
 
 export function createContactNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
@@ -70,6 +70,43 @@ export function createContactNexiTools(context: CrmToolContext, includeWrites: b
         return {
           result: queued,
           sources: [source(queued.approval.id, `ApprovalQueue client create ${queued.approval.id}`)]
+        };
+      }
+    }, {
+      name: "updateClient",
+      description: "Prepare a change to an existing native CRM client's billing and primary service address. The change is always queued for approval before it is saved.",
+      inputSchema: updateClientAddressInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        const input = updateClientAddressInputSchema.parse(args);
+        if (!provider.updateClient) {
+          throw new RailError("The configured CRM provider cannot update native clients.", { provider: "native", op: "updateClient", status: 501 });
+        }
+        const matches = dedupeClients(await provider.getClients(input.clientQuery));
+        const exact = matches.find((client) => client.id === input.clientQuery || client.name.toLowerCase() === input.clientQuery.toLowerCase());
+        const client = exact ?? (matches.length === 1 ? matches[0] : undefined);
+        if (!client) {
+          return {
+            result: {
+              needsClarification: matches.length > 1
+                ? `I found more than one client matching “${input.clientQuery}”. Please give the full client name before I prepare the address change.`
+                : `I could not find a saved client matching “${input.clientQuery}”. Please check the client name.`
+            },
+            sources: []
+          };
+        }
+        const properties = options.requestRepository
+          ? await options.requestRepository.listProperties(tenant.id)
+          : [];
+        const queued = await queueClientAddressUpdateApproval(
+          tenant,
+          input,
+          client,
+          properties.find((property) => property.clientId === client.id),
+          approvalQueue
+        );
+        return {
+          result: queued,
+          sources: queued.approval ? [source(queued.approval.id, `ApprovalQueue client address update ${queued.approval.id}`)] : []
         };
       }
     }] : [])

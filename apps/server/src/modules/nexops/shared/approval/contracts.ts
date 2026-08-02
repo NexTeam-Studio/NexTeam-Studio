@@ -162,3 +162,24 @@ export const sendReceiptReviewApprovalArgsSchema = z.object({
   sendChannels: z.array(receiptReviewChannelSchema).optional(),
   attachmentIds: z.array(z.string()).optional()
 });
+
+export const updateClientAddressApprovalArgsSchema = z.object({
+  tenantId: z.string().min(1),
+  clientId: z.string().min(1),
+  billingAddress: addressSchema.optional(),
+  primaryProperty: z.object({
+    id: z.string().min(1),
+    tenantId: z.string().min(1),
+    clientId: z.string().min(1),
+    siteName: z.string().optional(),
+    label: z.string().optional(),
+    address: addressSchema,
+    billingAddressSameAsClient: z.boolean().optional(),
+    assets: z.array(z.any()),
+    geo: z.any().optional(),
+    access: z.any().optional(),
+    contacts: z.array(z.any()).optional(),
+    customFields: z.record(z.any()).optional()
+  }).optional(),
+  changeSummary: z.string().min(1)
+});

@@ -17,3 +17,9 @@ export const createClientInputSchema = z.object({
   consent: z.object({ email: z.boolean(), sms: z.boolean(), marketing: z.boolean().optional() }).default({ email: false, sms: false, marketing: false })
 });
 export type CreateClientInput = z.infer<typeof createClientInputSchema>;
+
+export const updateClientAddressInputSchema = z.object({
+  clientQuery: z.string().trim().min(1),
+  changeRequest: z.string().trim().min(1)
+});
+export type UpdateClientAddressInput = z.infer<typeof updateClientAddressInputSchema>;

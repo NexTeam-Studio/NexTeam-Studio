@@ -1442,6 +1442,79 @@ test("post-approval edit follow-ups using pronouns after a lookup still return t
   assert.doesNotMatch(result.answer, /did not find/i);
 });
 
+test("Nexi queues an existing client address or ZIP update and only saves it after approval", async () => {
+  const repository = new MemoryNativeCrmRepository();
+  const provider = new NativeAdapter(repository, "aquatrace");
+  const approvalQueue = new ApprovalQueueService(
+    new InMemoryApprovalQueueRepository(),
+    new CrmApprovalExecutor(provider)
+  );
+  const client = await provider.createClient({
+    tenantId: "aquatrace",
+    name: "Catherine Sears",
+    billingAddress: { street1: "102 Kate Lane", city: "Fair Play", province: "SC", postalCode: "00000", country: "USA" },
+    emails: ["catherine@example.test"],
+    phones: ["8646171838"],
+    consent: { email: false, sms: false }
+  });
+  await provider.upsertProperty({
+    id: "property_catherine",
+    tenantId: "aquatrace",
+    clientId: client.id,
+    label: "Primary service address",
+    address: { street1: "102 Kate Lane", city: "Fair Play", province: "SC", postalCode: "00000", country: "USA" },
+    assets: []
+  });
+  const tools = [
+    ...createCrmToolsWithOptions(provider, approvalQueue, { requestRepository: repository }),
+    ...createApprovalNexiTools({
+      approvalQueue,
+      actorId: "owner_1",
+      actorRole: "OWNER",
+      crmRepository: repository,
+      publicBaseUrl: "http://127.0.0.1:4275"
+    })
+  ];
+
+  const updateTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    actorDisplayName: "Chris",
+    messages: [{ role: "user", content: "Update Catherine Sears's ZIP code to 29643" }],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {}
+  });
+
+  assert.equal(updateTurn.toolRuns[0].name, "updateClient");
+  assert.match(updateTurn.answer, /Catherine Sears/);
+  assert.match(updateTurn.answer, /29643/);
+  assert.ok(updateTurn.pendingApproval?.approvalId);
+  assert.equal((await repository.listClients("aquatrace"))[0].billingAddress.postalCode, "00000");
+
+  const approvalTurn = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    actorDisplayName: "Chris",
+    messages: [
+      { role: "user", content: "Update Catherine Sears's ZIP code to 29643" },
+      { role: "assistant", content: updateTurn.answer },
+      { role: "user", content: "yes" }
+    ],
+    tools,
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: {},
+    pendingApproval: updateTurn.pendingApproval
+  });
+
+  assert.equal(approvalTurn.toolRuns[0].name, "approvePendingApproval");
+  assert.match(approvalTurn.answer, /Approved and updated Catherine Sears/);
+  assert.equal((await repository.listClients("aquatrace"))[0].billingAddress.postalCode, "29643");
+  assert.equal((await repository.listProperties("aquatrace"))[0].address.postalCode, "29643");
+});
+
 test("approval rejections omit stray punctuation when the pending title is empty or malformed", async () => {
   const result = await runNexiToolLoop({
     tenant: tenant(),
