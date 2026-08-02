@@ -34,9 +34,9 @@ test("request helpers treat an unreviewed intake as review-first work", () => {
   assert.equal(requestReadyToConvert(request), false);
 
   const action = requestDominantAction(request);
-  assert.equal(action.stage, "Review required");
+  assert.equal(action.stage, "Review Required");
   assert.equal(action.dominantAction, "mark-reviewed");
-  assert.equal(action.dominantLabel, "Mark reviewed");
+  assert.equal(action.dominantLabel, "Mark Reviewed");
 });
 
 test("reviewed requests move onto the conversion rail", () => {
@@ -45,7 +45,7 @@ test("reviewed requests move onto the conversion rail", () => {
 
   assert.equal(requestNeedsReview(request), false);
   assert.equal(requestReadyToConvert(request), true);
-  assert.equal(action.stage, "Ready to convert");
+  assert.equal(action.stage, "Ready to Convert");
   assert.equal(action.dominantAction, "convert-to-quote");
   assert.equal(action.secondaryAction, "convert-to-job");
 });
@@ -65,8 +65,8 @@ test("converted requests stay read-only as intake source records", () => {
 
   assert.equal(requestDominantAction(quoteRequest).dominantAction, "none");
   assert.equal(requestDominantAction(jobRequest).dominantAction, "none");
-  assert.equal(requestDominantAction(quoteRequest).stage, "Quote created");
-  assert.equal(requestDominantAction(jobRequest).stage, "Job created");
+  assert.equal(requestDominantAction(quoteRequest).stage, "Quote Created");
+  assert.equal(requestDominantAction(jobRequest).stage, "Job Created");
 });
 
 test("request queue summary breaks out review, conversion, and archive counts", () => {

@@ -4,8 +4,26 @@ import { FirestoreNativeCrmRepository } from "../apps/server/src/crm/nativeRepos
 import { getAdminDb } from "../apps/server/src/firebase.js";
 
 const tenantId = process.env.TENANT_ID || "aquatrace";
+const writeRequested = process.argv.includes("--write-native") || process.env.JOBBER_IMPORT_WRITE_NATIVE === "true";
+const writeConfirmed = process.argv.includes("--confirm-import") || process.env.JOBBER_IMPORT_CONFIRM === "true";
+const writeNative = writeRequested && writeConfirmed;
+const importedHistoryClassification = "imported_history";
+
+if (writeRequested && !writeConfirmed) {
+  throw new Error("Native import write was requested, but confirmation is missing. Re-run with --confirm-import after reviewing the dry-run receipt.");
+}
+
 const adapter = JobberAdapter.fromEnv(process.env, tenantId);
-const writeNative = process.argv.includes("--write-native") || process.env.JOBBER_IMPORT_WRITE_NATIVE === "true";
+
+function markImportedHistory<T extends { customFields?: Record<string, string | number | boolean> }>(record: T): T {
+  return {
+    ...record,
+    customFields: {
+      ...(record.customFields ?? {}),
+      recordClassification: importedHistoryClassification
+    }
+  };
+}
 
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
@@ -47,15 +65,15 @@ if (writeNative) {
   }
   const repository = new FirestoreNativeCrmRepository(db);
   for (const client of clients) {
-    await repository.upsertClient(client);
+    await repository.upsertClient(markImportedHistory(client));
     nativeWriteCounts.clients += 1;
   }
   for (const property of properties) {
-    await repository.upsertProperty(property);
+    await repository.upsertProperty(markImportedHistory(property));
     nativeWriteCounts.properties += 1;
   }
   for (const job of jobs) {
-    await repository.upsertJob(job);
+    await repository.upsertJob(markImportedHistory(job));
     nativeWriteCounts.jobs += 1;
   }
 }
@@ -64,6 +82,7 @@ const receipt = {
   ok: true,
   dryRun: !writeNative,
   nativeWrites: writeNative,
+  writeConfirmationRequired: true,
   destructiveWrites: false,
   jobberWrites: false,
   tenantId,
@@ -79,6 +98,7 @@ const receipt = {
     jobs: jobs.filter((job) => Boolean(job.externalIds?.jobber)).length,
     properties: properties.filter((property) => Boolean(property.externalIds?.jobber)).length
   },
+  importedHistoryClassification,
   nativeWriteCounts,
   sampledAt: new Date().toISOString()
 };

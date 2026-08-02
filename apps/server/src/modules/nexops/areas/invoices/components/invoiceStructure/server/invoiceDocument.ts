@@ -13,6 +13,7 @@ export interface InvoicePortalRenderOptions {
   checkoutBasePath?: string | undefined;
   tippingEnabled?: boolean | undefined;
   paymentRecorded?: boolean | undefined;
+  paymentCancelled?: boolean | undefined;
   tipPresets?: number[] | undefined;
 }
 
@@ -63,6 +64,9 @@ export function renderInvoicePortalHtml(
   const paidBanner = options.paymentRecorded
     ? `<div class="success-banner"><strong>Payment recorded.</strong> The balance rail updated and the receipt path can continue from here.</div>`
     : "";
+  const cancelledBanner = options.paymentCancelled
+    ? `<div class="notice-banner"><strong>Payment was not completed.</strong> No charge was made. You can safely try again when ready.</div>`
+    : "";
   const payLabel = invoice.status === "paid" ? "Payment recorded" : "Balance due";
   return `<!doctype html>
 <html lang="en">
@@ -85,6 +89,9 @@ export function renderInvoicePortalHtml(
     .content { display: grid; gap: 20px; padding: 24px; }
     .summary { display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; }
     .panel { border: 1px solid rgba(16,32,39,.12); border-radius: 24px; background: #fff; padding: 20px; }
+    .success-banner, .notice-banner { border-radius: 16px; padding: 14px 16px; line-height: 1.45; }
+    .success-banner { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
+    .notice-banner { background: #fff7ed; color: #9a3412; border: 1px solid #fdba74; }
     .panel h2, .panel h3 { margin: 0 0 12px; }
     .muted { color: #56747c; font-size: .94rem; }
     .description { color: #39545b; font-size: .92rem; margin-top: 4px; }
@@ -118,6 +125,7 @@ export function renderInvoicePortalHtml(
       </section>
       <section class="content">
         ${paidBanner}
+        ${cancelledBanner}
         <div class="summary">
           <section class="panel">
             <h2>Invoice summary</h2>

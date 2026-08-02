@@ -385,6 +385,7 @@ export function registerInvoiceStructureRoutes(context: CrmRouteContext): void {
         checkoutBasePath: portalPathWithTenant(built.tenantId, `/api/nexportal/invoices/${encodeURIComponent(invoice.id)}/checkout`),
         tippingEnabled: settings.invoiceDefaults.tippingEnabled,
         paymentRecorded: req.query.paid === "1",
+        paymentCancelled: req.query.payment === "cancelled",
         chrome: {
           badge: "NexPortal",
           title: invoice.title,

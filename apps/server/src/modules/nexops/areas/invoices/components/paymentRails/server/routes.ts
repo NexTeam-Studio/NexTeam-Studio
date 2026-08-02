@@ -152,7 +152,9 @@ export function registerPaymentRailRoutes(context: CrmRouteContext): void {
         paid: "1",
         session_id: "{CHECKOUT_SESSION_ID}"
       }));
-      const cancelPath = portalPathWithTenant(portalAccess.tenantId, `/nexportal/invoices/${encodeURIComponent(invoice.id)}`);
+      const cancelPath = portalPathWithTenant(portalAccess.tenantId, `/nexportal/invoices/${encodeURIComponent(invoice.id)}`, new URLSearchParams({
+        payment: "cancelled"
+      }));
       const paypalReturnPath = portalPathWithTenant(portalAccess.tenantId, `/nexportal/invoices/${encodeURIComponent(invoice.id)}/paypal-return`, new URLSearchParams({
         method: checkoutInput.method,
         ...(checkoutInput.tipAmount !== undefined ? { tipAmount: checkoutInput.tipAmount.toFixed(2) } : {})

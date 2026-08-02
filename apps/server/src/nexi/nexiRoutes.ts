@@ -1,8 +1,8 @@
 import { Router, type Request, type Response } from "express";
 import { RailError, type ArtifactKind, type NexiTool, type Tenant } from "@nexteam/core";
-import type { DecodedIdToken } from "firebase-admin/auth";
-import { getAdminAuth, getAdminDb } from "../firebase.js";
+import { getAdminDb } from "../firebase.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
+import { requireAccessContext } from "../auth/accessContext.js";
 import { FirestoreUsageLogWriter, MemoryUsageLogWriter } from "../usageLog.js";
 import { FirestoreNexiRepository, MemoryNexiRepository, type NexiRepository } from "./nexiRepository.js";
 import { createNexiLookupTools } from "./nexiTools.js";
@@ -56,38 +56,13 @@ function runtimeStores(env: NodeJS.ProcessEnv): { repository: NexiRepository; us
   return { repository: memoryRepository, usageLog: memoryUsageLog };
 }
 
-function envList(value: string | undefined): string[] {
-  return (value ?? "").split(",").map((entry) => entry.trim().toLowerCase()).filter(Boolean);
-}
-
-function hasOperatorAccess(decoded: DecodedIdToken, env: NodeJS.ProcessEnv): boolean {
-  const allowedUids = envList(env.FIREBASE_PLATFORM_OPERATOR_UIDS);
-  const allowedEmails = envList(env.FIREBASE_PLATFORM_OPERATOR_EMAILS);
-  const email = decoded.email?.toLowerCase() ?? "";
-  const roles = Array.isArray(decoded.roles) ? decoded.roles.map((role) => String(role).toLowerCase()) : [];
-  return allowedUids.includes(decoded.uid.toLowerCase())
-    || (!!email && allowedEmails.includes(email))
-    || decoded.platform_operator === true
-    || roles.includes("platform_operator");
-}
-
 async function requireNexiOperator(req: Request, env: NodeJS.ProcessEnv): Promise<void> {
-  if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") {
-    return;
-  }
-  const auth = getAdminAuth(env);
-  if (!auth) {
-    return;
-  }
-  const header = req.header("authorization") ?? "";
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  if (!match?.[1]) {
-    throw new RailError("Firebase operator sign-in is required.", { provider: "firebase", op: "nexiAuth", status: 401 });
-  }
-  const decoded = await auth.verifyIdToken(match[1]);
-  if (!hasOperatorAccess(decoded, env)) {
-    throw new RailError("Firebase user is not authorized for Nexi Job Desk.", { provider: "firebase", op: "nexiAuth", status: 403 });
-  }
+  const requestedTenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim()
+    ? req.body.tenantId.trim()
+    : typeof req.query?.tenantId === "string" && req.query.tenantId.trim()
+      ? req.query.tenantId.trim()
+      : configuredTenantId(env, "nexiAuth");
+  await requireAccessContext(req, env, { requestedTenantId, op: "nexiAuth" });
 }
 
 export interface NexiRouterDeps {
