@@ -6,10 +6,6 @@ function firestoreDoc<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function docId(tenantId: string, date: string): string {
-  return `${tenantId}_${date}`;
-}
-
 export interface SelfRepairRepository {
   saveLog(log: SelfRepairLog): Promise<SelfRepairLog>;
   getLog(tenantId: string, date: string): Promise<SelfRepairLog | null>;
@@ -27,13 +23,15 @@ export class InMemorySelfRepairRepository implements SelfRepairRepository {
   }
 
   async getLog(tenantId: string, date: string): Promise<SelfRepairLog | null> {
-    return this.logs.get(docId(tenantId, date)) ?? null;
+    return [...this.logs.values()]
+      .filter((log) => log.tenantId === tenantId && log.date === date)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0] ?? null;
   }
 
   async listRecentLogs(tenantId: string, limit: number): Promise<SelfRepairLog[]> {
     return [...this.logs.values()]
       .filter((log) => log.tenantId === tenantId)
-      .sort((left, right) => right.date.localeCompare(left.date))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
       .slice(0, limit);
   }
 }
@@ -48,17 +46,20 @@ export class FirestoreSelfRepairRepository implements SelfRepairRepository {
   }
 
   async getLog(tenantId: string, date: string): Promise<SelfRepairLog | null> {
-    const doc = await this.db.collection("selfRepairLog").doc(docId(tenantId, date)).get();
-    if (!doc.exists) return null;
-    const parsed = selfRepairLogSchema.parse(doc.data());
-    return parsed.tenantId === tenantId ? parsed : null;
+    const snapshot = await this.db.collection("selfRepairLog")
+      .where("tenantId", "==", tenantId)
+      .where("date", "==", date)
+      .get();
+    return snapshot.docs
+      .map((doc) => selfRepairLogSchema.parse(doc.data()))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0] ?? null;
   }
 
   async listRecentLogs(tenantId: string, limit: number): Promise<SelfRepairLog[]> {
     const snapshot = await this.db.collection("selfRepairLog").where("tenantId", "==", tenantId).get();
     return snapshot.docs
       .map((doc) => selfRepairLogSchema.parse(doc.data()))
-      .sort((left, right) => right.date.localeCompare(left.date))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
       .slice(0, limit);
   }
 }

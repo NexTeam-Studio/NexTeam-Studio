@@ -8,7 +8,7 @@ Important boundary: this rail never edits code, SOUL files, schemas, deploys, or
 
 ## Hourly development review
 
-Set `SELF_REPAIR_HOURLY_ENABLED=true` to run one review at server start and then at minute `00` of every hour. Each pass uses its saved review window, so only new timestamped conversations and runtime records are analyzed. When hourly email delivery is enabled, every pass sends a report, including a short healthy report when no new issue is found.
+Set `SELF_REPAIR_HOURLY_ENABLED=true` to run one review at server start and then at minute `00` of every hour. Each pass keeps its own durable audit record and uses the most recent record as its saved review window, so only new timestamped conversations and runtime records are analyzed. When hourly email delivery is enabled, every pass sends a report, including a short healthy report when no new issue is found.
 
 To email each hourly report, configure the already-approved dedicated Nexi sender and set both `SELF_REPAIR_HOURLY_EMAIL_ENABLED=true` and either `SELF_REPAIR_REPORT_EMAIL` or the configured operator email. The message is tenant-scoped and contains only the diagnosis summary; it never changes customer data or code.
 

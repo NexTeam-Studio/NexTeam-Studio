@@ -79,6 +79,10 @@ function reportEmail(input: SelfRepairRunInput, env: NodeJS.ProcessEnv): string 
   return configured.split(",").map((entry) => entry.trim()).find((entry) => entry.includes("@"));
 }
 
+function auditLogId(tenantId: string, date: string, windowEnd: string): string {
+  return `${tenantId}_${date}_${windowEnd.replace(/[^0-9]/g, "")}`;
+}
+
 function buildMorningReport(log: Omit<SelfRepairLog, "morningReport" | "reportDelivery">): string {
   const lines = [
     log.windowStart
@@ -166,7 +170,9 @@ export class SelfRepairService {
       ...(reportEmail(input, this.env) ? [] : ["Report email was not queued because SELF_REPAIR_REPORT_EMAIL is not configured."])
     ];
     const baseLog = {
-      id: `${input.tenantId}_${date}`,
+      // Each audit run is retained. The hourly cursor must survive a server
+      // restart without replacing the earlier report from the same day.
+      id: auditLogId(input.tenantId, date, windowEnd),
       tenantId: input.tenantId,
       date,
       checked: {
