@@ -67,7 +67,7 @@ function clearLocalSessionToken(): void {
   }
 }
 
-function installLocalSessionFetchBridge(): void {
+function installSessionFetchBridge(auth: Auth | null): void {
   const bridgeWindow = window as Window & {
     __nexopsLocalFetchBridgeInstalled?: boolean;
     __nexopsOriginalFetch?: typeof window.fetch;
@@ -78,8 +78,8 @@ function installLocalSessionFetchBridge(): void {
   const originalFetch = window.fetch.bind(window);
   bridgeWindow.__nexopsOriginalFetch = originalFetch;
   bridgeWindow.__nexopsLocalFetchBridgeInstalled = true;
-  window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
-    const token = readLocalSessionToken();
+  window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const token = readLocalSessionToken() ?? await auth?.currentUser?.getIdToken();
     if (!token) {
       return originalFetch(input, init);
     }
@@ -184,11 +184,10 @@ export async function loadAuthBootstrap(): Promise<AuthBootstrap> {
   const localAuthEnabled = runtime?.ok && runtime.localAuthEnabled === true;
   const localProfiles = runtime?.ok ? runtime.localProfiles ?? [] : [];
   const localTenantId = localProfiles[0]?.tenantId ?? CONFIGURED_TENANT_ID;
-  if (localAuthEnabled) {
-    installLocalSessionFetchBridge();
-  }
+  const auth = createFirebaseAuth(config);
+  installSessionFetchBridge(auth);
   return {
-    auth: createFirebaseAuth(config),
+    auth,
     authRequired: runtime?.ok ? runtime.authRequired !== false : true,
     localAuthEnabled,
     localProfiles,
