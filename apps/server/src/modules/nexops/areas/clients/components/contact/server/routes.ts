@@ -4,6 +4,11 @@ import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
 import { createClientBodySchema, hasClientCreateAddress, hasClientCreatePhone, updateClientBodySchema } from "./routeSchemas.js";
 import { quickPaymentRequestBodySchema } from "../../../../invoices/components/paymentRails/server/routeSchemas.js";
 import { sendPortalLinkBodySchema } from "../../../../../../nexportal/components/portalCore/server/routeSchemas.js";
+import {
+  isProtectedLegacyClient,
+  legacyClientDeleteMessage,
+  preserveLegacyClientClassification
+} from "./clientDeletionPolicy.js";
 
 export function registerContactRoutes(context: CrmRouteContext): void {
   const {
@@ -163,7 +168,7 @@ export function registerContactRoutes(context: CrmRouteContext): void {
         ...(input.communicationSettings ? { communicationSettings: input.communicationSettings } : {}),
         ...(input.emails ? { emails: input.emails } : {}),
         ...(input.phones ? { phones: input.phones } : {}),
-        customFields: input.customFields ?? existing.customFields,
+        customFields: preserveLegacyClientClassification(existing, input.customFields ?? existing.customFields),
         consent: input.consent ? {
           email: input.consent.email ?? existing.consent.email,
           sms: input.consent.sms ?? existing.consent.sms,
@@ -235,6 +240,13 @@ export function registerContactRoutes(context: CrmRouteContext): void {
       const existing = (await repository.listClients(tenantId)).find((record) => record.id === clientId);
       if (!existing) {
         throw new RailError(`Client ${clientId} was not found.`, { provider: "native", op: "deleteClient", status: 404 });
+      }
+      if (isProtectedLegacyClient(existing)) {
+        throw new RailError(legacyClientDeleteMessage(), {
+          provider: "native",
+          op: "deleteClient",
+          status: 409
+        });
       }
       const [requests, quotes, jobs, invoices, properties] = await Promise.all([
         repository.listRequests(tenantId),
