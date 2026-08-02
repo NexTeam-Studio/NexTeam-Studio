@@ -21,9 +21,9 @@ function value(env: NodeJS.ProcessEnv, name: string): string {
 function configFromEnv(env: NodeJS.ProcessEnv, prefix: string, fallbackAlias: string, tenantId: string): GmailMailboxConfig | null {
   const email = value(env, `${prefix}_EMAIL`);
   const alias = value(env, `${prefix}_ALIAS`) || (email ? envKey(email) : fallbackAlias);
-  const clientId = value(env, `${prefix}_CLIENT_ID`) || value(env, "GMAIL_OAUTH_CLIENT_ID");
-  const clientSecret = value(env, `${prefix}_CLIENT_SECRET`) || value(env, "GMAIL_OAUTH_CLIENT_SECRET");
-  const refreshToken = value(env, `${prefix}_REFRESH_TOKEN`);
+  const clientId = value(env, `${prefix}_CLIENT_ID`) || value(env, "GMAIL_OAUTH_CLIENT_ID") || value(env, "GOOGLE_CLIENT_ID");
+  const clientSecret = value(env, `${prefix}_CLIENT_SECRET`) || value(env, "GMAIL_OAUTH_CLIENT_SECRET") || value(env, "GOOGLE_CLIENT_SECRET");
+  const refreshToken = value(env, `${prefix}_REFRESH_TOKEN`) || value(env, "GOOGLE_REFRESH_TOKEN");
   if (!email || !clientId || !clientSecret || !refreshToken) {
     return null;
   }
