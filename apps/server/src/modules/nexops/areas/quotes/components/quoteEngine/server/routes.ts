@@ -3,6 +3,7 @@ import type { Quote } from "@nexteam/core";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
 import { createInvoiceFromQuoteBodySchema, createQuoteRouteBodySchema, quoteManualApprovalBodySchema, quoteSendBodySchema, updateQuoteRouteBodySchema } from "./routeSchemas.js";
 import { portalSessionQuoteApprovalBodySchema, portalSessionQuoteChangeRequestBodySchema } from "../../../../../../nexportal/components/portalCore/server/routeSchemas.js";
+import { approveQuoteAfterDepositPreflight } from "../domain/atomicDepositApproval.js";
 
 export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
   const {
@@ -562,7 +563,8 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
       }
       const approvedAt = new Date().toISOString();
       const signatureMode = input.signatureMode ?? (input.drawnDataUrl ? "drawn" : "typed");
-      const approved = await provider.updateQuote(quote.id, {
+      const approvalCandidate: Quote = {
+        ...quote,
         status: "approved",
         approvedAt,
         approvedBy: input.customerName.trim(),
@@ -584,6 +586,12 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
           ...(input.deposit?.cardOnFileAuthorized ? { autoSavedCardOnFile: true } : {}),
           ...(quote.deposit.required ? { capturedAt: approvedAt } : {})
         } : quote.deposit
+      };
+      const approved = await approveQuoteAfterDepositPreflight({
+        originalQuote: quote,
+        approvedQuote: approvalCandidate,
+        ...(deps.ledgerService ? { syncDeposit: (candidate) => ledger().syncQuoteDepositBridge(candidate) } : {}),
+        persistApproval: () => provider.updateQuote(quote.id, approvalCandidate)
       });
       await eventBus.emit({
         tenantId: approved.tenantId,
@@ -595,9 +603,6 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         type: "quote.approved",
         payload: { quoteId: approved.id, clientId: approved.clientId, approvedAt, approvedBy: input.customerName.trim(), approvedByRole: "client" }
       });
-      if (deps.ledgerService) {
-        await ledger().syncQuoteDepositBridge(approved);
-      }
       const quotePortalUrl = `${publicOrigin(req)}${portalPathWithTenant(portalAccess.tenantId, `/nexportal/quotes/${encodeURIComponent(approved.id)}`)}`;
       const quoteVars = quoteTemplateVariables({ quote: approved, client: snapshot.client, portalUrl: quotePortalUrl });
       if (deps.commsRail?.sendAdapter && snapshot.client.emails[0]) {
@@ -782,7 +787,8 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
       }
       const approvedAt = new Date().toISOString();
       const signatureMode = input.signatureMode ?? (input.drawnDataUrl ? "drawn" : "typed");
-      const approved = await provider.updateQuote(quote.id, {
+      const approvalCandidate: Quote = {
+        ...quote,
         status: "approved",
         approvedAt,
         approvedBy: input.customerName.trim(),
@@ -804,6 +810,12 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
           ...(input.deposit?.cardOnFileAuthorized ? { autoSavedCardOnFile: true } : {}),
           ...(quote.deposit.required ? { capturedAt: approvedAt } : {})
         } : quote.deposit
+      };
+      const approved = await approveQuoteAfterDepositPreflight({
+        originalQuote: quote,
+        approvedQuote: approvalCandidate,
+        ...(deps.ledgerService ? { syncDeposit: (candidate) => ledger().syncQuoteDepositBridge(candidate) } : {}),
+        persistApproval: () => provider.updateQuote(quote.id, approvalCandidate)
       });
       await eventBus.emit({
         tenantId: approved.tenantId,
@@ -815,9 +827,6 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         type: "quote.approved",
         payload: { quoteId: approved.id, clientId: approved.clientId, approvedAt, approvedBy: input.customerName.trim(), approvedByRole: "client" }
       });
-      if (deps.ledgerService) {
-        await ledger().syncQuoteDepositBridge(approved);
-      }
       const settings = await repositoryForTenant().getCrmSettings(input.tenantId);
       const quotePortalUrl = portalUrlForQuote(approved, input.token);
       const quoteVars = quoteTemplateVariables({ quote: approved, client, portalUrl: quotePortalUrl });
