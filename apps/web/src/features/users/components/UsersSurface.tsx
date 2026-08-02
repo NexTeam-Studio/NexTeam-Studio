@@ -63,7 +63,7 @@ const permissionGroups = [
   ["Notes", "View work notes", "Add and edit notes", "Delete notes"],
 ];
 
-const workingHours = [
+export const workingHours = [
   ["Sunday", "Unavailable"], ["Monday", "8:00 AM – 4:30 PM"], ["Tuesday", "8:00 AM – 4:30 PM"],
   ["Wednesday", "8:00 AM – 4:30 PM"], ["Thursday", "8:00 AM – 4:30 PM"], ["Friday", "8:00 AM – 3:30 PM"], ["Saturday", "Unavailable"],
 ];

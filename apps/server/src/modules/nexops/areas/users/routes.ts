@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { RailError } from "@nexteam/core";
 import { getAdminDb } from "../../../../firebase.js";
@@ -35,7 +35,7 @@ const profileSchema = z.object({
 
 export type UserProfile = z.infer<typeof profileSchema>;
 
-export function registerUsersRoutes(app: import("express").Express, env: NodeJS.ProcessEnv): void {
+export function registerUsersRoutes(app: Express, env: NodeJS.ProcessEnv): void {
   app.get("/api/nexops/users/:id/profile", async (req: Request, res: Response) => {
     try {
       const tenantId = String(req.query.tenantId ?? "").trim();

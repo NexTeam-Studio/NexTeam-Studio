@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
-import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
 import { visitCanBeCompleted } from "./visitCompletion";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
