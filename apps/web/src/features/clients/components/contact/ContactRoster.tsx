@@ -47,18 +47,18 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
       </div>
 
       <div className="nexops-client-stats" aria-label="Client metrics">
-        <article><span>Active clients</span><strong>{props.activeCount}</strong><small>Native NexOps</small></article>
+        <article><span>Active Clients</span><strong>{props.activeCount}</strong><small>Native NexOps</small></article>
         <article><span>Leads</span><strong>{props.leadCount}</strong><small>Ready for follow-up</small></article>
-        <article><span>Text-ready</span><strong>{props.textReadyCount}</strong><small>Mobile confirmed</small></article>
+        <article><span>Text-Ready</span><strong>{props.textReadyCount}</strong><small>Mobile confirmed</small></article>
         <article><span>Sites</span><strong>{props.propertyCount}</strong><small>Multi-site hierarchy</small></article>
       </div>
 
       <div className="nexops-client-controls">
-        <button type="button">Filter by tag +</button>
+        <button type="button">Filter by Tag +</button>
         <button type="button">Status | Leads and Active</button>
         <label>
-          <span className="sr-only">Search clients</span>
-          <input value={props.query} placeholder="Search clients..." onChange={(event) => props.onQueryChange(event.target.value)} />
+          <span className="sr-only">Search Clients</span>
+          <input value={props.query} placeholder="Search Clients..." onChange={(event) => props.onQueryChange(event.target.value)} />
         </label>
       </div>
 
@@ -66,7 +66,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
         <section className="nexops-client-table-card" aria-label="Client list">
           <div className="nexops-client-table">
             <div className="nexops-client-table-head">
-              <span>Name</span><span>Primary address</span><span>Contact</span><span>Status</span><span>Last activity</span>
+              <span>Name</span><span>Primary Address</span><span>Contact</span><span>Status</span><span>Last Activity</span>
             </div>
             {props.clients.map((client) => (
               <button
@@ -78,12 +78,12 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
                 <span>
                   <strong>{props.clientDisplayName(client)}</strong>
                   <small>{client.company?.trim() ? client.company : props.contactSummary(client)}</small>
-                  {isImportedHistoryRecord(client) ? <small className="nexops-client-imported-history">Imported history</small> : null}
+                  {isImportedHistoryRecord(client) ? <small className="nexops-client-imported-history">Imported History</small> : null}
                 </span>
                 <span>{props.clientPrimaryAddress(client)}</span>
-                <span>{props.selectedClientId === client.id ? "Open now" : (client.phones[0] ?? client.emails[0] ?? "No contact saved")}</span>
+                <span>{props.selectedClientId === client.id ? "Open Now" : (client.phones[0] ?? client.emails[0] ?? "No Contact Saved")}</span>
                 <span><mark>{props.clientStatusLabel(client)}</mark></span>
-                <span>{client.tags?.[0] ?? "Native record"}</span>
+                <span>{client.tags?.[0] ?? "Native Record"}</span>
               </button>
             ))}
             {!props.clients.length ? (

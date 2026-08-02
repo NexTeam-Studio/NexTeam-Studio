@@ -66,10 +66,10 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
     ? "This number has not been confirmed as mobile. NexOps will treat texts as one-way and should prompt before sending."
     : "Texts stay one-way unless an upgraded two-way SMS tier is enabled.";
   const surfaceHeading = surface === "property"
-    ? "New property contact rail"
+    ? "New Property Contact Rail"
     : surface === "contact"
-      ? "New contact"
-      : editing ? "Edit client" : "New client";
+      ? "New Contact"
+      : editing ? "Edit Client" : "New Client";
   const surfaceBody = surface === "property"
     ? "Start with the client relationship, then capture the service address and access rules without losing the full CRM context."
     : surface === "contact"
@@ -304,10 +304,10 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
           </header>
           <div className="nexops-mobile-client-body">
             <label className="nexops-mobile-client-field">
-              <span>Search lead sources</span>
+              <span>Search Lead Sources</span>
               <input
                 value={leadSourceQuery}
-                placeholder="Search lead sources"
+                placeholder="Search Lead Sources"
                 onChange={(event) => setLeadSourceQuery(event.target.value)}
               />
             </label>
@@ -317,7 +317,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
             {leadSourceAddNewOpen ? (
               <div className="nexops-mobile-inline-panel">
                 <label className="nexops-mobile-client-field">
-                  <span>One-time lead source</span>
+                  <span>One-Time Lead Source</span>
                   <input
                     value={leadSourceAddNewValue}
                     placeholder="Enter a source for this client only"
@@ -325,7 +325,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
                   />
                 </label>
                 <div className="nexops-inline-actions wrap">
-                  <button className="nexops-mobile-inline-link" type="button" onClick={saveOneOffLeadSource}>Save this source</button>
+                  <button className="nexops-mobile-inline-link" type="button" onClick={saveOneOffLeadSource}>Save This Source</button>
                   <button
                     className="nexops-mobile-inline-link danger"
                     type="button"
@@ -366,24 +366,24 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
         <div className="nexops-mobile-client-body">
           <button className="nexops-mobile-client-row-action" type="button">Add From Contacts</button>
           <label className="nexops-mobile-client-field">
-            <span>First name</span>
-            <input value={newClient.firstName} placeholder="First name" onChange={(event) => patchClientDraft({ firstName: event.target.value })} />
+            <span>First Name</span>
+            <input value={newClient.firstName} placeholder="First Name" onChange={(event) => patchClientDraft({ firstName: event.target.value })} />
           </label>
           <label className="nexops-mobile-client-field">
-            <span>Last name</span>
-            <input value={newClient.lastName} placeholder="Last name" onChange={(event) => patchClientDraft({ lastName: event.target.value })} />
+            <span>Last Name</span>
+            <input value={newClient.lastName} placeholder="Last Name" onChange={(event) => patchClientDraft({ lastName: event.target.value })} />
           </label>
 
           <button className="nexops-mobile-client-row-action" type="button" onClick={() => setCompanyExpanded((current) => !current)}>
-            {companyExpanded || newClient.company.trim() ? "Company name" : "Add Company Name"}
+            {companyExpanded || newClient.company.trim() ? "Company Name" : "Add Company Name"}
           </button>
           {companyExpanded ? (
             <div className="nexops-mobile-inline-panel">
               <label className="nexops-mobile-client-field">
-                <span>Company name</span>
+                <span>Company Name</span>
                 <input
                   value={newClient.company}
-                  placeholder="Company name"
+                  placeholder="Company Name"
                   onChange={(event) => patchClientDraft({
                     company: event.target.value,
                     displayNamePreference: event.target.value ? newClient.displayNamePreference : "person"
@@ -391,7 +391,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
                 />
               </label>
               <label className="nexops-mobile-toggle-row">
-                <span>Commercial client: Use company name as client name</span>
+                <span>Commercial Client: Use Company Name as Client Name</span>
                 <input
                   type="checkbox"
                   checked={newClient.displayNamePreference === "company"}
@@ -403,8 +403,8 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
 
           <div className="nexops-mobile-inline-panel">
             <label className="nexops-mobile-client-field">
-              <span>Phone number</span>
-              <input value={newClient.phone} placeholder="Phone number" onChange={(event) => patchClientDraft({ phone: event.target.value })} />
+              <span>Phone Number</span>
+              <input value={newClient.phone} placeholder="Phone Number" onChange={(event) => patchClientDraft({ phone: event.target.value })} />
             </label>
             <label className="nexops-mobile-client-field">
               <span>Label</span>
@@ -413,14 +413,14 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
               </select>
             </label>
             <label className="nexops-mobile-toggle-row">
-              <span>Receives text messages</span>
+              <span>Receives Text Messages</span>
               <input type="checkbox" checked={newClient.phoneReceivesMessages} onChange={(event) => patchClientDraft({ phoneReceivesMessages: event.target.checked })} />
             </label>
             {(newClient.additionalPhones ?? []).map((entry: ClientPhoneDraft) => (
               <div className="nexops-mobile-inline-panel nested" key={entry.id}>
                 <label className="nexops-mobile-client-field">
-                  <span>Additional phone</span>
-                  <input value={entry.value} placeholder="Phone number" onChange={(event) => updatePhoneDraft(entry.id, { value: event.target.value })} />
+                  <span>Additional Phone</span>
+                  <input value={entry.value} placeholder="Phone Number" onChange={(event) => updatePhoneDraft(entry.id, { value: event.target.value })} />
                 </label>
                 <label className="nexops-mobile-client-field">
                   <span>Label</span>
@@ -429,13 +429,13 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
                   </select>
                 </label>
                 <label className="nexops-mobile-toggle-row">
-                  <span>Receives text messages</span>
+                  <span>Receives Text Messages</span>
                   <input type="checkbox" checked={entry.receivesMessages} onChange={(event) => updatePhoneDraft(entry.id, { receivesMessages: event.target.checked })} />
                 </label>
-                <button className="nexops-mobile-inline-link danger" type="button" onClick={() => removePhoneDraft(entry.id)}>Remove phone</button>
+                <button className="nexops-mobile-inline-link danger" type="button" onClick={() => removePhoneDraft(entry.id)}>Remove Phone</button>
               </div>
             ))}
-            <button className="nexops-mobile-inline-link" type="button" onClick={addPhoneDraft}>Add another phone number</button>
+            <button className="nexops-mobile-inline-link" type="button" onClick={addPhoneDraft}>Add Another Phone Number</button>
           </div>
 
           <button className="nexops-mobile-client-row-action" type="button" onClick={() => setEmailExpanded((current) => !current)}>
@@ -444,8 +444,8 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
           {emailExpanded ? (
             <div className="nexops-mobile-inline-panel">
               <label className="nexops-mobile-client-field">
-                <span>Email address</span>
-                <input type="email" value={newClient.email} placeholder="Email address" onChange={(event) => patchClientDraft({ email: event.target.value })} />
+                <span>Email Address</span>
+                <input type="email" value={newClient.email} placeholder="Email Address" onChange={(event) => patchClientDraft({ email: event.target.value })} />
               </label>
               <label className="nexops-mobile-client-field">
                 <span>Label</span>
@@ -456,8 +456,8 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
               {(newClient.additionalEmails ?? []).map((entry: ClientEmailDraft) => (
                 <div className="nexops-mobile-inline-panel nested" key={entry.id}>
                   <label className="nexops-mobile-client-field">
-                    <span>Additional email</span>
-                    <input type="email" value={entry.value} placeholder="Email address" onChange={(event) => updateEmailDraft(entry.id, { value: event.target.value })} />
+                    <span>Additional Email</span>
+                    <input type="email" value={entry.value} placeholder="Email Address" onChange={(event) => updateEmailDraft(entry.id, { value: event.target.value })} />
                   </label>
                   <label className="nexops-mobile-client-field">
                     <span>Label</span>
@@ -465,7 +465,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
                       {emailLabelOptions.map((label) => <option key={label} value={label}>{label}</option>)}
                     </select>
                   </label>
-                  <button className="nexops-mobile-inline-link danger" type="button" onClick={() => removeEmailDraft(entry.id)}>Remove email</button>
+                  <button className="nexops-mobile-inline-link danger" type="button" onClick={() => removeEmailDraft(entry.id)}>Remove Email</button>
                 </div>
               ))}
               <button className="nexops-mobile-inline-link" type="button" onClick={addEmailDraft}>Add Another Email</button>
@@ -498,10 +498,10 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
           ) : null}
 
           <label className="nexops-mobile-client-field">
-            <span>Property address</span>
+            <span>Property Address</span>
             <input
               value={newClient.street1}
-              placeholder="Property address"
+              placeholder="Property Address"
               onChange={(event) => patchClientDraft({ street1: event.target.value })}
             />
           </label>
@@ -528,8 +528,8 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
           </div>
           <div className="nexops-mobile-two-up">
             <label className="nexops-mobile-client-field">
-              <span>ZIP code</span>
-              <input value={newClient.postalCode} placeholder="ZIP code" onChange={(event) => patchClientDraft({ postalCode: event.target.value })} />
+              <span>ZIP Code</span>
+              <input value={newClient.postalCode} placeholder="ZIP Code" onChange={(event) => patchClientDraft({ postalCode: event.target.value })} />
             </label>
             <label className="nexops-mobile-client-field">
               <span>Street 2</span>
@@ -553,8 +553,8 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
                     <input value={newClient.propertyGateCodes} placeholder="Gate Entry Code(s)" onChange={(event) => patchClientDraft({ propertyGateCodes: event.target.value })} />
                   </label>
                   <label className="nexops-mobile-client-field">
-                    <span>Access note</span>
-                    <input value={newClient.propertyAccessNotes} placeholder="Access note" onChange={(event) => patchClientDraft({ propertyAccessNotes: event.target.value })} />
+                    <span>Access Note</span>
+                    <input value={newClient.propertyAccessNotes} placeholder="Access Note" onChange={(event) => patchClientDraft({ propertyAccessNotes: event.target.value })} />
                   </label>
                 </>
               ) : null}
@@ -578,7 +578,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
         </div>
         <footer className="nexops-mobile-client-footer">
           <p>{helperCopy}</p>
-          <button type="submit" disabled={!createClientCanSave}>{editing ? "Save changes" : "Save"}</button>
+          <button type="submit" disabled={!createClientCanSave}>{editing ? "Save Changes" : "Save"}</button>
         </footer>
       </form>
     );
@@ -589,13 +589,13 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
       {pageLayout ? (
         <div className="nexops-client-form-page-head">
           <div>
-            <p className="eyebrow">New record</p>
+            <p className="eyebrow">New Record</p>
             <h2>{surfaceHeading}</h2>
             <p>{surfaceBody}</p>
           </div>
           <div className="nexops-inline-actions wrap">
             <span className="nexops-client-form-page-note">Save the parent client first, then add extra contacts, properties, and billing details from the full workspace.</span>
-            <button className="nexops-link-button" type="button" onClick={onClose}>Back to clients</button>
+            <button className="nexops-link-button" type="button" onClick={onClose}>Back to Clients</button>
           </div>
         </div>
       ) : (
@@ -607,10 +607,10 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
             <p>{surfaceBody}</p>
           </div>
           <div className="nexops-client-form-hero-actions">
-            <span>Proof screen: final NexTeam design system</span>
+            <span>Proof Screen: Final NexTeam Design System</span>
             <button type="button" onClick={onClose}>Close</button>
           </div>
-          <ul className="nexops-form-principles" aria-label="Client setup rules">
+          <ul className="nexops-form-principles" aria-label="Client Setup Rules">
             <li>Parent client owns billing</li>
             <li>Company display is optional</li>
             <li>Texts stay one-way unless upgraded</li>
@@ -619,28 +619,28 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
       )}
         <section className="nexops-form-section">
           <div className="nexops-section-copy">
-            <h3>Primary contact details</h3>
+            <h3>Primary Contact Details</h3>
             <p>Start with the essentials only: name, best phone, best email, and the primary service address.</p>
           </div>
           <div className="nexops-section-fields">
             <div className="nexops-field-row">
-              <label className="nexops-field"><span>First name</span><input value={newClient.firstName} onChange={(event) => setNewClient({ ...newClient, firstName: event.target.value })} /></label>
-              <label className="nexops-field"><span>Last name</span><input value={newClient.lastName} onChange={(event) => setNewClient({ ...newClient, lastName: event.target.value })} /></label>
+              <label className="nexops-field"><span>First Name</span><input value={newClient.firstName} onChange={(event) => setNewClient({ ...newClient, firstName: event.target.value })} /></label>
+              <label className="nexops-field"><span>Last Name</span><input value={newClient.lastName} onChange={(event) => setNewClient({ ...newClient, lastName: event.target.value })} /></label>
             </div>
             <div className="nexops-field-row">
-              <label className="nexops-field"><span>Company name (optional)</span><input value={newClient.company} onChange={(event) => setNewClient({ ...newClient, company: event.target.value, displayNamePreference: event.target.value ? "company" : "person" })} /></label>
-              <label className="nexops-field"><span>Display as</span><select value={newClient.displayNamePreference} onChange={(event) => setNewClient({ ...newClient, displayNamePreference: event.target.value as "person" | "company" })}>
-                <option value="person">First name Last name</option>
-                <option value="company" disabled={!newClient.company}>Company name</option>
+              <label className="nexops-field"><span>Company Name (Optional)</span><input value={newClient.company} onChange={(event) => setNewClient({ ...newClient, company: event.target.value, displayNamePreference: event.target.value ? "company" : "person" })} /></label>
+              <label className="nexops-field"><span>Display As</span><select value={newClient.displayNamePreference} onChange={(event) => setNewClient({ ...newClient, displayNamePreference: event.target.value as "person" | "company" })}>
+                <option value="person">First Name Last Name</option>
+                <option value="company" disabled={!newClient.company}>Company Name</option>
               </select></label>
             </div>
             <div className="nexops-field-row">
-              <label className="nexops-field"><span>Phone number</span><input value={newClient.phone} onChange={(event) => setNewClient({ ...newClient, phone: event.target.value })} /></label>
+              <label className="nexops-field"><span>Phone Number</span><input value={newClient.phone} onChange={(event) => setNewClient({ ...newClient, phone: event.target.value })} /></label>
               <label className="nexops-field"><span>Email (recommended)</span><input type="email" value={newClient.email} onChange={(event) => setNewClient({ ...newClient, email: event.target.value })} /></label>
             </div>
-            <label className="nexops-check-field"><input type="checkbox" checked={newClient.phoneReceivesMessages} onChange={(event) => setNewClient({ ...newClient, phoneReceivesMessages: event.target.checked })} /> Allow one-way texts to this number</label>
+            <label className="nexops-check-field"><input type="checkbox" checked={newClient.phoneReceivesMessages} onChange={(event) => setNewClient({ ...newClient, phoneReceivesMessages: event.target.checked })} /> Allow One-Way Texts to This Number</label>
             {newClient.phoneReceivesMessages ? (
-              <label className="nexops-field"><span>SMS check</span><select value={newClient.smsCapability} onChange={(event) => setNewClient({ ...newClient, smsCapability: event.target.value })}>
+              <label className="nexops-field"><span>SMS Check</span><select value={newClient.smsCapability} onChange={(event) => setNewClient({ ...newClient, smsCapability: event.target.value })}>
                 <option value="unknown">Unknown - prompt before sending</option>
                 <option value="mobile">Mobile - can receive texts</option>
                 <option value="landline">Landline - prompt</option>
@@ -651,42 +651,42 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
             <p className="nexops-form-note">{smsPrompt}</p>
             <p className="nexops-form-note">Email is recommended so quotes, invoices, and follow-ups have a reliable destination, but it is not required to save the client.</p>
             <details className="nexops-extra-panel">
-              <summary>Communication and lead settings</summary>
+              <summary>Communication and Lead Settings</summary>
               <div className="nexops-extra-panel-body">
                 <div className="nexops-field-row">
-                  <label className="nexops-field compact"><span>Phone label</span><select value={newClient.phoneLabel} onChange={(event) => setNewClient({ ...newClient, phoneLabel: event.target.value })}>
+                  <label className="nexops-field compact"><span>Phone Label</span><select value={newClient.phoneLabel} onChange={(event) => setNewClient({ ...newClient, phoneLabel: event.target.value })}>
                     {["Main", "Work", "Mobile", "Home", "Fax", "Other"].map((label) => <option key={label}>{label}</option>)}
                   </select></label>
-                  <label className="nexops-field compact"><span>Email label</span><select value={newClient.emailLabel} onChange={(event) => setNewClient({ ...newClient, emailLabel: event.target.value })}>
+                  <label className="nexops-field compact"><span>Email Label</span><select value={newClient.emailLabel} onChange={(event) => setNewClient({ ...newClient, emailLabel: event.target.value })}>
                     {["Main", "Work", "Personal", "Other"].map((label) => <option key={label}>{label}</option>)}
                   </select></label>
                 </div>
                 <label className="nexops-field"><span>Role</span><input value={newClient.role} onChange={(event) => setNewClient({ ...newClient, role: event.target.value })} /></label>
-                <label className="nexops-field"><span>Lead source</span><input value={newClient.leadSource} onChange={(event) => setNewClient({ ...newClient, leadSource: event.target.value })} /></label>
+                <label className="nexops-field"><span>Lead Source</span><input value={newClient.leadSource} onChange={(event) => setNewClient({ ...newClient, leadSource: event.target.value })} /></label>
                 <div className="nexops-field-row">
-                  <label className="nexops-field"><span>Payment terms</span><input value={newClient.paymentTerms} onChange={(event) => setNewClient({ ...newClient, paymentTerms: event.target.value })} /></label>
-                  <label className="nexops-check-field inline"><input type="checkbox" checked={newClient.askForReview} onChange={(event) => setNewClient({ ...newClient, askForReview: event.target.checked })} /> Ask for a review</label>
+                  <label className="nexops-field"><span>Payment Terms</span><input value={newClient.paymentTerms} onChange={(event) => setNewClient({ ...newClient, paymentTerms: event.target.value })} /></label>
+                  <label className="nexops-check-field inline"><input type="checkbox" checked={newClient.askForReview} onChange={(event) => setNewClient({ ...newClient, askForReview: event.target.checked })} /> Ask for a Review</label>
                 </div>
               </div>
             </details>
             <details className="nexops-extra-panel">
-              <summary>Additional client details</summary>
+              <summary>Additional Client Details</summary>
               <div className="nexops-extra-panel-body">
                 <p>Create custom fields to track additional client-level details.</p>
                 <button type="button">Add Custom Field</button>
                 <div className="nexops-field-row">
-                  <label className="nexops-field"><span>Custom field name</span><input value={newClient.clientCustomFieldName} onChange={(event) => setNewClient({ ...newClient, clientCustomFieldName: event.target.value })} /></label>
-                  <label className="nexops-field"><span>Custom field value</span><input value={newClient.clientCustomFieldValue} onChange={(event) => setNewClient({ ...newClient, clientCustomFieldValue: event.target.value })} /></label>
+                  <label className="nexops-field"><span>Custom Field Name</span><input value={newClient.clientCustomFieldName} onChange={(event) => setNewClient({ ...newClient, clientCustomFieldName: event.target.value })} /></label>
+                  <label className="nexops-field"><span>Custom Field Value</span><input value={newClient.clientCustomFieldValue} onChange={(event) => setNewClient({ ...newClient, clientCustomFieldValue: event.target.value })} /></label>
                 </div>
               </div>
             </details>
             <details className="nexops-extra-panel">
-              <summary>Additional contacts</summary>
+              <summary>Additional Contacts</summary>
               <div className="nexops-extra-panel-body">
                 <p>For contacts with access to all properties, like spouse/family for residential or property managers for commercial.</p>
                 <button type="button">Add Contact</button>
                 <div className="nexops-field-row">
-                  <label className="nexops-field"><span>Contact name</span><input value={newClient.additionalContactName} onChange={(event) => setNewClient({ ...newClient, additionalContactName: event.target.value })} /></label>
+                  <label className="nexops-field"><span>Contact Name</span><input value={newClient.additionalContactName} onChange={(event) => setNewClient({ ...newClient, additionalContactName: event.target.value })} /></label>
                   <label className="nexops-field"><span>Role</span><input value={newClient.additionalContactRole} onChange={(event) => setNewClient({ ...newClient, additionalContactRole: event.target.value })} /></label>
                 </div>
                 <div className="nexops-field-row">
@@ -699,13 +699,13 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
         </section>
         <section className="nexops-form-section">
           <div className="nexops-section-copy">
-            <h3>Property address</h3>
+            <h3>Property Address</h3>
             <p>Start with the main service address. Optional billing and property details stay tucked away until you actually need them.</p>
           </div>
           <div className="nexops-section-fields">
-            <label className="nexops-field"><span>Site name</span><input value={newClient.siteName} onChange={(event) => setNewClient({ ...newClient, siteName: event.target.value })} placeholder="Optional, e.g. Mulberry Farms" /></label>
+            <label className="nexops-field"><span>Site Name</span><input value={newClient.siteName} onChange={(event) => setNewClient({ ...newClient, siteName: event.target.value })} placeholder="Optional, e.g. Mulberry Farms" /></label>
             <label className="nexops-field">
-              <span>Primary address</span>
+              <span>Primary Address</span>
               <input value={newClient.street1} onChange={(event) => setNewClient({ ...newClient, street1: event.target.value })} placeholder="Start typing the street address" />
             </label>
             {addressLookupBusy ? <p className="nexops-form-note">Looking up matching addresses...</p> : null}
@@ -729,38 +729,38 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
               <label className="nexops-field"><span>Country</span><select value={newClient.country} onChange={(event) => setNewClient({ ...newClient, country: event.target.value })}><option value="US">United States</option><option value="CA">Canada</option></select></label>
             </div>
             {newClient.propertyGeoLat && newClient.propertyGeoLng ? <p className="nexops-form-note">Drive-time coordinates captured for scheduling. You can still overwrite the address manually.</p> : <p className="nexops-form-note">Manual addresses still save even if nothing is recognized. Suggestions only speed up the entry.</p>}
-            <label className="nexops-field"><span>Tax rate</span><select value="none" onChange={() => undefined}><option value="none">No tax rate created</option></select></label>
-            <label className="nexops-check-field"><input type="checkbox" checked={newClient.billingSameAsPrimaryProperty} onChange={(event) => setNewClient({ ...newClient, billingSameAsPrimaryProperty: event.target.checked })} /> Billing address is the same as property address</label>
+            <label className="nexops-field"><span>Tax Rate</span><select value="none" onChange={() => undefined}><option value="none">No Tax Rate Created</option></select></label>
+            <label className="nexops-check-field"><input type="checkbox" checked={newClient.billingSameAsPrimaryProperty} onChange={(event) => setNewClient({ ...newClient, billingSameAsPrimaryProperty: event.target.checked })} /> Billing Address Is the Same as Property Address</label>
             {!newClient.billingSameAsPrimaryProperty ? (
               <div className="nexops-subsection">
-                <h4>Billing address</h4>
-                <label className="nexops-field"><span>Billing street 1</span><input value={newClient.billingStreet1} onChange={(event) => setNewClient({ ...newClient, billingStreet1: event.target.value })} /></label>
-                <label className="nexops-field"><span>Billing street 2</span><input value={newClient.billingStreet2} onChange={(event) => setNewClient({ ...newClient, billingStreet2: event.target.value })} /></label>
+                <h4>Billing Address</h4>
+                <label className="nexops-field"><span>Billing Street 1</span><input value={newClient.billingStreet1} onChange={(event) => setNewClient({ ...newClient, billingStreet1: event.target.value })} /></label>
+                <label className="nexops-field"><span>Billing Street 2</span><input value={newClient.billingStreet2} onChange={(event) => setNewClient({ ...newClient, billingStreet2: event.target.value })} /></label>
                 <div className="nexops-field-row">
-                  <label className="nexops-field"><span>Billing city</span><input value={newClient.billingCity} onChange={(event) => setNewClient({ ...newClient, billingCity: event.target.value })} /></label>
-                  <label className="nexops-field compact"><span>Billing state</span><input value={newClient.billingProvince} onChange={(event) => setNewClient({ ...newClient, billingProvince: event.target.value })} /></label>
+                  <label className="nexops-field"><span>Billing City</span><input value={newClient.billingCity} onChange={(event) => setNewClient({ ...newClient, billingCity: event.target.value })} /></label>
+                  <label className="nexops-field compact"><span>Billing State</span><input value={newClient.billingProvince} onChange={(event) => setNewClient({ ...newClient, billingProvince: event.target.value })} /></label>
                 </div>
                 <label className="nexops-field compact"><span>Billing ZIP</span><input value={newClient.billingPostalCode} onChange={(event) => setNewClient({ ...newClient, billingPostalCode: event.target.value })} /></label>
               </div>
             ) : null}
             <details className="nexops-extra-panel">
-              <summary>Property details</summary>
+              <summary>Property Details</summary>
               <div className="nexops-extra-panel-body">
                 <p>Create custom fields to track additional property details.</p>
                 <button type="button">Add Custom Field</button>
-                <label className="nexops-check-field inline"><input type="checkbox" checked={newClient.propertyGatedEntry} onChange={(event) => setNewClient({ ...newClient, propertyGatedEntry: event.target.checked })} /> Gated entry</label>
-                <label className="nexops-field"><span>Gate entry code(s)</span><input value={newClient.propertyGateCodes} onChange={(event) => setNewClient({ ...newClient, propertyGateCodes: event.target.value })} /></label>
-                <label className="nexops-field"><span>Property client name</span><input value={newClient.propertyClientName} onChange={(event) => setNewClient({ ...newClient, propertyClientName: event.target.value })} /></label>
-                <label className="nexops-field"><span>Property client telephone number</span><input value={newClient.propertyClientPhone} onChange={(event) => setNewClient({ ...newClient, propertyClientPhone: event.target.value })} /></label>
-                <label className="nexops-field"><span>Property client email address</span><input type="email" value={newClient.propertyClientEmail} onChange={(event) => setNewClient({ ...newClient, propertyClientEmail: event.target.value })} /></label>
+                <label className="nexops-check-field inline"><input type="checkbox" checked={newClient.propertyGatedEntry} onChange={(event) => setNewClient({ ...newClient, propertyGatedEntry: event.target.checked })} /> Gated Entry</label>
+                <label className="nexops-field"><span>Gate Entry Code(s)</span><input value={newClient.propertyGateCodes} onChange={(event) => setNewClient({ ...newClient, propertyGateCodes: event.target.value })} /></label>
+                <label className="nexops-field"><span>Property Client Name</span><input value={newClient.propertyClientName} onChange={(event) => setNewClient({ ...newClient, propertyClientName: event.target.value })} /></label>
+                <label className="nexops-field"><span>Property Client Telephone Number</span><input value={newClient.propertyClientPhone} onChange={(event) => setNewClient({ ...newClient, propertyClientPhone: event.target.value })} /></label>
+                <label className="nexops-field"><span>Property Client Email Address</span><input type="email" value={newClient.propertyClientEmail} onChange={(event) => setNewClient({ ...newClient, propertyClientEmail: event.target.value })} /></label>
                 <div className="nexops-field-row">
-                  <label className="nexops-field"><span>Custom field name</span><input value={newClient.propertyCustomFieldName} onChange={(event) => setNewClient({ ...newClient, propertyCustomFieldName: event.target.value })} /></label>
-                  <label className="nexops-field"><span>Custom field value</span><input value={newClient.propertyCustomFieldValue} onChange={(event) => setNewClient({ ...newClient, propertyCustomFieldValue: event.target.value })} /></label>
+                  <label className="nexops-field"><span>Custom Field Name</span><input value={newClient.propertyCustomFieldName} onChange={(event) => setNewClient({ ...newClient, propertyCustomFieldName: event.target.value })} /></label>
+                  <label className="nexops-field"><span>Custom Field Value</span><input value={newClient.propertyCustomFieldValue} onChange={(event) => setNewClient({ ...newClient, propertyCustomFieldValue: event.target.value })} /></label>
                 </div>
               </div>
             </details>
             <details className="nexops-extra-panel">
-              <summary>Property contacts</summary>
+              <summary>Property Contacts</summary>
               <div className="nexops-extra-panel-body single-row">
                 <p>For contacts with access limited to this property. These contacts do not receive parent-client correspondence by default.</p>
                 <button type="button">Add Contact</button>
@@ -770,8 +770,8 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
         </section>
         <div className={`nexops-drawer-actions${pageLayout ? " nexops-client-form-page-actions" : ""}`}>
           <span>{createStatus || (createClientCanSave ? "Name, address, and telephone are present. Email is optional." : `Add ${createClientMissingFields.join(", ")} before Save becomes available.`)}</span>
-          <button type="button" onClick={onClose}>{pageLayout ? "Back to clients" : "Cancel"}</button>
-          <button type="submit" disabled={!createClientCanSave}>Save client</button>
+          <button type="button" onClick={onClose}>{pageLayout ? "Back to Clients" : "Cancel"}</button>
+          <button type="submit" disabled={!createClientCanSave}>Save Client</button>
         </div>
     </form>
   );
