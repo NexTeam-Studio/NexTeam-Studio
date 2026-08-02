@@ -2272,12 +2272,18 @@ function createClientInputFromText(text: string): { name: string; address?: stri
 }
 
 function mergeCreateClientInput(primary: CreateClientExtraction, fallback: CreateClientExtraction): CreateClientExtraction {
-  const mergedEmails = mergeCreateClientEmails(primary.emails, fallback.emails);
+  // The deterministic parser reads the operator's literal message.  When it
+  // found a complete field, it is the source of truth over a model extraction:
+  // a stale or guessed value must never appear in an approval that can create
+  // a saved client.
+  const mergedEmails = fallback.emails.length > 0
+    ? fallback.emails
+    : mergeCreateClientEmails(primary.emails, fallback.emails);
   return {
-    name: cleanClientPreviewName(primary.name) ?? cleanClientPreviewName(fallback.name) ?? "",
-    address: primary.address?.trim() || fallback.address,
+    name: cleanClientPreviewName(fallback.name) ?? cleanClientPreviewName(primary.name) ?? "",
+    address: fallback.address?.trim() || primary.address,
     emails: mergedEmails.length > 0 ? mergedEmails : fallback.emails,
-    phones: primary.phones.length > 0 ? [...new Set(primary.phones.filter(Boolean))] : fallback.phones,
+    phones: fallback.phones.length > 0 ? fallback.phones : [...new Set(primary.phones.filter(Boolean))],
     consent: {
       email: primary.consent.email ?? fallback.consent.email,
       sms: primary.consent.sms ?? fallback.consent.sms

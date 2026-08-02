@@ -1480,7 +1480,7 @@ test("Nexi queues an existing client address or ZIP update and only saves it aft
     tenant: tenant(),
     system: "Use tools.",
     actorDisplayName: "Chris",
-    messages: [{ role: "user", content: "Update Catherine Sears's ZIP code to 29643" }],
+    messages: [{ role: "user", content: "Edit Catherine Sears ZIP code. The new ZIP code is 29643" }],
     tools,
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
@@ -1498,7 +1498,7 @@ test("Nexi queues an existing client address or ZIP update and only saves it aft
     system: "Use tools.",
     actorDisplayName: "Chris",
     messages: [
-      { role: "user", content: "Update Catherine Sears's ZIP code to 29643" },
+      { role: "user", content: "Edit Catherine Sears ZIP code. The new ZIP code is 29643" },
       { role: "assistant", content: updateTurn.answer },
       { role: "user", content: "yes" }
     ],

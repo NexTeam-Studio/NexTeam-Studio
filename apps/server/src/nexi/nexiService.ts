@@ -386,16 +386,17 @@ function looksLikeCreateClientAction(lower: string): boolean {
 }
 
 function looksLikeClientAddressUpdateAction(lower: string): boolean {
-  return /\b(?:add|update|change|fix|correct|replace)\b.{0,80}\b(?:client|address|location|zip|postal(?:\s+code)?)\b/.test(lower)
+  return /\b(?:add|edit|update|change|fix|correct|replace)\b.{0,80}\b(?:client|address|location|zip|postal(?:\s+code)?)\b/.test(lower)
     && /\b(?:address|location|zip|postal(?:\s+code)?)\b/.test(lower);
 }
 
 function clientQueryForAddressUpdate(message: string): string | undefined {
   const query = message.match(/\b([a-z][a-z' -]+?)'s\s+(?:address|location|zip|postal(?:\s+code)?)\b/i)?.[1]?.trim()
+    ?? message.match(/\b(?:edit|update|change|fix|correct)\s+([a-z][a-z' -]+?)\s+(?:client(?:'s)?\s+)?(?:address|location|zip|postal)\b/i)?.[1]?.trim()
     ?? entityQueryFromText(message)
     ?? message.match(/\b(?:client|for)\s+([a-z][a-z' -]+?)(?=\s+(?:address|location|zip|postal|to|from)\b|[?.!]|$)/i)?.[1]?.trim()
-    ?? message.match(/\b(?:update|change|fix|correct)\s+([a-z][a-z' -]+?)\s+(?:client(?:'s)?\s+)?(?:address|location|zip|postal)\b/i)?.[1]?.trim();
-  return query?.replace(/^(?:update|change|fix|correct)\s+/i, "").trim() || undefined;
+    ;
+  return query?.replace(/^(?:edit|update|change|fix|correct)\s+/i, "").trim() || undefined;
 }
 
 function previewFieldValue(body: string, label: string): string | undefined {
