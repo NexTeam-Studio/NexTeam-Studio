@@ -171,7 +171,7 @@ export async function authorizeStripeConnectCallback(input: {
   const tenantId = requiredTenantId(input.tenantId);
   const flow = input.flow?.trim() ?? "";
   const tenant = await input.repository.getTenant(tenantId);
-  const connection = tenant ? connectionFor(tenant) : undefined;
+  const connection = tenant?.payments?.stripeConnect;
   const expiresAt = connection?.onboardingFlowExpiresAt ? Date.parse(connection.onboardingFlowExpiresAt) : Number.NaN;
   if (!tenant || !flow || !connection?.onboardingFlowTokenHash || !Number.isFinite(expiresAt) || expiresAt < Date.now() || !safeTokenMatch(connection.onboardingFlowTokenHash, flow)) {
     throw new RailError("This Stripe onboarding link is invalid or has expired.", { provider: "stripe", op: "connectOnboarding", status: 403 });
