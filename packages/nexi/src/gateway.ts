@@ -2774,6 +2774,9 @@ function deterministicToolNames(
   if (looksLikeCreateClientAction(lower) && toolsByName.has("createClient")) {
     return ["createClient"];
   }
+  if (/\b(?:delete|remove)\b/i.test(lower) && /\b(?:client|customer|duplicate|record|entry)\b/i.test(lower) && toolsByName.has("deleteClient")) {
+    return ["deleteClient"];
+  }
   if (looksLikeSavedClientEditRequest(userText, messages) && toolsByName.has("updateClient")) {
     return ["updateClient"];
   }

@@ -686,6 +686,12 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
     const tool = tools.find((candidate) => candidate.name === "createClient");
     return tool ? { tool, args: {} } : null;
   }
+  if (/\b(?:delete|remove)\b/i.test(lower) && /\b(?:client|customer|duplicate|record|entry)\b/i.test(lower)) {
+    const tool = tools.find((candidate) => candidate.name === "deleteClient");
+    const clientQuery = message.match(/\b(?:delete|remove)\s+(?:the\s+)?(?:duplicate\s+)?(?:client|customer)?\s*([a-z][a-z' -]+?)(?=\s+(?:duplicate|record|entry)\b|[?.!]|$)/i)?.[1]?.trim()
+      || entityQueryFromText(message);
+    return tool && clientQuery ? { tool, args: { clientQuery } } : null;
+  }
   if (looksLikeClientAddressUpdateAction(lower)) {
     const tool = tools.find((candidate) => candidate.name === "updateClient");
     const clientQuery = clientQueryForAddressUpdate(message);
@@ -1488,6 +1494,14 @@ function summarizeResult(toolName: string, result: unknown, actorDisplayName?: s
     return approvalPromptFromResult(result, actorDisplayName)
       ?? "Client draft ready for approval.";
   }
+  if (toolName === "deleteClient" && result && typeof result === "object") {
+    const record = result as { needsClarification?: unknown };
+    if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
+      return record.needsClarification;
+    }
+    return approvalPromptFromResult(result, actorDisplayName, { allowChanges: false })
+      ?? "Client deletion is ready for approval.";
+  }
   if (toolName === "updateClient" && result && typeof result === "object") {
     const record = result as { needsClarification?: unknown };
     if (typeof record.needsClarification === "string" && record.needsClarification.trim()) {
@@ -1605,6 +1619,7 @@ function summarizeResult(toolName: string, result: unknown, actorDisplayName?: s
         refund?: { id?: unknown } | undefined;
         receiptReview?: { id?: unknown; status?: unknown } | undefined;
         jobs?: Array<{ number?: unknown; id?: unknown }> | undefined;
+        deletedClient?: { name?: unknown } | undefined;
       }
     }).execution;
     if (execution?.client && typeof execution.client.name === "string" && typeof execution.changeSummary === "string") {
@@ -1612,6 +1627,9 @@ function summarizeResult(toolName: string, result: unknown, actorDisplayName?: s
     }
     if (execution?.job && typeof execution.job.title === "string") {
       return `Approved and executed ${execution.job.title}.`;
+    }
+    if (execution?.deletedClient && typeof execution.deletedClient.name === "string") {
+      return `Approved and deleted ${execution.deletedClient.name}.`;
     }
     if (execution?.folder && typeof execution.folder.label === "string") {
       return `Approved and created the ${String(execution.folder.label)} folder.`;

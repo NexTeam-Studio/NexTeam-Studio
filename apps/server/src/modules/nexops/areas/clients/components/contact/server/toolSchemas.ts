@@ -23,3 +23,8 @@ export const updateClientAddressInputSchema = z.object({
   changeRequest: z.string().trim().min(1)
 });
 export type UpdateClientAddressInput = z.infer<typeof updateClientAddressInputSchema>;
+
+export const deleteClientInputSchema = z.object({
+  clientQuery: z.string().trim().min(1)
+});
+export type DeleteClientInput = z.infer<typeof deleteClientInputSchema>;

@@ -1,7 +1,8 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
-import { clientLookupInputSchema, createClientInputSchema, updateClientAddressInputSchema } from "./toolSchemas.js";
-import { clientSaveClarification, clientSaveMissingFields, dedupeClients, queueClientAddressUpdateApproval, queueClientCreateApproval } from "./toolSupport.js";
+import { clientLookupInputSchema, createClientInputSchema, deleteClientInputSchema, updateClientAddressInputSchema } from "./toolSchemas.js";
+import { clientSaveClarification, clientSaveMissingFields, dedupeClients, queueClientAddressUpdateApproval, queueClientCreateApproval, queueClientDeleteApproval } from "./toolSupport.js";
+import { isProtectedLegacyClient, legacyClientDeleteMessage } from "./clientDeletionPolicy.js";
 
 export function createContactNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
@@ -70,6 +71,52 @@ export function createContactNexiTools(context: CrmToolContext, includeWrites: b
         return {
           result: queued,
           sources: [source(queued.approval.id, `ApprovalQueue client create ${queued.approval.id}`)]
+        };
+      }
+    }, {
+      name: "deleteClient",
+      description: "Prepare deletion of one NexTeam-created client. Imported history and any client with linked work or billing are always protected. The deletion is queued for explicit approval before anything is removed.",
+      inputSchema: deleteClientInputSchema,
+      handler: async (tenant: Tenant, args: unknown) => {
+        if (!options.requestRepository) {
+          throw new RailError("Client deletion is not wired for this tenant yet.", { provider: "native", op: "deleteClient", status: 501 });
+        }
+        const input = deleteClientInputSchema.parse(args);
+        const matches = dedupeClients(await provider.getClients(input.clientQuery));
+        const client = matches.find((candidate) => candidate.id === input.clientQuery || candidate.name.toLowerCase() === input.clientQuery.toLowerCase())
+          ?? (matches.length === 1 ? matches[0] : undefined);
+        if (!client) {
+          return {
+            result: {
+              needsClarification: matches.length > 1
+                ? `I found more than one client matching “${input.clientQuery}”. Please give the full client name before I prepare deletion.`
+                : `I could not find a saved client matching “${input.clientQuery}”. Please check the client name.`
+            },
+            sources: []
+          };
+        }
+        if (isProtectedLegacyClient(client)) {
+          return { result: { needsClarification: legacyClientDeleteMessage() }, sources: [] };
+        }
+        const repository = options.requestRepository;
+        const [requests, quotes, jobs, invoices] = await Promise.all([
+          repository.listRequests(tenant.id),
+          repository.listQuotes(tenant.id),
+          repository.listJobs(tenant.id),
+          repository.listInvoices(tenant.id)
+        ]);
+        const hasLinkedWork =
+          requests.some((request) => request.selectedClientId === client.id || request.match?.matchedClientId === client.id)
+          || quotes.some((quote) => quote.clientId === client.id)
+          || jobs.some((job) => job.clientId === client.id)
+          || invoices.some((invoice) => invoice.clientId === client.id);
+        if (hasLinkedWork) {
+          return { result: { needsClarification: "I cannot delete this client because it has linked work or billing history. The record remains available for use." }, sources: [] };
+        }
+        const queued = await queueClientDeleteApproval(tenant, client, approvalQueue);
+        return {
+          result: queued,
+          sources: [source(queued.approval.id, `ApprovalQueue client deletion ${queued.approval.id}`)]
         };
       }
     }, {

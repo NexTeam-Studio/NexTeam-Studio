@@ -1,4 +1,5 @@
 import { RailError, type ApprovalExecutor, type ApprovalItem, type CRMProvider } from "@nexteam/core";
+import type { NativeCrmRepository } from "@nexteam/providers";
 import type { JobLifecycleService } from "../../areas/jobs/components/jobCore/server/jobLifecycleService.js";
 import type { LedgerService } from "../../areas/invoices/components/paymentRails/server/ledgerService.js";
 import type { CrmApprovalContext, CrmApprovalHandler } from "./handler.js";
@@ -21,8 +22,8 @@ const handlers: readonly CrmApprovalHandler[] = [
 export class CrmApprovalExecutor implements ApprovalExecutor {
   private readonly context: CrmApprovalContext;
 
-  constructor(provider: CRMProvider, jobLifecycleService?: JobLifecycleService, ledgerService?: LedgerService) {
-    this.context = { provider, jobLifecycleService, ledgerService };
+  constructor(provider: CRMProvider, jobLifecycleService?: JobLifecycleService, ledgerService?: LedgerService, crmRepository?: NativeCrmRepository) {
+    this.context = { provider, jobLifecycleService, ledgerService, crmRepository };
   }
 
   async execute(item: ApprovalItem): Promise<unknown> {

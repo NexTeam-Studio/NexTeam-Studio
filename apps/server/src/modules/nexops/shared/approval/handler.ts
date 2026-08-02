@@ -1,9 +1,11 @@
 import { RailError, type ApprovalItem, type CRMProvider } from "@nexteam/core";
+import type { NativeCrmRepository } from "@nexteam/providers";
 import type { JobLifecycleService } from "../../areas/jobs/components/jobCore/server/jobLifecycleService.js";
 import type { LedgerService } from "../../areas/invoices/components/paymentRails/server/ledgerService.js";
 
 export interface CrmApprovalContext {
   provider: CRMProvider;
+  crmRepository?: NativeCrmRepository | undefined;
   jobLifecycleService?: JobLifecycleService | undefined;
   ledgerService?: LedgerService | undefined;
 }

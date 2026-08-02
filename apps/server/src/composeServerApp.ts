@@ -188,6 +188,7 @@ const approvalQueue = new ApprovalQueueService(approvalQueueRepository, new Comp
   {
     canExecute: (item) => item.execute.service === "crm" && [
       "createClient",
+      "deleteClient",
       "createQuote",
       "createJob",
       "performJobAction",
@@ -199,7 +200,7 @@ const approvalQueue = new ApprovalQueueService(approvalQueueRepository, new Comp
       "recordInvoicePayment",
       "sendReceiptReview"
     ].includes(item.execute.op),
-    executor: new CrmApprovalExecutor(nativeCrmProvider, jobLifecycleService, ledgerService)
+    executor: new CrmApprovalExecutor(nativeCrmProvider, jobLifecycleService, ledgerService, nativeCrmRepository)
   },
   {
     canExecute: (item) => item.execute.service === "intake" && item.execute.op === "provisionTenant",

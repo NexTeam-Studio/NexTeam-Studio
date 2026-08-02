@@ -139,6 +139,32 @@ export async function queueClientCreateApproval(
   };
 }
 
+export async function queueClientDeleteApproval(
+  tenant: Tenant,
+  client: Client,
+  approvalQueue: ApprovalQueueService
+): Promise<{ approval: Awaited<ReturnType<ApprovalQueueService["create"]>>; writesAreApprovalQueuedOnly: true }> {
+  const approval = await approvalQueue.create({
+    tenantId: tenant.id,
+    kind: "client",
+    preview: {
+      title: `Delete client: ${client.name}`,
+      body: [
+        `Client: ${client.name}`,
+        "This permanently removes this NexTeam-created client and its saved properties.",
+        "Imported client history and any client with linked work cannot be deleted."
+      ].join("\n")
+    },
+    execute: {
+      service: "crm",
+      op: "deleteClient",
+      args: { tenantId: tenant.id, clientId: client.id }
+    },
+    createdBy: "nexi"
+  });
+  return { approval, writesAreApprovalQueuedOnly: true };
+}
+
 function requestedAddress(changeRequest: string, existing: Address | undefined): Address | undefined {
   const afterAddressLabel = changeRequest.match(/\b(?:address|location|zip|postal(?:\s+code)?)\b\s*(?:to|is|=|:)?\s*([^\n.!?]+(?:[.!?]|$))/i)?.[1]?.trim();
   const parsed = afterAddressLabel ? parseRequestAddress(afterAddressLabel) : null;

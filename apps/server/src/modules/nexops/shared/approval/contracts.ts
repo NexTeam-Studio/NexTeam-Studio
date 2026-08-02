@@ -163,6 +163,11 @@ export const sendReceiptReviewApprovalArgsSchema = z.object({
   attachmentIds: z.array(z.string()).optional()
 });
 
+export const deleteClientApprovalArgsSchema = z.object({
+  tenantId: z.string().min(1),
+  clientId: z.string().min(1)
+});
+
 export const updateClientAddressApprovalArgsSchema = z.object({
   tenantId: z.string().min(1),
   clientId: z.string().min(1),
