@@ -477,6 +477,7 @@ export interface ServiceRequest {
   match: ServiceRequestMatch;
   selectedClientId?: ID | undefined;
   selectedPropertyId?: ID | undefined;
+  reviewedAt?: string | undefined;
   convertedQuoteId?: ID | undefined;
   convertedJobId?: ID | undefined;
   sourceLeadId?: ID | undefined;

@@ -473,6 +473,7 @@ export const serviceRequestSchema = z.object({
   match: serviceRequestMatchSchema,
   selectedClientId: idSchema.optional(),
   selectedPropertyId: idSchema.optional(),
+  reviewedAt: z.string().optional(),
   convertedQuoteId: idSchema.optional(),
   convertedJobId: idSchema.optional(),
   sourceLeadId: idSchema.optional(),
