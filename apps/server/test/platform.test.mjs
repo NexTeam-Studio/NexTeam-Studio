@@ -313,6 +313,73 @@ test("platform routes expose tenants, test subscription, backup, and export", as
   }
 });
 
+test("tenant Stripe Connect onboarding persists one account and protects refresh and return callbacks", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("aquatrace", "suite"), defaultTenant("second-test", "suite")]);
+  const calls = { create: [], links: [], retrieve: [] };
+  const stripeConnect = {
+    async createExpressAccount(_env, input) {
+      calls.create.push(input);
+      return { id: "acct_aquatrace", type: "express" };
+    },
+    async createOnboardingLink(_env, input) {
+      calls.links.push(input);
+      return { url: `https://connect.stripe.test/link-${calls.links.length}` };
+    },
+    async retrieveAccount(_env, input) {
+      calls.retrieve.push(input);
+      return { id: input.accountId, type: "express", details_submitted: false, charges_enabled: false, payouts_enabled: false };
+    }
+  };
+  const app = express();
+  app.use(express.json());
+  registerPlatformRoutes(app, {
+    repository,
+    storage: null,
+    stripeConnect,
+    env: { NEXI_FIREBASE_AUTH_REQUIRED: "false", PUBLIC_BASE_URL: "http://localhost:3000" }
+  });
+  const server = app.listen(0);
+  try {
+    const { port } = server.address();
+    const base = `http://127.0.0.1:${port}`;
+    const created = await fetch(`${base}/api/platform/tenants/aquatrace/stripe-connect/onboarding`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "billing@example.test" })
+    }).then((response) => response.json());
+    assert.equal(created.ok, true);
+    assert.equal(created.accountId, "acct_aquatrace");
+    assert.equal(calls.create.length, 1);
+    assert.equal((await repository.getTenant("aquatrace")).payments.stripeConnect.accountId, "acct_aquatrace");
+    const firstReturn = new URL(calls.links[0].returnUrl);
+    assert.equal(firstReturn.origin, "http://localhost:3000");
+    assert.equal(firstReturn.pathname, "/api/stripe/connect/onboarding/return");
+    assert.equal(firstReturn.searchParams.get("tenantId"), "aquatrace");
+    assert.ok(firstReturn.searchParams.get("flow"));
+
+    const rejected = await fetch(`${base}/api/stripe/connect/onboarding/return?tenantId=second-test&flow=${encodeURIComponent(firstReturn.searchParams.get("flow"))}`);
+    assert.equal(rejected.status, 403);
+
+    const refresh = await fetch(`${base}${new URL(calls.links[0].refreshUrl).pathname}${new URL(calls.links[0].refreshUrl).search}`, { redirect: "manual" });
+    assert.equal(refresh.status, 303);
+    assert.equal(refresh.headers.get("location"), "https://connect.stripe.test/link-2");
+    const refreshedReturn = new URL(calls.links[1].returnUrl);
+    const returned = await fetch(`${base}${refreshedReturn.pathname}${refreshedReturn.search}`).then((response) => response.json());
+    assert.deepEqual(returned.status, { onboarding: "pending", chargesEnabled: false, payoutsEnabled: false });
+    assert.deepEqual(calls.retrieve, [{ accountId: "acct_aquatrace" }]);
+
+    const retry = await fetch(`${base}/api/platform/tenants/aquatrace/stripe-connect/onboarding`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "billing@example.test" })
+    }).then((response) => response.json());
+    assert.equal(retry.ok, true);
+    assert.equal(calls.create.length, 1);
+  } finally {
+    server.close();
+  }
+});
+
 test("platform routes manage tenant users and job links without leaking token hashes by default", async () => {
   const repository = new InMemoryPlatformRepository([defaultTenant("aquatrace", "suite")]);
   const storage = new MemoryStorageWriter();

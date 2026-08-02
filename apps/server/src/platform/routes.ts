@@ -11,6 +11,14 @@ import { createStripeTestSubscription } from "./billing.js";
 import { toolEntitlementMatrix } from "./entitlements.js";
 import { modulesForPlan, PLATFORM_PLANS } from "./plans.js";
 import { defaultTenant, defaultTenantBranding, planCatalog, subscriptionFromStripe, type PlatformRepository } from "./repository.js";
+import {
+  authorizeStripeConnectCallback,
+  createOrReuseStripeConnectOnboarding,
+  getStripeConnectOnboardingStatus,
+  issueStripeConnectOnboardingLink,
+  requiredTenantId,
+  type StripeConnectApi
+} from "./stripeConnect.js";
 
 const tenantBodySchema = z.object({
   id: z.string().min(1),
@@ -29,7 +37,9 @@ const tenantBodySchema = z.object({
   }).optional(),
   approval: z.record(z.object({ autoApprove: z.boolean(), cleanStreak: z.number().int().min(0) })).optional(),
   timezone: z.string().min(1).optional(),
-  plan: z.enum(["nexi", "marketing", "suite"]).default("nexi")
+  plan: z.enum(["nexi", "marketing", "suite"]).default("nexi"),
+  billingEmail: z.string().email().optional(),
+  billingCountry: z.string().length(2).optional()
 });
 
 const subscribeBodySchema = z.object({
@@ -94,7 +104,15 @@ const verifyJobAccessLinkSchema = z.object({
 export interface PlatformRouteDeps {
   repository: PlatformRepository;
   storage: StorageWriter | null;
+  stripeConnect?: StripeConnectApi | undefined;
   env?: NodeJS.ProcessEnv | undefined;
+}
+
+function requireStripeConnect(deps: PlatformRouteDeps): StripeConnectApi {
+  if (!deps.stripeConnect) {
+    throw new RailError("Stripe Connect is not available in this server composition.", { provider: "stripe", op: "connectOnboarding", status: 503 });
+  }
+  return deps.stripeConnect;
 }
 
 function envList(value: string | undefined): string[] {
@@ -228,7 +246,72 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         approval: input.approval ?? baseTenant.approval,
         timezone: input.timezone ?? baseTenant.timezone
       });
-      res.status(201).json({ ok: true, tenant });
+      if (!input.billingEmail) {
+        res.status(201).json({ ok: true, tenant });
+        return;
+      }
+      const connected = await createOrReuseStripeConnectOnboarding({
+        repository: deps.repository,
+        stripe: requireStripeConnect(deps),
+        env,
+        tenantId: tenant.id,
+        email: input.billingEmail,
+        ...(input.billingCountry ? { country: input.billingCountry } : {})
+      });
+      res.status(201).json({ ok: true, tenant: connected.tenant, stripeConnect: { accountId: connected.accountId, onboardingUrl: connected.onboardingUrl } });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/tenants/:tenantId/stripe-connect/onboarding", async (req: Request, res: Response) => {
+    try {
+      const tenantId = requiredTenantId(req.params.tenantId);
+      await requireTenantRole(req, env, ["OWNER"], { requestedTenantId: tenantId, op: "stripeConnectOnboarding" });
+      const input = z.object({ email: z.string().email(), country: z.string().length(2).optional() }).parse(req.body ?? {});
+      const tenant = await loadTenantFromPlatform(deps.repository, tenantId, env);
+      const connected = await createOrReuseStripeConnectOnboarding({ repository: deps.repository, stripe: requireStripeConnect(deps), env, tenantId: tenant.id, email: input.email, ...(input.country ? { country: input.country } : {}) });
+      res.status(201).json({ ok: true, tenantId, accountId: connected.accountId, onboardingUrl: connected.onboardingUrl });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/tenants/:tenantId/stripe-connect", async (req: Request, res: Response) => {
+    try {
+      const tenantId = requiredTenantId(req.params.tenantId);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "stripeConnectStatus" });
+      const tenant = await loadTenantFromPlatform(deps.repository, tenantId, env);
+      const status = await getStripeConnectOnboardingStatus({ stripe: requireStripeConnect(deps), env, tenant });
+      res.json({ ok: true, tenantId, status });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/stripe/connect/onboarding/refresh", async (req: Request, res: Response) => {
+    try {
+      const tenant = await authorizeStripeConnectCallback({
+        repository: deps.repository,
+        tenantId: typeof req.query.tenantId === "string" ? req.query.tenantId : undefined,
+        flow: typeof req.query.flow === "string" ? req.query.flow : undefined
+      });
+      const refreshed = await issueStripeConnectOnboardingLink({ repository: deps.repository, stripe: requireStripeConnect(deps), env, tenant });
+      res.redirect(303, refreshed.onboardingUrl);
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/stripe/connect/onboarding/return", async (req: Request, res: Response) => {
+    try {
+      const tenant = await authorizeStripeConnectCallback({
+        repository: deps.repository,
+        tenantId: typeof req.query.tenantId === "string" ? req.query.tenantId : undefined,
+        flow: typeof req.query.flow === "string" ? req.query.flow : undefined
+      });
+      const status = await getStripeConnectOnboardingStatus({ stripe: requireStripeConnect(deps), env, tenant });
+      res.json({ ok: true, tenantId: tenant.id, status });
     } catch (error) {
       sendRouteError(res, error);
     }
