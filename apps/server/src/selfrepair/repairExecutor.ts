@@ -1,4 +1,5 @@
 import type { SelfRepairSafeRepair } from "./schemas.js";
+import { decideSelfRepair } from "./repairPolicy.js";
 
 export type SelfRepairExecutionStatus = "performed" | "needs_product_repair" | "verification_failed";
 
@@ -27,20 +28,23 @@ function repairAgentFor(type: SelfRepairSafeRepair["type"]): string {
 /** Executes only non-destructive, runtime-safe repair work. */
 export class SafeSelfRepairExecutor implements SelfRepairRepairExecutor {
   async execute(repairs: SelfRepairSafeRepair[]): Promise<SelfRepairRepairExecution[]> {
-    return repairs.map((repair) => repair.applied ? {
+    return repairs.map((repair) => {
+      const policy = decideSelfRepair(repair);
+      return policy.allowed ? {
       repairId: repair.id,
       repairAgent: repairAgentFor(repair.type),
       status: "performed" as const,
       resolution: repair.summary,
-      verification: "The repair receipt was written to this tenant-scoped audit record.",
+      verification: "The approved metadata-only repair receipt was written to this tenant-scoped audit record.",
       verified: true
     } : {
       repairId: repair.id,
       repairAgent: repairAgentFor(repair.type),
       status: "needs_product_repair" as const,
-      resolution: "No safe automatic repair was available.",
+      resolution: policy.reason,
       verification: "No change was made by the automated repair agent.",
       verified: false
+      };
     });
   }
 }

@@ -6,6 +6,10 @@ The analysis path is deterministic-first. Known classes are caught locally, then
 
 Important boundary: this rail never edits code, SOUL files, schemas, deploys, or customer records. Safe repairs are limited to diagnosis metadata such as gap-label corrections and regression-wall candidates. A code-level problem is explicitly reported as needing product repair; it is never falsely reported as fixed.
 
+## Locked repair toolbox
+
+The repair worker has a central policy gate. It may only create the existing metadata-only repair receipts: failure-label corrections, regression-wall candidates, and transient health recovery receipts. It cannot send messages, change money, users, permissions, imported records, customer data, code, schemas, credentials, or deployments. New automatic actions require an explicit addition to `repairPolicy.ts` and a regression test.
+
 ## Hourly development review
 
 Set `SELF_REPAIR_HOURLY_ENABLED=true` to run one review at server start and then at minute `00` of every hour. Each pass keeps its own durable audit record and uses the most recent record as its saved review window, so only new timestamped conversations and runtime records are analyzed. When hourly email delivery is enabled, every pass sends a report, including a short healthy report when no new issue is found.

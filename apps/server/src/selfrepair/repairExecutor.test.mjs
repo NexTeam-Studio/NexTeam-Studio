@@ -15,7 +15,7 @@ test("safe repair executor records the responsible agent and verification", asyn
     repairAgent: "Nexi Regression Guard Agent",
     status: "performed",
     resolution: "Recorded a regression guard for the reported wording.",
-    verification: "The repair receipt was written to this tenant-scoped audit record.",
+    verification: "The approved metadata-only repair receipt was written to this tenant-scoped audit record.",
     verified: true
   }]);
 });
