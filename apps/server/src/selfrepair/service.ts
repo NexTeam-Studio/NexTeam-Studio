@@ -1,6 +1,7 @@
 import type { ApprovalQueueService, TenantDataExport } from "@nexteam/core";
 import { AnthropicSelfRepairAnalyzer, type SelfRepairUsageLogWriter } from "./anthropicAnalyzer.js";
 import { DeterministicSelfRepairAnalyzer, type SelfRepairAnalyzer } from "./analyzer.js";
+import { SafeSelfRepairExecutor, type SelfRepairRepairExecutor } from "./repairExecutor.js";
 import type { SelfRepairRepository } from "./repository.js";
 import {
   selfRepairLogSchema,
@@ -24,6 +25,7 @@ export interface SelfRepairServiceDeps {
   analyzer?: SelfRepairAnalyzer | undefined;
   usageLog?: SelfRepairUsageLogWriter | undefined;
   reportMailer?: SelfRepairReportMailer | undefined;
+  repairExecutor?: SelfRepairRepairExecutor | undefined;
   env?: NodeJS.ProcessEnv | undefined;
 }
 
@@ -106,12 +108,15 @@ function buildMorningReport(log: Omit<SelfRepairLog, "morningReport" | "reportDe
   for (const [index, finding] of log.findings.entries()) {
     const fixBrief = log.fixBriefs.find((brief) => brief.classId === finding.classId);
     const safeRepair = log.safeRepairs.find((repair) => repair.targetRef === finding.evidenceRefs[0]);
+    const execution = safeRepair ? log.repairExecutions.find((entry) => entry.repairId === safeRepair.id) : undefined;
     lines.push(
       "",
       `Issue ${index + 1}`,
       `Issue: ${finding.priority} - ${finding.title}`,
-      `Resolution: ${safeRepair?.summary ?? fixBrief?.title ?? "A regression case and fix brief were recorded for review."}`,
-      `Status: ${safeRepair?.applied ? "Safe diagnostic repair recorded; product-code fix still requires its owner." : "Needs owner review and implementation."}`
+      `Repair Agent: ${execution?.repairAgent ?? "Nexi Product Repair Agent"}`,
+      `Resolution Performed: ${execution?.resolution ?? "No automatic repair was performed."}`,
+      `Verification: ${execution?.verification ?? "A product repair task was recorded for this issue."}`,
+      `Status: ${execution?.status === "performed" ? "Repair performed and verified." : fixBrief?.title ?? "Needs product repair."}`
     );
   }
   if (log.watchItems.length) {
@@ -131,6 +136,7 @@ function buildMorningReport(log: Omit<SelfRepairLog, "morningReport" | "reportDe
 
 export class SelfRepairService {
   private readonly analyzer: SelfRepairAnalyzer;
+  private readonly repairExecutor: SelfRepairRepairExecutor;
   private readonly env: NodeJS.ProcessEnv;
 
   constructor(private readonly deps: SelfRepairServiceDeps) {
@@ -144,6 +150,7 @@ export class SelfRepairService {
         })
         : new DeterministicSelfRepairAnalyzer()
     );
+    this.repairExecutor = deps.repairExecutor ?? new SafeSelfRepairExecutor();
   }
 
   async run(inputValue: unknown): Promise<SelfRepairLog> {
@@ -162,6 +169,7 @@ export class SelfRepairService {
       exportData,
       recentLogs
     });
+    const repairExecutions = await this.repairExecutor.execute(analysis.safeRepairs);
     const pendingApprovals = await this.deps.approvalQueue.listPending(input.tenantId);
     const healthHistory = count(exportData, "tenantAdapterStatuses", date);
     const wallStatus = count(exportData, "nexiRegressionWallRuns", date) + count(exportData, "wallStatus", date);
@@ -184,12 +192,13 @@ export class SelfRepairService {
         wallStatus
       },
       found: analysis.findings.length,
-      autoRepaired: analysis.safeRepairs.filter((repair) => repair.applied).length,
+      autoRepaired: repairExecutions.filter((execution) => execution.status === "performed" && execution.verified).length,
       blocked,
       needsApproval: analysis.fixBriefs.map((brief) => `${brief.priority} ${brief.classId}: ${brief.title}`),
       watchItems: analysis.watchItems,
       findings: analysis.findings,
       safeRepairs: analysis.safeRepairs,
+      repairExecutions,
       fixBriefs: analysis.fixBriefs,
       analysisMode: analysis.analysisMode,
       ...(input.since ? { windowStart: input.since } : {}),

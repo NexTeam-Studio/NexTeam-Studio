@@ -42,6 +42,15 @@ export const selfRepairSafeRepairSchema = z.object({
   summary: z.string().min(1)
 });
 
+export const selfRepairRepairExecutionSchema = z.object({
+  repairId: z.string().min(1),
+  repairAgent: z.string().min(1),
+  status: z.enum(["performed", "needs_product_repair", "verification_failed"]),
+  resolution: z.string().min(1),
+  verification: z.string().min(1),
+  verified: z.boolean()
+});
+
 export const selfRepairFixBriefSchema = z.object({
   id: z.string().min(1),
   classId: selfRepairFailureClassSchema,
@@ -80,6 +89,7 @@ export const selfRepairLogSchema = z.object({
   watchItems: z.array(z.string()),
   findings: z.array(selfRepairFindingSchema),
   safeRepairs: z.array(selfRepairSafeRepairSchema),
+  repairExecutions: z.array(selfRepairRepairExecutionSchema).default([]),
   fixBriefs: z.array(selfRepairFixBriefSchema),
   morningReport: z.string(),
   morningReportApprovalId: z.string().optional(),
@@ -93,6 +103,7 @@ export const selfRepairLogSchema = z.object({
 export type SelfRepairFailureClass = z.infer<typeof selfRepairFailureClassSchema>;
 export type SelfRepairFinding = z.infer<typeof selfRepairFindingSchema>;
 export type SelfRepairSafeRepair = z.infer<typeof selfRepairSafeRepairSchema>;
+export type SelfRepairRepairExecution = z.infer<typeof selfRepairRepairExecutionSchema>;
 export type SelfRepairFixBrief = z.infer<typeof selfRepairFixBriefSchema>;
 export type SelfRepairRunInput = z.infer<typeof selfRepairRunInputSchema>;
 export type SelfRepairLog = z.infer<typeof selfRepairLogSchema>;
