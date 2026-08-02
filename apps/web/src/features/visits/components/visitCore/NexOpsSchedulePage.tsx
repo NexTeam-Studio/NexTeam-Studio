@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
+import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
+import { visitCanBeCompleted } from "./visitCompletion";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 type ScheduleView = "day" | "week" | "month" | "list";
@@ -513,6 +515,35 @@ export function NexOpsSchedulePage(props: {
     }
   }
 
+  async function completeVisit(visit: ScheduleWorkspaceVisit): Promise<void> {
+    if (!visitCanBeCompleted(visit)) {
+      return;
+    }
+    if (!window.confirm(`Mark this visit for ${visit.clientName} complete?`)) {
+      return;
+    }
+    setWorkingVisitId(visit.id);
+    setComposerStatus("");
+    try {
+      const body = await fetch(`/api/crm/jobs/visits/${encodeURIComponent(visit.id)}/complete`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: props.tenantId })
+      }).then((response) => response.json() as Promise<JobMutationResponse>);
+      if (!body.ok) {
+        setComposerStatus(body.error ?? "Visit completion failed.");
+        return;
+      }
+      setComposerStatus("Visit completed. The office can now close or invoice the job when all visits are done.");
+      props.onCrmMutation?.();
+      await Promise.all([loadWorkspace(), loadJobs()]);
+    } catch {
+      setComposerStatus("Visit completion API unreachable.");
+    } finally {
+      setWorkingVisitId("");
+    }
+  }
+
   async function openFieldDocsRail(visit: ScheduleWorkspaceVisit): Promise<void> {
     setFieldDocsVisit(visit);
     setFieldDocsStatus("Loading NexCam visit rail...");
@@ -564,6 +595,11 @@ export function NexOpsSchedulePage(props: {
             Add visit
           </button>
           {!visit.readOnly ? <button type="button" onClick={() => openEdit(visit)}>{workingVisitId === visit.id ? "Saving..." : "Edit"}</button> : null}
+          {visitCanBeCompleted(visit) ? (
+            <button type="button" onClick={() => void completeVisit(visit)} disabled={workingVisitId === visit.id}>
+              {workingVisitId === visit.id ? "Completing..." : "Complete visit"}
+            </button>
+          ) : null}
         </div>
       </article>
     );
@@ -634,6 +670,7 @@ export function NexOpsSchedulePage(props: {
           </div>
         </div>
         {status ? <p className="nexops-module-status">{status}</p> : null}
+        {composerStatus && !composerOpen ? <p className="nexops-module-status" role="status">{composerStatus}</p> : null}
 
         {workspace?.unscheduledJobs.length ? (
           <section className="nexops-schedule-unscheduled">
