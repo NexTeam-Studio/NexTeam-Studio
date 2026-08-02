@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { invoiceWorkspaceRail } from "../NexOpsInvoicesPage.tsx";
 
@@ -101,4 +102,29 @@ test("paid invoices stop at receipt review until the package is sent", () => {
   assert.equal(rail.stage, "Receipt review waiting");
   assert.equal(rail.dominantAction, "send-receipt");
   assert.equal(rail.dominantLabel, "Send receipt");
+});
+
+test("named invoice interface areas use Title Case", () => {
+  const source = readFileSync(new URL("../NexOpsInvoicesPage.tsx", import.meta.url), "utf8");
+  const scheduleSource = readFileSync(new URL("../PaymentScheduleEditor.tsx", import.meta.url), "utf8");
+
+  for (const label of [
+    "Invoice Roster",
+    "Combine Ready Jobs",
+    "Combined Invoice Title",
+    "Payment Schedule",
+    "Invoice Detail",
+    "Request Carry-Forward",
+    "Prepare and Send",
+    "Draft Invoice Editor",
+    "Add Line Item",
+    "Send Invoice",
+    "Receipt Review"
+  ]) {
+    assert.match(source, new RegExp(label));
+  }
+
+  for (const label of ["Payment Schedule", "On Approval", "On Job Close", "Amount Type", "Add Milestone"]) {
+    assert.match(scheduleSource, new RegExp(label));
+  }
 });

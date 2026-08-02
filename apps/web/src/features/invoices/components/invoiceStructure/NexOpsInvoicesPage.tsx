@@ -18,9 +18,9 @@ const INVOICE_FILTERS: Array<{ value: InvoiceFilter; label: string }> = [
   { value: "awaiting", label: "Awaiting" },
   { value: "partial_pay", label: "Partial" },
   { value: "paid", label: "Paid" },
-  { value: "past_due", label: "Past due" },
+  { value: "past_due", label: "Past Due" },
   { value: "void", label: "Void" },
-  { value: "bad_debt", label: "Bad debt" }
+  { value: "bad_debt", label: "Bad Debt" }
 ];
 
 interface ClientOption {
@@ -1266,8 +1266,8 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
         <article><span>Awaiting</span><strong>{counts.awaiting}</strong><p>Sent or outstanding balances.</p></article>
         <article><span>Partial</span><strong>{counts.partial}</strong><p>Prompt the remaining balance immediately.</p></article>
         <article><span>Paid</span><strong>{counts.paid}</strong><p>Receipt review should be waiting next.</p></article>
-        <article><span>Receipt waiting</span><strong>{counts.receiptWaiting}</strong><p>Paid or refunded, but still paused for review.</p></article>
-        <article><span>Failed attempts</span><strong>{counts.failedPayments}</strong><p>Recovery work still needs an office move.</p></article>
+        <article><span>Receipt Waiting</span><strong>{counts.receiptWaiting}</strong><p>Paid or refunded, but still paused for review.</p></article>
+        <article><span>Failed Attempts</span><strong>{counts.failedPayments}</strong><p>Recovery work still needs an office move.</p></article>
         <article><span>Refunds</span><strong>{counts.refunds}</strong><p>Tracked separately from void and bad debt.</p></article>
         <article><span>Credits</span><strong>{counts.credits}</strong><p>Available client balance still on hand.</p></article>
       </div>
@@ -1276,10 +1276,10 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
         <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
-              <p className="eyebrow">Invoice roster</p>
-              <h2>{filteredInvoices.length} visible</h2>
+              <p className="eyebrow">Invoice Roster</p>
+              <h2>{filteredInvoices.length} Visible</h2>
             </div>
-            <input placeholder="Search invoices" value={invoiceSearch} onChange={(event) => setInvoiceSearch(event.target.value)} />
+            <input placeholder="Search Invoices" value={invoiceSearch} onChange={(event) => setInvoiceSearch(event.target.value)} />
           </div>
           <div className="nexops-jobs-filter-row" aria-label="Invoice status filters">
             {INVOICE_FILTERS.map((filter) => (
@@ -1319,11 +1319,11 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
         <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
-              <p className="eyebrow">Combine ready jobs</p>
-              <h2>{combineSelection.length} selected</h2>
+              <p className="eyebrow">Combine Ready Jobs</p>
+              <h2>{combineSelection.length} Selected</h2>
             </div>
             <button type="button" onClick={() => void combineSelectedJobs()} disabled={Boolean(busy) || !combineSelection.length}>
-              {busy === "combine" ? "Combining..." : "Create combined invoice"}
+              {busy === "combine" ? "Combining..." : "Create Combined Invoice"}
             </button>
           </div>
           <p>Pick any subset of jobs that need invoicing. The resulting invoice keeps each job reference visible on the record and on the receipt path.</p>
@@ -1348,24 +1348,24 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
           </div>
           <div className="nexops-request-builder-grid">
             <label className="nexops-field">
-              <span>Combined invoice title</span>
-              <input value={combineDraft.title} onChange={(event) => setCombineDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Optional override" />
+              <span>Combined Invoice Title</span>
+              <input value={combineDraft.title} onChange={(event) => setCombineDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Optional Override" />
             </label>
             <label className="nexops-field">
-              <span>Tax rate (%)</span>
+              <span>Tax Rate (%)</span>
               <input type="number" min="0" step="0.01" value={combineDraft.taxRate} onChange={(event) => setCombineDraft((current) => ({ ...current, taxRate: Math.max(0, Number(event.target.value || 0)) }))} />
             </label>
           </div>
           <div className="nexops-request-builder-grid">
             <label className="nexops-field">
-              <span>Discount kind</span>
+              <span>Discount Kind</span>
               <select value={combineDraft.discountKind} onChange={(event) => setCombineDraft((current) => ({ ...current, discountKind: event.target.value as "amount" | "percent" }))}>
-                <option value="amount">Flat amount</option>
+                <option value="amount">Flat Amount</option>
                 <option value="percent">Percent</option>
               </select>
             </label>
             <label className="nexops-field">
-              <span>Discount value</span>
+              <span>Discount Value</span>
               <input type="number" min="0" step="0.01" value={combineDraft.discountValue} onChange={(event) => setCombineDraft((current) => ({ ...current, discountValue: Math.max(0, Number(event.target.value || 0)) }))} />
             </label>
           </div>
@@ -1376,7 +1376,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
           <PaymentScheduleEditor
             value={combineDraft.paymentSchedule}
             onChange={(paymentSchedule) => setCombineDraft((current) => ({ ...current, paymentSchedule }))}
-            title="Combined invoice payment schedule"
+            title="Combined Invoice Payment Schedule"
             hint="Use this when the grouped jobs still need a deposit or staged balance plan."
           />
         </article>
@@ -1387,7 +1387,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
           <div className="nexops-billing-detail">
             <div className="nexops-page-heading">
               <div>
-                <p className="eyebrow">Invoice detail</p>
+                <p className="eyebrow">Invoice Detail</p>
                 <h2>{detail.invoice.number ?? detail.invoice.id}</h2>
                 <p>{detail.invoice.title}</p>
               </div>
@@ -1413,7 +1413,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
             {workspaceRail ? (
               <section className="nexops-quote-panel">
                 <div className="nexops-quote-section-head">
-                  <h3>Next billing move</h3>
+                  <h3>Next Billing Move</h3>
                   <span>{workspaceRail.stage}</span>
                 </div>
                 <p>{workspaceRail.detail}</p>
@@ -1439,9 +1439,9 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
 
             <div className="nexops-density-inline-facts">
               <article><h3>Client</h3><p>{clientDisplayName(selectedClient)}</p><small>{selectedClient?.emails[0] ?? "No email"} | {selectedClient?.phones[0] ?? "No phone"}</small></article>
-              <article><h3>Balance due</h3><p>{money(detail.invoice.ledger?.balanceDue ?? detail.invoice.totals.total)}</p><small>Paid applied {money(detail.invoice.ledger?.paymentApplied)}</small></article>
+              <article><h3>Balance Due</h3><p>{money(detail.invoice.ledger?.balanceDue ?? detail.invoice.totals.total)}</p><small>Paid applied {money(detail.invoice.ledger?.paymentApplied)}</small></article>
               <article><h3>Due</h3><p>{detail.invoice.dueAt ? new Date(detail.invoice.dueAt).toLocaleDateString() : "Immediate"}</p><small>Updated {formatTimestamp(detail.invoice.updatedAt)}</small></article>
-              <article><h3>Receipt review</h3><p>{detail.receiptReviews?.length ?? 0}</p><small>{selectedReview ? `Latest ${selectedReview.status}` : "Created after payment/refund"}</small></article>
+              <article><h3>Receipt Review</h3><p>{detail.receiptReviews?.length ?? 0}</p><small>{selectedReview ? `Latest ${selectedReview.status}` : "Created after payment/refund"}</small></article>
             </div>
 
             {selectedInvoiceProminentFacts.length ? (
@@ -1455,7 +1455,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
             <details className="nexops-quote-panel nexops-density-disclosure-panel">
               <summary>
                 <div className="nexops-density-disclosure-copy">
-                  <h3>Request carry-forward</h3>
+                  <h3>Request Carry-Forward</h3>
                   <small>Open for site-contact, referral, access, and problem context still visible on the invoice rail.</small>
                 </div>
                 <span className="nexops-density-disclosure-caret">Open</span>
@@ -1481,7 +1481,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
               <details className="nexops-quote-panel nexops-density-disclosure-panel">
                 <summary>
                   <div className="nexops-density-disclosure-copy">
-                    <h3>Invoice dimensions</h3>
+                    <h3>Invoice Dimensions</h3>
                     <small>Open when you need the full lifecycle, delivery, balance, and due-state breakdown.</small>
                   </div>
                   <span className="nexops-density-disclosure-caret">Open</span>
@@ -1492,8 +1492,8 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                     <article><h3>Delivery</h3><p>{invoiceDimensions.delivery.replaceAll("_", " ")}</p><small>From send and delivery history</small></article>
                     <article><h3>Balance</h3><p>{invoiceDimensions.balance.replaceAll("_", " ")}</p><small>Derived from ledger balance</small></article>
                     <article><h3>Due</h3><p>{invoiceDimensions.due.replaceAll("_", " ")}</p><small>Overdue stays separate</small></article>
-                    <article><h3>Customer view</h3><p>{invoiceDimensions.customerView.replaceAll("_", " ")}</p><small>What the customer currently sees</small></article>
-                    <article><h3>Payment schedule</h3><p>{detail.invoice.paymentSchedule?.enabled ? "Active" : "None"}</p><small>{paymentScheduleRailCopy(detail.invoice.paymentSchedule)}</small></article>
+                    <article><h3>Customer View</h3><p>{invoiceDimensions.customerView.replaceAll("_", " ")}</p><small>What the customer currently sees</small></article>
+                    <article><h3>Payment Schedule</h3><p>{detail.invoice.paymentSchedule?.enabled ? "Active" : "None"}</p><small>{paymentScheduleRailCopy(detail.invoice.paymentSchedule)}</small></article>
                   </div>
                 </div>
               </details>
@@ -1503,7 +1503,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
               <details className="nexops-quote-panel nexops-density-disclosure-panel">
                 <summary>
                   <div className="nexops-density-disclosure-copy">
-                    <h3>Customer document package</h3>
+                  <h3>Customer Document Package</h3>
                     <small>Open for package stage, covered jobs, and attached artifact counts.</small>
                   </div>
                   <span className="nexops-density-disclosure-caret">Open</span>
@@ -1512,21 +1512,21 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                   <div className="nexops-mini-list">
                     <div className="nexops-quote-detail-line">
                       <span>
-                        <strong>Closeout package state</strong>
+                        <strong>Closeout Package State</strong>
                         <small>{packagePreview.detail}</small>
                       </span>
                       <mark>{detail.invoice.jobReferences?.length ?? 0} jobs</mark>
                     </div>
                     <div className="nexops-quote-detail-line">
                       <span>
-                        <strong>Invoice artifact</strong>
+                        <strong>Invoice Artifact</strong>
                         <small>{detail.invoice.number ?? detail.invoice.id}</small>
                       </span>
                       <mark>{detail.invoice.status.replaceAll("_", " ")}</mark>
                     </div>
                     <div className="nexops-quote-detail-line">
                       <span>
-                        <strong>Receipt artifact</strong>
+                        <strong>Receipt Artifact</strong>
                         <small>{selectedReview ? `Latest review ${selectedReview.status}` : "No receipt review yet"}</small>
                       </span>
                       <mark>{selectedReview?.attachments.length ?? 0} files</mark>
@@ -1552,7 +1552,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
             <details className="nexops-quote-panel nexops-density-disclosure-panel" open={detail.invoice.status === "draft"}>
               <summary>
                 <div className="nexops-density-disclosure-copy">
-                  <h3>Prepare and send</h3>
+                  <h3>Prepare and Send</h3>
                   <small>Open for draft edits, send mode, recipients, and delivery options.</small>
                 </div>
                 <span className="nexops-density-disclosure-caret">Open</span>
@@ -1561,11 +1561,11 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
             <div className="nexops-two-column">
               <section className="nexops-quote-panel">
                 <div className="nexops-quote-section-head">
-                  <h3>Draft invoice editor</h3>
+                  <h3>Draft Invoice Editor</h3>
                   <div className="nexops-inline-actions">
-                    <button type="button" onClick={() => setCatalogPickerOpen(true)} disabled={detail.invoice.status !== "draft"}>Add line item</button>
+                    <button type="button" onClick={() => setCatalogPickerOpen(true)} disabled={detail.invoice.status !== "draft"}>Add Line Item</button>
                     <button type="button" onClick={() => void saveInvoiceDraft()} disabled={Boolean(busy) || detail.invoice.status !== "draft"}>
-                      {busy === "save-invoice" ? "Saving..." : "Save invoice"}
+                      {busy === "save-invoice" ? "Saving..." : "Save Invoice"}
                     </button>
                   </div>
                 </div>
@@ -1575,13 +1575,13 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                     <input value={invoiceDraft.title} onChange={(event) => setInvoiceDraft((current) => current ? { ...current, title: event.target.value } : current)} disabled={detail.invoice.status !== "draft"} />
                   </label>
                   <label className="nexops-field">
-                    <span>Due date</span>
+                    <span>Due Date</span>
                     <input type="date" value={invoiceDraft.dueAt} onChange={(event) => setInvoiceDraft((current) => current ? { ...current, dueAt: event.target.value } : current)} />
                   </label>
                 </div>
                 {!invoiceDraft.lineItems.length ? (
                   <div className="nexops-catalog-picker-empty">
-                    <strong>No line items yet</strong>
+                    <strong>No Line Items Yet</strong>
                     <small>Pick from Products &amp; Services or create a new reusable item first.</small>
                   </div>
                 ) : null}
@@ -1620,14 +1620,14 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                           } : current)} disabled={detail.invoice.status !== "draft"} />
                         </label>
                         <label className="nexops-field">
-                          <span>Unit price</span>
+                          <span>Unit Price</span>
                           <input type="number" min="0" step="0.01" value={item.unitPrice} onChange={(event) => setInvoiceDraft((current) => current ? {
                             ...current,
                             lineItems: current.lineItems.map((candidate) => candidate.id === item.id ? { ...candidate, unitPrice: Math.max(0, Number(event.target.value || 0)) } : candidate)
                           } : current)} disabled={detail.invoice.status !== "draft"} />
                         </label>
                         <div className="nexops-invoice-inline-total">
-                          <span>Line total</span>
+                          <span>Line Total</span>
                           <strong>{money(lineItemTotal(item))}</strong>
                         </div>
                       </div>
@@ -1636,18 +1636,18 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                 </div>
                 <div className="nexops-request-builder-grid">
                   <label className="nexops-field">
-                    <span>Discount kind</span>
+                    <span>Discount Kind</span>
                     <select value={invoiceDraft.discountKind} onChange={(event) => setInvoiceDraft((current) => current ? { ...current, discountKind: event.target.value as "amount" | "percent" } : current)} disabled={detail.invoice.status !== "draft"}>
-                      <option value="amount">Flat amount</option>
+                      <option value="amount">Flat Amount</option>
                       <option value="percent">Percent</option>
                     </select>
                   </label>
                   <label className="nexops-field">
-                    <span>Discount value</span>
+                    <span>Discount Value</span>
                     <input type="number" min="0" step="0.01" value={invoiceDraft.discountValue} onChange={(event) => setInvoiceDraft((current) => current ? { ...current, discountValue: Math.max(0, Number(event.target.value || 0)) } : current)} disabled={detail.invoice.status !== "draft"} />
                   </label>
                   <label className="nexops-field">
-                    <span>Tax rate (%)</span>
+                    <span>Tax Rate (%)</span>
                     <input type="number" min="0" step="0.01" value={invoiceDraft.taxRate} onChange={(event) => setInvoiceDraft((current) => current ? { ...current, taxRate: Math.max(0, Number(event.target.value || 0)) } : current)} disabled={detail.invoice.status !== "draft"} />
                   </label>
                 </div>
@@ -1670,9 +1670,9 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
 
               <section className="nexops-quote-panel">
                 <div className="nexops-quote-section-head">
-                  <h3>Send invoice</h3>
+                  <h3>Send Invoice</h3>
                   <button type="button" onClick={() => void sendInvoice()} disabled={Boolean(busy)}>
-                    {busy === "send-invoice" ? "Sending..." : "Send invoice"}
+                    {busy === "send-invoice" ? "Sending..." : "Send Invoice"}
                   </button>
                 </div>
                 <div className="nexops-request-builder-grid">
@@ -1692,7 +1692,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                     >
                       <option value="email">Email</option>
                       <option value="sms">SMS</option>
-                      <option value="mark_sent">Mark sent</option>
+                      <option value="mark_sent">Mark Sent</option>
                     </select>
                   </label>
                   <label className="nexops-field">
@@ -1705,11 +1705,11 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                   <input value={sendDraft.subject} onChange={(event) => setSendDraft((current) => current ? { ...current, subject: event.target.value } : current)} />
                 </label>
                 <label className="nexops-field">
-                  <span>Message body</span>
+                  <span>Message Body</span>
                   <textarea rows={4} value={sendDraft.bodyText} onChange={(event) => setSendDraft((current) => current ? { ...current, bodyText: event.target.value } : current)} />
                 </label>
                 <label className="nexops-field">
-                  <span>Office note</span>
+                  <span>Office Note</span>
                   <textarea rows={2} value={sendDraft.note} onChange={(event) => setSendDraft((current) => current ? { ...current, note: event.target.value } : current)} />
                 </label>
                 <div className="nexops-quote-toggle-grid">
@@ -1746,14 +1746,14 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
 
             <section className="nexops-quote-panel">
               <div className="nexops-quote-section-head">
-                <h3>Receipt review</h3>
+                <h3>Receipt Review</h3>
                 <span>Email carries attachments. SMS sends the secure hosted link only.</span>
               </div>
               {selectedReview && receiptReviewDraft ? (
                 <>
                   {detail.receiptReviews && detail.receiptReviews.length > 1 ? (
                     <label className="nexops-field">
-                      <span>Review record</span>
+                      <span>Review Record</span>
                       <select value={selectedReceiptReviewId} onChange={(event) => setSelectedReceiptReviewId(event.target.value)}>
                         {detail.receiptReviews.map((review) => <option value={review.id} key={review.id}>{review.id} - {review.status}</option>)}
                       </select>
@@ -1788,11 +1788,11 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                   </label>
                   <div className="nexops-request-builder-grid">
                     <label className="nexops-field">
-                      <span>Email recipients</span>
+                      <span>Email Recipients</span>
                       <input value={receiptReviewDraft.emailRecipients} onChange={(event) => setReceiptReviewDraft((current) => current ? { ...current, emailRecipients: event.target.value } : current)} />
                     </label>
                     <label className="nexops-field">
-                      <span>SMS recipients</span>
+                      <span>SMS Recipients</span>
                       <input value={receiptReviewDraft.smsRecipients} onChange={(event) => setReceiptReviewDraft((current) => current ? { ...current, smsRecipients: event.target.value } : current)} />
                     </label>
                   </div>
@@ -1814,8 +1814,8 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                     ))}
                   </div>
                   <div className="nexops-inline-actions">
-                    <button type="button" onClick={() => void saveReceiptReview()} disabled={Boolean(busy)}>{busy === "save-receipt" ? "Saving..." : "Save receipt review"}</button>
-                    <button type="button" onClick={() => void sendReceiptReview()} disabled={Boolean(busy)}>{busy === "send-receipt" ? "Sending..." : "Send receipt"}</button>
+                    <button type="button" onClick={() => void saveReceiptReview()} disabled={Boolean(busy)}>{busy === "save-receipt" ? "Saving..." : "Save Receipt Review"}</button>
+                    <button type="button" onClick={() => void sendReceiptReview()} disabled={Boolean(busy)}>{busy === "send-receipt" ? "Sending..." : "Send Receipt"}</button>
                     {selectedReview.hostedLink ? <small>{selectedReview.hostedLink}</small> : null}
                   </div>
                 </>
@@ -1826,7 +1826,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
           </div>
         ) : (
           <div className="nexops-quote-empty">
-            <h2>No invoice selected</h2>
+            <h2>No Invoice Selected</h2>
             <p>Pick an invoice from the roster, or create one by combining jobs waiting for invoicing.</p>
           </div>
         )}
@@ -1835,7 +1835,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
         open={catalogPickerOpen}
         search={catalogSearch}
         catalogItems={visibleCatalogItems}
-        title="Add invoice line item"
+        title="Add Invoice Line Item"
         onSearchChange={setCatalogSearch}
         onClose={() => {
           setCatalogPickerOpen(false);

@@ -137,7 +137,7 @@ export function PaymentScheduleEditor(props: PaymentScheduleEditorProps): React.
     <section className="nexops-payment-schedule">
       <div className="nexops-jobs-card-heading">
         <div>
-          <h3>{props.title ?? "Payment schedule"}</h3>
+          <h3>{props.title ?? "Payment Schedule"}</h3>
           <p className="nexops-empty-copy">{props.hint ?? "Split billing into deposit and milestone payments when this work needs more than one invoice touchpoint."}</p>
         </div>
         <label className="nexops-payment-schedule-toggle">
@@ -160,16 +160,16 @@ export function PaymentScheduleEditor(props: PaymentScheduleEditorProps): React.
               <label>
                 <span>Trigger</span>
                 <select value={milestone.trigger} onChange={(event) => updateMilestone(milestone.id, { trigger: event.target.value as PaymentScheduleTrigger })}>
-                  <option value="on_approval">On approval</option>
-                  <option value="on_job_close">On job close</option>
-                  <option value="on_date">On a date</option>
+                  <option value="on_approval">On Approval</option>
+                  <option value="on_job_close">On Job Close</option>
+                  <option value="on_date">On a Date</option>
                 </select>
               </label>
               <label>
-                <span>Amount type</span>
+                <span>Amount Type</span>
                 <select value={milestone.amountKind} onChange={(event) => updateMilestone(milestone.id, { amountKind: event.target.value as PaymentScheduleAmountKind })}>
                   <option value="percent">Percent</option>
-                  <option value="amount">Dollar amount</option>
+                  <option value="amount">Dollar Amount</option>
                 </select>
               </label>
               <label>
@@ -184,14 +184,14 @@ export function PaymentScheduleEditor(props: PaymentScheduleEditorProps): React.
               </label>
               {milestone.trigger === "on_date" ? (
                 <label>
-                  <span>Due date</span>
+                  <span>Due Date</span>
                   <input type="date" value={milestone.dueAt} onChange={(event) => updateMilestone(milestone.id, { dueAt: event.target.value })} />
                 </label>
               ) : <div className="nexops-payment-schedule-spacer" />}
               <button type="button" onClick={() => removeMilestone(milestone.id)} disabled={props.value.milestones.length === 1}>Remove</button>
             </div>
           ))}
-          <button type="button" className="nexops-payment-schedule-add" onClick={addMilestone}>Add milestone</button>
+          <button type="button" className="nexops-payment-schedule-add" onClick={addMilestone}>Add Milestone</button>
         </div>
       ) : null}
     </section>
