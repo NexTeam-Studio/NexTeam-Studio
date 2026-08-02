@@ -414,18 +414,18 @@ function deriveWorkPackageStatus(detail: JobSummary | JobDetail): "draft" | "awa
 
 function deriveWorkPackageAction(detail: JobDetail): string {
   if (detail.reminders.invoice) {
-    return "Invoice or dismiss reminder";
+    return "Invoice or Dismiss Reminder";
   }
   if (detail.reminders.actionAlert) {
-    return "Review closeout";
+    return "Review Closeout";
   }
   if (!detail.visits.length) {
-    return "Schedule first visit";
+    return "Schedule First Visit";
   }
   if (detail.visits.some((visit) => visit.status !== "complete")) {
-    return "Finish field work";
+    return "Finish Field Work";
   }
-  return "Review package";
+  return "Review Package";
 }
 
 function deriveVisitNextStep(visit: VisitRecord): string {
@@ -486,36 +486,36 @@ function defaultBookingDraft(preview: BookingConfirmationPreview, mode: "email" 
 function deriveNextMoveCopy(detail: JobDetail, preview: BookingConfirmationPreview | null): { label: string; detail: string } {
   if (!detail.visits.length) {
     return {
-      label: "Schedule first visit",
+      label: "Schedule First Visit",
       detail: "Get the first visit on the board before confirmation, fieldwork, or closeout can move."
     };
   }
   if (preview && !bookingConfirmationWasSent(detail, preview.visit.id)) {
     return {
-      label: "Send booking confirmation",
+      label: "Send Booking Confirmation",
       detail: "This visit is scheduled, but the client has not received the booking confirmation yet."
     };
   }
   if (detail.reminders.invoice) {
     return {
-      label: "Invoice or dismiss reminder",
+      label: "Invoice or Dismiss Reminder",
       detail: "Field work is complete and the invoice reminder is now driving the work state."
     };
   }
   if (detail.reminders.actionAlert) {
     return {
-      label: "Review closeout",
+      label: "Review Closeout",
       detail: "A technician finished the field step. Owner or office admin still decides close, invoice, or both."
     };
   }
   if (detail.visits.some((visit) => visit.status !== "complete")) {
     return {
-      label: "Go to visits",
+      label: "Go to Visits",
       detail: "Booking is confirmed. The next live rail is the visit list and technician completion path."
     };
   }
   return {
-    label: "Review package",
+    label: "Review Package",
     detail: "Work is complete and the customer package is waiting on the billing path."
   };
 }
@@ -562,7 +562,7 @@ export function NexOpsJobsPage(props: {
   const [signedDocuments, setSignedDocuments] = useState<SignedDocumentRecord[]>([]);
   const [fieldDocsStatus, setFieldDocsStatus] = useState("NexCam media and reports will load with the job detail.");
   const [fieldDocsBusy, setFieldDocsBusy] = useState("");
-  const [quickPaymentDraft, setQuickPaymentDraft] = useState({ title: "Quick payment request", amount: "0.00", memo: "" });
+  const [quickPaymentDraft, setQuickPaymentDraft] = useState({ title: "Quick Payment Request", amount: "0.00", memo: "" });
   const [signedDocumentDraft, setSignedDocumentDraft] = useState<{ kind: SignedDocumentRecord["kind"]; title: string; bodyText: string }>({
     kind: "completion_signoff",
     title: "Completion sign-off",
@@ -1353,33 +1353,33 @@ export function NexOpsJobsPage(props: {
 
       <section className="nexops-jobs-layout">
         <article className="nexops-module-card">
-          <p className="eyebrow">Manual create</p>
-          <h2>New job</h2>
+          <p className="eyebrow">Manual Create</p>
+          <h2>New Job</h2>
           <form className="nexops-jobs-form" onSubmit={(event) => void createJob(event)}>
             <label>
               Client
               <select value={showInlineClientCreate ? NEW_JOB_CLIENT_VALUE : createClientId} onChange={(event) => handleClientChoice(event.target.value)}>
-                <option value="">Choose client</option>
+                <option value="">Choose Client</option>
                 {createClientOptions.map((client) => <option key={client.id} value={client.id}>{clientLabel(client)}</option>)}
-                <option value={NEW_JOB_CLIENT_VALUE}>+ Create new client</option>
+                <option value={NEW_JOB_CLIENT_VALUE}>+ Create New Client</option>
               </select>
             </label>
             {showInlineClientCreate ? (
               <section className="nexops-module-card embedded">
                 <div className="nexops-jobs-card-heading">
                   <div>
-                    <p className="eyebrow">Inline client create</p>
-                    <h3>Keep the job draft open</h3>
+                    <p className="eyebrow">Inline Client Create</p>
+                    <h3>Keep the Job Draft Open</h3>
                   </div>
                   <span>{inlineClientStatus}</span>
                 </div>
                 <div className="nexops-request-builder-grid">
                   <label className="nexops-field">
-                    <span>First name</span>
+                    <span>First Name</span>
                     <input value={inlineClientDraft.firstName} onChange={(event) => setInlineClientDraft((current) => ({ ...current, firstName: event.target.value }))} />
                   </label>
                   <label className="nexops-field">
-                    <span>Last name</span>
+                    <span>Last Name</span>
                     <input value={inlineClientDraft.lastName} onChange={(event) => setInlineClientDraft((current) => ({ ...current, lastName: event.target.value }))} />
                   </label>
                 </div>
@@ -1389,13 +1389,13 @@ export function NexOpsJobsPage(props: {
                     <input value={inlineClientDraft.company} onChange={(event) => setInlineClientDraft((current) => ({ ...current, company: event.target.value }))} />
                   </label>
                   <label className="nexops-field">
-                    <span>Main phone</span>
+                    <span>Main Phone</span>
                     <input value={inlineClientDraft.phone} onChange={(event) => setInlineClientDraft((current) => ({ ...current, phone: event.target.value }))} />
                   </label>
                 </div>
                 <div className="nexops-request-builder-grid">
                   <label className="nexops-field">
-                    <span>Main email</span>
+                    <span>Main Email</span>
                     <input type="email" value={inlineClientDraft.email} onChange={(event) => setInlineClientDraft((current) => ({ ...current, email: event.target.value }))} />
                   </label>
                   <label className="nexops-field">
@@ -1423,26 +1423,26 @@ export function NexOpsJobsPage(props: {
                     setShowInlineClientCreate(false);
                     setInlineClientStatus("Switched back to existing-client selection.");
                   }} disabled={!createClientOptions.length || inlineClientBusy}>
-                    Use existing instead
+                    Use Existing Instead
                   </button>
                   <button type="button" onClick={() => void createInlineClient()} disabled={!inlineClientCanSave || inlineClientBusy}>
-                    {inlineClientBusy ? "Saving client..." : "Save client and return"}
+                    {inlineClientBusy ? "Saving Client..." : "Save Client and Return"}
                   </button>
                 </div>
               </section>
             ) : null}
             <label>
-              Job title
+              Job Title
               <input value={createTitle} onChange={(event) => setCreateTitle(event.target.value)} placeholder="Leak detection follow-up" />
             </label>
             <PaymentScheduleEditor
               value={createPaymentSchedule}
               onChange={setCreatePaymentSchedule}
-              title="Job payment schedule"
+              title="Job Payment Schedule"
               hint="Use this when the work needs a deposit or milestone billing plan even without a quote."
             />
             <button type="submit" disabled={createBusy || inlineClientBusy || !createClientId || !createTitle.trim()}>
-              {createBusy ? "Creating..." : "Create job"}
+              {createBusy ? "Creating..." : "Create Job"}
             </button>
           </form>
         </article>
@@ -1450,12 +1450,12 @@ export function NexOpsJobsPage(props: {
         <article className="nexops-module-card">
           <div className="nexops-jobs-card-heading">
             <div>
-              <p className="eyebrow">Native list</p>
-              <h2>Job roster</h2>
+              <p className="eyebrow">Native List</p>
+              <h2>Job Roster</h2>
             </div>
             <span>{filteredJobs.length} shown / {jobs.length} total</span>
           </div>
-          <div className="nexops-jobs-filter-row" aria-label="Job status filters">
+          <div className="nexops-jobs-filter-row" aria-label="Job Status Filters">
             {JOB_FILTERS.map((filter) => (
               <button
                 key={filter}
@@ -1505,11 +1505,11 @@ export function NexOpsJobsPage(props: {
           <div className="nexops-jobs-card-heading">
             <div>
               <p className="eyebrow">Detail</p>
-              <h2>{detail?.title ?? "Select a job"}</h2>
+              <h2>{detail?.title ?? "Select a Job"}</h2>
             </div>
             {detail?.number ? <span>{detail.number}</span> : null}
           </div>
-          <div className="nexops-jobs-filter-row" aria-label="Job detail filters">
+          <div className="nexops-jobs-filter-row" aria-label="Job Detail Filters">
             {JOB_FILTERS.map((filter) => (
               <button
                 key={`detail-${filter}`}
@@ -1527,7 +1527,7 @@ export function NexOpsJobsPage(props: {
             <div className="nexops-jobs-detail">
               <div className="nexops-density-summary-strip">
                 <article><span>Status</span><strong>{detail.status}</strong><small>{deriveWorkPackageStatus(detail).replaceAll("_", " ")}</small></article>
-                <article><span>Client</span><strong>{detail.client?.name ?? detail.clientId}</strong><small>{detail.number ?? "Native job"}</small></article>
+                <article><span>Client</span><strong>{detail.client?.name ?? detail.clientId}</strong><small>{detail.number ?? "Native Job"}</small></article>
                 <article><span>Property</span><strong>{detail.property?.address?.street1 ?? detail.property?.label ?? "Not attached"}</strong><small>{detail.visitCount} visits</small></article>
                 <article><span>Total</span><strong>{formatMoney(detail.totals?.total)}</strong><small>{detail.paymentSchedule?.enabled ? `${detail.paymentSchedule.milestones.length} milestones` : "Full-balance rail"}</small></article>
               </div>
@@ -1553,30 +1553,30 @@ export function NexOpsJobsPage(props: {
 
               <div className="nexops-jobs-section">
                 <div className="nexops-jobs-card-heading">
-                  <h3>Next move</h3>
+                  <h3>Next Move</h3>
                   <span>One work rail driven by visits, reminders, and billing state.</span>
                 </div>
                 <div className="nexops-jobs-grid">
                   <div className="nexops-jobs-stat">
-                    <strong>Current status</strong>
+                    <strong>Current Status</strong>
                     <span>{deriveWorkPackageStatus(detail).replaceAll("_", " ")}</span>
                   </div>
                   <div className="nexops-jobs-stat">
-                    <strong>Source quote</strong>
+                    <strong>Source Quote</strong>
                     <span>{detail.quote?.number ?? detail.quote?.id ?? "No quote attached"}</span>
                   </div>
                   <div className="nexops-jobs-stat">
-                    <strong>Billing rail</strong>
+                    <strong>Billing Rail</strong>
                     <span>{detail.paymentSchedule?.enabled ? `${detail.paymentSchedule.milestones.length} milestones active` : "Full-balance rail"}</span>
                   </div>
                   <div className="nexops-jobs-stat">
-                    <strong>Dominant action</strong>
+                    <strong>Dominant Action</strong>
                     <span>{nextMove?.label ?? deriveWorkPackageAction(detail)}</span>
                   </div>
                 </div>
                 <div className="nexops-jobs-actions">
                   {bookingPreview && !bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? (
-                    <button type="button" disabled={bookingBusy} onClick={() => setBookingSheetOpen(true)}>Send booking confirmation</button>
+                    <button type="button" disabled={bookingBusy} onClick={() => setBookingSheetOpen(true)}>Send Booking Confirmation</button>
                   ) : null}
                   <button type="button" disabled={actionBusy !== null} onClick={() => void performAction("close")}>Close</button>
                   <button type="button" disabled={actionBusy !== null} onClick={() => void performAction("invoice")}>Invoice</button>
@@ -1588,7 +1588,7 @@ export function NexOpsJobsPage(props: {
                 {nextMove ? <p className="nexops-empty-copy">{nextMove.detail}</p> : null}
                 <div className="nexops-request-builder-grid">
                   <label className="nexops-field">
-                    <span>Quick payment title</span>
+                    <span>Quick Payment Title</span>
                     <input value={quickPaymentDraft.title} onChange={(event) => setQuickPaymentDraft((current) => ({ ...current, title: event.target.value }))} />
                   </label>
                   <label className="nexops-field">
@@ -1601,14 +1601,14 @@ export function NexOpsJobsPage(props: {
                   </label>
                 </div>
                 <div className="nexops-inline-actions">
-                  <button type="button" disabled={actionBusy !== null} onClick={() => void createQuickPaymentRequest()}>Create quick payment request</button>
+                  <button type="button" disabled={actionBusy !== null} onClick={() => void createQuickPaymentRequest()}>Create Quick Payment Request</button>
                   <small>Creates a real minimal invoice on the same ledger rail, then opens billing.</small>
                 </div>
               </div>
 
               <div className="nexops-jobs-section">
                 <div className="nexops-jobs-card-heading">
-                  <h3>Review follow-up</h3>
+                  <h3>Review Follow-Up</h3>
                   <span>Starts only after closeout and final payment settle.</span>
                 </div>
                 <p className="nexops-empty-copy">{reviewStatus}</p>
@@ -1619,7 +1619,7 @@ export function NexOpsJobsPage(props: {
                       return (
                         <div key={sequence.id} className="nexops-jobs-sublist-item">
                           <div>
-                            <strong>{sequence.status === "active" ? "Active sequence" : sequence.status === "completed" ? "Completed sequence" : "Stopped sequence"}</strong>
+                            <strong>{sequence.status === "active" ? "Active Sequence" : sequence.status === "completed" ? "Completed Sequence" : "Stopped Sequence"}</strong>
                             <span>
                               {activeStep ? `${activeStep.label} · ${new Date(activeStep.dueAt).toLocaleDateString()}` : "No pending step"}
                             </span>
@@ -1628,7 +1628,7 @@ export function NexOpsJobsPage(props: {
                           <div className="nexops-inline-actions">
                             {sequence.status === "active" ? (
                               <>
-                                <button type="button" disabled={reviewBusy === `reviewed-${sequence.id}`} onClick={() => void markReviewed(sequence.id)}>Mark reviewed</button>
+                                <button type="button" disabled={reviewBusy === `reviewed-${sequence.id}`} onClick={() => void markReviewed(sequence.id)}>Mark Reviewed</button>
                                 <button type="button" disabled={reviewBusy === `stop-${sequence.id}`} onClick={() => void stopReviewSequence(sequence.id)}>Stop</button>
                               </>
                             ) : null}
@@ -1639,7 +1639,7 @@ export function NexOpsJobsPage(props: {
                   </div>
                 ) : (
                   <div className="nexops-inline-actions">
-                    <button type="button" disabled={reviewBusy === "start"} onClick={() => void startReviewSequence()}>Start review follow-up</button>
+                    <button type="button" disabled={reviewBusy === "start"} onClick={() => void startReviewSequence()}>Start Review Follow-Up</button>
                   </div>
                 )}
               </div>
@@ -1647,7 +1647,7 @@ export function NexOpsJobsPage(props: {
               <details className="nexops-quote-panel nexops-density-disclosure-panel" open={Boolean(bookingPreview)}>
                 <summary>
                   <div className="nexops-density-disclosure-copy">
-                    <h3>Booking confirmation</h3>
+                    <h3>Booking Confirmation</h3>
                     <small>Open for email/text choice, editable message copy, calendar links, and resend status.</small>
                   </div>
                   <span className="nexops-density-disclosure-caret">Open</span>
@@ -1656,10 +1656,10 @@ export function NexOpsJobsPage(props: {
                   {bookingPreview && bookingDraft ? (
                     <>
                       <div className="nexops-density-inline-facts">
-                        <article><h3>Selected visit</h3><p>{bookingPreview.visit.title}</p><small>{formatDateTime(bookingPreview.visit.start)} to {formatDateTime(bookingPreview.visit.end)}</small></article>
-                        <article><h3>Confirmation status</h3><p>{bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? "Already sent" : "Not sent yet"}</p><small>{bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? "Use resend to send a fresh copy." : "This becomes the dominant action after scheduling."}</small></article>
-                        <article><h3>Email path</h3><p>{bookingPreview.emailEnabled ? "Enabled" : "Disabled"}</p><small>{bookingPreview.emailTarget ?? "No client email on file"}</small></article>
-                        <article><h3>Text path</h3><p>{bookingPreview.smsEnabled ? "Enabled" : "Disabled"}</p><small>{bookingPreview.smsTarget ?? "No client phone on file"}</small></article>
+                        <article><h3>Selected Visit</h3><p>{bookingPreview.visit.title}</p><small>{formatDateTime(bookingPreview.visit.start)} to {formatDateTime(bookingPreview.visit.end)}</small></article>
+                        <article><h3>Confirmation Status</h3><p>{bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? "Already Sent" : "Not Sent Yet"}</p><small>{bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? "Use resend to send a fresh copy." : "This becomes the dominant action after scheduling."}</small></article>
+                        <article><h3>Email Path</h3><p>{bookingPreview.emailEnabled ? "Enabled" : "Disabled"}</p><small>{bookingPreview.emailTarget ?? "No client email on file"}</small></article>
+                        <article><h3>Text Path</h3><p>{bookingPreview.smsEnabled ? "Enabled" : "Disabled"}</p><small>{bookingPreview.smsTarget ?? "No client phone on file"}</small></article>
                       </div>
                       {jobCarryForwardFacts.length ? (
                         <div className="nexops-density-inline-facts">
@@ -1673,10 +1673,10 @@ export function NexOpsJobsPage(props: {
                         </div>
                       ) : null}
                       <div className="nexops-inline-actions">
-                        <button type="button" disabled={!bookingPreview.emailEnabled} onClick={() => { setBookingDraft(defaultBookingDraft(bookingPreview, "email")); setBookingSheetOpen(true); }}>Send by email</button>
-                        <button type="button" disabled={!bookingPreview.smsEnabled} onClick={() => { setBookingDraft(defaultBookingDraft(bookingPreview, "sms")); setBookingSheetOpen(true); }}>Send by text</button>
+                        <button type="button" disabled={!bookingPreview.emailEnabled} onClick={() => { setBookingDraft(defaultBookingDraft(bookingPreview, "email")); setBookingSheetOpen(true); }}>Send by Email</button>
+                        <button type="button" disabled={!bookingPreview.smsEnabled} onClick={() => { setBookingDraft(defaultBookingDraft(bookingPreview, "sms")); setBookingSheetOpen(true); }}>Send by Text</button>
                         {bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? (
-                          <button type="button" disabled={bookingBusy} onClick={() => setBookingSheetOpen(true)}>Resend booking confirmation</button>
+                          <button type="button" disabled={bookingBusy} onClick={() => setBookingSheetOpen(true)}>Resend Booking Confirmation</button>
                         ) : null}
                         <a href={bookingPreview.googleCalendarUrl} target="_blank" rel="noreferrer">Add to Google Calendar</a>
                         <a href={bookingPreview.outlookCalendarUrl} target="_blank" rel="noreferrer">Add to Outlook</a>
@@ -1694,10 +1694,10 @@ export function NexOpsJobsPage(props: {
                   <span>{detail.visits.length} total</span>
                 </div>
                 <form className="nexops-jobs-form inline" onSubmit={(event) => void scheduleVisit(event)}>
-                  <input value={visitTitle} onChange={(event) => setVisitTitle(event.target.value)} placeholder="Visit title" />
+                  <input aria-label="Visit Title" value={visitTitle} onChange={(event) => setVisitTitle(event.target.value)} placeholder="Visit Title" />
                   <input type="datetime-local" value={visitStart} onChange={(event) => setVisitStart(event.target.value)} />
                   <input type="datetime-local" value={visitEnd} onChange={(event) => setVisitEnd(event.target.value)} />
-                  <button type="submit" disabled={actionBusy !== null}>Book visit</button>
+                  <button type="submit" disabled={actionBusy !== null}>Book Visit</button>
                 </form>
                 <div className="nexops-jobs-sublist">
                   {detail.visits.map((visit) => (
@@ -1721,21 +1721,21 @@ export function NexOpsJobsPage(props: {
               <details className="nexops-quote-panel nexops-density-disclosure-panel">
                 <summary>
                   <div className="nexops-density-disclosure-copy">
-                    <h3><ProductInlineLabel product="nexcam" label="NexCam rail" /></h3>
+                    <h3><ProductInlineLabel product="nexcam" label="NexCam Rail" /></h3>
                     <small>Read-only field reports and visit media for this job, plus the client-hub visibility switch.</small>
                   </div>
                   <span className="nexops-density-disclosure-caret">Open</span>
                 </summary>
                 <div className="nexops-density-disclosure-body">
                   <div className="nexops-jobs-card-heading">
-                    <h3>Client hub visibility</h3>
+                    <h3>Client Hub Visibility</h3>
                     {props.role !== "TECHNICIAN" ? (
                       <button
                         type="button"
                         disabled={fieldDocsBusy === "visibility"}
                         onClick={() => void toggleClientHubFieldDocsVisibility(!(detail.clientVisibility?.hideFieldDocsFromPortal === true))}
                       >
-                        {detail.clientVisibility?.hideFieldDocsFromPortal ? "Show in client hub" : "Hide from client hub"}
+                        {detail.clientVisibility?.hideFieldDocsFromPortal ? "Show in Client Hub" : "Hide from Client Hub"}
                       </button>
                     ) : null}
                   </div>
@@ -1757,20 +1757,20 @@ export function NexOpsJobsPage(props: {
                       <small>Visit-scoped photos and uploads tied to this job.</small>
                     </article>
                     <article>
-                      <h3>Signed docs</h3>
+                      <h3>Signed Docs</h3>
                       <p>{signedDocuments.length}</p>
                       <small>Completion signoffs, waivers, and change orders attach on this same rail.</small>
                     </article>
                   </div>
                   <article className="nexops-module-card wide nexops-request-builder-card">
-                    <p className="eyebrow">Signed documents</p>
+                    <p className="eyebrow">Signed Documents</p>
                     <div className="nexops-request-builder-grid">
                       <label className="nexops-field">
                         <span>Kind</span>
                         <select value={signedDocumentDraft.kind} onChange={(event) => setSignedDocumentDraft((current) => ({ ...current, kind: event.target.value as SignedDocumentRecord["kind"] }))}>
-                          <option value="completion_signoff">Completion sign-off</option>
+                          <option value="completion_signoff">Completion Sign-Off</option>
                           <option value="waiver">Waiver</option>
-                          <option value="change_order">Change order</option>
+                          <option value="change_order">Change Order</option>
                           <option value="custom">Custom</option>
                         </select>
                       </label>
@@ -1785,7 +1785,7 @@ export function NexOpsJobsPage(props: {
                     </label>
                     <div className="nexops-inline-actions">
                       <button type="button" disabled={fieldDocsBusy === "signed-document"} onClick={() => void createSignedDocument()}>
-                        {fieldDocsBusy === "signed-document" ? "Creating..." : "Create signed document"}
+                        {fieldDocsBusy === "signed-document" ? "Creating..." : "Create Signed Document"}
                       </button>
                     </div>
                   </article>
@@ -1821,7 +1821,7 @@ export function NexOpsJobsPage(props: {
                     <section className="nexops-module-page">
                       <div className="nexops-jobs-card-heading">
                         <h3>Media</h3>
-                        <span>Latest uploads</span>
+                        <span>Latest Uploads</span>
                       </div>
                       <ul className="nexops-record-list">
                         {fieldDocsMedia.slice(0, 8).map((media) => (
@@ -1863,7 +1863,7 @@ export function NexOpsJobsPage(props: {
                               disabled={fieldDocsBusy === "sign-document"}
                               onClick={() => openSignatureSheet(record)}
                             >
-                              Collect signature
+                              Collect Signature
                             </button>
                           ) : null}
                           <a className="nexops-link-button" href={`/api/fielddocs/signed-documents/${encodeURIComponent(record.id)}/pdf?tenantId=${encodeURIComponent(props.tenantId)}`} target="_blank" rel="noreferrer">Open PDF</a>
@@ -1887,7 +1887,7 @@ export function NexOpsJobsPage(props: {
               <details className="nexops-quote-panel nexops-density-disclosure-panel">
                 <summary>
                   <div className="nexops-density-disclosure-copy">
-                    <h3>Billing, reminders, and history</h3>
+                    <h3>Billing, Reminders, and History</h3>
                     <small>Open this only when you need the milestone plan, reminder records, package preview, or lifecycle history.</small>
                   </div>
                   <span className="nexops-density-disclosure-caret">Open</span>
@@ -1895,9 +1895,9 @@ export function NexOpsJobsPage(props: {
                 <div className="nexops-density-disclosure-body">
                   <div className="nexops-jobs-section">
                     <div className="nexops-jobs-card-heading">
-                      <h3>Payment schedule</h3>
+                      <h3>Payment Schedule</h3>
                       <button type="button" disabled={actionBusy !== null} onClick={() => void savePaymentSchedule()}>
-                        {actionBusy === "invoice" ? "Saving..." : "Save schedule"}
+                        {actionBusy === "invoice" ? "Saving..." : "Save Schedule"}
                       </button>
                     </div>
                     <PaymentScheduleEditor
@@ -1908,7 +1908,7 @@ export function NexOpsJobsPage(props: {
                   </div>
 
                   <div className="nexops-jobs-section">
-                    <h3>Reminders and alerts</h3>
+                    <h3>Reminders and Alerts</h3>
                     <ul className="nexops-jobs-bullets">
                       <li>{detail.reminders.invoice ? `Invoice reminder due ${formatDateTime(detail.reminders.invoice.dueAt)}.` : "No invoice reminder pending."}</li>
                       <li>{detail.reminders.actionAlert?.note ?? "No office review alert pending."}</li>
@@ -1918,7 +1918,7 @@ export function NexOpsJobsPage(props: {
 
                   <div className="nexops-jobs-section">
                     <div className="nexops-jobs-card-heading">
-                      <h3>Customer package preview</h3>
+                      <h3>Customer Package Preview</h3>
                       <span>{deriveDocumentPackagePreview(detail).stage}</span>
                     </div>
                     <ul className="nexops-jobs-bullets">
@@ -1944,7 +1944,7 @@ export function NexOpsJobsPage(props: {
         </article>
 
         <article className="nexops-module-card">
-          <p className="eyebrow">Billing handoff</p>
+          <p className="eyebrow">Billing Handoff</p>
           <h2>Invoices</h2>
           <div className="nexops-jobs-sublist">
             {(detail?.invoices ?? []).map((invoice) => (
@@ -1966,11 +1966,11 @@ export function NexOpsJobsPage(props: {
 
       {signingDocument ? (
         <div className="nexops-modal-layer" role="presentation">
-          <button className="nexops-modal-backdrop" type="button" aria-label="Close document signature capture" onClick={closeSignatureSheet} />
-          <section className="nexops-modal-card" role="dialog" aria-modal="true" aria-label="Document signature capture">
+          <button className="nexops-modal-backdrop" type="button" aria-label="Close Document Signature Capture" onClick={closeSignatureSheet} />
+          <section className="nexops-modal-card" role="dialog" aria-modal="true" aria-label="Document Signature Capture">
             <div className="nexops-modal-head">
               <div>
-                <p className="eyebrow">Signed document</p>
+                <p className="eyebrow">Signed Document</p>
                 <h2>{signingDocument.title}</h2>
               </div>
               <button type="button" onClick={closeSignatureSheet}>Close</button>
@@ -1991,7 +1991,7 @@ export function NexOpsJobsPage(props: {
               </article>
             </div>
             <label className="nexops-field">
-              <span>Document body</span>
+              <span>Document Body</span>
               <textarea rows={6} value={signingDocument.bodyText} readOnly />
             </label>
             <NexOpsSignatureCapture
@@ -2002,7 +2002,7 @@ export function NexOpsJobsPage(props: {
             />
             <div className="nexops-inline-actions">
               <button type="button" onClick={() => void submitSignedDocument()} disabled={fieldDocsBusy === "sign-document"}>
-                {fieldDocsBusy === "sign-document" ? "Saving..." : "Save signature"}
+                {fieldDocsBusy === "sign-document" ? "Saving..." : "Save Signature"}
               </button>
               <a className="nexops-link-button" href={`/api/fielddocs/signed-documents/${encodeURIComponent(signingDocument.id)}/pdf?tenantId=${encodeURIComponent(props.tenantId)}`} target="_blank" rel="noreferrer">Open PDF</a>
             </div>
@@ -2012,12 +2012,12 @@ export function NexOpsJobsPage(props: {
 
       {bookingSheetOpen && bookingDraft && bookingPreview ? (
         <div className="nexops-modal-layer" role="presentation">
-          <button className="nexops-modal-backdrop" type="button" aria-label="Close booking confirmation composer" onClick={() => setBookingSheetOpen(false)} />
-          <section className="nexops-modal-card" role="dialog" aria-modal="true" aria-label="Booking confirmation composer">
+          <button className="nexops-modal-backdrop" type="button" aria-label="Close Booking Confirmation Composer" onClick={() => setBookingSheetOpen(false)} />
+          <section className="nexops-modal-card" role="dialog" aria-modal="true" aria-label="Booking Confirmation Composer">
             <div className="nexops-modal-head">
               <div>
-                <p className="eyebrow">Booking confirmation</p>
-                <h2>{bookingDraft.mode === "email" ? "Send by email" : "Send by text"}</h2>
+                <p className="eyebrow">Booking Confirmation</p>
+                <h2>{bookingDraft.mode === "email" ? "Send by Email" : "Send by Text"}</h2>
               </div>
               <button type="button" onClick={() => setBookingSheetOpen(false)}>Close</button>
             </div>
@@ -2026,7 +2026,7 @@ export function NexOpsJobsPage(props: {
                 <span>Mode</span>
                 <select value={bookingDraft.mode} onChange={(event) => setBookingDraft(defaultBookingDraft(bookingPreview, event.target.value as "email" | "sms"))}>
                   <option value="email" disabled={!bookingPreview.emailEnabled}>Email</option>
-                  <option value="sms" disabled={!bookingPreview.smsEnabled}>Text message</option>
+                  <option value="sms" disabled={!bookingPreview.smsEnabled}>Text Message</option>
                 </select>
               </label>
               <label className="nexops-field">
@@ -2045,14 +2045,14 @@ export function NexOpsJobsPage(props: {
               </label>
             ) : null}
             <label className="nexops-field">
-              <span>Message body</span>
+              <span>Message Body</span>
               <textarea rows={bookingDraft.mode === "email" ? 7 : 5} value={bookingDraft.bodyText} onChange={(event) => setBookingDraft((current) => current ? { ...current, bodyText: event.target.value } : current)} />
             </label>
             {bookingDraft.mode === "email" ? (
               <div className="nexops-request-builder-grid">
-                <label className="nexops-check-field inline"><input type="checkbox" checked={bookingDraft.sendCopy} onChange={(event) => setBookingDraft((current) => current ? { ...current, sendCopy: event.target.checked } : current)} /> Send me a copy</label>
+                <label className="nexops-check-field inline"><input type="checkbox" checked={bookingDraft.sendCopy} onChange={(event) => setBookingDraft((current) => current ? { ...current, sendCopy: event.target.checked } : current)} /> Send Me a Copy</label>
                 <label className="nexops-field">
-                  <span>Copy target</span>
+                  <span>Copy Target</span>
                   <input value={bookingDraft.copyTarget} onChange={(event) => setBookingDraft((current) => current ? { ...current, copyTarget: event.target.value } : current)} placeholder={bookingPreview.defaultCopyTarget ?? "Office email"} />
                 </label>
               </div>
@@ -2061,7 +2061,7 @@ export function NexOpsJobsPage(props: {
               {bookingDraft.mode === "email" ? <small>{bookingPreview.calendarFilename} plus Google/Outlook links will be included.</small> : <small>Text keeps the confirmation short and field-friendly.</small>}
             </div>
             <div className="nexops-inline-actions">
-              <button type="button" onClick={() => void sendBookingConfirmation()} disabled={bookingBusy}>{bookingBusy ? "Sending..." : bookingDraft.mode === "email" ? "Send email" : "Send text"}</button>
+              <button type="button" onClick={() => void sendBookingConfirmation()} disabled={bookingBusy}>{bookingBusy ? "Sending..." : bookingDraft.mode === "email" ? "Send Email" : "Send Text"}</button>
               <a href={bookingPreview.googleCalendarUrl} target="_blank" rel="noreferrer">Google Calendar</a>
               <a href={bookingPreview.outlookCalendarUrl} target="_blank" rel="noreferrer">Outlook</a>
             </div>
