@@ -94,6 +94,17 @@ function mergePropertyPersistentValues(property: Property, checklist: ChecklistI
   };
 }
 
+function assertChecklistHasCloseoutContext(checklist: ChecklistInstance): void {
+  if (checklist.jobId || checklist.visitId) {
+    return;
+  }
+  throw new RailError("Attach this checklist to a job or visit before completing it.", {
+    provider: "native",
+    op: "completeChecklist",
+    status: 400
+  });
+}
+
 export class FieldDocsService {
   constructor(private readonly deps: FieldDocsServiceDeps) {}
 
@@ -211,6 +222,10 @@ export class FieldDocsService {
     const updates = (input.updates ?? []).map((update) => checklistFieldUpdateSchema.parse(update) as ChecklistFieldUpdate);
     const sectionStateUpdates = (input.sectionStateUpdates ?? []).map((update) => checklistSectionStateUpdateSchema.parse(update) as ChecklistSectionStateUpdate);
     const updated = applyChecklistSectionStateUpdates(applyChecklistFieldUpdates(existing, updates), sectionStateUpdates);
+    if (input.complete) {
+      assertChecklistHasCloseoutContext(updated);
+      await this.assertChecklistMediaBelongsToContext(updated);
+    }
     const next = input.complete
       ? completeChecklist(updated, [], { completedBy: input.actorId, sectionStateUpdates: [] })
       : updated;
@@ -354,6 +369,38 @@ export class FieldDocsService {
       return null;
     }
     return (await this.deps.crmRepository.listProperties(tenantId)).find((candidate) => candidate.id === propertyId) ?? null;
+  }
+
+  private async assertChecklistMediaBelongsToContext(checklist: ChecklistInstance): Promise<void> {
+    const mediaIds = [...new Set(checklist.fields.flatMap((field) => field.mediaIds ?? []))];
+    if (!mediaIds.length) {
+      return;
+    }
+    const media = await Promise.all(mediaIds.map((mediaId) => this.deps.mediaRepository.getMedia(checklist.tenantId, mediaId)));
+    const missingMediaId = mediaIds.find((mediaId, index) => !media[index]);
+    if (missingMediaId) {
+      throw new RailError(`Checklist evidence ${missingMediaId} was not found for this tenant.`, {
+        provider: "native",
+        op: "completeChecklist",
+        status: 400
+      });
+    }
+    const unrelatedMedia = media.find((record) => {
+      if (!record) {
+        return false;
+      }
+      return !(
+        (checklist.jobId !== undefined && record.jobId === checklist.jobId)
+        || (checklist.visitId !== undefined && record.visitId === checklist.visitId)
+      );
+    });
+    if (unrelatedMedia) {
+      throw new RailError("Checklist evidence must be attached to the same job or visit before completing it.", {
+        provider: "native",
+        op: "completeChecklist",
+        status: 400
+      });
+    }
   }
 }
 
