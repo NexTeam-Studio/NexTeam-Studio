@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import type { CrmRouteContext } from "../../../../nexops/runtime/routeRuntime.js";
 import { portalNexDocsUploadBodySchema, portalPhoneReverifyBodySchema } from "./routeSchemas.js";
 import { reviewSequenceActionBodySchema, startReviewSequenceBodySchema } from "../../../../../reputation/reviewSequenceRouteSchemas.js";
+import { applyPortalSecurityHeaders } from "./securityHeaders.js";
 
 export function registerPortalCoreRoutes(context: CrmRouteContext): void {
   const {
@@ -104,6 +105,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
 
   app.get("/nexportal/session/:sessionId", async (req: Request, res: Response) => {
     try {
+      applyPortalSecurityHeaders(res);
       const sessionId = req.params.sessionId;
       const token = typeof req.query.token === "string" ? req.query.token : "";
       const tenantId = portalTenantId(req);
@@ -120,6 +122,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
 
   app.get("/nexportal", async (req: Request, res: Response) => {
     try {
+      applyPortalSecurityHeaders(res);
       const built = await buildPortalSnapshotOrRedirect(req, res);
       if (!built) {
         return;
@@ -137,6 +140,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
 
   app.get("/nexportal/documents", async (req: Request, res: Response) => {
     try {
+      applyPortalSecurityHeaders(res);
       const built = await buildPortalSnapshotOrRedirect(req, res);
       if (!built) {
         return;
@@ -166,6 +170,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
 
   app.post("/api/nexportal/documents/upload", async (req: Request, res: Response) => {
     try {
+      applyPortalSecurityHeaders(res);
       const portalAccess = await requirePortalSession(req);
       const input = portalNexDocsUploadBodySchema.parse(req.body ?? {});
       if (input.tenantId !== portalAccess.tenantId) {
@@ -189,6 +194,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
 
   app.get("/nexportal/documents/:id/file", async (req: Request, res: Response) => {
     try {
+      applyPortalSecurityHeaders(res);
       const documentId = req.params.id;
       if (!documentId) {
         throw new RailError("Document id is required.", { provider: "native", op: "portalFetchNexDocsFile", status: 400 });
@@ -218,6 +224,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
 
   app.get("/nexportal/reverify", async (req: Request, res: Response) => {
     try {
+      applyPortalSecurityHeaders(res);
       const portalAccess = await requirePortalSession(req);
       const clients = await providerForTenant(portalAccess.tenantId).getClients("");
       const clientName = clients.find((record) => record.id === portalAccess.session.clientId)?.name ?? "Client";
@@ -237,6 +244,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
 
   app.post("/api/nexportal/reverify/phone", async (req: Request, res: Response) => {
     try {
+      applyPortalSecurityHeaders(res);
       const input = portalPhoneReverifyBodySchema.parse(req.body);
       await portalHub().reverifyByPhoneLast4({
         tenantId: input.tenantId,
@@ -269,6 +277,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
 
   app.get("/nexportal/review", async (req: Request, res: Response) => {
     try {
+      applyPortalSecurityHeaders(res);
       const tenantId = portalTenantId(req);
       const clientId = typeof req.query.clientId === "string" ? req.query.clientId : "";
       const jobId = typeof req.query.jobId === "string" ? req.query.jobId : "";
@@ -298,6 +307,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
 
   app.get("/nexportal/reviews/opt-out", async (req: Request, res: Response) => {
     try {
+      applyPortalSecurityHeaders(res);
       const tenantId = portalTenantId(req);
       const reviewSequenceId = typeof req.query.sequenceId === "string" ? req.query.sequenceId : "";
       const token = typeof req.query.token === "string" ? req.query.token : "";
