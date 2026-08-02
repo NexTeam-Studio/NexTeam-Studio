@@ -2,8 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  followUpDraftFromHistory,
   inlineJobClientDraftCanSave,
   inlineJobClientDraftMissingFields,
+  isHistoricalJob,
+  matchesJobSearch,
   mergeJobClientOptions
 } from "../NexOpsJobsPage.tsx";
 
@@ -57,5 +60,37 @@ test("inline-created clients merge into the job picker without duplicating exist
   assert.deepEqual(
     mergeJobClientOptions(existing, existing[0]).map((client) => client.id),
     ["client_1", "client_2"]
+  );
+});
+
+test("archived jobs remain historical records regardless of import source", () => {
+  assert.equal(isHistoricalJob({ status: "Archived" }), true);
+  assert.equal(isHistoricalJob({ status: "Upcoming", archivedAt: "2026-08-01T00:00:00.000Z" }), true);
+  assert.equal(isHistoricalJob({ status: "Upcoming" }), false);
+});
+
+test("job history search finds archived records by job, client, or number", () => {
+  const historicalJob = {
+    id: "job_history_1",
+    tenantId: "tenant_1",
+    clientId: "client_1",
+    title: "Annual service visit",
+    number: "J-104",
+    status: "Archived",
+    client: { id: "client_1", name: "Northside Home" },
+    visitCount: 1,
+    completedVisitCount: 1,
+    invoiceCount: 0
+  };
+  assert.equal(matchesJobSearch(historicalJob, "northside"), true);
+  assert.equal(matchesJobSearch(historicalJob, "j-104"), true);
+  assert.equal(matchesJobSearch(historicalJob, "annual"), true);
+  assert.equal(matchesJobSearch(historicalJob, "unrelated"), false);
+});
+
+test("a historical record prepares new work for the same client without modifying history", () => {
+  assert.deepEqual(
+    followUpDraftFromHistory({ clientId: "client_1", propertyId: "property_1", title: "Annual service visit" }),
+    { clientId: "client_1", propertyId: "property_1", title: "Follow-up: Annual service visit" }
   );
 });

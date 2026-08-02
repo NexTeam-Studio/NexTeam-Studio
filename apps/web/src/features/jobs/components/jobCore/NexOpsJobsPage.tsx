@@ -192,6 +192,7 @@ interface JobSummary {
   clientVisibility?: {
     hideFieldDocsFromPortal?: boolean;
   };
+  archivedAt?: string;
 }
 
 interface JobDetail extends JobSummary {
@@ -329,6 +330,39 @@ export function mergeJobClientOptions(clients: ClientOption[], createdClient: Cl
     return clients;
   }
   return [createdClient, ...clients];
+}
+
+/**
+ * Archived records are historical records. This deliberately does not depend
+ * on an upstream system name, so every import path gets the same treatment.
+ */
+export function isHistoricalJob(job: Pick<JobSummary, "status" | "archivedAt">): boolean {
+  return job.status === "Archived" || Boolean(job.archivedAt);
+}
+
+export function matchesJobSearch(
+  job: Pick<JobSummary, "title" | "number" | "clientId" | "client">,
+  query: string
+): boolean {
+  const needle = query.trim().toLocaleLowerCase();
+  if (!needle) {
+    return true;
+  }
+  return [job.title, job.number, job.client?.name, job.client?.company, job.clientId]
+    .filter((value): value is string => Boolean(value))
+    .some((value) => value.toLocaleLowerCase().includes(needle));
+}
+
+export function followUpDraftFromHistory(job: Pick<JobSummary, "clientId" | "title" | "propertyId">): {
+  clientId: string;
+  title: string;
+  propertyId?: string;
+} {
+  return {
+    clientId: job.clientId,
+    title: `Follow-up: ${job.title}`,
+    ...(job.propertyId ? { propertyId: job.propertyId } : {})
+  };
 }
 
 interface BookingConfirmationDraft {
@@ -514,6 +548,7 @@ export function NexOpsJobsPage(props: {
   const [visitEnd, setVisitEnd] = useState("");
   const [actionBusy, setActionBusy] = useState<JobAction | null>(null);
   const [statusFilter, setStatusFilter] = useState<JobFilter>("All");
+  const [jobSearch, setJobSearch] = useState("");
   const [detailPaymentSchedule, setDetailPaymentSchedule] = useState<PaymentScheduleDraft>(() => blankPaymentSchedule());
   const [bookingPreview, setBookingPreview] = useState<BookingConfirmationPreview | null>(null);
   const [bookingDraft, setBookingDraft] = useState<BookingConfirmationDraft | null>(null);
@@ -537,8 +572,8 @@ export function NexOpsJobsPage(props: {
   const [signatureDraft, setSignatureDraft] = useState<SignatureCaptureValue>(() => blankSignatureCaptureValue());
 
   const filteredJobs = useMemo(
-    () => jobs.filter((job) => statusFilter === "All" || job.status === statusFilter),
-    [jobs, statusFilter]
+    () => jobs.filter((job) => (statusFilter === "All" || job.status === statusFilter) && matchesJobSearch(job, jobSearch)),
+    [jobs, statusFilter, jobSearch]
   );
   const createClientOptions = useMemo(
     () => mergeJobClientOptions(props.clients, createdClientOption),
@@ -571,6 +606,14 @@ export function NexOpsJobsPage(props: {
     () => signedDocuments.find((record) => record.id === signingDocumentId) ?? null,
     [signedDocuments, signingDocumentId]
   );
+
+  function prepareFollowUpFromHistory(job: JobSummary): void {
+    const draft = followUpDraftFromHistory(job);
+    setShowInlineClientCreate(false);
+    setCreateClientId(draft.clientId);
+    setCreateTitle(draft.title);
+    setStatus(`New job is ready for ${job.client?.name ?? "this client"}. Historical record stays unchanged.`);
+  }
 
   async function loadJobs(preferredJobId?: string): Promise<void> {
     try {
@@ -1425,6 +1468,14 @@ export function NexOpsJobsPage(props: {
               </button>
             ))}
           </div>
+          <label className="nexops-jobs-search">
+            <span>Search all jobs, including history</span>
+            <input
+              value={jobSearch}
+              onChange={(event) => setJobSearch(event.target.value)}
+              placeholder="Search by job, client, or job number"
+            />
+          </label>
           <div className="nexops-jobs-list">
             {filteredJobs.map((job) => (
               <button
@@ -1435,7 +1486,7 @@ export function NexOpsJobsPage(props: {
               >
                 <div>
                   <strong>{job.title}</strong>
-                  <span>{job.client?.name ?? job.clientId}</span>
+                  <span>{job.client?.name ?? job.clientId}{isHistoricalJob(job) ? " · Historical record" : ""}</span>
                 </div>
                 <div>
                   <span className={`nexops-job-status status-${job.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{job.status}</span>
@@ -1444,7 +1495,7 @@ export function NexOpsJobsPage(props: {
               </button>
             ))}
             {!jobs.length ? <p className="nexops-empty-copy">No jobs yet. Requests and approved quotes can start here, and manual jobs can too.</p> : null}
-            {jobs.length > 0 && !filteredJobs.length ? <p className="nexops-empty-copy">No jobs match this status right now.</p> : null}
+            {jobs.length > 0 && !filteredJobs.length ? <p className="nexops-empty-copy">No jobs match this search or status right now.</p> : null}
           </div>
         </article>
       </section>
@@ -1480,6 +1531,17 @@ export function NexOpsJobsPage(props: {
                 <article><span>Property</span><strong>{detail.property?.address?.street1 ?? detail.property?.label ?? "Not attached"}</strong><small>{detail.visitCount} visits</small></article>
                 <article><span>Total</span><strong>{formatMoney(detail.totals?.total)}</strong><small>{detail.paymentSchedule?.enabled ? `${detail.paymentSchedule.milestones.length} milestones` : "Full-balance rail"}</small></article>
               </div>
+
+              {isHistoricalJob(detail) ? (
+                <section className="nexops-jobs-history-context" aria-label="Historical job context">
+                  <div>
+                    <p className="eyebrow">Historical record</p>
+                    <h3>Saved history for this client</h3>
+                    <p>This job and its past visit information stay read-only. Start new work from the same client without changing this history.</p>
+                  </div>
+                  <button type="button" onClick={() => prepareFollowUpFromHistory(detail)}>Start new work from this history</button>
+                </section>
+              ) : null}
 
               {prominentJobFacts.length ? (
                 <div className="nexops-request-alert-strip">
