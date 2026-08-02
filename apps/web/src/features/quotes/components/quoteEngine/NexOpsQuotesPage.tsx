@@ -34,9 +34,9 @@ const QUOTE_FILTERS: Array<{ value: QuoteFilter; label: string }> = [
   { value: "all", label: "All" },
   { value: "draft", label: "Draft" },
   { value: "sent", label: "Sent" },
-  { value: "change_requested", label: "Needs changes" },
+  { value: "change_requested", label: "Needs Changes" },
   { value: "approved", label: "Approved" },
-  { value: "approved_pending_conversion", label: "Approved queue" },
+  { value: "approved_pending_conversion", label: "Approved Queue" },
   { value: "expired", label: "Expired" }
 ];
 
@@ -669,7 +669,7 @@ export function quoteDominantAction(quote: QuoteRecord): {
   }
   return {
     action: "send",
-    label: "Send quote",
+    label: "Send Quote",
     hint: "Open the client approval path once the office draft is ready.",
     tone: "dominant"
   };
@@ -2226,7 +2226,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                     <input value={sendDraft.note} onChange={(event) => setSendDraft((current) => ({ ...current, note: event.target.value }))} />
                   </label>
                   <div className="nexops-inline-actions">
-                    <button type="button" onClick={() => void runQuoteAction("send")} disabled={Boolean(busy) || !selectedQuoteCanSend}>{busy === "send" ? "Sending..." : selectedQuote.status === "sent" || selectedQuote.status === "approved" || selectedQuote.status === "approved_internal" || selectedQuote.status === "signed" ? "Resend quote" : "Send quote"}</button>
+                    <button type="button" onClick={() => void runQuoteAction("send")} disabled={Boolean(busy) || !selectedQuoteCanSend}>{busy === "send" ? "Sending..." : selectedQuote.status === "sent" || selectedQuote.status === "approved" || selectedQuote.status === "approved_internal" || selectedQuote.status === "signed" ? "Resend Quote" : "Send Quote"}</button>
                     {portalLinks[selectedQuote.id] ? <small>{portalLinks[selectedQuote.id]}</small> : <small>Live portal link appears here after send or renew.</small>}
                   </div>
                   {!selectedQuoteCanSend && quoteSendBlockedReason(selectedQuote) ? <p className="nexops-quote-blocked-note">{quoteSendBlockedReason(selectedQuote)}</p> : null}
