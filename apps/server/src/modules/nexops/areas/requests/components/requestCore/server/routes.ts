@@ -196,6 +196,13 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       const input = updateRequestBodySchema.parse(req.body);
       const tenantId = input.tenantId ?? defaultTenantId(env);
       const existing = await getRequestOrThrow(tenantId, requestId);
+      if (existing.status === "converted_to_quote" || existing.status === "converted_to_job") {
+        throw new RailError("Converted requests are read-only. Continue the work from the linked quote or job.", {
+          provider: "native",
+          op: "updateRequest",
+          status: 409
+        });
+      }
       const next = updateServiceRequestShape(existing, {
         subject: input.subject,
         narrative: input.narrative,
@@ -225,6 +232,17 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         ? req.body.tenantId
         : defaultTenantId(env);
       const request = await getRequestOrThrow(tenantId, requestId);
+      if (request.status === "converted_to_quote" || request.status === "converted_to_job") {
+        throw new RailError("Converted requests remain as a read-only intake record and cannot be archived.", {
+          provider: "native",
+          op: "archiveRequest",
+          status: 409
+        });
+      }
+      if (request.status === "archived") {
+        res.json({ ok: true, request });
+        return;
+      }
       const saved = await repositoryForTenant().updateRequest(requestId, {
         tenantId,
         status: "archived",
@@ -247,7 +265,11 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim()
         ? req.body.tenantId
         : defaultTenantId(env);
-      await getRequestOrThrow(tenantId, requestId);
+      const request = await getRequestOrThrow(tenantId, requestId);
+      if (request.status !== "archived") {
+        res.json({ ok: true, request });
+        return;
+      }
       const saved = await repositoryForTenant().updateRequest(requestId, {
         tenantId,
         status: "new",
@@ -271,6 +293,34 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         ? req.body.tenantId
         : defaultTenantId(env);
       const request = await getRequestOrThrow(tenantId, requestId);
+      if (request.convertedQuoteId) {
+        const quote = await repositoryForTenant().getQuote(tenantId, request.convertedQuoteId);
+        if (quote) {
+          res.json({ ok: true, alreadyConverted: true, request, quote });
+          return;
+        }
+      }
+      if (request.status === "converted_to_job" || request.convertedJobId) {
+        throw new RailError("This request already created a job and cannot also create a quote.", {
+          provider: "native",
+          op: "convertRequestToQuote",
+          status: 409
+        });
+      }
+      if (request.status === "archived") {
+        throw new RailError("Reopen the request before converting it.", {
+          provider: "native",
+          op: "convertRequestToQuote",
+          status: 409
+        });
+      }
+      if (!request.reviewedAt) {
+        throw new RailError("Mark the request reviewed before creating a quote.", {
+          provider: "native",
+          op: "convertRequestToQuote",
+          status: 409
+        });
+      }
       const converted = await convertRequestToQuote(repositoryForTenant(), request);
       await eventBus.emit({
         tenantId,
@@ -306,6 +356,34 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         ? req.body.tenantId
         : defaultTenantId(env);
       const request = await getRequestOrThrow(tenantId, requestId);
+      if (request.convertedJobId) {
+        const job = (await repositoryForTenant().listJobs(tenantId)).find((candidate) => candidate.id === request.convertedJobId);
+        if (job) {
+          res.json({ ok: true, alreadyConverted: true, request, job });
+          return;
+        }
+      }
+      if (request.status === "converted_to_quote" || request.convertedQuoteId) {
+        throw new RailError("This request already created a quote and cannot also create a job.", {
+          provider: "native",
+          op: "convertRequestToJob",
+          status: 409
+        });
+      }
+      if (request.status === "archived") {
+        throw new RailError("Reopen the request before converting it.", {
+          provider: "native",
+          op: "convertRequestToJob",
+          status: 409
+        });
+      }
+      if (!request.reviewedAt) {
+        throw new RailError("Mark the request reviewed before creating a job.", {
+          provider: "native",
+          op: "convertRequestToJob",
+          status: 409
+        });
+      }
       const converted = await convertRequestToJob(repositoryForTenant(), request);
       await eventBus.emit({
         tenantId,
