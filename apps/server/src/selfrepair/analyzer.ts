@@ -84,6 +84,15 @@ function looksCapabilityGap(prompt: string): boolean {
   return /\b(how far|distance|drive time|attach|attachments?|email me the report|send.*pdf|clock|time is it|weather|temperature|temp)\b/i.test(prompt);
 }
 
+function looksClientWriteIntent(prompt: string): boolean {
+  return /\b(?:delete|remove)\b.*\b(?:duplicate|client|customer|record)\b/i.test(prompt)
+    || /\b(?:change|update|edit|correct|fix)\b.*\b(?:client|customer|record|zip|postal|address|phone|email)\b/i.test(prompt);
+}
+
+function looksStaleDraftLeak(answer: string): boolean {
+  return /tell me the changed name, address, phone, or email.*(?:before i save|i(?:'|’)ll restate)/i.test(answer);
+}
+
 function suspectedFilesFor(classId: SelfRepairFailureClass, prompt: string): string[] {
   const base = ["packages/nexi/src/gateway.ts", "apps/server/src/nexi/nexiService.ts"];
   if (classId === "A_SINGLE_RAIL_CONCLUSION") {
@@ -134,6 +143,12 @@ function classifyConversation(record: ConversationLike): SelfRepairFailureClass 
   const answer = lower(record.assistantText);
   if (/invalid time value|rangeerror|typeerror|object object/.test(answer)) {
     return "E_TOOL_EXCEPTION_LEAK";
+  }
+  if (looksClientWriteIntent(prompt) && (isStonewall(answer) || /(?:didn'?t go through|wasn'?t able to update|can'?t delete)/i.test(answer))) {
+    return "C_INTENT_MISROUTING";
+  }
+  if (!looksClientWriteIntent(prompt) && looksStaleDraftLeak(answer)) {
+    return "C_INTENT_MISROUTING";
   }
   if (looksSendIntent(prompt) && /couldn'?t find|matching email|lookup instead/i.test(answer)) {
     return "C_INTENT_MISROUTING";
