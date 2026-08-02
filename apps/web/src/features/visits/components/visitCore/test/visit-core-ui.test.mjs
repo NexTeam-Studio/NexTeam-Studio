@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { dateRange, visitToneClass } from "../NexOpsSchedulePage.tsx";
+import { dateRange, scheduleScopeLabel, scheduleViewLabel, visitToneClass } from "../NexOpsSchedulePage.tsx";
 
 test("schedule ranges keep day and month reads tenant-query bounded", () => {
   assert.deepEqual(dateRange("2026-07-26", "day", "all"), {
@@ -18,4 +18,15 @@ test("visit status tones map to stable component-owned style tokens", () => {
   assert.equal(visitToneClass("warning"), "warning");
   assert.equal(visitToneClass("success"), "success");
   assert.equal(visitToneClass("neutral"), "secondary");
+});
+
+test("schedule named controls use shared title capitalization", () => {
+  assert.deepEqual(
+    ["day", "week", "month", "list"].map(scheduleViewLabel),
+    ["Day", "Week", "Month", "List"]
+  );
+  assert.deepEqual(
+    ["all", "today", "upcoming"].map(scheduleScopeLabel),
+    ["All", "Today", "Upcoming"]
+  );
 });

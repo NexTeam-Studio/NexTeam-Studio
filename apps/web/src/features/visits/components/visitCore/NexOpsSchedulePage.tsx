@@ -7,6 +7,14 @@ type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 type ScheduleView = "day" | "week" | "month" | "list";
 type ScheduleScope = "all" | "today" | "upcoming";
 
+export function scheduleViewLabel(view: ScheduleView): string {
+  return ({ day: "Day", week: "Week", month: "Month", list: "List" })[view];
+}
+
+export function scheduleScopeLabel(scope: ScheduleScope): string {
+  return ({ all: "All", today: "Today", upcoming: "Upcoming" })[scope];
+}
+
 interface TeamMember {
   id: string;
   name: string;
@@ -592,7 +600,7 @@ export function NexOpsSchedulePage(props: {
             <ProductInlineLabel product="nexcam" />
           </button>
           <button type="button" onClick={() => openComposer(visit.jobId, dayKey(visit.start), formatTime(visit.start).includes(":") ? `${String(new Date(visit.start).getHours()).padStart(2, "0")}:${String(new Date(visit.start).getMinutes()).padStart(2, "0")}` : "09:00")}>
-            Add visit
+            Add Visit
           </button>
           {!visit.readOnly ? <button type="button" onClick={() => openEdit(visit)}>{workingVisitId === visit.id ? "Saving..." : "Edit"}</button> : null}
           {visitCanBeCompleted(visit) ? (
@@ -613,7 +621,7 @@ export function NexOpsSchedulePage(props: {
           <p>Place approved work on the board, shift future visits cleanly, and keep unscheduled jobs visible.</p>
         </div>
         <button className="nexops-primary-inline-button" type="button" onClick={() => openComposer()}>
-          New visit
+          New Visit
         </button>
       </div>
 
@@ -627,7 +635,7 @@ export function NexOpsSchedulePage(props: {
                 type="button"
                 onClick={() => setView(candidate)}
               >
-                {candidate}
+                {scheduleViewLabel(candidate)}
               </button>
             ))}
           </div>
@@ -640,7 +648,7 @@ export function NexOpsSchedulePage(props: {
                   type="button"
                   onClick={() => setScope(candidate)}
                 >
-                  {candidate}
+                  {scheduleScopeLabel(candidate)}
                 </button>
               ))}
             </div>
@@ -663,7 +671,7 @@ export function NexOpsSchedulePage(props: {
                       <span>{member.name}</span>
                     </label>
                   ))}
-                  <button type="button" onClick={() => setSelectedTeamIds([])}>Show all</button>
+                  <button type="button" onClick={() => setSelectedTeamIds([])}>Show All</button>
                 </div>
               </details>
             ) : null}
@@ -676,7 +684,7 @@ export function NexOpsSchedulePage(props: {
           <section className="nexops-schedule-unscheduled">
             <div className="nexops-home-section-head">
               <p className="eyebrow">Unscheduled</p>
-              <h2>Ready to place</h2>
+              <h2>Ready to Place</h2>
             </div>
             <div className="nexops-schedule-unscheduled-list">
               {workspace.unscheduledJobs.map((job) => (
@@ -794,15 +802,15 @@ export function NexOpsSchedulePage(props: {
             <form className="nexops-overlay-form" onSubmit={(event) => void saveVisitSeries(event)}>
               <div className="nexops-overlay-head">
                 <div>
-                  <p className="eyebrow">Multi-visit planner</p>
-                  <h2>Create visits</h2>
+                  <p className="eyebrow">Multi-Visit Planner</p>
+                  <h2>Create Visits</h2>
                 </div>
                 <button type="button" onClick={() => setComposerOpen(false)}>Close</button>
               </div>
               <label className="nexops-field">
                 <span>Job</span>
                 <select value={composerJobId} onChange={(event) => setComposerJobId(event.target.value)}>
-                  <option value="">Choose a job</option>
+                  <option value="">Choose a Job</option>
                   {jobOptions.map((job) => (
                     <option key={job.id} value={job.id}>
                       {(job.number ? `${job.number} • ` : "") + (job.client?.name ? `${job.client.name} • ` : "") + job.title}
@@ -843,7 +851,7 @@ export function NexOpsSchedulePage(props: {
                         <input type="time" value={draft.endTime} onChange={(event) => patchVisitDraft(draft.id, { endTime: event.target.value })} />
                       </label>
                       <label className="nexops-field">
-                        <span>Arrival window</span>
+                        <span>Arrival Window</span>
                         <input value={`${draft.startTime} - ${draft.endTime}`} readOnly />
                       </label>
                     </div>
@@ -863,8 +871,8 @@ export function NexOpsSchedulePage(props: {
                 ))}
               </div>
               <div className="nexops-overlay-actions">
-                <button type="button" onClick={() => setVisitDrafts((current) => [...current, emptyVisitDraft(anchorDate)])}>Add another visit</button>
-                <button type="submit">Save visits</button>
+                <button type="button" onClick={() => setVisitDrafts((current) => [...current, emptyVisitDraft(anchorDate)])}>Add Another Visit</button>
+                <button type="submit">Save Visits</button>
               </div>
               {composerStatus ? <p className="nexops-module-status">{composerStatus}</p> : null}
             </form>
@@ -903,7 +911,7 @@ export function NexOpsSchedulePage(props: {
                 <span>Shift all remaining visits on this job by the same offset</span>
               </label>
               <div className="nexops-overlay-actions">
-                <button type="submit">{workingVisitId === editVisit.id ? "Saving..." : "Save move"}</button>
+                <button type="submit">{workingVisitId === editVisit.id ? "Saving..." : "Save Move"}</button>
               </div>
             </form>
           </section>
@@ -925,8 +933,8 @@ export function NexOpsSchedulePage(props: {
             <div className="nexops-two-column">
               <section className="nexops-module-page">
                 <article className="nexops-module-card wide">
-                  <p className="eyebrow">Visit media</p>
-                  <h2>{fieldDocsMedia.length ? `${fieldDocsMedia.length} item${fieldDocsMedia.length === 1 ? "" : "s"}` : "No media yet"}</h2>
+                  <p className="eyebrow">Visit Media</p>
+                  <h2>{fieldDocsMedia.length ? `${fieldDocsMedia.length} item${fieldDocsMedia.length === 1 ? "" : "s"}` : "No Media Yet"}</h2>
                   <ul className="nexops-mini-list">
                     {fieldDocsMedia.map((media) => (
                       <li key={media.id}>
@@ -940,7 +948,7 @@ export function NexOpsSchedulePage(props: {
                     {!fieldDocsMedia.length ? (
                       <li>
                         <span>
-                          <strong>No visit media yet</strong>
+                          <strong>No Visit Media Yet</strong>
                           <small>Uploaded visit photos will collect here without changing the schedule flow.</small>
                         </span>
                       </li>
@@ -950,8 +958,8 @@ export function NexOpsSchedulePage(props: {
               </section>
               <section className="nexops-module-page">
                 <article className="nexops-module-card wide">
-                  <p className="eyebrow">Visit reports</p>
-                  <h2>{fieldDocsReports.length ? `${fieldDocsReports.length} report${fieldDocsReports.length === 1 ? "" : "s"}` : "No report yet"}</h2>
+                  <p className="eyebrow">Visit Reports</p>
+                  <h2>{fieldDocsReports.length ? `${fieldDocsReports.length} report${fieldDocsReports.length === 1 ? "" : "s"}` : "No Report Yet"}</h2>
                   <ul className="nexops-mini-list">
                     {fieldDocsReports.map((report) => (
                       <li key={report.id}>
@@ -965,7 +973,7 @@ export function NexOpsSchedulePage(props: {
                     {!fieldDocsReports.length ? (
                       <li>
                         <span>
-                          <strong>No report yet</strong>
+                          <strong>No Report Yet</strong>
                           <small>Generate the report in NexCam after the visit checklist is complete.</small>
                         </span>
                       </li>
