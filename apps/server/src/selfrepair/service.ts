@@ -13,12 +13,17 @@ export interface SelfRepairDataReader {
   exportTenantData(tenantId: string): Promise<TenantDataExport>;
 }
 
+export interface SelfRepairReportMailer {
+  send(input: { tenantId: string; to: string; subject: string; bodyText: string }): Promise<void>;
+}
+
 export interface SelfRepairServiceDeps {
   dataReader: SelfRepairDataReader;
   repository: SelfRepairRepository;
   approvalQueue: ApprovalQueueService;
   analyzer?: SelfRepairAnalyzer | undefined;
   usageLog?: SelfRepairUsageLogWriter | undefined;
+  reportMailer?: SelfRepairReportMailer | undefined;
   env?: NodeJS.ProcessEnv | undefined;
 }
 
@@ -41,6 +46,29 @@ function recordsForDate(records: unknown[], date: string): unknown[] {
   });
 }
 
+function recordsForWindow(records: unknown[], since: string | undefined, through: string | undefined): unknown[] {
+  if (!since && !through) return records;
+  return records.filter((record) => {
+    if (!record || typeof record !== "object") return false;
+    const value = (record as Record<string, unknown>).createdAt
+      ?? (record as Record<string, unknown>).checkedAt
+      ?? (record as Record<string, unknown>).ts
+      ?? (record as Record<string, unknown>).updatedAt;
+    return typeof value === "string" && (!since || value > since) && (!through || value <= through);
+  });
+}
+
+function exportForWindow(exportData: TenantDataExport, since: string | undefined, through: string | undefined): TenantDataExport {
+  if (!since && !through) return exportData;
+  return {
+    ...exportData,
+    collections: Object.fromEntries(Object.entries(exportData.collections).map(([name, records]) => [
+      name,
+      recordsForWindow(records, since, through)
+    ]))
+  };
+}
+
 function count(exportData: TenantDataExport, collection: string, date: string): number {
   return recordsForDate(exportData.collections[collection] ?? [], date).length;
 }
@@ -51,10 +79,13 @@ function reportEmail(input: SelfRepairRunInput, env: NodeJS.ProcessEnv): string 
   return configured.split(",").map((entry) => entry.trim()).find((entry) => entry.includes("@"));
 }
 
-function buildMorningReport(log: Omit<SelfRepairLog, "morningReport">): string {
+function buildMorningReport(log: Omit<SelfRepairLog, "morningReport" | "reportDelivery">): string {
   const lines = [
-    `Self-repair report for ${log.tenantId} on ${log.date}`,
+    log.windowStart
+      ? `Hourly quality report for ${log.tenantId} on ${log.date}`
+      : `Self-repair report for ${log.tenantId} on ${log.date}`,
     "",
+    ...(log.windowStart ? [`Review window: ${log.windowStart} through ${log.windowEnd ?? log.createdAt}`, ""] : []),
     `Checked: ${log.checked.conversations} conversations, ${log.checked.failureLog} failure logs, ${log.checked.usageLog} usage logs, ${log.checked.approvalQueue} pending approvals, ${log.checked.healthHistory} health records, ${log.checked.wallStatus} wall records.`,
     `Found: ${log.found}`,
     `Auto-repaired: ${log.autoRepaired} safe allowlist item(s).`,
@@ -115,7 +146,12 @@ export class SelfRepairService {
   async run(inputValue: unknown): Promise<SelfRepairLog> {
     const input = selfRepairRunInputSchema.parse(inputValue);
     const date = input.date ?? today();
-    const exportData = await this.deps.dataReader.exportTenantData(input.tenantId);
+    const windowEnd = input.through ?? now();
+    const exportData = exportForWindow(
+      await this.deps.dataReader.exportTenantData(input.tenantId),
+      input.since,
+      windowEnd
+    );
     const recentLogs = await this.deps.repository.listRecentLogs(input.tenantId, 7);
     const analysis = await this.analyzer.analyze({
       tenantId: input.tenantId,
@@ -127,8 +163,8 @@ export class SelfRepairService {
     const healthHistory = count(exportData, "tenantAdapterStatuses", date);
     const wallStatus = count(exportData, "nexiRegressionWallRuns", date) + count(exportData, "wallStatus", date);
     const blocked = [
-      "Safe-repair rail does not change code, SOUL, schemas, deploys, or outbound sends.",
-      ...(reportEmail(input, this.env) ? [] : ["Morning report email approval was not queued because SELF_REPAIR_REPORT_EMAIL is not configured."])
+      "Safe-repair rail does not change code, SOUL, schemas, deploys, or customer data.",
+      ...(reportEmail(input, this.env) ? [] : ["Report email was not queued because SELF_REPAIR_REPORT_EMAIL is not configured."])
     ];
     const baseLog = {
       id: `${input.tenantId}_${date}`,
@@ -151,12 +187,31 @@ export class SelfRepairService {
       safeRepairs: analysis.safeRepairs,
       fixBriefs: analysis.fixBriefs,
       analysisMode: analysis.analysisMode,
+      ...(input.since ? { windowStart: input.since } : {}),
+      windowEnd,
       createdAt: now()
     };
     const morningReport = buildMorningReport(baseLog);
     let morningReportApprovalId: string | undefined;
+    let reportDelivery: SelfRepairLog["reportDelivery"] = "not_requested";
     const to = reportEmail(input, this.env);
-    if (to) {
+    if (input.deliverReport && to && this.deps.reportMailer && baseLog.found > 0) {
+      try {
+        await this.deps.reportMailer.send({
+          tenantId: input.tenantId,
+          to,
+          subject: `Nexi hourly quality review: ${baseLog.found} item${baseLog.found === 1 ? "" : "s"} need attention`,
+          bodyText: morningReport
+        });
+        reportDelivery = "sent";
+      } catch {
+        blocked.push("Hourly report email could not be delivered; the diagnosis was saved and will be retried on a later pass.");
+        reportDelivery = "not_configured";
+      }
+    } else if (input.deliverReport && to && this.deps.reportMailer) {
+      // A configured hourly sender remains quiet when there is nothing new to report.
+      reportDelivery = "not_requested";
+    } else if (to && (!input.deliverReport || baseLog.found > 0)) {
       const approval = await this.deps.approvalQueue.create({
         tenantId: input.tenantId,
         kind: "email",
@@ -178,11 +233,15 @@ export class SelfRepairService {
         createdBy: "system"
       });
       morningReportApprovalId = approval.id;
+      reportDelivery = "queued_for_approval";
+    } else if (input.deliverReport) {
+      reportDelivery = "not_configured";
     }
     const parsed = selfRepairLogSchema.parse({
       ...baseLog,
       morningReport,
-      ...(morningReportApprovalId ? { morningReportApprovalId } : {})
+      ...(morningReportApprovalId ? { morningReportApprovalId } : {}),
+      reportDelivery
     });
     return this.deps.repository.saveLog(parsed);
   }

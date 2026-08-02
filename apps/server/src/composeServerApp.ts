@@ -69,6 +69,7 @@ import {
 import { FirestoreSitesRepository, InMemorySitesRepository } from "./sites/repository.js";
 import { registerSitesRoutes } from "./sites/routes.js";
 import { FirestoreSelfRepairRepository, InMemorySelfRepairRepository } from "./selfrepair/repository.js";
+import { HourlySelfRepairScheduler } from "./selfrepair/hourlyScheduler.js";
 import { registerSelfRepairRoutes } from "./selfrepair/routes.js";
 import { SelfRepairService } from "./selfrepair/service.js";
 import { FirestoreUsageLogWriter, MemoryUsageLogWriter } from "./usageLog.js";
@@ -210,13 +211,39 @@ const mobileRepository = new InMemoryMobileRepository();
 const sitesRepository = adminDb ? new FirestoreSitesRepository(adminDb) : new InMemorySitesRepository();
 const selfRepairRepository = adminDb ? new FirestoreSelfRepairRepository(adminDb) : new InMemorySelfRepairRepository();
 const selfRepairUsageLog = adminDb ? new FirestoreUsageLogWriter(adminDb) : new MemoryUsageLogWriter();
+const hourlySelfRepairSender = process.env.SELF_REPAIR_HOURLY_EMAIL_ENABLED?.trim().toLowerCase() === "true"
+  ? commsRail.sendAdapter
+  : null;
+const selfRepairReportMailer = hourlySelfRepairSender
+  ? {
+      send: async ({ tenantId, to, subject, bodyText }: { tenantId: string; to: string; subject: string; bodyText: string }) => {
+        if (tenantId !== commsRail.tenantId) {
+          throw new Error("Self-repair report tenant does not match the configured send mailbox.");
+        }
+        await hourlySelfRepairSender.sendEmail({
+          tenantId,
+          mailbox: hourlySelfRepairSender.mailbox,
+          to: [to],
+          subject,
+          bodyText
+        });
+      }
+    }
+  : undefined;
 const selfRepairService = new SelfRepairService({
   dataReader: platformRepository,
   repository: selfRepairRepository,
   approvalQueue,
   usageLog: selfRepairUsageLog,
+  reportMailer: selfRepairReportMailer,
   env: process.env
 });
+new HourlySelfRepairScheduler({
+  service: selfRepairService,
+  tenantId: runtimeTenantId,
+  env: process.env,
+  reportEmail: commsRail.operatorEmail
+}).start();
 const reputationRepository = adminDb ? new FirestoreReputationRepository(adminDb) : new InMemoryReputationRepository();
 const seoRepository = adminDb ? new FirestoreSeoRepository(adminDb) : new InMemorySeoRepository();
 nexReachService = new NexReachService({

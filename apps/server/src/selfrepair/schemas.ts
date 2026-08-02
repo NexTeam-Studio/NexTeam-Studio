@@ -55,7 +55,10 @@ export const selfRepairFixBriefSchema = z.object({
 export const selfRepairRunInputSchema = z.object({
   tenantId: z.string().min(1),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  ownerEmail: z.string().email().optional()
+  ownerEmail: z.string().email().optional(),
+  since: z.string().datetime().optional(),
+  through: z.string().datetime().optional(),
+  deliverReport: z.boolean().default(false)
 });
 
 export const selfRepairLogSchema = z.object({
@@ -80,6 +83,9 @@ export const selfRepairLogSchema = z.object({
   fixBriefs: z.array(selfRepairFixBriefSchema),
   morningReport: z.string(),
   morningReportApprovalId: z.string().optional(),
+  reportDelivery: z.enum(["not_requested", "queued_for_approval", "sent", "not_configured"]).default("not_requested"),
+  windowStart: z.string().datetime().optional(),
+  windowEnd: z.string().datetime().optional(),
   analysisMode: z.enum(["deterministic-local", "anthropic-gateway"]),
   createdAt: z.string()
 });
