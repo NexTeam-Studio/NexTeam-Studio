@@ -112,13 +112,13 @@ interface NexOpsSettingsPageProps {
 
 function templateChannelLabel(template: CommunicationTemplateRecord): string {
   if (template.emailEnabled && template.smsEnabled) {
-    return "Email + text";
+    return "Email + Text";
   }
   if (template.emailEnabled) {
-    return "Email only";
+    return "Email Only";
   }
   if (template.smsEnabled) {
-    return "Text only";
+    return "Text Only";
   }
   return "Disabled";
 }
@@ -135,7 +135,7 @@ function normalizeTemplateDraft(template: CommunicationTemplateRecord): Communic
 function defaultReviewStep(offsetDays = 14): ReviewSequenceStepSetting {
   return {
     id: `review_step_${Date.now()}`,
-    label: "Review nudge",
+    label: "Review Nudge",
     offsetDays,
     channels: "both",
     templateCategory: "review_request_nudge"
@@ -360,7 +360,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           <small>{props.tenantId}</small>
         </article>
         <article>
-          <h3>Viewer role</h3>
+          <h3>Viewer Role</h3>
           <p>{props.role}</p>
           <small>Catalog and template edits stay owner/admin scoped.</small>
         </article>
@@ -380,11 +380,11 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
-              <p className="eyebrow">Client hub</p>
-              <h2>Portal and billing defaults</h2>
+              <p className="eyebrow">Client Hub</p>
+              <h2>Portal and Billing Defaults</h2>
             </div>
             <button type="button" onClick={() => void saveOperationalDefaults()} disabled={busy === "save-defaults" || !settings}>
-              {busy === "save-defaults" ? "Saving..." : "Save defaults"}
+              {busy === "save-defaults" ? "Saving..." : "Save Defaults"}
             </button>
           </div>
           {settings ? (
@@ -396,12 +396,12 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                   <small>This integration stays off until the tenant turns it on here.</small>
                 </article>
                 <article>
-                  <h3>Business address</h3>
-                  <p>{settings.portalDefaults.keepBusinessAddressPrivate ? "Hidden in hub" : "Visible in hub"}</p>
+                  <h3>Business Address</h3>
+                  <p>{settings.portalDefaults.keepBusinessAddressPrivate ? "Hidden in Hub" : "Visible in Hub"}</p>
                   <small>Client-facing portal resolves this from shared tenant branding settings.</small>
                 </article>
                 <article>
-                  <h3>Reverify window</h3>
+                  <h3>Reverify Window</h3>
                   <p>{settings.portalDefaults.hubSessionReverifyDays} days</p>
                   <small>After this many idle days, the client must open a fresh link or pass last-4 phone verification.</small>
                 </article>
@@ -418,7 +418,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                     }
                   })}
                 />
-                Enable client-facing tip prompt on invoice payment and receipts
+                Enable Client-Facing Tip Prompt on Invoice Payment and Receipts
               </label>
               <label className="nexops-check-field inline">
                 <input
@@ -432,10 +432,10 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                     }
                   })}
                 />
-                Keep the tenant business address private inside NexPortal
+                Keep the Tenant Business Address Private Inside NexPortal
               </label>
               <label className="nexops-field">
-                <span>Client hub reverify window (days)</span>
+                <span>Client Hub Reverify Window (Days)</span>
                 <input
                   type="number"
                   min={1}
@@ -458,13 +458,13 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
-              <p className="eyebrow">Review follow-up</p>
-              <h2>Sequence defaults</h2>
+              <p className="eyebrow">Review Follow-Up</p>
+              <h2>Sequence Defaults</h2>
             </div>
             <div className="nexops-inline-actions">
-              <button type="button" onClick={() => addReviewStep()} disabled={!settings}>Add step</button>
+              <button type="button" onClick={() => addReviewStep()} disabled={!settings}>Add Step</button>
               <button type="button" onClick={() => void saveOperationalDefaults()} disabled={busy === "save-defaults" || !settings}>
-                {busy === "save-defaults" ? "Saving..." : "Save defaults"}
+                {busy === "save-defaults" ? "Saving..." : "Save Defaults"}
               </button>
             </div>
           </div>
@@ -482,7 +482,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                     }
                   })}
                 />
-                Enable post-closeout review follow-up by default
+                Enable Post-Closeout Review Follow-Up by Default
               </label>
               <p className="nexops-form-note">The seeded cadence is 1 / 4 / 10 days. Channels and spacing can be tuned here per tenant.</p>
               <div className="nexops-mini-list">
@@ -502,11 +502,11 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
               {settings.reviewDefaults.steps.map((step) => (
                 <div key={`editor-${step.id}`} className="nexops-quote-toggle-grid">
                   <label className="nexops-field">
-                    <span>Step label</span>
+                    <span>Step Label</span>
                     <input value={step.label} onChange={(event) => patchReviewStep(step.id, (current) => ({ ...current, label: event.target.value }))} />
                   </label>
                   <label className="nexops-field">
-                    <span>Days after closeout</span>
+                    <span>Days After Closeout</span>
                     <input
                       type="number"
                       min={0}
@@ -523,14 +523,14 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                     </select>
                   </label>
                   <label className="nexops-field">
-                    <span>Template category</span>
+                    <span>Template Category</span>
                     <select value={step.templateCategory} onChange={(event) => patchReviewStep(step.id, (current) => ({ ...current, templateCategory: event.target.value as ReviewSequenceStepSetting["templateCategory"] }))}>
-                      <option value="review_request_initial">Initial review request</option>
-                      <option value="review_request_nudge">Review nudge</option>
+                      <option value="review_request_initial">Initial Review Request</option>
+                      <option value="review_request_nudge">Review Nudge</option>
                     </select>
                   </label>
                   <div className="nexops-inline-actions">
-                    <button type="button" onClick={() => removeReviewStep(step.id)} disabled={settings.reviewDefaults.steps.length <= 1}>Remove step</button>
+                    <button type="button" onClick={() => removeReviewStep(step.id)} disabled={settings.reviewDefaults.steps.length <= 1}>Remove Step</button>
                   </div>
                 </div>
               ))}
@@ -544,14 +544,14 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           <div className="nexops-page-heading">
             <div>
               <p className="eyebrow">Products &amp; Services</p>
-              <h2>Global catalog</h2>
+              <h2>Global Catalog</h2>
             </div>
             <div className="nexops-inline-actions">
-              <input placeholder="Search catalog" value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} />
+              <input placeholder="Search Catalog" value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} />
               <button type="button" onClick={() => {
                 setCatalogDraft(blankCatalogItemDraft());
                 setCatalogEditorOpen(true);
-              }}>Add item</button>
+              }}>Add Item</button>
             </div>
           </div>
           <div className="nexops-mini-list">
@@ -581,7 +581,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           <div className="nexops-page-heading">
             <div>
               <p className="eyebrow">Email and Text Templates</p>
-              <h2>Outbound template manager</h2>
+              <h2>Outbound Template Manager</h2>
             </div>
           </div>
           <div className="nexops-settings-template-layout">
@@ -606,29 +606,29 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                     <span>{templateDraft.description ?? templateDraft.category}</span>
                   </div>
                   <button type="button" onClick={() => void saveTemplate()} disabled={busy === "save-template"}>
-                    {busy === "save-template" ? "Saving..." : "Save template"}
+                    {busy === "save-template" ? "Saving..." : "Save Template"}
                   </button>
                 </div>
                 <div className="nexops-quote-toggle-grid">
                   <label className="nexops-check-field inline">
                     <input type="checkbox" checked={templateDraft.emailEnabled} onChange={(event) => setTemplateDraft({ ...templateDraft, emailEnabled: event.target.checked })} />
-                    Email enabled
+                    Email Enabled
                   </label>
                   <label className="nexops-check-field inline">
                     <input type="checkbox" checked={templateDraft.smsEnabled} onChange={(event) => setTemplateDraft({ ...templateDraft, smsEnabled: event.target.checked })} />
-                    Text enabled
+                    Text Enabled
                   </label>
                 </div>
                 <label className="nexops-field">
-                  <span>Email subject</span>
+                  <span>Email Subject</span>
                   <input value={templateDraft.emailSubject ?? ""} onChange={(event) => setTemplateDraft({ ...templateDraft, emailSubject: event.target.value })} disabled={!templateDraft.emailEnabled} />
                 </label>
                 <label className="nexops-field">
-                  <span>Email body</span>
+                  <span>Email Body</span>
                   <textarea rows={6} value={templateDraft.emailBody ?? ""} onChange={(event) => setTemplateDraft({ ...templateDraft, emailBody: event.target.value })} disabled={!templateDraft.emailEnabled} />
                 </label>
                 <label className="nexops-field">
-                  <span>Text body</span>
+                  <span>Text Body</span>
                   <textarea rows={4} value={templateDraft.smsBody ?? ""} onChange={(event) => setTemplateDraft({ ...templateDraft, smsBody: event.target.value })} disabled={!templateDraft.smsEnabled} />
                 </label>
                 <p className="nexops-form-note">Use the existing merge-field pattern such as {"{{CLIENT_NAME}}"}, {"{{QUOTE_NUMBER}}"}, and {"{{JOB_DATE}}"} inside these bodies. Footer branding still comes from the tenant branding resolver.</p>
@@ -643,8 +643,8 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
       <article className="nexops-module-card">
         <div className="nexops-page-heading">
           <div>
-            <p className="eyebrow">Tenant users</p>
-            <h2>Salesperson and routing options</h2>
+            <p className="eyebrow">Tenant Users</p>
+            <h2>Salesperson and Routing Options</h2>
           </div>
         </div>
         <div className="nexops-mini-list">
@@ -662,8 +662,8 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
 
       <NexOpsCatalogEditorModal
         open={catalogEditorOpen}
-        title={catalogDraft.id ? "Edit catalog item" : "Add catalog item"}
-        saveLabel={catalogDraft.id ? "Save item" : "Create item"}
+        title={catalogDraft.id ? "Edit Catalog Item" : "Add Catalog Item"}
+        saveLabel={catalogDraft.id ? "Save Item" : "Create Item"}
         busy={busy === "save-catalog"}
         draft={catalogDraft}
         onDraftChange={setCatalogDraft}
