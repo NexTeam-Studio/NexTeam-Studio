@@ -4,6 +4,13 @@ import { RailError } from "@nexteam/core";
 import { getAdminDb } from "../../../../firebase.js";
 import { requireAccessContext } from "../../../../auth/accessContext.js";
 
+const notificationPreferencesSchema = z.object({
+  daily: z.boolean().default(true),
+  activity: z.boolean().default(true),
+  platform: z.boolean().default(true),
+  marketing: z.boolean().default(false)
+});
+
 const profileSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   middleName: z.string().trim().max(80).optional().default(""),
@@ -14,7 +21,16 @@ const profileSchema = z.object({
   streetAddress: z.string().trim().max(180).optional().default(""),
   city: z.string().trim().max(100).optional().default(""),
   stateProvince: z.string().trim().max(100).optional().default(""),
-  zipCode: z.string().trim().max(24).optional().default("")
+  zipCode: z.string().trim().max(24).optional().default(""),
+  // This remains tenant-scoped until the media lane supplies a durable,
+  // access-controlled image reference.
+  avatarDataUrl: z.string().startsWith("data:image/").max(500_000).optional().default(""),
+  notificationPreferences: notificationPreferencesSchema.optional().default({
+    daily: true,
+    activity: true,
+    platform: true,
+    marketing: false
+  })
 });
 
 export type UserProfile = z.infer<typeof profileSchema>;

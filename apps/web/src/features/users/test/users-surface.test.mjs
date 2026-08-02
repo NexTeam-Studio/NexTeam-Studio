@@ -36,8 +36,19 @@ test("users surface exports the signed-in-user contract and own-profile view", a
   assert.match(source, /Change Photo/);
   assert.match(source, /selectProfilePhoto/);
   assert.match(source, /props\.canManageTeam/);
+  assert.match(source, /notificationPreferences/);
   assert.match(source, /function toTeamMember/);
   assert.match(source, /function Avatar/);
+});
+
+test("team controls are role-safe and profile preferences are saved", async () => {
+  const source = await readFile(sourceUrl, "utf8");
+
+  assert.match(source, /canManageTeam=\{canManageTeam\}/);
+  assert.match(source, /action=\{canManageTeam \? \{ label: "Assign seat"/);
+  assert.match(source, /editable=\{false\}/);
+  assert.match(source, /tenant access service/);
+  assert.match(source, /notificationPreferences: \{ \.\.\.current\.notificationPreferences/);
 });
 
 test("team and own-profile opening headers use the shared title treatment with matching icons", async () => {
