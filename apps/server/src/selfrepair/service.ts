@@ -92,7 +92,12 @@ function buildMorningReport(log: Omit<SelfRepairLog, "morningReport" | "reportDe
     ""
   ];
   if (!log.findings.length) {
-    lines.push("No new issues found.");
+    lines.push(
+      "Issue 1",
+      "Issue: No new issue was found in this review window.",
+      "Resolution: No repair was needed.",
+      "Status: Healthy. Nexi will review the next new messages at the next hourly check."
+    );
   }
   for (const [index, finding] of log.findings.entries()) {
     const fixBrief = log.fixBriefs.find((brief) => brief.classId === finding.classId);
@@ -189,12 +194,14 @@ export class SelfRepairService {
     let morningReportApprovalId: string | undefined;
     let reportDelivery: SelfRepairLog["reportDelivery"] = "not_requested";
     const to = reportEmail(input, this.env);
-    if (input.deliverReport && to && this.deps.reportMailer && baseLog.found > 0) {
+    if (input.deliverReport && to && this.deps.reportMailer) {
       try {
         await this.deps.reportMailer.send({
           tenantId: input.tenantId,
           to,
-          subject: `Nexi hourly quality review: ${baseLog.found} item${baseLog.found === 1 ? "" : "s"} need attention`,
+          subject: baseLog.found > 0
+            ? `Nexi hourly quality review: ${baseLog.found} item${baseLog.found === 1 ? "" : "s"} need attention`
+            : "Nexi hourly quality review: no new issues",
           bodyText: morningReport
         });
         reportDelivery = "sent";
@@ -202,9 +209,6 @@ export class SelfRepairService {
         blocked.push("Hourly report email could not be delivered; the diagnosis was saved and will be retried on a later pass.");
         reportDelivery = "not_configured";
       }
-    } else if (input.deliverReport && to && this.deps.reportMailer) {
-      // A configured hourly sender remains quiet when there is nothing new to report.
-      reportDelivery = "not_requested";
     } else if (to && (!input.deliverReport || baseLog.found > 0)) {
       const approval = await this.deps.approvalQueue.create({
         tenantId: input.tenantId,
