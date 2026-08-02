@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
+import { titleCaseInterfaceName } from "./interfaceTitleCase";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 type ActivityFilter = "requests" | "quotes" | "jobs" | "invoices" | "payments";
@@ -140,7 +141,7 @@ function queueGroupsForRole(home: HomeSnapshot | null): Array<{ key: string; tit
       },
       {
         key: "attention",
-        title: "Needs attention",
+        title: "Needs Attention",
         rows: home.queues.filter((row) => row.key === "late-assigned" || row.key === "unassigned-photo-batches")
       },
       {
@@ -164,7 +165,7 @@ function queueGroupsForRole(home: HomeSnapshot | null): Array<{ key: string; tit
     },
     {
       key: "attention",
-      title: "Needs attention",
+      title: "Needs Attention",
       rows: home.queues.filter((row) => [
         "unscheduled-jobs",
         "action-required",
@@ -180,11 +181,11 @@ function queueGroupsForRole(home: HomeSnapshot | null): Array<{ key: string; tit
 function queueGroupHeadline(title: string): string {
   switch (title) {
     case "Today":
-      return "Handle the next few hours";
+      return "Handle the Next Few Hours";
     case "Upcoming":
-      return "See what is coming next";
-    case "Needs attention":
-      return "Clear the blockers";
+      return "See What Is Coming Next";
+    case "Needs Attention":
+      return "Clear the Blockers";
     default:
       return title;
   }
@@ -293,10 +294,10 @@ export function NexOpsHomePage(props: {
       </div>
 
       {home?.health.length ? (
-        <section className="nexops-home-health-strip" aria-label="Business health">
+        <section className="nexops-home-health-strip" aria-label="Business Health">
           {home.health.map((metric) => (
             <article key={metric.key} className="nexops-home-health-metric">
-              <span>{metric.label}</span>
+              <span>{titleCaseInterfaceName(metric.label)}</span>
               <strong>{metric.value}</strong>
               <small>{metric.delta}</small>
             </article>
@@ -308,9 +309,9 @@ export function NexOpsHomePage(props: {
         <section className="nexops-module-card wide">
           <div className="nexops-home-queue-grid">
             {queueGroups.map((group) => (
-              <section key={group.key} className="nexops-home-queue-group" aria-label={group.title}>
+              <section key={group.key} className="nexops-home-queue-group" aria-label={titleCaseInterfaceName(group.title)}>
                 <div className="nexops-home-section-head">
-                  <p className="eyebrow">{group.title}</p>
+                  <p className="eyebrow">{titleCaseInterfaceName(group.title)}</p>
                   <h2>{queueGroupHeadline(group.title)}</h2>
                 </div>
                 <div className="nexops-home-queue-list">
@@ -327,7 +328,7 @@ export function NexOpsHomePage(props: {
                     >
                       <div className="nexops-home-queue-row-main">
                         <div>
-                          <strong>{row.label}</strong>
+                          <strong>{titleCaseInterfaceName(row.label)}</strong>
                           <p>{row.detail}</p>
                         </div>
                         <div className="nexops-home-queue-row-stats">
@@ -347,7 +348,7 @@ export function NexOpsHomePage(props: {
             <section className="nexops-home-technician-rail">
               <div className="nexops-home-section-head">
                 <p className="eyebrow">Today</p>
-                <h2>Assigned visits</h2>
+                <h2>Assigned Visits</h2>
               </div>
               <div className="nexops-home-visit-list">
                 {home.technician.todayVisits.map((visit) => (
@@ -373,7 +374,7 @@ export function NexOpsHomePage(props: {
         <section className="nexops-module-card">
           <div className="nexops-home-section-head">
             <p className="eyebrow">Productivity</p>
-            <h2>Documentation activity</h2>
+            <h2>Documentation Activity</h2>
           </div>
           {documentation ? (
             <p className="nexops-empty-copy">
@@ -400,9 +401,9 @@ export function NexOpsHomePage(props: {
         <section className="nexops-module-card">
           <div className="nexops-home-section-head">
             <p className="eyebrow">Live activity</p>
-            <h2>Recent activity</h2>
+            <h2>Recent Activity</h2>
           </div>
-          <div className="nexops-home-filter-row" role="tablist" aria-label="Activity filters">
+          <div className="nexops-home-filter-row" role="tablist" aria-label="Activity Filters">
             {(["all", "requests", "quotes", "jobs", "invoices", "payments"] as const).map((filter) => (
               <button
                 key={filter}
