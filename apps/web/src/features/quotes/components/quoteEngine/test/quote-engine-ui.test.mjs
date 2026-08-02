@@ -43,10 +43,10 @@ test("quote dominant action changes across core pre-approval states", () => {
     [draft.action, sent.action, changeRequested.action, expired.action],
     ["send", "send", "edit", "renew"]
   );
-  assert.equal(draft.label, "Send quote");
-  assert.equal(sent.label, "Resend quote");
-  assert.equal(changeRequested.label, "Edit and resend");
-  assert.equal(expired.label, "Renew quote");
+  assert.equal(draft.label, "Send Quote");
+  assert.equal(sent.label, "Resend Quote");
+  assert.equal(changeRequested.label, "Edit and Resend");
+  assert.equal(expired.label, "Renew Quote");
 });
 
 test("quote dominant action changes after approval based on whether a job snapshot already exists", () => {
@@ -57,9 +57,9 @@ test("quote dominant action changes after approval based on whether a job snapsh
   const convertedAction = quoteDominantAction(approvedAlreadyConverted);
 
   assert.equal(firstAction.action, "convert-to-job");
-  assert.equal(firstAction.label, "Convert to job");
+  assert.equal(firstAction.label, "Convert to Job");
   assert.equal(convertedAction.action, "invoice");
-  assert.equal(convertedAction.label, "Create invoice");
+  assert.equal(convertedAction.label, "Create Invoice");
 });
 
 test("legacy signed quotes remain locked and can enter the downstream lifecycle", () => {

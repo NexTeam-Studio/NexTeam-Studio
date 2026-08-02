@@ -31,8 +31,10 @@ test("Quote Templates owns the real list and editor surface through a typed save
   }));
 
   assert.match(html, /Service visit/);
-  assert.match(html, /1 default lines/);
-  assert.match(html, /Edit template/);
-  assert.match(html, /Save current composer lines into this template/);
-  assert.match(html, /Save template/);
+  assert.match(html, /1 Default Lines/);
+  assert.match(html, /Edit Template/);
+  assert.match(html, /Save Current Composer Lines into This Template/);
+  assert.match(html, /Card on File/);
+  assert.match(html, /Save Template/);
+  assert.doesNotMatch(html, /Edit template|Save template|Card on file/);
 });
