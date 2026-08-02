@@ -75,6 +75,23 @@ export function paymentMethodsForProvider(provider: PaymentProvider): PaymentMet
   return ["card"];
 }
 
+export function reconcilePaymentDraftProvider(
+  draft: PaymentDraftState,
+  provider: PaymentProvider
+): PaymentDraftState {
+  const methods = paymentMethodsForProvider(provider);
+  const method = methods.includes(draft.method) ? draft.method : methods[0]!;
+
+  return {
+    ...draft,
+    provider,
+    method,
+    // A saved card only belongs to the saved-card collection path. Keeping it
+    // on another provider could accidentally submit the wrong payment details.
+    savedCardId: provider === "stripe" && method === "card" ? draft.savedCardId : ""
+  };
+}
+
 export function PaymentRailsPanel(props: PaymentRailsPanelProps): React.ReactElement {
   const update = (patch: Partial<PaymentDraftState>): void => {
     props.setPaymentDraft((current) => current ? { ...current, ...patch } : current);
@@ -100,7 +117,10 @@ export function PaymentRailsPanel(props: PaymentRailsPanelProps): React.ReactEle
             </div>
             <div className="nexops-request-builder-grid">
               <label className="nexops-field"><span>Amount</span><input type="number" min="0.01" step="0.01" value={props.paymentDraft.amount} onChange={(event) => update({ amount: Math.max(0.01, Number(event.target.value || 0.01)) })} /></label>
-              <label className="nexops-field"><span>Provider</span><select value={props.paymentDraft.provider} onChange={(event) => update({ provider: event.target.value as PaymentProvider })}><option value="stripe">Stripe</option><option value="paypal">PayPal / Venmo</option><option value="manual">Manual / offline</option></select></label>
+              <label className="nexops-field"><span>Provider</span><select value={props.paymentDraft.provider} onChange={(event) => {
+                const provider = event.target.value as PaymentProvider;
+                props.setPaymentDraft((current) => current ? reconcilePaymentDraftProvider(current, provider) : current);
+              }}><option value="stripe">Stripe</option><option value="paypal">PayPal / Venmo</option><option value="manual">Manual / offline</option></select></label>
               <label className="nexops-field"><span>Method</span><select value={props.paymentDraft.method} onChange={(event) => update({ method: event.target.value as PaymentMethodKind })}>
                 {props.paymentDraft.provider === "paypal" ? <><option value="paypal">PayPal</option><option value="venmo">Venmo</option></> : props.paymentDraft.provider === "stripe" ? <><option value="card">Saved card</option><option value="ach">ACH</option></> : <><option value="cash">Cash</option><option value="check">Check</option><option value="bank_transfer">Bank transfer</option><option value="other">Other</option></>}
               </select></label>
