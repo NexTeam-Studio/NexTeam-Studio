@@ -91,25 +91,19 @@ function buildMorningReport(log: Omit<SelfRepairLog, "morningReport" | "reportDe
     `Auto-repaired: ${log.autoRepaired} safe allowlist item(s).`,
     ""
   ];
-  if (log.findings.length) {
-    lines.push("Findings:");
-    for (const finding of log.findings) {
-      lines.push(`- ${finding.priority} ${finding.classId}: ${finding.reproPhrasings[0]}`);
-    }
-  } else {
-    lines.push("Findings: none.");
+  if (!log.findings.length) {
+    lines.push("No new issues found.");
   }
-  if (log.safeRepairs.length) {
-    lines.push("", "Safe repairs:");
-    for (const repair of log.safeRepairs) {
-      lines.push(`- ${repair.type}: ${repair.summary}`);
-    }
-  }
-  if (log.fixBriefs.length) {
-    lines.push("", "Fix briefs:");
-    for (const brief of log.fixBriefs) {
-      lines.push(`- ${brief.priority} ${brief.classId}: ${brief.title}`);
-    }
+  for (const [index, finding] of log.findings.entries()) {
+    const fixBrief = log.fixBriefs.find((brief) => brief.classId === finding.classId);
+    const safeRepair = log.safeRepairs.find((repair) => repair.targetRef === finding.evidenceRefs[0]);
+    lines.push(
+      "",
+      `Issue ${index + 1}`,
+      `Issue: ${finding.priority} - ${finding.title}`,
+      `Resolution: ${safeRepair?.summary ?? fixBrief?.title ?? "A regression case and fix brief were recorded for review."}`,
+      `Status: ${safeRepair?.applied ? "Safe diagnostic repair recorded; product-code fix still requires its owner." : "Needs owner review and implementation."}`
+    );
   }
   if (log.watchItems.length) {
     lines.push("", "Watch items:");

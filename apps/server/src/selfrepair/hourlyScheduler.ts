@@ -29,11 +29,10 @@ export class HourlySelfRepairScheduler {
     void this.tick().catch((error: unknown) => {
       logger.error({ error }, "Hourly self-repair review failed");
     });
-    this.timer = setInterval(() => {
-      void this.tick().catch((error: unknown) => {
-        logger.error({ error }, "Hourly self-repair review failed");
-      });
-    }, HOUR_MS);
+    const nextHour = new Date();
+    nextHour.setMinutes(0, 0, 0);
+    nextHour.setHours(nextHour.getHours() + 1);
+    this.timer = setTimeout(() => this.beginHourlyCycle(), nextHour.getTime() - Date.now());
     this.timer.unref();
     return true;
   }
@@ -55,5 +54,17 @@ export class HourlySelfRepairScheduler {
       deliverReport: true
     });
     this.lastCheckedAt = through;
+  }
+
+  private beginHourlyCycle(): void {
+    void this.tick().catch((error: unknown) => {
+      logger.error({ error }, "Hourly self-repair review failed");
+    });
+    this.timer = setInterval(() => {
+      void this.tick().catch((error: unknown) => {
+        logger.error({ error }, "Hourly self-repair review failed");
+      });
+    }, HOUR_MS);
+    this.timer.unref();
   }
 }
