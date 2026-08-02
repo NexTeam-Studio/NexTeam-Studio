@@ -6,6 +6,14 @@ export function deriveInvoiceDominantAction(input: {
   balanceStatus: InvoiceBalanceStatus;
   paymentScheduleActive: boolean;
 }): DominantActionState {
+  if (input.deliveryStatus === "failed") {
+    return dominantActionStateSchema.parse({
+      label: "Retry send",
+      tone: "danger",
+      reason: "Customer delivery failed and needs staff attention.",
+      nextCommandId: "invoice.send"
+    });
+  }
   if (input.lifecycle === "draft") {
     return dominantActionStateSchema.parse({
       label: "Send invoice",
@@ -20,14 +28,6 @@ export function deriveInvoiceDominantAction(input: {
       tone: "dominant",
       reason: "The invoice is open with balance remaining.",
       nextCommandId: "payment.collect"
-    });
-  }
-  if (input.deliveryStatus === "failed") {
-    return dominantActionStateSchema.parse({
-      label: "Retry send",
-      tone: "danger",
-      reason: "Customer delivery failed and needs staff attention.",
-      nextCommandId: "invoice.send"
     });
   }
   return dominantActionStateSchema.parse({
