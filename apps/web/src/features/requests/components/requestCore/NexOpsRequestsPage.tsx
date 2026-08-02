@@ -7,8 +7,8 @@ const REQUEST_FILTERS: Array<{ value: "all" | RequestStatus; label: string }> = 
   { value: "all", label: "All" },
   { value: "new", label: "New" },
   { value: "archived", label: "Archived" },
-  { value: "converted_to_quote", label: "To quote" },
-  { value: "converted_to_job", label: "To job" }
+  { value: "converted_to_quote", label: "To Quote" },
+  { value: "converted_to_job", label: "To Job" }
 ];
 type RequestSource = "website_form" | "office_existing_client" | "office_new_client" | "legacy_lead_backfill";
 type RequestSurface = "request" | "quote" | "job" | "visit" | "invoice";
@@ -198,19 +198,39 @@ function clientDisplayName(client: ClientOption): string {
 }
 
 function requestStatusLabel(status: RequestStatus): string {
-  return status.replaceAll("_", " ");
+  switch (status) {
+    case "converted_to_quote":
+      return "Converted to Quote";
+    case "converted_to_job":
+      return "Converted to Job";
+    default:
+      return status[0].toUpperCase() + status.slice(1);
+  }
+}
+
+const TITLE_CASE_SMALL_WORDS = new Set(["a", "an", "and", "as", "at", "but", "by", "for", "from", "in", "into", "nor", "of", "on", "onto", "or", "over", "so", "the", "to", "with", "yet"]);
+
+function titleCaseUiLabel(value: string): string {
+  const words = value.replaceAll("_", " ").trim().split(/\s+/);
+  return words.map((word, index) => {
+    const normalized = word.toLowerCase();
+    if (index > 0 && index < words.length - 1 && TITLE_CASE_SMALL_WORDS.has(normalized)) {
+      return normalized;
+    }
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }).join(" ");
 }
 
 function requestSourceLabel(source: RequestSource): string {
   switch (source) {
     case "website_form":
-      return "Website form";
+      return "Website Form";
     case "office_existing_client":
-      return "Office existing client";
+      return "Office Existing Client";
     case "office_new_client":
-      return "Office new client";
+      return "Office New Client";
     case "legacy_lead_backfill":
-      return "Legacy lead backfill";
+      return "Legacy Lead Backfill";
     default:
       return source;
   }
@@ -264,40 +284,40 @@ export function requestDominantAction(request: ServiceRequestRecord): {
       stage: "Archived",
       detail: "This intake is off the active queue. Reopen it if the office needs to bring it back into circulation.",
       dominantAction: "reopen",
-      dominantLabel: "Reopen request"
+      dominantLabel: "Reopen Request"
     };
   }
   if (request.status === "converted_to_quote") {
     return {
-      stage: "Quote created",
+      stage: "Quote Created",
       detail: `Quote ${request.convertedQuoteId ?? "record"} now carries this intake forward. Keep the request as the read-only intake source.`,
       dominantAction: "none"
     };
   }
   if (request.status === "converted_to_job") {
     return {
-      stage: "Job created",
+      stage: "Job Created",
       detail: `Job ${request.convertedJobId ?? "record"} now owns dispatch and reminder work. Keep the request as the original intake snapshot.`,
       dominantAction: "none"
     };
   }
   if (!request.reviewedAt) {
     return {
-      stage: request.match.reviewRequired ? "Review required" : "Mark reviewed",
+      stage: request.match.reviewRequired ? "Review Required" : "Mark Reviewed",
       detail: request.match.reviewRequired
         ? "Confirm the exact-match result first, then mark the intake reviewed before converting it downstream."
         : "This intake is ready for an office review pass. Mark it reviewed before you convert it to a quote or job.",
       dominantAction: "mark-reviewed",
-      dominantLabel: "Mark reviewed"
+      dominantLabel: "Mark Reviewed"
     };
   }
   return {
-    stage: "Ready to convert",
+    stage: "Ready to Convert",
     detail: "Choose a quote when the office needs approval and money flow, or go straight to a job when the work can dispatch immediately.",
     dominantAction: "convert-to-quote",
-    dominantLabel: "Convert to quote",
+    dominantLabel: "Convert to Quote",
     secondaryAction: "convert-to-job",
-    secondaryLabel: "Convert to job"
+    secondaryLabel: "Convert to Job"
   };
 }
 
@@ -849,7 +869,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         <div className="nexops-inline-actions">
           <button type="button" onClick={() => void refresh()} disabled={Boolean(actionBusy)}>Refresh</button>
           <button type="button" onClick={() => void backfillLeads()} disabled={Boolean(actionBusy)}>
-            {actionBusy === "backfill" ? "Backfilling..." : "Backfill legacy leads"}
+            {actionBusy === "backfill" ? "Backfilling..." : "Backfill Legacy Leads"}
           </button>
         </div>
       </div>
@@ -858,8 +878,8 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         <details className="nexops-module-card nexops-density-disclosure-card nexops-request-builder-card">
           <summary>
             <div className="nexops-density-disclosure-copy">
-              <p className="eyebrow">Office intake</p>
-              <h2>Create a request</h2>
+              <p className="eyebrow">Office Intake</p>
+              <h2>Create a Request</h2>
               <small>Open only when the office needs to enter a request by hand.</small>
             </div>
             <span className="nexops-density-disclosure-caret">Open</span>
@@ -867,12 +887,12 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
           <div className="nexops-density-disclosure-body">
             <form className="nexops-request-builder" onSubmit={(event) => void createRequest(event)}>
             <div className="nexops-request-toggle-row">
-              <button className={officeMode === "new_client" ? "active" : ""} type="button" onClick={() => setOfficeMode("new_client")}>New client</button>
-              <button className={officeMode === "existing_client" ? "active" : ""} type="button" onClick={() => setOfficeMode("existing_client")}>Existing client</button>
+              <button className={officeMode === "new_client" ? "active" : ""} type="button" onClick={() => setOfficeMode("new_client")}>New Client</button>
+              <button className={officeMode === "existing_client" ? "active" : ""} type="button" onClick={() => setOfficeMode("existing_client")}>Existing Client</button>
             </div>
             <div className="nexops-request-builder-grid">
               <label className="nexops-field">
-                <span>Request form</span>
+                <span>Request Form</span>
                 <select value={selectedForm?.id ?? ""} onChange={(event) => setSelectedFormId(event.target.value)}>
                   {forms.map((form) => <option value={form.id} key={form.id}>{form.title}</option>)}
                 </select>
@@ -880,24 +900,24 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
               {officeMode === "existing_client" ? (
                 <>
                   <label className="nexops-field">
-                    <span>Existing client</span>
+                    <span>Existing Client</span>
                     <select value={selectedClientId} onChange={(event) => setSelectedClientId(event.target.value)}>
-                      <option value="">Select client</option>
+                      <option value="">Select Client</option>
                       {props.clients.map((client) => <option value={client.id} key={client.id}>{clientDisplayName(client)}</option>)}
                     </select>
                   </label>
                   <label className="nexops-field">
-                    <span>Property handling</span>
+                    <span>Property Handling</span>
                     <select value={propertyMode} onChange={(event) => setPropertyMode(event.target.value as "existing_property" | "new_property")}>
-                      <option value="existing_property">Use existing property</option>
-                      <option value="new_property">Capture new property</option>
+                      <option value="existing_property">Use Existing Property</option>
+                      <option value="new_property">Capture New Property</option>
                     </select>
                   </label>
                   {propertyMode === "existing_property" ? (
                     <label className="nexops-field">
-                      <span>Existing property</span>
+                      <span>Existing Property</span>
                       <select value={selectedPropertyId} onChange={(event) => setSelectedPropertyId(event.target.value)}>
-                        <option value="">Select property</option>
+                        <option value="">Select Property</option>
                         {existingProperties.map((property) => <option value={property.id} key={property.id}>{property.siteName || property.label || property.address.street1}</option>)}
                       </select>
                     </label>
@@ -952,7 +972,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                     ) : field.type === "select" ? (
                       <select value={String(currentFieldValue(field))} onChange={(event) => updateFieldValue(field.key, event.target.value)}>
                         <option value="">Select</option>
-                        {field.options?.map((option) => <option value={option} key={option}>{option.replaceAll("_", " ")}</option>)}
+                        {field.options?.map((option) => <option value={option} key={option}>{titleCaseUiLabel(option)}</option>)}
                       </select>
                     ) : field.type === "boolean" ? (
                       <div className="nexops-check-field inline">
@@ -965,9 +985,9 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                       </div>
                     ) : field.key === "salesperson_user_id" ? (
                       <select value={String(currentFieldValue(field))} onChange={(event) => updateFieldValue(field.key, event.target.value)}>
-                        <option value="">Assign later</option>
+                        <option value="">Assign Later</option>
                         {activeTenantUsers.map((user) => (
-                          <option value={user.id} key={user.id}>{user.displayName} ({user.role.replaceAll("_", " ")})</option>
+                          <option value={user.id} key={user.id}>{user.displayName} ({titleCaseUiLabel(user.role)})</option>
                         ))}
                       </select>
                     ) : (
@@ -992,7 +1012,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                               }
                             }))}
                           />
-                          <span>{surface}</span>
+                          <span>{titleCaseUiLabel(surface)}</span>
                         </label>
                       ))}
                     </div>
@@ -1004,7 +1024,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
             )}
               <div className="nexops-inline-actions">
                 <button type="submit" disabled={Boolean(actionBusy) || !selectedForm}>
-                  {actionBusy === "create-request" ? "Saving..." : "Create request"}
+                  {actionBusy === "create-request" ? "Saving..." : "Create Request"}
                 </button>
                 <small>{statusMessage}</small>
               </div>
@@ -1015,8 +1035,8 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         <details className="nexops-module-card nexops-density-disclosure-card nexops-request-library-card">
           <summary>
             <div className="nexops-density-disclosure-copy">
-              <p className="eyebrow">Multi-form library</p>
-              <h2>Website intake forms</h2>
+              <p className="eyebrow">Multi-Form Library</p>
+              <h2>Website Intake Forms</h2>
               <small>{formStatus}</small>
             </div>
             <span className="nexops-density-disclosure-caret">Open</span>
@@ -1031,8 +1051,8 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                 </div>
                 <div className="nexops-inline-actions">
                   <button type="button" onClick={() => setFormDraft(initialFormDraft(form))}>Edit</button>
-                  <button type="button" onClick={() => void copyText(absoluteShareUrl(form), `Copied share link for ${form.title}.`)}>Copy link</button>
-                  <button type="button" onClick={() => void copyText(form.embedCode ?? `<iframe src="${absoluteShareUrl(form)}" loading="lazy"></iframe>`, `Copied embed code for ${form.title}.`)}>Copy embed</button>
+                  <button type="button" onClick={() => void copyText(absoluteShareUrl(form), `Copied share link for ${form.title}.`)}>Copy Link</button>
+                  <button type="button" onClick={() => void copyText(form.embedCode ?? `<iframe src="${absoluteShareUrl(form)}" loading="lazy"></iframe>`, `Copied embed code for ${form.title}.`)}>Copy Embed</button>
                 </div>
                 <a href={absoluteShareUrl(form)} rel="noreferrer" target="_blank">{absoluteShareUrl(form)}</a>
               </div>
@@ -1041,7 +1061,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
 
             <form className="nexops-request-library-editor" onSubmit={(event) => void saveForm(event)}>
               <div className="nexops-request-library-editor-head">
-                <h3>{formDraft.id ? "Edit form" : "New form"}</h3>
+                <h3>{formDraft.id ? "Edit Form" : "New Form"}</h3>
                 {formDraft.id ? <button type="button" onClick={() => setFormDraft(initialFormDraft())}>Clear</button> : null}
               </div>
               <div className="nexops-request-builder-grid">
@@ -1049,11 +1069,11 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                 <label className="nexops-field"><span>Slug</span><input value={formDraft.slug} onChange={(event) => setFormDraft({ ...formDraft, slug: event.target.value })} /></label>
               </div>
               <label className="nexops-field"><span>Intro</span><textarea rows={3} value={formDraft.intro} onChange={(event) => setFormDraft({ ...formDraft, intro: event.target.value })} /></label>
-              <label className="nexops-check-field"><input checked={formDraft.active} type="checkbox" onChange={(event) => setFormDraft({ ...formDraft, active: event.target.checked })} /> Form is active</label>
+              <label className="nexops-check-field"><input checked={formDraft.active} type="checkbox" onChange={(event) => setFormDraft({ ...formDraft, active: event.target.checked })} /> Form Is Active</label>
               <div className="nexops-request-library-field-groups">
                 {[...fieldGroups.entries()].map(([group, fields]) => (
                   <section key={group}>
-                    <h4>{group}</h4>
+                    <h4>{titleCaseUiLabel(group)}</h4>
                     <div className="nexops-request-library-field-list">
                       {fields.map((field) => (
                         <label className="nexops-check-field" key={field.key}>
@@ -1075,7 +1095,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                 ))}
               </div>
               <div className="nexops-inline-actions">
-                <button type="submit" disabled={Boolean(actionBusy)}>{actionBusy === "save-form" ? "Saving..." : formDraft.id ? "Save form" : "Create form"}</button>
+                <button type="submit" disabled={Boolean(actionBusy)}>{actionBusy === "save-form" ? "Saving..." : formDraft.id ? "Save Form" : "Create Form"}</button>
               </div>
             </form>
           </div>
@@ -1086,7 +1106,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
-              <p className="eyebrow">Request queue</p>
+              <p className="eyebrow">Request Queue</p>
               <h2>{filteredRequests.length} visible</h2>
             </div>
             <div className="nexops-inline-actions">
@@ -1110,22 +1130,22 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
             <article>
               <span>Unreviewed</span>
               <strong>{queueSummary.unreviewed}</strong>
-              <small>Needs first review</small>
+              <small>Needs First Review</small>
             </article>
             <article>
               <span>Ready</span>
               <strong>{queueSummary.readyToConvert}</strong>
-              <small>Can move to quote or job</small>
+              <small>Can Move to Quote or Job</small>
             </article>
             <article>
               <span>Converted</span>
               <strong>{queueSummary.converted}</strong>
-              <small>Already moved downstream</small>
+              <small>Already Moved Downstream</small>
             </article>
             <article>
               <span>Archived</span>
               <strong>{queueSummary.archived}</strong>
-              <small>Off the active rail</small>
+              <small>Off the Active Rail</small>
             </article>
           </div>
           <ul className="nexops-record-list">
@@ -1150,7 +1170,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
             <div className="nexops-request-detail">
               <div className="nexops-page-heading">
                 <div>
-                  <p className="eyebrow">Request detail</p>
+                  <p className="eyebrow">Request Detail</p>
                   <h2>{selectedRequest.clientName}</h2>
                   <p>{selectedRequest.subject}</p>
                 </div>
@@ -1179,7 +1199,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
 {selectedRequestAction ? (
                 <section className="nexops-quote-panel">
                   <div className="nexops-quote-section-head">
-                    <h3>Next office move</h3>
+                    <h3>Next Office Move</h3>
                     <span>{selectedRequestAction.stage}</span>
                   </div>
                   <p>{selectedRequestAction.detail}</p>
@@ -1225,7 +1245,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                   <small>{selectedRequest.convertedJobId ? `Job ${selectedRequest.convertedJobId}` : "No job yet"}</small>
                 </article>
                 <article>
-                  <h3>Service address</h3>
+                  <h3>Service Address</h3>
                   <p>{formatAddress(selectedRequest.propertyAddress) || "Use existing client/property link"}</p>
                   <small>{selectedRequest.email ?? "No email"} · {selectedRequest.phone ?? "No phone"}</small>
                 </article>
@@ -1242,7 +1262,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
               <details className="nexops-quote-panel nexops-density-disclosure-panel">
                 <summary>
                   <div className="nexops-density-disclosure-copy">
-                    <h3>Downstream field visibility</h3>
+                    <h3>Downstream Field Visibility</h3>
                     <small>Open only when you need to audit what carries into quote, job, visit, or invoice.</small>
                   </div>
                   <span className="nexops-density-disclosure-caret">Open</span>
@@ -1280,7 +1300,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
             </div>
           ) : (
             <div className="nexops-client-empty">
-              <h2>No request selected</h2>
+              <h2>No Request Selected</h2>
               <p>Pick a request to review the exact-match rule, confirmation timestamps, and field-by-field downstream visibility.</p>
             </div>
           )}
