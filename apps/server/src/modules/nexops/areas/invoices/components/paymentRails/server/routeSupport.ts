@@ -15,6 +15,7 @@ export function createPaymentRouteSupport(input: {
   repositoryForTenant: () => NativeCrmRepository;
   ledger: () => NonNullable<CrmRouteDeps["ledgerService"]>;
   hasLedgerService: boolean;
+  stripeConnectedAccountForTenant: (tenantId: string) => Promise<string | undefined>;
 }) {
   async function createQuickPaymentRequestRecord(request: {
     tenantId: string;
@@ -82,7 +83,16 @@ export function createPaymentRouteSupport(input: {
     if (tipAmount < 0) throw new RailError("Tip amount must be zero or greater.", { provider: request.provider, op: "createInvoiceCheckout", status: 400 });
     const totalCheckoutAmount = Number(((request.invoice.ledger?.balanceDue ?? request.invoice.totals.total) + tipAmount).toFixed(2));
     if (request.provider === "stripe") {
+      const connectedAccountId = await input.stripeConnectedAccountForTenant(request.tenantId);
+      if (!connectedAccountId) {
+        throw new RailError("This tenant has not completed payment-account onboarding.", {
+          provider: "stripe",
+          op: "createInvoiceCheckout",
+          status: 409
+        });
+      }
       const session = await createStripeCheckoutSession(input.env, request.invoice, request.req, {
+        connectedAccountId,
         ...(request.portalToken ? { portalToken: request.portalToken } : {}),
         ...(request.successPath ? { successPath: request.successPath } : {}),
         ...(request.cancelPath ? { cancelPath: request.cancelPath } : {}),

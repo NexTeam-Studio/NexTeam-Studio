@@ -68,7 +68,11 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
     providerForTenant,
     repositoryForTenant,
     ledger,
-    hasLedgerService: Boolean(deps.ledgerService)
+    hasLedgerService: Boolean(deps.ledgerService),
+    stripeConnectedAccountForTenant: async (tenantId) => {
+      const tenant = await deps.platformRepository?.getTenant(tenantId);
+      return tenant?.payments?.stripeConnect?.accountId;
+    }
   });
   const { createAndNotifyRequest, formPresentation, getRequestOrThrow } = createRequestRouteSupport({
     env,

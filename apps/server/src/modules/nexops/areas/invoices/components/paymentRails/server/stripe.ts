@@ -324,6 +324,8 @@ export async function createStripeCheckoutSession(
     amountOverride?: number | undefined;
     successPath?: string | undefined;
     cancelPath?: string | undefined;
+    /** Durable tenant mapping supplied by Platform/Tenants for direct charges. */
+    connectedAccountId?: string | undefined;
   } = {}
 ): Promise<StripeCheckoutSession> {
   const tipAmount = Math.max(options.tipAmount ?? 0, 0);
@@ -360,7 +362,7 @@ export async function createStripeCheckoutSession(
     body.set("metadata[quoteId]", invoice.quoteId);
   }
   return stripeFormRequest<StripeCheckoutSession>(env, "/checkout/sessions", body, {
-    stripeAccount: stripeConnectedAccountForTenant(env, invoice.tenantId)
+    stripeAccount: options.connectedAccountId?.trim() || stripeConnectedAccountForTenant(env, invoice.tenantId)
   });
 }
 

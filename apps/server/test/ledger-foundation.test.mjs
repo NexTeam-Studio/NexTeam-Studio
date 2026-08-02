@@ -257,8 +257,7 @@ test("Stripe checkout uses tenant Connect headers with zero application fee and 
   });
 
   const session = await createStripeCheckoutSession({
-    STRIPE_SECRET_KEY: "sk_test_piece4",
-    STRIPE_CONNECTED_ACCOUNT_AQUATRACE: "acct_piece4"
+    STRIPE_SECRET_KEY: "sk_test_piece4"
   }, {
     id: "invoice_connect_1",
     tenantId: "aquatrace",
@@ -279,6 +278,8 @@ test("Stripe checkout uses tenant Connect headers with zero application fee and 
     protocol: "http",
     get: () => "127.0.0.1:4175",
     headers: {}
+  }, {
+    connectedAccountId: "acct_piece4"
   });
 
   assert.equal(session.id, "cs_test_balance_due");
