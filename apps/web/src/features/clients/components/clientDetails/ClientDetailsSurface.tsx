@@ -15,6 +15,7 @@ import {
   type ClientProfileMobileBucket,
   type CustomFieldDraftRow
 } from "../contact/domain/clientProfile";
+import { isProtectedLegacyClient } from "./domain/clientDeletionPolicy";
 import type {
   ClientPortalActivityEntry,
   CrmClient,
@@ -1076,14 +1077,16 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
               {selectedEmail ? <a className="nexops-link-button" href={`mailto:${selectedEmail}`}>Email</a> : <button type="button" disabled>Email</button>}
               <button type="button" onClick={() => setClientProfileTabRoute("portal")}>More actions</button>
               <button type="button" onClick={toggleCreateMenu}>Create for client</button>
-              <button
-                type="button"
-                className="nexops-kit-action-danger"
-                disabled={clientRailBusy === "delete-client"}
-                onClick={() => void deleteClientRecord(selectedClient.id)}
-              >
-                Delete client
-              </button>
+              {!isProtectedLegacyClient(selectedClient) ? (
+                <button
+                  type="button"
+                  className="nexops-kit-action-danger"
+                  disabled={clientRailBusy === "delete-client"}
+                  onClick={() => void deleteClientRecord(selectedClient.id)}
+                >
+                  Delete client
+                </button>
+              ) : null}
             </div>
           </div>
           <div className="nexops-client-profile-meta">

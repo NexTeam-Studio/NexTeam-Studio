@@ -6,6 +6,10 @@ import {
   type CustomFieldDraftRow,
   validateCustomFieldDraftRows
 } from "../../contact/domain/clientProfile";
+import {
+  isProtectedLegacyClient,
+  protectedLegacyClientDeleteMessage
+} from "../domain/clientDeletionPolicy";
 import { clientDisplayName } from "../../../../nexopsShell/workspaceSupport";
 import type {
   ClientPortalActivityEntry,
@@ -139,6 +143,10 @@ export function useClientDetailsRails(options: {
     const client = options.clients.find((entry) => entry.id === clientId);
     if (!client) {
       setClientRailStatus("That client is no longer on the rail.");
+      return;
+    }
+    if (isProtectedLegacyClient(client)) {
+      setClientRailStatus(protectedLegacyClientDeleteMessage());
       return;
     }
     if (!window.confirm(`Delete ${clientDisplayName(client)}? This removes the client and any linked properties only when there is no saved request, quote, job, or invoice history.`)) return;
