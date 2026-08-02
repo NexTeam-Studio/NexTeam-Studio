@@ -7,7 +7,7 @@ import { setTenantOwnedDocument, updateTenantOwnedDocument } from "../../../../.
 import { legacyQuoteCompatibilityPatch, normalizeQuoteRecord } from "../domain/quoteStatusCompatibility.js";
 
 export function createQuoteFirestoreRepository(db: Firestore) {
-  async function normalizeStoredQuote(record: Record<string, unknown>, persistPatch: (patch: Record<string, unknown>) => Promise<void>): Promise<Quote> {
+  async function normalizeStoredQuote(record: Record<string, unknown>, persistPatch: (patch: Record<string, unknown>) => Promise<unknown>): Promise<Quote> {
     const patch = legacyQuoteCompatibilityPatch(record);
     if (patch) {
       await persistPatch(patch);
