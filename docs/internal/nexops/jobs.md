@@ -5,6 +5,14 @@ Build piece: Reminder-driven job-state engine + close/invoice/payment flow + sch
 
 ## Statuses
 
+## Imported history
+
+- Historical jobs remain tenant data. They are not deleted just because they came from an earlier system.
+- Completed or stale historical jobs use `Archived` so they stay searchable without appearing in the current scheduling and office-action queues.
+- The Jobs workspace identifies those records as **Historical record** and lets an authorized office user start a new active job for the same client.
+- Starting new work preserves the historical record. It creates a separate current job instead of reopening or rewriting old history.
+- A future shared contract may add a durable parent-history link. Until then, the safe carry-forward is the matched client and a new independently auditable job.
+
 ### `Upcoming`
 - At least one active visit exists in the future.
 - No pending office action alert and no active invoice reminder are overriding the rail.

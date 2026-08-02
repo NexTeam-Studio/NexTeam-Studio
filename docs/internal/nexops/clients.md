@@ -5,6 +5,14 @@ Build piece: Request foundation follow-up client gates
 
 ## Statuses
 
+## Imported history
+
+- A client imported from an earlier system remains a real tenant record and may be used when new NexTeam work is created.
+- Imported history is marked with the source-neutral field `customFields.recordClassification = "imported_history"`.
+- The client roster shows an **Imported history** label so office staff can distinguish historical records from records created directly in NexTeam.
+- The label is descriptive only. It does not block editing the client or creating a new request, quote, job, visit, invoice, or payment for that client.
+- Import provenance belongs in tenant data or a controlled migration receipt, never in reusable product code or customer-facing copy.
+
 ### `active`
 - The client exists as a saved native NexOps client record.
 - Current local UI lists only saved clients in the active client roster.
