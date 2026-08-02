@@ -146,14 +146,40 @@ function AuthForm(props: {
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onForgotPassword: () => void;
 }): React.ReactElement {
+  const [passwordVisible, setPasswordVisible] = useState(false);
+
   return (
     <form className="auth-form" onSubmit={props.onSubmit}>
       <label>Email<input autoComplete="email" inputMode="email" value={props.email} onChange={(event) => props.onEmail(event.target.value)} /></label>
-      {!props.localAuthEnabled ? <label>Password<input autoComplete="current-password" type="password" value={props.password} onChange={(event) => props.onPassword(event.target.value)} /></label> : null}
+      {!props.localAuthEnabled ? (
+        <label>
+          Password
+          <span className="auth-password-field">
+            <input autoComplete="current-password" type={passwordVisible ? "text" : "password"} value={props.password} onChange={(event) => props.onPassword(event.target.value)} />
+            <button
+              className="auth-password-visibility"
+              type="button"
+              aria-label={passwordVisible ? "Hide password" : "Show password"}
+              aria-pressed={passwordVisible}
+              onClick={() => setPasswordVisible((visible) => !visible)}
+            >
+              <EyeIcon hidden={passwordVisible} />
+            </button>
+          </span>
+        </label>
+      ) : null}
       {props.error ? <p className="auth-error">{props.error}</p> : null}
       {props.resetMessage ? <p className="auth-reset-message">{props.resetMessage}</p> : null}
       <button type="submit" disabled={props.working || !props.email.trim() || (!props.localAuthEnabled && !props.password)}>{props.working ? "Signing in..." : "Sign In"}</button>
       {!props.localAuthEnabled ? <button className="auth-forgot-password" type="button" disabled={props.working} onClick={props.onForgotPassword}>Forgot password?</button> : null}
     </form>
+  );
+}
+
+function EyeIcon(props: { hidden: boolean }): React.ReactElement {
+  return props.hidden ? (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3l18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 5.1A10.8 10.8 0 0 1 12 4.9c5.2 0 8.8 4.2 9.8 7.1a.9.9 0 0 1 0 .6 12.1 12.1 0 0 1-3.1 4.4M6.2 6.2A12.1 12.1 0 0 0 2.2 12a.9.9 0 0 0 0 .6c1 2.9 4.6 6.5 9.8 6.5a11 11 0 0 0 2.8-.4" /></svg>
+  ) : (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.2 12a.9.9 0 0 1 0-.6C3.2 8.5 6.8 4.9 12 4.9s8.8 3.6 9.8 6.5a.9.9 0 0 1 0 .6c-1 2.9-4.6 6.5-9.8 6.5S3.2 14.9 2.2 12Z" /><circle cx="12" cy="12" r="3" /></svg>
   );
 }
