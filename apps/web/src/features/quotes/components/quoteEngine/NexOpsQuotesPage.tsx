@@ -17,7 +17,9 @@ type QuoteStatus =
   | "approved_internal"
   | "declined"
   | "expired"
-  | "archived";
+  | "archived"
+  // Defensive read compatibility for an API response from an unmigrated server.
+  | "signed";
 
 type DeliveryMode = "draft" | "email" | "sms" | "mark_sent";
 type DiscountKind = "amount" | "percent";
@@ -376,13 +378,14 @@ function clientDisplayName(client?: ClientOption): string {
 }
 
 function quoteStatusLabel(status: QuoteStatus): string {
-  return status.replaceAll("_", " ");
+  return status === "signed" ? "approved" : status.replaceAll("_", " ");
 }
 
 export function quoteStatusTone(status: QuoteStatus): QuoteUiTone {
   switch (status) {
     case "approved":
     case "approved_internal":
+    case "signed":
       return "success";
     case "change_requested":
     case "pending_approval":
@@ -411,7 +414,7 @@ export function quoteApprovalBlockedReason(quote: QuoteRecord, timestamp = new D
   if (quote.expiresAt && new Date(quote.expiresAt).getTime() < new Date(timestamp).getTime()) {
     return "Expired quotes cannot be approved until they are renewed.";
   }
-  if (quote.status === "approved" || quote.status === "approved_internal") {
+  if (quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed") {
     return "Approved quotes are locked.";
   }
   if (quote.status === "declined") {
@@ -432,6 +435,7 @@ export function quoteLifecyclePercent(status: QuoteStatus): number {
       return 46;
     case "approved":
     case "approved_internal":
+    case "signed":
       return 84;
     case "expired":
       return 58;
@@ -455,6 +459,7 @@ export function quoteLifecycleNarrative(quote: QuoteRecord): string {
     case "change_requested":
       return "The client asked for revisions. Staff needs to update the quote and resend a fresh approval path.";
     case "approved":
+    case "signed":
       return "The client cleared the commercial gate. This quote is now immutable and ready for downstream work.";
     case "approved_internal":
       return "Office staff approved on the client's behalf. The quote is locked and can move into work or billing.";
@@ -470,12 +475,12 @@ export function quoteLifecycleNarrative(quote: QuoteRecord): string {
 }
 
 export function quoteCanEdit(quote: QuoteRecord): boolean {
-  return !["approved", "approved_internal", "archived", "declined", "expired"].includes(quote.status)
+  return !["approved", "approved_internal", "signed", "archived", "declined", "expired"].includes(quote.status)
     && !quoteApprovalBlockedReason(quote);
 }
 
 export function quoteSendBlockedReason(quote: QuoteRecord): string | null {
-  if (quote.status === "approved" || quote.status === "approved_internal") {
+  if (quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed") {
     return "Approved quotes are locked and no longer need a fresh send step.";
   }
   if (quote.status === "expired") {
@@ -512,7 +517,7 @@ export function quoteCanRenew(quote: QuoteRecord): boolean {
 }
 
 export function quoteConvertToJobBlockedReason(quote: QuoteRecord): string | null {
-  if (!["approved", "approved_internal"].includes(quote.status)) {
+  if (!["approved", "approved_internal", "signed"].includes(quote.status)) {
     return "Only approved quotes can convert into jobs.";
   }
   if (quote.convertedJobId) {
@@ -526,7 +531,7 @@ export function quoteCanConvertToJob(quote: QuoteRecord): boolean {
 }
 
 export function quoteInvoiceBlockedReason(quote: QuoteRecord): string | null {
-  if (!["approved", "approved_internal"].includes(quote.status)) {
+  if (!["approved", "approved_internal", "signed"].includes(quote.status)) {
     return "Quote must be approved before an invoice is created.";
   }
   return null;
@@ -586,6 +591,9 @@ export function quoteApprovalSummaryLabel(quote: QuoteRecord): string {
   if (quote.status === "sent") {
     return "Client action pending";
   }
+  if (quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed") {
+    return "Client accepted";
+  }
   return "Not approved yet";
 }
 
@@ -603,7 +611,7 @@ export function quoteDominantAction(quote: QuoteRecord): {
       tone: "warning"
     };
   }
-  if (quote.status === "approved" || quote.status === "approved_internal") {
+  if (quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed") {
     if (!quote.convertedJobId) {
       return {
         action: "convert-to-job",
@@ -946,10 +954,10 @@ function quoteMatchesFilter(quote: QuoteRecord, filter: QuoteFilter): boolean {
     return true;
   }
   if (filter === "approved") {
-    return quote.status === "approved" || quote.status === "approved_internal";
+    return quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed";
   }
   if (filter === "approved_pending_conversion") {
-    return (quote.status === "approved" || quote.status === "approved_internal") && !quote.convertedJobId;
+    return (quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed") && !quote.convertedJobId;
   }
   return quote.status === filter;
 }
@@ -1457,8 +1465,8 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
     draft: quotes.filter((quote) => quote.status === "draft").length,
     sent: quotes.filter((quote) => quote.status === "sent").length,
     change_requested: quotes.filter((quote) => quote.status === "change_requested").length,
-    approved: quotes.filter((quote) => quote.status === "approved" || quote.status === "approved_internal").length,
-    approved_pending_conversion: quotes.filter((quote) => (quote.status === "approved" || quote.status === "approved_internal") && !quote.convertedJobId).length,
+    approved: quotes.filter((quote) => quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed").length,
+    approved_pending_conversion: quotes.filter((quote) => (quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed") && !quote.convertedJobId).length,
     expired: quotes.filter((quote) => quote.status === "expired").length
   };
 
@@ -2218,7 +2226,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                     <input value={sendDraft.note} onChange={(event) => setSendDraft((current) => ({ ...current, note: event.target.value }))} />
                   </label>
                   <div className="nexops-inline-actions">
-                    <button type="button" onClick={() => void runQuoteAction("send")} disabled={Boolean(busy) || !selectedQuoteCanSend}>{busy === "send" ? "Sending..." : selectedQuote.status === "sent" || selectedQuote.status === "approved" || selectedQuote.status === "approved_internal" ? "Resend quote" : "Send quote"}</button>
+                    <button type="button" onClick={() => void runQuoteAction("send")} disabled={Boolean(busy) || !selectedQuoteCanSend}>{busy === "send" ? "Sending..." : selectedQuote.status === "sent" || selectedQuote.status === "approved" || selectedQuote.status === "approved_internal" || selectedQuote.status === "signed" ? "Resend quote" : "Send quote"}</button>
                     {portalLinks[selectedQuote.id] ? <small>{portalLinks[selectedQuote.id]}</small> : <small>Live portal link appears here after send or renew.</small>}
                   </div>
                   {!selectedQuoteCanSend && quoteSendBlockedReason(selectedQuote) ? <p className="nexops-quote-blocked-note">{quoteSendBlockedReason(selectedQuote)}</p> : null}

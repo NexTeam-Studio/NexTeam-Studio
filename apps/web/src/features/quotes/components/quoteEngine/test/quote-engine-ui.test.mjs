@@ -62,6 +62,15 @@ test("quote dominant action changes after approval based on whether a job snapsh
   assert.equal(convertedAction.label, "Create invoice");
 });
 
+test("legacy signed quotes remain locked and can enter the downstream lifecycle", () => {
+  const signed = makeQuote({ status: "signed" });
+
+  assert.equal(quoteDominantAction(signed).action, "convert-to-job");
+  assert.equal(quoteCanSend(signed), false);
+  assert.equal(quoteCanConvertToJob(signed), true);
+  assert.equal(quoteCanCreateInvoice(signed), true);
+});
+
 test("blocked delivery state disables send and exposes the reason on approved quotes", () => {
   const approved = makeQuote({ status: "approved" });
 
