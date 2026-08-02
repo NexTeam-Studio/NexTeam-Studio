@@ -62,7 +62,18 @@ export const tenantSchema = z.object({
     cleanStreak: z.number().int().min(0)
   })),
   timezone: z.string().min(1),
-  plan: z.enum(["nexi", "marketing", "suite"])
+  plan: z.enum(["nexi", "marketing", "suite"]),
+  payments: z.object({
+    stripeConnect: z.object({
+      accountId: z.string().regex(/^acct_[A-Za-z0-9]+$/),
+      onboardingEmail: z.string().email(),
+      country: z.string().length(2),
+      createdAt: z.string().min(1),
+      updatedAt: z.string().min(1),
+      onboardingFlowTokenHash: z.string().min(32).optional(),
+      onboardingFlowExpiresAt: z.string().min(1).optional()
+    }).optional()
+  }).optional()
 });
 
 const hexColorSchema = z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);

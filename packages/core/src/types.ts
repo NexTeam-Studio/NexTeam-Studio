@@ -71,6 +71,17 @@ export interface Tenant {
   approval: Record<ArtifactKind, { autoApprove: boolean; cleanStreak: number }>;
   timezone: string;
   plan: TenantPlan;
+  payments?: {
+    stripeConnect?: {
+      accountId: string;
+      onboardingEmail: string;
+      country: string;
+      createdAt: string;
+      updatedAt: string;
+      onboardingFlowTokenHash?: string | undefined;
+      onboardingFlowExpiresAt?: string | undefined;
+    } | undefined;
+  } | undefined;
 }
 
 export interface TenantBranding {

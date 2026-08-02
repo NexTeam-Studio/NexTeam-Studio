@@ -61,6 +61,11 @@ import { MemoryStorageWriter } from "./platform/backup.js";
 import { FirebaseStorageWriter } from "./platform/storage.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository } from "./platform/repository.js";
 import { registerPlatformRoutes } from "./platform/routes.js";
+import {
+  createStripeConnectExpressAccount,
+  createStripeConnectOnboardingLink,
+  retrieveStripeConnectAccount
+} from "./modules/nexops/areas/invoices/components/paymentRails/server/stripe.js";
 import { FirestoreSitesRepository, InMemorySitesRepository } from "./sites/repository.js";
 import { registerSitesRoutes } from "./sites/routes.js";
 import { FirestoreSelfRepairRepository, InMemorySelfRepairRepository } from "./selfrepair/repository.js";
@@ -326,7 +331,16 @@ registerMobileRoutes(app, {
   usageLog: fieldDocsUsageLog,
   env: process.env
 });
-registerPlatformRoutes(app, { repository: platformRepository, storage: platformStorage, env: process.env });
+registerPlatformRoutes(app, {
+  repository: platformRepository,
+  storage: platformStorage,
+  stripeConnect: {
+    createExpressAccount: createStripeConnectExpressAccount,
+    createOnboardingLink: createStripeConnectOnboardingLink,
+    retrieveAccount: retrieveStripeConnectAccount
+  },
+  env: process.env
+});
 registerSitesRoutes(app, {
   repository: sitesRepository,
   approvalQueue,
