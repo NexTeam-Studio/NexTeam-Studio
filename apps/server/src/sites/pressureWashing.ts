@@ -33,7 +33,11 @@ export function generatePressureWashingSite(input: SiteGenerationInput = {}, now
   const phone = parsed.phone ?? "Call for an estimate";
   const email = parsed.email;
   const website = parsed.website;
-  const services = parsed.services ?? defaultServices;
+  const serviceImageBaseUrl = parsed.serviceImageBaseUrl?.replace(/\/?$/, "/");
+  const services = (parsed.services ?? defaultServices).map((service) => ({
+    ...service,
+    backgroundImage: service.backgroundImage ?? (serviceImageBaseUrl ? `${serviceImageBaseUrl}${slugify(service.name)}.webp` : undefined)
+  }));
   const websiteLabel = website ? website.replace(/^https?:\/\//, "").replace(/\/$/, "") : "Residential and commercial";
   const blocks: SiteBlock[] = [
     {

@@ -25,7 +25,8 @@ export const servicesBlockSchema = blockBaseSchema.extend({
   services: z.array(z.object({
     name: z.string().min(1),
     description: z.string().min(1),
-    startingAt: z.string().optional()
+    startingAt: z.string().optional(),
+    backgroundImage: z.string().min(1).optional()
   })).min(1)
 });
 
@@ -175,11 +176,13 @@ export const siteGenerationInputSchema = z.object({
   tagline: z.string().min(1).optional(),
   logoUrl: z.string().min(1).optional(),
   faviconUrl: z.string().min(1).optional(),
+  serviceImageBaseUrl: z.string().min(1).optional(),
   serviceArea: z.array(z.string().min(1)).optional(),
   services: z.array(z.object({
     name: z.string().min(1),
     description: z.string().min(1),
-    startingAt: z.string().optional()
+    startingAt: z.string().optional(),
+    backgroundImage: z.string().min(1).optional()
   })).optional(),
   gallery: z.array(z.object({
     mediaId: z.string().min(1),

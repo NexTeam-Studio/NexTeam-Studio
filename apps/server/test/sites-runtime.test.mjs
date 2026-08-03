@@ -65,7 +65,8 @@ test("M8 generates a pressure-washing site with direct phone, email, and website
     phone: "864-934-7278",
     email: "contact@example.test",
     website: "https://example.test",
-    serviceArea: ["Test City"]
+    serviceArea: ["Test City"],
+    serviceImageBaseUrl: "/tenant-packs/test-pressure-washing/assets/services"
   }, "2026-08-03T20:00:00.000Z");
   assert.equal(site.theme, "pressure_washing");
   assert.match(site.html, /href="tel:8649347278"/);
@@ -74,6 +75,8 @@ test("M8 generates a pressure-washing site with direct phone, email, and website
   assert.doesNotMatch(site.html, /<p class="eyebrow">Dirty Work\. Clean Results\.<\/p>/);
   assert.match(site.html, /Exterior Cleaning That Makes the Whole Property Look Cared For/);
   assert.match(site.html, /Bronze Package/);
+  assert.match(site.html, /class="service-card has-photo"/);
+  assert.match(site.html, /test-pressure-washing\/assets\/services\/house-wash\.webp/);
 });
 
 test("M8 lead form creates lead, event, and approval-queued owner notification only", async () => {
