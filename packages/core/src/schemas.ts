@@ -45,7 +45,7 @@ export const artifactKindSchema = z.enum([
 export const tenantSchema = z.object({
   id: idSchema,
   name: z.string().min(1),
-  industryPack: z.enum(["pool_leak", "hvac", "plumbing"]),
+  industryPack: z.enum(["pool_leak", "hvac", "plumbing", "pressure_washing"]),
   branding: z.object({
     assistantName: z.string().min(1),
     logoRef: z.string().optional(),

@@ -23,7 +23,7 @@ import {
 const tenantBodySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  industryPack: z.enum(["pool_leak", "hvac", "plumbing"]).optional(),
+  industryPack: z.enum(["pool_leak", "hvac", "plumbing", "pressure_washing"]).optional(),
   branding: z.object({
     assistantName: z.string().min(1),
     logoRef: z.string().optional(),

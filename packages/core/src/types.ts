@@ -12,7 +12,7 @@ export interface Address {
   country: string;
 }
 
-export type IndustryPack = "pool_leak" | "hvac" | "plumbing";
+export type IndustryPack = "pool_leak" | "hvac" | "plumbing" | "pressure_washing";
 export type CrmAdapterKind = "jobber" | "native";
 export type MediaAdapterKind = "companycam" | "native";
 export type EmailAdapterKind = "gmail_relay" | "sendgrid";
