@@ -793,7 +793,20 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
 
   function renderMessageSources(message: ChatMessage): React.ReactNode {
     const photoSources = message.sources.filter(sourceIsPhoto);
-    const textSources = message.sources.filter((source) => !sourceIsPhoto(source) && !nexiShouldHideRenderedSource(source));
+    // A single tool call can be carried through several gateway passes. Show
+    // its human-facing source once, never as a stack of identical labels.
+    const seenSourceLabels = new Set<string>();
+    const textSources = message.sources.filter((source) => {
+      if (sourceIsPhoto(source) || nexiShouldHideRenderedSource(source)) {
+        return false;
+      }
+      const key = `${source.rail}:${source.ref}:${source.label}`;
+      if (seenSourceLabels.has(key)) {
+        return false;
+      }
+      seenSourceLabels.add(key);
+      return true;
+    });
     const actions = message.role === "assistant" ? messageQuickActions(message.text) : [];
     const activeApprovalPrompt = nexiActiveApprovalPrompt(messages, pendingApproval);
     const showConfirmationButtons = message.role === "assistant"

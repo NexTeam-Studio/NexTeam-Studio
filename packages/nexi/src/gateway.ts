@@ -14,7 +14,10 @@ const MAX_TOOL_ITERATIONS = 6;
  */
 function usesClaudeFirstRouting(env: NodeJS.ProcessEnv | undefined): boolean {
   const routingMode = env?.NEXI_ROUTING_MODE?.trim().toLowerCase();
-  return routingMode === "claude_first" || routingMode === "claude-first";
+  // Live Nexi must reason with Claude by default. The deterministic router is
+  // retained only as an explicit offline/recovery mode; otherwise ordinary
+  // human phrasing, corrections, and context drift into brittle regex paths.
+  return routingMode !== "deterministic" && routingMode !== "offline";
 }
 
 export interface AnthropicUsagePayload {

@@ -12,6 +12,12 @@ test("Nexi notification cleanup does not reference voice-hook internals", () => 
 
 test("every rendered Nexi message includes its date and time stamp", () => {
   assert.match(primitives, /formatNexiMessageTimestamp/);
+  assert.match(primitives, /second:\s*"2-digit"/);
   assert.match(primitives, /<time className="nexi-message-timestamp"/);
   assert.match(source, /createdAt: new Date\(\)\.toISOString\(\)/);
+});
+
+test("repeated gateway source labels render once per message", () => {
+  assert.match(source, /const seenSourceLabels = new Set<string>\(\)/);
+  assert.match(source, /seenSourceLabels\.has\(key\)/);
 });

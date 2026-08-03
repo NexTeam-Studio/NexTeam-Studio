@@ -69,7 +69,8 @@ export function formatNexiMessageTimestamp(value: string | undefined): string {
     day: "numeric",
     year: "numeric",
     hour: "numeric",
-    minute: "2-digit"
+    minute: "2-digit",
+    second: "2-digit"
   }).format(date);
 }
 

@@ -114,7 +114,8 @@ test("Claude-first routing executes a saved approval deterministically on a plai
     }],
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key", NEXI_ROUTING_MODE: "claude_first" },
+    // Claude-first is the production default. No routing-mode flag is needed.
+    env: { ANTHROPIC_API_KEY: "test-key" },
     fetchFn: async () => {
       throw new Error("A confirmation must not be re-routed through Claude.");
     }
