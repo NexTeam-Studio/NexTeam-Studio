@@ -278,13 +278,8 @@ export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
   if (site.theme === "pressure_washing") {
     return renderPressureWashingSite(site);
   }
-  const pressureWashing = site.theme === "pressure_washing";
-  const description = pressureWashing
-    ? "Residential and commercial exterior cleaning, soft washing, roof cleaning, and pressure washing."
-    : "Swimming pool leak detection, pressure testing, dye testing, and field documentation.";
-  const themeCss = pressureWashing
-    ? `--ink: #07101e; --deep: #062a58; --water: #1178d4; --foam: #eaf6ff; --sand: #dceeff; --coral: #e2a615; --card: rgba(255, 255, 255, 0.92);`
-    : `--ink: #14231f; --deep: #0f393d; --water: #4eb8c7; --foam: #effaf8; --sand: #efe2c8; --coral: #d56a4a; --card: rgba(255, 255, 255, 0.82);`;
+  const description = "Swimming pool leak detection, pressure testing, dye testing, and field documentation.";
+  const themeCss = `--ink: #14231f; --deep: #0f393d; --water: #4eb8c7; --foam: #effaf8; --sand: #efe2c8; --coral: #d56a4a; --card: rgba(255, 255, 255, 0.82);`;
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -401,7 +396,7 @@ export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
       <nav>
         <a href="#services">Services</a>
         ${site.blocks.some((block) => block.type === "gallery") ? `<a href="#gallery">Proof</a>` : ""}
-        <a href="${pressureWashing ? "#contact" : "#estimate"}">${pressureWashing ? "Contact" : "Estimate"}</a>
+        <a href="#estimate">Estimate</a>
       </nav>
     </header>
     <main>
@@ -409,7 +404,7 @@ export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
     </main>
     <footer>
       <strong>${escapeHtml(site.title)}</strong><br />
-      ${pressureWashing ? "Cleaner surfaces. Better impressions." : "Clear answers. Better next steps."}
+      Clear answers. Better next steps.
     </footer>
   </body>
 </html>`;
