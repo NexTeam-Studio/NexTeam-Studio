@@ -13,7 +13,9 @@ export const heroBlockSchema = blockBaseSchema.extend({
   headline: z.string().min(1),
   subhead: z.string().min(1),
   primaryCta: z.object({ label: z.string().min(1), href: z.string().min(1) }),
-  proofPoints: z.array(z.string().min(1))
+  proofPoints: z.array(z.string().min(1)),
+  imageSrc: z.string().min(1).optional(),
+  imageAlt: z.string().min(1).optional()
 });
 
 export const servicesBlockSchema = blockBaseSchema.extend({
@@ -168,6 +170,7 @@ export const siteGenerationInputSchema = z.object({
   phone: z.string().min(7).optional(),
   website: z.string().url().optional(),
   tagline: z.string().min(1).optional(),
+  logoUrl: z.string().min(1).optional(),
   serviceArea: z.array(z.string().min(1)).optional(),
   services: z.array(z.object({
     name: z.string().min(1),

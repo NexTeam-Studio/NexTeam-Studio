@@ -40,7 +40,9 @@ export function generatePressureWashingSite(input: SiteGenerationInput = {}, now
       headline: "Tough work. Clean results.",
       subhead: `${businessName} provides detailed exterior cleaning for homes, businesses, and properties that need to look their best.`,
       primaryCta: { label: "Call for an estimate", href: phone.startsWith("+") || /^\d/.test(phone) ? `tel:${phone.replace(/[^+\d]/g, "")}` : "#contact" },
-      proofPoints: ["Residential and commercial", "Exterior cleaning professionals", phone, websiteLabel]
+      proofPoints: ["Residential and commercial", "Exterior cleaning professionals", phone, websiteLabel],
+      imageSrc: parsed.logoUrl,
+      imageAlt: `${businessName} logo`
     },
     { id: "services", type: "services", heading: "Exterior cleaning that makes the whole property look cared for.", services },
     {
