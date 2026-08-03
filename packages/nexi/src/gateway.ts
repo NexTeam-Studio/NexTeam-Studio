@@ -728,6 +728,7 @@ function clientLookupQueryFromText(text: string): string {
   const candidate = deleteMatch?.[1] ?? lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? forEntityMatch?.[1] ?? whereaboutsMatch?.[1] ?? whatIsFieldMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
   return candidate
     .replace(/\b([A-Za-z][A-Za-z' -]*)'s\b/g, "$1")
+    .replace(/[’']+$/g, "")
     // Assistant history can contain a prior factual sentence such as
     // "Catherine Sears is 864-617-1838".  If it is considered while resolving
     // a later possessive follow-up, retain the person—not the factual tail.
@@ -1231,12 +1232,13 @@ async function normalizeToolInput(
     const parsedUserQuery = clientLookupQueryFromText(userText);
     const pronounOnlyQuery = /^(?:he|him|his|she|her|hers|they|them|their|theirs)$/i.test(parsedUserQuery)
       || (hasClientPronounReference(userText) && !hasExplicitClientSubject(userText));
+    const matchListFollowUp = looksLikeClientMatchListFollowUp(userText);
     // A pronoun is not a client lookup key.  Keep the person established in
     // the earlier turn instead of sending a literal search for "their".
-    const conversationQuery = pronounOnlyQuery
+    const conversationQuery = pronounOnlyQuery || matchListFollowUp
       ? clientEntityFromPreviousUserMessages(messages)
       : entityQueryFromMessages(messages);
-    const parsedQuery = (pronounOnlyQuery ? conversationQuery : parsedUserQuery) || conversationQuery || "";
+    const parsedQuery = (pronounOnlyQuery || matchListFollowUp ? conversationQuery : parsedUserQuery) || conversationQuery || "";
     if (looksLikeClientListQuestion(lowerUserText)) {
       record.q = "";
     } else if (parsedQuery) {
@@ -2063,6 +2065,10 @@ function looksLikeApprovalNo(text: string): boolean {
 
 function looksLikeApprovalChangeRequest(text: string): boolean {
   return /\b(?:make changes|change it|revise it|update it|edit it|not yet|hold on)\b/i.test(text);
+}
+
+function looksLikeClientMatchListFollowUp(text: string): boolean {
+  return /^\s*(?:show|list)\s+(?:me\s+)?(?:both|all|them)\s*[?.!]*\s*$/i.test(text);
 }
 
 function hasClientApprovalChangeDetails(text: string): boolean {
@@ -2945,7 +2951,8 @@ function deterministicToolNames(
   if (
     toolsByName.has("clientLookup")
     && (
-      looksLikeClientListQuestion(lower)
+      looksLikeClientMatchListFollowUp(userText)
+      || looksLikeClientListQuestion(lower)
       || looksLikeNamedClientLookupQuestion(lower)
       || ((looksLikePhoneLookupQuestion(lower) || looksLikeAddressLookupQuestion(lower) || looksLikeEmailLookupQuestion(lower))
         && Boolean(clientLookupQueryFromText(userText) || entityQueryFromMessages(messages)))
@@ -3116,7 +3123,8 @@ function deterministicToolNames(
     return ["searchEmail"];
   }
   if (
-    looksLikeClientListQuestion(lower)
+    looksLikeClientMatchListFollowUp(userText)
+    || looksLikeClientListQuestion(lower)
     || looksLikeNamedClientLookupQuestion(lower)
     || ((looksLikePhoneLookupQuestion(lower) || looksLikeAddressLookupQuestion(lower) || looksLikeEmailLookupQuestion(lower))
       && Boolean(clientLookupQueryFromText(userText) || entityQueryFromMessages(messages)))
@@ -3507,7 +3515,10 @@ function formatClientLookupPhone(phone: string): string {
 function clientLookupAnswer(latestText: string, messages: GatewayMessage[], result: unknown): string | undefined {
   const record = objectRecord(result);
   const rawClients = Array.isArray(record?.clients) ? record.clients : [];
-  const parsedUserQuery = clientLookupQueryFromText(latestText);
+  const matchListFollowUp = looksLikeClientMatchListFollowUp(latestText);
+  const parsedUserQuery = matchListFollowUp
+    ? clientEntityFromPreviousUserMessages(messages)
+    : clientLookupQueryFromText(latestText);
   const requested = preferConversationClientEntity(
     /^(?:he|him|his|she|her|hers|they|them|their|theirs)$/i.test(parsedUserQuery)
       || (hasClientPronounReference(latestText) && !hasExplicitClientSubject(latestText))
@@ -3932,7 +3943,7 @@ function directAnswerFromDeterministicRuns(
   if (
     clientLookupRun
     && !looksLikeClientListQuestion(lower)
-    && (looksLikeNamedClientLookupQuestion(lower) || looksLikePhoneLookupQuestion(lower) || looksLikeAddressLookupQuestion(lower) || looksLikeClientEmailFieldQuestion(lower))
+    && (looksLikeClientMatchListFollowUp(latestText) || looksLikeNamedClientLookupQuestion(lower) || looksLikePhoneLookupQuestion(lower) || looksLikeAddressLookupQuestion(lower) || looksLikeClientEmailFieldQuestion(lower))
   ) {
     return clientLookupAnswer(latestText, messages, clientLookupRun.result);
   }
@@ -4067,7 +4078,8 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
     : clientLookupQueryFromText(currentUserText) || entityQueryFromMessages(request.messages, { skipLatest: true });
   const deterministicClientDetailRead = Boolean(
     toolsByName.has("clientLookup")
-    && (looksLikePhoneLookupQuestion(currentUserText.toLowerCase())
+    && (looksLikeClientMatchListFollowUp(currentUserText)
+      || looksLikePhoneLookupQuestion(currentUserText.toLowerCase())
       || looksLikeClientEmailFieldQuestion(currentUserText.toLowerCase())
       || (looksLikeAddressLookupQuestion(currentUserText.toLowerCase())
         && !/\b(?:site\s+contact|property|job\s+site)\b/i.test(currentUserText)))

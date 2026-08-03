@@ -1044,10 +1044,34 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
             </section>
           ))}
           <div className="nexops-mobile-nav-footer">
-            <div>
-              <strong>{props.user.email ?? "Operator"}</strong>
-              <span>Signed in for this tenant</span>
-            </div>
+            <button
+              className="nexops-mobile-profile-button"
+              type="button"
+              onClick={() => navigateTo("/nexops/users")}
+              aria-label={`Open ${formatNexiOperatorDisplayName(props.user.displayName, props.user.email)}'s profile`}
+            >
+              <span className="nexops-mobile-profile-avatar" aria-hidden="true">
+                {formatNexiOperatorDisplayName(props.user.displayName, props.user.email)
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((part) => part[0])
+                  .join("")
+                  .toUpperCase() || "OP"}
+              </span>
+              <span className="nexops-mobile-profile-copy">
+                <strong>{formatNexiOperatorDisplayName(props.user.displayName, props.user.email)}</strong>
+                <span>View profile</span>
+              </span>
+            </button>
+            <button className="nexops-mobile-footer-sign-out" type="button" onClick={() => void signOutOperator(props.auth)}>
+              <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                <path d="M12 4.5h2a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 14 15.5h-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                <path d="M9 13.5 12.5 10 9 6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M12 10H4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              <span>Sign out</span>
+            </button>
           </div>
         </aside>
       </div>

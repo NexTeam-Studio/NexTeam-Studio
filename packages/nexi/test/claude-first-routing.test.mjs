@@ -163,6 +163,40 @@ test("Claude-first routing resolves a pronoun follow-up from the prior client tu
   assert.match(result.answer, /call now/i);
 });
 
+test("Claude-first routing lists previously matched clients when the operator says show me both", async () => {
+  const lookups = [];
+  const result = await runNexiToolLoop({
+    tenant,
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "What is Logan Sears' address?" },
+      { role: "assistant", content: "I found 2 matching clients for Logan Sears. Give me the exact client name so I can pull the right address." },
+      { role: "user", content: "Show me both" }
+    ],
+    tools: [{
+      name: "clientLookup",
+      description: "Look up a client.",
+      inputSchema: z.object({ q: z.string() }),
+      inputJsonSchema: { type: "object", properties: { q: { type: "string" } }, required: ["q"] },
+      handler: async (_tenant, args) => {
+        lookups.push(args);
+        return {
+          result: { clients: [{ name: "Logan Sears" }, { name: "logan sears" }], nativeCount: 2 },
+          sources: [{ rail: "native", ref: "client_logan", label: "Native CRM clients" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => { throw new Error("A checked duplicate list must not rely on a second model interpretation."); }
+  });
+
+  assert.deepEqual(lookups, [{ q: "Logan Sears" }]);
+  assert.match(result.answer, /Logan Sears/);
+  assert.match(result.answer, /logan sears/);
+});
+
 test("Claude-first routing keeps an explicit client name when a phone request also says call them", async () => {
   const lookups = [];
   const result = await runNexiToolLoop({
