@@ -9,7 +9,7 @@ const blockBaseSchema = z.object({
 
 export const heroBlockSchema = blockBaseSchema.extend({
   type: z.literal("hero"),
-  eyebrow: z.string().min(1),
+  eyebrow: z.string().min(1).optional(),
   headline: z.string().min(1),
   subhead: z.string().min(1),
   primaryCta: z.object({ label: z.string().min(1), href: z.string().min(1) }),

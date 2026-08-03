@@ -61,6 +61,7 @@ test("M8 generates a pressure-washing site with direct phone, email, and website
     tenantId: "test-pressure-washing",
     businessName: "Test Exterior Cleaning",
     slug: "test-exterior-cleaning",
+    tagline: "Dirty Work. Clean Results.",
     phone: "864-934-7278",
     email: "contact@example.test",
     website: "https://example.test",
@@ -69,6 +70,8 @@ test("M8 generates a pressure-washing site with direct phone, email, and website
   assert.equal(site.theme, "pressure_washing");
   assert.match(site.html, /href="tel:8649347278"/);
   assert.match(site.html, /href="mailto:contact@example\.test"/);
+  assert.match(site.html, /<h1>Dirty Work\. Clean Results\.<\/h1>/);
+  assert.doesNotMatch(site.html, /<p class="eyebrow">Dirty Work\. Clean Results\.<\/p>/);
   assert.match(site.html, /Exterior Cleaning That Makes the Whole Property Look Cared For/);
   assert.match(site.html, /Bronze Package/);
 });

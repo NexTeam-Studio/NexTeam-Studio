@@ -37,8 +37,8 @@ export function generatePressureWashingSite(input: SiteGenerationInput = {}, now
   const websiteLabel = website ? website.replace(/^https?:\/\//, "").replace(/\/$/, "") : "Residential and commercial";
   const blocks: SiteBlock[] = [
     {
-      id: "hero", type: "hero", eyebrow: parsed.tagline ?? "Cleaner surfaces. Better impressions.",
-      headline: "Tough work. Clean results.",
+      id: "hero", type: "hero",
+      headline: parsed.tagline ?? "Tough work. Clean results.",
       subhead: `${businessName} provides detailed exterior cleaning for homes, businesses, and properties that need to look their best.`,
       primaryCta: { label: "Call for an estimate", href: phone.startsWith("+") || /^\d/.test(phone) ? `tel:${phone.replace(/[^+\d]/g, "")}` : "#contact" },
       proofPoints: ["Residential and commercial", "Exterior cleaning professionals", phone, websiteLabel],
