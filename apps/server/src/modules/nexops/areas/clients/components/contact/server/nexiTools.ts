@@ -1,4 +1,4 @@
-import type { NexiTool, Tenant } from "@nexteam/core";
+import type { NexiTool, Property, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { clientLookupInputSchema, createClientInputSchema, deleteClientInputSchema, updateClientAddressInputSchema } from "./toolSchemas.js";
 import { clientSaveClarification, clientSaveMissingFields, dedupeClients, queueClientAddressUpdateApproval, queueClientCreateApproval, queueClientDeleteApproval } from "./toolSupport.js";
@@ -22,6 +22,28 @@ function clientLookupQueries(query: string): string[] {
     .replace(/\s+/g, " ")
     .trim();
   return [...new Set([original, simplified].filter(Boolean))];
+}
+
+function normalizedLookup(value: string | undefined): string {
+  return String(value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function propertyMatchesQuery(property: Property, query: string): boolean {
+  const needle = normalizedLookup(query);
+  if (!needle) return false;
+  const values = [
+    property.label,
+    property.siteName,
+    property.address?.street1,
+    property.address?.city,
+    property.address?.province,
+    property.address?.postalCode,
+    ...(property.contacts ?? []).flatMap((contact) => [contact.personName?.firstName, contact.personName?.lastName, ...(contact.emails ?? []).map((email) => email.value), ...(contact.phones ?? []).map((phone) => phone.value)])
+  ];
+  return values.some((value) => {
+    const candidate = normalizedLookup(value);
+    return Boolean(candidate) && (candidate.includes(needle) || needle.includes(candidate));
+  });
 }
 
 export function createContactNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
@@ -56,10 +78,18 @@ export function createContactNexiTools(context: CrmToolContext, includeWrites: b
             sources: [source("clients", "Native CRM clients")]
           };
         }
-        const nativeClients = dedupeClients((await Promise.all(clientLookupQueries(query).map((candidate) => provider.getClients(candidate)))).flat());
         const relatedProperties = options.requestRepository
           ? await options.requestRepository.listProperties(tenant.id)
           : [];
+        const directlyMatchedClients = await Promise.all(clientLookupQueries(query).map((candidate) => provider.getClients(candidate)));
+        // Site labels and site contacts are valid ways people identify a
+        // contractor account.  Resolve the owner locally, then return only
+        // that account instead of a whole client directory.
+        const matchingPropertyClientIds = new Set(relatedProperties.filter((property) => propertyMatchesQuery(property, query)).map((property) => property.clientId));
+        const propertyOwners = matchingPropertyClientIds.size > 0
+          ? (await provider.getClients("")).filter((client) => matchingPropertyClientIds.has(client.id))
+          : [];
+        const nativeClients = dedupeClients([...directlyMatchedClients.flat(), ...propertyOwners]);
         const clients = nativeClients.map((client) => {
           const propertiesForClient = relatedProperties
             .filter((property) => property.clientId === client.id)
@@ -68,7 +98,8 @@ export function createContactNexiTools(context: CrmToolContext, includeWrites: b
               label: property.label,
               siteName: property.siteName,
               address: property.address,
-              access: property.access
+              access: property.access,
+              contacts: property.contacts
             }));
           return propertiesForClient.length > 0
             ? { ...client, relatedProperties: propertiesForClient }

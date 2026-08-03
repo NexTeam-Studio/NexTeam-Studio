@@ -644,6 +644,7 @@ function entityQueryFromMessages(messages: GatewayMessage[], options: { skipLate
       continue;
     }
     const candidates = [
+      clientLookupQueryFromText(message.content),
       entityQueryFromText(message.content),
       /\b(?:photos?|pictures?|images?)\b/i.test(message.content) ? photoQueryFromText(message.content) : "",
       namedEntityFromText(message.content)
@@ -668,13 +669,16 @@ function currentEntityFromText(text: string): string {
 
 function clientLookupQueryFromText(text: string): string {
   const normalized = text.replace(/[?.!]+$/g, "").trim();
-  const lookupMatch = normalized.match(/\b(?:look\s+up|lookup|find|show|check|get|pull)\s+(?:the\s+)?(?:client|customer)\s+(.+)$/i);
+  // People commonly say "pull up Avery Smith" rather than "pull up client
+  // Avery Smith".  The former must keep the name as the lookup target.
+  const lookupMatch = normalized.match(/\b(?:look\s+up|lookup|find|show|check|get|pull\s+up|pull)\s+(?:the\s+)?(?:(?:client|customer)\s+)?(.+)$/i);
+  const deleteMatch = normalized.match(/\b(?:delete|remove)\s+(?:the\s+)?(?:duplicate\s+)?(?:client\s+)?(.+)$/i);
   const clientFirstMatch = normalized.match(/\b(?:client|customer)\s+(.+)$/i);
-  const forEntityMatch = normalized.match(/\bfor\s+((?:[A-Z][A-Za-z-]*\s+){1,4}\d{1,3})\b/);
+  const forEntityMatch = normalized.match(/\bfor\s+(.+?)(?=,?\s+(?:what|where|who|when|which|how)\b|[?.!]|$)/i);
   const whereaboutsMatch = normalized.match(/\b(?:where\s+(?:does|is)|where's)\s+(.+?)\s+(?:live|located|stay|reside)\b/i);
   const whatIsFieldMatch = normalized.match(/\bwhat(?:'s|\s+is)\s+(.+?)\s+(?:phone(?:\s+number)?|telephone|mobile|cell|call|text|number|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway|zip|postal|e-?mail(?:\s+address)?)\b/i);
   const possessiveMatch = normalized.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})'?\s+(?:client|customer|job|jobs)\b/);
-  const candidate = lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? forEntityMatch?.[1] ?? whereaboutsMatch?.[1] ?? whatIsFieldMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
+  const candidate = deleteMatch?.[1] ?? lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? forEntityMatch?.[1] ?? whereaboutsMatch?.[1] ?? whatIsFieldMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
   return candidate
     .replace(/\b([A-Za-z][A-Za-z' -]*)'s\b/g, "$1")
     .replace(/\b(?:in|from|on|with)\s+(?:jobber|crm|native|the\s+crm).*$/i, "")
@@ -954,11 +958,14 @@ async function normalizeToolInput(
       env: options?.env,
       fetchFn: options?.fetchFn
     });
-    record.name ??= parsed.name;
-    record.address ??= parsed.address;
-    record.emails ??= parsed.emails;
-    record.phones ??= parsed.phones;
-    record.consent ??= parsed.consent;
+    // Literal values in the user's message outrank incomplete or malformed
+    // model tool arguments.  In particular, an empty array is a valid JS
+    // value but is not evidence that the operator omitted a phone number.
+    if (parsed.name) record.name = parsed.name;
+    if (parsed.address) record.address = parsed.address;
+    if (parsed.emails.length > 0) record.emails = parsed.emails;
+    if (parsed.phones.length > 0) record.phones = parsed.phones;
+    record.consent = parsed.consent;
   }
   if (toolName === "updateClient") {
     const parsed = clientUpdateInputFromText(userText, messages);
@@ -974,8 +981,8 @@ async function normalizeToolInput(
     record.phones ??= parsed.phones;
   }
   if (toolName === "deleteClient") {
-    const named = userText.match(/\b(?:delete|remove)\s+(?:the\s+)?(?:duplicate\s+)?(?:client\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b/i)?.[1]
-      || userText.match(/\b(?:client|customer)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b/i)?.[1]
+    const named = userText.match(/\b(?:delete|remove)\s+(?:the\s+)?(?:duplicate\s+)?(?:client\s+)?([A-Za-z0-9][A-Za-z0-9-]*(?:\s+[A-Za-z0-9][A-Za-z0-9-]*){1,5})\b/i)?.[1]
+      || userText.match(/\b(?:client|customer)\s+([A-Za-z0-9][A-Za-z0-9-]*(?:\s+[A-Za-z0-9][A-Za-z0-9-]*){1,5})\b/i)?.[1]
       || clientLookupQueryFromText(userText)
       || entityQueryFromMessages(messages, { skipLatest: true });
     record.clientQuery ??= named.trim();
