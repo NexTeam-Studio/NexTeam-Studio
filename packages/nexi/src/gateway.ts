@@ -295,35 +295,66 @@ async function sendAnthropicRequest(input: {
   };
 
   const startedAt = Date.now();
-  const response = await (input.fetchFn ?? fetch)(ANTHROPIC_MESSAGES_URL, {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
-  const payload = await readJson(response);
-  const parsedPayload = isPayload(payload) ? payload : {};
-  const usage = normalizeUsage(parsedPayload.usage);
+  // A 429/5xx is a temporary provider condition, not a user-facing Nexi
+  // failure. Retry a small, bounded number of times with backoff; never retry
+  // authentication, validation, or other permanent errors.
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    let response: Response;
+    try {
+      response = await (input.fetchFn ?? fetch)(ANTHROPIC_MESSAGES_URL, {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify(body)
+      });
+    } catch (error) {
+      const networkRetryable = error instanceof TypeError && /fetch failed/i.test(error.message);
+      if (!networkRetryable || attempt === maxAttempts) {
+        throw new RailError(error instanceof Error ? error.message : "Anthropic request failed.", {
+          provider: "anthropic",
+          op: "messages",
+          status: 503,
+          retryable: networkRetryable
+        });
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 250 * (2 ** (attempt - 1))));
+      continue;
+    }
+    const payload = await readJson(response);
+    const parsedPayload = isPayload(payload) ? payload : {};
+    const usage = normalizeUsage(parsedPayload.usage);
 
-  if (!response.ok) {
-    throw new RailError(payloadMessage(payload), {
-      provider: "anthropic",
-      op: "messages",
-      status: response.status,
-      retryable: response.status >= 500
-    });
+    if (response.ok) {
+      return {
+        payload: parsedPayload,
+        usage,
+        answer: textFromContentBlocks(parsedPayload.content),
+        content: parsedPayload.content ?? [],
+        latencyMs: Date.now() - startedAt
+      };
+    }
+
+    const retryable = response.status === 429 || response.status >= 500;
+    if (!retryable || attempt === maxAttempts) {
+      throw new RailError(payloadMessage(payload), {
+        provider: "anthropic",
+        op: "messages",
+        status: response.status,
+        retryable
+      });
+    }
+    const retryAfterSeconds = Number(response.headers.get("retry-after"));
+    const delayMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+      ? Math.min(retryAfterSeconds * 1000, 5_000)
+      : 250 * (2 ** (attempt - 1));
+    await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
   }
 
-  return {
-    payload: parsedPayload,
-    usage,
-    answer: textFromContentBlocks(parsedPayload.content),
-    content: parsedPayload.content ?? [],
-    latencyMs: Date.now() - startedAt
-  };
+  throw new RailError("Anthropic request retry limit reached.", { provider: "anthropic", op: "messages", status: 503, retryable: true });
 }
 
 function toolDefinition(tool: NexiTool): GatewayToolDefinition {

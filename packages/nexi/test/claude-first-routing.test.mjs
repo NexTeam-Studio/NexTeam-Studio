@@ -188,3 +188,46 @@ test("Claude-first routing keeps an explicit client name when a phone request al
   assert.match(result.answer, /864-555-0101/);
   assert.match(result.answer, /call now/i);
 });
+
+test("Claude-first routing retries a temporary Anthropic overload", async () => {
+  let calls = 0;
+  const result = await runNexiToolLoop({
+    tenant,
+    system: "Answer directly.",
+    messages: [{ role: "user", content: "Hello" }],
+    tools: [],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key", NEXI_ROUTING_MODE: "claude_first" },
+    fetchFn: async () => {
+      calls += 1;
+      return calls === 1
+        ? new Response(JSON.stringify({ error: { message: "Overloaded" } }), { status: 529 })
+        : textResponse("Hello from Nexi.");
+    }
+  });
+
+  assert.equal(calls, 2);
+  assert.equal(result.answer, "Hello from Nexi.");
+});
+
+test("Claude-first routing retries a temporary Anthropic network failure", async () => {
+  let calls = 0;
+  const result = await runNexiToolLoop({
+    tenant,
+    system: "Answer directly.",
+    messages: [{ role: "user", content: "Hello" }],
+    tools: [],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key", NEXI_ROUTING_MODE: "claude_first" },
+    fetchFn: async () => {
+      calls += 1;
+      if (calls === 1) throw new TypeError("fetch failed");
+      return textResponse("Hello after retry.");
+    }
+  });
+
+  assert.equal(calls, 2);
+  assert.equal(result.answer, "Hello after retry.");
+});
