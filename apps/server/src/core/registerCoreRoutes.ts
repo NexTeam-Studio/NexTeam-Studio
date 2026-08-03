@@ -40,7 +40,7 @@ export function registerCoreRoutes(app: Express, runtime: ServerRuntime): void {
 
   app.get("/api/health", async (_req: Request, res: Response) => {
     try {
-      res.json(await buildHealth());
+      res.json(await buildHealth(runtime.env));
     } catch (error) {
       sendError(res, error);
     }

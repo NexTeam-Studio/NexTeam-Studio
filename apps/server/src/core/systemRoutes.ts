@@ -13,7 +13,7 @@ export function registerSystemRoutes(
 
   app.get("/api/health", async (_req: Request, res: Response) => {
     try {
-      res.json(await buildHealth());
+      res.json(await buildHealth(input.env));
     } catch (error) {
       sendHttpError(res, error);
     }

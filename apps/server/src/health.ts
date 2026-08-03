@@ -1,5 +1,6 @@
 import { healthResponseSchema } from "@nexteam/core";
 import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
+import { getAdminDb } from "./firebase.js";
 
 interface HealthRail {
   ok: boolean;
@@ -16,6 +17,21 @@ interface HealthRail {
 export async function buildHealth(env: NodeJS.ProcessEnv = process.env): Promise<unknown> {
   const comms = createCommsRailFromEnv(env);
   const rails: Record<string, HealthRail> = {};
+  const firebaseConfigured = Boolean(getAdminDb(env));
+  const customerTenantRuntime = Boolean(env.TENANT_ID?.trim()) && env.NODE_ENV !== "test";
+
+  rails.firebase = {
+    ok: !customerTenantRuntime || firebaseConfigured,
+    configured: firebaseConfigured,
+    provider: "firebase",
+    op: "admin_persistence_configured_no_data_read",
+    latencyMs: 0,
+    detail: firebaseConfigured
+      ? "Firebase Admin persistence is configured."
+      : customerTenantRuntime
+        ? "Firebase Admin persistence is missing; tenant startup is blocked."
+        : "Firebase Admin persistence is not configured for this non-customer runtime."
+  };
 
   rails.comms = {
     ok: comms.readAdapters.size > 0 || Boolean(comms.sendAdapter),

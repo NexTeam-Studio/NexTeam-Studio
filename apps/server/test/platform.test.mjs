@@ -14,7 +14,7 @@ import {
 import { FirestorePlatformRepository, InMemoryPlatformRepository, defaultTenant, defaultTenantBranding, subscriptionFromStripe } from "../dist/platform/repository.js";
 import { registerPlatformRoutes } from "../dist/platform/routes.js";
 import { createServerRuntime } from "../dist/app/runtime.js";
-import { assertRequiredPersistence } from "../dist/app/persistencePolicy.js";
+import { assertRequiredPersistence, assertTenantRuntimePersistence } from "../dist/app/persistencePolicy.js";
 import { resolveNexiStores } from "../dist/nexi/stores.js";
 
 function tool(name) {
@@ -471,13 +471,13 @@ test("tenancy scanner catches the planted unscoped query fixture", () => {
   );
 });
 
-test("runtime defaults to durable persistence and allows memory only by explicit local override", () => {
+test("runtime defaults to durable persistence and refuses an empty customer tenant runtime", () => {
   assert.throws(
     () => createServerRuntime({}),
     /Durable persistence is required/
   );
   assert.throws(() => resolveNexiStores({}), /Firestore persistence is required/);
-  assert.doesNotThrow(() => createServerRuntime({ ALLOW_IN_MEMORY_PERSISTENCE: "true", TENANT_ID: "test-tenant" }));
+  assert.doesNotThrow(() => createServerRuntime({ NODE_ENV: "test", ALLOW_IN_MEMORY_PERSISTENCE: "true", TENANT_ID: "test-tenant" }));
   assert.doesNotThrow(() => assertRequiredPersistence({}, {
     ApprovalQueue: true,
     Content: true,
@@ -493,4 +493,10 @@ test("runtime defaults to durable persistence and allows memory only by explicit
     Content: false,
     Scheduling: false
   }));
+  assert.throws(
+    () => assertTenantRuntimePersistence({ TENANT_ID: "aquatrace", ALLOW_IN_MEMORY_PERSISTENCE: "true" }, false),
+    /Refusing to use an empty in-memory database/
+  );
+  assert.doesNotThrow(() => assertTenantRuntimePersistence({ TENANT_ID: "aquatrace" }, true));
+  assert.doesNotThrow(() => assertTenantRuntimePersistence({ NODE_ENV: "test", TENANT_ID: "aquatrace" }, false));
 });

@@ -19,7 +19,7 @@ import { MemoryStorageWriter, type StorageWriter } from "../platform/backup.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository, type PlatformRepository } from "../platform/repository.js";
 import { FirebaseStorageWriter } from "../platform/storage.js";
 import { FirestoreSchedulingRepository, InMemorySchedulingRepository, type SchedulingRepository } from "../scheduling/repository.js";
-import { assertRequiredPersistence } from "./persistencePolicy.js";
+import { assertRequiredPersistence, assertTenantRuntimePersistence } from "./persistencePolicy.js";
 
 export interface ServerRuntime {
   env: NodeJS.ProcessEnv;
@@ -37,6 +37,7 @@ export interface ServerRuntime {
 
 export function createServerRuntime(env: NodeJS.ProcessEnv = process.env): ServerRuntime {
   const adminDb = getAdminDb(env);
+  assertTenantRuntimePersistence(env, Boolean(adminDb));
   assertRequiredPersistence(env, {
     ApprovalQueue: Boolean(adminDb),
     Content: Boolean(adminDb),

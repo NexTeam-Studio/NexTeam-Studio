@@ -18,3 +18,23 @@ export function assertRequiredPersistence(
       + "Set ALLOW_IN_MEMORY_PERSISTENCE=true only for an explicitly non-production runtime."
   );
 }
+
+/**
+ * A named tenant is customer data.  It must never silently fall back to an
+ * in-memory repository: doing so makes a healthy signed-in user appear to
+ * have an empty business.  Test processes can still exercise memory-backed
+ * fixtures by declaring NODE_ENV=test.
+ */
+export function assertTenantRuntimePersistence(
+  env: NodeJS.ProcessEnv,
+  durablePersistenceAvailable: boolean
+): void {
+  const tenantId = env.TENANT_ID?.trim();
+  if (!tenantId || env.NODE_ENV === "test" || durablePersistenceAvailable) {
+    return;
+  }
+  throw new Error(
+    `Firebase durable persistence is required before starting the ${tenantId} tenant runtime. `
+      + "Refusing to use an empty in-memory database for a customer tenant."
+  );
+}

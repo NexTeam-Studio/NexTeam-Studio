@@ -77,7 +77,7 @@ import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { createVoiceRouter } from "./voice/routes.js";
 import { configuredTenantId } from "./core/tenantConfig.js";
 import { registerSystemRoutes } from "./core/systemRoutes.js";
-import { assertRequiredPersistence } from "./app/persistencePolicy.js";
+import { assertRequiredPersistence, assertTenantRuntimePersistence } from "./app/persistencePolicy.js";
 import { registerIntegratedNexiRoutes } from "./nexi/integratedRoutes.js";
 import { registerUsersRoutes } from "./modules/nexops/areas/users/routes.js";
 
@@ -85,6 +85,7 @@ const app = express();
 const runtimeTenantId = configuredTenantId(process.env, "serverBootstrap");
 const commsRail = createCommsRailFromEnv(process.env);
 const adminDb = getAdminDb();
+assertTenantRuntimePersistence(process.env, Boolean(adminDb));
 assertRequiredPersistence(process.env, {
   ApprovalQueue: Boolean(adminDb),
   Content: Boolean(adminDb),
