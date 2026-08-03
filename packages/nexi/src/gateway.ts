@@ -7,6 +7,16 @@ export const NEXI_ANTHROPIC_MODEL = "claude-sonnet-5";
 const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
 const MAX_TOOL_ITERATIONS = 6;
 
+/**
+ * Claude-first keeps ordinary Nexi conversation in the model's reasoning loop.
+ * The older deterministic parser remains available as an explicit offline
+ * fallback, but must not decide the meaning of a live user's words first.
+ */
+function usesClaudeFirstRouting(env: NodeJS.ProcessEnv | undefined): boolean {
+  const routingMode = env?.NEXI_ROUTING_MODE?.trim().toLowerCase();
+  return routingMode === "claude_first" || routingMode === "claude-first";
+}
+
 export interface AnthropicUsagePayload {
   input_tokens?: number;
   output_tokens?: number;
@@ -3933,33 +3943,38 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
   const toolRuns: ToolRunTrace[] = [];
   const rawIterations: unknown[] = [];
   const maxToolIterations = request.maxToolIterations ?? MAX_TOOL_ITERATIONS;
-  const reusableRuns = reusableCachedToolRuns({
-    tenant: request.tenant,
-    messages,
-    toolsByName,
-    cachedToolRuns: request.cachedToolRuns,
-    pendingApproval: request.pendingApproval,
-    requestorContext: {
-      requestorEmail: request.requestorEmail,
-      requestorPhones: request.requestorPhones,
-      requestorOrigin: request.requestorOrigin
-    }
-  });
-  const deterministicRuns = reusableRuns.length > 0
-    ? reusableRuns
-    : await runDeterministicTools({
+  const claudeFirstRouting = usesClaudeFirstRouting(request.env);
+  const reusableRuns = claudeFirstRouting
+    ? []
+    : reusableCachedToolRuns({
         tenant: request.tenant,
         messages,
         toolsByName,
+        cachedToolRuns: request.cachedToolRuns,
         pendingApproval: request.pendingApproval,
         requestorContext: {
           requestorEmail: request.requestorEmail,
           requestorPhones: request.requestorPhones,
           requestorOrigin: request.requestorOrigin
-        },
-        env: request.env,
-        fetchFn: request.fetchFn
+        }
       });
+  const deterministicRuns = claudeFirstRouting
+    ? []
+    : reusableRuns.length > 0
+      ? reusableRuns
+      : await runDeterministicTools({
+          tenant: request.tenant,
+          messages,
+          toolsByName,
+          pendingApproval: request.pendingApproval,
+          requestorContext: {
+            requestorEmail: request.requestorEmail,
+            requestorPhones: request.requestorPhones,
+            requestorOrigin: request.requestorOrigin
+          },
+          env: request.env,
+          fetchFn: request.fetchFn
+        });
   const suppressToolsForFreeformDraft = looksLikeFreeformContentDraftAction(latestUserText(request.messages).toLowerCase());
   if (deterministicRuns.length > 0) {
     sources = [...sources, ...deterministicRuns.flatMap((run) => run.sources)];
