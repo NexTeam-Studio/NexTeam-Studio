@@ -67,7 +67,7 @@ test("M8 generates a pressure-washing site with direct phone and website contact
   }, "2026-08-03T20:00:00.000Z");
   assert.equal(site.theme, "pressure_washing");
   assert.match(site.html, /href="tel:8649347278"/);
-  assert.match(site.html, /Exterior cleaning that makes the whole property look cared for/);
+  assert.match(site.html, /Exterior Cleaning That Makes the Whole Property Look Cared For/);
   assert.match(site.html, /Bronze Package/);
 });
 
