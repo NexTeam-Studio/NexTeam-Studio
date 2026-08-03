@@ -878,6 +878,14 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
             >
               No
             </button>
+            <button
+              className="nexi-confirmation-button edit"
+              disabled={working}
+              type="button"
+              onClick={() => void sendTextMessage("I need to make changes.", activeApprovalPrompt.pendingApproval)}
+            >
+              Edit
+            </button>
           </div>
         ) : null}
       </>

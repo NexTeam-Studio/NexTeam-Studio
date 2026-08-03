@@ -294,6 +294,11 @@
   border: 1px solid rgba(21, 24, 23, 0.12);
 }
 
+.nexi-confirmation-button.edit {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(21, 24, 23, 0.18);
+}
+
 .nexi-confirmation-button:disabled {
   opacity: 0.54;
 }
