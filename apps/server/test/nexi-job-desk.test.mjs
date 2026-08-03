@@ -1584,7 +1584,7 @@ test("Nexi service answers phone lookups directly from matched client records", 
     }
   });
 
-  assert.match(result.answer, /The phone number on file for Logan Sears is 8645581725\./);
+  assert.match(result.answer, /The phone number on file for Logan Sears is 864-558-1725\./);
   assert.match(result.answer, /Would you like me to call now\?/);
 });
 

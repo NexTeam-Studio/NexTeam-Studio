@@ -83,14 +83,19 @@ export function createContactNexiTools(context: CrmToolContext, includeWrites: b
         }
         const input = deleteClientInputSchema.parse(args);
         const matches = dedupeClients(await provider.getClients(input.clientQuery));
-        const client = matches.find((candidate) => candidate.id === input.clientQuery || candidate.name.toLowerCase() === input.clientQuery.toLowerCase())
+        const byId = matches.find((candidate) => candidate.id === input.clientQuery);
+        const exactNameMatches = matches.filter((candidate) => candidate.name.toLowerCase() === input.clientQuery.toLowerCase());
+        // A textual name is never enough to silently choose between duplicate
+        // client records. An opaque client id remains unambiguous.
+        const client = byId
+          ?? (exactNameMatches.length === 1 ? exactNameMatches[0] : undefined)
           ?? (matches.length === 1 ? matches[0] : undefined);
         if (!client) {
           return {
             result: {
               needsClarification: matches.length > 1
-                ? `I found more than one client matching “${input.clientQuery}”. Please give the full client name before I prepare deletion.`
-                : `I could not find a saved client matching “${input.clientQuery}”. Please check the client name.`
+                ? `I found more than one client matching "${input.clientQuery}". Please give the full client name before I prepare deletion.`
+                : `I could not find a saved client matching "${input.clientQuery}". Please check the client name.`
             },
             sources: []
           };
@@ -129,14 +134,17 @@ export function createContactNexiTools(context: CrmToolContext, includeWrites: b
           throw new RailError("The configured CRM provider cannot update native clients.", { provider: "native", op: "updateClient", status: 501 });
         }
         const matches = dedupeClients(await provider.getClients(input.clientQuery));
-        const exact = matches.find((client) => client.id === input.clientQuery || client.name.toLowerCase() === input.clientQuery.toLowerCase());
-        const client = exact ?? (matches.length === 1 ? matches[0] : undefined);
+        const byId = matches.find((candidate) => candidate.id === input.clientQuery);
+        const exactNameMatches = matches.filter((candidate) => candidate.name.toLowerCase() === input.clientQuery.toLowerCase());
+        const client = byId
+          ?? (exactNameMatches.length === 1 ? exactNameMatches[0] : undefined)
+          ?? (matches.length === 1 ? matches[0] : undefined);
         if (!client) {
           return {
             result: {
               needsClarification: matches.length > 1
-                ? `I found more than one client matching “${input.clientQuery}”. Please give the full client name before I prepare the address change.`
-                : `I could not find a saved client matching “${input.clientQuery}”. Please check the client name.`
+                ? `I found more than one client matching "${input.clientQuery}". Please give the full client name before I prepare the address change.`
+                : `I could not find a saved client matching "${input.clientQuery}". Please check the client name.`
             },
             sources: []
           };

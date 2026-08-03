@@ -949,6 +949,10 @@ async function normalizeToolInput(
   if (toolName === "updateClient") {
     const parsed = clientUpdateInputFromText(userText, messages);
     record.clientQuery ??= parsed.clientQuery;
+    // The approved client rail owns the detailed interpretation of an edit.
+    // Preserve the user's literal request so it can apply a ZIP-only or other
+    // focused correction without guessing at omitted client fields.
+    record.changeRequest ??= userText;
     record.name ??= parsed.name;
     record.address ??= parsed.address;
     record.postalCode ??= parsed.postalCode;
@@ -2051,11 +2055,11 @@ function clientUpdateInputFromText(text: string, messages: GatewayMessage[]): {
   emails?: string[] | undefined;
   phones?: string[] | undefined;
 } {
-  const named = text.match(/\b(?:for|of)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})(?=\s+(?:to|zip|postal|phone|telephone|mobile|email|e-mail|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway)\b)/)?.[1]
+  const named = (text.match(/\b(?:for|of)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})(?=\s+(?:to|zip|postal|phone|telephone|mobile|email|e-mail|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway)\b)/)?.[1]
     ?? text.match(/\b(?:edit|change|update|fix|correct|replace)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})(?=\s+(?:zip|postal|phone|telephone|mobile|email|e-mail|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway)\b)/i)?.[1]
     ?? text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})'s\b/)?.[1]
-    ?? clientLookupQueryFromText(text)
-    ?? entityQueryFromMessages(messages, { skipLatest: true });
+    ?? clientLookupQueryFromText(text))
+    || entityQueryFromMessages(messages, { skipLatest: true });
   const email = firstEmailAddress(text);
   const phone = firstPhoneNumber(text);
   const postalCode = text.match(/\b(?:zip(?:\s+code)?|postal(?:\s+code)?)\s*(?:to|is|=|:)?\s*(\d{5}(?:-\d{4})?)\b/i)?.[1]
@@ -2838,6 +2842,22 @@ function deterministicToolNames(
   if (looksLikeSavedClientEditRequest(userText, messages) && toolsByName.has("updateClient")) {
     return ["updateClient"];
   }
+  // Client-detail questions must win before generic cross-rail job matching.
+  // A name plus a phone, address, email, or property question refers to the
+  // client record unless the user explicitly asks about a job.
+  if (
+    toolsByName.has("clientLookup")
+    && (
+      looksLikeClientListQuestion(lower)
+      || looksLikeNamedClientLookupQuestion(lower)
+      || ((looksLikePhoneLookupQuestion(lower) || looksLikeAddressLookupQuestion(lower) || looksLikeEmailLookupQuestion(lower))
+        && Boolean(clientLookupQueryFromText(userText) || entityQueryFromMessages(messages)))
+      || (/\b(?:how many|which|what)\b.*\bpropert(?:y|ies)\b/i.test(userText)
+        && Boolean(clientLookupQueryFromText(userText) || entityQueryFromMessages(messages)))
+    )
+  ) {
+    return ["clientLookup"];
+  }
   if (/\b(?:create|add|draft|new)\b.*\bquote\b/i.test(lower) && toolsByName.has("createQuote")) {
     return ["createQuote"];
   }
@@ -3374,6 +3394,17 @@ function clientAddressFromRecord(record: Record<string, unknown>): string | unde
   return joinAddressParts(record.billingAddress);
 }
 
+function formatClientLookupPhone(phone: string): string {
+  const digits = phone.replace(/[^\d]/g, "");
+  if (digits.length === 10) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `${digits.slice(1, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return phone.trim();
+}
+
 function clientLookupAnswer(latestText: string, messages: GatewayMessage[], result: unknown): string | undefined {
   const record = objectRecord(result);
   const rawClients = Array.isArray(record?.clients) ? record.clients : [];
@@ -3414,7 +3445,7 @@ function clientLookupAnswer(latestText: string, messages: GatewayMessage[], resu
     if (phoneQuestion) {
       const phone = clientPhoneFromRecord(match.raw);
       return phone
-        ? `The phone number on file for ${match.name || match.company} is ${phone}.\n\nWould you like me to call now?`
+        ? `The phone number on file for ${match.name || match.company} is ${formatClientLookupPhone(phone)}.\n\nWould you like me to call now?`
         : `I found ${match.name || match.company}, but there is no phone number on file yet.`;
     }
     if (addressQuestion) {
@@ -3618,6 +3649,10 @@ function directAnswerFromDeterministicRuns(
   }
   const updateClientRun = [...toolRuns].reverse().find((run) => run.name === "updateClient");
   if (updateClientRun) {
+    const clarification = stringValue(objectRecord(updateClientRun.result)?.needsClarification);
+    if (clarification) {
+      return clarification;
+    }
     const prompt = approvalPromptAnswer(updateClientRun.result, actorDisplayName, { allowChanges: false });
     if (prompt) {
       return prompt;
@@ -3626,6 +3661,10 @@ function directAnswerFromDeterministicRuns(
   const deleteClientRun = [...toolRuns].reverse().find((run) => run.name === "deleteClient");
   if (deleteClientRun) {
     const record = objectRecord(deleteClientRun.result);
+    const clarification = stringValue(record?.needsClarification);
+    if (clarification) {
+      return clarification;
+    }
     const blocked = stringValue(record?.message);
     if (record?.deleteBlocked && blocked) {
       return blocked;
