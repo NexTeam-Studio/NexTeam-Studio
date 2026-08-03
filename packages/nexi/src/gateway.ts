@@ -658,6 +658,19 @@ function entityQueryFromMessages(messages: GatewayMessage[], options: { skipLate
   return "";
 }
 
+function clientEntityFromPreviousUserMessages(messages: GatewayMessage[]): string {
+  for (const message of [...messages.slice(0, -1)].reverse()) {
+    if (message.role !== "user" || typeof message.content !== "string") {
+      continue;
+    }
+    const entity = clientLookupQueryFromText(message.content) || namedEntityFromText(message.content);
+    if (entity && !looksLikeGenericEntityCandidate(entity)) {
+      return entity;
+    }
+  }
+  return "";
+}
+
 function bareEntityFromText(text: string): string {
   const trimmed = text.replace(/[?.!]+$/g, "").trim();
   return /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(trimmed) ? trimmed : "";
@@ -681,6 +694,10 @@ function clientLookupQueryFromText(text: string): string {
   const candidate = deleteMatch?.[1] ?? lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? forEntityMatch?.[1] ?? whereaboutsMatch?.[1] ?? whatIsFieldMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
   return candidate
     .replace(/\b([A-Za-z][A-Za-z' -]*)'s\b/g, "$1")
+    // Assistant history can contain a prior factual sentence such as
+    // "Catherine Sears is 864-617-1838".  If it is considered while resolving
+    // a later possessive follow-up, retain the person—not the factual tail.
+    .replace(/\s+(?:is|was)\s+(?:\(?\d[\d().\s-]*|no\s+(?:phone|email|address)\b).*$/i, "")
     .replace(/\b(?:in|from|on|with)\s+(?:jobber|crm|native|the\s+crm).*$/i, "")
     .replace(/\b(?:record|profile|file|account|jobs?)\b$/i, "")
     .replace(/\b(?:the|a|an)\b/gi, " ")
@@ -710,6 +727,17 @@ function preferConversationClientEntity(candidate: string, messages: GatewayMess
     return priorEntity;
   }
   return cleaned;
+}
+
+function hasClientPronounReference(text: string): boolean {
+  return /\b(?:he|him|his|she|her|hers|they|them|their|theirs)\b/i.test(text);
+}
+
+function hasExplicitClientSubject(text: string): boolean {
+  // Do not mistake the trailing "call them" in "What is Avery Smith's
+  // number? I may call them" for a request to replace Avery Smith with a
+  // previous conversation subject.
+  return /\b[A-Z][A-Za-z0-9-]+(?:\s+[A-Z][A-Za-z0-9-]+)+\b/.test(text);
 }
 
 function jobLookupQueryFromText(text: string): string {
@@ -1166,8 +1194,15 @@ async function normalizeToolInput(
       : userText;
   }
   if (toolName === "clientLookup") {
-    const conversationQuery = entityQueryFromMessages(messages);
-    const parsedQuery = clientLookupQueryFromText(userText) || conversationQuery || "";
+    const parsedUserQuery = clientLookupQueryFromText(userText);
+    const pronounOnlyQuery = /^(?:he|him|his|she|her|hers|they|them|their|theirs)$/i.test(parsedUserQuery)
+      || (hasClientPronounReference(userText) && !hasExplicitClientSubject(userText));
+    // A pronoun is not a client lookup key.  Keep the person established in
+    // the earlier turn instead of sending a literal search for "their".
+    const conversationQuery = pronounOnlyQuery
+      ? clientEntityFromPreviousUserMessages(messages)
+      : entityQueryFromMessages(messages);
+    const parsedQuery = (pronounOnlyQuery ? conversationQuery : parsedUserQuery) || conversationQuery || "";
     if (looksLikeClientListQuestion(lowerUserText)) {
       record.q = "";
     } else if (parsedQuery) {
@@ -3438,7 +3473,14 @@ function formatClientLookupPhone(phone: string): string {
 function clientLookupAnswer(latestText: string, messages: GatewayMessage[], result: unknown): string | undefined {
   const record = objectRecord(result);
   const rawClients = Array.isArray(record?.clients) ? record.clients : [];
-  const requested = preferConversationClientEntity(clientLookupQueryFromText(latestText), messages);
+  const parsedUserQuery = clientLookupQueryFromText(latestText);
+  const requested = preferConversationClientEntity(
+    /^(?:he|him|his|she|her|hers|they|them|their|theirs)$/i.test(parsedUserQuery)
+      || (hasClientPronounReference(latestText) && !hasExplicitClientSubject(latestText))
+      ? clientEntityFromPreviousUserMessages(messages)
+      : parsedUserQuery,
+    messages
+  );
   const requestedNormalized = normalizeIdentityText(requested);
   const lower = latestText.toLowerCase();
   const phoneQuestion = looksLikePhoneLookupQuestion(lower);
@@ -3472,8 +3514,16 @@ function clientLookupAnswer(latestText: string, messages: GatewayMessage[], resu
   const foundIn = "the native client list";
   if ((phoneQuestion || addressQuestion || emailQuestion) && matches.length === 1) {
     const match = matches[0]!;
+    const phone = clientPhoneFromRecord(match.raw);
+    const email = clientEmailFromRecord(match.raw);
+    if (phoneQuestion && emailQuestion) {
+      const phoneLine = phone
+        ? `Phone: ${formatClientLookupPhone(phone)}. Would you like me to call now?`
+        : "Phone: no phone number on file yet.";
+      const emailLine = email ? `Email: ${email}.` : "Email: no email on file yet.";
+      return `Here are the contact details for ${match.name || match.company}.\n${phoneLine}\n${emailLine}`;
+    }
     if (phoneQuestion) {
-      const phone = clientPhoneFromRecord(match.raw);
       return phone
         ? `The phone number on file for ${match.name || match.company} is ${formatClientLookupPhone(phone)}.\n\nWould you like me to call now?`
         : `I found ${match.name || match.company}, but there is no phone number on file yet.`;
@@ -3485,7 +3535,6 @@ function clientLookupAnswer(latestText: string, messages: GatewayMessage[], resu
         : `I found ${match.name || match.company}, but there is no address on file yet.`;
     }
     if (emailQuestion) {
-      const email = clientEmailFromRecord(match.raw);
       return email
         ? `The email on file for ${match.name || match.company} is ${email}.`
         : `I found ${match.name || match.company}, but there is no email on file yet.`;
@@ -3964,6 +4013,32 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
   const rawIterations: unknown[] = [];
   const maxToolIterations = request.maxToolIterations ?? MAX_TOOL_ITERATIONS;
   const claudeFirstRouting = usesClaudeFirstRouting(request.env);
+  // A saved approval is a safety boundary, not a conversational inference
+  // exercise.  Claude-first mode remains responsible for ordinary language,
+  // but a plain confirmation/rejection must execute the exact persisted
+  // approval ID instead of asking the model to infer a new tool call.
+  const pendingApproval = request.pendingApproval ?? approvalContextFromMessages(request.messages);
+  const approvalTransition = Boolean(
+    pendingApproval
+    && (looksLikeApprovalYes(latestUserText(request.messages)) || looksLikeApprovalNo(latestUserText(request.messages)))
+  );
+  const currentUserText = latestUserText(request.messages);
+  // Client address, phone, and email questions are source-bound facts. Resolve
+  // simple named questions and pronoun follow-ups directly against the checked
+  // client rail; keep site/property questions on the normal Claude-first path
+  // because they need the model to distinguish billing from a named site.
+  const clientDetailQuery = hasClientPronounReference(currentUserText)
+    && !hasExplicitClientSubject(currentUserText)
+    ? clientEntityFromPreviousUserMessages(request.messages)
+    : clientLookupQueryFromText(currentUserText) || entityQueryFromMessages(request.messages, { skipLatest: true });
+  const deterministicClientDetailRead = Boolean(
+    toolsByName.has("clientLookup")
+    && (looksLikePhoneLookupQuestion(currentUserText.toLowerCase())
+      || looksLikeClientEmailFieldQuestion(currentUserText.toLowerCase())
+      || (looksLikeAddressLookupQuestion(currentUserText.toLowerCase())
+        && !/\b(?:site\s+contact|property|job\s+site)\b/i.test(currentUserText)))
+    && Boolean(clientDetailQuery)
+  );
   const reusableRuns = claudeFirstRouting
     ? []
     : reusableCachedToolRuns({
@@ -3978,7 +4053,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
           requestorOrigin: request.requestorOrigin
         }
       });
-  const deterministicRuns = claudeFirstRouting
+  const deterministicRuns = claudeFirstRouting && !approvalTransition && !deterministicClientDetailRead
     ? []
     : reusableRuns.length > 0
       ? reusableRuns
