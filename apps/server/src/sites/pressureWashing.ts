@@ -49,6 +49,7 @@ export function generatePressureWashingSite(input: SiteGenerationInput = {}, now
       primaryCta: { label: "Call for an estimate", href: phone.startsWith("+") || /^\d/.test(phone) ? `tel:${phone.replace(/[^+\d]/g, "")}` : "#contact" },
       proofPoints: ["Residential and commercial", "Exterior cleaning professionals", phone, websiteLabel],
       imageSrc: parsed.logoUrl,
+      backgroundSrc: parsed.heroBackgroundUrl,
       imageAlt: `${businessName} logo`,
       faviconSrc: parsed.faviconUrl
     },

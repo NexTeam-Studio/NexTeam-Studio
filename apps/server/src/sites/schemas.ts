@@ -15,6 +15,7 @@ export const heroBlockSchema = blockBaseSchema.extend({
   primaryCta: z.object({ label: z.string().min(1), href: z.string().min(1) }),
   proofPoints: z.array(z.string().min(1)),
   imageSrc: z.string().min(1).optional(),
+  backgroundSrc: z.string().min(1).optional(),
   imageAlt: z.string().min(1).optional(),
   faviconSrc: z.string().min(1).optional()
 });
@@ -175,6 +176,7 @@ export const siteGenerationInputSchema = z.object({
   website: z.string().url().optional(),
   tagline: z.string().min(1).optional(),
   logoUrl: z.string().min(1).optional(),
+  heroBackgroundUrl: z.string().min(1).optional(),
   faviconUrl: z.string().min(1).optional(),
   serviceImageBaseUrl: z.string().min(1).optional(),
   serviceArea: z.array(z.string().min(1)).optional(),
