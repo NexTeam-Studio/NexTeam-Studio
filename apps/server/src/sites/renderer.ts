@@ -246,14 +246,23 @@ function renderPressureWashingSite(site: Omit<GeneratedSite, "html">) {
   const serviceIcon = (serviceName: string) => {
     const label = serviceName.toLowerCase();
     const svg = (paths: string) => `<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+    if (label === "house wash") return svg('<path d="M3 12 12 4l9 8"/><path d="M6 11v8h12v-8"/><path d="M9 19v-5h6v5"/><path d="M4 5c1 1 2 1 3 0"/>');
+    if (label === "large house wash") return svg('<path d="M2 13 8 8l4 4 4-4 6 5"/><path d="M5 12v7h14v-7"/><path d="M9 19v-4h3v4"/><path d="M17 15h1"/>');
+    if (label === "estate house wash") return svg('<path d="M3 12 12 4l9 8"/><path d="M6 11v8h12v-8"/><path d="M9 19v-5h6v5"/><path d="m18 4 .6 1.4L20 6l-1.4.6L18 8l-.6-1.4L16 6l1.4-.6z"/>');
+    if (label === "driveway cleaning") return svg('<path d="M5 20 8 4h8l3 16"/><path d="M12 4v16"/><path d="M7 16h10"/><path d="M4 20h16"/>');
+    if (label.includes("sidewalk")) return svg('<path d="M4 20h16"/><path d="M4 14h16M4 8h16"/><path d="M8 8v6M16 14v6"/><path d="M12 4v4"/>');
+    if (label === "patio cleaning") return svg('<path d="M4 18h16"/><path d="M6 18v-6h12v6"/><path d="M12 12V4"/><path d="M7 7c2-3 8-3 10 0"/>');
     if (label.includes("roof")) return svg('<path d="M3 12 12 4l9 8"/><path d="M6 11v8h12v-8"/><path d="M9 19v-5h6v5"/>');
     if (label.includes("gutter")) return svg('<path d="M4 6h16"/><path d="M6 6v5c0 2 2 3 4 3h4c2 0 4-1 4-3V6"/><path d="M18 14v5"/><path d="M18 19l-2-2"/>');
-    if (label.includes("driveway") || label.includes("sidewalk") || label.includes("patio") || label.includes("dumpster")) return svg('<path d="M4 20h16"/><path d="M7 20 10 5h4l3 15"/><path d="M12 5v15"/><path d="M5 16h14"/>');
-    if (label.includes("deck") || label.includes("fence")) return svg('<path d="M4 20h16"/><path d="M6 20V5"/><path d="M12 20V5"/><path d="M18 20V5"/><path d="M4 8h16"/>');
-    if (label.includes("window") || label.includes("solar")) return svg('<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M12 4v16M4 12h16"/><path d="M17 3v-1M21 7h1"/>');
+    if (label.includes("deck")) return svg('<path d="M4 6h16M4 12h16M4 18h16"/><path d="M7 4v16M17 4v16"/><path d="M4 20h16"/>');
+    if (label.includes("fence")) return svg('<path d="M5 20V5l2-2 2 2v15M15 20V5l2-2 2 2v15"/><path d="M3 10h18M3 16h18"/>');
     if (label.includes("fleet")) return svg('<path d="M3 17h18"/><path d="M5 17V9h9v8"/><path d="M14 12h3l2 2v3"/><circle cx="8" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>');
     if (label.includes("commercial")) return svg('<path d="M4 21h16"/><path d="M6 21V4h12v17"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2"/>');
-    if (label.includes("rust") || label.includes("oxidation")) return svg('<path d="M6 18 18 6"/><path d="m8 6 10 10"/><path d="M4 20h16"/><circle cx="7" cy="7" r="2"/>');
+    if (label.includes("dumpster")) return svg('<path d="M5 8h14l-1 12H6L5 8Z"/><path d="M4 8h16M9 5h6"/><path d="M9 12v4M15 12v4"/>');
+    if (label.includes("rust")) return svg('<path d="M4 20h16"/><path d="m7 17 9-9"/><path d="m8 6 2 2M14 16l2 2"/><path d="M5 5h4v4H5z"/>');
+    if (label.includes("oxidation")) return svg('<circle cx="12" cy="12" r="6"/><path d="m12 3 .8 2.2L15 6l-2.2.8L12 9l-.8-2.2L9 6l2.2-.8z"/><path d="M4 19h4"/>');
+    if (label.includes("window")) return svg('<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M12 4v16M4 12h16"/><path d="m18 4 1-2M20 7h2"/>');
+    if (label.includes("solar")) return svg('<path d="m5 14 13-3 2 8-13 3z"/><path d="m9 13 2 8M14 12l2 8M6 17l13-3"/><path d="M5 6v-2M2 7H1M8 5l1-1"/>');
     return svg('<path d="M3 12 12 4l9 8"/><path d="M6 11v8h12v-8"/><path d="M9 19v-5h6v5"/><path d="m17 5 2 2"/>');
   };
   return `<!doctype html>
