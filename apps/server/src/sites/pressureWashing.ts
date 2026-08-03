@@ -31,6 +31,7 @@ export function generatePressureWashingSite(input: SiteGenerationInput = {}, now
   const businessName = parsed.businessName ?? "Exterior Cleaning Professionals";
   const slug = slugify(parsed.slug ?? businessName);
   const phone = parsed.phone ?? "Call for an estimate";
+  const email = parsed.email;
   const website = parsed.website;
   const services = parsed.services ?? defaultServices;
   const websiteLabel = website ? website.replace(/^https?:\/\//, "").replace(/\/$/, "") : "Residential and commercial";
@@ -55,7 +56,7 @@ export function generatePressureWashingSite(input: SiteGenerationInput = {}, now
     },
     { id: "area", type: "service_area_map", heading: "A cleaner property starts with one good call.", center: parsed.serviceArea?.[0] ?? "Your area", areas: parsed.serviceArea ?? ["Residential properties", "Commercial properties", "Property managers"] },
     { id: "badges", type: "compliance_badges", heading: "What we clean", badges: ["House washing", "Roof cleaning", "Concrete cleaning", "Gutter cleaning", "Residential and commercial", "Military and first responder discounts"] },
-    { id: "contact", type: "contact", heading: "Ready for a cleaner property?", intro: `Call ${phone} to talk through your project and request an estimate.`, phone, website }
+    { id: "contact", type: "contact", heading: "Ready for a cleaner property?", intro: `Call ${phone} to talk through your project and request an estimate.`, phone, email, website }
   ];
   const siteWithoutHtml = {
     id: `site_${tenantId}_${slug}`, tenantId, slug, title: businessName, theme: "pressure_washing" as const, blocks,

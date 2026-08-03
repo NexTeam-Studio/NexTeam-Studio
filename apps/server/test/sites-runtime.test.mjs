@@ -56,17 +56,19 @@ test("M8 generates Aquatrace site blocks and renders static HTML", () => {
   assert.equal(site.customDomainStatus, "pending_cloudflare");
 });
 
-test("M8 generates a pressure-washing site with direct phone and website contact", () => {
+test("M8 generates a pressure-washing site with direct phone, email, and website contact", () => {
   const site = generatePressureWashingSite({
     tenantId: "test-pressure-washing",
     businessName: "Test Exterior Cleaning",
     slug: "test-exterior-cleaning",
     phone: "864-934-7278",
+    email: "contact@example.test",
     website: "https://example.test",
     serviceArea: ["Test City"]
   }, "2026-08-03T20:00:00.000Z");
   assert.equal(site.theme, "pressure_washing");
   assert.match(site.html, /href="tel:8649347278"/);
+  assert.match(site.html, /href="mailto:contact@example\.test"/);
   assert.match(site.html, /Exterior Cleaning That Makes the Whole Property Look Cared For/);
   assert.match(site.html, /Bronze Package/);
 });

@@ -83,6 +83,7 @@ export const contactBlockSchema = blockBaseSchema.extend({
   heading: z.string().min(1),
   intro: z.string().min(1),
   phone: z.string().min(7),
+  email: z.string().email().optional(),
   website: z.string().url().optional()
 });
 
@@ -169,6 +170,7 @@ export const siteGenerationInputSchema = z.object({
   businessName: z.string().min(1).optional(),
   slug: z.string().min(1).optional(),
   phone: z.string().min(7).optional(),
+  email: z.string().email().optional(),
   website: z.string().url().optional(),
   tagline: z.string().min(1).optional(),
   logoUrl: z.string().min(1).optional(),
