@@ -234,6 +234,7 @@ function renderPressureWashingSite(site: Omit<GeneratedSite, "html">) {
   const badges = site.blocks.find((block): block is Extract<SiteBlock, { type: "compliance_badges" }> => block.type === "compliance_badges")?.badges ?? [];
   const contact = site.blocks.find((block): block is Extract<SiteBlock, { type: "contact" }> => block.type === "contact");
   const logo = hero?.imageSrc;
+  const favicon = hero?.faviconSrc ?? logo;
   const logoAlt = hero?.imageAlt ?? `${site.title} logo`;
   const phone = contact?.phone ?? hero?.proofPoints.find((point) => /\d{3}/.test(point)) ?? "";
   const phoneHref = `tel:${phone.replace(/[^+\d]/g, "")}`;
@@ -249,7 +250,8 @@ function renderPressureWashingSite(site: Omit<GeneratedSite, "html">) {
   <meta name="description" content="Owens Bluewater Wash provides professional house washing, roof soft washing, driveway cleaning, gutter cleaning, commercial washing, and exterior cleaning services. Call 864-934-7278 for an estimate." />
   <meta property="og:title" content="Owens Bluewater Wash | Exterior Cleaning &amp; Pressure Washing" />
   <meta property="og:description" content="Cleaner surfaces. Better impressions." />
-  ${logo ? `<meta property="og:image" content="${escapeHtml(logo)}" />\n  <link rel="icon" href="${escapeHtml(logo)}" />` : ""}
+  ${logo ? `<meta property="og:image" content="${escapeHtml(logo)}" />` : ""}
+  ${favicon ? `<link rel="icon" href="${escapeHtml(favicon)}" />` : ""}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
