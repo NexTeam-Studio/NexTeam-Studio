@@ -89,7 +89,7 @@ async function seedSyntheticData(provider, repository) {
   }
 
   for (let index = 1; index <= 25; index += 1) {
-    const company = `QA Contractor ${String(index).padStart(2, "0")} Pool Services`;
+    const company = `Contractor ${String(index).padStart(2, "0")} Pool Services`;
     const client = await provider.createClient({
       tenantId: TEST_TENANT_ID,
       name: company,

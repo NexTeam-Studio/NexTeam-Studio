@@ -670,10 +670,11 @@ function clientLookupQueryFromText(text: string): string {
   const normalized = text.replace(/[?.!]+$/g, "").trim();
   const lookupMatch = normalized.match(/\b(?:look\s+up|lookup|find|show|check|get|pull)\s+(?:the\s+)?(?:client|customer)\s+(.+)$/i);
   const clientFirstMatch = normalized.match(/\b(?:client|customer)\s+(.+)$/i);
+  const forEntityMatch = normalized.match(/\bfor\s+((?:[A-Z][A-Za-z-]*\s+){1,4}\d{1,3})\b/);
   const whereaboutsMatch = normalized.match(/\b(?:where\s+(?:does|is)|where's)\s+(.+?)\s+(?:live|located|stay|reside)\b/i);
   const whatIsFieldMatch = normalized.match(/\bwhat(?:'s|\s+is)\s+(.+?)\s+(?:phone(?:\s+number)?|telephone|mobile|cell|call|text|number|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway|zip|postal|e-?mail(?:\s+address)?)\b/i);
   const possessiveMatch = normalized.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})'?\s+(?:client|customer|job|jobs)\b/);
-  const candidate = lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? whereaboutsMatch?.[1] ?? whatIsFieldMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
+  const candidate = lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? forEntityMatch?.[1] ?? whereaboutsMatch?.[1] ?? whatIsFieldMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
   return candidate
     .replace(/\b([A-Za-z][A-Za-z' -]*)'s\b/g, "$1")
     .replace(/\b(?:in|from|on|with)\s+(?:jobber|crm|native|the\s+crm).*$/i, "")
