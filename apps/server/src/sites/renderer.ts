@@ -22,7 +22,7 @@ function renderHero(block: Extract<SiteBlock, { type: "hero" }>) {
   return `
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">${escapeHtml(block.eyebrow)}</p>
+        ${block.eyebrow ? `<p class="eyebrow">${escapeHtml(block.eyebrow)}</p>` : ""}
         <h1>${escapeHtml(block.headline)}</h1>
         <p class="subhead">${escapeHtml(block.subhead)}</p>
         <a class="button" href="${escapeHtml(block.primaryCta.href)}">${escapeHtml(block.primaryCta.label)}</a>
