@@ -35,7 +35,7 @@ function renderHero(block: Extract<SiteBlock, { type: "hero" }>) {
 
 function renderServices(block: Extract<SiteBlock, { type: "services" }>) {
   return `
-    <section class="section" id="services">
+    <section class="section"${block.id === "services" ? " id=\"services\"" : ""}>
       <div class="section-heading">
         <p class="eyebrow">Services</p>
         <h2>${escapeHtml(block.heading)}</h2>
@@ -51,13 +51,29 @@ function renderServices(block: Extract<SiteBlock, { type: "services" }>) {
     </section>`;
 }
 
+function renderContact(block: Extract<SiteBlock, { type: "contact" }>) {
+  const phoneHref = `tel:${block.phone.replace(/[^+\d]/g, "")}`;
+  return `
+    <section class="section contact" id="contact">
+      <div>
+        <p class="eyebrow">Contact</p>
+        <h2>${escapeHtml(block.heading)}</h2>
+        <p>${escapeHtml(block.intro)}</p>
+      </div>
+      <div class="contact-actions">
+        <a class="button" href="${escapeHtml(phoneHref)}">Call ${escapeHtml(block.phone)}</a>
+        ${block.website ? `<a class="button button-light" href="${escapeHtml(block.website)}" target="_blank" rel="noopener noreferrer">Visit ${escapeHtml(block.website.replace(/^https?:\/\//, "").replace(/\/$/, ""))}</a>` : ""}
+      </div>
+    </section>`;
+}
+
 function renderServiceArea(block: Extract<SiteBlock, { type: "service_area_map" }>) {
   return `
     <section class="section split">
       <div>
         <p class="eyebrow">Service Area</p>
         <h2>${escapeHtml(block.heading)}</h2>
-        <p>Based near ${escapeHtml(block.center)}, serving pool owners, builders, and property managers across:</p>
+        <p>Based near ${escapeHtml(block.center)}, serving homes, businesses, and property managers across:</p>
       </div>
       <div class="map-card">
         ${block.areas.map((area) => `<span>${escapeHtml(area)}</span>`).join("")}
@@ -69,7 +85,7 @@ function renderGallery(block: Extract<SiteBlock, { type: "gallery" }>) {
   return `
     <section class="section" id="gallery">
       <div class="section-heading">
-        <p class="eyebrow">Field Proof</p>
+        <p class="eyebrow">Our Work</p>
         <h2>${escapeHtml(block.heading)}</h2>
       </div>
       <div class="gallery">
@@ -128,11 +144,11 @@ function renderArticles(block: Extract<SiteBlock, { type: "article_index" }>) {
     </section>`;
 }
 
-function renderLeadForm(block: Extract<SiteBlock, { type: "lead_form" }>) {
+function renderLeadForm(block: Extract<SiteBlock, { type: "lead_form" }>, site: Omit<GeneratedSite, "html">) {
   return `
     <section class="section lead" id="estimate">
       <div>
-        <p class="eyebrow">Start Here</p>
+        <p class="eyebrow">Get Started</p>
         <h2>${escapeHtml(block.heading)}</h2>
         <p>${escapeHtml(block.intro)}</p>
       </div>
@@ -141,9 +157,9 @@ function renderLeadForm(block: Extract<SiteBlock, { type: "lead_form" }>) {
         <label>Email <input name="email" type="email" autocomplete="email" /></label>
         <label>Phone <input name="phone" autocomplete="tel" /></label>
         <label>City <input name="city" autocomplete="address-level2" /></label>
-        <label>What are you seeing? <textarea name="message" required></textarea></label>
+        <label>How can we help? <textarea name="message" required></textarea></label>
         <input type="hidden" name="consent.email" value="true" />
-        <button type="submit">Request leak help</button>
+        <button type="submit">${site.theme === "pressure_washing" ? "Request an estimate" : "Request leak help"}</button>
       </form>
     </section>`;
 }
@@ -187,7 +203,7 @@ function jsonLdScript(site: Omit<GeneratedSite, "html">): string {
   return JSON.stringify(graph).replace(/</g, "\\u003c");
 }
 
-function renderBlock(block: SiteBlock) {
+function renderBlock(block: SiteBlock, site: Omit<GeneratedSite, "html">) {
   switch (block.type) {
     case "hero":
       return renderHero(block);
@@ -204,28 +220,31 @@ function renderBlock(block: SiteBlock) {
     case "article_index":
       return renderArticles(block);
     case "lead_form":
-      return renderLeadForm(block);
+      return renderLeadForm(block, site);
+    case "contact":
+      return renderContact(block);
   }
 }
 
 export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
+  const pressureWashing = site.theme === "pressure_washing";
+  const description = pressureWashing
+    ? "Residential and commercial exterior cleaning, soft washing, roof cleaning, and pressure washing."
+    : "Swimming pool leak detection, pressure testing, dye testing, and field documentation.";
+  const themeCss = pressureWashing
+    ? `--ink: #07101e; --deep: #062a58; --water: #1178d4; --foam: #eaf6ff; --sand: #dceeff; --coral: #e2a615; --card: rgba(255, 255, 255, 0.92);`
+    : `--ink: #14231f; --deep: #0f393d; --water: #4eb8c7; --foam: #effaf8; --sand: #efe2c8; --coral: #d56a4a; --card: rgba(255, 255, 255, 0.82);`;
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(site.title)}</title>
-    <meta name="description" content="Swimming pool leak detection, pressure testing, dye testing, and field documentation." />
+    <meta name="description" content="${description}" />
     <script type="application/ld+json">${jsonLdScript(site)}</script>
     <style>
       :root {
-        --ink: #14231f;
-        --deep: #0f393d;
-        --water: #4eb8c7;
-        --foam: #effaf8;
-        --sand: #efe2c8;
-        --coral: #d56a4a;
-        --card: rgba(255, 255, 255, 0.82);
+        ${themeCss}
       }
       * { box-sizing: border-box; }
       body {
@@ -239,7 +258,7 @@ export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
       header, main, footer { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
       header { padding: 26px 0; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
       nav a { color: var(--deep); text-decoration: none; margin-left: 18px; font-weight: 700; }
-      .brand { font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+      .brand { font-weight: 900; letter-spacing: 0.045em; text-transform: uppercase; }
       .hero {
         min-height: 72vh;
         display: grid;
@@ -248,6 +267,7 @@ export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
         align-items: center;
         padding: 54px 0 76px;
       }
+      .hero-copy::after { content: ""; display: block; width: 128px; height: 5px; margin-top: 30px; border-radius: 999px; background: linear-gradient(90deg, var(--water), var(--coral)); }
       .eyebrow { color: var(--coral); text-transform: uppercase; letter-spacing: 0.14em; font: 800 0.78rem system-ui, sans-serif; }
       h1, h2, h3 { line-height: 0.96; margin: 0; }
       h1 { font-size: clamp(3.8rem, 10vw, 8.4rem); max-width: 9ch; }
@@ -286,7 +306,9 @@ export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
       .cards, .gallery, .reviews { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
       .card { padding: 24px; min-height: 220px; }
       .card strong { color: var(--coral); }
-      .split, .lead { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 24px; align-items: start; }
+      .split, .lead, .contact { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 24px; align-items: start; }
+      .contact-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+      .button-light { background: white; color: var(--deep); border: 2px solid var(--deep); }
       .map-card, form { padding: 24px; display: flex; flex-wrap: wrap; gap: 10px; }
       .photo-tile {
         width: 100%;
@@ -317,7 +339,7 @@ export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
       @media (max-width: 760px) {
         header { align-items: flex-start; flex-direction: column; }
         nav a { margin: 0 14px 0 0; }
-        .hero, .split, .lead, .cards, .gallery, .reviews { grid-template-columns: 1fr; }
+        .hero, .split, .lead, .contact, .cards, .gallery, .reviews { grid-template-columns: 1fr; }
         .proof-card { transform: none; }
       }
     </style>
@@ -327,16 +349,16 @@ export function renderStaticSite(site: Omit<GeneratedSite, "html">) {
       <div class="brand">${escapeHtml(site.title)}</div>
       <nav>
         <a href="#services">Services</a>
-        <a href="#gallery">Proof</a>
-        <a href="#estimate">Estimate</a>
+        ${site.blocks.some((block) => block.type === "gallery") ? `<a href="#gallery">Proof</a>` : ""}
+        <a href="${pressureWashing ? "#contact" : "#estimate"}">${pressureWashing ? "Contact" : "Estimate"}</a>
       </nav>
     </header>
     <main>
-      ${site.blocks.map(renderBlock).join("\n")}
+      ${site.blocks.map((block) => renderBlock(block, site)).join("\n")}
     </main>
     <footer>
       <strong>${escapeHtml(site.title)}</strong><br />
-      Internal NexTeam staging build. Custom domain and SSL are pending owner Cloudflare setup.
+      ${pressureWashing ? "Cleaner surfaces. Better impressions." : "Clear answers. Better next steps."}
     </footer>
   </body>
 </html>`;

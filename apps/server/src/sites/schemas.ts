@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const siteThemeSchema = z.enum(["pool_leak"]);
+export const siteThemeSchema = z.enum(["pool_leak", "pressure_washing"]);
 
 const blockBaseSchema = z.object({
   id: z.string().min(1),
@@ -75,6 +75,14 @@ export const leadFormBlockSchema = blockBaseSchema.extend({
   action: z.string().min(1)
 });
 
+export const contactBlockSchema = blockBaseSchema.extend({
+  type: z.literal("contact"),
+  heading: z.string().min(1),
+  intro: z.string().min(1),
+  phone: z.string().min(7),
+  website: z.string().url().optional()
+});
+
 export const siteBlockSchema = z.discriminatedUnion("type", [
   heroBlockSchema,
   servicesBlockSchema,
@@ -83,7 +91,8 @@ export const siteBlockSchema = z.discriminatedUnion("type", [
   reviewsBlockSchema,
   complianceBadgesBlockSchema,
   articleIndexBlockSchema,
-  leadFormBlockSchema
+  leadFormBlockSchema,
+  contactBlockSchema
 ]);
 
 export const generatedSiteSchema = z.object({
@@ -157,6 +166,8 @@ export const siteGenerationInputSchema = z.object({
   businessName: z.string().min(1).optional(),
   slug: z.string().min(1).optional(),
   phone: z.string().min(7).optional(),
+  website: z.string().url().optional(),
+  tagline: z.string().min(1).optional(),
   serviceArea: z.array(z.string().min(1)).optional(),
   services: z.array(z.object({
     name: z.string().min(1),
