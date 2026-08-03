@@ -85,6 +85,8 @@ export interface ToolLoopRequest {
 
 export interface ToolRunTrace {
   name: string;
+  /** Tool arguments are retained for tenant-scoped audit and regression evidence. */
+  input?: unknown;
   sources: Source[];
   result: unknown;
 }
@@ -668,9 +670,10 @@ function clientLookupQueryFromText(text: string): string {
   const normalized = text.replace(/[?.!]+$/g, "").trim();
   const lookupMatch = normalized.match(/\b(?:look\s+up|lookup|find|show|check|get|pull)\s+(?:the\s+)?(?:client|customer)\s+(.+)$/i);
   const clientFirstMatch = normalized.match(/\b(?:client|customer)\s+(.+)$/i);
-  const whatIsFieldMatch = normalized.match(/\bwhat\s+is\s+(.+?)\s+(?:phone(?:\s+number)?|telephone|mobile|cell|call|text|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway|zip|postal|e-?mail(?:\s+address)?)\b/i);
+  const whereaboutsMatch = normalized.match(/\b(?:where\s+(?:does|is)|where's)\s+(.+?)\s+(?:live|located|stay|reside)\b/i);
+  const whatIsFieldMatch = normalized.match(/\bwhat(?:'s|\s+is)\s+(.+?)\s+(?:phone(?:\s+number)?|telephone|mobile|cell|call|text|number|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway|zip|postal|e-?mail(?:\s+address)?)\b/i);
   const possessiveMatch = normalized.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})'?\s+(?:client|customer|job|jobs)\b/);
-  const candidate = lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? whatIsFieldMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
+  const candidate = lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? whereaboutsMatch?.[1] ?? whatIsFieldMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
   return candidate
     .replace(/\b([A-Za-z][A-Za-z' -]*)'s\b/g, "$1")
     .replace(/\b(?:in|from|on|with)\s+(?:jobber|crm|native|the\s+crm).*$/i, "")
@@ -1154,12 +1157,19 @@ async function normalizeToolInput(
       ? [entity, "paid payment receipt invoice zero balance"].filter(Boolean).join(" ")
       : userText;
   }
-  if (toolName === "clientLookup" && (typeof record.q !== "string" || (!record.q.trim() && !looksLikeClientListQuestion(lowerUserText)))) {
+  if (toolName === "clientLookup") {
     const conversationQuery = entityQueryFromMessages(messages);
     const parsedQuery = clientLookupQueryFromText(userText) || conversationQuery || "";
-    record.q = looksLikeClientListQuestion(lowerUserText)
-      ? ""
-      : preferConversationClientEntity(parsedQuery, messages);
+    if (looksLikeClientListQuestion(lowerUserText)) {
+      record.q = "";
+    } else if (parsedQuery) {
+      // Prefer the name parsed from the user's actual sentence over a model
+      // argument that accidentally contains conversational filler such as
+      // "I may need to call them".
+      record.q = preferConversationClientEntity(parsedQuery, messages);
+    } else if (typeof record.q !== "string" || !record.q.trim()) {
+      record.q = "";
+    }
   }
   if (toolName === "summarizeInbox" && !record.maxResults) {
     record.mailbox ??= mailboxAliasFromEmailAddress(firstEmailAddress(userText));
@@ -3137,8 +3147,9 @@ async function runDeterministicTools(input: {
     if (!tool) {
       continue;
     }
+    let args: unknown = {};
     try {
-      const args = tool.inputSchema.parse(
+      args = tool.inputSchema.parse(
         await normalizeToolInput(
           tool.name,
           {},
@@ -3154,7 +3165,7 @@ async function runDeterministicTools(input: {
         )
       );
       const result = await tool.handler(input.tenant, args);
-      runs.push({ name: tool.name, result: result.result, sources: result.sources });
+      runs.push({ name: tool.name, input: args, result: result.result, sources: result.sources });
     } catch (error) {
       const safeError = safeToolErrorResult(tool.name, error);
       console.warn(JSON.stringify({
@@ -3166,6 +3177,7 @@ async function runDeterministicTools(input: {
       }));
       runs.push({
         name: tool.name,
+        input: args,
         result: safeError,
         sources: []
       });
@@ -4113,8 +4125,9 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         });
         continue;
       }
+      let args: unknown = toolUse.input;
       try {
-        const args = tool.inputSchema.parse(
+        args = tool.inputSchema.parse(
           await normalizeToolInput(
             toolUse.name,
             toolUse.input,
@@ -4135,7 +4148,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         );
         const result = await tool.handler(request.tenant, args);
         sources = [...sources, ...result.sources];
-        toolRuns.push({ name: tool.name, result: result.result, sources: result.sources });
+        toolRuns.push({ name: tool.name, input: args, result: result.result, sources: result.sources });
         toolResults.push({
           type: "tool_result",
           tool_use_id: toolUse.id,
@@ -4143,7 +4156,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         });
       } catch (error) {
         const safeResult = safeToolErrorResult(tool.name, error);
-        toolRuns.push({ name: tool.name, result: safeResult, sources: [] });
+        toolRuns.push({ name: tool.name, input: args, result: safeResult, sources: [] });
         toolResults.push({
           type: "tool_result",
           tool_use_id: toolUse.id,

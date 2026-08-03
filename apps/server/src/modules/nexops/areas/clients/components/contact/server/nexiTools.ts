@@ -4,6 +4,26 @@ import { clientLookupInputSchema, createClientInputSchema, deleteClientInputSche
 import { clientSaveClarification, clientSaveMissingFields, dedupeClients, queueClientAddressUpdateApproval, queueClientCreateApproval, queueClientDeleteApproval } from "./toolSupport.js";
 import { isProtectedLegacyClient, legacyClientDeleteMessage } from "./clientDeletionPolicy.js";
 
+// Claude correctly understands a question such as "What is Avery's address?",
+// but may include part of that question in the lookup q argument.  The CRM
+// search rail accepts a name, company, email, or phone—not prose—so remove
+// only harmless conversational wrappers before searching.  We retain the
+// original query first so an actual company name is never discarded.
+function clientLookupQueries(query: string): string[] {
+  const original = query.trim();
+  if (!original) {
+    // An empty q is the explicit client-list request in the tool contract.
+    return [""];
+  }
+  const simplified = original
+    .replace(/\b(?:what(?:'s| is)|where(?:'s| is)|find|look up|pull up|show me|do you have|can you find)\b/gi, " ")
+    .replace(/(?:'s|’s)\s+(?:address|phone(?: number)?|telephone(?: number)?|email|contact|details?)\b/gi, " ")
+    .replace(/\b(?:address|phone(?: number)?|telephone(?: number)?|email|contact|details?)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return [...new Set([original, simplified].filter(Boolean))];
+}
+
 export function createContactNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
   const {
     RailError,
@@ -20,11 +40,27 @@ export function createContactNexiTools(context: CrmToolContext, includeWrites: b
       handler: async (tenant: Tenant, args: unknown) => {
         const input = clientLookupInputSchema.parse(args);
         const query = input.q.trim();
-        const nativeClients = await provider.getClients(query);
+        // A broad list is useful for a count, but never send an entire tenant
+        // directory into a model context. It is slow, needlessly exposes
+        // unrelated records, and can drown out the named client the user asked
+        // for. The model can answer count questions from nativeCount, then must
+        // retry with a name for a client-specific question.
+        if (!query) {
+          const nativeCount = (await provider.getClients("")).length;
+          return {
+            result: {
+              clients: [],
+              nativeCount,
+              searchHint: "This is a tenant-wide count only. For a specific client detail, call clientLookup again with that client name, company, email, or phone."
+            },
+            sources: [source("clients", "Native CRM clients")]
+          };
+        }
+        const nativeClients = dedupeClients((await Promise.all(clientLookupQueries(query).map((candidate) => provider.getClients(candidate)))).flat());
         const relatedProperties = options.requestRepository
           ? await options.requestRepository.listProperties(tenant.id)
           : [];
-        const clients = dedupeClients(nativeClients).map((client) => {
+        const clients = nativeClients.map((client) => {
           const propertiesForClient = relatedProperties
             .filter((property) => property.clientId === client.id)
             .map((property) => ({
