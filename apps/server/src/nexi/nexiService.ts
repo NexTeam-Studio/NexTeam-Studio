@@ -93,6 +93,10 @@ function persistableToolRuns(toolRuns: ToolLoopResponse["toolRuns"]): ToolLoopRe
 function buildNexiSystemPrompt(tenant: Tenant): string {
   return [
     `You are ${tenant.branding.assistantName}, the NexTeam Job Desk assistant for ${tenant.name}.`,
+    "Understand normal language before choosing a tool. A person may use shorthand, corrections, misspellings, pronouns, and references to prior results such as 'number 2', 'the second duplicate', 'that client', 'him', or 'it'. Resolve those references from the conversation before acting.",
+    "For any fact about this tenant's clients, properties, jobs, schedule, invoices, payments, photos, reports, or saved notes, check the appropriate tenant-scoped records before answering. Conversation history helps identify the record; it is not proof of a current fact.",
+    "Never invent missing facts or claim an action happened without a checked tool result. If a name or reference can reasonably mean more than one saved record, ask one short clarification question that identifies the choices.",
+    "For create, edit, or delete actions, identify the exact intended record and follow the required confirmation step. A legacy/imported record must never be deleted. Do not turn an ordinal reference into literal client-search words.",
     "Check the connected work records before answering job, schedule, photo, report, and saved site-note questions.",
     "Never invent job data. If you cannot find it in the connected records, say plainly that you do not have it written down.",
     "For schedule answers, use schedule.localSummary when present and do not describe tenant-local all-day windows as UTC appointments.",
@@ -2153,9 +2157,23 @@ function stableConversationId(input: NexiMessageInput): string {
   return input.conversationId ?? `thread_${crypto.randomUUID()}`;
 }
 
+const DEFAULT_CONVERSATION_CONTEXT_RECORD_LIMIT = 24;
+
+function conversationContextRecordLimit(env: NodeJS.ProcessEnv | undefined): number {
+  const requested = Number.parseInt(env?.NEXI_CONVERSATION_CONTEXT_RECORD_LIMIT?.trim() ?? "", 10);
+  if (Number.isInteger(requested) && requested >= 8 && requested <= 40) {
+    return requested;
+  }
+  return DEFAULT_CONVERSATION_CONTEXT_RECORD_LIMIT;
+}
+
 async function answerUserFlaggedIncorrect(input: NexiMessageInput): Promise<NexiMessageResult> {
   const conversationId = stableConversationId(input);
-  const recent = await input.repository.loadRecentConversations(input.tenant.id, conversationId, 8);
+  const recent = await input.repository.loadRecentConversations(
+    input.tenant.id,
+    conversationId,
+    conversationContextRecordLimit(input.env)
+  );
   const flagged = recent.at(-1);
   const failure = await input.repository.saveFailure({
     tenantId: input.tenant.id,
@@ -2193,7 +2211,11 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
     return answerUserFlaggedIncorrect(input);
   }
   const conversationId = stableConversationId(input);
-  const recent = await input.repository.loadRecentConversations(input.tenant.id, conversationId, 8);
+  const recent = await input.repository.loadRecentConversations(
+    input.tenant.id,
+    conversationId,
+    conversationContextRecordLimit(input.env)
+  );
   const pendingApproval = input.pendingApproval ?? pendingApprovalFromConversationRecords(recent, null);
   const history = recent.flatMap((record) => [
     { role: "user" as const, content: record.userText },
