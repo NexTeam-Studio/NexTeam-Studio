@@ -16,6 +16,7 @@ import { buildOperatorUiTheme, defaultOperatorUiTheme } from "./appearance.js";
 import { generatePoolLeakSite } from "./generator.js";
 import { leadSubmissionSchema, operatorUiThemeInputSchema } from "./schemas.js";
 import type { SitesRepository } from "./repository.js";
+import { buildStaticSitePublishBundle, ExplicitFtpsSitePublisher, ftpsTargetForTenant, type SitePublisher } from "./publisher.js";
 
 export interface SitesRouteDeps {
   repository: SitesRepository;
@@ -25,6 +26,8 @@ export interface SitesRouteDeps {
   commsRail?: CommsRail | undefined;
   eventBus?: EventBus | undefined;
   env?: NodeJS.ProcessEnv | undefined;
+  sitePublisher?: SitePublisher | undefined;
+  siteAssetRoot?: string | undefined;
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv) {
@@ -58,6 +61,65 @@ function normalizeLeadBody(body: unknown): unknown {
 export function registerSitesRoutes(app: Express, deps: SitesRouteDeps): void {
   const env = deps.env ?? process.env;
   const eventBus = deps.eventBus ?? new InMemoryEventBus();
+  const sitePublisher = deps.sitePublisher ?? new ExplicitFtpsSitePublisher();
+  const siteAssetRoot = deps.siteAssetRoot ?? "apps/web/public";
+
+  async function loadPublishBundle(tenantId: string, slug: string) {
+    const site = await deps.repository.getSiteBySlug(tenantId, slug);
+    if (!site) throw new RailError("Site was not found.", { provider: "native", op: "prepareSitePublish", status: 404 });
+    return {
+      site,
+      bundle: await buildStaticSitePublishBundle({ tenantId, html: site.html, assetRoot: siteAssetRoot })
+    };
+  }
+
+  app.post("/api/sites/:slug/publish/prepare", async (req: Request, res: Response) => {
+    try {
+      const requestedTenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : defaultTenantId(env);
+      const access = await requireTenantRole(req, env, ["OWNER"], { requestedTenantId, op: "sitePublishPrepare" });
+      const { site, bundle } = await loadPublishBundle(access.tenantId, String(req.params.slug ?? ""));
+      // Validate the target now, but never include credentials in an approval record or response.
+      ftpsTargetForTenant(env, access.tenantId);
+      const approval = await deps.approvalQueue.create({
+        tenantId: access.tenantId,
+        kind: "site_publish",
+        preview: {
+          title: `Publish ${site.title}`,
+          body: `Publish ${bundle.files.length} reviewed static website file(s) to this tenant's configured hosting folder. This updates files only; it never deletes remote files.`
+        },
+        execute: {
+          service: "sites",
+          op: "publishStaticSiteFtps",
+          args: { siteId: site.id, slug: site.slug, fileCount: bundle.files.length, contentHash: bundle.contentHash, transport: "explicit_ftps", noDelete: true, actorId: actorIdForAccess(access) }
+        },
+        createdBy: "user"
+      });
+      res.status(201).json({ ok: true, approval, publish: { fileCount: bundle.files.length, contentHash: bundle.contentHash, transport: "explicit_ftps" } });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.post("/api/sites/:slug/publish/execute", async (req: Request, res: Response) => {
+    try {
+      const approvalId = typeof req.body?.approvalId === "string" ? req.body.approvalId : "";
+      if (!approvalId) throw new RailError("An approved publish item is required.", { provider: "native", op: "sitePublishExecute", status: 400 });
+      const requestedTenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : defaultTenantId(env);
+      const access = await requireTenantRole(req, env, ["OWNER"], { requestedTenantId, op: "sitePublishExecute" });
+      const approval = await deps.approvalQueue.get(access.tenantId, approvalId);
+      if (!approval || approval.status !== "approved" || approval.execute.service !== "sites" || approval.execute.op !== "publishStaticSiteFtps") {
+        throw new RailError("That website publish item is not approved.", { provider: "native", op: "sitePublishExecute", status: 409 });
+      }
+      const { site, bundle } = await loadPublishBundle(access.tenantId, String(req.params.slug ?? ""));
+      const args = approval.execute.args && typeof approval.execute.args === "object"
+        ? approval.execute.args as Record<string, unknown>
+        : {};
+      if (args.siteId !== site.id || args.slug !== site.slug || args.contentHash !== bundle.contentHash) {
+        throw new RailError("The reviewed website changed. Prepare and approve it again before publishing.", { provider: "native", op: "sitePublishExecute", status: 409 });
+      }
+      const result = await sitePublisher.publish(ftpsTargetForTenant(env, access.tenantId), bundle);
+      const completed = await deps.approvalQueue.executeApproved(access.tenantId, approval.id, actorIdForAccess(access));
+      res.json({ ok: true, result, approval: completed.item });
+    } catch (error) { sendRouteError(res, error); }
+  });
 
   app.post("/api/sites/:slug/generate", async (req: Request, res: Response) => {
     try {

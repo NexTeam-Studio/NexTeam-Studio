@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import express from "express";
 import {
   ApprovalQueueService,
@@ -77,6 +80,84 @@ test("M8 generates a pressure-washing site with direct phone, email, and website
   assert.match(site.html, /Bronze Package/);
   assert.match(site.html, /class="service-card has-photo"/);
   assert.match(site.html, /test-pressure-washing\/assets\/services\/house-wash\.webp/);
+});
+
+test("M8 publishes only an owner-approved, unchanged reviewed site through the FTPS rail", async () => {
+  const app = express();
+  app.use(express.json());
+  const repository = new InMemorySitesRepository();
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  const assetRoot = await mkdtemp(path.join(os.tmpdir(), "nexteam-sites-publish-"));
+  const published = [];
+  const site = generatePressureWashingSite({
+    tenantId: "test-publisher",
+    businessName: "Test Publisher Exterior Cleaning",
+    slug: "test-publisher",
+    tagline: "Dirty Work. Clean Results.",
+    phone: "864-934-7278",
+    email: "contact@example.test",
+    website: "https://example.test",
+    serviceArea: ["Test City"],
+    serviceImageBaseUrl: "/tenant-packs/test-publisher/assets/services"
+  }, "2026-08-03T20:00:00.000Z");
+  await repository.saveSite(site);
+  for (const asset of [...site.html.matchAll(/\/tenant-packs\/test-publisher\/assets\/([^'"\s)]+)/g)].map((match) => match[1])) {
+    const destination = path.join(assetRoot, "tenant-packs", "test-publisher", "assets", asset);
+    await mkdir(path.dirname(destination), { recursive: true });
+    await writeFile(destination, `test asset: ${asset}`);
+  }
+  registerSitesRoutes(app, {
+    repository,
+    approvalQueue,
+    siteAssetRoot: assetRoot,
+    sitePublisher: {
+      async publish(_target, bundle) {
+        published.push(...bundle.files.map((file) => file.path));
+        return { filesPublished: bundle.files.length, contentHash: bundle.contentHash };
+      }
+    },
+    env: {
+      TENANT_ID: "test-publisher",
+      NEXI_FIREBASE_AUTH_REQUIRED: "false",
+      NEXREACH_FTPS_TARGETS_JSON: JSON.stringify({
+        "test-publisher": {
+          host: "ftp.example.test",
+          username: "test-publisher",
+          password: "not-a-real-password",
+          remoteDirectory: "."
+        }
+      })
+    }
+  });
+
+  await withServer(app, async (baseUrl) => {
+    const prepareResponse = await fetch(`${baseUrl}/api/sites/test-publisher/publish/prepare`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tenantId: "test-publisher" })
+    });
+    const prepared = await prepareResponse.json();
+    assert.equal(prepareResponse.status, 201, JSON.stringify(prepared));
+    assert.equal(prepared.approval.kind, "site_publish");
+    assert.equal(prepared.publish.transport, "explicit_ftps");
+    assert.equal(prepared.publish.fileCount > 1, true);
+    assert.equal(JSON.stringify(prepared).includes("not-a-real-password"), false);
+
+    const earlyExecute = await fetch(`${baseUrl}/api/sites/test-publisher/publish/execute`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tenantId: "test-publisher", approvalId: prepared.approval.id })
+    });
+    assert.equal(earlyExecute.status, 409);
+    assert.deepEqual(published, []);
+
+    await approvalQueue.approve("test-publisher", prepared.approval.id, "test:owner");
+    const executeResponse = await fetch(`${baseUrl}/api/sites/test-publisher/publish/execute`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tenantId: "test-publisher", approvalId: prepared.approval.id })
+    });
+    assert.equal(executeResponse.status, 200);
+    const executed = await executeResponse.json();
+    assert.equal(executed.ok, true);
+    assert.equal(executed.approval.status, "executed");
+    assert.equal(published.includes("index.html"), true);
+    assert.equal(published.some((file) => file.startsWith("assets/services/")), true);
+  });
 });
 
 test("M8 lead form creates lead, event, and approval-queued owner notification only", async () => {

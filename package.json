@@ -81,6 +81,7 @@
   },
   "dependencies": {
     "@rive-app/react-canvas": "^4.27.3",
+    "basic-ftp": "^5.0.5",
     "express": "^4.19.2",
     "firebase": "^12.11.0",
     "firebase-admin": "^14.1.0",
