@@ -133,6 +133,7 @@ export class ExplicitFtpsSitePublisher implements SitePublisher {
     let basicFtp: { Client: new () => {
       access(input: { host: string; port: number; user: string; password: string; secure: "explicit"; secureOptions: { rejectUnauthorized: true } }): Promise<void>;
       cd(directory: string): Promise<void>;
+      pwd(): Promise<string>;
       ensureDir(directory: string): Promise<void>;
       uploadFrom(source: Readable, destination: string): Promise<void>;
       close(): void;
@@ -146,14 +147,18 @@ export class ExplicitFtpsSitePublisher implements SitePublisher {
     try {
       await client.access({ host: target.host, port: target.port, user: target.username, password: target.password, secure: "explicit", secureOptions: { rejectUnauthorized: true } });
       await client.ensureDir(target.remoteDirectory);
+      // ensureDir changes the FTP client's current directory. Resolve the
+      // configured tenant root once, then return to that absolute directory
+      // before every file so nested assets never become assets/assets/… .
+      const remoteRoot = await client.pwd();
       for (const file of bundle.files) {
-        await client.cd(target.remoteDirectory);
+        await client.cd(remoteRoot);
         const destination = safeRemotePath(file.path);
         const directory = path.posix.dirname(destination);
         if (directory !== ".") await client.ensureDir(directory);
         // basic-ftp accepts a path or a readable stream. A raw Buffer is not a
         // supported upload source, so preserve the exact bytes in one stream chunk.
-        await client.uploadFrom(Readable.from([file.body]), destination);
+        await client.uploadFrom(Readable.from([file.body]), path.posix.basename(destination));
       }
       return { filesPublished: bundle.files.length, contentHash: bundle.contentHash };
     } finally {
