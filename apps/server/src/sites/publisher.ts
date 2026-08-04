@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
+import { Readable } from "node:stream";
 import path from "node:path";
 import { RailError } from "@nexteam/core";
 import { z } from "zod";
@@ -133,7 +134,7 @@ export class ExplicitFtpsSitePublisher implements SitePublisher {
       access(input: { host: string; port: number; user: string; password: string; secure: "explicit"; secureOptions: { rejectUnauthorized: true } }): Promise<void>;
       cd(directory: string): Promise<void>;
       ensureDir(directory: string): Promise<void>;
-      uploadFrom(source: Buffer, destination: string): Promise<void>;
+      uploadFrom(source: Readable, destination: string): Promise<void>;
       close(): void;
     } };
     try {
@@ -150,7 +151,9 @@ export class ExplicitFtpsSitePublisher implements SitePublisher {
         const destination = safeRemotePath(file.path);
         const directory = path.posix.dirname(destination);
         if (directory !== ".") await client.ensureDir(directory);
-        await client.uploadFrom(file.body, destination);
+        // basic-ftp accepts a path or a readable stream. A raw Buffer is not a
+        // supported upload source, so preserve the exact bytes in one stream chunk.
+        await client.uploadFrom(Readable.from([file.body]), destination);
       }
       return { filesPublished: bundle.files.length, contentHash: bundle.contentHash };
     } finally {
