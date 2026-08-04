@@ -85,6 +85,27 @@ export async function buildStaticSitePublishBundle(input: {
 }
 
 export function ftpsTargetForTenant(env: NodeJS.ProcessEnv, tenantId: string): FtpsPublishTarget {
+  const tenantKey = tenantId.replace(/[^A-Za-z0-9]/g, "_").toUpperCase();
+  const tenantTarget = {
+    host: env[`NEXREACH_FTPS_${tenantKey}_HOST`],
+    username: env[`NEXREACH_FTPS_${tenantKey}_USERNAME`],
+    password: env[`NEXREACH_FTPS_${tenantKey}_PASSWORD`],
+    port: env[`NEXREACH_FTPS_${tenantKey}_PORT`],
+    remoteDirectory: env[`NEXREACH_FTPS_${tenantKey}_REMOTE_DIRECTORY`]
+  };
+  if (tenantTarget.host || tenantTarget.username || tenantTarget.password) {
+    try {
+      return ftpsTargetSchema.parse({
+        ...tenantTarget,
+        ...(tenantTarget.port ? { port: Number(tenantTarget.port) } : {}),
+        ...(tenantTarget.remoteDirectory ? { remoteDirectory: tenantTarget.remoteDirectory } : {})
+      });
+    } catch {
+      throw new RailError("Publishing credentials are not configured for this tenant.", { provider: "native", op: "loadPublishTarget", status: 409 });
+    }
+  }
+
+  // Backward-compatible only. New tenants use the separate, tenant-scoped variables above.
   const source = env.NEXREACH_FTPS_TARGETS_JSON;
   if (!source) {
     throw new RailError("Publishing credentials are not configured for this tenant.", { provider: "native", op: "loadPublishTarget", status: 409 });

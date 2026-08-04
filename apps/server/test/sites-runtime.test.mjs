@@ -119,14 +119,10 @@ test("M8 publishes only an owner-approved, unchanged reviewed site through the F
     env: {
       TENANT_ID: "test-publisher",
       NEXI_FIREBASE_AUTH_REQUIRED: "false",
-      NEXREACH_FTPS_TARGETS_JSON: JSON.stringify({
-        "test-publisher": {
-          host: "ftp.example.test",
-          username: "test-publisher",
-          password: "not-a-real-password",
-          remoteDirectory: "."
-        }
-      })
+      NEXREACH_FTPS_TEST_PUBLISHER_HOST: "ftp.example.test",
+      NEXREACH_FTPS_TEST_PUBLISHER_USERNAME: "test-publisher",
+      NEXREACH_FTPS_TEST_PUBLISHER_PASSWORD: "not-a-real-password",
+      NEXREACH_FTPS_TEST_PUBLISHER_REMOTE_DIRECTORY: "."
     }
   });
 
