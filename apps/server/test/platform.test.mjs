@@ -498,5 +498,8 @@ test("runtime defaults to durable persistence and refuses an empty customer tena
     /Refusing to use an empty in-memory database/
   );
   assert.doesNotThrow(() => assertTenantRuntimePersistence({ TENANT_ID: "aquatrace" }, true));
-  assert.doesNotThrow(() => assertTenantRuntimePersistence({ NODE_ENV: "test", TENANT_ID: "aquatrace" }, false));
+  assert.throws(
+    () => assertTenantRuntimePersistence({ NODE_ENV: "test", TENANT_ID: "aquatrace" }, false),
+    /FIREBASE_ADMIN_PRIVATE_KEY/
+  );
 });
