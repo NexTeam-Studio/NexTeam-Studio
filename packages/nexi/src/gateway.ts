@@ -705,6 +705,28 @@ function clientEntityFromPreviousUserMessages(messages: GatewayMessage[]): strin
   return "";
 }
 
+function clientNameFromConversation(messages: GatewayMessage[]): string {
+  for (const message of [...messages.slice(0, -1)].reverse()) {
+    if (typeof message.content !== "string") {
+      continue;
+    }
+    // A create preview deliberately puts the client name on its own first
+    // line. Prefer it over free-form assistant prose, which may contain
+    // generic phrases that are not client names.
+    for (const line of message.content.split(/\r?\n/)) {
+      const candidate = line.replace(/[*_`]/g, "").trim();
+      if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(candidate)) {
+        return candidate;
+      }
+    }
+    const createMatch = message.content.match(/\b(?:add|create)\s+(?:a\s+|new\s+)?client\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})(?=\s+(?:\d|[A-Z][a-z]+\s+[A-Z]{2}\b))/i);
+    if (createMatch?.[1]) {
+      return createMatch[1].trim();
+    }
+  }
+  return "";
+}
+
 function bareEntityFromText(text: string): string {
   const trimmed = text.replace(/[?.!]+$/g, "").trim();
   return /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(trimmed) ? trimmed : "";
@@ -1230,15 +1252,16 @@ async function normalizeToolInput(
   }
   if (toolName === "clientLookup") {
     const parsedUserQuery = clientLookupQueryFromText(userText);
+    const confirmedCloseMatch = isCloseClientMatchConfirmation(userText, messages) ? confirmedCloseClientName(messages) : "";
     const pronounOnlyQuery = /^(?:he|him|his|she|her|hers|they|them|their|theirs)$/i.test(parsedUserQuery)
       || (hasClientPronounReference(userText) && !hasExplicitClientSubject(userText));
     const matchListFollowUp = looksLikeClientMatchListFollowUp(userText);
     // A pronoun is not a client lookup key.  Keep the person established in
     // the earlier turn instead of sending a literal search for "their".
-    const conversationQuery = pronounOnlyQuery || matchListFollowUp
-      ? clientEntityFromPreviousUserMessages(messages)
-      : entityQueryFromMessages(messages);
-    const parsedQuery = (pronounOnlyQuery || matchListFollowUp ? conversationQuery : parsedUserQuery) || conversationQuery || "";
+    const conversationQuery = confirmedCloseMatch || (pronounOnlyQuery || matchListFollowUp
+      ? clientNameFromConversation(messages) || clientEntityFromPreviousUserMessages(messages)
+      : entityQueryFromMessages(messages));
+    const parsedQuery = confirmedCloseMatch || (pronounOnlyQuery || matchListFollowUp ? conversationQuery : parsedUserQuery) || conversationQuery || "";
     if (looksLikeClientListQuestion(lowerUserText)) {
       record.q = "";
     } else if (parsedQuery) {
@@ -2071,6 +2094,26 @@ function looksLikeClientMatchListFollowUp(text: string): boolean {
   return /^\s*(?:show|list)\s+(?:me\s+)?(?:both|all|them)\s*[?.!]*\s*$/i.test(text);
 }
 
+function confirmedCloseClientName(messages: GatewayMessage[]): string {
+  for (const message of [...messages.slice(0, -1)].reverse()) {
+    if (message.role !== "assistant" || typeof message.content !== "string") continue;
+    const match = message.content.match(/close match:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\.\s*Is that the client you mean\?/i);
+    if (match?.[1]) return match[1];
+  }
+  return "";
+}
+
+function clientDetailQuestionBeforeConfirmation(messages: GatewayMessage[]): string {
+  for (const message of [...messages.slice(0, -1)].reverse()) {
+    if (message.role === "user" && typeof message.content === "string" && !looksLikeApprovalYes(message.content)) return message.content;
+  }
+  return "";
+}
+
+function isCloseClientMatchConfirmation(text: string, messages: GatewayMessage[]): boolean {
+  return looksLikeApprovalYes(text) && Boolean(confirmedCloseClientName(messages));
+}
+
 function hasClientApprovalChangeDetails(text: string): boolean {
   // A pending create must not capture a later lookup such as "What is Logan's
   // address?" merely because that sentence contains the word "address".
@@ -2158,10 +2201,12 @@ function clientUpdateInputFromText(text: string, messages: GatewayMessage[]): {
   emails?: string[] | undefined;
   phones?: string[] | undefined;
 } {
-  const named = (text.match(/\b(?:for|of)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})(?=\s+(?:to|zip|postal|phone|telephone|mobile|email|e-mail|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway)\b)/)?.[1]
+  const explicitlyNamed = text.match(/\b(?:for|of)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})(?=\s+(?:to|zip|postal|phone|telephone|mobile|email|e-mail|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway)\b)/)?.[1]
     ?? text.match(/\b(?:edit|change|update|fix|correct|replace)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})(?=\s+(?:zip|postal|phone|telephone|mobile|email|e-mail|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway)\b)/i)?.[1]
-    ?? text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})'s\b/)?.[1]
-    ?? clientLookupQueryFromText(text))
+    ?? text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})'s\b/)?.[1];
+  const named = (explicitlyNamed
+    || (hasClientPronounReference(text) ? clientNameFromConversation(messages) : "")
+    || clientLookupQueryFromText(text))
     || entityQueryFromMessages(messages, { skipLatest: true });
   const email = firstEmailAddress(text);
   const phone = firstPhoneNumber(text);
@@ -2939,6 +2984,9 @@ function deterministicToolNames(
   if (looksLikeCreateClientAction(lower) && toolsByName.has("createClient")) {
     return ["createClient"];
   }
+  if (isCloseClientMatchConfirmation(userText, messages) && toolsByName.has("clientLookup")) {
+    return ["clientLookup"];
+  }
   if (/\b(?:delete|remove)\b/i.test(lower) && /\b(?:client|customer|duplicate|record|entry)\b/i.test(lower) && toolsByName.has("deleteClient")) {
     return ["deleteClient"];
   }
@@ -3418,7 +3466,14 @@ function normalizeIdentityText(value: string): string {
 }
 
 function looksLikePhoneLookupQuestion(lower: string): boolean {
-  return /\b(?:phone|telephone|mobile|cell|call|text)\b/.test(lower);
+  if (/\b(?:phone|telephone|mobile|cell|call|text)\b/.test(lower)) {
+    return true;
+  }
+  // People regularly shorten "What is Chris Sears's phone number?" to
+  // "What is Chris Sears's number?". Treat that as a phone lookup unless
+  // the question is clearly asking for a document or account number.
+  return /\bnumber\b/.test(lower)
+    && !/\b(?:job|quote|invoice|estimate|request|account|ticket)\s+number\b/.test(lower);
 }
 
 function looksLikeAddressLookupQuestion(lower: string): boolean {
@@ -3515,11 +3570,15 @@ function formatClientLookupPhone(phone: string): string {
 function clientLookupAnswer(latestText: string, messages: GatewayMessage[], result: unknown): string | undefined {
   const record = objectRecord(result);
   const rawClients = Array.isArray(record?.clients) ? record.clients : [];
+  const closeMatchNames = arrayRecord(record?.closeMatches)
+    .map((client) => stringValue(client.name) ?? stringValue(client.company))
+    .filter((name): name is string => Boolean(name));
+  const confirmedCloseMatch = isCloseClientMatchConfirmation(latestText, messages) ? confirmedCloseClientName(messages) : "";
   const matchListFollowUp = looksLikeClientMatchListFollowUp(latestText);
   const parsedUserQuery = matchListFollowUp
     ? clientEntityFromPreviousUserMessages(messages)
     : clientLookupQueryFromText(latestText);
-  const requested = preferConversationClientEntity(
+  const requested = confirmedCloseMatch || preferConversationClientEntity(
     /^(?:he|him|his|she|her|hers|they|them|their|theirs)$/i.test(parsedUserQuery)
       || (hasClientPronounReference(latestText) && !hasExplicitClientSubject(latestText))
       ? clientEntityFromPreviousUserMessages(messages)
@@ -3527,7 +3586,7 @@ function clientLookupAnswer(latestText: string, messages: GatewayMessage[], resu
     messages
   );
   const requestedNormalized = normalizeIdentityText(requested);
-  const lower = latestText.toLowerCase();
+  const lower = (confirmedCloseMatch ? clientDetailQuestionBeforeConfirmation(messages) : latestText).toLowerCase();
   const phoneQuestion = looksLikePhoneLookupQuestion(lower);
   const addressQuestion = looksLikeAddressLookupQuestion(lower);
   const emailQuestion = looksLikeClientEmailFieldQuestion(lower);
@@ -3552,6 +3611,12 @@ function clientLookupAnswer(latestText: string, messages: GatewayMessage[], resu
     : clients;
   const names = [...new Set(matches.map((client) => client.name || client.company).filter(Boolean))];
   if (names.length === 0) {
+    if (requested && closeMatchNames.length === 1) {
+      return `I do not have ${requested} exactly, but I found a close match: ${closeMatchNames[0]}. Is that the client you mean?`;
+    }
+    if (requested && closeMatchNames.length > 1) {
+      return `I do not have ${requested} exactly, but I found close matches: ${closeMatchNames.join(", ")}. Which client do you mean?`;
+    }
     return requested
       ? `I checked the native client list, but I did not find ${requested}.`
       : "I checked the native client list, but I did not find a matching client.";
@@ -3943,7 +4008,7 @@ function directAnswerFromDeterministicRuns(
   if (
     clientLookupRun
     && !looksLikeClientListQuestion(lower)
-    && (looksLikeClientMatchListFollowUp(latestText) || looksLikeNamedClientLookupQuestion(lower) || looksLikePhoneLookupQuestion(lower) || looksLikeAddressLookupQuestion(lower) || looksLikeClientEmailFieldQuestion(lower))
+    && (isCloseClientMatchConfirmation(latestText, messages) || looksLikeClientMatchListFollowUp(latestText) || looksLikeNamedClientLookupQuestion(lower) || looksLikePhoneLookupQuestion(lower) || looksLikeAddressLookupQuestion(lower) || looksLikeClientEmailFieldQuestion(lower))
   ) {
     return clientLookupAnswer(latestText, messages, clientLookupRun.result);
   }
@@ -4072,13 +4137,15 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
   // simple named questions and pronoun follow-ups directly against the checked
   // client rail; keep site/property questions on the normal Claude-first path
   // because they need the model to distinguish billing from a named site.
-  const clientDetailQuery = hasClientPronounReference(currentUserText)
+  const confirmedCloseMatch = isCloseClientMatchConfirmation(currentUserText, request.messages) ? confirmedCloseClientName(request.messages) : "";
+  const clientDetailQuery = confirmedCloseMatch || (hasClientPronounReference(currentUserText)
     && !hasExplicitClientSubject(currentUserText)
     ? clientEntityFromPreviousUserMessages(request.messages)
-    : clientLookupQueryFromText(currentUserText) || entityQueryFromMessages(request.messages, { skipLatest: true });
+    : clientLookupQueryFromText(currentUserText) || entityQueryFromMessages(request.messages, { skipLatest: true }));
   const deterministicClientDetailRead = Boolean(
     toolsByName.has("clientLookup")
-    && (looksLikeClientMatchListFollowUp(currentUserText)
+    && (Boolean(confirmedCloseMatch)
+      || looksLikeClientMatchListFollowUp(currentUserText)
       || looksLikePhoneLookupQuestion(currentUserText.toLowerCase())
       || looksLikeClientEmailFieldQuestion(currentUserText.toLowerCase())
       || (looksLikeAddressLookupQuestion(currentUserText.toLowerCase())

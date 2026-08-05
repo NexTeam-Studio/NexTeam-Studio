@@ -177,6 +177,35 @@ export function createNexiRouter(env: NodeJS.ProcessEnv = process.env, deps: Nex
     }
   });
 
+  router.get("/history/latest", async (req: Request, res: Response) => {
+    try {
+      await requireNexiOperator(req, env);
+      const tenant = deps.loadTenant ? await deps.loadTenant(req) : loadDefaultTenant(req, env);
+      const requestorContext = deps.loadRequestorContext ? await deps.loadRequestorContext(req, tenant) : null;
+      const tenantUserId = requestorContext?.tenantUserId;
+      if (!tenantUserId) {
+        throw new RailError("Signed-in operator identity is required to restore Nexi history.", { provider: "firebase", op: "nexiHistoryLatest", status: 401 });
+      }
+      const recent = await runtimeStores(env).repository.loadUserConversations(tenant.id, tenantUserId, 100);
+      const conversationId = recent.at(-1)?.conversationId;
+      res.json({
+        ok: true,
+        ...(conversationId ? { conversationId } : {}),
+        messages: recent.flatMap((record) => [
+          { id: `${record.id}:user`, role: "user", text: record.userText, sources: [], createdAt: record.createdAt },
+          { id: `${record.id}:assistant`, role: "assistant", text: record.assistantText, sources: record.sources, createdAt: record.createdAt }
+        ]),
+        pendingApproval: pendingApprovalFromConversationRecords(recent, null)
+      });
+    } catch (error) {
+      if (error instanceof RailError && (error.status === 401 || error.status === 403 || error.status === 400)) {
+        sendError(res, error);
+        return;
+      }
+      res.status(500).json({ ok: false, error: sanitizeNexiRouteError(error) });
+    }
+  });
+
   router.post("/site-job-blueprints/ingest", async (req: Request, res: Response) => {
     try {
       await requireNexiOperator(req, env);

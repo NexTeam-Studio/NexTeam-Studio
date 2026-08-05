@@ -1664,6 +1664,134 @@ test("Nexi client lookup misses stay on the native rail and never mention dorman
   assert.doesNotMatch(result.answer, /Jobber|CompanyCam/i);
 });
 
+test("Nexi offers a close client name without disclosing that client's details", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is Chris Sears address?" }],
+    tools: [{
+      name: "clientLookup",
+      description: "Read native clients.",
+      inputSchema: z.object({ q: z.string().optional() }),
+      handler: async () => ({
+        result: {
+          clients: [],
+          nativeCount: 0,
+          closeMatches: [{ name: "Christophers Sears" }]
+        },
+        sources: [{ rail: "native", ref: "clients", label: "Native CRM clients" }]
+      })
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("close client lookup should not call the model");
+    }
+  });
+
+  assert.equal(result.answer, "I do not have Chris Sears exactly, but I found a close match: Christophers Sears. Is that the client you mean?");
+  assert.doesNotMatch(result.answer, /102 Kate Lane|864|@/);
+});
+
+test("Nexi treats a named client's bare number request as a phone lookup", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "What is Chris Sears number" }],
+    tools: [{
+      name: "clientLookup",
+      description: "Read native clients.",
+      inputSchema: z.object({ q: z.string().optional() }),
+      handler: async (_tenant, args) => {
+        assert.equal(args.q, "Chris Sears");
+        return {
+          result: {
+            clients: [],
+            nativeCount: 0,
+            closeMatches: [{ name: "Christophers Sears" }]
+          },
+          sources: [{ rail: "native", ref: "clients", label: "Native CRM clients" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("bare-number client lookup should not call the model");
+    }
+  });
+
+  assert.equal(result.answer, "I do not have Chris Sears exactly, but I found a close match: Christophers Sears. Is that the client you mean?");
+});
+
+test("Nexi resolves her to the most recently previewed client for an address update", async () => {
+  const result = await runExplicitLocalToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "Add new client Catherine Sears 102 Kate Lane Fair Play SC 8646171838 catherinesears31@gmail.com" },
+      { role: "assistant", content: "Catherine Sears\n102 Kate Lane, Fair Play, SC\n(864) 617-1838\ncatherinesears31@gmail.com\n\nDo the Client Details look correct?" },
+      { role: "user", content: "Where are the over 1300 clients we had" },
+      { role: "assistant", content: "I don't have that import connected right now, so I cannot confirm it from this reply." },
+      { role: "user", content: "Edit her zip code and make it 29643" }
+    ],
+    tools: [{
+      name: "updateClient",
+      description: "Prepare a client address update.",
+      inputSchema: z.object({ clientQuery: z.string(), postalCode: z.string().optional() }),
+      handler: async (_tenant, args) => {
+        assert.equal(args.clientQuery, "Catherine Sears");
+        return {
+          result: { needsClarification: "Update queued for Catherine Sears." },
+          sources: [{ rail: "native", ref: "clients", label: "Native CRM clients" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("pronoun client updates should not call the model");
+    }
+  });
+
+  assert.equal(result.toolRuns[0].name, "updateClient");
+});
+
+test("Nexi resolves yes to the offered close client match and answers the original phone question", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [
+      { role: "user", content: "Give me Christopher Sears phone number" },
+      { role: "assistant", content: "I do not have Christopher Sears exactly, but I found a close match: Christophers Sears. Is that the client you mean?" },
+      { role: "user", content: "Yes" }
+    ],
+    tools: [{
+      name: "clientLookup",
+      description: "Read native clients.",
+      inputSchema: z.object({ q: z.string().optional() }),
+      handler: async (_tenant, args) => {
+        assert.equal(args.q, "Christophers Sears");
+        return {
+          result: { clients: [{ name: "Christophers Sears", phones: ["8645581725"] }], nativeCount: 1 },
+          sources: [{ rail: "native", ref: "clients", label: "Native CRM clients" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("confirmed close client lookup should not call the model");
+    }
+  });
+
+  assert.match(result.answer, /The phone number on file for Christophers Sears is 864-558-1725\./);
+});
+
 test("client approval preview keeps the parsed zip separate from the phone number", async () => {
   let capturedApproval = null;
   await queueClientCreateApproval(

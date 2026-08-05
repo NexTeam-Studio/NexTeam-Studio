@@ -52,7 +52,8 @@ export function NexOpsSharedMobileBar(props: {
 }
 
 export function NexOpsSharedWebTopbar(props: {
-  tenantName: string;
+  tenantBranding: TenantBranding | null;
+  tenantId: string;
   moduleTitle: string;
   product?: ProductBrand;
   moduleSwitcherOpen: boolean;
@@ -65,10 +66,7 @@ export function NexOpsSharedWebTopbar(props: {
     <header className="nexops-web-topbar">
       <div className="nexops-web-brand">
         <ProductLogo product={product} className="nexops-header-product-logo" alt={productLabel(product)} />
-        <div className="nexops-web-brand-copy">
-          <strong>{productLabel(product)}</strong>
-          <span>{props.tenantName}</span>
-        </div>
+        <TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-header-tenant-logo" />
       </div>
       <div className="nexops-web-tools">
         <label>

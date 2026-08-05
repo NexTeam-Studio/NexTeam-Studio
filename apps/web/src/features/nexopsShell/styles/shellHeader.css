@@ -21,13 +21,20 @@
 .nexops-web-brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 20px;
   min-width: 0;
 }
 
 .nexops-header-product-logo {
-  width: 136px;
-  max-height: 42px;
+  width: 148px;
+  max-height: 50px;
+  flex: 0 0 auto;
+}
+
+.nexops-header-tenant-logo {
+  width: 150px;
+  height: 54px;
+  object-fit: contain;
   flex: 0 0 auto;
 }
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { RailError, addressSchema, type JobAccessScope, type Tenant, type TenantAdapterStatus, type TenantPlan } from "@nexteam/core";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
-import { getAdminAuth } from "../firebase.js";
+import { getAdminAuth, getAdminStorageBucket } from "../firebase.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 import { createJobAccessLink, customClaimsForTenantUser, upsertTenantUser, verifyJobAccessToken } from "./accessManagement.js";
 import { runTenantBackup, type StorageWriter } from "./backup.js";
@@ -325,6 +325,35 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const tenant = await loadTenantFromPlatform(deps.repository, tenantId, env);
       const branding = await deps.repository.getTenantBranding(tenantId) ?? defaultTenantBranding(tenant);
       res.json({ ok: true, tenantId, branding });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/public/tenant-branding/logo", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
+        ? req.query.tenantId.trim()
+        : configuredTenantId(env, "publicTenantBrandingLogo");
+      const tenant = await loadTenantFromPlatform(deps.repository, tenantId, env);
+      const branding = await deps.repository.getTenantBranding(tenantId) ?? defaultTenantBranding(tenant);
+      const storageRef = branding.logo?.storageRef;
+      const match = storageRef?.match(/^gs:\/\/([^/]+)\/(.+)$/);
+      if (!match?.[1] || !match[2]) {
+        throw new RailError("Tenant logo is not stored in Firebase Storage.", { provider: "firebase", op: "publicTenantBrandingLogo", status: 404 });
+      }
+      const bucket = getAdminStorageBucket(env);
+      if (!bucket || bucket.name !== match[1]) {
+        throw new RailError("Tenant logo storage is unavailable.", { provider: "firebase", op: "publicTenantBrandingLogo", status: 503 });
+      }
+      const file = bucket.file(match[2]);
+      const [exists] = await file.exists();
+      if (!exists) {
+        throw new RailError("Tenant logo was not found.", { provider: "firebase", op: "publicTenantBrandingLogo", status: 404 });
+      }
+      res.setHeader("cache-control", "public, max-age=3600");
+      res.setHeader("content-type", branding.logo?.mimeType ?? "image/png");
+      file.createReadStream().pipe(res);
     } catch (error) {
       sendRouteError(res, error);
     }

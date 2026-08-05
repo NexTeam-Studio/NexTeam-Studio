@@ -51,6 +51,11 @@ export const tenantSchema = z.object({
     logoRef: z.string().optional(),
     colors: z.record(z.string()).optional()
   }),
+  nexiBusinessProfile: z.object({
+    mission: z.string().min(1),
+    coreValues: z.array(z.string().min(1)).min(1),
+    approvedWhatWeDoReply: z.string().min(1)
+  }).optional(),
   adapters: z.object({
     crm: z.enum(["jobber", "native"]),
     media: z.enum(["companycam", "native"]),
@@ -1339,6 +1344,7 @@ const toolRunResultSchema = z.union([
 export const conversationRecordSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
+  tenantUserId: idSchema.optional(),
   conversationId: idSchema.optional(),
   userText: z.string(),
   assistantText: z.string(),

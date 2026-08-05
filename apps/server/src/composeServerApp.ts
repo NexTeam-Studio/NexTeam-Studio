@@ -381,9 +381,16 @@ registerSitesRoutes(app, {
 });
 registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });
 registerSeoRoutes(app, { repository: seoRepository, sitesRepository, approvalQueue, env: process.env });
+
+// Nexi has its own top-level workspace. Preserve the short-lived preview path
+// by sending it to the canonical Nexi URL instead of rendering NexOps there.
+app.get("/nexops/nexi", (_req: Request, res: Response) => {
+  res.redirect(302, "/nexi");
+});
+
 app.use(express.static(webDistDir));
 
-app.get(/^\/(?:nexops|nexcam|nexreach|platform)(?:\/.*)?$/, (_req: Request, res: Response) => {
+app.get(/^\/(?:nexi|nexops|nexcam|nexreach|platform)(?:\/.*)?$/, (_req: Request, res: Response) => {
   res.sendFile(path.join(webDistDir, "index.html"));
 });
 

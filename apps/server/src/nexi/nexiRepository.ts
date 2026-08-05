@@ -13,6 +13,7 @@ import { setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 export interface NexiRepository {
   loadHistory(tenantId: string, conversationId: string | undefined, limit: number): Promise<GatewayMessage[]>;
   loadRecentConversations(tenantId: string, conversationId: string | undefined, limit: number): Promise<ConversationRecord[]>;
+  loadUserConversations(tenantId: string, tenantUserId: string, limit: number): Promise<ConversationRecord[]>;
   loadSiteJobBlueprints(tenantId: string, limit: number): Promise<SiteJobBlueprint[]>;
   saveConversation(record: Omit<ConversationRecord, "id" | "createdAt">): Promise<ConversationRecord>;
   saveFailure(record: Omit<FailureLogRecord, "id" | "createdAt" | "module">): Promise<FailureLogRecord>;
@@ -51,6 +52,13 @@ export class MemoryNexiRepository implements NexiRepository {
     return this.conversations
       .filter((record) => record.tenantId === tenantId)
       .filter((record) => record.conversationId === conversationId)
+      .slice(-limit);
+  }
+
+  async loadUserConversations(tenantId: string, tenantUserId: string, limit: number): Promise<ConversationRecord[]> {
+    return this.conversations
+      .filter((record) => record.tenantId === tenantId && record.tenantUserId === tenantUserId)
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
       .slice(-limit);
   }
 
@@ -107,6 +115,18 @@ export class FirestoreNexiRepository implements NexiRepository {
       .get();
     return snapshot.docs
       .map((doc) => conversationRecordSchema.parse(doc.data()))
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+      .slice(-limit);
+  }
+
+  async loadUserConversations(tenantId: string, tenantUserId: string, limit: number): Promise<ConversationRecord[]> {
+    const snapshot = await this.db
+      .collection("conversations")
+      .where("tenantId", "==", tenantId)
+      .where("tenantUserId", "==", tenantUserId)
+      .get();
+    return snapshot.docs
+      .map((doc) => conversationRecordSchema.parse(doc.data()) as ConversationRecord)
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
       .slice(-limit);
   }

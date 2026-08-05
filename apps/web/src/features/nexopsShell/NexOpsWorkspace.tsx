@@ -1104,7 +1104,8 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
           </div>
         ) : null}
         <NexOpsSharedWebTopbar
-          tenantName={tenantName}
+          tenantBranding={tenantBranding}
+          tenantId={operatorContext.tenantId}
           moduleTitle={moduleTitle}
           moduleSwitcherOpen={moduleSwitcherOpen}
           onToggleModuleSwitcher={toggleModuleSwitcher}

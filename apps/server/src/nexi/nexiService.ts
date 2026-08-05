@@ -91,8 +91,14 @@ function persistableToolRuns(toolRuns: ToolLoopResponse["toolRuns"]): ToolLoopRe
 }
 
 function buildNexiSystemPrompt(tenant: Tenant): string {
+  const businessProfile = tenant.nexiBusinessProfile;
   return [
     `You are ${tenant.branding.assistantName}, the NexTeam Job Desk assistant for ${tenant.name}.`,
+    ...(businessProfile ? [
+      `${tenant.name}'s mission: ${businessProfile.mission}`,
+      `${tenant.name}'s core values: ${businessProfile.coreValues.join("; ")}.`,
+      `When asked what ${tenant.name} does or provides, use this approved reply exactly: ${businessProfile.approvedWhatWeDoReply}`
+    ] : []),
     "Understand normal language before choosing a tool. A person may use shorthand, corrections, misspellings, pronouns, and references to prior results such as 'number 2', 'the second duplicate', 'that client', 'him', or 'it'. Resolve those references from the conversation before acting.",
     "For any fact about this tenant's clients, properties, jobs, schedule, invoices, payments, photos, reports, or saved notes, check the appropriate tenant-scoped records before answering. Conversation history helps identify the record; it is not proof of a current fact.",
     "Never invent missing facts or claim an action happened without a checked tool result. If a name or reference can reasonably mean more than one saved record, ask one short clarification question that identifies the choices.",
@@ -394,8 +400,29 @@ function looksLikeClientAddressUpdateAction(lower: string): boolean {
     && /\b(?:address|location|zip|postal(?:\s+code)?)\b/.test(lower);
 }
 
-function clientQueryForAddressUpdate(message: string): string | undefined {
-  const query = message.match(/\b([a-z][a-z' -]+?)'s\s+(?:address|location|zip|postal(?:\s+code)?)\b/i)?.[1]?.trim()
+function clientNameFromConversation(messages: ToolLoopRequest["messages"]): string | undefined {
+  for (const entry of [...messages.slice(0, -1)].reverse()) {
+    const text = messageText(entry.content);
+    for (const line of text.split(/\r?\n/)) {
+      const candidate = line.replace(/[*_`]/g, "").trim();
+      if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(candidate)) {
+        return candidate;
+      }
+    }
+    const createMatch = text.match(/\b(?:add|create)\s+(?:a\s+|new\s+)?client\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})(?=\s+(?:\d|[A-Z][a-z]+\s+[A-Z]{2}\b))/i);
+    if (createMatch?.[1]) {
+      return createMatch[1].trim();
+    }
+  }
+  return undefined;
+}
+
+function clientQueryForAddressUpdate(message: string, messages: ToolLoopRequest["messages"] = []): string | undefined {
+  const pronounReference = /\b(?:he|him|his|she|her|hers|they|them|their|theirs)\b/i.test(message)
+    ? clientNameFromConversation(messages)
+    : undefined;
+  const query = pronounReference
+    ?? message.match(/\b([a-z][a-z' -]+?)'s\s+(?:address|location|zip|postal(?:\s+code)?)\b/i)?.[1]?.trim()
     ?? message.match(/\b(?:edit|update|change|fix|correct)\s+([a-z][a-z' -]+?)\s+(?:client(?:'s)?\s+)?(?:address|location|zip|postal)\b/i)?.[1]?.trim()
     ?? entityQueryFromText(message)
     ?? message.match(/\b(?:client|for)\s+([a-z][a-z' -]+?)(?=\s+(?:address|location|zip|postal|to|from)\b|[?.!]|$)/i)?.[1]?.trim()
@@ -698,7 +725,7 @@ function chooseTool(request: ToolLoopRequest): { tool: NexiTool; args: unknown }
   }
   if (looksLikeClientAddressUpdateAction(lower)) {
     const tool = tools.find((candidate) => candidate.name === "updateClient");
-    const clientQuery = clientQueryForAddressUpdate(message);
+    const clientQuery = clientQueryForAddressUpdate(message, request.messages);
     return tool && clientQuery ? { tool, args: { clientQuery, changeRequest: message } } : null;
   }
   if (/\b(?:how\s+far|distance|miles?|drive\s+time|travel\s+time)\b/i.test(lower)) {
@@ -2157,6 +2184,39 @@ function stableConversationId(input: NexiMessageInput): string {
   return input.conversationId ?? `thread_${crypto.randomUUID()}`;
 }
 
+function approvedWhatWeDoReply(tenant: Tenant, message: string): string | undefined {
+  const approvedReply = tenant.nexiBusinessProfile?.approvedWhatWeDoReply?.trim();
+  if (!approvedReply) {
+    return undefined;
+  }
+  const normalized = message.toLowerCase();
+  const asksWhatWeDo = /\bwhat\s+(?:do|does)\b/.test(normalized)
+    && (/\b(?:we|you|tenant|company|business|provide|offer)\b/.test(normalized) || normalized.includes(tenant.name.toLowerCase()));
+  const asksForServices = /\b(?:what|which)\s+(?:services|work)\b/.test(normalized)
+    || /\b(?:services|work)\s+(?:do|does)\s+(?:we|you|the\s+(?:tenant|company|business))\s+(?:provide|offer|do)\b/.test(normalized);
+  return asksWhatWeDo || asksForServices ? approvedReply : undefined;
+}
+
+async function answerApprovedWhatWeDoQuestion(input: NexiMessageInput, answer: string): Promise<NexiMessageResult> {
+  const conversationId = stableConversationId(input);
+  const saved = await input.repository.saveConversation({
+    tenantId: input.tenant.id,
+    ...(input.requestorContext?.tenantUserId ? { tenantUserId: input.requestorContext.tenantUserId } : {}),
+    conversationId,
+    userText: input.message,
+    assistantText: answer,
+    sources: []
+  });
+  return {
+    answer,
+    sources: [],
+    conversationId: saved.conversationId ?? saved.id,
+    usage: emptyUsage(),
+    toolRuns: [],
+    pendingApproval: null
+  };
+}
+
 const DEFAULT_CONVERSATION_CONTEXT_RECORD_LIMIT = 24;
 
 function conversationContextRecordLimit(env: NodeJS.ProcessEnv | undefined): number {
@@ -2190,6 +2250,7 @@ async function answerUserFlaggedIncorrect(input: NexiMessageInput): Promise<Nexi
   const answer = "You're right to flag that. I logged this as user_flagged_incorrect and tied it to my prior answer so we can correct the source path.";
   const saved = await input.repository.saveConversation({
     tenantId: input.tenant.id,
+    ...(input.requestorContext?.tenantUserId ? { tenantUserId: input.requestorContext.tenantUserId } : {}),
     conversationId,
     userText: input.message,
     assistantText: answer,
@@ -2209,6 +2270,10 @@ async function answerUserFlaggedIncorrect(input: NexiMessageInput): Promise<Nexi
 export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMessageResult> {
   if (isUserFlaggedIncorrect(input.message)) {
     return answerUserFlaggedIncorrect(input);
+  }
+  const approvedReply = approvedWhatWeDoReply(input.tenant, input.message);
+  if (approvedReply) {
+    return answerApprovedWhatWeDoQuestion(input, approvedReply);
   }
   const conversationId = stableConversationId(input);
   const recent = await input.repository.loadRecentConversations(
@@ -2243,6 +2308,7 @@ export async function answerNexiMessage(input: NexiMessageInput): Promise<NexiMe
     const sanitized = sanitizeNexiAnswer(result.answer);
     const saved = await input.repository.saveConversation({
       tenantId: input.tenant.id,
+      ...(input.requestorContext?.tenantUserId ? { tenantUserId: input.requestorContext.tenantUserId } : {}),
       conversationId,
       userText: input.message,
       assistantText: sanitized.answer,

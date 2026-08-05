@@ -62,6 +62,11 @@ export interface Tenant {
     logoRef?: string | undefined;
     colors?: Record<string, string> | undefined;
   };
+  nexiBusinessProfile?: {
+    mission: string;
+    coreValues: string[];
+    approvedWhatWeDoReply: string;
+  } | undefined;
   adapters: {
     crm: CrmAdapterKind;
     media: MediaAdapterKind;
@@ -1464,6 +1469,7 @@ export interface Source {
 export interface ConversationRecord {
   id: ID;
   tenantId: ID;
+  tenantUserId?: ID | undefined;
   conversationId?: ID | undefined;
   userText: string;
   assistantText: string;

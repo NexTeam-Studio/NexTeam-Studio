@@ -17,6 +17,8 @@ export function AppRouter(): React.ReactElement | null {
   if (pathname.startsWith("/nexreach")) {
     return <Suspense fallback={<main className="shell"><section className="auth-card"><h1>Loading NexReach</h1></section></main>}><NexReachPage auth={auth} user={user} /></Suspense>;
   }
+  // Retain support for the original preview link until an HTTP redirect can run.
+  if (pathname.startsWith("/nexops/nexi")) return <NexiStandaloneChat auth={auth} user={user} />;
   if (pathname.startsWith("/nexops")) return <NexOpsWorkspace auth={auth} user={user} />;
   return <NexiStandaloneChat auth={auth} user={user} />;
 }

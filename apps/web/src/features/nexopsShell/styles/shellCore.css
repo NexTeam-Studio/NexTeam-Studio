@@ -79,7 +79,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 8px;
+  padding: 4px 8px;
   box-sizing: border-box;
   border-radius: 0;
   border: 0;
@@ -87,12 +87,12 @@
 }
 
 .nexops-sidebar-brand-tier-platform {
-  min-height: 88px;
+  min-height: 98px;
   padding: 2px 4px;
 }
 
 .nexops-sidebar-brand-tier-tenant {
-  min-height: 70px;
+  min-height: 82px;
 }
 
 .nexops-sidebar-brand-logo {
@@ -102,18 +102,18 @@
 }
 
 .nexops-sidebar-brand-logo-product {
-  max-height: 42px;
+  max-height: 54px;
 }
 
 .nexops-sidebar-brand-logo-platform {
-  max-height: 86px;
-  max-width: 126px;
+  max-height: 96px;
+  max-width: 148px;
 }
 
 .nexops-sidebar-tenant-mark {
   width: auto;
-  max-width: 138px;
-  max-height: 54px;
+  max-width: 170px;
+  max-height: 72px;
   object-fit: contain;
 }
 

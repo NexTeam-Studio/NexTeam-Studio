@@ -37,6 +37,9 @@ export function tenantDisplayName(branding: TenantBranding | null, tenantId: str
 }
 
 export function tenantLogoSrc(branding: TenantBranding | null, tenantId: string): string | null {
+  if (branding?.logo?.storageRef) {
+    return `/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(tenantId)}`;
+  }
   if (branding?.logo?.url) {
     return branding.logo.url;
   }

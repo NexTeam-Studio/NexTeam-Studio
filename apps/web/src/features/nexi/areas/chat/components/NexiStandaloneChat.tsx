@@ -449,37 +449,25 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
       return;
     }
     const restored = parseNexiStoredSession(window.localStorage.getItem(storedSessionKey));
-    if (!restored) {
-      setConversationId(null);
-      setPendingApproval(null);
-      setMessages([]);
-      setHistoryLoaded(true);
-      return;
-    }
-    setConversationId(restored.conversationId);
-    setPendingApproval(restored.pendingApproval);
     setHistoryLoaded(false);
     let cancelled = false;
     props.user.getIdToken()
-      .then((idToken) => fetch(`/api/nexi/history?tenantId=${encodeURIComponent(operatorContext.tenantId)}&conversationId=${encodeURIComponent(restored.conversationId)}`, {
+      .then((idToken) => fetch(`/api/nexi/history/latest?tenantId=${encodeURIComponent(operatorContext.tenantId)}`, {
         headers: { authorization: `Bearer ${idToken}` }
       }))
       .then((response) => response.json() as Promise<NexiHistoryResponse>)
       .then((body) => {
-        if (cancelled) {
-          return;
-        }
-        if (!body.ok) {
-          setHistoryLoaded(true);
-          return;
-        }
-        setConversationId(body.conversationId ?? restored.conversationId);
-        setPendingApproval(body.pendingApproval ?? restored.pendingApproval);
-        setMessages(Array.isArray(body.messages) ? body.messages : []);
+        if (cancelled) return;
+        setConversationId(body.ok ? body.conversationId ?? restored?.conversationId ?? null : restored?.conversationId ?? null);
+        setPendingApproval(body.ok ? body.pendingApproval ?? restored?.pendingApproval ?? null : restored?.pendingApproval ?? null);
+        setMessages(body.ok && Array.isArray(body.messages) ? body.messages : []);
         setHistoryLoaded(true);
       })
       .catch(() => {
         if (!cancelled) {
+          setConversationId(restored?.conversationId ?? null);
+          setPendingApproval(restored?.pendingApproval ?? null);
+          setMessages([]);
           setHistoryLoaded(true);
         }
       });
@@ -1130,7 +1118,8 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
       {renderMobileNav()}
       <NexOpsSharedWebTopbar
         product="nexi"
-        tenantName={tenantName}
+        tenantBranding={tenantBranding}
+        tenantId={operatorContext.tenantId}
         moduleTitle="Nexi"
         moduleSwitcherOpen={moduleSwitcherOpen}
         onToggleModuleSwitcher={toggleModuleSwitcher}

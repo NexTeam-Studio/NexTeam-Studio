@@ -28,6 +28,34 @@ function normalizedLookup(value: string | undefined): string {
   return String(value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function words(value: string | undefined): string[] {
+  return String(value ?? "").toLowerCase().match(/[a-z0-9]+/g) ?? [];
+}
+
+function sharedPrefixRatio(left: string, right: string): number {
+  const limit = Math.min(left.length, right.length);
+  let shared = 0;
+  while (shared < limit && left[shared] === right[shared]) shared += 1;
+  return limit ? shared / limit : 0;
+}
+
+function closeClientMatches(query: string, clients: Array<{ id: string; name: string; company?: string | undefined }>): Array<{ name: string; company?: string | undefined }> {
+  const queryWords = words(query);
+  if (queryWords.length < 2) return [];
+  // The tool call may include polite wording or a requested field (for
+  // example, "give me Christopher Sears phone number"). Check every adjacent
+  // word pair so the actual name is still compared rather than "give number".
+  const queryNamePairs = queryWords.slice(0, -1).map((first, index) => ({ first, last: queryWords[index + 1]! }));
+  return clients
+    .filter((client) => {
+      const nameWords = words(client.name || client.company);
+      if (nameWords.length < 2) return false;
+      return queryNamePairs.some((pair) => pair.last === nameWords.at(-1) && sharedPrefixRatio(pair.first, nameWords[0]!) >= 0.6);
+    })
+    .slice(0, 3)
+    .map((client) => ({ name: client.name, ...(client.company ? { company: client.company } : {}) }));
+}
+
 function propertyMatchesQuery(property: Property, query: string): boolean {
   const needle = normalizedLookup(query);
   if (!needle) return false;
@@ -90,6 +118,11 @@ export function createContactNexiTools(context: CrmToolContext, includeWrites: b
           ? (await provider.getClients("")).filter((client) => matchingPropertyClientIds.has(client.id))
           : [];
         const nativeClients = dedupeClients([...directlyMatchedClients.flat(), ...propertyOwners]);
+        // A near match is a clarification, not a match. Return only its name
+        // so Nexi can ask before it discloses any address, phone, or email.
+        const closeMatches = nativeClients.length === 0
+          ? closeClientMatches(query, await provider.getClients(""))
+          : [];
         const clients = nativeClients.map((client) => {
           const propertiesForClient = relatedProperties
             .filter((property) => property.clientId === client.id)
@@ -108,7 +141,8 @@ export function createContactNexiTools(context: CrmToolContext, includeWrites: b
         return {
           result: {
             clients,
-            nativeCount: nativeClients.length
+            nativeCount: nativeClients.length,
+            ...(closeMatches.length ? { closeMatches } : {})
           },
           sources: [source("clients", "Native CRM clients")]
         };
