@@ -2,18 +2,20 @@ import type { Express, Request, Response } from "express";
 import { getBuildInfo } from "../buildInfo.js";
 import { buildHealth } from "../health.js";
 import { sendHttpError } from "./httpError.js";
+import { inspectRuntimeIdentity } from "../app/runtimeIdentity.js";
 
 export function registerSystemRoutes(
   app: Express,
   input: { env: NodeJS.ProcessEnv; tenantId: string; localProfiles: (tenantId: string) => unknown[] }
 ): void {
   app.get("/api/version", (_req: Request, res: Response) => {
-    res.json(getBuildInfo());
+    res.json({ ...getBuildInfo(input.env), ...inspectRuntimeIdentity(input.env) });
   });
 
   app.get("/api/health", async (_req: Request, res: Response) => {
     try {
-      res.json(await buildHealth(input.env));
+      const health = await buildHealth(input.env, inspectRuntimeIdentity(input.env));
+      res.status(health.ok ? 200 : 503).json(health);
     } catch (error) {
       sendHttpError(res, error);
     }

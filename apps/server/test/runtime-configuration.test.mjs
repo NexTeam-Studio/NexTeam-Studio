@@ -33,7 +33,7 @@ test("missing TENANT_ID never bypasses customer-capable persistence safety", () 
 test("a named tenant without Firestore fails even when NODE_ENV is test", () => {
   assert.throws(
     () => assertTenantRuntimePersistence({ TENANT_ID: "customer-tenant", NODE_ENV: "test" }, false),
-    /Firebase durable persistence is required/
+    /FIREBASE_ADMIN_PRIVATE_KEY/
   );
 });
 
@@ -44,10 +44,11 @@ test("memory persistence requires explicit isolated opt-in and rejects normal na
   );
   assert.throws(
     () => assertTenantRuntimePersistence({ TENANT_ID: "customer-tenant", ALLOW_IN_MEMORY_PERSISTENCE: "true" }, false),
-    /Firebase durable persistence is required/
+    /FIREBASE_ADMIN_PRIVATE_KEY/
   );
   assert.doesNotThrow(() => assertTenantRuntimePersistence({
     TENANT_ID: "local-runtime-proof",
+    NODE_ENV: "test",
     RUNTIME_MODE: "isolated",
     ALLOW_IN_MEMORY_PERSISTENCE: "true"
   }, false));
@@ -77,18 +78,28 @@ test("system HTTP routes expose sanitized runtime identity and fail unhealthy co
   assert.equal(version.statusCode, 200);
   assert.equal(version.body.sha, "runtime-proof-sha");
   assert.equal(version.body.tenantId, "customer-tenant");
-  assert.equal(version.body.crmRepositoryDriver, "firestore");
+  assert.equal(version.body.crmRepositoryDriver, "memory");
   assert.equal(version.body.configurationStatus, "invalid");
-  assert.deepEqual(version.body.missingRequiredVariables, ["FIREBASE_SERVICE_ACCOUNT"]);
-  assert.notMatch(JSON.stringify(version.body), new RegExp(secretSentinel));
+  assert.deepEqual(version.body.missingRequiredVariables, [
+    "FIREBASE_SERVICE_ACCOUNT",
+    "FIREBASE_ADMIN_PROJECT_ID",
+    "FIREBASE_ADMIN_CLIENT_EMAIL",
+    "FIREBASE_ADMIN_PRIVATE_KEY"
+  ]);
+  assert.equal(JSON.stringify(version.body).includes(secretSentinel), false);
 
   assert.equal(health.statusCode, 503);
   assert.equal(health.body.ok, false);
-  assert.equal(health.body.runtime.crmRepositoryDriver, "firestore");
+  assert.equal(health.body.runtime.crmRepositoryDriver, "memory");
   assert.equal(health.body.runtime.tenantId, "customer-tenant");
   assert.equal(health.body.runtime.configurationStatus, "invalid");
-  assert.deepEqual(health.body.runtime.missingRequiredVariables, ["FIREBASE_SERVICE_ACCOUNT"]);
-  assert.notMatch(JSON.stringify(health.body), new RegExp(secretSentinel));
+  assert.deepEqual(health.body.runtime.missingRequiredVariables, [
+    "FIREBASE_SERVICE_ACCOUNT",
+    "FIREBASE_ADMIN_PROJECT_ID",
+    "FIREBASE_ADMIN_CLIENT_EMAIL",
+    "FIREBASE_ADMIN_PRIVATE_KEY"
+  ]);
+  assert.equal(JSON.stringify(health.body).includes(secretSentinel), false);
 });
 
 test("the composed server can serve an explicitly isolated memory runtime over local HTTP", async (t) => {

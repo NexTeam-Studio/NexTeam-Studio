@@ -1394,10 +1394,19 @@ export const usageLogRecordSchema = z.object({
   createdAt: z.string()
 });
 
+export const runtimeIdentitySchema = z.object({
+  environment: z.string(),
+  tenantId: z.string().nullable(),
+  crmRepositoryDriver: z.enum(["firestore", "memory"]),
+  configurationStatus: z.enum(["valid", "invalid"]),
+  missingRequiredVariables: z.array(z.string()),
+  isolatedMemoryMode: z.boolean()
+});
+
 export const versionResponseSchema = z.object({
   sha: z.string(),
   builtAt: z.string()
-});
+}).and(runtimeIdentitySchema);
 
 export const healthRailSchema = z.object({
   ok: z.boolean(),
@@ -1412,7 +1421,8 @@ export const healthRailSchema = z.object({
 export const healthResponseSchema = z.object({
   ok: z.boolean(),
   checkedAt: z.string(),
-  rails: z.record(healthRailSchema)
+  rails: z.record(healthRailSchema),
+  runtime: runtimeIdentitySchema
 });
 
 export type TenantDoc = z.infer<typeof tenantSchema>;

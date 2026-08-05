@@ -1,8 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { versionResponseSchema } from "@nexteam/core";
 
-function readGitSha(): string {
+function readGitSha(env: NodeJS.ProcessEnv): string {
   try {
     const plainStamp = readFileSync("nexteam-build-sha.txt", "utf8").trim();
     if (plainStamp) {
@@ -19,11 +18,11 @@ function readGitSha(): string {
   } catch {
     // Local Railway uploads do not expose .git; a generated stamp restores the proof chain.
   }
-  const explicitSha = process.env.NEXTEAM_DEPLOY_SHA;
+  const explicitSha = env.NEXTEAM_DEPLOY_SHA;
   if (explicitSha?.trim()) {
     return explicitSha.trim();
   }
-  const envSha = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA;
+  const envSha = env.RAILWAY_GIT_COMMIT_SHA || env.VERCEL_GIT_COMMIT_SHA;
   if (envSha?.trim()) {
     return envSha.trim();
   }
@@ -34,10 +33,10 @@ function readGitSha(): string {
   }
 }
 
-export function getBuildInfo(): { sha: string; builtAt: string } {
-  return versionResponseSchema.parse({
-    sha: readGitSha(),
-    builtAt: process.env.BUILT_AT || new Date().toISOString()
-  });
+export function getBuildInfo(env: NodeJS.ProcessEnv = process.env): { sha: string; builtAt: string } {
+  return {
+    sha: readGitSha(env),
+    builtAt: env.BUILT_AT || new Date().toISOString()
+  };
 }
 

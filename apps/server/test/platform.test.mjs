@@ -477,7 +477,7 @@ test("runtime defaults to durable persistence and refuses an empty customer tena
     /Durable persistence is required/
   );
   assert.throws(() => resolveNexiStores({}), /Firestore persistence is required/);
-  assert.doesNotThrow(() => createServerRuntime({ NODE_ENV: "test", ALLOW_IN_MEMORY_PERSISTENCE: "true", TENANT_ID: "test-tenant" }));
+  assert.doesNotThrow(() => createServerRuntime({ NODE_ENV: "test", RUNTIME_MODE: "isolated", ALLOW_IN_MEMORY_PERSISTENCE: "true", TENANT_ID: "test-tenant" }));
   assert.doesNotThrow(() => assertRequiredPersistence({}, {
     ApprovalQueue: true,
     Content: true,
@@ -488,7 +488,7 @@ test("runtime defaults to durable persistence and refuses an empty customer tena
     Content: false,
     Scheduling: true
   }), /Content/);
-  assert.doesNotThrow(() => assertRequiredPersistence({ ALLOW_IN_MEMORY_PERSISTENCE: "true" }, {
+  assert.doesNotThrow(() => assertRequiredPersistence({ NODE_ENV: "test", RUNTIME_MODE: "isolated", ALLOW_IN_MEMORY_PERSISTENCE: "true", TENANT_ID: "test-tenant" }, {
     ApprovalQueue: false,
     Content: false,
     Scheduling: false

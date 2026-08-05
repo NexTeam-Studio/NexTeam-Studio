@@ -1,6 +1,6 @@
-import { healthResponseSchema } from "@nexteam/core";
 import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
 import { getAdminDb } from "./firebase.js";
+import { inspectRuntimeIdentity, type RuntimeIdentity } from "./app/runtimeIdentity.js";
 
 interface HealthRail {
   ok: boolean;
@@ -14,27 +14,31 @@ interface HealthRail {
 
 
 
-export async function buildHealth(env: NodeJS.ProcessEnv = process.env): Promise<unknown> {
+export async function buildHealth(
+  env: NodeJS.ProcessEnv = process.env,
+  runtime: RuntimeIdentity = inspectRuntimeIdentity(env, Boolean(getAdminDb(env)))
+): Promise<{ ok: boolean; checkedAt: string; rails: Record<string, HealthRail>; runtime: RuntimeIdentity }> {
   const comms = createCommsRailFromEnv(env);
   const rails: Record<string, HealthRail> = {};
-  const firebaseConfigured = Boolean(getAdminDb(env));
-  const customerTenantRuntime = Boolean(env.TENANT_ID?.trim()) && env.NODE_ENV !== "test";
+  const firebaseConfigured = runtime.crmRepositoryDriver === "firestore";
 
   rails.firebase = {
-    ok: !customerTenantRuntime || firebaseConfigured,
+    ok: runtime.configurationStatus === "valid" && (runtime.isolatedMemoryMode || firebaseConfigured),
     configured: firebaseConfigured,
     provider: "firebase",
     op: "admin_persistence_configured_no_data_read",
     latencyMs: 0,
     detail: firebaseConfigured
       ? "Firebase Admin persistence is configured."
-      : customerTenantRuntime
+      : runtime.isolatedMemoryMode
+        ? "Firebase Admin persistence is intentionally absent for this isolated memory runtime."
+        : runtime.tenantId
         ? "Firebase Admin persistence is missing; tenant startup is blocked."
         : "Firebase Admin persistence is not configured for this non-customer runtime."
   };
 
   rails.comms = {
-    ok: comms.readAdapters.size > 0 || Boolean(comms.sendAdapter),
+    ok: runtime.isolatedMemoryMode || comms.readAdapters.size > 0 || Boolean(comms.sendAdapter),
     configured: comms.readAdapters.size > 0 || Boolean(comms.sendAdapter),
     provider: "gmail",
     op: "configured_no_secret_values",
@@ -52,9 +56,10 @@ export async function buildHealth(env: NodeJS.ProcessEnv = process.env): Promise
       : "Anthropic not configured; skipped."
   };
 
-  return healthResponseSchema.parse({
+  return {
     ok: Object.values(rails).every((rail) => rail.ok),
     checkedAt: new Date().toISOString(),
-    rails
-  });
+    rails,
+    runtime
+  };
 }
