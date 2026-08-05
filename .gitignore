@@ -19,4 +19,6 @@ docs/internal/clawdia/reference/**/*.txt
 !firestore.indexes.json
 !docs/internal/goonies/GOONIES_DASHBOARD_REGISTRY.json
 !receipts/**/*.json
+/receipts/nexi/
+/tmp/
 
