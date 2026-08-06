@@ -1,0 +1,60 @@
+JOB_ID=NEXTEAM-CALENDAR-20260918
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Jobs/schedule acceptance
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/job-lifecycle.test.mjs apps/server/test/schedule-home-activity.test.mjs apps/server/test/mobile-routes.test.mjs
+
+✔ legacy job schema and in-memory native repository normalize stored jobs onto the new lifecycle rail (2.3383ms)
+✔ request and quote conversions land as Unscheduled and invoice reminders clear only by invoice or dismissal (13.9758ms)
+✔ moving a visit cancels old reminder timers and creates a fresh pair for the new slot (0.878ms)
+✔ due visit reminders auto-send email and sms with technician and access-note context (9.4066ms)
+✔ technicians can complete visits but stay blocked from office-only close and invoice authority (0.5166ms)
+✔ Nexi job tools create, read, revise, and execute lifecycle actions through chat-native approvals (19.0872ms)
+✔ M11 mobile day schedule returns assigned jobs for the requested field user (35.8056ms)
+✔ M11 mobile sync accepts airplane-mode checklist, photo, and close-out operations (23.8075ms)
+✔ M11 mobile push registration and approval review stay role-gated (10.8021ms)
+✔ M11 mobile access policy blocks cross-user and unscoped job-link access (0.8317ms)
+✔ operations hub activity feed renders every currently-defined lifecycle event type with deep-link targets (23.6449ms)
+✔ documentation activity counts photo uploads and checklist completions with owner-wide and technician-self fencing (1.0897ms)
+✔ operations hub schedule, home queues, and activity stay role-aware for owner and technician (22.8747ms)
+✔ home queues keep zero states, non-zero counts, exact filter targets, and Today/Upcoming/Unscheduled routing for the office rail (5.8787ms)
+✔ CRM schedule, home, activity, and notification routes expose live workspace data and unread-state changes (82.5831ms)
+✔ CRM scheduling tools queue unscheduled jobs, create 25-visit series, shift remaining visits, and read role-aware queues (43.6975ms)
+✔ Nexi conversational scheduling, shifting, schedule lookup, and home triage use the new Job 6/7 tools through chat-native approvals (16.3172ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2176.8955
+COMMAND_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-scope
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1656 tracked non-doc files checked).
+CHECK_SECRETS_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+CALENDAR_JOBS_SCHEDULE_ACCEPTANCE=PASS
