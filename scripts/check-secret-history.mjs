@@ -11,8 +11,7 @@ const git = (args, options = {}) =>
 
 const blockedPathPatterns = [
   /docs\/internal\/clawdia\/reference/i,
-  /\.env$/i,
-  /\.env\./i,
+  /\.env(?:\.(?!example$).+)?$/i,
   /credential/i,
   /application-password/i,
   /editor-login/i,
@@ -51,22 +50,29 @@ const commits = git(["rev-list", "--all"])
   .filter(Boolean);
 
 const contentFailures = [];
-for (const commit of commits) {
-  for (const pattern of grepPatterns) {
-    let output = "";
-    try {
-      output = git(["grep", "-I", "-l", "-E", "-e", pattern, commit, "--", "."], {
-        stdio: ["ignore", "pipe", "ignore"]
-      });
-    } catch {
-      continue;
-    }
-    for (const line of output.split(/\r?\n/).filter(Boolean)) {
-      const match = /^([^:]+):(.+)$/.exec(line);
-      const file = match?.[2] ?? line;
-      contentFailures.push(`${commit.slice(0, 12)}:${file}`);
-    }
-  }
+let grepOutput = "";
+try {
+  grepOutput = git([
+    "grep",
+    "-I",
+    "-l",
+    "-E",
+    ...grepPatterns.flatMap((pattern) => ["-e", pattern]),
+    ...commits,
+    "--",
+    "."
+  ], {
+    stdio: ["ignore", "pipe", "ignore"]
+  });
+} catch {
+  // git grep exits 1 when no matches are found, which is a passing result.
+}
+
+for (const line of grepOutput.split(/\r?\n/).filter(Boolean)) {
+  const match = /^([0-9a-f]{40}):(.+)$/.exec(line);
+  const commit = match?.[1];
+  const file = match?.[2] ?? line;
+  contentFailures.push(`${commit?.slice(0, 12) ?? "unknown"}:${file}`);
 }
 
 const failures = [...new Set([...pathFailures, ...contentFailures])];
