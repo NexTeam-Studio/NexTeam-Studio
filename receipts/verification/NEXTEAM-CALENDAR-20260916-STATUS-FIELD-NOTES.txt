@@ -1,0 +1,54 @@
+JOB_ID=NEXTEAM-CALENDAR-20260916
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Job status and field notes
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/schedule-home-activity.test.mjs apps/web/src/features/visits/components/visitCore/test/visit-completion.test.mjs apps/web/src/features/visits/components/visitCore/test/visit-core-ui.test.mjs
+
+✔ operations hub activity feed renders every currently-defined lifecycle event type with deep-link targets (22.935ms)
+✔ documentation activity counts photo uploads and checklist completions with owner-wide and technician-self fencing (1.0735ms)
+✔ operations hub schedule, home queues, and activity stay role-aware for owner and technician (19.0986ms)
+✔ home queues keep zero states, non-zero counts, exact filter targets, and Today/Upcoming/Unscheduled routing for the office rail (5.5611ms)
+✔ CRM schedule, home, activity, and notification routes expose live workspace data and unread-state changes (82.7633ms)
+✔ CRM scheduling tools queue unscheduled jobs, create 25-visit series, shift remaining visits, and read role-aware queues (42.9751ms)
+✔ Nexi conversational scheduling, shifting, schedule lookup, and home triage use the new Job 6/7 tools through chat-native approvals (16.1129ms)
+✔ only active writable visits expose the completion action (0.6166ms)
+✔ schedule ranges keep day and month reads tenant-query bounded (1.8105ms)
+✔ visit status tones map to stable component-owned style tokens (0.1491ms)
+✔ schedule named controls use shared title capitalization (0.1395ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2003.2746
+COMMAND_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-scope
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1654 tracked non-doc files checked).
+CHECK_SECRETS_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+CALENDAR_JOB_STATUS_AND_FIELD_NOTES=PASS
