@@ -1,0 +1,73 @@
+JOB_ID=NEXTEAM-CALENDAR-20261001
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Visit to invoice
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/job-lifecycle.test.mjs apps/server/test/close-invoice-payment-flow.test.mjs apps/server/test/lifecycle-command-map.test.mjs apps/web/src/features/visits/components/visitCore/test/visit-completion.test.mjs
+Raw output:
+✔ draft invoices stay fully editable through line items, discount, tax, and terms until delivery locks them (16.5847ms)
+✔ closing without invoicing creates a recurring 9AM reminder that advances until dismissal (2.2612ms)
+✔ combining a selected subset of jobs keeps per-job references and carries the chosen payment schedule (6.2881ms)
+✔ invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads (2.0699ms)
+✔ default invoice delivery templates keep labeled pay-link and hosted-link content at the shared template layer (0.7009ms)
+✔ saved-card reuse defaults to the newest card, supports alternate selection, and keeps manual/failed branches distinct (19.3476ms)
+✔ receipt review sends email attachments and an SMS hosted link from the same paused review (1.3487ms)
+✔ receipt review sends a real field report PDF attachment when NexCam already generated one for the job (1.355ms)
+✔ PayPal and Venmo checkout helpers create sandbox orders and capture completed payments (18.1408ms)
+✔ Nexi billing tools run combine, send, partial collect, failed recovery, and receipt review approval loops in chat (10.3035ms)
+✔ legacy job schema and in-memory native repository normalize stored jobs onto the new lifecycle rail (2.1884ms)
+✔ request and quote conversions land as Unscheduled and invoice reminders clear only by invoice or dismissal (13.0545ms)
+✔ moving a visit cancels old reminder timers and creates a fresh pair for the new slot (0.7493ms)
+✔ due visit reminders auto-send email and sms with technician and access-note context (7.0509ms)
+✔ technicians can complete visits but stay blocked from office-only close and invoice authority (0.42ms)
+✔ Nexi job tools create, read, revise, and execute lifecycle actions through chat-native approvals (13.0894ms)
+✔ lifecycle command map keeps the full D1-D19 decision register (1.1244ms)
+✔ lifecycle command map exposes the 12 required communication templates (0.166ms)
+✔ every command references valid decision ids and valid communication templates (0.2058ms)
+✔ permission registry stays unique and the portal commands stay on authorization profiles (0.1075ms)
+✔ quote dominant action derives atomic approval and renewal states (0.2627ms)
+✔ D1 atomic portal approval contract keeps failed deposit attempts out of accepted quote state (0.2398ms)
+✔ visit, invoice, and client-schedule dominant actions derive from orthogonal status dimensions (0.2712ms)
+✔ decision traces expose downstream command dependencies for auditability (0.1608ms)
+✔ only active writable visits expose the completion action (0.6333ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1255.0576
+COMMAND_EXIT_CODE=0
+
+VISIT_TO_INVOICE_PROOF=PASS
+VISIT_TO_INVOICE_CONTRACT=Technicians may complete active writable visits but cannot close jobs or create invoices. After visit completion, office-authorized lifecycle actions can close without invoicing (with a recurring reminder) or construct, deliver, and collect an invoice; invoice reminders clear only through invoice creation or explicit dismissal.
+CALENDAR_PROOF=PASS
+CALENDAR_VISIT_TO_INVOICE=PASS
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1667 tracked non-doc files checked).
+CHECK_SECRETS_EXIT_CODE=0
