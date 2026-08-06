@@ -1,0 +1,91 @@
+JOB_ID=NEXTEAM-CALENDAR-20261011
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Mobile/Nexi acceptance
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/mobile/test/*.test.mjs apps/server/test/mobile-routes.test.mjs apps/server/test/mobile-native-capture.test.mjs apps/server/test/fielddocs-read-side.test.mjs apps/server/test/fielddocs-nexi-tools.test.mjs apps/server/test/scheduling.test.mjs
+Raw output:
+✔ M11 local session re-auth waits seven days and GPS suggestions prefer today's assigned visit (1.49ms)
+✔ M11 syncCaptureSession creates the request route, uploads media, transcribes voice, and maps checklist photo ids (11.4154ms)
+✔ M11 syncQueuedSessions marks failed batches for retry and keeps the queue visibly failed until backoff clears (2.9422ms)
+✔ M11 airplane-mode job flow syncs after reconnect with conflict flags (22.527ms)
+✔ M11 mobile rejects unassigned cached job writes (0.9102ms)
+✔ Tap to Pay decline mapping stays staff-readable instead of surfacing raw Stripe jargon (1.3745ms)
+✔ Tap to Pay disconnect mapping calls out the reader drop explicitly (0.2888ms)
+✔ Tap to Pay finalize mapping explains the ledger handoff seam when Stripe succeeds first (0.2242ms)
+✔ Tap to Pay helper labels keep device metadata stable for the shared payment object (0.1808ms)
+✔ fielddocs Nexi tools expose property history and recent photos (16.9383ms)
+✔ fielddocs Nexi tools generate and fetch visit reports (2.0195ms)
+✔ local Nexi chat routes NexCam photo search, property history, and report generation (8.7166ms)
+✔ NexDocs tools search unified content and list client folders (410.0308ms)
+✔ local Nexi chat can search documents, queue a folder, approve it, queue an upload, and approve it (12.7288ms)
+✔ natural-language photo search matches imported metadata (1.0112ms)
+✔ vision pipeline stub is wired off by default (0.1981ms)
+✔ vision pipeline parses live Anthropic-style JSON responses with usage (1.0312ms)
+✔ upload service creates native storage refs, thumbnails, and EXIF metadata (0.6834ms)
+✔ before/after pairing and vision fallback are wired (0.3514ms)
+✔ leak checklist and report PDF render (3.0295ms)
+✔ native repository persists checklists and posted field report records (1.7593ms)
+✔ NexCam read tool searches native media repository (0.8855ms)
+✔ NexDocs accepts supported uploads, uses a 100 MB cap, and indexes PDF content for search (496.8319ms)
+✔ NexDocs OCR blocks image OCR before estimated spend exceeds the cap (1.0577ms)
+✔ NexDocs OCR logs usage and searchable text when image OCR runs inside cap (0.6338ms)
+✔ NexDocs keeps a flat folder model and moves each document into only one folder at a time (1.0431ms)
+✔ NexDocs unified search returns uploaded docs, office records, and NexCam hits together (3.0779ms)
+✔ NexDocs technician fence stays upload-only for destructive management actions (0.329ms)
+✔ M11 mobile session bootstrap returns tenant branding plus the reusable local staff profile registry (36.7341ms)
+✔ M11 day board stays technician-scoped while exposing GPS suggestions, gate notes, and visible queue state (18.9312ms)
+✔ M11 visit context returns checklist and before/after candidates, and unassigned technicians stay fenced out (35.1422ms)
+✔ M11 typed and voice narration both flow into the shared field report rail (13.7387ms)
+✔ M11 transcription blocks over-cap narration before provider fetch and writes a usage log record (8.6361ms)
+✔ M11 mobile day schedule returns assigned jobs for the requested field user (35.9601ms)
+✔ M11 mobile sync accepts airplane-mode checklist, photo, and close-out operations (31.5716ms)
+✔ M11 mobile push registration and approval review stay role-gated (11.7388ms)
+✔ M11 mobile access policy blocks cross-user and unscoped job-link access (0.9157ms)
+✔ suggestSlots prefers the least-drive non-conflicting slot (9.7871ms)
+✔ detectConflicts only flags overlapping visits for the same assigned crew (1.4328ms)
+✔ bookVisit parks the visit and queues a notification instead of sending (4.8424ms)
+✔ whatsMyDay reads native visits for the requested technician (0.5764ms)
+✔ calendar board returns native visits only even if stale overlay deps are passed in (57.5359ms)
+✔ calendar board ignores stale overlay timeout env and still serves native visits without warnings (10.7011ms)
+✔ reminder and on-my-way messages are approval queued, not sent (1.5092ms)
+ℹ tests 44
+ℹ suites 0
+ℹ pass 44
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2517.1746
+EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+CALENDAR_MOBILE_NEXI_ACCEPTANCE=PASS
+CALENDAR_MOBILE_NEXI_ACCEPTANCE_CONTRACT=An authenticated technician has only their assigned day board and visit context; airplane-mode checklist, photo, narration, and close-out operations remain queued and sync with conflict visibility; unassigned and cross-user access is denied. The server persists native field documentation, and tenant-scoped Nexi/NexCam tools expose property history, recent photos, visit reports, and unified documents while technicians remain upload-only for destructive management actions.
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1674 tracked non-doc files checked).
+CHECK_SECRETS_EXACT_EXIT_CODE=0
