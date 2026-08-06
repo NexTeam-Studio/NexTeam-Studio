@@ -1,0 +1,73 @@
+JOB_ID=NEXTEAM-CALENDAR-20260922
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Payment rail
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/close-invoice-payment-flow.test.mjs apps/server/test/ledger-foundation.test.mjs apps/server/src/modules/nexops/areas/invoices/components/invoiceStructure/test/invoice-document.test.mjs
+Raw output:
+✔ Invoice Structure owns the customer portal document and payment schedule wording (1.0647ms)
+✔ customer payment return states clearly distinguish a completed payment from a cancellation (0.1976ms)
+✔ draft invoices stay fully editable through line items, discount, tax, and terms until delivery locks them (17.2944ms)
+✔ closing without invoicing creates a recurring 9AM reminder that advances until dismissal (2.2869ms)
+✔ combining a selected subset of jobs keeps per-job references and carries the chosen payment schedule (6.0958ms)
+✔ invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads (2.1244ms)
+✔ default invoice delivery templates keep labeled pay-link and hosted-link content at the shared template layer (0.6614ms)
+✔ saved-card reuse defaults to the newest card, supports alternate selection, and keeps manual/failed branches distinct (19.7646ms)
+✔ receipt review sends email attachments and an SMS hosted link from the same paused review (1.4066ms)
+✔ receipt review sends a real field report PDF attachment when NexCam already generated one for the job (1.4306ms)
+✔ PayPal and Venmo checkout helpers create sandbox orders and capture completed payments (16.6956ms)
+✔ Nexi billing tools run combine, send, partial collect, failed recovery, and receipt review approval loops in chat (9.3666ms)
+✔ quote deposit bridge migrates into first-class payment, deposit, receipt review, and saved card records without rewriting the quote snapshot (7.2242ms)
+✔ invoice sync auto-applies deposits and credits, and overdue only marks awaiting-payment invoices (12.9614ms)
+✔ Stripe checkout uses tenant Connect headers with zero application fee and charges only the current balance due (19.95ms)
+✔ payment states progress through pending, succeeded, partially_refunded, and refunded with separate refund and receipt-review records (3.6635ms)
+✔ invoice and refund receipt reviews carry the default invoice, quote, report, photo, and job-file attachments (2.1873ms)
+✔ one payment stays on one invoice and overpayment rolls forward as credit instead of splitting across invoices (1.2486ms)
+✔ the ledger model already accepts PayPal and Venmo slots even though the live adapter is deferred (0.772ms)
+✔ draft invoices stay draft and failed payments do not settle the invoice (0.663ms)
+✔ void and bad debt stay distinct, and ledger chat tools require OWNER or OFFICE_ADMIN for execution (17.0897ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 514.3543
+COMMAND_EXIT_CODE=0
+
+PAYMENT_RAIL_PROOF=PASS
+PAYMENT_RAIL_CONTRACT=Stripe checkout uses the tenant Connect account, charges only the invoice balance due, and applies no platform application fee; PayPal and Venmo sandbox helpers create and capture completed checkout orders.
+PAYMENT_LIFECYCLE_PROOF=PASS
+PAYMENT_LIFECYCLE_CONTRACT=Payments progress pending → succeeded → partially_refunded → refunded; payment and refund receipt reviews remain distinct, and a full refund returns the invoice to awaiting_payment.
+CALENDAR_PROOF=PASS
+CALENDAR_PAYMENT_RAIL=PASS
+
+COMMAND=npm run check:worktree-scope
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1660 tracked non-doc files checked).
+CHECK_SECRETS_EXIT_CODE=0
+
+COMMAND=git status --short
+Raw output:
+(empty)
+GIT_STATUS_PRE_RECEIPT_EXIT_CODE=0
