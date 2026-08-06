@@ -1,0 +1,55 @@
+JOB_ID=NEXTEAM-CALENDAR-20260927
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Client to request
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/request-foundation.test.mjs apps/web/test/nexops-requests-ui.test.mjs
+Raw output:
+✔ request routes create, update, convert, archive, and reopen while preserving intake fields (72.9455ms)
+✔ local Nexi request tools clarify missing intake data, then create and recall real requests (13.093ms)
+✔ client record route toggles marketing consent and forwards the NexReach revocation hook (9.1301ms)
+✔ request helpers treat an unreviewed intake as review-first work (0.7295ms)
+✔ reviewed requests move onto the conversion rail (0.1252ms)
+✔ converted requests stay read-only as intake source records (0.1239ms)
+✔ request queue summary breaks out review, conversion, and archive counts (0.6159ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1841.5739
+COMMAND_EXIT_CODE=0
+
+CLIENT_TO_REQUEST_PROOF=PASS
+CLIENT_TO_REQUEST_CONTRACT=Tenant-scoped client requests preserve consent and intake field visibility, require review before conversion, create a linked quote or Unscheduled job from reviewed intake, prevent archive after downstream conversion, remain read-only after conversion, and are available through Nexi create/recall tools.
+CALENDAR_PROOF=PASS
+CALENDAR_CLIENT_TO_REQUEST=PASS
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1665 tracked non-doc files checked).
+CHECK_SECRETS_EXIT_CODE=0
