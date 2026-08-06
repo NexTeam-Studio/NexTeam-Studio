@@ -238,6 +238,7 @@ test("M10 gateway saves intake answer turns with deterministic answerIntake args
     cachedToolRuns: [{ name: "startIntake", result: { session }, sources: [{ rail: "native", ref: session.id, label: "Tenant intake Demo Pool Co" }] }],
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
+    env: { NEXI_ROUTING_MODE: "offline" },
     fetchFn: async () => {
       throw new Error("deterministic intake answers should not call the model");
     }
@@ -256,6 +257,7 @@ test("M10 gateway saves intake answer turns with deterministic answerIntake args
     cachedToolRuns: [{ name: "answerIntake", result: { session: afterServices }, sources: [{ rail: "native", ref: session.id, label: "Tenant intake Demo Pool Co" }] }],
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
+    env: { NEXI_ROUTING_MODE: "offline" },
     fetchFn: async () => {
       throw new Error("deterministic intake answers should not call the model");
     }

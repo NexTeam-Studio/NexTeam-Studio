@@ -151,7 +151,7 @@ test("Nexi tool loop preloads obvious tools and records cache metrics", async ()
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
     usageLog,
-    env: { ANTHROPIC_API_KEY: "test-key" },
+    env: { ANTHROPIC_API_KEY: "test-key", NEXI_ROUTING_MODE: "offline" },
     fetchFn
   });
   assert.equal(calls.length, 1);
@@ -360,7 +360,7 @@ test("Nexi Anthropic gateway answers draftEmail action commands from the approva
     }],
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
+    env: { ANTHROPIC_API_KEY: "test-key", NEXI_ROUTING_MODE: "offline" },
     fetchFn: async () => {
       throw new Error("draftEmail direct answers should not call the model");
     }
@@ -663,7 +663,7 @@ test("Nexi service formats client approvals as clean field-list confirmations wi
     }],
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
-    env: { ANTHROPIC_API_KEY: "test-key" },
+    env: { ANTHROPIC_API_KEY: "test-key", NEXI_ROUTING_MODE: "offline" },
     fetchFn: async (_url, init) => {
       anthropicCalls.push(JSON.parse(init.body));
       return anthropicToolUseResponse("submit_create_client_extraction", {
@@ -786,7 +786,7 @@ test("client approvals ask for a missing full name instead of rendering punctuat
     }],
     routeActionName: "/api/nexi/message",
     taskType: "job_desk_answer",
-    env: {}
+    env: { NEXI_ROUTING_MODE: "offline" }
   });
 
   assert.match(result.answer, /I still need the client's full name before I can queue this/i);

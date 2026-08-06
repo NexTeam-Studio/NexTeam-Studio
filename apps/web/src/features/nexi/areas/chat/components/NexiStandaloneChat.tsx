@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useState } from "react";
 import type { Auth, User } from "firebase/auth";
-import { PlatformMark, ProductLogo, TenantBrandMark, tenantDisplayName } from "../../../../../shared/branding/ProductBranding";
+import { PlatformMark, ProductLogo, TenantBrandMark } from "../../../../../shared/branding/ProductBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "../../../../nexopsShell/components/NexOpsHeader";
 import { buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, NEXTEAM_WORKSPACE_OPTIONS, type NexOpsCreateOption } from "../../../../nexopsShell/domain/nexopsNavigation";
 import { nexiActiveApprovalPrompt, nexiConversationOffer, nexiConversationOfferReplyAction, NEXI_FRIENDLY_FAILURE_MESSAGE, formatNexiOperatorDisplayName, nexiIsApprovalPrompt, nexiAddressActionValue, nexiMapsHref, nexiPhoneActionValue, nexiShouldHideRenderedSource, NexiStandaloneLayout, nexiStoredSessionKey, parseNexiStoredSession, sanitizeNexiRenderedText, stringifyNexiStoredSession, type NexiStandalonePendingApproval } from "./NexiStandalonePrimitives";
@@ -771,7 +771,6 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
     "--jobdesk-muted-text": brandColors?.mutedText,
     "--jobdesk-font-family": tenantBranding?.fontFamily
   } as React.CSSProperties;
-  const tenantName = tenantDisplayName(tenantBranding, operatorContext.tenantId);
   const liveStatus = [
     voiceStatus,
     uploadStatus,

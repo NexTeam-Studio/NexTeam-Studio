@@ -66,7 +66,7 @@ test("Nexi Client and Client Details: 20 isolated tenant regression scenarios", 
   // Use the full routed tool inventory, not a client-only mock. This protects
   // the client-detail route from being stolen by another rail's generic tool.
   const tools = allTools;
-  const run = (messages, pendingApproval, fetchFn) => runNexiToolLoop({
+  const run = (messages, pendingApproval, fetchFn, routingMode) => runNexiToolLoop({
     tenant: testTenant(),
     system: "Use the supplied tools. Never invent a client fact.",
     actorDisplayName: "Test Owner",
@@ -74,16 +74,18 @@ test("Nexi Client and Client Details: 20 isolated tenant regression scenarios", 
     tools,
     routeActionName: "/api/nexi/message",
     taskType: "client_details_regression",
-    env: fetchFn ? { ANTHROPIC_API_KEY: "test-key" } : {},
+    env: fetchFn
+      ? { ANTHROPIC_API_KEY: "test-key", ...(routingMode ? { NEXI_ROUTING_MODE: routingMode } : {}) }
+      : { NEXI_ROUTING_MODE: "offline" },
     ...(pendingApproval ? { pendingApproval } : {}),
     ...(fetchFn ? { fetchFn } : {})
   });
   const turn = (text, prior = [], pendingApproval, fetchFn) => run([...prior, { role: "user", content: text }], pendingApproval, fetchFn);
-  const createWith = (text, input, prior = []) => turn(text, prior, undefined, modelToolThenAnswer(
+  const createWith = (text, input, prior = []) => run([...prior, { role: "user", content: text }], undefined, modelToolThenAnswer(
     "submit_create_client_extraction",
     input,
     [input.name, input.address, input.phones?.[0], input.emails?.[0], "", "Do the Client Details look correct?"].filter(Boolean).join("\n")
-  ));
+  ), "offline");
   const lookupWith = (text, q, answer, prior = []) => turn(text, prior, undefined, modelToolThenAnswer("clientLookup", { q }, answer));
   const updateWith = (text, clientQuery, answer, prior = []) => turn(text, prior, undefined, modelToolThenAnswer("updateClient", { clientQuery }, answer));
 

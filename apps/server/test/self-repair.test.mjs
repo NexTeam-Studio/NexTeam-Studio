@@ -228,7 +228,7 @@ test("anthropic self-repair analyzer preserves deterministic findings when provi
     "C_INTENT_MISROUTING",
     "A_SINGLE_RAIL_CONCLUSION"
   ]);
-  assert.equal(analysis.watchItems.some((item) => item.includes("could not be parsed")), true);
+  assert.equal(analysis.watchItems.some((item) => item.includes("unreadable response")), true);
   assert.equal(usageRecords.length, 1);
   assert.equal(usageRecords[0].ok, true);
 });

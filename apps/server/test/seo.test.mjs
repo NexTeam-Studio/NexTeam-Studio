@@ -241,7 +241,7 @@ test("M9 Nexi tools are routeable and return sourced SEO queue data", async () =
     tools,
     routeActionName: "test",
     taskType: "seo",
-    env: { ANTHROPIC_API_KEY: "test" },
+    env: { ANTHROPIC_API_KEY: "test", NEXI_ROUTING_MODE: "offline" },
     fetchFn
   });
   assert.equal(loop.toolRuns[0].name, "seoQueue");
