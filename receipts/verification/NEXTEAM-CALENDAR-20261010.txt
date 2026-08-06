@@ -1,0 +1,67 @@
+JOB_ID=NEXTEAM-CALENDAR-20261010
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Error recovery
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/mobile/test/native-capture.test.mjs apps/mobile/test/tap-to-pay.test.mjs apps/server/test/tap-to-pay.test.mjs apps/server/test/self-repair.test.mjs apps/server/src/selfrepair/analyzer.regression.test.mjs apps/server/src/selfrepair/anthropicAnalyzer.contract.test.mjs apps/server/src/selfrepair/repairPolicy.test.mjs
+Raw output:
+✔ M11 local session re-auth waits seven days and GPS suggestions prefer today's assigned visit (0.9867ms)
+✔ M11 syncCaptureSession creates the request route, uploads media, transcribes voice, and maps checklist photo ids (6.9063ms)
+✔ M11 syncQueuedSessions marks failed batches for retry and keeps the queue visibly failed until backoff clears (1.864ms)
+✔ Tap to Pay decline mapping stays staff-readable instead of surfacing raw Stripe jargon (1.3392ms)
+✔ Tap to Pay disconnect mapping calls out the reader drop explicitly (0.2926ms)
+✔ Tap to Pay finalize mapping explains the ledger handoff seam when Stripe succeeds first (0.2361ms)
+✔ Tap to Pay helper labels keep device metadata stable for the shared payment object (0.1903ms)
+✔ self-repair catches a generic response to a client delete request (1.9411ms)
+✔ self-repair catches a stale create-draft response to a normal lookup (0.806ms)
+✔ Anthropic self-repair keeps malformed findings out of customer-facing watch items (19.9699ms)
+✔ repair policy permits only the locked metadata-only toolbox (1.4022ms)
+✔ deterministic self-repair analysis detects the P1 email, evap, and spa rail failures (2.9163ms)
+✔ self-repair service stores log and queues a morning report approval without sending outbound mail (4.7554ms)
+✔ anthropic self-repair analyzer merges provider findings and writes usageLog cost (11.781ms)
+✔ anthropic self-repair analyzer preserves deterministic findings when provider JSON is malformed (0.691ms)
+✔ self-repair recurrence escalates repeated findings in later runs (1.8728ms)
+✔ self-repair routes are owner/admin gated and expose run plus log reads (47.8599ms)
+✔ Tap to Pay token and payment-intent routes reuse the tenant Connect account and card_present intent model (52.0302ms)
+✔ Tap to Pay completion writes the same ledger payment object used by every other Stripe payment path (12.2613ms)
+✔ Tap to Pay failure records a failed Stripe payment without settling the invoice (5.8452ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1510.663
+EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+CALENDAR_ERROR_RECOVERY=PASS
+CALENDAR_ERROR_RECOVERY_CONTRACT=Offline mobile capture failures remain visibly queued and retry only after backoff; Tap to Pay failures are staff-readable and record an unsettled failed payment; self-repair detects stale or malformed responses, preserves deterministic findings, limits repairs to metadata-only actions, and queues reports without outbound send.
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1673 tracked non-doc files checked).
+CHECK_SECRETS_EXACT_EXIT_CODE=0
