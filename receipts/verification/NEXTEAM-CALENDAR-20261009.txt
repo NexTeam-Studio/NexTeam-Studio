@@ -1,0 +1,74 @@
+JOB_ID=NEXTEAM-CALENDAR-20261009
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Cross-device history
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/mobile/test/native-capture.test.mjs apps/server/test/mobile-native-capture.test.mjs apps/server/test/fielddocs-read-side.test.mjs apps/server/test/fielddocs-nexi-tools.test.mjs
+Raw output:
+✔ M11 local session re-auth waits seven days and GPS suggestions prefer today's assigned visit (0.9603ms)
+✔ M11 syncCaptureSession creates the request route, uploads media, transcribes voice, and maps checklist photo ids (5.4937ms)
+✔ M11 syncQueuedSessions marks failed batches for retry and keeps the queue visibly failed until backoff clears (1.7651ms)
+✔ fielddocs Nexi tools expose property history and recent photos (18.3976ms)
+✔ fielddocs Nexi tools generate and fetch visit reports (2.0637ms)
+✔ local Nexi chat routes NexCam photo search, property history, and report generation (10.5042ms)
+✔ NexDocs tools search unified content and list client folders (433.0469ms)
+✔ local Nexi chat can search documents, queue a folder, approve it, queue an upload, and approve it (12.0545ms)
+✔ natural-language photo search matches imported metadata (0.9989ms)
+✔ vision pipeline stub is wired off by default (0.1925ms)
+✔ vision pipeline parses live Anthropic-style JSON responses with usage (1.0427ms)
+✔ upload service creates native storage refs, thumbnails, and EXIF metadata (0.6789ms)
+✔ before/after pairing and vision fallback are wired (0.3514ms)
+✔ leak checklist and report PDF render (2.7885ms)
+✔ native repository persists checklists and posted field report records (1.7105ms)
+✔ NexCam read tool searches native media repository (0.854ms)
+✔ NexDocs accepts supported uploads, uses a 100 MB cap, and indexes PDF content for search (565.5549ms)
+✔ NexDocs OCR blocks image OCR before estimated spend exceeds the cap (1.7777ms)
+✔ NexDocs OCR logs usage and searchable text when image OCR runs inside cap (1.0086ms)
+✔ NexDocs keeps a flat folder model and moves each document into only one folder at a time (1.6053ms)
+✔ NexDocs unified search returns uploaded docs, office records, and NexCam hits together (2.8817ms)
+✔ NexDocs technician fence stays upload-only for destructive management actions (0.2937ms)
+✔ M11 mobile session bootstrap returns tenant branding plus the reusable local staff profile registry (38.609ms)
+✔ M11 day board stays technician-scoped while exposing GPS suggestions, gate notes, and visible queue state (19.3899ms)
+✔ M11 visit context returns checklist and before/after candidates, and unassigned technicians stay fenced out (42.1711ms)
+✔ M11 typed and voice narration both flow into the shared field report rail (16.2521ms)
+✔ M11 transcription blocks over-cap narration before provider fetch and writes a usage log record (7.7627ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2261.9031
+COMMAND_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+CALENDAR_CROSS_DEVICE_HISTORY=PASS
+CALENDAR_CROSS_DEVICE_HISTORY_CONTRACT=An authenticated technician can capture checklist, photo, and typed or voice narration data on mobile; the server persists native checklists and field-report records; the same tenant-scoped history is available through NexCam read tools and Nexi property-history and photo-search paths, while unassigned technicians remain fenced out.
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1672 tracked non-doc files checked).
+CHECK_SECRETS_EXIT_CODE=0
