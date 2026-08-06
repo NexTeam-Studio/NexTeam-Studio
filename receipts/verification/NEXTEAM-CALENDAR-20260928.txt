@@ -1,0 +1,60 @@
+JOB_ID=NEXTEAM-CALENDAR-20260928
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Request to quote
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/request-foundation.test.mjs apps/web/test/nexops-requests-ui.test.mjs
+Raw output:
+✔ request routes create, update, convert, archive, and reopen while preserving intake fields (74.0453ms)
+✔ local Nexi request tools clarify missing intake data, then create and recall real requests (12.9644ms)
+✔ client record route toggles marketing consent and forwards the NexReach revocation hook (9.1438ms)
+✔ request helpers treat an unreviewed intake as review-first work (0.7431ms)
+✔ reviewed requests move onto the conversion rail (0.1319ms)
+✔ converted requests stay read-only as intake source records (0.1231ms)
+✔ request queue summary breaks out review, conversion, and archive counts (0.6221ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1864.3999
+COMMAND_EXIT_CODE=0
+
+REQUEST_TO_QUOTE_PROOF=PASS
+REQUEST_TO_QUOTE_CONTRACT=Tenant-scoped client requests preserve consent and intake field visibility, require review before conversion, create a linked quote or Unscheduled job from reviewed intake, prevent archive after downstream conversion, remain read-only after conversion, and are available through Nexi create/recall tools.
+CALENDAR_PROOF=PASS
+CALENDAR_REQUEST_TO_QUOTE=PASS
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1666 tracked non-doc files checked).
+CHECK_SECRETS_EXIT_CODE=0
+
+COMMAND=git status --short
+Raw output:
+(empty)
+GIT_STATUS_FINAL_EXIT_CODE=0
