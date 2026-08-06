@@ -1,0 +1,68 @@
+JOB_ID=NEXTEAM-CALENDAR-20260917
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Mobile field workflow
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/mobile/test/*.test.mjs apps/server/test/mobile-routes.test.mjs apps/server/test/mobile-native-capture.test.mjs apps/server/test/scheduling.test.mjs
+
+✔ M11 local session re-auth waits seven days and GPS suggestions prefer today's assigned visit (1.3369ms)
+✔ M11 syncCaptureSession creates the request route, uploads media, transcribes voice, and maps checklist photo ids (7.7681ms)
+✔ M11 syncQueuedSessions marks failed batches for retry and keeps the queue visibly failed until backoff clears (2.5124ms)
+✔ M11 airplane-mode job flow syncs after reconnect with conflict flags (18.3887ms)
+✔ M11 mobile rejects unassigned cached job writes (0.489ms)
+✔ Tap to Pay decline mapping stays staff-readable instead of surfacing raw Stripe jargon (1.3563ms)
+✔ Tap to Pay disconnect mapping calls out the reader drop explicitly (0.3816ms)
+✔ Tap to Pay finalize mapping explains the ledger handoff seam when Stripe succeeds first (0.1805ms)
+✔ Tap to Pay helper labels keep device metadata stable for the shared payment object (0.1816ms)
+✔ M11 mobile session bootstrap returns tenant branding plus the reusable local staff profile registry (30.6091ms)
+✔ M11 day board stays technician-scoped while exposing GPS suggestions, gate notes, and visible queue state (15.9944ms)
+✔ M11 visit context returns checklist and before/after candidates, and unassigned technicians stay fenced out (27.4601ms)
+✔ M11 typed and voice narration both flow into the shared field report rail (25.3213ms)
+✔ M11 transcription blocks over-cap narration before provider fetch and writes a usage log record (5.087ms)
+✔ M11 mobile day schedule returns assigned jobs for the requested field user (32.3689ms)
+✔ M11 mobile sync accepts airplane-mode checklist, photo, and close-out operations (23.5223ms)
+✔ M11 mobile push registration and approval review stay role-gated (10.7246ms)
+✔ M11 mobile access policy blocks cross-user and unscoped job-link access (0.7824ms)
+✔ suggestSlots prefers the least-drive non-conflicting slot (8.6141ms)
+✔ detectConflicts only flags overlapping visits for the same assigned crew (0.6881ms)
+✔ bookVisit parks the visit and queues a notification instead of sending (3.0224ms)
+✔ whatsMyDay reads native visits for the requested technician (0.3825ms)
+✔ calendar board returns native visits only even if stale overlay deps are passed in (43.7415ms)
+✔ calendar board ignores stale overlay timeout env and still serves native visits without warnings (7.0406ms)
+✔ reminder and on-my-way messages are approval queued, not sent (1.0999ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1987.4711
+COMMAND_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-scope
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1655 tracked non-doc files checked).
+CHECK_SECRETS_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+CALENDAR_MOBILE_FIELD_WORKFLOW=PASS
