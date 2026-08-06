@@ -1,0 +1,57 @@
+JOB_ID=NEXTEAM-CALENDAR-20261005
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Official staging identity
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/runtime-configuration.test.mjs
+Raw output:
+✔ missing TENANT_ID never bypasses customer-capable persistence safety (0.9158ms)
+✔ a named tenant without Firestore fails even when NODE_ENV is test (0.1326ms)
+✔ memory persistence requires explicit isolated opt-in and rejects normal named tenants (0.2832ms)
+✔ system HTTP routes expose sanitized runtime identity and fail unhealthy configuration (19.5793ms)
+✔ the composed server can serve an explicitly isolated memory runtime over local HTTP (936.7079ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2131.7065
+COMMAND_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+CALENDAR_OFFICIAL_STAGING_IDENTITY=PASS
+CALENDAR_OFFICIAL_STAGING_IDENTITY_CONTRACT=A named tenant without the required Firebase service-account configuration is rejected even in test mode; the version and health endpoints report a sanitized runtime identity without exposing the private key; only an explicitly isolated local runtime may use memory persistence.
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+COMMAND_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+COMMAND_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1670 tracked non-doc files checked).
+COMMAND_EXIT_CODE=0
+
+COMMAND=git status --short
+Raw output:
+(empty)
+COMMAND_EXIT_CODE=0
