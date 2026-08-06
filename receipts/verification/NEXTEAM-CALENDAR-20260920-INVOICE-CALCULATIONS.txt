@@ -1,0 +1,68 @@
+JOB_ID=NEXTEAM-CALENDAR-20260920
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Invoice calculations
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/close-invoice-payment-flow.test.mjs apps/server/test/ledger-foundation.test.mjs apps/server/src/modules/nexops/areas/invoices/components/invoiceStructure/test/invoice-document.test.mjs
+Raw output:
+✔ Invoice Structure owns the customer portal document and payment schedule wording (1.0558ms)
+✔ customer payment return states clearly distinguish a completed payment from a cancellation (0.1985ms)
+✔ draft invoices stay fully editable through line items, discount, tax, and terms until delivery locks them (17.0828ms)
+✔ closing without invoicing creates a recurring 9AM reminder that advances until dismissal (2.1367ms)
+✔ combining a selected subset of jobs keeps per-job references and carries the chosen payment schedule (2.0858ms)
+✔ invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads (1.7687ms)
+✔ default invoice delivery templates keep labeled pay-link and hosted-link content at the shared template layer (0.4998ms)
+✔ saved-card reuse defaults to the newest card, supports alternate selection, and keeps manual/failed branches distinct (19.9985ms)
+✔ receipt review sends email attachments and an SMS hosted link from the same paused review (1.364ms)
+✔ receipt review sends a real field report PDF attachment when NexCam already generated one for the job (1.3741ms)
+✔ PayPal and Venmo checkout helpers create sandbox orders and capture completed payments (17.2232ms)
+✔ Nexi billing tools run combine, send, partial collect, failed recovery, and receipt review approval loops in chat (9.7512ms)
+✔ quote deposit bridge migrates into first-class payment, deposit, receipt review, and saved card records without rewriting the quote snapshot (7.5828ms)
+✔ invoice sync auto-applies deposits and credits, and overdue only marks awaiting-payment invoices (12.4158ms)
+✔ Stripe checkout uses tenant Connect headers with zero application fee and charges only the current balance due (18.7979ms)
+✔ payment states progress through pending, succeeded, partially_refunded, and refunded with separate refund and receipt-review records (3.6146ms)
+✔ invoice and refund receipt reviews carry the default invoice, quote, report, photo, and job-file attachments (1.992ms)
+✔ one payment stays on one invoice and overpayment rolls forward as credit instead of splitting across invoices (1.1483ms)
+✔ the ledger model already accepts PayPal and Venmo slots even though the live adapter is deferred (0.6848ms)
+✔ draft invoices stay draft and failed payments do not settle the invoice (0.5687ms)
+✔ void and bad debt stay distinct, and ledger chat tools require OWNER or OFFICE_ADMIN for execution (15.7913ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 510.9951
+COMMAND_EXIT_CODE=0
+
+CALCULATION_PROOF=PASS
+CALCULATION_CONTRACT=calculateInvoiceTotals rounds line-item subtotal, caps discounts at subtotal, calculates tax after discount, and rounds the final total.
+LEDGER_PROOF=PASS
+LEDGER_CONTRACT=invoice sync applies deposits and credits before balance due, carries overpayment as credit, and limits overdue marking to awaiting-payment invoices.
+CALENDAR_PROOF=PASS
+CALENDAR_INVOICE_CALCULATIONS=PASS
+
+COMMAND=npm run check:worktree-scope
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1658 tracked non-doc files checked).
+CHECK_SECRETS_EXIT_CODE=0
