@@ -1,0 +1,35 @@
+JOB_ID=NEXTEAM-CALENDAR-20260903
+WORKTREE=target-architecture-integration
+COMMAND=npm run verify
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1644 tracked non-doc files checked).
+
+> check:secret-history
+> node scripts/check-secret-history.mjs
+
+Secret history scan passed (720 reachable commits, 11721 reachable objects checked).
+
+> check:provider-imports
+> node scripts/check-provider-imports.mjs
+
+Provider boundary check passed (574 files checked).
+
+> check:blueprints
+> node scripts/check-blueprint-identifiers.mjs
+
+Blueprint naming check passed (463 files checked).
+COMMAND_EXIT_CODE=0

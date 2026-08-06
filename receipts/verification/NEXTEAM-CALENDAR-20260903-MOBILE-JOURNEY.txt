@@ -1,0 +1,27 @@
+JOB_ID=NEXTEAM-CALENDAR-20260903
+WORKTREE=target-architecture-integration
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/mobile/test/native-capture.test.mjs apps/server/test/mobile-routes.test.mjs apps/server/test/scheduling.test.mjs
+
+✔ M11 local session re-auth waits seven days and GPS suggestions prefer today's assigned visit (0.9047ms)
+✔ M11 syncCaptureSession creates the request route, uploads media, transcribes voice, and maps checklist photo ids (5.0983ms)
+✔ M11 syncQueuedSessions marks failed batches for retry and keeps the queue visibly failed until backoff clears (1.6277ms)
+✔ M11 mobile day schedule returns assigned jobs for the requested field user (25.9854ms)
+✔ M11 mobile sync accepts airplane-mode checklist, photo, and close-out operations (21.6914ms)
+✔ M11 mobile push registration and approval review stay role-gated (9.2851ms)
+✔ M11 mobile access policy blocks cross-user and unscoped job-link access (0.7203ms)
+✔ suggestSlots prefers the least-drive non-conflicting slot (8.5096ms)
+✔ detectConflicts only flags overlapping visits for the same assigned crew (0.7095ms)
+✔ bookVisit parks the visit and queues a notification instead of sending (3.2404ms)
+✔ whatsMyDay reads native visits for the requested technician (0.3878ms)
+✔ calendar board returns native visits only even if stale overlay deps are passed in (41.6516ms)
+✔ calendar board ignores stale overlay timeout env and still serves native visits without warnings (7.1046ms)
+✔ reminder and on-my-way messages are approval queued, not sent (1.0064ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1337.6304
+COMMAND_EXIT_CODE=0
