@@ -1,0 +1,58 @@
+﻿JOB_ID=NEXTEAM-CALENDAR-20260905
+WORKTREE=target-architecture-integration
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/crm-read-side.test.mjs apps/server/test/tenant-isolation.test.mjs apps/server/test/document-rendering.test.mjs apps/server/test/lifecycle-command-map.test.mjs apps/server/src/modules/nexops/areas/quotes/components/quoteEngine/domain/test/atomic-deposit-approval.test.mjs apps/server/src/modules/nexops/areas/quotes/components/quoteEngine/domain/test/quote-status-compatibility.test.mjs apps/web/src/features/quotes/components/quoteEngine/test/quote-engine-ui.test.mjs apps/web/src/features/quotes/components/quoteTemplates/test/quote-template-editor.test.mjs
+
+✔ a failed deposit leaves the quote sent and a retry must approve again (1.878ms)
+✔ legacy signed quote is migrated to current client-approved lifecycle without losing approval evidence (4.117ms)
+✔ current quote records do not receive a legacy migration patch (0.2868ms)
+✔ CRM quote and invoice native schemas parse (2.0784ms)
+✔ NativeAdapter exposes CRM read methods (0.7906ms)
+✔ native import upserts remain idempotent by legacy CRM external ids (0.4566ms)
+✔ NativeAdapter writes native clients and approval-gated quote drafts (1.7702ms)
+✔ NexOps 3.2 client records preserve display, billing, and one-way SMS settings (0.5865ms)
+✔ CRM read nexi-tools expose pipeline and client lookup (1.7452ms)
+✔ CRM clientLookup stays unmatched and never calls a dormant fallback on native misses (0.8417ms)
+✔ CRM write nexi-tools cover client create, quote draft, catalog/template settings, and invoice reads (18.244ms)
+✔ seeded catalog UTF-8 punctuation survives native settings round-trip (0.7867ms)
+✔ CRM createClient tool blocks approval when telephone is missing (0.4222ms)
+✔ CRM client route rejects incomplete saves before a client record is created (50.4467ms)
+✔ CRM routes read clients created by ApprovalQueue execution from the shared native repository (9.3384ms)
+✔ CRM client delete route removes property-only duplicates and blocks clients with linked work (8.7903ms)
+✔ CRM quick payment request routes create minimal ledger-backed invoices from job and client fast paths (14.8931ms)
+✔ CRM quote routes create, send, approve, convert, invoice, and renew quotes (56.3976ms)
+✔ CRM quote change requests store per-line comments plus a freeform note (6.7904ms)
+✔ Quote materialization preserves custom lines and future client-selectable fields (0.3646ms)
+✔ Quote terms resolve tenant default, then template override, then per-quote override (0.4823ms)
+✔ TECHNICIAN role is blocked from manual quote approval authority (0.3462ms)
+✔ NativeAdapter writes invoices and renders invoice PDFs (0.3308ms)
+✔ Stripe rail refuses live keys and verifies webhook signatures (0.8551ms)
+✔ shared Document Rendering escapes HTML and PDF payload text (1.6101ms)
+✔ shared Document Rendering writes a valid text PDF without owning document wording (0.6957ms)
+✔ Quote Engine and Invoice Structure own distinct PDF templates (0.6581ms)
+✔ lifecycle command map keeps the full D1-D19 decision register (1.1724ms)
+✔ lifecycle command map exposes the 12 required communication templates (0.1785ms)
+✔ every command references valid decision ids and valid communication templates (0.2254ms)
+✔ permission registry stays unique and the portal commands stay on authorization profiles (0.1103ms)
+✔ quote dominant action derives atomic approval and renewal states (0.2668ms)
+✔ D1 atomic portal approval contract keeps failed deposit attempts out of accepted quote state (0.2493ms)
+✔ visit, invoice, and client-schedule dominant actions derive from orthogonal status dimensions (0.2693ms)
+✔ decision traces expose downstream command dependencies for auditability (0.1821ms)
+✔ native CRM rejects cross-tenant document updates and tenantId mutation (1.6546ms)
+✔ native CRM Firestore writes reject cross-tenant IDs inside the write transaction (2.5512ms)
+✔ tenant settings rejects a document whose stored tenant differs from the requested tenant (1.3855ms)
+✔ platform persistence rejects a tenant user ID already owned by another tenant (0.7737ms)
+✔ quote dominant action changes across core pre-approval states (2.2516ms)
+✔ quote dominant action changes after approval based on whether a job snapshot already exists (0.2908ms)
+✔ legacy signed quotes remain locked and can enter the downstream lifecycle (0.3221ms)
+✔ blocked delivery state disables send and exposes the reason on approved quotes (0.1835ms)
+✔ downstream buttons stay gated with explicit reasons (1.3758ms)
+✔ Quote Templates owns the real list and editor surface through a typed save contract (14.3328ms)
+ℹ tests 45
+ℹ suites 0
+ℹ pass 45
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2108.9203
+COMMAND_EXIT_CODE=0
