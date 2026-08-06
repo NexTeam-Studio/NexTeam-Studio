@@ -1,0 +1,107 @@
+JOB_ID=NEXTEAM-CALENDAR-20260926
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Billing acceptance
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/close-invoice-payment-flow.test.mjs apps/server/test/ledger-foundation.test.mjs apps/server/test/crm-read-side.test.mjs apps/server/src/modules/nexops/areas/invoices/components/invoiceStructure/test/invoice-document.test.mjs apps/server/test/tap-to-pay.test.mjs apps/mobile/test/*.test.mjs
+Raw output:
+✔ M11 local session re-auth waits seven days and GPS suggestions prefer today's assigned visit (1.7559ms)
+✔ M11 syncCaptureSession creates the request route, uploads media, transcribes voice, and maps checklist photo ids (9.7386ms)
+✔ M11 syncQueuedSessions marks failed batches for retry and keeps the queue visibly failed until backoff clears (3.1701ms)
+✔ M11 airplane-mode job flow syncs after reconnect with conflict flags (19.5033ms)
+✔ M11 mobile rejects unassigned cached job writes (0.5137ms)
+✔ Tap to Pay decline mapping stays staff-readable instead of surfacing raw Stripe jargon (1.4919ms)
+✔ Tap to Pay disconnect mapping calls out the reader drop explicitly (0.3549ms)
+✔ Tap to Pay finalize mapping explains the ledger handoff seam when Stripe succeeds first (0.2349ms)
+✔ Tap to Pay helper labels keep device metadata stable for the shared payment object (0.1894ms)
+✔ Invoice Structure owns the customer portal document and payment schedule wording (1.8611ms)
+✔ customer payment return states clearly distinguish a completed payment from a cancellation (0.3739ms)
+✔ draft invoices stay fully editable through line items, discount, tax, and terms until delivery locks them (22.5339ms)
+✔ closing without invoicing creates a recurring 9AM reminder that advances until dismissal (3.0883ms)
+✔ combining a selected subset of jobs keeps per-job references and carries the chosen payment schedule (7.5382ms)
+✔ invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads (2.7069ms)
+✔ default invoice delivery templates keep labeled pay-link and hosted-link content at the shared template layer (0.8605ms)
+✔ saved-card reuse defaults to the newest card, supports alternate selection, and keeps manual/failed branches distinct (26.3571ms)
+✔ receipt review sends email attachments and an SMS hosted link from the same paused review (1.7952ms)
+✔ receipt review sends a real field report PDF attachment when NexCam already generated one for the job (2.0881ms)
+✔ PayPal and Venmo checkout helpers create sandbox orders and capture completed payments (25.6432ms)
+✔ Nexi billing tools run combine, send, partial collect, failed recovery, and receipt review approval loops in chat (12.8747ms)
+✔ CRM quote and invoice native schemas parse (2.0869ms)
+✔ NativeAdapter exposes CRM read methods (0.8099ms)
+✔ native import upserts remain idempotent by legacy CRM external ids (0.4884ms)
+✔ NativeAdapter writes native clients and approval-gated quote drafts (1.8437ms)
+✔ NexOps 3.2 client records preserve display, billing, and one-way SMS settings (0.626ms)
+✔ CRM read nexi-tools expose pipeline and client lookup (1.7798ms)
+✔ CRM clientLookup stays unmatched and never calls a dormant fallback on native misses (0.8757ms)
+✔ CRM write nexi-tools cover client create, quote draft, catalog/template settings, and invoice reads (18.6887ms)
+✔ seeded catalog UTF-8 punctuation survives native settings round-trip (0.6311ms)
+✔ CRM createClient tool blocks approval when telephone is missing (0.397ms)
+✔ CRM client route rejects incomplete saves before a client record is created (52.3232ms)
+✔ CRM routes read clients created by ApprovalQueue execution from the shared native repository (9.3996ms)
+✔ CRM client delete route removes property-only duplicates and blocks clients with linked work (7.7409ms)
+✔ CRM quick payment request routes create minimal ledger-backed invoices from job and client fast paths (13.0517ms)
+✔ CRM quote routes create, send, approve, convert, invoice, and renew quotes (61.7808ms)
+✔ CRM quote change requests store per-line comments plus a freeform note (6.4739ms)
+✔ Quote materialization preserves custom lines and future client-selectable fields (0.3312ms)
+✔ Quote terms resolve tenant default, then template override, then per-quote override (0.4771ms)
+✔ TECHNICIAN role is blocked from manual quote approval authority (0.3506ms)
+✔ NativeAdapter writes invoices and renders invoice PDFs (0.3309ms)
+✔ Stripe rail refuses live keys and verifies webhook signatures (0.8664ms)
+✔ quote deposit bridge migrates into first-class payment, deposit, receipt review, and saved card records without rewriting the quote snapshot (7.6518ms)
+✔ invoice sync auto-applies deposits and credits, and overdue only marks awaiting-payment invoices (15.8568ms)
+✔ Stripe checkout uses tenant Connect headers with zero application fee and charges only the current balance due (27.3971ms)
+✔ payment states progress through pending, succeeded, partially_refunded, and refunded with separate refund and receipt-review records (7.0919ms)
+✔ invoice and refund receipt reviews carry the default invoice, quote, report, photo, and job-file attachments (4.8581ms)
+✔ one payment stays on one invoice and overpayment rolls forward as credit instead of splitting across invoices (1.3105ms)
+✔ the ledger model already accepts PayPal and Venmo slots even though the live adapter is deferred (0.9028ms)
+✔ draft invoices stay draft and failed payments do not settle the invoice (0.6907ms)
+✔ void and bad debt stay distinct, and ledger chat tools require OWNER or OFFICE_ADMIN for execution (22.3497ms)
+✔ Tap to Pay token and payment-intent routes reuse the tenant Connect account and card_present intent model (53.4113ms)
+✔ Tap to Pay completion writes the same ledger payment object used by every other Stripe payment path (14.697ms)
+✔ Tap to Pay failure records a failed Stripe payment without settling the invoice (6.666ms)
+ℹ tests 54
+ℹ suites 0
+ℹ pass 54
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2232.9136
+COMMAND_EXIT_CODE=0
+
+BILLING_ACCEPTANCE_PROOF=PASS
+BILLING_ACCEPTANCE_CONTRACT=Invoice drafting and calculations, deposits, credits, payment and refund lifecycle, receipt review delivery, tenant-scoped Stripe Connect and PayPal/Venmo checkout, role-gated billing authority, mobile Tap to Pay success/failure, and shared ledger reconciliation all pass locally.
+CALENDAR_PROOF=PASS
+CALENDAR_BILLING_ACCEPTANCE=PASS
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1665 tracked non-doc files checked).
+CHECK_SECRETS_EXIT_CODE=0
+
+COMMAND=git status --short
+Raw output:
+(empty)
+GIT_STATUS_FINAL_EXIT_CODE=0
