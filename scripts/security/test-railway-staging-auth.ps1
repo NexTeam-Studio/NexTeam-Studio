@@ -52,14 +52,20 @@ try {
   Write-Host "Railway staging vault: present"
 
   $smoke = Invoke-RailwayGraphQL -Token $token -Query "query RailwayProjectTokenSmoke { __typename }"
-  if ($smoke.__typename -or ($smoke.data -and $smoke.data.__typename)) {
+  $smokeType = $null
+  if ($smoke.PSObject.Properties.Match("__typename").Count -gt 0) {
+    $smokeType = $smoke.__typename
+  } elseif ($smoke.PSObject.Properties.Match("data").Count -gt 0 -and $smoke.data -and $smoke.data.PSObject.Properties.Match("__typename").Count -gt 0) {
+    $smokeType = $smoke.data.__typename
+  }
+  if ($smokeType) {
     Write-Host "Railway project-token API smoke: passed"
   } else {
     Write-Host "Railway project-token API smoke: response received"
   }
 
   Write-Host "Railway CLI smoke: status"
-  & (Join-Path $PSScriptRoot "invoke-railway-staging.ps1") status
+  & (Join-Path $PSScriptRoot "invoke-railway-staging.ps1") -RailwayArgs status
   $cliExit = $LASTEXITCODE
   if ($cliExit -ne 0) {
     throw "Railway CLI smoke failed with exit code $cliExit."
