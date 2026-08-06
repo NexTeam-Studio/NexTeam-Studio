@@ -4007,8 +4007,7 @@ function directAnswerFromDeterministicRuns(
   const clientLookupRun = [...toolRuns].reverse().find((run) => run.name === "clientLookup" && run.sources.length > 0);
   if (
     clientLookupRun
-    && !looksLikeClientListQuestion(lower)
-    && (isCloseClientMatchConfirmation(latestText, messages) || looksLikeClientMatchListFollowUp(latestText) || looksLikeNamedClientLookupQuestion(lower) || looksLikePhoneLookupQuestion(lower) || looksLikeAddressLookupQuestion(lower) || looksLikeClientEmailFieldQuestion(lower))
+    && (looksLikeClientListQuestion(lower) || isCloseClientMatchConfirmation(latestText, messages) || looksLikeClientMatchListFollowUp(latestText) || looksLikeNamedClientLookupQuestion(lower) || looksLikePhoneLookupQuestion(lower) || looksLikeAddressLookupQuestion(lower) || looksLikeClientEmailFieldQuestion(lower))
   ) {
     return clientLookupAnswer(latestText, messages, clientLookupRun.result);
   }
@@ -4142,7 +4141,9 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
     && !hasExplicitClientSubject(currentUserText)
     ? clientEntityFromPreviousUserMessages(request.messages)
     : clientLookupQueryFromText(currentUserText) || entityQueryFromMessages(request.messages, { skipLatest: true }));
-  const deterministicClientDetailRead = Boolean(
+  const deterministicClientListRead = toolsByName.has("clientLookup")
+    && looksLikeClientListQuestion(currentUserText.toLowerCase());
+  const deterministicClientDetailRead = deterministicClientListRead || Boolean(
     toolsByName.has("clientLookup")
     && (Boolean(confirmedCloseMatch)
       || looksLikeClientMatchListFollowUp(currentUserText)

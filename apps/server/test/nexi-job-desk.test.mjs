@@ -1588,6 +1588,34 @@ test("Nexi service answers phone lookups directly from matched client records", 
   assert.match(result.answer, /Would you like me to call now\?/);
 });
 
+test("Nexi service answers client counts directly from native client records", async () => {
+  const result = await runNexiToolLoop({
+    tenant: tenant(),
+    system: "Use tools.",
+    messages: [{ role: "user", content: "How many clients do we have?" }],
+    tools: [{
+      name: "clientLookup",
+      description: "Read native clients.",
+      inputSchema: z.object({ q: z.string().optional() }),
+      handler: async (_tenant, args) => {
+        assert.equal(args.q, "");
+        return {
+          result: { clients: [], nativeCount: 1_307 },
+          sources: [{ rail: "native", ref: "clients", label: "Native CRM clients" }]
+        };
+      }
+    }],
+    routeActionName: "/api/nexi/message",
+    taskType: "job_desk_answer",
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    fetchFn: async () => {
+      throw new Error("client counts should not call the model");
+    }
+  });
+
+  assert.equal(result.answer, "I found 1,307 clients in the current client records.");
+});
+
 test("Nexi service answers address lookups directly from matched client property records", async () => {
   const result = await runNexiToolLoop({
     tenant: tenant(),
