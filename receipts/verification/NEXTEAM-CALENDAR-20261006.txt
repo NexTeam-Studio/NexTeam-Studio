@@ -1,0 +1,63 @@
+JOB_ID=NEXTEAM-CALENDAR-20261006
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Mobile authentication
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/mobile/test/native-capture.test.mjs apps/server/test/local-dev-auth.test.mjs apps/server/test/mobile-routes.test.mjs apps/server/test/mobile-native-capture.test.mjs
+Raw output:
+✔ M11 local session re-auth waits seven days and GPS suggestions prefer today's assigned visit (0.9108ms)
+✔ M11 syncCaptureSession creates the request route, uploads media, transcribes voice, and maps checklist photo ids (6.11ms)
+✔ M11 syncQueuedSessions marks failed batches for retry and keeps the queue visibly failed until backoff clears (2.2212ms)
+✔ local credential sessions cover owner, office admin, and technician roles (1.4562ms)
+✔ local credential sign-in accepts email-only local sessions and rejects unknown addresses (0.4385ms)
+✔ local bearer sessions feed the access-context role gate and refuse cross-tenant reuse (0.4692ms)
+✔ the same local session token keeps the same seat across internal module rails for owner and office admin (0.6426ms)
+✔ M11 mobile session bootstrap returns tenant branding plus the reusable local staff profile registry (30.5499ms)
+✔ M11 day board stays technician-scoped while exposing GPS suggestions, gate notes, and visible queue state (15.8859ms)
+✔ M11 visit context returns checklist and before/after candidates, and unassigned technicians stay fenced out (26.8648ms)
+✔ M11 typed and voice narration both flow into the shared field report rail (11.8791ms)
+✔ M11 transcription blocks over-cap narration before provider fetch and writes a usage log record (5.1882ms)
+✔ M11 mobile day schedule returns assigned jobs for the requested field user (28.0177ms)
+✔ M11 mobile sync accepts airplane-mode checklist, photo, and close-out operations (22.7627ms)
+✔ M11 mobile push registration and approval review stay role-gated (10.2427ms)
+✔ M11 mobile access policy blocks cross-user and unscoped job-link access (0.8651ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1940.5073
+COMMAND_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+CALENDAR_MOBILE_AUTHENTICATION=PASS
+CALENDAR_MOBILE_AUTHENTICATION_CONTRACT=Mobile local sessions re-authenticate on the seven-day policy; allowed owner, office-admin, and technician identities resolve to their correct roles; unknown addresses and cross-tenant token reuse are rejected; the mobile bootstrap returns only reusable local profiles; technician day-board, visit-context, sync, push, and job-link access remain role- and scope-gated.
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+CHECK_WORKTREE_SCOPE_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+CHECK_WORKTREE_COVERAGE_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1671 tracked non-doc files checked).
+CHECK_SECRETS_EXIT_CODE=0
