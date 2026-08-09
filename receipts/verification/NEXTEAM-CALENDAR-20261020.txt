@@ -1,0 +1,107 @@
+JOB_ID=NEXTEAM-CALENDAR-20261020
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Tenant configuration and branding.
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/crm-read-side.test.mjs apps/server/test/platform.test.mjs apps/server/test/tenant-isolation.test.mjs apps/server/test/numbering-service.test.mjs apps/web/src/features/settings/components/test/title-case.test.mjs apps/web/src/features/settings/components/catalog/test/catalog.test.mjs
+Raw output:
+✔ CRM quote and invoice native schemas parse (2.1213ms)
+✔ NativeAdapter exposes CRM read methods (0.8416ms)
+✔ native import upserts remain idempotent by legacy CRM external ids (0.4831ms)
+✔ NativeAdapter writes native clients and approval-gated quote drafts (1.8661ms)
+✔ NexOps 3.2 client records preserve display, billing, and one-way SMS settings (0.6326ms)
+✔ CRM read nexi-tools expose pipeline and client lookup (1.8192ms)
+✔ CRM clientLookup stays unmatched and never calls a dormant fallback on native misses (0.9662ms)
+✔ CRM write nexi-tools cover client create, quote draft, catalog/template settings, and invoice reads (19.9963ms)
+✔ seeded catalog UTF-8 punctuation survives native settings round-trip (0.7149ms)
+✔ CRM createClient tool blocks approval when telephone is missing (0.4348ms)
+✔ CRM client route rejects incomplete saves before a client record is created (50.4961ms)
+✔ CRM routes read clients created by ApprovalQueue execution from the shared native repository (10.8025ms)
+✔ CRM client delete route removes property-only duplicates and blocks clients with linked work (9.7313ms)
+✔ CRM quick payment request routes create minimal ledger-backed invoices from job and client fast paths (16.9117ms)
+✔ CRM quote routes create, send, approve, convert, invoice, and renew quotes (60.5716ms)
+✔ CRM quote change requests store per-line comments plus a freeform note (7.8547ms)
+✔ Quote materialization preserves custom lines and future client-selectable fields (0.4218ms)
+✔ Quote terms resolve tenant default, then template override, then per-quote override (0.5212ms)
+✔ TECHNICIAN role is blocked from manual quote approval authority (0.3628ms)
+✔ NativeAdapter writes invoices and renders invoice PDFs (0.359ms)
+✔ Stripe rail refuses live keys and verifies webhook signatures (1.4309ms)
+✔ shared Numbering formats and advances without owning component prefixes (1.6227ms)
+✔ shared Numbering backfills the receipt format on legacy four-sequence settings (3.2748ms)
+✔ memory Numbering reserves unique parallel sequences independently per tenant and kind (1.0531ms)
+✔ Numbering preview rejects settings from another tenant (0.6878ms)
+✔ platform entitlement registry removes tools outside the tenant plan (7.6731ms)
+✔ suite tenant keeps scheduling and marketing tools (0.1475ms)
+✔ firestore platform repository falls back when legacy Aquatrace tenant docs are partial (1.4885ms)
+✔ platform repository summarizes cost, records backup, and exports per tenant (1.7399ms)
+✔ platform repository stores tenant branding with text fallback and actor attribution (0.3948ms)
+✔ tenant users are provisioned explicitly and produce Firebase custom claims (0.5793ms)
+✔ job access links verify only one linked job and fail closed after revoke (1.2544ms)
+✔ platform billing refuses live Stripe keys and supports fake test-mode receipt runs (0.4846ms)
+✔ platform routes expose tenants, test subscription, backup, and export (65.7783ms)
+✔ tenant Stripe Connect onboarding persists one account and protects refresh and return callbacks (15.3167ms)
+Tenancy check failed:
+- tests/fixtures/tenancy/unscoped-query.fixture.ts: Firestore collection "jobs" lacks tenantId evidence
+✔ platform routes manage tenant users and job links without leaking token hashes by default (11.5804ms)
+✔ tenancy scanner catches the planted unscoped query fixture (41.095ms)
+✔ runtime defaults to durable persistence and refuses an empty customer tenant runtime (1.3172ms)
+✔ native CRM rejects cross-tenant document updates and tenantId mutation (1.2983ms)
+✔ native CRM Firestore writes reject cross-tenant IDs inside the write transaction (2.4616ms)
+✔ tenant settings rejects a document whose stored tenant differs from the requested tenant (1.5792ms)
+✔ platform persistence rejects a tenant user ID already owned by another tenant (0.6897ms)
+✔ Catalog owns reusable item normalization independently of consuming documents (1.6056ms)
+✔ Settings uses Title Case for named controls and sentence case for explanatory copy (6.4582ms)
+ℹ tests 44
+ℹ suites 0
+ℹ pass 44
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2130.0877
+EXACT_EXIT_CODE=0
+CALENDAR_PROOF_EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+TENANT_SETTINGS_PERSISTENCE=PASS
+TENANT_SETTINGS_ISOLATION=PASS
+TENANT_BRANDING_PERSISTENCE_FALLBACK_AND_ATTRIBUTION=PASS
+SETTINGS_UI_CONVENTIONS=PASS
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+EXACT_EXIT_CODE=0
+WORKTREE_SCOPE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+EXACT_EXIT_CODE=0
+WORKTREE_COVERAGE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1682 tracked non-doc files checked).
+EXACT_EXIT_CODE=0
+SECRET_SCAN_EXACT_EXIT_CODE=0
+
+COMMAND=git status --short
+Raw output:
+(empty after commit; see final verification below)
+EXACT_EXIT_CODE=0
+GIT_STATUS_CLEAN=YES
+
+REQUIRED_GATES_GREEN: YES
