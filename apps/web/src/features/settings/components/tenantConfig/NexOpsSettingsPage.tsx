@@ -65,6 +65,18 @@ interface TenantOperatingProfile {
     completedSteps: Array<"company-profile" | "module-selection" | "office-defaults" | "launch-review">;
     selectedModules: string[];
     launchReviewedAt?: string;
+    checklist: {
+      tasks: Array<{
+        id: string;
+        label: string;
+        description: string;
+        required: boolean;
+        status: "not_started" | "in_progress" | "complete" | "skipped";
+        ownerUserId?: string;
+        completedAt?: string;
+      }>;
+      auditHistory: Array<{ id: string; action: string; actorId: string; taskId: string; detail: string; createdAt: string }>;
+    };
   };
 }
 
@@ -184,6 +196,8 @@ const MODULE_CHOICES = [
   { id: "reputation", label: "NexReach Reputation", help: "Review-request workflows." },
   { id: "sites", label: "NexPortal", help: "Tenant-branded client-facing site and portal surfaces." }
 ] as const;
+
+const ONBOARDING_TASK_STATUSES = ["not_started", "in_progress", "complete", "skipped"] as const;
 
 export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactElement {
   const [settings, setSettings] = useState<CrmSettingsRecord | null>(null);
@@ -400,6 +414,29 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
     }
   }
 
+  async function runOnboardingCommand(command: { action: "claim"; taskId: string } | { action: "set-status"; taskId: string; status: "not_started" | "in_progress" | "complete" | "skipped" } | { action: "reassign"; taskId: string; ownerUserId: string }): Promise<void> {
+    setBusy(`onboarding-${command.taskId}`);
+    setStatusMessage("Saving secure onboarding checklist...");
+    try {
+      const body = await fetch("/api/crm/settings", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: props.tenantId, onboardingCommand: command })
+      }).then((response) => response.json() as Promise<CrmSettingsMutationResponse>);
+      if (!body.ok || !body.settings) {
+        setStatusMessage(body.error ?? "Secure onboarding checklist could not be saved.");
+        return;
+      }
+      setSettings(body.settings);
+      setStatusMessage("Secure onboarding checklist saved.");
+      props.onCrmMutation?.();
+    } catch {
+      setStatusMessage("Secure onboarding checklist save failed.");
+    } finally {
+      setBusy("");
+    }
+  }
+
   function toggleModule(moduleId: string, checked: boolean): void {
     setSettings((current) => current ? {
       ...current,
@@ -468,6 +505,10 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   }
 
   const activeUsers = props.tenantUsers.filter((user) => user.active);
+  const onboardingTasks = settings?.operatingProfile.onboarding.checklist.tasks ?? [];
+  const requiredOnboardingTasks = onboardingTasks.filter((task) => task.required);
+  const completedRequiredOnboardingTasks = requiredOnboardingTasks.filter((task) => task.status === "complete");
+  const onboardingProgress = requiredOnboardingTasks.length ? Math.round((completedRequiredOnboardingTasks.length / requiredOnboardingTasks.length) * 100) : 0;
 
   return (
     <section className="nexops-module-page tenant-config-page">
@@ -636,11 +677,30 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
               </div>
               <div className="nexops-mini-list">
                 <div className="nexops-quote-section-head">
-                  <div><h3>Guided Onboarding</h3><span>Progress and module choices are stored in this same tenant settings record.</span></div>
+                  <div><h3>Secure Post-Subscription Onboarding</h3><span>{completedRequiredOnboardingTasks.length} of {requiredOnboardingTasks.length} required tasks complete ({onboardingProgress}%). Owners, handoffs, and audit history are stored in this tenant settings record.</span></div>
                   <button type="button" onClick={() => void saveOnboarding(settings.operatingProfile.onboarding)} disabled={busy === "save-onboarding"}>
                     {busy === "save-onboarding" ? "Saving..." : "Save Module Choices"}
                   </button>
                 </div>
+                {onboardingTasks.map((task) => {
+                  const taskBusy = busy === `onboarding-${task.id}`;
+                  return <div className="nexops-quote-template-editor" key={task.id}>
+                    <div className="nexops-quote-section-head">
+                      <div><h3>{task.label} {task.required ? "(Required)" : "(Optional)"}</h3><span>{task.description}</span></div>
+                      <small>{task.completedAt ? `Completed ${new Date(task.completedAt).toLocaleString()}` : "Not completed"}</small>
+                    </div>
+                    <div className="nexops-quote-toggle-grid">
+                      <label className="nexops-field"><span>Status</span><select value={task.status} disabled={taskBusy} onChange={(event) => void runOnboardingCommand({ action: "set-status", taskId: task.id, status: event.target.value as typeof ONBOARDING_TASK_STATUSES[number] })}>{ONBOARDING_TASK_STATUSES.filter((status) => !task.required || status !== "skipped").map((status) => <option key={status} value={status}>{status.replace("_", " ")}</option>)}</select></label>
+                      <label className="nexops-field"><span>Owner</span><select value={task.ownerUserId ?? ""} disabled={taskBusy} onChange={(event) => { if (event.target.value) void runOnboardingCommand({ action: "reassign", taskId: task.id, ownerUserId: event.target.value }); }}><option value="">Unassigned</option>{activeUsers.map((user) => <option key={user.id} value={user.id}>{user.displayName} ({user.role})</option>)}</select></label>
+                      <button type="button" disabled={taskBusy} onClick={() => void runOnboardingCommand({ action: "claim", taskId: task.id })}>{taskBusy ? "Saving..." : task.ownerUserId ? "Take Ownership" : "Claim Task"}</button>
+                    </div>
+                  </div>;
+                })}
+                <div className="nexops-quote-template-editor">
+                  <h3>Audit History</h3>
+                  {(settings.operatingProfile.onboarding.checklist.auditHistory ?? []).length ? settings.operatingProfile.onboarding.checklist.auditHistory.slice().reverse().map((event) => <p key={event.id}><strong>{event.action}</strong> — {event.detail} <small>{new Date(event.createdAt).toLocaleString()}</small></p>) : <p className="nexops-empty-copy">No secure onboarding changes have been recorded yet.</p>}
+                </div>
+                <div className="nexops-quote-section-head"><div><h3>Guided Configuration</h3><span>Module choices and legacy launch steps remain compatible with the existing tenant setup flow.</span></div></div>
                 <div className="nexops-quote-toggle-grid">
                   {MODULE_CHOICES.map((module) => (
                     <label className="nexops-check-field inline" key={module.id}>

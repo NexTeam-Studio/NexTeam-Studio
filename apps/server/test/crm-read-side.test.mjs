@@ -700,7 +700,10 @@ test("CRM quick payment request routes create minimal ledger-backed invoices fro
     }
   };
   const platformRepository = {
-    listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
+    listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }],
+    getTenantUser: async (tenantId, userId) => tenantId === "aquatrace" && userId === "owner_1"
+      ? { id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }
+      : null
   };
   const eventBus = { async emit() {} };
   const ledgerService = new LedgerService({
@@ -808,7 +811,10 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
   const ledgerRepository = new MemoryLedgerRepository();
   const sentEmails = [];
   const platformRepository = {
-    listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
+    listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }],
+    getTenantUser: async (tenantId, userId) => tenantId === "aquatrace" && userId === "owner_1"
+      ? { id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }
+      : null
   };
   const commsRail = {
     tenantId: "aquatrace",
@@ -866,6 +872,34 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     const settingsBody = await settingsResponse.json();
     assert.equal(settingsBody.ok, true);
     assert.deepEqual(Object.keys(settingsBody.settings.documentNumbering).sort(), ["invoice", "job", "quote", "receipt", "request"]);
+    assert.equal(settingsBody.settings.operatingProfile.onboarding.checklist.tasks.filter((task) => task.required).length, 6);
+
+    const claimOnboardingTask = await fetch(`${base}/api/crm/settings`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace", onboardingCommand: { action: "claim", taskId: "subscription-confirmation" } })
+    });
+    const claimOnboardingTaskBody = await claimOnboardingTask.json();
+    assert.equal(claimOnboardingTaskBody.ok, true);
+    assert.equal(claimOnboardingTaskBody.settings.operatingProfile.onboarding.checklist.tasks.find((task) => task.id === "subscription-confirmation").ownerUserId, "local-owner");
+    assert.equal(claimOnboardingTaskBody.settings.operatingProfile.onboarding.checklist.auditHistory.at(-1).action, "task.claimed");
+
+    const reassignOnboardingTask = await fetch(`${base}/api/crm/settings`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace", onboardingCommand: { action: "reassign", taskId: "subscription-confirmation", ownerUserId: "owner_1" } })
+    });
+    const reassignOnboardingTaskBody = await reassignOnboardingTask.json();
+    assert.equal(reassignOnboardingTaskBody.ok, true);
+    assert.equal(reassignOnboardingTaskBody.settings.operatingProfile.onboarding.checklist.tasks.find((task) => task.id === "subscription-confirmation").ownerUserId, "owner_1");
+    assert.equal(reassignOnboardingTaskBody.settings.operatingProfile.onboarding.checklist.auditHistory.at(-1).action, "task.reassigned");
+
+    const skipRequiredOnboardingTask = await fetch(`${base}/api/crm/settings`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace", onboardingCommand: { action: "set-status", taskId: "subscription-confirmation", status: "skipped" } })
+    });
+    assert.equal(skipRequiredOnboardingTask.status, 400);
 
     const operatingProfileResponse = await fetch(`${base}/api/crm/settings`, {
       method: "PATCH",
@@ -903,6 +937,8 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     assert.deepEqual(rereadSettingsBody.settings.operatingProfile.onboarding.completedSteps, ["company-profile", "module-selection", "office-defaults", "launch-review"]);
     assert.deepEqual(rereadSettingsBody.settings.operatingProfile.onboarding.selectedModules, ["nexi", "crm", "fielddocs"]);
     assert.equal(rereadSettingsBody.settings.operatingProfile.onboarding.launchReviewedAt, "2026-08-08T22:00:00.000Z");
+    assert.equal(rereadSettingsBody.settings.operatingProfile.onboarding.checklist.tasks.find((task) => task.id === "subscription-confirmation").ownerUserId, "owner_1");
+    assert.equal(rereadSettingsBody.settings.operatingProfile.onboarding.checklist.auditHistory.length, 2);
 
     const technicianUpdate = await fetch(`${base}/api/crm/settings`, {
       method: "PATCH",
@@ -915,6 +951,15 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     assert.equal(technicianUpdate.status, 403);
     const afterDeniedUpdate = await (await fetch(`${base}/api/crm/settings?tenantId=aquatrace`)).json();
     assert.deepEqual(afterDeniedUpdate.settings.operatingProfile.onboarding.selectedModules, ["nexi", "crm", "fielddocs"]);
+
+    const technicianOnboardingUpdate = await fetch(`${base}/api/crm/settings`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", "x-nexteam-local-profile": "local-technician" },
+      body: JSON.stringify({ tenantId: "aquatrace", onboardingCommand: { action: "set-status", taskId: "subscription-confirmation", status: "complete" } })
+    });
+    assert.equal(technicianOnboardingUpdate.status, 403);
+    const afterDeniedOnboardingUpdate = await (await fetch(`${base}/api/crm/settings?tenantId=aquatrace`)).json();
+    assert.equal(afterDeniedOnboardingUpdate.settings.operatingProfile.onboarding.checklist.tasks.find((task) => task.id === "subscription-confirmation").status, "in_progress");
 
     const templatesResponse = await fetch(`${base}/api/crm/quote-templates?tenantId=aquatrace`);
     const templatesBody = await templatesResponse.json();

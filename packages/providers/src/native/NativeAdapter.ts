@@ -16,6 +16,7 @@ import {
   type QuoteTemplate,
   type RequestForm,
   type ServiceRequest,
+  defaultSecureOnboardingTasks,
   jobSchema
 } from "@nexteam/core";
 import { VGB_LINE_ITEM_CATALOG } from "@nexteam/industry-packs";
@@ -345,7 +346,11 @@ export function defaultCrmSettings(tenantId: string): CrmSettings {
       tax: { enabled: false, defaultRate: 0 },
       communicationIdentity: {},
       securityAudit: { auditEventsEnabled: true, requireApprovalForExternalSend: true },
-      onboarding: { completedSteps: [], selectedModules: [] }
+      onboarding: {
+        completedSteps: [],
+        selectedModules: [],
+        checklist: { tasks: defaultSecureOnboardingTasks.map((task) => ({ ...task })), auditHistory: [] }
+      }
     },
     documentNumbering: {
       request: { prefix: "REQ", separator: "-", padWidth: 4, nextValue: 1 },

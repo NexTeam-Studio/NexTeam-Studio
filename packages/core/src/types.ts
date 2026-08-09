@@ -40,6 +40,27 @@ export type TenantOnboardingStep =
   | "module-selection"
   | "office-defaults"
   | "launch-review";
+export type SecureOnboardingTaskStatus = "not_started" | "in_progress" | "complete" | "skipped";
+export type SecureOnboardingAuditAction = "task.claimed" | "task.status_changed" | "task.reassigned";
+
+export interface SecureOnboardingTask {
+  id: ID;
+  label: string;
+  description: string;
+  required: boolean;
+  status: SecureOnboardingTaskStatus;
+  ownerUserId?: ID | undefined;
+  completedAt?: string | undefined;
+}
+
+export interface SecureOnboardingAuditEvent {
+  id: ID;
+  action: SecureOnboardingAuditAction;
+  actorId: ID;
+  taskId: ID;
+  detail: string;
+  createdAt: string;
+}
 
 export type ArtifactKind =
   | "client"
@@ -1102,6 +1123,10 @@ export interface CrmSettings {
       completedSteps: TenantOnboardingStep[];
       selectedModules: PlatformModule[];
       launchReviewedAt?: string | undefined;
+      checklist: {
+        tasks: SecureOnboardingTask[];
+        auditHistory: SecureOnboardingAuditEvent[];
+      };
     };
   };
   documentNumbering: DocumentNumberingSettings;

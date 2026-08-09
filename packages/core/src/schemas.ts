@@ -135,6 +135,51 @@ export const tenantOnboardingStepSchema = z.enum([
   "launch-review"
 ]);
 
+export const secureOnboardingTaskStatusSchema = z.enum(["not_started", "in_progress", "complete", "skipped"]);
+
+export const secureOnboardingAuditActionSchema = z.enum([
+  "task.claimed",
+  "task.status_changed",
+  "task.reassigned"
+]);
+
+export const secureOnboardingTaskSchema = z.object({
+  id: idSchema,
+  label: z.string().min(1).max(120),
+  description: z.string().min(1).max(500),
+  required: z.boolean(),
+  status: secureOnboardingTaskStatusSchema,
+  ownerUserId: idSchema.optional(),
+  completedAt: z.string().optional()
+});
+
+export const secureOnboardingAuditEventSchema = z.object({
+  id: idSchema,
+  action: secureOnboardingAuditActionSchema,
+  actorId: idSchema,
+  taskId: idSchema,
+  detail: z.string().min(1).max(500),
+  createdAt: z.string()
+});
+
+export const defaultSecureOnboardingTasks = [
+  { id: "subscription-confirmation", label: "Confirm subscription", description: "Verify the subscribed tenant is ready for onboarding.", required: true, status: "not_started" },
+  { id: "owner-introduction", label: "Introduce the account owner", description: "Confirm the primary owner can access the tenant workspace.", required: true, status: "not_started" },
+  { id: "business-profile", label: "Complete business profile", description: "Confirm the business name, industry, and time zone.", required: true, status: "not_started" },
+  { id: "module-selection", label: "Choose subscribed modules", description: "Select the NexTeam capabilities this tenant will use.", required: true, status: "not_started" },
+  { id: "office-defaults", label: "Review office defaults", description: "Review locations, hours, tax, and approval defaults.", required: true, status: "not_started" },
+  { id: "team-handoff", label: "Complete owner handoff", description: "Confirm the owner has accepted the operational handoff.", required: true, status: "not_started" },
+  { id: "optional-integrations", label: "Review optional integrations", description: "Review optional connections after the required launch setup.", required: false, status: "not_started" }
+] as const;
+
+export const secureOnboardingChecklistSchema = z.object({
+  tasks: z.array(secureOnboardingTaskSchema).min(1).max(30),
+  auditHistory: z.array(secureOnboardingAuditEventSchema).max(200).default([])
+}).default({
+  tasks: defaultSecureOnboardingTasks.map((task) => ({ ...task })),
+  auditHistory: []
+});
+
 export const tenantOnboardingSteps = [
   "company-profile",
   "module-selection",
@@ -949,7 +994,8 @@ const tenantOperatingProfileSchema = z.object({
       }
     }),
     selectedModules: z.array(platformModuleSchema).default([]),
-    launchReviewedAt: z.string().min(1).optional()
+    launchReviewedAt: z.string().min(1).optional(),
+    checklist: secureOnboardingChecklistSchema
   })
 });
 
@@ -993,7 +1039,11 @@ export const crmSettingsSchema = z.object({
     tax: { enabled: false, defaultRate: 0 },
     communicationIdentity: {},
     securityAudit: { auditEventsEnabled: true, requireApprovalForExternalSend: true },
-    onboarding: { completedSteps: [], selectedModules: [] }
+    onboarding: {
+      completedSteps: [],
+      selectedModules: [],
+      checklist: { tasks: defaultSecureOnboardingTasks.map((task) => ({ ...task })), auditHistory: [] }
+    }
   }),
   documentNumbering: documentNumberingSettingsSchema,
   quoteDefaults: z.object({

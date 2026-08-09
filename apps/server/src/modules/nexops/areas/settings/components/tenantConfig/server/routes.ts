@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
-import { RailError, tenantOnboardingSteps } from "@nexteam/core";
+import { RailError, tenantOnboardingSteps, type CrmSettingsDoc } from "@nexteam/core";
+import { randomUUID } from "node:crypto";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
 
 export function registerTenantConfigRoutes(context: CrmRouteContext): void {
@@ -12,6 +13,42 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
     requireQuoteAccess,
     sendRouteError
   } = context;
+
+  async function applyOnboardingCommand(settings: CrmSettingsDoc, command: NonNullable<ReturnType<typeof crmSettingsPatchSchema.parse>["onboardingCommand"]>, actorId: string) {
+    const checklist = settings.operatingProfile.onboarding.checklist;
+    const task = checklist.tasks.find((entry) => entry.id === command.taskId);
+    if (!task) {
+      throw new RailError("Onboarding task was not found.", { provider: "native", op: "updateCrmSettings", status: 404 });
+    }
+    if (command.action === "set-status" && command.status === "skipped" && task.required) {
+      throw new RailError("Required onboarding tasks cannot be skipped.", { provider: "native", op: "updateCrmSettings", status: 400 });
+    }
+    if (command.action === "reassign" && command.ownerUserId === task.ownerUserId) {
+      throw new RailError("Choose a different active tenant user for reassignment.", { provider: "native", op: "updateCrmSettings", status: 400 });
+    }
+    if (command.action === "reassign") {
+      const user = await context.deps.platformRepository?.getTenantUser(settings.tenantId, command.ownerUserId);
+      if (!user || !user.active || user.tenantId !== settings.tenantId) {
+        throw new RailError("Onboarding tasks can only be assigned to active users in this tenant.", { provider: "native", op: "updateCrmSettings", status: 400 });
+      }
+    }
+    const nextTask = command.action === "claim"
+      ? { ...task, ownerUserId: actorId, status: task.status === "not_started" ? "in_progress" as const : task.status }
+      : command.action === "reassign"
+        ? { ...task, ownerUserId: command.ownerUserId }
+        : { ...task, status: command.status, ...(command.status === "complete" ? { completedAt: new Date().toISOString() } : { completedAt: undefined }) };
+    const action = command.action === "claim" ? "task.claimed" as const : command.action === "reassign" ? "task.reassigned" as const : "task.status_changed" as const;
+    const detail = command.action === "claim"
+      ? `Task claimed by ${actorId}.`
+      : command.action === "reassign"
+        ? `Task reassigned to ${command.ownerUserId}.`
+        : `Task status changed to ${command.status}.`;
+    return {
+      ...checklist,
+      tasks: checklist.tasks.map((entry) => entry.id === task.id ? nextTask : entry),
+      auditHistory: [...checklist.auditHistory, { id: `onboarding_audit_${randomUUID()}`, action, actorId, taskId: task.id, detail, createdAt: new Date().toISOString() }].slice(-200)
+    };
+  }
 
   app.get("/api/crm/settings", async (req: Request, res: Response) => {
     try {
@@ -32,11 +69,15 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
       const access = await requireQuoteAccess(req, input.tenantId, "updateCrmSettings");
       const repository = repositoryForTenant();
       const current = await repository.getCrmSettings(input.tenantId);
+      const secureChecklist = input.onboardingCommand
+        ? await applyOnboardingCommand(current, input.onboardingCommand, access.tenantUserId)
+        : current.operatingProfile.onboarding.checklist;
       const onboarding = {
         ...current.operatingProfile.onboarding,
         ...(input.operatingProfile?.onboarding?.completedSteps !== undefined ? { completedSteps: input.operatingProfile.onboarding.completedSteps } : {}),
         ...(input.operatingProfile?.onboarding?.selectedModules !== undefined ? { selectedModules: input.operatingProfile.onboarding.selectedModules } : {}),
-        ...(input.operatingProfile?.onboarding?.launchReviewedAt !== undefined ? { launchReviewedAt: input.operatingProfile.onboarding.launchReviewedAt } : {})
+        ...(input.operatingProfile?.onboarding?.launchReviewedAt !== undefined ? { launchReviewedAt: input.operatingProfile.onboarding.launchReviewedAt } : {}),
+        checklist: secureChecklist
       };
       const completedSteps = onboarding.completedSteps;
       if (!completedSteps.every((step, index) => step === tenantOnboardingSteps[index])) {

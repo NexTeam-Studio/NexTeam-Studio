@@ -7,8 +7,15 @@ import {
 } from "@nexteam/core";
 import { z } from "zod";
 
+const onboardingCommandSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("claim"), taskId: z.string().min(1) }),
+  z.object({ action: z.literal("set-status"), taskId: z.string().min(1), status: z.enum(["not_started", "in_progress", "complete", "skipped"]) }),
+  z.object({ action: z.literal("reassign"), taskId: z.string().min(1), ownerUserId: z.string().min(1) })
+]);
+
 export const crmSettingsPatchSchema = z.object({
   tenantId: z.string().min(1),
+  onboardingCommand: onboardingCommandSchema.optional(),
   operatingProfile: z.object({
     company: z.object({
       legalName: z.string().min(1).optional(),
