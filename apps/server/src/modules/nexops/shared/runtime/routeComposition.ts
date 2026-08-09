@@ -18,6 +18,8 @@ import { AgreementService, MemoryAgreementRepository, type AgreementRepository }
 import { FirestoreAgreementRepository } from "../agreements/agreementRepository.js";
 import { JobCostingService, MemoryJobCostingRepository, type JobCostingRepository } from "../jobCosting/jobCostingFoundation.js";
 import { FirestoreJobCostingRepository } from "../jobCosting/jobCostingRepository.js";
+import { MemoryTimePayRepository, TimePayService, type TimePayRepository } from "../timePay/timePayFoundation.js";
+import { FirestoreTimePayRepository } from "../timePay/timePayRepository.js";
 
 export interface CrmRouteDeps {
   approvalQueue: ApprovalQueueService;
@@ -36,6 +38,7 @@ export interface CrmRouteDeps {
   operationsHubService?: OperationsHubService | undefined;
   agreementRepository?: AgreementRepository | undefined;
   jobCostingRepository?: JobCostingRepository | undefined;
+  timePayRepository?: TimePayRepository | undefined;
   env?: NodeJS.ProcessEnv | undefined;
 }
 
@@ -46,6 +49,7 @@ export function createCrmRouteServices(deps: CrmRouteDeps) {
   const eventBus = deps.eventBus ?? new InMemoryEventBus();
   const fallbackAgreementRepository = deps.agreementRepository ?? new MemoryAgreementRepository();
   const fallbackJobCostingRepository = deps.jobCostingRepository ?? new MemoryJobCostingRepository();
+  const fallbackTimePayRepository = deps.timePayRepository ?? new MemoryTimePayRepository();
 
   function repositoryForTenant(): NativeCrmRepository {
     const db = getAdminDb(env);
@@ -64,6 +68,10 @@ export function createCrmRouteServices(deps: CrmRouteDeps) {
   function jobCostingService(): JobCostingService {
     const db = getAdminDb(env);
     return new JobCostingService(db ? new FirestoreJobCostingRepository(db) : fallbackJobCostingRepository);
+  }
+  function timePayService(): TimePayService {
+    const db = getAdminDb(env);
+    return new TimePayService(db ? new FirestoreTimePayRepository(db) : fallbackTimePayRepository);
   }
 
   function fieldDocsRepository(): MediaRepository {
@@ -118,6 +126,7 @@ export function createCrmRouteServices(deps: CrmRouteDeps) {
     fieldDocsService,
     jobLifecycle,
     jobCostingService,
+    timePayService,
     ledger,
     nexDocsService,
     operationsHub,

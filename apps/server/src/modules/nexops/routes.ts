@@ -13,6 +13,7 @@ import { registerPaymentRailRoutes } from "./areas/invoices/components/paymentRa
 import { registerPortalCoreRoutes } from "../nexportal/components/portalCore/server/routes.js";
 import { registerAgreementRoutes } from "./shared/agreements/routes.js";
 import { registerJobCostingRoutes } from "./shared/jobCosting/routes.js";
+import { registerTimePayRoutes } from "./shared/timePay/routes.js";
 
 export type { CrmRouteDeps } from "./runtime/routeRuntime.js";
 
@@ -30,5 +31,6 @@ export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {
   registerPaymentRailRoutes(context);
   registerAgreementRoutes(context);
   registerJobCostingRoutes(context);
+  registerTimePayRoutes(context);
   registerPortalCoreRoutes(context);
 }
