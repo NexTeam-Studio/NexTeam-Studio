@@ -21,6 +21,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
     getRequestOrThrow,
     publicFormSubmissionValues,
     randomUUID,
+    requireTenantRole,
     renderPublicRequestForm,
     repositoryForTenant,
     sanitizeFieldVisibility,
@@ -34,6 +35,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
         ? req.query.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "listRequests" });
       const forms = await ensureRequestForms(repositoryForTenant(), tenantId);
       res.json({
         ok: true,
@@ -153,6 +155,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
         ? req.query.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "getRequest" });
       await ensureRequestForms(repositoryForTenant(), tenantId);
       const requests = await repositoryForTenant().listRequests(tenantId);
       res.json({ ok: true, requests });

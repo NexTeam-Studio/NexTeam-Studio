@@ -773,6 +773,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.get("/api/fielddocs/search", async (req: Request, res: Response) => {
     try {
       const input = searchQuerySchema.parse(req.query);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "searchFieldDocsMedia"
+      });
       const hits = await searchMediaWithVisionFallback(await repository().listMedia(input.tenantId), input.q, input.limit ?? 10, env);
       res.json({
         ok: true,
@@ -792,6 +796,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
         ? req.query.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: tenantId,
+        op: "listChecklistTemplates"
+      });
       const templates = await fieldDocsService().listTemplates(tenantId);
       res.json({
         ok: true,
@@ -806,6 +814,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.get("/api/fielddocs/media", async (req: Request, res: Response) => {
     try {
       const input = mediaListQuerySchema.parse(req.query);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "listFieldDocsMedia"
+      });
       const scoped = input.clientId ? await clientScopedIds(crmRepository(), input.tenantId, input.clientId) : null;
       const media = (await repository().listMedia(input.tenantId))
         .filter((record) => input.includeTrashed ? true : !record.trashedAt)
@@ -832,6 +844,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         throw new RailError("Media id is required.", { provider: "native", op: "fieldDocsMediaDetail", status: 400 });
       }
       const input = mediaDetailQuerySchema.parse(req.query);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "fieldDocsMediaDetail"
+      });
       const media = await repository().getMedia(input.tenantId, mediaId);
       if (!media) {
         throw new RailError(`Media ${mediaId} was not found.`, { provider: "native", op: "fieldDocsMediaDetail", status: 404 });
@@ -1123,6 +1139,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.get("/api/fielddocs/reports", async (req: Request, res: Response) => {
     try {
       const input = reportListQuerySchema.parse(req.query);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "listFieldReports"
+      });
       const scoped = input.clientId ? await clientScopedIds(crmRepository(), input.tenantId, input.clientId) : null;
       const reports = (await repository().listReports(input.tenantId))
         .filter((record) => !input.propertyId || record.propertyId === input.propertyId)
@@ -1264,6 +1284,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.get("/api/fielddocs/reports/templates", async (req: Request, res: Response) => {
     try {
       const input = reportTemplateListQuerySchema.parse(req.query);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "listFieldReportTemplates"
+      });
       const templates = await fieldDocsService().listReportTemplates(input.tenantId);
       res.json({ ok: true, templates });
     } catch (error) {

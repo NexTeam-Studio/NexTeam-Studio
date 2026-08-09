@@ -3,6 +3,7 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { InMemoryEventBus, RailError, type ApprovalQueueService, type EventBus } from "@nexteam/core";
 import { configuredTenantId } from "../core/tenantConfig.js";
+import { requireTenantRole } from "../auth/accessContext.js";
 import { summarizeContentStats, type ContentDraftKind, type ContentPerformanceSnapshot, type TenantBrandVoice } from "./contentEngine.js";
 import type { ContentRepository } from "./repository.js";
 import { draftContentForJob } from "./workflow.js";
@@ -148,6 +149,7 @@ export function registerContentRoutes(app: Express, deps: ContentRouteDeps): voi
   app.get("/api/content/queue", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "listContentQueue" });
       res.json({ ok: true, drafts: await deps.repository.listDrafts(tenantId) });
     } catch (error) {
       sendRouteError(res, error);

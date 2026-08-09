@@ -15,6 +15,7 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
     jobLifecycle,
     providerForTenant,
     publicOrigin,
+    requireTenantRole,
     requireBillingAccess,
     requireQuoteAccess,
     sendRouteError,
@@ -25,6 +26,7 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
         ? req.query.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "listJobs" });
       const jobs = await jobLifecycle().listJobs(tenantId);
       res.json({ ok: true, jobs });
     } catch (error) {
@@ -41,6 +43,7 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
         ? req.query.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "getJobDetail" });
       const job = await jobLifecycle().getJobDetail(tenantId, jobId);
       if (!job) {
         throw new RailError(`Native job ${jobId} was not found.`, { provider: "native", op: "getJobDetail", status: 404 });

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { type ApprovalQueueService, RailError } from "@nexteam/core";
 import type { JobLifecycleService } from "../crm/jobLifecycle.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
+import { requireTenantRole } from "../auth/accessContext.js";
 import { detectConflicts, driveTimeProviderFromEnv, suggestSlots, type ScheduledVisit, type ScheduleLocation } from "./schedulingEngine.js";
 import type { SchedulingRepository } from "./repository.js";
 import { queueScheduleNotification } from "./notifications.js";
@@ -83,6 +84,7 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
     try {
       const env = deps.env ?? process.env;
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : configuredTenantId(env, "schedulingCalendar");
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "listSchedule" });
       const from = typeof req.query.from === "string" ? req.query.from : undefined;
       const to = typeof req.query.to === "string" ? req.query.to : undefined;
       const range: { from?: string; to?: string } = {};
