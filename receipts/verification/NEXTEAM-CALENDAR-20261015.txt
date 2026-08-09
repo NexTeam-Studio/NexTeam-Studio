@@ -1,0 +1,62 @@
+JOB_ID=NEXTEAM-CALENDAR-20261015
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Photo organization and AI metadata.
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/camera-capture-tool.test.mjs apps/server/test/fielddocs-read-side.test.mjs apps/mobile/test/native-capture.test.mjs apps/mobile/test/offline-first.test.mjs
+Raw output:
+✔ M11 local session re-auth waits seven days and GPS suggestions prefer today's assigned visit (0.9145ms)
+✔ M11 syncCaptureSession creates the request route, uploads media, transcribes voice, and maps checklist photo ids (6.7419ms)
+✔ M11 syncQueuedSessions marks failed batches for retry and keeps the queue visibly failed until backoff clears (2.5411ms)
+✔ M11 airplane-mode job flow syncs after reconnect with conflict flags (17.4998ms)
+✔ M11 mobile rejects unassigned cached job writes (0.5458ms)
+✔ multi-shot capture batches stay draft until routed, materialize request images, and keep later uploads auto-scoped (82.5017ms)
+✔ existing-client capture routing supports decide-later inbox, target lookup, mixed client rail, and later move-to-job (22.479ms)
+✔ same-day decide-later sessions stay as separate batches with their own GPS anchor (41.513ms)
+✔ reopened unassigned batches keep the original GPS anchor while tracking the newest capture location (20.4079ms)
+✔ unassigned batch Nexi tools and Home queue stay tenant-wide for office and scoped for technicians (13.6577ms)
+✔ local Nexi routes assign an unassigned capture batch to an existing client by exact name (2.2034ms)
+✔ natural-language photo search matches imported metadata (0.9694ms)
+✔ vision pipeline stub is wired off by default (0.1663ms)
+✔ vision pipeline parses live Anthropic-style JSON responses with usage (1.0404ms)
+✔ upload service creates native storage refs, thumbnails, and EXIF metadata (0.6714ms)
+✔ before/after pairing and vision fallback are wired (0.3389ms)
+✔ leak checklist and report PDF render (2.7631ms)
+✔ native repository persists checklists and posted field report records (1.6635ms)
+✔ NexCam read tool searches native media repository (0.8257ms)
+✔ NexDocs accepts supported uploads, uses a 100 MB cap, and indexes PDF content for search (493.1876ms)
+✔ NexDocs OCR blocks image OCR before estimated spend exceeds the cap (0.9463ms)
+✔ NexDocs OCR logs usage and searchable text when image OCR runs inside cap (0.5788ms)
+✔ NexDocs keeps a flat folder model and moves each document into only one folder at a time (0.977ms)
+✔ NexDocs unified search returns uploaded docs, office records, and NexCam hits together (2.7632ms)
+✔ NexDocs technician fence stays upload-only for destructive management actions (0.2632ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1886.7197
+CALENDAR_PROOF_EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+PHOTO_ORGANIZATION=PASS
+AI_METADATA=PASS
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+Worktree scope check passed: nexteam-integration is the integration lane.
+WORKTREE_SCOPE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+WORKTREE_COVERAGE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+Secret scan passed (1678 tracked non-doc files checked).
+SECRET_SCAN_EXACT_EXIT_CODE=0
+
+REQUIRED_GATES_GREEN: YES
