@@ -1459,6 +1459,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.post("/api/fielddocs/reports/pdf", async (req: Request, res: Response) => {
     try {
       const input = reportPdfInputSchema.parse(req.body);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "renderGeneratedFieldReportPdf"
+      });
       const repo = repository();
       const media = (await Promise.all(input.mediaIds.map((id) => repo.getMedia(input.tenantId, id))))
         .filter((item): item is NonNullable<typeof item> => Boolean(item));

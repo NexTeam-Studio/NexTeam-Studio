@@ -68,6 +68,18 @@ test("both tenant directions are denied every repaired cross-tenant read route",
         const response = await fetch(`${base}${route}`, { headers });
         assert.equal(response.status, 403, `${sourceTenantId} -> ${targetTenantId}: ${route}`);
       }
+      const generatedPdf = await fetch(`${base}/api/fielddocs/reports/pdf`, {
+        method: "POST",
+        headers: { ...headers, "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: targetTenantId,
+          jobId: "foreign_job",
+          title: "Cross-tenant report probe",
+          findings: [],
+          mediaIds: []
+        })
+      });
+      assert.equal(generatedPdf.status, 403, `${sourceTenantId} -> ${targetTenantId}: generated FieldDocs PDF`);
     }
   } finally {
     await close(server);
