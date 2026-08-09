@@ -59,7 +59,7 @@ export function renderPortfolioHtml(input: {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${escapeHtml(input.tenantName)} portfolio</title>
+    <title>${escapeHtml(input.tenantName)} portfolio preview</title>
     <style>
       :root {
         --accent: ${accent};
@@ -189,7 +189,7 @@ export function renderPortfolioHtml(input: {
         <div class="brand">
           ${logoHref ? `<img alt="${escapeHtml(input.branding?.logo?.alt ?? `${input.tenantName} logo`)}" src="${escapeHtml(logoHref)}" />` : ""}
           <div>
-            <p class="eyebrow">Nexportal showcase</p>
+            <p class="eyebrow">Nexportal preview</p>
             <h1>${escapeHtml(input.tenantName)}</h1>
           </div>
         </div>
@@ -198,7 +198,7 @@ export function renderPortfolioHtml(input: {
       <section>
         <div>
           <p class="eyebrow">Showcases</p>
-          <h2>Proof of work, kept local and concrete</h2>
+          <h2>Owner-approved proof of work</h2>
         </div>
         <div class="grid">
           ${input.showcases.length ? input.showcases.map((showcase) => `
@@ -216,7 +216,7 @@ export function renderPortfolioHtml(input: {
                 ${showcaseMedia(showcase, input.tenantId, watermark)}
               </div>
             </article>
-          `).join("") : `<article class="empty-card">No approved showcases are live yet.</article>`}
+          `).join("") : `<article class="empty-card">No showcase previews are ready yet.</article>`}
         </div>
       </section>
       <section>

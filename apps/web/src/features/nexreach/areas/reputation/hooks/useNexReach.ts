@@ -70,7 +70,7 @@ interface NexReachShowcase {
   writeUp: string;
   locality: string;
   serviceType: string;
-  status: "live" | "review_required";
+  status: "preview_ready" | "review_required";
   featuredReviewIds: string[];
   mediaRefs: string[];
 }
@@ -285,7 +285,7 @@ export function useNexReach(props: { auth: Auth | null; user: User }) {
         refreshSettings(),
         refreshAudience()
       ]);
-      setStatus("NexReach is live locally.");
+      setStatus("NexReach is ready locally. Publishing remains disabled.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "NexReach API unreachable.");
     }
@@ -399,7 +399,7 @@ export function useNexReach(props: { auth: Auth | null; user: User }) {
         })
       });
       await Promise.all([refreshShowcases(), refreshReadyDrafts()]);
-      setStatus("Showcase added to the portfolio rail.");
+      setStatus("Showcase preview added to the unpublished portfolio rail.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Showcase build failed.");
     } finally {
@@ -408,7 +408,7 @@ export function useNexReach(props: { auth: Auth | null; user: User }) {
   }
 
   async function issuePortfolioLink(): Promise<void> {
-    setStatus("Issuing portfolio link...");
+    setStatus("Issuing portfolio preview link...");
     try {
       const body = await fetchJson<NexReachApiResponse>(`/api/nexreach/portfolio-link`, {
         method: "POST",
@@ -416,7 +416,7 @@ export function useNexReach(props: { auth: Auth | null; user: User }) {
         body: JSON.stringify({ tenantId: operatorContext.tenantId })
       });
       setPortfolioUrl(body.url ?? "");
-      setStatus("Portfolio link refreshed.");
+      setStatus("Portfolio preview link refreshed. No publishing was performed.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Portfolio link failed.");
     }

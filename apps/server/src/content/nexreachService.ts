@@ -266,7 +266,7 @@ export class NexReachService {
       return { flaggedShowcases: [] };
     }
     const flagged: ContentShowcase[] = [];
-    for (const showcase of showcases.filter((record) => record.clientId === input.clientId && record.status === "live")) {
+    for (const showcase of showcases.filter((record) => record.clientId === input.clientId && record.status === "preview_ready")) {
       const updated = await this.deps.repository.saveShowcase({
         ...showcase,
         status: "review_required",
@@ -546,7 +546,7 @@ export class NexReachService {
       ? (await this.deps.crmRepository.listClients(input.tenantId)).find((record) => record.id === draft.clientId)
       : undefined;
     if (!marketingConsentEnabled(client)) {
-      throw new RailError("The client marketing consent is off, so this showcase cannot go live.", { provider: "native", op: "createShowcase", status: 409 });
+      throw new RailError("The client marketing consent is off, so this showcase preview cannot be created.", { provider: "native", op: "createShowcase", status: 409 });
     }
     const availableReviews = (await this.deps.reputationRepository.listReviews(input.tenantId))
       .filter((review) => review.rating >= 4)
@@ -564,7 +564,7 @@ export class NexReachService {
       serviceType: draft.serviceType ?? "Pool leak detection",
       mediaRefs: draft.mediaRefs,
       featuredReviewIds: selectedReviewIds,
-      status: "live",
+      status: "preview_ready",
       createdAt: now(),
       updatedAt: now()
     };
@@ -647,8 +647,8 @@ export class NexReachService {
       }
     }
     const shell = await this.getPortfolioShell(input.tenantId);
-    const liveShowcases = (await this.deps.repository.listShowcases(input.tenantId)).filter((showcase) => showcase.status === "live");
-    const reviewIds = new Set(liveShowcases.flatMap((showcase) => showcase.featuredReviewIds));
+    const previewShowcases = (await this.deps.repository.listShowcases(input.tenantId)).filter((showcase) => showcase.status === "preview_ready");
+    const reviewIds = new Set(previewShowcases.flatMap((showcase) => showcase.featuredReviewIds));
     const reviews = (await this.deps.reputationRepository.listReviews(input.tenantId))
       .filter((review) => reviewIds.has(review.id))
       .map((review) => ({
@@ -662,7 +662,7 @@ export class NexReachService {
       tenantId: input.tenantId,
       tenantName: shell.tenantName,
       branding: shell.branding,
-      showcases: liveShowcases,
+      showcases: previewShowcases,
       reviews,
       settings
     };

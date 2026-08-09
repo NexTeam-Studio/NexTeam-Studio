@@ -91,7 +91,9 @@ export interface ContentSettings {
   updatedAt: string;
 }
 
-export type ContentShowcaseStatus = "live" | "review_required";
+// A showcase is an owner-approved, token-gated preview. No NexReach rail publishes
+// it to a provider or a tenant site in this phase.
+export type ContentShowcaseStatus = "preview_ready" | "review_required";
 
 export interface ContentShowcase {
   id: string;

@@ -69,7 +69,7 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
           </div>
           <div className="nexreach-header-actions">
             <button className="nexreach-ghost-button" type="button" onClick={() => void refreshAll()}>Refresh</button>
-            <button className="nexreach-primary-button" type="button" onClick={() => void issuePortfolioLink()}>Refresh portfolio link</button>
+            <button className="nexreach-primary-button" type="button" onClick={() => void issuePortfolioLink()}>Refresh preview link</button>
           </div>
         </header>
 
@@ -230,8 +230,8 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
           <section className="nexreach-card">
             <div className="nexreach-card-header">
               <div>
-                <p className="nexreach-eyebrow">Public proof</p>
-                <h3>Portfolio rail</h3>
+                <p className="nexreach-eyebrow">Proof preview</p>
+                <h3>Portfolio preview rail</h3>
               </div>
               <span>{showcases.length} showcases</span>
             </div>
@@ -240,7 +240,7 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
                 <a href={portfolioUrl} target="_blank" rel="noreferrer">{portfolioUrl}</a>
               </div>
             ) : (
-              <p className="nexreach-empty">Generate a fresh share link when you want to open the public portfolio.</p>
+              <p className="nexreach-empty">Generate a fresh token-gated link to review this unpublished portfolio preview.</p>
             )}
             <div className="nexreach-list">
               {showcases.map((showcase) => (
@@ -253,7 +253,7 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
                   <span className={`nexreach-badge nexreach-badge-${showcase.status}`}>{showcase.status.replaceAll("_", " ")}</span>
                 </article>
               ))}
-              {!showcases.length ? <p className="nexreach-empty">No live showcases yet.</p> : null}
+              {!showcases.length ? <p className="nexreach-empty">No showcase previews are ready yet.</p> : null}
             </div>
           </section>
 

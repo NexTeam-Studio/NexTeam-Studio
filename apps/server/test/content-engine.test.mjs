@@ -316,7 +316,7 @@ test("NexReach generates approval-pending article and social drafts from consent
   assert.equal(pending.every((draft) => !/lat[:=]/i.test(draft.approval?.preview.body ?? "")), true);
 });
 
-test("NexReach consent revocation flags live showcases and keeps the audience export consent-only", async () => {
+test("NexReach consent revocation flags showcase previews and keeps the audience export consent-only", async () => {
   const harness = await createHarness();
   const generated = await harness.service.generateJobContent({
     tenantId: "aquatrace",
@@ -335,7 +335,7 @@ test("NexReach consent revocation flags live showcases and keeps the audience ex
     draftId: approved.draft.id,
     reviewIds: ["review_5_star"]
   });
-  assert.equal(showcase.status, "live");
+  assert.equal(showcase.status, "preview_ready");
   assert.equal(showcase.featuredReviewIds[0], "review_5_star");
 
   const audience = await harness.service.listAudience("aquatrace");
@@ -379,7 +379,7 @@ test("NexReach consent revocation flags live showcases and keeps the audience ex
   assert.equal(eligibility?.blockedReason, "marketing_consent_revoked");
 });
 
-test("NexReach routes expose bundle exports and a token-gated public portfolio page", async () => {
+test("NexReach routes expose bundle exports and a token-gated unpublished portfolio preview", async () => {
   const harness = await createHarness();
   const generated = await harness.service.generateJobContent({
     tenantId: "aquatrace",
@@ -433,8 +433,8 @@ test("NexReach routes expose bundle exports and a token-gated public portfolio p
     assert.equal(blocked.status, 403);
 
     const portfolioHtml = await fetch(linkResponse.url).then((response) => response.text());
-    assert.match(portfolioHtml, /Nexportal showcase/);
-    assert.match(portfolioHtml, /Proof of work, kept local and concrete/);
+    assert.match(portfolioHtml, /Nexportal preview/);
+    assert.match(portfolioHtml, /Owner-approved proof of work/);
     assert.match(portfolioHtml, new RegExp(showcase.title));
     assert.match(portfolioHtml, /Deborah Justice/);
     assert.doesNotMatch(portfolioHtml, /102 Kate Lane/);
