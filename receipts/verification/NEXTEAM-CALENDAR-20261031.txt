@@ -1,0 +1,56 @@
+JOB_ID=NEXTEAM-CALENDAR-20261031
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: October 31 go/no-go
+
+COMMAND=npm run verify
+RAW_OUTPUT_LOG=tmp/NEXTEAM-CALENDAR-20261031-verify.log
+Raw output summary:
+No-browser test guard passed (98 default test files checked).
+Test suite passed: 0 failures; no browser tests were run.
+Tenancy check passed (463 files checked).
+Admin tenant write check passed (326 source files, 17 transactional writes, 1 append-only generated-ID write).
+Firestore index check passed (10 compound query shapes).
+Component collision check passed (40 components, 780 pairs, zero overlaps).
+Worktree scope check passed: nexteam-integration is the integration lane.
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+Secret scan passed (1692 tracked non-doc files checked).
+Secret history scan passed (765 reachable commits, 11966 reachable objects checked).
+Provider boundary check passed (574 files checked).
+Blueprint naming check passed (463 files checked).
+EXACT_EXIT_CODE=0
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test --test-name-pattern="request routes create, update, convert, archive, and reopen while preserving intake fields|bookVisit parks the visit and queues a notification instead of sending|technicians can complete visits but stay blocked from office-only close and invoice authority|fielddocs media review merges manual tags into search and supports tenant trash with restore|fielddocs signed document routes create, capture signature, reject re-sign, and render PDF|portal appointment confirmation stamps the visit and surfaces the event to client and staff rails|invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads" apps/server/test/request-foundation.test.mjs apps/server/test/scheduling.test.mjs apps/server/test/job-lifecycle.test.mjs apps/server/test/fielddocs-template-library.test.mjs apps/server/test/client-hub-review-followup.test.mjs apps/server/test/close-invoice-payment-flow.test.mjs
+RAW_OUTPUT_LOG=tmp/NEXTEAM-CALENDAR-20261031-calendar-proof.log
+Raw output:
+tests 7
+pass 7
+fail 0
+cancelled 0
+skipped 0
+todo 0
+duration_ms 2098.2799
+EXACT_EXIT_CODE=0
+CALENDAR_PROOF_EXACT_EXIT_CODE=0
+
+COMMAND=npm run build
+RAW_OUTPUT_LOG=tmp/NEXTEAM-CALENDAR-20261031-build.log
+Raw output:
+182 modules transformed.
+built in 1.74s
+EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+REQUEST_TO_SCHEDULED_VISIT=PASS
+NOTIFICATION_PARKED_AND_NOT_SENT=PASS
+TECHNICIAN_AND_OFFICE_AUTHORITY_BOUNDARY=PASS
+NEXCAM_MEDIA_AND_SIGNED_DOCUMENT_RAIL=PASS
+PORTAL_APPOINTMENT_CONFIRMATION=PASS
+INVOICE_DELIVERY_CONFIGURATION=PASS
+REPOSITORY_WIDE_REQUIRED_GATES=PASS
+PRODUCTION_BUILD=PASS
+BUILT_IN_CODEX_BROWSER_USED=NO
+NO_DEPLOYMENT_PUSH_MERGE_OR_EXTERNAL_CHANGE=YES
+
+RECEIPT_COMMITTED=YES
+GIT_STATUS_CLEAN=YES
