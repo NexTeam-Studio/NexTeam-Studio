@@ -391,6 +391,10 @@ app.get("/nexops/nexi", (_req: Request, res: Response) => {
 
 app.use(express.static(webDistDir));
 
+app.get("/nexops/sign-in", (_req: Request, res: Response) => {
+  res.sendFile(path.join(webDistDir, "index.html"));
+});
+
 app.get(/^\/(?:nexi|nexops|nexcam|nexreach|platform)(?:\/.*)?$/, (_req: Request, res: Response) => {
   res.sendFile(path.join(webDistDir, "index.html"));
 });
