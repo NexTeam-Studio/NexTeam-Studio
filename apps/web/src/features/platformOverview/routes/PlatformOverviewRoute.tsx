@@ -5,6 +5,7 @@ import { useTenantOverview } from "../../tenantOverview/hooks/useTenantOverview"
 import "../../tenantOverview/styles/tenantOverview.css";
 import { PlatformHeroPanel } from "../components/PlatformHeroPanel";
 import { PlatformPlansPanel } from "../components/PlatformPlansPanel";
+import { PlatformProspectIntakePanel } from "../components/PlatformProspectIntakePanel";
 import { usePlatformPlans } from "../hooks/usePlatformPlans";
 import "../styles/platformOverview.css";
 
@@ -32,6 +33,7 @@ export function PlatformOverviewRoute(): React.ReactElement {
         }}
       />
       <PlatformPlansPanel plans={plans} />
+      <PlatformProspectIntakePanel />
       {status ? <p className="platform-overview__status">{status}</p> : null}
       <TenantOverviewPanel
         rows={rows}

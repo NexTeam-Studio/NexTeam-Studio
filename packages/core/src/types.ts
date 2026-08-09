@@ -201,7 +201,7 @@ export interface TenantOnboardingBlueprint {
   prospectId: ID;
   recommendedLayout: string[];
   nexiResponsibilities: string[];
-  opportunities: Partial<Record<"nexcam" | "nexdocs" | "nexreach" | "nexportal", string[]>>;
+  opportunities: Partial<Record<"nexcam" | "nexdocs" | "nexreach" | "nexportal", string[] | undefined>>;
   recommendedForms: string[];
   recommendedWorkflows: string[];
   recommendedAutomations: string[];

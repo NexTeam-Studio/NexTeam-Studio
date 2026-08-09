@@ -287,6 +287,28 @@ test("platform routes expose tenants, test subscription, backup, and export", as
       summary: { prospects: 0, blueprintsAwaitingAction: 0, subscriptions: 2, tenants: 2, activationPending: 0 }
     });
 
+    const createdProspect = await fetch(`${base}/api/platform/admin/prospects`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ businessName: "Northside Services", industry: "plumbing", serviceArea: ["Northside"] })
+    }).then((response) => response.json());
+    assert.equal(createdProspect.ok, true);
+    assert.equal(createdProspect.prospect.status, "DRAFT");
+    const intake = await fetch(`${base}/api/platform/admin/prospects/${encodeURIComponent(createdProspect.prospect.id)}/intake`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ services: ["Repair"], customerTypes: ["Residential"], currentSystems: [] })
+    }).then((response) => response.json());
+    assert.equal(intake.prospect.status, "INTAKE_COMPLETE");
+    const blueprint = await fetch(`${base}/api/platform/admin/prospects/${encodeURIComponent(createdProspect.prospect.id)}/blueprints`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ recommendedLayout: ["Office"], nexiResponsibilities: ["Operational answers"], recommendedModules: ["nexi", "crm"] })
+    }).then((response) => response.json());
+    assert.equal(blueprint.ok, true);
+    assert.equal(blueprint.prospect.status, "BLUEPRINT_READY");
+    assert.equal(blueprint.revision.revisionNumber, 1);
+
     const publicBranding = await fetch(`${base}/api/public/tenant-branding?tenantId=second-test`).then((response) => response.json());
     assert.equal(publicBranding.ok, true);
     assert.equal(publicBranding.branding.displayName, "second-test");

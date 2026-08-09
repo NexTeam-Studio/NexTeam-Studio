@@ -48,6 +48,56 @@ const subscribeBodySchema = z.object({
   email: z.string().email().optional()
 });
 
+const prospectBodySchema = z.object({
+  businessName: z.string().trim().min(1),
+  website: z.string().url().optional(),
+  industry: z.string().trim().min(1),
+  primaryLocation: addressSchema.optional(),
+  additionalLocations: z.array(addressSchema).default([]),
+  serviceArea: z.array(z.string().trim().min(1)).default([]),
+  yearsInBusiness: z.number().int().min(0).max(250).optional(),
+  primaryContactName: z.string().trim().min(1).optional(),
+  primaryContactRole: z.string().trim().min(1).optional(),
+  notes: z.string().max(4000).optional()
+}).strict();
+
+const prospectIntakeBodySchema = z.object({
+  services: z.array(z.string().trim().min(1)).default([]),
+  customerTypes: z.array(z.string().trim().min(1)).default([]),
+  serviceAreaNotes: z.string().max(2000).optional(),
+  teamSize: z.number().int().min(0).max(100000).optional(),
+  operatingHoursNotes: z.string().max(2000).optional(),
+  brandVoice: z.string().max(2000).optional(),
+  currentSystems: z.array(z.object({
+    id: z.string().min(1).optional(),
+    category: z.string().trim().min(1),
+    provider: z.string().trim().min(1),
+    purpose: z.string().max(1000).optional(),
+    replacementTiming: z.enum(["REPLACE_NOW", "REPLACE_LATER", "COEXIST", "UNKNOWN"]),
+    notes: z.string().max(2000).optional()
+  }).strict()).default([]),
+  migrationRecommendation: z.string().max(4000).optional(),
+  source: z.enum(["MANUAL", "NEXI"]).default("MANUAL")
+}).strict();
+
+const blueprintBodySchema = z.object({
+  recommendedLayout: z.array(z.string().trim().min(1)).default([]),
+  nexiResponsibilities: z.array(z.string().trim().min(1)).default([]),
+  opportunities: z.object({
+    nexcam: z.array(z.string().trim().min(1)).optional(),
+    nexdocs: z.array(z.string().trim().min(1)).optional(),
+    nexreach: z.array(z.string().trim().min(1)).optional(),
+    nexportal: z.array(z.string().trim().min(1)).optional()
+  }).strict().default({}),
+  recommendedForms: z.array(z.string().trim().min(1)).default([]),
+  recommendedWorkflows: z.array(z.string().trim().min(1)).default([]),
+  recommendedAutomations: z.array(z.string().trim().min(1)).default([]),
+  recommendedModules: z.array(z.enum(["nexi", "crm", "fielddocs", "scheduling", "content", "campaigns", "reputation", "comms", "voice", "platform", "evaporation", "seo", "sites"])).default([]),
+  migrationRecommendation: z.string().max(4000).optional(),
+  futureOpportunities: z.array(z.string().trim().min(1)).default([]),
+  reason: z.string().max(2000).optional()
+}).strict();
+
 const hexColorSchema = z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
 
 const tenantBrandingBodySchema = z.object({
@@ -219,6 +269,98 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
           activationPending: prospects.filter((prospect) => prospect.status === "SUBSCRIPTION_REQUIRED").length
         }
       });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/admin/prospects", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env);
+      res.json({ ok: true, prospects: await deps.repository.listProspects() });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/admin/prospects", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env);
+      const input = prospectBodySchema.parse(req.body ?? {});
+      const timestamp = new Date().toISOString();
+      const prospect = await deps.repository.saveProspect({
+        id: `prospect_${randomUUID()}`,
+        status: "DRAFT",
+        ...input,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        createdBy: "platform_operator"
+      });
+      res.status(201).json({ ok: true, prospect });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/admin/prospects/:prospectId/intake", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env);
+      const prospectId = requiredTenantId(req.params.prospectId);
+      const input = prospectIntakeBodySchema.parse(req.body ?? {});
+      const prospect = await deps.repository.getProspect(prospectId);
+      if (!prospect) throw new RailError("Prospect was not found.", { provider: "platform", op: "prospectIntake", status: 404 });
+      const timestamp = new Date().toISOString();
+      const intake = await deps.repository.saveProspectIntake({
+        id: `prospect_intake_${prospect.id}`,
+        prospectId: prospect.id,
+        ...input,
+        currentSystems: input.currentSystems.map((system) => ({ ...system, id: system.id ?? `software_${randomUUID()}` })),
+        createdAt: (await deps.repository.getProspectIntake(prospect.id))?.createdAt ?? timestamp,
+        updatedAt: timestamp,
+        createdBy: "platform_operator"
+      });
+      const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "INTAKE_COMPLETE", updatedAt: timestamp });
+      res.json({ ok: true, prospect: nextProspect, intake });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/admin/prospects/:prospectId/blueprints", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env);
+      const prospectId = requiredTenantId(req.params.prospectId);
+      const input = blueprintBodySchema.parse(req.body ?? {});
+      const { reason, ...blueprintInput } = input;
+      const prospect = await deps.repository.getProspect(prospectId);
+      if (!prospect) throw new RailError("Prospect was not found.", { provider: "platform", op: "prospectBlueprint", status: 404 });
+      if (!await deps.repository.getProspectIntake(prospect.id)) {
+        throw new RailError("Complete the non-sensitive intake before creating a Blueprint.", { provider: "platform", op: "prospectBlueprint", status: 409 });
+      }
+      const timestamp = new Date().toISOString();
+      const blueprint = await deps.repository.createTenantOnboardingBlueprint({
+        id: `onboarding_blueprint_${randomUUID()}`,
+        prospectId: prospect.id,
+        ...blueprintInput,
+        createdAt: timestamp,
+        createdBy: "platform_operator"
+      });
+      const revision = await deps.repository.appendTenantOnboardingBlueprintRevision({
+        id: `onboarding_blueprint_revision_${randomUUID()}`,
+        prospectId: prospect.id,
+        blueprintId: blueprint.id,
+        revisionNumber: 1,
+        snapshot: blueprint,
+        actorId: "platform_operator",
+        actorType: "NEXTEAM_STAFF",
+        source: "NEXTEAM_STAFF",
+        fieldsChanged: ["initial"],
+        reason,
+        approvalState: "DRAFT",
+        createdAt: timestamp
+      });
+      const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "BLUEPRINT_READY", updatedAt: timestamp });
+      res.status(201).json({ ok: true, prospect: nextProspect, blueprint, revision });
     } catch (error) {
       sendRouteError(res, error);
     }
