@@ -24,7 +24,13 @@
 | D — manual intake and Blueprint UI | GREEN | platform-tenants | NexTeam Admin now has an operator-facing manual form that creates a Prospect, saves the same non-sensitive intake contract, creates a Blueprint, and appends its first immutable revision. Server route suite and web build passed on 2026-08-09. |
 | E — required test subscription | GREEN | platform-tenants | The active `all-access-test` package is versioned, $0.00, all-access, and must be assigned durably to an onboarding-plan-ready Prospect before activation. Full `npm run verify` passed on 2026-08-09 after platform-owned writes were moved behind the approved transaction seam. |
 | F — tenant and owner activation | GREEN | platform-tenants + nexteam-global | Activation requires the durable assigned $0 test package, creates the existing tenant, subscription, and tenant-user records, then creates or reuses the Firebase owner without a password. Tenant-specific claims merge into existing claims and preserve platform claims. Full test suite passed: 489 pass, 0 fail, 3 skipped on 2026-08-09. Firebase runtime activation remains built / not operationally proven until staging-safe credentials and tenant test data are used. |
-| G–O | NOT STARTED | assigned per phase | Advance only after the preceding phase has captured green evidence. |
+| G — durable post-subscription onboarding | GREEN | nexteam-global | Tenant onboarding tasks and audits persist through the existing tenant settings contract. |
+| H — blockers and support escalations | GREEN | platform-tenants | Tenant-scoped blocker and platform-support lifecycle records are operator-only. |
+| I — migration tracking | GREEN | platform-tenants | Migration status is durable, operator-only, and excludes exports, credentials, and customer payloads. |
+| J — launch readiness | GREEN | nexteam-global | Required onboarding tasks, allowed module selection, ordered guided steps, and launch review are checked on every reload. |
+| K — Blueprint insight and acceptance | GREEN | platform-tenants | Insights are read-only and the latest draft can be accepted only by appending an immutable approved revision. |
+| L — internal lifecycle administration | GREEN | platform-tenants + integration | NexTeam Admin sends authenticated operator requests for manual intake and can progress blockers, escalations, and migration lifecycle states with reload proof. |
+| M–O | NOT STARTED | assigned per phase | Advance only after the preceding phase has captured green evidence. |
 
 ## Authoritative existing ownership
 

@@ -752,6 +752,19 @@ test("tenant blockers persist by tenant and platform support escalation denies n
     assert.equal(escalation.status, 201);
     assert.equal((await escalation.json()).blocker.status, "ESCALATED");
 
+    const deniedResolution = await fetch(`${base}/api/platform/admin/tenant-blockers/${encodeURIComponent(blocker.id)}`, {
+      method: "PATCH", headers: { authorization: "Bearer tenant-owner", "content-type": "application/json" },
+      body: JSON.stringify({ status: "RESOLVED" })
+    });
+    assert.equal(deniedResolution.status, 403);
+
+    const resolved = await fetch(`${base}/api/platform/admin/tenant-blockers/${encodeURIComponent(blocker.id)}`, {
+      method: "PATCH", headers: { authorization: "Bearer operator", "content-type": "application/json" },
+      body: JSON.stringify({ status: "RESOLVED" })
+    });
+    assert.equal(resolved.status, 200);
+    assert.equal((await resolved.json()).blocker.status, "RESOLVED");
+
     const listed = await fetch(`${base}/api/platform/admin/tenant-blockers?tenantId=tenant-a`, { headers: { authorization: "Bearer operator" } }).then((response) => response.json());
     assert.equal(listed.blockers.length, 1);
     assert.equal(listed.escalations.length, 1);

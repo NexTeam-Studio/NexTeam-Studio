@@ -95,6 +95,26 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
     finally { setWorking(false); }
   }
 
+  async function updateBlocker(blocker: Blocker, nextStatus: "OPEN" | "RESOLVED"): Promise<void> {
+    if (!user || working) return;
+    setWorking(true); setStatus("");
+    try {
+      await request(user, `/api/platform/admin/tenant-blockers/${encodeURIComponent(blocker.id)}`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) });
+      await reload(); setStatus(`Tenant blocker marked ${nextStatus.toLowerCase()}.`);
+    } catch (error) { setStatus(error instanceof Error ? error.message : "Tenant blocker could not be updated."); }
+    finally { setWorking(false); }
+  }
+
+  async function updateEscalation(escalation: Escalation, nextStatus: "ACKNOWLEDGED" | "RESOLVED"): Promise<void> {
+    if (!user || working) return;
+    setWorking(true); setStatus("");
+    try {
+      await request(user, `/api/platform/admin/support-escalations/${encodeURIComponent(escalation.id)}`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) });
+      await reload(); setStatus(`Support escalation marked ${nextStatus.toLowerCase()}.`);
+    } catch (error) { setStatus(error instanceof Error ? error.message : "Support escalation could not be updated."); }
+    finally { setWorking(false); }
+  }
+
   async function createMigration(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (!user || working) return;
@@ -128,8 +148,8 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
       <button type="submit" disabled={!user || working || !tenantId.trim() || !title.trim() || !detail.trim()}>{working ? "Saving…" : "Save blocker"}</button>
     </form>
     <div className="platform-tenant-blockers__list" aria-live="polite">
-      {blockers.map((blocker) => <article key={blocker.id}><strong>{blocker.title}</strong><span>{blocker.tenantId} · {blocker.severity} · {blocker.status}</span><p>{blocker.detail}</p>{blocker.status !== "RESOLVED" ? <button type="button" disabled={!user || working} onClick={() => void escalate(blocker)}>Escalate to support</button> : null}</article>)}
-      {escalations.map((escalation) => <article key={escalation.id}><strong>Support {escalation.priority}: {escalation.status}</strong><span>Blocker {escalation.blockerId}</span><p>{escalation.summary}</p></article>)}
+      {blockers.map((blocker) => <article key={blocker.id}><strong>{blocker.title}</strong><span>{blocker.tenantId} · {blocker.severity} · {blocker.status}</span><p>{blocker.detail}</p>{blocker.status !== "RESOLVED" ? <><button type="button" disabled={!user || working} onClick={() => void escalate(blocker)}>Escalate to support</button><button type="button" disabled={!user || working} onClick={() => void updateBlocker(blocker, "RESOLVED")}>Resolve blocker</button></> : <button type="button" disabled={!user || working} onClick={() => void updateBlocker(blocker, "OPEN")}>Reopen blocker</button>}</article>)}
+      {escalations.map((escalation) => <article key={escalation.id}><strong>Support {escalation.priority}: {escalation.status}</strong><span>Blocker {escalation.blockerId}</span><p>{escalation.summary}</p>{escalation.status === "OPEN" ? <button type="button" disabled={!user || working} onClick={() => void updateEscalation(escalation, "ACKNOWLEDGED")}>Acknowledge escalation</button> : null}{escalation.status !== "RESOLVED" ? <button type="button" disabled={!user || working} onClick={() => void updateEscalation(escalation, "RESOLVED")}>Resolve escalation</button> : null}</article>)}
     </div>
     <div><p className="ui-eyebrow">Onboarding Phase I</p><h3>Migration tracking</h3><p>Track only migration status and scope. Do not enter exports, credentials, or customer records here.</p></div>
     <form onSubmit={(event) => void createMigration(event)}>
@@ -140,7 +160,7 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
       <button type="submit" disabled={!user || working || !tenantId.trim() || !sourceSystem.trim() || !migrationScope.trim() || (migrationStatus === "DEFERRED" && !deferredReason.trim())}>{working ? "Saving…" : "Save migration"}</button>
     </form>
     <div className="platform-tenant-blockers__list" aria-live="polite">
-      {migrations.map((migration) => <article key={migration.id}><strong>{migration.sourceSystem} · {migration.status}</strong><span>{migration.tenantId}{migration.deferredUntil ? ` · review ${migration.deferredUntil}` : ""}</span><p>{migration.scope}</p>{migration.status === "DEFERRED" ? <p>Deferred: {migration.deferredReason}</p> : null}{migration.status === "PENDING" ? <button type="button" disabled={!user || working} onClick={() => void updateMigration(migration, "IN_PROGRESS")}>Start migration</button> : null}{migration.status === "IN_PROGRESS" || migration.status === "VALIDATION" ? <button type="button" disabled={!user || working} onClick={() => void updateMigration(migration, "COMPLETED")}>Mark completed</button> : null}</article>)}
+      {migrations.map((migration) => <article key={migration.id}><strong>{migration.sourceSystem} · {migration.status}</strong><span>{migration.tenantId}{migration.deferredUntil ? ` · review ${migration.deferredUntil}` : ""}</span><p>{migration.scope}</p>{migration.status === "DEFERRED" ? <p>Deferred: {migration.deferredReason}</p> : null}{migration.status === "PENDING" || migration.status === "DEFERRED" ? <button type="button" disabled={!user || working} onClick={() => void updateMigration(migration, "IN_PROGRESS")}>Start migration</button> : null}{migration.status === "IN_PROGRESS" ? <button type="button" disabled={!user || working} onClick={() => void updateMigration(migration, "VALIDATION")}>Mark ready for validation</button> : null}{migration.status === "VALIDATION" ? <button type="button" disabled={!user || working} onClick={() => void updateMigration(migration, "COMPLETED")}>Mark completed</button> : null}</article>)}
     </div>
     {status ? <p className="platform-prospect-intake__status">{status}</p> : null}
   </section>;

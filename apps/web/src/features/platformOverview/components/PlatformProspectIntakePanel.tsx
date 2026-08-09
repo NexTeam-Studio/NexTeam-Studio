@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import type { User } from "firebase/auth";
 
 interface ProspectResponse {
   ok: boolean;
@@ -10,10 +11,11 @@ function splitList(value: string): string[] {
   return value.split(",").map((entry) => entry.trim()).filter(Boolean);
 }
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
+async function postJson<T>(user: User, path: string, body: unknown): Promise<T> {
+  const token = await user.getIdToken();
   const response = await fetch(path, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
     body: JSON.stringify(body)
   });
   const result = await response.json() as T & { error?: string };
@@ -22,7 +24,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
 }
 
 /** Manual staff intake uses the same platform Prospect/onboarding-plan API reserved for future Nexi intake. */
-export function PlatformProspectIntakePanel(): React.ReactElement {
+export function PlatformProspectIntakePanel({ user }: { user: User | null }): React.ReactElement {
   const [businessName, setBusinessName] = useState("");
   const [industry, setIndustry] = useState("");
   const [serviceArea, setServiceArea] = useState("");
@@ -32,24 +34,24 @@ export function PlatformProspectIntakePanel(): React.ReactElement {
 
   async function createProspectAndBlueprint(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (working) return;
+    if (working || !user) return;
     setWorking(true);
     setStatus("");
     try {
-      const prospect = await postJson<ProspectResponse>("/api/platform/admin/prospects", {
+      const prospect = await postJson<ProspectResponse>(user, "/api/platform/admin/prospects", {
         businessName: businessName.trim(),
         industry: industry.trim(),
         serviceArea: splitList(serviceArea)
       });
       if (!prospect.prospect) throw new Error("NexTeam Admin did not return a Prospect record.");
       const id = encodeURIComponent(prospect.prospect.id);
-      await postJson(`/api/platform/admin/prospects/${id}/intake`, {
+      await postJson(user, `/api/platform/admin/prospects/${id}/intake`, {
         services: splitList(services),
         customerTypes: [],
         currentSystems: [],
         source: "MANUAL"
       });
-      await postJson(`/api/platform/admin/prospects/${id}/blueprints`, {
+      await postJson(user, `/api/platform/admin/prospects/${id}/blueprints`, {
         recommendedLayout: ["Office operations"],
         nexiResponsibilities: ["Provide tool-backed operational assistance"],
         recommendedModules: ["nexi", "crm"],
@@ -79,7 +81,7 @@ export function PlatformProspectIntakePanel(): React.ReactElement {
         <label>Industry or trade<input required value={industry} onChange={(event) => setIndustry(event.target.value)} /></label>
         <label>Service area <span>(comma separated)</span><input value={serviceArea} onChange={(event) => setServiceArea(event.target.value)} /></label>
         <label>Services <span>(comma separated)</span><input value={services} onChange={(event) => setServices(event.target.value)} /></label>
-        <button type="submit" disabled={working || !businessName.trim() || !industry.trim()}>{working ? "Saving intake…" : "Create Prospect and onboarding plan"}</button>
+        <button type="submit" disabled={working || !user || !businessName.trim() || !industry.trim()}>{working ? "Saving intake…" : "Create Prospect and onboarding plan"}</button>
       </form>
       {status ? <p className="platform-prospect-intake__status">{status}</p> : null}
     </section>

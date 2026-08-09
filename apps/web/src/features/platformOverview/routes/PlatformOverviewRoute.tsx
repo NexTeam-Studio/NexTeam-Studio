@@ -34,7 +34,7 @@ export function PlatformOverviewRoute(): React.ReactElement {
         }}
       />
       <PlatformPlansPanel plans={plans} />
-      <PlatformProspectIntakePanel />
+      <PlatformProspectIntakePanel user={user} />
       <PlatformTenantBlockersPanel user={user} />
       {status ? <p className="platform-overview__status">{status}</p> : null}
       <TenantOverviewPanel
