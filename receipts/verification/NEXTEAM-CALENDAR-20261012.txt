@@ -1,0 +1,65 @@
+JOB_ID=NEXTEAM-CALENDAR-20261012
+RECOVERY_JOB_ID=NEXTEAM-BUILD-STATE-RECOVERY-VERIFY
+WORKTREE=target-architecture-integration
+PURPOSE=Recover interrupted NexDocs attachment calendar verification without changing implementation or external state.
+
+FAILED_JOB_RECEIPT=NOT_FOUND
+FAILED_JOB_EVIDENCE=docs/knowledge/checkpoints/NEXTEAM_CURRENT_BUILD_STATE_2026-08-08.md records NEXTEAM-CALENDAR-20261012 as dispatched at 2026-08-06T06:35:08.977Z with LAST_COMPLETION_EVIDENCE=none and STATUS=INTERRUPTED / ungraded active job.
+
+LANE_OWNERSHIP=NexDocs implementation paths are owned by codex/lane/nexdocs: apps/web/src/features/nexdocs/**, apps/web/src/shared/signature/**, apps/server/src/modules/nexdocs/**. This receipt is a target-architecture-integration verification artifact; no implementation files were changed.
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/fielddocs-read-side.test.mjs apps/server/test/fielddocs-nexi-tools.test.mjs apps/server/test/fielddocs-tenant-boundary.test.mjs
+Raw output:
+✔ fielddocs Nexi tools expose property history and recent photos (13.3508ms)
+✔ fielddocs Nexi tools generate and fetch visit reports (1.6375ms)
+✔ local Nexi chat routes NexCam photo search, property history, and report generation (8.1556ms)
+✔ NexDocs tools search unified content and list client folders (464.0308ms)
+✔ local Nexi chat can search documents, queue a folder, approve it, queue an upload, and approve it (12.2822ms)
+✔ natural-language photo search matches imported metadata (1.6019ms)
+✔ vision pipeline stub is wired off by default (0.33ms)
+✔ vision pipeline parses live Anthropic-style JSON responses with usage (2.6925ms)
+✔ upload service creates native storage refs, thumbnails, and EXIF metadata (1.1058ms)
+✔ before/after pairing and vision fallback are wired (0.5177ms)
+✔ leak checklist and report PDF render (2.9791ms)
+✔ native repository persists checklists and posted field report records (1.7234ms)
+✔ NexCam read tool searches native media repository (0.8841ms)
+✔ NexDocs accepts supported uploads, uses a 100 MB cap, and indexes PDF content for search (500.425ms)
+✔ NexDocs OCR blocks image OCR before estimated spend exceeds the cap (0.8684ms)
+✔ NexDocs OCR logs usage and searchable text when image OCR runs inside cap (0.5672ms)
+✔ NexDocs keeps a flat folder model and moves each document into only one folder at a time (0.9552ms)
+✔ NexDocs unified search returns uploaded docs, office records, and NexCam hits together (2.4946ms)
+✔ NexDocs technician fence stays upload-only for destructive management actions (0.2598ms)
+✔ Field Docs Admin repository rejects cross-tenant create collisions and updates (2.8031ms)
+✔ Field Docs Admin repository preserves tenant identity on valid updates (0.4273ms)
+✔ NexDocs Admin writes reject a folder id already owned by another tenant (0.3093ms)
+✔ NexDocs Admin deletes reject a document owned by another tenant (0.3925ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12894.4053
+NEXDOCS_ATTACHMENT_VERIFICATION_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+Worktree scope check passed: nexteam-integration is the integration lane.
+WORKTREE_SCOPE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+WORKTREE_COVERAGE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+Secret scan passed (1675 tracked non-doc files checked).
+SECRET_SCAN_EXACT_EXIT_CODE=0
+
+FUNCTIONALITY_STATUS=BUILT_NOT_OPERATIONALLY_PROVEN
+RUNTIME_PROOF=NO; this bounded recovery ran local automated tests only and did not start a service, use a browser, access customer data, or call an external environment.
+RECOVERY_RESULT=PASS; an interrupted job had no prior completion receipt, and its current local implementation plus tenant-isolation tests are green.
+REQUIRED_GATES_GREEN: YES
