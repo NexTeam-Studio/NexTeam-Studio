@@ -1,8 +1,9 @@
 import type { Express, Request, Response } from "express";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { RailError, addressSchema, type JobAccessScope, type Tenant, type TenantAdapterStatus, type TenantPlan } from "@nexteam/core";
 import type { DecodedIdToken } from "firebase-admin/auth";
-import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
+import { actorIdForAccess, requireTenantCapability, requireTenantRole } from "../auth/accessContext.js";
 import { getAdminAuth, getAdminStorageBucket } from "../firebase.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 import { createJobAccessLink, customClaimsForTenantUser, upsertTenantUser, verifyJobAccessToken } from "./accessManagement.js";
@@ -82,6 +83,8 @@ const tenantUserBodySchema = z.object({
   address: addressSchema.optional(),
   displayName: z.string().min(1),
   role: z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]),
+  customRoleName: z.string().trim().min(1).max(80).optional(),
+  capabilities: z.array(z.enum(["team.view", "team.manage", "team.invite", "tenant.audit.read"])).optional(),
   active: z.boolean().optional()
 });
 
@@ -406,7 +409,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantUsers", status: 400 });
       }
-      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "tenantUsers" });
+      await requireTenantCapability(req, env, "team.view", { requestedTenantId: tenantId, op: "tenantUsers" });
       res.json({ ok: true, tenantId, users: await deps.repository.listTenantUsers(tenantId) });
     } catch (error) {
       sendRouteError(res, error);
@@ -419,9 +422,24 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantUserUpsert", status: 400 });
       }
-      await requireTenantRole(req, env, ["OWNER"], { requestedTenantId: tenantId, op: "tenantUserUpsert" });
+      const access = await requireTenantCapability(req, env, "team.manage", { requestedTenantId: tenantId, op: "tenantUserUpsert" });
       const input = tenantUserBodySchema.parse(req.body ?? {});
+      if (input.role === "OWNER" && access.role !== "OWNER") {
+        throw new RailError("Only an owner can assign the owner role.", { provider: "platform", op: "tenantUserUpsert", status: 403 });
+      }
+      if ((input.capabilities ?? []).some((capability) => !access.capabilities.includes(capability))) {
+        throw new RailError("You cannot grant a capability you do not hold.", { provider: "platform", op: "tenantUserUpsert", status: 403 });
+      }
       const user = await upsertTenantUser(deps.repository, { ...input, tenantId });
+      await deps.repository.saveTenantMembershipAudit({
+        id: `membership_audit_${randomUUID()}`,
+        tenantId,
+        action: "member.upserted",
+        actorId: actorIdForAccess(access),
+        targetUserId: user.id,
+        detail: `role=${user.role}; customRole=${user.customRoleName ?? "none"}; active=${user.active}`,
+        createdAt: new Date().toISOString()
+      });
       res.status(201).json({ ok: true, user, claimsPreview: customClaimsForTenantUser(user) });
     } catch (error) {
       sendRouteError(res, error);
@@ -435,7 +453,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       if (!tenantId || !userId) {
         throw new RailError("Tenant id and user id are required.", { provider: "platform", op: "tenantUserClaims", status: 400 });
       }
-      await requireTenantRole(req, env, ["OWNER"], { requestedTenantId: tenantId, op: "tenantUserClaims" });
+      const access = await requireTenantCapability(req, env, "team.manage", { requestedTenantId: tenantId, op: "tenantUserClaims" });
       const user = await deps.repository.getTenantUser(tenantId, userId);
       if (!user) {
         throw new RailError("Tenant user was not found.", { provider: "platform", op: "tenantUserClaims", status: 404 });
@@ -446,7 +464,27 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       if (canApply && auth && user.authUid) {
         await auth.setCustomUserClaims(user.authUid, claims);
       }
+      await deps.repository.saveTenantMembershipAudit({
+        id: `membership_audit_${randomUUID()}`,
+        tenantId,
+        action: "member.claims_applied",
+        actorId: actorIdForAccess(access),
+        targetUserId: user.id,
+        detail: canApply ? "Firebase claims applied." : "Firebase claims previewed; no auth adapter available.",
+        createdAt: new Date().toISOString()
+      });
       res.json({ ok: true, userId: user.id, applied: canApply, claimsPreview: claims });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/tenants/:tenantId/users/audit", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      if (!tenantId) throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantMembershipAudit", status: 400 });
+      await requireTenantCapability(req, env, "tenant.audit.read", { requestedTenantId: tenantId, op: "tenantMembershipAudit" });
+      res.json({ ok: true, tenantId, audits: await deps.repository.listTenantMembershipAudits(tenantId) });
     } catch (error) {
       sendRouteError(res, error);
     }

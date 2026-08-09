@@ -188,6 +188,7 @@ test("tenant users are provisioned explicitly and produce Firebase custom claims
     tenantId: "aquatrace",
     tenantRole: "OFFICE_ADMIN",
     tenantUserId: "office_catherine",
+    tenantCapabilities: ["team.view", "team.manage", "team.invite"],
     roles: ["office_admin"]
   });
 });

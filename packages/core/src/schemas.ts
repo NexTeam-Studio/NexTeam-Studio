@@ -161,6 +161,7 @@ export const tenantSubscriptionSchema = z.object({
 });
 
 export const tenantUserRoleSchema = z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]);
+export const tenantCapabilitySchema = z.enum(["team.view", "team.manage", "team.invite", "tenant.audit.read"]);
 
 export const tenantUserSchema = z.object({
   id: idSchema,
@@ -171,6 +172,8 @@ export const tenantUserSchema = z.object({
   address: addressSchema.optional(),
   displayName: z.string().min(1),
   role: tenantUserRoleSchema,
+  customRoleName: z.string().min(1).max(80).optional(),
+  capabilities: z.array(tenantCapabilitySchema).optional(),
   active: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string()
@@ -827,6 +830,16 @@ const tenantOperatingProfileSchema = z.object({
     selectedModules: z.array(platformModuleSchema).default([]),
     launchReviewedAt: z.string().min(1).optional()
   })
+});
+
+export const tenantMembershipAuditSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  action: z.enum(["member.upserted", "member.claims_applied"]),
+  actorId: idSchema,
+  targetUserId: idSchema,
+  detail: z.string().min(1).max(500),
+  createdAt: z.string()
 });
 
 export const crmSettingsSchema = z.object({

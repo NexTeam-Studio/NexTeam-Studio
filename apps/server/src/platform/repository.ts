@@ -19,6 +19,8 @@ import {
   type TenantPlan,
   type TenantSubscription,
   type TenantUser,
+  type TenantMembershipAudit,
+  tenantMembershipAuditSchema,
   type UsageLogRecord
 } from "@nexteam/core";
 import { PLATFORM_PLANS } from "./plans.js";
@@ -107,6 +109,8 @@ export interface PlatformRepository {
   listTenantUsers(tenantId: string): Promise<TenantUser[]>;
   getTenantUser(tenantId: string, id: string): Promise<TenantUser | null>;
   upsertTenantUser(user: TenantUser): Promise<TenantUser>;
+  listTenantMembershipAudits(tenantId: string): Promise<TenantMembershipAudit[]>;
+  saveTenantMembershipAudit(audit: TenantMembershipAudit): Promise<TenantMembershipAudit>;
   listJobAccessLinks(tenantId: string, jobId?: string | undefined): Promise<JobAccessLink[]>;
   saveJobAccessLink(link: JobAccessLink): Promise<JobAccessLink>;
   revokeJobAccessLink(tenantId: string, id: string, revokedAt: string): Promise<JobAccessLink | null>;
@@ -138,6 +142,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   private readonly tenants = new Map<string, Tenant>();
   private readonly tenantBranding = new Map<string, TenantBranding>();
   private readonly tenantUsers = new Map<string, TenantUser[]>();
+  private readonly membershipAudits = new Map<string, TenantMembershipAudit[]>();
   private readonly jobAccessLinks = new Map<string, JobAccessLink[]>();
   private readonly subscriptions = new Map<string, TenantSubscription>();
   private readonly statuses = new Map<string, TenantAdapterStatus[]>();
@@ -199,6 +204,16 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     const current = (this.tenantUsers.get(parsed.tenantId) ?? []).filter((entry) => entry.id !== parsed.id);
     current.push(parsed);
     this.tenantUsers.set(parsed.tenantId, current);
+    return parsed;
+  }
+
+  async listTenantMembershipAudits(tenantId: string): Promise<TenantMembershipAudit[]> {
+    return this.membershipAudits.get(tenantId) ?? [];
+  }
+
+  async saveTenantMembershipAudit(audit: TenantMembershipAudit): Promise<TenantMembershipAudit> {
+    const parsed = tenantMembershipAuditSchema.parse(audit) as TenantMembershipAudit;
+    this.membershipAudits.set(parsed.tenantId, [...(this.membershipAudits.get(parsed.tenantId) ?? []), parsed]);
     return parsed;
   }
 
@@ -377,6 +392,17 @@ export class FirestorePlatformRepository implements PlatformRepository {
   async upsertTenantUser(user: TenantUser): Promise<TenantUser> {
     const parsed = tenantUserSchema.parse(user) as TenantUser;
     await setTenantOwnedDocument({ db: this.db, collection: "tenantUsers", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant user ${parsed.id}` });
+    return parsed;
+  }
+
+  async listTenantMembershipAudits(tenantId: string): Promise<TenantMembershipAudit[]> {
+    const snapshot = await this.db.collection("tenantMembershipAudits").where("tenantId", "==", tenantId).orderBy("createdAt", "desc").get();
+    return snapshot.docs.map((doc) => tenantMembershipAuditSchema.parse(doc.data()) as TenantMembershipAudit);
+  }
+
+  async saveTenantMembershipAudit(audit: TenantMembershipAudit): Promise<TenantMembershipAudit> {
+    const parsed = tenantMembershipAuditSchema.parse(audit) as TenantMembershipAudit;
+    await setTenantOwnedDocument({ db: this.db, collection: "tenantMembershipAudits", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant membership audit ${parsed.id}` });
     return parsed;
   }
 

@@ -2,16 +2,19 @@ import crypto from "node:crypto";
 import type { Request } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { RailError } from "@nexteam/core";
+import type { TenantCapability, TenantUserRole } from "@nexteam/core";
+import { ROLE_CAPABILITIES } from "../platform/accessManagement.js";
 import { getAdminAuth } from "../firebase.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 
-export type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
+export type TenantRole = TenantUserRole;
 export type AccessKind = "internal" | "job_link";
 
 export interface AccessContext {
   tenantId: string;
   tenantUserId: string;
   role: TenantRole;
+  capabilities: TenantCapability[];
   accessKind: AccessKind;
   jobAccessLinkId?: string | undefined;
   jobId?: string | undefined;
@@ -152,6 +155,12 @@ function normalizeRole(decoded: DecodedIdToken, env: NodeJS.ProcessEnv): TenantR
   throw new RailError("Your sign-in is missing a tenant role.", { provider: "firebase", op: "accessContext", status: 403 });
 }
 
+function capabilities(decoded: DecodedIdToken, role: TenantRole): TenantCapability[] {
+  const value = (decoded as unknown as Record<string, unknown>).tenantCapabilities;
+  const allowed: TenantCapability[] = ["team.view", "team.manage", "team.invite", "tenant.audit.read"];
+  return Array.isArray(value) ? value.filter((entry): entry is TenantCapability => allowed.includes(entry as TenantCapability)) : ROLE_CAPABILITIES[role];
+}
+
 function accessKind(decoded: DecodedIdToken): AccessKind {
   const explicit = claimString(decoded, "accessKind");
   if (explicit === "job_link" || claimString(decoded, "jobAccessLinkId")) {
@@ -187,6 +196,7 @@ function localDevAccessContext(req: Request, tenantId: string, op = "accessConte
     tenantId,
     tenantUserId: profile.tenantUserId,
     role: profile.role,
+    capabilities: ROLE_CAPABILITIES[profile.role],
     accessKind: "internal",
     email: profile.email
   };
@@ -359,6 +369,7 @@ export function readLocalDevSession(
       tenantId,
       tenantUserId: accessProfile.tenantUserId,
       role: accessProfile.role,
+      capabilities: ROLE_CAPABILITIES[accessProfile.role],
       accessKind: "internal",
       email: accessProfile.email
     },
@@ -393,13 +404,13 @@ export async function requireAccessContext(
 
   if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") {
     return localDevAccessContext(req, tenantId, options.op ?? "accessContext")
-      ?? { tenantId, tenantUserId: "local-owner", role: "OWNER", accessKind: "internal" };
+      ?? { tenantId, tenantUserId: "local-owner", role: "OWNER", capabilities: ROLE_CAPABILITIES.OWNER, accessKind: "internal" };
   }
 
   const auth = getAdminAuth(env);
   if (!auth) {
     return localDevAccessContext(req, tenantId, options.op ?? "accessContext")
-      ?? { tenantId, tenantUserId: "local-owner", role: "OWNER", accessKind: "internal" };
+      ?? { tenantId, tenantUserId: "local-owner", role: "OWNER", capabilities: ROLE_CAPABILITIES.OWNER, accessKind: "internal" };
   }
 
   if (!token) {
@@ -416,10 +427,12 @@ export async function requireAccessContext(
     throw new RailError("Your sign-in is missing a tenant assignment.", { provider: "firebase", op: options.op ?? "accessContext", status: 403 });
   }
 
+  const role = normalizeRole(decoded, env);
   return {
     tenantId: claimedTenantId ?? tenantId,
     tenantUserId: claimString(decoded, "tenantUserId") ?? decoded.uid,
-    role: normalizeRole(decoded, env),
+    role,
+    capabilities: capabilities(decoded, role),
     accessKind: accessKind(decoded),
     ...(claimString(decoded, "jobAccessLinkId") ? { jobAccessLinkId: claimString(decoded, "jobAccessLinkId") } : {}),
     ...(claimString(decoded, "jobId") ? { jobId: claimString(decoded, "jobId") } : {}),
@@ -444,5 +457,16 @@ export function assertAccessRole(access: AccessContext, allowedRoles: TenantRole
     throw new RailError("Your role cannot perform that action.", { provider: "firebase", op, status: 403 });
   }
   return access;
+}
+
+export function assertAccessCapability(access: AccessContext, capability: TenantCapability, op = "capabilityGate"): AccessContext {
+  if (access.accessKind !== "internal" || !access.capabilities.includes(capability)) {
+    throw new RailError("Your access cannot perform that action.", { provider: "firebase", op, status: 403 });
+  }
+  return access;
+}
+
+export async function requireTenantCapability(req: Request, env: NodeJS.ProcessEnv, capability: TenantCapability, options: AccessContextOptions = {}): Promise<AccessContext> {
+  return assertAccessCapability(await requireAccessContext(req, env, options), capability, options.op);
 }
 

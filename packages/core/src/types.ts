@@ -19,6 +19,7 @@ export type EmailAdapterKind = "gmail_relay" | "sendgrid";
 export type SmsAdapterKind = "twilio";
 export type TenantPlan = "nexi" | "marketing" | "suite";
 export type TenantUserRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
+export type TenantCapability = "team.view" | "team.manage" | "team.invite" | "tenant.audit.read";
 export type JobAccessScope = "job.read" | "checklist.write" | "media.upload" | "notes.write";
 export type PlatformModule =
   | "nexi"
@@ -150,9 +151,22 @@ export interface TenantUser {
   address?: Address | undefined;
   displayName: string;
   role: TenantUserRole;
+  /** A named custom role retains a safe base role and grants only these capabilities. */
+  customRoleName?: string | undefined;
+  capabilities?: TenantCapability[] | undefined;
   active: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TenantMembershipAudit {
+  id: ID;
+  tenantId: ID;
+  action: "member.upserted" | "member.claims_applied";
+  actorId: ID;
+  targetUserId: ID;
+  detail: string;
+  createdAt: string;
 }
 
 export interface JobAccessLink {

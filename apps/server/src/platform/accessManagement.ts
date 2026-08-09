@@ -6,6 +6,7 @@ import {
   type JobAccessLink,
   type JobAccessScope,
   type TenantUser,
+  type TenantCapability,
   type TenantUserRole
 } from "@nexteam/core";
 import { RailError } from "@nexteam/core";
@@ -23,8 +24,20 @@ export interface TenantUserInput {
   address?: Address | undefined;
   displayName: string;
   role: TenantUserRole;
+  customRoleName?: string | undefined;
+  capabilities?: TenantCapability[] | undefined;
   active?: boolean | undefined;
   now?: string | undefined;
+}
+
+export const ROLE_CAPABILITIES: Record<TenantUserRole, TenantCapability[]> = {
+  OWNER: ["team.view", "team.manage", "team.invite", "tenant.audit.read"],
+  OFFICE_ADMIN: ["team.view", "team.manage", "team.invite"],
+  TECHNICIAN: []
+};
+
+export function capabilitiesForTenantUser(user: Pick<TenantUser, "role" | "capabilities">): TenantCapability[] {
+  return [...new Set(user.capabilities ?? ROLE_CAPABILITIES[user.role])];
 }
 
 export interface JobAccessLinkInput {
@@ -75,6 +88,8 @@ export function buildTenantUser(input: TenantUserInput): TenantUser {
     address: input.address,
     displayName: input.displayName,
     role: input.role,
+    customRoleName: input.customRoleName,
+    capabilities: input.capabilities,
     active: input.active ?? true,
     createdAt: timestamp,
     updatedAt: timestamp
@@ -86,6 +101,7 @@ export function customClaimsForTenantUser(user: TenantUser): Record<string, unkn
     tenantId: user.tenantId,
     tenantRole: user.role,
     tenantUserId: user.id,
+    tenantCapabilities: capabilitiesForTenantUser(user),
     roles: [user.role.toLowerCase()]
   };
 }
@@ -136,6 +152,7 @@ export function accessContextForJobLink(link: JobAccessLink): AccessContext {
     tenantId: link.tenantId,
     tenantUserId: link.id,
     role: "TECHNICIAN",
+    capabilities: [],
     accessKind: "job_link",
     jobAccessLinkId: link.id,
     jobId: link.jobId,

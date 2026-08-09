@@ -1,6 +1,7 @@
 import { RailError } from "@nexteam/core";
 import type { z } from "zod";
 import type { AccessContext } from "../../../../auth/accessContext.js";
+import { ROLE_CAPABILITIES } from "../../../../platform/accessManagement.js";
 import type { PlatformRepository } from "../../../../platform/repository.js";
 import type { workspaceRoleSchema } from "./workspaceAccessSchemas.js";
 
@@ -63,6 +64,7 @@ export async function resolveWorkspaceAccess(
     tenantId,
     tenantUserId: resolved?.tenantUserId ?? "nexi",
     role: input.role ?? resolved?.role ?? "OWNER",
+    capabilities: ROLE_CAPABILITIES[input.role ?? resolved?.role ?? "OWNER"],
     accessKind: "internal"
   };
 }
