@@ -139,7 +139,7 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
   }
 
   return <section className="platform-tenant-blockers" aria-labelledby="tenant-blockers-title">
-    <div><p className="ui-eyebrow">Phase H</p><h2 id="tenant-blockers-title">Tenant blockers and support</h2><p>Track activation obstacles and escalate them to NexTeam support without exposing tenant credentials.</p></div>
+    <div><p className="ui-eyebrow">Support operations</p><h2 id="tenant-blockers-title">Tenant blockers and support</h2><p>Track activation obstacles and escalate them to NexTeam support without exposing tenant credentials.</p></div>
     <form onSubmit={(event) => void createBlocker(event)}>
       <label>Tenant ID<input required value={tenantId} onChange={(event) => setTenantId(event.target.value)} /></label>
       <label>Blocker title<input required value={title} onChange={(event) => setTitle(event.target.value)} /></label>
@@ -151,7 +151,7 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
       {blockers.map((blocker) => <article key={blocker.id}><strong>{blocker.title}</strong><span>{blocker.tenantId} · {blocker.severity} · {blocker.status}</span><p>{blocker.detail}</p>{blocker.status !== "RESOLVED" ? <><button type="button" disabled={!user || working} onClick={() => void escalate(blocker)}>Escalate to support</button><button type="button" disabled={!user || working} onClick={() => void updateBlocker(blocker, "RESOLVED")}>Resolve blocker</button></> : <button type="button" disabled={!user || working} onClick={() => void updateBlocker(blocker, "OPEN")}>Reopen blocker</button>}</article>)}
       {escalations.map((escalation) => <article key={escalation.id}><strong>Support {escalation.priority}: {escalation.status}</strong><span>Blocker {escalation.blockerId}</span><p>{escalation.summary}</p>{escalation.status === "OPEN" ? <button type="button" disabled={!user || working} onClick={() => void updateEscalation(escalation, "ACKNOWLEDGED")}>Acknowledge escalation</button> : null}{escalation.status !== "RESOLVED" ? <button type="button" disabled={!user || working} onClick={() => void updateEscalation(escalation, "RESOLVED")}>Resolve escalation</button> : null}</article>)}
     </div>
-    <div><p className="ui-eyebrow">Onboarding Phase I</p><h3>Migration tracking</h3><p>Track only migration status and scope. Do not enter exports, credentials, or customer records here.</p></div>
+    <div><p className="ui-eyebrow">Migration tracking</p><h3>Migration progress</h3><p>Track only migration status and scope. Do not enter exports, credentials, or customer records here.</p></div>
     <form onSubmit={(event) => void createMigration(event)}>
       <label>Source system<input required value={sourceSystem} onChange={(event) => setSourceSystem(event.target.value)} /></label>
       <label>Migration scope<textarea required value={migrationScope} onChange={(event) => setMigrationScope(event.target.value)} /></label>

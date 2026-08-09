@@ -7,6 +7,13 @@ interface ProspectResponse {
   error?: string;
 }
 
+interface ActivatedTenantResponse {
+  ok: boolean;
+  tenant?: { id: string; name: string };
+  owner?: { email: string };
+  error?: string;
+}
+
 function splitList(value: string): string[] {
   return value.split(",").map((entry) => entry.trim()).filter(Boolean);
 }
@@ -31,6 +38,11 @@ export function PlatformProspectIntakePanel({ user }: { user: User | null }): Re
   const [services, setServices] = useState("");
   const [status, setStatus] = useState("");
   const [working, setWorking] = useState(false);
+  const [prospectId, setProspectId] = useState("");
+  const [tenantId, setTenantId] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerDisplayName, setOwnerDisplayName] = useState("");
+  const [subscriptionAssigned, setSubscriptionAssigned] = useState(false);
 
   async function createProspectAndBlueprint(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -57,7 +69,9 @@ export function PlatformProspectIntakePanel({ user }: { user: User | null }): Re
         recommendedModules: ["nexi", "crm"],
         reason: "Initial manual intake"
       });
-      setStatus(`Onboarding plan saved for ${businessName.trim()}. It is ready for review and required subscription selection.`);
+      setProspectId(prospect.prospect.id);
+      setSubscriptionAssigned(false);
+      setStatus(`Onboarding plan saved for ${businessName.trim()}. Select the required pilot package to continue.`);
       setBusinessName("");
       setIndustry("");
       setServiceArea("");
@@ -67,6 +81,33 @@ export function PlatformProspectIntakePanel({ user }: { user: User | null }): Re
     } finally {
       setWorking(false);
     }
+  }
+
+  async function assignPilotSubscription(): Promise<void> {
+    if (!user || !prospectId || working) return;
+    setWorking(true); setStatus("");
+    try {
+      await postJson(user, `/api/platform/admin/prospects/${encodeURIComponent(prospectId)}/subscription`, { packageId: "all-access-test" });
+      setSubscriptionAssigned(true);
+      setStatus("NexTeam All Access Test assigned. Enter the tenant and owner details to activate secure setup.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "The pilot package could not be assigned.");
+    } finally { setWorking(false); }
+  }
+
+  async function activateTenant(event: React.FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (!user || !prospectId || !subscriptionAssigned || working) return;
+    setWorking(true); setStatus("");
+    try {
+      const result = await postJson<ActivatedTenantResponse>(user, `/api/platform/admin/prospects/${encodeURIComponent(prospectId)}/activate`, {
+        tenantId: tenantId.trim(), ownerEmail: ownerEmail.trim(), ownerDisplayName: ownerDisplayName.trim()
+      });
+      if (!result.tenant || !result.owner) throw new Error("Activation did not return the tenant and owner records.");
+      setStatus(`${result.tenant.name} is activated. Secure owner setup is ready for ${result.owner.email}.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "The tenant could not be activated.");
+    } finally { setWorking(false); }
   }
 
   return (
@@ -83,6 +124,18 @@ export function PlatformProspectIntakePanel({ user }: { user: User | null }): Re
         <label>Services <span>(comma separated)</span><input value={services} onChange={(event) => setServices(event.target.value)} /></label>
         <button type="submit" disabled={working || !user || !businessName.trim() || !industry.trim()}>{working ? "Saving intake…" : "Create Prospect and onboarding plan"}</button>
       </form>
+      {prospectId ? <section className="platform-prospect-intake__continuation" aria-label="Continue tenant onboarding">
+        <p className="ui-eyebrow">Continue onboarding</p>
+        <h3>Required pilot package</h3>
+        <p>NexTeam All Access Test &middot; $0.00 &middot; all approved pilot modules</p>
+        <button type="button" disabled={working || !user || subscriptionAssigned} onClick={() => void assignPilotSubscription()}>{subscriptionAssigned ? "Pilot package assigned" : "Assign NexTeam All Access Test — $0.00"}</button>
+        {subscriptionAssigned ? <form onSubmit={(event) => void activateTenant(event)}>
+          <label>Tenant ID<input required value={tenantId} onChange={(event) => setTenantId(event.target.value)} /></label>
+          <label>Owner name<input required value={ownerDisplayName} onChange={(event) => setOwnerDisplayName(event.target.value)} /></label>
+          <label>Owner email<input required type="email" value={ownerEmail} onChange={(event) => setOwnerEmail(event.target.value)} /></label>
+          <button type="submit" disabled={working || !tenantId.trim() || !ownerDisplayName.trim() || !ownerEmail.trim()}>{working ? "Activating…" : "Activate tenant and secure owner setup"}</button>
+        </form> : null}
+      </section> : null}
       {status ? <p className="platform-prospect-intake__status">{status}</p> : null}
     </section>
   );

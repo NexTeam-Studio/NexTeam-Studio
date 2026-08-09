@@ -107,6 +107,9 @@
 .platform-prospect-intake button { justify-self: start; border: 0; border-radius: 999px; padding: 11px 16px; color: #142016; background: linear-gradient(135deg, #d4ff20, #25d238); font-weight: 800; }
 .platform-prospect-intake button:disabled { opacity: 0.55; }
 .platform-prospect-intake__status { grid-column: 1 / -1; padding: 10px 12px; border-radius: 12px; background: rgba(37, 210, 56, 0.12); }
+.platform-prospect-intake__continuation { min-width: 0; display: grid; gap: 10px; padding: 16px; border: 1px solid rgba(38, 53, 44, 0.12); border-radius: 16px; background: rgba(38, 53, 44, 0.05); }
+.platform-prospect-intake__continuation h3 { margin: 0; color: var(--ink-900); }
+.platform-prospect-intake__continuation form { min-width: 0; }
 
 .platform-tenant-blockers { display: grid; grid-template-columns: minmax(220px, 0.8fr) minmax(320px, 1.2fr); gap: 20px; padding: 24px; border: 1px solid rgba(38, 53, 44, 0.12); border-radius: 28px; background: rgba(255, 250, 240, 0.94); }
 .platform-tenant-blockers h2, .platform-tenant-blockers p { margin: 0; }
