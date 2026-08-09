@@ -16,6 +16,8 @@ import type { PortalHubService } from "../../../nexportal/components/portalCore/
 import { FirestoreNativeCrmRepository } from "../persistence/nativeRepository.js";
 import { AgreementService, MemoryAgreementRepository, type AgreementRepository } from "../agreements/agreementFoundation.js";
 import { FirestoreAgreementRepository } from "../agreements/agreementRepository.js";
+import { JobCostingService, MemoryJobCostingRepository, type JobCostingRepository } from "../jobCosting/jobCostingFoundation.js";
+import { FirestoreJobCostingRepository } from "../jobCosting/jobCostingRepository.js";
 
 export interface CrmRouteDeps {
   approvalQueue: ApprovalQueueService;
@@ -33,6 +35,7 @@ export interface CrmRouteDeps {
   nexReachService?: Pick<NexReachService, "handleConsentChange"> | undefined;
   operationsHubService?: OperationsHubService | undefined;
   agreementRepository?: AgreementRepository | undefined;
+  jobCostingRepository?: JobCostingRepository | undefined;
   env?: NodeJS.ProcessEnv | undefined;
 }
 
@@ -42,6 +45,7 @@ export function createCrmRouteServices(deps: CrmRouteDeps) {
   const fallbackFieldDocsRepository = deps.fieldDocsRepository ?? new MemoryMediaRepository();
   const eventBus = deps.eventBus ?? new InMemoryEventBus();
   const fallbackAgreementRepository = deps.agreementRepository ?? new MemoryAgreementRepository();
+  const fallbackJobCostingRepository = deps.jobCostingRepository ?? new MemoryJobCostingRepository();
 
   function repositoryForTenant(): NativeCrmRepository {
     const db = getAdminDb(env);
@@ -55,6 +59,11 @@ export function createCrmRouteServices(deps: CrmRouteDeps) {
   function agreementService(): AgreementService {
     const db = getAdminDb(env);
     return new AgreementService(db ? new FirestoreAgreementRepository(db) : fallbackAgreementRepository);
+  }
+
+  function jobCostingService(): JobCostingService {
+    const db = getAdminDb(env);
+    return new JobCostingService(db ? new FirestoreJobCostingRepository(db) : fallbackJobCostingRepository);
   }
 
   function fieldDocsRepository(): MediaRepository {
@@ -108,6 +117,7 @@ export function createCrmRouteServices(deps: CrmRouteDeps) {
     fieldDocsRepository,
     fieldDocsService,
     jobLifecycle,
+    jobCostingService,
     ledger,
     nexDocsService,
     operationsHub,

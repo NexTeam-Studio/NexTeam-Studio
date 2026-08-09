@@ -1,0 +1,13 @@
+import type { Firestore } from "firebase-admin/firestore";
+import { setTenantOwnedDocument } from "../../../../core/tenantOwnedWrite.js";
+import { asDocumentData } from "../persistence/firestoreRepositoryBase.js";
+import { jobCostFactSchema, type JobCostFact, type JobCostFactEvent, type JobCostingRepository } from "./jobCostingFoundation.js";
+
+export class FirestoreJobCostingRepository implements JobCostingRepository {
+  constructor(private readonly db: Firestore) {}
+  async listFacts(tenantId: string, jobId: string) { const snapshot = await this.db.collection("jobCostFacts").where("tenantId", "==", tenantId).get(); return snapshot.docs.map((doc) => jobCostFactSchema.parse(doc.data())).filter((fact) => fact.jobId === jobId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)); }
+  async getFact(tenantId: string, id: string) { const snapshot = await this.db.collection("jobCostFacts").doc(id).get(); if (!snapshot.exists) return null; const fact = jobCostFactSchema.parse(snapshot.data()); return fact.tenantId === tenantId ? fact : null; }
+  async saveFact(fact: JobCostFact) { const parsed = jobCostFactSchema.parse(fact); await setTenantOwnedDocument({ db: this.db, collection: "jobCostFacts", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Job cost fact ${parsed.id}` }); return parsed; }
+  async appendEvent(event: JobCostFactEvent) { await setTenantOwnedDocument({ db: this.db, collection: "jobCostFactEvents", id: event.id, tenantId: event.tenantId, data: asDocumentData(event), label: `Job cost event ${event.id}` }); }
+  async listEvents(tenantId: string, jobId: string) { const snapshot = await this.db.collection("jobCostFactEvents").where("tenantId", "==", tenantId).get(); return snapshot.docs.map((doc) => doc.data() as JobCostFactEvent).filter((event) => event.jobId === jobId).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)); }
+}

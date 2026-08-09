@@ -30,6 +30,7 @@ import { createQuoteRouteSupport } from "../areas/quotes/components/quoteEngine/
 import { createInvoiceRouteSupport } from "../areas/invoices/components/invoiceStructure/server/routeSupport.js";
 import { defaultCrmTenantId, publicRequestOrigin, requireOfficeAccess, sendCrmRouteError } from "../shared/runtime/routeHttpSupport.js";
 import { AgreementService, agreementCreateInputSchema, agreementPatchInputSchema } from "../shared/agreements/agreementFoundation.js";
+import { JobCostingService, createJobCostFactInputSchema, voidJobCostFactInputSchema } from "../shared/jobCosting/jobCostingFoundation.js";
 
 export type { CrmRouteDeps } from "../shared/runtime/routeComposition.js";
 
@@ -46,6 +47,7 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
     fieldDocsRepository,
     fieldDocsService,
     jobLifecycle,
+    jobCostingService,
     ledger,
     nexDocsService,
     operationsHub,
@@ -106,6 +108,7 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
   return {
     FieldDocsService,
     AgreementService,
+    JobCostingService,
     FirestoreMediaRepository,
     FirestoreNativeCrmRepository,
     InMemoryEventBus,
@@ -167,8 +170,10 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
     invoiceDeliveryPreferencesSchema,
     invoiceTemplateVariables,
     jobLifecycle,
+    jobCostingService,
     ledger,
     lineItemSchema,
+    createJobCostFactInputSchema,
     materializeQuoteRecord,
     nexDocsService,
     notifyRequestCreated,
@@ -230,6 +235,7 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
     sendRouteError,
     syncExpiredQuote,
     tenantBranding,
+    voidJobCostFactInputSchema,
     updateServiceRequestShape,
     verifyStripeWebhookEvent,
     z,
