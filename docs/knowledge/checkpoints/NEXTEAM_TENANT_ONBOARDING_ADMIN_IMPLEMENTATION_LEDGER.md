@@ -1,0 +1,38 @@
+# NexTeam Tenant Onboarding and Admin Implementation Ledger
+
+## Wave
+
+- Job: `NEXTEAM-TENANT-ONBOARDING-ADMIN-AUTONOMOUS-BUILD`
+- Boundary: Ready for Chris end-user onboarding test
+- Integration worktree: `target-architecture-integration`
+- Active component owner: `platform-tenants`
+
+## Phase ledger
+
+| Phase | Status | Owner | Evidence / next requirement |
+| --- | --- | --- | --- |
+| A — inventory and ownership | GREEN | platform-tenants + integration | Existing platform repository/routes/UI, Firebase tenant-user contract, tenant settings onboarding, and capability guards were inspected. Extend these authoritative paths; do not create a second tenant or subscription system. |
+| B — prospect, intake, Blueprint contracts | NOT STARTED | platform-tenants + integration | Add a shared, non-sensitive prospect intake and immutable Blueprint revision contract. |
+| C — NexTeam Admin foundation | NOT STARTED | platform-tenants | Extend the internal platform surface with operator-only access. |
+| D — manual intake and Blueprint UI | NOT STARTED | platform-tenants | Use the Phase B contract only. |
+| E — required test subscription | NOT STARTED | platform-tenants | Normalize an audited $0 test package and activation gate. |
+| F — tenant and owner activation | NOT STARTED | platform-tenants + nexteam-global | Reuse Firebase tenant-user and claims contracts; never store passwords. |
+| G–O | NOT STARTED | assigned per phase | Advance only after the preceding phase has captured green evidence. |
+
+## Authoritative existing ownership
+
+| Domain | Existing authoritative implementation | Build direction |
+| --- | --- | --- |
+| Platform tenant administration | `apps/server/src/platform/**`; `apps/web/src/features/platform/**` | Extend in the platform-tenants lane. |
+| Tenant users, roles, capabilities | platform repository/routes and Firebase auth guards | Reuse; activation must create the existing tenant-user linkage. |
+| Tenant configuration and current guided settings onboarding | NexOps settings and tenant configuration contracts | Keep onboarding configuration in the existing durable tenant record path. |
+| Firebase auth | shared web auth plus server admin-auth guards | Reuse secure invitation/password-reset mechanisms; no plaintext passwords. |
+| Tenant audit | platform membership audits and existing tenant-scoped persistence | Extend with immutable onboarding and Blueprint revisions. |
+| Assistant intake | Nexi runtime | Consume the shared intake contract after manual intake is operational. |
+
+## Phase A gaps confirmed
+
+- No unified durable prospect/intake/Blueprint lifecycle contract is present.
+- Existing subscription support is tenant-oriented but does not yet provide the required package-selection activation gate.
+- Existing platform administration is tenant-management oriented; it lacks the complete internal prospect, Blueprint, onboarding, migration, support-blocker, and integration-health workflow.
+- Existing tenant onboarding settings must be connected to the activation lifecycle, not duplicated.
