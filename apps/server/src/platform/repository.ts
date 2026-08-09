@@ -12,6 +12,7 @@ import {
   tenantOnboardingBlueprintRevisionSchema,
   tenantOnboardingBlueprintSchema,
   tenantBlockerSchema,
+  tenantMigrationRecordSchema,
   tenantSchema,
   tenantSubscriptionSchema,
   tenantUserSchema,
@@ -24,6 +25,7 @@ import {
   type ProspectIntake,
   type Tenant,
   type TenantBlocker,
+  type TenantMigrationRecord,
   type TenantAdapterStatus,
   type TenantOnboardingBlueprint,
   type TenantOnboardingBlueprintRevision,
@@ -127,6 +129,9 @@ export interface PlatformRepository {
   listTenantBlockers(tenantId?: string): Promise<TenantBlocker[]>;
   getTenantBlocker(blockerId: string): Promise<TenantBlocker | null>;
   saveTenantBlocker(blocker: TenantBlocker): Promise<TenantBlocker>;
+  listTenantMigrationRecords(tenantId?: string): Promise<TenantMigrationRecord[]>;
+  getTenantMigrationRecord(migrationId: string): Promise<TenantMigrationRecord | null>;
+  saveTenantMigrationRecord(record: TenantMigrationRecord): Promise<TenantMigrationRecord>;
   listPlatformSupportEscalations(tenantId?: string): Promise<PlatformSupportEscalation[]>;
   getPlatformSupportEscalation(escalationId: string): Promise<PlatformSupportEscalation | null>;
   savePlatformSupportEscalation(escalation: PlatformSupportEscalation): Promise<PlatformSupportEscalation>;
@@ -175,6 +180,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   private readonly onboardingBlueprints = new Map<string, TenantOnboardingBlueprint>();
   private readonly onboardingBlueprintRevisions = new Map<string, TenantOnboardingBlueprintRevision[]>();
   private readonly tenantBlockers = new Map<string, TenantBlocker>();
+  private readonly tenantMigrationRecords = new Map<string, TenantMigrationRecord>();
   private readonly supportEscalations = new Map<string, PlatformSupportEscalation>();
   private readonly subscriptionAssignments = new Map<string, PlatformSubscriptionAssignment>();
   private readonly tenants = new Map<string, Tenant>();
@@ -326,6 +332,22 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     const parsed = tenantBlockerSchema.parse(blocker) as TenantBlocker;
     if (!this.tenants.has(parsed.tenantId)) throw new Error(`Tenant ${parsed.tenantId} does not exist.`);
     this.tenantBlockers.set(parsed.id, firestoreDoc(parsed));
+    return firestoreDoc(parsed);
+  }
+
+  async listTenantMigrationRecords(tenantId?: string): Promise<TenantMigrationRecord[]> {
+    return [...this.tenantMigrationRecords.values()].filter((entry) => !tenantId || entry.tenantId === tenantId).map(firestoreDoc);
+  }
+
+  async getTenantMigrationRecord(migrationId: string): Promise<TenantMigrationRecord | null> {
+    const record = this.tenantMigrationRecords.get(migrationId);
+    return record ? firestoreDoc(record) : null;
+  }
+
+  async saveTenantMigrationRecord(record: TenantMigrationRecord): Promise<TenantMigrationRecord> {
+    const parsed = tenantMigrationRecordSchema.parse(record) as TenantMigrationRecord;
+    if (!this.tenants.has(parsed.tenantId)) throw new Error(`Tenant ${parsed.tenantId} does not exist.`);
+    this.tenantMigrationRecords.set(parsed.id, firestoreDoc(parsed));
     return firestoreDoc(parsed);
   }
 
@@ -628,6 +650,26 @@ export class FirestorePlatformRepository implements PlatformRepository {
     const parsed = tenantBlockerSchema.parse(blocker) as TenantBlocker;
     if (!await this.getTenant(parsed.tenantId)) throw new Error(`Tenant ${parsed.tenantId} does not exist.`);
     await setPlatformOwnedDocument({ db: this.db, collection: "platformTenantBlockers", id: parsed.id, data: docData(parsed) });
+    return parsed;
+  }
+
+  async listTenantMigrationRecords(tenantId?: string): Promise<TenantMigrationRecord[]> {
+    const collection = this.db.collection("platformTenantMigrationRecords");
+    const snapshot = tenantId
+      ? await collection.where("tenantId", "==", tenantId).orderBy("updatedAt", "desc").get()
+      : await collection.orderBy("updatedAt", "desc").get();
+    return snapshot.docs.map((doc) => tenantMigrationRecordSchema.parse(doc.data()) as TenantMigrationRecord);
+  }
+
+  async getTenantMigrationRecord(migrationId: string): Promise<TenantMigrationRecord | null> {
+    const snapshot = await this.db.collection("platformTenantMigrationRecords").doc(migrationId).get();
+    return snapshot.exists ? tenantMigrationRecordSchema.parse(snapshot.data()) as TenantMigrationRecord : null;
+  }
+
+  async saveTenantMigrationRecord(record: TenantMigrationRecord): Promise<TenantMigrationRecord> {
+    const parsed = tenantMigrationRecordSchema.parse(record) as TenantMigrationRecord;
+    if (!await this.getTenant(parsed.tenantId)) throw new Error(`Tenant ${parsed.tenantId} does not exist.`);
+    await setPlatformOwnedDocument({ db: this.db, collection: "platformTenantMigrationRecords", id: parsed.id, data: docData(parsed) });
     return parsed;
   }
 

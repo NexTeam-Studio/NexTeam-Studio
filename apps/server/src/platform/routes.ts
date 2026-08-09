@@ -311,6 +311,74 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
     }
   });
 
+  app.get("/api/platform/admin/migrations", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim() ? requiredTenantId(req.query.tenantId) : undefined;
+      res.json({ ok: true, migrations: await deps.repository.listTenantMigrationRecords(tenantId) });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/admin/tenants/:tenantId/migrations", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      const input = z.object({
+        sourceSystem: z.string().trim().min(1).max(120),
+        scope: z.string().trim().min(1).max(4000),
+        status: z.enum(["PENDING", "DEFERRED"]).default("PENDING"),
+        deferredReason: z.string().trim().min(1).max(2000).optional(),
+        deferredUntil: z.string().min(1).optional()
+      }).strict().parse(req.body ?? {});
+      if (input.status === "DEFERRED" && !input.deferredReason) throw new RailError("Deferred migrations require a safe deferral reason.", { provider: "platform", op: "tenantMigration", status: 400 });
+      if (input.status !== "DEFERRED" && (input.deferredReason || input.deferredUntil)) throw new RailError("Deferral details are allowed only while a migration is deferred.", { provider: "platform", op: "tenantMigration", status: 400 });
+      const timestamp = new Date().toISOString();
+      const migration = await deps.repository.saveTenantMigrationRecord({
+        id: `tenant_migration_${randomUUID()}`,
+        tenantId,
+        ...input,
+        createdAt: timestamp,
+        createdBy: "platform_operator",
+        updatedAt: timestamp,
+        updatedBy: "platform_operator"
+      });
+      res.status(201).json({ ok: true, migration });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.patch("/api/platform/admin/migrations/:migrationId", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      const migrationId = requiredTenantId(req.params.migrationId);
+      const input = z.object({
+        status: z.enum(["PENDING", "IN_PROGRESS", "VALIDATION", "DEFERRED", "COMPLETED"]),
+        deferredReason: z.string().trim().min(1).max(2000).optional(),
+        deferredUntil: z.string().min(1).optional()
+      }).strict().parse(req.body ?? {});
+      const migration = await deps.repository.getTenantMigrationRecord(migrationId);
+      if (!migration) throw new RailError("Tenant migration record was not found.", { provider: "platform", op: "tenantMigration", status: 404 });
+      if (input.status === "DEFERRED" && !input.deferredReason) throw new RailError("Deferred migrations require a safe deferral reason.", { provider: "platform", op: "tenantMigration", status: 400 });
+      if (input.status !== "DEFERRED" && (input.deferredReason || input.deferredUntil)) throw new RailError("Deferral details are allowed only while a migration is deferred.", { provider: "platform", op: "tenantMigration", status: 400 });
+      const timestamp = new Date().toISOString();
+      const updated = await deps.repository.saveTenantMigrationRecord({
+        ...migration,
+        status: input.status,
+        deferredReason: input.status === "DEFERRED" ? input.deferredReason : undefined,
+        deferredUntil: input.status === "DEFERRED" ? input.deferredUntil : undefined,
+        completedAt: input.status === "COMPLETED" ? timestamp : undefined,
+        updatedAt: timestamp,
+        updatedBy: "platform_operator"
+      });
+      res.json({ ok: true, migration: updated });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.post("/api/platform/admin/tenants/:tenantId/blockers", async (req: Request, res: Response) => {
     try {
       await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);

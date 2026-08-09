@@ -243,6 +243,34 @@ export const tenantBlockerSchema = z.object({
   resolvedBy: idSchema.optional()
 }).strict();
 
+export const tenantMigrationRecordSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  sourceSystem: z.string().trim().min(1).max(120),
+  scope: z.string().trim().min(1).max(4000),
+  status: z.enum(["PENDING", "IN_PROGRESS", "VALIDATION", "DEFERRED", "COMPLETED"]),
+  deferredReason: z.string().trim().min(1).max(2000).optional(),
+  deferredUntil: z.string().min(1).optional(),
+  createdAt: z.string().min(1),
+  createdBy: idSchema,
+  updatedAt: z.string().min(1),
+  updatedBy: idSchema,
+  completedAt: z.string().min(1).optional()
+}).strict().superRefine((value, context) => {
+  if (value.status === "DEFERRED" && !value.deferredReason) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Deferred migrations require a safe deferral reason." });
+  }
+  if (value.status !== "DEFERRED" && (value.deferredReason || value.deferredUntil)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Deferral details are allowed only while a migration is deferred." });
+  }
+  if (value.status === "COMPLETED" && !value.completedAt) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Completed migrations require a completion timestamp." });
+  }
+  if (value.status !== "COMPLETED" && value.completedAt) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Only completed migrations may have a completion timestamp." });
+  }
+});
+
 export const platformSupportEscalationSchema = z.object({
   id: idSchema,
   tenantId: idSchema,

@@ -203,6 +203,26 @@ export interface TenantBlocker {
   resolvedBy?: ID | undefined;
 }
 
+/**
+ * A tenant-scoped onboarding migration record.  It contains planning and
+ * lifecycle metadata only; credentials, exports, and source records stay out
+ * of the platform database.
+ */
+export interface TenantMigrationRecord {
+  id: ID;
+  tenantId: ID;
+  sourceSystem: string;
+  scope: string;
+  status: "PENDING" | "IN_PROGRESS" | "VALIDATION" | "DEFERRED" | "COMPLETED";
+  deferredReason?: string | undefined;
+  deferredUntil?: string | undefined;
+  createdAt: string;
+  createdBy: ID;
+  updatedAt: string;
+  updatedBy: ID;
+  completedAt?: string | undefined;
+}
+
 /** Platform-operated support case linked to a tenant blocker. */
 export interface PlatformSupportEscalation {
   id: ID;

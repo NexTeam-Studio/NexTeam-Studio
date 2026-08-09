@@ -708,3 +708,63 @@ test("tenant blockers persist by tenant and platform support escalation denies n
     server.close();
   }
 });
+
+test("tenant migration records persist status and require an operator plus a safe deferral reason", async () => {
+  const app = express();
+  app.use(express.json());
+  registerPlatformRoutes(app, {
+    repository: new InMemoryPlatformRepository([defaultTenant("tenant-a"), defaultTenant("tenant-b")]),
+    storage: null,
+    env: { NEXI_FIREBASE_AUTH_REQUIRED: "true" },
+    platformOperatorAuth: { async verifyIdToken(token) {
+      if (token === "operator") return { uid: "operator", platform_operator: true };
+      return { uid: "tenant-owner" };
+    } }
+  });
+  const server = app.listen(0);
+  try {
+    const { port } = server.address();
+    const base = `http://127.0.0.1:${port}`;
+    const denied = await fetch(`${base}/api/platform/admin/tenants/tenant-a/migrations`, {
+      method: "POST", headers: { authorization: "Bearer tenant-owner", "content-type": "application/json" },
+      body: JSON.stringify({ sourceSystem: "Legacy CRM", scope: "Contacts" })
+    });
+    assert.equal(denied.status, 403);
+
+    const unsafeDeferral = await fetch(`${base}/api/platform/admin/tenants/tenant-a/migrations`, {
+      method: "POST", headers: { authorization: "Bearer operator", "content-type": "application/json" },
+      body: JSON.stringify({ sourceSystem: "Legacy CRM", scope: "Contacts", status: "DEFERRED" })
+    });
+    assert.equal(unsafeDeferral.status, 400);
+
+    const created = await fetch(`${base}/api/platform/admin/tenants/tenant-a/migrations`, {
+      method: "POST", headers: { authorization: "Bearer operator", "content-type": "application/json" },
+      body: JSON.stringify({ sourceSystem: "Legacy CRM", scope: "Contacts and historical invoices", status: "DEFERRED", deferredReason: "Owner will provide a sanitized export after launch." })
+    });
+    assert.equal(created.status, 201);
+    const migration = (await created.json()).migration;
+    assert.equal(migration.status, "DEFERRED");
+
+    const resumed = await fetch(`${base}/api/platform/admin/migrations/${encodeURIComponent(migration.id)}`, {
+      method: "PATCH", headers: { authorization: "Bearer operator", "content-type": "application/json" },
+      body: JSON.stringify({ status: "IN_PROGRESS" })
+    });
+    assert.equal(resumed.status, 200);
+    assert.equal((await resumed.json()).migration.deferredReason, undefined);
+
+    const completed = await fetch(`${base}/api/platform/admin/migrations/${encodeURIComponent(migration.id)}`, {
+      method: "PATCH", headers: { authorization: "Bearer operator", "content-type": "application/json" },
+      body: JSON.stringify({ status: "COMPLETED" })
+    });
+    assert.equal(completed.status, 200);
+    assert.ok((await completed.json()).migration.completedAt);
+
+    const persisted = await fetch(`${base}/api/platform/admin/migrations?tenantId=tenant-a`, { headers: { authorization: "Bearer operator" } }).then((response) => response.json());
+    assert.equal(persisted.migrations.length, 1);
+    assert.equal(persisted.migrations[0].status, "COMPLETED");
+    const isolated = await fetch(`${base}/api/platform/admin/migrations?tenantId=tenant-b`, { headers: { authorization: "Bearer operator" } }).then((response) => response.json());
+    assert.deepEqual(isolated.migrations, []);
+  } finally {
+    server.close();
+  }
+});
