@@ -395,7 +395,7 @@ app.get("/nexops/sign-in", (_req: Request, res: Response) => {
   res.sendFile(path.join(webDistDir, "index.html"));
 });
 
-app.get(/^\/(?:nexi|nexops|nexcam|nexreach|platform)(?:\/.*)?$/, (_req: Request, res: Response) => {
+app.get(/^\/(?:nexi|nexops|nexcam|nexreach|platform|nexcommand)(?:\/.*)?$/, (_req: Request, res: Response) => {
   res.sendFile(path.join(webDistDir, "index.html"));
 });
 
