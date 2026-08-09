@@ -458,6 +458,13 @@ test("client hub sessions authenticate, reverify after 14 days, and keep propert
       tokenIssuedAt: "2026-07-17T09:00:00.000Z"
     }
   }));
+  await fixture.repository.createQuote(quoteRecord({
+    id: "quote_internal_draft",
+    number: "Q-2003",
+    title: "Internal draft quote",
+    jobId: mainJob.id,
+    status: "draft"
+  }));
   await fixture.repository.createInvoice(invoiceRecord({
     id: "invoice_main",
     number: "INV-2001",
@@ -471,6 +478,13 @@ test("client hub sessions authenticate, reverify after 14 days, and keep propert
     title: "Lake house invoice",
     jobId: lakeJob.id,
     totals: totals(180)
+  }));
+  await fixture.repository.createInvoice(invoiceRecord({
+    id: "invoice_internal_draft",
+    number: "INV-2003",
+    title: "Internal draft invoice",
+    jobId: mainJob.id,
+    status: "draft"
   }));
 
   const app = appForFixture(fixture);
@@ -511,6 +525,13 @@ test("client hub sessions authenticate, reverify after 14 days, and keep propert
     assert.match(homeHtml, /Appointments/i);
     assert.match(homeHtml, /Documents/i);
     assert.doesNotMatch(homeHtml, /Archived client/i);
+    assert.doesNotMatch(homeHtml, /Internal draft quote/i);
+    assert.doesNotMatch(homeHtml, /Internal draft invoice/i);
+
+    const wrongTenantResponse = await fetch(`${base}/nexportal?tenantId=another_tenant`, {
+      headers: { cookie: clientCookie }
+    });
+    assert.equal(wrongTenantResponse.status, 401);
 
     const staleClientSession = await fixture.portalHubRepository.getPortalSession("aquatrace", clientLink.session.id);
     await fixture.portalHubRepository.upsertPortalSession({

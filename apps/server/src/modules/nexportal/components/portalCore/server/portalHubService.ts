@@ -238,6 +238,18 @@ function jobAllowsPortalFieldDocs(job: Job | undefined): boolean {
   return job?.clientVisibility?.hideFieldDocsFromPortal !== true;
 }
 
+// A portal session is not an internal-record viewer. These are the only
+// lifecycle states that have crossed the customer-delivery boundary.
+function quoteIsVisibleInPortal(quote: Quote): boolean {
+  return Boolean(quote.portal?.tokenHash)
+    && (quote.status === "sent" || quote.status === "change_requested" || quote.status === "approved");
+}
+
+function invoiceIsVisibleInPortal(invoice: Invoice): boolean {
+  return Boolean(invoice.portal?.tokenHash)
+    && (invoice.status === "sent" || invoice.status === "awaiting_payment" || invoice.status === "partial_pay" || invoice.status === "paid");
+}
+
 export class PortalHubService {
   constructor(private readonly deps: PortalHubServiceDeps) {}
 
@@ -509,11 +521,15 @@ export class PortalHubService {
     const propertyIds = new Set(clientJobs.map((job) => job.propertyId).filter(Boolean));
     const clientQuotes = quotes.filter((record) => {
       const propertyId = record.jobId ? jobById.get(record.jobId)?.propertyId : undefined;
-      return record.clientId === client.id && this.propertyFilter(input.session, propertyId);
+      return record.clientId === client.id
+        && quoteIsVisibleInPortal(record)
+        && this.propertyFilter(input.session, propertyId);
     });
     const clientInvoices = invoices.filter((record) => {
       const propertyId = record.jobId ? jobById.get(record.jobId)?.propertyId : undefined;
-      return record.clientId === client.id && this.propertyFilter(input.session, propertyId);
+      return record.clientId === client.id
+        && invoiceIsVisibleInPortal(record)
+        && this.propertyFilter(input.session, propertyId);
     });
     const clientVisits = visits.filter((record) => {
       const job = jobById.get(record.jobId);
@@ -521,6 +537,7 @@ export class PortalHubService {
     });
     const clientReceipts = receiptReviews
       .filter((record) => record.clientId === client.id)
+      .filter((record) => record.status === "sent")
       .filter((record) => this.propertyFilter(input.session, record.jobId ? jobById.get(record.jobId)?.propertyId : undefined));
     const clientFieldReports = fieldDocsReports
       .filter((record) => {
