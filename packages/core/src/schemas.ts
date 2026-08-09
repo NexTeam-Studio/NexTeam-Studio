@@ -160,6 +160,102 @@ export const tenantSubscriptionSchema = z.object({
   updatedAt: z.string()
 });
 
+export const prospectStatusSchema = z.enum(["DRAFT", "INTAKE_COMPLETE", "BLUEPRINT_READY", "SUBSCRIPTION_REQUIRED", "CONVERTED", "LOST", "ABANDONED"]);
+export const blueprintRevisionSourceSchema = z.enum(["NEXI", "NEXTEAM_STAFF", "TENANT_OWNER", "TENANT_TEAM_MEMBER", "SYSTEM"]);
+export const blueprintApprovalStateSchema = z.enum(["DRAFT", "APPROVED", "DELIVERED", "SUPERSEDED"]);
+
+/** Explicitly restricted to non-sensitive fields that are appropriate before subscription. */
+export const prospectSchema = z.object({
+  id: idSchema,
+  status: prospectStatusSchema,
+  businessName: z.string().min(1),
+  website: z.string().url().optional(),
+  industry: z.string().min(1),
+  primaryLocation: addressSchema.optional(),
+  additionalLocations: z.array(addressSchema),
+  serviceArea: z.array(z.string().min(1)),
+  yearsInBusiness: z.number().int().min(0).max(250).optional(),
+  primaryContactName: z.string().min(1).optional(),
+  primaryContactRole: z.string().min(1).optional(),
+  notes: z.string().max(4000).optional(),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1),
+  createdBy: idSchema
+}).strict();
+
+export const prospectSoftwareInventoryItemSchema = z.object({
+  id: idSchema,
+  category: z.string().min(1),
+  provider: z.string().min(1),
+  purpose: z.string().max(1000).optional(),
+  replacementTiming: z.enum(["REPLACE_NOW", "REPLACE_LATER", "COEXIST", "UNKNOWN"]),
+  notes: z.string().max(2000).optional()
+}).strict();
+
+export const prospectIntakeSchema = z.object({
+  id: idSchema,
+  prospectId: idSchema,
+  services: z.array(z.string().min(1)),
+  customerTypes: z.array(z.string().min(1)),
+  serviceAreaNotes: z.string().max(2000).optional(),
+  teamSize: z.number().int().min(0).max(100000).optional(),
+  operatingHoursNotes: z.string().max(2000).optional(),
+  brandVoice: z.string().max(2000).optional(),
+  currentSystems: z.array(prospectSoftwareInventoryItemSchema),
+  migrationRecommendation: z.string().max(4000).optional(),
+  source: z.enum(["MANUAL", "NEXI"]),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1),
+  createdBy: idSchema
+}).strict();
+
+export const tenantOnboardingBlueprintSchema = z.object({
+  id: idSchema,
+  prospectId: idSchema,
+  recommendedLayout: z.array(z.string().min(1)),
+  nexiResponsibilities: z.array(z.string().min(1)),
+  opportunities: z.object({
+    nexcam: z.array(z.string().min(1)).optional(),
+    nexdocs: z.array(z.string().min(1)).optional(),
+    nexreach: z.array(z.string().min(1)).optional(),
+    nexportal: z.array(z.string().min(1)).optional()
+  }).strict(),
+  recommendedForms: z.array(z.string().min(1)),
+  recommendedWorkflows: z.array(z.string().min(1)),
+  recommendedAutomations: z.array(z.string().min(1)),
+  recommendedModules: z.array(platformModuleSchema),
+  migrationRecommendation: z.string().max(4000).optional(),
+  futureOpportunities: z.array(z.string().min(1)),
+  createdAt: z.string().min(1),
+  createdBy: idSchema
+}).strict();
+
+export const tenantOnboardingBlueprintRevisionSchema = z.object({
+  id: idSchema,
+  prospectId: idSchema,
+  blueprintId: idSchema,
+  previousRevisionId: idSchema.optional(),
+  revisionNumber: z.number().int().positive(),
+  snapshot: tenantOnboardingBlueprintSchema,
+  actorId: idSchema,
+  actorType: blueprintRevisionSourceSchema,
+  source: blueprintRevisionSourceSchema,
+  fieldsChanged: z.array(z.string().min(1)),
+  reason: z.string().max(2000).optional(),
+  approvalState: blueprintApprovalStateSchema,
+  createdAt: z.string().min(1)
+}).strict().superRefine((value, context) => {
+  if (value.snapshot.id !== value.blueprintId || value.snapshot.prospectId !== value.prospectId) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Blueprint revision snapshot must belong to the same prospect and Blueprint." });
+  }
+  if (value.revisionNumber === 1 && value.previousRevisionId) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "The first Blueprint revision cannot reference a previous revision." });
+  }
+  if (value.revisionNumber > 1 && !value.previousRevisionId) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Later Blueprint revisions must reference the prior revision." });
+  }
+});
+
 export const tenantUserRoleSchema = z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]);
 export const tenantCapabilitySchema = z.enum(["team.view", "team.manage", "team.invite", "tenant.audit.read"]);
 
@@ -1536,6 +1632,10 @@ export type TenantDoc = z.infer<typeof tenantSchema>;
 export type TenantBrandingDoc = z.infer<typeof tenantBrandingSchema>;
 export type PlatformPlanDoc = z.infer<typeof platformPlanSchema>;
 export type TenantSubscriptionDoc = z.infer<typeof tenantSubscriptionSchema>;
+export type ProspectDoc = z.infer<typeof prospectSchema>;
+export type ProspectIntakeDoc = z.infer<typeof prospectIntakeSchema>;
+export type TenantOnboardingBlueprintDoc = z.infer<typeof tenantOnboardingBlueprintSchema>;
+export type TenantOnboardingBlueprintRevisionDoc = z.infer<typeof tenantOnboardingBlueprintRevisionSchema>;
 export type TenantAdapterStatusDoc = z.infer<typeof tenantAdapterStatusSchema>;
 export type TenantCostSummaryDoc = z.infer<typeof tenantCostSummarySchema>;
 export type PlatformBackupRecordDoc = z.infer<typeof platformBackupRecordSchema>;

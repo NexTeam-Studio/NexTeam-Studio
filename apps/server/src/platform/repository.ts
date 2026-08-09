@@ -3,16 +3,24 @@ import type { Firestore } from "firebase-admin/firestore";
 import {
   jobAccessLinkSchema,
   platformBackupRecordSchema,
+  prospectIntakeSchema,
+  prospectSchema,
   tenantBrandingSchema,
   tenantAdapterStatusSchema,
+  tenantOnboardingBlueprintRevisionSchema,
+  tenantOnboardingBlueprintSchema,
   tenantSchema,
   tenantSubscriptionSchema,
   tenantUserSchema,
   usageLogRecordSchema,
   type JobAccessLink,
   type PlatformBackupRecord,
+  type Prospect,
+  type ProspectIntake,
   type Tenant,
   type TenantAdapterStatus,
+  type TenantOnboardingBlueprint,
+  type TenantOnboardingBlueprintRevision,
   type TenantBranding,
   type TenantCostSummary,
   type TenantDataExport,
@@ -101,6 +109,15 @@ function now(): string {
 }
 
 export interface PlatformRepository {
+  listProspects(): Promise<Prospect[]>;
+  getProspect(prospectId: string): Promise<Prospect | null>;
+  saveProspect(prospect: Prospect): Promise<Prospect>;
+  getProspectIntake(prospectId: string): Promise<ProspectIntake | null>;
+  saveProspectIntake(intake: ProspectIntake): Promise<ProspectIntake>;
+  createTenantOnboardingBlueprint(blueprint: TenantOnboardingBlueprint): Promise<TenantOnboardingBlueprint>;
+  getTenantOnboardingBlueprint(blueprintId: string): Promise<TenantOnboardingBlueprint | null>;
+  listTenantOnboardingBlueprintRevisions(blueprintId: string): Promise<TenantOnboardingBlueprintRevision[]>;
+  appendTenantOnboardingBlueprintRevision(revision: TenantOnboardingBlueprintRevision): Promise<TenantOnboardingBlueprintRevision>;
   listTenants(): Promise<Tenant[]>;
   getTenant(tenantId: string): Promise<Tenant | null>;
   upsertTenant(tenant: Tenant): Promise<Tenant>;
@@ -139,6 +156,10 @@ function starterSubscription(tenant: Tenant): TenantSubscription {
 }
 
 export class InMemoryPlatformRepository implements PlatformRepository {
+  private readonly prospects = new Map<string, Prospect>();
+  private readonly prospectIntakes = new Map<string, ProspectIntake>();
+  private readonly onboardingBlueprints = new Map<string, TenantOnboardingBlueprint>();
+  private readonly onboardingBlueprintRevisions = new Map<string, TenantOnboardingBlueprintRevision[]>();
   private readonly tenants = new Map<string, Tenant>();
   private readonly tenantBranding = new Map<string, TenantBranding>();
   private readonly tenantUsers = new Map<string, TenantUser[]>();
@@ -205,6 +226,74 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     current.push(parsed);
     this.tenantUsers.set(parsed.tenantId, current);
     return parsed;
+  }
+
+  async listProspects(): Promise<Prospect[]> {
+    return [...this.prospects.values()].map(firestoreDoc);
+  }
+
+  async getProspect(prospectId: string): Promise<Prospect | null> {
+    const prospect = this.prospects.get(prospectId);
+    return prospect ? firestoreDoc(prospect) : null;
+  }
+
+  async saveProspect(prospect: Prospect): Promise<Prospect> {
+    const parsed = prospectSchema.parse(prospect) as Prospect;
+    this.prospects.set(parsed.id, firestoreDoc(parsed));
+    return firestoreDoc(parsed);
+  }
+
+  async getProspectIntake(prospectId: string): Promise<ProspectIntake | null> {
+    const intake = this.prospectIntakes.get(prospectId);
+    return intake ? firestoreDoc(intake) : null;
+  }
+
+  async saveProspectIntake(intake: ProspectIntake): Promise<ProspectIntake> {
+    const parsed = prospectIntakeSchema.parse(intake) as ProspectIntake;
+    if (!this.prospects.has(parsed.prospectId)) {
+      throw new Error(`Prospect ${parsed.prospectId} does not exist.`);
+    }
+    this.prospectIntakes.set(parsed.prospectId, firestoreDoc(parsed));
+    return firestoreDoc(parsed);
+  }
+
+  async createTenantOnboardingBlueprint(blueprint: TenantOnboardingBlueprint): Promise<TenantOnboardingBlueprint> {
+    const parsed = tenantOnboardingBlueprintSchema.parse(blueprint) as TenantOnboardingBlueprint;
+    if (!this.prospects.has(parsed.prospectId)) {
+      throw new Error(`Prospect ${parsed.prospectId} does not exist.`);
+    }
+    if (this.onboardingBlueprints.has(parsed.id)) {
+      throw new Error(`Blueprint ${parsed.id} is immutable and already exists.`);
+    }
+    this.onboardingBlueprints.set(parsed.id, firestoreDoc(parsed));
+    return firestoreDoc(parsed);
+  }
+
+  async getTenantOnboardingBlueprint(blueprintId: string): Promise<TenantOnboardingBlueprint | null> {
+    const blueprint = this.onboardingBlueprints.get(blueprintId);
+    return blueprint ? firestoreDoc(blueprint) : null;
+  }
+
+  async listTenantOnboardingBlueprintRevisions(blueprintId: string): Promise<TenantOnboardingBlueprintRevision[]> {
+    return (this.onboardingBlueprintRevisions.get(blueprintId) ?? []).map(firestoreDoc);
+  }
+
+  async appendTenantOnboardingBlueprintRevision(revision: TenantOnboardingBlueprintRevision): Promise<TenantOnboardingBlueprintRevision> {
+    const parsed = tenantOnboardingBlueprintRevisionSchema.parse(revision) as TenantOnboardingBlueprintRevision;
+    const blueprint = this.onboardingBlueprints.get(parsed.blueprintId);
+    if (!blueprint || blueprint.prospectId !== parsed.prospectId) {
+      throw new Error("Blueprint revision must reference an existing Blueprint for the same prospect.");
+    }
+    const current = this.onboardingBlueprintRevisions.get(parsed.blueprintId) ?? [];
+    if (current.some((entry) => entry.id === parsed.id)) {
+      throw new Error(`Blueprint revision ${parsed.id} is immutable and already exists.`);
+    }
+    const prior = current.at(-1);
+    if (parsed.revisionNumber !== current.length + 1 || parsed.previousRevisionId !== prior?.id) {
+      throw new Error("Blueprint revisions must append in order and reference the immediate prior revision.");
+    }
+    this.onboardingBlueprintRevisions.set(parsed.blueprintId, [...current, firestoreDoc(parsed)]);
+    return firestoreDoc(parsed);
   }
 
   async listTenantMembershipAudits(tenantId: string): Promise<TenantMembershipAudit[]> {
@@ -392,6 +481,71 @@ export class FirestorePlatformRepository implements PlatformRepository {
   async upsertTenantUser(user: TenantUser): Promise<TenantUser> {
     const parsed = tenantUserSchema.parse(user) as TenantUser;
     await setTenantOwnedDocument({ db: this.db, collection: "tenantUsers", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant user ${parsed.id}` });
+    return parsed;
+  }
+
+  async listProspects(): Promise<Prospect[]> {
+    // Platform-owned intake records intentionally exist before a tenant exists.
+    const snapshot = await this.db.collection("platformProspects").orderBy("updatedAt", "desc").get();
+    return snapshot.docs.map((doc) => prospectSchema.parse(doc.data()) as Prospect);
+  }
+
+  async getProspect(prospectId: string): Promise<Prospect | null> {
+    const snapshot = await this.db.collection("platformProspects").doc(prospectId).get();
+    return snapshot.exists ? prospectSchema.parse(snapshot.data()) as Prospect : null;
+  }
+
+  async saveProspect(prospect: Prospect): Promise<Prospect> {
+    const parsed = prospectSchema.parse(prospect) as Prospect;
+    await this.db.collection("platformProspects").doc(parsed.id).set(docData(parsed));
+    return parsed;
+  }
+
+  async getProspectIntake(prospectId: string): Promise<ProspectIntake | null> {
+    const snapshot = await this.db.collection("platformProspectIntakes").doc(prospectId).get();
+    return snapshot.exists ? prospectIntakeSchema.parse(snapshot.data()) as ProspectIntake : null;
+  }
+
+  async saveProspectIntake(intake: ProspectIntake): Promise<ProspectIntake> {
+    const parsed = prospectIntakeSchema.parse(intake) as ProspectIntake;
+    if (!await this.getProspect(parsed.prospectId)) {
+      throw new Error(`Prospect ${parsed.prospectId} does not exist.`);
+    }
+    await this.db.collection("platformProspectIntakes").doc(parsed.prospectId).set(docData(parsed));
+    return parsed;
+  }
+
+  async createTenantOnboardingBlueprint(blueprint: TenantOnboardingBlueprint): Promise<TenantOnboardingBlueprint> {
+    const parsed = tenantOnboardingBlueprintSchema.parse(blueprint) as TenantOnboardingBlueprint;
+    if (!await this.getProspect(parsed.prospectId)) {
+      throw new Error(`Prospect ${parsed.prospectId} does not exist.`);
+    }
+    await this.db.collection("platformOnboardingBlueprints").doc(parsed.id).create(docData(parsed));
+    return parsed;
+  }
+
+  async getTenantOnboardingBlueprint(blueprintId: string): Promise<TenantOnboardingBlueprint | null> {
+    const snapshot = await this.db.collection("platformOnboardingBlueprints").doc(blueprintId).get();
+    return snapshot.exists ? tenantOnboardingBlueprintSchema.parse(snapshot.data()) as TenantOnboardingBlueprint : null;
+  }
+
+  async listTenantOnboardingBlueprintRevisions(blueprintId: string): Promise<TenantOnboardingBlueprintRevision[]> {
+    const snapshot = await this.db.collection("platformOnboardingBlueprintRevisions").where("blueprintId", "==", blueprintId).orderBy("revisionNumber", "asc").get();
+    return snapshot.docs.map((doc) => tenantOnboardingBlueprintRevisionSchema.parse(doc.data()) as TenantOnboardingBlueprintRevision);
+  }
+
+  async appendTenantOnboardingBlueprintRevision(revision: TenantOnboardingBlueprintRevision): Promise<TenantOnboardingBlueprintRevision> {
+    const parsed = tenantOnboardingBlueprintRevisionSchema.parse(revision) as TenantOnboardingBlueprintRevision;
+    const blueprint = await this.getTenantOnboardingBlueprint(parsed.blueprintId);
+    if (!blueprint || blueprint.prospectId !== parsed.prospectId) {
+      throw new Error("Blueprint revision must reference an existing Blueprint for the same prospect.");
+    }
+    const current = await this.listTenantOnboardingBlueprintRevisions(parsed.blueprintId);
+    const prior = current.at(-1);
+    if (parsed.revisionNumber !== current.length + 1 || parsed.previousRevisionId !== prior?.id) {
+      throw new Error("Blueprint revisions must append in order and reference the immediate prior revision.");
+    }
+    await this.db.collection("platformOnboardingBlueprintRevisions").doc(parsed.id).create(docData(parsed));
     return parsed;
   }
 

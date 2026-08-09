@@ -16,6 +16,7 @@ import { registerPlatformRoutes } from "../dist/platform/routes.js";
 import { createServerRuntime } from "../dist/app/runtime.js";
 import { assertRequiredPersistence, assertTenantRuntimePersistence } from "../dist/app/persistencePolicy.js";
 import { resolveNexiStores } from "../dist/nexi/stores.js";
+import { prospectSchema } from "@nexteam/core";
 
 function tool(name) {
   return {
@@ -503,4 +504,89 @@ test("runtime defaults to durable persistence and refuses an empty customer tena
     () => assertTenantRuntimePersistence({ NODE_ENV: "test", TENANT_ID: "aquatrace" }, false),
     /FIREBASE_ADMIN_PRIVATE_KEY/
   );
+});
+
+test("platform prospect intake excludes sensitive pre-subscription fields", () => {
+  assert.throws(() => prospectSchema.parse({
+    id: "prospect_safe",
+    status: "DRAFT",
+    businessName: "Northside Services",
+    industry: "plumbing",
+    additionalLocations: [],
+    serviceArea: ["Northside"],
+    createdAt: "2026-08-09T00:00:00.000Z",
+    updatedAt: "2026-08-09T00:00:00.000Z",
+    createdBy: "platform_operator",
+    taxId: "must-not-be-accepted"
+  }), /Unrecognized key/);
+});
+
+test("platform Blueprint revisions are append-only snapshots", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("platform-test", "suite")]);
+  const prospect = await repository.saveProspect({
+    id: "prospect_safe",
+    status: "INTAKE_COMPLETE",
+    businessName: "Northside Services",
+    industry: "plumbing",
+    additionalLocations: [],
+    serviceArea: ["Northside"],
+    createdAt: "2026-08-09T00:00:00.000Z",
+    updatedAt: "2026-08-09T00:00:00.000Z",
+    createdBy: "platform_operator"
+  });
+  await repository.saveProspectIntake({
+    id: "intake_safe",
+    prospectId: prospect.id,
+    services: ["Repair"],
+    customerTypes: ["Residential"],
+    currentSystems: [{ id: "system_1", category: "CRM", provider: "Existing CRM", replacementTiming: "COEXIST" }],
+    source: "MANUAL",
+    createdAt: "2026-08-09T00:00:00.000Z",
+    updatedAt: "2026-08-09T00:00:00.000Z",
+    createdBy: "platform_operator"
+  });
+  const blueprint = await repository.createTenantOnboardingBlueprint({
+    id: "blueprint_safe",
+    prospectId: prospect.id,
+    recommendedLayout: ["Office"],
+    nexiResponsibilities: ["Answer operational questions"],
+    opportunities: { nexcam: ["Photo evidence"] },
+    recommendedForms: [],
+    recommendedWorkflows: [],
+    recommendedAutomations: [],
+    recommendedModules: ["nexi", "crm"],
+    futureOpportunities: [],
+    createdAt: "2026-08-09T00:00:00.000Z",
+    createdBy: "platform_operator"
+  });
+  await repository.appendTenantOnboardingBlueprintRevision({
+    id: "blueprint_revision_1",
+    prospectId: prospect.id,
+    blueprintId: blueprint.id,
+    revisionNumber: 1,
+    snapshot: blueprint,
+    actorId: "platform_operator",
+    actorType: "NEXTEAM_STAFF",
+    source: "NEXTEAM_STAFF",
+    fieldsChanged: ["initial"],
+    approvalState: "APPROVED",
+    createdAt: "2026-08-09T00:01:00.000Z"
+  });
+  await assert.rejects(() => repository.createTenantOnboardingBlueprint(blueprint), /immutable/);
+  await assert.rejects(() => repository.appendTenantOnboardingBlueprintRevision({
+    id: "blueprint_revision_2",
+    prospectId: prospect.id,
+    blueprintId: blueprint.id,
+    revisionNumber: 2,
+    snapshot: blueprint,
+    actorId: "platform_operator",
+    actorType: "NEXTEAM_STAFF",
+    source: "NEXTEAM_STAFF",
+    fieldsChanged: ["recommendedModules"],
+    approvalState: "APPROVED",
+    createdAt: "2026-08-09T00:02:00.000Z"
+  }), /reference.*prior/);
+  const revisions = await repository.listTenantOnboardingBlueprintRevisions(blueprint.id);
+  revisions[0].snapshot.recommendedLayout[0] = "Mutated locally";
+  assert.equal((await repository.listTenantOnboardingBlueprintRevisions(blueprint.id))[0].snapshot.recommendedLayout[0], "Office");
 });

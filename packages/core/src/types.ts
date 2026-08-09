@@ -142,6 +142,96 @@ export interface TenantSubscription {
   updatedAt: string;
 }
 
+/**
+ * Platform-owned, non-sensitive lifecycle for a company before it becomes a tenant.
+ * A Prospect deliberately has no credentials, payment credentials, tax data, or
+ * provider secrets. Those belong to secure onboarding after activation.
+ */
+export type ProspectStatus = "DRAFT" | "INTAKE_COMPLETE" | "BLUEPRINT_READY" | "SUBSCRIPTION_REQUIRED" | "CONVERTED" | "LOST" | "ABANDONED";
+export type BlueprintRevisionSource = "NEXI" | "NEXTEAM_STAFF" | "TENANT_OWNER" | "TENANT_TEAM_MEMBER" | "SYSTEM";
+export type BlueprintApprovalState = "DRAFT" | "APPROVED" | "DELIVERED" | "SUPERSEDED";
+
+export interface Prospect {
+  id: ID;
+  status: ProspectStatus;
+  businessName: string;
+  website?: string | undefined;
+  industry: string;
+  primaryLocation?: Address | undefined;
+  additionalLocations: Address[];
+  serviceArea: string[];
+  yearsInBusiness?: number | undefined;
+  primaryContactName?: string | undefined;
+  primaryContactRole?: string | undefined;
+  notes?: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: ID;
+}
+
+export interface ProspectSoftwareInventoryItem {
+  id: ID;
+  category: string;
+  provider: string;
+  purpose?: string | undefined;
+  replacementTiming: "REPLACE_NOW" | "REPLACE_LATER" | "COEXIST" | "UNKNOWN";
+  notes?: string | undefined;
+}
+
+/** This object contains only the approved, non-sensitive pre-subscription intake fields. */
+export interface ProspectIntake {
+  id: ID;
+  prospectId: ID;
+  services: string[];
+  customerTypes: string[];
+  serviceAreaNotes?: string | undefined;
+  teamSize?: number | undefined;
+  operatingHoursNotes?: string | undefined;
+  brandVoice?: string | undefined;
+  currentSystems: ProspectSoftwareInventoryItem[];
+  migrationRecommendation?: string | undefined;
+  source: "MANUAL" | "NEXI";
+  createdAt: string;
+  updatedAt: string;
+  createdBy: ID;
+}
+
+export interface TenantOnboardingBlueprint {
+  id: ID;
+  prospectId: ID;
+  recommendedLayout: string[];
+  nexiResponsibilities: string[];
+  opportunities: Partial<Record<"nexcam" | "nexdocs" | "nexreach" | "nexportal", string[]>>;
+  recommendedForms: string[];
+  recommendedWorkflows: string[];
+  recommendedAutomations: string[];
+  recommendedModules: PlatformModule[];
+  migrationRecommendation?: string | undefined;
+  futureOpportunities: string[];
+  createdAt: string;
+  createdBy: ID;
+}
+
+/**
+ * Revisions are append-only snapshots. There is intentionally no mutable
+ * "update Blueprint" contract: every accepted change creates another record.
+ */
+export interface TenantOnboardingBlueprintRevision {
+  id: ID;
+  prospectId: ID;
+  blueprintId: ID;
+  previousRevisionId?: ID | undefined;
+  revisionNumber: number;
+  snapshot: TenantOnboardingBlueprint;
+  actorId: ID;
+  actorType: BlueprintRevisionSource;
+  source: BlueprintRevisionSource;
+  fieldsChanged: string[];
+  reason?: string | undefined;
+  approvalState: BlueprintApprovalState;
+  createdAt: string;
+}
+
 export interface TenantUser {
   id: ID;
   tenantId: ID;
