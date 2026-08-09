@@ -1110,6 +1110,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.get("/api/fielddocs/checklists", async (req: Request, res: Response) => {
     try {
       const input = checklistListQuerySchema.parse(req.query);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "listFieldChecklists"
+      });
       const checklists = await fieldDocsService().listChecklists(input);
       res.json({ ok: true, checklists });
     } catch (error) {
@@ -1124,6 +1128,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         throw new RailError("Property id is required.", { provider: "native", op: "fieldDocsPropertyHistory", status: 400 });
       }
       const input = propertyHistoryQuerySchema.parse(req.query);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "fieldDocsPropertyHistory"
+      });
       const history = await fieldDocsService().getPropertyHistory({
         tenantId: input.tenantId,
         propertyId,
@@ -1455,6 +1463,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.get("/api/fielddocs/reports/:id/pdf", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: tenantId,
+        op: "renderFieldReportPdf"
+      });
       const reportId = req.params.id;
       if (!reportId) {
         throw new RailError("Report id is required.", { provider: "native", op: "renderFieldReportPdf", status: 400 });
@@ -1598,6 +1610,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         throw new RailError("Signed document id is required.", { provider: "native", op: "renderSignedDocumentPdf", status: 400 });
       }
       const input = mediaDetailQuerySchema.parse(req.query);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "renderSignedDocumentPdf"
+      });
       const record = await repository().getSignedDocument(input.tenantId, signedDocumentId);
       if (!record) {
         throw new RailError(`Signed document ${signedDocumentId} was not found.`, { provider: "native", op: "renderSignedDocumentPdf", status: 404 });

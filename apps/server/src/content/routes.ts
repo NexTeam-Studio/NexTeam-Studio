@@ -201,6 +201,7 @@ export function registerContentRoutes(app: Express, deps: ContentRouteDeps): voi
   app.get("/api/content/calendar", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "listContentCalendar" });
       res.json({ ok: true, items: await deps.repository.listCalendar(tenantId) });
     } catch (error) {
       sendRouteError(res, error);
@@ -230,6 +231,7 @@ export function registerContentRoutes(app: Express, deps: ContentRouteDeps): voi
   app.get("/api/content/stats", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "getContentStats" });
       const drafts = await deps.repository.listDrafts(tenantId);
       const performance = await deps.repository.listPerformance(tenantId);
       res.json({ ok: true, stats: summarizeContentStats(drafts, performance), publishingDeferred: true });

@@ -36,24 +36,32 @@ async function close(server) {
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 }
 
-test("tenant-A signed session is denied every repaired tenant-B read route", async () => {
+test("both tenant directions are denied every repaired cross-tenant read route", async () => {
   const { server, base } = await startApp();
-  const token = createLocalDevSession("owner@local.dev", undefined, tenantA, env).token;
-  const headers = { authorization: `Bearer ${token}` };
-  const routes = [
-    `/api/scheduling/calendar?tenantId=${tenantB}`,
-    `/api/fielddocs/search?tenantId=${tenantB}&q=test`,
-    `/api/fielddocs/checklists/templates?tenantId=${tenantB}`,
-    `/api/fielddocs/media?tenantId=${tenantB}`,
-    `/api/fielddocs/media/not-owned?tenantId=${tenantB}`,
-    `/api/fielddocs/reports?tenantId=${tenantB}`,
-    `/api/fielddocs/reports/templates?tenantId=${tenantB}`,
-    `/api/content/queue?tenantId=${tenantB}`
-  ];
   try {
-    for (const route of routes) {
-      const response = await fetch(`${base}${route}`, { headers });
-      assert.equal(response.status, 403, route);
+    for (const [sourceTenantId, targetTenantId] of [[tenantA, tenantB], [tenantB, tenantA]]) {
+      const token = createLocalDevSession("owner@local.dev", undefined, sourceTenantId, env).token;
+      const headers = { authorization: `Bearer ${token}` };
+      const routes = [
+        `/api/scheduling/calendar?tenantId=${targetTenantId}`,
+        `/api/fielddocs/search?tenantId=${targetTenantId}&q=test`,
+        `/api/fielddocs/checklists/templates?tenantId=${targetTenantId}`,
+        `/api/fielddocs/media?tenantId=${targetTenantId}`,
+        `/api/fielddocs/media/not-owned?tenantId=${targetTenantId}`,
+        `/api/fielddocs/reports?tenantId=${targetTenantId}`,
+        `/api/fielddocs/reports/templates?tenantId=${targetTenantId}`,
+        `/api/fielddocs/checklists?tenantId=${targetTenantId}`,
+        `/api/fielddocs/properties/property_b/history?tenantId=${targetTenantId}`,
+        `/api/fielddocs/reports/report_b/pdf?tenantId=${targetTenantId}`,
+        `/api/fielddocs/signed-documents/document_b/pdf?tenantId=${targetTenantId}`,
+        `/api/content/queue?tenantId=${targetTenantId}`,
+        `/api/content/calendar?tenantId=${targetTenantId}`,
+        `/api/content/stats?tenantId=${targetTenantId}`
+      ];
+      for (const route of routes) {
+        const response = await fetch(`${base}${route}`, { headers });
+        assert.equal(response.status, 403, `${sourceTenantId} -> ${targetTenantId}: ${route}`);
+      }
     }
   } finally {
     await close(server);
