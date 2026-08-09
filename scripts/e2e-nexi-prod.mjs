@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 
-const BASE_URL = 'https://nexteam-studio-production.up.railway.app';
+const BASE_URL = 'https://nexapp.nexteam.studio';
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));

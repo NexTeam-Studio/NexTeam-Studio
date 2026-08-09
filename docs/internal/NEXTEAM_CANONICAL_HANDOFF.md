@@ -4,6 +4,15 @@ Purpose: this is the single corrected handoff for a fresh human or AI session. I
 
 Last updated: 2026-07-01
 
+## Canonical application domains
+
+| Environment | Canonical domain | Control rule |
+|---|---|---|
+| Production | `https://nexapp.nexteam.studio` | Production-only callbacks and release controls. Never use for staging verification or deployment. |
+| Staging | `https://nexstage.nexteam.studio` | The only approved mobile test, staging verification, and Railway staging deployment target. |
+
+Legacy provider hostnames may remain reachable for infrastructure continuity, but no new NexTeam configuration, test URL, release control, or operational instruction may use them as the canonical target.
+
 ## Verification Legend
 
 - `BUILT+PROVEN` = verified from code plus tests and/or live route checks in this audit.

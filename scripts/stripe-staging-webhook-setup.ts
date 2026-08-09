@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 
 const stripeKey = process.env.STRIPE_SECRET_KEY?.trim() ?? "";
-const stagingBaseUrl = (process.env.STAGING_BASE_URL?.trim() || "https://nexteam-studio-staging.up.railway.app").replace(/\/$/, "");
+const stagingBaseUrl = (process.env.STAGING_BASE_URL?.trim() || "https://nexstage.nexteam.studio").replace(/\/$/, "");
 
 function fail(message: string): never {
   console.error(JSON.stringify({ ok: false, error: message }));

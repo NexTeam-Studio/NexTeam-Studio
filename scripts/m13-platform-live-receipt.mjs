@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { dirname } from "node:path";
 import { createOperatorProofSession, fetchJson } from "./support/liveProofHelpers.mjs";
 
-const baseUrl = (process.env.NEXTEAM_BASE_URL || "https://nexteam-studio-staging.up.railway.app").replace(/\/$/, "");
+const baseUrl = (process.env.NEXTEAM_BASE_URL || "https://nexstage.nexteam.studio").replace(/\/$/, "");
 const expectedSha = process.env.EXPECTED_GIT_SHA || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 const receiptPath = process.env.M13_PLATFORM_RECEIPT || "receipts/m13/m13-platform-live-receipt.json";
 const tenantId = process.env.M13_TEST_TENANT_ID || `m13-test-${Date.now()}-${randomUUID().slice(0, 8)}`;

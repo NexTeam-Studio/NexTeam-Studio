@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { chromium, type Locator } from "playwright";
 import { getAdminDb } from "../apps/server/src/firebase.js";
 
-const baseUrl = (process.env.STAGING_BASE_URL?.trim() || "https://nexteam-studio-staging.up.railway.app").replace(/\/$/, "");
+const baseUrl = (process.env.STAGING_BASE_URL?.trim() || "https://nexstage.nexteam.studio").replace(/\/$/, "");
 const receiptPath = "receipts/m2/stripe-payment-receipt.json";
 
 async function fetchJson(path: string, init?: RequestInit): Promise<{ status: number; json: unknown; headers: Record<string, string> }> {

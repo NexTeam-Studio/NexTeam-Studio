@@ -42,7 +42,7 @@ export interface QueueCampaignResult {
 }
 
 function baseUrl(env: NodeJS.ProcessEnv): string {
-  return (env.NEXTEAM_BASE_URL || env.PUBLIC_BASE_URL || "https://nexteam-studio-staging.up.railway.app").replace(/\/$/, "");
+  return (env.NEXTEAM_BASE_URL || env.PUBLIC_BASE_URL || "https://nexstage.nexteam.studio").replace(/\/$/, "");
 }
 
 function trackingId(): string {

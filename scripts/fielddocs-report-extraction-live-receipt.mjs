@@ -4,7 +4,7 @@ import { cert, deleteApp, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { fetchJson, signInWithCustomTokenRest } from "./support/liveProofHelpers.mjs";
 
-const baseUrl = process.env.NEXTEAM_BASE_URL || "https://nexteam-studio-staging.up.railway.app";
+const baseUrl = process.env.NEXTEAM_BASE_URL || "https://nexstage.nexteam.studio";
 const receiptPath = "receipts/m4/report-extraction-schema-receipt.json";
 const expectedSha = process.env.EXPECTED_GIT_SHA || "96d57327aa373f48fdcb1e3f56394fb40acb0b33";
 

@@ -4,7 +4,7 @@ import { cert, deleteApp, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { fetchJson } from "./support/liveProofHelpers.mjs";
 
-const baseUrl = (process.env.NEXTEAM_BASE_URL || "https://nexteam-studio-staging.up.railway.app").replace(/\/$/, "");
+const baseUrl = (process.env.NEXTEAM_BASE_URL || "https://nexstage.nexteam.studio").replace(/\/$/, "");
 const expectedSha = process.env.EXPECTED_GIT_SHA;
 const receiptPath = process.env.M12A_VOICE_RECEIPT || "receipts/m12a/m12a-voice-live-receipt.json";
 const tenantId = process.env.M12A_TENANT_ID || "aquatrace";

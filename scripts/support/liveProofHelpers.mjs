@@ -84,7 +84,7 @@ export function resolveOperatorProofIdentity() {
 }
 
 export function resolveBaseUrl() {
-  return requireEnv("NEXTEAM_BASE_URL", "https://nexteam-studio-production.up.railway.app");
+  return requireEnv("NEXTEAM_BASE_URL", "https://nexapp.nexteam.studio");
 }
 
 export function resolveFirebaseWebConfig() {
