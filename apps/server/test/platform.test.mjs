@@ -835,3 +835,116 @@ test("tenant migration records persist status and require an operator plus a saf
     server.close();
   }
 });
+
+test("Phase M runs isolated onboarding from prospect through activation and persisted operator follow-up", async () => {
+  const repository = new InMemoryPlatformRepository();
+  const firebaseCalls = { created: [], claims: [] };
+  const app = express();
+  app.use(express.json());
+  registerPlatformRoutes(app, {
+    repository,
+    storage: new MemoryStorageWriter(),
+    env: { NEXI_FIREBASE_AUTH_REQUIRED: "true" },
+    platformOperatorAuth: {
+      async verifyIdToken(token) {
+        return token === "operator" ? { uid: "operator", platform_operator: true } : { uid: "tenant-user" };
+      }
+    },
+    firebaseOwnerActivation: {
+      async getUserByEmail() {
+        const error = new Error("not found");
+        error.code = "auth/user-not-found";
+        throw error;
+      },
+      async createUser(input) {
+        firebaseCalls.created.push(input);
+        return { uid: "phase_m_owner", email: input.email, customClaims: { platform_operator: true } };
+      },
+      async setCustomUserClaims(uid, claims) {
+        firebaseCalls.claims.push({ uid, claims });
+      }
+    }
+  });
+  const server = app.listen(0);
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const operatorHeaders = { authorization: "Bearer operator", "content-type": "application/json" };
+
+    const denied = await fetch(`${base}/api/platform/admin/prospects`, {
+      method: "POST", headers: { authorization: "Bearer tenant-user", "content-type": "application/json" },
+      body: JSON.stringify({ businessName: "Denied Prospect", industry: "plumbing" })
+    });
+    assert.equal(denied.status, 403);
+
+    const prospectResponse = await fetch(`${base}/api/platform/admin/prospects`, {
+      method: "POST", headers: operatorHeaders,
+      body: JSON.stringify({ businessName: "Phase M Services", industry: "plumbing", serviceArea: ["Northside"] })
+    });
+    assert.equal(prospectResponse.status, 201);
+    const { prospect } = await prospectResponse.json();
+    const intakeResponse = await fetch(`${base}/api/platform/admin/prospects/${prospect.id}/intake`, {
+      method: "POST", headers: operatorHeaders,
+      body: JSON.stringify({ services: ["Repair"], customerTypes: ["Residential"], currentSystems: [] })
+    });
+    assert.equal(intakeResponse.status, 200);
+    const blueprintResponse = await fetch(`${base}/api/platform/admin/prospects/${prospect.id}/blueprints`, {
+      method: "POST", headers: operatorHeaders,
+      body: JSON.stringify({ recommendedLayout: ["Office"], nexiResponsibilities: ["Operational answers"], recommendedModules: ["nexi", "crm"] })
+    });
+    assert.equal(blueprintResponse.status, 201);
+    const { onboardingPlan, revision } = await blueprintResponse.json();
+    const accepted = await fetch(`${base}/api/platform/admin/prospects/${prospect.id}/blueprints/${onboardingPlan.id}/revisions/${revision.id}/accept`, {
+      method: "POST", headers: operatorHeaders, body: JSON.stringify({ reason: "Phase M isolated acceptance." })
+    });
+    assert.equal(accepted.status, 201);
+    const subscription = await fetch(`${base}/api/platform/admin/prospects/${prospect.id}/subscription`, {
+      method: "POST", headers: operatorHeaders, body: JSON.stringify({ packageId: "all-access-test" })
+    });
+    assert.equal(subscription.status, 201);
+    const activationResponse = await fetch(`${base}/api/platform/admin/prospects/${prospect.id}/activate`, {
+      method: "POST", headers: operatorHeaders,
+      body: JSON.stringify({ tenantId: "phase-m-services", ownerEmail: "owner@phase-m.example.test", ownerDisplayName: "Phase M Owner" })
+    });
+    assert.equal(activationResponse.status, 201);
+    const activation = await activationResponse.json();
+    assert.deepEqual(firebaseCalls.created, [{ email: "owner@phase-m.example.test", emailVerified: false, disabled: false, displayName: "Phase M Owner" }]);
+    assert.equal(firebaseCalls.claims[0].claims.platform_operator, true);
+    assert.equal(firebaseCalls.claims[0].claims.tenantId, "phase-m-services");
+
+    const migrationResponse = await fetch(`${base}/api/platform/admin/tenants/phase-m-services/migrations`, {
+      method: "POST", headers: operatorHeaders,
+      body: JSON.stringify({ sourceSystem: "Legacy CRM", scope: "Planning-only contact migration", status: "DEFERRED", deferredReason: "Awaiting a sanitized planning decision." })
+    });
+    assert.equal(migrationResponse.status, 201);
+    const { migration } = await migrationResponse.json();
+    const resumed = await fetch(`${base}/api/platform/admin/migrations/${migration.id}`, {
+      method: "PATCH", headers: operatorHeaders, body: JSON.stringify({ status: "IN_PROGRESS" })
+    });
+    assert.equal(resumed.status, 200);
+    assert.equal((await resumed.json()).migration.deferredReason, undefined);
+    const blockerResponse = await fetch(`${base}/api/platform/admin/tenants/phase-m-services/blockers`, {
+      method: "POST", headers: operatorHeaders,
+      body: JSON.stringify({ title: "Owner review", detail: "Owner review is pending.", category: "CONFIGURATION", severity: "NORMAL" })
+    });
+    assert.equal(blockerResponse.status, 201);
+    const { blocker } = await blockerResponse.json();
+    const resolved = await fetch(`${base}/api/platform/admin/tenant-blockers/${blocker.id}`, {
+      method: "PATCH", headers: operatorHeaders, body: JSON.stringify({ status: "RESOLVED" })
+    });
+    assert.equal(resolved.status, 200);
+
+    const [reloadedProspect, assignment, owner, migrations, blockers] = await Promise.all([
+      repository.getProspect(prospect.id), repository.getPlatformSubscriptionAssignment(prospect.id),
+      repository.getTenantUser("phase-m-services", activation.owner.id),
+      fetch(`${base}/api/platform/admin/migrations?tenantId=phase-m-services`, { headers: { authorization: "Bearer operator" } }).then((response) => response.json()),
+      fetch(`${base}/api/platform/admin/tenant-blockers?tenantId=phase-m-services`, { headers: { authorization: "Bearer operator" } }).then((response) => response.json())
+    ]);
+    assert.equal(reloadedProspect.status, "CONVERTED");
+    assert.equal(assignment.status, "ACTIVE");
+    assert.equal(owner.authUid, "phase_m_owner");
+    assert.equal(migrations.migrations[0].status, "IN_PROGRESS");
+    assert.equal(blockers.blockers[0].status, "RESOLVED");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

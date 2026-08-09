@@ -30,7 +30,8 @@
 | J — launch readiness | GREEN | nexteam-global | Required onboarding tasks, allowed module selection, ordered guided steps, and launch review are checked on every reload. |
 | K — Blueprint insight and acceptance | GREEN | platform-tenants | Insights are read-only and the latest draft can be accepted only by appending an immutable approved revision. |
 | L — internal lifecycle administration | GREEN | platform-tenants + integration | NexTeam Admin sends authenticated operator requests for manual intake and can progress blockers, escalations, and migration lifecycle states with reload proof. |
-| M–O | NOT STARTED | assigned per phase | Advance only after the preceding phase has captured green evidence. |
+| M — isolated end-to-end acceptance | GREEN | target-architecture-integration | `apps/server/test/platform.test.mjs` exercises operator authorization, prospect/intake/Blueprint creation and immutable acceptance, required test-subscription assignment, passwordless owner activation with merged claims, migration deferral/resume, blocker resolution, and persisted reloads through supported HTTP routes and in-memory repositories. The existing tenant-settings contract remains covered by `apps/server/test/crm-read-side.test.mjs`. |
+| N–O | NOT STARTED | assigned per phase | Advance only after the preceding phase has captured green evidence. |
 
 ## Authoritative existing ownership
 
