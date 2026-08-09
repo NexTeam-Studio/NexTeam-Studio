@@ -768,8 +768,64 @@ export const invoiceDeliveryPreferencesSchema = z.object({
   smsIncludeHostedLink: z.boolean()
 });
 
+const tenantOperatingProfileSchema = z.object({
+  company: z.object({
+    legalName: z.string().min(1).optional(),
+    publicName: z.string().min(1).optional(),
+    industry: z.string().min(1).optional(),
+    timezone: z.string().min(1)
+  }),
+  locations: z.array(z.object({
+    id: idSchema,
+    label: z.string().min(1),
+    address: addressSchema.optional(),
+    active: z.boolean()
+  })),
+  businessHours: z.array(z.object({
+    day: z.enum(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]),
+    open: z.string().min(1).optional(),
+    close: z.string().min(1).optional(),
+    closed: z.boolean()
+  })).length(7),
+  tax: z.object({
+    enabled: z.boolean(),
+    defaultRate: z.number().min(0).max(100),
+    registrationId: z.string().min(1).optional()
+  }),
+  communicationIdentity: z.object({
+    replyToEmail: z.string().email().optional(),
+    replyToName: z.string().min(1).optional(),
+    phone: z.string().min(1).optional()
+  }),
+  securityAudit: z.object({
+    auditEventsEnabled: z.boolean(),
+    requireApprovalForExternalSend: z.boolean()
+  }),
+  onboarding: z.object({
+    completedSteps: z.array(z.string().min(1)),
+    launchReviewedAt: z.string().min(1).optional()
+  })
+});
+
 export const crmSettingsSchema = z.object({
   tenantId: idSchema,
+  operatingProfile: tenantOperatingProfileSchema.default({
+    company: { timezone: "America/New_York" },
+    locations: [],
+    businessHours: [
+      { day: "monday", open: "09:00", close: "17:00", closed: false },
+      { day: "tuesday", open: "09:00", close: "17:00", closed: false },
+      { day: "wednesday", open: "09:00", close: "17:00", closed: false },
+      { day: "thursday", open: "09:00", close: "17:00", closed: false },
+      { day: "friday", open: "09:00", close: "17:00", closed: false },
+      { day: "saturday", closed: true },
+      { day: "sunday", closed: true }
+    ],
+    tax: { enabled: false, defaultRate: 0 },
+    communicationIdentity: {},
+    securityAudit: { auditEventsEnabled: true, requireApprovalForExternalSend: true },
+    onboarding: { completedSteps: [] }
+  }),
   documentNumbering: documentNumberingSettingsSchema,
   quoteDefaults: z.object({
     expiryDays: z.number().int().min(1),

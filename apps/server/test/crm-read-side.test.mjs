@@ -866,6 +866,37 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     assert.equal(settingsBody.ok, true);
     assert.deepEqual(Object.keys(settingsBody.settings.documentNumbering).sort(), ["invoice", "job", "quote", "receipt", "request"]);
 
+    const operatingProfileResponse = await fetch(`${base}/api/crm/settings`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        operatingProfile: {
+          company: { publicName: "Northwind Service", industry: "field-service", timezone: "America/Chicago" },
+          locations: [{
+            id: "location_main",
+            label: "Main Office",
+            address: { street1: "100 Main Street", city: "Springfield", province: "IL", postalCode: "62701", country: "US" },
+            active: true
+          }],
+          tax: { enabled: true, defaultRate: 8.25 },
+          communicationIdentity: { replyToEmail: "office@example.test", replyToName: "Northwind Office" },
+          securityAudit: { auditEventsEnabled: true, requireApprovalForExternalSend: true },
+          onboarding: { completedSteps: ["company", "owner", "team", "services", "review"] }
+        }
+      })
+    });
+    const operatingProfileBody = await operatingProfileResponse.json();
+    assert.equal(operatingProfileBody.ok, true);
+    assert.equal(operatingProfileBody.settings.operatingProfile.company.publicName, "Northwind Service");
+    assert.equal(operatingProfileBody.settings.operatingProfile.locations[0].address.street1, "100 Main Street");
+    assert.equal(operatingProfileBody.settings.operatingProfile.tax.defaultRate, 8.25);
+
+    const rereadSettingsResponse = await fetch(`${base}/api/crm/settings?tenantId=aquatrace`);
+    const rereadSettingsBody = await rereadSettingsResponse.json();
+    assert.equal(rereadSettingsBody.settings.operatingProfile.company.timezone, "America/Chicago");
+    assert.deepEqual(rereadSettingsBody.settings.operatingProfile.onboarding.completedSteps, ["company", "owner", "team", "services", "review"]);
+
     const templatesResponse = await fetch(`${base}/api/crm/quote-templates?tenantId=aquatrace`);
     const templatesBody = await templatesResponse.json();
     assert.equal(templatesBody.ok, true);

@@ -48,8 +48,19 @@ interface ReviewSequenceStepSetting {
   templateCategory: "review_request_initial" | "review_request_nudge";
 }
 
+interface TenantOperatingProfile {
+  company: { legalName?: string; publicName?: string; industry?: string; timezone: string };
+  locations: Array<{ id: string; label: string; active: boolean }>;
+  businessHours: Array<{ day: string; open?: string; close?: string; closed: boolean }>;
+  tax: { enabled: boolean; defaultRate: number; registrationId?: string };
+  communicationIdentity: { replyToEmail?: string; replyToName?: string; phone?: string };
+  securityAudit: { auditEventsEnabled: boolean; requireApprovalForExternalSend: boolean };
+  onboarding: { completedSteps: string[]; launchReviewedAt?: string };
+}
+
 interface CrmSettingsRecord {
   tenantId: string;
+  operatingProfile: TenantOperatingProfile;
   documentNumbering: Record<"request" | "quote" | "job" | "invoice" | "receipt", DocumentNumberingRule>;
   quoteDefaults: {
     expiryDays: number;
@@ -285,6 +296,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           tenantId: props.tenantId,
+          operatingProfile: settings.operatingProfile,
           invoiceDefaults: {
             tippingEnabled: settings.invoiceDefaults.tippingEnabled
           },
@@ -377,6 +389,72 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
       </div>
 
       <div className="nexops-two-column">
+        <article className="nexops-module-card">
+          <div className="nexops-page-heading">
+            <div>
+              <p className="eyebrow">Company Foundation</p>
+              <h2>Business Profile and Launch Controls</h2>
+            </div>
+            <button type="button" onClick={() => void saveOperationalDefaults()} disabled={busy === "save-defaults" || !settings}>
+              {busy === "save-defaults" ? "Saving..." : "Save Company Settings"}
+            </button>
+          </div>
+          {settings ? (
+            <div className="nexops-quote-template-editor">
+              <label className="nexops-field">
+                <span>Public Business Name</span>
+                <input value={settings.operatingProfile.company.publicName ?? ""} onChange={(event) => setSettings({
+                  ...settings,
+                  operatingProfile: { ...settings.operatingProfile, company: { ...settings.operatingProfile.company, publicName: event.target.value } }
+                })} />
+              </label>
+              <label className="nexops-field">
+                <span>Industry</span>
+                <input value={settings.operatingProfile.company.industry ?? ""} onChange={(event) => setSettings({
+                  ...settings,
+                  operatingProfile: { ...settings.operatingProfile, company: { ...settings.operatingProfile.company, industry: event.target.value } }
+                })} />
+              </label>
+              <label className="nexops-field">
+                <span>Time Zone</span>
+                <input value={settings.operatingProfile.company.timezone} onChange={(event) => setSettings({
+                  ...settings,
+                  operatingProfile: { ...settings.operatingProfile, company: { ...settings.operatingProfile.company, timezone: event.target.value } }
+                })} />
+              </label>
+              <label className="nexops-field">
+                <span>Reply-To Email</span>
+                <input type="email" value={settings.operatingProfile.communicationIdentity.replyToEmail ?? ""} onChange={(event) => setSettings({
+                  ...settings,
+                  operatingProfile: { ...settings.operatingProfile, communicationIdentity: { ...settings.operatingProfile.communicationIdentity, replyToEmail: event.target.value } }
+                })} />
+              </label>
+              <label className="nexops-field">
+                <span>Default Tax Rate (%)</span>
+                <input type="number" min={0} max={100} step="0.01" value={settings.operatingProfile.tax.defaultRate} onChange={(event) => setSettings({
+                  ...settings,
+                  operatingProfile: { ...settings.operatingProfile, tax: { ...settings.operatingProfile.tax, defaultRate: Math.max(0, Math.min(100, Number(event.target.value) || 0)) } }
+                })} />
+              </label>
+              <label className="nexops-check-field inline">
+                <input type="checkbox" checked={settings.operatingProfile.tax.enabled} onChange={(event) => setSettings({
+                  ...settings,
+                  operatingProfile: { ...settings.operatingProfile, tax: { ...settings.operatingProfile.tax, enabled: event.target.checked } }
+                })} />
+                Apply Tax Defaults to New Records
+              </label>
+              <label className="nexops-check-field inline">
+                <input type="checkbox" checked={settings.operatingProfile.securityAudit.requireApprovalForExternalSend} onChange={(event) => setSettings({
+                  ...settings,
+                  operatingProfile: { ...settings.operatingProfile, securityAudit: { ...settings.operatingProfile.securityAudit, requireApprovalForExternalSend: event.target.checked } }
+                })} />
+                Require Approval Before External Sends
+              </label>
+              <p className="nexops-form-note">{settings.operatingProfile.locations.length} location{settings.operatingProfile.locations.length === 1 ? "" : "s"} and {settings.operatingProfile.onboarding.completedSteps.length} onboarding step{settings.operatingProfile.onboarding.completedSteps.length === 1 ? "" : "s"} are stored in this same tenant settings record.</p>
+            </div>
+          ) : <p className="nexops-empty-copy">Company settings load with the tenant configuration.</p>}
+        </article>
+
         <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>

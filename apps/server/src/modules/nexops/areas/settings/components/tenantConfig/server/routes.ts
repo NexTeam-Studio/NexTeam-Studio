@@ -33,6 +33,38 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
       const current = await repository.getCrmSettings(input.tenantId);
       const saved = await repository.saveCrmSettings({
         ...current,
+        operatingProfile: {
+          ...current.operatingProfile,
+          company: {
+            ...current.operatingProfile.company,
+            ...(input.operatingProfile?.company?.legalName !== undefined ? { legalName: input.operatingProfile.company.legalName } : {}),
+            ...(input.operatingProfile?.company?.publicName !== undefined ? { publicName: input.operatingProfile.company.publicName } : {}),
+            ...(input.operatingProfile?.company?.industry !== undefined ? { industry: input.operatingProfile.company.industry } : {}),
+            ...(input.operatingProfile?.company?.timezone !== undefined ? { timezone: input.operatingProfile.company.timezone } : {})
+          },
+          ...(input.operatingProfile?.locations ? { locations: input.operatingProfile.locations } : {}),
+          ...(input.operatingProfile?.businessHours ? { businessHours: input.operatingProfile.businessHours } : {}),
+          tax: {
+            ...current.operatingProfile.tax,
+            ...(input.operatingProfile?.tax?.enabled !== undefined ? { enabled: input.operatingProfile.tax.enabled } : {}),
+            ...(input.operatingProfile?.tax?.defaultRate !== undefined ? { defaultRate: input.operatingProfile.tax.defaultRate } : {}),
+            ...(input.operatingProfile?.tax?.registrationId !== undefined ? { registrationId: input.operatingProfile.tax.registrationId } : {})
+          },
+          communicationIdentity: {
+            ...current.operatingProfile.communicationIdentity,
+            ...input.operatingProfile?.communicationIdentity
+          },
+          securityAudit: {
+            ...current.operatingProfile.securityAudit,
+            ...(input.operatingProfile?.securityAudit?.auditEventsEnabled !== undefined ? { auditEventsEnabled: input.operatingProfile.securityAudit.auditEventsEnabled } : {}),
+            ...(input.operatingProfile?.securityAudit?.requireApprovalForExternalSend !== undefined ? { requireApprovalForExternalSend: input.operatingProfile.securityAudit.requireApprovalForExternalSend } : {})
+          },
+          onboarding: {
+            ...current.operatingProfile.onboarding,
+            ...(input.operatingProfile?.onboarding?.completedSteps !== undefined ? { completedSteps: input.operatingProfile.onboarding.completedSteps } : {}),
+            ...(input.operatingProfile?.onboarding?.launchReviewedAt !== undefined ? { launchReviewedAt: input.operatingProfile.onboarding.launchReviewedAt } : {})
+          }
+        },
         documentNumbering: {
           request: {
             ...current.documentNumbering.request,

@@ -326,6 +326,23 @@ export function defaultCrmSettings(tenantId: string): CrmSettings {
   const timestamp = defaultCrmSettingsTimestamp();
   return {
     tenantId,
+    operatingProfile: {
+      company: { timezone: "America/New_York" },
+      locations: [],
+      businessHours: [
+        { day: "monday", open: "09:00", close: "17:00", closed: false },
+        { day: "tuesday", open: "09:00", close: "17:00", closed: false },
+        { day: "wednesday", open: "09:00", close: "17:00", closed: false },
+        { day: "thursday", open: "09:00", close: "17:00", closed: false },
+        { day: "friday", open: "09:00", close: "17:00", closed: false },
+        { day: "saturday", closed: true },
+        { day: "sunday", closed: true }
+      ],
+      tax: { enabled: false, defaultRate: 0 },
+      communicationIdentity: {},
+      securityAudit: { auditEventsEnabled: true, requireApprovalForExternalSend: true },
+      onboarding: { completedSteps: [] }
+    },
     documentNumbering: {
       request: { prefix: "REQ", separator: "-", padWidth: 4, nextValue: 1 },
       quote: { prefix: "Q", separator: "-", padWidth: 4, nextValue: 1 },

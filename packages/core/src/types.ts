@@ -915,6 +915,44 @@ export interface InvoiceDeliveryPreferences {
 
 export interface CrmSettings {
   tenantId: ID;
+  operatingProfile: {
+    company: {
+      legalName?: string | undefined;
+      publicName?: string | undefined;
+      industry?: string | undefined;
+      timezone: string;
+    };
+    locations: Array<{
+      id: ID;
+      label: string;
+      address?: Address | undefined;
+      active: boolean;
+    }>;
+    businessHours: Array<{
+      day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+      open?: string | undefined;
+      close?: string | undefined;
+      closed: boolean;
+    }>;
+    tax: {
+      enabled: boolean;
+      defaultRate: number;
+      registrationId?: string | undefined;
+    };
+    communicationIdentity: {
+      replyToEmail?: string | undefined;
+      replyToName?: string | undefined;
+      phone?: string | undefined;
+    };
+    securityAudit: {
+      auditEventsEnabled: boolean;
+      requireApprovalForExternalSend: boolean;
+    };
+    onboarding: {
+      completedSteps: string[];
+      launchReviewedAt?: string | undefined;
+    };
+  };
   documentNumbering: DocumentNumberingSettings;
   quoteDefaults: {
     expiryDays: number;
