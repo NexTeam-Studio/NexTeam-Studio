@@ -1,9 +1,8 @@
-import { getPoolLeakCatalogItem } from "@nexteam/industry-packs";
 import { RailError, type LineItem, type QuoteDraft } from "@nexteam/core";
 import { z } from "zod";
 
 export const quoteCatalogItemInputSchema = z.object({
-  catalogCode: z.string().min(1),
+  catalogItemId: z.string().min(1),
   quantity: z.number().positive(),
   unitPriceCents: z.number().int().min(0).optional()
 });
@@ -13,6 +12,14 @@ export const draftQuoteInputSchema = z.object({
   clientId: z.string().min(1),
   jobId: z.string().min(1).optional(),
   title: z.string().min(1),
+  catalogItems: z.array(z.object({
+    id: z.string().min(1),
+    tenantId: z.string().min(1),
+    code: z.string().min(1),
+    name: z.string().min(1),
+    description: z.string().optional(),
+    price: z.number().min(0)
+  })),
   items: z.array(quoteCatalogItemInputSchema).min(1)
 });
 
@@ -24,22 +31,26 @@ function centsToCurrency(cents: number): number {
 
 export function buildQuoteDraft(input: DraftQuoteInput): QuoteDraft {
   const lineItems: LineItem[] = input.items.map((item, index) => {
-    const catalogItem = getPoolLeakCatalogItem(item.catalogCode);
+    const catalogItem = input.catalogItems.find((entry) => entry.id === item.catalogItemId && entry.tenantId === input.tenantId);
     if (!catalogItem) {
-      throw new RailError(`VGB catalog item ${item.catalogCode} was not found.`, {
+      throw new RailError(`Tenant catalog item ${item.catalogItemId} was not found.`, {
         provider: "native",
         op: "buildQuoteDraft",
         status: 400
       });
     }
-    const unitPrice = centsToCurrency(item.unitPriceCents ?? catalogItem.unitPriceCents);
+    const unitPrice = centsToCurrency(item.unitPriceCents ?? Math.round(catalogItem.price * 100));
     return {
       id: `line_${catalogItem.code.toLowerCase()}_${index + 1}`,
       code: catalogItem.code,
       name: catalogItem.name,
+      ...(catalogItem.description ? { description: catalogItem.description } : {}),
       quantity: item.quantity,
       unitPrice,
-      total: Number((item.quantity * unitPrice).toFixed(2))
+      total: Number((item.quantity * unitPrice).toFixed(2)),
+      source: "catalog",
+      catalogItemId: catalogItem.id,
+      catalogCode: catalogItem.code
     };
   });
   return {

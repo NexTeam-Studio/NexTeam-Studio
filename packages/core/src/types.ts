@@ -535,6 +535,9 @@ export interface LineItem {
   unitPrice: number;
   total: number;
   source?: "catalog" | "custom" | undefined;
+  /** Immutable tenant catalog record selected when this line was created. */
+  catalogItemId?: ID | undefined;
+  /** Legacy/display code snapshot. Never use this as the catalog lookup key. */
   catalogCode?: string | undefined;
   clientSelectable?: boolean | undefined;
   defaultSelected?: boolean | undefined;
@@ -892,6 +895,7 @@ export interface ProductServiceCatalogItem {
   name: string;
   description?: string | undefined;
   price: number;
+  category: "service" | "material" | "equipment";
   tag: string;
   taxable: boolean;
   visible: boolean;

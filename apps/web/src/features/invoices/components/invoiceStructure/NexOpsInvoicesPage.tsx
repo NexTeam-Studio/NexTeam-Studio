@@ -42,6 +42,9 @@ interface InvoiceLineItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  source?: "catalog" | "custom";
+  catalogItemId?: string;
+  catalogCode?: string;
 }
 
 interface QuoteDiscount {
@@ -830,6 +833,9 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
         quantity: 1,
         unitPrice: roundMoney(item.price),
         total: roundMoney(item.price)
+        ,source: "catalog",
+        catalogItemId: item.id,
+        catalogCode: item.code
       }]
     } : current);
     setCatalogPickerOpen(false);

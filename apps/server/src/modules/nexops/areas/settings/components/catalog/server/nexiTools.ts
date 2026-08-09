@@ -20,7 +20,7 @@ export function createCatalogNexiTools(context: CrmToolContext, includeWrites: b
   return [
     ...[{
       name: "listCatalogItems",
-      description: "Read tenant Products & Services catalog items by code, name, description, or tag.",
+      description: "Read tenant Products & Services catalog items by stable id, code, name, category, description, or tag.",
       inputSchema: listCatalogItemsInputSchema,
       handler: async (tenant: Tenant, args: unknown) => {
         if (!options.requestRepository) {
@@ -31,7 +31,7 @@ export function createCatalogNexiTools(context: CrmToolContext, includeWrites: b
         const settings = await options.requestRepository.getCrmSettings(tenant.id);
         const items = settings.catalogItems
           .filter((item) => !input.visibleOnly || item.visible)
-          .filter((item) => !needle || [item.code, item.name, item.description, item.tag].filter(Boolean).join(" ").toLowerCase().includes(needle))
+          .filter((item) => !needle || [item.id, item.code, item.name, item.category, item.description, item.tag].filter(Boolean).join(" ").toLowerCase().includes(needle))
           .sort((left, right) => left.name.localeCompare(right.name));
         return {
           result: { items },
@@ -64,6 +64,7 @@ export function createCatalogNexiTools(context: CrmToolContext, includeWrites: b
           name: input.name.trim(),
           ...(input.description?.trim() ? { description: input.description.trim() } : {}),
           price: Math.round(input.price * 100) / 100,
+          category: input.category,
           tag: input.tag.trim() || "Service",
           taxable: input.taxable,
           visible: input.visible,

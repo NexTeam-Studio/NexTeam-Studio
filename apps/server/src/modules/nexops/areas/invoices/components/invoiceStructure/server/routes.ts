@@ -186,6 +186,20 @@ export function registerInvoiceStructureRoutes(context: CrmRouteContext): void {
       const input = updateInvoiceDraftBodySchema.parse(req.body);
       const tenantId = input.tenantId ?? defaultTenantId(env);
       const access = await requireBillingAccess(req, tenantId, "updateInvoiceDraft");
+      if (input.lineItems?.some((item) => item.catalogItemId)) {
+        const settings = await repositoryForTenant().getCrmSettings(tenantId);
+        const missingCatalogItem = input.lineItems.find((item) =>
+          item.catalogItemId
+          && !settings.catalogItems.some((catalogItem) => catalogItem.id === item.catalogItemId && catalogItem.tenantId === tenantId)
+        );
+        if (missingCatalogItem) {
+          throw new RailError("Invoice catalog lines must reference an item in this tenant's Products & Services catalog.", {
+            provider: "native",
+            op: "updateInvoiceDraft",
+            status: 400
+          });
+        }
+      }
       const invoice = await ledger().updateInvoiceDraft({
         tenantId,
         invoiceId,

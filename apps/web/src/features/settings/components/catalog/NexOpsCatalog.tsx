@@ -7,6 +7,7 @@ export interface ProductServiceCatalogItem {
   name: string;
   description?: string;
   price: number;
+  category: "service" | "material" | "equipment";
   tag: string;
   taxable: boolean;
   visible: boolean;
@@ -21,6 +22,7 @@ export interface CatalogItemDraft {
   name: string;
   description: string;
   price: number;
+  category: "service" | "material" | "equipment";
   tag: string;
   taxable: boolean;
   visible: boolean;
@@ -73,6 +75,7 @@ export function blankCatalogItemDraft(seed = ""): CatalogItemDraft {
     name: seed.trim(),
     description: "",
     price: 0,
+    category: "service",
     tag: "Service",
     taxable: true,
     visible: true,
@@ -87,6 +90,7 @@ export function catalogDraftFromItem(item: ProductServiceCatalogItem): CatalogIt
     name: item.name,
     description: item.description ?? "",
     price: item.price,
+    category: item.category ?? "service",
     tag: item.tag,
     taxable: item.taxable,
     visible: item.visible,
@@ -107,6 +111,7 @@ export function catalogItemFromDraft(
     name: draft.name.trim(),
     ...(draft.description.trim() ? { description: draft.description.trim() } : {}),
     price: roundMoney(Math.max(0, draft.price)),
+    category: draft.category,
     tag: draft.tag.trim() || "Service",
     taxable: draft.taxable,
     visible: draft.visible,
@@ -127,8 +132,10 @@ export function NexOpsCatalogPicker(props: CatalogPickerProps): React.ReactEleme
           return true;
         }
         return [
+          item.id,
           item.code,
           item.name,
+          item.category,
           item.description,
           item.tag
         ].join(" ").toLowerCase().includes(normalizedSearch);
@@ -177,7 +184,7 @@ export function NexOpsCatalogPicker(props: CatalogPickerProps): React.ReactEleme
             <button className="nexops-catalog-picker-item" type="button" key={item.id} onClick={() => props.onSelect(item)}>
               <span>
                 <strong>{item.name}</strong>
-                <small>{item.code} · {item.tag}</small>
+                <small>{item.code} · {item.category} · {item.tag}</small>
                 <small>{item.description ?? "No saved description yet."}</small>
               </span>
               <mark>${item.price.toFixed(2)}</mark>
@@ -246,6 +253,14 @@ export function NexOpsCatalogEditorModal(props: CatalogEditorModalProps): React.
               value={props.draft.price}
               onChange={(event) => props.onDraftChange({ ...props.draft, price: Math.max(0, Number(event.target.value || 0)) })}
             />
+          </label>
+          <label className="nexops-field">
+            <span>Category</span>
+            <select value={props.draft.category} onChange={(event) => props.onDraftChange({ ...props.draft, category: event.target.value as CatalogItemDraft["category"] })}>
+              <option value="service">Service</option>
+              <option value="material">Material</option>
+              <option value="equipment">Equipment</option>
+            </select>
           </label>
           <label className="nexops-field">
             <span>Tag</span>

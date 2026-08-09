@@ -13,7 +13,8 @@ Build piece: Mobile UI / intake expansion / catalog / templates combined pass
   - `code`
   - `name`
   - `description?`
-  - `price`
+- `price`
+- `category = "service" | "material" | "equipment"`
   - `tag`
   - `taxable`
   - `visible`
@@ -47,17 +48,20 @@ Build piece: Mobile UI / intake expansion / catalog / templates combined pass
 
 ### Shared line-item behavior
 - Catalog selection prefills:
+  - immutable `catalogItemId`
   - code
   - name
   - description
   - price
+- `catalogItemId` is the stable reference. `catalogCode` remains a display/legacy snapshot and is not used as the primary lookup key.
 - Line-level edits after selection do not mutate the catalog record automatically.
 - Quotes and invoices snapshot the line values they used at compose time.
 
 ### Seed vs tenant items
-- Seed items come from the native tenant defaults.
+- Seed items come from the native tenant defaults and are materialized into that tenant's Settings record.
 - Tenant-created items are stored with `source = "tenant"`.
 - Code matching is case-insensitive when tools or UI save an item back to Settings.
+- Settings rejects catalog entries with another tenant id or duplicate item ids/codes; quote, job, and invoice catalog references are checked against the active tenant catalog.
 
 ## Nexi tools
 

@@ -68,6 +68,7 @@ interface QuoteLineItem {
   unitPrice: number;
   total: number;
   source?: "catalog" | "custom";
+  catalogItemId?: string;
   catalogCode?: string;
   clientSelectable?: boolean;
   defaultSelected?: boolean;
@@ -265,6 +266,7 @@ interface TemplateMutationResponse {
 interface QuoteLineDraft {
   rowId: string;
   kind: "catalog" | "custom";
+  catalogItemId: string;
   catalogCode: string;
   code: string;
   name: string;
@@ -675,14 +677,15 @@ export function quoteDominantAction(quote: QuoteRecord): {
   };
 }
 
-function catalogItem(catalogItems: ProductServiceCatalogItem[], code: string) {
-  return catalogItems.find((item) => item.code === code);
+function catalogItem(catalogItems: ProductServiceCatalogItem[], id: string) {
+  return catalogItems.find((item) => item.id === id);
 }
 
 function lineDraftFromCatalogItem(item: ProductServiceCatalogItem): QuoteLineDraft {
   return {
     rowId: rowId("catalog"),
     kind: "catalog",
+    catalogItemId: item.id,
     catalogCode: item.code,
     code: item.code,
     name: item.name,
@@ -700,6 +703,7 @@ function lineDraftFromQuoteItem(item: QuoteLineItem): QuoteLineDraft {
   return {
     rowId: rowId("line"),
     kind: item.source === "custom" ? "custom" : "catalog",
+    catalogItemId: item.catalogItemId ?? "",
     catalogCode: item.catalogCode ?? "",
     code: item.code,
     name: item.name,
@@ -881,7 +885,7 @@ function quotePayload(composer: QuoteComposerDraft, tenantId: string) {
     title: composer.title.trim(),
     items: composer.items.map((item) => ({
       kind: item.kind,
-      ...(item.kind === "catalog" ? { catalogCode: item.catalogCode, unitPrice: item.unitPrice } : {}),
+      ...(item.kind === "catalog" ? { catalogItemId: item.catalogItemId, unitPrice: item.unitPrice } : {}),
       ...(item.code.trim() ? { code: item.code.trim() } : {}),
       ...(item.name.trim() ? { name: item.name.trim() } : {}),
       ...(item.description.trim() ? { description: item.description.trim() } : {}),
@@ -919,6 +923,7 @@ function templateLineItemsFromComposer(items: QuoteLineDraft[]): QuoteLineItem[]
     unitPrice: item.unitPrice,
     total: roundMoney(item.quantity * item.unitPrice),
     source: item.kind,
+    ...(item.catalogItemId ? { catalogItemId: item.catalogItemId } : {}),
     ...(item.catalogCode ? { catalogCode: item.catalogCode } : {}),
     clientSelectable: item.clientSelectable,
     defaultSelected: item.defaultSelected
@@ -934,7 +939,7 @@ function canSaveComposer(composer: QuoteComposerDraft): boolean {
       return false;
     }
     if (item.kind === "catalog") {
-      return Boolean(item.catalogCode);
+      return Boolean(item.catalogItemId);
     }
     return Boolean(item.name.trim());
   });
@@ -1176,8 +1181,8 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           return item;
         }
         const next = { ...item, ...patch };
-        if (next.kind === "catalog" && next.catalogCode) {
-          const source = catalogItem(settingsRecord?.catalogItems ?? [], next.catalogCode);
+        if (next.kind === "catalog" && next.catalogItemId) {
+          const source = catalogItem(settingsRecord?.catalogItems ?? [], next.catalogItemId);
           if (source) {
             return {
               ...next,
@@ -1606,7 +1611,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                     <div className="nexops-request-builder-grid">
                       <label className="nexops-field">
                         <span>Catalog Code</span>
-                        <input value={item.catalogCode || item.code} onChange={(event) => updateLine(item.rowId, { catalogCode: event.target.value, code: event.target.value })} />
+                        <input value={item.catalogCode || item.code} readOnly />
                       </label>
                       <label className="nexops-field">
                         <span>Saved Source</span>

@@ -529,6 +529,7 @@ export const lineItemSchema = z.object({
   unitPrice: z.number(),
   total: z.number(),
   source: z.enum(["catalog", "custom"]).optional(),
+  catalogItemId: idSchema.optional(),
   catalogCode: z.string().optional(),
   clientSelectable: z.boolean().optional(),
   defaultSelected: z.boolean().optional()
@@ -745,6 +746,7 @@ export const productServiceCatalogItemSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   price: z.number().min(0),
+  category: z.enum(["service", "material", "equipment"]).default("service"),
   tag: z.string().min(1),
   taxable: z.boolean(),
   visible: z.boolean(),

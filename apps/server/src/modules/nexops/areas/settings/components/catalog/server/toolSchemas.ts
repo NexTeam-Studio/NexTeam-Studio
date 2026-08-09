@@ -10,6 +10,7 @@ export const saveCatalogItemInputSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   price: z.number().min(0),
+  category: z.enum(["service", "material", "equipment"]).default("service"),
   tag: z.string().default("Service"),
   taxable: z.boolean().default(true),
   visible: z.boolean().default(true)

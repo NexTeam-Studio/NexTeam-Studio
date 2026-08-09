@@ -48,6 +48,21 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
       if (onboarding.launchReviewedAt && !completedSteps.includes("launch-review")) {
         throw new RailError("Complete launch review before recording its review time.", { provider: "native", op: "updateCrmSettings", status: 400 });
       }
+      if (input.catalogItems) {
+        const ids = new Set<string>();
+        const codes = new Set<string>();
+        for (const item of input.catalogItems) {
+          if (item.tenantId !== input.tenantId) {
+            throw new RailError("Catalog items must belong to the tenant being updated.", { provider: "native", op: "updateCrmSettings", status: 400 });
+          }
+          const code = item.code.trim().toLowerCase();
+          if (ids.has(item.id) || codes.has(code)) {
+            throw new RailError("Catalog item ids and codes must be unique within a tenant.", { provider: "native", op: "updateCrmSettings", status: 400 });
+          }
+          ids.add(item.id);
+          codes.add(code);
+        }
+      }
       const saved = await repository.saveCrmSettings({
         ...current,
         operatingProfile: {

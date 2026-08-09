@@ -1,4 +1,4 @@
-import { RailError, type ApprovalQueueService, type Client, type CRMProvider, type Job, type Tenant } from "@nexteam/core";
+import { RailError, type ApprovalQueueService, type Client, type CrmSettings, type CRMProvider, type Job, type Tenant } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { z } from "zod";
 import { resolveExactClientId } from "../../../../../shared/tools/clientResolution.js";
@@ -36,17 +36,30 @@ export function jobMatchesQuery(job: {
   return values.some((value) => value === needle || value.includes(needle));
 }
 
-function materializeJobLineItems(items: z.infer<typeof createJobToolInputSchema>["lineItems"]): NonNullable<Job["lineItems"]> {
+async function materializeJobLineItems(
+  settings: CrmSettings,
+  items: z.infer<typeof createJobToolInputSchema>["lineItems"]
+): Promise<NonNullable<Job["lineItems"]>> {
   return (items ?? []).map((item, index) => {
+    const catalogItem = item.kind === "catalog"
+      ? settings.catalogItems.find((entry) => entry.id === item.catalogItemId && entry.tenantId === settings.tenantId)
+      : undefined;
+    if (item.kind === "catalog" && !catalogItem) {
+      throw new RailError("Catalog job lines require a catalogItemId from this tenant's Products & Services catalog.", {
+        provider: "native",
+        op: "createJob",
+        status: 400
+      });
+    }
     const quantity = item.quantity ?? 1;
-    const unitPrice = item.unitPrice ?? 0;
+    const unitPrice = item.kind === "catalog" ? catalogItem!.price : item.unitPrice ?? 0;
     return {
       id: `job_line_${index + 1}`,
       source: item.kind === "catalog" ? "catalog" : "custom",
-      ...(item.catalogCode ? { catalogCode: item.catalogCode } : {}),
-      code: item.code?.trim() || `LINE-${index + 1}`,
-      name: item.name.trim(),
-      ...(item.description?.trim() ? { description: item.description.trim() } : {}),
+      ...(catalogItem ? { catalogItemId: catalogItem.id, catalogCode: catalogItem.code } : {}),
+      code: catalogItem?.code ?? (item.code?.trim() || `LINE-${index + 1}`),
+      name: catalogItem?.name ?? item.name.trim(),
+      ...(catalogItem?.description?.trim() ? { description: catalogItem.description.trim() } : item.description?.trim() ? { description: item.description.trim() } : {}),
       quantity,
       unitPrice,
       total: Number((quantity * unitPrice).toFixed(2)),
@@ -103,7 +116,7 @@ export async function queueJobCreateApproval(
   const clientId = await resolveExactClientId(provider, input.clientId, input.clientQuery, "createJob");
   const clientProperties = (await repository.listProperties(tenant.id)).filter((property) => property.clientId === clientId);
   const propertyId = input.propertyId ?? (clientProperties.length === 1 ? clientProperties[0]!.id : undefined);
-  const lineItems = materializeJobLineItems(input.lineItems);
+  const lineItems = await materializeJobLineItems(await repository.getCrmSettings(tenant.id), input.lineItems);
   const previewBody = [
     `Title: ${input.title}`,
     `Client id: ${clientId}`,

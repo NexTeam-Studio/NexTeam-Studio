@@ -153,6 +153,7 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         title: input.title ?? existing.quote.title,
         items: input.items ?? existing.quote.lineItems.map((item) => ({
           kind: item.source === "custom" ? "custom" as const : "catalog" as const,
+          ...(item.catalogItemId ? { catalogItemId: item.catalogItemId } : {}),
           ...(item.catalogCode ? { catalogCode: item.catalogCode } : {}),
           code: item.code,
           name: item.name,

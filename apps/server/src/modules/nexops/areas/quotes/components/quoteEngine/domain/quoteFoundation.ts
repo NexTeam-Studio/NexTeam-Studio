@@ -1,5 +1,4 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { getPoolLeakCatalogItem } from "@nexteam/industry-packs";
 import { RailError, quoteApprovalRulesSchema, quoteDiscountSchema, paymentSchedulePlanSchema, quoteSchema, type CrmSettings, type IntakeSnapshot, type LineItem, type Quote, type QuoteApprovalRules, type QuoteDepositBridge, type QuoteDiscount, type QuoteStatus, type QuoteTemplate, type QuoteTotals } from "@nexteam/core";
 import { z } from "zod";
 import type { NativeCrmRepository } from "@nexteam/providers";
@@ -12,6 +11,7 @@ const EMPTY_LINE_ITEMS: LineItem[] = [];
 
 export const quoteLineItemInputSchema = z.object({
   kind: z.enum(["catalog", "custom"]).default("catalog"),
+  catalogItemId: z.string().min(1).optional(),
   catalogCode: z.string().min(1).optional(),
   code: z.string().min(1).optional(),
   name: z.string().min(1).optional(),
@@ -21,8 +21,8 @@ export const quoteLineItemInputSchema = z.object({
   clientSelectable: z.boolean().optional(),
   defaultSelected: z.boolean().optional()
 }).superRefine((value, ctx) => {
-  if (value.kind === "catalog" && !value.catalogCode) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Catalog line items require a catalogCode.", path: ["catalogCode"] });
+  if (value.kind === "catalog" && !value.catalogItemId && !value.catalogCode) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Catalog line items require a catalogItemId.", path: ["catalogItemId"] });
   }
   if (value.kind === "custom") {
     if (!value.name) {
@@ -113,38 +113,21 @@ function roundMoney(value: number): number {
   return Number(value.toFixed(2));
 }
 
-function catalogItemFromSettings(settings: CrmSettings, code: string) {
-  const normalized = code.trim().toLowerCase();
-  const tenantItem = settings.catalogItems.find((item) => item.code.trim().toLowerCase() === normalized);
-  if (tenantItem) {
-    return tenantItem;
-  }
-  const seeded = getPoolLeakCatalogItem(code);
-  if (!seeded) {
-    return null;
-  }
-  return {
-    id: `catalog_${seeded.code.toLowerCase()}`,
-    tenantId: settings.tenantId,
-    code: seeded.code,
-    name: seeded.name,
-    description: seeded.description,
-    price: roundMoney(Math.round(seeded.unitPriceCents) / 100),
-    tag: "Service",
-    taxable: true,
-    visible: seeded.visible,
-    source: "seed" as const,
-    createdAt: settings.createdAt,
-    updatedAt: settings.updatedAt
-  };
+function catalogItemFromSettings(settings: CrmSettings, catalogItemId?: string, catalogCode?: string) {
+  const id = catalogItemId?.trim();
+  const normalizedCode = catalogCode?.trim().toLowerCase();
+  const tenantItem = settings.catalogItems.find((item) =>
+    item.tenantId === settings.tenantId
+    && (id ? item.id === id : Boolean(normalizedCode) && item.code.trim().toLowerCase() === normalizedCode)
+  );
+  return tenantItem ?? null;
 }
 
 function buildLineItem(settings: CrmSettings, input: z.infer<typeof quoteLineItemInputSchema>, index: number): LineItem {
   if (input.kind === "catalog") {
-    const catalogCode = input.catalogCode?.trim();
-    const catalogItem = catalogCode ? catalogItemFromSettings(settings, catalogCode) : null;
+    const catalogItem = catalogItemFromSettings(settings, input.catalogItemId, input.catalogCode);
     if (!catalogItem) {
-      throw new RailError(`Catalog item ${catalogCode ?? "unknown"} was not found.`, { provider: "native", op: "buildQuoteLineItem", status: 400 });
+      throw new RailError(`Tenant catalog item ${input.catalogItemId ?? input.catalogCode ?? "unknown"} was not found.`, { provider: "native", op: "buildQuoteLineItem", status: 400 });
     }
     const unitPrice = roundMoney(input.unitPrice ?? catalogItem.price);
     return {
@@ -156,6 +139,7 @@ function buildLineItem(settings: CrmSettings, input: z.infer<typeof quoteLineIte
       unitPrice,
       total: roundMoney(input.quantity * unitPrice),
       source: "catalog",
+      catalogItemId: catalogItem.id,
       catalogCode: catalogItem.code,
       clientSelectable: input.clientSelectable,
       defaultSelected: input.defaultSelected
@@ -285,6 +269,7 @@ export async function materializeQuoteRecord(
   const defaultLineItems = template?.defaultLineItems ?? EMPTY_LINE_ITEMS;
   const lineItems = buildLineItems(settings, input.items.length ? input.items : defaultLineItems.map((item) => ({
     kind: item.source === "custom" ? "custom" : "catalog",
+    catalogItemId: item.catalogItemId,
     catalogCode: item.catalogCode,
     code: item.code,
     name: item.name,

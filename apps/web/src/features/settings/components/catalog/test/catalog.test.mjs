@@ -11,6 +11,7 @@ test("Catalog owns reusable item normalization independently of consuming docume
     name: "Annual filter service",
     description: "Replace and inspect",
     price: 199.999,
+    category: "material",
     tag: "Service",
     taxable: true,
     visible: true,
@@ -18,5 +19,6 @@ test("Catalog owns reusable item normalization independently of consuming docume
   });
   assert.equal(item.tenantId, "tenant_1");
   assert.equal(item.price, 200);
+  assert.equal(item.category, "material");
   assert.equal(item.source, "tenant");
 });

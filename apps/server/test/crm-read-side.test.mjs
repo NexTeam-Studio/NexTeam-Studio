@@ -138,7 +138,8 @@ test("NativeAdapter writes native clients and approval-gated quote drafts", asyn
     tenantId: "aquatrace",
     clientId: created.id,
     title: "VGB compliance quote",
-    items: [{ catalogCode: "VGB-001", quantity: 2, unitPriceCents: 12500 }]
+    catalogItems: [{ id: "catalog_vgb_001", tenantId: "aquatrace", code: "VGB-001", name: "VGB compliance", price: 125 }],
+    items: [{ catalogItemId: "catalog_vgb_001", quantity: 2, unitPriceCents: 12500 }]
   });
   const quote = await adapter.draftQuote(draft);
   assert.equal(quote.status, "draft");

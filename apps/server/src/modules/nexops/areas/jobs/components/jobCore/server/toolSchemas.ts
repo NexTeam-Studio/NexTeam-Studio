@@ -17,6 +17,7 @@ export const createJobToolInputSchema = z.object({
   title: z.string().min(1),
   lineItems: z.array(z.object({
     kind: z.enum(["catalog", "custom"]).default("custom"),
+    catalogItemId: z.string().optional(),
     catalogCode: z.string().optional(),
     code: z.string().min(1).optional(),
     name: z.string().min(1),
