@@ -1,6 +1,10 @@
 # Enterprise future-readiness contracts
 
-**Status:** future-readiness documentation only. This document neither enables a feature nor changes a runtime contract.
+**Document ID:** `NEXTEAM-ENTERPRISE-FUTURE-READINESS-V1`
+**Status:** future-readiness documentation only — no enterprise capability in this document is implemented.
+**Contract version:** `1.0.0`
+
+This document neither enables a feature nor changes a runtime contract. Its companion contract guard, `apps/server/test/enterprise-future-readiness-contract.test.mjs`, verifies the current seams cited below and prevents a proposed boundary from being presented as a current capability.
 
 ## Reality boundary
 
@@ -131,3 +135,6 @@ Before any proposed item becomes implemented, its delivery must add tenant-scope
 - `apps/server/src/platform/entitlements.ts` for current plan/module and Nexi tool entitlements.
 - `apps/server/src/nexi/access.ts` and `ARCHITECTURE.md` for current tenant claim enforcement and cross-tenant rejection boundary.
 
+## Change control
+
+The `NOT IMPLEMENTED` state may be changed only in the same change set that implements the adoption gate above and extends the contract guard with positive implementation evidence. A future implementation must preserve this document as the migration record or replace it with a versioned successor that identifies the superseded contract version.
