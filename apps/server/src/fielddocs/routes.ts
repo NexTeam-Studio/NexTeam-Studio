@@ -600,10 +600,14 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
     file.createReadStream().pipe(res);
   }
 
-  app.post("/api/fielddocs/uploads/sessions", (req: Request, res: Response) => {
+  app.post("/api/fielddocs/uploads/sessions", async (req: Request, res: Response) => {
     try {
       const input = uploadSessionInputSchema.parse(req.body);
       const tenantId = input.tenantId ?? defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: tenantId,
+        op: "createFieldDocsUploadSession"
+      });
       const sessionId = `upload_${randomUUID()}`;
       res.status(201).json({
         ok: true,
@@ -625,6 +629,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.post("/api/fielddocs/uploads", async (req: Request, res: Response) => {
     try {
       const input = uploadMediaInputSchema.parse(req.body);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "fieldDocsUpload"
+      });
       const imageInput = optionalImageSchema.parse(req.body);
       const repo = repository();
       const captureBatch = input.captureBatchId ? await repo.getCaptureBatch(input.tenantId, input.captureBatchId) : null;
@@ -1215,6 +1223,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.post("/api/fielddocs/checklists/leak-detection", async (req: Request, res: Response) => {
     try {
       const input = checklistCreateInputSchema.parse(req.body);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "createLeakDetectionChecklist"
+      });
       const checklist = await repository().saveChecklist(createLeakDetectionChecklist(input));
       res.status(201).json({ ok: true, checklist });
     } catch (error) {
@@ -1225,6 +1237,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.post("/api/fielddocs/checklists", async (req: Request, res: Response) => {
     try {
       const input = checklistCreateInputSchema.parse(req.body);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "createFieldChecklist"
+      });
       const checklist = await fieldDocsService().createChecklist({
         tenantId: input.tenantId,
         templateId: input.templateId ?? "leak_detection_checklist_v1",
@@ -1383,6 +1399,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.post("/api/fielddocs/reports", async (req: Request, res: Response) => {
     try {
       const input = reportPdfInputSchema.parse(req.body);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "createFieldReport"
+      });
       const repo = repository();
       const service = fieldDocsService();
       const media = (await Promise.all(input.mediaIds.map((id) => repo.getMedia(input.tenantId, id))))

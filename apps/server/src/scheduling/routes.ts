@@ -112,6 +112,7 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
         ...req.body,
         tenantId: req.body?.tenantId ?? configuredTenantId(deps.env ?? process.env, "schedulingFindSlot")
       }) as z.infer<typeof findSlotSchema> & { tenantId: string };
+      await requireTenantRole(req, deps.env ?? process.env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: input.tenantId, op: "findScheduleSlot" });
       const existingVisits = await deps.repository.listVisits(input.tenantId, { from: input.from, to: input.to });
       const suggestions = await suggestSlots({
         ...input,
@@ -130,6 +131,7 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
         ...req.body,
         tenantId: req.body?.tenantId ?? configuredTenantId(deps.env ?? process.env, "schedulingBookVisit")
       }) as z.infer<typeof bookVisitSchema> & { tenantId: string };
+      await requireTenantRole(req, deps.env ?? process.env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: input.tenantId, op: "bookVisit" });
       const visit = visitFromInput(input);
       const conflicts = detectConflicts(await deps.repository.listVisits(input.tenantId, { from: input.start, to: input.end }), visit);
       const saved = deps.jobLifecycleService
@@ -161,6 +163,7 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
         ...req.body,
         tenantId: req.body?.tenantId ?? configuredTenantId(deps.env ?? process.env, "schedulingReminder")
       }) as z.infer<typeof queueVisitMessageSchema> & { tenantId: string };
+      await requireTenantRole(req, deps.env ?? process.env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: input.tenantId, op: "queueReminder" });
       const visitId = req.params.id;
       if (!visitId) {
         throw new RailError("Visit id is required.", { provider: "native", op: "queueReminder", status: 400 });
@@ -189,6 +192,7 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
         ...req.body,
         tenantId: req.body?.tenantId ?? configuredTenantId(deps.env ?? process.env, "schedulingOnMyWay")
       }) as z.infer<typeof queueVisitMessageSchema> & { tenantId: string };
+      await requireTenantRole(req, deps.env ?? process.env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: input.tenantId, op: "queueOnMyWay" });
       const visitId = req.params.id;
       if (!visitId) {
         throw new RailError("Visit id is required.", { provider: "native", op: "queueOnMyWay", status: 400 });

@@ -159,6 +159,7 @@ export function registerContentRoutes(app: Express, deps: ContentRouteDeps): voi
   app.post("/api/content/drafts/:id/approve", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "approveContentDraft" });
       const draftId = req.params.id;
       if (!draftId) {
         throw new RailError("Content draft id is required.", { provider: "native", op: "approveContentDraft", status: 400 });
@@ -180,6 +181,7 @@ export function registerContentRoutes(app: Express, deps: ContentRouteDeps): voi
   app.post("/api/content/drafts/:id/reject", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "rejectContentDraft" });
       const draftId = req.params.id;
       if (!draftId) {
         throw new RailError("Content draft id is required.", { provider: "native", op: "rejectContentDraft", status: 400 });
@@ -211,9 +213,11 @@ export function registerContentRoutes(app: Express, deps: ContentRouteDeps): voi
   app.post("/api/content/performance/ingest", async (req: Request, res: Response) => {
     try {
       const input = performanceInputSchema.parse(req.body);
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "ingestContentPerformance" });
       const snapshot: ContentPerformanceSnapshot = {
         id: `perf_${randomUUID()}`,
-        tenantId: input.tenantId ?? defaultTenantId(env),
+        tenantId,
         provider: input.provider,
         metricDate: input.metricDate,
         impressions: input.impressions,
