@@ -308,6 +308,17 @@ test("platform routes expose tenants, test subscription, backup, and export", as
     assert.equal(blueprint.ok, true);
     assert.equal(blueprint.prospect.status, "BLUEPRINT_READY");
     assert.equal(blueprint.revision.revisionNumber, 1);
+    const packages = await fetch(`${base}/api/platform/admin/subscription-packages`).then((response) => response.json());
+    assert.equal(packages.packages[0].id, "all-access-test");
+    assert.equal(packages.packages[0].priceCents, 0);
+    const assignment = await fetch(`${base}/api/platform/admin/prospects/${encodeURIComponent(createdProspect.prospect.id)}/subscription`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ packageId: "all-access-test" })
+    }).then((response) => response.json());
+    assert.equal(assignment.ok, true);
+    assert.equal(assignment.assignment.status, "ASSIGNED");
+    assert.equal(assignment.package.includedModules.length > 1, true);
 
     const publicBranding = await fetch(`${base}/api/public/tenant-branding?tenantId=second-test`).then((response) => response.json());
     assert.equal(publicBranding.ok, true);

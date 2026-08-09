@@ -160,6 +160,29 @@ export const tenantSubscriptionSchema = z.object({
   updatedAt: z.string()
 });
 
+export const platformSubscriptionPackageSchema = z.object({
+  id: idSchema,
+  version: z.string().min(1),
+  name: z.string().min(1),
+  priceCents: z.number().int().min(0),
+  currency: z.literal("USD"),
+  includedModules: z.array(platformModuleSchema).min(1),
+  active: z.boolean()
+}).strict();
+
+export const platformSubscriptionAssignmentSchema = z.object({
+  id: idSchema,
+  prospectId: idSchema,
+  tenantId: idSchema.optional(),
+  packageId: idSchema,
+  packageVersion: z.string().min(1),
+  status: z.enum(["ASSIGNED", "ACTIVE", "CANCELED"]),
+  effectiveAt: z.string().min(1),
+  assignedBy: idSchema,
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1)
+}).strict();
+
 export const prospectStatusSchema = z.enum(["DRAFT", "INTAKE_COMPLETE", "BLUEPRINT_READY", "SUBSCRIPTION_REQUIRED", "CONVERTED", "LOST", "ABANDONED"]);
 export const blueprintRevisionSourceSchema = z.enum(["NEXI", "NEXTEAM_STAFF", "TENANT_OWNER", "TENANT_TEAM_MEMBER", "SYSTEM"]);
 export const blueprintApprovalStateSchema = z.enum(["DRAFT", "APPROVED", "DELIVERED", "SUPERSEDED"]);
@@ -246,13 +269,13 @@ export const tenantOnboardingBlueprintRevisionSchema = z.object({
   createdAt: z.string().min(1)
 }).strict().superRefine((value, context) => {
   if (value.snapshot.id !== value.blueprintId || value.snapshot.prospectId !== value.prospectId) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Blueprint revision snapshot must belong to the same prospect and Blueprint." });
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Onboarding plan revision snapshot must belong to the same prospect and plan." });
   }
   if (value.revisionNumber === 1 && value.previousRevisionId) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "The first Blueprint revision cannot reference a previous revision." });
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "The first onboarding plan revision cannot reference a previous revision." });
   }
   if (value.revisionNumber > 1 && !value.previousRevisionId) {
-    context.addIssue({ code: z.ZodIssueCode.custom, message: "Later Blueprint revisions must reference the prior revision." });
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Later onboarding plan revisions must reference the prior revision." });
   }
 });
 
@@ -1632,6 +1655,8 @@ export type TenantDoc = z.infer<typeof tenantSchema>;
 export type TenantBrandingDoc = z.infer<typeof tenantBrandingSchema>;
 export type PlatformPlanDoc = z.infer<typeof platformPlanSchema>;
 export type TenantSubscriptionDoc = z.infer<typeof tenantSubscriptionSchema>;
+export type PlatformSubscriptionPackageDoc = z.infer<typeof platformSubscriptionPackageSchema>;
+export type PlatformSubscriptionAssignmentDoc = z.infer<typeof platformSubscriptionAssignmentSchema>;
 export type ProspectDoc = z.infer<typeof prospectSchema>;
 export type ProspectIntakeDoc = z.infer<typeof prospectIntakeSchema>;
 export type TenantOnboardingBlueprintDoc = z.infer<typeof tenantOnboardingBlueprintSchema>;

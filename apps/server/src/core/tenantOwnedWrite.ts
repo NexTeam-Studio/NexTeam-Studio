@@ -32,6 +32,24 @@ export async function setTenantOwnedDocument(input: {
   });
 }
 
+/**
+ * Platform records such as pre-tenant Prospects have no tenantId yet. They are
+ * still written transactionally so an Admin SDK write cannot bypass the common
+ * persistence/audit seam. Platform routes provide the operator authorization.
+ */
+export async function setPlatformOwnedDocument(input: {
+  db: Firestore;
+  collection: string;
+  id: string;
+  data: DocumentData;
+}): Promise<void> {
+  const ref = input.db.collection(input.collection).doc(input.id);
+  await input.db.runTransaction(async (transaction) => {
+    await transaction.get(ref);
+    transaction.set(ref, input.data);
+  });
+}
+
 export function assertMemoryTenantOwner(
   existing: { tenantId: string } | undefined,
   tenantId: string,

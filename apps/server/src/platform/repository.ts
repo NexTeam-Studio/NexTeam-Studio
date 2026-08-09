@@ -3,6 +3,7 @@ import type { Firestore } from "firebase-admin/firestore";
 import {
   jobAccessLinkSchema,
   platformBackupRecordSchema,
+  platformSubscriptionAssignmentSchema,
   prospectIntakeSchema,
   prospectSchema,
   tenantBrandingSchema,
@@ -15,6 +16,7 @@ import {
   usageLogRecordSchema,
   type JobAccessLink,
   type PlatformBackupRecord,
+  type PlatformSubscriptionAssignment,
   type Prospect,
   type ProspectIntake,
   type Tenant,
@@ -33,7 +35,7 @@ import {
 } from "@nexteam/core";
 import { PLATFORM_PLANS } from "./plans.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
-import { setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
+import { setPlatformOwnedDocument, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 
 function defaultApproval(): Tenant["approval"] {
   return {
@@ -114,10 +116,12 @@ export interface PlatformRepository {
   saveProspect(prospect: Prospect): Promise<Prospect>;
   getProspectIntake(prospectId: string): Promise<ProspectIntake | null>;
   saveProspectIntake(intake: ProspectIntake): Promise<ProspectIntake>;
-  createTenantOnboardingBlueprint(blueprint: TenantOnboardingBlueprint): Promise<TenantOnboardingBlueprint>;
+  createTenantOnboardingBlueprint(onboardingPlan: TenantOnboardingBlueprint): Promise<TenantOnboardingBlueprint>;
   getTenantOnboardingBlueprint(blueprintId: string): Promise<TenantOnboardingBlueprint | null>;
   listTenantOnboardingBlueprintRevisions(blueprintId: string): Promise<TenantOnboardingBlueprintRevision[]>;
   appendTenantOnboardingBlueprintRevision(revision: TenantOnboardingBlueprintRevision): Promise<TenantOnboardingBlueprintRevision>;
+  getPlatformSubscriptionAssignment(prospectId: string): Promise<PlatformSubscriptionAssignment | null>;
+  savePlatformSubscriptionAssignment(assignment: PlatformSubscriptionAssignment): Promise<PlatformSubscriptionAssignment>;
   listTenants(): Promise<Tenant[]>;
   getTenant(tenantId: string): Promise<Tenant | null>;
   upsertTenant(tenant: Tenant): Promise<Tenant>;
@@ -160,6 +164,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   private readonly prospectIntakes = new Map<string, ProspectIntake>();
   private readonly onboardingBlueprints = new Map<string, TenantOnboardingBlueprint>();
   private readonly onboardingBlueprintRevisions = new Map<string, TenantOnboardingBlueprintRevision[]>();
+  private readonly subscriptionAssignments = new Map<string, PlatformSubscriptionAssignment>();
   private readonly tenants = new Map<string, Tenant>();
   private readonly tenantBranding = new Map<string, TenantBranding>();
   private readonly tenantUsers = new Map<string, TenantUser[]>();
@@ -257,21 +262,21 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     return firestoreDoc(parsed);
   }
 
-  async createTenantOnboardingBlueprint(blueprint: TenantOnboardingBlueprint): Promise<TenantOnboardingBlueprint> {
-    const parsed = tenantOnboardingBlueprintSchema.parse(blueprint) as TenantOnboardingBlueprint;
+  async createTenantOnboardingBlueprint(onboardingPlan: TenantOnboardingBlueprint): Promise<TenantOnboardingBlueprint> {
+    const parsed = tenantOnboardingBlueprintSchema.parse(onboardingPlan) as TenantOnboardingBlueprint;
     if (!this.prospects.has(parsed.prospectId)) {
       throw new Error(`Prospect ${parsed.prospectId} does not exist.`);
     }
     if (this.onboardingBlueprints.has(parsed.id)) {
-      throw new Error(`Blueprint ${parsed.id} is immutable and already exists.`);
+      throw new Error(`Onboarding plan ${parsed.id} is immutable and already exists.`);
     }
     this.onboardingBlueprints.set(parsed.id, firestoreDoc(parsed));
     return firestoreDoc(parsed);
   }
 
   async getTenantOnboardingBlueprint(blueprintId: string): Promise<TenantOnboardingBlueprint | null> {
-    const blueprint = this.onboardingBlueprints.get(blueprintId);
-    return blueprint ? firestoreDoc(blueprint) : null;
+    const onboardingPlan = this.onboardingBlueprints.get(blueprintId);
+    return onboardingPlan ? firestoreDoc(onboardingPlan) : null;
   }
 
   async listTenantOnboardingBlueprintRevisions(blueprintId: string): Promise<TenantOnboardingBlueprintRevision[]> {
@@ -280,19 +285,31 @@ export class InMemoryPlatformRepository implements PlatformRepository {
 
   async appendTenantOnboardingBlueprintRevision(revision: TenantOnboardingBlueprintRevision): Promise<TenantOnboardingBlueprintRevision> {
     const parsed = tenantOnboardingBlueprintRevisionSchema.parse(revision) as TenantOnboardingBlueprintRevision;
-    const blueprint = this.onboardingBlueprints.get(parsed.blueprintId);
-    if (!blueprint || blueprint.prospectId !== parsed.prospectId) {
-      throw new Error("Blueprint revision must reference an existing Blueprint for the same prospect.");
+    const onboardingPlan = this.onboardingBlueprints.get(parsed.blueprintId);
+    if (!onboardingPlan || onboardingPlan.prospectId !== parsed.prospectId) {
+      throw new Error("Onboarding plan revision must reference an existing plan for the same prospect.");
     }
     const current = this.onboardingBlueprintRevisions.get(parsed.blueprintId) ?? [];
     if (current.some((entry) => entry.id === parsed.id)) {
-      throw new Error(`Blueprint revision ${parsed.id} is immutable and already exists.`);
+      throw new Error(`Onboarding plan revision ${parsed.id} is immutable and already exists.`);
     }
     const prior = current.at(-1);
     if (parsed.revisionNumber !== current.length + 1 || parsed.previousRevisionId !== prior?.id) {
-      throw new Error("Blueprint revisions must append in order and reference the immediate prior revision.");
+      throw new Error("Onboarding plan revisions must append in order and reference the immediate prior revision.");
     }
     this.onboardingBlueprintRevisions.set(parsed.blueprintId, [...current, firestoreDoc(parsed)]);
+    return firestoreDoc(parsed);
+  }
+
+  async getPlatformSubscriptionAssignment(prospectId: string): Promise<PlatformSubscriptionAssignment | null> {
+    const assignment = this.subscriptionAssignments.get(prospectId);
+    return assignment ? firestoreDoc(assignment) : null;
+  }
+
+  async savePlatformSubscriptionAssignment(assignment: PlatformSubscriptionAssignment): Promise<PlatformSubscriptionAssignment> {
+    const parsed = platformSubscriptionAssignmentSchema.parse(assignment) as PlatformSubscriptionAssignment;
+    if (!this.prospects.has(parsed.prospectId)) throw new Error(`Prospect ${parsed.prospectId} does not exist.`);
+    this.subscriptionAssignments.set(parsed.prospectId, firestoreDoc(parsed));
     return firestoreDoc(parsed);
   }
 
@@ -497,7 +514,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
   async saveProspect(prospect: Prospect): Promise<Prospect> {
     const parsed = prospectSchema.parse(prospect) as Prospect;
-    await this.db.collection("platformProspects").doc(parsed.id).set(docData(parsed));
+    await setPlatformOwnedDocument({ db: this.db, collection: "platformProspects", id: parsed.id, data: docData(parsed) });
     return parsed;
   }
 
@@ -511,12 +528,12 @@ export class FirestorePlatformRepository implements PlatformRepository {
     if (!await this.getProspect(parsed.prospectId)) {
       throw new Error(`Prospect ${parsed.prospectId} does not exist.`);
     }
-    await this.db.collection("platformProspectIntakes").doc(parsed.prospectId).set(docData(parsed));
+    await setPlatformOwnedDocument({ db: this.db, collection: "platformProspectIntakes", id: parsed.prospectId, data: docData(parsed) });
     return parsed;
   }
 
-  async createTenantOnboardingBlueprint(blueprint: TenantOnboardingBlueprint): Promise<TenantOnboardingBlueprint> {
-    const parsed = tenantOnboardingBlueprintSchema.parse(blueprint) as TenantOnboardingBlueprint;
+  async createTenantOnboardingBlueprint(onboardingPlan: TenantOnboardingBlueprint): Promise<TenantOnboardingBlueprint> {
+    const parsed = tenantOnboardingBlueprintSchema.parse(onboardingPlan) as TenantOnboardingBlueprint;
     if (!await this.getProspect(parsed.prospectId)) {
       throw new Error(`Prospect ${parsed.prospectId} does not exist.`);
     }
@@ -536,16 +553,28 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
   async appendTenantOnboardingBlueprintRevision(revision: TenantOnboardingBlueprintRevision): Promise<TenantOnboardingBlueprintRevision> {
     const parsed = tenantOnboardingBlueprintRevisionSchema.parse(revision) as TenantOnboardingBlueprintRevision;
-    const blueprint = await this.getTenantOnboardingBlueprint(parsed.blueprintId);
-    if (!blueprint || blueprint.prospectId !== parsed.prospectId) {
-      throw new Error("Blueprint revision must reference an existing Blueprint for the same prospect.");
+    const onboardingPlan = await this.getTenantOnboardingBlueprint(parsed.blueprintId);
+    if (!onboardingPlan || onboardingPlan.prospectId !== parsed.prospectId) {
+      throw new Error("Onboarding plan revision must reference an existing plan for the same prospect.");
     }
     const current = await this.listTenantOnboardingBlueprintRevisions(parsed.blueprintId);
     const prior = current.at(-1);
     if (parsed.revisionNumber !== current.length + 1 || parsed.previousRevisionId !== prior?.id) {
-      throw new Error("Blueprint revisions must append in order and reference the immediate prior revision.");
+      throw new Error("Onboarding plan revisions must append in order and reference the immediate prior revision.");
     }
     await this.db.collection("platformOnboardingBlueprintRevisions").doc(parsed.id).create(docData(parsed));
+    return parsed;
+  }
+
+  async getPlatformSubscriptionAssignment(prospectId: string): Promise<PlatformSubscriptionAssignment | null> {
+    const snapshot = await this.db.collection("platformSubscriptionAssignments").doc(prospectId).get();
+    return snapshot.exists ? platformSubscriptionAssignmentSchema.parse(snapshot.data()) as PlatformSubscriptionAssignment : null;
+  }
+
+  async savePlatformSubscriptionAssignment(assignment: PlatformSubscriptionAssignment): Promise<PlatformSubscriptionAssignment> {
+    const parsed = platformSubscriptionAssignmentSchema.parse(assignment) as PlatformSubscriptionAssignment;
+    if (!await this.getProspect(parsed.prospectId)) throw new Error(`Prospect ${parsed.prospectId} does not exist.`);
+    await setPlatformOwnedDocument({ db: this.db, collection: "platformSubscriptionAssignments", id: parsed.prospectId, data: docData(parsed) });
     return parsed;
   }
 

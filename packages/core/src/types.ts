@@ -142,6 +142,30 @@ export interface TenantSubscription {
   updatedAt: string;
 }
 
+export interface PlatformSubscriptionPackage {
+  id: ID;
+  version: string;
+  name: string;
+  priceCents: number;
+  currency: "USD";
+  includedModules: PlatformModule[];
+  active: boolean;
+}
+
+/** A platform subscription assignment exists before tenant activation, then links to the tenant. */
+export interface PlatformSubscriptionAssignment {
+  id: ID;
+  prospectId: ID;
+  tenantId?: ID | undefined;
+  packageId: ID;
+  packageVersion: string;
+  status: "ASSIGNED" | "ACTIVE" | "CANCELED";
+  effectiveAt: string;
+  assignedBy: ID;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /**
  * Platform-owned, non-sensitive lifecycle for a company before it becomes a tenant.
  * A Prospect deliberately has no credentials, payment credentials, tax data, or
@@ -214,7 +238,7 @@ export interface TenantOnboardingBlueprint {
 
 /**
  * Revisions are append-only snapshots. There is intentionally no mutable
- * "update Blueprint" contract: every accepted change creates another record.
+ * "update onboarding plan" contract: every accepted change creates another record.
  */
 export interface TenantOnboardingBlueprintRevision {
   id: ID;

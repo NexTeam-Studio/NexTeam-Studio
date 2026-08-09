@@ -7,7 +7,7 @@ const files = execFileSync("git", ["ls-files", "--cached", "--others", "--exclud
   .filter(Boolean)
   .filter((file) => /\.(ts|tsx)$/.test(file));
 
-const allowed = /\b(?:NexiBlueprint|SiteJobBlueprint|nexiBlueprint|siteJobBlueprint|siteJobBlueprints|nexiBlueprintSchema|siteJobBlueprintSchema|NexiBlueprintDoc|SiteJobBlueprintDoc)\b|site[- ]job[- ]blueprints?/gi;
+const allowed = /\b(?:NexiBlueprint|SiteJobBlueprint|TenantOnboardingBlueprint|BlueprintRevisionSource|BlueprintApprovalState|nexiBlueprint|siteJobBlueprint|tenantOnboardingBlueprint|siteJobBlueprints|onboardingBlueprints|onboardingBlueprintRevisions|nexiBlueprintSchema|siteJobBlueprintSchema|tenantOnboardingBlueprintSchema|nexiBlueprintRevisionSchema|tenantOnboardingBlueprintRevisionSchema|NexiBlueprintDoc|SiteJobBlueprintDoc|TenantOnboardingBlueprintDoc|TenantOnboardingBlueprintRevisionDoc)\b|site[- ]job[- ]blueprints?|tenant onboarding blueprints?/gi;
 const failures = [];
 
 for (const file of files) {

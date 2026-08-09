@@ -12,6 +12,7 @@ import { createStripeTestSubscription } from "./billing.js";
 import { toolEntitlementMatrix } from "./entitlements.js";
 import { modulesForPlan, PLATFORM_PLANS } from "./plans.js";
 import { defaultTenant, defaultTenantBranding, planCatalog, subscriptionFromStripe, type PlatformRepository } from "./repository.js";
+import { activeSubscriptionPackages } from "./subscriptionPackages.js";
 import {
   authorizeStripeConnectCallback,
   createOrReuseStripeConnectOnboarding,
@@ -335,10 +336,10 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const prospect = await deps.repository.getProspect(prospectId);
       if (!prospect) throw new RailError("Prospect was not found.", { provider: "platform", op: "prospectBlueprint", status: 404 });
       if (!await deps.repository.getProspectIntake(prospect.id)) {
-        throw new RailError("Complete the non-sensitive intake before creating a Blueprint.", { provider: "platform", op: "prospectBlueprint", status: 409 });
+        throw new RailError("Complete the non-sensitive intake before creating an onboarding plan.", { provider: "platform", op: "prospectBlueprint", status: 409 });
       }
       const timestamp = new Date().toISOString();
-      const blueprint = await deps.repository.createTenantOnboardingBlueprint({
+      const onboardingPlan = await deps.repository.createTenantOnboardingBlueprint({
         id: `onboarding_blueprint_${randomUUID()}`,
         prospectId: prospect.id,
         ...blueprintInput,
@@ -348,9 +349,9 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const revision = await deps.repository.appendTenantOnboardingBlueprintRevision({
         id: `onboarding_blueprint_revision_${randomUUID()}`,
         prospectId: prospect.id,
-        blueprintId: blueprint.id,
+        blueprintId: onboardingPlan.id,
         revisionNumber: 1,
-        snapshot: blueprint,
+        snapshot: onboardingPlan,
         actorId: "platform_operator",
         actorType: "NEXTEAM_STAFF",
         source: "NEXTEAM_STAFF",
@@ -360,7 +361,49 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         createdAt: timestamp
       });
       const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "BLUEPRINT_READY", updatedAt: timestamp });
-      res.status(201).json({ ok: true, prospect: nextProspect, blueprint, revision });
+      res.status(201).json({ ok: true, prospect: nextProspect, onboardingPlan, revision });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/admin/subscription-packages", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env);
+      res.json({ ok: true, packages: activeSubscriptionPackages() });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/admin/prospects/:prospectId/subscription", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env);
+      const prospectId = requiredTenantId(req.params.prospectId);
+      const input = z.object({ packageId: z.string().min(1) }).strict().parse(req.body ?? {});
+      const prospect = await deps.repository.getProspect(prospectId);
+      if (!prospect) throw new RailError("Prospect was not found.", { provider: "platform", op: "prospectSubscription", status: 404 });
+      if (prospect.status !== "BLUEPRINT_READY" && prospect.status !== "SUBSCRIPTION_REQUIRED") {
+        throw new RailError("An onboarding plan must be ready before selecting the required subscription.", { provider: "platform", op: "prospectSubscription", status: 409 });
+      }
+      const subscriptionPackage = activeSubscriptionPackages().find((entry) => entry.id === input.packageId && entry.active);
+      if (!subscriptionPackage) throw new RailError("The selected subscription package is not available.", { provider: "platform", op: "prospectSubscription", status: 400 });
+      const timestamp = new Date().toISOString();
+      const existing = await deps.repository.getPlatformSubscriptionAssignment(prospect.id);
+      const assignment = await deps.repository.savePlatformSubscriptionAssignment({
+        id: existing?.id ?? `platform_subscription_${randomUUID()}`,
+        prospectId: prospect.id,
+        tenantId: existing?.tenantId,
+        packageId: subscriptionPackage.id,
+        packageVersion: subscriptionPackage.version,
+        status: "ASSIGNED",
+        effectiveAt: timestamp,
+        assignedBy: "platform_operator",
+        createdAt: existing?.createdAt ?? timestamp,
+        updatedAt: timestamp
+      });
+      const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "SUBSCRIPTION_REQUIRED", updatedAt: timestamp });
+      res.status(201).json({ ok: true, prospect: nextProspect, assignment, package: subscriptionPackage });
     } catch (error) {
       sendRouteError(res, error);
     }

@@ -15,7 +15,7 @@
 | B — prospect, intake, Blueprint contracts | GREEN | platform-tenants + integration | Shared non-sensitive Prospect, intake/software-inventory, Blueprint, and append-only Blueprint revision contracts are persisted through the platform repository. Targeted server build, 15 platform tests, scope, and coverage checks passed on 2026-08-09. |
 | C — NexTeam Admin foundation | GREEN | platform-tenants | The existing platform console is explicitly NexTeam Admin. Its lifecycle summary API is platform-operator guarded, never tenant-role guarded; it compiles and is exercised in the platform route suite. |
 | D — manual intake and Blueprint UI | GREEN | platform-tenants | NexTeam Admin now has an operator-facing manual form that creates a Prospect, saves the same non-sensitive intake contract, creates a Blueprint, and appends its first immutable revision. Server route suite and web build passed on 2026-08-09. |
-| E — required test subscription | NOT STARTED | platform-tenants | Normalize an audited $0 test package and activation gate. |
+| E — required test subscription | GREEN | platform-tenants | The active `all-access-test` package is versioned, $0.00, all-access, and must be assigned durably to an onboarding-plan-ready Prospect before activation. Full `npm run verify` passed on 2026-08-09 after platform-owned writes were moved behind the approved transaction seam. |
 | F — tenant and owner activation | NOT STARTED | platform-tenants + nexteam-global | Reuse Firebase tenant-user and claims contracts; never store passwords. |
 | G–O | NOT STARTED | assigned per phase | Advance only after the preceding phase has captured green evidence. |
 
