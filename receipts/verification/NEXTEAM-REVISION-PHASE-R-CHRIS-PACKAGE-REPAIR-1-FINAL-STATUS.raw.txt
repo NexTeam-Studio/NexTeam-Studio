@@ -1,0 +1,2 @@
+COMMAND: git status --short
+PHASE_R_FINAL_GIT_STATUS_EXIT_CODE=0
