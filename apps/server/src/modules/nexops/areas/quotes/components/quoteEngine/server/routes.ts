@@ -425,6 +425,7 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
   app.get("/api/crm/quotes/:id/pdf", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      await requireQuoteAccess(req, tenantId, "renderQuotePdf");
       const quoteId = req.params.id;
       if (!quoteId) {
         throw new RailError("Quote id is required.", { provider: "native", op: "renderQuotePdf", status: 400 });

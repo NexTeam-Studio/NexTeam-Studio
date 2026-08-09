@@ -119,6 +119,10 @@ export function registerContactRoutes(context: CrmRouteContext): void {
 
   app.get("/api/crm/address-suggestions", async (req: Request, res: Response) => {
     try {
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
+        ? req.query.tenantId
+        : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "addressSuggestions" });
       const query = typeof req.query.query === "string" ? req.query.query.trim() : "";
       if (query.length < 3) {
         res.json({ ok: true, suggestions: [] });
@@ -140,6 +144,7 @@ export function registerContactRoutes(context: CrmRouteContext): void {
     try {
       const input = createClientBodySchema.parse(req.body);
       const tenantId = input.tenantId ?? defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "createClient" });
       const provider = providerForTenant(tenantId);
       const client = await provider.createClient({
         tenantId,

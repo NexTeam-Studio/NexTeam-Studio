@@ -51,6 +51,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
     try {
       const input = requestFormBodySchema.parse(req.body);
       const tenantId = input.tenantId ?? defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "saveRequestForm" });
       const timestamp = new Date().toISOString();
       const form: RequestForm = {
         id: `request_form_${randomUUID()}`,
@@ -81,6 +82,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       }
       const input = requestFormBodySchema.partial().parse(req.body);
       const tenantId = input.tenantId ?? defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "updateRequestForm" });
       const existing = await repositoryForTenant().getRequestForm(tenantId, formId);
       if (!existing) {
         throw new RailError(`Request form ${formId} was not found.`, { provider: "native", op: "updateRequestForm", status: 404 });
@@ -173,6 +175,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
         ? req.query.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "getRequest" });
       const request = await getRequestOrThrow(tenantId, requestId);
       res.json({ ok: true, request });
     } catch (error) {
@@ -183,6 +186,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
   app.post("/api/crm/requests", async (req: Request, res: Response) => {
     try {
       const input = createRequestBodySchema.parse(req.body);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: input.tenantId, op: "createRequest" });
       const request = await createAndNotifyRequest(input);
       res.status(201).json({ ok: true, request });
     } catch (error) {
@@ -198,6 +202,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       }
       const input = updateRequestBodySchema.parse(req.body);
       const tenantId = input.tenantId ?? defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "updateRequest" });
       const existing = await getRequestOrThrow(tenantId, requestId);
       if (existing.status === "converted_to_quote" || existing.status === "converted_to_job") {
         throw new RailError("Converted requests are read-only. Continue the work from the linked quote or job.", {
@@ -234,6 +239,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim()
         ? req.body.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "archiveRequest" });
       const request = await getRequestOrThrow(tenantId, requestId);
       if (request.status === "converted_to_quote" || request.status === "converted_to_job") {
         throw new RailError("Converted requests remain as a read-only intake record and cannot be archived.", {
@@ -268,6 +274,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim()
         ? req.body.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "reopenRequest" });
       const request = await getRequestOrThrow(tenantId, requestId);
       if (request.status !== "archived") {
         res.json({ ok: true, request });
@@ -295,6 +302,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim()
         ? req.body.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "convertRequestToQuote" });
       const request = await getRequestOrThrow(tenantId, requestId);
       if (request.convertedQuoteId) {
         const quote = await repositoryForTenant().getQuote(tenantId, request.convertedQuoteId);
@@ -358,6 +366,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim()
         ? req.body.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "convertRequestToJob" });
       const request = await getRequestOrThrow(tenantId, requestId);
       if (request.convertedJobId) {
         const job = (await repositoryForTenant().listJobs(tenantId)).find((candidate) => candidate.id === request.convertedJobId);
@@ -420,6 +429,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim()
         ? req.body.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "backfillLeads" });
       const leads = await deps.sitesRepository.listLeads(tenantId);
       const result = await backfillLegacyLeads({
         repository: repositoryForTenant(),
