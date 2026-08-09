@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { RailError } from "@nexteam/core";
 import { configuredTenantId } from "../core/tenantConfig.js";
+import { requireTenantRole } from "../auth/accessContext.js";
 import { createEvaporationReport, evaporationAttachmentFor, renderEvaporationReportPdf } from "./report.js";
 import { MemoryEvaporationRepository, type EvaporationRepository } from "./repository.js";
 import { OpenWeatherMapProvider, type EvaporationWeatherProvider } from "./weather.js";
@@ -28,8 +29,10 @@ export function registerEvaporationRoutes(app: Express, deps: EvaporationRouteDe
 
   app.post("/api/evaporation/run", async (req: Request, res: Response) => {
     try {
+      const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "runEvaporationReport" });
       const report = await createEvaporationReport({
-        tenantId: defaultTenantId(env),
+        tenantId,
         body: req.body,
         repository,
         weatherProvider
@@ -48,6 +51,7 @@ export function registerEvaporationRoutes(app: Express, deps: EvaporationRouteDe
   app.get("/api/evaporation/reports/:id/pdf", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "renderEvaporationPdf" });
       const reportId = req.params.id;
       if (!reportId) {
         throw new RailError("Evaporation report id is required.", { provider: "native", op: "renderEvaporationPdf", status: 400 });

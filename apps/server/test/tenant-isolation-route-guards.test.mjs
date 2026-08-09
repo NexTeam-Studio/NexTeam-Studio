@@ -5,6 +5,7 @@ import { ApprovalQueueService, InMemoryApprovalQueueRepository } from "@nexteam/
 import { createLocalDevSession, requireAccessContext } from "../dist/auth/accessContext.js";
 import { registerContentRoutes } from "../dist/content/routes.js";
 import { InMemoryContentRepository } from "../dist/content/repository.js";
+import { registerEvaporationRoutes } from "../dist/evaporation/routes.js";
 import { registerFieldDocsRoutes } from "../dist/fielddocs/routes.js";
 import { MemoryMediaRepository } from "../dist/fielddocs/mediaRepository.js";
 import { registerSchedulingRoutes } from "../dist/scheduling/routes.js";
@@ -24,6 +25,7 @@ async function startApp() {
   });
   registerFieldDocsRoutes(app, { repository: new MemoryMediaRepository(), env });
   registerContentRoutes(app, { repository: new InMemoryContentRepository(), env });
+  registerEvaporationRoutes(app, { env });
   const server = await new Promise((resolve) => {
     const started = app.listen(0, () => resolve(started));
   });
@@ -60,6 +62,7 @@ test("both tenant directions are denied every repaired cross-tenant read route",
         `/api/content/queue?tenantId=${targetTenantId}`,
         `/api/content/calendar?tenantId=${targetTenantId}`,
         `/api/content/stats?tenantId=${targetTenantId}`
+        ,`/api/evaporation/reports/report_b/pdf?tenantId=${targetTenantId}`
       ];
       for (const route of routes) {
         const response = await fetch(`${base}${route}`, { headers });
