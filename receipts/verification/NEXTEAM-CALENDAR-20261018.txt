@@ -1,0 +1,91 @@
+JOB_ID=NEXTEAM-CALENDAR-20261018
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Support modules acceptance.
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/campaigns.test.mjs apps/server/test/reputation.test.mjs apps/server/test/reputation-tenant-boundary.test.mjs apps/server/test/content-engine.test.mjs apps/server/test/content-tenant-boundary.test.mjs apps/server/test/sites-runtime.test.mjs
+Raw output:
+✔ audience builder honors consent and suppression (4.3929ms)
+✔ XState sequence plans delayed sends and reaches approvalQueued (8.5198ms)
+✔ campaign queueing parks approvals only and marks DNS boundary blocked (16.3988ms)
+✔ open, click, unsubscribe, and second-step suppression are recorded (4.2121ms)
+✔ configurable tenant templates render variables and physical address compliance text (2.3219ms)
+✔ transactional report and review emails are approval queued, including 48-hour review delay (1.3837ms)
+✔ campaign Nexi tools expose approval-gated campaign operations (2.8114ms)
+✔ campaign routes expose template, test-run, tracking, unsubscribe, and stats (68.5039ms)
+✔ campaign AccessContext gate blocks technician and job-link contexts (0.5343ms)
+✔ DNS boundary stays blocked until SPF, DKIM, and DMARC are confirmed (0.2067ms)
+✔ NexReach generates approval-pending article and social drafts from consented closed jobs only (17.4356ms)
+✔ NexReach consent revocation flags live showcases and keeps the audience export consent-only (3.639ms)
+✔ NexReach routes expose bundle exports and a token-gated public portfolio page (75.6654ms)
+✔ NexReach Nexi tools keep marketing actions role-fenced and approval-gated (3.7309ms)
+✔ NexReach local Nexi loop accepts underscore ids through generate, approve, and refusal flow (8.5621ms)
+✔ Content Admin writes reject cross-tenant ids across every shared-id collection (3.3195ms)
+✔ Content draft updates reject another tenant and cannot mutate tenant identity (0.6349ms)
+✔ Content memory persistence has matching collision and immutable-tenant behavior (0.4226ms)
+✔ Reputation Admin writes reject cross-tenant review and profile ids (4.6016ms)
+✔ M7 imports GBP reviews, emits review.received, and drafts approval-only replies (5.8726ms)
+✔ M7 review requests and GBP profile updates park in ApprovalQueue only (1.4477ms)
+✔ M7 routes expose review queue, draft reply, profile sync, and public widget (70.3266ms)
+✔ M7 Nexi tools surface blockers honestly and park all outbound reputation work (2.3294ms)
+✔ M8 generates Aquatrace site blocks and renders static HTML (3.6447ms)
+✔ M8 generates a pressure-washing site with direct phone, email, and website contact (1.6686ms)
+✔ M8 publishes only an owner-approved, unchanged reviewed site through the FTPS rail (105.7684ms)
+✔ M8 lead form creates lead, event, and approval-queued owner notification only (23.5806ms)
+✔ M8 operator UI customization is tenant-scoped and owner/admin gated (8.4589ms)
+✔ M8 Nexi tool changes Job Desk appearance without touching another tenant (0.586ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1787.1125
+EXACT_EXIT_CODE=0
+CALENDAR_PROOF_EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+SUPPORT_MODULES_ACCEPTANCE=PASS
+CAMPAIGN_APPROVAL_AND_CONSENT=PASS
+CONTENT_TENANT_ISOLATION=PASS
+REPUTATION_APPROVAL_AND_TENANT_ISOLATION=PASS
+SITE_OWNER_APPROVAL_AND_TENANT_GATING=PASS
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+EXACT_EXIT_CODE=0
+WORKTREE_SCOPE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+EXACT_EXIT_CODE=0
+WORKTREE_COVERAGE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1681 tracked non-doc files checked).
+EXACT_EXIT_CODE=0
+SECRET_SCAN_EXACT_EXIT_CODE=0
+
+COMMAND=git status --short
+Raw output:
+(empty)
+EXACT_EXIT_CODE=0
+GIT_STATUS_CLEAN=YES
+
+REQUIRED_GATES_GREEN: YES
