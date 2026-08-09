@@ -1,0 +1,9 @@
+PHASE_P_CONTAMINATION_GATE=FAIL
+apps/server/src\fielddocs\visionSurvey.ts
+apps/server/src\fielddocs\reportExtraction.ts
+apps/server/src\campaigns\repository.ts
+apps/server/src\fielddocs\checklists.ts
+apps/server/src\mobile\repository.ts
+apps/server/src\sites\generator.ts
+PHASE_P_CONTAMINATION_MATCH_COUNT=6
+PHASE_P_CONTAMINATION_EXIT_CODE=1
