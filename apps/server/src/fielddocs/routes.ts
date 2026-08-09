@@ -1341,6 +1341,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.get("/api/fielddocs/bundles", async (req: Request, res: Response) => {
     try {
       const input = bundleListQuerySchema.parse(req.query);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "listFieldDocsBundles"
+      });
       const bundles = await fieldDocsService().listBundles(input.tenantId);
       res.json({ ok: true, bundles });
     } catch (error) {
@@ -1370,6 +1374,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.get("/api/fielddocs/text-snippets", async (req: Request, res: Response) => {
     try {
       const input = textSnippetListQuerySchema.parse(req.query);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "listFieldDocsTextSnippets"
+      });
       const snippets = await fieldDocsService().listTextSnippets(input.tenantId);
       res.json({ ok: true, snippets });
     } catch (error) {
@@ -1525,6 +1533,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.get("/api/fielddocs/signed-documents", async (req: Request, res: Response) => {
     try {
       const input = signedDocumentListQuerySchema.parse(req.query);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
+        requestedTenantId: input.tenantId,
+        op: "listSignedDocuments"
+      });
       const records = await fieldDocsService().listSignedDocuments(input);
       res.json({ ok: true, records });
     } catch (error) {
