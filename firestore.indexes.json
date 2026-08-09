@@ -134,6 +134,46 @@
         { "fieldPath": "tenantId", "order": "ASCENDING" },
         { "fieldPath": "slug", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "platformOnboardingBlueprintRevisions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "blueprintId", "order": "ASCENDING" },
+        { "fieldPath": "revisionNumber", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "platformTenantBlockers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "platformTenantMigrationRecords",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "platformSupportEscalations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "tenantMembershipAudits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

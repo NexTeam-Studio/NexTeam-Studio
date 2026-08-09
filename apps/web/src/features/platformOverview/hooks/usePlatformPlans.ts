@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
-import type { PlatformPlan } from "../../../shared/contracts/platform";
 import { recordBrowserEvent } from "../../../shared/telemetry/browserTelemetry";
-import { fetchPlatformPlans } from "../api/platformPlansApi";
+import { fetchPilotSubscriptionPackages, type PilotSubscriptionPackage } from "../api/platformPlansApi";
 
 export function usePlatformPlans(user: User | null): {
-  plans: PlatformPlan[];
+  plans: PilotSubscriptionPackage[];
   status: string;
 } {
   const [plans, setPlans] = useState<PlatformPlan[]>([]);
@@ -14,14 +13,14 @@ export function usePlatformPlans(user: User | null): {
   useEffect(() => {
     if (!user) {
       setPlans([]);
-      setStatus("Platform plans require a signed-in operator.");
+      setStatus("Pilot package details require a signed-in platform operator.");
       return;
     }
 
     let cancelled = false;
-    setStatus("Loading platform plans...");
+    setStatus("Loading pilot package...");
 
-    fetchPlatformPlans(user)
+    fetchPilotSubscriptionPackages(user)
       .then((nextPlans) => {
         if (!cancelled) {
           setPlans(nextPlans);
@@ -34,7 +33,7 @@ export function usePlatformPlans(user: User | null): {
         });
         if (!cancelled) {
           setPlans([]);
-          setStatus(error instanceof Error ? error.message : "Platform plans could not reach the server.");
+          setStatus(error instanceof Error ? error.message : "Pilot package details could not reach the server.");
         }
       });
 

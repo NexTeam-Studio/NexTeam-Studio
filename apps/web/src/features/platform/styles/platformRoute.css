@@ -1,4 +1,8 @@
 .platform-route {
   min-height: 100vh;
   padding: 18px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }

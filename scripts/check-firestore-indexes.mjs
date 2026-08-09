@@ -10,7 +10,12 @@ const requiredCompoundQueries = [
   ["requestForms", "tenantId", "slug"],
   ["jobAccessLinks", "tenantId", "jobId"],
   ["sitePages", "tenantId", "slug"],
-  ["leads", "tenantId", "slug"]
+  ["leads", "tenantId", "slug"],
+  ["platformOnboardingBlueprintRevisions", "blueprintId", "revisionNumber"],
+  ["platformTenantBlockers", "tenantId", "updatedAt"],
+  ["platformTenantMigrationRecords", "tenantId", "updatedAt"],
+  ["platformSupportEscalations", "tenantId", "updatedAt"],
+  ["tenantMembershipAudits", "tenantId", "createdAt"]
 ];
 
 const config = JSON.parse(readFileSync("firestore.indexes.json", "utf8"));

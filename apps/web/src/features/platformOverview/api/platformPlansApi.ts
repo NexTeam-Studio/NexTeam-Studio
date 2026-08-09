@@ -1,5 +1,13 @@
 import type { User } from "firebase/auth";
-import type { PlatformPlansResponse } from "../../../shared/contracts/platform";
+export interface PilotSubscriptionPackage {
+  id: string;
+  version: string;
+  name: string;
+  priceCents: number;
+  currency: string;
+  includedModules: string[];
+  active: boolean;
+}
 
 async function authedFetch(user: User, path: string, init?: RequestInit): Promise<Response> {
   const token = await user.getIdToken();
@@ -13,13 +21,13 @@ async function authedFetch(user: User, path: string, init?: RequestInit): Promis
   });
 }
 
-export async function fetchPlatformPlans(user: User): Promise<NonNullable<PlatformPlansResponse["plans"]>> {
-  const body = await authedFetch(user, "/api/platform/plans")
-    .then((response) => response.json() as Promise<PlatformPlansResponse>);
+export async function fetchPilotSubscriptionPackages(user: User): Promise<PilotSubscriptionPackage[]> {
+  const response = await authedFetch(user, "/api/platform/admin/subscription-packages");
+  const body = await response.json() as { ok?: boolean; packages?: PilotSubscriptionPackage[]; error?: string };
 
-  if (!body.ok) {
-    throw new Error(body.error ?? "Platform plans are unavailable.");
+  if (!response.ok || !body.ok) {
+    throw new Error(body.error ?? "Pilot subscription package is unavailable.");
   }
 
-  return body.plans ?? [];
+  return (body.packages ?? []).filter((entry) => entry.active);
 }
