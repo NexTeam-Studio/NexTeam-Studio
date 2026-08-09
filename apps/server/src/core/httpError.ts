@@ -1,9 +1,13 @@
 import type { Response } from "express";
-import { RailError, logger } from "@nexteam/core";
+import { logger } from "@nexteam/core";
+import { publicErrorResponse } from "./publicError.js";
 
 export function sendHttpError(res: Response, error: unknown): void {
-  const status = error instanceof RailError ? error.status ?? 500 : 500;
-  const message = error instanceof Error ? error.message : "Unknown server error";
-  logger.error({ status, message });
+  const { status, message } = publicErrorResponse(error);
+  logger.error({
+    status,
+    errorType: error instanceof Error ? error.name : typeof error,
+    message: error instanceof Error ? error.message : "Unknown server error"
+  });
   res.status(status).json({ ok: false, error: message });
 }

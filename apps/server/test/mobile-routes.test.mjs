@@ -19,7 +19,7 @@ function access(overrides = {}) {
   };
 }
 
-function makeServer() {
+function makeServer(options = {}) {
   const repository = new InMemoryMobileRepository();
   const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
   const app = express();
@@ -29,8 +29,10 @@ function makeServer() {
     approvalQueue,
     env: {
       TENANT_ID: "aquatrace",
-      NEXI_FIREBASE_AUTH_REQUIRED: "false"
-    }
+      NEXI_FIREBASE_AUTH_REQUIRED: "false",
+      OPENAI_API_KEY: "test-only-mobile-transcription-config"
+    },
+    ...(options.transcriptionFetch ? { transcriptionFetch: options.transcriptionFetch } : {})
   });
   return { app, repository, approvalQueue };
 }
@@ -176,4 +178,31 @@ test("M11 mobile access policy blocks cross-user and unscoped job-link access", 
   assert.equal(assertMobileJobAccess(access({ role: "OWNER", tenantUserId: "owner_1" }), job).jobId, "job_deborah_justice");
   assert.equal(assertMobileJobAccess(access({ accessKind: "job_link", jobAccessLinkId: "link_deborah_subcontractor" }), job).jobId, "job_deborah_justice");
   assert.throws(() => assertMobileJobAccess(access({ accessKind: "job_link", jobAccessLinkId: "wrong_link" }), job), /not allowed/);
+});
+
+test("M11 mobile routes keep unexpected provider details out of HTTP errors", async () => {
+  const internalProviderDetail = "provider-internal-diagnostic";
+  const { app } = makeServer({
+    transcriptionFetch: async () => {
+      throw new Error(internalProviderDetail);
+    }
+  });
+
+  await withServer(app, async (base) => {
+    const response = await fetch(`${base}/api/mobile/transcribe`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        fileName: "field-note.m4a",
+        mimeType: "audio/mp4",
+        audioBase64: Buffer.from("non-production-test-audio").toString("base64")
+      })
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 500);
+    assert.equal(body.error, "Something went wrong. Please try again.");
+    assert.equal(JSON.stringify(body).includes(internalProviderDetail), false);
+  });
 });

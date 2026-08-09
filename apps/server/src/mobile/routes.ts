@@ -13,6 +13,7 @@ import type { MediaRepository } from "../fielddocs/mediaRepository.js";
 import type { PlatformRepository } from "../platform/repository.js";
 import type { SchedulingRepository } from "../scheduling/repository.js";
 import { assertMobileDayScheduleAccess, assertMobileJobAccess } from "./access.js";
+import { publicErrorResponse } from "../core/publicError.js";
 import type { InMemoryMobileRepository } from "./repository.js";
 import { maybeTranscribeMobileNarration, type MobileTranscriptionFetch } from "./transcription.js";
 
@@ -99,8 +100,8 @@ export interface MobileRouteDeps {
 }
 
 function sendError(res: Response, error: unknown): void {
-  const status = error instanceof RailError ? error.status ?? 500 : 500;
-  res.status(status).json({ ok: false, error: error instanceof Error ? error.message : "Unknown mobile error" });
+  const { status, message } = publicErrorResponse(error);
+  res.status(status).json({ ok: false, error: message });
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {

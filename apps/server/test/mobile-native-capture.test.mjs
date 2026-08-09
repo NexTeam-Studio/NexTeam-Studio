@@ -406,7 +406,7 @@ test("M11 visit context returns checklist and before/after candidates, and unass
     });
     const blockedBody = await blocked.json();
     assert.equal(blocked.status, 403);
-    assert.match(blockedBody.error, /not assigned/i);
+    assert.equal(blockedBody.error, "You do not have permission to perform that action.");
   });
 });
 
