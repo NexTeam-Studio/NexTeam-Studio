@@ -28,6 +28,13 @@
 
 ## Authoritative existing ownership
 
+## Phase H contract
+
+- `TenantBlocker` is tenant-scoped by `tenantId`; it records only non-secret operational blockers with a lifecycle of `OPEN`, `ESCALATED`, or `RESOLVED`.
+- `PlatformSupportEscalation` is linked to exactly one blocker for the same tenant. It is platform-operator-only and has a lifecycle of `OPEN`, `ACKNOWLEDGED`, or `RESOLVED`.
+- Commands: create/list/update a blocker; create/list/update a linked escalation. Events: `tenant_blocker.created`, `tenant_blocker.status_changed`, `platform_support_escalation.created`, and `platform_support_escalation.status_changed`.
+- Routes reject non-platform operators; repository validation rejects mismatched tenant/blocker links. No credentials, provider tokens, or payment data belong in either record.
+
 | Domain | Existing authoritative implementation | Build direction |
 | --- | --- | --- |
 | Platform tenant administration | `apps/server/src/platform/**`; `apps/web/src/features/platform/**` | Extend in the platform-tenants lane. |

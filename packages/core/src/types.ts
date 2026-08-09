@@ -187,6 +187,37 @@ export interface PlatformSubscriptionAssignment {
   updatedAt: string;
 }
 
+/** A tenant-scoped onboarding obstacle tracked by NexTeam Admin. */
+export interface TenantBlocker {
+  id: ID;
+  tenantId: ID;
+  title: string;
+  detail: string;
+  category: "CONFIGURATION" | "DATA_MIGRATION" | "INTEGRATION" | "TRAINING" | "BILLING" | "OTHER";
+  severity: "BLOCKING" | "HIGH" | "NORMAL";
+  status: "OPEN" | "ESCALATED" | "RESOLVED";
+  createdAt: string;
+  createdBy: ID;
+  updatedAt: string;
+  resolvedAt?: string | undefined;
+  resolvedBy?: ID | undefined;
+}
+
+/** Platform-operated support case linked to a tenant blocker. */
+export interface PlatformSupportEscalation {
+  id: ID;
+  tenantId: ID;
+  blockerId: ID;
+  summary: string;
+  priority: "P1" | "P2" | "P3";
+  status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+  createdAt: string;
+  createdBy: ID;
+  updatedAt: string;
+  resolvedAt?: string | undefined;
+  resolvedBy?: ID | undefined;
+}
+
 /**
  * Platform-owned, non-sensitive lifecycle for a company before it becomes a tenant.
  * A Prospect deliberately has no credentials, payment credentials, tax data, or

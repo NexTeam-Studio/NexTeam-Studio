@@ -660,3 +660,51 @@ test("platform Blueprint revisions are append-only snapshots", async () => {
   revisions[0].snapshot.recommendedLayout[0] = "Mutated locally";
   assert.equal((await repository.listTenantOnboardingBlueprintRevisions(blueprint.id))[0].snapshot.recommendedLayout[0], "Office");
 });
+
+test("tenant blockers persist by tenant and platform support escalation denies non-operators", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("tenant-a", "suite"), defaultTenant("tenant-b", "suite")]);
+  const app = express();
+  app.use(express.json());
+  registerPlatformRoutes(app, {
+    repository,
+    storage: new MemoryStorageWriter(),
+    env: { NEXI_FIREBASE_AUTH_REQUIRED: "true" },
+    platformOperatorAuth: {
+      async verifyIdToken(token) {
+        return token === "operator" ? { uid: "operator", platform_operator: true } : { uid: "tenant-owner", email: "owner@example.test" };
+      }
+    }
+  });
+  const server = app.listen(0);
+  try {
+    const { port } = server.address();
+    const base = `http://127.0.0.1:${port}`;
+    const denied = await fetch(`${base}/api/platform/admin/tenants/tenant-a/blockers`, {
+      method: "POST", headers: { authorization: "Bearer tenant-owner", "content-type": "application/json" },
+      body: JSON.stringify({ title: "Blocked", detail: "Tenant configuration is incomplete.", category: "CONFIGURATION", severity: "BLOCKING" })
+    });
+    assert.equal(denied.status, 403);
+
+    const created = await fetch(`${base}/api/platform/admin/tenants/tenant-a/blockers`, {
+      method: "POST", headers: { authorization: "Bearer operator", "content-type": "application/json" },
+      body: JSON.stringify({ title: "Domain verification", detail: "DNS verification is still required.", category: "INTEGRATION", severity: "BLOCKING" })
+    });
+    assert.equal(created.status, 201);
+    const blocker = (await created.json()).blocker;
+    const escalation = await fetch(`${base}/api/platform/admin/tenant-blockers/${encodeURIComponent(blocker.id)}/escalations`, {
+      method: "POST", headers: { authorization: "Bearer operator", "content-type": "application/json" },
+      body: JSON.stringify({ summary: "Platform team must validate the tenant domain.", priority: "P1" })
+    });
+    assert.equal(escalation.status, 201);
+    assert.equal((await escalation.json()).blocker.status, "ESCALATED");
+
+    const listed = await fetch(`${base}/api/platform/admin/tenant-blockers?tenantId=tenant-a`, { headers: { authorization: "Bearer operator" } }).then((response) => response.json());
+    assert.equal(listed.blockers.length, 1);
+    assert.equal(listed.escalations.length, 1);
+    const isolated = await fetch(`${base}/api/platform/admin/tenant-blockers?tenantId=tenant-b`, { headers: { authorization: "Bearer operator" } }).then((response) => response.json());
+    assert.deepEqual(isolated.blockers, []);
+    assert.deepEqual(isolated.escalations, []);
+  } finally {
+    server.close();
+  }
+});

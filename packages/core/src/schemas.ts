@@ -228,6 +228,35 @@ export const platformSubscriptionAssignmentSchema = z.object({
   updatedAt: z.string().min(1)
 }).strict();
 
+export const tenantBlockerSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  title: z.string().trim().min(1).max(180),
+  detail: z.string().trim().min(1).max(4000),
+  category: z.enum(["CONFIGURATION", "DATA_MIGRATION", "INTEGRATION", "TRAINING", "BILLING", "OTHER"]),
+  severity: z.enum(["BLOCKING", "HIGH", "NORMAL"]),
+  status: z.enum(["OPEN", "ESCALATED", "RESOLVED"]),
+  createdAt: z.string().min(1),
+  createdBy: idSchema,
+  updatedAt: z.string().min(1),
+  resolvedAt: z.string().min(1).optional(),
+  resolvedBy: idSchema.optional()
+}).strict();
+
+export const platformSupportEscalationSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  blockerId: idSchema,
+  summary: z.string().trim().min(1).max(4000),
+  priority: z.enum(["P1", "P2", "P3"]),
+  status: z.enum(["OPEN", "ACKNOWLEDGED", "RESOLVED"]),
+  createdAt: z.string().min(1),
+  createdBy: idSchema,
+  updatedAt: z.string().min(1),
+  resolvedAt: z.string().min(1).optional(),
+  resolvedBy: idSchema.optional()
+}).strict();
+
 export const prospectStatusSchema = z.enum(["DRAFT", "INTAKE_COMPLETE", "BLUEPRINT_READY", "SUBSCRIPTION_REQUIRED", "CONVERTED", "LOST", "ABANDONED"]);
 export const blueprintRevisionSourceSchema = z.enum(["NEXI", "NEXTEAM_STAFF", "TENANT_OWNER", "TENANT_TEAM_MEMBER", "SYSTEM"]);
 export const blueprintApprovalStateSchema = z.enum(["DRAFT", "APPROVED", "DELIVERED", "SUPERSEDED"]);
@@ -1707,6 +1736,8 @@ export type PlatformPlanDoc = z.infer<typeof platformPlanSchema>;
 export type TenantSubscriptionDoc = z.infer<typeof tenantSubscriptionSchema>;
 export type PlatformSubscriptionPackageDoc = z.infer<typeof platformSubscriptionPackageSchema>;
 export type PlatformSubscriptionAssignmentDoc = z.infer<typeof platformSubscriptionAssignmentSchema>;
+export type TenantBlockerDoc = z.infer<typeof tenantBlockerSchema>;
+export type PlatformSupportEscalationDoc = z.infer<typeof platformSupportEscalationSchema>;
 export type ProspectDoc = z.infer<typeof prospectSchema>;
 export type ProspectIntakeDoc = z.infer<typeof prospectIntakeSchema>;
 export type TenantOnboardingBlueprintDoc = z.infer<typeof tenantOnboardingBlueprintSchema>;

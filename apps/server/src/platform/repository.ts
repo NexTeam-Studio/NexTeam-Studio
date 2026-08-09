@@ -3,6 +3,7 @@ import type { Firestore } from "firebase-admin/firestore";
 import {
   jobAccessLinkSchema,
   platformBackupRecordSchema,
+  platformSupportEscalationSchema,
   platformSubscriptionAssignmentSchema,
   prospectIntakeSchema,
   prospectSchema,
@@ -10,16 +11,19 @@ import {
   tenantAdapterStatusSchema,
   tenantOnboardingBlueprintRevisionSchema,
   tenantOnboardingBlueprintSchema,
+  tenantBlockerSchema,
   tenantSchema,
   tenantSubscriptionSchema,
   tenantUserSchema,
   usageLogRecordSchema,
   type JobAccessLink,
   type PlatformBackupRecord,
+  type PlatformSupportEscalation,
   type PlatformSubscriptionAssignment,
   type Prospect,
   type ProspectIntake,
   type Tenant,
+  type TenantBlocker,
   type TenantAdapterStatus,
   type TenantOnboardingBlueprint,
   type TenantOnboardingBlueprintRevision,
@@ -120,6 +124,12 @@ export interface PlatformRepository {
   getTenantOnboardingBlueprint(blueprintId: string): Promise<TenantOnboardingBlueprint | null>;
   listTenantOnboardingBlueprintRevisions(blueprintId: string): Promise<TenantOnboardingBlueprintRevision[]>;
   appendTenantOnboardingBlueprintRevision(revision: TenantOnboardingBlueprintRevision): Promise<TenantOnboardingBlueprintRevision>;
+  listTenantBlockers(tenantId?: string): Promise<TenantBlocker[]>;
+  getTenantBlocker(blockerId: string): Promise<TenantBlocker | null>;
+  saveTenantBlocker(blocker: TenantBlocker): Promise<TenantBlocker>;
+  listPlatformSupportEscalations(tenantId?: string): Promise<PlatformSupportEscalation[]>;
+  getPlatformSupportEscalation(escalationId: string): Promise<PlatformSupportEscalation | null>;
+  savePlatformSupportEscalation(escalation: PlatformSupportEscalation): Promise<PlatformSupportEscalation>;
   getPlatformSubscriptionAssignment(prospectId: string): Promise<PlatformSubscriptionAssignment | null>;
   savePlatformSubscriptionAssignment(assignment: PlatformSubscriptionAssignment): Promise<PlatformSubscriptionAssignment>;
   listTenants(): Promise<Tenant[]>;
@@ -164,6 +174,8 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   private readonly prospectIntakes = new Map<string, ProspectIntake>();
   private readonly onboardingBlueprints = new Map<string, TenantOnboardingBlueprint>();
   private readonly onboardingBlueprintRevisions = new Map<string, TenantOnboardingBlueprintRevision[]>();
+  private readonly tenantBlockers = new Map<string, TenantBlocker>();
+  private readonly supportEscalations = new Map<string, PlatformSupportEscalation>();
   private readonly subscriptionAssignments = new Map<string, PlatformSubscriptionAssignment>();
   private readonly tenants = new Map<string, Tenant>();
   private readonly tenantBranding = new Map<string, TenantBranding>();
@@ -298,6 +310,39 @@ export class InMemoryPlatformRepository implements PlatformRepository {
       throw new Error("Onboarding plan revisions must append in order and reference the immediate prior revision.");
     }
     this.onboardingBlueprintRevisions.set(parsed.blueprintId, [...current, firestoreDoc(parsed)]);
+    return firestoreDoc(parsed);
+  }
+
+  async listTenantBlockers(tenantId?: string): Promise<TenantBlocker[]> {
+    return [...this.tenantBlockers.values()].filter((entry) => !tenantId || entry.tenantId === tenantId).map(firestoreDoc);
+  }
+
+  async getTenantBlocker(blockerId: string): Promise<TenantBlocker | null> {
+    const blocker = this.tenantBlockers.get(blockerId);
+    return blocker ? firestoreDoc(blocker) : null;
+  }
+
+  async saveTenantBlocker(blocker: TenantBlocker): Promise<TenantBlocker> {
+    const parsed = tenantBlockerSchema.parse(blocker) as TenantBlocker;
+    if (!this.tenants.has(parsed.tenantId)) throw new Error(`Tenant ${parsed.tenantId} does not exist.`);
+    this.tenantBlockers.set(parsed.id, firestoreDoc(parsed));
+    return firestoreDoc(parsed);
+  }
+
+  async listPlatformSupportEscalations(tenantId?: string): Promise<PlatformSupportEscalation[]> {
+    return [...this.supportEscalations.values()].filter((entry) => !tenantId || entry.tenantId === tenantId).map(firestoreDoc);
+  }
+
+  async getPlatformSupportEscalation(escalationId: string): Promise<PlatformSupportEscalation | null> {
+    const escalation = this.supportEscalations.get(escalationId);
+    return escalation ? firestoreDoc(escalation) : null;
+  }
+
+  async savePlatformSupportEscalation(escalation: PlatformSupportEscalation): Promise<PlatformSupportEscalation> {
+    const parsed = platformSupportEscalationSchema.parse(escalation) as PlatformSupportEscalation;
+    const blocker = this.tenantBlockers.get(parsed.blockerId);
+    if (!blocker || blocker.tenantId !== parsed.tenantId) throw new Error("Support escalation must reference a blocker for the same tenant.");
+    this.supportEscalations.set(parsed.id, firestoreDoc(parsed));
     return firestoreDoc(parsed);
   }
 
@@ -563,6 +608,47 @@ export class FirestorePlatformRepository implements PlatformRepository {
       throw new Error("Onboarding plan revisions must append in order and reference the immediate prior revision.");
     }
     await this.db.collection("platformOnboardingBlueprintRevisions").doc(parsed.id).create(docData(parsed));
+    return parsed;
+  }
+
+  async listTenantBlockers(tenantId?: string): Promise<TenantBlocker[]> {
+    const collection = this.db.collection("platformTenantBlockers");
+    const snapshot = tenantId
+      ? await collection.where("tenantId", "==", tenantId).orderBy("updatedAt", "desc").get()
+      : await collection.orderBy("updatedAt", "desc").get();
+    return snapshot.docs.map((doc) => tenantBlockerSchema.parse(doc.data()) as TenantBlocker);
+  }
+
+  async getTenantBlocker(blockerId: string): Promise<TenantBlocker | null> {
+    const snapshot = await this.db.collection("platformTenantBlockers").doc(blockerId).get();
+    return snapshot.exists ? tenantBlockerSchema.parse(snapshot.data()) as TenantBlocker : null;
+  }
+
+  async saveTenantBlocker(blocker: TenantBlocker): Promise<TenantBlocker> {
+    const parsed = tenantBlockerSchema.parse(blocker) as TenantBlocker;
+    if (!await this.getTenant(parsed.tenantId)) throw new Error(`Tenant ${parsed.tenantId} does not exist.`);
+    await setPlatformOwnedDocument({ db: this.db, collection: "platformTenantBlockers", id: parsed.id, data: docData(parsed) });
+    return parsed;
+  }
+
+  async listPlatformSupportEscalations(tenantId?: string): Promise<PlatformSupportEscalation[]> {
+    const collection = this.db.collection("platformSupportEscalations");
+    const snapshot = tenantId
+      ? await collection.where("tenantId", "==", tenantId).orderBy("updatedAt", "desc").get()
+      : await collection.orderBy("updatedAt", "desc").get();
+    return snapshot.docs.map((doc) => platformSupportEscalationSchema.parse(doc.data()) as PlatformSupportEscalation);
+  }
+
+  async getPlatformSupportEscalation(escalationId: string): Promise<PlatformSupportEscalation | null> {
+    const snapshot = await this.db.collection("platformSupportEscalations").doc(escalationId).get();
+    return snapshot.exists ? platformSupportEscalationSchema.parse(snapshot.data()) as PlatformSupportEscalation : null;
+  }
+
+  async savePlatformSupportEscalation(escalation: PlatformSupportEscalation): Promise<PlatformSupportEscalation> {
+    const parsed = platformSupportEscalationSchema.parse(escalation) as PlatformSupportEscalation;
+    const blocker = await this.getTenantBlocker(parsed.blockerId);
+    if (!blocker || blocker.tenantId !== parsed.tenantId) throw new Error("Support escalation must reference a blocker for the same tenant.");
+    await setPlatformOwnedDocument({ db: this.db, collection: "platformSupportEscalations", id: parsed.id, data: docData(parsed) });
     return parsed;
   }
 

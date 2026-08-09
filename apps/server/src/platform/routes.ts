@@ -162,6 +162,8 @@ export interface PlatformRouteDeps {
   stripeConnect?: StripeConnectApi | undefined;
   env?: NodeJS.ProcessEnv | undefined;
   firebaseOwnerActivation?: FirebaseOwnerActivation | undefined;
+  /** Testable auth seam; production falls back to Firebase Admin. */
+  platformOperatorAuth?: { verifyIdToken(token: string): Promise<DecodedIdToken> } | undefined;
 }
 
 function requireStripeConnect(deps: PlatformRouteDeps): StripeConnectApi {
@@ -203,6 +205,15 @@ async function requirePlatformOperator(req: Request, env: NodeJS.ProcessEnv): Pr
   if (!hasPlatformAccess(decoded, env)) {
     throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformAuth", status: 403 });
   }
+}
+
+async function requirePlatformSupportOperator(req: Request, env: NodeJS.ProcessEnv, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<void> {
+  if (!authOverride) return requirePlatformOperator(req, env);
+  const header = req.header("authorization") ?? "";
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  if (!match?.[1]) throw new RailError("Firebase platform operator sign-in is required.", { provider: "firebase", op: "platformAuth", status: 401 });
+  const decoded = await authOverride.verifyIdToken(match[1]);
+  if (!hasPlatformAccess(decoded, env)) throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformAuth", status: 403 });
 }
 
 function sendRouteError(res: Response, error: unknown): void {
@@ -260,7 +271,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
   // Tenant ownership is never enough to enter the NexTeam Admin surface.
   app.get("/api/platform/admin/summary", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
       const [prospects, tenants] = await Promise.all([deps.repository.listProspects(), deps.repository.listTenants()]);
       res.json({
         ok: true,
@@ -279,8 +290,114 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/prospects", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
       res.json({ ok: true, prospects: await deps.repository.listProspects() });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/admin/tenant-blockers", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim() ? requiredTenantId(req.query.tenantId) : undefined;
+      const [blockers, escalations] = await Promise.all([
+        deps.repository.listTenantBlockers(tenantId),
+        deps.repository.listPlatformSupportEscalations(tenantId)
+      ]);
+      res.json({ ok: true, blockers, escalations });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/admin/tenants/:tenantId/blockers", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      const input = z.object({
+        title: z.string().trim().min(1).max(180),
+        detail: z.string().trim().min(1).max(4000),
+        category: z.enum(["CONFIGURATION", "DATA_MIGRATION", "INTEGRATION", "TRAINING", "BILLING", "OTHER"]),
+        severity: z.enum(["BLOCKING", "HIGH", "NORMAL"])
+      }).strict().parse(req.body ?? {});
+      const timestamp = new Date().toISOString();
+      const blocker = await deps.repository.saveTenantBlocker({
+        id: `tenant_blocker_${randomUUID()}`,
+        tenantId,
+        ...input,
+        status: "OPEN",
+        createdAt: timestamp,
+        createdBy: "platform_operator",
+        updatedAt: timestamp
+      });
+      res.status(201).json({ ok: true, blocker });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.patch("/api/platform/admin/tenant-blockers/:blockerId", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      const blockerId = requiredTenantId(req.params.blockerId);
+      const input = z.object({ status: z.enum(["OPEN", "ESCALATED", "RESOLVED"]) }).strict().parse(req.body ?? {});
+      const blocker = await deps.repository.getTenantBlocker(blockerId);
+      if (!blocker) throw new RailError("Tenant blocker was not found.", { provider: "platform", op: "tenantBlocker", status: 404 });
+      const timestamp = new Date().toISOString();
+      const updated = await deps.repository.saveTenantBlocker({
+        ...blocker,
+        status: input.status,
+        updatedAt: timestamp,
+        ...(input.status === "RESOLVED" ? { resolvedAt: timestamp, resolvedBy: "platform_operator" } : { resolvedAt: undefined, resolvedBy: undefined })
+      });
+      res.json({ ok: true, blocker: updated });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/admin/tenant-blockers/:blockerId/escalations", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      const blockerId = requiredTenantId(req.params.blockerId);
+      const input = z.object({ summary: z.string().trim().min(1).max(4000), priority: z.enum(["P1", "P2", "P3"]) }).strict().parse(req.body ?? {});
+      const blocker = await deps.repository.getTenantBlocker(blockerId);
+      if (!blocker) throw new RailError("Tenant blocker was not found.", { provider: "platform", op: "supportEscalation", status: 404 });
+      if (blocker.status === "RESOLVED") throw new RailError("Resolved blockers cannot be escalated.", { provider: "platform", op: "supportEscalation", status: 409 });
+      const timestamp = new Date().toISOString();
+      const escalation = await deps.repository.savePlatformSupportEscalation({
+        id: `support_escalation_${randomUUID()}`,
+        tenantId: blocker.tenantId,
+        blockerId: blocker.id,
+        ...input,
+        status: "OPEN",
+        createdAt: timestamp,
+        createdBy: "platform_operator",
+        updatedAt: timestamp
+      });
+      const updatedBlocker = await deps.repository.saveTenantBlocker({ ...blocker, status: "ESCALATED", updatedAt: timestamp });
+      res.status(201).json({ ok: true, blocker: updatedBlocker, escalation });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.patch("/api/platform/admin/support-escalations/:escalationId", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      const escalationId = requiredTenantId(req.params.escalationId);
+      const input = z.object({ status: z.enum(["OPEN", "ACKNOWLEDGED", "RESOLVED"]) }).strict().parse(req.body ?? {});
+      const escalation = await deps.repository.getPlatformSupportEscalation(escalationId);
+      if (!escalation) throw new RailError("Support escalation was not found.", { provider: "platform", op: "supportEscalation", status: 404 });
+      const timestamp = new Date().toISOString();
+      const updated = await deps.repository.savePlatformSupportEscalation({
+        ...escalation,
+        status: input.status,
+        updatedAt: timestamp,
+        ...(input.status === "RESOLVED" ? { resolvedAt: timestamp, resolvedBy: "platform_operator" } : { resolvedAt: undefined, resolvedBy: undefined })
+      });
+      res.json({ ok: true, escalation: updated });
     } catch (error) {
       sendRouteError(res, error);
     }

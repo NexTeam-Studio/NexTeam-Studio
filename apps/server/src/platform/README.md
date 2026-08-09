@@ -9,4 +9,5 @@ Start here when something breaks:
 - `routes.ts` exposes the platform/operator API, tenant branding, and tenant owner/admin multi-user endpoints. User, branding, and job-link write routes must resolve `AccessContext` before writing.
 - `billing.ts` only accepts Stripe test-mode keys in this build lane. A live key here is a failed receipt.
 - `backup.ts` exports tenant data and writes backup records. Backups should contain tenant-scoped collections only.
+- Tenant blockers and linked platform support escalations are platform-operator-only records. They contain tenant IDs and non-secret operational detail; never place provider credentials, payment data, or access tokens in a blocker or escalation.
 - Firestore rules for these records live in `../../../firestore.rules`; job links stay server-only and tenant users are owner/admin/self-readable.
