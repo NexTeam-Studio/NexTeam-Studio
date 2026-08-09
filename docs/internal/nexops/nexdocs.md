@@ -3,6 +3,10 @@
 Last updated: 2026-07-19  
 Build piece: NexDocs tenant document library
 
+## Link integrity
+
+An uploaded document may link to one client and optionally one property, job, and visit. The server resolves every supplied link from the active tenant, rejects client/property/job/visit mismatches, and derives the job property when it is omitted. This is the shared metadata contract used by library search, portal filtering, and Nexi `searchDocuments`; callers never supply trusted link metadata directly.
+
 ## Statuses
 
 ### Uploaded document visibility

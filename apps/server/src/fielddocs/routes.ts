@@ -558,6 +558,7 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
     return new NexDocsService({
       mediaRepository: repository(),
       crmRepository: crm,
+      schedulingRepository: schedulingRepository(),
       ledgerService: deps.ledgerService,
       usageLog: deps.usageLog,
       ocrFetch: deps.ocrFetch

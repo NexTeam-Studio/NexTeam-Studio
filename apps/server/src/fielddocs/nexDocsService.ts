@@ -17,6 +17,7 @@ import type { NativeCrmRepository } from "@nexteam/providers";
 import type { UsageLogWriter } from "@nexteam/nexi";
 import { getAdminStorageBucket } from "../firebase.js";
 import type { LedgerService } from "../crm/ledgerFoundation.js";
+import type { SchedulingRepository } from "../scheduling/repository.js";
 import { safeFilename } from "./uploadService.js";
 import { searchMediaWithVisionFallback } from "./photoSearch.js";
 import type { FieldReportRecord } from "./reportService.js";
@@ -101,11 +102,13 @@ export interface NexDocsClientLibrary {
 
 interface NexDocsServiceDeps {
   mediaRepository: MediaRepository;
-  crmRepository: Pick<NativeCrmRepository, "listQuotes" | "listInvoices" | "listJobs" | "listProperties">;
+  crmRepository: Pick<NativeCrmRepository, "listClients" | "listQuotes" | "listInvoices" | "listJobs" | "listProperties">;
   ledgerService?: Pick<LedgerService, "listReceiptReviews"> | undefined;
   storeUpload?: StoreNexDocsUpload | undefined;
   usageLog?: UsageLogWriter | undefined;
   ocrFetch?: NexDocsOcrFetch | undefined;
+  /** Resolves an optional visit link without allowing a document to cross a job boundary. */
+  schedulingRepository?: Pick<SchedulingRepository, "getVisit"> | undefined;
 }
 
 export interface UploadNexDocsDocumentInput {
@@ -560,6 +563,51 @@ export function portalDocumentHref(tenantId: string, clientId: string, entry: Ne
 export class NexDocsService {
   constructor(private readonly deps: NexDocsServiceDeps) {}
 
+  private async resolveDocumentLinks(input: Pick<UploadNexDocsDocumentInput, "tenantId" | "clientId" | "propertyId" | "jobId" | "visitId">): Promise<{
+    propertyId?: string;
+    jobId?: string;
+    visitId?: string;
+  }> {
+    const [clients, properties, jobs] = await Promise.all([
+      this.deps.crmRepository.listClients(input.tenantId),
+      this.deps.crmRepository.listProperties(input.tenantId),
+      this.deps.crmRepository.listJobs(input.tenantId)
+    ]);
+    if (!clients.some((client) => client.id === input.clientId)) {
+      throw new RailError(`Client ${input.clientId} was not found.`, { provider: "native", op: "linkNexDocsDocument", status: 404 });
+    }
+    const property = input.propertyId ? properties.find((record) => record.id === input.propertyId) : undefined;
+    if (input.propertyId && (!property || property.clientId !== input.clientId)) {
+      throw new RailError("Selected property does not belong to this client.", { provider: "native", op: "linkNexDocsDocument", status: 409 });
+    }
+    let job = input.jobId ? jobs.find((record) => record.id === input.jobId) : undefined;
+    if (input.jobId && (!job || job.clientId !== input.clientId)) {
+      throw new RailError("Selected job does not belong to this client.", { provider: "native", op: "linkNexDocsDocument", status: 409 });
+    }
+    let visitId = input.visitId;
+    if (visitId) {
+      if (!this.deps.schedulingRepository) {
+        throw new RailError("Visit linking is not configured for NexDocs.", { provider: "native", op: "linkNexDocsDocument", status: 503 });
+      }
+      const visit = await this.deps.schedulingRepository.getVisit(input.tenantId, visitId);
+      if (!visit) {
+        throw new RailError(`Visit ${visitId} was not found.`, { provider: "native", op: "linkNexDocsDocument", status: 404 });
+      }
+      job = job ?? jobs.find((record) => record.id === visit.jobId);
+      if (!job || job.clientId !== input.clientId || visit.jobId !== job.id) {
+        throw new RailError("Selected visit does not belong to this client's job.", { provider: "native", op: "linkNexDocsDocument", status: 409 });
+      }
+    }
+    if (property && job?.propertyId && property.id !== job.propertyId) {
+      throw new RailError("Selected property does not match the selected job.", { provider: "native", op: "linkNexDocsDocument", status: 409 });
+    }
+    return {
+      ...(property ? { propertyId: property.id } : job?.propertyId ? { propertyId: job.propertyId } : {}),
+      ...(job ? { jobId: job.id } : {}),
+      ...(visitId ? { visitId } : {})
+    };
+  }
+
   async listFolders(tenantId: string, clientId: string): Promise<NexDocsFolder[]> {
     return (await this.deps.mediaRepository.listNexDocsFolders(tenantId))
       .filter((folder) => folder.clientId === clientId);
@@ -610,6 +658,7 @@ export class NexDocsService {
         throw new RailError(`NexDocs folder ${input.folderId} was not found for this client.`, { provider: "native", op: "uploadNexDocsDocument", status: 404 });
       }
     }
+    const links = await this.resolveDocumentLinks(input);
     const id = `nexdocs_doc_${randomUUID()}`;
     const timestamp = nowIso();
     const normalizedUpload = normalizeNexDocsUpload({
@@ -646,9 +695,7 @@ export class NexDocsService {
       tenantId: input.tenantId,
       clientId: input.clientId,
       ...(input.folderId ? { folderId: input.folderId } : {}),
-      ...(input.propertyId ? { propertyId: input.propertyId } : {}),
-      ...(input.jobId ? { jobId: input.jobId } : {}),
-      ...(input.visitId ? { visitId: input.visitId } : {}),
+      ...links,
       kind: "uploaded_file",
       source: input.source,
       label: input.label?.trim() || normalizedUpload.fileName,

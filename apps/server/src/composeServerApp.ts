@@ -131,6 +131,7 @@ const ledgerService = new LedgerService({
 const nexDocsService = new NexDocsService({
   mediaRepository,
   crmRepository: nativeCrmRepository,
+  schedulingRepository,
   ledgerService,
   usageLog: fieldDocsUsageLog
 });

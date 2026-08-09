@@ -115,6 +115,8 @@ function createNexDocsHarness(options = {}) {
       phones: ["8645551212"],
       tags: [],
       consent: { email: true, sms: true }
+    }, {
+      id: "client_2", tenantId: tenant.id, name: "Other client", tags: [], consent: { email: true, sms: true }
     }],
     properties: [{
       id: "property_1",
@@ -123,6 +125,8 @@ function createNexDocsHarness(options = {}) {
       label: "Main residence",
       address: { street1: "181 Isbell Road", city: "Fair Play", province: "SC", postalCode: "29643", country: "US" },
       assets: []
+    }, {
+      id: "property_2", tenantId: tenant.id, clientId: "client_2", label: "Other residence", address: { street1: "2 Other Road", city: "Fair Play", province: "SC", postalCode: "29643", country: "US" }, assets: []
     }],
     jobs: [{
       id: "job_1",
@@ -133,6 +137,8 @@ function createNexDocsHarness(options = {}) {
       title: "Leak detection",
       lineItems: lineItems([{ name: "Leak detection", quantity: 1, unitPrice: 795, code: "LEAK" }]),
       totals: totals(795)
+    }, {
+      id: "job_2", tenantId: tenant.id, clientId: "client_2", propertyId: "property_2", status: "Unscheduled", title: "Other job", lineItems: lineItems([]), totals: totals(0)
     }],
     quotes: [{
       id: "quote_1",
@@ -201,6 +207,11 @@ function createNexDocsHarness(options = {}) {
   const nexDocsService = new NexDocsService({
     mediaRepository,
     crmRepository,
+    schedulingRepository: {
+      async getVisit(tenantId, visitId) {
+        return tenantId === tenant.id && visitId === "visit_1" ? { id: "visit_1", tenantId, jobId: "job_1" } : null;
+      }
+    },
     usageLog,
     ...(options.ocrFetch ? { ocrFetch: options.ocrFetch } : {}),
     storeUpload: async ({ documentId, fileName, fileBase64 }) => {
@@ -368,6 +379,21 @@ test("NexDocs accepts supported uploads, uses a 100 MB cap, and indexes PDF cont
       return true;
     }
   );
+});
+
+test("NexDocs validates tenant-owned client, property, job, and visit links before persisting searchable metadata", async () => {
+  const { nexDocsService } = createNexDocsHarness();
+  const input = {
+    tenantId: tenant.id, clientId: "client_1", fileName: "visit-notes.txt", mimeType: "text/plain",
+    fileBase64: Buffer.from("Skimmer notes", "utf8").toString("base64"), source: "staff_upload"
+  };
+  const linked = await nexDocsService.uploadDocument({ ...input, jobId: "job_1", visitId: "visit_1" });
+  assert.equal(linked.propertyId, "property_1");
+  assert.equal(linked.jobId, "job_1");
+  assert.equal(linked.visitId, "visit_1");
+  await assert.rejects(() => nexDocsService.uploadDocument({ ...input, propertyId: "property_2" }), /property does not belong/i);
+  await assert.rejects(() => nexDocsService.uploadDocument({ ...input, jobId: "job_2" }), /job does not belong/i);
+  await assert.rejects(() => nexDocsService.uploadDocument({ ...input, jobId: "job_1", visitId: "missing_visit" }), /visit .* not found/i);
 });
 
 test("NexDocs OCR blocks image OCR before estimated spend exceeds the cap", async () => {
