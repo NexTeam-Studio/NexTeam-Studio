@@ -273,7 +273,7 @@ registerIntegratedNexiRoutes(app, {
   tenantId: runtimeTenantId,
   platformRepository,
   crm: {
-    provider: nativeCrmProvider,
+    createProvider: (tenantId) => new NativeAdapter(nativeCrmRepository, tenantId),
     approvalQueue,
     options: {
       requestRepository: nativeCrmRepository,

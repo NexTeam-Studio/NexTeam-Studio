@@ -1,12 +1,12 @@
 import type { Express, Request } from "express";
-import { RailError } from "@nexteam/core";
-import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
+import { RailError, type CRMProvider, type NexiTool } from "@nexteam/core";
+import { actorIdForAccess, requireTenantRole, type AccessContext } from "../auth/accessContext.js";
 import { createApprovalNexiTools } from "../approval/nexiTools.js";
 import { createCampaignNexiTools } from "../campaigns/nexiTools.js";
 import { createCommsNexiTools } from "../comms/nexiTools.js";
 import { createContentNexiTools } from "../content/nexiTools.js";
 import { createContextNexiTools } from "../context/nexiTools.js";
-import { createCrmToolsWithOptions } from "../modules/nexops/nexiTools.js";
+import { createCrmReadToolsWithOptions, createCrmToolsWithOptions } from "../modules/nexops/nexiTools.js";
 import { createEvaporationNexiTools } from "../evaporation/nexiTools.js";
 import { createFieldDocsTools } from "../fielddocs/nexiTools.js";
 import { createIntakeNexiTools } from "../intake/nexiTools.js";
@@ -33,7 +33,7 @@ export interface IntegratedNexiRouteDependencies {
   tenantId: string;
   platformRepository: PlatformRepository;
   crm: {
-    provider: Parameters<typeof createCrmToolsWithOptions>[0];
+    createProvider: (tenantId: string) => CRMProvider;
     approvalQueue: Parameters<typeof createCrmToolsWithOptions>[1];
     options: Parameters<typeof createCrmToolsWithOptions>[2];
   };
@@ -51,6 +51,42 @@ export interface IntegratedNexiRouteDependencies {
   seo: Omit<SeoInput, "access">;
   intake: Omit<IntakeInput, "access">;
   content: Omit<ContentInput, "actorRole" | "actorId">;
+}
+
+/**
+ * Build the tool set only after the request's tenant and operator role are known.
+ *
+ * Every CRM provider is bound to the tenant selected by requireTenantRole. Technicians
+ * receive read-only real-record tools; only owners and office admins receive tool paths
+ * that can enqueue or execute approval-gated work.
+ */
+export function createIntegratedNexiToolsForAccess(
+  input: IntegratedNexiRouteDependencies,
+  access: AccessContext
+): NexiTool[] {
+  const commonTools = createContextNexiTools({ env: input.env }).concat(createFieldDocsTools({
+    ...input.fieldDocs,
+    viewerRole: access.role,
+    viewerUserId: access.tenantUserId
+  }));
+  const crmProvider = input.crm.createProvider(access.tenantId);
+  if (access.role === "TECHNICIAN") {
+    return commonTools.concat(createCrmReadToolsWithOptions(crmProvider, input.crm.options));
+  }
+
+  const actorId = actorIdForAccess(access);
+  return commonTools
+    .concat(createCrmToolsWithOptions(crmProvider, input.crm.approvalQueue, input.crm.options))
+    .concat(createCommsNexiTools(input.comms.rail, input.comms.approvalQueue))
+    .concat(createSchedulingNexiTools(input.scheduling))
+    .concat(createEvaporationNexiTools(input.evaporation))
+    .concat(createCampaignNexiTools({ ...input.campaign, actorId }))
+    .concat(createApprovalNexiTools({ ...input.approval, actorId, actorRole: access.role }))
+    .concat(createSitesNexiTools({ ...input.sites, access }))
+    .concat(createReputationNexiTools({ ...input.reputation, actorId }))
+    .concat(createSeoNexiTools({ ...input.seo, access }))
+    .concat(createIntakeNexiTools({ ...input.intake, access }))
+    .concat(createContentNexiTools({ ...input.content, actorRole: access.role, actorId }));
 }
 
 export function registerIntegratedNexiRoutes(app: Express, input: IntegratedNexiRouteDependencies): void {
@@ -88,12 +124,6 @@ export function registerIntegratedNexiRoutes(app: Express, input: IntegratedNexi
       }
     },
     filterTools: (tenant, tools) => enforceToolEntitlements(tenant, tools).tools,
-    extraTools: [
-      ...createCrmToolsWithOptions(input.crm.provider, input.crm.approvalQueue, input.crm.options),
-      ...createCommsNexiTools(input.comms.rail, input.comms.approvalQueue),
-      ...createSchedulingNexiTools(input.scheduling),
-      ...createEvaporationNexiTools(input.evaporation)
-    ],
     extraToolsForRequest: async (req, tenant) => {
       let access;
       try {
@@ -102,21 +132,7 @@ export function registerIntegratedNexiRoutes(app: Express, input: IntegratedNexi
         if (error instanceof RailError && (error.status === 401 || error.status === 403)) return [];
         throw error;
       }
-      const commonTools = createContextNexiTools({ env: input.env }).concat(createFieldDocsTools({
-        ...input.fieldDocs,
-        viewerRole: access.role,
-        viewerUserId: access.tenantUserId
-      }));
-      if (access.role === "TECHNICIAN") return commonTools;
-      const actorId = actorIdForAccess(access);
-      return commonTools
-        .concat(createCampaignNexiTools({ ...input.campaign, actorId }))
-        .concat(createApprovalNexiTools({ ...input.approval, actorId, actorRole: access.role }))
-        .concat(createSitesNexiTools({ ...input.sites, access }))
-        .concat(createReputationNexiTools({ ...input.reputation, actorId }))
-        .concat(createSeoNexiTools({ ...input.seo, access }))
-        .concat(createIntakeNexiTools({ ...input.intake, access }))
-        .concat(createContentNexiTools({ ...input.content, actorRole: access.role, actorId }));
+      return createIntegratedNexiToolsForAccess(input, access);
     }
   }));
 }

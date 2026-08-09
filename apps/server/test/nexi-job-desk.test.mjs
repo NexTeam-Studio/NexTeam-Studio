@@ -10,6 +10,7 @@ import { ingestSiteJobBlueprint } from "../dist/nexi/siteJobBlueprintIngest.js";
 import { answerNexiMessage, runExplicitLocalToolLoop } from "../dist/nexi/nexiService.js";
 import { createCrmToolsWithOptions, queueClientCreateApproval } from "../dist/crm/nexiTools.js";
 import { createNexiRouter } from "../dist/nexi/nexiRoutes.js";
+import { createIntegratedNexiToolsForAccess } from "../dist/nexi/integratedRoutes.js";
 import { createNexiJobDeskTools } from "../dist/nexi/nexiTools.js";
 import { createContentNexiTools } from "../dist/content/nexiTools.js";
 import { FirestoreNexiRepository, MemoryNexiRepository } from "../dist/nexi/nexiRepository.js";
@@ -51,6 +52,49 @@ function pendingApprovalContext(approvalId, overrides = {}) {
     ...overrides
   };
 }
+
+test("integrated Nexi tool assembly binds CRM reads to the authenticated tenant and withholds action tools from technicians", async () => {
+  const providerTenantIds = [];
+  const input = {
+    env: {},
+    tenantId: "bootstrap-tenant",
+    platformRepository: {},
+    crm: {
+      createProvider: (tenantId) => {
+        providerTenantIds.push(tenantId);
+        return {
+          getClients: async () => [],
+          getJobs: async () => [],
+          getQuotes: async () => [],
+          getInvoices: async () => []
+        };
+      },
+      options: {}
+    },
+    fieldDocs: { mediaRepository: { listMedia: async () => [] } }
+  };
+  const access = {
+    tenantId: "tenant-technician",
+    tenantUserId: "tech-1",
+    role: "TECHNICIAN",
+    capabilities: [],
+    accessKind: "internal"
+  };
+
+  const tools = createIntegratedNexiToolsForAccess(input, access);
+  const names = tools.map((tool) => tool.name);
+  assert.deepEqual(providerTenantIds, ["tenant-technician"]);
+  assert.ok(names.includes("clientLookup"));
+  assert.ok(!names.includes("createClient"));
+  assert.ok(!names.includes("approvePendingApproval"));
+  assert.ok(!names.includes("draftEmail"));
+  assert.ok(!names.includes("bookVisit"));
+
+  const lookup = tools.find((tool) => tool.name === "clientLookup");
+  const result = await lookup.handler({ ...tenant(), id: "tenant-technician" }, { q: "Avery" });
+  assert.deepEqual(result.result.clients, []);
+  assert.equal(result.sources[0].label, "Native CRM clients");
+});
 
 function anthropicToolUseResponse(name, input, usage = { input_tokens: 18, output_tokens: 11, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }) {
   return new Response(JSON.stringify({
