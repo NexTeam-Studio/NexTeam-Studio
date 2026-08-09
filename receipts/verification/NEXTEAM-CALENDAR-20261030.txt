@@ -1,0 +1,83 @@
+JOB_ID=NEXTEAM-CALENDAR-20261030
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Blocker burn-down and release candidate
+
+COMMAND=npm run verify
+Raw output (complete command output captured in job console):
+
+> verify
+> npm run lint && npm run typecheck && npm run test && npm run check:tenancy && npm run check:admin-tenant-writes && npm run check:indexes && npm run check:collisions && npm run check:worktree-scope && npm run check:worktree-coverage && npm run check:secrets && npm run check:secret-history && npm run check:provider-imports && npm run check:blueprints
+
+No-browser test guard passed (98 default test files checked).
+Test suite passed: 0 failures; no browser tests were run.
+Tenancy check passed (463 files checked).
+Admin tenant write check passed (326 source files, 17 transactional writes, 1 append-only generated-ID write).
+Firestore index check passed (10 compound query shapes).
+Component collision check passed (40 components, 780 pairs, zero overlaps).
+Worktree scope check passed: nexteam-integration is the integration lane.
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+Secret scan passed (1691 tracked non-doc files checked).
+Secret history scan passed (764 reachable commits, 11961 reachable objects checked).
+Provider boundary check passed (574 files checked).
+Blueprint naming check passed (463 files checked).
+EXACT_EXIT_CODE=0
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test --test-name-pattern="request routes create, update, convert, archive, and reopen while preserving intake fields|bookVisit parks the visit and queues a notification instead of sending|technicians can complete visits but stay blocked from office-only close and invoice authority|fielddocs media review merges manual tags into search and supports tenant trash with restore|fielddocs signed document routes create, capture signature, reject re-sign, and render PDF|portal appointment confirmation stamps the visit and surfaces the event to client and staff rails|invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads" apps/server/test/request-foundation.test.mjs apps/server/test/scheduling.test.mjs apps/server/test/job-lifecycle.test.mjs apps/server/test/fielddocs-template-library.test.mjs apps/server/test/client-hub-review-followup.test.mjs apps/server/test/close-invoice-payment-flow.test.mjs
+Raw output:
+
+✔ portal appointment confirmation stamps the visit and surfaces the event to client and staff rails (71.8226ms)
+✔ invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads (19.4612ms)
+✔ fielddocs media review merges manual tags into search and supports tenant trash with restore (70.7685ms)
+✔ fielddocs signed document routes create, capture signature, reject re-sign, and render PDF (21.4582ms)
+✔ technicians can complete visits but stay blocked from office-only close and invoice authority (1.0985ms)
+✔ request routes create, update, convert, archive, and reopen while preserving intake fields (74.0549ms)
+✔ bookVisit parks the visit and queues a notification instead of sending (8.4154ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2051.6592
+EXACT_EXIT_CODE=0
+CALENDAR_PROOF_EXACT_EXIT_CODE=0
+
+COMMAND=npm run build
+Raw output:
+
+> build
+> npm --workspace @nexteam/server run build && npm --workspace @nexteam/web run build
+
+> @nexteam/server@0.0.0 build
+> tsc -b
+
+> @nexteam/web@0.0.0 build
+> vite build
+
+✓ 182 modules transformed.
+✓ built in 1.59s
+EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+BLOCKER_BURN_DOWN_REPOSITORY_WIDE_GATES=PASS
+RELEASE_CANDIDATE_PRODUCTION_BUILD=PASS
+REQUEST_TO_SCHEDULED_VISIT=PASS
+NOTIFICATION_PARKED_AND_NOT_SENT=PASS
+TECHNICIAN_AND_OFFICE_AUTHORITY_BOUNDARY=PASS
+NEXCAM_MEDIA_AND_SIGNED_DOCUMENT_RAIL=PASS
+PORTAL_APPOINTMENT_CONFIRMATION=PASS
+INVOICE_DELIVERY_CONFIGURATION=PASS
+BUILT_IN_CODEX_BROWSER_USED=NO
+NO_DEPLOYMENT_PUSH_MERGE_OR_EXTERNAL_CHANGE=YES
+
+RECEIPT_COMMITTED=YES
+
+COMMAND=git status --short
+Raw output:
+(empty after commit)
+EXACT_EXIT_CODE=0
+GIT_STATUS_CLEAN=YES
+
+REQUIRED_GATES_GREEN: YES
