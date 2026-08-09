@@ -7,6 +7,13 @@
 - Integration worktree: `target-architecture-integration`
 - Active component owner: `platform-tenants`
 
+## Active-wave operating rule
+
+- This authorized build stays active until its stated green-gate or genuine human-blocker boundary.
+- A status request does not cancel, pause, or replace the work order.
+- After every green phase, dispatch the next authorized phase automatically. Missing, failed, skipped, contradictory, or timed-out proof is red and must be repaired before advancement.
+- Do not describe a phase as active unless an actual job is executing or an evidence-backed active-job record proves it is running.
+
 ## Phase ledger
 
 | Phase | Status | Owner | Evidence / next requirement |
