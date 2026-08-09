@@ -1,6 +1,6 @@
 {
   "ok": true,
-  "generatedAt": "2026-07-05T00:28:01.763Z",
+  "generatedAt": "2026-08-09T01:24:54.959Z",
   "hardLimits": {
     "companyCamWrite": false,
     "outboundDelivery": false,
@@ -8,8 +8,8 @@
   },
   "upload": {
     "mediaIds": [
-      "media_3a7e765a-4285-436e-82b1-3bc8b81c91d4",
-      "media_8b650c5a-63fe-4c4a-83d0-ea10b4be2172"
+      "media_2fd59f97-9665-4ede-8753-afd9463bf27d",
+      "media_921aaf20-f8f9-4672-960d-371ea547c07e"
     ],
     "storageRefsAreNative": true,
     "thumbnailsCreated": true,
@@ -17,34 +17,34 @@
   },
   "vision": {
     "beforeEnabled": false,
-    "beforeReason": "FIELD_DOCS_VISION_ENABLED is not true.",
+    "beforeReason": "Anthropic vision is unavailable because no approved credentials are configured.",
     "afterEnabled": false,
-    "afterReason": "FIELD_DOCS_VISION_ENABLED is not true.",
+    "afterReason": "Anthropic vision is unavailable because no approved credentials are configured.",
     "actualSpendUsd": 0
   },
   "checklist": {
-    "id": "checklist_5d81597e-71f5-40c6-9423-a7888ea8c394",
+    "id": "checklist_ada1bc04-9fc9-4fbe-8cd5-5ac52f759664",
     "templateId": "leak_detection_checklist_v1",
     "completedItems": 4
   },
   "report": {
-    "id": "report_d2b71ca2-f997-4abc-852c-79b843471b45",
+    "id": "report_e53e9452-d440-4991-9315-aeb727b99f3e",
     "status": "posted",
-    "pdfRef": "native://tenants/aquatrace/fieldReports/report_d2b71ca2-f997-4abc-852c-79b843471b45.pdf",
-    "postedAt": "2026-07-05T00:28:01.754Z",
+    "pdfRef": "native://tenants/aquatrace/fieldReports/report_e53e9452-d440-4991-9315-aeb727b99f3e.pdf",
+    "postedAt": "2026-08-09T01:24:54.950Z",
     "pdfPath": "receipts/m4/native-field-report.pdf",
     "pdfMagic": "%PDF-"
   },
   "search": {
     "query": "show me skimmer photo from Aquatrace job",
-    "topHitId": "media_3a7e765a-4285-436e-82b1-3bc8b81c91d4",
+    "topHitId": "media_2fd59f97-9665-4ede-8753-afd9463bf27d",
     "hitCount": 2
   },
   "beforeAfter": {
     "pairCount": 1,
     "firstPair": {
-      "before": "media_3a7e765a-4285-436e-82b1-3bc8b81c91d4",
-      "after": "media_8b650c5a-63fe-4c4a-83d0-ea10b4be2172"
+      "before": "media_2fd59f97-9665-4ede-8753-afd9463bf27d",
+      "after": "media_921aaf20-f8f9-4672-960d-371ea547c07e"
     }
   }
 }

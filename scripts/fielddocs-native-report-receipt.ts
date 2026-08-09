@@ -101,7 +101,7 @@ async function main(): Promise<void> {
     checklist: {
       id: checklist.id,
       templateId: checklist.templateId,
-      completedItems: checklist.items.filter((item) => item.status !== "pending").length
+      completedItems: checklist.fields.filter((field) => field.status !== "pending").length
     },
     report: {
       id: report.id,
