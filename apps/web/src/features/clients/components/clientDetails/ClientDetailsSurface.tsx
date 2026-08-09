@@ -16,6 +16,7 @@ import {
   type CustomFieldDraftRow
 } from "../contact/domain/clientProfile";
 import { isProtectedLegacyClient } from "./domain/clientDeletionPolicy";
+import { PropertyAssetsManager } from "./PropertyAssetsManager";
 import type {
   ClientPortalActivityEntry,
   CrmClient,
@@ -313,6 +314,7 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
                         ))}
                       </div>
                     ) : null}
+                    <PropertyAssetsManager property={property} tenantId={operatorContext.tenantId} />
                   </article>
                 );
               })}

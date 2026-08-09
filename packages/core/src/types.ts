@@ -385,6 +385,19 @@ export interface Asset {
   fields: Record<string, string | number | boolean>;
 }
 
+export interface PropertyAssetFieldDefinition {
+  key: string;
+  label: string;
+  type: "text" | "number" | "boolean";
+  required?: boolean | undefined;
+}
+
+export interface PropertyAssetDefinition {
+  kind: string;
+  label: string;
+  fields: PropertyAssetFieldDefinition[];
+}
+
 export type FieldDocsChecklistFieldType =
   | "multi_select"
   | "count"
@@ -998,6 +1011,7 @@ export interface CrmSettings {
     enabled: boolean;
     steps: ReviewSequenceStepSetting[];
   };
+  propertyAssetDefinitions: PropertyAssetDefinition[];
   catalogItems: ProductServiceCatalogItem[];
   communicationTemplates: CommunicationTemplateRecord[];
   createdAt: string;

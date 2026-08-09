@@ -63,6 +63,24 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
           codes.add(code);
         }
       }
+      if (input.propertyAssetDefinitions) {
+        const kinds = new Set<string>();
+        for (const definition of input.propertyAssetDefinitions) {
+          const kind = definition.kind.trim().toLowerCase();
+          if (kinds.has(kind)) {
+            throw new RailError("Property asset types must have unique kinds within a tenant.", { provider: "native", op: "updateCrmSettings", status: 400 });
+          }
+          kinds.add(kind);
+          const fieldKeys = new Set<string>();
+          for (const field of definition.fields) {
+            const key = field.key.trim().toLowerCase();
+            if (fieldKeys.has(key)) {
+              throw new RailError("Property asset fields must have unique keys within an asset type.", { provider: "native", op: "updateCrmSettings", status: 400 });
+            }
+            fieldKeys.add(key);
+          }
+        }
+      }
       const saved = await repository.saveCrmSettings({
         ...current,
         operatingProfile: {
@@ -166,6 +184,7 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
           ...(input.reviewDefaults?.enabled !== undefined ? { enabled: input.reviewDefaults.enabled } : {}),
           ...(input.reviewDefaults?.steps ? { steps: input.reviewDefaults.steps } : {})
         },
+        ...(input.propertyAssetDefinitions ? { propertyAssetDefinitions: input.propertyAssetDefinitions } : {}),
         ...(input.catalogItems ? { catalogItems: input.catalogItems } : {}),
         ...(input.communicationTemplates ? { communicationTemplates: input.communicationTemplates } : {}),
         updatedAt: new Date().toISOString()

@@ -834,6 +834,19 @@ const tenantOperatingProfileSchema = z.object({
   })
 });
 
+export const propertyAssetFieldDefinitionSchema = z.object({
+  key: z.string().min(1).max(80),
+  label: z.string().min(1).max(120),
+  type: z.enum(["text", "number", "boolean"]),
+  required: z.boolean().optional()
+});
+
+export const propertyAssetDefinitionSchema = z.object({
+  kind: z.string().min(1).max(80),
+  label: z.string().min(1).max(120),
+  fields: z.array(propertyAssetFieldDefinitionSchema).max(40)
+});
+
 export const tenantMembershipAuditSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
@@ -906,6 +919,7 @@ export const crmSettingsSchema = z.object({
       { id: "review_nudge_2", label: "Final review nudge", offsetDays: 10, channels: "both", templateCategory: "review_request_nudge" }
     ]
   }),
+  propertyAssetDefinitions: z.array(propertyAssetDefinitionSchema).default([]),
   catalogItems: z.array(productServiceCatalogItemSchema).default([]),
   communicationTemplates: z.array(communicationTemplateRecordSchema).default([]),
   createdAt: z.string(),

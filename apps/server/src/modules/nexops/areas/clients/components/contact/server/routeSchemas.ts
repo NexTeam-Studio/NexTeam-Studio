@@ -3,6 +3,16 @@ import { addressSchema, clientCommunicationSettingsSchema, clientContactSchema, 
 
 export const customFieldValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 
+export const propertyAssetsBodySchema = z.object({
+  tenantId: z.string().min(1).optional(),
+  assets: z.array(z.object({
+    id: z.string().min(1).optional(),
+    kind: z.string().min(1).max(80),
+    label: z.string().min(1).max(160),
+    fields: z.record(customFieldValueSchema)
+  })).max(100)
+});
+
 export const createClientPrimaryPropertySchema = z.object({
   siteName: z.string().min(1).optional(),
   label: z.string().min(1).optional(),

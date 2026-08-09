@@ -48,6 +48,12 @@ interface ReviewSequenceStepSetting {
   templateCategory: "review_request_initial" | "review_request_nudge";
 }
 
+interface PropertyAssetDefinition {
+  kind: string;
+  label: string;
+  fields: Array<{ key: string; label: string; type: "text" | "number" | "boolean"; required?: boolean }>;
+}
+
 interface TenantOperatingProfile {
   company: { legalName?: string; publicName?: string; industry?: string; timezone: string };
   locations: Array<{ id: string; label: string; active: boolean }>;
@@ -99,6 +105,7 @@ interface CrmSettingsRecord {
     enabled: boolean;
     steps: ReviewSequenceStepSetting[];
   };
+  propertyAssetDefinitions: PropertyAssetDefinition[];
   catalogItems: ProductServiceCatalogItem[];
   communicationTemplates: CommunicationTemplateRecord[];
   createdAt: string;
@@ -155,6 +162,10 @@ function defaultReviewStep(offsetDays = 14): ReviewSequenceStepSetting {
     channels: "both",
     templateCategory: "review_request_nudge"
   };
+}
+
+function defaultPropertyAssetDefinition(): PropertyAssetDefinition {
+  return { kind: "equipment", label: "Equipment", fields: [{ key: "model", label: "Model", type: "text" }] };
 }
 
 const ONBOARDING_STEPS = [
@@ -339,6 +350,30 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
     }
   }
 
+  async function savePropertyAssetDefinitions(): Promise<void> {
+    if (!settings) return;
+    setBusy("save-property-assets");
+    setStatusMessage("Saving property asset types...");
+    try {
+      const body = await fetch("/api/crm/settings", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: props.tenantId, propertyAssetDefinitions: settings.propertyAssetDefinitions })
+      }).then((response) => response.json() as Promise<CrmSettingsMutationResponse>);
+      if (!body.ok || !body.settings) {
+        setStatusMessage(body.error ?? "Property asset types could not be saved.");
+        return;
+      }
+      setSettings(body.settings);
+      setStatusMessage("Property asset types saved.");
+      props.onCrmMutation?.();
+    } catch {
+      setStatusMessage("Property asset type save failed.");
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function saveOnboarding(onboarding: TenantOperatingProfile["onboarding"]): Promise<void> {
     if (!settings) {
       return;
@@ -467,6 +502,33 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
       </div>
 
       <div className="nexops-two-column">
+        <article className="nexops-module-card">
+          <div className="nexops-page-heading">
+            <div><p className="eyebrow">Properties</p><h2>Asset Types</h2></div>
+            <div className="nexops-inline-actions">
+              <button type="button" onClick={() => setSettings((current) => current ? { ...current, propertyAssetDefinitions: [...current.propertyAssetDefinitions, defaultPropertyAssetDefinition()] } : current)} disabled={!settings}>Add Asset Type</button>
+              <button type="button" onClick={() => void savePropertyAssetDefinitions()} disabled={!settings || busy === "save-property-assets"}>{busy === "save-property-assets" ? "Saving..." : "Save Asset Types"}</button>
+            </div>
+          </div>
+          <p className="nexops-form-note">These tenant-specific types control the fields staff can save on each service property.</p>
+          {(settings?.propertyAssetDefinitions ?? []).map((definition, definitionIndex) => (
+            <div className="nexops-quote-template-editor" key={`${definition.kind}-${definitionIndex}`}>
+              <div className="nexops-quote-toggle-grid">
+                <label className="nexops-field"><span>Type Key</span><input value={definition.kind} onChange={(event) => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.map((item, index) => index === definitionIndex ? { ...item, kind: event.target.value } : item) } : current)} /></label>
+                <label className="nexops-field"><span>Display Name</span><input value={definition.label} onChange={(event) => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.map((item, index) => index === definitionIndex ? { ...item, label: event.target.value } : item) } : current)} /></label>
+              </div>
+              {definition.fields.map((field, fieldIndex) => <div className="nexops-quote-toggle-grid" key={`${field.key}-${fieldIndex}`}>
+                <label className="nexops-field"><span>Field Key</span><input value={field.key} onChange={(event) => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.map((item, index) => index === definitionIndex ? { ...item, fields: item.fields.map((entry, nestedIndex) => nestedIndex === fieldIndex ? { ...entry, key: event.target.value } : entry) } : item) } : current)} /></label>
+                <label className="nexops-field"><span>Field Label</span><input value={field.label} onChange={(event) => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.map((item, index) => index === definitionIndex ? { ...item, fields: item.fields.map((entry, nestedIndex) => nestedIndex === fieldIndex ? { ...entry, label: event.target.value } : entry) } : item) } : current)} /></label>
+                <label className="nexops-field"><span>Field Type</span><select value={field.type} onChange={(event) => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.map((item, index) => index === definitionIndex ? { ...item, fields: item.fields.map((entry, nestedIndex) => nestedIndex === fieldIndex ? { ...entry, type: event.target.value as PropertyAssetDefinition["fields"][number]["type"] } : entry) } : item) } : current)}><option value="text">Text</option><option value="number">Number</option><option value="boolean">Yes / No</option></select></label>
+                <label className="nexops-check-field inline"><input type="checkbox" checked={field.required === true} onChange={(event) => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.map((item, index) => index === definitionIndex ? { ...item, fields: item.fields.map((entry, nestedIndex) => nestedIndex === fieldIndex ? { ...entry, required: event.target.checked } : entry) } : item) } : current)} /> Required</label>
+              </div>)}
+              <div className="nexops-inline-actions"><button type="button" onClick={() => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.map((item, index) => index === definitionIndex ? { ...item, fields: [...item.fields, { key: "serial", label: "Serial Number", type: "text" }] } : item) } : current)}>Add Field</button><button type="button" onClick={() => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.filter((_, index) => index !== definitionIndex) } : current)}>Remove Type</button></div>
+            </div>
+          ))}
+          {!settings?.propertyAssetDefinitions.length ? <p className="nexops-empty-copy">No property asset types are configured yet.</p> : null}
+        </article>
+
         <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>

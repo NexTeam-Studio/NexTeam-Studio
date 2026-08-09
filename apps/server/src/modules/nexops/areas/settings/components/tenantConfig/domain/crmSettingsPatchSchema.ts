@@ -95,6 +95,16 @@ export const crmSettingsPatchSchema = z.object({
       templateCategory: z.enum(["review_request_initial", "review_request_nudge"])
     })).optional()
   }).optional(),
+  propertyAssetDefinitions: z.array(z.object({
+    kind: z.string().min(1).max(80),
+    label: z.string().min(1).max(120),
+    fields: z.array(z.object({
+      key: z.string().min(1).max(80),
+      label: z.string().min(1).max(120),
+      type: z.enum(["text", "number", "boolean"]),
+      required: z.boolean().optional()
+    })).max(40)
+  })).max(50).optional(),
   catalogItems: z.array(productServiceCatalogItemSchema).optional(),
   communicationTemplates: z.array(communicationTemplateRecordSchema).optional()
 });

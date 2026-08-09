@@ -409,6 +409,7 @@ export function defaultCrmSettings(tenantId: string): CrmSettings {
         }
       ]
     },
+    propertyAssetDefinitions: [],
     catalogItems: defaultCatalogItems(tenantId),
     communicationTemplates: defaultCommunicationTemplates(tenantId),
     createdAt: timestamp,

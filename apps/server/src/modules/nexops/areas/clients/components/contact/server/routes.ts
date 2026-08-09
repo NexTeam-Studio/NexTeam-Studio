@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import type { Client, Property } from "@nexteam/core";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
-import { createClientBodySchema, hasClientCreateAddress, hasClientCreatePhone, updateClientBodySchema } from "./routeSchemas.js";
+import { createClientBodySchema, hasClientCreateAddress, hasClientCreatePhone, propertyAssetsBodySchema, updateClientBodySchema } from "./routeSchemas.js";
 import { quickPaymentRequestBodySchema } from "../../../../invoices/components/paymentRails/server/routeSchemas.js";
 import { sendPortalLinkBodySchema } from "../../../../../../nexportal/components/portalCore/server/routeSchemas.js";
 import {
@@ -52,6 +52,64 @@ export function registerContactRoutes(context: CrmRouteContext): void {
         : defaultTenantId(env);
       const properties = await repositoryForTenant().listProperties(tenantId);
       res.json({ ok: true, properties });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.put("/api/crm/properties/:id/assets", async (req: Request, res: Response) => {
+    try {
+      const propertyId = req.params.id;
+      if (!propertyId) {
+        throw new RailError("Property id is required.", { provider: "native", op: "updatePropertyAssets", status: 400 });
+      }
+      const input = propertyAssetsBodySchema.parse(req.body);
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "updatePropertyAssets" });
+      const repository = repositoryForTenant();
+      const [properties, clients, settings] = await Promise.all([
+        repository.listProperties(tenantId),
+        repository.listClients(tenantId),
+        repository.getCrmSettings(tenantId)
+      ]);
+      const property = properties.find((record) => record.id === propertyId);
+      if (!property || !clients.some((client) => client.id === property.clientId)) {
+        throw new RailError(`Property ${propertyId} was not found.`, { provider: "native", op: "updatePropertyAssets", status: 404 });
+      }
+      const definitions = new Map(settings.propertyAssetDefinitions.map((definition) => [definition.kind.trim().toLowerCase(), definition]));
+      const assets = input.assets.map((asset) => {
+        const definition = definitions.get(asset.kind.trim().toLowerCase());
+        if (!definition) {
+          throw new RailError(`Property asset type ${asset.kind} is not configured for this tenant.`, { provider: "native", op: "updatePropertyAssets", status: 400 });
+        }
+        const fields = new Map(definition.fields.map((field) => [field.key, field]));
+        for (const [key, value] of Object.entries(asset.fields)) {
+          const field = fields.get(key);
+          if (!field) {
+            throw new RailError(`Property asset field ${key} is not configured for ${definition.label}.`, { provider: "native", op: "updatePropertyAssets", status: 400 });
+          }
+          const expectedType = field.type === "text" ? "string" : field.type;
+          if (typeof value !== expectedType) {
+            throw new RailError(`Property asset field ${field.label} must be a ${field.type}.`, { provider: "native", op: "updatePropertyAssets", status: 400 });
+          }
+        }
+        for (const field of definition.fields) {
+          if (field.required && (asset.fields[field.key] === undefined || asset.fields[field.key] === "")) {
+            throw new RailError(`Property asset field ${field.label} is required.`, { provider: "native", op: "updatePropertyAssets", status: 400 });
+          }
+        }
+        return {
+          id: asset.id ?? `asset_${randomUUID()}`,
+          kind: definition.kind,
+          label: asset.label.trim(),
+          fields: asset.fields
+        };
+      });
+      if (new Set(assets.map((asset) => asset.id)).size !== assets.length) {
+        throw new RailError("Property asset ids must be unique.", { provider: "native", op: "updatePropertyAssets", status: 400 });
+      }
+      const saved = await repository.upsertProperty({ ...property, assets });
+      res.json({ ok: true, property: saved });
     } catch (error) {
       sendRouteError(res, error);
     }
