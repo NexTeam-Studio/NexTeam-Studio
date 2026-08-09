@@ -1,0 +1,71 @@
+JOB_ID=NEXTEAM-CALENDAR-20261017
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Customer-facing access basics.
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/client-hub-review-followup.test.mjs apps/server/src/modules/nexportal/components/portalCore/server/securityHeaders.test.mjs
+Raw output:
+✔ portal responses prohibit caching, framing, and referrer leakage (0.6064ms)
+✔ client hub sessions authenticate, reverify after 14 days, and keep property-scoped viewers isolated (87.0774ms)
+✔ client hub shows NexCam visit documents by default and removes them when the job rail is opted out (20.3896ms)
+✔ portal client uploads land directly, stay visible to staff immediately, and absorb office records into the unified NexDocs rail (393.8404ms)
+✔ portal appointment confirmation stamps the visit and surfaces the event to client and staff rails (12.6268ms)
+✔ client statements keep tips separate from invoice balance and can be delivered from the hub (10.8073ms)
+✔ review sequences honor exhaustion, opt-out, and manual stop without auto-restarting closed jobs (5.379ms)
+✔ Nexi client-hub and review tools send portal links, read activity, generate statements, and restart then complete review rails (5.0254ms)
+✔ local Nexi chat routes portal and review intents through the new client-hub tools (9.5289ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2091.7256
+EXACT_EXIT_CODE=0
+CALENDAR_PROOF_EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+CUSTOMER_FACING_ACCESS_BASICS=PASS
+MAGIC_LINK_AUTHENTICATION=PASS
+REVERIFICATION_AFTER_14_DAYS=PASS
+PROPERTY_SCOPED_ISOLATION=PASS
+PORTAL_SECURITY_HEADERS=PASS
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+EXACT_EXIT_CODE=0
+WORKTREE_SCOPE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+EXACT_EXIT_CODE=0
+WORKTREE_COVERAGE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1680 tracked non-doc files checked).
+EXACT_EXIT_CODE=0
+SECRET_SCAN_EXACT_EXIT_CODE=0
+
+COMMAND=git status --short
+Raw output:
+(empty)
+EXACT_EXIT_CODE=0
+GIT_STATUS_CLEAN=YES
+
+REQUIRED_GATES_GREEN: YES
