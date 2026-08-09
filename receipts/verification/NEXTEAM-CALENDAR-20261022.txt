@@ -1,0 +1,65 @@
+JOB_ID=NEXTEAM-CALENDAR-20261022
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Tenant onboarding.
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/intake.test.mjs
+Raw output:
+✔ M10 XState intake interview reaches approval and provisioned states (6.3357ms)
+✔ M10 service drafts Demo Pool Co blueprint, queues approval, and provisions native tenant only after approval (10.925ms)
+✔ M10 routes are owner/admin gated and queue tenant provisioning approval (55.1367ms)
+✔ M10 Nexi tools start intake and finalize to ApprovalQueue with actor attribution (3.5844ms)
+✔ M10 chat router sends onboarding language to intake tools instead of job lookup (11.9927ms)
+✔ M10 gateway saves intake answer turns with deterministic answerIntake args (12.4055ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1219.333
+EXACT_EXIT_CODE=0
+CALENDAR_PROOF_EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+TENANT_ONBOARDING_APPROVAL_GATED_NATIVE_PROVISIONING=PASS
+TENANT_ONBOARDING_OWNER_ADMIN_ROUTE_GATE=PASS
+TENANT_ONBOARDING_NEXI_TOOL_AND_ROUTING_CONTRACT=PASS
+TENANT_ONBOARDING_DETERMINISTIC_ANSWER_PERSISTENCE=PASS
+EXTERNAL_OAUTH_PUBLISHING_AND_SENDS_DEFERRED=PASS
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+EXACT_EXIT_CODE=0
+WORKTREE_SCOPE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+EXACT_EXIT_CODE=0
+WORKTREE_COVERAGE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1684 tracked non-doc files checked).
+EXACT_EXIT_CODE=0
+SECRET_SCAN_EXACT_EXIT_CODE=0
+
+COMMAND=git status --short
+Raw output:
+(empty after commit; captured by final verification command)
+EXACT_EXIT_CODE=0
+GIT_STATUS_CLEAN=YES
+
+REQUIRED_GATES_GREEN: YES
