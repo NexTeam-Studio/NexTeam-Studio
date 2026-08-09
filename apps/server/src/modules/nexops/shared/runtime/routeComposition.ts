@@ -14,6 +14,8 @@ import type { LedgerService } from "../../areas/invoices/components/paymentRails
 import type { JobLifecycleService } from "../../areas/jobs/components/jobCore/server/jobLifecycleService.js";
 import type { PortalHubService } from "../../../nexportal/components/portalCore/server/portalHubService.js";
 import { FirestoreNativeCrmRepository } from "../persistence/nativeRepository.js";
+import { AgreementService, MemoryAgreementRepository, type AgreementRepository } from "../agreements/agreementFoundation.js";
+import { FirestoreAgreementRepository } from "../agreements/agreementRepository.js";
 
 export interface CrmRouteDeps {
   approvalQueue: ApprovalQueueService;
@@ -30,6 +32,7 @@ export interface CrmRouteDeps {
   reviewSequenceService?: ReviewSequenceService | undefined;
   nexReachService?: Pick<NexReachService, "handleConsentChange"> | undefined;
   operationsHubService?: OperationsHubService | undefined;
+  agreementRepository?: AgreementRepository | undefined;
   env?: NodeJS.ProcessEnv | undefined;
 }
 
@@ -38,6 +41,7 @@ export function createCrmRouteServices(deps: CrmRouteDeps) {
   const fallbackRepository = deps.memoryRepository ?? new MemoryNativeCrmRepository();
   const fallbackFieldDocsRepository = deps.fieldDocsRepository ?? new MemoryMediaRepository();
   const eventBus = deps.eventBus ?? new InMemoryEventBus();
+  const fallbackAgreementRepository = deps.agreementRepository ?? new MemoryAgreementRepository();
 
   function repositoryForTenant(): NativeCrmRepository {
     const db = getAdminDb(env);
@@ -46,6 +50,11 @@ export function createCrmRouteServices(deps: CrmRouteDeps) {
 
   function providerForTenant(tenantId: string): NativeAdapter {
     return new NativeAdapter(repositoryForTenant(), tenantId);
+  }
+
+  function agreementService(): AgreementService {
+    const db = getAdminDb(env);
+    return new AgreementService(db ? new FirestoreAgreementRepository(db) : fallbackAgreementRepository);
   }
 
   function fieldDocsRepository(): MediaRepository {
@@ -92,6 +101,7 @@ export function createCrmRouteServices(deps: CrmRouteDeps) {
 
   return {
     env,
+    agreementService,
     eventBus,
     fallbackFieldDocsRepository,
     fallbackRepository,

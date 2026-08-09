@@ -11,6 +11,7 @@ import { registerQuoteEngineRoutes } from "./areas/quotes/components/quoteEngine
 import { registerInvoiceStructureRoutes } from "./areas/invoices/components/invoiceStructure/server/routes.js";
 import { registerPaymentRailRoutes } from "./areas/invoices/components/paymentRails/server/routes.js";
 import { registerPortalCoreRoutes } from "../nexportal/components/portalCore/server/routes.js";
+import { registerAgreementRoutes } from "./shared/agreements/routes.js";
 
 export type { CrmRouteDeps } from "./runtime/routeRuntime.js";
 
@@ -26,5 +27,6 @@ export function registerCrmRoutes(app: Express, deps: CrmRouteDeps): void {
   registerQuoteEngineRoutes(context);
   registerInvoiceStructureRoutes(context);
   registerPaymentRailRoutes(context);
+  registerAgreementRoutes(context);
   registerPortalCoreRoutes(context);
 }

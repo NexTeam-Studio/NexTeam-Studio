@@ -29,6 +29,7 @@ import { createRequestRouteSupport, sanitizeFieldVisibility } from "../areas/req
 import { createQuoteRouteSupport } from "../areas/quotes/components/quoteEngine/server/routeSupport.js";
 import { createInvoiceRouteSupport } from "../areas/invoices/components/invoiceStructure/server/routeSupport.js";
 import { defaultCrmTenantId, publicRequestOrigin, requireOfficeAccess, sendCrmRouteError } from "../shared/runtime/routeHttpSupport.js";
+import { AgreementService, agreementCreateInputSchema, agreementPatchInputSchema } from "../shared/agreements/agreementFoundation.js";
 
 export type { CrmRouteDeps } from "../shared/runtime/routeComposition.js";
 
@@ -37,6 +38,7 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
   const publicOrigin = publicRequestOrigin;
   const sendRouteError = sendCrmRouteError;
   const {
+    agreementService,
     env,
     eventBus,
     fallbackFieldDocsRepository,
@@ -103,6 +105,7 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
 
   return {
     FieldDocsService,
+    AgreementService,
     FirestoreMediaRepository,
     FirestoreNativeCrmRepository,
     InMemoryEventBus,
@@ -113,6 +116,9 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
     RailError,
     actorIdForAccess,
     addressSchema,
+    agreementCreateInputSchema,
+    agreementPatchInputSchema,
+    agreementService,
     app,
     archiveQuoteVersion,
     assignedTechniciansByVisitId,
