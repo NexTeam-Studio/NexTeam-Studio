@@ -203,6 +203,27 @@ export async function loadTenantFromPlatform(repository: PlatformRepository, ten
 export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): void {
   const env = deps.env ?? process.env;
 
+  // This is deliberately platform-operator guarded rather than tenant-role guarded.
+  // Tenant ownership is never enough to enter the NexTeam Admin surface.
+  app.get("/api/platform/admin/summary", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env);
+      const [prospects, tenants] = await Promise.all([deps.repository.listProspects(), deps.repository.listTenants()]);
+      res.json({
+        ok: true,
+        summary: {
+          prospects: prospects.length,
+          blueprintsAwaitingAction: prospects.filter((prospect) => ["INTAKE_COMPLETE", "BLUEPRINT_READY", "SUBSCRIPTION_REQUIRED"].includes(prospect.status)).length,
+          subscriptions: tenants.length,
+          tenants: tenants.length,
+          activationPending: prospects.filter((prospect) => prospect.status === "SUBSCRIPTION_REQUIRED").length
+        }
+      });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.get("/api/platform/plans", async (req: Request, res: Response) => {
     try {
       await requirePlatformOperator(req, env);

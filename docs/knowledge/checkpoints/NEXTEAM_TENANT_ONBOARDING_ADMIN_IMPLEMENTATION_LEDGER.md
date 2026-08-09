@@ -13,7 +13,7 @@
 | --- | --- | --- | --- |
 | A — inventory and ownership | GREEN | platform-tenants + integration | Existing platform repository/routes/UI, Firebase tenant-user contract, tenant settings onboarding, and capability guards were inspected. Extend these authoritative paths; do not create a second tenant or subscription system. |
 | B — prospect, intake, Blueprint contracts | GREEN | platform-tenants + integration | Shared non-sensitive Prospect, intake/software-inventory, Blueprint, and append-only Blueprint revision contracts are persisted through the platform repository. Targeted server build, 15 platform tests, scope, and coverage checks passed on 2026-08-09. |
-| C — NexTeam Admin foundation | NOT STARTED | platform-tenants | Extend the internal platform surface with operator-only access. |
+| C — NexTeam Admin foundation | GREEN | platform-tenants | The existing platform console is explicitly NexTeam Admin. Its lifecycle summary API is platform-operator guarded, never tenant-role guarded; it compiles and is exercised in the platform route suite. |
 | D — manual intake and Blueprint UI | NOT STARTED | platform-tenants | Use the Phase B contract only. |
 | E — required test subscription | NOT STARTED | platform-tenants | Normalize an audited $0 test package and activation gate. |
 | F — tenant and owner activation | NOT STARTED | platform-tenants + nexteam-global | Reuse Firebase tenant-user and claims contracts; never store passwords. |
