@@ -22,6 +22,7 @@ import {
 } from "./fieldDocsRecords.js";
 import { fieldReportRecordSchema, type FieldReportRecord } from "./reportService.js";
 import { signedDocumentRecordSchema } from "@nexteam/core";
+import { formAuditSchema, formResponseSchema, formSchema, type FormAudit, type FormResponse, type TenantForm } from "./forms.js";
 
 export interface MediaRepository {
   listMedia(tenantId: string): Promise<Media[]>;
@@ -38,6 +39,14 @@ export interface MediaRepository {
   listChecklists(tenantId: string): Promise<ChecklistInstance[]>;
   saveChecklist(checklist: ChecklistInstance): Promise<ChecklistInstance>;
   getChecklist(tenantId: string, id: string): Promise<ChecklistInstance | null>;
+  listForms(tenantId: string): Promise<TenantForm[]>;
+  getForm(tenantId: string, id: string): Promise<TenantForm | null>;
+  saveForm(form: TenantForm): Promise<TenantForm>;
+  listFormResponses(tenantId: string): Promise<FormResponse[]>;
+  getFormResponse(tenantId: string, id: string): Promise<FormResponse | null>;
+  saveFormResponse(response: FormResponse): Promise<FormResponse>;
+  listFormAudit(tenantId: string, responseId: string): Promise<FormAudit[]>;
+  saveFormAudit(audit: FormAudit): Promise<FormAudit>;
   listReports(tenantId: string): Promise<FieldReportRecord[]>;
   saveReport(report: FieldReportRecord): Promise<FieldReportRecord>;
   getReport(tenantId: string, id: string): Promise<FieldReportRecord | null>;
@@ -68,6 +77,9 @@ export class MemoryMediaRepository implements MediaRepository {
   private readonly records: Media[];
   private readonly templates: ChecklistTemplate[];
   private readonly checklists: ChecklistInstance[];
+  private readonly forms: TenantForm[] = [];
+  private readonly formResponses: FormResponse[] = [];
+  private readonly formAudits: FormAudit[] = [];
   private readonly reports: FieldReportRecord[];
   private readonly reportTemplates: FieldReportTemplate[];
   private readonly bundles: FieldDocsBundle[];
@@ -218,6 +230,14 @@ export class MemoryMediaRepository implements MediaRepository {
   async getChecklist(tenantId: string, id: string): Promise<ChecklistInstance | null> {
     return this.checklists.find((record) => record.tenantId === tenantId && record.id === id) ?? null;
   }
+  async listForms(tenantId: string): Promise<TenantForm[]> { return this.forms.filter((x) => x.tenantId === tenantId); }
+  async getForm(tenantId: string, id: string): Promise<TenantForm | null> { return this.forms.find((x) => x.tenantId === tenantId && x.id === id) ?? null; }
+  async saveForm(form: TenantForm): Promise<TenantForm> { const parsed = formSchema.parse(form) as TenantForm; const i = this.forms.findIndex((x) => x.id === parsed.id); if (i < 0) this.forms.push(parsed); else this.forms[i] = parsed; return parsed; }
+  async listFormResponses(tenantId: string): Promise<FormResponse[]> { return this.formResponses.filter((x) => x.tenantId === tenantId); }
+  async getFormResponse(tenantId: string, id: string): Promise<FormResponse | null> { return this.formResponses.find((x) => x.tenantId === tenantId && x.id === id) ?? null; }
+  async saveFormResponse(response: FormResponse): Promise<FormResponse> { const parsed = formResponseSchema.parse(response) as FormResponse; const i = this.formResponses.findIndex((x) => x.id === parsed.id); if (i < 0) this.formResponses.push(parsed); else this.formResponses[i] = parsed; return parsed; }
+  async listFormAudit(tenantId: string, responseId: string): Promise<FormAudit[]> { return this.formAudits.filter((x) => x.tenantId === tenantId && x.responseId === responseId); }
+  async saveFormAudit(audit: FormAudit): Promise<FormAudit> { const parsed = formAuditSchema.parse(audit) as FormAudit; this.formAudits.push(parsed); return parsed; }
 
   async listReports(tenantId: string): Promise<FieldReportRecord[]> {
     return this.reports.filter((record) => record.tenantId === tenantId);
@@ -541,6 +561,14 @@ export class FirestoreMediaRepository implements MediaRepository {
     const parsed = checklistInstanceSchema.parse(snapshot.data()) as ChecklistInstance;
     return parsed.tenantId === tenantId ? parsed : null;
   }
+  async listForms(tenantId: string): Promise<TenantForm[]> { const s = await this.db.collection("tenantForms").where("tenantId", "==", tenantId).get(); return s.docs.map((d) => formSchema.parse(d.data()) as TenantForm); }
+  async getForm(tenantId: string, id: string): Promise<TenantForm | null> { const s = await this.db.collection("tenantForms").doc(id).get(); if (!s.exists) return null; const value = formSchema.parse(s.data()) as TenantForm; return value.tenantId === tenantId ? value : null; }
+  async saveForm(form: TenantForm): Promise<TenantForm> { const parsed = formSchema.parse(form) as TenantForm; await this.writeTenantRecord("tenantForms", parsed.id, parsed.tenantId, parsed); return parsed; }
+  async listFormResponses(tenantId: string): Promise<FormResponse[]> { const s = await this.db.collection("tenantFormResponses").where("tenantId", "==", tenantId).get(); return s.docs.map((d) => formResponseSchema.parse(d.data()) as FormResponse); }
+  async getFormResponse(tenantId: string, id: string): Promise<FormResponse | null> { const s = await this.db.collection("tenantFormResponses").doc(id).get(); if (!s.exists) return null; const value = formResponseSchema.parse(s.data()) as FormResponse; return value.tenantId === tenantId ? value : null; }
+  async saveFormResponse(response: FormResponse): Promise<FormResponse> { const parsed = formResponseSchema.parse(response) as FormResponse; await this.writeTenantRecord("tenantFormResponses", parsed.id, parsed.tenantId, parsed); return parsed; }
+  async listFormAudit(tenantId: string, responseId: string): Promise<FormAudit[]> { const s = await this.db.collection("tenantFormAudit").where("tenantId", "==", tenantId).get(); return s.docs.map((d) => formAuditSchema.parse(d.data()) as FormAudit).filter((x) => x.responseId === responseId).sort((a,b) => a.at.localeCompare(b.at)); }
+  async saveFormAudit(audit: FormAudit): Promise<FormAudit> { const parsed = formAuditSchema.parse(audit) as FormAudit; await this.writeTenantRecord("tenantFormAudit", parsed.id, parsed.tenantId, parsed); return parsed; }
 
   async listReports(tenantId: string): Promise<FieldReportRecord[]> {
     const snapshot = await this.db.collection("fieldReports").where("tenantId", "==", tenantId).get();

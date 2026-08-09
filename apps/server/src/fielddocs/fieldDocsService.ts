@@ -29,6 +29,7 @@ import {
 } from "./fieldDocsRecords.js";
 import type { MediaRepository } from "./mediaRepository.js";
 import { createFieldReportRecord } from "./reportService.js";
+import { formAuditSchema, formResponseSchema, formSchema, newForm, validateResponse, type FormResponse, type TenantForm } from "./forms.js";
 
 export interface FieldDocsServiceDeps {
   mediaRepository: MediaRepository;
@@ -163,6 +164,22 @@ export class FieldDocsService {
   async upsertTemplate(input: ChecklistTemplate): Promise<ChecklistTemplate> {
     const parsed = checklistTemplateSchema.parse(input) as ChecklistTemplate;
     return this.deps.mediaRepository.upsertChecklistTemplate(parsed);
+  }
+
+  async listForms(tenantId: string): Promise<TenantForm[]> { return (await this.deps.mediaRepository.listForms(tenantId)).sort((a, b) => a.title.localeCompare(b.title)); }
+  async getForm(tenantId: string, id: string): Promise<TenantForm> { const form = await this.deps.mediaRepository.getForm(tenantId, id); if (!form) throw new RailError(`Form ${id} was not found.`, { provider: "native", op: "getForm", status: 404 }); return form; }
+  async createForm(input: Omit<TenantForm, "id" | "version" | "createdAt" | "updatedAt">): Promise<TenantForm> { return this.deps.mediaRepository.saveForm(newForm(input)); }
+  async reviseForm(input: TenantForm): Promise<TenantForm> { const current = await this.getForm(input.tenantId, input.id); const next = formSchema.parse({ ...input, version: current.version + 1, createdAt: current.createdAt, updatedAt: nowIso(), publishedAt: nowIso() }) as TenantForm; return this.deps.mediaRepository.saveForm(next); }
+  async listFormResponses(tenantId: string, formId?: string): Promise<FormResponse[]> { return (await this.deps.mediaRepository.listFormResponses(tenantId)).filter((x) => !formId || x.formId === formId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)); }
+  async saveFormResponse(input: { tenantId: string; formId: string; responseId?: string; values: Record<string, string | number | boolean | string[]>; links: FormResponse["links"]; submit: boolean; actorId: string }): Promise<FormResponse> {
+    const form = await this.getForm(input.tenantId, input.formId); if (!form.active) throw new RailError("This form is inactive.", { provider: "native", op: "saveFormResponse", status: 409 });
+    const existing = input.responseId ? await this.deps.mediaRepository.getFormResponse(input.tenantId, input.responseId) : null;
+    if (input.responseId && !existing) throw new RailError(`Form response ${input.responseId} was not found.`, { provider: "native", op: "saveFormResponse", status: 404 });
+    if (existing?.status === "submitted") throw new RailError("Submitted form responses are immutable.", { provider: "native", op: "saveFormResponse", status: 409 });
+    validateResponse(form, input.values, input.submit); const at = nowIso();
+    const response = formResponseSchema.parse({ id: existing?.id ?? `form_response_${Math.random().toString(36).slice(2, 10)}`, tenantId: input.tenantId, formId: form.id, formVersion: form.version, status: input.submit ? "submitted" : "draft", values: input.values, links: input.links, createdAt: existing?.createdAt ?? at, updatedAt: at, ...(input.submit ? { submittedAt: at } : {}), createdBy: existing?.createdBy ?? input.actorId, updatedBy: input.actorId }) as FormResponse;
+    const saved = await this.deps.mediaRepository.saveFormResponse(response); const changes = Object.keys(input.values).filter((key) => JSON.stringify(existing?.values[key]) !== JSON.stringify(input.values[key]));
+    await this.deps.mediaRepository.saveFormAudit(formAuditSchema.parse({ id: `form_audit_${Math.random().toString(36).slice(2, 10)}`, tenantId: input.tenantId, responseId: saved.id, action: input.submit ? "submitted" : existing ? "updated" : "created", actorId: input.actorId, at, changes }) ); return saved;
   }
 
   async listChecklists(input: {

@@ -22,6 +22,7 @@ import { searchMediaWithVisionFallback } from "./photoSearch.js";
 import { createFieldReportRecord, renderFieldReportPdf, renderSignedDocumentPdf } from "./reportService.js";
 import { createNativeMediaFromUpload, storeUploadedMediaBytes, uploadMediaInputSchema } from "./uploadService.js";
 import { maybeRunVision } from "./visionPipeline.js";
+import { formSchema } from "./forms.js";
 import {
   POOL_LEAK_VISION_TAG_TAXONOMY,
   applyVisionSurveyCorrection,
@@ -129,6 +130,11 @@ const checklistCreateInputSchema = z.object({
     note: z.string().optional()
   })).optional()
 });
+const formsListQuerySchema = z.object({ tenantId: z.string().min(1) });
+const formCreateInputSchema = z.object({ tenantId: z.string().min(1), slug: z.string().min(1), title: z.string().min(1), description: z.string().optional(), active: z.boolean(), fields: z.array(z.object({ id: z.string().min(1), label: z.string().min(1), type: z.enum(["text", "number", "boolean", "select", "multi_select", "date", "media"]), required: z.boolean().default(false), options: z.array(z.string().min(1)).optional(), visibleWhen: z.object({ fieldId: z.string().min(1), equals: z.union([z.string(), z.number(), z.boolean()]) }).optional() })).min(1) });
+const formReviseInputSchema = formSchema;
+const formResponseInputSchema = z.object({ tenantId: z.string().min(1), formId: z.string().min(1), responseId: z.string().min(1).optional(), values: z.record(z.union([z.string(), z.number(), z.boolean(), z.array(z.string())])), links: z.object({ clientId: z.string().min(1).optional(), propertyId: z.string().min(1).optional(), jobId: z.string().min(1).optional(), visitId: z.string().min(1).optional(), documentId: z.string().min(1).optional() }).default({}), submit: z.boolean().default(false) });
+const formResponsesQuerySchema = z.object({ tenantId: z.string().min(1), formId: z.string().min(1).optional() });
 
 const checklistUpdateInputSchema = z.object({
   tenantId: z.string().min(1),
@@ -1076,6 +1082,13 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
       sendRouteError(res, error);
     }
   });
+
+  app.get("/api/fielddocs/forms", async (req: Request, res: Response) => { try { const input = formsListQuerySchema.parse(req.query); await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: input.tenantId, op: "listTenantForms" }); res.json({ ok: true, forms: await fieldDocsService().listForms(input.tenantId) }); } catch (error) { sendRouteError(res, error); } });
+  app.post("/api/fielddocs/forms", async (req: Request, res: Response) => { try { const input = formCreateInputSchema.parse(req.body); await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: input.tenantId, op: "createTenantForm" }); res.status(201).json({ ok: true, form: await fieldDocsService().createForm(input) }); } catch (error) { sendRouteError(res, error); } });
+  app.put("/api/fielddocs/forms/:id", async (req: Request, res: Response) => { try { const id = req.params.id; if (!id) throw new RailError("Form id is required.", { provider: "native", op: "reviseTenantForm", status: 400 }); const input = formReviseInputSchema.parse({ ...req.body, id }); await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: input.tenantId, op: "reviseTenantForm" }); res.json({ ok: true, form: await fieldDocsService().reviseForm(input) }); } catch (error) { sendRouteError(res, error); } });
+  app.get("/api/fielddocs/form-responses", async (req: Request, res: Response) => { try { const input = formResponsesQuerySchema.parse(req.query); await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: input.tenantId, op: "listFormResponses" }); res.json({ ok: true, responses: await fieldDocsService().listFormResponses(input.tenantId, input.formId) }); } catch (error) { sendRouteError(res, error); } });
+  app.get("/api/fielddocs/form-responses/:id/audit", async (req: Request, res: Response) => { try { const tenantId = formsListQuerySchema.parse(req.query).tenantId; const id = req.params.id; if (!id) throw new RailError("Response id is required.", { provider: "native", op: "listFormAudit", status: 400 }); await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "listFormAudit" }); res.json({ ok: true, audit: await repository().listFormAudit(tenantId, id) }); } catch (error) { sendRouteError(res, error); } });
+  app.post("/api/fielddocs/form-responses", async (req: Request, res: Response) => { try { const input = formResponseInputSchema.parse(req.body); const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: input.tenantId, op: "saveFormResponse" }); const response = await fieldDocsService().saveFormResponse({ tenantId: input.tenantId, formId: input.formId, values: input.values, links: input.links, submit: input.submit, actorId: access.tenantUserId, ...(input.responseId ? { responseId: input.responseId } : {}) }); res.status(input.responseId ? 200 : 201).json({ ok: true, response }); } catch (error) { sendRouteError(res, error); } });
 
   app.get("/api/fielddocs/checklists", async (req: Request, res: Response) => {
     try {
