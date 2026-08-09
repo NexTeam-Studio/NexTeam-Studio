@@ -1,0 +1,75 @@
+JOB_ID=NEXTEAM-CALENDAR-20261016
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Communication timeline.
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/lifecycle-command-map.test.mjs apps/server/test/scheduling.test.mjs
+Raw output:
+✔ lifecycle command map keeps the full D1-D19 decision register (1.1059ms)
+✔ lifecycle command map exposes the 12 required communication templates (0.1586ms)
+✔ every command references valid decision ids and valid communication templates (0.2073ms)
+✔ permission registry stays unique and the portal commands stay on authorization profiles (0.1042ms)
+✔ quote dominant action derives atomic approval and renewal states (0.2537ms)
+✔ D1 atomic portal approval contract keeps failed deposit attempts out of accepted quote state (0.2368ms)
+✔ visit, invoice, and client-schedule dominant actions derive from orthogonal status dimensions (0.2667ms)
+✔ decision traces expose downstream command dependencies for auditability (0.1459ms)
+✔ suggestSlots prefers the least-drive non-conflicting slot (8.3471ms)
+✔ detectConflicts only flags overlapping visits for the same assigned crew (0.7596ms)
+✔ bookVisit parks the visit and queues a notification instead of sending (3.1982ms)
+✔ whatsMyDay reads native visits for the requested technician (0.4027ms)
+✔ calendar board returns native visits only even if stale overlay deps are passed in (42.4831ms)
+✔ calendar board ignores stale overlay timeout env and still serves native visits without warnings (6.2754ms)
+✔ reminder and on-my-way messages are approval queued, not sent (0.9171ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 501.8626
+EXACT_EXIT_CODE=0
+CALENDAR_PROOF_EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+COMMUNICATION_TIMELINE=PASS
+COMMUNICATION_TEMPLATES=PASS
+APPROVAL_GATED_MESSAGES=PASS
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+EXACT_EXIT_CODE=0
+WORKTREE_SCOPE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+EXACT_EXIT_CODE=0
+WORKTREE_COVERAGE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1679 tracked non-doc files checked).
+EXACT_EXIT_CODE=0
+SECRET_SCAN_EXACT_EXIT_CODE=0
+
+COMMAND=git status --short
+Raw output:
+(empty)
+EXACT_EXIT_CODE=0
+GIT_STATUS_CLEAN=YES
+
+REQUIRED_GATES_GREEN: YES
