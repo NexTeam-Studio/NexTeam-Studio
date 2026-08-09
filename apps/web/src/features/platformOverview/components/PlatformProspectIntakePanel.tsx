@@ -21,7 +21,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return result;
 }
 
-/** Manual staff intake uses the same platform Prospect/Blueprint API reserved for future Nexi intake. */
+/** Manual staff intake uses the same platform Prospect/onboarding-plan API reserved for future Nexi intake. */
 export function PlatformProspectIntakePanel(): React.ReactElement {
   const [businessName, setBusinessName] = useState("");
   const [industry, setIndustry] = useState("");
@@ -55,7 +55,7 @@ export function PlatformProspectIntakePanel(): React.ReactElement {
         recommendedModules: ["nexi", "crm"],
         reason: "Initial manual intake"
       });
-      setStatus(`Blueprint saved for ${businessName.trim()}. It is ready for review and required subscription selection.`);
+      setStatus(`Onboarding plan saved for ${businessName.trim()}. It is ready for review and required subscription selection.`);
       setBusinessName("");
       setIndustry("");
       setServiceArea("");
@@ -71,7 +71,7 @@ export function PlatformProspectIntakePanel(): React.ReactElement {
     <section className="platform-prospect-intake" aria-labelledby="manual-intake-title">
       <div>
         <p className="ui-eyebrow">Manual intake</p>
-        <h2 id="manual-intake-title">Start a tenant Blueprint</h2>
+        <h2 id="manual-intake-title">Start a tenant onboarding plan</h2>
         <p>Pre-subscription intake accepts only business information. Private setup unlocks after activation.</p>
       </div>
       <form onSubmit={(event) => void createProspectAndBlueprint(event)}>
@@ -79,7 +79,7 @@ export function PlatformProspectIntakePanel(): React.ReactElement {
         <label>Industry or trade<input required value={industry} onChange={(event) => setIndustry(event.target.value)} /></label>
         <label>Service area <span>(comma separated)</span><input value={serviceArea} onChange={(event) => setServiceArea(event.target.value)} /></label>
         <label>Services <span>(comma separated)</span><input value={services} onChange={(event) => setServices(event.target.value)} /></label>
-        <button type="submit" disabled={working || !businessName.trim() || !industry.trim()}>{working ? "Saving intake…" : "Create Prospect and Blueprint"}</button>
+        <button type="submit" disabled={working || !businessName.trim() || !industry.trim()}>{working ? "Saving intake…" : "Create Prospect and onboarding plan"}</button>
       </form>
       {status ? <p className="platform-prospect-intake__status">{status}</p> : null}
     </section>

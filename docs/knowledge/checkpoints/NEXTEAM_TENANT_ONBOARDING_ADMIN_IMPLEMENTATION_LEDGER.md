@@ -16,7 +16,7 @@
 | C — NexTeam Admin foundation | GREEN | platform-tenants | The existing platform console is explicitly NexTeam Admin. Its lifecycle summary API is platform-operator guarded, never tenant-role guarded; it compiles and is exercised in the platform route suite. |
 | D — manual intake and Blueprint UI | GREEN | platform-tenants | NexTeam Admin now has an operator-facing manual form that creates a Prospect, saves the same non-sensitive intake contract, creates a Blueprint, and appends its first immutable revision. Server route suite and web build passed on 2026-08-09. |
 | E — required test subscription | GREEN | platform-tenants | The active `all-access-test` package is versioned, $0.00, all-access, and must be assigned durably to an onboarding-plan-ready Prospect before activation. Full `npm run verify` passed on 2026-08-09 after platform-owned writes were moved behind the approved transaction seam. |
-| F — tenant and owner activation | NOT STARTED | platform-tenants + nexteam-global | Reuse Firebase tenant-user and claims contracts; never store passwords. |
+| F — tenant and owner activation | GREEN | platform-tenants + nexteam-global | Activation requires the durable assigned $0 test package, creates the existing tenant, subscription, and tenant-user records, then creates or reuses the Firebase owner without a password. Tenant-specific claims merge into existing claims and preserve platform claims. Full test suite passed: 489 pass, 0 fail, 3 skipped on 2026-08-09. Firebase runtime activation remains built / not operationally proven until staging-safe credentials and tenant test data are used. |
 | G–O | NOT STARTED | assigned per phase | Advance only after the preceding phase has captured green evidence. |
 
 ## Authoritative existing ownership

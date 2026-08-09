@@ -260,9 +260,25 @@ test("platform routes expose tenants, test subscription, backup, and export", as
   repository.seedUsage(usageRecord("second-test", 0.05));
   const app = express();
   app.use(express.json());
+  const firebaseCalls = { created: [], claims: [] };
+  const firebaseOwnerActivation = {
+    async getUserByEmail() {
+      const error = new Error("not found");
+      error.code = "auth/user-not-found";
+      throw error;
+    },
+    async createUser(input) {
+      firebaseCalls.created.push(input);
+      return { uid: "firebase_owner_1", email: input.email, customClaims: { role: "platform_operator", preserved: true } };
+    },
+    async setCustomUserClaims(uid, claims) {
+      firebaseCalls.claims.push({ uid, claims });
+    }
+  };
   registerPlatformRoutes(app, {
     repository,
     storage,
+    firebaseOwnerActivation,
     env: { NEXI_FIREBASE_AUTH_REQUIRED: "false", PLATFORM_FAKE_STRIPE: "true", STRIPE_SECRET_KEY: "sk_test_fake" }
   });
   const server = app.listen(0);
@@ -319,6 +335,21 @@ test("platform routes expose tenants, test subscription, backup, and export", as
     assert.equal(assignment.ok, true);
     assert.equal(assignment.assignment.status, "ASSIGNED");
     assert.equal(assignment.package.includedModules.length > 1, true);
+    const activation = await fetch(`${base}/api/platform/admin/prospects/${encodeURIComponent(createdProspect.prospect.id)}/activate`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "northside-services", ownerEmail: "owner@example.test", ownerDisplayName: "Northside Owner" })
+    }).then((response) => response.json());
+    assert.equal(activation.ok, true);
+    assert.equal(activation.passwordSet, false);
+    assert.equal(activation.passwordSetupLinkDelivered, false);
+    assert.deepEqual(firebaseCalls.created[0], { email: "owner@example.test", emailVerified: false, disabled: false, displayName: "Northside Owner" });
+    assert.equal(firebaseCalls.claims[0].claims.role, "platform_operator");
+    assert.equal(firebaseCalls.claims[0].claims.preserved, true);
+    assert.equal(firebaseCalls.claims[0].claims.tenantId, "northside-services");
+    assert.equal((await repository.getPlatformSubscriptionAssignment(createdProspect.prospect.id)).status, "ACTIVE");
+    assert.equal((await repository.getProspect(createdProspect.prospect.id)).status, "CONVERTED");
+    assert.equal((await repository.getTenantUser("northside-services", activation.owner.id)).authUid, "firebase_owner_1");
 
     const publicBranding = await fetch(`${base}/api/public/tenant-branding?tenantId=second-test`).then((response) => response.json());
     assert.equal(publicBranding.ok, true);

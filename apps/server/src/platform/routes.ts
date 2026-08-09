@@ -13,6 +13,7 @@ import { toolEntitlementMatrix } from "./entitlements.js";
 import { modulesForPlan, PLATFORM_PLANS } from "./plans.js";
 import { defaultTenant, defaultTenantBranding, planCatalog, subscriptionFromStripe, type PlatformRepository } from "./repository.js";
 import { activeSubscriptionPackages } from "./subscriptionPackages.js";
+import { activateProspectTenant, type FirebaseOwnerActivation } from "./tenantActivation.js";
 import {
   authorizeStripeConnectCallback,
   createOrReuseStripeConnectOnboarding,
@@ -160,6 +161,7 @@ export interface PlatformRouteDeps {
   storage: StorageWriter | null;
   stripeConnect?: StripeConnectApi | undefined;
   env?: NodeJS.ProcessEnv | undefined;
+  firebaseOwnerActivation?: FirebaseOwnerActivation | undefined;
 }
 
 function requireStripeConnect(deps: PlatformRouteDeps): StripeConnectApi {
@@ -404,6 +406,33 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       });
       const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "SUBSCRIPTION_REQUIRED", updatedAt: timestamp });
       res.status(201).json({ ok: true, prospect: nextProspect, assignment, package: subscriptionPackage });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/admin/prospects/:prospectId/activate", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env);
+      const prospectId = requiredTenantId(req.params.prospectId);
+      const input = z.object({
+        tenantId: z.string().trim().min(3).max(100).regex(/^[a-z0-9-]+$/, "Tenant id must use lowercase letters, numbers, and hyphens."),
+        ownerEmail: z.string().email(),
+        ownerDisplayName: z.string().trim().min(1).max(120)
+      }).strict().parse(req.body ?? {});
+      const auth = deps.firebaseOwnerActivation ?? getAdminAuth(env);
+      if (!auth) throw new RailError("Firebase owner activation is not configured.", { provider: "firebase", op: "activateTenant", status: 503 });
+      const activated = await activateProspectTenant(deps.repository, auth, { prospectId, ...input });
+      // A password setup link is never returned or logged here. Delivery belongs to an explicitly approved mail action.
+      res.status(201).json({
+        ok: true,
+        tenant: { id: activated.tenant.id, name: activated.tenant.name },
+        owner: { id: activated.owner.id, uid: activated.owner.authUid, email: activated.owner.email, role: activated.owner.role },
+        ownerCreated: activated.ownerCreated,
+        subscriptionId: activated.subscriptionId,
+        passwordSet: false,
+        passwordSetupLinkDelivered: false
+      });
     } catch (error) {
       sendRouteError(res, error);
     }
