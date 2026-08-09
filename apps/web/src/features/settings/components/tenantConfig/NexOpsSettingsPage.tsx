@@ -127,13 +127,21 @@ interface CrmSettingsRecord {
 interface CrmSettingsResponse {
   ok: boolean;
   settings?: CrmSettingsRecord;
+  onboardingLaunch?: OnboardingLaunch;
   error?: string;
 }
 
 interface CrmSettingsMutationResponse {
   ok: boolean;
   settings?: CrmSettingsRecord;
+  onboardingLaunch?: OnboardingLaunch;
   error?: string;
+}
+
+interface OnboardingLaunch {
+  ready: boolean;
+  reasons: string[];
+  availableModules: string[];
 }
 
 interface NexOpsSettingsPageProps {
@@ -201,6 +209,7 @@ const ONBOARDING_TASK_STATUSES = ["not_started", "in_progress", "complete", "ski
 
 export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactElement {
   const [settings, setSettings] = useState<CrmSettingsRecord | null>(null);
+  const [onboardingLaunch, setOnboardingLaunch] = useState<OnboardingLaunch | null>(null);
   const [statusMessage, setStatusMessage] = useState("Loading settings...");
   const [busy, setBusy] = useState("");
   const [catalogSearch, setCatalogSearch] = useState("");
@@ -248,6 +257,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         return;
       }
       setSettings(body.settings);
+      setOnboardingLaunch(body.onboardingLaunch ?? null);
       setSelectedTemplateId((current) => current && body.settings?.communicationTemplates.some((template) => template.id === current)
         ? current
         : body.settings.communicationTemplates[0]?.id ?? "");
@@ -379,6 +389,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         return;
       }
       setSettings(body.settings);
+      setOnboardingLaunch(body.onboardingLaunch ?? null);
       setStatusMessage("Property asset types saved.");
       props.onCrmMutation?.();
     } catch {
@@ -405,6 +416,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         return;
       }
       setSettings(body.settings);
+      setOnboardingLaunch(body.onboardingLaunch ?? null);
       setStatusMessage("Guided onboarding saved.");
       props.onCrmMutation?.();
     } catch {
@@ -428,6 +440,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         return;
       }
       setSettings(body.settings);
+      setOnboardingLaunch(body.onboardingLaunch ?? null);
       setStatusMessage("Secure onboarding checklist saved.");
       props.onCrmMutation?.();
     } catch {
@@ -700,9 +713,9 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                   <h3>Audit History</h3>
                   {(settings.operatingProfile.onboarding.checklist.auditHistory ?? []).length ? settings.operatingProfile.onboarding.checklist.auditHistory.slice().reverse().map((event) => <p key={event.id}><strong>{event.action}</strong> — {event.detail} <small>{new Date(event.createdAt).toLocaleString()}</small></p>) : <p className="nexops-empty-copy">No secure onboarding changes have been recorded yet.</p>}
                 </div>
-                <div className="nexops-quote-section-head"><div><h3>Guided Configuration</h3><span>Module choices and legacy launch steps remain compatible with the existing tenant setup flow.</span></div></div>
+                <div className="nexops-quote-section-head"><div><h3>Guided Configuration</h3><span>Only modules included in this tenant's subscription can be selected. Launch requires every required checklist task, module selection, and launch review.</span></div></div>
                 <div className="nexops-quote-toggle-grid">
-                  {MODULE_CHOICES.map((module) => (
+                  {MODULE_CHOICES.filter((module) => onboardingLaunch?.availableModules.includes(module.id) ?? true).map((module) => (
                     <label className="nexops-check-field inline" key={module.id}>
                       <input type="checkbox" checked={settings.operatingProfile.onboarding.selectedModules.includes(module.id)} onChange={(event) => toggleModule(module.id, event.target.checked)} />
                       <span><strong>{module.label}</strong><small>{module.help}</small></span>
@@ -716,6 +729,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                     <article><h3>{index + 1}. {step.label}</h3><p>{complete ? "Complete" : current ? "Next" : "Locked"}</p><small>{step.help}</small></article>
                   </div>;
                 })}
+                {onboardingLaunch ? <div className="nexops-quote-template-editor"><h3>{onboardingLaunch.ready ? "Launch criteria met" : "Launch criteria remaining"}</h3>{onboardingLaunch.ready ? <p>Required onboarding work is complete and the selected modules are covered by this tenant's subscription.</p> : <ul>{onboardingLaunch.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>}</div> : null}
                 <button type="button" onClick={completeNextOnboardingStep} disabled={busy === "save-onboarding" || settings.operatingProfile.onboarding.completedSteps.length === ONBOARDING_STEPS.length}>
                   {settings.operatingProfile.onboarding.completedSteps.length === ONBOARDING_STEPS.length ? "Onboarding Complete" : `Complete ${ONBOARDING_STEPS[settings.operatingProfile.onboarding.completedSteps.length]?.label}`}
                 </button>

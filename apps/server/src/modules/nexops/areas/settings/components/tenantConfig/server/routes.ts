@@ -1,7 +1,25 @@
 import type { Request, Response } from "express";
-import { RailError, tenantOnboardingSteps, type CrmSettingsDoc } from "@nexteam/core";
+import { RailError, tenantOnboardingSteps, type CrmSettingsDoc, type PlatformModule } from "@nexteam/core";
 import { randomUUID } from "node:crypto";
+import { modulesForPlan } from "../../../../../../../platform/plans.js";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
+
+function onboardingLaunchReadiness(settings: CrmSettingsDoc, availableModules: ReadonlySet<PlatformModule>) {
+  const onboarding = settings.operatingProfile.onboarding;
+  const requiredTasksComplete = onboarding.checklist.tasks
+    .filter((task) => task.required)
+    .every((task) => task.status === "complete");
+  const guidedStepsComplete = tenantOnboardingSteps.every((step, index) => onboarding.completedSteps[index] === step);
+  const selectedModulesAllowed = onboarding.selectedModules.every((module) => availableModules.has(module));
+  const reasons = [
+    ...(requiredTasksComplete ? [] : ["Complete every required onboarding task."]),
+    ...(onboarding.selectedModules.length ? [] : ["Select at least one subscribed module."]),
+    ...(selectedModulesAllowed ? [] : ["Remove modules that are not included in this tenant's subscription."]),
+    ...(guidedStepsComplete ? [] : ["Complete the guided configuration steps in order."]),
+    ...(onboarding.launchReviewedAt ? [] : ["Record the launch review."])
+  ];
+  return { ready: reasons.length === 0, reasons, availableModules: [...availableModules].sort() };
+}
 
 export function registerTenantConfigRoutes(context: CrmRouteContext): void {
   const {
@@ -13,6 +31,14 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
     requireQuoteAccess,
     sendRouteError
   } = context;
+
+  async function launchReadinessFor(settings: CrmSettingsDoc) {
+    const tenant = await context.deps.platformRepository?.getTenant(settings.tenantId);
+    if (!tenant) {
+      throw new RailError("Tenant subscription could not be verified for onboarding.", { provider: "platform", op: "onboardingLaunch", status: 503 });
+    }
+    return onboardingLaunchReadiness(settings, modulesForPlan(tenant.plan));
+  }
 
   async function applyOnboardingCommand(settings: CrmSettingsDoc, command: NonNullable<ReturnType<typeof crmSettingsPatchSchema.parse>["onboardingCommand"]>, actorId: string) {
     const checklist = settings.operatingProfile.onboarding.checklist;
@@ -57,7 +83,7 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
         : defaultTenantId(env);
       const access = await requireQuoteAccess(req, tenantId, "getCrmSettings");
       const settings = await repositoryForTenant().getCrmSettings(tenantId);
-      res.json({ ok: true, tenantId, actorRole: access.role, settings });
+      res.json({ ok: true, tenantId, actorRole: access.role, settings, onboardingLaunch: await launchReadinessFor(settings) });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -83,11 +109,21 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
       if (!completedSteps.every((step, index) => step === tenantOnboardingSteps[index])) {
         throw new RailError("Onboarding steps must be completed in guided order.", { provider: "native", op: "updateCrmSettings", status: 400 });
       }
+      const candidateSettings = { ...current, operatingProfile: { ...current.operatingProfile, onboarding } };
+      const launchReadiness = await launchReadinessFor(candidateSettings);
       if (completedSteps.includes("module-selection") && onboarding.selectedModules.length === 0) {
         throw new RailError("Select at least one module before completing module selection.", { provider: "native", op: "updateCrmSettings", status: 400 });
       }
+      if (!onboarding.selectedModules.every((module) => launchReadiness.availableModules.includes(module))) {
+        throw new RailError("Selected modules must be included in the tenant subscription.", { provider: "platform", op: "onboardingModules", status: 400 });
+      }
       if (onboarding.launchReviewedAt && !completedSteps.includes("launch-review")) {
         throw new RailError("Complete launch review before recording its review time.", { provider: "native", op: "updateCrmSettings", status: 400 });
+      }
+      const launchWasSubmitted = input.operatingProfile?.onboarding?.completedSteps?.includes("launch-review")
+        || input.operatingProfile?.onboarding?.launchReviewedAt !== undefined;
+      if (launchWasSubmitted && !launchReadiness.ready) {
+        throw new RailError(`Launch criteria are incomplete: ${launchReadiness.reasons.join(" ")}`, { provider: "native", op: "onboardingLaunch", status: 400 });
       }
       if (input.catalogItems) {
         const ids = new Set<string>();
@@ -230,7 +266,7 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
         ...(input.communicationTemplates ? { communicationTemplates: input.communicationTemplates } : {}),
         updatedAt: new Date().toISOString()
       });
-      res.json({ ok: true, tenantId: input.tenantId, actorRole: access.role, settings: saved });
+      res.json({ ok: true, tenantId: input.tenantId, actorRole: access.role, settings: saved, onboardingLaunch: await launchReadinessFor(saved) });
     } catch (error) {
       sendRouteError(res, error);
     }

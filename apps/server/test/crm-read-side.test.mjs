@@ -811,6 +811,7 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
   const ledgerRepository = new MemoryLedgerRepository();
   const sentEmails = [];
   const platformRepository = {
+    getTenant: async (tenantId) => tenantId === "aquatrace" ? { id: "aquatrace", name: "Aquatrace", plan: "nexi", status: "active", createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" } : null,
     listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }],
     getTenantUser: async (tenantId, userId) => tenantId === "aquatrace" && userId === "owner_1"
       ? { id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }
@@ -901,6 +902,29 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     });
     assert.equal(skipRequiredOnboardingTask.status, 400);
 
+    const outOfPlanModule = await fetch(`${base}/api/crm/settings`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace", operatingProfile: { onboarding: { selectedModules: ["scheduling"] } } })
+    });
+    assert.equal(outOfPlanModule.status, 400);
+
+    const prematureLaunch = await fetch(`${base}/api/crm/settings`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace", operatingProfile: { onboarding: { selectedModules: ["nexi"], completedSteps: ["company-profile", "module-selection", "office-defaults", "launch-review"], launchReviewedAt: "2026-08-08T21:00:00.000Z" } } })
+    });
+    assert.equal(prematureLaunch.status, 400);
+
+    for (const taskId of ["subscription-confirmation", "owner-introduction", "business-profile", "module-selection", "office-defaults", "team-handoff"]) {
+      const completeTask = await fetch(`${base}/api/crm/settings`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: "aquatrace", onboardingCommand: { action: "set-status", taskId, status: "complete" } })
+      });
+      assert.equal(completeTask.status, 200);
+    }
+
     const operatingProfileResponse = await fetch(`${base}/api/crm/settings`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -937,8 +961,9 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     assert.deepEqual(rereadSettingsBody.settings.operatingProfile.onboarding.completedSteps, ["company-profile", "module-selection", "office-defaults", "launch-review"]);
     assert.deepEqual(rereadSettingsBody.settings.operatingProfile.onboarding.selectedModules, ["nexi", "crm", "fielddocs"]);
     assert.equal(rereadSettingsBody.settings.operatingProfile.onboarding.launchReviewedAt, "2026-08-08T22:00:00.000Z");
+    assert.equal(rereadSettingsBody.onboardingLaunch.ready, true);
     assert.equal(rereadSettingsBody.settings.operatingProfile.onboarding.checklist.tasks.find((task) => task.id === "subscription-confirmation").ownerUserId, "owner_1");
-    assert.equal(rereadSettingsBody.settings.operatingProfile.onboarding.checklist.auditHistory.length, 2);
+    assert.equal(rereadSettingsBody.settings.operatingProfile.onboarding.checklist.auditHistory.length, 8);
 
     const technicianUpdate = await fetch(`${base}/api/crm/settings`, {
       method: "PATCH",
@@ -959,7 +984,7 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     });
     assert.equal(technicianOnboardingUpdate.status, 403);
     const afterDeniedOnboardingUpdate = await (await fetch(`${base}/api/crm/settings?tenantId=aquatrace`)).json();
-    assert.equal(afterDeniedOnboardingUpdate.settings.operatingProfile.onboarding.checklist.tasks.find((task) => task.id === "subscription-confirmation").status, "in_progress");
+    assert.equal(afterDeniedOnboardingUpdate.settings.operatingProfile.onboarding.checklist.tasks.find((task) => task.id === "subscription-confirmation").status, "complete");
 
     const templatesResponse = await fetch(`${base}/api/crm/quote-templates?tenantId=aquatrace`);
     const templatesBody = await templatesResponse.json();

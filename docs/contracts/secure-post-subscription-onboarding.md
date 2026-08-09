@@ -20,3 +20,9 @@ The route enforces office access, validates reassignment targets as active users
 ## Events
 
 Each accepted command persists the changed checklist and one audit event atomically in the same tenant settings save. UI progress is the completed-required-task count divided by the required-task count; optional tasks never reduce required completion.
+
+## Phase J launch gate and module entitlement
+
+`GET` and `PATCH /api/crm/settings` return `onboardingLaunch`: a derived, non-persistent readiness result containing `ready`, human-readable unmet `reasons`, and the subscription-backed `availableModules` list. The server derives available modules from the tenant plan; module choices outside that list are rejected and are not shown as selectable in the settings UI.
+
+Launch review cannot be completed until every required checklist task is `complete`, at least one allowed module is selected, all guided steps are in order, and a launch-review timestamp is supplied. The same criteria are recalculated after every save so a reload reports the persisted launch state. This is an onboarding configuration gate; it does not replace the existing route and tool plan-entitlement enforcement.
