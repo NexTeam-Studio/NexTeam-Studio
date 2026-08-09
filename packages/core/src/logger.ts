@@ -1,4 +1,5 @@
 import pino from "pino";
+import { redactSecrets } from "./redaction.js";
 
 export interface LogEvent {
   tenantId: string;
@@ -16,7 +17,7 @@ export const logger = pino({
 });
 
 export function logOperation(event: LogEvent): void {
-  logger.info(event);
+  logger.info(redactSecrets(event));
 }
 
 export async function withOperationLog<T>(
@@ -33,7 +34,7 @@ export async function withOperationLog<T>(
       ...event,
       latencyMs: Date.now() - startedAt,
       ok: false,
-      detail: error instanceof Error ? error.message : "Unknown error"
+      detail: redactSecrets(error instanceof Error ? error.message : "Unknown error") as string
     });
     throw error;
   }

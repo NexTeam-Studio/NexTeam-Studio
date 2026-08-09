@@ -79,6 +79,9 @@ async function sendSmsViaTwilio(env: NodeJS.ProcessEnv, message: OutboundSms): P
 
 export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
   const tenantId = configuredTenantId(env, "createCommsRail");
+  if (value(env, "NEXTEAM_EXTERNAL_INTEGRATIONS_QUARANTINED").toLowerCase() === "true") {
+    return { tenantId, readAdapters: new Map(), sendAdapter: null };
+  }
   const readAdapters = new Map<string, EmailReadProvider>();
   for (const [prefix, fallbackAlias] of [
     ["GMAIL_READONLY_MAILBOX_1", "READONLY_1"],
