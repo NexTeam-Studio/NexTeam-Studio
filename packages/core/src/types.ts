@@ -34,6 +34,11 @@ export type PlatformModule =
   | "evaporation"
   | "seo"
   | "sites";
+export type TenantOnboardingStep =
+  | "company-profile"
+  | "module-selection"
+  | "office-defaults"
+  | "launch-review";
 
 export type ArtifactKind =
   | "client"
@@ -949,7 +954,8 @@ export interface CrmSettings {
       requireApprovalForExternalSend: boolean;
     };
     onboarding: {
-      completedSteps: string[];
+      completedSteps: TenantOnboardingStep[];
+      selectedModules: PlatformModule[];
       launchReviewedAt?: string | undefined;
     };
   };

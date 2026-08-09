@@ -1,7 +1,9 @@
 import {
   communicationTemplateRecordSchema,
+  platformModuleSchema,
   productServiceCatalogItemSchema,
-  quoteApprovalRulesSchema
+  quoteApprovalRulesSchema,
+  tenantOnboardingStepSchema
 } from "@nexteam/core";
 import { z } from "zod";
 
@@ -48,7 +50,8 @@ export const crmSettingsPatchSchema = z.object({
       requireApprovalForExternalSend: z.boolean().optional()
     }).optional(),
     onboarding: z.object({
-      completedSteps: z.array(z.string().min(1)).optional(),
+      completedSteps: z.array(tenantOnboardingStepSchema).optional(),
+      selectedModules: z.array(platformModuleSchema).optional(),
       launchReviewedAt: z.string().min(1).optional()
     }).optional()
   }).optional(),

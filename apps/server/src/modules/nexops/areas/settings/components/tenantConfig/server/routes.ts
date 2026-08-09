@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { RailError, tenantOnboardingSteps } from "@nexteam/core";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
 
 export function registerTenantConfigRoutes(context: CrmRouteContext): void {
@@ -31,6 +32,22 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
       const access = await requireQuoteAccess(req, input.tenantId, "updateCrmSettings");
       const repository = repositoryForTenant();
       const current = await repository.getCrmSettings(input.tenantId);
+      const onboarding = {
+        ...current.operatingProfile.onboarding,
+        ...(input.operatingProfile?.onboarding?.completedSteps !== undefined ? { completedSteps: input.operatingProfile.onboarding.completedSteps } : {}),
+        ...(input.operatingProfile?.onboarding?.selectedModules !== undefined ? { selectedModules: input.operatingProfile.onboarding.selectedModules } : {}),
+        ...(input.operatingProfile?.onboarding?.launchReviewedAt !== undefined ? { launchReviewedAt: input.operatingProfile.onboarding.launchReviewedAt } : {})
+      };
+      const completedSteps = onboarding.completedSteps;
+      if (!completedSteps.every((step, index) => step === tenantOnboardingSteps[index])) {
+        throw new RailError("Onboarding steps must be completed in guided order.", { provider: "native", op: "updateCrmSettings", status: 400 });
+      }
+      if (completedSteps.includes("module-selection") && onboarding.selectedModules.length === 0) {
+        throw new RailError("Select at least one module before completing module selection.", { provider: "native", op: "updateCrmSettings", status: 400 });
+      }
+      if (onboarding.launchReviewedAt && !completedSteps.includes("launch-review")) {
+        throw new RailError("Complete launch review before recording its review time.", { provider: "native", op: "updateCrmSettings", status: 400 });
+      }
       const saved = await repository.saveCrmSettings({
         ...current,
         operatingProfile: {
@@ -60,9 +77,7 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
             ...(input.operatingProfile?.securityAudit?.requireApprovalForExternalSend !== undefined ? { requireApprovalForExternalSend: input.operatingProfile.securityAudit.requireApprovalForExternalSend } : {})
           },
           onboarding: {
-            ...current.operatingProfile.onboarding,
-            ...(input.operatingProfile?.onboarding?.completedSteps !== undefined ? { completedSteps: input.operatingProfile.onboarding.completedSteps } : {}),
-            ...(input.operatingProfile?.onboarding?.launchReviewedAt !== undefined ? { launchReviewedAt: input.operatingProfile.onboarding.launchReviewedAt } : {})
+            ...onboarding
           }
         },
         documentNumbering: {

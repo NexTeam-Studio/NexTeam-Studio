@@ -128,6 +128,20 @@ export const platformModuleSchema = z.enum([
   "sites"
 ]);
 
+export const tenantOnboardingStepSchema = z.enum([
+  "company-profile",
+  "module-selection",
+  "office-defaults",
+  "launch-review"
+]);
+
+export const tenantOnboardingSteps = [
+  "company-profile",
+  "module-selection",
+  "office-defaults",
+  "launch-review"
+] as const;
+
 export const platformPlanSchema = z.object({
   id: z.enum(["nexi", "marketing", "suite"]),
   name: z.string().min(1),
@@ -802,7 +816,15 @@ const tenantOperatingProfileSchema = z.object({
     requireApprovalForExternalSend: z.boolean()
   }),
   onboarding: z.object({
-    completedSteps: z.array(z.string().min(1)),
+    completedSteps: z.array(tenantOnboardingStepSchema).superRefine((steps, context) => {
+      if (new Set(steps).size !== steps.length) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: "Onboarding steps must not repeat." });
+      }
+      if (!steps.every((step, index) => step === tenantOnboardingSteps[index])) {
+        context.addIssue({ code: z.ZodIssueCode.custom, message: "Onboarding steps must be completed in guided order." });
+      }
+    }),
+    selectedModules: z.array(platformModuleSchema).default([]),
     launchReviewedAt: z.string().min(1).optional()
   })
 });
@@ -824,7 +846,7 @@ export const crmSettingsSchema = z.object({
     tax: { enabled: false, defaultRate: 0 },
     communicationIdentity: {},
     securityAudit: { auditEventsEnabled: true, requireApprovalForExternalSend: true },
-    onboarding: { completedSteps: [] }
+    onboarding: { completedSteps: [], selectedModules: [] }
   }),
   documentNumbering: documentNumberingSettingsSchema,
   quoteDefaults: z.object({

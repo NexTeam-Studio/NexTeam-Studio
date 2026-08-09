@@ -882,7 +882,11 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
           tax: { enabled: true, defaultRate: 8.25 },
           communicationIdentity: { replyToEmail: "office@example.test", replyToName: "Northwind Office" },
           securityAudit: { auditEventsEnabled: true, requireApprovalForExternalSend: true },
-          onboarding: { completedSteps: ["company", "owner", "team", "services", "review"] }
+          onboarding: {
+            completedSteps: ["company-profile", "module-selection", "office-defaults", "launch-review"],
+            selectedModules: ["nexi", "crm", "fielddocs"],
+            launchReviewedAt: "2026-08-08T22:00:00.000Z"
+          }
         }
       })
     });
@@ -895,7 +899,21 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     const rereadSettingsResponse = await fetch(`${base}/api/crm/settings?tenantId=aquatrace`);
     const rereadSettingsBody = await rereadSettingsResponse.json();
     assert.equal(rereadSettingsBody.settings.operatingProfile.company.timezone, "America/Chicago");
-    assert.deepEqual(rereadSettingsBody.settings.operatingProfile.onboarding.completedSteps, ["company", "owner", "team", "services", "review"]);
+    assert.deepEqual(rereadSettingsBody.settings.operatingProfile.onboarding.completedSteps, ["company-profile", "module-selection", "office-defaults", "launch-review"]);
+    assert.deepEqual(rereadSettingsBody.settings.operatingProfile.onboarding.selectedModules, ["nexi", "crm", "fielddocs"]);
+    assert.equal(rereadSettingsBody.settings.operatingProfile.onboarding.launchReviewedAt, "2026-08-08T22:00:00.000Z");
+
+    const technicianUpdate = await fetch(`${base}/api/crm/settings`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", "x-nexteam-local-profile": "local-technician" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        operatingProfile: { onboarding: { selectedModules: ["nexi"] } }
+      })
+    });
+    assert.equal(technicianUpdate.status, 403);
+    const afterDeniedUpdate = await (await fetch(`${base}/api/crm/settings?tenantId=aquatrace`)).json();
+    assert.deepEqual(afterDeniedUpdate.settings.operatingProfile.onboarding.selectedModules, ["nexi", "crm", "fielddocs"]);
 
     const templatesResponse = await fetch(`${base}/api/crm/quote-templates?tenantId=aquatrace`);
     const templatesBody = await templatesResponse.json();

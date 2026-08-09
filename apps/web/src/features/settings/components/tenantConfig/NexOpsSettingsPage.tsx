@@ -55,7 +55,11 @@ interface TenantOperatingProfile {
   tax: { enabled: boolean; defaultRate: number; registrationId?: string };
   communicationIdentity: { replyToEmail?: string; replyToName?: string; phone?: string };
   securityAudit: { auditEventsEnabled: boolean; requireApprovalForExternalSend: boolean };
-  onboarding: { completedSteps: string[]; launchReviewedAt?: string };
+  onboarding: {
+    completedSteps: Array<"company-profile" | "module-selection" | "office-defaults" | "launch-review">;
+    selectedModules: string[];
+    launchReviewedAt?: string;
+  };
 }
 
 interface CrmSettingsRecord {
@@ -152,6 +156,23 @@ function defaultReviewStep(offsetDays = 14): ReviewSequenceStepSetting {
     templateCategory: "review_request_nudge"
   };
 }
+
+const ONBOARDING_STEPS = [
+  { id: "company-profile", label: "Business profile", help: "Confirm the business name, industry, and time zone." },
+  { id: "module-selection", label: "Choose modules", help: "Select the NexTeam capabilities this tenant will set up." },
+  { id: "office-defaults", label: "Office defaults", help: "Review locations, hours, tax, and approval defaults." },
+  { id: "launch-review", label: "Launch review", help: "Confirm this configuration is ready for the next phase." }
+] as const;
+
+const MODULE_CHOICES = [
+  { id: "nexi", label: "Nexi", help: "Assistant and guided operations." },
+  { id: "crm", label: "NexOps", help: "Clients, requests, quotes, jobs, and invoices." },
+  { id: "fielddocs", label: "NexCam", help: "Field photos, checklists, and reports." },
+  { id: "comms", label: "Communications", help: "Approved email and text workflows." },
+  { id: "content", label: "NexReach Content", help: "Content drafts from approved business facts." },
+  { id: "reputation", label: "NexReach Reputation", help: "Review-request workflows." },
+  { id: "sites", label: "NexPortal", help: "Tenant-branded client-facing site and portal surfaces." }
+] as const;
 
 export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactElement {
   const [settings, setSettings] = useState<CrmSettingsRecord | null>(null);
@@ -316,6 +337,63 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
     } finally {
       setBusy("");
     }
+  }
+
+  async function saveOnboarding(onboarding: TenantOperatingProfile["onboarding"]): Promise<void> {
+    if (!settings) {
+      return;
+    }
+    setBusy("save-onboarding");
+    setStatusMessage("Saving guided onboarding...");
+    try {
+      const body = await fetch("/api/crm/settings", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: props.tenantId, operatingProfile: { onboarding } })
+      }).then((response) => response.json() as Promise<CrmSettingsMutationResponse>);
+      if (!body.ok || !body.settings) {
+        setStatusMessage(body.error ?? "Guided onboarding could not be saved.");
+        return;
+      }
+      setSettings(body.settings);
+      setStatusMessage("Guided onboarding saved.");
+      props.onCrmMutation?.();
+    } catch {
+      setStatusMessage("Guided onboarding save failed.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  function toggleModule(moduleId: string, checked: boolean): void {
+    setSettings((current) => current ? {
+      ...current,
+      operatingProfile: {
+        ...current.operatingProfile,
+        onboarding: {
+          ...current.operatingProfile.onboarding,
+          selectedModules: checked
+            ? [...current.operatingProfile.onboarding.selectedModules, moduleId]
+            : current.operatingProfile.onboarding.selectedModules.filter((entry) => entry !== moduleId)
+        }
+      }
+    } : current);
+  }
+
+  function completeNextOnboardingStep(): void {
+    if (!settings) {
+      return;
+    }
+    const onboarding = settings.operatingProfile.onboarding;
+    const nextStep = ONBOARDING_STEPS[onboarding.completedSteps.length];
+    if (!nextStep) {
+      return;
+    }
+    void saveOnboarding({
+      ...onboarding,
+      completedSteps: [...onboarding.completedSteps, nextStep.id],
+      ...(nextStep.id === "launch-review" ? { launchReviewedAt: new Date().toISOString() } : {})
+    });
   }
 
   function patchReviewStep(stepId: string, updater: (step: ReviewSequenceStepSetting) => ReviewSequenceStepSetting): void {
@@ -494,7 +572,32 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                   </div>
                 ))}
               </div>
-              <p className="nexops-form-note">{settings.operatingProfile.onboarding.completedSteps.length} onboarding step{settings.operatingProfile.onboarding.completedSteps.length === 1 ? "" : "s"} are stored in this same tenant settings record.</p>
+              <div className="nexops-mini-list">
+                <div className="nexops-quote-section-head">
+                  <div><h3>Guided Onboarding</h3><span>Progress and module choices are stored in this same tenant settings record.</span></div>
+                  <button type="button" onClick={() => void saveOnboarding(settings.operatingProfile.onboarding)} disabled={busy === "save-onboarding"}>
+                    {busy === "save-onboarding" ? "Saving..." : "Save Module Choices"}
+                  </button>
+                </div>
+                <div className="nexops-quote-toggle-grid">
+                  {MODULE_CHOICES.map((module) => (
+                    <label className="nexops-check-field inline" key={module.id}>
+                      <input type="checkbox" checked={settings.operatingProfile.onboarding.selectedModules.includes(module.id)} onChange={(event) => toggleModule(module.id, event.target.checked)} />
+                      <span><strong>{module.label}</strong><small>{module.help}</small></span>
+                    </label>
+                  ))}
+                </div>
+                {ONBOARDING_STEPS.map((step, index) => {
+                  const complete = settings.operatingProfile.onboarding.completedSteps.includes(step.id);
+                  const current = !complete && index === settings.operatingProfile.onboarding.completedSteps.length;
+                  return <div className="nexops-density-inline-facts" key={step.id}>
+                    <article><h3>{index + 1}. {step.label}</h3><p>{complete ? "Complete" : current ? "Next" : "Locked"}</p><small>{step.help}</small></article>
+                  </div>;
+                })}
+                <button type="button" onClick={completeNextOnboardingStep} disabled={busy === "save-onboarding" || settings.operatingProfile.onboarding.completedSteps.length === ONBOARDING_STEPS.length}>
+                  {settings.operatingProfile.onboarding.completedSteps.length === ONBOARDING_STEPS.length ? "Onboarding Complete" : `Complete ${ONBOARDING_STEPS[settings.operatingProfile.onboarding.completedSteps.length]?.label}`}
+                </button>
+              </div>
             </div>
           ) : <p className="nexops-empty-copy">Company settings load with the tenant configuration.</p>}
         </article>

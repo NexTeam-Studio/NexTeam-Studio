@@ -341,7 +341,7 @@ export function defaultCrmSettings(tenantId: string): CrmSettings {
       tax: { enabled: false, defaultRate: 0 },
       communicationIdentity: {},
       securityAudit: { auditEventsEnabled: true, requireApprovalForExternalSend: true },
-      onboarding: { completedSteps: [] }
+      onboarding: { completedSteps: [], selectedModules: [] }
     },
     documentNumbering: {
       request: { prefix: "REQ", separator: "-", padWidth: 4, nextValue: 1 },
