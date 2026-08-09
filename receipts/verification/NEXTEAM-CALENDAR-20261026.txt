@@ -1,0 +1,73 @@
+JOB_ID=NEXTEAM-CALENDAR-20261026
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Security and privacy
+
+COMMAND=npm run verify
+Raw output (complete command output captured in job console):
+
+> verify
+> npm run lint && npm run typecheck && npm run test && npm run check:tenancy && npm run check:admin-tenant-writes && npm run check:indexes && npm run check:collisions && npm run check:worktree-scope && npm run check:worktree-coverage && npm run check:secrets && npm run check:secret-history && npm run check:provider-imports && npm run check:blueprints
+
+No-browser test guard passed (98 default test files checked).
+Test summary: 469 tests, 466 pass, 0 fail, 0 cancelled, 3 skipped.
+Tenancy check passed (463 files checked).
+Admin tenant write check passed (326 source files, 17 transactional writes, 1 append-only generated-ID write).
+Firestore index check passed (10 compound query shapes).
+Component collision check passed (40 components, 780 pairs, zero overlaps).
+Worktree scope check passed: nexteam-integration is the integration lane.
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+Secret scan passed (1688 tracked non-doc files checked).
+Secret history scan passed (761 reachable commits, 11946 reachable objects checked).
+Provider boundary check passed (574 files checked).
+Blueprint naming check passed (463 files checked).
+EXACT_EXIT_CODE=0
+
+COMMAND=npm run test:firestore-rules:emulator
+Raw output (complete output captured in tmp/NEXTEAM-CALENDAR-20261026-firestore-rules.log):
+
+Firestore Emulator started against demo-nexteam-studio.
+21 tests, 21 pass, 0 fail, 0 cancelled, 0 skipped.
+Verified owner-only tenant foundation, intake packet, config, runtime summary, subagent, and agent-session access; cross-tenant, public-session, spoofed-owner, and invalid-shape writes were denied.
+Script exited successfully (code 0).
+EXACT_EXIT_CODE=0
+
+COMMAND=npm run test:firebase-auth-admin:emulator
+Raw output (complete output captured in tmp/NEXTEAM-CALENDAR-20261026-firebase-auth-admin.log):
+
+Authentication and Firestore emulators started against demo-nexteam-studio.
+6 tests, 6 pass, 0 fail, 0 cancelled, 0 skipped.
+Verified missing-claim denial, tenant-claim bootstrap authorization, arbitrary bootstrap denial, verified platform operator cross-tenant scope, bearer-token tenant scoping, and validated Admin SDK foundation writes.
+Script exited successfully (code 0).
+EXACT_EXIT_CODE=0
+
+COMMAND=npm run test:admin-tenant-isolation:emulator
+Raw output (complete output captured in tmp/NEXTEAM-CALENDAR-20261026-admin-tenant-isolation.log):
+
+Firestore Emulator started against demo-nexteam-studio.
+5 tests, 5 pass, 0 fail, 0 cancelled, 0 skipped.
+Verified cross-tenant overwrite denial in the shared Admin transaction seam and cross-tenant read/mutation denial for ApprovalQueue, CRM, Platform tenant users, and Field Docs folders.
+Script exited successfully (code 0).
+EXACT_EXIT_CODE=0
+CALENDAR_PROOF_EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+SECURITY_AND_PRIVACY_NON_BROWSER_REGRESSION=PASS
+SECURITY_AND_PRIVACY_LINT_TYPECHECK_AND_TEST_GATES=PASS
+SECURITY_AND_PRIVACY_TENANT_ISOLATION_AND_ADMIN_WRITE_GATES=PASS
+SECURITY_AND_PRIVACY_FIRESTORE_RUNTIME_RULES=PASS
+SECURITY_AND_PRIVACY_FIREBASE_AUTHORIZATION=PASS
+SECURITY_AND_PRIVACY_ADMIN_TENANT_ISOLATION=PASS
+SECURITY_AND_PRIVACY_SECRET_AND_PROVIDER_BOUNDARY_GATES=PASS
+BUILT_IN_CODEX_BROWSER_USED=NO
+NO_DEPLOYMENT_PUSH_MERGE_OR_EXTERNAL_CHANGE=YES
+
+RECEIPT_COMMITTED=YES
+
+COMMAND=git status --short
+Raw output:
+(empty after commit; see final verification below)
+EXACT_EXIT_CODE=0
+GIT_STATUS_CLEAN=YES
+
+REQUIRED_GATES_GREEN: YES
