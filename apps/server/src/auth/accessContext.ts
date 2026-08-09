@@ -409,6 +409,13 @@ export async function requireAccessContext(
 
   const auth = getAdminAuth(env);
   if (!auth) {
+    if (env.NEXI_FIREBASE_AUTH_REQUIRED !== "false") {
+      throw new RailError("Tenant authentication is temporarily unavailable.", {
+        provider: "firebase",
+        op: options.op ?? "accessContext",
+        status: 503
+      });
+    }
     return localDevAccessContext(req, tenantId, options.op ?? "accessContext")
       ?? { tenantId, tenantUserId: "local-owner", role: "OWNER", capabilities: ROLE_CAPABILITIES.OWNER, accessKind: "internal" };
   }
