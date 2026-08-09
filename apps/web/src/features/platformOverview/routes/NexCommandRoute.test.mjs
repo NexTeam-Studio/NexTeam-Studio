@@ -3,6 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 
 const source = fs.readFileSync(new URL("./NexCommandRoute.tsx", import.meta.url), "utf8");
+const styles = fs.readFileSync(new URL("../styles/nexCommand.css", import.meta.url), "utf8");
 
 test("NexCommand provides the required platform-console areas and canonical routes", () => {
   for (const label of ["Dashboard", "Tenants", "Prospects", "Blueprints", "Subscriptions", "Onboarding", "Migrations", "Support", "Modules", "Integrations", "Code & System", "Releases", "Usage", "Billing", "Security & Audit", "Settings"]) {
@@ -10,6 +11,7 @@ test("NexCommand provides the required platform-console areas and canonical rout
   }
   assert.match(source, /nexstage\.nexteam\.studio/);
   assert.match(source, /nexapp\.nexteam\.studio/);
+  assert.match(styles, /\/assets\/brand\/nexcommand-logo\.png/);
   assert.match(source, /Support access is not active/);
   assert.match(source, /time limit, revocation, and audit history/);
 });
