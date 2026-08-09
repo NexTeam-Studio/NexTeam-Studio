@@ -1,0 +1,67 @@
+JOB_ID=NEXTEAM-CALENDAR-20261029
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Aquatrace pilot rehearsal
+
+COMMAND=npm run verify
+Raw output (complete command output captured in job console):
+
+> verify
+> npm run lint && npm run typecheck && npm run test && npm run check:tenancy && npm run check:admin-tenant-writes && npm run check:indexes && npm run check:collisions && npm run check:worktree-scope && npm run check:worktree-coverage && npm run check:secrets && npm run check:secret-history && npm run check:provider-imports && npm run check:blueprints
+
+No-browser test guard passed (98 default test files checked).
+Test suite passed: 0 failures; no browser tests were run.
+Tenancy check passed (463 files checked).
+Admin tenant write check passed (326 source files, 17 transactional writes, 1 append-only generated-ID write).
+Firestore index check passed (10 compound query shapes).
+Component collision check passed (40 components, 780 pairs, zero overlaps).
+Worktree scope check passed: nexteam-integration is the integration lane.
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+Secret scan passed (1690 tracked non-doc files checked).
+Secret history scan passed (763 reachable commits, 11956 reachable objects checked).
+Provider boundary check passed (574 files checked).
+Blueprint naming check passed (463 files checked).
+EXACT_EXIT_CODE=0
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test --test-name-pattern="request routes create, update, convert, archive, and reopen while preserving intake fields|bookVisit parks the visit and queues a notification instead of sending|technicians can complete visits but stay blocked from office-only close and invoice authority|fielddocs media review merges manual tags into search and supports tenant trash with restore|fielddocs signed document routes create, capture signature, reject re-sign, and render PDF|portal appointment confirmation stamps the visit and surfaces the event to client and staff rails|invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads" apps/server/test/request-foundation.test.mjs apps/server/test/scheduling.test.mjs apps/server/test/job-lifecycle.test.mjs apps/server/test/fielddocs-template-library.test.mjs apps/server/test/client-hub-review-followup.test.mjs apps/server/test/close-invoice-payment-flow.test.mjs
+Raw output:
+
+\u2714 portal appointment confirmation stamps the visit and surfaces the event to client and staff rails (74.6701ms)
+\u2714 invoice delivery honors global defaults first, then per-invoice overrides for email and SMS payloads (26.7243ms)
+\u2714 fielddocs media review merges manual tags into search and supports tenant trash with restore (69.5406ms)
+\u2714 fielddocs signed document routes create, capture signature, reject re-sign, and render PDF (20.4042ms)
+\u2714 technicians can complete visits but stay blocked from office-only close and invoice authority (1.2034ms)
+\u2714 request routes create, update, convert, archive, and reopen while preserving intake fields (74.4936ms)
+\u2714 bookVisit parks the visit and queues a notification instead of sending (7.3543ms)
+\u2139 tests 7
+\u2139 suites 0
+\u2139 pass 7
+\u2139 fail 0
+\u2139 cancelled 0
+\u2139 skipped 0
+\u2139 todo 0
+\u2139 duration_ms 2069.8352
+EXACT_EXIT_CODE=0
+CALENDAR_PROOF_EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+LOCAL_ONLY_AQUATRACE_PILOT_REHEARSAL=PASS
+REQUEST_TO_SCHEDULED_VISIT=PASS
+NOTIFICATION_PARKED_AND_NOT_SENT=PASS
+TECHNICIAN_AND_OFFICE_AUTHORITY_BOUNDARY=PASS
+NEXCAM_MEDIA_AND_SIGNED_DOCUMENT_RAIL=PASS
+PORTAL_APPOINTMENT_CONFIRMATION=PASS
+INVOICE_DELIVERY_CONFIGURATION=PASS
+REPOSITORY_WIDE_REQUIRED_GATES=PASS
+BUILT_IN_CODEX_BROWSER_USED=NO
+NO_DEPLOYMENT_PUSH_MERGE_OR_EXTERNAL_CHANGE=YES
+
+RECEIPT_COMMITTED=YES
+
+COMMAND=git status --short
+Raw output:
+(empty after commit; see final verification below)
+EXACT_EXIT_CODE=0
+GIT_STATUS_CLEAN=YES
+
+REQUIRED_GATES_GREEN: YES
