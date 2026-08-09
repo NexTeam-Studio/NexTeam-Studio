@@ -35,6 +35,12 @@
 - Commands: create/list/update a blocker; create/list/update a linked escalation. Events: `tenant_blocker.created`, `tenant_blocker.status_changed`, `platform_support_escalation.created`, and `platform_support_escalation.status_changed`.
 - Routes reject non-platform operators; repository validation rejects mismatched tenant/blocker links. No credentials, provider tokens, or payment data belong in either record.
 
+## Phase K contract
+
+- Onboarding-plan insights are deterministic, read-only recommendations calculated from a durable Blueprint, its latest immutable revision, and the non-sensitive Prospect intake. They cannot change a plan, configure a module, activate a tenant, or call a provider.
+- Commands: list Blueprint revisions; read recommendation-only insights; accept the latest DRAFT revision with an operator-supplied reason. Acceptance appends an immutable `APPROVED` revision whose snapshot matches the accepted draft; it never mutates the draft record.
+- Event records: reading insights produces no persisted event because it is side-effect-free; an accepted revision is the durable, append-only `onboarding_plan.revision_accepted` record. All three routes require a platform operator. No credentials, payment information, or customer data is accepted.
+
 | Domain | Existing authoritative implementation | Build direction |
 | --- | --- | --- |
 | Platform tenant administration | `apps/server/src/platform/**`; `apps/web/src/features/platform/**` | Extend in the platform-tenants lane. |

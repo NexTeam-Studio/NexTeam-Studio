@@ -14,6 +14,7 @@ import { modulesForPlan, PLATFORM_PLANS } from "./plans.js";
 import { defaultTenant, defaultTenantBranding, planCatalog, subscriptionFromStripe, type PlatformRepository } from "./repository.js";
 import { activeSubscriptionPackages } from "./subscriptionPackages.js";
 import { activateProspectTenant, type FirebaseOwnerActivation } from "./tenantActivation.js";
+import { buildOnboardingPlanInsights } from "./onboardingInsights.js";
 import {
   authorizeStripeConnectCallback,
   createOrReuseStripeConnectOnboarding,
@@ -98,6 +99,10 @@ const blueprintBodySchema = z.object({
   migrationRecommendation: z.string().max(4000).optional(),
   futureOpportunities: z.array(z.string().trim().min(1)).default([]),
   reason: z.string().max(2000).optional()
+}).strict();
+
+const revisionAcceptanceBodySchema = z.object({
+  reason: z.string().trim().min(1).max(2000)
 }).strict();
 
 const hexColorSchema = z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
@@ -188,11 +193,11 @@ function hasPlatformAccess(decoded: DecodedIdToken, env: NodeJS.ProcessEnv): boo
     || roles.includes("platform_operator");
 }
 
-async function requirePlatformOperator(req: Request, env: NodeJS.ProcessEnv): Promise<void> {
+async function requirePlatformOperator(req: Request, env: NodeJS.ProcessEnv, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<void> {
   if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") {
     return;
   }
-  const auth = getAdminAuth(env);
+  const auth = authOverride ?? getAdminAuth(env);
   if (!auth) {
     return;
   }
@@ -473,7 +478,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/prospects", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const input = prospectBodySchema.parse(req.body ?? {});
       const timestamp = new Date().toISOString();
       const prospect = await deps.repository.saveProspect({
@@ -492,7 +497,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/prospects/:prospectId/intake", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const prospectId = requiredTenantId(req.params.prospectId);
       const input = prospectIntakeBodySchema.parse(req.body ?? {});
       const prospect = await deps.repository.getProspect(prospectId);
@@ -516,7 +521,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/prospects/:prospectId/blueprints", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const prospectId = requiredTenantId(req.params.prospectId);
       const input = blueprintBodySchema.parse(req.body ?? {});
       const { reason, ...blueprintInput } = input;
@@ -549,6 +554,74 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       });
       const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "BLUEPRINT_READY", updatedAt: timestamp });
       res.status(201).json({ ok: true, prospect: nextProspect, onboardingPlan, revision });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/admin/prospects/:prospectId/blueprints/:blueprintId/revisions", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      const prospectId = requiredTenantId(req.params.prospectId);
+      const blueprintId = requiredTenantId(req.params.blueprintId);
+      const onboardingPlan = await deps.repository.getTenantOnboardingBlueprint(blueprintId);
+      if (!onboardingPlan || onboardingPlan.prospectId !== prospectId) throw new RailError("Onboarding plan was not found.", { provider: "platform", op: "onboardingPlanRevisionList", status: 404 });
+      res.json({ ok: true, revisions: await deps.repository.listTenantOnboardingBlueprintRevisions(blueprintId) });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/admin/prospects/:prospectId/blueprints/:blueprintId/insights", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      const prospectId = requiredTenantId(req.params.prospectId);
+      const blueprintId = requiredTenantId(req.params.blueprintId);
+      const onboardingPlan = await deps.repository.getTenantOnboardingBlueprint(blueprintId);
+      if (!onboardingPlan || onboardingPlan.prospectId !== prospectId) throw new RailError("Onboarding plan was not found.", { provider: "platform", op: "onboardingPlanInsights", status: 404 });
+      const revisions = await deps.repository.listTenantOnboardingBlueprintRevisions(blueprintId);
+      const latest = revisions.at(-1);
+      if (!latest) throw new RailError("Onboarding plan has no immutable revision.", { provider: "platform", op: "onboardingPlanInsights", status: 409 });
+      const intake = await deps.repository.getProspectIntake(prospectId);
+      res.json({ ok: true, insight: buildOnboardingPlanInsights(onboardingPlan, latest, intake) });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/admin/prospects/:prospectId/blueprints/:blueprintId/revisions/:revisionId/accept", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      const prospectId = requiredTenantId(req.params.prospectId);
+      const blueprintId = requiredTenantId(req.params.blueprintId);
+      const revisionId = requiredTenantId(req.params.revisionId);
+      const input = revisionAcceptanceBodySchema.parse(req.body ?? {});
+      const onboardingPlan = await deps.repository.getTenantOnboardingBlueprint(blueprintId);
+      if (!onboardingPlan || onboardingPlan.prospectId !== prospectId) throw new RailError("Onboarding plan was not found.", { provider: "platform", op: "onboardingPlanRevisionAccept", status: 404 });
+      const revisions = await deps.repository.listTenantOnboardingBlueprintRevisions(blueprintId);
+      const candidate = revisions.find((revision) => revision.id === revisionId);
+      const latest = revisions.at(-1);
+      if (!candidate) throw new RailError("Onboarding plan revision was not found.", { provider: "platform", op: "onboardingPlanRevisionAccept", status: 404 });
+      if (candidate.approvalState !== "DRAFT" || latest?.id !== candidate.id) {
+        throw new RailError("Only the latest draft onboarding-plan revision can be accepted.", { provider: "platform", op: "onboardingPlanRevisionAccept", status: 409 });
+      }
+      const timestamp = new Date().toISOString();
+      const acceptance = await deps.repository.appendTenantOnboardingBlueprintRevision({
+        id: `onboarding_blueprint_revision_${randomUUID()}`,
+        prospectId,
+        blueprintId,
+        previousRevisionId: candidate.id,
+        revisionNumber: candidate.revisionNumber + 1,
+        snapshot: candidate.snapshot,
+        actorId: "platform_operator",
+        actorType: "NEXTEAM_STAFF",
+        source: "NEXTEAM_STAFF",
+        fieldsChanged: ["approvalState"],
+        reason: input.reason,
+        approvalState: "APPROVED",
+        createdAt: timestamp
+      });
+      res.status(201).json({ ok: true, acceptance });
     } catch (error) {
       sendRouteError(res, error);
     }

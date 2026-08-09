@@ -324,6 +324,32 @@ test("platform routes expose tenants, test subscription, backup, and export", as
     assert.equal(blueprint.ok, true);
     assert.equal(blueprint.prospect.status, "BLUEPRINT_READY");
     assert.equal(blueprint.revision.revisionNumber, 1);
+    const insightResponse = await fetch(`${base}/api/platform/admin/prospects/${encodeURIComponent(createdProspect.prospect.id)}/blueprints/${encodeURIComponent(blueprint.onboardingPlan.id)}/insights`);
+    assert.equal(insightResponse.status, 200);
+    const insight = await insightResponse.json();
+    assert.equal(insight.insight.kind, "RECOMMENDATION_ONLY");
+    assert.match(insight.insight.notice, /do not modify/i);
+    assert.equal((await repository.listTenantOnboardingBlueprintRevisions(blueprint.onboardingPlan.id)).length, 1);
+    const acceptedResponse = await fetch(`${base}/api/platform/admin/prospects/${encodeURIComponent(createdProspect.prospect.id)}/blueprints/${encodeURIComponent(blueprint.onboardingPlan.id)}/revisions/${encodeURIComponent(blueprint.revision.id)}/accept`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ reason: "Reviewed with the prospect owner." })
+    });
+    assert.equal(acceptedResponse.status, 201);
+    const accepted = await acceptedResponse.json();
+    assert.equal(accepted.acceptance.approvalState, "APPROVED");
+    assert.equal(accepted.acceptance.revisionNumber, 2);
+    assert.equal(accepted.acceptance.previousRevisionId, blueprint.revision.id);
+    const reloadedRevisions = await fetch(`${base}/api/platform/admin/prospects/${encodeURIComponent(createdProspect.prospect.id)}/blueprints/${encodeURIComponent(blueprint.onboardingPlan.id)}/revisions`).then((response) => response.json());
+    assert.equal(reloadedRevisions.revisions.length, 2);
+    assert.equal(reloadedRevisions.revisions[0].approvalState, "DRAFT");
+    assert.equal(reloadedRevisions.revisions[1].approvalState, "APPROVED");
+    const secondAcceptance = await fetch(`${base}/api/platform/admin/prospects/${encodeURIComponent(createdProspect.prospect.id)}/blueprints/${encodeURIComponent(blueprint.onboardingPlan.id)}/revisions/${encodeURIComponent(blueprint.revision.id)}/accept`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ reason: "Attempt to accept a stale draft." })
+    });
+    assert.equal(secondAcceptance.status, 409);
     const packages = await fetch(`${base}/api/platform/admin/subscription-packages`).then((response) => response.json());
     assert.equal(packages.packages[0].id, "all-access-test");
     assert.equal(packages.packages[0].priceCents, 0);
@@ -659,6 +685,34 @@ test("platform Blueprint revisions are append-only snapshots", async () => {
   const revisions = await repository.listTenantOnboardingBlueprintRevisions(blueprint.id);
   revisions[0].snapshot.recommendedLayout[0] = "Mutated locally";
   assert.equal((await repository.listTenantOnboardingBlueprintRevisions(blueprint.id))[0].snapshot.recommendedLayout[0], "Office");
+});
+
+test("onboarding-plan insights and revision acceptance require a platform operator", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("platform-test", "suite")]);
+  const timestamp = "2026-08-09T00:00:00.000Z";
+  const prospect = await repository.saveProspect({ id: "prospect_insights", status: "INTAKE_COMPLETE", businessName: "Northside Services", industry: "plumbing", additionalLocations: [], serviceArea: [], createdAt: timestamp, updatedAt: timestamp, createdBy: "platform_operator" });
+  await repository.saveProspectIntake({ id: "intake_insights", prospectId: prospect.id, services: ["Repair"], customerTypes: [], currentSystems: [], source: "MANUAL", createdAt: timestamp, updatedAt: timestamp, createdBy: "platform_operator" });
+  const blueprint = await repository.createTenantOnboardingBlueprint({ id: "blueprint_insights", prospectId: prospect.id, recommendedLayout: [], nexiResponsibilities: [], opportunities: {}, recommendedForms: [], recommendedWorkflows: [], recommendedAutomations: [], recommendedModules: ["nexi"], futureOpportunities: [], createdAt: timestamp, createdBy: "platform_operator" });
+  const revision = await repository.appendTenantOnboardingBlueprintRevision({ id: "revision_insights", prospectId: prospect.id, blueprintId: blueprint.id, revisionNumber: 1, snapshot: blueprint, actorId: "platform_operator", actorType: "NEXTEAM_STAFF", source: "NEXTEAM_STAFF", fieldsChanged: ["initial"], approvalState: "DRAFT", createdAt: timestamp });
+  const app = express();
+  app.use(express.json());
+  registerPlatformRoutes(app, {
+    repository,
+    storage: new MemoryStorageWriter(),
+    env: { NEXI_FIREBASE_AUTH_REQUIRED: "true" },
+    platformOperatorAuth: { async verifyIdToken(token) { return token === "operator" ? { uid: "operator", platform_operator: true } : { uid: "tenant-owner" }; } }
+  });
+  const server = app.listen(0);
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const path = `/api/platform/admin/prospects/${prospect.id}/blueprints/${blueprint.id}`;
+    assert.equal((await fetch(`${base}${path}/insights`, { headers: { authorization: "Bearer tenant-owner" } })).status, 403);
+    assert.equal((await fetch(`${base}${path}/insights`, { headers: { authorization: "Bearer operator" } })).status, 200);
+    assert.equal((await fetch(`${base}${path}/revisions/${revision.id}/accept`, { method: "POST", headers: { authorization: "Bearer tenant-owner", "content-type": "application/json" }, body: JSON.stringify({ reason: "No." }) })).status, 403);
+    assert.equal((await fetch(`${base}${path}/revisions/${revision.id}/accept`, { method: "POST", headers: { authorization: "Bearer operator", "content-type": "application/json" }, body: JSON.stringify({ reason: "Owner review complete." }) })).status, 201);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test("tenant blockers persist by tenant and platform support escalation denies non-operators", async () => {
