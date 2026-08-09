@@ -1,0 +1,78 @@
+JOB_ID=NEXTEAM-CALENDAR-20261021
+WORKTREE=target-architecture-integration
+PURPOSE=Daily Production Calendar: Users and permissions.
+
+COMMAND=node --import ./tests/setup.mjs --import tsx --test apps/server/test/platform.test.mjs apps/server/src/modules/nexops/areas/users/users-routes.test.mjs apps/web/src/features/users/test/users-surface.test.mjs
+Raw output:
+✔ tenant-scoped user profiles retain a bounded avatar and notification preferences (4.5237ms)
+✔ platform entitlement registry removes tools outside the tenant plan (7.6681ms)
+✔ suite tenant keeps scheduling and marketing tools (0.1479ms)
+✔ firestore platform repository falls back when legacy Aquatrace tenant docs are partial (1.4673ms)
+✔ platform repository summarizes cost, records backup, and exports per tenant (1.7197ms)
+✔ platform repository stores tenant branding with text fallback and actor attribution (0.3792ms)
+✔ tenant users are provisioned explicitly and produce Firebase custom claims (0.6025ms)
+✔ job access links verify only one linked job and fail closed after revoke (1.2207ms)
+✔ platform billing refuses live Stripe keys and supports fake test-mode receipt runs (0.4636ms)
+✔ platform routes expose tenants, test subscription, backup, and export (64.585ms)
+✔ tenant Stripe Connect onboarding persists one account and protects refresh and return callbacks (14.7776ms)
+Tenancy check failed:
+- tests/fixtures/tenancy/unscoped-query.fixture.ts: Firestore collection "jobs" lacks tenantId evidence
+✔ platform routes manage tenant users and job links without leaking token hashes by default (11.8856ms)
+✔ tenancy scanner catches the planted unscoped query fixture (40.4524ms)
+✔ runtime defaults to durable persistence and refuses an empty customer tenant runtime (1.1947ms)
+✔ users surface includes the team, profile, permission, and invite workflows (5.0722ms)
+✔ users surface exports the signed-in-user contract and own-profile view (0.8658ms)
+✔ team controls are role-safe and profile preferences are saved (0.6545ms)
+✔ team and own-profile opening headers use the shared title treatment with matching icons (1.4504ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1179.6215
+EXACT_EXIT_CODE=0
+CALENDAR_PROOF_EXACT_EXIT_CODE=0
+
+CALENDAR_PROOF=PASS
+TENANT_USER_PROVISIONING_AND_CUSTOM_CLAIMS=PASS
+TENANT_USER_ROUTE_MANAGEMENT_AND_TOKEN_REDACTION=PASS
+PROFILE_TENANT_SCOPE_AND_PREFERENCES=PASS
+TEAM_PERMISSION_AND_INVITE_UI_CONTRACT=PASS
+
+COMMAND=npm run check:worktree-scope
+Raw output:
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+EXACT_EXIT_CODE=0
+WORKTREE_SCOPE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:worktree-coverage
+Raw output:
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 513/513 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+EXACT_EXIT_CODE=0
+WORKTREE_COVERAGE_EXACT_EXIT_CODE=0
+
+COMMAND=npm run check:secrets
+Raw output:
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1683 tracked non-doc files checked).
+EXACT_EXIT_CODE=0
+SECRET_SCAN_EXACT_EXIT_CODE=0
+
+COMMAND=git status --short
+Raw output:
+(empty after commit; see final verification below)
+EXACT_EXIT_CODE=0
+GIT_STATUS_CLEAN=YES
+
+REQUIRED_GATES_GREEN: YES
