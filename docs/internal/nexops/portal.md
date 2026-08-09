@@ -147,6 +147,11 @@ Build piece: Client hub / review follow-up combined pass
 - Property labels render from the associated work record.
 - Billing-contact details remain client-level and do not appear in a property-only portal session.
 
+### Delivered-record boundary
+
+- NexPortal snapshots admit only customer-delivered quotes (`sent`, `change_requested`, or `approved`) and invoices (`sent`, `awaiting_payment`, `partial_pay`, or `paid`) that hold a portal token.
+- The shared NexDocs client-library is additionally narrowed to the snapshot's delivered quote, invoice, receipt, and statement records before portal rendering or document search. Draft/internal office records stay staff-only.
+
 ### Statement and document assembly
 - Statement PDFs reuse the same HTML/PDF pipeline already used by quotes, invoices, and receipts.
 - Statement send uses the `statement_send` communication-template category and emits `statement.sent`.

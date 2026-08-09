@@ -528,6 +528,15 @@ test("client hub sessions authenticate, reverify after 14 days, and keep propert
     assert.doesNotMatch(homeHtml, /Internal draft quote/i);
     assert.doesNotMatch(homeHtml, /Internal draft invoice/i);
 
+    const draftSearchResponse = await fetch(`${base}/nexportal/documents?tenantId=aquatrace&q=internal+draft`, {
+      headers: { cookie: clientCookie }
+    });
+    const draftSearchHtml = await draftSearchResponse.text();
+    assert.equal(draftSearchResponse.status, 200);
+    assert.doesNotMatch(draftSearchHtml, /Internal draft quote/i);
+    assert.doesNotMatch(draftSearchHtml, /Internal draft invoice/i);
+    assert.match(draftSearchHtml, /No unified document matches were found/i);
+
     const wrongTenantResponse = await fetch(`${base}/nexportal?tenantId=another_tenant`, {
       headers: { cookie: clientCookie }
     });

@@ -1,8 +1,39 @@
 import type { Request, Response } from "express";
 import type { CrmRouteContext } from "../../../../nexops/runtime/routeRuntime.js";
+import type { NexDocsClientLibrary } from "../../../../../fielddocs/nexDocsService.js";
+import type { PortalHubSnapshot } from "./portalHubService.js";
 import { portalNexDocsUploadBodySchema, portalPhoneReverifyBodySchema } from "./routeSchemas.js";
 import { reviewSequenceActionBodySchema, startReviewSequenceBodySchema } from "../../../../../reputation/reviewSequenceRouteSchemas.js";
 import { applyPortalSecurityHeaders } from "./securityHeaders.js";
+
+/**
+ * NexDocs is also used by staff, so its library deliberately contains all
+ * client-owned office records.  NexPortal must narrow that list back to the
+ * delivered records admitted by its session snapshot before rendering or
+ * searching it.  This keeps draft/internal quote and invoice PDFs from
+ * leaking through the otherwise shared document-library surface.
+ */
+function deliveredPortalLibrary(snapshot: PortalHubSnapshot, library: NexDocsClientLibrary): NexDocsClientLibrary {
+  const deliveredOfficeRecordIds = new Set(
+    snapshot.documents
+      .filter((document) => document.kind === "quote_pdf" || document.kind === "invoice_pdf" || document.kind === "receipt" || document.kind === "statement")
+      .map((document) => document.id)
+  );
+  const officeRecords = library.officeRecords.filter((entry) => deliveredOfficeRecordIds.has(entry.id));
+  const searchResults = library.searchResults.filter((hit) => (
+    hit.entry.section !== "office_records" || deliveredOfficeRecordIds.has(hit.entry.id)
+  ));
+  return {
+    ...library,
+    officeRecords,
+    searchResults,
+    counts: {
+      ...library.counts,
+      officeRecords: officeRecords.length,
+      total: library.counts.total - library.counts.officeRecords + officeRecords.length
+    }
+  };
+}
 
 export function registerPortalCoreRoutes(context: CrmRouteContext): void {
   const {
@@ -145,7 +176,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
       if (!built) {
         return;
       }
-      const portalLibrary = await nexDocsService().listClientLibrary({
+      const library = await nexDocsService().listClientLibrary({
         tenantId: built.tenantId,
         clientId: built.snapshot.client.id,
         viewer: "portal",
@@ -155,6 +186,7 @@ export function registerPortalCoreRoutes(context: CrmRouteContext): void {
           : {}),
         ...(typeof req.query.q === "string" && req.query.q.trim() ? { q: req.query.q.trim() } : {})
       });
+      const portalLibrary = deliveredPortalLibrary(built.snapshot, library);
       res.setHeader("content-type", "text/html; charset=utf-8");
       res.send(renderUnifiedPortalDocumentsHtml({
         snapshot: built.snapshot,
