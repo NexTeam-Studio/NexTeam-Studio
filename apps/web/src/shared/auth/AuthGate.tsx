@@ -13,12 +13,14 @@ interface AuthProduct {
 }
 
 function authProductForPath(pathname: string): AuthProduct {
-  if (pathname.startsWith("/nexops")) {
+  if (pathname.startsWith("/nexops") || pathname.startsWith("/platform") || pathname.startsWith("/nexcommand")) {
     return {
       brand: "nexops",
       path: "/nexops",
-      workspaceName: "NexOps",
-      signInDescription: "Sign in with your NexSuite account to open the NexOps workspace."
+      workspaceName: pathname.startsWith("/platform") || pathname.startsWith("/nexcommand") ? "NexCommand" : "NexOps",
+      signInDescription: pathname.startsWith("/platform") || pathname.startsWith("/nexcommand")
+        ? "Sign in with your authorized NexTeam platform account to open NexCommand."
+        : "Sign in with your NexSuite account to open the NexOps workspace."
     };
   }
   return {

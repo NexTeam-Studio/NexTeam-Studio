@@ -12,7 +12,7 @@ export function AppRouter(): React.ReactElement | null {
   const { auth, user } = useAuthSession();
   const pathname = usePathname();
   if (!user) return null;
-  if (pathname.startsWith("/platform")) return <PlatformRoute />;
+  if (pathname.startsWith("/platform") || pathname.startsWith("/nexcommand")) return <PlatformRoute />;
   if (pathname.startsWith("/nexcam")) return <NexCamPage auth={auth} user={user} />;
   if (pathname.startsWith("/nexreach")) {
     return <Suspense fallback={<main className="shell"><section className="auth-card"><h1>Loading NexReach</h1></section></main>}><NexReachPage auth={auth} user={user} /></Suspense>;

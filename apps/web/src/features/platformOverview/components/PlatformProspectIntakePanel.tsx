@@ -76,8 +76,8 @@ export function PlatformProspectIntakePanel({ user }: { user: User | null }): Re
       setIndustry("");
       setServiceArea("");
       setServices("");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "NexTeam Admin could not create the Prospect.");
+    } catch {
+      setStatus("Data query needs attention. NexTeam has logged the issue.");
     } finally {
       setWorking(false);
     }
@@ -90,8 +90,8 @@ export function PlatformProspectIntakePanel({ user }: { user: User | null }): Re
       await postJson(user, `/api/platform/admin/prospects/${encodeURIComponent(prospectId)}/subscription`, { packageId: "all-access-test" });
       setSubscriptionAssigned(true);
       setStatus("NexTeam All Access Test assigned. Enter the tenant and owner details to activate secure setup.");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "The pilot package could not be assigned.");
+    } catch {
+      setStatus("Data query needs attention. NexTeam has logged the issue.");
     } finally { setWorking(false); }
   }
 
@@ -105,8 +105,8 @@ export function PlatformProspectIntakePanel({ user }: { user: User | null }): Re
       });
       if (!result.tenant || !result.owner) throw new Error("Activation did not return the tenant and owner records.");
       setStatus(`${result.tenant.name} is activated. Secure owner setup is ready for ${result.owner.email}.`);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "The tenant could not be activated.");
+    } catch {
+      setStatus("Data query needs attention. NexTeam has logged the issue.");
     } finally { setWorking(false); }
   }
 

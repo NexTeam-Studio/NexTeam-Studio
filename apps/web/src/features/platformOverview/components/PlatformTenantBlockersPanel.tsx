@@ -68,7 +68,7 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
     setMigrations(migrationData.migrations);
   }, [tenantId, user]);
 
-  useEffect(() => { void reload().catch((error) => setStatus(error instanceof Error ? error.message : "Tenant support could not load.")); }, [reload]);
+  useEffect(() => { void reload().catch(() => setStatus("Data query needs attention. NexTeam has logged the issue.")); }, [reload]);
 
   async function createBlocker(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -79,7 +79,7 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
         method: "POST", body: JSON.stringify({ title: title.trim(), detail: detail.trim(), category: "CONFIGURATION", severity })
       });
       setTitle(""); setDetail(""); await reload(); setStatus("Tenant blocker saved.");
-    } catch (error) { setStatus(error instanceof Error ? error.message : "Tenant blocker could not be saved."); }
+    } catch { setStatus("Data query needs attention. NexTeam has logged the issue."); }
     finally { setWorking(false); }
   }
 
@@ -91,7 +91,7 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
         method: "POST", body: JSON.stringify({ priority: blocker.severity === "BLOCKING" ? "P1" : "P2", summary: blocker.detail })
       });
       await reload(); setStatus("Platform support escalation opened.");
-    } catch (error) { setStatus(error instanceof Error ? error.message : "Support escalation could not be opened."); }
+    } catch { setStatus("Data query needs attention. NexTeam has logged the issue."); }
     finally { setWorking(false); }
   }
 
@@ -101,7 +101,7 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
     try {
       await request(user, `/api/platform/admin/tenant-blockers/${encodeURIComponent(blocker.id)}`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) });
       await reload(); setStatus(`Tenant blocker marked ${nextStatus.toLowerCase()}.`);
-    } catch (error) { setStatus(error instanceof Error ? error.message : "Tenant blocker could not be updated."); }
+    } catch { setStatus("Data query needs attention. NexTeam has logged the issue."); }
     finally { setWorking(false); }
   }
 
@@ -111,7 +111,7 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
     try {
       await request(user, `/api/platform/admin/support-escalations/${encodeURIComponent(escalation.id)}`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) });
       await reload(); setStatus(`Support escalation marked ${nextStatus.toLowerCase()}.`);
-    } catch (error) { setStatus(error instanceof Error ? error.message : "Support escalation could not be updated."); }
+    } catch { setStatus("Data query needs attention. NexTeam has logged the issue."); }
     finally { setWorking(false); }
   }
 
@@ -124,7 +124,7 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
         method: "POST", body: JSON.stringify({ sourceSystem: sourceSystem.trim(), scope: migrationScope.trim(), status: migrationStatus, ...(migrationStatus === "DEFERRED" ? { deferredReason: deferredReason.trim(), ...(deferredUntil ? { deferredUntil } : {}) } : {}) })
       });
       setSourceSystem(""); setMigrationScope(""); setMigrationStatus("PENDING"); setDeferredReason(""); setDeferredUntil(""); await reload(); setStatus("Migration record saved.");
-    } catch (error) { setStatus(error instanceof Error ? error.message : "Migration record could not be saved."); }
+    } catch { setStatus("Data query needs attention. NexTeam has logged the issue."); }
     finally { setWorking(false); }
   }
 
@@ -134,7 +134,7 @@ export function PlatformTenantBlockersPanel({ user }: { user: User | null }): Re
     try {
       await request(user, `/api/platform/admin/migrations/${encodeURIComponent(migration.id)}`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) });
       await reload(); setStatus(`Migration marked ${nextStatus.toLowerCase()}.`);
-    } catch (error) { setStatus(error instanceof Error ? error.message : "Migration status could not be updated."); }
+    } catch { setStatus("Data query needs attention. NexTeam has logged the issue."); }
     finally { setWorking(false); }
   }
 

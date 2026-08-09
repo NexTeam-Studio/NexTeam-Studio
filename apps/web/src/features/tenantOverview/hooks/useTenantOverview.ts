@@ -37,7 +37,7 @@ export function useTenantOverview(user: User | null): {
         });
         if (!cancelled) {
           setRows([]);
-          setStatus(error instanceof Error ? error.message : "Tenant overview could not reach the server.");
+          setStatus("Data query needs attention. NexTeam has logged the issue.");
         }
       });
 
