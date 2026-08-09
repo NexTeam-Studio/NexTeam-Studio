@@ -20,3 +20,10 @@ test("NexCommand only displays a sanitized operator error", () => {
   assert.match(source, /Data query needs attention\. NexTeam has logged the issue\./);
   assert.doesNotMatch(source, /error\.message/);
 });
+
+test("NexCommand keeps one clean header lockup and removes the duplicate sidebar brand", () => {
+  assert.match(styles, /\.nexcommand__brand \.platform-mark \{ flex:0 0 auto; width:36px; height:36px/);
+  assert.match(styles, /\.nexcommand__brand span \{ width:144px; height:27px/);
+  assert.match(styles, /\.nexcommand__nav-title \{ display:none; \}/);
+  assert.doesNotMatch(styles, /nexcommand__brand[^\n]*filter:(?!none)/);
+});
