@@ -36,6 +36,7 @@ export function registerContactRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
         ? req.query.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "listClients" });
       const q = typeof req.query.q === "string" ? req.query.q : "";
       const provider = providerForTenant(tenantId);
       const clients = await provider.getClients(q);
@@ -50,6 +51,7 @@ export function registerContactRoutes(context: CrmRouteContext): void {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
         ? req.query.tenantId
         : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "listProperties" });
       const properties = await repositoryForTenant().listProperties(tenantId);
       res.json({ ok: true, properties });
     } catch (error) {
