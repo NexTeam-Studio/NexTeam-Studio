@@ -450,7 +450,51 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                 })} />
                 Require Approval Before External Sends
               </label>
-              <p className="nexops-form-note">{settings.operatingProfile.locations.length} location{settings.operatingProfile.locations.length === 1 ? "" : "s"} and {settings.operatingProfile.onboarding.completedSteps.length} onboarding step{settings.operatingProfile.onboarding.completedSteps.length === 1 ? "" : "s"} are stored in this same tenant settings record.</p>
+              <div className="nexops-mini-list">
+                <div className="nexops-quote-section-head">
+                  <div><h3>Locations</h3><span>These locations use the shared tenant settings record.</span></div>
+                  <button type="button" onClick={() => setSettings({
+                    ...settings,
+                    operatingProfile: {
+                      ...settings.operatingProfile,
+                      locations: [...settings.operatingProfile.locations, { id: `location_${Date.now()}`, label: "New Location", active: true }]
+                    }
+                  })}>Add Location</button>
+                </div>
+                {settings.operatingProfile.locations.map((location) => (
+                  <div className="nexops-quote-toggle-grid" key={location.id}>
+                    <label className="nexops-field"><span>Location Name</span><input value={location.label} onChange={(event) => setSettings({
+                      ...settings,
+                      operatingProfile: { ...settings.operatingProfile, locations: settings.operatingProfile.locations.map((entry) => entry.id === location.id ? { ...entry, label: event.target.value } : entry) }
+                    })} /></label>
+                    <label className="nexops-check-field inline"><input type="checkbox" checked={location.active} onChange={(event) => setSettings({
+                      ...settings,
+                      operatingProfile: { ...settings.operatingProfile, locations: settings.operatingProfile.locations.map((entry) => entry.id === location.id ? { ...entry, active: event.target.checked } : entry) }
+                    })} />Active</label>
+                  </div>
+                ))}
+              </div>
+              <div className="nexops-mini-list">
+                <h3>Business Hours</h3>
+                {settings.operatingProfile.businessHours.map((hours) => (
+                  <div className="nexops-quote-toggle-grid" key={hours.day}>
+                    <strong>{hours.day}</strong>
+                    <label className="nexops-check-field inline"><input type="checkbox" checked={hours.closed} onChange={(event) => setSettings({
+                      ...settings,
+                      operatingProfile: { ...settings.operatingProfile, businessHours: settings.operatingProfile.businessHours.map((entry) => entry.day === hours.day ? { ...entry, closed: event.target.checked } : entry) }
+                    })} />Closed</label>
+                    <label className="nexops-field"><span>Open</span><input type="time" disabled={hours.closed} value={hours.open ?? ""} onChange={(event) => setSettings({
+                      ...settings,
+                      operatingProfile: { ...settings.operatingProfile, businessHours: settings.operatingProfile.businessHours.map((entry) => entry.day === hours.day ? { ...entry, open: event.target.value } : entry) }
+                    })} /></label>
+                    <label className="nexops-field"><span>Close</span><input type="time" disabled={hours.closed} value={hours.close ?? ""} onChange={(event) => setSettings({
+                      ...settings,
+                      operatingProfile: { ...settings.operatingProfile, businessHours: settings.operatingProfile.businessHours.map((entry) => entry.day === hours.day ? { ...entry, close: event.target.value } : entry) }
+                    })} /></label>
+                  </div>
+                ))}
+              </div>
+              <p className="nexops-form-note">{settings.operatingProfile.onboarding.completedSteps.length} onboarding step{settings.operatingProfile.onboarding.completedSteps.length === 1 ? "" : "s"} are stored in this same tenant settings record.</p>
             </div>
           ) : <p className="nexops-empty-copy">Company settings load with the tenant configuration.</p>}
         </article>
