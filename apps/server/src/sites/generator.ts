@@ -1,5 +1,7 @@
-import { generatedSiteSchema, siteGenerationInputSchema, type GeneratedSite, type SiteBlock, type SiteGenerationInput } from "../../../sites/schemas.js";
-import { renderStaticSite } from "../../../sites/renderer.js";
+import { generatedSiteSchema, siteGenerationInputSchema, type GeneratedSite, type SiteBlock, type SiteGenerationInput } from "./schemas.js";
+import { renderStaticSite } from "./renderer.js";
+
+export { generatePressureWashingSite } from "./pressureWashing.js";
 
 function slugify(value: string) {
   return value
@@ -32,18 +34,18 @@ function defaultServices(): Extract<SiteBlock, { type: "services" }>["services"]
 function defaultGallery(): Extract<SiteBlock, { type: "gallery" }>["items"] {
   return [
     {
-      mediaId: "aquatrace-field-proof-1",
-      thumbRef: "native://media/aquatrace-field-proof-1",
+      mediaId: "field-proof-1",
+      thumbRef: "native://media/field-proof-1",
       caption: "Dye testing around a suspected leak point"
     },
     {
-      mediaId: "aquatrace-field-proof-2",
-      thumbRef: "native://media/aquatrace-field-proof-2",
+      mediaId: "field-proof-2",
+      thumbRef: "native://media/field-proof-2",
       caption: "Pressure test setup before repair planning"
     },
     {
-      mediaId: "aquatrace-field-proof-3",
-      thumbRef: "native://media/aquatrace-field-proof-3",
+      mediaId: "field-proof-3",
+      thumbRef: "native://media/field-proof-3",
       caption: "Underwater documentation for commercial pools"
     }
   ];
@@ -79,8 +81,8 @@ function defaultArticles(): Extract<SiteBlock, { type: "article_index" }>["artic
 
 export function generatePoolLeakSite(input: SiteGenerationInput = {}, now = new Date().toISOString()): GeneratedSite {
   const parsed = siteGenerationInputSchema.parse(input);
-  const tenantId = parsed.tenantId ?? "aquatrace";
-  const businessName = parsed.businessName ?? "Aquatrace Swimming Pool Leak Detection";
+  const tenantId = parsed.tenantId ?? "default-tenant";
+  const businessName = parsed.businessName ?? "Pool Leak Detection Company";
   const slug = slugify(parsed.slug ?? businessName);
   const serviceArea = parsed.serviceArea ?? ["Fair Play", "Seneca", "Anderson", "Greenville", "Bryson City", "Western North Carolina"];
   const phone = parsed.phone ?? "Call or send a message";
@@ -117,7 +119,7 @@ export function generatePoolLeakSite(input: SiteGenerationInput = {}, now = new 
     {
       id: "reviews",
       type: "reviews",
-      heading: "Owners hire Aquatrace when they need a clear answer.",
+      heading: "Owners hire a specialist when they need a clear answer.",
       reviews: parsed.reviews ?? defaultReviews()
     },
     {

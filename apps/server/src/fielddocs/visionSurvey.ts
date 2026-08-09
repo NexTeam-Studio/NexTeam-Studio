@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { Media } from "@nexteam/core";
 import { RailError } from "@nexteam/core";
-import type { MediaRepository } from "../../../fielddocs/mediaRepository.js";
+import type { MediaRepository } from "./mediaRepository.js";
 
 export const visionEvidenceTierSchema = z.enum(["VISIBLE", "SUGGESTS", "INSUFFICIENT"]);
 export const visionComponentSchema = z.enum([
@@ -69,6 +69,9 @@ export const POOL_LEAK_VISION_TAG_TAXONOMY = {
     "review:human_confirmed"
   ]
 } as const;
+
+// Kept as a source-compatible alias for existing integrations; the taxonomy is industry-level, not tenant-owned.
+export const AQUATRACE_VISION_TAG_TAXONOMY = POOL_LEAK_VISION_TAG_TAXONOMY;
 
 export const visionSurveyBatchInputSchema = z.object({
   tenantId: z.string().min(1).optional(),
