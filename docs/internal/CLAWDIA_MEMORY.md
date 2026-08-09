@@ -413,4 +413,28 @@ Accepted permanent memory autonomy rule:
 - Use the routing map to send Clawdia truth to CLAWDIA_MEMORY, Willy truth to Willy MEMORY, reference facts to Willy KNOWLEDGE_BASE, procedures to Willy PLAYBOOK, and core behavior to Willy SYSTEM PROMPT.
 - Return proof of what changed and why whenever an automatic memory action happens.
 <!-- MEMORY_AUTONOMY_ENTRY_END:clawdia_memory_autonomy_rule -->
+<!-- MEMORY_AUTONOMY_ENTRY_START:nexteam_autonomous_green_gate_progression -->
+### NexTeam autonomous green-gate progression rule
+- entry_key: nexteam_autonomous_green_gate_progression
+- entry_status: active
+- material_type: operating_rule
+- decision_mode: save
+- recorded_at: 2026-08-09T00:00:00.000Z
+- proof_status: accepted
+- confidence: high
+- reason: Chris requires authorized NexTeam build waves to advance without routine follow-up prompts.
+- source_type: direct_owner_instruction
+- source_name: Chris
+- citation_ready: no
+- public_source: no
+- private_internal_source: yes
+- supersedes: none
+
+Accepted operating rule:
+- An explicitly authorized NexTeam build remains active until its stated green-gate or human-blocker boundary is reached.
+- A status request does not cancel, pause, or replace the active build authority.
+- After a phase is green, the controller must dispatch the next approved phase automatically; it must not wait for routine confirmation.
+- A phase may not be represented as active unless an actual job is executing or a recoverable active-job record proves it is running.
+- Missing, failed, skipped, contradictory, or timed-out evidence is red: repair and re-verify inside the authorized lane before advancing.
+<!-- MEMORY_AUTONOMY_ENTRY_END:nexteam_autonomous_green_gate_progression -->
 <!-- CLAWDIA_MEMORY_AUTONOMY_END -->
