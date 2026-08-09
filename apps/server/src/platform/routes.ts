@@ -14,6 +14,7 @@ import { modulesForPlan, PLATFORM_PLANS } from "./plans.js";
 import { defaultTenant, defaultTenantBranding, planCatalog, subscriptionFromStripe, type PlatformRepository } from "./repository.js";
 import { activeSubscriptionPackages } from "./subscriptionPackages.js";
 import { activateProspectTenant, type FirebaseOwnerActivation } from "./tenantActivation.js";
+import { newOwnerInvite, type OwnerInviteSender } from "./tenantOwnerInvite.js";
 import { buildOnboardingPlanInsights } from "./onboardingInsights.js";
 import {
   authorizeStripeConnectCallback,
@@ -167,6 +168,7 @@ export interface PlatformRouteDeps {
   stripeConnect?: StripeConnectApi | undefined;
   env?: NodeJS.ProcessEnv | undefined;
   firebaseOwnerActivation?: FirebaseOwnerActivation | undefined;
+  ownerInviteSender?: OwnerInviteSender | undefined;
   /** Testable auth seam; production falls back to Firebase Admin. */
   platformOperatorAuth?: { verifyIdToken(token: string): Promise<DecodedIdToken> } | undefined;
 }
@@ -293,10 +295,65 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
     }
   });
 
+  app.get("/api/platform/admin/providers/stripe", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      const key = env.STRIPE_SECRET_KEY?.trim() ?? "";
+      const staging = (env.RAILWAY_ENVIRONMENT ?? "").toLowerCase() === "staging" || (env.NODE_ENV ?? "").toLowerCase() !== "production";
+      const testMode = key.startsWith("sk_test_");
+      res.json({ ok: true, provider: "Stripe", environment: staging ? "Test Mode" : "Live Mode", credentialStatus: key ? (staging && !testMode ? "INVALID_FOR_STAGING" : "CONFIGURED") : "NOT_CONFIGURED", billingRailStatus: key && (!staging || testMode) ? "READY" : "NOT_READY", lastVerification: new Date().toISOString(), liveChargesAllowed: !staging && key.startsWith("sk_live_") });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.get("/api/platform/admin/prospects", async (req: Request, res: Response) => {
     try {
       await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
       res.json({ ok: true, prospects: await deps.repository.listProspects() });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  /** Read model for NexCommand lifecycle pages.  These are projections of the
+   * existing authoritative records; they never create another intake or tenant. */
+  app.get("/api/platform/admin/lifecycle", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      const [prospects, blueprints, tenants, migrations, blockers] = await Promise.all([
+        deps.repository.listProspects(),
+        deps.repository.listTenantOnboardingBlueprints(),
+        deps.repository.listTenants(),
+        deps.repository.listTenantMigrationRecords(),
+        deps.repository.listTenantBlockers()
+      ]);
+      const prospectById = new Map(prospects.map((prospect) => [prospect.id, prospect]));
+      const tenantById = new Map(tenants.map((tenant) => [tenant.id, tenant]));
+      const assignments = await Promise.all(prospects.map(async (prospect) => [prospect.id, await deps.repository.getPlatformSubscriptionAssignment(prospect.id)] as const));
+      const assignmentByProspectId = new Map(assignments);
+      const records = await Promise.all(blueprints.map(async (blueprint) => {
+        const prospect = prospectById.get(blueprint.prospectId) ?? null;
+        const assignment = assignmentByProspectId.get(blueprint.prospectId) ?? null;
+        const tenant = assignment?.tenantId ? tenantById.get(assignment.tenantId) ?? null : null;
+        const owners = tenant ? await deps.repository.listTenantUsers(tenant.id) : [];
+        const owner = owners.find((member) => member.role === "OWNER") ?? null;
+        const invite = tenant && owner ? await deps.repository.getTenantOwnerInvite(tenant.id, owner.id) : null;
+        const revisions = await deps.repository.listTenantOnboardingBlueprintRevisions(blueprint.id);
+        const tenantMigrations = tenant ? migrations.filter((migration) => migration.tenantId === tenant.id) : [];
+        const tenantBlockers = tenant ? blockers.filter((blocker) => blocker.tenantId === tenant.id && blocker.status !== "RESOLVED") : [];
+        return { blueprint, prospect, assignment, tenant, owner, invite, revisions, migrations: tenantMigrations, blockers: tenantBlockers };
+      }));
+      const subscriptionAssignments = records.filter((record) => record.assignment).map((record) => ({
+        tenant: record.tenant,
+        tenantId: record.tenant?.id ?? record.assignment?.tenantId ?? null,
+        owner: record.owner,
+        assignment: record.assignment,
+        blueprint: record.blueprint,
+        invite: record.invite,
+        modules: record.assignment?.packageId === "all-access-test" ? activeSubscriptionPackages()[0]?.includedModules ?? [] : []
+      }));
+      res.json({ ok: true, blueprints: records, subscriptions: subscriptionAssignments, onboarding: records });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -320,7 +377,10 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
     try {
       await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim() ? requiredTenantId(req.query.tenantId) : undefined;
-      res.json({ ok: true, migrations: await deps.repository.listTenantMigrationRecords(tenantId) });
+      const migrations = await deps.repository.listTenantMigrationRecords(tenantId);
+      const tenants = await deps.repository.listTenants();
+      const tenantById = new Map(tenants.map((tenant) => [tenant.id, tenant]));
+      res.json({ ok: true, migrations: migrations.map((migration) => ({ ...migration, tenant: tenantById.get(migration.tenantId) ?? null })) });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -333,7 +393,13 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const input = z.object({
         sourceSystem: z.string().trim().min(1).max(120),
         scope: z.string().trim().min(1).max(4000),
+        classification: z.enum(["INCLUDED_BASIC", "PAID_COMPLEX", "NEEDS_REVIEW"]).default("NEEDS_REVIEW"),
         status: z.enum(["PENDING", "DEFERRED"]).default("PENDING"),
+        expectedRecords: z.number().int().min(0).optional(),
+        importedRecords: z.number().int().min(0).optional(),
+        rejectedRecords: z.number().int().min(0).optional(),
+        conflictOrDuplicateRecords: z.number().int().min(0).optional(),
+        launchImpact: z.enum(["NONE", "WATCH", "BLOCKING"]).default("WATCH"),
         deferredReason: z.string().trim().min(1).max(2000).optional(),
         deferredUntil: z.string().min(1).optional()
       }).strict().parse(req.body ?? {});
@@ -361,6 +427,12 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const migrationId = requiredTenantId(req.params.migrationId);
       const input = z.object({
         status: z.enum(["PENDING", "IN_PROGRESS", "VALIDATION", "DEFERRED", "COMPLETED"]),
+        classification: z.enum(["INCLUDED_BASIC", "PAID_COMPLEX", "NEEDS_REVIEW"]).optional(),
+        expectedRecords: z.number().int().min(0).optional(),
+        importedRecords: z.number().int().min(0).optional(),
+        rejectedRecords: z.number().int().min(0).optional(),
+        conflictOrDuplicateRecords: z.number().int().min(0).optional(),
+        launchImpact: z.enum(["NONE", "WATCH", "BLOCKING"]).optional(),
         deferredReason: z.string().trim().min(1).max(2000).optional(),
         deferredUntil: z.string().min(1).optional()
       }).strict().parse(req.body ?? {});
@@ -372,6 +444,12 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const updated = await deps.repository.saveTenantMigrationRecord({
         ...migration,
         status: input.status,
+        classification: input.classification ?? migration.classification,
+        expectedRecords: input.expectedRecords ?? migration.expectedRecords,
+        importedRecords: input.importedRecords ?? migration.importedRecords,
+        rejectedRecords: input.rejectedRecords ?? migration.rejectedRecords,
+        conflictOrDuplicateRecords: input.conflictOrDuplicateRecords ?? migration.conflictOrDuplicateRecords,
+        launchImpact: input.launchImpact ?? migration.launchImpact,
         deferredReason: input.status === "DEFERRED" ? input.deferredReason : undefined,
         deferredUntil: input.status === "DEFERRED" ? input.deferredUntil : undefined,
         completedAt: input.status === "COMPLETED" ? timestamp : undefined,
@@ -485,6 +563,10 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         id: `prospect_${randomUUID()}`,
         status: "DRAFT",
         ...input,
+        onboardingCurrentStep: "Prospect Intake",
+        onboardingProgressPercent: 10,
+        onboardingLastSavedAt: timestamp,
+        onboardingLastUpdatedBy: "platform_operator",
         createdAt: timestamp,
         updatedAt: timestamp,
         createdBy: "platform_operator"
@@ -510,9 +592,11 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         currentSystems: input.currentSystems.map((system) => ({ ...system, id: system.id ?? `software_${randomUUID()}` })),
         createdAt: (await deps.repository.getProspectIntake(prospect.id))?.createdAt ?? timestamp,
         updatedAt: timestamp,
-        createdBy: "platform_operator"
+        createdBy: "platform_operator",
+        lastSavedAt: timestamp,
+        lastUpdatedBy: "platform_operator"
       });
-      const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "INTAKE_COMPLETE", updatedAt: timestamp });
+      const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "INTAKE_COMPLETE", onboardingCurrentStep: "Blueprint", onboardingProgressPercent: 30, onboardingLastSavedAt: timestamp, onboardingLastUpdatedBy: "platform_operator", updatedAt: timestamp });
       res.json({ ok: true, prospect: nextProspect, intake });
     } catch (error) {
       sendRouteError(res, error);
@@ -552,7 +636,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         approvalState: "DRAFT",
         createdAt: timestamp
       });
-      const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "BLUEPRINT_READY", updatedAt: timestamp });
+      const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "BLUEPRINT_READY", onboardingCurrentStep: "Subscription", onboardingProgressPercent: 50, onboardingLastSavedAt: timestamp, onboardingLastUpdatedBy: "platform_operator", updatedAt: timestamp });
       res.status(201).json({ ok: true, prospect: nextProspect, onboardingPlan, revision });
     } catch (error) {
       sendRouteError(res, error);
@@ -674,14 +758,13 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       await requirePlatformOperator(req, env);
       const prospectId = requiredTenantId(req.params.prospectId);
       const input = z.object({
-        tenantId: z.string().trim().min(3).max(100).regex(/^[a-z0-9-]+$/, "Tenant id must use lowercase letters, numbers, and hyphens."),
+        tenantId: z.string().trim().min(3).max(100).regex(/^[a-z0-9-]+$/, "Tenant id must use lowercase letters, numbers, and hyphens.").optional(),
         ownerEmail: z.string().email(),
         ownerDisplayName: z.string().trim().min(1).max(120)
       }).strict().parse(req.body ?? {});
       const auth = deps.firebaseOwnerActivation ?? getAdminAuth(env);
       if (!auth) throw new RailError("Firebase owner activation is not configured.", { provider: "firebase", op: "activateTenant", status: 503 });
-      const activated = await activateProspectTenant(deps.repository, auth, { prospectId, ...input });
-      // A password setup link is never returned or logged here. Delivery belongs to an explicitly approved mail action.
+      const activated = await activateProspectTenant(deps.repository, auth, { prospectId, ...input }, deps.ownerInviteSender ?? null);
       res.status(201).json({
         ok: true,
         tenant: { id: activated.tenant.id, name: activated.tenant.name },
@@ -689,8 +772,37 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         ownerCreated: activated.ownerCreated,
         subscriptionId: activated.subscriptionId,
         passwordSet: false,
-        passwordSetupLinkDelivered: false
+        passwordSetupLinkDelivered: activated.invite.status === "SENT_TO_PROVIDER",
+        activationAlreadyExisted: activated.activationAlreadyExisted,
+        invite: { status: activated.invite.status, provider: activated.invite.provider, messageId: activated.invite.providerMessageId, attemptCount: activated.invite.attemptCount }
       });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/admin/tenants/:tenantId/owner-invite/resend", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      const body = z.object({ ownerEmail: z.string().email().optional() }).strict().parse(req.body ?? {});
+      const tenant = await deps.repository.getTenant(tenantId);
+      if (!tenant) throw new RailError("Tenant was not found.", { provider: "platform", op: "resendOwnerInvite", status: 404 });
+      const owners = (await deps.repository.listTenantUsers(tenantId)).filter((member) => member.role === "OWNER" && member.active !== false);
+      const owner = body.ownerEmail ? owners.find((member) => member.email?.toLowerCase() === body.ownerEmail?.toLowerCase()) : owners[0];
+      if (!owner?.email || !owner.authUid) throw new RailError("An active tenant owner with an email is required before an invite can be resent.", { provider: "platform", op: "resendOwnerInvite", status: 409 });
+      const auth = deps.firebaseOwnerActivation ?? getAdminAuth(env);
+      if (!auth || !deps.ownerInviteSender) throw new RailError("Owner invite email delivery is not configured.", { provider: "gmail", op: "resendOwnerInvite", status: 503 });
+      const existing = await deps.repository.getTenantOwnerInvite(tenant.id, owner.id);
+      let invite = newOwnerInvite({ tenantId: tenant.id, ownerUserId: owner.id, ownerEmail: owner.email, status: "NOT_SENT", attemptCount: existing?.attemptCount ?? 0 });
+      try {
+        const receipt = await deps.ownerInviteSender.send({ tenantId: tenant.id, ownerEmail: owner.email, ownerName: owner.displayName, tenantName: tenant.name });
+        invite = { ...invite, status: "SENT_TO_PROVIDER", attemptCount: invite.attemptCount + 1, provider: receipt.provider, providerMessageId: receipt.messageId, updatedAt: new Date().toISOString() };
+      } catch (error) {
+        invite = { ...invite, status: "FAILED", attemptCount: invite.attemptCount + 1, lastError: error instanceof Error ? error.message : "Owner invite delivery failed.", updatedAt: new Date().toISOString() };
+      }
+      await deps.repository.saveTenantOwnerInvite(invite);
+      res.status(invite.status === "SENT_TO_PROVIDER" ? 201 : 502).json({ ok: invite.status === "SENT_TO_PROVIDER", tenant: { id: tenant.id, name: tenant.name }, owner: { id: owner.id, email: owner.email }, invite: { status: invite.status, provider: invite.provider, messageId: invite.providerMessageId, attemptCount: invite.attemptCount } });
     } catch (error) {
       sendRouteError(res, error);
     }

@@ -42,6 +42,7 @@ import {
 import { PLATFORM_PLANS } from "./plans.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 import { setPlatformOwnedDocument, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
+import type { TenantOwnerInvite } from "./tenantOwnerInvite.js";
 
 function defaultApproval(): Tenant["approval"] {
   return {
@@ -123,6 +124,7 @@ export interface PlatformRepository {
   getProspectIntake(prospectId: string): Promise<ProspectIntake | null>;
   saveProspectIntake(intake: ProspectIntake): Promise<ProspectIntake>;
   createTenantOnboardingBlueprint(onboardingPlan: TenantOnboardingBlueprint): Promise<TenantOnboardingBlueprint>;
+  listTenantOnboardingBlueprints(): Promise<TenantOnboardingBlueprint[]>;
   getTenantOnboardingBlueprint(blueprintId: string): Promise<TenantOnboardingBlueprint | null>;
   listTenantOnboardingBlueprintRevisions(blueprintId: string): Promise<TenantOnboardingBlueprintRevision[]>;
   appendTenantOnboardingBlueprintRevision(revision: TenantOnboardingBlueprintRevision): Promise<TenantOnboardingBlueprintRevision>;
@@ -147,6 +149,8 @@ export interface PlatformRepository {
   upsertTenantUser(user: TenantUser): Promise<TenantUser>;
   listTenantMembershipAudits(tenantId: string): Promise<TenantMembershipAudit[]>;
   saveTenantMembershipAudit(audit: TenantMembershipAudit): Promise<TenantMembershipAudit>;
+  getTenantOwnerInvite(tenantId: string, ownerUserId: string): Promise<TenantOwnerInvite | null>;
+  saveTenantOwnerInvite(invite: TenantOwnerInvite): Promise<TenantOwnerInvite>;
   listJobAccessLinks(tenantId: string, jobId?: string | undefined): Promise<JobAccessLink[]>;
   saveJobAccessLink(link: JobAccessLink): Promise<JobAccessLink>;
   revokeJobAccessLink(tenantId: string, id: string, revokedAt: string): Promise<JobAccessLink | null>;
@@ -187,6 +191,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   private readonly tenantBranding = new Map<string, TenantBranding>();
   private readonly tenantUsers = new Map<string, TenantUser[]>();
   private readonly membershipAudits = new Map<string, TenantMembershipAudit[]>();
+  private readonly ownerInvites = new Map<string, TenantOwnerInvite>();
   private readonly jobAccessLinks = new Map<string, JobAccessLink[]>();
   private readonly subscriptions = new Map<string, TenantSubscription>();
   private readonly statuses = new Map<string, TenantAdapterStatus[]>();
@@ -251,6 +256,15 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     return parsed;
   }
 
+  async getTenantOwnerInvite(tenantId: string, ownerUserId: string): Promise<TenantOwnerInvite | null> {
+    return this.ownerInvites.get(`owner_invite_${tenantId}_${ownerUserId}`) ?? null;
+  }
+
+  async saveTenantOwnerInvite(invite: TenantOwnerInvite): Promise<TenantOwnerInvite> {
+    this.ownerInvites.set(invite.id, firestoreDoc(invite));
+    return firestoreDoc(invite);
+  }
+
   async listProspects(): Promise<Prospect[]> {
     return [...this.prospects.values()].map(firestoreDoc);
   }
@@ -290,6 +304,10 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     }
     this.onboardingBlueprints.set(parsed.id, firestoreDoc(parsed));
     return firestoreDoc(parsed);
+  }
+
+  async listTenantOnboardingBlueprints(): Promise<TenantOnboardingBlueprint[]> {
+    return [...this.onboardingBlueprints.values()].map(firestoreDoc);
   }
 
   async getTenantOnboardingBlueprint(blueprintId: string): Promise<TenantOnboardingBlueprint | null> {
@@ -608,6 +626,11 @@ export class FirestorePlatformRepository implements PlatformRepository {
     return parsed;
   }
 
+  async listTenantOnboardingBlueprints(): Promise<TenantOnboardingBlueprint[]> {
+    const snapshot = await this.db.collection("platformOnboardingBlueprints").get();
+    return snapshot.docs.map((doc) => tenantOnboardingBlueprintSchema.parse(doc.data()) as TenantOnboardingBlueprint);
+  }
+
   async getTenantOnboardingBlueprint(blueprintId: string): Promise<TenantOnboardingBlueprint | null> {
     const snapshot = await this.db.collection("platformOnboardingBlueprints").doc(blueprintId).get();
     return snapshot.exists ? tenantOnboardingBlueprintSchema.parse(snapshot.data()) as TenantOnboardingBlueprint : null;
@@ -715,6 +738,19 @@ export class FirestorePlatformRepository implements PlatformRepository {
     const parsed = tenantMembershipAuditSchema.parse(audit) as TenantMembershipAudit;
     await setTenantOwnedDocument({ db: this.db, collection: "tenantMembershipAudits", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant membership audit ${parsed.id}` });
     return parsed;
+  }
+
+  async getTenantOwnerInvite(tenantId: string, ownerUserId: string): Promise<TenantOwnerInvite | null> {
+    const id = `owner_invite_${tenantId}_${ownerUserId}`;
+    const snapshot = await this.db.collection("tenantOwnerInvites").doc(id).get();
+    if (!snapshot.exists) return null;
+    const data = snapshot.data() as TenantOwnerInvite;
+    return data.tenantId === tenantId && data.ownerUserId === ownerUserId ? firestoreDoc(data) : null;
+  }
+
+  async saveTenantOwnerInvite(invite: TenantOwnerInvite): Promise<TenantOwnerInvite> {
+    await setTenantOwnedDocument({ db: this.db, collection: "tenantOwnerInvites", id: invite.id, tenantId: invite.tenantId, data: docData(invite), label: `Tenant owner invite ${invite.id}` });
+    return firestoreDoc(invite);
   }
 
   async listJobAccessLinks(tenantId: string, jobId?: string | undefined): Promise<JobAccessLink[]> {

@@ -26,7 +26,7 @@ import { PortalHubService } from "./crm/portalHubService.js";
 import { FirestoreReviewSequenceRepository, InMemoryReviewSequenceRepository } from "./crm/reviewSequenceRepository.js";
 import { ReviewSequenceService } from "./crm/reviewSequenceService.js";
 import { registerCrmRoutes } from "./modules/nexops/routes.js";
-import { getAdminDb } from "./firebase.js";
+import { getAdminAuth, getAdminDb } from "./firebase.js";
 import { FieldDocsApprovalExecutor } from "./fielddocs/approvalExecutor.js";
 import { FieldDocsService } from "./fielddocs/fieldDocsService.js";
 import { NexDocsService } from "./fielddocs/nexDocsService.js";
@@ -61,6 +61,7 @@ import { MemoryStorageWriter } from "./platform/backup.js";
 import { FirebaseStorageWriter } from "./platform/storage.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository } from "./platform/repository.js";
 import { registerPlatformRoutes } from "./platform/routes.js";
+import { createOwnerInviteSender } from "./platform/tenantOwnerInvite.js";
 import {
   createStripeConnectExpressAccount,
   createStripeConnectOnboardingLink,
@@ -364,6 +365,9 @@ registerMobileRoutes(app, {
 registerPlatformRoutes(app, {
   repository: platformRepository,
   storage: platformStorage,
+  ownerInviteSender: getAdminAuth()
+    ? createOwnerInviteSender({ auth: getAdminAuth()!, email: commsRail.sendAdapter, continueUrl: `${(process.env.PUBLIC_BASE_URL?.trim() || "http://127.0.0.1:4175").replace(/\/$/, "")}/nexops/sign-in` })
+    : undefined,
   stripeConnect: {
     createExpressAccount: createStripeConnectExpressAccount,
     createOnboardingLink: createStripeConnectOnboardingLink,

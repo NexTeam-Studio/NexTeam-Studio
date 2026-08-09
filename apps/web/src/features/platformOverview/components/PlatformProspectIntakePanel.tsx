@@ -10,7 +10,9 @@ interface ProspectResponse {
 interface ActivatedTenantResponse {
   ok: boolean;
   tenant?: { id: string; name: string };
-  owner?: { email: string };
+  owner?: { id?: string; email: string };
+  activationAlreadyExisted?: boolean;
+  invite?: { status: string; provider?: string; messageId?: string; attemptCount: number };
   error?: string;
 }
 
@@ -43,6 +45,7 @@ export function PlatformProspectIntakePanel({ user }: { user: User | null }): Re
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerDisplayName, setOwnerDisplayName] = useState("");
   const [subscriptionAssigned, setSubscriptionAssigned] = useState(false);
+  const [activation, setActivation] = useState<ActivatedTenantResponse | null>(null);
 
   async function createProspectAndBlueprint(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -101,12 +104,25 @@ export function PlatformProspectIntakePanel({ user }: { user: User | null }): Re
     setWorking(true); setStatus("");
     try {
       const result = await postJson<ActivatedTenantResponse>(user, `/api/platform/admin/prospects/${encodeURIComponent(prospectId)}/activate`, {
-        tenantId: tenantId.trim(), ownerEmail: ownerEmail.trim(), ownerDisplayName: ownerDisplayName.trim()
+        ...(tenantId.trim() ? { tenantId: tenantId.trim() } : {}), ownerEmail: ownerEmail.trim(), ownerDisplayName: ownerDisplayName.trim()
       });
       if (!result.tenant || !result.owner) throw new Error("Activation did not return the tenant and owner records.");
-      setStatus(`${result.tenant.name} is activated. Secure owner setup is ready for ${result.owner.email}.`);
+      setActivation(result);
+      setStatus(result.activationAlreadyExisted ? "Tenant activation was already complete. No duplicate tenant was created." : "Tenant Activated Successfully.");
     } catch {
       setStatus("Data query needs attention. NexTeam has logged the issue.");
+    } finally { setWorking(false); }
+  }
+
+  async function resendOwnerInvite(): Promise<void> {
+    if (!user || !activation?.tenant?.id || working) return;
+    setWorking(true); setStatus("");
+    try {
+      const result = await postJson<ActivatedTenantResponse>(user, `/api/platform/admin/tenants/${encodeURIComponent(activation.tenant.id)}/owner-invite/resend`, { ownerEmail: activation.owner?.email });
+      setActivation({ ...activation, invite: result.invite ?? activation.invite });
+      setStatus("Owner invite was sent to the configured email provider.");
+    } catch {
+      setStatus("Owner invite delivery failed. The tenant remains activated and can be retried safely.");
     } finally { setWorking(false); }
   }
 
@@ -126,16 +142,17 @@ export function PlatformProspectIntakePanel({ user }: { user: User | null }): Re
       </form>
       {prospectId ? <section className="platform-prospect-intake__continuation" aria-label="Continue tenant onboarding">
         <p className="ui-eyebrow">Continue onboarding</p>
-        <h3>Required pilot package</h3>
+        <h3>Pilot Onboarding Package</h3>
         <p>NexTeam All Access Test &middot; $0.00 &middot; all approved pilot modules</p>
         <button type="button" disabled={working || !user || subscriptionAssigned} onClick={() => void assignPilotSubscription()}>{subscriptionAssigned ? "Pilot package assigned" : "Assign NexTeam All Access Test — $0.00"}</button>
         {subscriptionAssigned ? <form onSubmit={(event) => void activateTenant(event)}>
-          <label>Tenant ID<input required value={tenantId} onChange={(event) => setTenantId(event.target.value)} /></label>
+          <label>Tenant ID <span>(optional legacy value; blank generates an immutable ID)</span><input value={tenantId} onChange={(event) => setTenantId(event.target.value)} /></label>
           <label>Owner name<input required value={ownerDisplayName} onChange={(event) => setOwnerDisplayName(event.target.value)} /></label>
           <label>Owner email<input required type="email" value={ownerEmail} onChange={(event) => setOwnerEmail(event.target.value)} /></label>
-          <button type="submit" disabled={working || !tenantId.trim() || !ownerDisplayName.trim() || !ownerEmail.trim()}>{working ? "Activating…" : "Activate tenant and secure owner setup"}</button>
+          <button type="submit" disabled={working || !ownerDisplayName.trim() || !ownerEmail.trim()}>{working ? "Activating…" : "Activate tenant and secure owner setup"}</button>
         </form> : null}
       </section> : null}
+      {activation?.tenant && activation.owner ? <section className="platform-prospect-intake__confirmation" aria-label="Tenant activation confirmation"><p className="ui-eyebrow">Tenant Activated Successfully</p><h3>{activation.tenant.name}</h3><p><strong>Tenant ID:</strong> {activation.tenant.id}</p><p><strong>Owner:</strong> {activation.owner.email}</p><p><strong>Invite delivery:</strong> {activation.invite?.status ?? "NOT_SENT"}{activation.invite?.provider ? ` via ${activation.invite.provider}` : ""}</p><button type="button" disabled={working} onClick={() => void resendOwnerInvite()}>{working ? "Sending..." : "Resend Owner Invite"}</button></section> : null}
       {status ? <p className="platform-prospect-intake__status">{status}</p> : null}
     </section>
   );

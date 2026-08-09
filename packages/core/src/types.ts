@@ -213,7 +213,13 @@ export interface TenantMigrationRecord {
   tenantId: ID;
   sourceSystem: string;
   scope: string;
+  classification?: "INCLUDED_BASIC" | "PAID_COMPLEX" | "NEEDS_REVIEW" | undefined;
   status: "PENDING" | "IN_PROGRESS" | "VALIDATION" | "DEFERRED" | "COMPLETED";
+  expectedRecords?: number | undefined;
+  importedRecords?: number | undefined;
+  rejectedRecords?: number | undefined;
+  conflictOrDuplicateRecords?: number | undefined;
+  launchImpact?: "NONE" | "WATCH" | "BLOCKING" | undefined;
   deferredReason?: string | undefined;
   deferredUntil?: string | undefined;
   createdAt: string;
@@ -260,6 +266,11 @@ export interface Prospect {
   primaryContactName?: string | undefined;
   primaryContactRole?: string | undefined;
   notes?: string | undefined;
+  /** Shared non-sensitive draft state used by Nexi and NexCommand before activation. */
+  onboardingCurrentStep?: string | undefined;
+  onboardingProgressPercent?: number | undefined;
+  onboardingLastSavedAt?: string | undefined;
+  onboardingLastUpdatedBy?: ID | undefined;
   createdAt: string;
   updatedAt: string;
   createdBy: ID;
@@ -290,6 +301,8 @@ export interface ProspectIntake {
   createdAt: string;
   updatedAt: string;
   createdBy: ID;
+  lastSavedAt?: string | undefined;
+  lastUpdatedBy?: ID | undefined;
 }
 
 export interface TenantOnboardingBlueprint {

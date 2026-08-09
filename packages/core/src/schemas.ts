@@ -248,7 +248,13 @@ export const tenantMigrationRecordSchema = z.object({
   tenantId: idSchema,
   sourceSystem: z.string().trim().min(1).max(120),
   scope: z.string().trim().min(1).max(4000),
+  classification: z.enum(["INCLUDED_BASIC", "PAID_COMPLEX", "NEEDS_REVIEW"]).optional(),
   status: z.enum(["PENDING", "IN_PROGRESS", "VALIDATION", "DEFERRED", "COMPLETED"]),
+  expectedRecords: z.number().int().min(0).optional(),
+  importedRecords: z.number().int().min(0).optional(),
+  rejectedRecords: z.number().int().min(0).optional(),
+  conflictOrDuplicateRecords: z.number().int().min(0).optional(),
+  launchImpact: z.enum(["NONE", "WATCH", "BLOCKING"]).optional(),
   deferredReason: z.string().trim().min(1).max(2000).optional(),
   deferredUntil: z.string().min(1).optional(),
   createdAt: z.string().min(1),
@@ -303,6 +309,10 @@ export const prospectSchema = z.object({
   primaryContactName: z.string().min(1).optional(),
   primaryContactRole: z.string().min(1).optional(),
   notes: z.string().max(4000).optional(),
+  onboardingCurrentStep: z.string().trim().min(1).max(120).optional(),
+  onboardingProgressPercent: z.number().int().min(0).max(100).optional(),
+  onboardingLastSavedAt: z.string().min(1).optional(),
+  onboardingLastUpdatedBy: idSchema.optional(),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1),
   createdBy: idSchema
@@ -331,7 +341,9 @@ export const prospectIntakeSchema = z.object({
   source: z.enum(["MANUAL", "NEXI"]),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1),
-  createdBy: idSchema
+  createdBy: idSchema,
+  lastSavedAt: z.string().min(1).optional(),
+  lastUpdatedBy: idSchema.optional()
 }).strict();
 
 export const tenantOnboardingBlueprintSchema = z.object({
