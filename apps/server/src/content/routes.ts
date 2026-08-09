@@ -131,6 +131,7 @@ export function registerContentRoutes(app: Express, deps: ContentRouteDeps): voi
     try {
       const input = draftFromJobSchema.parse(req.body);
       const tenantId = input.tenantId ?? input.job.tenantId ?? defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "draftContentForJob" });
       const drafts = await draftContentForJob({
         tenantId,
         job: { ...input.job, tenantId },
