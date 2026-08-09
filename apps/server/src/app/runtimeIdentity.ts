@@ -49,7 +49,7 @@ export function inspectRuntimeIdentity(
   }
 
   return {
-    environment: env.NODE_ENV?.trim() || "unknown",
+    environment: env.NEXTEAM_RUNTIME_ENV?.trim() || env.RAILWAY_ENVIRONMENT?.trim() || env.NODE_ENV?.trim() || "unknown",
     tenantId,
     crmRepositoryDriver: durablePersistenceAvailable ? "firestore" : "memory",
     configurationStatus: missingRequiredVariables.length === 0 ? "valid" : "invalid",
