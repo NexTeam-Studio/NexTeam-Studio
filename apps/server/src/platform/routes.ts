@@ -14,6 +14,7 @@ import { modulesForPlan, PLATFORM_PLANS } from "./plans.js";
 import { defaultTenant, defaultTenantBranding, planCatalog, subscriptionFromStripe, type PlatformRepository } from "./repository.js";
 import { activeSubscriptionPackages } from "./subscriptionPackages.js";
 import { activateProspectTenant, type FirebaseOwnerActivation } from "./tenantActivation.js";
+import { confirmSubscriptionCancellation, requestSubscriptionCancellation, resubscribeTenant } from "./tenantSubscriptionLifecycle.js";
 import { newOwnerInvite, type OwnerInviteSender } from "./tenantOwnerInvite.js";
 import { buildOnboardingPlanInsights } from "./onboardingInsights.js";
 import { readLiveBuildStatus } from "./liveBuildStatus.js";
@@ -54,6 +55,20 @@ const subscribeBodySchema = z.object({
   plan: z.enum(["nexi", "marketing", "suite"]),
   email: z.string().email().optional()
 });
+
+const cancellationFirstConfirmationSchema = z.object({
+  confirmation: z.literal("I_UNDERSTAND_CANCEL_ARCHIVE"),
+  idempotencyKey: z.string().min(12).max(160)
+}).strict();
+const cancellationSecondConfirmationSchema = z.object({
+  confirmation: z.literal("CANCEL_AND_ARCHIVE"),
+  cancellationId: z.string().min(1).max(200),
+  idempotencyKey: z.string().min(12).max(160)
+}).strict();
+const resubscribeBodySchema = z.object({
+  confirmation: z.literal("RESUBSCRIBE"),
+  idempotencyKey: z.string().min(12).max(160)
+}).strict();
 
 const prospectBodySchema = z.object({
   businessName: z.string().trim().min(1),
@@ -1462,6 +1477,45 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantBackups", status: 400 });
       }
       res.json({ ok: true, backups: await deps.repository.listBackups(tenantId) });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/tenants/:tenantId/subscription/cancel/confirmations", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      if (!tenantId) throw new RailError("Tenant id is required.", { provider: "platform", op: "subscriptionCancellationConfirmationOne", status: 400 });
+      const access = await requireTenantRole(req, env, ["OWNER"], { requestedTenantId: tenantId, op: "subscriptionCancellationConfirmationOne" });
+      const input = cancellationFirstConfirmationSchema.parse(req.body ?? {});
+      const result = await requestSubscriptionCancellation({ repository: deps.repository, tenantId, tenantUserId: access.tenantUserId, idempotencyKey: input.idempotencyKey });
+      res.status(result.alreadyExisted ? 200 : 201).json({ ok: true, ...result });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/tenants/:tenantId/subscription/cancel", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      if (!tenantId) throw new RailError("Tenant id is required.", { provider: "platform", op: "subscriptionCancellation", status: 400 });
+      const access = await requireTenantRole(req, env, ["OWNER"], { requestedTenantId: tenantId, op: "subscriptionCancellation" });
+      const input = cancellationSecondConfirmationSchema.parse(req.body ?? {});
+      const result = await confirmSubscriptionCancellation({ repository: deps.repository, tenantId, tenantUserId: access.tenantUserId, cancellationId: input.cancellationId, idempotencyKey: input.idempotencyKey });
+      res.json({ ok: true, tenant: result.tenant, alreadyExisted: result.alreadyExisted });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/tenants/:tenantId/subscription/resubscribe", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      if (!tenantId) throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantResubscribe", status: 400 });
+      const access = await requireTenantRole(req, env, ["OWNER"], { requestedTenantId: tenantId, op: "tenantResubscribe" });
+      const input = resubscribeBodySchema.parse(req.body ?? {});
+      const result = await resubscribeTenant({ repository: deps.repository, tenantId, tenantUserId: access.tenantUserId, idempotencyKey: input.idempotencyKey });
+      res.status(result.alreadyExisted ? 200 : 201).json({ ok: true, ...result });
     } catch (error) {
       sendRouteError(res, error);
     }

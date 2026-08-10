@@ -77,7 +77,9 @@ export function defaultTenant(tenantId = configuredTenantId(process.env, "defaul
     adapters: { crm: "native", media: "native", email: "gmail_relay" },
     approval: defaultApproval(),
     timezone: "America/New_York",
-    plan
+    plan,
+    lifecycleState: "ACTIVE",
+    lifecycleUpdatedAt: now()
   };
 }
 
@@ -167,6 +169,7 @@ export interface PlatformRepository {
   saveJobAccessLink(link: JobAccessLink): Promise<JobAccessLink>;
   revokeJobAccessLink(tenantId: string, id: string, revokedAt: string): Promise<JobAccessLink | null>;
   getSubscription(tenantId: string): Promise<TenantSubscription | null>;
+  listSubscriptions(tenantId: string): Promise<TenantSubscription[]>;
   saveSubscription(subscription: TenantSubscription): Promise<TenantSubscription>;
   listAdapterStatuses(tenantId: string): Promise<TenantAdapterStatus[]>;
   saveAdapterStatuses(statuses: TenantAdapterStatus[]): Promise<void>;
@@ -218,7 +221,8 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     for (const tenant of seed) {
       this.tenants.set(tenant.id, tenantSchema.parse(tenant) as Tenant);
       this.tenantBranding.set(tenant.id, defaultTenantBranding(tenant));
-      this.subscriptions.set(tenant.id, starterSubscription(tenant));
+      const subscription = starterSubscription(tenant);
+      this.subscriptions.set(subscription.id, subscription);
       this.tenantUsers.set(tenant.id, defaultTenantUsers(tenant.id).map((user) => tenantUserSchema.parse(user) as TenantUser));
     }
   }
@@ -234,8 +238,9 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   async upsertTenant(tenant: Tenant): Promise<Tenant> {
     const parsed = tenantSchema.parse(tenant) as Tenant;
     this.tenants.set(parsed.id, parsed);
-    if (!this.subscriptions.has(parsed.id)) {
-      this.subscriptions.set(parsed.id, starterSubscription(parsed));
+    if (![...this.subscriptions.values()].some((subscription) => subscription.tenantId === parsed.id)) {
+      const subscription = starterSubscription(parsed);
+      this.subscriptions.set(subscription.id, subscription);
     }
     if (!this.tenantUsers.has(parsed.id)) {
       this.tenantUsers.set(parsed.id, defaultTenantUsers(parsed.id).map((user) => tenantUserSchema.parse(user) as TenantUser));
@@ -431,6 +436,9 @@ export class InMemoryPlatformRepository implements PlatformRepository {
 
   async saveTenantMembershipAudit(audit: TenantMembershipAudit): Promise<TenantMembershipAudit> {
     const parsed = tenantMembershipAuditSchema.parse(audit) as TenantMembershipAudit;
+    if ((this.membershipAudits.get(parsed.tenantId) ?? []).some((entry) => entry.id === parsed.id)) {
+      throw new Error(`Tenant membership audit ${parsed.id} is immutable.`);
+    }
     this.membershipAudits.set(parsed.tenantId, [...(this.membershipAudits.get(parsed.tenantId) ?? []), parsed]);
     return parsed;
   }
@@ -457,12 +465,24 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   }
 
   async getSubscription(tenantId: string): Promise<TenantSubscription | null> {
-    return this.subscriptions.get(tenantId) ?? null;
+    return (await this.listSubscriptions(tenantId)).at(-1) ?? null;
+  }
+
+  async listSubscriptions(tenantId: string): Promise<TenantSubscription[]> {
+    return [...this.subscriptions.values()]
+      .filter((subscription) => subscription.tenantId === tenantId)
+      .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt) || left.id.localeCompare(right.id))
+      .map(firestoreDoc);
   }
 
   async saveSubscription(subscription: TenantSubscription): Promise<TenantSubscription> {
     const parsed = tenantSubscriptionSchema.parse(subscription) as TenantSubscription;
-    this.subscriptions.set(parsed.tenantId, parsed);
+    const existing = this.subscriptions.get(parsed.id);
+    if (existing) {
+      if (JSON.stringify(existing) !== JSON.stringify(parsed)) throw new Error(`Subscription ${parsed.id} is immutable.`);
+      return firestoreDoc(existing);
+    }
+    this.subscriptions.set(parsed.id, firestoreDoc(parsed));
     const tenant = this.tenants.get(parsed.tenantId);
     if (tenant && tenant.plan !== parsed.plan) {
       this.tenants.set(tenant.id, { ...tenant, plan: parsed.plan });
@@ -507,7 +527,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
         tenants: [...(this.tenants.has(tenantId) ? [this.tenants.get(tenantId)] : [])],
         tenantUsers: this.tenantUsers.get(tenantId) ?? [],
         jobAccessLinks: this.jobAccessLinks.get(tenantId) ?? [],
-        tenantSubscriptions: [...(this.subscriptions.has(tenantId) ? [this.subscriptions.get(tenantId)] : [])],
+        tenantSubscriptions: await this.listSubscriptions(tenantId),
         tenantBranding: [...(this.tenantBranding.has(tenantId) ? [this.tenantBranding.get(tenantId)] : [])],
         tenantAdapterStatuses: this.statuses.get(tenantId) ?? [],
         usageLog: this.usage.get(tenantId) ?? [],
@@ -810,7 +830,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
   async saveTenantMembershipAudit(audit: TenantMembershipAudit): Promise<TenantMembershipAudit> {
     const parsed = tenantMembershipAuditSchema.parse(audit) as TenantMembershipAudit;
-    await setTenantOwnedDocument({ db: this.db, collection: "tenantMembershipAudits", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant membership audit ${parsed.id}` });
+    await this.db.collection("tenantMembershipAudits").doc(parsed.id).create(docData({ ...parsed, tenantId: parsed.tenantId }));
     return parsed;
   }
 
@@ -855,14 +875,19 @@ export class FirestorePlatformRepository implements PlatformRepository {
   }
 
   async getSubscription(tenantId: string): Promise<TenantSubscription | null> {
+    return (await this.listSubscriptions(tenantId)).at(-1) ?? null;
+  }
+
+  async listSubscriptions(tenantId: string): Promise<TenantSubscription[]> {
     const snapshot = await this.db.collection("tenantSubscriptions").where("tenantId", "==", tenantId).get();
-    const data = snapshot.docs[0]?.data();
-    return data ? tenantSubscriptionSchema.parse(data) as TenantSubscription : null;
+    return snapshot.docs
+      .map((doc) => tenantSubscriptionSchema.parse(doc.data()) as TenantSubscription)
+      .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt) || left.id.localeCompare(right.id));
   }
 
   async saveSubscription(subscription: TenantSubscription): Promise<TenantSubscription> {
     const parsed = tenantSubscriptionSchema.parse(subscription) as TenantSubscription;
-    await setTenantOwnedDocument({ db: this.db, collection: "tenantSubscriptions", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant subscription ${parsed.id}` });
+    await this.db.collection("tenantSubscriptions").doc(parsed.id).create(docData({ ...parsed, tenantId: parsed.tenantId }));
     const tenant = await this.getTenant(parsed.tenantId);
     if (tenant) {
       await this.upsertTenant({ ...tenant, plan: parsed.plan });

@@ -68,6 +68,8 @@ export const tenantSchema = z.object({
   })),
   timezone: z.string().min(1),
   plan: z.enum(["nexi", "marketing", "suite"]),
+  lifecycleState: z.enum(["ACTIVE", "DISABLED_ARCHIVED"]).optional(),
+  lifecycleUpdatedAt: z.string().datetime().optional(),
   payments: z.object({
     stripeConnect: z.object({
       accountId: z.string().regex(/^acct_[A-Za-z0-9]+$/),
@@ -1084,11 +1086,13 @@ export const propertyAssetDefinitionSchema = z.object({
 export const tenantMembershipAuditSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
-  action: z.enum(["member.upserted", "member.claims_applied"]),
+  action: z.enum(["member.upserted", "member.claims_applied", "tenant.cancellation_confirmation_one", "tenant.subscription_canceled", "tenant.resubscribed"]),
   actorId: idSchema,
   targetUserId: idSchema,
   detail: z.string().min(1).max(500),
-  createdAt: z.string()
+  createdAt: z.string(),
+  correlationId: z.string().min(1).max(200).optional(),
+  subscriptionId: idSchema.optional()
 });
 
 export const crmSettingsSchema = z.object({

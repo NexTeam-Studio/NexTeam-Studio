@@ -13,6 +13,7 @@ import {
 } from "../dist/platform/accessManagement.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository, defaultTenant, defaultTenantBranding, subscriptionFromStripe } from "../dist/platform/repository.js";
 import { registerPlatformRoutes } from "../dist/platform/routes.js";
+import { assertActiveTenantLifecycle, confirmSubscriptionCancellation, requestSubscriptionCancellation, resubscribeTenant } from "../dist/platform/tenantSubscriptionLifecycle.js";
 import { createServerRuntime } from "../dist/app/runtime.js";
 import { assertRequiredPersistence, assertTenantRuntimePersistence } from "../dist/app/persistencePolicy.js";
 import { resolveNexiStores } from "../dist/nexi/stores.js";
@@ -143,7 +144,7 @@ test("platform repository summarizes cost, records backup, and exports per tenan
   const backup = await runTenantBackup({ tenantId: "second-test", repository, storage, now: "2026-07-07T13:00:00.000Z" });
   assert.equal(backup.record.tenantId, "second-test");
   assert.equal(storage.files.has(backup.record.storageRef), true);
-  assert.equal(backup.record.collectionCounts.tenantSubscriptions, 1);
+  assert.equal(backup.record.collectionCounts.tenantSubscriptions, 2);
 
   const exported = await repository.exportTenantData("second-test");
   assert.equal(exported.collections.usageLog.length, 1);
@@ -600,6 +601,48 @@ test("runtime defaults to durable persistence and refuses an empty customer tena
     () => assertTenantRuntimePersistence({ NODE_ENV: "test", TENANT_ID: "aquatrace" }, false),
     /FIREBASE_ADMIN_PRIVATE_KEY/
   );
+});
+
+test("tenant subscription lifecycle archives without loss, restores the same tenant and owner, and remains tenant-isolated", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("tenant-a", "suite"), defaultTenant("tenant-b", "nexi")]);
+  const owner = await upsertTenantUser(repository, {
+    tenantId: "tenant-a", id: "tenant_owner_a", authUid: "firebase_owner_a", email: "owner-a@example.test", displayName: "Owner A", role: "OWNER", now: "2026-08-10T12:00:00.000Z"
+  });
+  await upsertTenantUser(repository, {
+    tenantId: "tenant-b", id: "tenant_owner_b", authUid: "firebase_owner_b", email: "owner-b@example.test", displayName: "Owner B", role: "OWNER", now: "2026-08-10T12:00:00.000Z"
+  });
+  await repository.saveTenantBranding({ ...defaultTenantBranding("tenant-a"), displayName: "Retained Tenant A", updatedBy: owner.id, updatedAt: "2026-08-10T12:00:00.000Z" });
+  repository.seedUsage(usageRecord("tenant-a", 0.17));
+  const originalTenant = await repository.getTenant("tenant-a");
+  const originalSubscriptionId = (await repository.getSubscription("tenant-a")).id;
+
+  const first = await requestSubscriptionCancellation({ repository, tenantId: "tenant-a", tenantUserId: owner.id, idempotencyKey: "cancel-intent-0001", now: "2026-08-10T12:01:00.000Z" });
+  assert.equal(first.alreadyExisted, false);
+  assert.equal((await requestSubscriptionCancellation({ repository, tenantId: "tenant-a", tenantUserId: owner.id, idempotencyKey: "cancel-intent-0001", now: "2026-08-10T12:02:00.000Z" })).alreadyExisted, true);
+  await assert.rejects(() => confirmSubscriptionCancellation({ repository, tenantId: "tenant-a", tenantUserId: owner.id, cancellationId: "cancel-wrong-intent", idempotencyKey: "cancel-confirm-0001" }), /first cancellation confirmation/);
+  const cancelled = await confirmSubscriptionCancellation({ repository, tenantId: "tenant-a", tenantUserId: owner.id, cancellationId: first.cancellationId, idempotencyKey: "cancel-confirm-0001", now: "2026-08-10T12:03:00.000Z" });
+  assert.equal(cancelled.tenant.lifecycleState, "DISABLED_ARCHIVED");
+  assert.equal((await confirmSubscriptionCancellation({ repository, tenantId: "tenant-a", tenantUserId: owner.id, cancellationId: first.cancellationId, idempotencyKey: "cancel-confirm-duplicate" })).alreadyExisted, true);
+  await assert.rejects(() => assertActiveTenantLifecycle(repository, "tenant-a"), /disabled and archived/);
+  await assert.doesNotReject(() => assertActiveTenantLifecycle(repository, "tenant-b"));
+
+  const retained = await repository.exportTenantData("tenant-a");
+  assert.equal(retained.collections.tenants[0].id, originalTenant.id);
+  assert.equal(retained.collections.tenantUsers[0].authUid, "firebase_owner_a");
+  assert.equal(retained.collections.tenantBranding[0].displayName, "Retained Tenant A");
+  assert.equal(retained.collections.usageLog.length, 1);
+  assert.equal((await repository.listTenantUsers("tenant-b")).some((user) => user.id === owner.id), false);
+
+  const restored = await resubscribeTenant({ repository, tenantId: "tenant-a", tenantUserId: owner.id, idempotencyKey: "resubscribe-0001", now: "2026-08-10T12:04:00.000Z" });
+  assert.equal(restored.tenant.id, originalTenant.id);
+  assert.equal(restored.tenant.lifecycleState, "ACTIVE");
+  assert.notEqual(restored.subscription.id, originalSubscriptionId);
+  assert.equal((await resubscribeTenant({ repository, tenantId: "tenant-a", tenantUserId: owner.id, idempotencyKey: "resubscribe-0001" })).subscription.id, restored.subscription.id);
+  assert.equal((await repository.getTenantUser("tenant-a", owner.id)).authUid, "firebase_owner_a");
+  assert.equal((await repository.listSubscriptions("tenant-a")).length, 2);
+  assert.equal((await repository.listTenantMembershipAudits("tenant-a")).map((event) => event.action).includes("tenant.subscription_canceled"), true);
+  await assert.doesNotReject(() => assertActiveTenantLifecycle(repository, "tenant-a"));
+  await assert.rejects(() => requestSubscriptionCancellation({ repository, tenantId: "tenant-b", tenantUserId: owner.id, idempotencyKey: "cross-tenant-0001" }), /Only the active tenant owner/);
 });
 
 test("platform prospect intake excludes sensitive pre-subscription fields", () => {

@@ -5,6 +5,7 @@ import { RailError } from "@nexteam/core";
 import type { TenantCapability, TenantUserRole } from "@nexteam/core";
 import { ROLE_CAPABILITIES } from "../platform/accessManagement.js";
 import { getAdminAuth } from "../firebase.js";
+import { getAdminDb } from "../firebase.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 
 export type TenantRole = TenantUserRole;
@@ -449,8 +450,22 @@ export async function requireAccessContext(
   }
 
   const role = normalizeRole(decoded, env);
+  const resolvedTenantId = claimedTenantId ?? tenantId;
+  // Claims can outlive a cancellation. The authoritative tenant root is checked
+  // on every production tenant request so disabled tenants cannot retain normal
+  // access merely because an old Firebase token is still valid.
+  if (!isPlatformOperator) {
+    const db = getAdminDb(env);
+    if (!db) {
+      throw new RailError("Tenant lifecycle authorization is temporarily unavailable.", { provider: "firebase", op: options.op ?? "accessContext", status: 503 });
+    }
+    const tenant = await db.collection("tenants").doc(resolvedTenantId).get();
+    if (tenant.exists && tenant.data()?.lifecycleState === "DISABLED_ARCHIVED") {
+      throw new RailError("This tenant is disabled and archived. Resubscribe to restore access.", { provider: "platform", op: options.op ?? "accessContext", status: 403 });
+    }
+  }
   return {
-    tenantId: claimedTenantId ?? tenantId,
+    tenantId: resolvedTenantId,
     tenantUserId: claimString(decoded, "tenantUserId") ?? decoded.uid,
     role,
     capabilities: capabilities(decoded, role),

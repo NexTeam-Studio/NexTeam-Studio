@@ -24,7 +24,10 @@ service cloud.firestore {
     function sameTenant(tenantId) {
       return request.auth != null
         && !isPublicSession()
-        && request.auth.token.tenantId == tenantId;
+        && request.auth.token.tenantId == tenantId
+        && (!exists(/databases/$(database)/documents/tenants/$(tenantId))
+          || !('lifecycleState' in get(/databases/$(database)/documents/tenants/$(tenantId)).data)
+          || get(/databases/$(database)/documents/tenants/$(tenantId)).data.lifecycleState == 'ACTIVE');
     }
 
     function tenantRole() {

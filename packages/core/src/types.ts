@@ -103,6 +103,9 @@ export interface Tenant {
   approval: Record<ArtifactKind, { autoApprove: boolean; cleanStreak: number }>;
   timezone: string;
   plan: TenantPlan;
+  /** Server-authoritative access state. Tenant identity and all tenant data survive archival. */
+  lifecycleState?: "ACTIVE" | "DISABLED_ARCHIVED" | undefined;
+  lifecycleUpdatedAt?: string | undefined;
   payments?: {
     stripeConnect?: {
       accountId: string;
@@ -361,11 +364,13 @@ export interface TenantUser {
 export interface TenantMembershipAudit {
   id: ID;
   tenantId: ID;
-  action: "member.upserted" | "member.claims_applied";
+  action: "member.upserted" | "member.claims_applied" | "tenant.cancellation_confirmation_one" | "tenant.subscription_canceled" | "tenant.resubscribed";
   actorId: ID;
   targetUserId: ID;
   detail: string;
   createdAt: string;
+  correlationId?: string | undefined;
+  subscriptionId?: ID | undefined;
 }
 
 export interface JobAccessLink {
