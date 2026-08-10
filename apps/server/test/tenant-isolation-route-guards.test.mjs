@@ -80,6 +80,17 @@ test("both tenant directions are denied every repaired cross-tenant read route",
         })
       });
       assert.equal(generatedPdf.status, 403, `${sourceTenantId} -> ${targetTenantId}: generated FieldDocs PDF`);
+      const checklistTemplate = await fetch(`${base}/api/fielddocs/checklists/templates`, {
+        method: "POST",
+        headers: { ...headers, "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: targetTenantId,
+          title: "Cross-tenant template probe",
+          slug: "cross-tenant-template-probe",
+          fields: []
+        })
+      });
+      assert.equal(checklistTemplate.status, 403, `${sourceTenantId} -> ${targetTenantId}: checklist template write`);
     }
   } finally {
     await close(server);

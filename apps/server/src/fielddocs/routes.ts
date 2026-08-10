@@ -1087,6 +1087,10 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
   app.post("/api/fielddocs/checklists/templates", async (req: Request, res: Response) => {
     try {
       const input = checklistTemplateInputSchema.parse(req.body);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+        requestedTenantId: input.tenantId,
+        op: "upsertChecklistTemplate"
+      });
       const saved = input.id
         ? await fieldDocsService().upsertTemplate({
             ...input,
