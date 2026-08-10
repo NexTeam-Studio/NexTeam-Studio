@@ -206,6 +206,16 @@ function localDevAuthSecret(env: NodeJS.ProcessEnv): string {
   return env.NEXI_LOCAL_AUTH_SECRET?.trim() || "nexteam-local-auth-dev-secret";
 }
 
+/**
+ * Local credentials are a test/development convenience, never an alternate
+ * authentication rail for a Firebase-protected runtime.  In particular, a
+ * syntactically valid local token must not short-circuit Firebase token
+ * verification on staging or production.
+ */
+export function isLocalDevAuthEnabled(env: NodeJS.ProcessEnv): boolean {
+  return env.NEXI_FIREBASE_AUTH_REQUIRED === "false";
+}
+
 function base64urlJson(value: unknown): string {
   return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
 }
@@ -259,6 +269,9 @@ function encodeLocalDevSession(
 export function listLocalDevWebProfiles(
   tenantId = defaultTenantId(process.env)
 ): LocalDevWebProfileSummary[] {
+  if (!isLocalDevAuthEnabled(process.env)) {
+    return [];
+  }
   return LOCAL_DEV_WEB_CREDENTIAL_PROFILES.map((profile) => localDevProfileSummary(profile, tenantId));
 }
 
@@ -395,21 +408,21 @@ export async function requireAccessContext(
 ): Promise<AccessContext> {
   const tenantId = requestedTenant(options, env);
   const token = bearerToken(req);
-  if (token) {
+  if (token && isLocalDevAuthEnabled(env)) {
     const localSession = readLocalDevSession(token, tenantId, env, options.op ?? "accessContext");
     if (localSession) {
       return localSession.access;
     }
   }
 
-  if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") {
+  if (isLocalDevAuthEnabled(env)) {
     return localDevAccessContext(req, tenantId, options.op ?? "accessContext")
       ?? { tenantId, tenantUserId: "local-owner", role: "OWNER", capabilities: ROLE_CAPABILITIES.OWNER, accessKind: "internal" };
   }
 
   const auth = getAdminAuth(env);
   if (!auth) {
-    if (env.NEXI_FIREBASE_AUTH_REQUIRED !== "false") {
+    if (!isLocalDevAuthEnabled(env)) {
       throw new RailError("Tenant authentication is temporarily unavailable.", {
         provider: "firebase",
         op: options.op ?? "accessContext",

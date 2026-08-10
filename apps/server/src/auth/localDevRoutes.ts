@@ -1,12 +1,15 @@
 import type { Express, Request, Response } from "express";
 import { RailError } from "@nexteam/core";
-import { createLocalDevSession, readLocalDevSession } from "./accessContext.js";
+import { createLocalDevSession, isLocalDevAuthEnabled, readLocalDevSession } from "./accessContext.js";
 import { sendHttpError } from "../core/httpError.js";
 
 export function registerLocalDevAuthRoutes(
   app: Express,
   input: { env: NodeJS.ProcessEnv; tenantId: string }
 ): void {
+  if (!isLocalDevAuthEnabled(input.env)) {
+    return;
+  }
   app.post("/api/public/local-auth/sign-in", (req: Request, res: Response) => {
     try {
       const body = req.body as { email?: unknown; password?: unknown; tenantId?: unknown };

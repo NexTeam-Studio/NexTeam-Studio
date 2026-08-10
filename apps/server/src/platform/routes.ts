@@ -201,7 +201,11 @@ async function requirePlatformOperator(req: Request, env: NodeJS.ProcessEnv, aut
   }
   const auth = authOverride ?? getAdminAuth(env);
   if (!auth) {
-    return;
+    throw new RailError("Platform authentication is temporarily unavailable.", {
+      provider: "firebase",
+      op: "platformAuth",
+      status: 503
+    });
   }
   const header = req.header("authorization") ?? "";
   const match = header.match(/^Bearer\s+(.+)$/i);
@@ -713,7 +717,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/subscription-packages", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       res.json({ ok: true, packages: activeSubscriptionPackages() });
     } catch (error) {
       sendRouteError(res, error);
@@ -722,7 +726,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/prospects/:prospectId/subscription", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const prospectId = requiredTenantId(req.params.prospectId);
       const input = z.object({ packageId: z.string().min(1) }).strict().parse(req.body ?? {});
       const prospect = await deps.repository.getProspect(prospectId);
@@ -755,7 +759,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/prospects/:prospectId/activate", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const prospectId = requiredTenantId(req.params.prospectId);
       const input = z.object({
         tenantId: z.string().trim().min(3).max(100).regex(/^[a-z0-9-]+$/, "Tenant id must use lowercase letters, numbers, and hyphens.").optional(),
@@ -783,7 +787,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/tenants/:tenantId/owner-invite/resend", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const tenantId = requiredTenantId(req.params.tenantId);
       const body = z.object({ ownerEmail: z.string().email().optional() }).strict().parse(req.body ?? {});
       const tenant = await deps.repository.getTenant(tenantId);
@@ -810,7 +814,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/plans", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       res.json({ ok: true, plans: Object.values(planCatalog()) });
     } catch (error) {
       sendRouteError(res, error);
@@ -819,7 +823,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/tenants", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const period = defaultPeriod();
       const tenants = await deps.repository.listTenants();
       const rows = await Promise.all(tenants.map(async (tenant) => {
@@ -842,7 +846,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/tenants", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const input = tenantBodySchema.parse(req.body);
       const baseTenant = defaultTenant(input.id, input.plan);
       const tenant = await deps.repository.upsertTenant({
@@ -1186,7 +1190,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/tenants/:tenantId/subscribe-test", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const tenantId = req.params.tenantId;
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "subscribeTestTenant", status: 400 });
@@ -1210,7 +1214,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/tenants/:tenantId/export", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const tenantId = req.params.tenantId;
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantExport", status: 400 });
@@ -1223,7 +1227,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/tenants/:tenantId/tool-entitlements", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const tenantId = req.params.tenantId;
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "toolEntitlements", status: 400 });
@@ -1237,7 +1241,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/tenants/:tenantId/backups/run", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const tenantId = req.params.tenantId;
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantBackup", status: 400 });
@@ -1251,7 +1255,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/tenants/:tenantId/backups", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env);
+      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
       const tenantId = req.params.tenantId;
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantBackups", status: 400 });

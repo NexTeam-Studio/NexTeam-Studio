@@ -715,6 +715,24 @@ test("onboarding-plan insights and revision acceptance require a platform operat
   }
 });
 
+test("platform-admin routes fail closed when Firebase auth is required but unavailable", async () => {
+  const app = express();
+  app.use(express.json());
+  registerPlatformRoutes(app, {
+    repository: new InMemoryPlatformRepository([defaultTenant("tenant-primary", "nexi")]),
+    storage: new MemoryStorageWriter(),
+    env: { TENANT_ID: "tenant-primary", NEXI_FIREBASE_AUTH_REQUIRED: "true" }
+  });
+  const server = app.listen(0);
+  try {
+    const { port } = server.address();
+    const response = await fetch(`http://127.0.0.1:${port}/api/platform/admin/subscription-packages`);
+    assert.equal(response.status, 503);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test("tenant blockers persist by tenant and platform support escalation denies non-operators", async () => {
   const repository = new InMemoryPlatformRepository([defaultTenant("tenant-a", "suite"), defaultTenant("tenant-b", "suite")]);
   const app = express();

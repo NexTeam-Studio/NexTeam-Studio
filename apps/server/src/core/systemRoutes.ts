@@ -3,6 +3,7 @@ import { getBuildInfo } from "../buildInfo.js";
 import { buildHealth } from "../health.js";
 import { sendHttpError } from "./httpError.js";
 import { inspectRuntimeIdentity } from "../app/runtimeIdentity.js";
+import { isLocalDevAuthEnabled } from "../auth/accessContext.js";
 
 export function registerSystemRoutes(
   app: Express,
@@ -35,8 +36,8 @@ export function registerSystemRoutes(
       firebase,
       firebaseConfigured: Object.values(firebase).every((value) => value.length > 0),
       authRequired: input.env.NEXI_FIREBASE_AUTH_REQUIRED !== "false",
-      localAuthEnabled: input.env.NEXI_FIREBASE_AUTH_REQUIRED === "false",
-      localProfiles: input.localProfiles(input.tenantId)
+      localAuthEnabled: isLocalDevAuthEnabled(input.env),
+      localProfiles: isLocalDevAuthEnabled(input.env) ? input.localProfiles(input.tenantId) : []
     });
   });
 }

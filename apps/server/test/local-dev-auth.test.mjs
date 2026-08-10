@@ -73,6 +73,20 @@ test("local bearer sessions feed the access-context role gate and refuse cross-t
   );
 });
 
+test("local development sessions cannot authenticate an auth-required runtime", async () => {
+  const localSession = createLocalDevSession("owner@local.dev", "", "aquatrace", env);
+  await assert.rejects(
+    () => requireAccessContext(requestWithBearer(localSession.token), {
+      TENANT_ID: "aquatrace",
+      NEXI_FIREBASE_AUTH_REQUIRED: "true"
+    }, {
+      requestedTenantId: "aquatrace",
+      op: "stagingMustRejectLocalSession"
+    }),
+    (error) => error?.status === 401 || error?.status === 503
+  );
+});
+
 test("the same local session token keeps the same seat across internal module rails for owner and office admin", async () => {
   const owner = createLocalDevSession("owner@local.dev", "", "aquatrace", env);
   const office = createLocalDevSession("office@local.dev", "", "aquatrace", env);
