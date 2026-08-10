@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import express from "express";
 import { ApprovalQueueService, InMemoryApprovalQueueRepository } from "@nexteam/core";
-import { createLocalDevSession, requireAccessContext } from "../dist/auth/accessContext.js";
+import { createLocalDevSession, listLocalDevWebProfiles, requireAccessContext } from "../dist/auth/accessContext.js";
 import { registerContentRoutes } from "../dist/content/routes.js";
 import { InMemoryContentRepository } from "../dist/content/repository.js";
 import { registerEvaporationRoutes } from "../dist/evaporation/routes.js";
@@ -119,6 +119,8 @@ test("both tenant directions are denied every repaired cross-tenant read route",
 });
 
 test("required Firebase authentication fails closed without a configured admin SDK", async () => {
+  assert.deepEqual(listLocalDevWebProfiles(tenantA, { TENANT_ID: tenantA, NEXI_FIREBASE_AUTH_REQUIRED: "true" }), []);
+  assert.equal(listLocalDevWebProfiles(tenantA, env).length, 4);
   const request = { header: () => "" };
   await assert.rejects(
     () => requireAccessContext(request, { TENANT_ID: tenantA, NEXI_FIREBASE_AUTH_REQUIRED: "true" }),

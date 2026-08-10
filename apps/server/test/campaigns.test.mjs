@@ -271,7 +271,7 @@ test("campaign routes expose template, test-run, tracking, unsubscribe, and stat
   const { repository, approvalQueue } = campaignService();
   const app = express();
   app.use(express.json());
-  registerCampaignRoutes(app, { repository, approvalQueue, env: { TENANT_ID: "aquatrace" } });
+  registerCampaignRoutes(app, { repository, approvalQueue, env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" } });
   const server = app.listen(0);
   try {
     const { port } = server.address();

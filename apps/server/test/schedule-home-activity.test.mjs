@@ -988,7 +988,7 @@ test("CRM schedule, home, activity, and notification routes expose live workspac
     ledgerService: fixture.ledgerService,
     operationsHubService: fixture.operationsHubService,
     commsRail: fixture.commsRail,
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   const server = await listen(app);

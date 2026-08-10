@@ -440,7 +440,7 @@ export function registerMobileRoutes(app: Express, deps: MobileRouteDeps): void 
         authRequired: env.NEXI_FIREBASE_AUTH_REQUIRED !== "false",
         firebaseConfigured: firebaseConfigured(env),
         localDevHeader: LOCAL_DEV_PROFILE_HEADER,
-        localProfiles: listLocalDevWebProfiles(access.tenantId)
+        localProfiles: listLocalDevWebProfiles(access.tenantId, env)
       });
     } catch (error) {
       sendError(res, error);

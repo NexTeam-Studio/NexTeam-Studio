@@ -21,6 +21,14 @@ test("NexCommand only displays a sanitized operator error", () => {
   assert.doesNotMatch(source, /error\.message/);
 });
 
+test("NexCommand exposes a platform Team area without treating it as tenant users", () => {
+  assert.match(source, /PlatformTeamPanel/);
+  assert.match(source, /Open Team/);
+  assert.match(source, /Platform profiles are separate from tenant users/);
+  assert.match(source, /Identity creation, invitations, and email delivery are intentionally unavailable here/);
+  assert.match(source, /\/api\/platform\/admin\/team/);
+});
+
 test("NexCommand live build status is controller-backed, refreshes, and exposes the full read-only run record", () => {
   assert.match(source, /\/api\/platform\/admin\/live-build-status/);
   assert.match(source, /setInterval\(\(\) => void refresh\(\), 30_000\)/);

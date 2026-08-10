@@ -193,6 +193,7 @@ test("calendar board returns native visits only even if stale overlay deps are p
   registerSchedulingRoutes(app, {
     repository,
     approvalQueue,
+    env: { NEXI_FIREBASE_AUTH_REQUIRED: "false" },
     legacyOverlayReader: {
       isConfigured: () => true,
       async getJobs() {
@@ -239,7 +240,7 @@ test("calendar board ignores stale overlay timeout env and still serves native v
   registerSchedulingRoutes(app, {
     repository,
     approvalQueue,
-    env: { SCHEDULE_DORMANT_OVERLAY_TIMEOUT_MS: "20" },
+    env: { NEXI_FIREBASE_AUTH_REQUIRED: "false", SCHEDULE_DORMANT_OVERLAY_TIMEOUT_MS: "20" },
     legacyOverlayReader: {
       isConfigured: () => true,
       async getJobs() {

@@ -167,7 +167,7 @@ test("M8 lead form creates lead, event, and approval-queued owner notification o
     repository,
     approvalQueue,
     eventBus,
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   await withServer(app, async (baseUrl) => {

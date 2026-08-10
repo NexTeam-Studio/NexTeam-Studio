@@ -41,7 +41,7 @@ test("client route saves and replaces editable custom fields on an existing clie
     platformRepository: {
       listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
     },
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   const server = await new Promise((resolve) => {
@@ -164,7 +164,7 @@ test("client route updates mobile editor client details and the linked primary p
     platformRepository: {
       listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
     },
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   const server = await new Promise((resolve) => {
@@ -341,7 +341,7 @@ test("client edit route rejects blank required name, phone, and address values",
     platformRepository: {
       listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
     },
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   const server = await new Promise((resolve) => {
@@ -482,7 +482,7 @@ test("client edit route preserves untouched fields when only one field is change
     platformRepository: {
       listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
     },
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   const server = await new Promise((resolve) => {

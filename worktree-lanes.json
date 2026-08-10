@@ -5,7 +5,7 @@
     {
       "id": "nexcommand-foundation",
       "displayName": "NexCommand Foundation",
-      "status": "PHASE_B_GREEN",
+      "status": "PHASE_C_GREEN",
       "authoritativeLane": "platform-tenants",
       "dedicatedWorktree": null,
       "permittedPaths": [

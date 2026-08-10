@@ -43,6 +43,7 @@ import { PLATFORM_PLANS } from "./plans.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 import { setPlatformOwnedDocument, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 import type { TenantOwnerInvite } from "./tenantOwnerInvite.js";
+import { platformUserAuditSchema, platformUserSchema, type PlatformUser, type PlatformUserAudit } from "./team.js";
 
 function defaultApproval(): Tenant["approval"] {
   return {
@@ -118,6 +119,12 @@ function now(): string {
 }
 
 export interface PlatformRepository {
+  listPlatformUsers(): Promise<PlatformUser[]>;
+  getPlatformUser(userId: string): Promise<PlatformUser | null>;
+  getPlatformUserByAuthUid(authUid: string): Promise<PlatformUser | null>;
+  savePlatformUser(user: PlatformUser): Promise<PlatformUser>;
+  listPlatformUserAudits(userId?: string): Promise<PlatformUserAudit[]>;
+  appendPlatformUserAudit(audit: PlatformUserAudit): Promise<PlatformUserAudit>;
   listProspects(): Promise<Prospect[]>;
   getProspect(prospectId: string): Promise<Prospect | null>;
   saveProspect(prospect: Prospect): Promise<Prospect>;
@@ -179,6 +186,8 @@ function starterSubscription(tenant: Tenant): TenantSubscription {
 }
 
 export class InMemoryPlatformRepository implements PlatformRepository {
+  private readonly platformUsers = new Map<string, PlatformUser>();
+  private readonly platformUserAudits: PlatformUserAudit[] = [];
   private readonly prospects = new Map<string, Prospect>();
   private readonly prospectIntakes = new Map<string, ProspectIntake>();
   private readonly onboardingBlueprints = new Map<string, TenantOnboardingBlueprint>();
@@ -255,6 +264,13 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     this.tenantUsers.set(parsed.tenantId, current);
     return parsed;
   }
+
+  async listPlatformUsers(): Promise<PlatformUser[]> { return [...this.platformUsers.values()].map(firestoreDoc); }
+  async getPlatformUser(userId: string): Promise<PlatformUser | null> { const user = this.platformUsers.get(userId); return user ? firestoreDoc(user) : null; }
+  async getPlatformUserByAuthUid(authUid: string): Promise<PlatformUser | null> { const user = [...this.platformUsers.values()].find((entry) => entry.authUid === authUid); return user ? firestoreDoc(user) : null; }
+  async savePlatformUser(user: PlatformUser): Promise<PlatformUser> { const parsed = platformUserSchema.parse(user) as PlatformUser; this.platformUsers.set(parsed.id, firestoreDoc(parsed)); return firestoreDoc(parsed); }
+  async listPlatformUserAudits(userId?: string): Promise<PlatformUserAudit[]> { return this.platformUserAudits.filter((audit) => !userId || audit.userId === userId).map(firestoreDoc); }
+  async appendPlatformUserAudit(audit: PlatformUserAudit): Promise<PlatformUserAudit> { const parsed = platformUserAuditSchema.parse(audit) as PlatformUserAudit; this.platformUserAudits.push(firestoreDoc(parsed)); return firestoreDoc(parsed); }
 
   async getTenantOwnerInvite(tenantId: string, ownerUserId: string): Promise<TenantOwnerInvite | null> {
     return this.ownerInvites.get(`owner_invite_${tenantId}_${ownerUserId}`) ?? null;
@@ -583,6 +599,35 @@ export class FirestorePlatformRepository implements PlatformRepository {
   async upsertTenantUser(user: TenantUser): Promise<TenantUser> {
     const parsed = tenantUserSchema.parse(user) as TenantUser;
     await setTenantOwnedDocument({ db: this.db, collection: "tenantUsers", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant user ${parsed.id}` });
+    return parsed;
+  }
+
+  async listPlatformUsers(): Promise<PlatformUser[]> {
+    const snapshot = await this.db.collection("platformUsers").orderBy("updatedAt", "desc").get();
+    return snapshot.docs.map((doc) => platformUserSchema.parse(doc.data()) as PlatformUser);
+  }
+  async getPlatformUser(userId: string): Promise<PlatformUser | null> {
+    const snapshot = await this.db.collection("platformUsers").doc(userId).get();
+    return snapshot.exists ? platformUserSchema.parse(snapshot.data()) as PlatformUser : null;
+  }
+  async getPlatformUserByAuthUid(authUid: string): Promise<PlatformUser | null> {
+    const snapshot = await this.db.collection("platformUsers").where("authUid", "==", authUid).limit(1).get();
+    return snapshot.empty ? null : platformUserSchema.parse(snapshot.docs[0]?.data()) as PlatformUser;
+  }
+  async savePlatformUser(user: PlatformUser): Promise<PlatformUser> {
+    const parsed = platformUserSchema.parse(user) as PlatformUser;
+    await setPlatformOwnedDocument({ db: this.db, collection: "platformUsers", id: parsed.id, data: docData(parsed) });
+    return parsed;
+  }
+  async listPlatformUserAudits(userId?: string): Promise<PlatformUserAudit[]> {
+    let query = this.db.collection("platformUserAudits").orderBy("createdAt", "desc");
+    if (userId) query = query.where("userId", "==", userId).orderBy("createdAt", "desc");
+    const snapshot = await query.get();
+    return snapshot.docs.map((doc) => platformUserAuditSchema.parse(doc.data()) as PlatformUserAudit);
+  }
+  async appendPlatformUserAudit(audit: PlatformUserAudit): Promise<PlatformUserAudit> {
+    const parsed = platformUserAuditSchema.parse(audit) as PlatformUserAudit;
+    await this.db.collection("platformUserAudits").doc(parsed.id).create(docData(parsed));
     return parsed;
   }
 

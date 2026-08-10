@@ -301,7 +301,8 @@ async function makeServer(options = {}) {
     platformRepository,
     usageLog,
     env: {
-      TENANT_ID: tenantId
+      TENANT_ID: tenantId,
+      NEXI_FIREBASE_AUTH_REQUIRED: "false"
     }
   });
 

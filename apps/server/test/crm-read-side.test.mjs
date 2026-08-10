@@ -491,7 +491,7 @@ test("CRM client route rejects incomplete saves before a client record is create
   registerCrmRoutes(app, {
     approvalQueue,
     memoryRepository: repository,
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   const server = await new Promise((resolve) => {
@@ -576,7 +576,7 @@ test("CRM routes read clients created by ApprovalQueue execution from the shared
   registerCrmRoutes(app, {
     approvalQueue,
     memoryRepository: repository,
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   const server = await new Promise((resolve) => {
@@ -857,7 +857,7 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     ledgerService,
     platformRepository,
     commsRail,
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   const server = await new Promise((resolve) => {
@@ -1199,7 +1199,7 @@ test("CRM quote change requests store per-line comments plus a freeform note", a
   registerCrmRoutes(app, {
     approvalQueue: new ApprovalQueueService(new InMemoryApprovalQueueRepository()),
     memoryRepository: repository,
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   const server = await new Promise((resolve) => {

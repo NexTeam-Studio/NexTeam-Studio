@@ -33,7 +33,7 @@ test("request routes create, update, convert, archive, and reopen while preservi
     platformRepository: {
       listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
     },
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   const server = await new Promise((resolve) => {
@@ -267,7 +267,7 @@ test("client record route toggles marketing consent and forwards the NexReach re
     platformRepository: {
       listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
     },
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
   const server = await new Promise((resolve) => {

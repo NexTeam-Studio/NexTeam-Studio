@@ -267,9 +267,10 @@ function encodeLocalDevSession(
 }
 
 export function listLocalDevWebProfiles(
-  tenantId = defaultTenantId(process.env)
+  tenantId = defaultTenantId(process.env),
+  env: NodeJS.ProcessEnv = process.env
 ): LocalDevWebProfileSummary[] {
-  if (!isLocalDevAuthEnabled(process.env)) {
+  if (!isLocalDevAuthEnabled(env)) {
     return [];
   }
   return LOCAL_DEV_WEB_CREDENTIAL_PROFILES.map((profile) => localDevProfileSummary(profile, tenantId));

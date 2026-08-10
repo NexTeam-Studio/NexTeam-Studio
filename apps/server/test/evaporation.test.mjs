@@ -84,7 +84,7 @@ test("evaporation routes create a report and render a PDF", async () => {
   registerEvaporationRoutes(app, {
     repository: new MemoryEvaporationRepository(),
     weatherProvider,
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
   await withServer(app, async (baseUrl) => {
     const createdResponse = await fetch(`${baseUrl}/api/evaporation/run`, {

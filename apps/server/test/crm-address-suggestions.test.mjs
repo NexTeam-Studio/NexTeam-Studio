@@ -30,7 +30,7 @@ test("CRM address suggestions route normalizes geocode results into UI-ready fie
   registerCrmRoutes(app, {
     memoryRepository: new MemoryNativeCrmRepository(),
     platformRepository: { listTenantUsers: async () => tenantUsers() },
-    env: { TENANT_ID: "aquatrace", GOOGLE_MAPS_API_KEY: "test-google-key" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false", GOOGLE_MAPS_API_KEY: "test-google-key" }
   });
   const server = await new Promise((resolve) => {
     const started = app.listen(0, () => resolve(started));
@@ -65,7 +65,7 @@ test("CRM client create route persists property coordinates when address autocom
   registerCrmRoutes(app, {
     memoryRepository: repository,
     platformRepository: { listTenantUsers: async () => tenantUsers() },
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
   const server = await new Promise((resolve) => {
     const started = app.listen(0, () => resolve(started));

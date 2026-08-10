@@ -1,7 +1,7 @@
 DOCUMENT_ID: NEXCOMMAND-FOUNDATION-LEDGER-20260810
 TITLE: NexCommand Foundation Implementation Ledger
 DOCUMENT_TYPE: ARCHITECTURE_RECORD
-STATUS: PHASE_B_GREEN
+STATUS: PHASE_C_GREEN
 CREATED_AT: 2026-08-10
 UPDATED_AT: 2026-08-10
 AUTHOR: NexTeam Global Control
@@ -111,6 +111,17 @@ Phase C is dispatched only through the validated local relay after the Phase B c
 - Relay route/target: `ops-bridge/to-codex.jsonl` → `atlas`.
 - Acknowledgement check: no relay acknowledgement or executor return was present after dispatch.
 - Actual run ID, PID, and heartbeat: **not available**. The existing file relay has queued the task but has not started an executor; recording invented values would violate the work order.
+
+## Phase C green gate repair and Phase D dispatch
+
+The Phase C aggregate gate was repaired on 2026-08-10 without weakening Firebase-required authentication. Existing local-only route fixtures now explicitly set `NEXI_FIREBASE_AUTH_REQUIRED: "false"`; the mobile profile helper now evaluates the route's injected runtime environment rather than global process state. Regression coverage proves profiles are unavailable when Firebase authentication is required and the Firebase-required runtime still fails closed without an Admin SDK.
+
+- Aggregate gate: `npm test` — 511 passed, 0 failed, 3 skipped.
+- Phase C focused gate: 27 passed, 0 failed.
+- Admin tenant-isolation emulator: 5 passed, 0 failed.
+- Static and boundary checks: typecheck, lint, tenancy, worktree scope/coverage, secret and secret-history scans, and `git diff --check` passed.
+- Phase D packet: `msg-5d254553-9825-4d8b-bb59-d42737406b9f` for `NEXTEAM-NEXCOMMAND-FOUNDATION-PHASE-D-20260810`, queued at `2026-08-10T17:56:44.8357745Z` through `ops-bridge/to-clawdia.jsonl`.
+- Phase D executor acknowledgement: not yet present in the relay at dispatch verification. No run ID, PID, or heartbeat is recorded until a real executor reports it.
 
 ## Risks and recovery
 

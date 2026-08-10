@@ -18,7 +18,7 @@ async function startApp() {
     platformRepository: {
       listTenantUsers: async () => [{ id: "owner_1", tenantId: "tenant_demo", displayName: "Owner", role: "OWNER", active: true, email: "owner@example.test" }]
     },
-    env: { TENANT_ID: "tenant_demo" }
+    env: { TENANT_ID: "tenant_demo", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
   const server = await new Promise((resolve) => {
     const started = app.listen(0, () => resolve(started));

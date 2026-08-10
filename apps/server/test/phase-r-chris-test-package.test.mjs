@@ -23,7 +23,7 @@ test("Phase R Chris package is fixed-url, isolated, and presents only explicit l
   assert.match(launcher, /ANTHROPIC_API_KEY/);
   assert.match(launcher, /RESEND_API_KEY/);
 
-  const profiles = listLocalDevWebProfiles("local-chris-test");
+  const profiles = listLocalDevWebProfiles("local-chris-test", { NEXI_FIREBASE_AUTH_REQUIRED: "false" });
   assert.deepEqual(profiles.map(({ email, role, tenantId }) => ({ email, role, tenantId })), [
     { email: "owner@local.dev", role: "OWNER", tenantId: "local-chris-test" },
     { email: "office@local.dev", role: "OFFICE_ADMIN", tenantId: "local-chris-test" },

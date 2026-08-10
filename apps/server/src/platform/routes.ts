@@ -17,6 +17,7 @@ import { activateProspectTenant, type FirebaseOwnerActivation } from "./tenantAc
 import { newOwnerInvite, type OwnerInviteSender } from "./tenantOwnerInvite.js";
 import { buildOnboardingPlanInsights } from "./onboardingInsights.js";
 import { readLiveBuildStatus } from "./liveBuildStatus.js";
+import { newPlatformUserAudit, PLATFORM_TEAM_CAPABILITIES, platformTeamCapabilitySchema, platformUserSchema, platformUserSummary, type PlatformTeamCapability, type PlatformUser } from "./team.js";
 import {
   authorizeStripeConnectCallback,
   createOrReuseStripeConnectOnboarding,
@@ -163,6 +164,9 @@ const verifyJobAccessLinkSchema = z.object({
   token: z.string().min(16)
 });
 
+const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true, role: true }).strict();
+const platformUserPatchSchema = platformUserInputSchema.omit({ authUid: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
+
 export interface PlatformRouteDeps {
   repository: PlatformRepository;
   storage: StorageWriter | null;
@@ -228,6 +232,27 @@ async function requirePlatformSupportOperator(req: Request, env: NodeJS.ProcessE
   if (!hasPlatformAccess(decoded, env)) throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformAuth", status: 403 });
 }
 
+function platformCapabilities(decoded: DecodedIdToken): PlatformTeamCapability[] {
+  const claimed = (decoded as unknown as Record<string, unknown>).platformCapabilities;
+  return Array.isArray(claimed)
+    ? claimed.filter((value): value is PlatformTeamCapability => platformTeamCapabilitySchema.safeParse(value).success)
+    : PLATFORM_TEAM_CAPABILITIES;
+}
+
+async function requirePlatformTeamCapability(req: Request, env: NodeJS.ProcessEnv, capability: PlatformTeamCapability, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<{ uid: string; capabilities: PlatformTeamCapability[] }> {
+  if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") return { uid: "local-platform-operator", capabilities: PLATFORM_TEAM_CAPABILITIES };
+  const header = req.header("authorization") ?? "";
+  const token = header.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!token) throw new RailError("Firebase platform operator sign-in is required.", { provider: "firebase", op: "platformTeam", status: 401 });
+  const auth = authOverride ?? getAdminAuth(env);
+  if (!auth) throw new RailError("Platform authentication is temporarily unavailable.", { provider: "firebase", op: "platformTeam", status: 503 });
+  const decoded = await auth.verifyIdToken(token);
+  if (!hasPlatformAccess(decoded, env)) throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformTeam", status: 403 });
+  const capabilities = platformCapabilities(decoded);
+  if (!capabilities.includes(capability)) throw new RailError("Platform operator lacks the required NexCommand capability.", { provider: "firebase", op: "platformTeam", status: 403 });
+  return { uid: decoded.uid, capabilities };
+}
+
 function sendRouteError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
   const message = error instanceof Error ? error.message : "Unknown platform route error";
@@ -278,6 +303,86 @@ export async function loadTenantFromPlatform(repository: PlatformRepository, ten
 
 export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): void {
   const env = deps.env ?? process.env;
+
+  // NexCommand Team is platform-owned personnel metadata. It deliberately does
+  // not use tenantUsers, tenant roles, or tenant capabilities.
+  app.get("/api/platform/admin/team", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformTeamCapability(req, env, "platform.team.view", deps.platformOperatorAuth);
+      const users = await deps.repository.listPlatformUsers();
+      res.json({ ok: true, users: users.map(platformUserSummary) });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.get("/api/platform/admin/team/me", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.profile.self", deps.platformOperatorAuth);
+      const user = await deps.repository.getPlatformUserByAuthUid(actor.uid);
+      res.json({ ok: true, user });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.get("/api/platform/admin/team/:userId", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.team.view", deps.platformOperatorAuth);
+      const userId = req.params.userId; if (!userId) throw new RailError("Platform user id is required.", { provider: "platform", op: "platformTeamRead", status: 400 });
+      const user = await deps.repository.getPlatformUser(userId);
+      if (!user) throw new RailError("Platform user was not found.", { provider: "platform", op: "platformTeamRead", status: 404 });
+      // Contact and address data are only returned to the subject or a manager.
+      if (user.authUid !== actor.uid && !actor.capabilities.includes("platform.team.manage")) return res.json({ ok: true, user: platformUserSummary(user) });
+      res.json({ ok: true, user });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.post("/api/platform/admin/team", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.platformOperatorAuth);
+      const input = platformUserInputSchema.parse(req.body ?? {});
+      const existing = await deps.repository.getPlatformUserByAuthUid(input.authUid);
+      if (existing) throw new RailError("A platform profile already exists for that signed-in identity.", { provider: "platform", op: "platformTeamCreate", status: 409 });
+      const timestamp = new Date().toISOString();
+      const user = await deps.repository.savePlatformUser({ ...input, id: `platform_user_${randomUUID()}`, accountStatus: "ACTIVE", createdAt: timestamp, updatedAt: timestamp, createdBy: actor.uid, updatedBy: actor.uid } as PlatformUser);
+      await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.added", actor.uid, "Profile record added; no Firebase identity, invitation, or email was created.", timestamp));
+      res.status(201).json({ ok: true, user });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.patch("/api/platform/admin/team/:userId", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.platformOperatorAuth);
+      const userId = req.params.userId; if (!userId) throw new RailError("Platform user id is required.", { provider: "platform", op: "platformTeamUpdate", status: 400 });
+      const existing = await deps.repository.getPlatformUser(userId);
+      if (!existing) throw new RailError("Platform user was not found.", { provider: "platform", op: "platformTeamUpdate", status: 404 });
+      const patch = platformUserPatchSchema.parse(req.body ?? {});
+      const timestamp = new Date().toISOString();
+      const user = await deps.repository.savePlatformUser({ ...existing, ...patch, updatedAt: timestamp, updatedBy: actor.uid } as PlatformUser);
+      await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Profile metadata updated.", timestamp));
+      res.json({ ok: true, user });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  for (const [verb, accountStatus, action] of [["disable", "DISABLED", "platform_user.disabled"], ["reactivate", "ACTIVE", "platform_user.reactivated"]] as const) {
+    app.post(`/api/platform/admin/team/:userId/${verb}`, async (req: Request, res: Response) => {
+      try {
+        const actor = await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.platformOperatorAuth);
+        const userId = req.params.userId; if (!userId) throw new RailError("Platform user id is required.", { provider: "platform", op: "platformTeamStatus", status: 400 });
+        const existing = await deps.repository.getPlatformUser(userId);
+        if (!existing) throw new RailError("Platform user was not found.", { provider: "platform", op: "platformTeamStatus", status: 404 });
+        const timestamp = new Date().toISOString();
+        const user = await deps.repository.savePlatformUser({ ...existing, accountStatus, updatedAt: timestamp, updatedBy: actor.uid });
+        await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, action, actor.uid, `Account marked ${accountStatus}.`, timestamp));
+        res.json({ ok: true, user });
+      } catch (error) { sendRouteError(res, error); }
+    });
+  }
+
+  app.get("/api/platform/admin/team/:userId/audit", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.platformOperatorAuth);
+      const userId = req.params.userId; if (!userId) throw new RailError("Platform user id is required.", { provider: "platform", op: "platformTeamAudit", status: 400 });
+      res.json({ ok: true, audits: await deps.repository.listPlatformUserAudits(userId) });
+    } catch (error) { sendRouteError(res, error); }
+  });
 
   // This is deliberately platform-operator guarded rather than tenant-role guarded.
   // Tenant ownership is never enough to enter the NexTeam Admin surface.

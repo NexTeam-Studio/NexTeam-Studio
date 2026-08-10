@@ -367,7 +367,7 @@ function appForFixture(fixture, overrides = {}) {
     repository: fixture.fieldDocsRepository,
     crmRepository: fixture.repository,
     eventBus: fixture.eventBus,
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
   registerCrmRoutes(app, {
     approvalQueue: fixture.approvalQueue,
@@ -382,7 +382,7 @@ function appForFixture(fixture, overrides = {}) {
     reviewSequenceService: fixture.reviewSequenceService,
     operationsHubService: fixture.operationsHubService,
     ...(overrides.nexDocsService ? { nexDocsService: overrides.nexDocsService } : {}),
-    env: { TENANT_ID: "aquatrace" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
   return app;
 }
