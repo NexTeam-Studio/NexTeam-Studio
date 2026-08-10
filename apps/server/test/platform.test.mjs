@@ -733,6 +733,29 @@ test("platform-admin routes fail closed when Firebase auth is required but unava
   }
 });
 
+test("live build status is read-only, operator-guarded, and IDLE without a controller heartbeat", async () => {
+  const app = express();
+  app.use(express.json());
+  registerPlatformRoutes(app, {
+    repository: new InMemoryPlatformRepository(), storage: null,
+    env: { NEXI_FIREBASE_AUTH_REQUIRED: "true" },
+    platformOperatorAuth: { async verifyIdToken(token) { return token === "operator" ? { uid: "operator", platform_operator: true } : { uid: "tenant-owner" }; } }
+  });
+  const server = app.listen(0);
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`;
+    assert.equal((await fetch(`${base}/api/platform/admin/live-build-status`, { headers: { authorization: "Bearer tenant-owner" } })).status, 403);
+    const response = await fetch(`${base}/api/platform/admin/live-build-status`, { headers: { authorization: "Bearer operator" } });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.actualState, "IDLE");
+    assert.equal(body.runId, null);
+    assert.deepEqual(body.completedTasks, []);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test("tenant blockers persist by tenant and platform support escalation denies non-operators", async () => {
   const repository = new InMemoryPlatformRepository([defaultTenant("tenant-a", "suite"), defaultTenant("tenant-b", "suite")]);
   const app = express();

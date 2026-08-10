@@ -21,6 +21,14 @@ test("NexCommand only displays a sanitized operator error", () => {
   assert.doesNotMatch(source, /error\.message/);
 });
 
+test("NexCommand live build status is controller-backed, refreshes, and exposes the full read-only run record", () => {
+  assert.match(source, /\/api\/platform\/admin\/live-build-status/);
+  assert.match(source, /setInterval\(\(\) => void refresh\(\), 30_000\)/);
+  assert.match(source, /No current controller run or fresh heartbeat means IDLE/);
+  for (const label of ["Current Build", "Current Task", "Actual State", "Run ID", "PID", "Last Heartbeat", "Progress", "Completed Tasks", "Remaining Tasks", "Blocker", "Last Activity"]) assert.match(source, new RegExp(`"${label}"`));
+  assert.doesNotMatch(source, /NEXCOMMAND_LIVE_BUILD_HEARTBEAT/);
+});
+
 test("NexCommand keeps one clean header lockup and removes the duplicate sidebar brand", () => {
   assert.match(styles, /\.nexcommand__brand \.platform-mark \{ flex:0 0 auto; width:36px; height:36px/);
   assert.match(styles, /\.nexcommand__brand span \{ width:144px; height:27px/);

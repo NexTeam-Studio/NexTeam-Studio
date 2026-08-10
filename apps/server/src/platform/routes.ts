@@ -16,6 +16,7 @@ import { activeSubscriptionPackages } from "./subscriptionPackages.js";
 import { activateProspectTenant, type FirebaseOwnerActivation } from "./tenantActivation.js";
 import { newOwnerInvite, type OwnerInviteSender } from "./tenantOwnerInvite.js";
 import { buildOnboardingPlanInsights } from "./onboardingInsights.js";
+import { readLiveBuildStatus } from "./liveBuildStatus.js";
 import {
   authorizeStripeConnectCallback,
   createOrReuseStripeConnectOnboarding,
@@ -294,6 +295,15 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
           activationPending: prospects.filter((prospect) => prospect.status === "SUBSCRIPTION_REQUIRED").length
         }
       });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/admin/live-build-status", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      res.json({ ok: true, ...(await readLiveBuildStatus(env)) });
     } catch (error) {
       sendRouteError(res, error);
     }

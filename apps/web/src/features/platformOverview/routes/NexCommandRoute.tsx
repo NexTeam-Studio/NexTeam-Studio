@@ -56,7 +56,7 @@ export function NexCommandRoute(): React.ReactElement {
 }
 
 function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOverview>["rows"]; workingTenant: string; onRunBackup: ReturnType<typeof useTenantOverview>["runBackup"]; user: ReturnType<typeof useAuthSession>["user"]; summary: { tenants: number; active: number } }): React.ReactElement {
-  if (props.area === "dashboard") return <><section className="nexcommand__metrics"><Metric label="Active tenants" value={String(props.summary.active)} /><Metric label="Tenant records" value={String(props.summary.tenants)} /><Metric label="Pilot package" value="$0.00" /><Metric label="Staging health" value="Connected" /></section><section className="nexcommand__panel"><h2>Operator overview</h2><p>Use NexCommand to manage verified tenant onboarding and platform operations. Metrics appear only when the platform provides the underlying data.</p></section></>;
+  if (props.area === "dashboard") return <><section className="nexcommand__metrics"><Metric label="Active tenants" value={String(props.summary.active)} /><Metric label="Tenant records" value={String(props.summary.tenants)} /><Metric label="Pilot package" value="$0.00" /><Metric label="Staging health" value="Connected" /></section><LiveBuildStatusPanel user={props.user} /><section className="nexcommand__panel"><h2>Operator overview</h2><p>Use NexCommand to manage verified tenant onboarding and platform operations. Metrics appear only when the platform provides the underlying data.</p></section></>;
   if (props.area === "tenants") return <section className="nexcommand__panel"><h2>Tenant administration</h2><p>Tenant records remain scoped to their own data. Open a tenant row to review its current platform summary.</p><TenantOverviewPanel rows={props.rows} workingTenant={props.workingTenant} onRunBackup={props.onRunBackup} /></section>;
   if (props.area === "prospects") return <PlatformProspectIntakePanel user={props.user} />;
   if (props.area === "blueprints" || props.area === "subscriptions" || props.area === "onboarding") return <PlatformLifecycleRecordsPanel user={props.user} mode={props.area} />;
@@ -71,5 +71,40 @@ function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOv
 }
 
 function Metric(props: { label: string; value: string }): React.ReactElement { return <article><span>{props.label}</span><strong>{props.value}</strong></article>; }
+type LiveBuildStatus = {
+  currentBuild: string | null; currentTask: string | null; actualState: "ACTIVE" | "IDLE"; runId: string | null; pid: number | null;
+  lastHeartbeat: string | null; progress: string | null; completedTasks: string[]; remainingTasks: string[]; blocker: string | null; lastActivity: string | null;
+};
+
+function displayBuildValue(value: string | number | null): string { return value === null || value === "" ? "—" : String(value); }
+
+function LiveBuildStatusPanel({ user }: { user: ReturnType<typeof useAuthSession>["user"] }): React.ReactElement {
+  const [status, setStatus] = useState<LiveBuildStatus | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    let live = true;
+    const refresh = async (): Promise<void> => {
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch("/api/platform/admin/live-build-status", { headers: { authorization: `Bearer ${token}` } });
+        const body = await response.json() as LiveBuildStatus;
+        if (!live) return;
+        setStatus(response.ok ? body : null);
+        setUnavailable(!response.ok);
+      } catch {
+        if (live) { setStatus(null); setUnavailable(true); }
+      }
+    };
+    void refresh();
+    const interval = window.setInterval(() => void refresh(), 30_000);
+    return () => { live = false; window.clearInterval(interval); };
+  }, [user]);
+  const rows: Array<[string, string | number | null]> = status ? [
+    ["Current Build", status.currentBuild], ["Current Task", status.currentTask], ["Actual State", status.actualState], ["Run ID", status.runId], ["PID", status.pid],
+    ["Last Heartbeat", status.lastHeartbeat], ["Progress", status.progress], ["Completed Tasks", status.completedTasks.join(", ") || null], ["Remaining Tasks", status.remainingTasks.join(", ") || null], ["Blocker", status.blocker], ["Last Activity", status.lastActivity]
+  ] : [];
+  return <section className="nexcommand__panel nexcommand__live-build"><p className="ui-eyebrow">NexCommand Live Build Status</p><h2>{unavailable ? "Unavailable" : status?.actualState ?? "Loading…"}</h2><p>Controller-backed runtime state. No current controller run or fresh heartbeat means IDLE.</p>{status ? <dl className="nexcommand__facts">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{displayBuildValue(value)}</dd></div>)}</dl> : null}</section>;
+}
 function Directory(props: { title: string; items: string[][]; external?: boolean }): React.ReactElement { return <section className="nexcommand__panel"><h2>{props.title}</h2><div className="nexcommand__directory">{props.items.map(([name, purpose, environment, link]) => { const href = props.external ? link : environment; const badge = props.external ? environment : "Available"; return <article key={name}><h3>{name}</h3><p>{purpose}</p><span>{badge}</span><a href={href} target={props.external ? "_blank" : undefined} rel={props.external ? "noreferrer" : undefined}>{props.external ? "Open console" : "Open area"}</a></article>; })}</div></section>; }
 function StripeBillingPanel({ user }: { user: ReturnType<typeof useAuthSession>["user"] }): React.ReactElement { const [status, setStatus] = useState("Loading Stripe provider status…"); useEffect(() => { if (!user) return; void user.getIdToken().then((token) => fetch("/api/platform/admin/providers/stripe", { headers: { authorization: `Bearer ${token}` } })).then(async (response) => { const body = await response.json() as { environment?: string; credentialStatus?: string; billingRailStatus?: string; lastVerification?: string; liveChargesAllowed?: boolean }; setStatus(response.ok ? `${body.environment} · Credentials: ${body.credentialStatus} · Billing Rail: ${body.billingRailStatus} · Last Verification: ${body.lastVerification} · Live Charges: ${body.liveChargesAllowed ? "Allowed" : "Blocked"}` : "Stripe status is unavailable."); }).catch(() => setStatus("Stripe status is unavailable.")); }, [user]); return <section className="nexcommand__panel"><p className="ui-eyebrow">Stripe Billing</p><h2>Billing</h2><p>{status}</p><p>Staging is limited to Stripe Test Mode. No live payment method can be charged from staging. Subscription assignments appear in Subscriptions.</p><a href="https://dashboard.stripe.com/test" target="_blank" rel="noreferrer">Open Stripe Test Console</a></section>; }
