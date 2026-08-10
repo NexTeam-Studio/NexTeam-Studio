@@ -7,7 +7,7 @@ test("staging owner invitation uses only the approved sender and gmail.send", ()
   assert.equal(config.configured, true);
   const url = createAuthorizationUrl({ clientId: "client", state: "state", verifier: "verifier" });
   assert.equal(url.searchParams.get("scope"), "https://www.googleapis.com/auth/gmail.send");
-  assert.equal(url.searchParams.get("redirect_uri"), "http://127.0.0.1:53682/oauth2callback");
+  assert.equal(url.searchParams.get("redirect_uri"), "http://localhost:53682/oauth2callback");
 });
 
 test("staging owner invitation rejects a mismatched sender without legacy fallback", () => {

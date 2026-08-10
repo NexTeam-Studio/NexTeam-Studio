@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const SENDER = "nexteamstudioai@gmail.com";
 const SCOPE = "https://www.googleapis.com/auth/gmail.send";
-const REDIRECT_URI = "http://127.0.0.1:53682/oauth2callback";
+const REDIRECT_URI = "http://localhost:53682/oauth2callback";
 const AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const PROFILE_ENDPOINT = "https://gmail.googleapis.com/gmail/v1/users/me/profile";
