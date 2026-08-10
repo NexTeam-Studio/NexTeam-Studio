@@ -1,7 +1,7 @@
 # Today Goal 1 — Gmail-independent tenant owner activation receipt
 
-Job: `NEXTEAM-TODAY-GOAL1-GMAIL-INDEPENDENT-20260810`  
-Worktree: `target-architecture-integration`  
+Job: `NEXTEAM-TODAY-GOAL1-GMAIL-INDEPENDENT-20260810`
+Worktree: `target-architecture-integration`
 Scope: tenant activation, Firebase owner identity/linkage, operator visibility,
 and tenant isolation only.
 
