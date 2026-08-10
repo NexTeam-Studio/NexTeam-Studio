@@ -116,7 +116,7 @@ function writeStagingRefreshToken(refreshToken, spawnImpl = spawn) {
 
 function openBrowser(url, spawnImpl = spawn) {
   return new Promise((resolve, reject) => {
-    const child = spawnImpl("powershell.exe", ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", "Start-Process -FilePath $args[0]", url.toString()], { windowsHide: true, stdio: "ignore" });
+    const child = spawnImpl("cmd.exe", ["/d", "/s", "/c", "start", "", url.toString()], { windowsHide: true, stdio: "ignore" });
     child.once("error", () => reject(new Error("Could not open the Google authorization page.")));
     child.once("spawn", resolve);
   });
