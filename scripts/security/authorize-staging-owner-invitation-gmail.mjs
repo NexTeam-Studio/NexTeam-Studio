@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import http from "node:http";
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const SENDER = "nexteamstudioai@gmail.com";
 const SCOPE = "https://www.googleapis.com/auth/gmail.send";
@@ -116,7 +117,8 @@ function writeStagingRefreshToken(refreshToken, spawnImpl = spawn) {
 
 function openBrowser(url, spawnImpl = spawn) {
   return new Promise((resolve, reject) => {
-    const child = spawnImpl("cmd.exe", ["/d", "/s", "/c", "start", "", url.toString()], { windowsHide: true, stdio: "ignore" });
+    const launcher = fileURLToPath(new URL("./open-staging-gmail-authorization.ps1", import.meta.url));
+    const child = spawnImpl("powershell.exe", ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-File", launcher, url.toString()], { windowsHide: true, stdio: "ignore" });
     child.once("error", () => reject(new Error("Could not open the Google authorization page.")));
     child.once("spawn", resolve);
   });
