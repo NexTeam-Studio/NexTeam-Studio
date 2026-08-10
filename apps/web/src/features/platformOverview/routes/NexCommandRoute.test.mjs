@@ -29,6 +29,16 @@ test("NexCommand exposes a platform Team area without treating it as tenant user
   assert.match(source, /\/api\/platform\/admin\/team/);
 });
 
+test("NexCommand exposes only sanitized staging Gmail provider identity and health", () => {
+  assert.match(source, /Credentials &amp; Provider Management/);
+  assert.match(source, /\/api\/platform\/admin\/providers\/gmail\/staging-owner-invitation/);
+  assert.match(source, /Sender identity/);
+  assert.match(source, /Required scope/);
+  assert.match(source, /Secret health/);
+  assert.match(source, /Credentials are never shown/);
+  assert.doesNotMatch(source, /GMAIL_SEND_MAILBOX_REFRESH_TOKEN\s*=/);
+});
+
 test("NexCommand live build status is controller-backed, refreshes, and exposes the full read-only run record", () => {
   assert.match(source, /\/api\/platform\/admin\/live-build-status/);
   assert.match(source, /setInterval\(\(\) => void refresh\(\), 30_000\)/);

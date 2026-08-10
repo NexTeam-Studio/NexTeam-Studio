@@ -16,6 +16,7 @@ import { activeSubscriptionPackages } from "./subscriptionPackages.js";
 import { activateProspectTenant, type FirebaseOwnerActivation } from "./tenantActivation.js";
 import { confirmSubscriptionCancellation, requestSubscriptionCancellation, resubscribeTenant } from "./tenantSubscriptionLifecycle.js";
 import { newOwnerInvite, type OwnerInviteSender } from "./tenantOwnerInvite.js";
+import { stagingOwnerInvitationGmailProviderStatus } from "../comms/gmailRegistry.js";
 import { buildOnboardingPlanInsights } from "./onboardingInsights.js";
 import { readLiveBuildStatus } from "./liveBuildStatus.js";
 import { newPlatformUserAudit, PLATFORM_CAPABILITIES, platformCapabilitySchema, platformUserSchema, platformUserSummary, resolvePlatformCapabilities, type PlatformCapability, type PlatformUser } from "./team.js";
@@ -522,6 +523,15 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const staging = (env.RAILWAY_ENVIRONMENT ?? "").toLowerCase() === "staging" || (env.NODE_ENV ?? "").toLowerCase() !== "production";
       const testMode = key.startsWith("sk_test_");
       res.json({ ok: true, provider: "Stripe", environment: staging ? "Test Mode" : "Live Mode", credentialStatus: key ? (staging && !testMode ? "INVALID_FOR_STAGING" : "CONFIGURED") : "NOT_CONFIGURED", billingRailStatus: key && (!staging || testMode) ? "READY" : "NOT_READY", lastVerification: new Date().toISOString(), liveChargesAllowed: !staging && key.startsWith("sk_live_") });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/platform/admin/providers/gmail/staging-owner-invitation", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
+      res.json({ ok: true, ...stagingOwnerInvitationGmailProviderStatus(env) });
     } catch (error) {
       sendRouteError(res, error);
     }

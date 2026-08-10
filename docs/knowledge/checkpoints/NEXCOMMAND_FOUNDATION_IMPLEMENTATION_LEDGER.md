@@ -1,7 +1,7 @@
 DOCUMENT_ID: NEXCOMMAND-FOUNDATION-LEDGER-20260810
 TITLE: NexCommand Foundation Implementation Ledger
 DOCUMENT_TYPE: ARCHITECTURE_RECORD
-STATUS: PHASE_E_GREEN
+STATUS: PHASE_E_GREEN__TODAY_GOAL2_GREEN__TODAY_GOAL1_IN_PROGRESS
 CREATED_AT: 2026-08-10
 UPDATED_AT: 2026-08-10
 AUTHOR: NexTeam Global Control
@@ -19,9 +19,9 @@ TAGS: nexcommand, foundation, phase-d, ownership, controller, relay, security, p
 ## Current authoritative phase count
 
 As of 2026-08-10, Phases **A, B, C, and D** are independently GREEN.
-That is **4 of 15 Foundation phases: 26.7% verified complete**. Phase E is
-IN PROGRESS and is not included in the verified count until its complete gate
-evidence is captured. This entry supersedes the stale Phase C-only status above.
+That is **5 of 15 Foundation phases: 33.3% verified complete**. Phase E is
+GREEN and included in the verified count. This entry supersedes the stale
+Phase C-only status above.
 
 ## Phase E measurable gate
 
@@ -42,6 +42,42 @@ substeps; implementation activity alone does not increase the count.
 | 10 | Focused Phase E GREEN commit exists | VERIFIED — see Phase E recovery commit. |
 
 **Phase E verified progress: 10 of 10 (100%). Phase E is GREEN.**
+
+## Today Goal 2 measurable gate
+
+| # | Required outcome | Status |
+| --- | --- | --- |
+| 1 | Active tenant lifecycle baseline | VERIFIED |
+| 2 | Two deliberate server-validated cancellation confirmations | VERIFIED |
+| 3 | Disabled/archived state without tenant deletion | VERIFIED |
+| 4 | Normal tenant access revocation | VERIFIED |
+| 5 | Retention of users, profiles, configuration, documents, transactions, history, and audit data | VERIFIED |
+| 6 | Resubscribe creates a new immutable subscription ID | VERIFIED |
+| 7 | Same permanent immutable tenant ID is reactivated | VERIFIED |
+| 8 | Owner/profile/data linkage and authorized access restore | VERIFIED |
+| 9 | Idempotency protections | VERIFIED |
+| 10 | Cross-tenant isolation regression coverage | VERIFIED |
+| 11 | Full gate, receipt, and focused commit | VERIFIED |
+
+**Today Goal 2 verified progress: 11 of 11 (100%) — GREEN at \`b090a28\`.**
+
+## Today Goal 1 measurable gate
+
+| # | Required outcome | Status |
+| --- | --- | --- |
+| 1 | Atomic idempotent tenant activation | VERIFIED |
+| 2 | Passwordless Firebase owner creation or safe reuse | VERIFIED |
+| 3 | Owner linked to immutable tenant and tenant-user profile | VERIFIED |
+| 4 | Owner profile persisted | VERIFIED |
+| 5 | Tenant activation/onboarding state visible in NexCommand | VERIFIED |
+| 6 | Owner profile visible to authorized NexCommand operators | VERIFIED |
+| 7 | Two-way tenant isolation and no local-owner fallback | VERIFIED |
+| 8 | Containment-safe staging Gmail preflight | BLOCKED — the non-secret staging owner-invitation identity is registered and displayed in NexCommand Credentials & Provider Management, but the OAuth client/project-to-sender mapping is unproven. Integrations remain quarantined; `SAFE_TO_REAUTHORIZE=false`. Proof: `docs/contracts/staging-owner-invitation-gmail-provider.md` and `receipts/architecture/NEXTEAM-TODAY-GOAL1-STAGING-GMAIL-PREFLIGHT-20260810.md`. |
+| 9 | Owner invitation send succeeds | NOT YET VERIFIED |
+| 10 | Actual invitation delivery is verified | NOT YET VERIFIED |
+
+**Today Goal 1 verified progress: 7 of 10 (70%).** Gmail must not reduce,
+bypass, or modify the seven completed identity/lifecycle protections.
 
 ## Phase E completion and Phase F relay packet
 

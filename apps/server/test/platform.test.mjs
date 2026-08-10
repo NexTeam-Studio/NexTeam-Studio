@@ -290,12 +290,27 @@ test("platform routes expose tenants, test subscription, backup, and export", as
     repository,
     storage,
     firebaseOwnerActivation,
-    env: { NEXI_FIREBASE_AUTH_REQUIRED: "false", PLATFORM_FAKE_STRIPE: "true", STRIPE_SECRET_KEY: "sk_test_fake" }
+    env: { NEXI_FIREBASE_AUTH_REQUIRED: "false", PLATFORM_FAKE_STRIPE: "true", STRIPE_SECRET_KEY: "sk_test_fake", NEXTEAM_EXTERNAL_INTEGRATIONS_QUARANTINED: "true" }
   });
   const server = app.listen(0);
   try {
     const { port } = server.address();
     const base = `http://127.0.0.1:${port}`;
+    const gmailProvider = await fetch(`${base}/api/platform/admin/providers/gmail/staging-owner-invitation`).then((response) => response.json());
+    assert.deepEqual(gmailProvider, {
+      ok: true,
+      provider: "gmail",
+      senderIdentity: "nexteamstudioai@gmail.com",
+      environment: "staging",
+      purpose: "owner invitation",
+      requiredScope: "gmail.send",
+      secretDestinationName: "GMAIL_SEND_MAILBOX_REFRESH_TOKEN",
+      oauthClientStatus: "MISSING",
+      quarantineState: "QUARANTINED",
+      secretHealth: "MISSING",
+      safeToReauthorize: false,
+      reauthorizationReason: "SAFE_TO_REAUTHORIZE=false: the OAuth client/project is not proven by an authoritative non-secret record."
+    });
     const subscribe = await fetch(`${base}/api/platform/tenants/second-test/subscribe-test`, {
       method: "POST",
       headers: { "content-type": "application/json" },

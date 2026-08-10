@@ -16,7 +16,7 @@ Railway staging env contract:
 - `TENANT_ID`: tenant that owns the Gmail rail; staging currently binds this rail to `aquatrace`.
 - `GMAIL_READONLY_MAILBOX_1_EMAIL`, `_ALIAS`, `_REFRESH_TOKEN`: first existing mailbox, consented with `gmail.readonly`.
 - `GMAIL_READONLY_MAILBOX_2_EMAIL`, `_ALIAS`, `_REFRESH_TOKEN`: second existing mailbox, consented with `gmail.readonly`.
-- `GMAIL_SEND_MAILBOX_EMAIL`, `_ALIAS`, `_REFRESH_TOKEN`: dedicated Nexi sender mailbox, consented with `gmail.send` and, when read is enabled, `gmail.readonly`.
+- `GMAIL_SEND_MAILBOX_EMAIL`, `_ALIAS`, `_REFRESH_TOKEN`: dedicated sender mailbox, consented with `gmail.send` and, when read is enabled, `gmail.readonly`. The staging owner-invitation sender identity and its exact required scope are recorded non-secretly in `apps/server/src/comms/gmailRegistry.ts`; its refresh credential belongs only in Railway staging `GMAIL_SEND_MAILBOX_REFRESH_TOKEN`.
 - `GMAIL_SEND_MAILBOX_READ_ENABLED=true`: also exposes the dedicated Nexi mailbox to read/search tools while keeping sends approval-gated.
 
 Per-mailbox `_CLIENT_ID` and `_CLIENT_SECRET` can override the shared OAuth client if a fresh client is needed.

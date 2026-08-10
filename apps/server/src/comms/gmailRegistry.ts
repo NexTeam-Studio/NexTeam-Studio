@@ -10,6 +10,49 @@ export interface CommsRail {
   operatorEmail?: string | undefined;
 }
 
+/**
+ * Authoritative non-secret deployment identity for the separately gated owner
+ * invitation rail. This is platform infrastructure, never tenant data.
+ */
+export const STAGING_OWNER_INVITATION_GMAIL_PROVIDER = Object.freeze({
+  provider: "gmail",
+  senderIdentity: "nexteamstudioai@gmail.com",
+  environment: "staging",
+  purpose: "owner invitation",
+  requiredScope: "gmail.send",
+  secretDestinationName: "GMAIL_SEND_MAILBOX_REFRESH_TOKEN"
+});
+
+export type StagingOwnerInvitationGmailProviderStatus = {
+  provider: "gmail";
+  senderIdentity: string;
+  environment: "staging";
+  purpose: "owner invitation";
+  requiredScope: "gmail.send";
+  secretDestinationName: "GMAIL_SEND_MAILBOX_REFRESH_TOKEN";
+  oauthClientStatus: "PRESENT_UNIDENTIFIED" | "MISSING";
+  quarantineState: "QUARANTINED" | "NOT_QUARANTINED";
+  secretHealth: "PRESENT" | "MISSING";
+  safeToReauthorize: false;
+  reauthorizationReason: string;
+};
+
+/**
+ * Returns only non-secret preflight state. OAuth client/project identity stays
+ * unreported until an authoritative non-secret label or identifier is recorded.
+ */
+export function stagingOwnerInvitationGmailProviderStatus(env: NodeJS.ProcessEnv): StagingOwnerInvitationGmailProviderStatus {
+  const clientIdPresent = Boolean(value(env, "GMAIL_OAUTH_CLIENT_ID") || value(env, "GMAIL_SEND_MAILBOX_CLIENT_ID") || value(env, "GOOGLE_CLIENT_ID"));
+  return {
+    ...STAGING_OWNER_INVITATION_GMAIL_PROVIDER,
+    oauthClientStatus: clientIdPresent ? "PRESENT_UNIDENTIFIED" : "MISSING",
+    quarantineState: value(env, "NEXTEAM_EXTERNAL_INTEGRATIONS_QUARANTINED").toLowerCase() === "true" ? "QUARANTINED" : "NOT_QUARANTINED",
+    secretHealth: value(env, STAGING_OWNER_INVITATION_GMAIL_PROVIDER.secretDestinationName) ? "PRESENT" : "MISSING",
+    safeToReauthorize: false,
+    reauthorizationReason: "SAFE_TO_REAUTHORIZE=false: the OAuth client/project is not proven by an authoritative non-secret record."
+  };
+}
+
 function envKey(value: string): string {
   return value.replace(/[^A-Z0-9]+/gi, "_").replace(/^_+|_+$/g, "").toUpperCase();
 }

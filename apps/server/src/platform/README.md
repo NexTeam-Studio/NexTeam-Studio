@@ -10,4 +10,5 @@ Start here when something breaks:
 - `billing.ts` only accepts Stripe test-mode keys in this build lane. A live key here is a failed receipt.
 - `backup.ts` exports tenant data and writes backup records. Backups should contain tenant-scoped collections only.
 - Tenant blockers and linked platform support escalations are platform-operator-only records. They contain tenant IDs and non-secret operational detail; never place provider credentials, payment data, or access tokens in a blocker or escalation.
+- The staging owner-invitation Gmail identity is platform infrastructure in `../comms/gmailRegistry.ts`, not a tenant record. NexCommand may read its sanitized status through the provider route; it must never return secret values or clear the external-integrations quarantine.
 - Firestore rules for these records live in `../../../firestore.rules`; job links stay server-only and tenant users are owner/admin/self-readable.
