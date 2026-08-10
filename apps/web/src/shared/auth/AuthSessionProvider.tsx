@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, type Auth, type User } from "firebase/auth";
-import { loadAuthBootstrap, signInWithLocalCredentials, signOutOperator } from "./authBootstrap";
+import { loadAuthBootstrap, markFreshNexCommandAuthentication, signInWithLocalCredentials, signOutOperator } from "./authBootstrap";
 import type { LocalAuthProfileSummary } from "./types";
 
 export interface AuthSessionValue {
@@ -61,6 +61,7 @@ export function AuthSessionProvider(props: { children: React.ReactNode }): React
     const nextUser = localAuthEnabled
       ? await signInWithLocalCredentials(email, localTenantId)
       : (await signInWithEmailAndPassword(requireFirebaseAuth(auth), email, password)).user;
+    markFreshNexCommandAuthentication();
     setUser(nextUser);
   }
 

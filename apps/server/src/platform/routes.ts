@@ -18,6 +18,7 @@ import { newOwnerInvite, type OwnerInviteSender } from "./tenantOwnerInvite.js";
 import { buildOnboardingPlanInsights } from "./onboardingInsights.js";
 import { readLiveBuildStatus } from "./liveBuildStatus.js";
 import { newPlatformUserAudit, PLATFORM_CAPABILITIES, platformCapabilitySchema, platformUserSchema, platformUserSummary, resolvePlatformCapabilities, type PlatformCapability, type PlatformUser } from "./team.js";
+import { NEXCOMMAND_IDLE_TIMEOUT_MS, hashSessionToken, newNexCommandSession, newPlatformSecurityAudit, type PlatformSession } from "./sessionSecurity.js";
 import {
   authorizeStripeConnectCallback,
   createOrReuseStripeConnectOnboarding,
@@ -177,6 +178,8 @@ export interface PlatformRouteDeps {
   ownerInviteSender?: OwnerInviteSender | undefined;
   /** Testable auth seam; production falls back to Firebase Admin. */
   platformOperatorAuth?: { verifyIdToken(token: string): Promise<DecodedIdToken> } | undefined;
+  /** Enables production-equivalent session-only behavior in isolated route tests. */
+  strictNexCommandSession?: boolean | undefined;
 }
 
 function requireStripeConnect(deps: PlatformRouteDeps): StripeConnectApi {
@@ -216,40 +219,14 @@ function capabilityForNexCommandRoute(req: Request): PlatformCapability {
 }
 async function requirePlatformOperator(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<void> {
   if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") return;
-  const auth = authOverride ?? getAdminAuth(env);
-  if (!auth) {
-    throw new RailError("Platform authentication is temporarily unavailable.", {
-      provider: "firebase",
-      op: "platformAuth",
-      status: 503
-    });
-  }
-  const header = req.header("authorization") ?? "";
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  if (!match?.[1]) {
-    throw new RailError("Firebase platform operator sign-in is required.", { provider: "firebase", op: "platformAuth", status: 401 });
-  }
-  const decoded = await auth.verifyIdToken(match[1]);
-  if (!hasPlatformAccess(decoded, env)) {
-    throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformAuth", status: 403 });
-  }
-  const profile = await repository.getPlatformUserByAuthUid(decoded.uid);
-  if (profile?.accountStatus === "DISABLED") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformAuth", status: 403 });
-  const capabilities = profile ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : claimedPlatformCapabilities(decoded);
-  if (!capabilities.includes(capabilityForNexCommandRoute(req))) throw new RailError("Platform operator lacks the required NexCommand capability.", { provider: "platform", op: "platformAuth", status: 403 });
+  const sessionActor = await requireNexCommandSessionOrTestIdentity(req, env, repository, authOverride, env.NEXCOMMAND_STRICT_SESSION === "true");
+  if (!sessionActor.capabilities.includes(capabilityForNexCommandRoute(req))) throw new RailError("Platform operator lacks the required NexCommand capability.", { provider: "platform", op: "platformAuth", status: 403 });
 }
 
 async function requirePlatformSupportOperator(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<void> {
-  if (!authOverride) return requirePlatformOperator(req, env, repository);
-  const header = req.header("authorization") ?? "";
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  if (!match?.[1]) throw new RailError("Firebase platform operator sign-in is required.", { provider: "firebase", op: "platformAuth", status: 401 });
-  const decoded = await authOverride.verifyIdToken(match[1]);
-  if (!hasPlatformAccess(decoded, env)) throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformAuth", status: 403 });
-  const profile = await repository.getPlatformUserByAuthUid(decoded.uid);
-  if (profile?.accountStatus === "DISABLED") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformAuth", status: 403 });
-  const capabilities = profile ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : claimedPlatformCapabilities(decoded);
-  if (!capabilities.includes(capabilityForNexCommandRoute(req))) throw new RailError("Platform operator lacks the required NexCommand capability.", { provider: "platform", op: "platformAuth", status: 403 });
+  if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") return;
+  const sessionActor = await requireNexCommandSessionOrTestIdentity(req, env, repository, authOverride, env.NEXCOMMAND_STRICT_SESSION === "true");
+  if (!sessionActor.capabilities.includes(capabilityForNexCommandRoute(req))) throw new RailError("Platform operator lacks the required NexCommand capability.", { provider: "platform", op: "platformAuth", status: 403 });
 }
 
 function claimedPlatformCapabilities(decoded: DecodedIdToken): PlatformCapability[] {
@@ -259,20 +236,50 @@ function claimedPlatformCapabilities(decoded: DecodedIdToken): PlatformCapabilit
     : PLATFORM_CAPABILITIES;
 }
 
+function bearerToken(req: Request): string | null { return (req.header("authorization") ?? "").match(/^Bearer\s+(.+)$/i)?.[1] ?? null; }
+async function requireNexCommandSession(req: Request, repository: PlatformRepository): Promise<{ uid: string; capabilities: PlatformCapability[] }> {
+  const token = bearerToken(req);
+  if (!token?.startsWith("ncs_")) throw new RailError("A fresh NexCommand session is required.", { provider: "platform", op: "platformSession", status: 401 });
+  const session = await repository.getPlatformSessionByTokenHash(hashSessionToken(token));
+  if (!session || session.invalidatedAt) throw new RailError("NexCommand session is no longer valid.", { provider: "platform", op: "platformSession", status: 401 });
+  const now = new Date();
+  if (now.getTime() - new Date(session.lastActivityAt).getTime() >= NEXCOMMAND_IDLE_TIMEOUT_MS) {
+    const expired: PlatformSession = { ...session, invalidatedAt: now.toISOString(), invalidationReason: "idle_expired" };
+    await repository.savePlatformSession(expired);
+    await repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_session.idle_expired", session.actorUid, "NexCommand session expired after 15 minutes of inactivity.", undefined, now.toISOString()));
+    throw new RailError("NexCommand session expired after 15 minutes of inactivity.", { provider: "platform", op: "platformSession", status: 401 });
+  }
+  await repository.savePlatformSession({ ...session, lastActivityAt: now.toISOString() });
+  const profile = await repository.getPlatformUserByAuthUid(session.actorUid);
+  if (profile?.accountStatus === "DISABLED") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformSession", status: 403 });
+  return { uid: session.actorUid, capabilities: profile ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : session.capabilities.filter((capability): capability is PlatformCapability => platformCapabilitySchema.safeParse(capability).success) };
+}
+async function requireNexCommandSessionOrTestIdentity(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }, strictSession = false): Promise<{ uid: string; capabilities: PlatformCapability[] }> {
+  // The injected verifier is an isolated-test seam. Production has no override,
+  // so deployed NexCommand routes accept only short-lived NexCommand sessions.
+  if (!strictSession && !bearerToken(req)?.startsWith("ncs_") && authOverride) return requireFirebasePlatformIdentity(req, env, repository, authOverride);
+  if (!bearerToken(req)?.startsWith("ncs_") && !authOverride && !getAdminAuth(env)) throw new RailError("Platform authentication is temporarily unavailable.", { provider: "firebase", op: "platformAuth", status: 503 });
+  return requireNexCommandSession(req, repository);
+}
+async function requireFirebasePlatformIdentity(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<{ uid: string; capabilities: PlatformCapability[] }> {
+  const token = bearerToken(req);
+  if (!token) throw new RailError("Firebase platform operator sign-in is required.", { provider: "firebase", op: "platformAuth", status: 401 });
+  const auth = authOverride ?? getAdminAuth(env);
+  if (!auth) throw new RailError("Platform authentication is temporarily unavailable.", { provider: "firebase", op: "platformAuth", status: 503 });
+  const decoded = await auth.verifyIdToken(token);
+  if (!hasPlatformAccess(decoded, env)) throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformAuth", status: 403 });
+  const profile = await repository.getPlatformUserByAuthUid(decoded.uid);
+  if (profile?.accountStatus === "DISABLED") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformAuth", status: 403 });
+  return { uid: decoded.uid, capabilities: profile ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : claimedPlatformCapabilities(decoded) };
+}
+
 async function requirePlatformTeamCapability(req: Request, env: NodeJS.ProcessEnv, capability: PlatformCapability, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<{ uid: string; capabilities: PlatformCapability[]; role?: string }> {
   if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") return { uid: "local-platform-operator", capabilities: PLATFORM_CAPABILITIES, role: "Owner" };
-  const header = req.header("authorization") ?? "";
-  const token = header.match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!token) throw new RailError("Firebase platform operator sign-in is required.", { provider: "firebase", op: "platformTeam", status: 401 });
-  const auth = authOverride ?? getAdminAuth(env);
-  if (!auth) throw new RailError("Platform authentication is temporarily unavailable.", { provider: "firebase", op: "platformTeam", status: 503 });
-  const decoded = await auth.verifyIdToken(token);
-  if (!hasPlatformAccess(decoded, env)) throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformTeam", status: 403 });
-  const profile = await repository.getPlatformUserByAuthUid(decoded.uid);
-  if (profile?.accountStatus === "DISABLED") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformTeam", status: 403 });
-  const capabilities = profile ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : claimedPlatformCapabilities(decoded);
+  const actor = await requireNexCommandSessionOrTestIdentity(req, env, repository, authOverride, env.NEXCOMMAND_STRICT_SESSION === "true");
+  const profile = await repository.getPlatformUserByAuthUid(actor.uid);
+  const capabilities = actor.capabilities;
   if (!capabilities.includes(capability)) throw new RailError("Platform operator lacks the required NexCommand capability.", { provider: "firebase", op: "platformTeam", status: 403 });
-  return profile ? { uid: decoded.uid, capabilities, role: profile.role } : { uid: decoded.uid, capabilities };
+  return profile ? { uid: actor.uid, capabilities, role: profile.role } : { uid: actor.uid, capabilities };
 }
 
 function sendRouteError(res: Response, error: unknown): void {
@@ -326,6 +333,37 @@ export async function loadTenantFromPlatform(repository: PlatformRepository, ten
 export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): void {
   const env = deps.env ?? process.env;
 
+  app.post("/api/platform/admin/session", async (req: Request, res: Response) => {
+    try {
+      const actor = await requireFirebasePlatformIdentity(req, env, deps.repository, deps.platformOperatorAuth);
+      if (!actor.capabilities.includes("platform.profile.self")) throw new RailError("Platform operator lacks the required NexCommand capability.", { provider: "platform", op: "platformSessionCreate", status: 403 });
+      const created = newNexCommandSession(actor.uid, actor.capabilities);
+      await deps.repository.savePlatformSession(created.session);
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_session.created", actor.uid, "Fresh NexCommand session created."));
+      res.status(201).json({ ok: true, token: created.token, idleTimeoutMs: NEXCOMMAND_IDLE_TIMEOUT_MS });
+    } catch (error) {
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_session.failed_sign_in", "anonymous", "NexCommand session creation was denied.")).catch(() => undefined);
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/platform/admin/session/sign-out", async (req: Request, res: Response) => {
+    try {
+      const token = bearerToken(req);
+      const session = token?.startsWith("ncs_") ? await deps.repository.getPlatformSessionByTokenHash(hashSessionToken(token)) : null;
+      if (!session || session.invalidatedAt) throw new RailError("NexCommand session is no longer valid.", { provider: "platform", op: "platformSessionSignOut", status: 401 });
+      const now = new Date().toISOString();
+      await deps.repository.savePlatformSession({ ...session, invalidatedAt: now, invalidationReason: "explicit_sign_out", lastActivityAt: now });
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_session.signed_out", session.actorUid, "NexCommand session explicitly signed out.", undefined, now));
+      res.json({ ok: true });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.get("/api/platform/admin/audit", async (req: Request, res: Response) => {
+    try { await requirePlatformTeamCapability(req, env, "platform.security.view", deps.repository, deps.platformOperatorAuth); res.json({ ok: true, audits: await deps.repository.listPlatformSecurityAudits() }); } catch (error) { sendRouteError(res, error); }
+  });
+  app.all("/api/platform/admin/audit", (_req: Request, res: Response) => res.status(405).json({ ok: false, error: "Platform audit history is immutable." }));
+
   // NexCommand Team is platform-owned personnel metadata. It deliberately does
   // not use tenantUsers, tenant roles, or tenant capabilities.
   app.get("/api/platform/admin/team", async (req: Request, res: Response) => {
@@ -366,6 +404,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const timestamp = new Date().toISOString();
       const user = await deps.repository.savePlatformUser({ ...input, id: `platform_user_${randomUUID()}`, accountStatus: "ACTIVE", createdAt: timestamp, updatedAt: timestamp, createdBy: actor.uid, updatedBy: actor.uid } as PlatformUser);
       await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.added", actor.uid, "Profile record added; no Firebase identity, invitation, or email was created.", timestamp));
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, "Platform profile or permission record added.", user.authUid, timestamp));
       res.status(201).json({ ok: true, user });
     } catch (error) { sendRouteError(res, error); }
   });
@@ -381,6 +420,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const timestamp = new Date().toISOString();
       const user = await deps.repository.savePlatformUser({ ...existing, ...patch, updatedAt: timestamp, updatedBy: actor.uid } as PlatformUser);
       await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Profile metadata updated.", timestamp));
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, "Platform profile or permission record updated.", user.authUid, timestamp));
       res.json({ ok: true, user });
     } catch (error) { sendRouteError(res, error); }
   });
@@ -396,6 +436,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         const timestamp = new Date().toISOString();
         const user = await deps.repository.savePlatformUser({ ...existing, accountStatus, updatedAt: timestamp, updatedBy: actor.uid });
         await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, action, actor.uid, `Account marked ${accountStatus}.`, timestamp));
+        await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `Platform account marked ${accountStatus}.`, user.authUid, timestamp));
         res.json({ ok: true, user });
       } catch (error) { sendRouteError(res, error); }
     });
@@ -424,6 +465,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const owner = await deps.repository.savePlatformUser({ ...to, role: "Owner", updatedAt: timestamp, updatedBy: actor.uid });
       await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(from.id, "platform_user.ownership_transferred", actor.uid, `Ownership transferred to ${to.id}.`, timestamp));
       await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(to.id, "platform_user.ownership_transferred", actor.uid, `Ownership transferred from ${from.id}.`, timestamp));
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, "Platform ownership permissions changed.", to.authUid, timestamp));
       res.json({ ok: true, user: owner });
     } catch (error) { sendRouteError(res, error); }
   });

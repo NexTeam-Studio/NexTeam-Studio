@@ -1,7 +1,7 @@
 DOCUMENT_ID: NEXCOMMAND-FOUNDATION-LEDGER-20260810
 TITLE: NexCommand Foundation Implementation Ledger
 DOCUMENT_TYPE: ARCHITECTURE_RECORD
-STATUS: PHASE_C_GREEN
+STATUS: PHASE_E_GREEN
 CREATED_AT: 2026-08-10
 UPDATED_AT: 2026-08-10
 AUTHOR: NexTeam Global Control
@@ -12,9 +12,43 @@ TENANTS: all
 RELATED_TESTS: apps/server/test/nexcommand-foundation-registry.test.mjs; apps/server/test/live-build-status.test.mjs; apps/server/test/platform.test.mjs; apps/web/src/features/platformOverview/routes/NexCommandRoute.test.mjs
 RELATED_DOCUMENTS: docs/knowledge/code-maps/2026-08-10-nexcommand-foundation-phase-a.md; docs/knowledge/code-maps/2026-08-10-nexcommand-foundation-phase-b.md; docs/knowledge/operations/NEXCOMMAND_ADMIN_CONSOLE.md; receipts/security/NEXTEAM-P0-INDEPENDENT-VALIDATION-20260810.md; docs/worktrees/README.md
 RELATED_LLM_ARTIFACTS: JOB-NEXTEAM-NEXCOMMAND-FOUNDATION-PHASE-A-20260810; JOB-NEXTEAM-NEXCOMMAND-FOUNDATION-PHASE-B-20260810
-TAGS: nexcommand, foundation, phase-b, ownership, controller, relay, security
+TAGS: nexcommand, foundation, phase-d, ownership, controller, relay, security, platform-team, session-security
 
 # NexCommand Foundation Implementation Ledger
+
+## Current authoritative phase count
+
+As of 2026-08-10, Phases **A, B, C, and D** are independently GREEN.
+That is **4 of 15 Foundation phases: 26.7% verified complete**. Phase E is
+IN PROGRESS and is not included in the verified count until its complete gate
+evidence is captured. This entry supersedes the stale Phase C-only status above.
+
+## Phase E measurable gate
+
+Phase E progress is measured as verified outcomes out of these ten required
+substeps; implementation activity alone does not increase the count.
+
+| # | Required outcome | Status |
+| --- | --- | --- |
+| 1 | Fifteen-minute idle timeout | VERIFIED — server invalidates at `900000ms`. |
+| 2 | Fresh authentication after browser/session close | VERIFIED — token is session-storage-only; absent token denies route. |
+| 3 | Explicit logout invalidates the session | VERIFIED — server invalidation plus Firebase sign-out. |
+| 4 | Failed login and session lifecycle events are audited | VERIFIED — immutable, redacted platform security audits. |
+| 5 | Immutable platform-audit protections | VERIFIED — only GET is exposed; mutations return 405. |
+| 6 | Server-side permission enforcement remains intact | VERIFIED — platform capability and tenant-auth regressions pass. |
+| 7 | Focused Phase E tests pass | VERIFIED — see Phase E receipt. |
+| 8 | Aggregate and security regression suite passes | VERIFIED — 514 pass, 0 fail, 3 skipped; all static/security checks pass. |
+| 9 | Phase E evidence and receipt are complete | VERIFIED — Phase E contract and recovery receipt recorded. |
+| 10 | Focused Phase E GREEN commit exists | VERIFIED — see Phase E recovery commit. |
+
+**Phase E verified progress: 10 of 10 (100%). Phase E is GREEN.**
+
+## Phase E completion and Phase F relay packet
+
+- Recovery job: `NEXTEAM-NEXCOMMAND-FOUNDATION-PHASE-E-RECOVERY-20260810`.
+- Final local validation: focused affected tests **30 pass, 0 fail**; full non-browser suite **514 pass, 0 fail, 3 skipped**; typecheck, lint, build, tenancy, worktree scope/coverage, secret scan, secret-history scan, and diff check all passed.
+- No browser, staging/production deployment, live data, outbound communication, payment action, or secret output occurred.
+- Next packet: `receipts/security/NEXTEAM-NEXCOMMAND-FOUNDATION-PHASE-F-RELAY-PACKET-20260810.md` with `JOB_ID: NEXTEAM-NEXCOMMAND-FOUNDATION-PHASE-F-20260810`.
 
 ## Authorization and gate
 

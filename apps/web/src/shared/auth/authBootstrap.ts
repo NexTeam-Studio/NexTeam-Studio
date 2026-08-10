@@ -30,6 +30,8 @@ const buildTimeFirebaseConfig: FirebasePublicConfig = {
 
 export const CONFIGURED_TENANT_ID = (import.meta.env.VITE_TENANT_ID as string | undefined)?.trim() ?? "";
 const LOCAL_SESSION_TOKEN_KEY = "nexops.local-auth-token";
+const NEXCOMMAND_SESSION_TOKEN_KEY = "nexcommand.session-token";
+const NEXCOMMAND_FRESH_AUTH_KEY = "nexcommand.fresh-auth";
 
 function completeFirebaseConfig(config: FirebasePublicConfig): boolean {
   return Object.values(config).every((value) => value.length > 0);
@@ -67,6 +69,19 @@ function clearLocalSessionToken(): void {
   }
 }
 
+function readNexCommandSessionToken(): string | null { try { return window.sessionStorage.getItem(NEXCOMMAND_SESSION_TOKEN_KEY); } catch { return null; } }
+function clearNexCommandSession(): void { try { window.sessionStorage.removeItem(NEXCOMMAND_SESSION_TOKEN_KEY); window.sessionStorage.removeItem(NEXCOMMAND_FRESH_AUTH_KEY); } catch { /* session storage is optional */ } }
+export function markFreshNexCommandAuthentication(): void { try { window.sessionStorage.setItem(NEXCOMMAND_FRESH_AUTH_KEY, "1"); } catch { /* session storage is optional */ } }
+export function hasFreshNexCommandAuthentication(): boolean { try { return window.sessionStorage.getItem(NEXCOMMAND_FRESH_AUTH_KEY) === "1"; } catch { return false; } }
+export function hasNexCommandSession(): boolean { return Boolean(readNexCommandSessionToken()); }
+export async function establishNexCommandSession(user: User): Promise<void> {
+  const firebaseToken = await user.getIdToken();
+  const response = await fetch("/api/platform/admin/session", { method: "POST", headers: { authorization: `Bearer ${firebaseToken}` } });
+  const body = await response.json() as { ok?: boolean; token?: string };
+  if (!response.ok || !body.ok || !body.token) throw new Error("NexCommand session could not be created.");
+  try { window.sessionStorage.setItem(NEXCOMMAND_SESSION_TOKEN_KEY, body.token); window.sessionStorage.removeItem(NEXCOMMAND_FRESH_AUTH_KEY); } catch { throw new Error("NexCommand requires browser session storage."); }
+}
+
 function installSessionFetchBridge(auth: Auth | null): void {
   const bridgeWindow = window as Window & {
     __nexopsLocalFetchBridgeInstalled?: boolean;
@@ -79,20 +94,21 @@ function installSessionFetchBridge(auth: Auth | null): void {
   bridgeWindow.__nexopsOriginalFetch = originalFetch;
   bridgeWindow.__nexopsLocalFetchBridgeInstalled = true;
   window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const token = readLocalSessionToken() ?? await auth?.currentUser?.getIdToken();
-    if (!token) {
-      return originalFetch(input, init);
-    }
     const requestUrl = typeof input === "string"
       ? input
       : input instanceof URL
         ? input.toString()
         : input.url;
+    const nexCommandToken = requestUrl.includes("/api/platform/admin/") && !requestUrl.endsWith("/api/platform/admin/session") ? readNexCommandSessionToken() : null;
+    const token = nexCommandToken ?? readLocalSessionToken() ?? await auth?.currentUser?.getIdToken();
+    if (!token) {
+      return originalFetch(input, init);
+    }
     if (!requestUrl.startsWith("/") && !requestUrl.startsWith(window.location.origin)) {
       return originalFetch(input, init);
     }
     const headers = new Headers(input instanceof Request ? input.headers : init?.headers);
-    if (!headers.has("authorization")) {
+    if (nexCommandToken || !headers.has("authorization")) {
       headers.set("authorization", `Bearer ${token}`);
     }
     return originalFetch(input, { ...init, headers });
@@ -162,6 +178,9 @@ export async function signInWithLocalCredentials(email: string, tenantId: string
 }
 
 export async function signOutOperator(auth: Auth | null): Promise<void> {
+  const nexCommandToken = readNexCommandSessionToken();
+  if (nexCommandToken) await fetch("/api/platform/admin/session/sign-out", { method: "POST", headers: { authorization: `Bearer ${nexCommandToken}` } }).catch(() => undefined);
+  clearNexCommandSession();
   clearLocalSessionToken();
   if (auth) {
     await signOut(auth);

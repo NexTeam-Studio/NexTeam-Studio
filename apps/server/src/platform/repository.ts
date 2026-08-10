@@ -44,6 +44,7 @@ import { configuredTenantId } from "../core/tenantConfig.js";
 import { setPlatformOwnedDocument, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 import type { TenantOwnerInvite } from "./tenantOwnerInvite.js";
 import { platformUserAuditSchema, platformUserSchema, type PlatformUser, type PlatformUserAudit } from "./team.js";
+import { platformSecurityAuditSchema, platformSessionSchema, type PlatformSecurityAudit, type PlatformSession } from "./sessionSecurity.js";
 
 function defaultApproval(): Tenant["approval"] {
   return {
@@ -125,6 +126,10 @@ export interface PlatformRepository {
   savePlatformUser(user: PlatformUser): Promise<PlatformUser>;
   listPlatformUserAudits(userId?: string): Promise<PlatformUserAudit[]>;
   appendPlatformUserAudit(audit: PlatformUserAudit): Promise<PlatformUserAudit>;
+  getPlatformSessionByTokenHash(tokenHash: string): Promise<PlatformSession | null>;
+  savePlatformSession(session: PlatformSession): Promise<PlatformSession>;
+  appendPlatformSecurityAudit(audit: PlatformSecurityAudit): Promise<PlatformSecurityAudit>;
+  listPlatformSecurityAudits(): Promise<PlatformSecurityAudit[]>;
   listProspects(): Promise<Prospect[]>;
   getProspect(prospectId: string): Promise<Prospect | null>;
   saveProspect(prospect: Prospect): Promise<Prospect>;
@@ -188,6 +193,8 @@ function starterSubscription(tenant: Tenant): TenantSubscription {
 export class InMemoryPlatformRepository implements PlatformRepository {
   private readonly platformUsers = new Map<string, PlatformUser>();
   private readonly platformUserAudits: PlatformUserAudit[] = [];
+  private readonly platformSessions = new Map<string, PlatformSession>();
+  private readonly platformSecurityAudits: PlatformSecurityAudit[] = [];
   private readonly prospects = new Map<string, Prospect>();
   private readonly prospectIntakes = new Map<string, ProspectIntake>();
   private readonly onboardingBlueprints = new Map<string, TenantOnboardingBlueprint>();
@@ -271,6 +278,10 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   async savePlatformUser(user: PlatformUser): Promise<PlatformUser> { const parsed = platformUserSchema.parse(user) as PlatformUser; this.platformUsers.set(parsed.id, firestoreDoc(parsed)); return firestoreDoc(parsed); }
   async listPlatformUserAudits(userId?: string): Promise<PlatformUserAudit[]> { return this.platformUserAudits.filter((audit) => !userId || audit.userId === userId).map(firestoreDoc); }
   async appendPlatformUserAudit(audit: PlatformUserAudit): Promise<PlatformUserAudit> { const parsed = platformUserAuditSchema.parse(audit) as PlatformUserAudit; this.platformUserAudits.push(firestoreDoc(parsed)); return firestoreDoc(parsed); }
+  async getPlatformSessionByTokenHash(tokenHash: string): Promise<PlatformSession | null> { const session = [...this.platformSessions.values()].find((entry) => entry.tokenHash === tokenHash); return session ? firestoreDoc(session) : null; }
+  async savePlatformSession(session: PlatformSession): Promise<PlatformSession> { const parsed = platformSessionSchema.parse(session) as PlatformSession; this.platformSessions.set(parsed.id, firestoreDoc(parsed)); return firestoreDoc(parsed); }
+  async appendPlatformSecurityAudit(audit: PlatformSecurityAudit): Promise<PlatformSecurityAudit> { const parsed = platformSecurityAuditSchema.parse(audit) as PlatformSecurityAudit; this.platformSecurityAudits.push(firestoreDoc(parsed)); return firestoreDoc(parsed); }
+  async listPlatformSecurityAudits(): Promise<PlatformSecurityAudit[]> { return this.platformSecurityAudits.map(firestoreDoc); }
 
   async getTenantOwnerInvite(tenantId: string, ownerUserId: string): Promise<TenantOwnerInvite | null> {
     return this.ownerInvites.get(`owner_invite_${tenantId}_${ownerUserId}`) ?? null;
@@ -629,6 +640,24 @@ export class FirestorePlatformRepository implements PlatformRepository {
     const parsed = platformUserAuditSchema.parse(audit) as PlatformUserAudit;
     await this.db.collection("platformUserAudits").doc(parsed.id).create(docData(parsed));
     return parsed;
+  }
+  async getPlatformSessionByTokenHash(tokenHash: string): Promise<PlatformSession | null> {
+    const snapshot = await this.db.collection("platformSessions").where("tokenHash", "==", tokenHash).limit(1).get();
+    return snapshot.empty ? null : platformSessionSchema.parse(snapshot.docs[0]?.data()) as PlatformSession;
+  }
+  async savePlatformSession(session: PlatformSession): Promise<PlatformSession> {
+    const parsed = platformSessionSchema.parse(session) as PlatformSession;
+    await setPlatformOwnedDocument({ db: this.db, collection: "platformSessions", id: parsed.id, data: docData(parsed) });
+    return parsed;
+  }
+  async appendPlatformSecurityAudit(audit: PlatformSecurityAudit): Promise<PlatformSecurityAudit> {
+    const parsed = platformSecurityAuditSchema.parse(audit) as PlatformSecurityAudit;
+    await this.db.collection("platformSecurityAudits").doc(parsed.id).create(docData(parsed));
+    return parsed;
+  }
+  async listPlatformSecurityAudits(): Promise<PlatformSecurityAudit[]> {
+    const snapshot = await this.db.collection("platformSecurityAudits").orderBy("createdAt", "desc").get();
+    return snapshot.docs.map((doc) => platformSecurityAuditSchema.parse(doc.data()) as PlatformSecurityAudit);
   }
 
   async listProspects(): Promise<Prospect[]> {
