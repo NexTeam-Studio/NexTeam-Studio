@@ -47,7 +47,10 @@ export function createAuthorizationUrl({ clientId, state, verifier }) {
     code_challenge: codeChallenge(verifier),
     code_challenge_method: "S256",
     access_type: "offline",
-    prompt: "consent",
+    // Always show Google's account chooser. The staging sender is a specific
+    // mailbox and must never be silently inherited from an unrelated Google
+    // session already open in the browser.
+    prompt: "select_account consent",
   }).toString();
   return url;
 }
