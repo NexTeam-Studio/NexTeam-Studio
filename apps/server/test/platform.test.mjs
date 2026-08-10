@@ -262,15 +262,25 @@ test("platform routes expose tenants, test subscription, backup, and export", as
   const app = express();
   app.use(express.json());
   const firebaseCalls = { created: [], claims: [] };
+  const firebaseUsers = new Map();
   const firebaseOwnerActivation = {
-    async getUserByEmail() {
+    async getUserByEmail(email) {
+      const user = firebaseUsers.get(email);
+      if (user) return user;
       const error = new Error("not found");
       error.code = "auth/user-not-found";
       throw error;
     },
     async createUser(input) {
+      if (firebaseUsers.has(input.email)) {
+        const error = new Error("already exists");
+        error.code = "auth/email-already-exists";
+        throw error;
+      }
       firebaseCalls.created.push(input);
-      return { uid: "firebase_owner_1", email: input.email, customClaims: { role: "platform_operator", preserved: true } };
+      const user = { uid: "firebase_owner_1", email: input.email, customClaims: { role: "platform_operator", preserved: true } };
+      firebaseUsers.set(input.email, user);
+      return user;
     },
     async setCustomUserClaims(uid, claims) {
       firebaseCalls.claims.push({ uid, claims });
@@ -377,6 +387,21 @@ test("platform routes expose tenants, test subscription, backup, and export", as
     assert.equal((await repository.getPlatformSubscriptionAssignment(createdProspect.prospect.id)).status, "ACTIVE");
     assert.equal((await repository.getProspect(createdProspect.prospect.id)).status, "CONVERTED");
     assert.equal((await repository.getTenantUser("northside-services", activation.owner.id)).authUid, "firebase_owner_1");
+    const repeatedActivation = await fetch(`${base}/api/platform/admin/prospects/${encodeURIComponent(createdProspect.prospect.id)}/activate`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "northside-services", ownerEmail: "owner@example.test", ownerDisplayName: "Northside Owner" })
+    }).then((response) => response.json());
+    assert.equal(repeatedActivation.activationAlreadyExisted, true);
+    assert.equal(firebaseCalls.created.length, 1);
+    assert.equal((await repository.listTenants()).filter((tenant) => tenant.id === "northside-services").length, 1);
+    assert.equal((await repository.listTenantUsers("northside-services")).filter((user) => user.authUid === "firebase_owner_1").length, 1);
+    assert.equal((await repository.listSubscriptions("northside-services")).length, 1);
+    const lifecycle = await fetch(`${base}/api/platform/admin/lifecycle`).then((response) => response.json());
+    const onboarding = lifecycle.onboarding.find((record) => record.tenant?.id === "northside-services");
+    assert.equal(onboarding.owner.authUid, "firebase_owner_1");
+    assert.equal(onboarding.assignment.status, "ACTIVE");
+    assert.equal("lastError" in onboarding.invite, false);
 
     const publicBranding = await fetch(`${base}/api/public/tenant-branding?tenantId=second-test`).then((response) => response.json());
     assert.equal(publicBranding.ok, true);

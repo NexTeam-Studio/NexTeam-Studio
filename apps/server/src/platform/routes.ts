@@ -558,7 +558,15 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         const tenant = assignment?.tenantId ? tenantById.get(assignment.tenantId) ?? null : null;
         const owners = tenant ? await deps.repository.listTenantUsers(tenant.id) : [];
         const owner = owners.find((member) => member.role === "OWNER") ?? null;
-        const invite = tenant && owner ? await deps.repository.getTenantOwnerInvite(tenant.id, owner.id) : null;
+        const storedInvite = tenant && owner ? await deps.repository.getTenantOwnerInvite(tenant.id, owner.id) : null;
+        // Lifecycle visibility is an operator read model, never an email/error
+        // diagnostic surface.  In particular, do not project reset links or
+        // provider failure detail into NexCommand.
+        const invite = storedInvite ? {
+          status: storedInvite.status,
+          attemptCount: storedInvite.attemptCount,
+          ...(storedInvite.provider ? { provider: storedInvite.provider } : {})
+        } : null;
         const revisions = await deps.repository.listTenantOnboardingBlueprintRevisions(blueprint.id);
         const tenantMigrations = tenant ? migrations.filter((migration) => migration.tenantId === tenant.id) : [];
         const tenantBlockers = tenant ? blockers.filter((blocker) => blocker.tenantId === tenant.id && blocker.status !== "RESOLVED") : [];

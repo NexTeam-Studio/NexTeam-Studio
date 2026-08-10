@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { RailError, type Tenant, type TenantUser } from "@nexteam/core";
-import { capabilitiesForTenantUser, upsertTenantUser } from "./accessManagement.js";
+import { RailError, type Tenant, type TenantMembershipAudit, type TenantUser } from "@nexteam/core";
+import { buildTenantUser, capabilitiesForTenantUser } from "./accessManagement.js";
 import { defaultTenant, subscriptionFromStripe, type PlatformRepository } from "./repository.js";
 import { ALL_ACCESS_TEST_PACKAGE } from "./subscriptionPackages.js";
 import { generatedTenantId, newOwnerInvite, type OwnerInviteSender, type TenantOwnerInvite } from "./tenantOwnerInvite.js";
@@ -46,15 +46,21 @@ async function getOrCreateOwner(auth: FirebaseOwnerActivation, input: ActivatePr
   } catch (error) {
     const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
     if (code !== "auth/user-not-found") throw error;
-    return {
-      user: await auth.createUser({
-        email: input.ownerEmail,
-        emailVerified: false,
-        disabled: false,
-        ...(input.ownerDisplayName ? { displayName: input.ownerDisplayName } : {})
-      }),
-      created: true
-    };
+    try {
+      return {
+        user: await auth.createUser({
+          email: input.ownerEmail,
+          emailVerified: false,
+          disabled: false,
+          ...(input.ownerDisplayName ? { displayName: input.ownerDisplayName } : {})
+        }),
+        created: true
+      };
+    } catch (createError) {
+      const createCode = typeof createError === "object" && createError !== null && "code" in createError ? String(createError.code) : "";
+      if (createCode !== "auth/email-already-exists") throw createError;
+      return { user: await auth.getUserByEmail(input.ownerEmail), created: false };
+    }
   }
 }
 
@@ -89,7 +95,9 @@ export async function activateProspectTenant(
       throw new RailError("Activation is already complete for this prospect and cannot be changed by a duplicate request.", { provider: "platform", op: "activateTenant", status: 409 });
     }
     const invite = await repository.getTenantOwnerInvite(tenant.id, owner.id) ?? newOwnerInvite({ tenantId: tenant.id, ownerUserId: owner.id, ownerEmail: owner.email ?? input.ownerEmail, status: "NOT_SENT", attemptCount: 0 });
-    return { tenant, owner, ownerCreated: false, subscriptionId: `sub_${tenant.id}`, activationAlreadyExisted: true, invite };
+    const subscription = await repository.getSubscription(tenant.id);
+    if (!subscription) throw new RailError("Activation is missing its tenant subscription.", { provider: "platform", op: "activateTenant", status: 409 });
+    return { tenant, owner, ownerCreated: false, subscriptionId: subscription.id, activationAlreadyExisted: true, invite };
   }
   if (prospect.status !== "SUBSCRIPTION_REQUIRED") {
     throw new RailError("A valid subscription assignment is required before tenant activation.", { provider: "platform", op: "activateTenant", status: 409 });
@@ -103,12 +111,12 @@ export async function activateProspectTenant(
 
   const now = timestamp(input.now);
   const firebaseOwner = await getOrCreateOwner(auth, input);
-  const tenant = await repository.upsertTenant({
+  const tenant: Tenant = {
     ...defaultTenant(tenantId, "suite"),
     name: prospect.businessName,
     industryPack: prospect.industry === "pressure_washing" ? "pressure_washing" : "pool_leak"
-  });
-  const owner = await upsertTenantUser(repository, {
+  };
+  const owner = buildTenantUser({
     tenantId: tenant.id,
     id: `tenant_owner_${firebaseOwner.user.uid}`,
     authUid: firebaseOwner.user.uid,
@@ -117,11 +125,8 @@ export async function activateProspectTenant(
     role: "OWNER",
     now
   });
-  await auth.setCustomUserClaims(firebaseOwner.user.uid, mergeTenantOwnerClaims(firebaseOwner.user.customClaims, owner));
-  const subscription = await repository.saveSubscription(subscriptionFromStripe({ tenantId: tenant.id, plan: "suite", status: "active" }));
-  await repository.savePlatformSubscriptionAssignment({ ...assignment, tenantId: tenant.id, status: "ACTIVE", updatedAt: now });
-  await repository.saveProspect({ ...prospect, status: "CONVERTED", updatedAt: now });
-  await repository.saveTenantMembershipAudit({
+  const subscription = subscriptionFromStripe({ tenantId: tenant.id, plan: "suite", status: "active" });
+  const audit: TenantMembershipAudit = {
     id: `membership_audit_${randomUUID()}`,
     tenantId: tenant.id,
     action: "member.claims_applied",
@@ -129,7 +134,16 @@ export async function activateProspectTenant(
     targetUserId: owner.id,
     detail: "Initial owner activated with merged tenant claims; no password was stored or set.",
     createdAt: now
+  };
+  const committed = await repository.commitProspectTenantActivation({
+    tenant,
+    owner,
+    subscription,
+    assignment: { ...assignment, tenantId: tenant.id, status: "ACTIVE", updatedAt: now },
+    prospect: { ...prospect, status: "CONVERTED", updatedAt: now },
+    audit
   });
+  await auth.setCustomUserClaims(firebaseOwner.user.uid, mergeTenantOwnerClaims(firebaseOwner.user.customClaims, owner));
   const previousInvite = await repository.getTenantOwnerInvite(tenant.id, owner.id);
   let invite = newOwnerInvite({ tenantId: tenant.id, ownerUserId: owner.id, ownerEmail: owner.email ?? input.ownerEmail, status: "NOT_SENT", attemptCount: previousInvite?.attemptCount ?? 0 });
   try {
@@ -140,5 +154,5 @@ export async function activateProspectTenant(
     invite = { ...invite, status: "FAILED", attemptCount: invite.attemptCount + 1, lastError: error instanceof Error ? error.message : "Owner invite delivery failed.", updatedAt: new Date().toISOString() };
   }
   await repository.saveTenantOwnerInvite(invite);
-  return { tenant, owner, ownerCreated: firebaseOwner.created, subscriptionId: subscription.id, activationAlreadyExisted: false, invite };
+  return { tenant, owner, ownerCreated: firebaseOwner.created && !committed.alreadyExisted, subscriptionId: subscription.id, activationAlreadyExisted: committed.alreadyExisted, invite };
 }

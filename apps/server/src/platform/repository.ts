@@ -153,6 +153,17 @@ export interface PlatformRepository {
   savePlatformSupportEscalation(escalation: PlatformSupportEscalation): Promise<PlatformSupportEscalation>;
   getPlatformSubscriptionAssignment(prospectId: string): Promise<PlatformSubscriptionAssignment | null>;
   savePlatformSubscriptionAssignment(assignment: PlatformSubscriptionAssignment): Promise<PlatformSubscriptionAssignment>;
+  /** Atomically persists the tenant-root activation records.  Firebase identity
+   * creation happens before this seam; this prevents duplicate durable tenants,
+   * owner profiles, subscriptions, or activation audits on a retry. */
+  commitProspectTenantActivation(input: {
+    prospect: Prospect;
+    assignment: PlatformSubscriptionAssignment;
+    tenant: Tenant;
+    owner: TenantUser;
+    subscription: TenantSubscription;
+    audit: TenantMembershipAudit;
+  }): Promise<{ alreadyExisted: boolean }>;
   listTenants(): Promise<Tenant[]>;
   getTenant(tenantId: string): Promise<Tenant | null>;
   upsertTenant(tenant: Tenant): Promise<Tenant>;
@@ -428,6 +439,25 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     if (!this.prospects.has(parsed.prospectId)) throw new Error(`Prospect ${parsed.prospectId} does not exist.`);
     this.subscriptionAssignments.set(parsed.prospectId, firestoreDoc(parsed));
     return firestoreDoc(parsed);
+  }
+
+  async commitProspectTenantActivation(input: { prospect: Prospect; assignment: PlatformSubscriptionAssignment; tenant: Tenant; owner: TenantUser; subscription: TenantSubscription; audit: TenantMembershipAudit }): Promise<{ alreadyExisted: boolean }> {
+    const existingAssignment = this.subscriptionAssignments.get(input.prospect.id);
+    if (existingAssignment?.status === "ACTIVE") {
+      if (existingAssignment.tenantId === input.tenant.id && (await this.getTenantUser(input.tenant.id, input.owner.id))?.authUid === input.owner.authUid) return { alreadyExisted: true };
+      throw new Error("Activation is already complete for this prospect and cannot be changed by a duplicate request.");
+    }
+    if (!existingAssignment || existingAssignment.status !== "ASSIGNED" || this.tenants.has(input.tenant.id)) {
+      throw new Error("Activation records are no longer eligible to commit.");
+    }
+    this.tenants.set(input.tenant.id, tenantSchema.parse(input.tenant) as Tenant);
+    this.tenantBranding.set(input.tenant.id, defaultTenantBranding(input.tenant));
+    this.tenantUsers.set(input.tenant.id, [tenantUserSchema.parse(input.owner) as TenantUser]);
+    this.subscriptions.set(input.subscription.id, tenantSubscriptionSchema.parse(input.subscription) as TenantSubscription);
+    this.subscriptionAssignments.set(input.assignment.prospectId, platformSubscriptionAssignmentSchema.parse(input.assignment) as PlatformSubscriptionAssignment);
+    this.prospects.set(input.prospect.id, prospectSchema.parse(input.prospect) as Prospect);
+    this.membershipAudits.set(input.tenant.id, [tenantMembershipAuditSchema.parse(input.audit) as TenantMembershipAudit]);
+    return { alreadyExisted: false };
   }
 
   async listTenantMembershipAudits(tenantId: string): Promise<TenantMembershipAudit[]> {
@@ -821,6 +851,37 @@ export class FirestorePlatformRepository implements PlatformRepository {
     if (!await this.getProspect(parsed.prospectId)) throw new Error(`Prospect ${parsed.prospectId} does not exist.`);
     await setPlatformOwnedDocument({ db: this.db, collection: "platformSubscriptionAssignments", id: parsed.prospectId, data: docData(parsed) });
     return parsed;
+  }
+
+  async commitProspectTenantActivation(input: { prospect: Prospect; assignment: PlatformSubscriptionAssignment; tenant: Tenant; owner: TenantUser; subscription: TenantSubscription; audit: TenantMembershipAudit }): Promise<{ alreadyExisted: boolean }> {
+    const prospectRef = this.db.collection("platformProspects").doc(input.prospect.id);
+    const assignmentRef = this.db.collection("platformSubscriptionAssignments").doc(input.assignment.prospectId);
+    const tenantRef = this.db.collection("tenants").doc(input.tenant.id);
+    const ownerRef = this.db.collection("tenantUsers").doc(input.owner.id);
+    const subscriptionRef = this.db.collection("tenantSubscriptions").doc(input.subscription.id);
+    const auditRef = this.db.collection("tenantMembershipAudits").doc(input.audit.id);
+    return this.db.runTransaction(async (transaction) => {
+      const [prospectSnapshot, assignmentSnapshot, tenantSnapshot, ownerSnapshot, subscriptionSnapshot] = await Promise.all([
+        transaction.get(prospectRef), transaction.get(assignmentRef), transaction.get(tenantRef), transaction.get(ownerRef), transaction.get(subscriptionRef)
+      ]);
+      const currentProspect = prospectSnapshot.exists ? prospectSchema.parse(prospectSnapshot.data()) as Prospect : null;
+      const currentAssignment = assignmentSnapshot.exists ? platformSubscriptionAssignmentSchema.parse(assignmentSnapshot.data()) as PlatformSubscriptionAssignment : null;
+      if (currentProspect?.status === "CONVERTED" && currentAssignment?.status === "ACTIVE") {
+        const existingOwner = ownerSnapshot.exists ? tenantUserSchema.parse(ownerSnapshot.data()) as TenantUser : null;
+        if (currentAssignment.tenantId === input.tenant.id && existingOwner?.tenantId === input.tenant.id && existingOwner.authUid === input.owner.authUid) return { alreadyExisted: true };
+        throw new Error("Activation is already complete for this prospect and cannot be changed by a duplicate request.");
+      }
+      if (!currentProspect || currentProspect.status !== "SUBSCRIPTION_REQUIRED" || !currentAssignment || currentAssignment.status !== "ASSIGNED" || tenantSnapshot.exists || ownerSnapshot.exists || subscriptionSnapshot.exists) {
+        throw new Error("Activation records are no longer eligible to commit.");
+      }
+      transaction.create(tenantRef, docData({ ...input.tenant, tenantId: input.tenant.id }));
+      transaction.create(ownerRef, docData(input.owner));
+      transaction.create(subscriptionRef, docData({ ...input.subscription, tenantId: input.subscription.tenantId }));
+      transaction.set(assignmentRef, docData(input.assignment));
+      transaction.set(prospectRef, docData(input.prospect));
+      transaction.create(auditRef, docData({ ...input.audit, tenantId: input.audit.tenantId }));
+      return { alreadyExisted: false };
+    });
   }
 
   async listTenantMembershipAudits(tenantId: string): Promise<TenantMembershipAudit[]> {

@@ -146,13 +146,12 @@ function hasPlatformAccess(decoded: DecodedIdToken, env: NodeJS.ProcessEnv): boo
     || normalizedRoles.includes("platform_operator");
 }
 
-function normalizeRole(decoded: DecodedIdToken, env: NodeJS.ProcessEnv): TenantRole {
+function normalizeRole(decoded: DecodedIdToken, _env: NodeJS.ProcessEnv): TenantRole {
   const explicit = claimString(decoded, "tenantRole") ?? claimString(decoded, "role");
   const candidates = [explicit, ...roles(decoded)].filter(Boolean).map((value) => String(value).toUpperCase());
   if (candidates.includes("OWNER")) return "OWNER";
   if (candidates.includes("OFFICE_ADMIN") || candidates.includes("OFFICE") || candidates.includes("ADMIN")) return "OFFICE_ADMIN";
   if (candidates.includes("TECHNICIAN") || candidates.includes("TECH")) return "TECHNICIAN";
-  if (hasPlatformAccess(decoded, env)) return "OWNER";
   throw new RailError("Your sign-in is missing a tenant role.", { provider: "firebase", op: "accessContext", status: 403 });
 }
 
@@ -445,7 +444,7 @@ export async function requireAccessContext(
   if (claimedTenantId && claimedTenantId !== tenantId) {
     throw new RailError("Your sign-in is not allowed for this tenant.", { provider: "firebase", op: options.op ?? "accessContext", status: 403 });
   }
-  if (!claimedTenantId && !isPlatformOperator) {
+  if (!claimedTenantId) {
     throw new RailError("Your sign-in is missing a tenant assignment.", { provider: "firebase", op: options.op ?? "accessContext", status: 403 });
   }
 
