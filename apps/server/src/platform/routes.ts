@@ -17,7 +17,7 @@ import { activateProspectTenant, type FirebaseOwnerActivation } from "./tenantAc
 import { newOwnerInvite, type OwnerInviteSender } from "./tenantOwnerInvite.js";
 import { buildOnboardingPlanInsights } from "./onboardingInsights.js";
 import { readLiveBuildStatus } from "./liveBuildStatus.js";
-import { newPlatformUserAudit, PLATFORM_TEAM_CAPABILITIES, platformTeamCapabilitySchema, platformUserSchema, platformUserSummary, type PlatformTeamCapability, type PlatformUser } from "./team.js";
+import { newPlatformUserAudit, PLATFORM_CAPABILITIES, platformCapabilitySchema, platformUserSchema, platformUserSummary, resolvePlatformCapabilities, type PlatformCapability, type PlatformUser } from "./team.js";
 import {
   authorizeStripeConnectCallback,
   createOrReuseStripeConnectOnboarding,
@@ -164,8 +164,9 @@ const verifyJobAccessLinkSchema = z.object({
   token: z.string().min(16)
 });
 
-const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true, role: true }).strict();
+const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true, role: true, capabilityOverrides: true }).strict();
 const platformUserPatchSchema = platformUserInputSchema.omit({ authUid: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
+const ownershipTransferSchema = z.object({ toUserId: z.string().min(1) }).strict();
 
 export interface PlatformRouteDeps {
   repository: PlatformRepository;
@@ -200,10 +201,21 @@ function hasPlatformAccess(decoded: DecodedIdToken, env: NodeJS.ProcessEnv): boo
     || roles.includes("platform_operator");
 }
 
-async function requirePlatformOperator(req: Request, env: NodeJS.ProcessEnv, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<void> {
-  if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") {
-    return;
-  }
+function capabilityForNexCommandRoute(req: Request): PlatformCapability {
+  const path = req.path;
+  if (path.includes("/prospects")) return req.method === "GET" ? "platform.prospects.view" : "platform.prospects.manage";
+  if (path.includes("/migrations")) return req.method === "GET" ? "platform.migrations.view" : "platform.migrations.manage";
+  if (path.includes("/blockers") || path.includes("/support-escalations")) return req.method === "GET" ? "platform.support.view" : "platform.support.manage";
+  if (path.includes("subscription") || path.includes("stripe")) return req.method === "GET" ? "platform.billing.view" : "platform.billing.manage";
+  if (path.includes("blueprint") || path.includes("onboarding") || path.includes("/activate")) return req.method === "GET" ? "platform.onboarding.view" : "platform.onboarding.manage";
+  if (path.includes("/backups") || path.includes("/export") || path.includes("/tool-entitlements")) return "platform.security.manage";
+  if (path.includes("/live-build-status")) return "platform.code.view";
+  if (path.includes("/providers")) return "platform.integrations.view";
+  if (path.includes("/summary")) return "platform.dashboard.view";
+  return req.method === "GET" ? "platform.tenants.view" : "platform.tenants.manage";
+}
+async function requirePlatformOperator(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<void> {
+  if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") return;
   const auth = authOverride ?? getAdminAuth(env);
   if (!auth) {
     throw new RailError("Platform authentication is temporarily unavailable.", {
@@ -221,26 +233,34 @@ async function requirePlatformOperator(req: Request, env: NodeJS.ProcessEnv, aut
   if (!hasPlatformAccess(decoded, env)) {
     throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformAuth", status: 403 });
   }
+  const profile = await repository.getPlatformUserByAuthUid(decoded.uid);
+  if (profile?.accountStatus === "DISABLED") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformAuth", status: 403 });
+  const capabilities = profile ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : claimedPlatformCapabilities(decoded);
+  if (!capabilities.includes(capabilityForNexCommandRoute(req))) throw new RailError("Platform operator lacks the required NexCommand capability.", { provider: "platform", op: "platformAuth", status: 403 });
 }
 
-async function requirePlatformSupportOperator(req: Request, env: NodeJS.ProcessEnv, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<void> {
-  if (!authOverride) return requirePlatformOperator(req, env);
+async function requirePlatformSupportOperator(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<void> {
+  if (!authOverride) return requirePlatformOperator(req, env, repository);
   const header = req.header("authorization") ?? "";
   const match = header.match(/^Bearer\s+(.+)$/i);
   if (!match?.[1]) throw new RailError("Firebase platform operator sign-in is required.", { provider: "firebase", op: "platformAuth", status: 401 });
   const decoded = await authOverride.verifyIdToken(match[1]);
   if (!hasPlatformAccess(decoded, env)) throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformAuth", status: 403 });
+  const profile = await repository.getPlatformUserByAuthUid(decoded.uid);
+  if (profile?.accountStatus === "DISABLED") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformAuth", status: 403 });
+  const capabilities = profile ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : claimedPlatformCapabilities(decoded);
+  if (!capabilities.includes(capabilityForNexCommandRoute(req))) throw new RailError("Platform operator lacks the required NexCommand capability.", { provider: "platform", op: "platformAuth", status: 403 });
 }
 
-function platformCapabilities(decoded: DecodedIdToken): PlatformTeamCapability[] {
+function claimedPlatformCapabilities(decoded: DecodedIdToken): PlatformCapability[] {
   const claimed = (decoded as unknown as Record<string, unknown>).platformCapabilities;
   return Array.isArray(claimed)
-    ? claimed.filter((value): value is PlatformTeamCapability => platformTeamCapabilitySchema.safeParse(value).success)
-    : PLATFORM_TEAM_CAPABILITIES;
+    ? claimed.filter((value): value is PlatformCapability => platformCapabilitySchema.safeParse(value).success)
+    : PLATFORM_CAPABILITIES;
 }
 
-async function requirePlatformTeamCapability(req: Request, env: NodeJS.ProcessEnv, capability: PlatformTeamCapability, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<{ uid: string; capabilities: PlatformTeamCapability[] }> {
-  if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") return { uid: "local-platform-operator", capabilities: PLATFORM_TEAM_CAPABILITIES };
+async function requirePlatformTeamCapability(req: Request, env: NodeJS.ProcessEnv, capability: PlatformCapability, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<{ uid: string; capabilities: PlatformCapability[]; role?: string }> {
+  if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") return { uid: "local-platform-operator", capabilities: PLATFORM_CAPABILITIES, role: "Owner" };
   const header = req.header("authorization") ?? "";
   const token = header.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) throw new RailError("Firebase platform operator sign-in is required.", { provider: "firebase", op: "platformTeam", status: 401 });
@@ -248,9 +268,11 @@ async function requirePlatformTeamCapability(req: Request, env: NodeJS.ProcessEn
   if (!auth) throw new RailError("Platform authentication is temporarily unavailable.", { provider: "firebase", op: "platformTeam", status: 503 });
   const decoded = await auth.verifyIdToken(token);
   if (!hasPlatformAccess(decoded, env)) throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformTeam", status: 403 });
-  const capabilities = platformCapabilities(decoded);
+  const profile = await repository.getPlatformUserByAuthUid(decoded.uid);
+  if (profile?.accountStatus === "DISABLED") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformTeam", status: 403 });
+  const capabilities = profile ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : claimedPlatformCapabilities(decoded);
   if (!capabilities.includes(capability)) throw new RailError("Platform operator lacks the required NexCommand capability.", { provider: "firebase", op: "platformTeam", status: 403 });
-  return { uid: decoded.uid, capabilities };
+  return profile ? { uid: decoded.uid, capabilities, role: profile.role } : { uid: decoded.uid, capabilities };
 }
 
 function sendRouteError(res: Response, error: unknown): void {
@@ -308,7 +330,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
   // not use tenantUsers, tenant roles, or tenant capabilities.
   app.get("/api/platform/admin/team", async (req: Request, res: Response) => {
     try {
-      await requirePlatformTeamCapability(req, env, "platform.team.view", deps.platformOperatorAuth);
+      await requirePlatformTeamCapability(req, env, "platform.team.view", deps.repository, deps.platformOperatorAuth);
       const users = await deps.repository.listPlatformUsers();
       res.json({ ok: true, users: users.map(platformUserSummary) });
     } catch (error) { sendRouteError(res, error); }
@@ -316,7 +338,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/team/me", async (req: Request, res: Response) => {
     try {
-      const actor = await requirePlatformTeamCapability(req, env, "platform.profile.self", deps.platformOperatorAuth);
+      const actor = await requirePlatformTeamCapability(req, env, "platform.profile.self", deps.repository, deps.platformOperatorAuth);
       const user = await deps.repository.getPlatformUserByAuthUid(actor.uid);
       res.json({ ok: true, user });
     } catch (error) { sendRouteError(res, error); }
@@ -324,7 +346,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/team/:userId", async (req: Request, res: Response) => {
     try {
-      const actor = await requirePlatformTeamCapability(req, env, "platform.team.view", deps.platformOperatorAuth);
+      const actor = await requirePlatformTeamCapability(req, env, "platform.team.view", deps.repository, deps.platformOperatorAuth);
       const userId = req.params.userId; if (!userId) throw new RailError("Platform user id is required.", { provider: "platform", op: "platformTeamRead", status: 400 });
       const user = await deps.repository.getPlatformUser(userId);
       if (!user) throw new RailError("Platform user was not found.", { provider: "platform", op: "platformTeamRead", status: 404 });
@@ -336,8 +358,9 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/team", async (req: Request, res: Response) => {
     try {
-      const actor = await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.platformOperatorAuth);
+      const actor = await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.repository, deps.platformOperatorAuth);
       const input = platformUserInputSchema.parse(req.body ?? {});
+      if (input.role === "Owner" && !actor.capabilities.includes("platform.ownership.manage")) throw new RailError("Only an Owner can assign platform ownership.", { provider: "platform", op: "platformTeamCreate", status: 403 });
       const existing = await deps.repository.getPlatformUserByAuthUid(input.authUid);
       if (existing) throw new RailError("A platform profile already exists for that signed-in identity.", { provider: "platform", op: "platformTeamCreate", status: 409 });
       const timestamp = new Date().toISOString();
@@ -349,11 +372,12 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.patch("/api/platform/admin/team/:userId", async (req: Request, res: Response) => {
     try {
-      const actor = await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.platformOperatorAuth);
+      const actor = await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.repository, deps.platformOperatorAuth);
       const userId = req.params.userId; if (!userId) throw new RailError("Platform user id is required.", { provider: "platform", op: "platformTeamUpdate", status: 400 });
       const existing = await deps.repository.getPlatformUser(userId);
       if (!existing) throw new RailError("Platform user was not found.", { provider: "platform", op: "platformTeamUpdate", status: 404 });
       const patch = platformUserPatchSchema.parse(req.body ?? {});
+      if ((existing.role === "Owner" || patch.role === "Owner") && !actor.capabilities.includes("platform.ownership.manage")) throw new RailError("Only an Owner can change platform ownership.", { provider: "platform", op: "platformTeamUpdate", status: 403 });
       const timestamp = new Date().toISOString();
       const user = await deps.repository.savePlatformUser({ ...existing, ...patch, updatedAt: timestamp, updatedBy: actor.uid } as PlatformUser);
       await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Profile metadata updated.", timestamp));
@@ -364,10 +388,11 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
   for (const [verb, accountStatus, action] of [["disable", "DISABLED", "platform_user.disabled"], ["reactivate", "ACTIVE", "platform_user.reactivated"]] as const) {
     app.post(`/api/platform/admin/team/:userId/${verb}`, async (req: Request, res: Response) => {
       try {
-        const actor = await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.platformOperatorAuth);
+        const actor = await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.repository, deps.platformOperatorAuth);
         const userId = req.params.userId; if (!userId) throw new RailError("Platform user id is required.", { provider: "platform", op: "platformTeamStatus", status: 400 });
         const existing = await deps.repository.getPlatformUser(userId);
         if (!existing) throw new RailError("Platform user was not found.", { provider: "platform", op: "platformTeamStatus", status: 404 });
+        if (existing.role === "Owner" && !actor.capabilities.includes("platform.ownership.manage")) throw new RailError("Only an Owner can change an Owner account.", { provider: "platform", op: "platformTeamStatus", status: 403 });
         const timestamp = new Date().toISOString();
         const user = await deps.repository.savePlatformUser({ ...existing, accountStatus, updatedAt: timestamp, updatedBy: actor.uid });
         await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, action, actor.uid, `Account marked ${accountStatus}.`, timestamp));
@@ -378,9 +403,28 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/team/:userId/audit", async (req: Request, res: Response) => {
     try {
-      await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.platformOperatorAuth);
+      await requirePlatformTeamCapability(req, env, "platform.team.manage", deps.repository, deps.platformOperatorAuth);
       const userId = req.params.userId; if (!userId) throw new RailError("Platform user id is required.", { provider: "platform", op: "platformTeamAudit", status: 400 });
       res.json({ ok: true, audits: await deps.repository.listPlatformUserAudits(userId) });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.post("/api/platform/admin/team/:userId/transfer-ownership", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.ownership.manage", deps.repository, deps.platformOperatorAuth);
+      const fromUserId = req.params.userId;
+      if (!fromUserId) throw new RailError("Platform user id is required.", { provider: "platform", op: "platformOwnershipTransfer", status: 400 });
+      const from = await deps.repository.getPlatformUser(fromUserId);
+      const input = ownershipTransferSchema.parse(req.body ?? {});
+      const to = await deps.repository.getPlatformUser(input.toUserId);
+      if (!from || !to) throw new RailError("Platform user was not found.", { provider: "platform", op: "platformOwnershipTransfer", status: 404 });
+      if (from.role !== "Owner" || to.accountStatus !== "ACTIVE") throw new RailError("Ownership can only be transferred from an Owner to an active platform user.", { provider: "platform", op: "platformOwnershipTransfer", status: 409 });
+      const timestamp = new Date().toISOString();
+      await deps.repository.savePlatformUser({ ...from, role: "Super Admin", updatedAt: timestamp, updatedBy: actor.uid });
+      const owner = await deps.repository.savePlatformUser({ ...to, role: "Owner", updatedAt: timestamp, updatedBy: actor.uid });
+      await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(from.id, "platform_user.ownership_transferred", actor.uid, `Ownership transferred to ${to.id}.`, timestamp));
+      await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(to.id, "platform_user.ownership_transferred", actor.uid, `Ownership transferred from ${from.id}.`, timestamp));
+      res.json({ ok: true, user: owner });
     } catch (error) { sendRouteError(res, error); }
   });
 
@@ -388,7 +432,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
   // Tenant ownership is never enough to enter the NexTeam Admin surface.
   app.get("/api/platform/admin/summary", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const [prospects, tenants] = await Promise.all([deps.repository.listProspects(), deps.repository.listTenants()]);
       res.json({
         ok: true,
@@ -407,7 +451,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/live-build-status", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       res.json({ ok: true, ...(await readLiveBuildStatus(env)) });
     } catch (error) {
       sendRouteError(res, error);
@@ -416,7 +460,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/providers/stripe", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const key = env.STRIPE_SECRET_KEY?.trim() ?? "";
       const staging = (env.RAILWAY_ENVIRONMENT ?? "").toLowerCase() === "staging" || (env.NODE_ENV ?? "").toLowerCase() !== "production";
       const testMode = key.startsWith("sk_test_");
@@ -428,7 +472,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/prospects", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       res.json({ ok: true, prospects: await deps.repository.listProspects() });
     } catch (error) {
       sendRouteError(res, error);
@@ -439,7 +483,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
    * existing authoritative records; they never create another intake or tenant. */
   app.get("/api/platform/admin/lifecycle", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const [prospects, blueprints, tenants, migrations, blockers] = await Promise.all([
         deps.repository.listProspects(),
         deps.repository.listTenantOnboardingBlueprints(),
@@ -480,7 +524,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/tenant-blockers", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim() ? requiredTenantId(req.query.tenantId) : undefined;
       const [blockers, escalations] = await Promise.all([
         deps.repository.listTenantBlockers(tenantId),
@@ -494,7 +538,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/migrations", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim() ? requiredTenantId(req.query.tenantId) : undefined;
       const migrations = await deps.repository.listTenantMigrationRecords(tenantId);
       const tenants = await deps.repository.listTenants();
@@ -507,7 +551,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/tenants/:tenantId/migrations", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const tenantId = requiredTenantId(req.params.tenantId);
       const input = z.object({
         sourceSystem: z.string().trim().min(1).max(120),
@@ -542,7 +586,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.patch("/api/platform/admin/migrations/:migrationId", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const migrationId = requiredTenantId(req.params.migrationId);
       const input = z.object({
         status: z.enum(["PENDING", "IN_PROGRESS", "VALIDATION", "DEFERRED", "COMPLETED"]),
@@ -583,7 +627,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/tenants/:tenantId/blockers", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const tenantId = requiredTenantId(req.params.tenantId);
       const input = z.object({
         title: z.string().trim().min(1).max(180),
@@ -609,7 +653,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.patch("/api/platform/admin/tenant-blockers/:blockerId", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const blockerId = requiredTenantId(req.params.blockerId);
       const input = z.object({ status: z.enum(["OPEN", "ESCALATED", "RESOLVED"]) }).strict().parse(req.body ?? {});
       const blocker = await deps.repository.getTenantBlocker(blockerId);
@@ -629,7 +673,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/tenant-blockers/:blockerId/escalations", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const blockerId = requiredTenantId(req.params.blockerId);
       const input = z.object({ summary: z.string().trim().min(1).max(4000), priority: z.enum(["P1", "P2", "P3"]) }).strict().parse(req.body ?? {});
       const blocker = await deps.repository.getTenantBlocker(blockerId);
@@ -655,7 +699,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.patch("/api/platform/admin/support-escalations/:escalationId", async (req: Request, res: Response) => {
     try {
-      await requirePlatformSupportOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const escalationId = requiredTenantId(req.params.escalationId);
       const input = z.object({ status: z.enum(["OPEN", "ACKNOWLEDGED", "RESOLVED"]) }).strict().parse(req.body ?? {});
       const escalation = await deps.repository.getPlatformSupportEscalation(escalationId);
@@ -675,7 +719,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/prospects", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const input = prospectBodySchema.parse(req.body ?? {});
       const timestamp = new Date().toISOString();
       const prospect = await deps.repository.saveProspect({
@@ -698,7 +742,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/prospects/:prospectId/intake", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const prospectId = requiredTenantId(req.params.prospectId);
       const input = prospectIntakeBodySchema.parse(req.body ?? {});
       const prospect = await deps.repository.getProspect(prospectId);
@@ -724,7 +768,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/prospects/:prospectId/blueprints", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const prospectId = requiredTenantId(req.params.prospectId);
       const input = blueprintBodySchema.parse(req.body ?? {});
       const { reason, ...blueprintInput } = input;
@@ -764,7 +808,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/prospects/:prospectId/blueprints/:blueprintId/revisions", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const prospectId = requiredTenantId(req.params.prospectId);
       const blueprintId = requiredTenantId(req.params.blueprintId);
       const onboardingPlan = await deps.repository.getTenantOnboardingBlueprint(blueprintId);
@@ -777,7 +821,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/prospects/:prospectId/blueprints/:blueprintId/insights", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const prospectId = requiredTenantId(req.params.prospectId);
       const blueprintId = requiredTenantId(req.params.blueprintId);
       const onboardingPlan = await deps.repository.getTenantOnboardingBlueprint(blueprintId);
@@ -794,7 +838,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/prospects/:prospectId/blueprints/:blueprintId/revisions/:revisionId/accept", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const prospectId = requiredTenantId(req.params.prospectId);
       const blueprintId = requiredTenantId(req.params.blueprintId);
       const revisionId = requiredTenantId(req.params.revisionId);
@@ -832,7 +876,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/admin/subscription-packages", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       res.json({ ok: true, packages: activeSubscriptionPackages() });
     } catch (error) {
       sendRouteError(res, error);
@@ -841,7 +885,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/prospects/:prospectId/subscription", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const prospectId = requiredTenantId(req.params.prospectId);
       const input = z.object({ packageId: z.string().min(1) }).strict().parse(req.body ?? {});
       const prospect = await deps.repository.getProspect(prospectId);
@@ -874,7 +918,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/prospects/:prospectId/activate", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const prospectId = requiredTenantId(req.params.prospectId);
       const input = z.object({
         tenantId: z.string().trim().min(3).max(100).regex(/^[a-z0-9-]+$/, "Tenant id must use lowercase letters, numbers, and hyphens.").optional(),
@@ -902,7 +946,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/tenants/:tenantId/owner-invite/resend", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const tenantId = requiredTenantId(req.params.tenantId);
       const body = z.object({ ownerEmail: z.string().email().optional() }).strict().parse(req.body ?? {});
       const tenant = await deps.repository.getTenant(tenantId);
@@ -929,7 +973,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/plans", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       res.json({ ok: true, plans: Object.values(planCatalog()) });
     } catch (error) {
       sendRouteError(res, error);
@@ -938,7 +982,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/tenants", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const period = defaultPeriod();
       const tenants = await deps.repository.listTenants();
       const rows = await Promise.all(tenants.map(async (tenant) => {
@@ -961,7 +1005,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/tenants", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const input = tenantBodySchema.parse(req.body);
       const baseTenant = defaultTenant(input.id, input.plan);
       const tenant = await deps.repository.upsertTenant({
@@ -1305,7 +1349,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/tenants/:tenantId/subscribe-test", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const tenantId = req.params.tenantId;
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "subscribeTestTenant", status: 400 });
@@ -1329,7 +1373,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/tenants/:tenantId/export", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const tenantId = req.params.tenantId;
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantExport", status: 400 });
@@ -1342,7 +1386,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/tenants/:tenantId/tool-entitlements", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const tenantId = req.params.tenantId;
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "toolEntitlements", status: 400 });
@@ -1356,7 +1400,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/tenants/:tenantId/backups/run", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const tenantId = req.params.tenantId;
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantBackup", status: 400 });
@@ -1370,7 +1414,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.get("/api/platform/tenants/:tenantId/backups", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.platformOperatorAuth);
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const tenantId = req.params.tenantId;
       if (!tenantId) {
         throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantBackups", status: 400 });

@@ -6,7 +6,9 @@
 
 ## Fields and redaction
 
-Each profile stores `authUid`, first/last name, email, optional telephone, optional address, optional profile-photo reference, role, `ACTIVE`/`DISABLED` account status, and creation/update attribution. Team lists return only name, role, status, photo reference, and update time. A full profile is returned only to its subject or a `platform.team.manage` operator.
+Each profile stores `authUid`, first/last name, email, optional telephone, optional address, optional profile-photo reference, role template, explicit grant/deny capability overrides, `ACTIVE`/`DISABLED` account status, and creation/update attribution. Approved platform templates are Owner, Super Admin, Administrator, Developer, Developer Admin, Support, Sales & Onboarding, Marketing, Finance, and Read Only. Team lists return only name, role, status, photo reference, and update time. A full profile is returned only to its subject or a `platform.team.manage` operator.
+
+Capabilities resolve server-side from the persisted template plus overrides (grant then deny); role labels alone never authorize a request. The verified Firebase platform-operator gate remains mandatory. Disabled platform profiles are denied. Existing claim capabilities only provide a controlled bootstrap fallback when no platform profile exists.
 
 ## Commands and events
 
@@ -16,9 +18,10 @@ Each profile stores `authUid`, first/last name, email, optional telephone, optio
 | `PATCH /api/platform/admin/team/:userId` | `platform.team.manage` | `platform_user.updated` |
 | `POST /api/platform/admin/team/:userId/disable` | `platform.team.manage` | `platform_user.disabled` |
 | `POST /api/platform/admin/team/:userId/reactivate` | `platform.team.manage` | `platform_user.reactivated` |
+| `POST /api/platform/admin/team/:userId/transfer-ownership` | `platform.ownership.manage` | `platform_user.ownership_transferred` |
 | `GET /api/platform/admin/team/me` | `platform.profile.self` | none |
 
-All commands require a server-verified platform operator as well as the named capability. A `platform_operator` with no explicit `platformCapabilities` receives the existing operator default capability set; explicit claim values restrict access. Tenant ownership and tenant capabilities do not satisfy these gates.
+All commands require a server-verified platform operator as well as the named capability. NexCommand area routes resolve an explicit capability for dashboard, tenants, prospects, onboarding, migrations, support, integrations, billing, code, security, and settings actions. Tenant ownership and tenant capabilities do not satisfy these gates. Only `platform.ownership.manage` can assign, remove, disable, or transfer an Owner. Production capability is not in any lower-role template and must be explicitly granted.
 
 ## Persistence and rollback
 

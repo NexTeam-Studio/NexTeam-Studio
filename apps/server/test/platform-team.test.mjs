@@ -18,7 +18,7 @@ test("NexCommand Team persists platform-only profiles, redacts sensitive data, a
     const headers = { authorization: "Bearer manager", "content-type": "application/json" };
     const denied = await fetch(`${base}/api/platform/admin/team`, { headers: { authorization: "Bearer tenant-user" } });
     assert.equal(denied.status, 403);
-    const created = await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers, body: JSON.stringify({ authUid: "operator-two", firstName: "Avery", lastName: "Stone", email: "avery@example.test", telephone: "555-0100", address: { line1: "1 Main", city: "Town", region: "NY", postalCode: "10001", country: "US" }, profilePhotoRef: "media/platform/avery", role: "Platform Operator" }) });
+    const created = await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers, body: JSON.stringify({ authUid: "operator-two", firstName: "Avery", lastName: "Stone", email: "avery@example.test", telephone: "555-0100", address: { line1: "1 Main", city: "Town", region: "NY", postalCode: "10001", country: "US" }, profilePhotoRef: "media/platform/avery", role: "Administrator" }) });
     assert.equal(created.status, 201); const member = (await created.json()).user;
     assert.equal((await repository.listTenantUsers("default")).length, 0);
     const list = await fetch(`${base}/api/platform/admin/team`, { headers: { authorization: "Bearer viewer" } }).then((response) => response.json());
