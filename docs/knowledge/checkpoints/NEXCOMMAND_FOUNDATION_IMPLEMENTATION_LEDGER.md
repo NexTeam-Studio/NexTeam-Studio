@@ -1,7 +1,7 @@
 DOCUMENT_ID: NEXCOMMAND-FOUNDATION-LEDGER-20260810
 TITLE: NexCommand Foundation Implementation Ledger
 DOCUMENT_TYPE: ARCHITECTURE_RECORD
-STATUS: PHASE_A_GREEN
+STATUS: PHASE_B_GREEN
 CREATED_AT: 2026-08-10
 UPDATED_AT: 2026-08-10
 AUTHOR: NexTeam Global Control
@@ -9,10 +9,10 @@ SOURCE_AGENT: Codex
 PRODUCT_AREA: NexCommand Foundation
 MODULES: platform, authorization, routing, controller-status, module-registry
 TENANTS: all
-RELATED_TESTS: apps/server/test/live-build-status.test.mjs; apps/server/test/platform.test.mjs; apps/web/src/features/platformOverview/routes/NexCommandRoute.test.mjs
-RELATED_DOCUMENTS: docs/knowledge/code-maps/2026-08-10-nexcommand-foundation-phase-a.md; receipts/security/NEXTEAM-P0-INDEPENDENT-VALIDATION-20260810.md; docs/worktrees/README.md
-RELATED_LLM_ARTIFACTS: JOB-NEXTEAM-NEXCOMMAND-FOUNDATION-PHASE-A-20260810
-TAGS: nexcommand, foundation, phase-a, ownership, controller, security
+RELATED_TESTS: apps/server/test/nexcommand-foundation-registry.test.mjs; apps/server/test/live-build-status.test.mjs; apps/server/test/platform.test.mjs; apps/web/src/features/platformOverview/routes/NexCommandRoute.test.mjs
+RELATED_DOCUMENTS: docs/knowledge/code-maps/2026-08-10-nexcommand-foundation-phase-a.md; docs/knowledge/code-maps/2026-08-10-nexcommand-foundation-phase-b.md; docs/knowledge/operations/NEXCOMMAND_ADMIN_CONSOLE.md; receipts/security/NEXTEAM-P0-INDEPENDENT-VALIDATION-20260810.md; docs/worktrees/README.md
+RELATED_LLM_ARTIFACTS: JOB-NEXTEAM-NEXCOMMAND-FOUNDATION-PHASE-A-20260810; JOB-NEXTEAM-NEXCOMMAND-FOUNDATION-PHASE-B-20260810
+TAGS: nexcommand, foundation, phase-b, ownership, controller, relay, security
 
 # NexCommand Foundation Implementation Ledger
 
@@ -84,6 +84,33 @@ The controller job must stop before any source change if a genuine Codex SDK/run
 On 2026-08-10, immediately after the Phase A green gate, the local runtime discovery and dispatch preflight attempted the available `codex` executable with `exec --help`. Windows denied execution of the discovered executable before it could report supported commands or launch a process (`Access is denied`). No Codex SDK package is installed in the workspace. Therefore no genuine Phase B controller process could be dispatched, and there is truthfully no Phase B run ID, PID, or heartbeat to record.
 
 This is an environment-runtime blocker, not a reason to synthesize controller state. The existing NexCommand status endpoint remains `IDLE` when no valid fresh status document exists. After the local Codex runtime is made executable or an approved SDK/runtime is supplied, dispatch the bounded Phase B specification above and append its real run ID, PID, first heartbeat, status-file location class (never a secret), test evidence, and rollback receipt here.
+
+## Phase B authoritative boundary registry
+
+Phase B supersedes the earlier runtime-discovery conclusion for ownership/routing work only. The existing persistent file relay is available at `C:\Users\Peyto\.openclaw\workspace\ops-bridge\to-codex.jsonl`; it is an external local execution-plane seam, never a deployed NexCommand endpoint. The repository now registers the `nexcommand-foundation` component in `worktree-lanes.json` with these authoritative boundaries:
+
+| Boundary | Record |
+| --- | --- |
+| Authoritative lane | `platform-tenants`; no physical `nexcommand` worktree and no duplicate lane. |
+| Permitted implementation paths | `apps/web/src/features/platform/**`, `apps/web/src/features/platformOverview/**`, `apps/server/src/platform/**`. |
+| Shared dependencies | `nexteam-global` owns shared auth, routing, module manifest/types, and `packages/core`; any change is a coordinated integration contract change. |
+| Routing | `/nexcommand` is canonical; `/platform` is compatible; `GET /api/platform/admin/live-build-status` is the sole controller projection and has no write peer. |
+| Conflict relationships | Do not duplicate auth/router/module registries. `src/features/missioncontrol/**` and `scripts/run-rail-local-api.mjs` remain unrelated legacy local rails. |
+| Tests | `nexcommand-foundation-registry`, live-status, platform route, and NexCommand route tests. |
+| Rollback | Registry/docs revert independently. Missing, malformed, or stale controller documents remain fail-closed `IDLE`; shared-route rollback stays with `nexteam-global`. |
+
+No Team/Users implementation, tenant-record mutation, production change, release execution, or browser automation is included in this phase.
+
+## Phase C dispatch
+
+Phase C is dispatched only through the validated local relay after the Phase B checks are green. Its packet is bounded to a persistence-first NexCommand Team/Users discovery-and-contract job: it must preserve the existing platform-operator gate, create no duplicate user/role model, make no production or customer-data change, and stop before implementation if its required persistence/authorization contract is not present. The relay receipt records the actual queue packet identifier, job run identifier, executor PID, and first heartbeat when and only when the existing executor acknowledges them. No value is synthesized in this ledger.
+
+- Queued packet ID: `msg-76a45b7f-6c77-432a-b7d4-4cbe1e2186ba`.
+- Task ID: `NEXTEAM-NEXCOMMAND-FOUNDATION-PHASE-C-20260810`.
+- Queued at: `2026-08-10T15:59:25.6481712Z`.
+- Relay route/target: `ops-bridge/to-codex.jsonl` → `atlas`.
+- Acknowledgement check: no relay acknowledgement or executor return was present after dispatch.
+- Actual run ID, PID, and heartbeat: **not available**. The existing file relay has queued the task but has not started an executor; recording invented values would violate the work order.
 
 ## Risks and recovery
 

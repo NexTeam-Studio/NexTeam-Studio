@@ -1,6 +1,63 @@
 {
   "schemaVersion": 1,
   "baselineBranch": "codex/target-architecture-integration",
+  "componentRegistry": [
+    {
+      "id": "nexcommand-foundation",
+      "displayName": "NexCommand Foundation",
+      "status": "PHASE_B_GREEN",
+      "authoritativeLane": "platform-tenants",
+      "dedicatedWorktree": null,
+      "permittedPaths": [
+        "apps/web/src/features/platform/**",
+        "apps/web/src/features/platformOverview/**",
+        "apps/server/src/platform/**"
+      ],
+      "sharedDependencies": [
+        {
+          "lane": "nexteam-global",
+          "paths": [
+            "apps/web/src/shared/auth/**",
+            "apps/web/src/shared/router/**",
+            "apps/server/src/auth/**",
+            "apps/server/src/modules/manifest.ts",
+            "apps/server/src/modules/types.ts",
+            "packages/core/**"
+          ],
+          "rule": "Consume existing auth, routing, and module contracts; coordinate any contract change in the integration lane."
+        }
+      ],
+      "routing": {
+        "canonicalWebRoute": "/nexcommand",
+        "compatibilityWebRoute": "/platform",
+        "statusReadRoute": "GET /api/platform/admin/live-build-status",
+        "writeRoutes": []
+      },
+      "tests": [
+        "apps/server/test/nexcommand-foundation-registry.test.mjs",
+        "apps/server/test/live-build-status.test.mjs",
+        "apps/server/test/platform.test.mjs",
+        "apps/web/src/features/platformOverview/routes/NexCommandRoute.test.mjs"
+      ],
+      "conflicts": [
+        {
+          "with": "nexteam-global",
+          "when": "A change touches shared auth, shared routing, module registration, or packages/core.",
+          "resolution": "Use the integration lane and coordinated-contract tests; do not duplicate a NexCommand auth, router, or module registry."
+        },
+        {
+          "with": "integration legacy area",
+          "when": "A proposal reaches src/features/missioncontrol/** or scripts/run-rail-local-api.mjs.",
+          "resolution": "Keep legacy local rails separate; they are not a NexCommand controller boundary."
+        }
+      ],
+      "rollback": {
+        "registry": "Revert this registry/documentation change independently; no runtime or tenant data changes are coupled to it.",
+        "statusProjection": "The existing reader fails closed to IDLE when the local controller document is absent, malformed, or stale.",
+        "routing": "Retain the canonical /nexcommand route and /platform compatibility route; shared route rollback remains a nexteam-global contract action."
+      }
+    }
+  ],
   "lanes": [
     {
       "slug": "nexteam-integration",
