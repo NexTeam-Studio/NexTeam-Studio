@@ -103,6 +103,15 @@ test("both tenant directions are denied every repaired cross-tenant read route",
         })
       });
       assert.equal(checklistTemplate.status, 403, `${sourceTenantId} -> ${targetTenantId}: checklist template write`);
+      const nexDocsFolderDelete = await fetch(`${base}/api/nexdocs/clients/foreign-client/folders/foreign-folder`, {
+        method: "DELETE",
+        headers: { ...headers, "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: targetTenantId,
+          clientId: "foreign-client"
+        })
+      });
+      assert.equal(nexDocsFolderDelete.status, 403, `${sourceTenantId} -> ${targetTenantId}: NexDocs folder delete`);
     }
   } finally {
     await close(server);
