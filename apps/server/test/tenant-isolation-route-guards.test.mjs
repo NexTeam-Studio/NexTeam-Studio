@@ -85,9 +85,21 @@ test("both tenant directions are denied every repaired cross-tenant read route",
         headers: { ...headers, "content-type": "application/json" },
         body: JSON.stringify({
           tenantId: targetTenantId,
+          id: "cross_tenant_template",
           title: "Cross-tenant template probe",
           slug: "cross-tenant-template-probe",
-          fields: []
+          active: true,
+          version: 1,
+          appliesTo: "visit",
+          createdAt: "2026-08-09T00:00:00.000Z",
+          updatedAt: "2026-08-09T00:00:00.000Z",
+          fields: [{
+            id: "cross_tenant_field",
+            label: "Cross-tenant field",
+            section: "General",
+            type: "free_text",
+            memory: "visit"
+          }]
         })
       });
       assert.equal(checklistTemplate.status, 403, `${sourceTenantId} -> ${targetTenantId}: checklist template write`);
