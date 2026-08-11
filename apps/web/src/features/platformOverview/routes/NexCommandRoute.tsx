@@ -75,8 +75,10 @@ function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOv
 
 function Metric(props: { label: string; value: string }): React.ReactElement { return <article><span>{props.label}</span><strong>{props.value}</strong></article>; }
 type LiveBuildStatus = {
-  currentBuild: string | null; currentTask: string | null; actualState: "ACTIVE" | "IDLE"; runId: string | null; pid: number | null;
+  currentBuild: string | null; currentTask: string | null; actualState: "ACTIVE" | "IDLE"; controlState: "IDLE" | "QUEUED" | "DISPATCHED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED"; runId: string | null; pid: number | null;
   lastHeartbeat: string | null; progress: string | null; completedTasks: string[]; remainingTasks: string[]; blocker: string | null; lastActivity: string | null;
+  noProgressWarning: boolean; noProgressSince: string | null; events: Array<{ id: string; type: string; at: string; detail: string | null }>;
+  deploymentEvidence: { environment: "staging"; sourceSha: string; deploymentSha: string; liveSha: string; verifiedAt: string } | null;
 };
 
 function displayBuildValue(value: string | number | null): string { return value === null || value === "" ? "—" : String(value); }
@@ -104,10 +106,10 @@ function LiveBuildStatusPanel({ user }: { user: ReturnType<typeof useAuthSession
     return () => { live = false; window.clearInterval(interval); };
   }, [user]);
   const rows: Array<[string, string | number | null]> = status ? [
-    ["Current Build", status.currentBuild], ["Current Task", status.currentTask], ["Actual State", status.actualState], ["Run ID", status.runId], ["PID", status.pid],
-    ["Last Heartbeat", status.lastHeartbeat], ["Progress", status.progress], ["Completed Tasks", status.completedTasks.join(", ") || null], ["Remaining Tasks", status.remainingTasks.join(", ") || null], ["Blocker", status.blocker], ["Last Activity", status.lastActivity]
+    ["Current Build", status.currentBuild], ["Current Task", status.currentTask], ["Actual State", status.actualState], ["Control State", status.controlState], ["Run ID", status.runId], ["PID", status.pid],
+    ["Last Heartbeat", status.lastHeartbeat], ["Progress", status.progress], ["Completed Tasks", status.completedTasks.join(", ") || null], ["Remaining Tasks", status.remainingTasks.join(", ") || null], ["Blocker", status.blocker], ["Last Activity", status.lastActivity], ["No-progress warning", status.noProgressWarning ? `No progress since ${displayBuildValue(status.noProgressSince)}` : "None"]
   ] : [];
-  return <section className="nexcommand__panel nexcommand__live-build"><p className="ui-eyebrow">NexCommand Live Build Status</p><h2>{unavailable ? "Unavailable" : status?.actualState ?? "Loading…"}</h2><p>Controller-backed runtime state. No current controller run or fresh heartbeat means IDLE.</p>{status ? <dl className="nexcommand__facts">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{displayBuildValue(value)}</dd></div>)}</dl> : null}</section>;
+  return <section className="nexcommand__panel nexcommand__live-build"><p className="ui-eyebrow">NexCommand Live Build Status</p><h2>{unavailable ? "Unavailable" : status?.controlState ?? "Loading…"}</h2><p>Durable controller state, run records, event ledger, and live deployment evidence only. Refreshes automatically every 30 seconds.</p>{status ? <><dl className="nexcommand__facts">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{displayBuildValue(value)}</dd></div>)}<div><dt>Live deployment SHA</dt><dd>{status.deploymentEvidence?.liveSha ?? "Unverified"}</dd></div><div><dt>Deployment verified</dt><dd>{status.deploymentEvidence?.verifiedAt ?? "Unverified"}</dd></div></dl><h3>Last 10 controller events</h3>{status.events.length ? <ol className="nexcommand__live-events">{status.events.map((event) => <li key={event.id}><strong>{event.type}</strong><span>{event.at}</span>{event.detail ? <p>{event.detail}</p> : null}</li>)}</ol> : <p>No durable controller events are available for this run.</p>}</> : null}</section>;
 }
 type StagingGmailProviderStatus = {
   senderIdentity: string; environment: string; purpose: string; requiredScope: string; secretDestinationName: string;

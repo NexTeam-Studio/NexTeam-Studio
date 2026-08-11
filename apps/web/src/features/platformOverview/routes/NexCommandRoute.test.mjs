@@ -43,12 +43,14 @@ test("NexCommand exposes only sanitized staging Gmail provider identity and heal
   assert.doesNotMatch(source, /GMAIL_SEND_MAILBOX_REFRESH_TOKEN\s*=/);
 });
 
-test("NexCommand live build status is controller-backed, refreshes, and exposes the full read-only run record", () => {
+test("NexCommand live build status is durable, refreshes, and exposes controller evidence", () => {
   assert.match(source, /\/api\/platform\/admin\/live-build-status/);
   assert.match(source, /setInterval\(\(\) => void refresh\(\), 30_000\)/);
-  assert.match(source, /No current controller run or fresh heartbeat means IDLE/);
-  for (const label of ["Current Build", "Current Task", "Actual State", "Run ID", "PID", "Last Heartbeat", "Progress", "Completed Tasks", "Remaining Tasks", "Blocker", "Last Activity"]) assert.match(source, new RegExp(`"${label}"`));
-  assert.doesNotMatch(source, /NEXCOMMAND_LIVE_BUILD_HEARTBEAT/);
+  assert.match(source, /Durable controller state, run records, event ledger, and live deployment evidence only/);
+  for (const label of ["Current Build", "Current Task", "Actual State", "Control State", "Run ID", "PID", "Last Heartbeat", "Progress", "Completed Tasks", "Remaining Tasks", "Blocker", "Last Activity", "No-progress warning"]) assert.match(source, new RegExp(`"${label}"`));
+  for (const label of ["Live deployment SHA", "Deployment verified", "Last 10 controller events"]) assert.match(source, new RegExp(label));
+  assert.match(source, /noProgressWarning/);
+  assert.match(source, /deploymentEvidence/);
 });
 
 test("NexCommand keeps one clean header lockup and removes the duplicate sidebar brand", () => {
