@@ -2,6 +2,17 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 function readGitSha(env: NodeJS.ProcessEnv): string {
+  // GitHub-connected Railway deploys provide the authoritative source commit.
+  // Check it before a local upload stamp: Railway build caches can retain a
+  // stale untracked stamp even when the connected GitHub revision changed.
+  const explicitSha = env.NEXTEAM_DEPLOY_SHA;
+  if (explicitSha?.trim()) {
+    return explicitSha.trim();
+  }
+  const envSha = env.RAILWAY_GIT_COMMIT_SHA || env.VERCEL_GIT_COMMIT_SHA;
+  if (envSha?.trim()) {
+    return envSha.trim();
+  }
   try {
     const plainStamp = readFileSync("nexteam-build-sha.txt", "utf8").trim();
     if (plainStamp) {
@@ -17,14 +28,6 @@ function readGitSha(env: NodeJS.ProcessEnv): string {
     }
   } catch {
     // Local Railway uploads do not expose .git; a generated stamp restores the proof chain.
-  }
-  const explicitSha = env.NEXTEAM_DEPLOY_SHA;
-  if (explicitSha?.trim()) {
-    return explicitSha.trim();
-  }
-  const envSha = env.RAILWAY_GIT_COMMIT_SHA || env.VERCEL_GIT_COMMIT_SHA;
-  if (envSha?.trim()) {
-    return envSha.trim();
   }
   try {
     return execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
