@@ -226,7 +226,7 @@ function capabilityForNexCommandRoute(req: Request): PlatformCapability {
   if (path.includes("/migrations")) return req.method === "GET" ? "platform.migrations.view" : "platform.migrations.manage";
   if (path.includes("/blockers") || path.includes("/support-escalations")) return req.method === "GET" ? "platform.support.view" : "platform.support.manage";
   if (path.includes("subscription") || path.includes("stripe")) return req.method === "GET" ? "platform.billing.view" : "platform.billing.manage";
-  if (path.includes("blueprint") || path.includes("onboarding") || path.includes("/activate")) return req.method === "GET" ? "platform.onboarding.view" : "platform.onboarding.manage";
+  if (path.includes("/prospects/") || path.includes("onboarding") || path.includes("/activate")) return req.method === "GET" ? "platform.onboarding.view" : "platform.onboarding.manage";
   if (path.includes("/backups") || path.includes("/export") || path.includes("/tool-entitlements")) return "platform.security.manage";
   if (path.includes("/live-build-status")) return "platform.code.view";
   if (path.includes("/providers")) return "platform.integrations.view";
@@ -558,7 +558,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
   app.get("/api/platform/admin/lifecycle", async (req: Request, res: Response) => {
     try {
       await requirePlatformSupportOperator(req, env, deps.repository, deps.platformOperatorAuth);
-      const [prospects, blueprints, tenants, migrations, blockers] = await Promise.all([
+      const [prospects, tenantOnboardingBlueprints, tenants, migrations, blockers] = await Promise.all([
         deps.repository.listProspects(),
         deps.repository.listTenantOnboardingBlueprints(),
         deps.repository.listTenants(),
@@ -569,9 +569,9 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const tenantById = new Map(tenants.map((tenant) => [tenant.id, tenant]));
       const assignments = await Promise.all(prospects.map(async (prospect) => [prospect.id, await deps.repository.getPlatformSubscriptionAssignment(prospect.id)] as const));
       const assignmentByProspectId = new Map(assignments);
-      const records = await Promise.all(blueprints.map(async (blueprint) => {
-        const prospect = prospectById.get(blueprint.prospectId) ?? null;
-        const assignment = assignmentByProspectId.get(blueprint.prospectId) ?? null;
+      const records = await Promise.all(tenantOnboardingBlueprints.map(async (tenantOnboardingBlueprint) => {
+        const prospect = prospectById.get(tenantOnboardingBlueprint.prospectId) ?? null;
+        const assignment = assignmentByProspectId.get(tenantOnboardingBlueprint.prospectId) ?? null;
         const tenant = assignment?.tenantId ? tenantById.get(assignment.tenantId) ?? null : null;
         const owners = tenant ? await deps.repository.listTenantUsers(tenant.id) : [];
         const owner = owners.find((member) => member.role === "OWNER") ?? null;
@@ -584,21 +584,21 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
           attemptCount: storedInvite.attemptCount,
           ...(storedInvite.provider ? { provider: storedInvite.provider } : {})
         } : null;
-        const revisions = await deps.repository.listTenantOnboardingBlueprintRevisions(blueprint.id);
+        const revisions = await deps.repository.listTenantOnboardingBlueprintRevisions(tenantOnboardingBlueprint.id);
         const tenantMigrations = tenant ? migrations.filter((migration) => migration.tenantId === tenant.id) : [];
         const tenantBlockers = tenant ? blockers.filter((blocker) => blocker.tenantId === tenant.id && blocker.status !== "RESOLVED") : [];
-        return { blueprint, prospect, assignment, tenant, owner, invite, revisions, migrations: tenantMigrations, blockers: tenantBlockers };
+        return { tenantOnboardingBlueprint, prospect, assignment, tenant, owner, invite, revisions, migrations: tenantMigrations, blockers: tenantBlockers };
       }));
       const subscriptionAssignments = records.filter((record) => record.assignment).map((record) => ({
         tenant: record.tenant,
         tenantId: record.tenant?.id ?? record.assignment?.tenantId ?? null,
         owner: record.owner,
         assignment: record.assignment,
-        blueprint: record.blueprint,
+        tenantOnboardingBlueprint: record.tenantOnboardingBlueprint,
         invite: record.invite,
         modules: record.assignment?.packageId === "all-access-test" ? activeSubscriptionPackages()[0]?.includedModules ?? [] : []
       }));
-      res.json({ ok: true, blueprints: records, subscriptions: subscriptionAssignments, onboarding: records });
+      res.json({ ok: true, tenantOnboardingBlueprints: records, subscriptions: subscriptionAssignments, onboarding: records });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -841,7 +841,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         lastSavedAt: timestamp,
         lastUpdatedBy: "platform_operator"
       });
-      const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "INTAKE_COMPLETE", onboardingCurrentStep: "Blueprint", onboardingProgressPercent: 30, onboardingLastSavedAt: timestamp, onboardingLastUpdatedBy: "platform_operator", updatedAt: timestamp });
+      const nextProspect = await deps.repository.saveProspect({ ...prospect, status: "INTAKE_COMPLETE", onboardingCurrentStep: "Onboarding plan", onboardingProgressPercent: 30, onboardingLastSavedAt: timestamp, onboardingLastUpdatedBy: "platform_operator", updatedAt: timestamp });
       res.json({ ok: true, prospect: nextProspect, intake });
     } catch (error) {
       sendRouteError(res, error);
