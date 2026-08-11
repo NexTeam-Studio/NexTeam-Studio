@@ -268,8 +268,8 @@ async function requireNexCommandSession(req: Request, repository: PlatformReposi
   }
   await repository.savePlatformSession({ ...session, lastActivityAt: now.toISOString() });
   const profile = await repository.getPlatformUserByAuthUid(session.actorUid);
-  if (profile?.accountStatus === "DISABLED") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformSession", status: 403 });
-  return { uid: session.actorUid, capabilities: profile ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : session.capabilities.filter((capability): capability is PlatformCapability => platformCapabilitySchema.safeParse(capability).success) };
+  if (!profile || profile.accountStatus !== "ACTIVE") throw new RailError("An active NexTeam internal user profile is required for NexCommand.", { provider: "platform", op: "platformSession", status: 403 });
+  return { uid: session.actorUid, capabilities: resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) };
 }
 async function requireNexCommandSessionOrTestIdentity(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }, strictSession = false): Promise<{ uid: string; capabilities: PlatformCapability[] }> {
   // The injected verifier is an isolated-test seam. Production has no override,
@@ -284,10 +284,16 @@ async function requireFirebasePlatformIdentity(req: Request, env: NodeJS.Process
   const auth = authOverride ?? getAdminAuth(env);
   if (!auth) throw new RailError("Platform authentication is temporarily unavailable.", { provider: "firebase", op: "platformAuth", status: 503 });
   const decoded = await auth.verifyIdToken(token);
-  if (!hasPlatformAccess(decoded, env)) throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformAuth", status: 403 });
   const profile = await repository.getPlatformUserByAuthUid(decoded.uid);
-  if (profile?.accountStatus === "DISABLED") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformAuth", status: 403 });
-  return { uid: decoded.uid, capabilities: profile ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : claimedPlatformCapabilities(decoded) };
+  // Tenant claims (including tenant owner) are never NexCommand credentials.
+  // Deployed NexCommand requires a separate, durable active internal profile.
+  if (!profile && (!authOverride || env.NEXCOMMAND_REQUIRE_INTERNAL_PROFILE === "true")) throw new RailError("An active NexTeam internal user profile is required for NexCommand.", { provider: "platform", op: "platformAuth", status: 403 });
+  if (!profile) {
+    if (!hasPlatformAccess(decoded, env)) throw new RailError("Firebase user is not authorized for the platform console.", { provider: "firebase", op: "platformAuth", status: 403 });
+    return { uid: decoded.uid, capabilities: claimedPlatformCapabilities(decoded) };
+  }
+  if (profile.accountStatus !== "ACTIVE") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformAuth", status: 403 });
+  return { uid: decoded.uid, capabilities: resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) };
 }
 
 async function requirePlatformTeamCapability(req: Request, env: NodeJS.ProcessEnv, capability: PlatformCapability, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<{ uid: string; capabilities: PlatformCapability[]; role?: string }> {
