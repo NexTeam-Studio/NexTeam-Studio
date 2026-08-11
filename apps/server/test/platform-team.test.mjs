@@ -72,4 +72,20 @@ test("NexCommand resolves the current Firebase UID to its sole active internal p
   assert.equal(resolved?.accountStatus, "ACTIVE");
   assert.equal(resolved?.accountClass, "internal");
   assert.equal(resolved?.email, "nexteamstudioai@gmail.com");
+
+  await repository.savePlatformUser({
+    id: "platform_user_unexpected_second_active",
+    authUid,
+    firstName: "Chris",
+    lastName: "Sears",
+    email: "nexteamstudioai@gmail.com",
+    role: "Owner",
+    capabilityOverrides: { grant: [], deny: [] },
+    accountStatus: "ACTIVE",
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    createdBy: "system",
+    updatedBy: "system"
+  });
+  assert.equal(await repository.getPlatformUserByAuthUid(authUid), null, "multiple active profiles fail closed");
 });
