@@ -290,7 +290,14 @@ export class InMemoryPlatformRepository implements PlatformRepository {
 
   async listPlatformUsers(): Promise<PlatformUser[]> { return [...this.platformUsers.values()].map(firestoreDoc); }
   async getPlatformUser(userId: string): Promise<PlatformUser | null> { const user = this.platformUsers.get(userId); return user ? firestoreDoc(user) : null; }
-  async getPlatformUserByAuthUid(authUid: string): Promise<PlatformUser | null> { const user = [...this.platformUsers.values()].find((entry) => entry.authUid === authUid); return user ? firestoreDoc(user) : null; }
+  async getPlatformUserByAuthUid(authUid: string): Promise<PlatformUser | null> {
+    const matches = [...this.platformUsers.values()].filter((entry) => entry.authUid === authUid);
+    const active = matches.filter((entry) => entry.accountStatus === "ACTIVE");
+    // A legacy disabled duplicate must never shadow the one active internal profile.
+    // More than one active profile is an authorization data-integrity failure, so fail closed.
+    const user = active.length === 1 ? active[0] : active.length === 0 ? matches[0] : undefined;
+    return user ? firestoreDoc(user) : null;
+  }
   async savePlatformUser(user: PlatformUser): Promise<PlatformUser> { const parsed = platformUserSchema.parse(user) as PlatformUser; this.platformUsers.set(parsed.id, firestoreDoc(parsed)); return firestoreDoc(parsed); }
   async listPlatformUserAudits(userId?: string): Promise<PlatformUserAudit[]> { return this.platformUserAudits.filter((audit) => !userId || audit.userId === userId).map(firestoreDoc); }
   async appendPlatformUserAudit(audit: PlatformUserAudit): Promise<PlatformUserAudit> { const parsed = platformUserAuditSchema.parse(audit) as PlatformUserAudit; this.platformUserAudits.push(firestoreDoc(parsed)); return firestoreDoc(parsed); }
@@ -672,8 +679,19 @@ export class FirestorePlatformRepository implements PlatformRepository {
     return snapshot.exists ? platformUserSchema.parse(snapshot.data()) as PlatformUser : null;
   }
   async getPlatformUserByAuthUid(authUid: string): Promise<PlatformUser | null> {
-    const snapshot = await this.db.collection("platformUsers").where("authUid", "==", authUid).limit(1).get();
-    return snapshot.empty ? null : platformUserSchema.parse(snapshot.docs[0]?.data()) as PlatformUser;
+    const snapshot = await this.db.collection("platformUsers").where("authUid", "==", authUid).get();
+    const matches = snapshot.docs
+      .map((document) => platformUserSchema.safeParse(document.data()))
+      .filter((result): result is { success: true; data: PlatformUser } => result.success)
+      .map((result) => result.data as PlatformUser);
+    const active = matches.filter((profile) => profile.accountStatus === "ACTIVE");
+    // Firestore does not guarantee an order for this query. Selecting limit(1)
+    // allowed a disabled legacy duplicate to deny the current Firebase identity.
+    // A non-unique active identity remains fail-closed until repaired.
+    const soleActive = active[0];
+    if (active.length === 1 && soleActive) return soleActive;
+    if (active.length > 1) return null;
+    return matches[0] ?? null;
   }
   async savePlatformUser(user: PlatformUser): Promise<PlatformUser> {
     const parsed = platformUserSchema.parse(user) as PlatformUser;

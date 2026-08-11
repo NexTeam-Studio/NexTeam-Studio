@@ -8,7 +8,7 @@
 
 Each profile stores `authUid`, first/last name, email, optional telephone, optional address, optional profile-photo reference, role template, explicit grant/deny capability overrides, `ACTIVE`/`DISABLED` account status, and creation/update attribution. Approved platform templates are Owner, Super Admin, Administrator, Developer, Developer Admin, Support, Sales & Onboarding, Marketing, Finance, and Read Only. Team lists return only name, role, status, photo reference, and update time. A full profile is returned only to its subject or a `platform.team.manage` operator.
 
-Capabilities resolve server-side from the persisted template plus overrides (grant then deny); role labels alone never authorize a request. The verified Firebase platform-operator gate remains mandatory. Disabled platform profiles are denied. Existing claim capabilities only provide a controlled bootstrap fallback when no platform profile exists.
+Capabilities resolve server-side from the persisted template plus overrides (grant then deny); role labels alone never authorize a request. The verified Firebase platform-operator gate remains mandatory. Disabled platform profiles are denied. For a Firebase UID with one active profile plus legacy disabled duplicate records, server lookup selects the sole active profile; multiple active profiles fail closed until repaired. Existing claim capabilities only provide a controlled bootstrap fallback when no platform profile exists.
 
 ## Commands and events
 

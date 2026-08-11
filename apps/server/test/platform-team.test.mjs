@@ -33,3 +33,43 @@ test("NexCommand Team persists platform-only profiles, redacts sensitive data, a
     assert.deepEqual(audits.map((audit) => audit.action), ["platform_user.added", "platform_user.disabled", "platform_user.reactivated"]);
   } finally { await new Promise((resolve) => server.close(resolve)); }
 });
+
+test("NexCommand resolves the current Firebase UID to its sole active internal profile when a disabled legacy duplicate exists", async () => {
+  const repository = new InMemoryPlatformRepository();
+  const timestamp = new Date().toISOString();
+  const authUid = "staging-current-owner-firebase-uid";
+  await repository.savePlatformUser({
+    id: "platform_user_legacy_disabled",
+    authUid,
+    firstName: "Chris",
+    lastName: "Sears",
+    email: "nexteamstudioai@gmail.com",
+    role: "Owner",
+    capabilityOverrides: { grant: [], deny: [] },
+    accountStatus: "DISABLED",
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    createdBy: "system",
+    updatedBy: "system"
+  });
+  await repository.savePlatformUser({
+    id: "platform_user_current_active",
+    authUid,
+    firstName: "Chris",
+    lastName: "Sears",
+    email: "nexteamstudioai@gmail.com",
+    role: "Owner",
+    capabilityOverrides: { grant: [], deny: [] },
+    accountStatus: "ACTIVE",
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    createdBy: "system",
+    updatedBy: "system"
+  });
+
+  const resolved = await repository.getPlatformUserByAuthUid(authUid);
+  assert.equal(resolved?.id, "platform_user_current_active");
+  assert.equal(resolved?.accountStatus, "ACTIVE");
+  assert.equal(resolved?.accountClass, "internal");
+  assert.equal(resolved?.email, "nexteamstudioai@gmail.com");
+});
