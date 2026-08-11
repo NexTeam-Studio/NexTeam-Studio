@@ -3,8 +3,9 @@ import { NexCamPage } from "../../features/nexcam/areas/capture/components/NexCa
 import { NexiStandaloneChat } from "../../features/nexi/areas/chat/components/NexiStandaloneChat";
 import { NexOpsWorkspace } from "../../features/nexopsShell/NexOpsWorkspace";
 import { PlatformRoute } from "../../features/platform/routes/PlatformRoute";
+import { PlatformMark } from "../branding/ProductBranding";
 import { useAuthSession } from "../auth/AuthSessionProvider";
-import { establishNexCommandSession, hasFreshNexCommandAuthentication, hasNexCommandSession } from "../auth/authBootstrap";
+import { establishNexCommandSession, hasFreshNexCommandAuthentication, hasNexCommandSession, signOutOperator } from "../auth/authBootstrap";
 import { usePathname } from "./usePathname";
 
 const NexReachPage = React.lazy(async () => ({ default: (await import("../../features/nexreach/areas/reputation/components/NexReachPage")).NexReachPage }));
@@ -25,7 +26,7 @@ export function AppRouter(): React.ReactElement | null {
 }
 
 function NexCommandSessionGate(): React.ReactElement | null {
-  const { user } = useAuthSession();
+  const { auth, user } = useAuthSession();
   const [ready, setReady] = useState(hasNexCommandSession());
   const [denied, setDenied] = useState(false);
   useEffect(() => {
@@ -37,6 +38,17 @@ function NexCommandSessionGate(): React.ReactElement | null {
     if (!hasFreshNexCommandAuthentication()) return;
     void establishNexCommandSession(user).then(() => setReady(true)).catch(() => setDenied(true));
   }, [user]);
-  if (denied) return <main className="shell"><section className="auth-card"><h1>NexCommand access denied</h1><p>This account does not have an active NexTeam internal profile and cannot open NexCommand.</p></section></main>;
+  if (denied) {
+    return <main className="shell"><section className="auth-card">
+      <PlatformMark className="auth-card-brand" alt="NexTeam" />
+      <p className="auth-eyebrow">NexTeam platform</p>
+      <h1>NexCommand access denied</h1>
+      <p>This account is not authorized to access NexCommand. Tenant accounts can use NexOps only.</p>
+      <div className="auth-denial-actions">
+        <button type="button" onClick={() => void signOutOperator(auth, "/nexcommand/sign-in")}>Sign in with a different account</button>
+        <button type="button" className="auth-secondary-action" onClick={() => void signOutOperator(auth, "/nexops/sign-in")}>Open NexOps</button>
+      </div>
+    </section></main>;
+  }
   return ready ? <PlatformRoute /> : null;
 }

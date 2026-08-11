@@ -188,7 +188,7 @@ export async function signInWithLocalCredentials(email: string, tenantId: string
   return localSessionUser(body.token, body.profile);
 }
 
-export async function signOutOperator(auth: Auth | null): Promise<void> {
+export async function signOutOperator(auth: Auth | null, destination = "/nexops/sign-in"): Promise<void> {
   const nexCommandToken = readNexCommandSessionToken();
   if (nexCommandToken) await fetch("/api/platform/admin/session/sign-out", { method: "POST", headers: { authorization: `Bearer ${nexCommandToken}` } }).catch(() => undefined);
   clearNexCommandSession();
@@ -196,7 +196,7 @@ export async function signOutOperator(auth: Auth | null): Promise<void> {
   if (auth) {
     await signOut(auth);
   }
-  window.location.assign("/nexops/sign-in");
+  window.location.assign(destination);
 }
 
 export async function loadAuthBootstrap(): Promise<AuthBootstrap> {
