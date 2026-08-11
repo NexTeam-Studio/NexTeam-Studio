@@ -2,12 +2,28 @@ import { randomUUID } from "node:crypto";
 import { cert, deleteApp, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
-import { GmailSendAdapter } from "@nexteam/providers";
 
-const EMAIL = "nexteamstudioai@gmail.com";
-const JOB_ID = "NEXTEAM-DAY1-CREATE-INTERNAL-OWNER-ONBOARDING-20260810";
-const SENT_AUDIT_DETAIL = "Staging internal NexCommand onboarding dispatch was accepted by the provider; delivery metadata only.";
-const STARTED_AUDIT_DETAIL = "Staging internal NexCommand onboarding dispatch was initiated; do not retry automatically.";
+const JOB_ID = "NEXTEAM-DAY1-LINK-EXISTING-OWNER-20260810";
+
+function argument(name) {
+  const index = process.argv.indexOf(name);
+  return index === -1 ? "" : String(process.argv[index + 1] || "").trim();
+}
+
+function authorizedInput() {
+  const input = {
+    environment: argument("--environment"),
+    email: argument("--authorized-email").toLowerCase(),
+    firstName: argument("--first-name"),
+    lastName: argument("--last-name"),
+    role: argument("--role"),
+    confirmation: argument("--confirm-job")
+  };
+  if (input.environment !== "staging") throw new Error("This repair is staging-only; pass --environment staging.");
+  if (!/^\S+@\S+\.\S+$/.test(input.email) || !input.firstName || !input.lastName || input.role !== "Owner") throw new Error("Explicit authorized Owner input is required.");
+  if (input.confirmation !== JOB_ID) throw new Error("The authorized job confirmation does not match.");
+  return input;
+}
 
 function credentials() {
   const projectId = String(process.env.FIREBASE_ADMIN_PROJECT_ID || "").trim();
@@ -19,126 +35,93 @@ function credentials() {
 
 function operatorUid() {
   const uid = String(process.env.FIREBASE_PLATFORM_OPERATOR_UIDS || "").split(",")[0]?.trim();
-  if (!uid) throw new Error("The staging platform operator UID is unavailable.");
+  if (!uid) throw new Error("The staging bootstrap operator UID is unavailable.");
   return uid;
 }
 
-function safeErrorCode(error) {
-  return String(error && typeof error === "object" && "code" in error ? error.code : "UNKNOWN").replace(/[^A-Za-z0-9_.-]/g, "_").slice(0, 120) || "UNKNOWN";
+function withoutTenantClaims(claims) {
+  const repaired = { ...claims };
+  delete repaired.tenantId;
+  delete repaired.tenantRole;
+  delete repaired.tenantUserId;
+  delete repaired.tenantCapabilities;
+  return repaired;
 }
 
-function safeResult(result) {
-  console.log(JSON.stringify(result));
-}
-
-const app = initializeApp({ credential: cert(credentials()) }, `staging-internal-owner-${randomUUID()}`);
+const input = authorizedInput();
+const app = initializeApp({ credential: cert(credentials()) }, `staging-internal-owner-link-${randomUUID()}`);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const actorUid = operatorUid();
 
 try {
-  if (String(process.env.NEXTEAM_EXTERNAL_INTEGRATIONS_QUARANTINED || "").trim().toLowerCase() === "true") throw new Error("The staging mail rail is quarantined.");
-  if (String(process.env.GMAIL_SEND_MAILBOX_EMAIL || "").trim().toLowerCase() !== EMAIL) throw new Error("The approved staging sender identity is not configured.");
-  for (const key of ["GMAIL_SEND_MAILBOX_CLIENT_ID", "GMAIL_SEND_MAILBOX_CLIENT_SECRET", "GMAIL_SEND_MAILBOX_REFRESH_TOKEN"]) {
-    if (!String(process.env[key] || "").trim()) throw new Error("The staging owner-onboarding mail rail is incomplete.");
-  }
+  const firebaseUser = await auth.getUserByEmail(input.email);
+  if (firebaseUser.disabled) throw new Error("The existing Firebase identity is disabled; refusing to create a replacement identity.");
 
-  let firebaseUser;
-  try { firebaseUser = await auth.getUserByEmail(EMAIL); } catch (error) { if (safeErrorCode(error) !== "auth_user-not-found") throw error; }
-  const uid = firebaseUser?.uid;
-  const existingProfile = uid ? (await db.collection("platformUsers").where("authUid", "==", uid).limit(1).get()).docs[0] : undefined;
-  const existingAudits = existingProfile ? await db.collection("platformUserAudits").where("userId", "==", existingProfile.id).get() : undefined;
-  const dispatchAlreadyRecorded = existingAudits?.docs.some((doc) => [SENT_AUDIT_DETAIL, STARTED_AUDIT_DETAIL].includes(String(doc.data().detail || ""))) ?? false;
-  if (dispatchAlreadyRecorded) throw new Error("A staging internal onboarding dispatch was already recorded; refusing a duplicate send.");
-
-  if (firebaseUser) {
-    const tenantMembership = await db.collection("tenantUsers").where("authUid", "==", firebaseUser.uid).limit(1).get();
-    const claims = firebaseUser.customClaims || {};
-    if (!tenantMembership.empty || claims.tenantId || claims.tenantRole) throw new Error("The target Firebase identity has tenant access; refusing this internal-only operation.");
-  }
+  const membership = await db.collection("tenantUsers").where("authUid", "==", firebaseUser.uid).limit(1).get();
+  if (!membership.empty) throw new Error("The existing Firebase identity has tenant membership; refusing to alter tenant access in this internal-profile repair.");
 
   const now = new Date().toISOString();
-  if (!firebaseUser) {
-    firebaseUser = await auth.createUser({ email: EMAIL, emailVerified: false, disabled: false, displayName: "NexTeam Studio" });
-    await auth.setCustomUserClaims(firebaseUser.uid, { platform_operator: true, roles: ["platform_operator"] });
-  }
+  const profiles = await db.collection("platformUsers").where("authUid", "==", firebaseUser.uid).get();
+  const profileId = profiles.docs.find((entry) => entry.data().accountStatus === "ACTIVE")?.id ?? profiles.docs[0]?.id ?? `platform_user_${randomUUID()}`;
+  const auditId = `platform_user_audit_${randomUUID()}`;
 
-  let profileId = existingProfile?.id;
-  if (!existingProfile) {
-    profileId = `platform_user_${randomUUID()}`;
-    await db.collection("platformUsers").doc(profileId).create({
+  await db.runTransaction(async (transaction) => {
+    const linkedProfiles = await transaction.get(db.collection("platformUsers").where("authUid", "==", firebaseUser.uid));
+    const primary = linkedProfiles.docs.find((entry) => entry.id === profileId);
+    const primaryData = primary?.data() || {};
+    transaction.set(db.collection("platformUsers").doc(profileId), {
+      ...primaryData,
       id: profileId,
       authUid: firebaseUser.uid,
-      firstName: "NexTeam",
-      lastName: "Studio",
-      email: EMAIL,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      email: input.email,
       role: "Owner",
-      capabilityOverrides: { grant: [], deny: [] },
+      accountClass: "internal",
+      capabilityOverrides: primaryData.capabilityOverrides || { grant: [], deny: [] },
       accountStatus: "ACTIVE",
-      createdAt: now,
+      createdAt: primaryData.createdAt || now,
       updatedAt: now,
-      createdBy: actorUid,
+      createdBy: primaryData.createdBy || actorUid,
       updatedBy: actorUid
     });
-    await db.collection("platformUserAudits").doc(`platform_user_audit_${randomUUID()}`).create({
-      id: `platform_user_audit_${randomUUID()}`,
+    for (const duplicate of linkedProfiles.docs.filter((entry) => entry.id !== profileId && entry.data().accountStatus !== "DISABLED")) {
+      transaction.update(duplicate.ref, { accountStatus: "DISABLED", updatedAt: now, updatedBy: actorUid });
+    }
+    transaction.create(db.collection("platformUserAudits").doc(auditId), {
+      id: auditId,
       userId: profileId,
-      action: "platform_user.added",
+      action: primary ? "platform_user.updated" : "platform_user.added",
       actorUid,
       createdAt: now,
-      detail: "Staging internal NexCommand Owner profile created by authorized onboarding job."
+      detail: "Staging authorized existing Firebase identity linked to one active internal NexCommand Owner profile; no password or email action was performed."
     });
-  }
-
-  await db.collection("platformUserAudits").doc(`platform_user_audit_${randomUUID()}`).create({
-    id: `platform_user_audit_${randomUUID()}`,
-    userId: profileId,
-    action: "platform_user.updated",
-    actorUid,
-    createdAt: new Date().toISOString(),
-    detail: STARTED_AUDIT_DETAIL
   });
 
-  const baseUrl = String(process.env.PUBLIC_BASE_URL || "https://nexstage.nexteam.studio").replace(/\/$/, "");
-  const setupLink = await auth.generatePasswordResetLink(EMAIL, { url: `${baseUrl}/nexcommand`, handleCodeInApp: false });
-  const sender = new GmailSendAdapter({
-    mailbox: "NEXCOMMAND_INTERNAL_OWNER",
-    tenantId: "platform-internal",
-    clientId: String(process.env.GMAIL_SEND_MAILBOX_CLIENT_ID),
-    clientSecret: String(process.env.GMAIL_SEND_MAILBOX_CLIENT_SECRET),
-    refreshToken: String(process.env.GMAIL_SEND_MAILBOX_REFRESH_TOKEN)
-  });
-  const receipt = await sender.sendEmail({
-    tenantId: "platform-internal",
-    mailbox: sender.mailbox,
-    to: [EMAIL],
-    subject: "Set up your NexCommand account",
-    bodyText: `Hello,\n\nYour NexCommand internal Owner account is ready. Set your password using this secure link: ${setupLink}\n\nAfterward, sign in to NexCommand. If you did not expect this onboarding email, you can ignore it.`
-  });
-  await db.collection("platformUserAudits").doc(`platform_user_audit_${randomUUID()}`).create({
-    id: `platform_user_audit_${randomUUID()}`,
-    userId: profileId,
-    action: "platform_user.updated",
-    actorUid,
-    createdAt: new Date().toISOString(),
-    detail: SENT_AUDIT_DETAIL
-  });
-
-  const savedProfile = await db.collection("platformUsers").doc(profileId).get();
-  const tenantMembershipAfter = await db.collection("tenantUsers").where("authUid", "==", firebaseUser.uid).limit(1).get();
-  const refreshedUser = await auth.getUser(firebaseUser.uid);
-  safeResult({
+  await auth.setCustomUserClaims(firebaseUser.uid, withoutTenantClaims(firebaseUser.customClaims || {}));
+  const [refreshedUser, savedProfiles, membershipAfter] = await Promise.all([
+    auth.getUser(firebaseUser.uid),
+    db.collection("platformUsers").where("authUid", "==", firebaseUser.uid).get(),
+    db.collection("tenantUsers").where("authUid", "==", firebaseUser.uid).limit(1).get()
+  ]);
+  const activeProfiles = savedProfiles.docs.filter((entry) => entry.data().accountStatus === "ACTIVE");
+  const owner = activeProfiles[0]?.data();
+  console.log(JSON.stringify({
     jobId: JOB_ID,
     environment: "staging",
-    firebaseIdentity: refreshedUser.email?.toLowerCase() === EMAIL && !refreshedUser.disabled ? "CREATED_ACTIVE" : "NOT_VERIFIED",
-    platformProfile: savedProfile.exists && savedProfile.data()?.role === "Owner" && savedProfile.data()?.accountStatus === "ACTIVE" && savedProfile.data()?.email === EMAIL ? "ACTIVE_OWNER" : "NOT_VERIFIED",
-    tenantMembership: tenantMembershipAfter.empty && !refreshedUser.customClaims?.tenantId && !refreshedUser.customClaims?.tenantRole ? "ABSENT" : "PRESENT",
-    providerAcceptance: receipt.provider === "gmail" && Boolean(receipt.id) ? "ACCEPTED" : "NOT_ACCEPTED",
-    provider: receipt.provider,
-    messageIdentifierRecorded: Boolean(receipt.id),
+    firebaseIdentityResolved: refreshedUser.email?.toLowerCase() === input.email && !refreshedUser.disabled,
+    activeInternalProfileCount: activeProfiles.length,
+    profileMatchesAuthorizedIdentity: owner?.authUid === refreshedUser.uid && owner?.email === input.email,
+    profileNameMatches: owner?.firstName === input.firstName && owner?.lastName === input.lastName,
+    platformRole: owner?.role || "MISSING",
+    accountClass: owner?.accountClass || "MISSING",
+    tenantMembershipAbsent: membershipAfter.empty,
+    tenantClaimsAbsent: !refreshedUser.customClaims?.tenantId && !refreshedUser.customClaims?.tenantRole,
     passwordOrActionMaterialReturned: false,
+    emailOrResetSent: false,
     productionChanged: false
-  });
+  }));
 } finally {
   await deleteApp(app).catch(() => undefined);
 }

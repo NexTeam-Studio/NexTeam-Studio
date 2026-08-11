@@ -1,0 +1,58 @@
+JOB_ID=NEXTEAM-DAY1-LINK-EXISTING-OWNER-20260810-VERIFY-2
+WORKTREE=target-architecture-integration
+
+$ railway run --service NexTeam-Studio --environment staging -- node scripts/run-staging-internal-nexcommand-owner-onboarding.mjs --environment staging --authorized-email nexteamstudioai@gmail.com --first-name Chris --last-name Sears --role Owner --confirm-job NEXTEAM-DAY1-LINK-EXISTING-OWNER-20260810
+{"jobId":"NEXTEAM-DAY1-LINK-EXISTING-OWNER-20260810","environment":"staging","firebaseIdentityResolved":true,"activeInternalProfileCount":1,"profileMatchesAuthorizedIdentity":true,"profileNameMatches":true,"platformRole":"Owner","accountClass":"internal","tenantMembershipAbsent":true,"tenantClaimsAbsent":true,"passwordOrActionMaterialReturned":false,"emailOrResetSent":false,"productionChanged":false}
+EXIT_CODE=0
+
+$ railway run --service NexTeam-Studio --environment staging -- node scripts/verify-staging-internal-nexcommand-owner-onboarding.mjs
+{"environment":"staging","firebaseEmailMatches":true,"firebaseActive":true,"activeInternalProfileCount":1,"platformProfileEmailMatches":true,"platformProfileNameMatches":true,"platformRole":"Owner","accountClass":"internal","platformStatus":"ACTIVE","tenantMembershipAbsent":true,"tenantClaimsAbsent":true,"actionMaterialReturned":false,"emailOrResetSent":false,"productionChanged":false}
+EXIT_CODE=0
+
+$ node --import ./tests/setup.mjs --import tsx --test apps/server/test/platform-team.test.mjs apps/server/test/platform-role-capabilities.test.mjs apps/server/test/nexcommand-session-security.test.mjs scripts/run-staging-internal-nexcommand-owner-onboarding.test.mjs
+✔ NexCommand sessions expire, cannot reopen without fresh authentication, sign out, and retain immutable redacted audit history (58.9962ms)
+✔ approved platform role templates resolve explicit capabilities and deny production by default (1.1812ms)
+✔ persisted role overrides, disabled profiles, ownership protections, and platform route capability denials are server enforced (88.5781ms)
+✔ NexCommand Team persists platform-only profiles, redacts sensitive data, and records immutable audit events (80.5609ms)
+✔ the staging internal Owner repair requires explicit input and cannot create identities or send password actions (5.3245ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1253.9375
+EXIT_CODE=0
+
+$ npm run typecheck
+
+> typecheck
+> tsc -b
+
+EXIT_CODE=0
+
+$ npm run check:worktree-scope
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+EXIT_CODE=0
+
+$ npm run check:worktree-coverage
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 536/536 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+EXIT_CODE=0
+
+$ npm run check:secrets
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1815 tracked non-doc files checked).
+EXIT_CODE=0

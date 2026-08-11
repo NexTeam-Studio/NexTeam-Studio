@@ -19,7 +19,9 @@ try {
   const auth = getAuth(app);
   const db = getFirestore(app);
   const firebaseUser = await auth.getUserByEmail(EMAIL);
-  const profile = (await db.collection("platformUsers").where("authUid", "==", firebaseUser.uid).limit(1).get()).docs[0];
+  const profiles = await db.collection("platformUsers").where("authUid", "==", firebaseUser.uid).get();
+  const activeProfiles = profiles.docs.filter((doc) => doc.data().accountStatus === "ACTIVE");
+  const profile = activeProfiles[0];
   const membership = await db.collection("tenantUsers").where("authUid", "==", firebaseUser.uid).limit(1).get();
   const audits = profile ? await db.collection("platformUserAudits").where("userId", "==", profile.id).get() : null;
   const details = audits?.docs.map((doc) => String(doc.data().detail || "")) ?? [];
@@ -27,14 +29,16 @@ try {
     environment: "staging",
     firebaseEmailMatches: firebaseUser.email?.toLowerCase() === EMAIL,
     firebaseActive: !firebaseUser.disabled,
+    activeInternalProfileCount: activeProfiles.length,
     platformProfileEmailMatches: profile?.data()?.email === EMAIL,
+    platformProfileNameMatches: profile?.data()?.firstName === "Chris" && profile?.data()?.lastName === "Sears",
     platformRole: profile?.data()?.role || "MISSING",
+    accountClass: profile?.data()?.accountClass || "MISSING",
     platformStatus: profile?.data()?.accountStatus || "MISSING",
     tenantMembershipAbsent: membership.empty,
     tenantClaimsAbsent: !firebaseUser.customClaims?.tenantId && !firebaseUser.customClaims?.tenantRole,
-    onboardingDispatchStartedCount: details.filter((detail) => detail.includes("onboarding dispatch was initiated")).length,
-    onboardingProviderAcceptedCount: details.filter((detail) => detail.includes("onboarding dispatch was accepted")).length,
     actionMaterialReturned: false,
+    emailOrResetSent: false,
     productionChanged: false
   }));
 } finally {
