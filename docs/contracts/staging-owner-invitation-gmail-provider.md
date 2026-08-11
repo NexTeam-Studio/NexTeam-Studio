@@ -10,6 +10,8 @@ not tenant-scoped data and never contains a credential.
 - Sender identity: `nexteamstudioai@gmail.com`
 - Environment: `staging`
 - Purpose: `owner invitation`
+- OAuth project: `NexTeam Gmail Sender`
+- OAuth client: `NexTeam Gmail Sender Local`
 - Required OAuth scope: `gmail.send`
 - Refresh-secret destination: `GMAIL_SEND_MAILBOX_REFRESH_TOKEN`
 
@@ -22,18 +24,17 @@ present/missing health. It never returns an OAuth client value, refresh token,
 client secret, authorization code, or password.
 
 The command is read-only and creates no durable event. It must report
-`safeToReauthorize: false` until an authoritative non-secret OAuth
-client/project label or identifier proves the configured client is the intended
-NexTeam staging sender configuration. Quarantine remains controlled by
+The provider status reports the approved non-secret OAuth project/client labels,
+connection health, and last successful verification timestamp. It never returns
+an OAuth client value, refresh token, client secret, authorization code, or
+password. Quarantine remains controlled by
 `NEXTEAM_EXTERNAL_INTEGRATIONS_QUARANTINED` and no status read changes it.
 
 ## Reauthorization boundary
 
 No browser consent, callback handling, token creation, or email delivery is
-part of this provider-status contract. Once a later authorized preflight proves
-the non-secret OAuth client/project mapping, the human-only procedure is to
-select the registered sender, grant `gmail.send` only through that client's
-already-registered staging-local callback, and store the resulting refresh
-credential only in Railway staging under the registered destination name.
-Production remains out of scope; quarantine remains enabled until a separate
-authorized send/delivery job.
+part of this provider-status contract. The current staging sender is locked.
+It may not be replaced, revoked, or silently reauthorized for another account
+without an explicitly authorized sender-migration job. Preflight refreshes the
+stored staging credential and the send path performs a provider acceptance
+check before recording an invitation receipt. Production remains out of scope.

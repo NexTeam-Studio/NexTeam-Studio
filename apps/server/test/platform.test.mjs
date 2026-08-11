@@ -353,13 +353,17 @@ test("platform routes expose tenants, test subscription, backup, and export", as
       senderIdentity: "nexteamstudioai@gmail.com",
       environment: "staging",
       purpose: "owner invitation",
+      oauthProjectIdentity: "NexTeam Gmail Sender",
+      oauthClientIdentity: "NexTeam Gmail Sender Local",
       requiredScope: "gmail.send",
       secretDestinationName: "GMAIL_SEND_MAILBOX_REFRESH_TOKEN",
       oauthClientStatus: "MISSING",
       quarantineState: "QUARANTINED",
       secretHealth: "MISSING",
+      connectionHealth: "UNVERIFIED",
+      lastVerifiedAt: null,
       safeToReauthorize: false,
-      reauthorizationReason: "SAFE_TO_REAUTHORIZE=false: the OAuth client/project is not proven by an authoritative non-secret record."
+      reauthorizationReason: "STAGING_SENDER_LOCKED: explicit sender-migration authorization is required."
     });
     const subscribe = await fetch(`${base}/api/platform/tenants/second-test/subscribe-test`, {
       method: "POST",

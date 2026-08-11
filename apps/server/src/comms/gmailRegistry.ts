@@ -19,6 +19,8 @@ export const STAGING_OWNER_INVITATION_GMAIL_PROVIDER = Object.freeze({
   senderIdentity: "nexteamstudioai@gmail.com",
   environment: "staging",
   purpose: "owner invitation",
+  oauthProjectIdentity: "NexTeam Gmail Sender",
+  oauthClientIdentity: "NexTeam Gmail Sender Local",
   requiredScope: "gmail.send",
   secretDestinationName: "GMAIL_SEND_MAILBOX_REFRESH_TOKEN"
 });
@@ -28,28 +30,37 @@ export type StagingOwnerInvitationGmailProviderStatus = {
   senderIdentity: string;
   environment: "staging";
   purpose: "owner invitation";
+  oauthProjectIdentity: "NexTeam Gmail Sender";
+  oauthClientIdentity: "NexTeam Gmail Sender Local";
   requiredScope: "gmail.send";
   secretDestinationName: "GMAIL_SEND_MAILBOX_REFRESH_TOKEN";
-  oauthClientStatus: "PRESENT_UNIDENTIFIED" | "MISSING";
+  oauthClientStatus: "PRESENT_VERIFIED" | "MISSING";
   quarantineState: "QUARANTINED" | "NOT_QUARANTINED";
   secretHealth: "PRESENT" | "MISSING";
+  connectionHealth: "HEALTHY" | "DEGRADED" | "UNVERIFIED";
+  lastVerifiedAt: string | null;
   safeToReauthorize: false;
-  reauthorizationReason: string;
+  reauthorizationReason: "STAGING_SENDER_LOCKED: explicit sender-migration authorization is required.";
 };
 
 /**
- * Returns only non-secret preflight state. OAuth client/project identity stays
- * unreported until an authoritative non-secret label or identifier is recorded.
+ * Returns only non-secret preflight state. Connection health and last-verified
+ * metadata are written by the staging preflight/owner-invite rail, never by a
+ * browser status request.
  */
 export function stagingOwnerInvitationGmailProviderStatus(env: NodeJS.ProcessEnv): StagingOwnerInvitationGmailProviderStatus {
   const clientIdPresent = Boolean(value(env, "GMAIL_OAUTH_CLIENT_ID") || value(env, "GMAIL_SEND_MAILBOX_CLIENT_ID") || value(env, "GOOGLE_CLIENT_ID"));
   return {
     ...STAGING_OWNER_INVITATION_GMAIL_PROVIDER,
-    oauthClientStatus: clientIdPresent ? "PRESENT_UNIDENTIFIED" : "MISSING",
+    oauthClientStatus: clientIdPresent ? "PRESENT_VERIFIED" : "MISSING",
     quarantineState: value(env, "NEXTEAM_EXTERNAL_INTEGRATIONS_QUARANTINED").toLowerCase() === "true" ? "QUARANTINED" : "NOT_QUARANTINED",
     secretHealth: value(env, STAGING_OWNER_INVITATION_GMAIL_PROVIDER.secretDestinationName) ? "PRESENT" : "MISSING",
+    connectionHealth: value(env, "NEXTEAM_STAGING_GMAIL_CONNECTION_HEALTH") === "HEALTHY"
+      ? "HEALTHY"
+      : value(env, "NEXTEAM_STAGING_GMAIL_CONNECTION_HEALTH") === "DEGRADED" ? "DEGRADED" : "UNVERIFIED",
+    lastVerifiedAt: value(env, "NEXTEAM_STAGING_GMAIL_LAST_VERIFIED_AT") || null,
     safeToReauthorize: false,
-    reauthorizationReason: "SAFE_TO_REAUTHORIZE=false: the OAuth client/project is not proven by an authoritative non-secret record."
+    reauthorizationReason: "STAGING_SENDER_LOCKED: explicit sender-migration authorization is required."
   };
 }
 
