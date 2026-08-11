@@ -8,7 +8,7 @@ export const platformSessionSchema = z.object({
 export type PlatformSession = z.infer<typeof platformSessionSchema>;
 
 export const platformSecurityAuditSchema = z.object({
-  id: z.string().min(1), action: z.enum(["platform_session.created", "platform_session.failed_sign_in", "platform_session.signed_out", "platform_session.idle_expired", "platform_user.profile_or_permission_changed"]), actorUid: z.string().min(1), subjectUid: z.string().min(1).optional(), createdAt: z.string().datetime(), detail: z.string().max(500)
+  id: z.string().min(1), action: z.enum(["platform_session.created", "platform_session.failed_sign_in", "platform_session.signed_out", "platform_session.idle_expired", "platform_user.profile_or_permission_changed", "tenant_owner_invite.sent", "tenant_owner_invite.failed"]), actorUid: z.string().min(1), subjectUid: z.string().min(1).optional(), createdAt: z.string().datetime(), detail: z.string().max(500)
 }).strict();
 export type PlatformSecurityAudit = z.infer<typeof platformSecurityAuditSchema>;
 

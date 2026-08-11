@@ -7,6 +7,7 @@ import { MemoryStorageWriter, runTenantBackup } from "../dist/platform/backup.js
 import { createStripeTestSubscription } from "../dist/platform/billing.js";
 import {
   createJobAccessLink,
+  buildTenantUser,
   customClaimsForTenantUser,
   upsertTenantUser,
   verifyJobAccessToken
@@ -239,6 +240,55 @@ test("job access links verify only one linked job and fail closed after revoke",
     }),
     /revoked/
   );
+});
+
+test("owner-invite resend uses the protected send path, writes one invite record, and records an immutable audit", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("invite-proof", "suite")]);
+  const owner = buildTenantUser({
+    tenantId: "invite-proof", id: "owner-invite-proof", authUid: "firebase-owner-proof",
+    email: "owner@example.test", displayName: "Owner Proof", role: "OWNER", now: "2026-08-10T00:00:00.000Z"
+  });
+  await repository.upsertTenantUser(owner);
+  const sent = [];
+  const app = express();
+  app.use(express.json());
+  registerPlatformRoutes(app, {
+    repository,
+    storage: null,
+    env: { NEXI_FIREBASE_AUTH_REQUIRED: "false" },
+    firebaseOwnerActivation: {
+      async generatePasswordResetLink() { return "https://example.test/reset/opaque"; }
+    },
+    ownerInviteSender: {
+      async send(input) {
+        sent.push(input);
+        return { provider: "gmail", messageId: `message-${sent.length}` };
+      }
+    }
+  });
+  const server = app.listen(0);
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const post = () => fetch(`${base}/api/platform/admin/tenants/invite-proof/owner-invite/resend`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ownerEmail: "owner@example.test" })
+    });
+    const first = await (await post()).json();
+    const second = await (await post()).json();
+    assert.equal(first.ok, true);
+    assert.equal(second.ok, true);
+    assert.equal(first.invite.provider, "gmail");
+    assert.equal(first.invite.messageId, "message-1");
+    assert.equal(second.invite.attemptCount, 2);
+    assert.equal(sent.length, 2);
+    assert.equal((await repository.listTenants()).filter((tenant) => tenant.id === "invite-proof").length, 1);
+    assert.equal((await repository.listTenantUsers("invite-proof")).filter((user) => user.id === owner.id).length, 1);
+    const invite = await repository.getTenantOwnerInvite("invite-proof", owner.id);
+    assert.equal(invite.status, "SENT_TO_PROVIDER");
+    assert.equal(invite.providerMessageId, "message-2");
+    assert.equal((await repository.listPlatformSecurityAudits()).filter((audit) => audit.action === "tenant_owner_invite.sent" && audit.subjectUid === owner.authUid).length, 2);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test("platform billing refuses live Stripe keys and supports fake test-mode receipt runs", async () => {

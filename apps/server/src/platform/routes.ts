@@ -233,10 +233,11 @@ function capabilityForNexCommandRoute(req: Request): PlatformCapability {
   if (path.includes("/summary")) return "platform.dashboard.view";
   return req.method === "GET" ? "platform.tenants.view" : "platform.tenants.manage";
 }
-async function requirePlatformOperator(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<void> {
-  if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") return;
+async function requirePlatformOperator(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<{ uid: string; capabilities: PlatformCapability[] }> {
+  if (env.NEXI_FIREBASE_AUTH_REQUIRED === "false") return { uid: "local-platform-operator", capabilities: PLATFORM_CAPABILITIES };
   const sessionActor = await requireNexCommandSessionOrTestIdentity(req, env, repository, authOverride, env.NEXCOMMAND_STRICT_SESSION === "true");
   if (!sessionActor.capabilities.includes(capabilityForNexCommandRoute(req))) throw new RailError("Platform operator lacks the required NexCommand capability.", { provider: "platform", op: "platformAuth", status: 403 });
+  return sessionActor;
 }
 
 async function requirePlatformSupportOperator(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<void> {
@@ -1021,7 +1022,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
 
   app.post("/api/platform/admin/tenants/:tenantId/owner-invite/resend", async (req: Request, res: Response) => {
     try {
-      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
+      const actor = await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
       const tenantId = requiredTenantId(req.params.tenantId);
       const body = z.object({ ownerEmail: z.string().email().optional() }).strict().parse(req.body ?? {});
       const tenant = await deps.repository.getTenant(tenantId);
@@ -1033,11 +1034,14 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       if (!auth || !deps.ownerInviteSender) throw new RailError("Owner invite email delivery is not configured.", { provider: "gmail", op: "resendOwnerInvite", status: 503 });
       const existing = await deps.repository.getTenantOwnerInvite(tenant.id, owner.id);
       let invite = newOwnerInvite({ tenantId: tenant.id, ownerUserId: owner.id, ownerEmail: owner.email, status: "NOT_SENT", attemptCount: existing?.attemptCount ?? 0 });
+      const timestamp = new Date().toISOString();
       try {
         const receipt = await deps.ownerInviteSender.send({ tenantId: tenant.id, ownerEmail: owner.email, ownerName: owner.displayName, tenantName: tenant.name });
-        invite = { ...invite, status: "SENT_TO_PROVIDER", attemptCount: invite.attemptCount + 1, provider: receipt.provider, providerMessageId: receipt.messageId, updatedAt: new Date().toISOString() };
+        invite = { ...invite, status: "SENT_TO_PROVIDER", attemptCount: invite.attemptCount + 1, provider: receipt.provider, providerMessageId: receipt.messageId, updatedAt: timestamp };
+        await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("tenant_owner_invite.sent", actor.uid, `Owner invitation accepted by ${receipt.provider} for tenant ${tenant.id}.`, owner.authUid, timestamp));
       } catch (error) {
-        invite = { ...invite, status: "FAILED", attemptCount: invite.attemptCount + 1, lastError: error instanceof Error ? error.message : "Owner invite delivery failed.", updatedAt: new Date().toISOString() };
+        invite = { ...invite, status: "FAILED", attemptCount: invite.attemptCount + 1, lastError: error instanceof Error ? error.message : "Owner invite delivery failed.", updatedAt: timestamp };
+        await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("tenant_owner_invite.failed", actor.uid, `Owner invitation was not accepted for tenant ${tenant.id}.`, owner.authUid, timestamp));
       }
       await deps.repository.saveTenantOwnerInvite(invite);
       res.status(invite.status === "SENT_TO_PROVIDER" ? 201 : 502).json({ ok: invite.status === "SENT_TO_PROVIDER", tenant: { id: tenant.id, name: tenant.name }, owner: { id: owner.id, email: owner.email }, invite: { status: invite.status, provider: invite.provider, messageId: invite.providerMessageId, attemptCount: invite.attemptCount } });
