@@ -25,13 +25,15 @@ export function AppRouter(): React.ReactElement | null {
 }
 
 function NexCommandSessionGate(): React.ReactElement | null {
-  const { user, signOut } = useAuthSession();
+  const { user } = useAuthSession();
   const [ready, setReady] = useState(hasNexCommandSession());
+  const [denied, setDenied] = useState(false);
   useEffect(() => {
     if (!user) return;
     if (hasNexCommandSession()) { setReady(true); return; }
-    if (!hasFreshNexCommandAuthentication()) { void signOut(); return; }
-    void establishNexCommandSession(user).then(() => setReady(true)).catch(() => void signOut());
-  }, [signOut, user]);
+    if (!hasFreshNexCommandAuthentication()) { setDenied(true); return; }
+    void establishNexCommandSession(user).then(() => setReady(true)).catch(() => setDenied(true));
+  }, [user]);
+  if (denied) return <main className="shell"><section className="auth-card"><h1>NexCommand access denied</h1><p>This account does not have an active NexTeam internal profile and cannot open NexCommand.</p></section></main>;
   return ready ? <PlatformRoute /> : null;
 }

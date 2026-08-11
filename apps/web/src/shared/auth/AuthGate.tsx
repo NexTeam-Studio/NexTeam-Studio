@@ -7,22 +7,21 @@ import "./auth.css";
 
 interface AuthProduct {
   brand: ProductBrand;
-  path: "/nexi" | "/nexops";
+  path: "/nexi" | "/nexops" | "/nexcommand";
   workspaceName: string;
   signInDescription: string;
 }
 
 function authProductForPath(pathname: string): AuthProduct {
-  if (pathname.startsWith("/nexops") || pathname.startsWith("/platform") || pathname.startsWith("/nexcommand")) {
+  if (pathname.startsWith("/platform") || pathname.startsWith("/nexcommand")) {
     return {
       brand: "nexops",
-      path: "/nexops",
-      workspaceName: pathname.startsWith("/platform") || pathname.startsWith("/nexcommand") ? "NexCommand" : "NexOps",
-      signInDescription: pathname.startsWith("/platform") || pathname.startsWith("/nexcommand")
-        ? "Sign in with your authorized NexTeam platform account to open NexCommand."
-        : "Sign in with your NexSuite account to open the NexOps workspace."
+      path: "/nexcommand",
+      workspaceName: "NexCommand",
+      signInDescription: "Sign in with your authorized NexTeam platform account to open NexCommand."
     };
   }
+  if (pathname.startsWith("/nexops")) return { brand: "nexops", path: "/nexops", workspaceName: "NexOps", signInDescription: "Sign in with your NexSuite account to open the NexOps workspace." };
   return {
     brand: "nexi",
     path: "/nexi",
@@ -66,7 +65,10 @@ export function AuthGate(props: { children: React.ReactNode }): React.ReactEleme
     setWorking(true);
     setError("");
     try {
-      await sendPasswordResetEmail(auth, email.trim());
+      await sendPasswordResetEmail(auth, email.trim(), {
+        url: `${window.location.origin}${product.path}/sign-in?passwordReset=1`,
+        handleCodeInApp: false
+      });
     } catch {
       // Keep the response identical so this screen does not reveal whether an account exists.
     } finally {
@@ -132,6 +134,7 @@ function AccessCard(props: { product: AuthProduct; title: string; body: string }
 }
 
 function ProductSwitch(props: { product: AuthProduct }): React.ReactElement {
+  if (props.product.path === "/nexcommand") return <></>;
   const alternate = props.product.path === "/nexops"
     ? { path: "/nexi", label: "Open Nexi" }
     : { path: "/nexops", label: "Open NexOps" };

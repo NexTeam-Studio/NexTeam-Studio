@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
 import type { Request } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
-import { RailError } from "@nexteam/core";
-import type { TenantCapability, TenantUserRole } from "@nexteam/core";
-import { ROLE_CAPABILITIES } from "../platform/accessManagement.js";
+import { RailError, tenantUserSchema } from "@nexteam/core";
+import type { TenantCapability, TenantUser, TenantUserRole } from "@nexteam/core";
+import { capabilitiesForTenantUser, ROLE_CAPABILITIES } from "../platform/accessManagement.js";
 import { getAdminAuth } from "../firebase.js";
 import { getAdminDb } from "../firebase.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
@@ -159,6 +159,29 @@ function capabilities(decoded: DecodedIdToken, role: TenantRole): TenantCapabili
   const value = (decoded as unknown as Record<string, unknown>).tenantCapabilities;
   const allowed: TenantCapability[] = ["team.view", "team.manage", "team.invite", "tenant.audit.read"];
   return Array.isArray(value) ? value.filter((entry): entry is TenantCapability => allowed.includes(entry as TenantCapability)) : ROLE_CAPABILITIES[role];
+}
+
+/**
+ * Firebase establishes who presented a credential, but it never establishes
+ * what that person may access.  The tenant-membership record is consulted on
+ * every protected tenant request so role removal, deactivation, and tenant
+ * moves take effect without waiting for a token claim to expire.
+ */
+export async function resolveAuthoritativeTenantMembership(
+  db: { collection(name: string): { where(fieldPath: string, opStr: "==", value: unknown): { get(): Promise<{ docs: Array<{ data(): unknown }> }> } } },
+  authUid: string,
+  tenantId: string
+): Promise<TenantUser> {
+  const snapshot = await db.collection("tenantUsers").where("authUid", "==", authUid).get();
+  const memberships = snapshot.docs
+    .map((document) => tenantUserSchema.safeParse(document.data()))
+    .filter((result): result is { success: true; data: TenantUser } => result.success)
+    .map((result) => result.data)
+    .filter((membership) => membership.tenantId === tenantId && membership.authUid === authUid);
+  if (memberships.length !== 1 || !memberships[0]?.active) {
+    throw new RailError("Your active NexOps membership does not permit this tenant.", { provider: "platform", op: "tenantMembership", status: 403 });
+  }
+  return memberships[0];
 }
 
 function accessKind(decoded: DecodedIdToken): AccessKind {
@@ -439,35 +462,24 @@ export async function requireAccessContext(
   }
 
   const decoded = await auth.verifyIdToken(token);
-  const claimedTenantId = claimString(decoded, "tenantId") ?? claimString(decoded, "tenant_id");
-  const isPlatformOperator = hasPlatformAccess(decoded, env);
-  if (claimedTenantId && claimedTenantId !== tenantId) {
-    throw new RailError("Your sign-in is not allowed for this tenant.", { provider: "firebase", op: options.op ?? "accessContext", status: 403 });
-  }
-  if (!claimedTenantId) {
-    throw new RailError("Your sign-in is missing a tenant assignment.", { provider: "firebase", op: options.op ?? "accessContext", status: 403 });
-  }
-
-  const role = normalizeRole(decoded, env);
-  const resolvedTenantId = claimedTenantId ?? tenantId;
+  const resolvedTenantId = tenantId;
   // Claims can outlive a cancellation. The authoritative tenant root is checked
   // on every production tenant request so disabled tenants cannot retain normal
   // access merely because an old Firebase token is still valid.
-  if (!isPlatformOperator) {
-    const db = getAdminDb(env);
-    if (!db) {
-      throw new RailError("Tenant lifecycle authorization is temporarily unavailable.", { provider: "firebase", op: options.op ?? "accessContext", status: 503 });
-    }
-    const tenant = await db.collection("tenants").doc(resolvedTenantId).get();
-    if (tenant.exists && tenant.data()?.lifecycleState === "DISABLED_ARCHIVED") {
-      throw new RailError("This tenant is disabled and archived. Resubscribe to restore access.", { provider: "platform", op: options.op ?? "accessContext", status: 403 });
-    }
+  const db = getAdminDb(env);
+  if (!db) {
+    throw new RailError("Tenant lifecycle authorization is temporarily unavailable.", { provider: "firebase", op: options.op ?? "accessContext", status: 503 });
   }
+  const tenant = await db.collection("tenants").doc(resolvedTenantId).get();
+  if (tenant.exists && tenant.data()?.lifecycleState === "DISABLED_ARCHIVED") {
+    throw new RailError("This tenant is disabled and archived. Resubscribe to restore access.", { provider: "platform", op: options.op ?? "accessContext", status: 403 });
+  }
+  const membership = await resolveAuthoritativeTenantMembership(db, decoded.uid, resolvedTenantId);
   return {
     tenantId: resolvedTenantId,
-    tenantUserId: claimString(decoded, "tenantUserId") ?? decoded.uid,
-    role,
-    capabilities: capabilities(decoded, role),
+    tenantUserId: membership.id,
+    role: membership.role,
+    capabilities: capabilitiesForTenantUser(membership),
     accessKind: accessKind(decoded),
     ...(claimString(decoded, "jobAccessLinkId") ? { jobAccessLinkId: claimString(decoded, "jobAccessLinkId") } : {}),
     ...(claimString(decoded, "jobId") ? { jobId: claimString(decoded, "jobId") } : {}),
