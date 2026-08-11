@@ -10,6 +10,8 @@ An authorized external controller owns these Firestore records:
 - `nexcommandControllerRuns/{runId}`: immutable run identity and result fields, including PID, task lists, and optional deployment evidence.
 - `nexcommandControllerEvents/{eventId}`: append-only event ledger with `runId`, `type`, `at`, and sanitized `detail`.
 
+These are platform-global controller records, never tenant business records: they intentionally have no `tenantId`, are read only by this application, and are exposed only through the server-verified platform capability. The tenancy check permits exactly these three explicitly annotated read-only collections; no tenant-facing route may use them.
+
 State values are `IDLE`, `QUEUED`, `DISPATCHED`, `RUNNING`, `SUCCEEDED`, `FAILED`, and `CANCELLED`. A `DISPATCHED` or `RUNNING` record is active only with a heartbeat no older than two minutes. A lack of progress for at least 30 minutes raises `noProgressWarning` without changing controller state. The API returns at most the ten newest events.
 
 ## Deployment evidence

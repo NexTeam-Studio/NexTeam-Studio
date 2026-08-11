@@ -67,14 +67,17 @@ function safeEvent(value: Record<string, unknown>): LiveBuildEvent | null {
 class FirestoreControlStore implements DurableControlStore {
   constructor(private readonly db: Firestore) {}
   async readState(): Promise<Record<string, unknown> | null> {
+    // @platform-global-readonly:nexcommandControllerStates
     const snapshot = await this.db.collection("nexcommandControllerStates").doc("current").get();
     return snapshot.exists ? snapshot.data() as Record<string, unknown> : null;
   }
   async readRun(runId: string): Promise<Record<string, unknown> | null> {
+    // @platform-global-readonly:nexcommandControllerRuns
     const snapshot = await this.db.collection("nexcommandControllerRuns").doc(runId).get();
     return snapshot.exists ? snapshot.data() as Record<string, unknown> : null;
   }
   async listEvents(runId: string, limit: number): Promise<Record<string, unknown>[]> {
+    // @platform-global-readonly:nexcommandControllerEvents
     const snapshot = await this.db.collection("nexcommandControllerEvents").where("runId", "==", runId).orderBy("at", "desc").limit(limit).get();
     return snapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
   }

@@ -12,6 +12,11 @@ const files = explicitFiles.length
 
 const collectionPattern = /\.collection\(["']([^"']+)["']\)([\s\S]{0,260})/g;
 const platformAdminCollections = new Set(["tenants"]);
+const platformGlobalReadOnlyCollections = new Set([
+  "nexcommandControllerStates",
+  "nexcommandControllerRuns",
+  "nexcommandControllerEvents"
+]);
 const tenantEvidencePattern = /tenantId|\.where\(["']tenantId["']\s*,/;
 const directDocumentReadPattern = /\.doc\([^)]*\)\.get\(\)/;
 const tenantBoundaryPattern = /requireTenantMatch|tenantId\s*===\s*|tenantId\s*!==\s*/;
@@ -30,6 +35,9 @@ for (const file of files) {
       continue;
     }
     if (platformAdminCollections.has(collection) && text.includes("@platform-admin-read")) {
+      continue;
+    }
+    if (platformGlobalReadOnlyCollections.has(collection) && text.includes(`@platform-global-readonly:${collection}`)) {
       continue;
     }
     if (text.includes(`@tenant-doc:${collection}`)) {
