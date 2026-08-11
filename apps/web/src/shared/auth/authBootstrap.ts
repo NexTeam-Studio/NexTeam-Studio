@@ -82,6 +82,17 @@ export async function establishNexCommandSession(user: User): Promise<void> {
   try { window.sessionStorage.setItem(NEXCOMMAND_SESSION_TOKEN_KEY, body.token); window.sessionStorage.removeItem(NEXCOMMAND_FRESH_AUTH_KEY); } catch { throw new Error("NexCommand requires browser session storage."); }
 }
 
+/**
+ * NexCommand has a small number of legacy platform routes outside the
+ * `/admin` namespace.  They are still internal-console routes and must use
+ * the same short-lived NexCommand session; a Firebase browser session alone
+ * is never sufficient authorization for them.
+ */
+function isNexCommandApiRequest(requestUrl: string): boolean {
+  return requestUrl.includes("/api/platform/")
+    && !requestUrl.endsWith("/api/platform/admin/session");
+}
+
 function installSessionFetchBridge(auth: Auth | null): void {
   const bridgeWindow = window as Window & {
     __nexopsLocalFetchBridgeInstalled?: boolean;
@@ -99,7 +110,7 @@ function installSessionFetchBridge(auth: Auth | null): void {
       : input instanceof URL
         ? input.toString()
         : input.url;
-    const nexCommandToken = requestUrl.includes("/api/platform/admin/") && !requestUrl.endsWith("/api/platform/admin/session") ? readNexCommandSessionToken() : null;
+    const nexCommandToken = isNexCommandApiRequest(requestUrl) ? readNexCommandSessionToken() : null;
     const token = nexCommandToken ?? readLocalSessionToken() ?? await auth?.currentUser?.getIdToken();
     if (!token) {
       return originalFetch(input, init);

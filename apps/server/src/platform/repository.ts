@@ -587,27 +587,49 @@ export class InMemoryPlatformRepository implements PlatformRepository {
 export class FirestorePlatformRepository implements PlatformRepository {
   constructor(private readonly db: Firestore) {}
 
-  private parseTenantCandidate(data: unknown): Tenant | null {
+  private parseTenantCandidate(data: unknown, documentId?: string): Tenant | null {
     const parsed = tenantSchema.safeParse(data);
-    return parsed.success ? parsed.data as Tenant : null;
+    if (parsed.success) return parsed.data as Tenant;
+
+    // Older tenant roots used `tenantId` and omitted newly-required platform
+    // settings.  Normalize only a real persisted document into the current
+    // contract so it remains visible to the operator.  An empty collection is
+    // always an empty result: never invent a default tenant for the dashboard.
+    if (!data || typeof data !== "object") return null;
+    const legacy = data as Record<string, unknown>;
+    const id = typeof legacy.id === "string" && legacy.id.trim()
+      ? legacy.id
+      : typeof legacy.tenantId === "string" && legacy.tenantId.trim()
+        ? legacy.tenantId
+        : documentId;
+    if (!id) return null;
+    const base = defaultTenant(id);
+    const candidate = {
+      ...base,
+      ...legacy,
+      id,
+      name: typeof legacy.name === "string" && legacy.name.trim() ? legacy.name : base.name,
+      branding: { ...base.branding, ...(legacy.branding && typeof legacy.branding === "object" ? legacy.branding as Record<string, unknown> : {}) },
+      adapters: { ...base.adapters, ...(legacy.adapters && typeof legacy.adapters === "object" ? legacy.adapters as Record<string, unknown> : {}) },
+      approval: { ...base.approval, ...(legacy.approval && typeof legacy.approval === "object" ? legacy.approval as Record<string, unknown> : {}) }
+    };
+    const normalized = tenantSchema.safeParse(candidate);
+    return normalized.success ? normalized.data as Tenant : null;
   }
 
   async listTenants(): Promise<Tenant[]> {
     // @platform-admin-read: platform operator console intentionally lists tenant roots.
     const snapshot = await this.db.collection("tenants").get();
-    if (snapshot.empty) {
-      return [defaultTenant()];
-    }
     const tenants = snapshot.docs
-      .map((doc) => this.parseTenantCandidate(doc.data()))
+      .map((doc) => this.parseTenantCandidate(doc.data(), doc.id))
       .filter((tenant): tenant is Tenant => tenant !== null);
-    return tenants.length > 0 ? tenants : [defaultTenant()];
+    return tenants;
   }
 
   async getTenant(tenantId: string): Promise<Tenant | null> {
     const direct = await this.db.collection("tenants").doc(tenantId).get();
     if (direct.exists) {
-      const tenant = this.parseTenantCandidate(direct.data());
+      const tenant = this.parseTenantCandidate(direct.data(), tenantId);
       if (tenant) {
         return tenant;
       }
@@ -615,7 +637,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
     const snapshot = await this.db.collection("tenants").where("tenantId", "==", tenantId).get();
     for (const doc of snapshot.docs) {
-      const tenant = this.parseTenantCandidate(doc.data());
+      const tenant = this.parseTenantCandidate(doc.data(), doc.id);
       if (tenant) {
         return tenant;
       }

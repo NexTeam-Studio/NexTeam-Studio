@@ -122,6 +122,16 @@ test("firestore platform repository falls back when legacy Aquatrace tenant docs
   assert.equal(tenant.adapters.crm, "native");
 });
 
+test("tenant list reports persisted tenant roots and never fabricates a default row", async () => {
+  const empty = new FirestorePlatformRepository(fakeTenantFirestore());
+  assert.deepEqual(await empty.listTenants(), []);
+
+  const legacy = new FirestorePlatformRepository(fakeTenantFirestore({ query: [{ tenantId: "actual-tenant" }] }));
+  const tenants = await legacy.listTenants();
+  assert.equal(tenants.length, 1);
+  assert.equal(tenants[0].id, "actual-tenant");
+});
+
 test("platform repository summarizes cost, records backup, and exports per tenant", async () => {
   const repository = new InMemoryPlatformRepository([defaultTenant("aquatrace", "suite"), defaultTenant("second-test", "nexi")]);
   const storage = new MemoryStorageWriter();

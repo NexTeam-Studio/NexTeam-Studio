@@ -20,6 +20,8 @@ test("NexCommand sessions expire, cannot reopen without fresh authentication, si
     const first = await create(); assert.equal(first.status, 201); const firstToken = (await first.json()).token;
     const firstHeaders = { authorization: `Bearer ${firstToken}` };
     assert.equal((await fetch(`${base}/api/platform/admin/summary`, { headers: firstHeaders })).status, 200);
+    assert.equal((await fetch(`${base}/api/platform/tenants`, { headers: firstHeaders })).status, 200, "the dashboard tenant query accepts the fresh NexCommand session");
+    assert.equal((await fetch(`${base}/api/platform/tenants`, { headers: { authorization: "Bearer operator" } })).status, 401, "a Firebase token alone cannot authorize the dashboard tenant query");
     assert.equal((await fetch(`${base}/api/platform/admin/session/sign-out`, { method: "POST", headers: firstHeaders })).status, 200);
     assert.equal((await fetch(`${base}/api/platform/admin/summary`, { headers: firstHeaders })).status, 401, "explicit sign-out invalidates the session");
     const second = await create(); const secondToken = (await second.json()).token;
