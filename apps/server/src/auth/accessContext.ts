@@ -117,48 +117,9 @@ function defaultTenantId(env: NodeJS.ProcessEnv): string {
   return configuredTenantId(env, "accessContext");
 }
 
-function envList(value: string | undefined): string[] {
-  return (value ?? "").split(",").map((entry) => entry.trim().toLowerCase()).filter(Boolean);
-}
-
 function claimString(decoded: DecodedIdToken, key: string): string | undefined {
   const value = (decoded as unknown as Record<string, unknown>)[key];
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
-}
-
-function claimBoolean(decoded: DecodedIdToken, key: string): boolean {
-  return (decoded as unknown as Record<string, unknown>)[key] === true;
-}
-
-function roles(decoded: DecodedIdToken): string[] {
-  const value = (decoded as unknown as Record<string, unknown>).roles;
-  return Array.isArray(value) ? value.map((role) => String(role).toLowerCase()) : [];
-}
-
-function hasPlatformAccess(decoded: DecodedIdToken, env: NodeJS.ProcessEnv): boolean {
-  const allowedUids = envList(env.FIREBASE_PLATFORM_OPERATOR_UIDS);
-  const allowedEmails = envList(env.FIREBASE_PLATFORM_OPERATOR_EMAILS);
-  const email = decoded.email?.toLowerCase() ?? "";
-  const normalizedRoles = roles(decoded);
-  return allowedUids.includes(decoded.uid.toLowerCase())
-    || (!!email && allowedEmails.includes(email))
-    || claimBoolean(decoded, "platform_operator")
-    || normalizedRoles.includes("platform_operator");
-}
-
-function normalizeRole(decoded: DecodedIdToken, _env: NodeJS.ProcessEnv): TenantRole {
-  const explicit = claimString(decoded, "tenantRole") ?? claimString(decoded, "role");
-  const candidates = [explicit, ...roles(decoded)].filter(Boolean).map((value) => String(value).toUpperCase());
-  if (candidates.includes("OWNER")) return "OWNER";
-  if (candidates.includes("OFFICE_ADMIN") || candidates.includes("OFFICE") || candidates.includes("ADMIN")) return "OFFICE_ADMIN";
-  if (candidates.includes("TECHNICIAN") || candidates.includes("TECH")) return "TECHNICIAN";
-  throw new RailError("Your sign-in is missing a tenant role.", { provider: "firebase", op: "accessContext", status: 403 });
-}
-
-function capabilities(decoded: DecodedIdToken, role: TenantRole): TenantCapability[] {
-  const value = (decoded as unknown as Record<string, unknown>).tenantCapabilities;
-  const allowed: TenantCapability[] = ["team.view", "team.manage", "team.invite", "tenant.audit.read"];
-  return Array.isArray(value) ? value.filter((entry): entry is TenantCapability => allowed.includes(entry as TenantCapability)) : ROLE_CAPABILITIES[role];
 }
 
 /**
