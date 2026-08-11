@@ -31,7 +31,10 @@ function NexCommandSessionGate(): React.ReactElement | null {
   useEffect(() => {
     if (!user) return;
     if (hasNexCommandSession()) { setReady(true); return; }
-    if (!hasFreshNexCommandAuthentication()) { setDenied(true); return; }
+    // AuthGate renders the NexCommand sign-in form for this state. Do not turn
+    // a missing browser marker into a profile denial before the server has had
+    // a chance to authorize a fresh sign-in.
+    if (!hasFreshNexCommandAuthentication()) return;
     void establishNexCommandSession(user).then(() => setReady(true)).catch(() => setDenied(true));
   }, [user]);
   if (denied) return <main className="shell"><section className="auth-card"><h1>NexCommand access denied</h1><p>This account does not have an active NexTeam internal profile and cannot open NexCommand.</p></section></main>;

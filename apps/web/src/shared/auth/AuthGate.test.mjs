@@ -16,6 +16,8 @@ test("NexCommand uses the platform-admin sign-in framing instead of the Nexi sig
   assert.match(source, /workspaceName: "NexCommand"/);
   assert.match(source, /authorized NexTeam platform account/);
   assert.match(source, /props\.product\.path === "\/nexcommand"/);
+  assert.match(source, /requiresNexCommandReauthentication/);
+  assert.match(source, /sign in again to start a fresh NexCommand session/);
 });
 
 test("password-reset handoffs return to the matching branded product route", () => {

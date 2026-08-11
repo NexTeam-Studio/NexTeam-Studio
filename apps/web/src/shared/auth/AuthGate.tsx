@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { NexiIdentityMark, ProductLogo, type ProductBrand } from "../branding/ProductBranding";
 import { useAuthSession } from "./AuthSessionProvider";
+import { hasFreshNexCommandAuthentication, hasNexCommandSession } from "./authBootstrap";
+import { requiresNexCommandReauthentication } from "./nexCommandFreshAuth";
 import { usePathname } from "../router/usePathname";
 import "./auth.css";
 
@@ -33,6 +35,11 @@ function authProductForPath(pathname: string): AuthProduct {
 export function AuthGate(props: { children: React.ReactNode }): React.ReactElement {
   const { auth, authReady, localAuthEnabled, localProfiles, signIn, user } = useAuthSession();
   const product = authProductForPath(usePathname());
+  const nexCommandReauthenticationRequired = requiresNexCommandReauthentication({
+    pathname: window.location.pathname,
+    hasFreshAuthentication: hasFreshNexCommandAuthentication(),
+    hasSession: hasNexCommandSession()
+  });
   const ownerInviteComplete = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("ownerInvite") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -78,7 +85,10 @@ export function AuthGate(props: { children: React.ReactNode }): React.ReactEleme
   }
 
   if (!authReady) return <AccessCard product={product} title="Checking session" body="Loading operator access." />;
-  if (user) return <>{props.children}</>;
+  // A persisted Firebase user is not a NexCommand session. Keep the real
+  // NexCommand sign-in form visible until the operator authenticates again;
+  // the session endpoint then makes the authoritative profile decision.
+  if (user && !nexCommandReauthenticationRequired) return <>{props.children}</>;
 
   if (localAuthEnabled) {
     return (
@@ -104,7 +114,7 @@ export function AuthGate(props: { children: React.ReactNode }): React.ReactEleme
       <section className="auth-card">
         <AuthProductMark product={product} />
         <h1>{product.workspaceName} Sign-In</h1>
-        <p>{product.signInDescription}</p>
+        <p>{nexCommandReauthenticationRequired ? "For your security, sign in again to start a fresh NexCommand session." : product.signInDescription}</p>
         {ownerInviteComplete ? <p className="auth-welcome-message">Your password is set. Sign in to open your NexTeam workspace.</p> : null}
         <AuthForm email={email} password={password} localAuthEnabled={false} working={working} error={error} resetMessage={resetMessage} onEmail={setEmail} onPassword={setPassword} onSubmit={handleSubmit} onForgotPassword={handleForgotPassword} />
         <ProductSwitch product={product} />
