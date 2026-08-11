@@ -1,6 +1,6 @@
 # Day 1 reliability control-plane contract
 
-The authoritative Global Control transport is an append-only JSONL journal. It accepts `JOB_QUEUED` and valid `JOB_TRANSITION` records; state is derived from the journal, never a second controller or mutable status document. Reconciliation requeues expired `DISPATCHED`/`RUNNING` leases, and dispatch always selects the next queued job.
+The authoritative Global Control transport is an append-only JSONL journal. It accepts `JOB_QUEUED` and valid `JOB_TRANSITION` records; state is derived from the journal, never a second controller or mutable status document. Reconciliation requeues expired `DISPATCHED`/`RUNNING` leases, and dispatch always selects the next queued job. The duplicate guard retains active and successful jobs, but a later `JOB_QUEUED` for a failed (incomplete) job automatically resumes that same job ID. A new `JOB_QUEUED` may include `continuationOf` to record and queue a linked continuation without manual controller intervention.
 
 Deployment evidence is staging-only and GitHub Actions-only. A green/fixed claim requires matching source, deployment, and live SHA values plus a receipt that declares `green: true`, `fixed: true`, and `productionChanged: false`.
 

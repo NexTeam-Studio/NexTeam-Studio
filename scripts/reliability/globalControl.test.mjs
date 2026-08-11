@@ -20,6 +20,23 @@ test("JSONL control journal dispatches queued jobs, retries expired leases, and 
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
+test("duplicate guard resumes incomplete same-job work and retains linked continuations", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "global-control-resume-")); const file = join(dir, "jobs.jsonl");
+  try {
+    await appendEvent(file, { type: "JOB_QUEUED", jobId: "tenant-lifecycle", payload: { phase: "STAGING_PROMOTION" } });
+    await appendEvent(file, { type: "JOB_TRANSITION", jobId: "tenant-lifecycle", to: "DISPATCHED" });
+    await appendEvent(file, { type: "JOB_TRANSITION", jobId: "tenant-lifecycle", to: "RUNNING" });
+    await appendEvent(file, { type: "JOB_TRANSITION", jobId: "tenant-lifecycle", to: "FAILED", reason: "interrupted" });
+    await appendEvent(file, { type: "JOB_QUEUED", jobId: "tenant-lifecycle", payload: { phase: "STAGING_PROMOTION" } });
+    await appendEvent(file, { type: "JOB_QUEUED", jobId: "tenant-lifecycle-verify", continuationOf: "tenant-lifecycle", payload: { phase: "LIVE_REGRESSION" } });
+    const status = await pollStatus({ file });
+    const resumed = status.jobs.find((job) => job.id === "tenant-lifecycle");
+    const continuation = status.jobs.find((job) => job.id === "tenant-lifecycle-verify");
+    assert.equal(resumed?.state, "QUEUED"); assert.equal(resumed?.resumes, 1);
+    assert.equal(continuation?.state, "QUEUED"); assert.equal(continuation?.continuationOf, "tenant-lifecycle");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
 test("staging rail, SHA model, bootstrap, auth harness, and evidence gate fail closed", async () => {
   const sha = "a".repeat(40); assert.equal(assertStagingGitHubRail({ environment: "staging", deploymentRail: "github-actions", sourceSha: sha, deploymentSha: sha, liveSha: sha }).verified, true);
   assert.throws(() => assertStagingGitHubRail({ environment: "production", deploymentRail: "railway-cli", sourceSha: sha, deploymentSha: sha, liveSha: sha }));

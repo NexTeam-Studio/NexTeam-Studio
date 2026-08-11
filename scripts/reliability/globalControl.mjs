@@ -55,7 +55,25 @@ export function projectJobs(events, now = Date.now(), leaseMs = 60_000) {
   const jobs = new Map();
   for (const event of events) {
     if (event.type === "JOB_QUEUED") {
-      if (!jobs.has(event.jobId)) jobs.set(event.jobId, { id: event.jobId, state: "QUEUED", payload: event.payload ?? null, attempts: 0, events: [event] });
+      const existing = jobs.get(event.jobId);
+      if (!existing) {
+        jobs.set(event.jobId, {
+          id: event.jobId,
+          state: "QUEUED",
+          payload: event.payload ?? null,
+          continuationOf: typeof event.continuationOf === "string" && event.continuationOf.trim() ? event.continuationOf : null,
+          attempts: 0,
+          resumes: 0,
+          events: [event]
+        });
+      } else if (existing.state === "FAILED") {
+        // A failed control job is incomplete, not a permanently blocked duplicate.
+        // Re-queue the same ID so a bridge retry can resume it without manual repair.
+        existing.state = "QUEUED";
+        existing.payload = event.payload ?? existing.payload;
+        existing.resumes += 1;
+        existing.events.push(event);
+      }
       continue;
     }
     const job = jobs.get(event.jobId);
