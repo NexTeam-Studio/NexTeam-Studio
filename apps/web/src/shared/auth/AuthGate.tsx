@@ -34,6 +34,7 @@ function authProductForPath(pathname: string): AuthProduct {
 export function AuthGate(props: { children: React.ReactNode }): React.ReactElement {
   const { auth, authReady, localAuthEnabled, localProfiles, signIn, user } = useAuthSession();
   const product = authProductForPath(usePathname());
+  const ownerInviteComplete = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("ownerInvite") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [working, setWorking] = useState(false);
@@ -102,6 +103,7 @@ export function AuthGate(props: { children: React.ReactNode }): React.ReactEleme
         <AuthProductMark product={product} />
         <h1>{product.workspaceName} Sign-In</h1>
         <p>{product.signInDescription}</p>
+        {ownerInviteComplete ? <p className="auth-welcome-message">Your password is set. Sign in to open your NexTeam workspace.</p> : null}
         <AuthForm email={email} password={password} localAuthEnabled={false} working={working} error={error} resetMessage={resetMessage} onEmail={setEmail} onPassword={setPassword} onSubmit={handleSubmit} onForgotPassword={handleForgotPassword} />
         <ProductSwitch product={product} />
       </section>

@@ -30,6 +30,15 @@ export function ownerInviteDocumentId(tenantId: string, ownerUserId: string): st
   return `owner_invite_${tenantId}_${ownerUserId}`;
 }
 
+/**
+ * The Firebase-hosted action page returns here after a password is changed.
+ * This is a web-app route (not an API endpoint) so the owner reaches the
+ * branded sign-in handoff rather than a server 404.
+ */
+export function ownerInviteContinueUrl(publicBaseUrl: string): string {
+  return `${publicBaseUrl.replace(/\/$/, "")}/nexops/sign-in?ownerInvite=1`;
+}
+
 export function createOwnerInviteSender(input: { auth: FirebaseOwnerInviteAuth; email: EmailSendProvider | null; continueUrl: string }): OwnerInviteSender {
   return {
     async send({ tenantId, ownerEmail, ownerName, tenantName }) {

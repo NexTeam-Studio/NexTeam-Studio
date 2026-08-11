@@ -54,5 +54,6 @@
 .auth-profile-hints span { color: #526055; font-size: 0.82rem; }
 .auth-error { padding: 10px 12px; border-radius: 16px; background: rgba(231, 95, 72, 0.14); color: #9c3324 !important; }
 .auth-reset-message { padding: 10px 12px; border-radius: 16px; background: rgba(37, 210, 56, 0.13); color: #1c6b29 !important; }
+.auth-welcome-message { padding: 12px 14px; border: 1px solid rgba(37, 210, 56, 0.34); border-radius: 16px; color: #174a31 !important; background: linear-gradient(135deg, rgba(212, 255, 32, 0.2), rgba(37, 210, 56, 0.12)); font-weight: 700; }
 .auth-product-link,
 .auth-forgot-password { justify-self: start; padding: 0; border: 0; color: transparent; background: linear-gradient(135deg, #d4ff20 0%, #25d238 100%); -webkit-background-clip: text; background-clip: text; font: inherit; font-weight: 700; text-decoration-thickness: 2px; text-decoration-color: #25d238; text-underline-offset: 3px; cursor: pointer; }

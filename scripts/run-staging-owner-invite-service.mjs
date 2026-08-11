@@ -4,7 +4,7 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { FirestorePlatformRepository } from "../apps/server/dist/platform/repository.js";
 import { createCommsRailFromEnv } from "../apps/server/dist/comms/gmailRegistry.js";
-import { createOwnerInviteSender, newOwnerInvite } from "../apps/server/dist/platform/tenantOwnerInvite.js";
+import { createOwnerInviteSender, newOwnerInvite, ownerInviteContinueUrl } from "../apps/server/dist/platform/tenantOwnerInvite.js";
 import { newPlatformSecurityAudit } from "../apps/server/dist/platform/sessionSecurity.js";
 
 const tenantName = argument("--tenant-name");
@@ -72,7 +72,7 @@ try {
     process.exitCode = existing?.providerMessageId ? 0 : 2;
   } else {
   const rail = createCommsRailFromEnv(process.env);
-  const continueUrl = `${String(process.env.PUBLIC_BASE_URL || "https://nexstage.nexteam.studio").replace(/\/$/, "")}/nexops/sign-in`;
+  const continueUrl = ownerInviteContinueUrl(String(process.env.PUBLIC_BASE_URL || "https://nexstage.nexteam.studio"));
   const sender = createOwnerInviteSender({ auth, email: rail.sendAdapter, continueUrl });
   const timestamp = new Date().toISOString();
   let providerFailureCode = null;

@@ -15,3 +15,8 @@ test("NexCommand uses the platform-admin sign-in framing instead of the Nexi sig
   assert.match(source, /workspaceName: pathname\.startsWith\("\/platform"\) \|\| pathname\.startsWith\("\/nexcommand"\) \? "NexCommand" : "NexOps"/);
   assert.match(source, /authorized NexTeam platform account/);
 });
+
+test("owner invite handoff confirms the password reset on the branded sign-in page", () => {
+  assert.match(source, /get\("ownerInvite"\) === "1"/);
+  assert.match(source, /Your password is set\. Sign in to open your NexTeam workspace\./);
+});

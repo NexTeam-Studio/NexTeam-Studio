@@ -61,7 +61,7 @@ import { MemoryStorageWriter } from "./platform/backup.js";
 import { FirebaseStorageWriter } from "./platform/storage.js";
 import { FirestorePlatformRepository, InMemoryPlatformRepository } from "./platform/repository.js";
 import { registerPlatformRoutes } from "./platform/routes.js";
-import { createOwnerInviteSender } from "./platform/tenantOwnerInvite.js";
+import { createOwnerInviteSender, ownerInviteContinueUrl } from "./platform/tenantOwnerInvite.js";
 import {
   createStripeConnectExpressAccount,
   createStripeConnectOnboardingLink,
@@ -366,7 +366,7 @@ registerPlatformRoutes(app, {
   repository: platformRepository,
   storage: platformStorage,
   ownerInviteSender: getAdminAuth()
-    ? createOwnerInviteSender({ auth: getAdminAuth()!, email: commsRail.sendAdapter, continueUrl: `${(process.env.PUBLIC_BASE_URL?.trim() || "http://127.0.0.1:4175").replace(/\/$/, "")}/nexops/sign-in` })
+    ? createOwnerInviteSender({ auth: getAdminAuth()!, email: commsRail.sendAdapter, continueUrl: ownerInviteContinueUrl(process.env.PUBLIC_BASE_URL?.trim() || "http://127.0.0.1:4175") })
     : undefined,
   stripeConnect: {
     createExpressAccount: createStripeConnectExpressAccount,
