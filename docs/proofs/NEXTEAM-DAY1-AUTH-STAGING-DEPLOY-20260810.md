@@ -14,7 +14,7 @@ Job: `NEXTEAM-DAY1-AUTH-STAGING-DEPLOY-20260810`.
 
 `codex/staging-current` fast-forwarded from `7e63d05` to `5572309` on 2026-08-10. GitHub's Railway deployment status for `5572309` accepted the staging-only deploy and completed successfully. The corresponding GitHub deployment is marked non-production.
 
-The first live version check exposed a build-identity discrepancy: the healthy staging service reported an earlier SHA while Railway reported the GitHub deployment successful. The cause is a stale local upload stamp being preferred over GitHub/Railway's source-commit identifier. `apps/server/src/buildInfo.ts` now prefers the explicit deploy SHA and Railway/Vercel Git commit SHA before local upload stamps. This preserves upload fallback behavior while making connected GitHub deployments observable by their actual revision.
+The first live version check exposed a build-identity discrepancy: the healthy staging service reported an earlier SHA while Railway reported the GitHub deployment successful. The cause is a stale local upload marker being preferred over GitHub/Railway's source-commit identifier. `apps/server/src/buildInfo.ts` now prefers Railway/Vercel's Git commit SHA, then the explicit upload SHA, before local upload stamps. This preserves upload fallback behavior while making connected GitHub deployments observable by their actual revision.
 
 The old local DPAPI deployment-vault/upload path is an obsolete, non-operational dependency for staging deployment. It was neither read nor used. GitHub is the staging deployment trigger and Railway's GitHub status plus the staging version endpoint are the deployment evidence rails.
 
