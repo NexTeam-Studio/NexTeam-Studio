@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
 import http from "node:http";
+import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -8,7 +10,6 @@ const SCOPE = "https://www.googleapis.com/auth/gmail.send";
 const REDIRECT_URI = "http://localhost:53682/oauth2callback";
 const AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
-const PROFILE_ENDPOINT = "https://gmail.googleapis.com/gmail/v1/users/me/profile";
 const FIVE_MINUTES = 5 * 60 * 1000;
 
 function codeVerifier() {
@@ -25,15 +26,24 @@ function safeError(error) {
 }
 
 export function stagingOwnerInvitationConfiguration(env = process.env) {
-  const clientId = String(env.GMAIL_OAUTH_CLIENT_ID || "").trim();
-  const clientSecret = String(env.GMAIL_OAUTH_CLIENT_SECRET || "").trim();
+  // Owner invitations have their own OAuth client. Do not reuse the general
+  // Gmail metadata rail, which is intentionally configured separately.
+  const clientId = String(env.GMAIL_SEND_MAILBOX_CLIENT_ID || "").trim();
+  const clientSecret = String(env.GMAIL_SEND_MAILBOX_CLIENT_SECRET || "").trim();
   const sender = String(env.GMAIL_SEND_MAILBOX_EMAIL || "").trim().toLowerCase();
   const missing = [];
-  if (!clientId) missing.push("GMAIL_OAUTH_CLIENT_ID");
-  if (!clientSecret) missing.push("GMAIL_OAUTH_CLIENT_SECRET");
+  if (!clientId) missing.push("GMAIL_SEND_MAILBOX_CLIENT_ID");
+  if (!clientSecret) missing.push("GMAIL_SEND_MAILBOX_CLIENT_SECRET");
   if (!sender) missing.push("GMAIL_SEND_MAILBOX_EMAIL");
   if (sender && sender !== SENDER) missing.push("approved staging sender identity");
-  return { clientId, clientSecret, sender: SENDER, missing, configured: missing.length === 0 };
+  return {
+    clientId,
+    clientSecret,
+    sender: SENDER,
+    secretDestination: "GMAIL_SEND_MAILBOX_REFRESH_TOKEN",
+    missing,
+    configured: missing.length === 0,
+  };
 }
 
 export function createAuthorizationUrl({ clientId, state, verifier }) {
@@ -47,6 +57,7 @@ export function createAuthorizationUrl({ clientId, state, verifier }) {
     code_challenge: codeChallenge(verifier),
     code_challenge_method: "S256",
     access_type: "offline",
+    login_hint: SENDER,
     // Always show Google's account chooser. The staging sender is a specific
     // mailbox and must never be silently inherited from an unrelated Google
     // session already open in the browser.
@@ -57,6 +68,7 @@ export function createAuthorizationUrl({ clientId, state, verifier }) {
 
 export function preflightStagingOwnerInvitation(env = process.env) {
   const config = stagingOwnerInvitationConfiguration(env);
+  const refreshCredentialPresent = Boolean(env.GMAIL_SEND_MAILBOX_REFRESH_TOKEN);
   return {
     ok: config.configured && Boolean(env.RAILWAY_TOKEN),
     sender: config.sender,
@@ -65,6 +77,7 @@ export function preflightStagingOwnerInvitation(env = process.env) {
     clientIdPresent: Boolean(config.clientId),
     clientSecretPresent: Boolean(config.clientSecret),
     railwayWriterPresent: Boolean(env.RAILWAY_TOKEN),
+    refreshCredentialPresent,
     secretDestination: config.secretDestination,
     missing: config.missing,
   };
@@ -84,7 +97,7 @@ function callbackServer(expectedState) {
       const code = received.searchParams.get("code");
       if (!code) throw new Error("Google authorization did not return a code.");
       response.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
-      response.end("Gmail authorization received. Return to NexTeam; this window may be closed.");
+      response.end("Gmail authorization received. Secure staging verification is still in progress; return to NexTeam.");
       resolveCode(code);
     } catch (error) {
       response.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
@@ -103,15 +116,27 @@ async function exchangeCode({ clientId, clientSecret, code, verifier, fetchImpl 
   return payload;
 }
 
-async function verifySender(accessToken, fetchImpl = fetch) {
-  const response = await fetchImpl(PROFILE_ENDPOINT, { headers: { authorization: `Bearer ${accessToken}` } });
-  const profile = await response.json();
-  if (!response.ok || String(profile.emailAddress || "").toLowerCase() !== SENDER) throw new Error("The authorized Google account is not the registered staging sender.");
+async function exchangeRefreshCredential({ clientId, clientSecret, refreshToken, fetchImpl = fetch }) {
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    refresh_token: refreshToken,
+    grant_type: "refresh_token",
+  });
+  const response = await fetchImpl(TOKEN_ENDPOINT, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body });
+  const payload = await response.json();
+  if (!response.ok || !payload.access_token) {
+    const reason = /^[a-z_]+$/i.test(String(payload.error || "")) ? payload.error : "unknown";
+    throw new Error(`The stored staging sender credential is not usable (${reason}).`);
+  }
+  return payload.access_token;
 }
 
 function writeStagingRefreshToken(refreshToken, spawnImpl = spawn) {
   return new Promise((resolve, reject) => {
-    const child = spawnImpl("railway", ["variable", "set", "GMAIL_SEND_MAILBOX_REFRESH_TOKEN", "--stdin", "--service", "NexTeam-Studio", "--environment", "staging"], { stdio: ["pipe", "ignore", "ignore"], windowsHide: true });
+    const appData = process.env.APPDATA || "";
+    const railwayExecutable = path.join(appData, "npm", "node_modules", "@railway", "cli", "bin", "railway.exe");
+    const child = spawnImpl(railwayExecutable, ["variable", "set", "GMAIL_SEND_MAILBOX_REFRESH_TOKEN", "--stdin", "--service", "NexTeam-Studio", "--environment", "staging"], { stdio: ["pipe", "ignore", "ignore"], windowsHide: true });
     child.once("error", () => reject(new Error("Unable to store the staging refresh credential.")));
     child.once("close", (code) => code === 0 ? resolve() : reject(new Error("Railway rejected the staging refresh credential update.")));
     child.stdin.end(refreshToken);
@@ -127,26 +152,42 @@ function openBrowser(url, spawnImpl = spawn) {
   });
 }
 
-export async function authorizeStagingOwnerInvitation({ env = process.env, fetchImpl = fetch, spawnImpl = spawn, log = console.log } = {}) {
+export async function authorizeStagingOwnerInvitation({ env = process.env, fetchImpl = fetch, spawnImpl = spawn, log = console.log, showUrl = false } = {}) {
   const config = stagingOwnerInvitationConfiguration(env);
   if (!config.configured) throw new Error(`Staging owner-invitation OAuth is not configured: ${config.missing.join(", ")}.`);
   if (!env.RAILWAY_TOKEN) throw new Error("Railway staging credential is unavailable to the secure writer.");
   const verifier = codeVerifier();
   const state = crypto.randomBytes(32).toString("base64url");
   const callback = callbackServer(state);
-  const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Google authorization timed out after five minutes.")), FIVE_MINUTES));
+  let timeoutId;
+  const timeout = new Promise((_, reject) => { timeoutId = setTimeout(() => reject(new Error("Google authorization timed out after five minutes.")), FIVE_MINUTES); });
   try {
     await callback.start();
-    await openBrowser(createAuthorizationUrl({ clientId: config.clientId, state, verifier }), spawnImpl);
+    const authorizationUrl = createAuthorizationUrl({ clientId: config.clientId, state, verifier });
+    if (showUrl) {
+      // This is a short-lived user-authorization URL, not a credential. It is
+      // intentionally emitted only when a local operator explicitly requests it.
+      log(`STAGING_GMAIL_OWNER_INVITATION_AUTHORIZATION_URL ${authorizationUrl.toString()}`);
+    } else {
+      await openBrowser(authorizationUrl, spawnImpl);
+    }
     log("STAGING_GMAIL_OWNER_INVITATION_AUTHORIZATION_WAITING");
     const code = await Promise.race([callback.result, timeout]);
     const tokens = await exchangeCode({ ...config, code, verifier, fetchImpl });
-    await verifySender(tokens.access_token, fetchImpl);
     await writeStagingRefreshToken(tokens.refresh_token, spawnImpl);
     log("STAGING_GMAIL_OWNER_INVITATION_AUTHORIZATION_STORED");
   } finally {
+    clearTimeout(timeoutId);
     callback.close();
   }
+}
+
+export async function verifyStagingOwnerInvitationMailbox({ env = process.env, fetchImpl = fetch } = {}) {
+  const config = stagingOwnerInvitationConfiguration(env);
+  const refreshToken = String(env.GMAIL_SEND_MAILBOX_REFRESH_TOKEN || "").trim();
+  if (!config.configured || !refreshToken) throw new Error("Staging owner-invitation mailbox verification is not configured.");
+  await exchangeRefreshCredential({ ...config, refreshToken, fetchImpl });
+  return { ok: true, sender: SENDER, scope: SCOPE, refreshCredentialPresent: true };
 }
 
 if (import.meta.url === new URL(`file://${process.argv[1]}`).href) {
@@ -154,8 +195,32 @@ if (import.meta.url === new URL(`file://${process.argv[1]}`).href) {
     const result = preflightStagingOwnerInvitation();
     console.log(JSON.stringify(result));
     if (!result.ok) process.exitCode = 1;
+  } else if (process.argv.includes("--verify-mailbox")) {
+    verifyStagingOwnerInvitationMailbox().then((result) => console.log(JSON.stringify(result))).catch((error) => {
+      console.error(`STAGING_GMAIL_OWNER_INVITATION_MAILBOX_VERIFY_FAILED: ${safeError(error)}`);
+      process.exitCode = 1;
+    });
   } else {
-    authorizeStagingOwnerInvitation().catch((error) => {
+    const urlFileArgument = process.argv.indexOf("--authorization-url-file");
+    const authorizationUrlFile = urlFileArgument >= 0 ? process.argv[urlFileArgument + 1] : null;
+    const resultFileArgument = process.argv.indexOf("--authorization-result-file");
+    const authorizationResultFile = resultFileArgument >= 0 ? process.argv[resultFileArgument + 1] : null;
+    const writeResult = (status) => {
+      if (authorizationResultFile) fs.writeFileSync(authorizationResultFile, status, { encoding: "utf8", flag: "wx" });
+    };
+    authorizeStagingOwnerInvitation({
+      showUrl: process.argv.includes("--show-url"),
+      log: (message) => {
+        if (authorizationUrlFile && message.startsWith("STAGING_GMAIL_OWNER_INVITATION_AUTHORIZATION_URL ")) {
+          fs.writeFileSync(authorizationUrlFile, message.slice("STAGING_GMAIL_OWNER_INVITATION_AUTHORIZATION_URL ".length), { encoding: "utf8", flag: "wx" });
+          return;
+        }
+        console.log(message);
+      },
+    }).then(() => {
+      writeResult("STAGING_GMAIL_OWNER_INVITATION_AUTHORIZATION_STORED");
+    }).catch((error) => {
+      writeResult(`STAGING_GMAIL_OWNER_INVITATION_AUTHORIZATION_FAILED: ${safeError(error)}`);
       console.error(`STAGING_GMAIL_OWNER_INVITATION_AUTHORIZATION_FAILED: ${safeError(error)}`);
       process.exitCode = 1;
     });
