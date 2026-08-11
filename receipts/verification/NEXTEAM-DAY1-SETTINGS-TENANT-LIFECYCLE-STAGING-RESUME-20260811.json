@@ -1,0 +1,41 @@
+{
+  "jobId": "NEXTEAM-DAY1-SETTINGS-TENANT-LIFECYCLE-STAGING-RESUME-20260811",
+  "continuationOf": "NEXTEAM-DAY1-SETTINGS-TENANT-LIFECYCLE-20260811",
+  "source": "Authorized Global Control bridge packet msg-91df2a12-0516-4b77-9b37-3fd9944ba517",
+  "environment": "staging",
+  "deploymentRail": "github-actions",
+  "branch": "codex/staging-current",
+  "sourceSha": "583f579c2501fb182622e1d73488b6222775fe34",
+  "deploymentSha": "583f579c2501fb182622e1d73488b6222775fe34",
+  "liveSha": "583f579c2501fb182622e1d73488b6222775fe34",
+  "railwayStagingUrl": "https://nexteam-studio-staging.up.railway.app",
+  "promotion": {
+    "startedFromCommit": "67551a6",
+    "pushedOnly": "refs/heads/codex/staging-current",
+    "remoteConfirmedAt": "2026-08-11T20:32:57Z",
+    "previousLiveShaObserved": "5d47ea75d286b806ac5937ba8cfa1fa1416a8c38",
+    "liveShaMatchedAt": "2026-08-11T20:35:09Z"
+  },
+  "controllerContinuationGuard": {
+    "sameJobFailedStateAutomaticallyResumes": true,
+    "linkedContinuationField": "continuationOf",
+    "focusedTests": "3 passed, 0 failed"
+  },
+  "liveRegression": {
+    "command": "npm run test:staging-auth:readonly",
+    "browserStatus": 200,
+    "browserAuthenticatedRouteGuard": true,
+    "mobileStatus": 200,
+    "mobileAuthenticatedRouteGuard": true,
+    "shaMatches": true,
+    "readOnly": true
+  },
+  "localVerification": {
+    "command": "npm run verify",
+    "result": "passed"
+  },
+  "green": true,
+  "fixed": true,
+  "productionChanged": false,
+  "secretsExposed": false
+}
