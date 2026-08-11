@@ -23,13 +23,12 @@ try {
   const activeProfiles = profiles.docs.filter((doc) => doc.data().accountStatus === "ACTIVE");
   const profile = activeProfiles[0];
   const membership = await db.collection("tenantUsers").where("authUid", "==", firebaseUser.uid).limit(1).get();
-  const audits = profile ? await db.collection("platformUserAudits").where("userId", "==", profile.id).get() : null;
-  const details = audits?.docs.map((doc) => String(doc.data().detail || "")) ?? [];
-  console.log(JSON.stringify({
+  const result = {
     environment: "staging",
     firebaseEmailMatches: firebaseUser.email?.toLowerCase() === EMAIL,
     firebaseActive: !firebaseUser.disabled,
     activeInternalProfileCount: activeProfiles.length,
+    platformProfileAuthUidMatches: profile?.data()?.authUid === firebaseUser.uid,
     platformProfileEmailMatches: profile?.data()?.email === EMAIL,
     platformProfileNameMatches: profile?.data()?.firstName === "Chris" && profile?.data()?.lastName === "Sears",
     platformRole: profile?.data()?.role || "MISSING",
@@ -40,7 +39,26 @@ try {
     actionMaterialReturned: false,
     emailOrResetSent: false,
     productionChanged: false
-  }));
+  };
+  console.log(JSON.stringify(result));
+
+  const failedChecks = [
+    ["firebaseEmailMatches", result.firebaseEmailMatches],
+    ["firebaseActive", result.firebaseActive],
+    ["activeInternalProfileCount", result.activeInternalProfileCount === 1],
+    ["platformProfileAuthUidMatches", result.platformProfileAuthUidMatches],
+    ["platformProfileEmailMatches", result.platformProfileEmailMatches],
+    ["platformProfileNameMatches", result.platformProfileNameMatches],
+    ["platformRole", result.platformRole === "Owner"],
+    ["accountClass", result.accountClass === "internal"],
+    ["platformStatus", result.platformStatus === "ACTIVE"],
+    ["tenantMembershipAbsent", result.tenantMembershipAbsent],
+    ["tenantClaimsAbsent", result.tenantClaimsAbsent],
+    ["actionMaterialReturned", result.actionMaterialReturned === false],
+    ["emailOrResetSent", result.emailOrResetSent === false],
+    ["productionChanged", result.productionChanged === false]
+  ].filter(([, passed]) => !passed).map(([name]) => name);
+  if (failedChecks.length > 0) throw new Error(`Internal Owner profile compatibility failed: ${failedChecks.join(", ")}`);
 } finally {
   await deleteApp(app).catch(() => undefined);
 }

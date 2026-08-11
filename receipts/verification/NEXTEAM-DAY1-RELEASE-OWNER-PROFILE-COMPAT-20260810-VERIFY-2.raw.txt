@@ -1,0 +1,54 @@
+JOB_ID=NEXTEAM-DAY1-RELEASE-OWNER-PROFILE-COMPAT-20260810-VERIFY-2
+WORKTREE=target-architecture-integration
+
+$ railway run --service NexTeam-Studio --environment staging -- node scripts/verify-staging-internal-nexcommand-owner-onboarding.mjs
+{"environment":"staging","firebaseEmailMatches":true,"firebaseActive":true,"activeInternalProfileCount":1,"platformProfileAuthUidMatches":true,"platformProfileEmailMatches":true,"platformProfileNameMatches":true,"platformRole":"Owner","accountClass":"internal","platformStatus":"ACTIVE","tenantMembershipAbsent":true,"tenantClaimsAbsent":true,"actionMaterialReturned":false,"emailOrResetSent":false,"productionChanged":false}
+EXIT_CODE=0
+
+$ node --import ./tests/setup.mjs --import tsx --test apps/server/test/platform-team.test.mjs apps/server/test/platform-role-capabilities.test.mjs apps/server/test/nexcommand-session-security.test.mjs scripts/run-staging-internal-nexcommand-owner-onboarding.test.mjs
+✔ NexCommand sessions expire, cannot reopen without fresh authentication, sign out, and retain immutable redacted audit history (56.8642ms)
+✔ approved platform role templates resolve explicit capabilities and deny production by default (1.1228ms)
+✔ persisted role overrides, disabled profiles, ownership protections, and platform route capability denials are server enforced (78.8571ms)
+✔ NexCommand Team persists platform-only profiles, redacts sensitive data, and records immutable audit events (66.285ms)
+✔ the staging internal Owner repair and verifier enforce the internal Owner compatibility contract (5.5199ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1286.2583
+EXIT_CODE=0
+
+$ npm run typecheck
+
+> typecheck
+> tsc -b
+
+EXIT_CODE=0
+
+$ npm run check:worktree-scope
+
+> check:worktree-scope
+> node scripts/check-worktree-scope.mjs
+
+Worktree scope check passed: nexteam-integration is the integration lane.
+EXIT_CODE=0
+
+$ npm run check:worktree-coverage
+
+> check:worktree-coverage
+> node scripts/check-worktree-coverage.mjs
+
+Worktree coverage check passed: 536/536 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+EXIT_CODE=0
+
+$ npm run check:secrets
+
+> check:secrets
+> node scripts/check-secrets.mjs
+
+Secret scan passed (1817 tracked non-doc files checked).
+EXIT_CODE=0
