@@ -13,11 +13,12 @@ import { usePathname } from "../../../shared/router/usePathname";
 import "../../tenantOverview/styles/tenantOverview.css";
 import "../styles/nexCommand.css";
 
-type Area = "dashboard" | "team" | "tenants" | "prospects" | "blueprints" | "subscriptions" | "onboarding" | "migrations" | "support" | "modules" | "integrations" | "system" | "releases" | "usage" | "billing" | "security" | "settings";
+type Area = "dashboard" | "live-status" | "team" | "tenants" | "prospects" | "blueprints" | "subscriptions" | "onboarding" | "migrations" | "support" | "modules" | "integrations" | "system" | "releases" | "usage" | "billing" | "security" | "settings";
 
 const navigation: Array<[Area, string, string]> = [
   ["dashboard", "Dashboard", "⌂"], ["tenants", "Tenants", "◫"], ["prospects", "Prospects", "◌"], ["blueprints", "Blueprints", "◇"], ["subscriptions", "Subscriptions", "◈"], ["onboarding", "Onboarding", "→"], ["migrations", "Migrations", "↻"], ["support", "Support", "?"], ["modules", "Modules", "▦"], ["integrations", "Integrations", "⌁"], ["system", "Code & System", "⌘"], ["releases", "Releases", "↑"], ["usage", "Usage", "▥"], ["billing", "Billing", "$"], ["security", "Security & Audit", "◉"], ["settings", "Settings", "⚙"]
 ];
+navigation.splice(1, 0, ["live-status", "Live Build Status", "●"]);
 
 const moduleDirectory = [
   ["NexOps", "Business operations workspace", "/nexops"], ["Nexi", "Tool-backed operating assistant", "/nexi"], ["Tenant onboarding", "Prospect, onboarding plan, subscription, and activation workflow", "/nexcommand?area=onboarding"], ["Settings", "Tenant configuration controls", "/platform/settings"], ["Authentication", "Platform and tenant access boundaries", "/nexcommand?area=security"], ["Integrations", "Configured provider health and quick access", "/nexcommand?area=integrations"], ["Global Control", "Build and verification coordination", "/nexcommand?area=system"], ["Code & System", "Build identity and diagnostic foundation", "/nexcommand?area=system"]
@@ -28,6 +29,7 @@ const providers = [
 ];
 
 function safeOperatorMessage(value: string): string { return value && !value.startsWith("Loading") ? "Data query needs attention. NexTeam has logged the issue." : ""; }
+function liveStatusTone(state: string): "green" | "yellow" | "red" { return state === "COMPLETE" || state === "SUCCEEDED" || state === "IDLE" ? "green" : state === "FAILED" || state === "STALLED" || state === "BLOCKED" ? "red" : "yellow"; }
 
 function areaFromLocation(): Area {
   const requested = new URLSearchParams(window.location.search).get("area");
@@ -39,10 +41,12 @@ export function NexCommandRoute(): React.ReactElement {
   const pathname = usePathname();
   const [area, setArea] = useState<Area>(areaFromLocation);
   const [open, setOpen] = useState(false);
+  const [liveState, setLiveState] = useState("COMPLETE");
   const { status: planStatus } = usePlatformPlans(user);
   const { rows, runBackup, runLifecycle, status: tenantStatus, workingTenant } = useTenantOverview(user);
   const issue = safeOperatorMessage(planStatus || tenantStatus);
   const summary = useMemo(() => ({ tenants: rows.length, active: rows.filter((row) => row.subscription?.status === "active").length }), [rows]);
+  useEffect(() => { if (!user) return; const refresh = async () => { try { const token = await user.getIdToken(); const body = await fetch("/api/platform/admin/live-build-status", { headers: { authorization: `Bearer ${token}` } }).then((response) => response.json() as Promise<LiveBuildStatus>); setLiveState(body.controlState); } catch { setLiveState("FAILED"); } }; void refresh(); const timer = window.setInterval(() => void refresh(), 30_000); return () => window.clearInterval(timer); }, [user]);
 
   function selectArea(next: Area): void {
     window.history.pushState({}, "", `${pathname.startsWith("/platform") ? "/platform" : "/nexcommand"}?area=${next}`);
@@ -51,13 +55,14 @@ export function NexCommandRoute(): React.ReactElement {
 
   return <div className="nexcommand">
     <header className="nexcommand__topbar"><button className="nexcommand__menu" aria-label="Open NexCommand navigation" onClick={() => setOpen((value) => !value)}>☰</button><div className="nexcommand__brand"><PlatformMark decorative /><span>NexCommand</span></div><div className="nexcommand__environment"><span>STAGING</span><small>nexstage.nexteam.studio</small></div><button className="nexcommand__signout" onClick={() => void signOut()}>Sign out</button></header>
-    <aside className={`nexcommand__nav ${open ? "nexcommand__nav--open" : ""}`} aria-label="NexCommand navigation"><div className="nexcommand__nav-title"><PlatformMark decorative /><div><strong>NexCommand</strong><span>Internal operating console</span></div></div>{navigation.map(([key, label, icon]) => <button key={key} className={area === key ? "is-active" : ""} onClick={() => { selectArea(key); setOpen(false); }}><i aria-hidden="true">{icon}</i>{label}</button>)}</aside>
+    <aside className={`nexcommand__nav ${open ? "nexcommand__nav--open" : ""}`} aria-label="NexCommand navigation"><div className="nexcommand__nav-title"><PlatformMark decorative /><div><strong>NexCommand</strong><span>Internal operating console</span></div></div>{navigation.map(([key, label, icon]) => <button key={key} className={area === key ? "is-active" : ""} onClick={() => { selectArea(key); setOpen(false); }}><i className={key === "live-status" ? `nexcommand__live-status-icon nexcommand__live-status-icon--${liveStatusTone(liveState)}` : ""} aria-hidden="true">{icon}</i>{label}</button>)}</aside>
     <main className="nexcommand__workspace"><section className="nexcommand__heading"><div><p className="ui-eyebrow">NexTeam internal operations</p><h1>{navigation.find(([key]) => key === area)?.[1]}</h1><p>{user?.email ?? "Authorized NexTeam operator"}</p></div><span className="nexcommand__health">Staging connected</span></section>{issue ? <p className="nexcommand__notice">{issue}</p> : null}<NexCommandArea area={area} rows={rows} workingTenant={workingTenant} onRunBackup={runBackup} onRunLifecycle={runLifecycle} user={user} summary={summary} /></main>
   </div>;
 }
 
 function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOverview>["rows"]; workingTenant: string; onRunBackup: ReturnType<typeof useTenantOverview>["runBackup"]; onRunLifecycle: ReturnType<typeof useTenantOverview>["runLifecycle"]; user: ReturnType<typeof useAuthSession>["user"]; summary: { tenants: number; active: number } }): React.ReactElement {
   if (props.area === "dashboard") return <><section className="nexcommand__metrics"><Metric label="Active tenants" value={String(props.summary.active)} /><Metric label="Tenant records" value={String(props.summary.tenants)} /><Metric label="Pilot package" value="$0.00" /><Metric label="Staging health" value="Connected" /></section><LiveBuildStatusPanel user={props.user} /><section className="nexcommand__panel"><h2>Operator overview</h2><p>Use NexCommand to manage verified tenant onboarding and platform operations. Metrics appear only when the platform provides the underlying data.</p><a href="/nexcommand?area=team">Open Team</a></section></>;
+  if (props.area === "live-status") return <LiveBuildStatusPanel user={props.user} />;
   if (props.area === "team") return <PlatformSettingsPanel user={props.user} />;
   if (props.area === "tenants") return <section className="nexcommand__panel"><h2>Tenant administration</h2><p>Cancellation requires two deliberate confirmations. Archiving retains tenant records; resubscription restores the existing tenant.</p><TenantOverviewPanel rows={props.rows} workingTenant={props.workingTenant} onRunBackup={props.onRunBackup} onRunLifecycle={props.onRunLifecycle} /></section>;
   if (props.area === "prospects") return <PlatformProspectIntakePanel user={props.user} />;
