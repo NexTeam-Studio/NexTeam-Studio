@@ -97,3 +97,49 @@ Command: npm run check:secrets
 Secret scan passed (1814 tracked non-doc files checked).
 EXIT_CODE=0
 ```
+
+## Verify-2 local gate re-run — 2026-08-10
+
+Authoritative implementation remains `apps/server/src/platform/team.ts`,
+`apps/server/src/platform/repository.ts`, and
+`apps/server/src/platform/routes.ts`. This re-run is local-only: it performed
+no staging mutation, email dispatch, deployment, or production action.
+
+```text
+=== FOCUSED_OWNER_ONBOARDING_TESTS ===
+Command: node --import ./tests/setup.mjs --import tsx --test apps/server/test/platform-team.test.mjs apps/server/test/platform-role-capabilities.test.mjs apps/server/test/nexcommand-session-security.test.mjs scripts/security/authorize-staging-owner-invitation-gmail.test.mjs
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1290.7221
+EXIT_CODE=0
+
+=== TYPECHECK ===
+Command: npm run typecheck
+EXIT_CODE=0
+
+=== TENANCY ===
+Command: npm run check:tenancy
+Tenancy check passed (485 files checked).
+EXIT_CODE=0
+
+=== WORKTREE_SCOPE ===
+Command: npm run check:worktree-scope
+Worktree scope check passed: nexteam-integration is the integration lane.
+EXIT_CODE=0
+
+=== WORKTREE_COVERAGE ===
+Command: npm run check:worktree-coverage
+Worktree coverage check passed: 536/536 implementation files have exactly one owner.
+Known migration debt: 0 legacy CRM file(s) under apps/server/src/crm/.
+EXIT_CODE=0
+
+=== SECRETS ===
+Command: npm run check:secrets
+Secret scan passed (1814 tracked non-doc files checked).
+EXIT_CODE=0
+```
