@@ -43,4 +43,4 @@ The full verification gate included the default no-browser suite, reliability su
 
 ## Remaining acceptance
 
-The remaining step is genuine Chris live acceptance: confirm the GitHub staging deployment of commit `468b353`, then run `npm run test:staging-auth:readonly` with its staging URL and deployed SHA and retain the resulting green receipt. This is intentionally not inferred from local verification.
+The remaining step is genuine Chris live acceptance: confirm the GitHub staging deployment carrying feature commit `468b353`, then run `npm run test:staging-auth:readonly` with its staging URL and deployed SHA and retain the resulting green receipt. This is intentionally not inferred from local verification.
