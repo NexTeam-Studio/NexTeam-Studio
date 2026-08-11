@@ -7,7 +7,7 @@ import { appendEvent, completeJob, dispatchNext, pollStatus, reconcileJournal } 
 import { assertStagingGitHubRail, evidenceGate, runEnvironmentBootstrap, runStagingAuthRegression } from "./stagingReliability.mjs";
 
 test("JSONL control journal dispatches queued jobs, retries expired leases, and advances to next job", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "global-control-")); const file = join(dir, "jobs.jsonl"); const now = Date.parse("2026-08-11T12:00:00Z"); const dispatched = [];
+  const dir = await mkdtemp(join(tmpdir(), "global-control-")); const file = join(dir, "jobs.jsonl"); const now = Date.now(); const dispatched = [];
   try {
     await appendEvent(file, { type: "JOB_QUEUED", jobId: "one", payload: { command: "verify" } });
     await appendEvent(file, { type: "JOB_QUEUED", jobId: "two" });

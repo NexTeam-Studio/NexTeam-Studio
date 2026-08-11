@@ -8,8 +8,14 @@ import { createLocalDevSession } from "../../dist/auth/accessContext.js";
 async function startApp() {
   const app = express();
   app.use(express.json());
+  const repository = new InMemoryPlatformRepository();
+  await repository.savePlatformUser({
+    id: "platform_local_operator", authUid: "local-platform-operator", firstName: "Local", lastName: "Operator", email: "operator@local.dev",
+    role: "Owner", accountClass: "internal", capabilityOverrides: { grant: [], deny: [] }, accountStatus: "ACTIVE",
+    createdAt: "2026-08-11T00:00:00.000Z", updatedAt: "2026-08-11T00:00:00.000Z", createdBy: "seed", updatedBy: "seed"
+  });
   registerPlatformRoutes(app, {
-    repository: new InMemoryPlatformRepository(),
+    repository,
     storage: null,
     env: { TENANT_ID: "tenant_demo", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
@@ -18,7 +24,7 @@ async function startApp() {
   });
   const address = server.address();
   assert.equal(typeof address, "object");
-  return { server, base: `http://127.0.0.1:${address.port}` };
+  return { server, base: `http://127.0.0.1:${address.port}`, repository };
 }
 
 async function close(server) {
@@ -59,6 +65,30 @@ test("tenant membership is capability-gated, tenant-scoped, and audited", async 
     const audits = await fetch(`${base}/api/platform/tenants/tenant_demo/users/audit`, { headers: ownerHeaders });
     assert.equal(audits.status, 200);
     assert.equal((await audits.json()).audits[0].targetUserId, "custom_tech");
+  } finally {
+    await close(server);
+  }
+});
+
+test("platform self-profile and lifecycle routes persist authorized platform actions without deleting tenant data", async () => {
+  const { server, base, repository } = await startApp();
+  try {
+    const headers = { "content-type": "application/json" };
+    const tenantId = (await repository.listTenants())[0].id;
+    const updated = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ firstName: "Staging", lastName: "Operator", email: "staging.operator@local.dev" }) });
+    assert.equal(updated.status, 200);
+    assert.equal((await updated.json()).user.firstName, "Staging");
+
+    const first = await fetch(`${base}/api/platform/admin/tenants/${tenantId}/subscription/cancel/confirmations`, { method: "POST", headers, body: JSON.stringify({ confirmation: "I_UNDERSTAND_CANCEL_ARCHIVE", idempotencyKey: "platform-cancel-intent-001" }) });
+    assert.equal(first.status, 201);
+    const { cancellationId } = await first.json();
+    const cancelled = await fetch(`${base}/api/platform/admin/tenants/${tenantId}/subscription/cancel`, { method: "POST", headers, body: JSON.stringify({ confirmation: "CANCEL_AND_ARCHIVE", cancellationId, idempotencyKey: "platform-cancel-confirm-001" }) });
+    assert.equal(cancelled.status, 200);
+    assert.equal((await repository.getTenant(tenantId)).lifecycleState, "DISABLED_ARCHIVED");
+
+    const restored = await fetch(`${base}/api/platform/admin/tenants/${tenantId}/subscription/resubscribe`, { method: "POST", headers, body: JSON.stringify({ confirmation: "RESUBSCRIBE", idempotencyKey: "platform-resubscribe-001" }) });
+    assert.equal(restored.status, 201);
+    assert.equal((await repository.getTenant(tenantId)).lifecycleState, "ACTIVE");
   } finally {
     await close(server);
   }

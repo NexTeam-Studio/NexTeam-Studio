@@ -23,12 +23,14 @@ test("NexCommand only displays a sanitized operator error", () => {
   assert.doesNotMatch(source, /error\.message/);
 });
 
-test("NexCommand exposes a platform Team area without treating it as tenant users", () => {
-  assert.match(source, /PlatformTeamPanel/);
+test("NexCommand exposes managed platform settings, profiles, and roles without treating them as tenant users", () => {
+  assert.match(source, /PlatformSettingsPanel/);
   assert.match(source, /Open Team/);
-  assert.match(source, /Platform profiles are separate from tenant users/);
-  assert.match(source, /Identity creation, invitations, and email delivery are intentionally unavailable here/);
-  assert.match(source, /\/api\/platform\/admin\/team/);
+  const settings = fs.readFileSync(new URL("../components/PlatformSettingsPanel.tsx", import.meta.url), "utf8");
+  const api = fs.readFileSync(new URL("../api/nexCommandAdminApi.ts", import.meta.url), "utf8");
+  assert.match(settings, /Platform profiles are isolated from tenant users/);
+  assert.match(settings, /Role access guide/);
+  assert.match(api, /\/api\/platform\/admin\/team/);
 });
 
 test("NexCommand exposes only sanitized staging Gmail provider identity and health", () => {

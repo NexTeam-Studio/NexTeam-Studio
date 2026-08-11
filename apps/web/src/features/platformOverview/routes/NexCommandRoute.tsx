@@ -7,6 +7,7 @@ import { PlatformProspectIntakePanel } from "../components/PlatformProspectIntak
 import { PlatformSupportPanel } from "../components/PlatformSupportPanel";
 import { PlatformLifecycleRecordsPanel } from "../components/PlatformLifecycleRecordsPanel";
 import { PlatformMigrationsPanel } from "../components/PlatformMigrationsPanel";
+import { PlatformSettingsPanel } from "../components/PlatformSettingsPanel";
 import { usePlatformPlans } from "../hooks/usePlatformPlans";
 import { usePathname } from "../../../shared/router/usePathname";
 import "../../tenantOverview/styles/tenantOverview.css";
@@ -39,7 +40,7 @@ export function NexCommandRoute(): React.ReactElement {
   const [area, setArea] = useState<Area>(areaFromLocation);
   const [open, setOpen] = useState(false);
   const { status: planStatus } = usePlatformPlans(user);
-  const { rows, runBackup, status: tenantStatus, workingTenant } = useTenantOverview(user);
+  const { rows, runBackup, runLifecycle, status: tenantStatus, workingTenant } = useTenantOverview(user);
   const issue = safeOperatorMessage(planStatus || tenantStatus);
   const summary = useMemo(() => ({ tenants: rows.length, active: rows.filter((row) => row.subscription?.status === "active").length }), [rows]);
 
@@ -51,14 +52,14 @@ export function NexCommandRoute(): React.ReactElement {
   return <div className="nexcommand">
     <header className="nexcommand__topbar"><button className="nexcommand__menu" aria-label="Open NexCommand navigation" onClick={() => setOpen((value) => !value)}>☰</button><div className="nexcommand__brand"><PlatformMark decorative /><span>NexCommand</span></div><div className="nexcommand__environment"><span>STAGING</span><small>nexstage.nexteam.studio</small></div><button className="nexcommand__signout" onClick={() => void signOut()}>Sign out</button></header>
     <aside className={`nexcommand__nav ${open ? "nexcommand__nav--open" : ""}`} aria-label="NexCommand navigation"><div className="nexcommand__nav-title"><PlatformMark decorative /><div><strong>NexCommand</strong><span>Internal operating console</span></div></div>{navigation.map(([key, label, icon]) => <button key={key} className={area === key ? "is-active" : ""} onClick={() => { selectArea(key); setOpen(false); }}><i aria-hidden="true">{icon}</i>{label}</button>)}</aside>
-    <main className="nexcommand__workspace"><section className="nexcommand__heading"><div><p className="ui-eyebrow">NexTeam internal operations</p><h1>{navigation.find(([key]) => key === area)?.[1]}</h1><p>{user?.email ?? "Authorized NexTeam operator"}</p></div><span className="nexcommand__health">Staging connected</span></section>{issue ? <p className="nexcommand__notice">{issue}</p> : null}<NexCommandArea area={area} rows={rows} workingTenant={workingTenant} onRunBackup={runBackup} user={user} summary={summary} /></main>
+    <main className="nexcommand__workspace"><section className="nexcommand__heading"><div><p className="ui-eyebrow">NexTeam internal operations</p><h1>{navigation.find(([key]) => key === area)?.[1]}</h1><p>{user?.email ?? "Authorized NexTeam operator"}</p></div><span className="nexcommand__health">Staging connected</span></section>{issue ? <p className="nexcommand__notice">{issue}</p> : null}<NexCommandArea area={area} rows={rows} workingTenant={workingTenant} onRunBackup={runBackup} onRunLifecycle={runLifecycle} user={user} summary={summary} /></main>
   </div>;
 }
 
-function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOverview>["rows"]; workingTenant: string; onRunBackup: ReturnType<typeof useTenantOverview>["runBackup"]; user: ReturnType<typeof useAuthSession>["user"]; summary: { tenants: number; active: number } }): React.ReactElement {
+function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOverview>["rows"]; workingTenant: string; onRunBackup: ReturnType<typeof useTenantOverview>["runBackup"]; onRunLifecycle: ReturnType<typeof useTenantOverview>["runLifecycle"]; user: ReturnType<typeof useAuthSession>["user"]; summary: { tenants: number; active: number } }): React.ReactElement {
   if (props.area === "dashboard") return <><section className="nexcommand__metrics"><Metric label="Active tenants" value={String(props.summary.active)} /><Metric label="Tenant records" value={String(props.summary.tenants)} /><Metric label="Pilot package" value="$0.00" /><Metric label="Staging health" value="Connected" /></section><LiveBuildStatusPanel user={props.user} /><section className="nexcommand__panel"><h2>Operator overview</h2><p>Use NexCommand to manage verified tenant onboarding and platform operations. Metrics appear only when the platform provides the underlying data.</p><a href="/nexcommand?area=team">Open Team</a></section></>;
-  if (props.area === "team") return <PlatformTeamPanel user={props.user} />;
-  if (props.area === "tenants") return <section className="nexcommand__panel"><h2>Tenant administration</h2><p>Tenant records remain scoped to their own data. Open a tenant row to review its current platform summary.</p><TenantOverviewPanel rows={props.rows} workingTenant={props.workingTenant} onRunBackup={props.onRunBackup} /></section>;
+  if (props.area === "team") return <PlatformSettingsPanel user={props.user} />;
+  if (props.area === "tenants") return <section className="nexcommand__panel"><h2>Tenant administration</h2><p>Cancellation requires two deliberate confirmations. Archiving retains tenant records; resubscription restores the existing tenant.</p><TenantOverviewPanel rows={props.rows} workingTenant={props.workingTenant} onRunBackup={props.onRunBackup} onRunLifecycle={props.onRunLifecycle} /></section>;
   if (props.area === "prospects") return <PlatformProspectIntakePanel user={props.user} />;
   if (props.area === "blueprints" || props.area === "subscriptions" || props.area === "onboarding") return <PlatformLifecycleRecordsPanel user={props.user} mode={props.area} />;
   if (props.area === "migrations") return <PlatformMigrationsPanel user={props.user} />;
@@ -68,17 +69,8 @@ function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOv
   if (props.area === "system") return <section className="nexcommand__panel"><h2>Code &amp; System</h2><p>Current system identity, diagnostics, provider health, and green-gate evidence belong here. Embedded build controls are intentionally not enabled in this release.</p><dl className="nexcommand__facts"><div><dt>Staging</dt><dd>nexstage.nexteam.studio</dd></div><div><dt>Production</dt><dd>nexapp.nexteam.studio</dd></div><div><dt>Global Control</dt><dd>Local diagnostic access available to authorized operators.</dd></div></dl></section>;
   if (props.area === "security") return <section className="nexcommand__panel"><h2>Security &amp; audit</h2><p>NexCommand is for authorized NexTeam platform personnel. Tenant ownership alone does not grant NexCommand access. Provider credentials and tenant secrets remain masked.</p><p>Support access is not active. A future request-and-approval session will require tenant approval, explicit scope, a time limit, revocation, and audit history.</p></section>;
   if (props.area === "billing") return <StripeBillingPanel user={props.user} />;
-  return <section className="nexcommand__panel"><h2>{props.area === "releases" ? "Release Controls" : props.area === "usage" ? "Usage" : "NexTeam Settings"}</h2><p>This area is prepared for the next authorized platform capability. It does not expose unverified data or production controls.</p></section>;
-}
-
-type PlatformTeamUser = { id: string; firstName: string; lastName: string; role: string; accountStatus: "ACTIVE" | "DISABLED"; updatedAt: string };
-function PlatformTeamPanel({ user }: { user: ReturnType<typeof useAuthSession>["user"] }): React.ReactElement {
-  const [members, setMembers] = useState<PlatformTeamUser[]>([]); const [error, setError] = useState(""); const [busy, setBusy] = useState("");
-  const request = async (path: string, init?: RequestInit): Promise<{ users?: PlatformTeamUser[]; error?: string }> => { const token = await user?.getIdToken(); const response = await fetch(path, { ...init, headers: { authorization: `Bearer ${token ?? ""}`, "content-type": "application/json", ...init?.headers } }); const body = await response.json() as { users?: PlatformTeamUser[]; error?: string }; if (!response.ok) throw new Error(body.error ?? "Team request failed."); return body; };
-  const refresh = async (): Promise<void> => { if (!user) return; try { setError(""); setMembers((await request("/api/platform/admin/team")).users ?? []); } catch { setError("Team records are unavailable to this signed-in operator."); } };
-  useEffect(() => { void refresh(); }, [user]);
-  const changeStatus = async (member: PlatformTeamUser): Promise<void> => { try { setBusy(member.id); await request(`/api/platform/admin/team/${encodeURIComponent(member.id)}/${member.accountStatus === "ACTIVE" ? "disable" : "reactivate"}`, { method: "POST" }); await refresh(); } catch { setError("Unable to update account status."); } finally { setBusy(""); } };
-  return <section className="nexcommand__panel nexcommand__team"><p className="ui-eyebrow">NexTeam platform personnel</p><h2>Team</h2><p>Platform profiles are separate from tenant users. Identity creation, invitations, and email delivery are intentionally unavailable here.</p>{error ? <p className="nexcommand__notice" role="alert">{error}</p> : null}<div className="nexcommand__team-grid">{members.map((member) => <article key={member.id}><div><strong>{member.firstName} {member.lastName}</strong><span>{member.role}</span></div><span className={`nexcommand__status nexcommand__status--${member.accountStatus.toLowerCase()}`}>{member.accountStatus}</span><button type="button" disabled={busy === member.id} onClick={() => void changeStatus(member)}>{member.accountStatus === "ACTIVE" ? "Disable" : "Reactivate"}</button></article>)}</div>{members.length === 0 && !error ? <p>No platform profile records yet. The signed-in identity remains visible in the header.</p> : null}</section>;
+  if (props.area === "settings") return <PlatformSettingsPanel user={props.user} />;
+  return <section className="nexcommand__panel"><h2>{props.area === "releases" ? "Release Controls" : "Usage"}</h2><p>This area is prepared for the next authorized platform capability. It does not expose unverified data or production controls.</p></section>;
 }
 
 function Metric(props: { label: string; value: string }): React.ReactElement { return <article><span>{props.label}</span><strong>{props.value}</strong></article>; }

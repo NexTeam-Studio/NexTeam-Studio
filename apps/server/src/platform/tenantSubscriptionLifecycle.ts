@@ -31,11 +31,11 @@ export async function assertActiveTenantLifecycle(repository: PlatformRepository
   }
 }
 
-export async function requestSubscriptionCancellation(input: { repository: PlatformRepository; tenantId: string; tenantUserId: string; idempotencyKey: string; now?: string }) {
+export async function requestSubscriptionCancellation(input: { repository: PlatformRepository; tenantId: string; tenantUserId: string; idempotencyKey: string; platformActor?: boolean; now?: string }) {
   const now = input.now ?? new Date().toISOString();
   const tenant = await input.repository.getTenant(input.tenantId);
   if (!tenant) throw new RailError("Tenant was not found.", { provider: "platform", op: "requestSubscriptionCancellation", status: 404 });
-  await owner(input.repository, input.tenantId, input.tenantUserId);
+  if (!input.platformActor) await owner(input.repository, input.tenantId, input.tenantUserId);
   const correlationId = `cancel_${input.idempotencyKey}`;
   const existing = await auditByCorrelation(input.repository, input.tenantId, "tenant.cancellation_confirmation_one", correlationId);
   if (existing) return { cancellationId: correlationId, confirmationRecorded: true, alreadyExisted: true };
@@ -48,11 +48,11 @@ export async function requestSubscriptionCancellation(input: { repository: Platf
   return { cancellationId: correlationId, confirmationRecorded: true, alreadyExisted: false };
 }
 
-export async function confirmSubscriptionCancellation(input: { repository: PlatformRepository; tenantId: string; tenantUserId: string; cancellationId: string; idempotencyKey: string; now?: string }) {
+export async function confirmSubscriptionCancellation(input: { repository: PlatformRepository; tenantId: string; tenantUserId: string; cancellationId: string; idempotencyKey: string; platformActor?: boolean; now?: string }) {
   const now = input.now ?? new Date().toISOString();
   const tenant = await input.repository.getTenant(input.tenantId);
   if (!tenant) throw new RailError("Tenant was not found.", { provider: "platform", op: "confirmSubscriptionCancellation", status: 404 });
-  await owner(input.repository, input.tenantId, input.tenantUserId);
+  if (!input.platformActor) await owner(input.repository, input.tenantId, input.tenantUserId);
   const first = await auditByCorrelation(input.repository, input.tenantId, "tenant.cancellation_confirmation_one", input.cancellationId);
   if (!first || first.actorId !== input.tenantUserId) throw new RailError("A separate first cancellation confirmation from this owner is required.", { provider: "platform", op: "confirmSubscriptionCancellation", status: 409 });
   const existing = await auditByCorrelation(input.repository, input.tenantId, "tenant.subscription_canceled", input.cancellationId);
@@ -67,11 +67,11 @@ export async function confirmSubscriptionCancellation(input: { repository: Platf
   return { tenant: updated, alreadyExisted: false };
 }
 
-export async function resubscribeTenant(input: { repository: PlatformRepository; tenantId: string; tenantUserId: string; idempotencyKey: string; now?: string }) {
+export async function resubscribeTenant(input: { repository: PlatformRepository; tenantId: string; tenantUserId: string; idempotencyKey: string; platformActor?: boolean; now?: string }) {
   const now = input.now ?? new Date().toISOString();
   const tenant = await input.repository.getTenant(input.tenantId);
   if (!tenant) throw new RailError("Tenant was not found.", { provider: "platform", op: "resubscribeTenant", status: 404 });
-  await owner(input.repository, input.tenantId, input.tenantUserId);
+  if (!input.platformActor) await owner(input.repository, input.tenantId, input.tenantUserId);
   const correlationId = `resubscribe_${input.idempotencyKey}`;
   const existing = await auditByCorrelation(input.repository, input.tenantId, "tenant.resubscribed", correlationId);
   if (existing?.subscriptionId) return { tenant: await input.repository.getTenant(input.tenantId), subscription: (await input.repository.listSubscriptions(input.tenantId)).find((subscription) => subscription.id === existing.subscriptionId)!, alreadyExisted: true };

@@ -3,12 +3,14 @@ import type { User } from "firebase/auth";
 import type { PlatformTenantRow } from "../../../shared/contracts/platform";
 import { recordBrowserEvent } from "../../../shared/telemetry/browserTelemetry";
 import { fetchTenantOverview, runTenantBackup } from "../api/tenantOverviewApi";
+import { lifecycleCommand } from "../../platformOverview/api/nexCommandAdminApi";
 
 export function useTenantOverview(user: User | null): {
   rows: PlatformTenantRow[];
   runBackup: (tenantId: string) => Promise<void>;
   status: string;
   workingTenant: string;
+  runLifecycle: (tenantId: string, command: "first" | "cancel" | "resubscribe", cancellationId?: string) => Promise<{ cancellationId?: string } | undefined>;
 } {
   const [rows, setRows] = useState<PlatformTenantRow[]>([]);
   const [status, setStatus] = useState("Loading tenant overview...");
@@ -69,10 +71,27 @@ export function useTenantOverview(user: User | null): {
     }
   }
 
+  async function runLifecycle(tenantId: string, command: "first" | "cancel" | "resubscribe", cancellationId?: string): Promise<{ cancellationId?: string } | undefined> {
+    if (!user) return undefined;
+    setWorkingTenant(tenantId);
+    try {
+      const result = await lifecycleCommand(user, tenantId, command, cancellationId);
+      setStatus(command === "first" ? "First cancellation confirmation recorded. A second confirmation is required." : command === "cancel" ? "Tenant archived. Data was retained." : "Tenant resubscribed and restored.");
+      setRows(await fetchTenantOverview(user));
+      return result;
+    } catch {
+      setStatus("Tenant lifecycle request could not be completed.");
+      return undefined;
+    } finally {
+      setWorkingTenant("");
+    }
+  }
+
   return {
     rows,
     runBackup: runBackupForTenant,
     status,
-    workingTenant
+    workingTenant,
+    runLifecycle
   };
 }

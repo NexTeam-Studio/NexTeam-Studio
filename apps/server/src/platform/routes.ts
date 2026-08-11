@@ -183,6 +183,7 @@ const verifyJobAccessLinkSchema = z.object({
 
 const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true, role: true, capabilityOverrides: true }).strict();
 const platformUserPatchSchema = platformUserInputSchema.omit({ authUid: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
+const platformSelfProfilePatchSchema = platformUserSchema.pick({ firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const ownershipTransferSchema = z.object({ toUserId: z.string().min(1) }).strict();
 
 export interface PlatformRouteDeps {
@@ -401,6 +402,22 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
     try {
       const actor = await requirePlatformTeamCapability(req, env, "platform.profile.self", deps.repository, deps.platformOperatorAuth);
       const user = await deps.repository.getPlatformUserByAuthUid(actor.uid);
+      res.json({ ok: true, user });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  // A platform operator may maintain their own contact profile, but never their
+  // role or capability overrides. Those remain a separate managed-team action.
+  app.patch("/api/platform/admin/team/me", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.profile.self", deps.repository, deps.platformOperatorAuth);
+      const existing = await deps.repository.getPlatformUserByAuthUid(actor.uid);
+      if (!existing) throw new RailError("An internal platform profile is required.", { provider: "platform", op: "platformSelfProfileUpdate", status: 404 });
+      const patch = platformSelfProfilePatchSchema.parse(req.body ?? {});
+      const timestamp = new Date().toISOString();
+      const user = await deps.repository.savePlatformUser({ ...existing, ...patch, updatedAt: timestamp, updatedBy: actor.uid } as PlatformUser);
+      await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Self-service profile metadata updated.", timestamp));
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, "Platform self-service profile updated.", user.authUid, timestamp));
       res.json({ ok: true, user });
     } catch (error) { sendRouteError(res, error); }
   });
@@ -1508,6 +1525,18 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
     } catch (error) {
       sendRouteError(res, error);
     }
+  });
+
+  // NexCommand lifecycle controls are platform-authorized. They preserve the
+  // immutable tenant record and audit actor; they do not use tenant authority.
+  app.post("/api/platform/admin/tenants/:tenantId/subscription/cancel/confirmations", async (req: Request, res: Response) => {
+    try { const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.manage", deps.repository, deps.platformOperatorAuth); const tenantId = req.params.tenantId!; const input = cancellationFirstConfirmationSchema.parse(req.body ?? {}); const result = await requestSubscriptionCancellation({ repository: deps.repository, tenantId, tenantUserId: actor.uid, platformActor: true, idempotencyKey: input.idempotencyKey }); res.status(result.alreadyExisted ? 200 : 201).json({ ok: true, ...result }); } catch (error) { sendRouteError(res, error); }
+  });
+  app.post("/api/platform/admin/tenants/:tenantId/subscription/cancel", async (req: Request, res: Response) => {
+    try { const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.manage", deps.repository, deps.platformOperatorAuth); const tenantId = req.params.tenantId!; const input = cancellationSecondConfirmationSchema.parse(req.body ?? {}); const result = await confirmSubscriptionCancellation({ repository: deps.repository, tenantId, tenantUserId: actor.uid, platformActor: true, cancellationId: input.cancellationId, idempotencyKey: input.idempotencyKey }); res.json({ ok: true, ...result }); } catch (error) { sendRouteError(res, error); }
+  });
+  app.post("/api/platform/admin/tenants/:tenantId/subscription/resubscribe", async (req: Request, res: Response) => {
+    try { const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.manage", deps.repository, deps.platformOperatorAuth); const tenantId = req.params.tenantId!; const input = resubscribeBodySchema.parse(req.body ?? {}); const result = await resubscribeTenant({ repository: deps.repository, tenantId, tenantUserId: actor.uid, platformActor: true, idempotencyKey: input.idempotencyKey }); res.status(result.alreadyExisted ? 200 : 201).json({ ok: true, ...result }); } catch (error) { sendRouteError(res, error); }
   });
 
   app.post("/api/platform/tenants/:tenantId/subscription/cancel/confirmations", async (req: Request, res: Response) => {

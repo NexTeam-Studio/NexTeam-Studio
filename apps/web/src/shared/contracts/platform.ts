@@ -10,6 +10,8 @@ export interface PlatformTenantRow {
     id: string;
     name: string;
     plan: "nexi" | "marketing" | "suite";
+    lifecycleState?: "ACTIVE" | "DISABLED_ARCHIVED";
+    lifecycleUpdatedAt?: string;
   };
   plan: PlatformPlan;
   modules: string[];
