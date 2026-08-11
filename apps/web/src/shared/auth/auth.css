@@ -35,12 +35,14 @@
   object-fit: contain;
   justify-self: start;
 }
+.auth-card-brand-nexcommand { object-position: left center; }
 
 .auth-card h1 { color: #151817; }
 .auth-card p { margin: 0; color: #526055; line-height: 1.45; }
 .auth-eyebrow { color: #147a74; font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .auth-denial-actions { display: grid; gap: .7rem; margin-top: 1.2rem; }
-.auth-secondary-action { background: transparent; border: 1px solid #147a74; color: #0e5d59; }
+.auth-denial-actions button { border: 0; border-radius: 999px; padding: 14px 18px; color: #101010; background: linear-gradient(135deg, #d4ff20 0%, #8ef236 50%, #25d238 100%); font: inherit; font-weight: 700; cursor: pointer; }
+.auth-denial-actions .auth-secondary-action { border: 1px solid #147a74; color: #0e5d59; background: rgba(248, 255, 252, 0.74); }
 .auth-form { display: grid; gap: 14px; }
 .auth-form label { display: grid; gap: 7px; color: #151817; font-size: 0.92rem; }
 .auth-form input { border: 1px solid rgba(21, 24, 23, 0.18); border-radius: 18px; padding: 14px 16px; background: #f8fffc; color: #151817; }

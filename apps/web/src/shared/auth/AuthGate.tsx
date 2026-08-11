@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { NexiIdentityMark, ProductLogo, type ProductBrand } from "../branding/ProductBranding";
+import { NexCommandMark, NexiIdentityMark, ProductLogo, type ProductBrand } from "../branding/ProductBranding";
 import { useAuthSession } from "./AuthSessionProvider";
 import { hasFreshNexCommandAuthentication, hasNexCommandSession } from "./authBootstrap";
 import { requiresNexCommandReauthentication } from "./nexCommandFreshAuth";
@@ -126,6 +126,9 @@ export function AuthGate(props: { children: React.ReactNode }): React.ReactEleme
 function AuthProductMark(props: { product: AuthProduct }): React.ReactElement {
   if (props.product.brand === "nexi") {
     return <NexiIdentityMark className="auth-card-brand" />;
+  }
+  if (props.product.path === "/nexcommand") {
+    return <NexCommandMark />;
   }
   return <ProductLogo product={props.product.brand} className="auth-card-brand" alt={props.product.workspaceName} />;
 }

@@ -9,8 +9,8 @@ test("NexCommand only presents profile denial after the server session endpoint 
   assert.match(source, /establishNexCommandSession\(user\)\.then\(\(\) => setReady\(true\)\)\.catch\(\(\) => setDenied\(true\)\)/);
 });
 
-test("NexCommand tenant denial is NexTeam-branded and offers a safe exit to either sign-in or NexOps", () => {
-  assert.match(source, /<PlatformMark className="auth-card-brand" alt="NexTeam" \/>/);
+test("NexCommand tenant denial uses the same NexCommand identity and offers a safe exit to either sign-in or NexOps", () => {
+  assert.match(source, /<NexCommandMark \/>/);
   assert.match(source, /This account is not authorized to access NexCommand/);
   assert.match(source, /Sign in with a different account/);
   assert.match(source, /signOutOperator\(auth, "\/nexcommand\/sign-in"\)/);

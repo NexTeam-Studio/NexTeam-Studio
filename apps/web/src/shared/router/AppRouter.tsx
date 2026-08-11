@@ -3,7 +3,7 @@ import { NexCamPage } from "../../features/nexcam/areas/capture/components/NexCa
 import { NexiStandaloneChat } from "../../features/nexi/areas/chat/components/NexiStandaloneChat";
 import { NexOpsWorkspace } from "../../features/nexopsShell/NexOpsWorkspace";
 import { PlatformRoute } from "../../features/platform/routes/PlatformRoute";
-import { PlatformMark } from "../branding/ProductBranding";
+import { NexCommandMark } from "../branding/ProductBranding";
 import { useAuthSession } from "../auth/AuthSessionProvider";
 import { establishNexCommandSession, hasFreshNexCommandAuthentication, hasNexCommandSession, signOutOperator } from "../auth/authBootstrap";
 import { usePathname } from "./usePathname";
@@ -40,7 +40,7 @@ function NexCommandSessionGate(): React.ReactElement | null {
   }, [user]);
   if (denied) {
     return <main className="shell"><section className="auth-card">
-      <PlatformMark className="auth-card-brand" alt="NexTeam" />
+      <NexCommandMark />
       <p className="auth-eyebrow">NexTeam platform</p>
       <h1>NexCommand access denied</h1>
       <p>This account is not authorized to access NexCommand. Tenant accounts can use NexOps only.</p>

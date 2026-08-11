@@ -93,6 +93,10 @@ export function PlatformMark(props: {
   );
 }
 
+export function NexCommandMark(props: { className?: string }): React.ReactElement {
+  return <img className={`auth-card-brand auth-card-brand-nexcommand ${props.className ?? ""}`.trim()} src="/assets/brand/nexcommand-wordmark.png" alt="NexCommand" />;
+}
+
 export function TenantBrandMark(props: {
   branding: TenantBranding | null;
   tenantId: string;
