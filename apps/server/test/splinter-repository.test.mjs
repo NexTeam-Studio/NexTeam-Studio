@@ -507,6 +507,29 @@ test("only an integrated exact approved candidate can begin and record staging d
   await assert.rejects(() => service.beginDeployment(approved.id, "1234567", "abcdef1"), { code: "INVALID_TRANSITION" });
 });
 
+test("relay rediscovery resumes only an integrated Raphael-approved code change that has not started deployment", async () => {
+  const { repository, service } = await queuedService();
+  const eligible = await approvedCodeChange(service, repository, "splinter-deployment-recovery");
+  await service.beginIntegration(eligible.id, "1234567", "abcdef1");
+  await service.recordIntegration(eligible.id, { status: "PASSED", stagingBaseSha: "1234567", approvedCommitSha: "abcdef1", integratedCandidateSha: "fedcba1", verification: ["combined checks passed"] });
+  const unapproved = await approvedCodeChange(service, repository, "splinter-not-approved");
+  await service.beginIntegration(unapproved.id, "1234567", "abcdef1");
+  await service.recordIntegration(unapproved.id, { status: "PASSED", stagingBaseSha: "1234567", approvedCommitSha: "abcdef1", integratedCandidateSha: "fedcba1", verification: [] });
+  await repository.update(unapproved.id, { reviewStatus: "AWAITING_REVIEW" });
+  const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
+  const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const response = await fetch(`${base}/api/internal/splinter/jobs?state=QUEUED`, { headers: { "x-splinter-relay-token": "relay-secret" } }); const body = await response.json();
+    const recovered = body.jobs.find((job) => job.id === eligible.id);
+    assert.equal(response.status, 200); assert.equal(recovered.state, "SUCCEEDED"); assert.equal(recovered.integration.integratedCandidateSha, "fedcba1"); assert.equal(recovered.deployment.status, "NOT_REQUESTED"); assert.equal(body.jobs.some((job) => job.id === unapproved.id), false);
+    const starts = await Promise.allSettled([service.beginDeployment(eligible.id, "1234567", "fedcba1"), service.beginDeployment(eligible.id, "1234567", "fedcba1")]);
+    assert.equal(starts.filter((result) => result.status === "fulfilled").length, 1);
+    assert.equal((await repository.get(eligible.id)).deployment.status, "DEPLOYING");
+    const afterStart = await fetch(`${base}/api/internal/splinter/jobs?state=QUEUED`, { headers: { "x-splinter-relay-token": "relay-secret" } });
+    assert.equal((await afterStart.json()).jobs.some((job) => job.id === eligible.id), false);
+  } finally { await new Promise((resolve) => server.close(resolve)); }
+});
+
 test("unintegrated, stale, or failed deployment evidence cannot become known-good", async () => {
   const { repository, service } = await queuedService();
   const approved = await approvedCodeChange(service, repository, "splinter-deployment-reject");

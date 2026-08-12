@@ -19,6 +19,7 @@ export interface SplinterRepository {
   listQueued(limit: number): Promise<SplinterJob[]>;
   update(id: string, patch: SplinterJobUpdate): Promise<SplinterJob | null>;
   compareAndSet(id: string, expectedState: SplinterJobState, patch: SplinterJobUpdate): Promise<SplinterJob | null>;
+  claimDeploymentStart(id: string, patch: SplinterJobUpdate): Promise<SplinterJob | null>;
 }
 
 export interface SplinterRepositoryOptions {
@@ -70,6 +71,15 @@ function updateRecord(existing: SplinterJob, patch: SplinterJobUpdate, timestamp
   });
 }
 
+function deploymentRecoveryEligible(job: SplinterJob): boolean {
+  return job.state === "SUCCEEDED" && job.result === "PASS" && job.executionMode === "CODE_CHANGE"
+    && !job.nonPromotable && job.reviewStatus === "APPROVED" && job.review?.reviewResult === "PASS"
+    && Boolean(job.workerResult?.commitSha) && job.workerResult?.commitSha === job.review?.reviewedCommitSha
+    && (job.review?.blockingFindings.length ?? 1) === 0 && job.reviewCycleCount <= job.maxReviewCycles
+    && job.integration.status === "PASSED" && Boolean(job.integration.integratedCandidateSha)
+    && job.deployment.status === "NOT_REQUESTED";
+}
+
 export class InMemorySplinterRepository implements SplinterRepository {
   private readonly jobs = new Map<string, SplinterJob>();
   private readonly now: () => string;
@@ -93,7 +103,7 @@ export class InMemorySplinterRepository implements SplinterRepository {
 
   async listQueued(limit: number): Promise<SplinterJob[]> {
     return [...this.jobs.values()]
-      .filter((job) => job.state === "QUEUED")
+      .filter((job) => job.state === "QUEUED" || deploymentRecoveryEligible(job))
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id))
       .slice(0, limit);
   }
@@ -109,6 +119,14 @@ export class InMemorySplinterRepository implements SplinterRepository {
   async compareAndSet(id: string, expectedState: SplinterJobState, patch: SplinterJobUpdate): Promise<SplinterJob | null> {
     const existing = this.jobs.get(id);
     if (!existing || existing.state !== expectedState) return null;
+    const record = updateRecord(existing, patch, this.now());
+    this.jobs.set(id, record);
+    return record;
+  }
+
+  async claimDeploymentStart(id: string, patch: SplinterJobUpdate): Promise<SplinterJob | null> {
+    const existing = this.jobs.get(id);
+    if (!existing || existing.state !== "SUCCEEDED" || existing.deployment.status !== "NOT_REQUESTED") return null;
     const record = updateRecord(existing, patch, this.now());
     this.jobs.set(id, record);
     return record;
@@ -142,13 +160,19 @@ export class FirestoreSplinterRepository implements SplinterRepository {
   }
 
   async listQueued(limit: number): Promise<SplinterJob[]> {
-    const snapshot = await this.db.collection("admin").doc("splinter").collection("splinterJobs")
+    const collection = this.db.collection("admin").doc("splinter").collection("splinterJobs");
+    const queued = await collection
       .where("state", "==", "QUEUED")
       .orderBy("createdAt", "asc")
       .orderBy("id", "asc")
       .limit(limit)
       .get();
-    return snapshot.docs.map((document) => splinterJobSchema.parse(document.data()));
+    const succeeded = await collection.where("state", "==", "SUCCEEDED").get();
+    return [...queued.docs, ...succeeded.docs]
+      .map((document) => splinterJobSchema.parse(document.data()))
+      .filter((job) => job.state === "QUEUED" || deploymentRecoveryEligible(job))
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id))
+      .slice(0, limit);
   }
 
   async update(id: string, patch: SplinterJobUpdate): Promise<SplinterJob | null> {
@@ -170,6 +194,19 @@ export class FirestoreSplinterRepository implements SplinterRepository {
       if (!snapshot.exists) return null;
       const existing = splinterJobSchema.parse(snapshot.data());
       if (existing.state !== expectedState) return null;
+      const record = updateRecord(existing, patch, this.now());
+      transaction.set(ref, firestoreDoc(record));
+      return record;
+    });
+  }
+
+  async claimDeploymentStart(id: string, patch: SplinterJobUpdate): Promise<SplinterJob | null> {
+    const ref = this.jobRef(id);
+    return this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) return null;
+      const existing = splinterJobSchema.parse(snapshot.data());
+      if (existing.state !== "SUCCEEDED" || existing.deployment.status !== "NOT_REQUESTED") return null;
       const record = updateRecord(existing, patch, this.now());
       transaction.set(ref, firestoreDoc(record));
       return record;

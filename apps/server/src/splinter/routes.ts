@@ -44,8 +44,8 @@ function createJobId(): string {
   return `splinter-${crypto.randomUUID()}`;
 }
 
-function queuedProjection(job: { id: string; goal: string; executionMode: string; allowedPaths: string[]; pathDiscoveryPolicy: string; acceptanceCriteria: string[]; requiredChecks: string[]; attemptCount: number; maxAttempts: number; lastCheckFailures: string[]; repairProofInjection?: string | undefined; rfi?: unknown; state: string; result: string; next: { owner: string; action: string }; createdAt: string; updatedAt: string }) {
-  return { id: job.id, goal: job.goal, executionMode: job.executionMode, allowedPaths: job.allowedPaths, pathDiscoveryPolicy: job.pathDiscoveryPolicy, acceptanceCriteria: job.acceptanceCriteria, requiredChecks: job.requiredChecks, attemptCount: job.attemptCount, maxAttempts: job.maxAttempts, lastCheckFailures: job.lastCheckFailures, repairProofInjection: job.repairProofInjection, rfi: job.rfi, state: job.state, result: job.result, next: job.next, createdAt: job.createdAt, updatedAt: job.updatedAt };
+function queuedProjection(job: { id: string; goal: string; executionMode: string; allowedPaths: string[]; pathDiscoveryPolicy: string; acceptanceCriteria: string[]; requiredChecks: string[]; attemptCount: number; maxAttempts: number; lastCheckFailures: string[]; repairProofInjection?: string | undefined; rfi?: unknown; integration: unknown; deployment: unknown; state: string; result: string; next: { owner: string; action: string }; createdAt: string; updatedAt: string }) {
+  return { id: job.id, goal: job.goal, executionMode: job.executionMode, allowedPaths: job.allowedPaths, pathDiscoveryPolicy: job.pathDiscoveryPolicy, acceptanceCriteria: job.acceptanceCriteria, requiredChecks: job.requiredChecks, attemptCount: job.attemptCount, maxAttempts: job.maxAttempts, lastCheckFailures: job.lastCheckFailures, repairProofInjection: job.repairProofInjection, rfi: job.rfi, integration: job.integration, deployment: job.deployment, state: job.state, result: job.result, next: job.next, createdAt: job.createdAt, updatedAt: job.updatedAt };
 }
 
 /** Backend-only relay boundary. It delegates all state changes to SplinterJobService. */

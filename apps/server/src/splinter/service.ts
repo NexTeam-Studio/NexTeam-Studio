@@ -236,8 +236,8 @@ export class SplinterJobService {
   async beginDeployment(id: string, previousKnownGoodStagingSha: string, requestedCandidateSha: string): Promise<SplinterJob> {
     const job = await this.repository.get(id);
     if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
-    if (!promotionEligible(job) || job.integration.status !== "PASSED" || job.integration.integratedCandidateSha !== requestedCandidateSha || job.integration.stagingBaseSha !== previousKnownGoodStagingSha) throw new SplinterTransitionError("INVALID_TRANSITION", "Splinter candidate is not eligible for staging deployment.");
-    const updated = await this.repository.compareAndSet(id, "SUCCEEDED", { deployment: { status: "DEPLOYING", previousKnownGoodStagingSha, requestedCandidateSha, verification: [] } });
+    if (!promotionEligible(job) || job.deployment.status !== "NOT_REQUESTED" || job.integration.status !== "PASSED" || job.integration.integratedCandidateSha !== requestedCandidateSha || job.integration.stagingBaseSha !== previousKnownGoodStagingSha) throw new SplinterTransitionError("INVALID_TRANSITION", "Splinter candidate is not eligible for staging deployment.");
+    const updated = await this.repository.claimDeploymentStart(id, { deployment: { status: "DEPLOYING", previousKnownGoodStagingSha, requestedCandidateSha, verification: [] } });
     if (!updated) throw new SplinterTransitionError("CONFLICT", "Splinter job changed before deployment could begin.");
     return updated;
   }
