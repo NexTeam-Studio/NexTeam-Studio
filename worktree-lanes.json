@@ -97,6 +97,8 @@
         "apps/server/src/context/**",
         "apps/server/src/core/**",
         "apps/server/src/selfrepair/**",
+        "apps/server/src/splinter/**",
+        "apps/server/test/splinter-repository.test.mjs",
         "apps/server/src/modules/nexops/areas/home/**",
         "apps/server/src/modules/nexops/shared/**",
         "apps/server/src/modules/nexops/runtime/**",
