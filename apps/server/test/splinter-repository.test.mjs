@@ -300,6 +300,26 @@ test("Splinter work selector requires completed dependency evidence and linked j
   const next = await selector.select("abcdef1"); assert.equal(next.item.workItemId, "dependent"); await assert.rejects(() => selector.reconcile("dependent", ["claim-only"]), /not complete/);
 });
 
+test("Splinter work selector preserves safe READ_ONLY defaults for pre-code-change registry records", async () => {
+  const work = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository(); const selector = new SplinterWorkSelector(work, jobs);
+  await work.create(workItem({ workItemId: "read-only-legacy", priority: 1 })); await selector.approve("read-only-legacy");
+  const selected = await selector.select("abcdef1");
+  assert.equal(selected.item.executionMode, "READ_ONLY"); assert.equal(selected.item.maxAttempts, 1);
+  assert.equal(selected.job.executionMode, "READ_ONLY"); assert.equal(selected.job.reviewRequired, false); assert.equal(selected.job.maxAttempts, 1);
+});
+
+test("Splinter work selector maps approved CODE_CHANGE authority into the existing job contract", async () => {
+  const work = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository(); const selector = new SplinterWorkSelector(work, jobs);
+  await work.create(workItem({ workItemId: "code-change", priority: 1, executionMode: "CODE_CHANGE", reviewRequired: true, maxAttempts: 3, allowedPaths: ["apps/server/test/splinter-repository.test.mjs"], pathDiscoveryPolicy: "EXPLICIT_PATHS", requiredChecks: ["SPLINTER_FOCUSED_TESTS", "SPLINTER_FOCUSED_TYPECHECK"], promotionPolicy: "NONE", nonPromotable: true }));
+  await selector.approve("code-change"); const selected = await selector.select("abcdef1");
+  assert.equal(selected.job.executionMode, "CODE_CHANGE"); assert.equal(selected.job.reviewRequired, true); assert.equal(selected.job.maxAttempts, 3);
+  assert.deepEqual(selected.job.allowedPaths, ["apps/server/test/splinter-repository.test.mjs"]); assert.equal(selected.job.pathDiscoveryPolicy, "EXPLICIT_PATHS");
+  assert.deepEqual(selected.job.workItemContext, { workItemId: "code-change", module: "splinter", tenantScope: "platform", promotionPolicy: "NONE", sourceRequirementRefs: ["docs/specs/test.md#A"], requirementRevision: "r1" });
+  await assert.rejects(() => work.create(workItem({ workItemId: "code-no-review", executionMode: "CODE_CHANGE", reviewRequired: false, allowedPaths: ["apps/server/test/splinter-repository.test.mjs"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 })), /independent review/);
+  await assert.rejects(() => work.create(workItem({ workItemId: "code-no-path", executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: [], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 })), /bounded write envelope/);
+  await assert.rejects(() => work.create(workItem({ workItemId: "code-no-check", executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/test/splinter-repository.test.mjs"], requiredChecks: [], maxAttempts: 3 })), /deterministic checks/);
+});
+
 test("legacy Atlas worker evidence remains readable while new builder evidence is Donatello", () => {
   const legacy = splinterJobSchema.parse({ ...validJob({ workerResult: { workerRunId: "atlas-legacy-run", status: "SUCCEEDED", summary: "Historical Atlas result.", filesInspected: [], filesChanged: [], testsPerformed: [], startedAt: timestamps[0], completedAt: timestamps[1] } }), createdAt: timestamps[0], updatedAt: timestamps[1] });
   assert.equal(legacy.workerResult.builderDisplayName, "Donatello");

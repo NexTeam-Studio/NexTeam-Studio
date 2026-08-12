@@ -52,8 +52,16 @@ export const splinterWorkItemSchema = z.object({
   workItemId: idSchema, title: z.string().min(1).max(200), goal: z.string().min(1).max(4000), module: z.string().min(1).max(100), tenantScope: z.string().min(1).max(100), priority: splinterWorkPrioritySchema,
   launchCritical: z.boolean().default(false), status: splinterWorkItemStatusSchema, dependencies: z.array(idSchema).max(30).default([]), blockedBy: splinterWorkBlockerSchema.optional(),
   acceptanceCriteria: z.array(z.string().min(1).max(1000)).max(50).default([]), requiredChecks: z.array(z.enum(["SPLINTER_FOCUSED_TESTS", "SPLINTER_FOCUSED_TYPECHECK"])).max(10).default([]), allowedPaths: z.array(z.string().min(1).max(256).refine((value) => !value.startsWith("/") && !value.startsWith("\\") && !value.includes("..") && !value.includes(":"))).max(50).default([]), pathDiscoveryPolicy: splinterPathDiscoveryPolicySchema.default("EXPLICIT_PATHS"),
+  executionMode: splinterExecutionModeSchema.default("READ_ONLY"), reviewRequired: z.boolean().default(false), maxAttempts: z.number().int().min(1).max(3).default(1),
   ownerDecisionRequired: z.boolean().default(false), promotionPolicy: splinterPromotionPolicySchema.default("NONE"), sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128), nonPromotable: z.boolean().default(false), reconciliationMode: z.boolean().default(false), reconciliation: splinterReconciliationEvidenceSchema.optional(), completedEvidenceRefs: z.array(z.string().min(1).max(256)).max(30).default([]), selectedStagingBaseSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), activeSplinterJobId: idSchema.optional(), createdAt: z.string().min(1), updatedAt: z.string().min(1)
-}).strict();
+}).strict().superRefine((item, context) => {
+  if (item.executionMode !== "CODE_CHANGE") return;
+  if (item.acceptanceCriteria.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["acceptanceCriteria"], message: "CODE_CHANGE work requires acceptance criteria." });
+  if (item.requiredChecks.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["requiredChecks"], message: "CODE_CHANGE work requires deterministic checks." });
+  if (item.allowedPaths.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["allowedPaths"], message: "CODE_CHANGE work requires an explicit bounded write envelope." });
+  if (!item.reviewRequired) context.addIssue({ code: z.ZodIssueCode.custom, path: ["reviewRequired"], message: "CODE_CHANGE work requires independent review." });
+  if (item.maxAttempts !== 3) context.addIssue({ code: z.ZodIssueCode.custom, path: ["maxAttempts"], message: "CODE_CHANGE work uses the controller-owned maximum of three attempts." });
+});
 export const splinterEscalationClassSchema = z.enum(["AUTONOMOUS", "EXTERNAL_BLOCKER", "OWNER_REQUIRED", "SAFETY_STOP"]);
 export const splinterResolutionScopeSchema = z.enum(["JOB_ONLY", "MODULE", "TENANT", "GLOBAL"]);
 export const splinterRfiOptionSchema = z.object({ id: z.string().min(1).max(64), label: z.string().min(1).max(300) }).strict();
@@ -127,6 +135,8 @@ export const splinterJobSchema = z.object({
   goal: z.string().min(1).max(4_000),
   executionMode: splinterExecutionModeSchema.default("READ_ONLY"),
   allowedPaths: z.array(splinterAllowedPathSchema).max(50).default([]),
+  pathDiscoveryPolicy: splinterPathDiscoveryPolicySchema.default("EXPLICIT_PATHS"),
+  workItemContext: z.object({ workItemId: idSchema, module: z.string().min(1).max(100), tenantScope: z.string().min(1).max(100), promotionPolicy: splinterPromotionPolicySchema, sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128) }).strict().optional(),
   acceptanceCriteria: z.array(z.string().min(1).max(1_000)).max(50).default([]),
   requiredChecks: z.array(splinterRequiredCheckSchema).max(10).default([]),
   attemptCount: z.number().int().min(0).default(0),
