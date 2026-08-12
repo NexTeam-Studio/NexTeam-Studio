@@ -298,18 +298,54 @@ test("Splinter relay API reads, claims, and records only validated outcomes thro
 
 test("Splinter review accepts only matching autonomous commit evidence and preserves rejects", async () => {
   const { job, repository, service } = await queuedService();
+  await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 });
   await service.transition(job.id, "RUNNING");
   await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
   const review = { reviewResult: "REJECT", summary: "Needs a test.", blockingFindings: ["Missing focused coverage."], nonBlockingFindings: [], reviewedCommitSha: "abcdef1", reviewerRunId: "raphael-1", reviewerProvider: "anthropic", reviewerModel: "claude-sonnet-4-5", startedAt: timestamps[0], completedAt: timestamps[1] };
   const updated = await service.submitReview(job.id, review);
-  assert.equal(updated.review.reviewResult, "REJECT"); assert.deepEqual(updated.review.blockingFindings, ["Missing focused coverage."]);
+  assert.equal(updated.state, "RUNNING"); assert.equal(updated.result, "PENDING"); assert.equal(updated.reviewStatus, "REJECTED"); assert.equal(updated.review.reviewResult, "REJECT"); assert.deepEqual(updated.review.blockingFindings, ["Missing focused coverage."]);
   await assert.rejects(() => service.submitReview(job.id, { ...review, reviewedCommitSha: "deadbee" }), { code: "INVALID_TRANSITION" });
 });
 
 test("Splinter bounds Raphael review cycles at three while preserving review history", async () => {
-  const { job, repository, service } = await queuedService(); await service.transition(job.id, "RUNNING");
+  const { job, repository, service } = await queuedService(); await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 }); await service.transition(job.id, "RUNNING");
   await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: [], testsPerformed: [], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
-  const review = (run) => ({ reviewResult: "REJECT", summary: `reject ${run}`, blockingFindings: ["inside allowed path"], nonBlockingFindings: [], reviewedCommitSha: "abcdef1", reviewerRunId: `raphael-${run}`, reviewerProvider: "anthropic", reviewerModel: "claude", startedAt: timestamps[0], completedAt: timestamps[1] });
-  await service.submitReview(job.id, review(1)); await service.submitReview(job.id, review(2)); const third = await service.submitReview(job.id, review(3));
-  assert.equal(third.reviewCycleCount, 3); assert.equal(third.reviewHistory.length, 3); await assert.rejects(() => service.submitReview(job.id, review(4)), { code: "INVALID_TRANSITION" });
+  const review = (run, reviewedCommitSha) => ({ reviewResult: "REJECT", summary: `reject ${run}`, blockingFindings: ["inside allowed path"], nonBlockingFindings: [], reviewedCommitSha, reviewerRunId: `raphael-${run}`, reviewerProvider: "anthropic", reviewerModel: "claude", startedAt: timestamps[0], completedAt: timestamps[1] });
+  await service.submitReview(job.id, review(1, "abcdef1")); await service.recordReviewRepair(job.id, { workerRunId: "repair-1", status: "SUCCEEDED", summary: "repaired", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], commitSha: "abcdef2", startedAt: timestamps[0], completedAt: timestamps[1] });
+  await service.submitReview(job.id, review(2, "abcdef2")); await service.recordReviewRepair(job.id, { workerRunId: "repair-2", status: "SUCCEEDED", summary: "repaired", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], commitSha: "abcdef3", startedAt: timestamps[0], completedAt: timestamps[1] }); const third = await service.submitReview(job.id, review(3, "abcdef3"));
+  assert.equal(third.reviewCycleCount, 3); assert.equal(third.reviewHistory.length, 3); await assert.rejects(() => service.submitReview(job.id, review(4, "abcdef3")), { code: "INVALID_TRANSITION" });
+});
+
+test("review-required code-change builder success remains awaiting Raphael approval", async () => {
+  const { job, repository, service } = await queuedService();
+  await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 }); await service.transition(job.id, "RUNNING");
+  const built = await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
+  assert.equal(built.state, "RUNNING"); assert.equal(built.result, "PENDING"); assert.equal(built.reviewStatus, "AWAITING_REVIEW");
+});
+
+test("only an exact Raphael PASS finalizes a review-required code change", async () => {
+  const { job, repository, service } = await queuedService();
+  await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 }); await service.transition(job.id, "RUNNING");
+  await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
+  const review = (reviewResult, reviewedCommitSha = "abcdef1") => ({ reviewResult, summary: "review", blockingFindings: reviewResult === "REJECT" ? ["fix"] : [], nonBlockingFindings: [], reviewedCommitSha, reviewerRunId: `raphael-${reviewResult}`, reviewerProvider: "anthropic", reviewerModel: "claude", startedAt: timestamps[0], completedAt: timestamps[1] });
+  await assert.rejects(() => service.submitReview(job.id, review("PASS", "deadbee")), { code: "INVALID_TRANSITION" });
+  assert.equal((await repository.get(job.id)).state, "RUNNING");
+  const approved = await service.submitReview(job.id, review("PASS"));
+  assert.equal(approved.state, "SUCCEEDED"); assert.equal(approved.result, "PASS"); assert.equal(approved.reviewStatus, "APPROVED");
+});
+
+test("infrastructure failure and reject cannot finalize a review-required code change", async () => {
+  for (const reviewResult of ["INFRASTRUCTURE_FAILURE", "REJECT"]) {
+    const { job, repository, service } = await queuedService();
+    await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 }); await service.transition(job.id, "RUNNING");
+    await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
+    const result = await service.submitReview(job.id, { reviewResult, summary: "not approved", blockingFindings: reviewResult === "REJECT" ? ["fix"] : [], nonBlockingFindings: [], reviewedCommitSha: "abcdef1", reviewerRunId: `raphael-${reviewResult}`, reviewerProvider: "anthropic", reviewerModel: "claude", startedAt: timestamps[0], completedAt: timestamps[1] });
+    assert.equal(result.state, "RUNNING"); assert.equal(result.result, "PENDING");
+  }
+});
+
+test("read-only worker success remains final without Raphael review", async () => {
+  const { job, service } = await queuedService(); await service.transition(job.id, "RUNNING");
+  const finished = await service.submitWorkerOutcome(job.id, { workerRunId: "reader", status: "SUCCEEDED", summary: "done", filesInspected: ["package.json"], filesChanged: [], testsPerformed: [], startedAt: timestamps[0], completedAt: timestamps[1] });
+  assert.equal(finished.state, "SUCCEEDED"); assert.equal(finished.result, "PASS"); assert.equal(finished.reviewStatus, "NOT_REQUIRED");
 });

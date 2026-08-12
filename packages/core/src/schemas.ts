@@ -48,6 +48,8 @@ export const splinterReviewSchema = z.object({
   completedAt: z.string().min(1)
 }).strict();
 
+export const splinterReviewStatusSchema = z.enum(["NOT_REQUIRED", "AWAITING_REVIEW", "APPROVED", "REJECTED", "INFRASTRUCTURE_FAILURE"]);
+
 const splinterAllowedPathSchema = z.string().min(1).max(256).refine(
   (value) => !value.startsWith("/") && !value.startsWith("\\") && !value.includes("..") && !value.includes(":"),
   "Splinter allowed paths must be repository-relative."
@@ -75,6 +77,8 @@ export const splinterJobSchema = z.object({
   maxAttempts: z.number().int().min(1).max(3).default(1),
   lastCheckFailures: z.array(z.string().min(1).max(500)).max(10).default([]),
   repairProofInjection: splinterRepairProofInjectionSchema.optional(),
+  reviewRequired: z.boolean().default(false),
+  reviewStatus: splinterReviewStatusSchema.default("NOT_REQUIRED"),
   review: splinterReviewSchema.optional(),
   reviewCycleCount: z.number().int().min(0).default(0),
   maxReviewCycles: z.number().int().min(1).max(3).default(3),

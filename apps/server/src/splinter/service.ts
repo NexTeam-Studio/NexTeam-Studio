@@ -39,6 +39,10 @@ function redactWorkerText(value: string): string {
   return value.replace(/[\r\n\t]+/g, " ").replace(/\b(Bearer\s+)[^\s]+/gi, "$1[REDACTED]").replace(/\b(api[_-]?key|token|password|secret|credential|authorization)\s*[:=]\s*[^\s,;]+/gi, "$1=[REDACTED]").slice(0, 500);
 }
 
+function requiresRaphaelReview(job: SplinterJob): boolean {
+  return job.executionMode === "CODE_CHANGE" && job.reviewRequired;
+}
+
 function transitionPatch(targetState: SplinterJobState, input: SplinterTransitionInput, timestamp: string) {
   switch (targetState) {
     case "RUNNING": {
@@ -121,8 +125,17 @@ export class SplinterJobService {
     const job = await this.repository.get(id);
     if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
     if (job.state !== "RUNNING") throw new SplinterTransitionError("INVALID_TRANSITION", "Worker outcomes require a RUNNING Splinter job.");
-    const recorded = await this.repository.compareAndSet(id, "RUNNING", { workerResult: safe });
+    const recorded = await this.repository.compareAndSet(id, "RUNNING", {
+      workerResult: safe,
+      ...(safe.status === "SUCCEEDED" && requiresRaphaelReview(job) ? {
+        reviewStatus: "AWAITING_REVIEW" as const,
+        next: { owner: "splinter" as const, action: "Await independent Raphael review." },
+        result: "PENDING" as const,
+        lastError: null
+      } : {})
+    });
     if (!recorded) throw new SplinterTransitionError("CONFLICT", "Splinter job changed before its worker outcome could be recorded.");
+    if (safe.status === "SUCCEEDED" && requiresRaphaelReview(job)) return recorded;
     const target = safe.status;
     return this.transition(id, target, {
       ...(target === "AWAITING_HUMAN" ? { action: "Review the worker's stated human decision." } : {}),
@@ -153,25 +166,35 @@ export class SplinterJobService {
     const parsed = splinterReviewSchema.parse(review);
     const job = await this.repository.get(id);
     if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
-    if (job.state !== "SUCCEEDED" || !job.workerResult?.commitSha || job.workerResult.commitSha !== parsed.reviewedCommitSha) {
-      throw new SplinterTransitionError("INVALID_TRANSITION", "Review evidence does not match a completed autonomous commit.");
+    if (job.state !== "RUNNING" || job.reviewStatus !== "AWAITING_REVIEW" || !job.workerResult?.commitSha || job.workerResult.commitSha !== parsed.reviewedCommitSha) {
+      throw new SplinterTransitionError("INVALID_TRANSITION", "Review evidence does not match an autonomous commit awaiting review.");
     }
     const safe = { ...parsed, summary: redactWorkerText(parsed.summary), blockingFindings: parsed.blockingFindings.map(redactWorkerText), nonBlockingFindings: parsed.nonBlockingFindings.map(redactWorkerText) };
     if (job.reviewCycleCount >= job.maxReviewCycles) {
       throw new SplinterTransitionError("INVALID_TRANSITION", "The bounded Raphael review limit has been exhausted.");
     }
-    const updated = await this.repository.update(id, { review: safe, reviewCycleCount: job.reviewCycleCount + 1, reviewHistory: [...job.reviewHistory, safe] });
+    const updated = await this.repository.compareAndSet(id, "RUNNING", {
+      review: safe,
+      reviewCycleCount: job.reviewCycleCount + 1,
+      reviewHistory: [...job.reviewHistory, safe],
+      reviewStatus: safe.reviewResult === "PASS" ? "APPROVED" : safe.reviewResult === "REJECT" ? "REJECTED" : "INFRASTRUCTURE_FAILURE",
+      next: { owner: "splinter", action: safe.reviewResult === "PASS" ? "Finalize independently approved code change." : "Review is not approved; continue through the controller-owned review path." }
+    });
     if (!updated) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
-    return updated;
+    return safe.reviewResult === "PASS" ? this.transition(id, "SUCCEEDED") : updated;
   }
 
   async recordReviewRepair(id: string, outcome: SplinterWorkerResult): Promise<SplinterJob> {
     const parsed = splinterWorkerResultSchema.parse(outcome);
     const job = await this.repository.get(id);
-    if (!job || job.state !== "SUCCEEDED" || job.review?.reviewResult !== "REJECT" || !parsed.commitSha) {
-      throw new SplinterTransitionError("INVALID_TRANSITION", "Only a Raphael-rejected completed job can record a repaired commit.");
+    if (!job || job.state !== "RUNNING" || job.reviewStatus !== "REJECTED" || job.review?.reviewResult !== "REJECT" || !parsed.commitSha) {
+      throw new SplinterTransitionError("INVALID_TRANSITION", "Only a Raphael-rejected job can record a repaired commit.");
     }
-    const updated = await this.repository.update(id, { workerResult: { ...parsed, summary: redactWorkerText(parsed.summary) } });
+    const updated = await this.repository.compareAndSet(id, "RUNNING", {
+      workerResult: { ...parsed, summary: redactWorkerText(parsed.summary) },
+      reviewStatus: "AWAITING_REVIEW",
+      next: { owner: "splinter", action: "Await Raphael review of the repaired commit." }
+    });
     if (!updated) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
     return updated;
   }
