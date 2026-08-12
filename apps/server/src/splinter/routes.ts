@@ -68,6 +68,12 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
     if (!deps.workSelector || !ownerAuthorized(req, env)) return reject(res, 401, "Splinter owner authorization is required.");
     try { return res.json({ ok: true, item: await deps.workSelector.approve(req.params.id) }); } catch { return reject(res, 409, "Splinter work item approval was rejected."); }
   });
+  app.post("/api/internal/splinter/work-items/:id/block", async (req, res) => {
+    if (!deps.workRegistry || !ownerAuthorized(req, env)) return reject(res, 401, "Splinter owner authorization is required.");
+    const parsed = z.object({ classification: z.enum(["EXTERNAL_BLOCKER", "OWNER_REQUIRED", "SAFETY_STOP"]), detail: z.string().min(1).max(500) }).strict().safeParse(req.body);
+    if (!parsed.success) return reject(res, 400, "Splinter work blocker was rejected.");
+    try { const item = await deps.workRegistry.update(req.params.id, { status: parsed.data.classification === "EXTERNAL_BLOCKER" ? "BLOCKED" : parsed.data.classification, blockedBy: parsed.data }); return item ? res.json({ ok: true, item }) : reject(res, 404, "Splinter work item was not found."); } catch { return reject(res, 400, "Splinter work blocker was rejected."); }
+  });
   app.use("/api/internal/splinter", (req, res, next) => authorized(req, env) ? next() : reject(res, 401, "Splinter relay authorization is required."));
   app.post("/api/internal/splinter/work-items/select", async (req, res) => {
     if (!deps.workSelector) return reject(res, 503, "Splinter work selection is unavailable.");
