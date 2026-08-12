@@ -295,3 +295,13 @@ test("Splinter relay API reads, claims, and records only validated outcomes thro
     assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1/outcome`, { method: "POST", headers, body: JSON.stringify({ ...outcome, rawPrompt: "forbidden" }) })).status, 400);
   } finally { server.close(); }
 });
+
+test("Splinter review accepts only matching autonomous commit evidence and preserves rejects", async () => {
+  const { job, repository, service } = await queuedService();
+  await service.transition(job.id, "RUNNING");
+  await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
+  const review = { reviewResult: "REJECT", summary: "Needs a test.", blockingFindings: ["Missing focused coverage."], nonBlockingFindings: [], reviewedCommitSha: "abcdef1", reviewerRunId: "raphael-1", reviewerProvider: "anthropic", reviewerModel: "claude-sonnet-4-5", startedAt: timestamps[0], completedAt: timestamps[1] };
+  const updated = await service.submitReview(job.id, review);
+  assert.equal(updated.review.reviewResult, "REJECT"); assert.deepEqual(updated.review.blockingFindings, ["Missing focused coverage."]);
+  await assert.rejects(() => service.submitReview(job.id, { ...review, reviewedCommitSha: "deadbee" }), { code: "INVALID_TRANSITION" });
+});

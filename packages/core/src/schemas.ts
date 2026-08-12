@@ -35,6 +35,19 @@ export const splinterRequiredCheckSchema = z.enum([
 
 export const splinterRepairProofInjectionSchema = z.enum(["FOCUSED_TEST_ONCE"]);
 
+export const splinterReviewSchema = z.object({
+  reviewResult: z.enum(["PASS", "REJECT", "INFRASTRUCTURE_FAILURE"]),
+  summary: z.string().min(1).max(500),
+  blockingFindings: z.array(z.string().min(1).max(500)).max(20),
+  nonBlockingFindings: z.array(z.string().min(1).max(500)).max(20),
+  reviewedCommitSha: z.string().regex(/^[a-f0-9]{7,64}$/i),
+  reviewerRunId: z.string().min(1).max(128),
+  reviewerProvider: z.literal("anthropic"),
+  reviewerModel: z.string().min(1).max(128),
+  startedAt: z.string().min(1),
+  completedAt: z.string().min(1)
+}).strict();
+
 const splinterAllowedPathSchema = z.string().min(1).max(256).refine(
   (value) => !value.startsWith("/") && !value.startsWith("\\") && !value.includes("..") && !value.includes(":"),
   "Splinter allowed paths must be repository-relative."
@@ -62,6 +75,7 @@ export const splinterJobSchema = z.object({
   maxAttempts: z.number().int().min(1).max(3).default(1),
   lastCheckFailures: z.array(z.string().min(1).max(500)).max(10).default([]),
   repairProofInjection: splinterRepairProofInjectionSchema.optional(),
+  review: splinterReviewSchema.optional(),
   state: splinterJobStateSchema,
   next: z.object({
     owner: splinterJobOwnerSchema,
@@ -1859,6 +1873,7 @@ export type SplinterJobCreate = z.infer<typeof splinterJobCreateSchema>;
 export type SplinterJobUpdate = z.infer<typeof splinterJobUpdateSchema>;
 export type SplinterJobState = z.infer<typeof splinterJobStateSchema>;
 export type SplinterWorkerResult = z.infer<typeof splinterWorkerResultSchema>;
+export type SplinterReview = z.infer<typeof splinterReviewSchema>;
 export type TenantBrandingDoc = z.infer<typeof tenantBrandingSchema>;
 export type PlatformPlanDoc = z.infer<typeof platformPlanSchema>;
 export type TenantSubscriptionDoc = z.infer<typeof tenantSubscriptionSchema>;

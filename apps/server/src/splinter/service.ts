@@ -1,4 +1,4 @@
-import { idSchema, splinterJobStateSchema, splinterWorkerResultSchema, type SplinterJob, type SplinterJobState, type SplinterWorkerResult } from "@nexteam/core";
+import { idSchema, splinterJobStateSchema, splinterReviewSchema, splinterWorkerResultSchema, type SplinterJob, type SplinterJobState, type SplinterReview, type SplinterWorkerResult } from "@nexteam/core";
 import type { SplinterRepository } from "./repository.js";
 
 const ALLOWED_TRANSITIONS: Readonly<Record<SplinterJobState, readonly SplinterJobState[]>> = {
@@ -147,5 +147,18 @@ export class SplinterJobService {
     });
     if (updated) return updated;
     throw new SplinterTransitionError("CONFLICT", "Splinter job changed before its attempt could begin.");
+  }
+
+  async submitReview(id: string, review: SplinterReview): Promise<SplinterJob> {
+    const parsed = splinterReviewSchema.parse(review);
+    const job = await this.repository.get(id);
+    if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
+    if (job.state !== "SUCCEEDED" || !job.workerResult?.commitSha || job.workerResult.commitSha !== parsed.reviewedCommitSha) {
+      throw new SplinterTransitionError("INVALID_TRANSITION", "Review evidence does not match a completed autonomous commit.");
+    }
+    const safe = { ...parsed, summary: redactWorkerText(parsed.summary), blockingFindings: parsed.blockingFindings.map(redactWorkerText), nonBlockingFindings: parsed.nonBlockingFindings.map(redactWorkerText) };
+    const updated = await this.repository.update(id, { review: safe });
+    if (!updated) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
+    return updated;
   }
 }

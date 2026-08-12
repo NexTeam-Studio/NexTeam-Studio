@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { Express, Request, Response } from "express";
-import { idSchema, splinterExecutionModeSchema, splinterRepairProofInjectionSchema, splinterRequiredCheckSchema, splinterWorkerResultSchema } from "@nexteam/core";
+import { idSchema, splinterExecutionModeSchema, splinterRepairProofInjectionSchema, splinterRequiredCheckSchema, splinterReviewSchema, splinterWorkerResultSchema } from "@nexteam/core";
 import { z } from "zod";
 import type { SplinterRepository } from "./repository.js";
 import type { SplinterJobService } from "./service.js";
@@ -93,5 +93,9 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
   app.post("/api/internal/splinter/jobs/:id/outcome", async (req, res) => {
     try { return res.json({ ok: true, job: await deps.service.submitWorkerOutcome(req.params.id, splinterWorkerResultSchema.parse(req.body)) }); }
     catch { return reject(res, 400, "Splinter worker outcome was rejected."); }
+  });
+  app.post("/api/internal/splinter/jobs/:id/review", async (req, res) => {
+    try { return res.json({ ok: true, job: await deps.service.submitReview(req.params.id, splinterReviewSchema.parse(req.body)) }); }
+    catch { return reject(res, 400, "Splinter review evidence was rejected."); }
   });
 }
