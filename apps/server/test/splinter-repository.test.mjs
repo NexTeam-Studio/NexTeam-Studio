@@ -237,7 +237,9 @@ test("Splinter relay health returns only the safe controller version payload", a
   try {
     const response = await fetch(`${base}/api/internal/splinter/health`, { headers: { "x-splinter-relay-token": "relay-secret" } });
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ok: true, controllerVersion: "splinter-v1" });
+    const body = await response.json();
+    assert.deepEqual(Object.keys(body).sort(), ["controllerVersion", "ok"]);
+    assert.deepEqual(body, { ok: true, controllerVersion: "splinter-v1" });
   } finally { server.close(); }
 });
 
