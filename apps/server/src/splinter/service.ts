@@ -55,11 +55,12 @@ function promotionEligible(job: SplinterJob): boolean {
 
 function retryEligible(job: SplinterJob): boolean {
   const candidate = job.integration.integratedCandidateSha;
+  const stagingBase = job.integration.stagingBaseSha;
   return promotionEligible(job)
     && job.deployment.status === "FAILED"
     && job.integration.status === "PASSED"
     && Boolean(candidate)
-    && job.deployment.previousKnownGoodStagingSha === job.integration.stagingBaseSha
+    && Boolean(stagingBase)
     && (job.deploymentHistory?.length ?? 0) < 3
     && job.escalation?.classification !== "SAFETY_STOP"
     && !(job.rfi && !job.rfi.resolvedAt);
@@ -265,7 +266,7 @@ export class SplinterJobService {
     return updated;
   }
 
-  /** Retries exactly one failed staging deployment using the current integrated candidate. */
+  /** Archives the failed deployment, then retries using only the current passed integration. */
   async retryFailedDeployment(id: string): Promise<SplinterJob> {
     const job = await this.repository.get(id);
     if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);

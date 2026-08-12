@@ -547,14 +547,17 @@ async function failedDeployment(service, repository, id = "splinter-deployment-r
   return service.recordDeployment(approved.id, { status: "FAILED", previousKnownGoodStagingSha: "1234567", requestedCandidateSha: "fedcba1", deploymentRunId: "staging-run-failed", verification: ["health failed"], error: "safe failure" });
 }
 
-test("an eligible failed staging deployment retries atomically with preserved audited failure evidence", async () => {
+test("a regenerated passed integration retries atomically while preserving failed deployment evidence", async () => {
   const { repository, service } = await queuedService();
   const failed = await failedDeployment(service, repository);
+  const failedEvidence = structuredClone(failed.deployment);
+  await service.beginIntegration(failed.id, "7654321", "abcdef1");
+  await service.recordIntegration(failed.id, { status: "PASSED", stagingBaseSha: "7654321", approvedCommitSha: "abcdef1", integratedCandidateSha: "c0ffee2", verification: ["regenerated checks passed"] });
   const retries = await Promise.allSettled([service.retryFailedDeployment(failed.id), service.retryFailedDeployment(failed.id)]);
   assert.equal(retries.filter((result) => result.status === "fulfilled").length, 1);
   const retried = retries.find((result) => result.status === "fulfilled").value;
-  assert.equal(retried.state, "RUNNING"); assert.equal(retried.deployment.status, "DEPLOYING"); assert.equal(retried.deployment.requestedCandidateSha, "fedcba1");
-  assert.equal(retried.deploymentHistory.length, 1); assert.deepEqual(retried.deploymentHistory[0].deployment, failed.deployment); assert.equal(retried.deploymentHistory[0].retriedBy, "splinter");
+  assert.equal(retried.state, "RUNNING"); assert.equal(retried.deployment.status, "DEPLOYING"); assert.equal(retried.deployment.previousKnownGoodStagingSha, "7654321"); assert.equal(retried.deployment.requestedCandidateSha, "c0ffee2");
+  assert.equal(retried.deploymentHistory.length, 1); assert.deepEqual(retried.deploymentHistory[0].deployment, failedEvidence); assert.equal(retried.deploymentHistory[0].deployment.previousKnownGoodStagingSha, "1234567"); assert.equal(retried.deploymentHistory[0].deployment.requestedCandidateSha, "fedcba1"); assert.equal(retried.deploymentHistory[0].deployment.deploymentRunId, "staging-run-failed"); assert.equal(retried.deploymentHistory[0].deployment.error, "safe failure"); assert.equal(retried.deploymentHistory[0].retriedBy, "splinter");
 });
 
 test("deployment retry binds only the current integration candidate and rejects ineligible conditions", async () => {
@@ -565,9 +568,12 @@ test("deployment retry binds only the current integration candidate and rejects 
   try {
     const arbitrary = await fetch(`${base}/api/internal/splinter/jobs/${failed.id}/deployment/retry`, { method: "POST", headers: { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" }, body: JSON.stringify({ requestedCandidateSha: "deadbee" }) });
     assert.equal(arbitrary.status, 400);
-    await repository.update(failed.id, { integration: { ...failed.integration, integratedCandidateSha: "deadbee" } });
-    const retried = await service.retryFailedDeployment(failed.id);
+    await repository.update(failed.id, { integration: { ...failed.integration, stagingBaseSha: "7654321", integratedCandidateSha: "deadbee" } });
+    const retry = await fetch(`${base}/api/internal/splinter/jobs/${failed.id}/deployment/retry`, { method: "POST", headers: { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" }, body: "{}" });
+    assert.equal(retry.status, 200);
+    const { job: retried } = await retry.json();
     assert.equal(retried.deployment.requestedCandidateSha, "deadbee");
+    assert.equal(retried.deployment.previousKnownGoodStagingSha, "7654321");
     assert.equal(retried.deploymentHistory[0].deployment.requestedCandidateSha, "fedcba1");
     await repository.update(failed.id, { state: "SUCCEEDED", result: "PASS", deployment: failed.deployment, deploymentHistory: undefined, integration: failed.integration, nonPromotable: true });
     await assert.rejects(() => service.retryFailedDeployment(failed.id), { code: "INVALID_TRANSITION" });
