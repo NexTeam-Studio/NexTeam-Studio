@@ -114,6 +114,11 @@ export const splinterDeploymentSchema = z.object({
   verification: z.array(z.string().min(1).max(256)).max(20).default([]),
   error: z.string().min(1).max(500).optional()
 }).strict();
+export const splinterDeploymentHistorySchema = z.object({
+  deployment: splinterDeploymentSchema,
+  retriedAt: z.string().min(1),
+  retriedBy: z.literal("splinter")
+}).strict();
 
 const splinterAllowedPathSchema = z.string().min(1).max(256).refine(
   (value) => !value.startsWith("/") && !value.startsWith("\\") && !value.includes("..") && !value.includes(":"),
@@ -151,6 +156,7 @@ export const splinterJobSchema = z.object({
   workerHistory: z.array(z.lazy(() => splinterWorkerResultSchema)).max(6).default([]),
   integration: splinterIntegrationSchema.default({ status: "NOT_REQUESTED", verification: [] }),
   deployment: splinterDeploymentSchema.default({ status: "NOT_REQUESTED", verification: [] }),
+  deploymentHistory: z.array(splinterDeploymentHistorySchema).max(3).optional(),
   review: splinterReviewSchema.optional(),
   reviewCycleCount: z.number().int().min(0).default(0),
   maxReviewCycles: z.number().int().min(1).max(3).default(3),

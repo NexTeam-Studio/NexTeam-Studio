@@ -53,6 +53,19 @@ function promotionEligible(job: SplinterJob): boolean {
     && (job.review?.blockingFindings.length ?? 1) === 0 && job.reviewCycleCount <= job.maxReviewCycles;
 }
 
+function retryEligible(job: SplinterJob): boolean {
+  const candidate = job.integration.integratedCandidateSha;
+  return promotionEligible(job)
+    && job.deployment.status === "FAILED"
+    && job.integration.status === "PASSED"
+    && Boolean(candidate)
+    && job.deployment.requestedCandidateSha === candidate
+    && job.deployment.previousKnownGoodStagingSha === job.integration.stagingBaseSha
+    && (job.deploymentHistory?.length ?? 0) < 3
+    && job.escalation?.classification !== "SAFETY_STOP"
+    && !(job.rfi && !job.rfi.resolvedAt);
+}
+
 function transitionPatch(targetState: SplinterJobState, input: SplinterTransitionInput, timestamp: string) {
   switch (targetState) {
     case "RUNNING": {
@@ -247,8 +260,29 @@ export class SplinterJobService {
     const job = await this.repository.get(id);
     if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
     if (job.deployment.status !== "DEPLOYING" || job.deployment.previousKnownGoodStagingSha !== parsed.previousKnownGoodStagingSha || job.deployment.requestedCandidateSha !== parsed.requestedCandidateSha) throw new SplinterTransitionError("INVALID_TRANSITION", "Deployment result does not match the active Splinter deployment.");
-    const updated = await this.repository.compareAndSet(id, "SUCCEEDED", { deployment: parsed });
+    const expectedState = job.state;
+    const updated = await this.repository.compareAndSet(id, expectedState, { deployment: parsed, ...(expectedState === "RUNNING" ? { state: "SUCCEEDED" as const, next: { owner: "splinter" as const, action: "No further action required." }, result: "PASS" as const } : {}) });
     if (!updated) throw new SplinterTransitionError("CONFLICT", "Splinter job changed before deployment result could be recorded.");
+    return updated;
+  }
+
+  /** Retries exactly one failed staging deployment using the current integrated candidate. */
+  async retryFailedDeployment(id: string): Promise<SplinterJob> {
+    const job = await this.repository.get(id);
+    if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
+    if (!retryEligible(job)) {
+      throw new SplinterTransitionError("INVALID_TRANSITION", "Only the current integrated candidate from an eligible failed staging deployment can be retried.");
+    }
+    const candidate = job.integration.integratedCandidateSha!;
+    const previousKnownGoodStagingSha = job.integration.stagingBaseSha!;
+    const updated = await this.repository.compareAndSet(id, "SUCCEEDED", {
+      state: "RUNNING",
+      next: { owner: "splinter", action: "Retry the authorized staging deployment." },
+      result: "PENDING",
+      deploymentHistory: [...(job.deploymentHistory ?? []), { deployment: job.deployment, retriedAt: this.now(), retriedBy: "splinter" }],
+      deployment: { status: "DEPLOYING", previousKnownGoodStagingSha, requestedCandidateSha: candidate, verification: [] }
+    });
+    if (!updated) throw new SplinterTransitionError("CONFLICT", "Splinter deployment retry was already claimed or the job changed.");
     return updated;
   }
 

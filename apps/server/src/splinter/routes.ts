@@ -197,6 +197,11 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
     try { return res.json({ ok: true, job: await deps.service.beginDeployment(req.params.id, parsed.data.previousKnownGoodStagingSha, parsed.data.requestedCandidateSha) }); }
     catch { return reject(res, 400, "Splinter deployment request was rejected."); }
   });
+  app.post("/api/internal/splinter/jobs/:id/deployment/retry", async (req, res) => {
+    if (!z.object({}).strict().safeParse(req.body ?? {}).success) return reject(res, 400, "Splinter deployment retry was rejected.");
+    try { return res.json({ ok: true, job: await deps.service.retryFailedDeployment(req.params.id) }); }
+    catch { return reject(res, 409, "Splinter deployment retry was rejected."); }
+  });
   app.post("/api/internal/splinter/jobs/:id/deployment/result", async (req, res) => {
     const parsed = z.object({ previousKnownGoodStagingSha: z.string().regex(/^[a-f0-9]{7,64}$/i), requestedCandidateSha: z.string().regex(/^[a-f0-9]{7,64}$/i), actualLiveSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), deploymentRunId: z.string().min(1).max(128).optional(), verification: z.array(z.string().min(1).max(256)).max(20).default([]), status: z.enum(["PASSED", "FAILED", "ROLLED_BACK", "ROLLBACK_FAILED", "STALE"]), error: z.string().min(1).max(500).optional() }).strict().safeParse(req.body);
     if (!parsed.success || !splinterDeploymentStatusSchema.safeParse(parsed.data.status).success) return reject(res, 400, "Splinter deployment result was rejected.");
