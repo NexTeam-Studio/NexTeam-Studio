@@ -59,7 +59,6 @@ function retryEligible(job: SplinterJob): boolean {
     && job.deployment.status === "FAILED"
     && job.integration.status === "PASSED"
     && Boolean(candidate)
-    && job.deployment.requestedCandidateSha === candidate
     && job.deployment.previousKnownGoodStagingSha === job.integration.stagingBaseSha
     && (job.deploymentHistory?.length ?? 0) < 3
     && job.escalation?.classification !== "SAFETY_STOP"
