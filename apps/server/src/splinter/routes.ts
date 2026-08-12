@@ -101,4 +101,8 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
     try { return res.json({ ok: true, job: await deps.service.submitReview(req.params.id, splinterReviewSchema.parse(req.body)) }); }
     catch { return reject(res, 400, "Splinter review evidence was rejected."); }
   });
+  app.post("/api/internal/splinter/jobs/:id/repair", async (req, res) => {
+    try { return res.json({ ok: true, job: await deps.service.recordReviewRepair(req.params.id, splinterWorkerResultSchema.parse(req.body)) }); }
+    catch { return reject(res, 400, "Splinter repaired commit evidence was rejected."); }
+  });
 }

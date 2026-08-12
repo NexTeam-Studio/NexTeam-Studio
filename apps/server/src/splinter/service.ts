@@ -164,4 +164,15 @@ export class SplinterJobService {
     if (!updated) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
     return updated;
   }
+
+  async recordReviewRepair(id: string, outcome: SplinterWorkerResult): Promise<SplinterJob> {
+    const parsed = splinterWorkerResultSchema.parse(outcome);
+    const job = await this.repository.get(id);
+    if (!job || job.state !== "SUCCEEDED" || job.review?.reviewResult !== "REJECT" || !parsed.commitSha) {
+      throw new SplinterTransitionError("INVALID_TRANSITION", "Only a Raphael-rejected completed job can record a repaired commit.");
+    }
+    const updated = await this.repository.update(id, { workerResult: { ...parsed, summary: redactWorkerText(parsed.summary) } });
+    if (!updated) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
+    return updated;
+  }
 }
