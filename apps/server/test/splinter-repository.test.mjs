@@ -320,7 +320,7 @@ test("review-required code-change builder success remains awaiting Raphael appro
   const { job, repository, service } = await queuedService();
   await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 }); await service.transition(job.id, "RUNNING");
   const built = await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
-  assert.equal(built.state, "RUNNING"); assert.equal(built.result, "PENDING"); assert.equal(built.reviewStatus, "AWAITING_REVIEW");
+  assert.equal(built.state, "RUNNING"); assert.equal(built.result, "PENDING"); assert.equal(built.reviewStatus, "AWAITING_REVIEW"); assert.equal(built.workerHistory[0].workerRunId, "builder");
 });
 
 test("only an exact Raphael PASS finalizes a review-required code change", async () => {
@@ -348,4 +348,13 @@ test("read-only worker success remains final without Raphael review", async () =
   const { job, service } = await queuedService(); await service.transition(job.id, "RUNNING");
   const finished = await service.submitWorkerOutcome(job.id, { workerRunId: "reader", status: "SUCCEEDED", summary: "done", filesInspected: ["package.json"], filesChanged: [], testsPerformed: [], startedAt: timestamps[0], completedAt: timestamps[1] });
   assert.equal(finished.state, "SUCCEEDED"); assert.equal(finished.result, "PASS"); assert.equal(finished.reviewStatus, "NOT_REQUIRED");
+});
+
+test("review repair preserves both Atlas run records", async () => {
+  const { job, repository, service } = await queuedService();
+  await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 }); await service.transition(job.id, "RUNNING");
+  await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
+  await service.submitReview(job.id, { reviewResult: "REJECT", summary: "fix", blockingFindings: ["fix"], nonBlockingFindings: [], reviewedCommitSha: "abcdef1", reviewerRunId: "raphael-1", reviewerProvider: "anthropic", reviewerModel: "claude", startedAt: timestamps[0], completedAt: timestamps[1] });
+  const repaired = await service.recordReviewRepair(job.id, { workerRunId: "repair", status: "SUCCEEDED", summary: "fixed", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], baseSha: "abcdef0", commitSha: "abcdef2", startedAt: timestamps[0], completedAt: timestamps[1] });
+  assert.deepEqual(repaired.workerHistory.map((item) => item.workerRunId), ["builder", "repair"]);
 });

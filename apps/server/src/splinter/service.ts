@@ -127,6 +127,7 @@ export class SplinterJobService {
     if (job.state !== "RUNNING") throw new SplinterTransitionError("INVALID_TRANSITION", "Worker outcomes require a RUNNING Splinter job.");
     const recorded = await this.repository.compareAndSet(id, "RUNNING", {
       workerResult: safe,
+      workerHistory: [...job.workerHistory, safe],
       ...(safe.status === "SUCCEEDED" && requiresRaphaelReview(job) ? {
         reviewStatus: "AWAITING_REVIEW" as const,
         next: { owner: "splinter" as const, action: "Await independent Raphael review." },
@@ -192,6 +193,7 @@ export class SplinterJobService {
     }
     const updated = await this.repository.compareAndSet(id, "RUNNING", {
       workerResult: { ...parsed, summary: redactWorkerText(parsed.summary) },
+      workerHistory: [...job.workerHistory, { ...parsed, summary: redactWorkerText(parsed.summary) }],
       reviewStatus: "AWAITING_REVIEW",
       next: { owner: "splinter", action: "Await Raphael review of the repaired commit." }
     });

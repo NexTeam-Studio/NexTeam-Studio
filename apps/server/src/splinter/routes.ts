@@ -60,6 +60,7 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
         ...(input.repairProofInjection ? { repairProofInjection: input.repairProofInjection } : {}),
         reviewRequired: input.executionMode === "CODE_CHANGE",
         reviewStatus: "NOT_REQUIRED",
+        workerHistory: [],
         reviewCycleCount: 0,
         maxReviewCycles: 3,
         reviewHistory: [],
