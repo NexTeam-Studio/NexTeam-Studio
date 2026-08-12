@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createHmac } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import express from "express";
 import { ApprovalQueueService, clientSchema, InMemoryApprovalQueueRepository, invoiceSchema, quoteSchema } from "@nexteam/core";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
@@ -15,7 +15,7 @@ import { materializeQuoteRecord } from "../dist/crm/quoteFoundation.js";
 import { createCrmReadTools, createCrmReadToolsWithOptions, createCrmToolsWithOptions } from "../dist/crm/nexiTools.js";
 import { registerCrmRoutes } from "../dist/crm/routes.js";
 import { createStripeCheckoutSession, verifyStripeWebhookEvent } from "../dist/crm/stripe.js";
-import { assertAccessRole } from "../dist/auth/accessContext.js";
+import { assertAccessRole, createLocalDevSession } from "../dist/auth/accessContext.js";
 import { InMemorySchedulingRepository } from "../dist/scheduling/repository.js";
 
 const LEGACY_CRM_KEY = String.fromCharCode(106, 111, 98, 98, 101, 114);
@@ -1335,6 +1335,108 @@ test("TECHNICIAN role is blocked from manual quote approval authority", () => {
     role: "TECHNICIAN",
     accessKind: "internal"
   }, ["OWNER", "OFFICE_ADMIN"], "manualApproveQuote"), /role cannot perform/i);
+});
+
+test("office quote archive is tenant-bound, draft-only, and blocks stale approval", async () => {
+  const repository = new MemoryNativeCrmRepository({ clients: [client], properties: [property], jobs: [] });
+  const app = express();
+  app.use(express.json());
+  const env = { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" };
+  registerCrmRoutes(app, {
+    approvalQueue: new ApprovalQueueService(new InMemoryApprovalQueueRepository()),
+    memoryRepository: repository,
+    env
+  });
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const base = `http://127.0.0.1:${address.port}`;
+    const officeToken = createLocalDevSession("office@local.dev", undefined, "aquatrace", env).token;
+    const officeHeaders = { "content-type": "application/json", authorization: `Bearer ${officeToken}` };
+    const createDraft = async (title) => {
+      const response = await fetch(`${base}/api/crm/quotes`, {
+        method: "POST",
+        headers: officeHeaders,
+        body: JSON.stringify({
+          tenantId: "aquatrace",
+          clientId: "client_1",
+          title,
+          items: [{ kind: "catalog", catalogCode: "VGB-010", quantity: 1 }],
+          delivery: { mode: "draft" }
+        })
+      });
+      assert.equal(response.status, 201);
+      return (await response.json()).quote;
+    };
+
+    const draft = await createDraft("Archive-safe draft quote");
+    const stalePortalToken = "stale-portal-token";
+    await repository.updateQuote(draft.id, {
+      portal: { tokenHash: createHash("sha256").update(stalePortalToken).digest("hex") }
+    });
+
+    const unauthenticated = await fetch(`${base}/api/crm/quotes/${draft.id}/archive`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer localdev.invalid" },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    assert.equal(unauthenticated.status, 401);
+
+    const otherTenantToken = createLocalDevSession("owner@local.dev", undefined, "other-tenant", env).token;
+    const crossTenant = await fetch(`${base}/api/crm/quotes/${draft.id}/archive`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${otherTenantToken}` },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    assert.equal(crossTenant.status, 403);
+
+    const archivedResponse = await fetch(`${base}/api/crm/quotes/${draft.id}/archive`, {
+      method: "POST",
+      headers: officeHeaders,
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    const archivedBody = await archivedResponse.json();
+    assert.equal(archivedResponse.status, 200);
+    assert.equal(archivedBody.quote.status, "archived");
+    assert.equal(archivedBody.quote.id, draft.id);
+    assert.equal(archivedBody.quote.number, draft.number);
+    assert.deepEqual(archivedBody.quote.lineItems, draft.lineItems);
+    assert.deepEqual(archivedBody.quote.totals, draft.totals);
+
+    const manualApproval = await fetch(`${base}/api/crm/quotes/${draft.id}/manual-approve`, {
+      method: "POST",
+      headers: officeHeaders,
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    assert.equal(manualApproval.status, 409);
+
+    const stalePortalApproval = await fetch(`${base}/api/portal/quotes/${draft.id}/approve`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace", token: stalePortalToken, customerName: "Deborah Justice" })
+    });
+    assert.equal(stalePortalApproval.status, 409);
+
+    const sentDraft = await createDraft("Sent quote cannot archive");
+    const sentResponse = await fetch(`${base}/api/crm/quotes/${sentDraft.id}/send`, {
+      method: "POST",
+      headers: officeHeaders,
+      body: JSON.stringify({ tenantId: "aquatrace", mode: "mark_sent" })
+    });
+    assert.equal(sentResponse.status, 200);
+    const sentArchive = await fetch(`${base}/api/crm/quotes/${sentDraft.id}/archive`, {
+      method: "POST",
+      headers: officeHeaders,
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    assert.equal(sentArchive.status, 409);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
 });
 
 test("NativeAdapter writes invoices and renders invoice PDFs", async () => {

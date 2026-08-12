@@ -50,6 +50,16 @@ test("permission registry stays unique and the portal commands stay on authoriza
   assert.equal(portalApprove.requiredPermission, undefined);
 });
 
+test("quote archive contract is an office-only draft transition that preserves commercial history", () => {
+  const command = COMMANDS_BY_ID.get("quote.archive");
+  assert.ok(command);
+  assert.equal(command.actorSurface, "office_web");
+  assert.equal(command.requiredPermission, "quote.send");
+  assert.match(command.currentConditions[0].when, /draft/i);
+  assert.match(command.transitionResult, /identity, number, and commercial history/i);
+  assert.equal(command.auditEvent, "quote.archived");
+});
+
 test("quote dominant action derives atomic approval and renewal states", () => {
   const expired = deriveQuoteDominantAction({
     quoteStatus: "sent",

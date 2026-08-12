@@ -22,6 +22,10 @@ export const quoteManualApprovalBodySchema = z.object({
   tenantId: z.string().min(1).optional()
 });
 
+export const quoteArchiveBodySchema = z.object({
+  tenantId: z.string().min(1).optional()
+});
+
 export const createInvoiceFromQuoteBodySchema = z.object({
   tenantId: z.string().min(1).optional()
 });
