@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { Express, Request, Response } from "express";
-import { idSchema, splinterWorkerResultSchema } from "@nexteam/core";
+import { idSchema, splinterExecutionModeSchema, splinterRequiredCheckSchema, splinterWorkerResultSchema } from "@nexteam/core";
 import { z } from "zod";
 import type { SplinterRepository } from "./repository.js";
 import type { SplinterJobService } from "./service.js";
@@ -20,15 +20,23 @@ function reject(res: Response, status: number, message: string) { return res.sta
 const splinterJobCreateRequestSchema = z.object({
   id: idSchema.optional(),
   goal: z.string().min(1).max(4_000),
-  nextAction: z.string().min(1).max(1_000)
-}).strict();
+  nextAction: z.string().min(1).max(1_000),
+  executionMode: splinterExecutionModeSchema.default("READ_ONLY"),
+  allowedPaths: z.array(z.string().min(1).max(256)).max(50).default([]),
+  acceptanceCriteria: z.array(z.string().min(1).max(1_000)).max(50).default([]),
+  requiredChecks: z.array(splinterRequiredCheckSchema).max(10).default([])
+}).strict().superRefine((input, context) => {
+  if (input.executionMode === "CODE_CHANGE" && input.allowedPaths.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["allowedPaths"], message: "CODE_CHANGE jobs require allowed paths." });
+  if (input.executionMode === "CODE_CHANGE" && input.acceptanceCriteria.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["acceptanceCriteria"], message: "CODE_CHANGE jobs require acceptance criteria." });
+  if (input.executionMode === "CODE_CHANGE" && input.requiredChecks.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["requiredChecks"], message: "CODE_CHANGE jobs require deterministic checks." });
+});
 
 function createJobId(): string {
   return `splinter-${crypto.randomUUID()}`;
 }
 
-function queuedProjection(job: { id: string; goal: string; state: string; result: string; next: { owner: string; action: string }; createdAt: string; updatedAt: string }) {
-  return { id: job.id, goal: job.goal, state: job.state, result: job.result, next: job.next, createdAt: job.createdAt, updatedAt: job.updatedAt };
+function queuedProjection(job: { id: string; goal: string; executionMode: string; allowedPaths: string[]; acceptanceCriteria: string[]; requiredChecks: string[]; state: string; result: string; next: { owner: string; action: string }; createdAt: string; updatedAt: string }) {
+  return { id: job.id, goal: job.goal, executionMode: job.executionMode, allowedPaths: job.allowedPaths, acceptanceCriteria: job.acceptanceCriteria, requiredChecks: job.requiredChecks, state: job.state, result: job.result, next: job.next, createdAt: job.createdAt, updatedAt: job.updatedAt };
 }
 
 /** Backend-only relay boundary. It delegates all state changes to SplinterJobService. */
@@ -41,6 +49,10 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
       const job = await deps.repository.create({
         id: input.id ?? createJobId(),
         goal: input.goal,
+        executionMode: input.executionMode,
+        allowedPaths: input.allowedPaths,
+        acceptanceCriteria: input.acceptanceCriteria,
+        requiredChecks: input.requiredChecks,
         state: "QUEUED",
         next: { owner: "splinter", action: input.nextAction },
         result: "PENDING",

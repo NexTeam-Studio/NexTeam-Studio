@@ -240,6 +240,10 @@ test("Splinter relay API creates only normalized queued jobs through authenticat
     assert.equal((await fetch(`${base}/api/internal/splinter/jobs`, { method: "POST", headers, body: JSON.stringify({ goal: "invalid", nextAction: "reject", result: "PASS" }) })).status, 400);
     assert.equal((await fetch(`${base}/api/internal/splinter/jobs`, { method: "POST", headers, body: JSON.stringify({ goal: "invalid" }) })).status, 400);
     assert.equal((await repository.get("splinter-created-1")).state, "QUEUED");
+    const codeChange = await fetch(`${base}/api/internal/splinter/jobs`, { method: "POST", headers, body: JSON.stringify({ id: "splinter-code-change", goal: "Add a narrow health route.", nextAction: "Dispatch the controlled code task.", executionMode: "CODE_CHANGE", allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["Route responds safely."], requiredChecks: ["SPLINTER_FOCUSED_TESTS"] }) });
+    assert.equal(codeChange.status, 201); assert.equal((await codeChange.json()).job.executionMode, "CODE_CHANGE");
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs`, { method: "POST", headers, body: JSON.stringify({ goal: "invalid code change", nextAction: "reject", executionMode: "CODE_CHANGE", allowedPaths: [], acceptanceCriteria: [], requiredChecks: [] }) })).status, 400);
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs`, { method: "POST", headers, body: JSON.stringify({ goal: "invalid path", nextAction: "reject", executionMode: "CODE_CHANGE", allowedPaths: ["../outside.ts"], acceptanceCriteria: ["x"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"] }) })).status, 400);
   } finally { server.close(); }
 });
 

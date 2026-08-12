@@ -26,6 +26,18 @@ export const splinterJobOwnerSchema = z.enum(["splinter", "worker", "human"]);
 
 export const splinterJobResultSchema = z.enum(["PENDING", "PASS", "FAIL"]);
 
+export const splinterExecutionModeSchema = z.enum(["READ_ONLY", "CODE_CHANGE"]);
+
+export const splinterRequiredCheckSchema = z.enum([
+  "SPLINTER_FOCUSED_TESTS",
+  "SPLINTER_FOCUSED_TYPECHECK"
+]);
+
+const splinterAllowedPathSchema = z.string().min(1).max(256).refine(
+  (value) => !value.startsWith("/") && !value.startsWith("\\") && !value.includes("..") && !value.includes(":"),
+  "Splinter allowed paths must be repository-relative."
+);
+
 export const splinterLastErrorSchema = z.object({
   message: z.string().min(1).max(500),
   at: z.string().min(1)
@@ -34,12 +46,16 @@ export const splinterLastErrorSchema = z.object({
 export const splinterWorkerResultSchema = z.object({
   workerRunId: z.string().min(1).max(128), status: z.enum(["SUCCEEDED", "FAILED", "AWAITING_HUMAN"]), summary: z.string().min(1).max(500),
   filesInspected: z.array(z.string().min(1).max(256)).max(50), filesChanged: z.array(z.string().min(1).max(256)).max(50), testsPerformed: z.array(z.string().min(1).max(256)).max(50),
-  commitSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), error: z.string().min(1).max(500).optional(), startedAt: z.string().min(1), completedAt: z.string().min(1)
+  baseSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), branch: z.string().min(1).max(256).optional(), commitSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), error: z.string().min(1).max(500).optional(), startedAt: z.string().min(1), completedAt: z.string().min(1)
 }).strict();
 
 export const splinterJobSchema = z.object({
   id: idSchema,
   goal: z.string().min(1).max(4_000),
+  executionMode: splinterExecutionModeSchema.default("READ_ONLY"),
+  allowedPaths: z.array(splinterAllowedPathSchema).max(50).default([]),
+  acceptanceCriteria: z.array(z.string().min(1).max(1_000)).max(50).default([]),
+  requiredChecks: z.array(splinterRequiredCheckSchema).max(10).default([]),
   state: splinterJobStateSchema,
   next: z.object({
     owner: splinterJobOwnerSchema,
@@ -52,12 +68,22 @@ export const splinterJobSchema = z.object({
   updatedAt: z.string().min(1)
 });
 
-export const splinterJobCreateSchema = splinterJobSchema.omit({
+function validateSplinterCodeChange(job: { executionMode: "READ_ONLY" | "CODE_CHANGE"; allowedPaths: string[]; acceptanceCriteria: string[]; requiredChecks: string[] }, context: z.RefinementCtx): void {
+  if (job.executionMode === "CODE_CHANGE") {
+    if (job.allowedPaths.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["allowedPaths"], message: "CODE_CHANGE jobs require allowed paths." });
+    if (job.acceptanceCriteria.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["acceptanceCriteria"], message: "CODE_CHANGE jobs require acceptance criteria." });
+    if (job.requiredChecks.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["requiredChecks"], message: "CODE_CHANGE jobs require deterministic checks." });
+  }
+}
+
+const splinterJobCreateBaseSchema = splinterJobSchema.omit({
   createdAt: true,
   updatedAt: true
 });
 
-export const splinterJobUpdateSchema = splinterJobCreateSchema.omit({ id: true }).partial();
+export const splinterJobCreateSchema = splinterJobCreateBaseSchema.superRefine(validateSplinterCodeChange);
+
+export const splinterJobUpdateSchema = splinterJobCreateBaseSchema.omit({ id: true }).partial();
 
 
 export const addressSchema = z.object({
