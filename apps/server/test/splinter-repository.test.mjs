@@ -495,3 +495,89 @@ test("unintegrated, stale, or failed deployment evidence cannot become known-goo
   await service.recordIntegration(approved.id, { status: "STALE", stagingBaseSha: "1234567", approvedCommitSha: "abcdef1", verification: [], error: "staging advanced" });
   await assert.rejects(() => service.beginDeployment(approved.id, "1234567", "abcdef1"), { code: "INVALID_TRANSITION" });
 });
+
+function reconciliationWorkItem(overrides = {}) {
+  return {
+    workItemId: "request-foundation-reconciliation",
+    title: "First-class Request lifecycle foundation",
+    goal: "Reconcile the current Request foundation against approved requirements.",
+    module: "NexOps / CRM / Requests",
+    tenantScope: "Aquatrace-first reusable tenant architecture",
+    priority: 1,
+    launchCritical: true,
+    dependencies: [],
+    acceptanceCriteria: ["Current Request behavior is verified against the approved revision."],
+    requiredChecks: ["SPLINTER_FOCUSED_TESTS", "SPLINTER_FOCUSED_TYPECHECK"],
+    allowedPaths: [],
+    pathDiscoveryPolicy: "APPROVED_DISCOVERY",
+    ownerDecisionRequired: false,
+    promotionPolicy: "NONE",
+    sourceRequirementRefs: ["docs/specs/phase1/NEXOPS-OPERATING-MODEL-DECISIONS-20260712.md#1.1"],
+    requirementRevision: "2026-07-12-settled",
+    nonPromotable: false,
+    reconciliationMode: true,
+    completedEvidenceRefs: [],
+    ...overrides
+  };
+}
+
+function reconciliationEvidence(overrides = {}) {
+  return {
+    reconciliationId: "reconciliation-request-foundation",
+    sourceRequirementRefs: ["docs/specs/phase1/NEXOPS-OPERATING-MODEL-DECISIONS-20260712.md#1.1"],
+    requirementRevision: "2026-07-12-settled",
+    stagingShaVerified: "31b736e",
+    deterministicChecks: ["focused Request foundation tests: PASS", "server typecheck: PASS"],
+    liveChecks: ["staging version: PASS", "unauthenticated request protection: PASS"],
+    reviewResult: "PASS",
+    reviewedEvidence: ["raphael:raphael-reconciliation-1"],
+    missingEvidence: [],
+    reconciledAt: timestamps[1],
+    reconciledBy: "splinter",
+    completionStatus: "VERIFIED_COMPLETE",
+    ...overrides
+  };
+}
+
+test("pre-registry reconciliation completes only fully verified current evidence without creating a development job", async () => {
+  const registry = new InMemoryWorkRegistry();
+  const jobs = new InMemorySplinterRepository({ now: sequentialClock() });
+  const selector = new SplinterWorkSelector(registry, jobs);
+  await registry.create(reconciliationWorkItem());
+  const item = await selector.reconcilePreRegistry("request-foundation-reconciliation", reconciliationEvidence());
+  assert.equal(item.status, "COMPLETED");
+  assert.equal(item.activeSplinterJobId, undefined);
+  assert.deepEqual(item.completedEvidenceRefs, ["reconciliation:reconciliation-request-foundation", "raphael:raphael-reconciliation-1"]);
+  assert.equal((await jobs.listQueued()).length, 0);
+  assert.equal(await selector.select("31b736e"), null);
+});
+
+test("pre-registry reconciliation preserves partial evidence without a duplicate development job", async () => {
+  const registry = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository({ now: sequentialClock() }); const selector = new SplinterWorkSelector(registry, jobs);
+  await registry.create(reconciliationWorkItem({ workItemId: "request-partial" }));
+  const result = await selector.reconcilePreRegistry("request-partial", reconciliationEvidence({ reconciliationId: "reconciliation-partial", completionStatus: "PARTIALLY_VERIFIED", reviewResult: "INSUFFICIENT_EVIDENCE", liveChecks: [], missingEvidence: ["Authenticated Aquatrace live tenant acceptance is unavailable."] }));
+  assert.equal(result.status, "DRAFT"); assert.equal(result.reconciliation.completionStatus, "PARTIALLY_VERIFIED"); assert.equal(result.completedEvidenceRefs.length, 0); assert.equal((await jobs.listQueued()).length, 0);
+});
+
+test("pre-registry reconciliation rejects incomplete, stale, active, and self-certified completion evidence", async () => {
+  const registry = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository({ now: sequentialClock() }); const selector = new SplinterWorkSelector(registry, jobs);
+  await registry.create(reconciliationWorkItem({ workItemId: "request-incomplete" }));
+  await assert.rejects(() => selector.reconcilePreRegistry("request-incomplete", reconciliationEvidence({ completionStatus: "VERIFIED_COMPLETE", reviewResult: "REJECT" })));
+  await registry.create(reconciliationWorkItem({ workItemId: "request-stale", requirementRevision: "new-revision" }));
+  await assert.rejects(() => selector.reconcilePreRegistry("request-stale", reconciliationEvidence()));
+  await registry.create(reconciliationWorkItem({ workItemId: "request-active", activeSplinterJobId: "job-existing" }));
+  await assert.rejects(() => selector.reconcilePreRegistry("request-active", reconciliationEvidence()));
+  await assert.rejects(() => selector.reconcilePreRegistry("request-incomplete", { ...reconciliationEvidence(), reconciledBy: "donatello" }));
+});
+
+test("pre-registry reconciliation route is owner-only and relay authority cannot directly complete an item", async () => {
+  const registry = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository({ now: sequentialClock() }); const service = new SplinterJobService(jobs); const selector = new SplinterWorkSelector(registry, jobs);
+  await registry.create(reconciliationWorkItem({ workItemId: "request-route" }));
+  const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository: jobs, service, workRegistry: registry, workSelector: selector, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret", SPLINTER_OWNER_SERVICE_TOKEN: "owner-secret" } });
+  const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const body = JSON.stringify(reconciliationEvidence({ reconciliationId: "reconciliation-route" }));
+    assert.equal((await fetch(`${base}/api/internal/splinter/work-items/request-route/reconcile`, { method: "POST", headers: { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" }, body })).status, 401);
+    assert.equal((await fetch(`${base}/api/internal/splinter/work-items/request-route/reconcile`, { method: "POST", headers: { "content-type": "application/json", "x-splinter-owner-token": "owner-secret" }, body })).status, 200);
+  } finally { server.close(); }
+});

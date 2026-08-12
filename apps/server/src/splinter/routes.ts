@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { Express, Request, Response } from "express";
-import { idSchema, splinterDeploymentStatusSchema, splinterExecutionModeSchema, splinterIntegrationStatusSchema, splinterRepairProofInjectionSchema, splinterRequiredCheckSchema, splinterReviewSchema, splinterRfiSchema, splinterWorkerResultSchema } from "@nexteam/core";
+import { idSchema, splinterDeploymentStatusSchema, splinterExecutionModeSchema, splinterIntegrationStatusSchema, splinterReconciliationEvidenceSchema, splinterRepairProofInjectionSchema, splinterRequiredCheckSchema, splinterReviewSchema, splinterRfiSchema, splinterWorkerResultSchema } from "@nexteam/core";
 import { z } from "zod";
 import type { SplinterRepository } from "./repository.js";
 import type { SplinterJobService } from "./service.js";
@@ -60,9 +60,15 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
   });
   app.post("/api/internal/splinter/work-items", async (req, res) => {
     if (!deps.workRegistry || !ownerAuthorized(req, env)) return reject(res, 401, "Splinter owner authorization is required.");
-    const parsed = z.object({ workItemId: idSchema, title: z.string().min(1).max(200), goal: z.string().min(1).max(4000), module: z.string().min(1).max(100), tenantScope: z.string().min(1).max(100), priority: z.number().int().min(1).max(5), launchCritical: z.boolean().optional(), dependencies: z.array(idSchema).max(30).default([]), acceptanceCriteria: z.array(z.string().min(1).max(1000)).max(50), requiredChecks: z.array(splinterRequiredCheckSchema).max(10), allowedPaths: z.array(z.string().min(1).max(256)).max(50).default([]), pathDiscoveryPolicy: z.enum(["EXPLICIT_PATHS", "APPROVED_DISCOVERY"]).default("EXPLICIT_PATHS"), ownerDecisionRequired: z.boolean().default(false), promotionPolicy: z.enum(["NONE", "STAGING_ONLY"]).default("NONE"), sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128), nonPromotable: z.boolean().default(false) }).strict().safeParse(req.body);
+    const parsed = z.object({ workItemId: idSchema, title: z.string().min(1).max(200), goal: z.string().min(1).max(4000), module: z.string().min(1).max(100), tenantScope: z.string().min(1).max(100), priority: z.number().int().min(1).max(5), launchCritical: z.boolean().optional(), dependencies: z.array(idSchema).max(30).default([]), acceptanceCriteria: z.array(z.string().min(1).max(1000)).max(50), requiredChecks: z.array(splinterRequiredCheckSchema).max(10), allowedPaths: z.array(z.string().min(1).max(256)).max(50).default([]), pathDiscoveryPolicy: z.enum(["EXPLICIT_PATHS", "APPROVED_DISCOVERY"]).default("EXPLICIT_PATHS"), ownerDecisionRequired: z.boolean().default(false), promotionPolicy: z.enum(["NONE", "STAGING_ONLY"]).default("NONE"), sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128), nonPromotable: z.boolean().default(false), reconciliationMode: z.boolean().default(false) }).strict().safeParse(req.body);
     if (!parsed.success) return reject(res, 400, "Splinter work item creation was rejected.");
-    try { return res.status(201).json({ ok: true, item: await deps.workRegistry.create({ ...parsed.data, launchCritical: parsed.data.launchCritical ?? false, ownerDecisionRequired: parsed.data.ownerDecisionRequired ?? false, promotionPolicy: parsed.data.promotionPolicy ?? "NONE", pathDiscoveryPolicy: parsed.data.pathDiscoveryPolicy ?? "EXPLICIT_PATHS", nonPromotable: parsed.data.nonPromotable ?? false, completedEvidenceRefs: [] }) }); } catch { return reject(res, 400, "Splinter work item creation was rejected."); }
+    try { return res.status(201).json({ ok: true, item: await deps.workRegistry.create({ ...parsed.data, launchCritical: parsed.data.launchCritical ?? false, ownerDecisionRequired: parsed.data.ownerDecisionRequired ?? false, promotionPolicy: parsed.data.promotionPolicy ?? "NONE", pathDiscoveryPolicy: parsed.data.pathDiscoveryPolicy ?? "EXPLICIT_PATHS", nonPromotable: parsed.data.nonPromotable ?? false, reconciliationMode: parsed.data.reconciliationMode ?? false, completedEvidenceRefs: [] }) }); } catch { return reject(res, 400, "Splinter work item creation was rejected."); }
+  });
+  app.post("/api/internal/splinter/work-items/:id/reconcile", async (req, res) => {
+    if (!deps.workSelector || !ownerAuthorized(req, env)) return reject(res, 401, "Splinter owner authorization is required.");
+    const parsed = splinterReconciliationEvidenceSchema.safeParse(req.body);
+    if (!parsed.success) return reject(res, 400, "Splinter reconciliation evidence was rejected.");
+    try { return res.json({ ok: true, item: await deps.workSelector.reconcilePreRegistry(req.params.id, parsed.data) }); } catch { return reject(res, 409, "Splinter reconciliation evidence was rejected."); }
   });
   app.post("/api/internal/splinter/work-items/:id/approve", async (req, res) => {
     if (!deps.workSelector || !ownerAuthorized(req, env)) return reject(res, 401, "Splinter owner authorization is required.");

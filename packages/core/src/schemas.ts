@@ -32,11 +32,27 @@ export const splinterWorkPrioritySchema = z.number().int().min(1).max(5);
 export const splinterPromotionPolicySchema = z.enum(["NONE", "STAGING_ONLY"]);
 export const splinterPathDiscoveryPolicySchema = z.enum(["EXPLICIT_PATHS", "APPROVED_DISCOVERY"]);
 export const splinterWorkBlockerSchema = z.object({ classification: z.enum(["EXTERNAL_BLOCKER", "OWNER_REQUIRED", "SAFETY_STOP"]), detail: z.string().min(1).max(500), resolvedAt: z.string().min(1).optional() }).strict();
+export const splinterReconciliationStatusSchema = z.enum(["VERIFIED_COMPLETE", "PARTIALLY_VERIFIED", "NOT_COMPLETE"]);
+export const splinterReconciliationReviewResultSchema = z.enum(["PASS", "REJECT", "INSUFFICIENT_EVIDENCE"]);
+export const splinterReconciliationEvidenceSchema = z.object({
+  reconciliationId: idSchema,
+  sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20),
+  requirementRevision: z.string().min(1).max(128),
+  stagingShaVerified: z.string().regex(/^[a-f0-9]{7,64}$/i),
+  deterministicChecks: z.array(z.string().min(1).max(500)).min(1).max(30),
+  liveChecks: z.array(z.string().min(1).max(500)).max(30).default([]),
+  reviewResult: splinterReconciliationReviewResultSchema,
+  reviewedEvidence: z.array(z.string().min(1).max(500)).max(30).default([]),
+  missingEvidence: z.array(z.string().min(1).max(500)).max(20).default([]),
+  reconciledAt: z.string().min(1),
+  reconciledBy: z.literal("splinter"),
+  completionStatus: splinterReconciliationStatusSchema
+}).strict();
 export const splinterWorkItemSchema = z.object({
   workItemId: idSchema, title: z.string().min(1).max(200), goal: z.string().min(1).max(4000), module: z.string().min(1).max(100), tenantScope: z.string().min(1).max(100), priority: splinterWorkPrioritySchema,
   launchCritical: z.boolean().default(false), status: splinterWorkItemStatusSchema, dependencies: z.array(idSchema).max(30).default([]), blockedBy: splinterWorkBlockerSchema.optional(),
   acceptanceCriteria: z.array(z.string().min(1).max(1000)).max(50).default([]), requiredChecks: z.array(z.enum(["SPLINTER_FOCUSED_TESTS", "SPLINTER_FOCUSED_TYPECHECK"])).max(10).default([]), allowedPaths: z.array(z.string().min(1).max(256).refine((value) => !value.startsWith("/") && !value.startsWith("\\") && !value.includes("..") && !value.includes(":"))).max(50).default([]), pathDiscoveryPolicy: splinterPathDiscoveryPolicySchema.default("EXPLICIT_PATHS"),
-  ownerDecisionRequired: z.boolean().default(false), promotionPolicy: splinterPromotionPolicySchema.default("NONE"), sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128), nonPromotable: z.boolean().default(false), completedEvidenceRefs: z.array(z.string().min(1).max(256)).max(30).default([]), selectedStagingBaseSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), activeSplinterJobId: idSchema.optional(), createdAt: z.string().min(1), updatedAt: z.string().min(1)
+  ownerDecisionRequired: z.boolean().default(false), promotionPolicy: splinterPromotionPolicySchema.default("NONE"), sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128), nonPromotable: z.boolean().default(false), reconciliationMode: z.boolean().default(false), reconciliation: splinterReconciliationEvidenceSchema.optional(), completedEvidenceRefs: z.array(z.string().min(1).max(256)).max(30).default([]), selectedStagingBaseSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), activeSplinterJobId: idSchema.optional(), createdAt: z.string().min(1), updatedAt: z.string().min(1)
 }).strict();
 export const splinterEscalationClassSchema = z.enum(["AUTONOMOUS", "EXTERNAL_BLOCKER", "OWNER_REQUIRED", "SAFETY_STOP"]);
 export const splinterResolutionScopeSchema = z.enum(["JOB_ONLY", "MODULE", "TENANT", "GLOBAL"]);
@@ -1928,6 +1944,7 @@ export type SplinterJobState = z.infer<typeof splinterJobStateSchema>;
 export type SplinterWorkerResult = z.infer<typeof splinterWorkerResultSchema>;
 export type SplinterReview = z.infer<typeof splinterReviewSchema>;
 export type SplinterWorkItem = z.infer<typeof splinterWorkItemSchema>;
+export type SplinterReconciliationEvidence = z.infer<typeof splinterReconciliationEvidenceSchema>;
 export type TenantBrandingDoc = z.infer<typeof tenantBrandingSchema>;
 export type PlatformPlanDoc = z.infer<typeof platformPlanSchema>;
 export type TenantSubscriptionDoc = z.infer<typeof tenantSubscriptionSchema>;

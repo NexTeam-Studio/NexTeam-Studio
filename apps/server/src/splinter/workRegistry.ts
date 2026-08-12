@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
-import { splinterWorkItemSchema, type SplinterJob, type SplinterWorkItem } from "@nexteam/core";
+import { splinterReconciliationEvidenceSchema, splinterWorkItemSchema, type SplinterJob, type SplinterReconciliationEvidence, type SplinterWorkItem } from "@nexteam/core";
 import type { SplinterRepository } from "./repository.js";
 
 export const SPLINTER_WORK_ITEM_COLLECTION_PATH = "admin/splinter/workItems";
@@ -29,7 +29,7 @@ export class FirestoreWorkRegistry implements WorkRegistry {
 }
 
 function dependenciesComplete(item: SplinterWorkItem, all: Map<string, SplinterWorkItem>) { return item.dependencies.every(id => { const dependency = all.get(id); return dependency?.status === "COMPLETED" && dependency.completedEvidenceRefs.length > 0; }); }
-function eligible(item: SplinterWorkItem, all: Map<string, SplinterWorkItem>) { return item.status === "APPROVED" && !item.activeSplinterJobId && !item.blockedBy && !item.ownerDecisionRequired && item.sourceRequirementRefs.length > 0 && item.acceptanceCriteria.length > 0 && (item.requiredChecks.length > 0 || item.pathDiscoveryPolicy === "APPROVED_DISCOVERY") && dependenciesComplete(item, all); }
+function eligible(item: SplinterWorkItem, all: Map<string, SplinterWorkItem>) { return !item.reconciliationMode && item.status === "APPROVED" && !item.activeSplinterJobId && !item.blockedBy && !item.ownerDecisionRequired && item.sourceRequirementRefs.length > 0 && item.acceptanceCriteria.length > 0 && (item.requiredChecks.length > 0 || item.pathDiscoveryPolicy === "APPROVED_DISCOVERY") && dependenciesComplete(item, all); }
 function rank(left: SplinterWorkItem, right: SplinterWorkItem) { return left.priority - right.priority || Number(right.launchCritical) - Number(left.launchCritical) || left.createdAt.localeCompare(right.createdAt) || left.workItemId.localeCompare(right.workItemId); }
 export function validateDependencyGraph(items: SplinterWorkItem[]): void { const byId = new Map(items.map(item => [item.workItemId, item])); const visiting = new Set<string>(), complete = new Set<string>(); const visit = (id: string) => { if (complete.has(id)) return; if (visiting.has(id)) throw new Error("Circular Splinter work dependency."); const item = byId.get(id); if (!item) throw new Error("Missing Splinter work dependency."); visiting.add(id); item.dependencies.forEach(visit); visiting.delete(id); complete.add(id); }; items.forEach(item => visit(item.workItemId)); }
 
@@ -38,4 +38,19 @@ export class SplinterWorkSelector {
   async approve(id: string) { const all = await this.work.list(); validateDependencyGraph(all); const item = await this.work.get(id); if (!item || item.status !== "DRAFT") throw new Error("Only draft work items can be approved."); return this.work.update(id, { status: "APPROVED" }); }
   async select(currentStagingSha: string): Promise<{ item: SplinterWorkItem; job: SplinterJob } | null> { const items = await this.work.list(); validateDependencyGraph(items); const all = new Map(items.map(item => [item.workItemId, item])); const candidate = items.filter(item => eligible(item, all)).sort(rank)[0]; if (!candidate) return null; const jobId = `splinter-work-${crypto.randomUUID()}`; const claimed = await this.work.claim(candidate.workItemId, jobId, currentStagingSha); if (!claimed) return null; const job = await this.jobs.create({ id: jobId, goal: claimed.goal, executionMode: "READ_ONLY", allowedPaths: claimed.allowedPaths, acceptanceCriteria: claimed.acceptanceCriteria, requiredChecks: claimed.requiredChecks, attemptCount: 0, maxAttempts: 1, lastCheckFailures: [], nonPromotable: claimed.nonPromotable, reviewRequired: false, reviewStatus: "NOT_REQUIRED", workerHistory: [], integration: { status: "NOT_REQUESTED", verification: [] }, deployment: { status: "NOT_REQUESTED", verification: [] }, reviewCycleCount: 0, maxReviewCycles: 3, reviewHistory: [], state: "QUEUED", next: { owner: "splinter", action: `Execute approved work item ${claimed.workItemId} (${claimed.requirementRevision}).` }, result: "PENDING", lastError: null }); return { item: claimed, job }; }
   async reconcile(id: string, evidenceRefs: string[]) { const item = await this.work.get(id); if (!item || item.status !== "CLAIMED" || !item.activeSplinterJobId || evidenceRefs.length === 0) throw new Error("Work completion evidence is insufficient."); const job = await this.jobs.get(item.activeSplinterJobId); if (!job || job.state !== "SUCCEEDED" || job.result !== "PASS") throw new Error("Linked Splinter job is not complete."); return this.work.update(id, { status: "COMPLETED", completedEvidenceRefs: evidenceRefs, activeSplinterJobId: undefined }); }
+  async reconcilePreRegistry(id: string, rawEvidence: unknown): Promise<SplinterWorkItem> {
+    const evidence = splinterReconciliationEvidenceSchema.parse(rawEvidence) as SplinterReconciliationEvidence;
+    const item = await this.work.get(id);
+    if (!item || !item.reconciliationMode || item.activeSplinterJobId || item.blockedBy || item.ownerDecisionRequired || item.status !== "DRAFT") throw new Error("Work item is not eligible for pre-registry reconciliation.");
+    if (item.requirementRevision !== evidence.requirementRevision || item.sourceRequirementRefs.join("\n") !== evidence.sourceRequirementRefs.join("\n")) throw new Error("Reconciliation evidence does not match the approved requirement revision.");
+    const all = await this.work.list();
+    if (all.some(other => other.workItemId !== item.workItemId && other.sourceRequirementRefs.some(ref => item.sourceRequirementRefs.includes(ref)) && other.requirementRevision !== item.requirementRevision && ["APPROVED", "CLAIMED", "COMPLETED"].includes(other.status))) throw new Error("A newer or conflicting requirement revision exists.");
+    const deterministicPass = evidence.deterministicChecks.every(check => /\bPASS\b/i.test(check));
+    const verified = evidence.completionStatus === "VERIFIED_COMPLETE" && evidence.reviewResult === "PASS" && deterministicPass && evidence.liveChecks.length > 0 && evidence.missingEvidence.length === 0;
+    if (evidence.completionStatus === "VERIFIED_COMPLETE" && !verified) throw new Error("Verified completion evidence is incomplete.");
+    const completedEvidenceRefs = verified ? [...new Set([`reconciliation:${evidence.reconciliationId}`, ...evidence.reviewedEvidence])] : [];
+    const updated = await this.work.update(id, { reconciliation: evidence, ...(verified ? { status: "COMPLETED", completedEvidenceRefs } : {}) });
+    if (!updated) throw new Error("Work item was not found.");
+    return updated;
+  }
 }
