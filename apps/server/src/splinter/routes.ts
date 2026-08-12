@@ -44,6 +44,9 @@ function queuedProjection(job: { id: string; goal: string; executionMode: string
 export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRouteDeps): void {
   const env = deps.env ?? process.env;
   app.use("/api/internal/splinter", (req, res, next) => authorized(req, env) ? next() : reject(res, 401, "Splinter relay authorization is required."));
+  app.get("/api/internal/splinter/health", (_req, res) => {
+    return res.json({ ok: true, controllerVersion: "splinter-v1" });
+  });
   app.post("/api/internal/splinter/jobs", async (req, res) => {
     try {
       const input = splinterJobCreateRequestSchema.parse(req.body);

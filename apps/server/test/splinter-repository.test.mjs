@@ -223,9 +223,21 @@ test("Splinter relay API rejects unauthenticated and invalid service credentials
   const { repository, service } = await queuedService(); const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
   const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`;
   try {
+    assert.equal((await fetch(`${base}/api/internal/splinter/health`)).status, 401);
+    assert.equal((await fetch(`${base}/api/internal/splinter/health`, { headers: { "x-splinter-relay-token": "wrong" } })).status, 401);
     assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1`)).status, 401);
     assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1`, { headers: { "x-splinter-relay-token": "wrong" } })).status, 401);
     assert.equal((await fetch(`${base}/api/internal/splinter/jobs`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ goal: "unauthorized", nextAction: "reject" }) })).status, 401);
+  } finally { server.close(); }
+});
+
+test("Splinter relay health returns only the safe controller version payload", async () => {
+  const { repository, service } = await queuedService(); const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
+  const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const response = await fetch(`${base}/api/internal/splinter/health`, { headers: { "x-splinter-relay-token": "relay-secret" } });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, controllerVersion: "splinter-v1" });
   } finally { server.close(); }
 });
 
