@@ -81,12 +81,17 @@ import { registerSystemRoutes } from "./core/systemRoutes.js";
 import { assertRequiredPersistence, assertTenantRuntimePersistence } from "./app/persistencePolicy.js";
 import { registerIntegratedNexiRoutes } from "./nexi/integratedRoutes.js";
 import { registerUsersRoutes } from "./modules/nexops/areas/users/routes.js";
+import { FirestoreSplinterRepository } from "./splinter/repository.js";
+import { SplinterJobService } from "./splinter/service.js";
+import { registerSplinterRelayRoutes } from "./splinter/routes.js";
 
 const app = express();
 const runtimeTenantId = configuredTenantId(process.env, "serverBootstrap");
 const commsRail = createCommsRailFromEnv(process.env);
 const adminDb = getAdminDb();
 assertTenantRuntimePersistence(process.env, Boolean(adminDb));
+const splinterRepository = adminDb ? new FirestoreSplinterRepository(adminDb) : null;
+const splinterService = splinterRepository ? new SplinterJobService(splinterRepository) : null;
 assertRequiredPersistence(process.env, {
   ApprovalQueue: Boolean(adminDb),
   Content: Boolean(adminDb),
@@ -385,6 +390,7 @@ registerSitesRoutes(app, {
   env: process.env
 });
 registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });
+if (splinterRepository && splinterService) registerSplinterRelayRoutes(app, { repository: splinterRepository, service: splinterService, env: process.env });
 registerSeoRoutes(app, { repository: seoRepository, sitesRepository, approvalQueue, env: process.env });
 
 // Nexi has its own top-level workspace. Preserve the short-lived preview path

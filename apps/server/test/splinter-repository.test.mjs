@@ -8,6 +8,8 @@ import {
   SPLINTER_JOB_COLLECTION_PATH
 } from "../src/splinter/repository.ts";
 import { SplinterJobService } from "../src/splinter/service.ts";
+import { registerSplinterRelayRoutes } from "../src/splinter/routes.ts";
+import express from "express";
 
 const timestamps = ["2026-08-11T12:00:00.000Z", "2026-08-11T12:05:00.000Z"];
 
@@ -215,4 +217,24 @@ test("compare-and-set prevents a stale caller from persisting a conflicting tran
   await service.transition(job.id, "RUNNING");
   assert.equal(await repository.compareAndSet(job.id, "QUEUED", { state: "FAILED", result: "FAIL" }), null);
   assert.equal((await repository.get(job.id)).state, "RUNNING");
+});
+
+test("Splinter relay API rejects unauthenticated and invalid service credentials", async () => {
+  const { repository, service } = await queuedService(); const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
+  const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`;
+  try { assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1`)).status, 401); assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1`, { headers: { "x-splinter-relay-token": "wrong" } })).status, 401); } finally { server.close(); }
+});
+
+test("Splinter relay API reads, claims, and records only validated outcomes through the service", async () => {
+  const { repository, service } = await queuedService(); const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
+  const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`; const headers = { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" };
+  try {
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1`, { headers })).status, 200);
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1/claim`, { method: "POST", headers })).status, 200);
+    const outcome = { workerRunId: "run-1", status: "SUCCEEDED", summary: "Read package metadata.", filesInspected: ["package.json"], filesChanged: [], testsPerformed: [], startedAt: timestamps[0], completedAt: timestamps[1] };
+    const response = await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1/outcome`, { method: "POST", headers, body: JSON.stringify(outcome) }); const body = await response.json();
+    assert.equal(response.status, 200); assert.equal(body.job.state, "SUCCEEDED"); assert.equal(body.job.workerResult.workerRunId, "run-1");
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs/missing/claim`, { method: "POST", headers })).status, 409);
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1/outcome`, { method: "POST", headers, body: JSON.stringify({ ...outcome, rawPrompt: "forbidden" }) })).status, 400);
+  } finally { server.close(); }
 });

@@ -1,4 +1,4 @@
-import { idSchema, splinterJobStateSchema, type SplinterJob, type SplinterJobState } from "@nexteam/core";
+import { idSchema, splinterJobStateSchema, splinterWorkerResultSchema, type SplinterJob, type SplinterJobState, type SplinterWorkerResult } from "@nexteam/core";
 import type { SplinterRepository } from "./repository.js";
 
 const ALLOWED_TRANSITIONS: Readonly<Record<SplinterJobState, readonly SplinterJobState[]>> = {
@@ -33,6 +33,10 @@ export class SplinterTransitionError extends Error {
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+function redactWorkerText(value: string): string {
+  return value.replace(/[\r\n\t]+/g, " ").replace(/\b(Bearer\s+)[^\s]+/gi, "$1[REDACTED]").replace(/\b(api[_-]?key|token|password|secret|credential|authorization)\s*[:=]\s*[^\s,;]+/gi, "$1=[REDACTED]").slice(0, 500);
 }
 
 function transitionPatch(targetState: SplinterJobState, input: SplinterTransitionInput, timestamp: string) {
@@ -109,5 +113,20 @@ export class SplinterJobService {
       throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
     }
     throw new SplinterTransitionError("CONFLICT", `Splinter job ${id} changed before its transition could be applied.`);
+  }
+
+  async submitWorkerOutcome(id: string, outcome: SplinterWorkerResult): Promise<SplinterJob> {
+    const parsed = splinterWorkerResultSchema.parse(outcome);
+    const safe = { ...parsed, summary: redactWorkerText(parsed.summary), ...(parsed.error ? { error: redactWorkerText(parsed.error) } : {}) };
+    const job = await this.repository.get(id);
+    if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
+    if (job.state !== "RUNNING") throw new SplinterTransitionError("INVALID_TRANSITION", "Worker outcomes require a RUNNING Splinter job.");
+    const recorded = await this.repository.compareAndSet(id, "RUNNING", { workerResult: safe });
+    if (!recorded) throw new SplinterTransitionError("CONFLICT", "Splinter job changed before its worker outcome could be recorded.");
+    const target = safe.status;
+    return this.transition(id, target, {
+      ...(target === "AWAITING_HUMAN" ? { action: "Review the worker's stated human decision." } : {}),
+      ...(target === "FAILED" ? { errorMessage: safe.error ?? safe.summary } : {})
+    });
   }
 }

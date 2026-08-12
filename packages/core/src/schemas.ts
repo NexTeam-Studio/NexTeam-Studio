@@ -31,6 +31,12 @@ export const splinterLastErrorSchema = z.object({
   at: z.string().min(1)
 });
 
+export const splinterWorkerResultSchema = z.object({
+  workerRunId: z.string().min(1).max(128), status: z.enum(["SUCCEEDED", "FAILED", "AWAITING_HUMAN"]), summary: z.string().min(1).max(500),
+  filesInspected: z.array(z.string().min(1).max(256)).max(50), filesChanged: z.array(z.string().min(1).max(256)).max(50), testsPerformed: z.array(z.string().min(1).max(256)).max(50),
+  commitSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), error: z.string().min(1).max(500).optional(), startedAt: z.string().min(1), completedAt: z.string().min(1)
+}).strict();
+
 export const splinterJobSchema = z.object({
   id: idSchema,
   goal: z.string().min(1).max(4_000),
@@ -41,6 +47,7 @@ export const splinterJobSchema = z.object({
   }),
   result: splinterJobResultSchema,
   lastError: splinterLastErrorSchema.nullable(),
+  workerResult: splinterWorkerResultSchema.optional(),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1)
 });
@@ -51,6 +58,7 @@ export const splinterJobCreateSchema = splinterJobSchema.omit({
 });
 
 export const splinterJobUpdateSchema = splinterJobCreateSchema.omit({ id: true }).partial();
+
 
 export const addressSchema = z.object({
   street1: z.string(),
@@ -1817,6 +1825,7 @@ export type SplinterJob = z.infer<typeof splinterJobSchema>;
 export type SplinterJobCreate = z.infer<typeof splinterJobCreateSchema>;
 export type SplinterJobUpdate = z.infer<typeof splinterJobUpdateSchema>;
 export type SplinterJobState = z.infer<typeof splinterJobStateSchema>;
+export type SplinterWorkerResult = z.infer<typeof splinterWorkerResultSchema>;
 export type TenantBrandingDoc = z.infer<typeof tenantBrandingSchema>;
 export type PlatformPlanDoc = z.infer<typeof platformPlanSchema>;
 export type TenantSubscriptionDoc = z.infer<typeof tenantSubscriptionSchema>;
