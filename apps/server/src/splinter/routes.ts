@@ -87,6 +87,11 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
     if (!parsed.success) return reject(res, 400, "Splinter work completion was rejected.");
     try { return res.json({ ok: true, item: await deps.workSelector.reconcile(req.params.id, parsed.data.evidenceRefs) }); } catch { return reject(res, 409, "Splinter work completion was rejected."); }
   });
+  app.get("/api/internal/splinter/work-items/:id", async (req, res) => {
+    if (!deps.workRegistry) return reject(res, 503, "Splinter work registry is unavailable.");
+    const item = await deps.workRegistry.get(req.params.id);
+    return item ? res.json({ ok: true, item }) : reject(res, 404, "Splinter work item was not found.");
+  });
   app.get("/api/internal/splinter/health", (_req, res) => {
     return res.json({ ok: true, controllerVersion: "splinter-v1" });
   });
