@@ -157,7 +157,10 @@ export class SplinterJobService {
       throw new SplinterTransitionError("INVALID_TRANSITION", "Review evidence does not match a completed autonomous commit.");
     }
     const safe = { ...parsed, summary: redactWorkerText(parsed.summary), blockingFindings: parsed.blockingFindings.map(redactWorkerText), nonBlockingFindings: parsed.nonBlockingFindings.map(redactWorkerText) };
-    const updated = await this.repository.update(id, { review: safe });
+    if (job.reviewCycleCount >= job.maxReviewCycles) {
+      throw new SplinterTransitionError("INVALID_TRANSITION", "The bounded Raphael review limit has been exhausted.");
+    }
+    const updated = await this.repository.update(id, { review: safe, reviewCycleCount: job.reviewCycleCount + 1, reviewHistory: [...job.reviewHistory, safe] });
     if (!updated) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
     return updated;
   }

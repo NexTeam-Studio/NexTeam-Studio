@@ -76,6 +76,9 @@ export const splinterJobSchema = z.object({
   lastCheckFailures: z.array(z.string().min(1).max(500)).max(10).default([]),
   repairProofInjection: splinterRepairProofInjectionSchema.optional(),
   review: splinterReviewSchema.optional(),
+  reviewCycleCount: z.number().int().min(0).default(0),
+  maxReviewCycles: z.number().int().min(1).max(3).default(3),
+  reviewHistory: z.array(splinterReviewSchema).max(3).default([]),
   state: splinterJobStateSchema,
   next: z.object({
     owner: splinterJobOwnerSchema,

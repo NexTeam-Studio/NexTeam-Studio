@@ -305,3 +305,11 @@ test("Splinter review accepts only matching autonomous commit evidence and prese
   assert.equal(updated.review.reviewResult, "REJECT"); assert.deepEqual(updated.review.blockingFindings, ["Missing focused coverage."]);
   await assert.rejects(() => service.submitReview(job.id, { ...review, reviewedCommitSha: "deadbee" }), { code: "INVALID_TRANSITION" });
 });
+
+test("Splinter bounds Raphael review cycles at three while preserving review history", async () => {
+  const { job, repository, service } = await queuedService(); await service.transition(job.id, "RUNNING");
+  await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: [], testsPerformed: [], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
+  const review = (run) => ({ reviewResult: "REJECT", summary: `reject ${run}`, blockingFindings: ["inside allowed path"], nonBlockingFindings: [], reviewedCommitSha: "abcdef1", reviewerRunId: `raphael-${run}`, reviewerProvider: "anthropic", reviewerModel: "claude", startedAt: timestamps[0], completedAt: timestamps[1] });
+  await service.submitReview(job.id, review(1)); await service.submitReview(job.id, review(2)); const third = await service.submitReview(job.id, review(3));
+  assert.equal(third.reviewCycleCount, 3); assert.equal(third.reviewHistory.length, 3); await assert.rejects(() => service.submitReview(job.id, review(4)), { code: "INVALID_TRANSITION" });
+});
