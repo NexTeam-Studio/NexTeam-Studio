@@ -358,3 +358,43 @@ test("review repair preserves both Atlas run records", async () => {
   const repaired = await service.recordReviewRepair(job.id, { workerRunId: "repair", status: "SUCCEEDED", summary: "fixed", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], baseSha: "abcdef0", commitSha: "abcdef2", startedAt: timestamps[0], completedAt: timestamps[1] });
   assert.deepEqual(repaired.workerHistory.map((item) => item.workerRunId), ["builder", "repair"]);
 });
+
+async function approvedCodeChange(service, repository, id = "splinter-promotion-job") {
+  const created = await repository.create(validJob({ id }));
+  await repository.update(created.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 });
+  await service.transition(created.id, "RUNNING");
+  await service.submitWorkerOutcome(created.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
+  return service.submitReview(created.id, { reviewResult: "PASS", summary: "approved", blockingFindings: [], nonBlockingFindings: [], reviewedCommitSha: "abcdef1", reviewerRunId: "raphael-approved", reviewerProvider: "anthropic", reviewerModel: "claude", startedAt: timestamps[0], completedAt: timestamps[1] });
+}
+
+test("only an exact Raphael-approved promotable code change can begin staging integration", async () => {
+  const { repository, service } = await queuedService();
+  const approved = await approvedCodeChange(service, repository);
+  const started = await service.beginIntegration(approved.id, "1234567", "abcdef1");
+  assert.equal(started.integration.status, "IN_PROGRESS");
+  assert.equal(started.integration.stagingBaseSha, "1234567");
+  assert.equal(started.integration.approvedCommitSha, "abcdef1");
+  assert.equal(started.state, "SUCCEEDED");
+});
+
+test("unreviewed, mismatched, and proof-only jobs cannot enter staging integration", async () => {
+  const { job, repository, service } = await queuedService();
+  await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 });
+  await service.transition(job.id, "RUNNING");
+  await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: [], testsPerformed: [], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
+  await assert.rejects(() => service.beginIntegration(job.id, "1234567", "abcdef1"), { code: "INVALID_TRANSITION" });
+  const approved = await approvedCodeChange(service, repository, "splinter-approved-mismatch");
+  await assert.rejects(() => service.beginIntegration(approved.id, "1234567", "deadbee"), { code: "INVALID_TRANSITION" });
+  const proof = await approvedCodeChange(service, repository, "splinter-review-proof-historical");
+  await assert.rejects(() => service.beginIntegration(proof.id, "1234567", "abcdef1"), { code: "INVALID_TRANSITION" });
+});
+
+test("integration results require the active base and preserve verified candidate evidence", async () => {
+  const { repository, service } = await queuedService();
+  const approved = await approvedCodeChange(service, repository, "splinter-integration-result");
+  await service.beginIntegration(approved.id, "1234567", "abcdef1");
+  const finished = await service.recordIntegration(approved.id, { status: "PASSED", stagingBaseSha: "1234567", approvedCommitSha: "abcdef1", integratedCandidateSha: "fedcba1", verification: ["focused tests passed", "typecheck passed"] });
+  assert.equal(finished.integration.status, "PASSED");
+  assert.equal(finished.integration.integratedCandidateSha, "fedcba1");
+  await assert.rejects(() => service.recordIntegration(approved.id, { status: "STALE", stagingBaseSha: "7654321", approvedCommitSha: "abcdef1", verification: [] }), { code: "INVALID_TRANSITION" });
+});

@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { Express, Request, Response } from "express";
-import { idSchema, splinterExecutionModeSchema, splinterRepairProofInjectionSchema, splinterRequiredCheckSchema, splinterReviewSchema, splinterWorkerResultSchema } from "@nexteam/core";
+import { idSchema, splinterExecutionModeSchema, splinterIntegrationStatusSchema, splinterRepairProofInjectionSchema, splinterRequiredCheckSchema, splinterReviewSchema, splinterWorkerResultSchema } from "@nexteam/core";
 import { z } from "zod";
 import type { SplinterRepository } from "./repository.js";
 import type { SplinterJobService } from "./service.js";
@@ -58,9 +58,11 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
         maxAttempts: input.executionMode === "CODE_CHANGE" ? 3 : 1,
         lastCheckFailures: [],
         ...(input.repairProofInjection ? { repairProofInjection: input.repairProofInjection } : {}),
+        nonPromotable: (input.id ?? "").startsWith("splinter-review-proof-"),
         reviewRequired: input.executionMode === "CODE_CHANGE",
         reviewStatus: "NOT_REQUIRED",
         workerHistory: [],
+        integration: { status: "NOT_REQUESTED", verification: [] },
         reviewCycleCount: 0,
         maxReviewCycles: 3,
         reviewHistory: [],
@@ -107,5 +109,20 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
   app.post("/api/internal/splinter/jobs/:id/repair", async (req, res) => {
     try { return res.json({ ok: true, job: await deps.service.recordReviewRepair(req.params.id, splinterWorkerResultSchema.parse(req.body)) }); }
     catch { return reject(res, 400, "Splinter repaired commit evidence was rejected."); }
+  });
+  app.post("/api/internal/splinter/jobs/:id/integration/start", async (req, res) => {
+    const parsed = z.object({ stagingBaseSha: z.string().regex(/^[a-f0-9]{7,64}$/i), approvedCommitSha: z.string().regex(/^[a-f0-9]{7,64}$/i) }).strict().safeParse(req.body);
+    if (!parsed.success) return reject(res, 400, "Splinter integration request was rejected.");
+    try { return res.json({ ok: true, job: await deps.service.beginIntegration(req.params.id, parsed.data.stagingBaseSha, parsed.data.approvedCommitSha) }); }
+    catch { return reject(res, 400, "Splinter integration request was rejected."); }
+  });
+  app.post("/api/internal/splinter/jobs/:id/integration/result", async (req, res) => {
+    const parsed = z.object({ stagingBaseSha: z.string().regex(/^[a-f0-9]{7,64}$/i), approvedCommitSha: z.string().regex(/^[a-f0-9]{7,64}$/i), integratedCandidateSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), verification: z.array(z.string().min(1).max(256)).max(20).default([]), status: z.enum(["PASSED", "FAILED", "STALE"]), error: z.string().min(1).max(500).optional() }).strict().safeParse(req.body);
+    if (!parsed.success || !splinterIntegrationStatusSchema.safeParse(parsed.data.status).success) return reject(res, 400, "Splinter integration result was rejected.");
+    try {
+      const { integratedCandidateSha, error, ...required } = parsed.data;
+      return res.json({ ok: true, job: await deps.service.recordIntegration(req.params.id, { ...required, ...(integratedCandidateSha ? { integratedCandidateSha } : {}), ...(error ? { error } : {}) }) });
+    }
+    catch { return reject(res, 400, "Splinter integration result was rejected."); }
   });
 }

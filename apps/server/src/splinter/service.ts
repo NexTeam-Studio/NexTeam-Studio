@@ -1,4 +1,4 @@
-import { idSchema, splinterJobStateSchema, splinterReviewSchema, splinterWorkerResultSchema, type SplinterJob, type SplinterJobState, type SplinterReview, type SplinterWorkerResult } from "@nexteam/core";
+import { idSchema, splinterIntegrationSchema, splinterJobStateSchema, splinterReviewSchema, splinterWorkerResultSchema, type SplinterJob, type SplinterJobState, type SplinterReview, type SplinterWorkerResult } from "@nexteam/core";
 import type { SplinterRepository } from "./repository.js";
 
 const ALLOWED_TRANSITIONS: Readonly<Record<SplinterJobState, readonly SplinterJobState[]>> = {
@@ -39,8 +39,17 @@ function redactWorkerText(value: string): string {
   return value.replace(/[\r\n\t]+/g, " ").replace(/\b(Bearer\s+)[^\s]+/gi, "$1[REDACTED]").replace(/\b(api[_-]?key|token|password|secret|credential|authorization)\s*[:=]\s*[^\s,;]+/gi, "$1=[REDACTED]").slice(0, 500);
 }
 
+export interface SplinterIntegrationResult { stagingBaseSha: string; approvedCommitSha: string; integratedCandidateSha?: string; verification?: string[]; status: "PASSED" | "FAILED" | "STALE"; error?: string; }
+
 function requiresRaphaelReview(job: SplinterJob): boolean {
   return job.executionMode === "CODE_CHANGE" && job.reviewRequired;
+}
+
+function promotionEligible(job: SplinterJob): boolean {
+  return job.executionMode === "CODE_CHANGE" && !job.nonPromotable && !job.id.startsWith("splinter-review-proof-") && job.state === "SUCCEEDED" && job.result === "PASS"
+    && job.reviewStatus === "APPROVED" && job.review?.reviewResult === "PASS"
+    && Boolean(job.workerResult?.commitSha) && job.workerResult?.commitSha === job.review?.reviewedCommitSha
+    && (job.review?.blockingFindings.length ?? 1) === 0 && job.reviewCycleCount <= job.maxReviewCycles;
 }
 
 function transitionPatch(targetState: SplinterJobState, input: SplinterTransitionInput, timestamp: string) {
@@ -198,6 +207,29 @@ export class SplinterJobService {
       next: { owner: "splinter", action: "Await Raphael review of the repaired commit." }
     });
     if (!updated) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
+    return updated;
+  }
+
+  async beginIntegration(id: string, stagingBaseSha: string, approvedCommitSha: string): Promise<SplinterJob> {
+    const job = await this.repository.get(id);
+    if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
+    if (!promotionEligible(job) || job.workerResult?.commitSha !== approvedCommitSha || !/^[a-f0-9]{7,64}$/i.test(stagingBaseSha)) {
+      throw new SplinterTransitionError("INVALID_TRANSITION", "Splinter job is not eligible for staging integration.");
+    }
+    const updated = await this.repository.compareAndSet(id, "SUCCEEDED", { integration: { status: "IN_PROGRESS", stagingBaseSha, approvedCommitSha, verification: [] } });
+    if (!updated) throw new SplinterTransitionError("CONFLICT", "Splinter job changed before integration could begin.");
+    return updated;
+  }
+
+  async recordIntegration(id: string, input: SplinterIntegrationResult): Promise<SplinterJob> {
+    const parsed = splinterIntegrationSchema.parse({ status: input.status, stagingBaseSha: input.stagingBaseSha, approvedCommitSha: input.approvedCommitSha, ...(input.integratedCandidateSha ? { integratedCandidateSha: input.integratedCandidateSha } : {}), verification: input.verification ?? [], ...(input.error ? { error: redactWorkerText(input.error) } : {}) });
+    const job = await this.repository.get(id);
+    if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
+    if (job.integration.status !== "IN_PROGRESS" || job.integration.stagingBaseSha !== parsed.stagingBaseSha || job.integration.approvedCommitSha !== parsed.approvedCommitSha) {
+      throw new SplinterTransitionError("INVALID_TRANSITION", "Integration result does not match the active Splinter integration.");
+    }
+    const updated = await this.repository.compareAndSet(id, "SUCCEEDED", { integration: parsed });
+    if (!updated) throw new SplinterTransitionError("CONFLICT", "Splinter job changed before integration result could be recorded.");
     return updated;
   }
 }

@@ -49,6 +49,15 @@ export const splinterReviewSchema = z.object({
 }).strict();
 
 export const splinterReviewStatusSchema = z.enum(["NOT_REQUIRED", "AWAITING_REVIEW", "APPROVED", "REJECTED", "INFRASTRUCTURE_FAILURE"]);
+export const splinterIntegrationStatusSchema = z.enum(["NOT_REQUESTED", "IN_PROGRESS", "PASSED", "FAILED", "STALE"]);
+export const splinterIntegrationSchema = z.object({
+  status: splinterIntegrationStatusSchema,
+  stagingBaseSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  approvedCommitSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  integratedCandidateSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  verification: z.array(z.string().min(1).max(256)).max(20).default([]),
+  error: z.string().min(1).max(500).optional()
+}).strict();
 
 const splinterAllowedPathSchema = z.string().min(1).max(256).refine(
   (value) => !value.startsWith("/") && !value.startsWith("\\") && !value.includes("..") && !value.includes(":"),
@@ -77,9 +86,11 @@ export const splinterJobSchema = z.object({
   maxAttempts: z.number().int().min(1).max(3).default(1),
   lastCheckFailures: z.array(z.string().min(1).max(500)).max(10).default([]),
   repairProofInjection: splinterRepairProofInjectionSchema.optional(),
+  nonPromotable: z.boolean().default(false),
   reviewRequired: z.boolean().default(false),
   reviewStatus: splinterReviewStatusSchema.default("NOT_REQUIRED"),
   workerHistory: z.array(z.lazy(() => splinterWorkerResultSchema)).max(6).default([]),
+  integration: splinterIntegrationSchema.default({ status: "NOT_REQUESTED", verification: [] }),
   review: splinterReviewSchema.optional(),
   reviewCycleCount: z.number().int().min(0).default(0),
   maxReviewCycles: z.number().int().min(1).max(3).default(3),
