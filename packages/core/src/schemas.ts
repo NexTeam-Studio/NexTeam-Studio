@@ -1816,6 +1816,7 @@ export type TenantDoc = z.infer<typeof tenantSchema>;
 export type SplinterJob = z.infer<typeof splinterJobSchema>;
 export type SplinterJobCreate = z.infer<typeof splinterJobCreateSchema>;
 export type SplinterJobUpdate = z.infer<typeof splinterJobUpdateSchema>;
+export type SplinterJobState = z.infer<typeof splinterJobStateSchema>;
 export type TenantBrandingDoc = z.infer<typeof tenantBrandingSchema>;
 export type PlatformPlanDoc = z.infer<typeof platformPlanSchema>;
 export type TenantSubscriptionDoc = z.infer<typeof tenantSubscriptionSchema>;

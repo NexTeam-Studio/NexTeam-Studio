@@ -5,6 +5,7 @@ import {
   splinterJobUpdateSchema,
   type SplinterJob,
   type SplinterJobCreate,
+  type SplinterJobState,
   type SplinterJobUpdate
 } from "@nexteam/core";
 
@@ -16,6 +17,7 @@ export interface SplinterRepository {
   create(job: SplinterJobCreate): Promise<SplinterJob>;
   get(id: string): Promise<SplinterJob | null>;
   update(id: string, patch: SplinterJobUpdate): Promise<SplinterJob | null>;
+  compareAndSet(id: string, expectedState: SplinterJobState, patch: SplinterJobUpdate): Promise<SplinterJob | null>;
 }
 
 export interface SplinterRepositoryOptions {
@@ -95,6 +97,14 @@ export class InMemorySplinterRepository implements SplinterRepository {
     this.jobs.set(id, record);
     return record;
   }
+
+  async compareAndSet(id: string, expectedState: SplinterJobState, patch: SplinterJobUpdate): Promise<SplinterJob | null> {
+    const existing = this.jobs.get(id);
+    if (!existing || existing.state !== expectedState) return null;
+    const record = updateRecord(existing, patch, this.now());
+    this.jobs.set(id, record);
+    return record;
+  }
 }
 
 export class FirestoreSplinterRepository implements SplinterRepository {
@@ -129,6 +139,19 @@ export class FirestoreSplinterRepository implements SplinterRepository {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists) return null;
       const existing = splinterJobSchema.parse(snapshot.data());
+      const record = updateRecord(existing, patch, this.now());
+      transaction.set(ref, firestoreDoc(record));
+      return record;
+    });
+  }
+
+  async compareAndSet(id: string, expectedState: SplinterJobState, patch: SplinterJobUpdate): Promise<SplinterJob | null> {
+    const ref = this.jobRef(id);
+    return this.db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) return null;
+      const existing = splinterJobSchema.parse(snapshot.data());
+      if (existing.state !== expectedState) return null;
       const record = updateRecord(existing, patch, this.now());
       transaction.set(ref, firestoreDoc(record));
       return record;

@@ -7,6 +7,7 @@ import {
   InMemorySplinterRepository,
   SPLINTER_JOB_COLLECTION_PATH
 } from "../src/splinter/repository.ts";
+import { SplinterJobService } from "../src/splinter/service.ts";
 
 const timestamps = ["2026-08-11T12:00:00.000Z", "2026-08-11T12:05:00.000Z"];
 
@@ -121,4 +122,97 @@ test("Splinter records are platform-only and sanitize error metadata", async () 
   assert.match(created.lastError.message, /api_key=\[REDACTED\]/);
   assert.match(created.lastError.message, /Bearer \[REDACTED\]/);
   assert.doesNotMatch(created.lastError.message, /super-secret-value|token-value/);
+});
+
+async function queuedService() {
+  const repository = new InMemorySplinterRepository({ now: sequentialClock() });
+  const job = await repository.create(validJob());
+  return { job, repository, service: new SplinterJobService(repository, { now: () => timestamps[1] }) };
+}
+
+test("QUEUED -> RUNNING succeeds", async () => {
+  const { job, service } = await queuedService();
+  const updated = await service.transition(job.id, "RUNNING");
+  assert.equal(updated.state, "RUNNING");
+  assert.equal(updated.result, "PENDING");
+  assert.equal(updated.next.owner, "worker");
+});
+
+test("RUNNING -> SUCCEEDED succeeds and produces PASS", async () => {
+  const { job, service } = await queuedService();
+  await service.transition(job.id, "RUNNING");
+  const updated = await service.transition(job.id, "SUCCEEDED");
+  assert.equal(updated.state, "SUCCEEDED");
+  assert.equal(updated.result, "PASS");
+  assert.equal(updated.next.action, "No further action required.");
+});
+
+test("RUNNING -> FAILED succeeds and produces sanitized FAIL", async () => {
+  const { job, service } = await queuedService();
+  await service.transition(job.id, "RUNNING");
+  const updated = await service.transition(job.id, "FAILED", { errorMessage: "token=not-for-storage" });
+  assert.equal(updated.state, "FAILED");
+  assert.equal(updated.result, "FAIL");
+  assert.equal(updated.lastError.message, "token=[REDACTED]");
+});
+
+test("RUNNING -> AWAITING_HUMAN assigns human ownership", async () => {
+  const { job, service } = await queuedService();
+  await service.transition(job.id, "RUNNING");
+  const updated = await service.transition(job.id, "AWAITING_HUMAN");
+  assert.equal(updated.next.owner, "human");
+  assert.equal(updated.result, "PENDING");
+});
+
+test("AWAITING_HUMAN -> RUNNING succeeds", async () => {
+  const { job, service } = await queuedService();
+  await service.transition(job.id, "RUNNING");
+  await service.transition(job.id, "AWAITING_HUMAN");
+  assert.equal((await service.transition(job.id, "RUNNING")).state, "RUNNING");
+});
+
+test("FAILED -> RUNNING allows a controlled retry", async () => {
+  const { job, service } = await queuedService();
+  await service.transition(job.id, "RUNNING");
+  await service.transition(job.id, "FAILED", { errorMessage: "safe failure" });
+  const updated = await service.transition(job.id, "RUNNING", { runningOwner: "splinter" });
+  assert.equal(updated.state, "RUNNING");
+  assert.equal(updated.next.owner, "splinter");
+  assert.equal(updated.lastError, null);
+});
+
+test("SUCCEEDED cannot transition anywhere", async () => {
+  const { job, service } = await queuedService();
+  await service.transition(job.id, "RUNNING");
+  await service.transition(job.id, "SUCCEEDED");
+  await assert.rejects(() => service.transition(job.id, "RUNNING"), { code: "INVALID_TRANSITION" });
+  await assert.rejects(() => service.transition(job.id, "FAILED"), { code: "INVALID_TRANSITION" });
+});
+
+test("invalid transitions are rejected without corrupting the stored job", async () => {
+  const { job, repository, service } = await queuedService();
+  const before = await repository.get(job.id);
+  await assert.rejects(() => service.transition(job.id, "SUCCEEDED"), { code: "INVALID_TRANSITION" });
+  assert.deepEqual(await repository.get(job.id), before);
+});
+
+test("successful transitions preserve createdAt and update updatedAt", async () => {
+  const { job, service } = await queuedService();
+  const updated = await service.transition(job.id, "RUNNING");
+  assert.equal(updated.createdAt, job.createdAt);
+  assert.notEqual(updated.updatedAt, job.updatedAt);
+});
+
+test("invalid and missing job IDs fail safely", async () => {
+  const { service } = await queuedService();
+  await assert.rejects(() => service.transition("", "RUNNING"), { code: "INVALID_JOB_ID" });
+  await assert.rejects(() => service.transition("missing-job", "RUNNING"), { code: "NOT_FOUND" });
+  await assert.rejects(() => service.transition("splinter-job-1", "NOT_A_STATE"), z.ZodError);
+});
+
+test("compare-and-set prevents a stale caller from persisting a conflicting transition", async () => {
+  const { job, repository, service } = await queuedService();
+  await service.transition(job.id, "RUNNING");
+  assert.equal(await repository.compareAndSet(job.id, "QUEUED", { state: "FAILED", result: "FAIL" }), null);
+  assert.equal((await repository.get(job.id)).state, "RUNNING");
 });
