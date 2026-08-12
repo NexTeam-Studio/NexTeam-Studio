@@ -259,6 +259,13 @@ test("Splinter relay API returns only the oldest bounded queued jobs in a saniti
   } finally { server.close(); }
 });
 
+test("Splinter relay API fails queued discovery safely when persistence is temporarily unavailable", async () => {
+  const { service } = await queuedService(); const app = express(); app.use(express.json());
+  registerSplinterRelayRoutes(app, { repository: { listQueued: async () => { throw new Error("index unavailable"); } }, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
+  const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`;
+  try { assert.equal((await fetch(`${base}/api/internal/splinter/jobs?state=QUEUED`, { headers: { "x-splinter-relay-token": "relay-secret" } })).status, 503); } finally { server.close(); }
+});
+
 test("Splinter relay API reads, claims, and records only validated outcomes through the service", async () => {
   const { repository, service } = await queuedService(); const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
   const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`; const headers = { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" };

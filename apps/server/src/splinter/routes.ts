@@ -53,7 +53,11 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
   });
   app.get("/api/internal/splinter/jobs", async (req, res) => {
     if (req.query.state !== "QUEUED") return reject(res, 400, "Only queued Splinter job discovery is supported.");
-    return res.json({ ok: true, jobs: (await deps.repository.listQueued(10)).map(queuedProjection) });
+    try {
+      return res.json({ ok: true, jobs: (await deps.repository.listQueued(10)).map(queuedProjection) });
+    } catch {
+      return reject(res, 503, "Splinter queued job discovery is temporarily unavailable.");
+    }
   });
   app.get("/api/internal/splinter/jobs/:id", async (req, res) => {
     const job = await deps.repository.get(req.params.id);
