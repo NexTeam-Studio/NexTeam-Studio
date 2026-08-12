@@ -129,4 +129,23 @@ export class SplinterJobService {
       ...(target === "FAILED" ? { errorMessage: safe.error ?? safe.summary } : {})
     });
   }
+
+  /** Records controller-owned bounded repair evidence without changing job state. */
+  async beginWorkerAttempt(id: string, lastCheckFailures: string[] = []): Promise<SplinterJob> {
+    const job = await this.repository.get(id);
+    if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
+    if (job.state !== "RUNNING" || job.executionMode !== "CODE_CHANGE") {
+      throw new SplinterTransitionError("INVALID_TRANSITION", "Only RUNNING code-change jobs can begin an attempt.");
+    }
+    if (job.attemptCount >= job.maxAttempts) {
+      throw new SplinterTransitionError("INVALID_TRANSITION", "The bounded repair attempt limit has been exhausted.");
+    }
+    const safeFailures = lastCheckFailures.map(redactWorkerText).filter(Boolean).slice(0, 10);
+    const updated = await this.repository.compareAndSet(id, "RUNNING", {
+      attemptCount: job.attemptCount + 1,
+      lastCheckFailures: safeFailures
+    });
+    if (updated) return updated;
+    throw new SplinterTransitionError("CONFLICT", "Splinter job changed before its attempt could begin.");
+  }
 }

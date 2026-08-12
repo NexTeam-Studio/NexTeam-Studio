@@ -229,6 +229,18 @@ test("Splinter relay API rejects unauthenticated and invalid service credentials
   } finally { server.close(); }
 });
 
+test("RUNNING code-change job records only bounded sanitized repair attempts", async () => {
+  const { job, repository, service } = await queuedService();
+  await repository.update(job.id, { executionMode: "CODE_CHANGE", allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 });
+  await service.transition(job.id, "RUNNING");
+  const first = await service.beginWorkerAttempt(job.id, ["token=not-for-storage test failed"]);
+  const second = await service.beginWorkerAttempt(job.id, ["typecheck failed"]);
+  const third = await service.beginWorkerAttempt(job.id, ["test failed again"]);
+  assert.equal(first.attemptCount, 1); assert.match(first.lastCheckFailures[0], /\[REDACTED\]/);
+  assert.equal(second.attemptCount, 2); assert.equal(third.attemptCount, 3);
+  await assert.rejects(() => service.beginWorkerAttempt(job.id), { code: "INVALID_TRANSITION" });
+});
+
 test("Splinter relay API creates only normalized queued jobs through authenticated server authority", async () => {
   const { repository, service } = await queuedService(); const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
   const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`; const headers = { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" };

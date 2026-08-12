@@ -33,6 +33,8 @@ export const splinterRequiredCheckSchema = z.enum([
   "SPLINTER_FOCUSED_TYPECHECK"
 ]);
 
+export const splinterRepairProofInjectionSchema = z.enum(["FOCUSED_TEST_ONCE"]);
+
 const splinterAllowedPathSchema = z.string().min(1).max(256).refine(
   (value) => !value.startsWith("/") && !value.startsWith("\\") && !value.includes("..") && !value.includes(":"),
   "Splinter allowed paths must be repository-relative."
@@ -56,6 +58,10 @@ export const splinterJobSchema = z.object({
   allowedPaths: z.array(splinterAllowedPathSchema).max(50).default([]),
   acceptanceCriteria: z.array(z.string().min(1).max(1_000)).max(50).default([]),
   requiredChecks: z.array(splinterRequiredCheckSchema).max(10).default([]),
+  attemptCount: z.number().int().min(0).default(0),
+  maxAttempts: z.number().int().min(1).max(3).default(1),
+  lastCheckFailures: z.array(z.string().min(1).max(500)).max(10).default([]),
+  repairProofInjection: splinterRepairProofInjectionSchema.optional(),
   state: splinterJobStateSchema,
   next: z.object({
     owner: splinterJobOwnerSchema,
@@ -68,11 +74,12 @@ export const splinterJobSchema = z.object({
   updatedAt: z.string().min(1)
 });
 
-function validateSplinterCodeChange(job: { executionMode: "READ_ONLY" | "CODE_CHANGE"; allowedPaths: string[]; acceptanceCriteria: string[]; requiredChecks: string[] }, context: z.RefinementCtx): void {
+function validateSplinterCodeChange(job: { executionMode: "READ_ONLY" | "CODE_CHANGE"; allowedPaths: string[]; acceptanceCriteria: string[]; requiredChecks: string[]; maxAttempts: number }, context: z.RefinementCtx): void {
   if (job.executionMode === "CODE_CHANGE") {
     if (job.allowedPaths.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["allowedPaths"], message: "CODE_CHANGE jobs require allowed paths." });
     if (job.acceptanceCriteria.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["acceptanceCriteria"], message: "CODE_CHANGE jobs require acceptance criteria." });
     if (job.requiredChecks.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["requiredChecks"], message: "CODE_CHANGE jobs require deterministic checks." });
+    if (job.maxAttempts !== 3) context.addIssue({ code: z.ZodIssueCode.custom, path: ["maxAttempts"], message: "CODE_CHANGE jobs use the controller-owned maximum of three attempts." });
   }
 }
 

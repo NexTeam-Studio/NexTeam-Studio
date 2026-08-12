@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { Express, Request, Response } from "express";
-import { idSchema, splinterExecutionModeSchema, splinterRequiredCheckSchema, splinterWorkerResultSchema } from "@nexteam/core";
+import { idSchema, splinterExecutionModeSchema, splinterRepairProofInjectionSchema, splinterRequiredCheckSchema, splinterWorkerResultSchema } from "@nexteam/core";
 import { z } from "zod";
 import type { SplinterRepository } from "./repository.js";
 import type { SplinterJobService } from "./service.js";
@@ -24,7 +24,8 @@ const splinterJobCreateRequestSchema = z.object({
   executionMode: splinterExecutionModeSchema.default("READ_ONLY"),
   allowedPaths: z.array(z.string().min(1).max(256)).max(50).default([]),
   acceptanceCriteria: z.array(z.string().min(1).max(1_000)).max(50).default([]),
-  requiredChecks: z.array(splinterRequiredCheckSchema).max(10).default([])
+  requiredChecks: z.array(splinterRequiredCheckSchema).max(10).default([]),
+  repairProofInjection: splinterRepairProofInjectionSchema.optional()
 }).strict().superRefine((input, context) => {
   if (input.executionMode === "CODE_CHANGE" && input.allowedPaths.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["allowedPaths"], message: "CODE_CHANGE jobs require allowed paths." });
   if (input.executionMode === "CODE_CHANGE" && input.acceptanceCriteria.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["acceptanceCriteria"], message: "CODE_CHANGE jobs require acceptance criteria." });
@@ -35,8 +36,8 @@ function createJobId(): string {
   return `splinter-${crypto.randomUUID()}`;
 }
 
-function queuedProjection(job: { id: string; goal: string; executionMode: string; allowedPaths: string[]; acceptanceCriteria: string[]; requiredChecks: string[]; state: string; result: string; next: { owner: string; action: string }; createdAt: string; updatedAt: string }) {
-  return { id: job.id, goal: job.goal, executionMode: job.executionMode, allowedPaths: job.allowedPaths, acceptanceCriteria: job.acceptanceCriteria, requiredChecks: job.requiredChecks, state: job.state, result: job.result, next: job.next, createdAt: job.createdAt, updatedAt: job.updatedAt };
+function queuedProjection(job: { id: string; goal: string; executionMode: string; allowedPaths: string[]; acceptanceCriteria: string[]; requiredChecks: string[]; attemptCount: number; maxAttempts: number; lastCheckFailures: string[]; repairProofInjection?: string | undefined; state: string; result: string; next: { owner: string; action: string }; createdAt: string; updatedAt: string }) {
+  return { id: job.id, goal: job.goal, executionMode: job.executionMode, allowedPaths: job.allowedPaths, acceptanceCriteria: job.acceptanceCriteria, requiredChecks: job.requiredChecks, attemptCount: job.attemptCount, maxAttempts: job.maxAttempts, lastCheckFailures: job.lastCheckFailures, repairProofInjection: job.repairProofInjection, state: job.state, result: job.result, next: job.next, createdAt: job.createdAt, updatedAt: job.updatedAt };
 }
 
 /** Backend-only relay boundary. It delegates all state changes to SplinterJobService. */
@@ -53,6 +54,10 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
         allowedPaths: input.allowedPaths,
         acceptanceCriteria: input.acceptanceCriteria,
         requiredChecks: input.requiredChecks,
+        attemptCount: 0,
+        maxAttempts: input.executionMode === "CODE_CHANGE" ? 3 : 1,
+        lastCheckFailures: [],
+        ...(input.repairProofInjection ? { repairProofInjection: input.repairProofInjection } : {}),
         state: "QUEUED",
         next: { owner: "splinter", action: input.nextAction },
         result: "PENDING",
@@ -78,6 +83,12 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
   app.post("/api/internal/splinter/jobs/:id/claim", async (req, res) => {
     try { return res.json({ ok: true, job: await deps.service.transition(req.params.id, "RUNNING") }); }
     catch (error) { return reject(res, error instanceof Error && error.name === "SplinterTransitionError" ? 409 : 400, "Splinter job claim was rejected."); }
+  });
+  app.post("/api/internal/splinter/jobs/:id/attempt", async (req, res) => {
+    const parsed = z.object({ lastCheckFailures: z.array(z.string().min(1).max(500)).max(10).default([]) }).strict().safeParse(req.body ?? {});
+    if (!parsed.success) return reject(res, 400, "Splinter attempt evidence was rejected.");
+    try { return res.json({ ok: true, job: await deps.service.beginWorkerAttempt(req.params.id, parsed.data.lastCheckFailures) }); }
+    catch { return reject(res, 409, "Splinter worker attempt was rejected."); }
   });
   app.post("/api/internal/splinter/jobs/:id/outcome", async (req, res) => {
     try { return res.json({ ok: true, job: await deps.service.submitWorkerOutcome(req.params.id, splinterWorkerResultSchema.parse(req.body)) }); }
