@@ -80,7 +80,7 @@ export const splinterLastErrorSchema = z.object({
 });
 
 export const splinterWorkerResultSchema = z.object({
-  workerRunId: z.string().min(1).max(128), status: z.enum(["SUCCEEDED", "FAILED", "AWAITING_HUMAN"]), summary: z.string().min(1).max(500),
+  workerRunId: z.string().min(1).max(128), builderDisplayName: z.literal("Donatello").default("Donatello"), status: z.enum(["SUCCEEDED", "FAILED", "AWAITING_HUMAN"]), summary: z.string().min(1).max(500),
   filesInspected: z.array(z.string().min(1).max(256)).max(50), filesChanged: z.array(z.string().min(1).max(256)).max(50), testsPerformed: z.array(z.string().min(1).max(256)).max(50),
   baseSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), branch: z.string().min(1).max(256).optional(), commitSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), error: z.string().min(1).max(500).optional(), startedAt: z.string().min(1), completedAt: z.string().min(1)
 }).strict();

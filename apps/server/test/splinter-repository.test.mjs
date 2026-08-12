@@ -243,6 +243,11 @@ test("Splinter relay health returns only the safe controller version payload", a
   } finally { server.close(); }
 });
 
+test("legacy Atlas worker evidence remains readable while new builder evidence is Donatello", () => {
+  const legacy = splinterJobSchema.parse({ ...validJob({ workerResult: { workerRunId: "atlas-legacy-run", status: "SUCCEEDED", summary: "Historical Atlas result.", filesInspected: [], filesChanged: [], testsPerformed: [], startedAt: timestamps[0], completedAt: timestamps[1] } }), createdAt: timestamps[0], updatedAt: timestamps[1] });
+  assert.equal(legacy.workerResult.builderDisplayName, "Donatello");
+});
+
 test("RUNNING code-change job records only bounded sanitized repair attempts", async () => {
   const { job, repository, service } = await queuedService();
   await repository.update(job.id, { executionMode: "CODE_CHANGE", allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 });
