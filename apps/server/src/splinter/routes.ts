@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import type { Express, Request, Response } from "express";
-import { splinterWorkerResultSchema } from "@nexteam/core";
+import { idSchema, splinterWorkerResultSchema } from "@nexteam/core";
+import { z } from "zod";
 import type { SplinterRepository } from "./repository.js";
 import type { SplinterJobService } from "./service.js";
 
@@ -16,10 +17,36 @@ function authorized(req: Request, env: NodeJS.ProcessEnv): boolean {
 
 function reject(res: Response, status: number, message: string) { return res.status(status).json({ ok: false, error: message }); }
 
+const splinterJobCreateRequestSchema = z.object({
+  id: idSchema.optional(),
+  goal: z.string().min(1).max(4_000),
+  nextAction: z.string().min(1).max(1_000)
+}).strict();
+
+function createJobId(): string {
+  return `splinter-${crypto.randomUUID()}`;
+}
+
 /** Backend-only relay boundary. It delegates all state changes to SplinterJobService. */
 export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRouteDeps): void {
   const env = deps.env ?? process.env;
   app.use("/api/internal/splinter", (req, res, next) => authorized(req, env) ? next() : reject(res, 401, "Splinter relay authorization is required."));
+  app.post("/api/internal/splinter/jobs", async (req, res) => {
+    try {
+      const input = splinterJobCreateRequestSchema.parse(req.body);
+      const job = await deps.repository.create({
+        id: input.id ?? createJobId(),
+        goal: input.goal,
+        state: "QUEUED",
+        next: { owner: "splinter", action: input.nextAction },
+        result: "PENDING",
+        lastError: null
+      });
+      return res.status(201).json({ ok: true, job });
+    } catch {
+      return reject(res, 400, "Splinter job creation was rejected.");
+    }
+  });
   app.get("/api/internal/splinter/jobs/:id", async (req, res) => {
     const job = await deps.repository.get(req.params.id);
     return job ? res.json({ ok: true, job }) : reject(res, 404, "Splinter job was not found.");

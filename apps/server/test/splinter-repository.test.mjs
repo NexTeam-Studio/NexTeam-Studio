@@ -222,7 +222,25 @@ test("compare-and-set prevents a stale caller from persisting a conflicting tran
 test("Splinter relay API rejects unauthenticated and invalid service credentials", async () => {
   const { repository, service } = await queuedService(); const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
   const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`;
-  try { assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1`)).status, 401); assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1`, { headers: { "x-splinter-relay-token": "wrong" } })).status, 401); } finally { server.close(); }
+  try {
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1`)).status, 401);
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs/splinter-job-1`, { headers: { "x-splinter-relay-token": "wrong" } })).status, 401);
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ goal: "unauthorized", nextAction: "reject" }) })).status, 401);
+  } finally { server.close(); }
+});
+
+test("Splinter relay API creates only normalized queued jobs through authenticated server authority", async () => {
+  const { repository, service } = await queuedService(); const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
+  const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`; const headers = { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" };
+  try {
+    const created = await fetch(`${base}/api/internal/splinter/jobs`, { method: "POST", headers, body: JSON.stringify({ id: "splinter-created-1", goal: "Read one safe file.", nextAction: "Dispatch the authorized smoke task." }) });
+    const body = await created.json();
+    assert.equal(created.status, 201); assert.equal(body.job.state, "QUEUED"); assert.equal(body.job.result, "PENDING"); assert.equal(body.job.next.owner, "splinter"); assert.ok(body.job.createdAt); assert.equal(body.job.createdAt, body.job.updatedAt);
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs`, { method: "POST", headers, body: JSON.stringify({ goal: "invalid", nextAction: "reject", state: "SUCCEEDED" }) })).status, 400);
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs`, { method: "POST", headers, body: JSON.stringify({ goal: "invalid", nextAction: "reject", result: "PASS" }) })).status, 400);
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs`, { method: "POST", headers, body: JSON.stringify({ goal: "invalid" }) })).status, 400);
+    assert.equal((await repository.get("splinter-created-1")).state, "QUEUED");
+  } finally { server.close(); }
 });
 
 test("Splinter relay API reads, claims, and records only validated outcomes through the service", async () => {
