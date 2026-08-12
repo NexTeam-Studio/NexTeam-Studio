@@ -82,6 +82,7 @@ import { assertRequiredPersistence, assertTenantRuntimePersistence } from "./app
 import { registerIntegratedNexiRoutes } from "./nexi/integratedRoutes.js";
 import { registerUsersRoutes } from "./modules/nexops/areas/users/routes.js";
 import { FirestoreSplinterRepository } from "./splinter/repository.js";
+import { FirestoreWorkRegistry, SplinterWorkSelector } from "./splinter/workRegistry.js";
 import { SplinterJobService } from "./splinter/service.js";
 import { registerSplinterRelayRoutes } from "./splinter/routes.js";
 
@@ -92,6 +93,8 @@ const adminDb = getAdminDb();
 assertTenantRuntimePersistence(process.env, Boolean(adminDb));
 const splinterRepository = adminDb ? new FirestoreSplinterRepository(adminDb) : null;
 const splinterService = splinterRepository ? new SplinterJobService(splinterRepository) : null;
+const splinterWorkRegistry = adminDb ? new FirestoreWorkRegistry(adminDb) : null;
+const splinterWorkSelector = splinterWorkRegistry && splinterRepository ? new SplinterWorkSelector(splinterWorkRegistry, splinterRepository) : null;
 assertRequiredPersistence(process.env, {
   ApprovalQueue: Boolean(adminDb),
   Content: Boolean(adminDb),
@@ -390,7 +393,7 @@ registerSitesRoutes(app, {
   env: process.env
 });
 registerSelfRepairRoutes(app, { service: selfRepairService, env: process.env });
-if (splinterRepository && splinterService) registerSplinterRelayRoutes(app, { repository: splinterRepository, service: splinterService, env: process.env });
+if (splinterRepository && splinterService && splinterWorkRegistry && splinterWorkSelector) registerSplinterRelayRoutes(app, { repository: splinterRepository, service: splinterService, workRegistry: splinterWorkRegistry, workSelector: splinterWorkSelector, env: process.env });
 registerSeoRoutes(app, { repository: seoRepository, sitesRepository, approvalQueue, env: process.env });
 
 // Nexi has its own top-level workspace. Preserve the short-lived preview path

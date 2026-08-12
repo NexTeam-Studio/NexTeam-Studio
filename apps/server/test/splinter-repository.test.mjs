@@ -8,6 +8,7 @@ import {
   SPLINTER_JOB_COLLECTION_PATH
 } from "../src/splinter/repository.ts";
 import { SplinterJobService } from "../src/splinter/service.ts";
+import { InMemoryWorkRegistry, SPLINTER_WORK_ITEM_COLLECTION_PATH, SplinterWorkSelector, validateDependencyGraph } from "../src/splinter/workRegistry.ts";
 import { registerSplinterRelayRoutes } from "../src/splinter/routes.ts";
 import express from "express";
 
@@ -278,6 +279,25 @@ test("owner RFI resolution requires a distinct owner credential", async () => {
     assert.equal((await fetch(`${base}/api/internal/splinter/jobs/${job.id}/rfi/resolve`, { method: "POST", headers: { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" }, body: JSON.stringify({ rfiId: rfi.rfiId, resolution: "a", resolutionScope: "JOB_ONLY" }) })).status, 401);
     assert.equal((await fetch(`${base}/api/internal/splinter/jobs/${job.id}/rfi/resolve`, { method: "POST", headers: { "content-type": "application/json", "x-splinter-owner-token": "owner-secret" }, body: JSON.stringify({ rfiId: rfi.rfiId, resolution: "a", resolutionScope: "JOB_ONLY" }) })).status, 200);
   } finally { await new Promise((resolve) => server.close(resolve)); }
+});
+
+function workItem(overrides = {}) { return { workItemId: "work-a", title: "Read service", goal: "Inspect apps/server/src/splinter/service.ts without modifying files.", module: "splinter", tenantScope: "platform", priority: 2, launchCritical: true, dependencies: [], acceptanceCriteria: ["File is inspected."], requiredChecks: [], allowedPaths: [], pathDiscoveryPolicy: "APPROVED_DISCOVERY", ownerDecisionRequired: false, promotionPolicy: "NONE", sourceRequirementRefs: ["docs/specs/test.md#A"], requirementRevision: "r1", nonPromotable: true, completedEvidenceRefs: [], ...overrides }; }
+
+test("Splinter work registry validates records, dependency cycles, and deterministic blocked-work selection", async () => {
+  const work = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository(); const selector = new SplinterWorkSelector(work, jobs);
+  await work.create(workItem({ workItemId: "blocked", priority: 1 })); await work.update("blocked", { status: "BLOCKED", blockedBy: { classification: "EXTERNAL_BLOCKER", detail: "provider unavailable" } });
+  await work.create(workItem({ workItemId: "work-a", priority: 2 })); await selector.approve("work-a");
+  const selected = await selector.select("abcdef1"); assert.equal(selected.item.workItemId, "work-a"); assert.equal(selected.item.status, "CLAIMED"); assert.equal(selected.job.state, "QUEUED"); assert.equal(SPLINTER_WORK_ITEM_COLLECTION_PATH, "admin/splinter/workItems");
+  assert.equal(await selector.select("abcdef1"), null);
+  const cycleA = { ...workItem({ workItemId: "cycle-a", dependencies: ["cycle-b"] }), status: "DRAFT", createdAt: timestamps[0], updatedAt: timestamps[0] }; const cycleB = { ...workItem({ workItemId: "cycle-b", dependencies: ["cycle-a"] }), status: "DRAFT", createdAt: timestamps[0], updatedAt: timestamps[0] };
+  assert.throws(() => validateDependencyGraph([cycleA, cycleB]), /Circular/);
+});
+
+test("Splinter work selector requires completed dependency evidence and linked job proof before completion", async () => {
+  const work = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository(); const selector = new SplinterWorkSelector(work, jobs);
+  await work.create(workItem({ workItemId: "dependency" })); await work.update("dependency", { status: "COMPLETED", completedEvidenceRefs: ["job:done"] });
+  await work.create(workItem({ workItemId: "dependent", dependencies: ["dependency"] })); await selector.approve("dependent");
+  const next = await selector.select("abcdef1"); assert.equal(next.item.workItemId, "dependent"); await assert.rejects(() => selector.reconcile("dependent", ["claim-only"]), /not complete/);
 });
 
 test("legacy Atlas worker evidence remains readable while new builder evidence is Donatello", () => {
