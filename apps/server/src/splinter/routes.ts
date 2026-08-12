@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { Express, Request, Response } from "express";
-import { idSchema, splinterDeploymentStatusSchema, splinterExecutionModeSchema, splinterIntegrationStatusSchema, splinterReconciliationEvidenceSchema, splinterRepairProofInjectionSchema, splinterRequiredCheckSchema, splinterReviewSchema, splinterRfiSchema, splinterWorkerResultSchema } from "@nexteam/core";
+import { idSchema, splinterDeploymentStatusSchema, splinterExecutionModeSchema, splinterIntegrationStatusSchema, splinterReconciliationEvidenceSchema, splinterRepairProofInjectionSchema, splinterRepositoryTargetSchema, splinterRequiredCheckSchema, splinterReviewSchema, splinterRfiSchema, splinterWorkerResultSchema } from "@nexteam/core";
 import { z } from "zod";
 import type { SplinterRepository } from "./repository.js";
 import type { SplinterJobService } from "./service.js";
@@ -60,7 +60,7 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
   });
   app.post("/api/internal/splinter/work-items", async (req, res) => {
     if (!deps.workRegistry || !ownerAuthorized(req, env)) return reject(res, 401, "Splinter owner authorization is required.");
-    const parsed = z.object({ workItemId: idSchema, title: z.string().min(1).max(200), goal: z.string().min(1).max(4000), module: z.string().min(1).max(100), tenantScope: z.string().min(1).max(100), priority: z.number().int().min(1).max(5), launchCritical: z.boolean().optional(), dependencies: z.array(idSchema).max(30).default([]), acceptanceCriteria: z.array(z.string().min(1).max(1000)).max(50), requiredChecks: z.array(splinterRequiredCheckSchema).max(10), allowedPaths: z.array(z.string().min(1).max(256)).max(50).default([]), pathDiscoveryPolicy: z.enum(["EXPLICIT_PATHS", "APPROVED_DISCOVERY"]).default("EXPLICIT_PATHS"), executionMode: splinterExecutionModeSchema.default("READ_ONLY"), reviewRequired: z.boolean().optional(), maxAttempts: z.number().int().min(1).max(3).optional(), ownerDecisionRequired: z.boolean().default(false), promotionPolicy: z.enum(["NONE", "STAGING_ONLY"]).default("NONE"), sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128), nonPromotable: z.boolean().default(false), reconciliationMode: z.boolean().default(false) }).strict().safeParse(req.body);
+    const parsed = z.object({ workItemId: idSchema, title: z.string().min(1).max(200), goal: z.string().min(1).max(4000), module: z.string().min(1).max(100), tenantScope: z.string().min(1).max(100), priority: z.number().int().min(1).max(5), launchCritical: z.boolean().optional(), dependencies: z.array(idSchema).max(30).default([]), acceptanceCriteria: z.array(z.string().min(1).max(1000)).max(50), requiredChecks: z.array(splinterRequiredCheckSchema).max(10), allowedPaths: z.array(z.string().min(1).max(256)).max(50).default([]), pathDiscoveryPolicy: z.enum(["EXPLICIT_PATHS", "APPROVED_DISCOVERY"]).default("EXPLICIT_PATHS"), executionMode: splinterExecutionModeSchema.default("READ_ONLY"), repositoryTarget: splinterRepositoryTargetSchema.default("NEXTEAM"), reviewRequired: z.boolean().optional(), maxAttempts: z.number().int().min(1).max(3).optional(), ownerDecisionRequired: z.boolean().default(false), promotionPolicy: z.enum(["NONE", "STAGING_ONLY"]).default("NONE"), sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128), nonPromotable: z.boolean().default(false), reconciliationMode: z.boolean().default(false) }).strict().safeParse(req.body);
     if (!parsed.success) return reject(res, 400, "Splinter work item creation was rejected.");
     try { return res.status(201).json({ ok: true, item: await deps.workRegistry.create({ ...parsed.data, launchCritical: parsed.data.launchCritical ?? false, executionMode: parsed.data.executionMode ?? "READ_ONLY", reviewRequired: parsed.data.reviewRequired ?? false, maxAttempts: parsed.data.maxAttempts ?? (parsed.data.executionMode === "CODE_CHANGE" ? 3 : 1), ownerDecisionRequired: parsed.data.ownerDecisionRequired ?? false, promotionPolicy: parsed.data.promotionPolicy ?? "NONE", pathDiscoveryPolicy: parsed.data.pathDiscoveryPolicy ?? "EXPLICIT_PATHS", nonPromotable: parsed.data.nonPromotable ?? false, reconciliationMode: parsed.data.reconciliationMode ?? false, completedEvidenceRefs: [] }) }); } catch { return reject(res, 400, "Splinter work item creation was rejected."); }
   });
@@ -108,6 +108,7 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
         id: input.id ?? createJobId(),
         goal: input.goal,
         executionMode: input.executionMode,
+        repositoryTarget: "NEXTEAM",
         allowedPaths: input.allowedPaths,
         pathDiscoveryPolicy: "EXPLICIT_PATHS",
         acceptanceCriteria: input.acceptanceCriteria,
