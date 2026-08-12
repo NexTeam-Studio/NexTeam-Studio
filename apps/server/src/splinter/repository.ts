@@ -16,6 +16,7 @@ export { SPLINTER_JOB_COLLECTION_PATH };
 export interface SplinterRepository {
   create(job: SplinterJobCreate): Promise<SplinterJob>;
   get(id: string): Promise<SplinterJob | null>;
+  listQueued(limit: number): Promise<SplinterJob[]>;
   update(id: string, patch: SplinterJobUpdate): Promise<SplinterJob | null>;
   compareAndSet(id: string, expectedState: SplinterJobState, patch: SplinterJobUpdate): Promise<SplinterJob | null>;
 }
@@ -90,6 +91,13 @@ export class InMemorySplinterRepository implements SplinterRepository {
     return this.jobs.get(id) ?? null;
   }
 
+  async listQueued(limit: number): Promise<SplinterJob[]> {
+    return [...this.jobs.values()]
+      .filter((job) => job.state === "QUEUED")
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id))
+      .slice(0, limit);
+  }
+
   async update(id: string, patch: SplinterJobUpdate): Promise<SplinterJob | null> {
     const existing = this.jobs.get(id);
     if (!existing) return null;
@@ -131,6 +139,16 @@ export class FirestoreSplinterRepository implements SplinterRepository {
     const snapshot = await this.jobRef(id).get();
     if (!snapshot.exists) return null;
     return splinterJobSchema.parse(snapshot.data());
+  }
+
+  async listQueued(limit: number): Promise<SplinterJob[]> {
+    const snapshot = await this.db.collection("admin").doc("splinter").collection("splinterJobs")
+      .where("state", "==", "QUEUED")
+      .orderBy("createdAt", "asc")
+      .orderBy("id", "asc")
+      .limit(limit)
+      .get();
+    return snapshot.docs.map((document) => splinterJobSchema.parse(document.data()));
   }
 
   async update(id: string, patch: SplinterJobUpdate): Promise<SplinterJob | null> {

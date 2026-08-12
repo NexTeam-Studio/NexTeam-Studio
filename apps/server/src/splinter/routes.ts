@@ -27,6 +27,10 @@ function createJobId(): string {
   return `splinter-${crypto.randomUUID()}`;
 }
 
+function queuedProjection(job: { id: string; goal: string; state: string; result: string; next: { owner: string; action: string }; createdAt: string; updatedAt: string }) {
+  return { id: job.id, goal: job.goal, state: job.state, result: job.result, next: job.next, createdAt: job.createdAt, updatedAt: job.updatedAt };
+}
+
 /** Backend-only relay boundary. It delegates all state changes to SplinterJobService. */
 export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRouteDeps): void {
   const env = deps.env ?? process.env;
@@ -46,6 +50,10 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
     } catch {
       return reject(res, 400, "Splinter job creation was rejected.");
     }
+  });
+  app.get("/api/internal/splinter/jobs", async (req, res) => {
+    if (req.query.state !== "QUEUED") return reject(res, 400, "Only queued Splinter job discovery is supported.");
+    return res.json({ ok: true, jobs: (await deps.repository.listQueued(10)).map(queuedProjection) });
   });
   app.get("/api/internal/splinter/jobs/:id", async (req, res) => {
     const job = await deps.repository.get(req.params.id);

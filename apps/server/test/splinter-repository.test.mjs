@@ -243,6 +243,22 @@ test("Splinter relay API creates only normalized queued jobs through authenticat
   } finally { server.close(); }
 });
 
+test("Splinter relay API returns only the oldest bounded queued jobs in a sanitized deterministic projection", async () => {
+  const repository = new InMemorySplinterRepository({ now: (() => { let index = 0; return () => `2026-08-11T12:0${index++}:00.000Z`; })() });
+  const service = new SplinterJobService(repository);
+  await repository.create(validJob({ id: "splinter-z", goal: "oldest" }));
+  await repository.create(validJob({ id: "splinter-a", goal: "second" }));
+  await repository.create(validJob({ id: "splinter-running", goal: "not queued" }));
+  await service.transition("splinter-running", "RUNNING");
+  const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
+  const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`; const headers = { "x-splinter-relay-token": "relay-secret" };
+  try {
+    const response = await fetch(`${base}/api/internal/splinter/jobs?state=QUEUED`, { headers }); const body = await response.json();
+    assert.equal(response.status, 200); assert.deepEqual(body.jobs.map((job) => job.id), ["splinter-z", "splinter-a"]); assert.equal("lastError" in body.jobs[0], false); assert.equal("workerResult" in body.jobs[0], false);
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs?state=RUNNING`, { headers })).status, 400);
+  } finally { server.close(); }
+});
+
 test("Splinter relay API reads, claims, and records only validated outcomes through the service", async () => {
   const { repository, service } = await queuedService(); const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret" } });
   const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`; const headers = { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" };
