@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { Express, Request, Response } from "express";
-import { idSchema, splinterDeploymentStatusSchema, splinterExecutionModeSchema, splinterIntegrationStatusSchema, splinterRepairProofInjectionSchema, splinterRequiredCheckSchema, splinterReviewSchema, splinterWorkerResultSchema } from "@nexteam/core";
+import { idSchema, splinterDeploymentStatusSchema, splinterExecutionModeSchema, splinterIntegrationStatusSchema, splinterRepairProofInjectionSchema, splinterRequiredCheckSchema, splinterReviewSchema, splinterRfiSchema, splinterWorkerResultSchema } from "@nexteam/core";
 import { z } from "zod";
 import type { SplinterRepository } from "./repository.js";
 import type { SplinterJobService } from "./service.js";
@@ -10,6 +10,13 @@ export interface SplinterRelayRouteDeps { repository: SplinterRepository; servic
 function authorized(req: Request, env: NodeJS.ProcessEnv): boolean {
   const expected = env.SPLINTER_RELAY_SERVICE_TOKEN?.trim();
   const received = req.header("x-splinter-relay-token")?.trim();
+  if (!expected || !received) return false;
+  const left = Buffer.from(expected); const right = Buffer.from(received);
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+function ownerAuthorized(req: Request, env: NodeJS.ProcessEnv): boolean {
+  const expected = env.SPLINTER_OWNER_SERVICE_TOKEN?.trim();
+  const received = req.header("x-splinter-owner-token")?.trim();
   if (!expected || !received) return false;
   const left = Buffer.from(expected); const right = Buffer.from(received);
   return left.length === right.length && crypto.timingSafeEqual(left, right);
@@ -36,13 +43,20 @@ function createJobId(): string {
   return `splinter-${crypto.randomUUID()}`;
 }
 
-function queuedProjection(job: { id: string; goal: string; executionMode: string; allowedPaths: string[]; acceptanceCriteria: string[]; requiredChecks: string[]; attemptCount: number; maxAttempts: number; lastCheckFailures: string[]; repairProofInjection?: string | undefined; state: string; result: string; next: { owner: string; action: string }; createdAt: string; updatedAt: string }) {
-  return { id: job.id, goal: job.goal, executionMode: job.executionMode, allowedPaths: job.allowedPaths, acceptanceCriteria: job.acceptanceCriteria, requiredChecks: job.requiredChecks, attemptCount: job.attemptCount, maxAttempts: job.maxAttempts, lastCheckFailures: job.lastCheckFailures, repairProofInjection: job.repairProofInjection, state: job.state, result: job.result, next: job.next, createdAt: job.createdAt, updatedAt: job.updatedAt };
+function queuedProjection(job: { id: string; goal: string; executionMode: string; allowedPaths: string[]; acceptanceCriteria: string[]; requiredChecks: string[]; attemptCount: number; maxAttempts: number; lastCheckFailures: string[]; repairProofInjection?: string | undefined; rfi?: unknown; state: string; result: string; next: { owner: string; action: string }; createdAt: string; updatedAt: string }) {
+  return { id: job.id, goal: job.goal, executionMode: job.executionMode, allowedPaths: job.allowedPaths, acceptanceCriteria: job.acceptanceCriteria, requiredChecks: job.requiredChecks, attemptCount: job.attemptCount, maxAttempts: job.maxAttempts, lastCheckFailures: job.lastCheckFailures, repairProofInjection: job.repairProofInjection, rfi: job.rfi, state: job.state, result: job.result, next: job.next, createdAt: job.createdAt, updatedAt: job.updatedAt };
 }
 
 /** Backend-only relay boundary. It delegates all state changes to SplinterJobService. */
 export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRouteDeps): void {
   const env = deps.env ?? process.env;
+  app.post("/api/internal/splinter/jobs/:id/rfi/resolve", async (req, res) => {
+    if (!ownerAuthorized(req, env)) return reject(res, 401, "Splinter owner authorization is required.");
+    const parsed = z.object({ rfiId: idSchema, resolution: z.string().min(1).max(64), resolutionScope: z.enum(["JOB_ONLY", "MODULE", "TENANT", "GLOBAL"]) }).strict().safeParse(req.body);
+    if (!parsed.success) return reject(res, 400, "Splinter owner resolution was rejected.");
+    try { return res.json({ ok: true, job: await deps.service.resolveOwnerRfi(req.params.id, parsed.data) }); }
+    catch { return reject(res, 409, "Splinter owner resolution was rejected."); }
+  });
   app.use("/api/internal/splinter", (req, res, next) => authorized(req, env) ? next() : reject(res, 401, "Splinter relay authorization is required."));
   app.get("/api/internal/splinter/health", (_req, res) => {
     return res.json({ ok: true, controllerVersion: "splinter-v1" });
@@ -113,6 +127,12 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
   app.post("/api/internal/splinter/jobs/:id/repair", async (req, res) => {
     try { return res.json({ ok: true, job: await deps.service.recordReviewRepair(req.params.id, splinterWorkerResultSchema.parse(req.body)) }); }
     catch { return reject(res, 400, "Splinter repaired commit evidence was rejected."); }
+  });
+  app.post("/api/internal/splinter/jobs/:id/escalation", async (req, res) => {
+    const parsed = z.object({ classification: z.enum(["AUTONOMOUS", "EXTERNAL_BLOCKER", "OWNER_REQUIRED", "SAFETY_STOP"]), detail: z.string().min(1).max(500), rfi: splinterRfiSchema.optional() }).strict().safeParse(req.body);
+    if (!parsed.success) return reject(res, 400, "Splinter issue classification was rejected.");
+    try { return res.json({ ok: true, job: await deps.service.classifyIssue(req.params.id, parsed.data) }); }
+    catch { return reject(res, 409, "Splinter issue classification was rejected."); }
   });
   app.post("/api/internal/splinter/jobs/:id/integration/start", async (req, res) => {
     const parsed = z.object({ stagingBaseSha: z.string().regex(/^[a-f0-9]{7,64}$/i), approvedCommitSha: z.string().regex(/^[a-f0-9]{7,64}$/i) }).strict().safeParse(req.body);

@@ -27,6 +27,16 @@ export const splinterJobOwnerSchema = z.enum(["splinter", "worker", "human"]);
 export const splinterJobResultSchema = z.enum(["PENDING", "PASS", "FAIL"]);
 
 export const splinterExecutionModeSchema = z.enum(["READ_ONLY", "CODE_CHANGE"]);
+export const splinterEscalationClassSchema = z.enum(["AUTONOMOUS", "EXTERNAL_BLOCKER", "OWNER_REQUIRED", "SAFETY_STOP"]);
+export const splinterResolutionScopeSchema = z.enum(["JOB_ONLY", "MODULE", "TENANT", "GLOBAL"]);
+export const splinterRfiOptionSchema = z.object({ id: z.string().min(1).max(64), label: z.string().min(1).max(300) }).strict();
+export const splinterRfiSchema = z.object({
+  rfiId: idSchema, jobId: idSchema, category: z.literal("OWNER_REQUIRED"), title: z.string().min(1).max(200),
+  decisionNeeded: z.string().min(1).max(500), whyAutomationCannotDecide: z.string().min(1).max(500),
+  knownFacts: z.array(z.string().min(1).max(500)).min(1).max(10), options: z.array(splinterRfiOptionSchema).min(2).max(5),
+  recommendedOption: z.string().min(1).max(64), affectedScope: z.string().min(1).max(300), currentSafeState: z.string().min(1).max(300),
+  blocking: z.boolean(), createdAt: z.string().min(1), resolvedAt: z.string().min(1).optional(), resolution: z.string().min(1).max(500).optional(), resolutionScope: splinterResolutionScopeSchema.optional()
+}).strict();
 
 export const splinterRequiredCheckSchema = z.enum([
   "SPLINTER_FOCUSED_TESTS",
@@ -106,6 +116,8 @@ export const splinterJobSchema = z.object({
   reviewCycleCount: z.number().int().min(0).default(0),
   maxReviewCycles: z.number().int().min(1).max(3).default(3),
   reviewHistory: z.array(splinterReviewSchema).max(3).default([]),
+  escalation: z.object({ classification: splinterEscalationClassSchema, detail: z.string().min(1).max(500) }).optional(),
+  rfi: splinterRfiSchema.optional(),
   state: splinterJobStateSchema,
   next: z.object({
     owner: splinterJobOwnerSchema,

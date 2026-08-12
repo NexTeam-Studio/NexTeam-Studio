@@ -243,6 +243,43 @@ test("Splinter relay health returns only the safe controller version payload", a
   } finally { server.close(); }
 });
 
+test("Splinter classifies ordinary failures without creating an owner RFI", async () => {
+  const { job, service } = await queuedService(); await service.transition(job.id, "RUNNING");
+  const updated = await service.classifyIssue(job.id, { classification: "AUTONOMOUS", detail: "Focused test failed; repair remains authorized." });
+  assert.equal(updated.state, "RUNNING"); assert.equal(updated.escalation.classification, "AUTONOMOUS"); assert.equal(updated.rfi, undefined);
+});
+
+test("Splinter records an owner RFI and resumes only after an authorized resolution", async () => {
+  const { job, service } = await queuedService(); await service.transition(job.id, "RUNNING");
+  const rfi = { rfiId: "rfi-owner-choice-1", jobId: job.id, category: "OWNER_REQUIRED", title: "Status vocabulary", decisionNeeded: "Choose a status label.", whyAutomationCannotDecide: "No approved requirement selects either valid term.", knownFacts: ["Both labels are valid."], options: [{ id: "ready", label: "Use ready" }, { id: "available", label: "Use available" }], recommendedOption: "ready", affectedScope: "Test-only Splinter proof", currentSafeState: "No source change has been made.", blocking: true, createdAt: timestamps[1] };
+  const paused = await service.classifyIssue(job.id, { classification: "OWNER_REQUIRED", detail: "Product wording is ambiguous.", rfi });
+  assert.equal(paused.state, "AWAITING_HUMAN"); assert.equal(paused.next.owner, "human");
+  const resumed = await service.resolveOwnerRfi(job.id, { rfiId: rfi.rfiId, resolution: "ready", resolutionScope: "JOB_ONLY" });
+  assert.equal(resumed.state, "QUEUED"); assert.equal(resumed.rfi.resolution, "ready"); assert.equal(resumed.rfi.resolutionScope, "JOB_ONLY");
+  await assert.rejects(() => service.resolveOwnerRfi(job.id, { rfiId: rfi.rfiId, resolution: "ready", resolutionScope: "JOB_ONLY" }), { code: "INVALID_TRANSITION" });
+});
+
+test("Splinter safety stops fail closed and external blockers do not create owner RFIs", async () => {
+  const { job, service } = await queuedService(); await service.transition(job.id, "RUNNING");
+  const blocked = await service.classifyIssue(job.id, { classification: "EXTERNAL_BLOCKER", detail: "Third-party service is unavailable." });
+  assert.equal(blocked.state, "RUNNING"); assert.equal(blocked.rfi, undefined);
+  const { job: safetyJob, service: safetyService } = await queuedService(); await safetyService.transition(safetyJob.id, "RUNNING");
+  const stopped = await safetyService.classifyIssue(safetyJob.id, { classification: "SAFETY_STOP", detail: "Attempted tenant-boundary bypass." });
+  assert.equal(stopped.state, "FAILED"); assert.equal(stopped.result, "FAIL");
+});
+
+test("owner RFI resolution requires a distinct owner credential", async () => {
+  const { job, repository, service } = await queuedService(); await service.transition(job.id, "RUNNING");
+  const rfi = { rfiId: "rfi-auth-1", jobId: job.id, category: "OWNER_REQUIRED", title: "Choice", decisionNeeded: "Choose.", whyAutomationCannotDecide: "Ambiguous.", knownFacts: ["Two valid options."], options: [{ id: "a", label: "A" }, { id: "b", label: "B" }], recommendedOption: "a", affectedScope: "test", currentSafeState: "paused", blocking: true, createdAt: timestamps[1] };
+  await service.classifyIssue(job.id, { classification: "OWNER_REQUIRED", detail: "Ambiguous.", rfi });
+  const app = express(); app.use(express.json()); registerSplinterRelayRoutes(app, { repository, service, env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret", SPLINTER_OWNER_SERVICE_TOKEN: "owner-secret" } });
+  const server = app.listen(0); const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs/${job.id}/rfi/resolve`, { method: "POST", headers: { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" }, body: JSON.stringify({ rfiId: rfi.rfiId, resolution: "a", resolutionScope: "JOB_ONLY" }) })).status, 401);
+    assert.equal((await fetch(`${base}/api/internal/splinter/jobs/${job.id}/rfi/resolve`, { method: "POST", headers: { "content-type": "application/json", "x-splinter-owner-token": "owner-secret" }, body: JSON.stringify({ rfiId: rfi.rfiId, resolution: "a", resolutionScope: "JOB_ONLY" }) })).status, 200);
+  } finally { await new Promise((resolve) => server.close(resolve)); }
+});
+
 test("legacy Atlas worker evidence remains readable while new builder evidence is Donatello", () => {
   const legacy = splinterJobSchema.parse({ ...validJob({ workerResult: { workerRunId: "atlas-legacy-run", status: "SUCCEEDED", summary: "Historical Atlas result.", filesInspected: [], filesChanged: [], testsPerformed: [], startedAt: timestamps[0], completedAt: timestamps[1] } }), createdAt: timestamps[0], updatedAt: timestamps[1] });
   assert.equal(legacy.workerResult.builderDisplayName, "Donatello");

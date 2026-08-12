@@ -1,10 +1,10 @@
-import { idSchema, splinterDeploymentSchema, splinterIntegrationSchema, splinterJobStateSchema, splinterReviewSchema, splinterWorkerResultSchema, type SplinterJob, type SplinterJobState, type SplinterReview, type SplinterWorkerResult } from "@nexteam/core";
+import { idSchema, splinterDeploymentSchema, splinterEscalationClassSchema, splinterIntegrationSchema, splinterJobStateSchema, splinterResolutionScopeSchema, splinterReviewSchema, splinterRfiSchema, splinterWorkerResultSchema, type SplinterJob, type SplinterJobState, type SplinterReview, type SplinterWorkerResult } from "@nexteam/core";
 import type { SplinterRepository } from "./repository.js";
 
 const ALLOWED_TRANSITIONS: Readonly<Record<SplinterJobState, readonly SplinterJobState[]>> = {
   QUEUED: ["RUNNING"],
   RUNNING: ["AWAITING_HUMAN", "SUCCEEDED", "FAILED"],
-  AWAITING_HUMAN: ["RUNNING", "FAILED"],
+  AWAITING_HUMAN: ["RUNNING", "QUEUED", "FAILED"],
   SUCCEEDED: [],
   FAILED: ["RUNNING"]
 };
@@ -84,8 +84,7 @@ function transitionPatch(targetState: SplinterJobState, input: SplinterTransitio
         result: "FAIL" as const,
         lastError: input.errorMessage ? { message: input.errorMessage, at: timestamp } : null
       };
-    case "QUEUED":
-      throw new SplinterTransitionError("INVALID_TRANSITION", "Jobs cannot transition back to QUEUED.");
+    case "QUEUED": return { state: "QUEUED" as const, next: { owner: "splinter" as const, action: input.action ?? "Resume authorized job work." }, result: "PENDING" as const, lastError: null };
   }
 }
 
@@ -251,5 +250,35 @@ export class SplinterJobService {
     const updated = await this.repository.compareAndSet(id, "SUCCEEDED", { deployment: parsed });
     if (!updated) throw new SplinterTransitionError("CONFLICT", "Splinter job changed before deployment result could be recorded.");
     return updated;
+  }
+
+  async classifyIssue(id: string, input: { classification: "AUTONOMOUS" | "EXTERNAL_BLOCKER" | "OWNER_REQUIRED" | "SAFETY_STOP"; detail: string; rfi?: unknown }): Promise<SplinterJob> {
+    const classification = splinterEscalationClassSchema.parse(input.classification);
+    const detail = redactWorkerText(input.detail);
+    const job = await this.repository.get(id);
+    if (!job || job.state !== "RUNNING") throw new SplinterTransitionError("INVALID_TRANSITION", "Only RUNNING jobs can be classified.");
+    if (classification === "OWNER_REQUIRED") {
+      const rfi = splinterRfiSchema.parse(input.rfi);
+      if (rfi.jobId !== id || rfi.category !== "OWNER_REQUIRED" || rfi.resolvedAt) throw new SplinterTransitionError("INVALID_TRANSITION", "Owner RFI does not match the active job.");
+      const updated = await this.repository.compareAndSet(id, "RUNNING", { state: "AWAITING_HUMAN", next: { owner: "human", action: rfi.decisionNeeded }, result: "PENDING", escalation: { classification, detail }, rfi });
+      if (updated) return updated;
+      throw new SplinterTransitionError("CONFLICT", "Job changed before RFI could be recorded.");
+    }
+    const patch = classification === "SAFETY_STOP"
+      ? { state: "FAILED" as const, result: "FAIL" as const, next: { owner: "splinter" as const, action: "Safety stop: do not continue." }, lastError: { message: detail, at: this.now() }, escalation: { classification, detail } }
+      : { escalation: { classification, detail }, next: { owner: "splinter" as const, action: classification === "EXTERNAL_BLOCKER" ? "External blocker: recheck safely." : "Continue through authorized autonomous rail." } };
+    const updated = await this.repository.compareAndSet(id, "RUNNING", patch);
+    if (updated) return updated;
+    throw new SplinterTransitionError("CONFLICT", "Job changed before issue classification could be recorded.");
+  }
+
+  async resolveOwnerRfi(id: string, input: { rfiId: string; resolution: string; resolutionScope: "JOB_ONLY" | "MODULE" | "TENANT" | "GLOBAL" }): Promise<SplinterJob> {
+    const scope = splinterResolutionScopeSchema.parse(input.resolutionScope);
+    const job = await this.repository.get(id);
+    if (!job || job.state !== "AWAITING_HUMAN" || !job.rfi || job.rfi.rfiId !== input.rfiId || job.rfi.resolvedAt) throw new SplinterTransitionError("INVALID_TRANSITION", "No unresolved owner RFI is available for this job.");
+    if (!job.rfi.options.some((option) => option.id === input.resolution)) throw new SplinterTransitionError("INVALID_TRANSITION", "Owner resolution is not one of the recorded options.");
+    const updated = await this.repository.compareAndSet(id, "AWAITING_HUMAN", { state: "QUEUED", next: { owner: "splinter", action: `Resume with owner decision: ${input.resolution}` }, result: "PENDING", escalation: { classification: "AUTONOMOUS", detail: "Owner decision recorded; resume authorized work." }, rfi: { ...job.rfi, resolution: input.resolution, resolutionScope: scope, resolvedAt: this.now() } });
+    if (updated) return updated;
+    throw new SplinterTransitionError("CONFLICT", "Job changed before owner resolution could be recorded.");
   }
 }
