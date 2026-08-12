@@ -75,7 +75,7 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
         maxAttempts: input.executionMode === "CODE_CHANGE" ? 3 : 1,
         lastCheckFailures: [],
         ...(input.repairProofInjection ? { repairProofInjection: input.repairProofInjection } : {}),
-        nonPromotable: (input.id ?? "").startsWith("splinter-review-proof-"),
+        nonPromotable: (input.id ?? "").startsWith("splinter-review-proof-") || (input.id ?? "").startsWith("splinter-rfi-proof-"),
         reviewRequired: input.executionMode === "CODE_CHANGE",
         reviewStatus: "NOT_REQUIRED",
         workerHistory: [],

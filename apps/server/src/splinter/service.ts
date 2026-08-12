@@ -256,18 +256,18 @@ export class SplinterJobService {
     const classification = splinterEscalationClassSchema.parse(input.classification);
     const detail = redactWorkerText(input.detail);
     const job = await this.repository.get(id);
-    if (!job || job.state !== "RUNNING") throw new SplinterTransitionError("INVALID_TRANSITION", "Only RUNNING jobs can be classified.");
+    if (!job || !["QUEUED", "RUNNING"].includes(job.state)) throw new SplinterTransitionError("INVALID_TRANSITION", "Only active or queued jobs can be classified.");
     if (classification === "OWNER_REQUIRED") {
       const rfi = splinterRfiSchema.parse(input.rfi);
       if (rfi.jobId !== id || rfi.category !== "OWNER_REQUIRED" || rfi.resolvedAt) throw new SplinterTransitionError("INVALID_TRANSITION", "Owner RFI does not match the active job.");
-      const updated = await this.repository.compareAndSet(id, "RUNNING", { state: "AWAITING_HUMAN", next: { owner: "human", action: rfi.decisionNeeded }, result: "PENDING", escalation: { classification, detail }, rfi });
+      const updated = await this.repository.compareAndSet(id, job.state, { state: "AWAITING_HUMAN", next: { owner: "human", action: rfi.decisionNeeded }, result: "PENDING", escalation: { classification, detail }, rfi });
       if (updated) return updated;
       throw new SplinterTransitionError("CONFLICT", "Job changed before RFI could be recorded.");
     }
     const patch = classification === "SAFETY_STOP"
       ? { state: "FAILED" as const, result: "FAIL" as const, next: { owner: "splinter" as const, action: "Safety stop: do not continue." }, lastError: { message: detail, at: this.now() }, escalation: { classification, detail } }
       : { escalation: { classification, detail }, next: { owner: "splinter" as const, action: classification === "EXTERNAL_BLOCKER" ? "External blocker: recheck safely." : "Continue through authorized autonomous rail." } };
-    const updated = await this.repository.compareAndSet(id, "RUNNING", patch);
+    const updated = await this.repository.compareAndSet(id, job.state, patch);
     if (updated) return updated;
     throw new SplinterTransitionError("CONFLICT", "Job changed before issue classification could be recorded.");
   }
