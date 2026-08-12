@@ -1,4 +1,4 @@
-import { idSchema, splinterIntegrationSchema, splinterJobStateSchema, splinterReviewSchema, splinterWorkerResultSchema, type SplinterJob, type SplinterJobState, type SplinterReview, type SplinterWorkerResult } from "@nexteam/core";
+import { idSchema, splinterDeploymentSchema, splinterIntegrationSchema, splinterJobStateSchema, splinterReviewSchema, splinterWorkerResultSchema, type SplinterJob, type SplinterJobState, type SplinterReview, type SplinterWorkerResult } from "@nexteam/core";
 import type { SplinterRepository } from "./repository.js";
 
 const ALLOWED_TRANSITIONS: Readonly<Record<SplinterJobState, readonly SplinterJobState[]>> = {
@@ -40,6 +40,7 @@ function redactWorkerText(value: string): string {
 }
 
 export interface SplinterIntegrationResult { stagingBaseSha: string; approvedCommitSha: string; integratedCandidateSha?: string; verification?: string[]; status: "PASSED" | "FAILED" | "STALE"; error?: string; }
+export interface SplinterDeploymentResult { previousKnownGoodStagingSha: string; requestedCandidateSha: string; actualLiveSha?: string; deploymentRunId?: string; verification?: string[]; status: "PASSED" | "FAILED" | "ROLLED_BACK" | "ROLLBACK_FAILED" | "STALE"; error?: string; }
 
 function requiresRaphaelReview(job: SplinterJob): boolean {
   return job.executionMode === "CODE_CHANGE" && job.reviewRequired;
@@ -230,6 +231,25 @@ export class SplinterJobService {
     }
     const updated = await this.repository.compareAndSet(id, "SUCCEEDED", { integration: parsed });
     if (!updated) throw new SplinterTransitionError("CONFLICT", "Splinter job changed before integration result could be recorded.");
+    return updated;
+  }
+
+  async beginDeployment(id: string, previousKnownGoodStagingSha: string, requestedCandidateSha: string): Promise<SplinterJob> {
+    const job = await this.repository.get(id);
+    if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
+    if (!promotionEligible(job) || job.integration.status !== "PASSED" || job.integration.integratedCandidateSha !== requestedCandidateSha || job.integration.stagingBaseSha !== previousKnownGoodStagingSha) throw new SplinterTransitionError("INVALID_TRANSITION", "Splinter candidate is not eligible for staging deployment.");
+    const updated = await this.repository.compareAndSet(id, "SUCCEEDED", { deployment: { status: "DEPLOYING", previousKnownGoodStagingSha, requestedCandidateSha, verification: [] } });
+    if (!updated) throw new SplinterTransitionError("CONFLICT", "Splinter job changed before deployment could begin.");
+    return updated;
+  }
+
+  async recordDeployment(id: string, input: SplinterDeploymentResult): Promise<SplinterJob> {
+    const parsed = splinterDeploymentSchema.parse({ status: input.status, previousKnownGoodStagingSha: input.previousKnownGoodStagingSha, requestedCandidateSha: input.requestedCandidateSha, ...(input.actualLiveSha ? { actualLiveSha: input.actualLiveSha } : {}), ...(input.deploymentRunId ? { deploymentRunId: input.deploymentRunId } : {}), verification: input.verification ?? [], ...(input.error ? { error: redactWorkerText(input.error) } : {}) });
+    const job = await this.repository.get(id);
+    if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
+    if (job.deployment.status !== "DEPLOYING" || job.deployment.previousKnownGoodStagingSha !== parsed.previousKnownGoodStagingSha || job.deployment.requestedCandidateSha !== parsed.requestedCandidateSha) throw new SplinterTransitionError("INVALID_TRANSITION", "Deployment result does not match the active Splinter deployment.");
+    const updated = await this.repository.compareAndSet(id, "SUCCEEDED", { deployment: parsed });
+    if (!updated) throw new SplinterTransitionError("CONFLICT", "Splinter job changed before deployment result could be recorded.");
     return updated;
   }
 }

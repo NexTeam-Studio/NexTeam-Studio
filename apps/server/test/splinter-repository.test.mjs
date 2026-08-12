@@ -398,3 +398,24 @@ test("integration results require the active base and preserve verified candidat
   assert.equal(finished.integration.integratedCandidateSha, "fedcba1");
   await assert.rejects(() => service.recordIntegration(approved.id, { status: "STALE", stagingBaseSha: "7654321", approvedCommitSha: "abcdef1", verification: [] }), { code: "INVALID_TRANSITION" });
 });
+
+test("only an integrated exact approved candidate can begin and record staging deployment", async () => {
+  const { repository, service } = await queuedService();
+  const approved = await approvedCodeChange(service, repository, "splinter-deployment-job");
+  await service.beginIntegration(approved.id, "1234567", "abcdef1");
+  await service.recordIntegration(approved.id, { status: "PASSED", stagingBaseSha: "1234567", approvedCommitSha: "abcdef1", integratedCandidateSha: "fedcba1", verification: ["combined checks passed"] });
+  const started = await service.beginDeployment(approved.id, "1234567", "fedcba1");
+  assert.equal(started.deployment.status, "DEPLOYING");
+  const completed = await service.recordDeployment(approved.id, { status: "PASSED", previousKnownGoodStagingSha: "1234567", requestedCandidateSha: "fedcba1", actualLiveSha: "fedcba1", deploymentRunId: "staging-run-1", verification: ["live SHA verified", "health passed"] });
+  assert.equal(completed.deployment.status, "PASSED"); assert.equal(completed.deployment.actualLiveSha, "fedcba1");
+  await assert.rejects(() => service.beginDeployment(approved.id, "1234567", "abcdef1"), { code: "INVALID_TRANSITION" });
+});
+
+test("unintegrated, stale, or failed deployment evidence cannot become known-good", async () => {
+  const { repository, service } = await queuedService();
+  const approved = await approvedCodeChange(service, repository, "splinter-deployment-reject");
+  await assert.rejects(() => service.beginDeployment(approved.id, "1234567", "abcdef1"), { code: "INVALID_TRANSITION" });
+  await service.beginIntegration(approved.id, "1234567", "abcdef1");
+  await service.recordIntegration(approved.id, { status: "STALE", stagingBaseSha: "1234567", approvedCommitSha: "abcdef1", verification: [], error: "staging advanced" });
+  await assert.rejects(() => service.beginDeployment(approved.id, "1234567", "abcdef1"), { code: "INVALID_TRANSITION" });
+});

@@ -58,6 +58,16 @@ export const splinterIntegrationSchema = z.object({
   verification: z.array(z.string().min(1).max(256)).max(20).default([]),
   error: z.string().min(1).max(500).optional()
 }).strict();
+export const splinterDeploymentStatusSchema = z.enum(["NOT_REQUESTED", "DEPLOYING", "PASSED", "FAILED", "ROLLED_BACK", "ROLLBACK_FAILED", "STALE"]);
+export const splinterDeploymentSchema = z.object({
+  status: splinterDeploymentStatusSchema,
+  previousKnownGoodStagingSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  requestedCandidateSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  actualLiveSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  deploymentRunId: z.string().min(1).max(128).optional(),
+  verification: z.array(z.string().min(1).max(256)).max(20).default([]),
+  error: z.string().min(1).max(500).optional()
+}).strict();
 
 const splinterAllowedPathSchema = z.string().min(1).max(256).refine(
   (value) => !value.startsWith("/") && !value.startsWith("\\") && !value.includes("..") && !value.includes(":"),
@@ -91,6 +101,7 @@ export const splinterJobSchema = z.object({
   reviewStatus: splinterReviewStatusSchema.default("NOT_REQUIRED"),
   workerHistory: z.array(z.lazy(() => splinterWorkerResultSchema)).max(6).default([]),
   integration: splinterIntegrationSchema.default({ status: "NOT_REQUESTED", verification: [] }),
+  deployment: splinterDeploymentSchema.default({ status: "NOT_REQUESTED", verification: [] }),
   review: splinterReviewSchema.optional(),
   reviewCycleCount: z.number().int().min(0).default(0),
   maxReviewCycles: z.number().int().min(1).max(3).default(3),
