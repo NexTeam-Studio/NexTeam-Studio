@@ -6,8 +6,8 @@ type AddressSuggestion = Required<Pick<Address, "street1" | "city" | "province" 
 type Contact = { firstName?: string; lastName?: string; email?: string; phone?: string; address?: Address; physicalAddress?: Address; mailingAddress?: Address };
 type TenantProfileResponse = {
   tenant: { id: string; name: string; timezone: string; lifecycleState?: "ACTIVE" | "DISABLED_ARCHIVED"; branding: { assistantName: string } };
-  profile: { legalName?: string; dbaName?: string; website?: string; status?: "ACTIVE" | "PENDING" | "INACTIVE" | "CANCELLED"; subscriptionPlan?: "none" | "nexi" | "marketing" | "suite"; primaryContact?: Contact } | null;
-  branding: { logo?: { url?: string; storageRef?: string } } | null;
+  profile: { legalName?: string; dbaName?: string; website?: string; status?: "ACTIVE" | "PENDING" | "INACTIVE" | "CANCELLED"; subscriptionPlan?: "none" | "staging-tier-1" | "staging-tier-2" | "staging-tier-3"; primaryContact?: Contact } | null;
+  branding: { logo?: { url?: string; storageRef?: string; updatedAt?: string } } | null;
   subscription: { plan: string; status: string } | null;
   access: Array<{ displayName: string; email: string | null; role: string; active: boolean; firebaseUidBound: boolean }>;
 };
@@ -23,7 +23,10 @@ async function request(user: User, path: string, init?: RequestInit): Promise<Te
   return body;
 }
 
-function logoFor(data: TenantProfileResponse): string | undefined { return data.branding?.logo?.url ?? (data.branding?.logo?.storageRef ? `/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(data.tenant.id)}` : fallbackLogo[data.tenant.id]); }
+function logoFor(data: TenantProfileResponse): string | undefined {
+  const logo = data.branding?.logo;
+  return logo?.url ?? (logo?.storageRef ? `/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(data.tenant.id)}&v=${encodeURIComponent(logo.updatedAt ?? "current")}` : fallbackLogo[data.tenant.id]);
+}
 function currentAddress(contact: Contact): Address | undefined { return contact.address ?? contact.physicalAddress ?? contact.mailingAddress; }
 
 export function NexCommandTenantProfilePanel({ user, tenantId, onBack }: { user: User | null; tenantId: string; onBack: () => void }): React.ReactElement {
@@ -34,12 +37,12 @@ export function NexCommandTenantProfilePanel({ user, tenantId, onBack }: { user:
   const [messageTone, setMessageTone] = useState<"error" | "success">("success");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [pendingLogoUrl, setPendingLogoUrl] = useState("");
-  const [subscriptionPlan, setSubscriptionPlan] = useState<"none" | "nexi" | "marketing" | "suite">("none");
+  const [subscriptionPlan, setSubscriptionPlan] = useState<"none" | "staging-tier-1" | "staging-tier-2" | "staging-tier-3">("none");
   const [status, setStatus] = useState<"ACTIVE" | "PENDING" | "INACTIVE" | "CANCELLED">("INACTIVE");
   const fileInput = useRef<HTMLInputElement>(null);
   const load = async (): Promise<void> => { if (user) setData(await request(user, `/api/platform/admin/tenants/${encodeURIComponent(tenantId)}/profile`)); };
   useEffect(() => { void load().catch(() => setMessage("Tenant profile could not be loaded.")); }, [tenantId, user]);
-  useEffect(() => { if (data) { const plan = data.profile?.subscriptionPlan ?? data.subscription?.plan ?? "none"; setSubscriptionPlan(plan); setStatus(data.profile?.status ?? (plan === "none" ? "INACTIVE" : "ACTIVE")); } }, [data]);
+  useEffect(() => { if (data) { const plan = data.profile?.subscriptionPlan ?? "none"; setSubscriptionPlan(plan); setStatus(data.profile?.status ?? (plan === "none" ? "INACTIVE" : "ACTIVE")); } }, [data]);
   useEffect(() => () => { if (pendingLogoUrl) URL.revokeObjectURL(pendingLogoUrl); }, [pendingLogoUrl]);
   if (!data) return <section className="nexcommand__panel"><button className="tenant-action" type="button" onClick={onBack}>Back to Tenant Roster</button><p>{message || "Loading tenant profile…"}</p></section>;
   const profile = data.profile ?? {};
@@ -68,11 +71,9 @@ export function NexCommandTenantProfilePanel({ user, tenantId, onBack }: { user:
     <button className="tenant-action" type="button" onClick={onBack}>Back to Tenant Roster</button>
     <div className="tenant-profile__heading"><div className="tenant-profile__heading-copy"><p className="ui-eyebrow">Tenant Profile</p><div className="tenant-profile__tenant-line"><h2>{data.tenant.name}</h2>{displayedLogo ? <img src={displayedLogo} alt={`${data.tenant.name} logo`} /> : <span>{data.tenant.name.slice(0, 1)}</span>}</div><p>{data.subscription?.plan ?? "No plan"} · {data.subscription?.status ?? "No subscription"}</p></div><button className="tenant-action" type="button" onClick={() => setEditing((value) => !value)}>{editing ? "Cancel" : "Edit Tenant"}</button></div>
     <form onSubmit={(event) => void save(event)}>
-      <section className="tenant-profile__logo-control"><div><strong>Tenant Logo</strong>{displayedLogo ? <img src={displayedLogo} alt="Tenant logo preview" /> : null}</div><input ref={fileInput} name="logoFile" type="file" accept="image/png,image/jpeg,image/webp" capture="environment" onChange={chooseLogo} /><button className="tenant-action" type="button" onClick={() => { setEditing(true); fileInput.current?.click(); }}>Choose File</button><p>This logo is used throughout NexCommand, NexOps, and tenant-facing product areas.</p></section>
       <fieldset disabled={!editing || saving}>
-      <div className="tenant-profile__grid"><label>Tenant Name<input name="name" defaultValue={data.tenant.name} required /></label><label>Legal Business Name<input name="legalName" defaultValue={profile.legalName ?? ""} /></label><label>DBA / Public Name<input name="dbaName" defaultValue={profile.dbaName ?? ""} /></label><label>Website<input name="website" type="url" defaultValue={profile.website ?? ""} placeholder="https://aquatraceleak.com" /></label><label>Timezone<select name="timezone" defaultValue={data.tenant.timezone}>{[...new Set([data.tenant.timezone, ...timezones])].map((timezone) => <option key={timezone} value={timezone}>{timezone}</option>)}</select></label><label>Subscription<select name="subscriptionPlan" value={subscriptionPlan} onChange={(event) => { const next = event.target.value as typeof subscriptionPlan; setSubscriptionPlan(next); if (next === "none") setStatus("INACTIVE"); }}><option value="none">None</option><option value="nexi">Nexi</option><option value="marketing">Marketing</option><option value="suite">Suite</option></select></label><label>Status<select name="status" value={status} disabled={subscriptionPlan === "none"} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="ACTIVE">Active</option><option value="PENDING">Pending</option><option value="INACTIVE">Inactive</option><option value="CANCELLED">Cancelled</option></select><input name="lifecycleState" type="hidden" value={data.tenant.lifecycleState ?? "ACTIVE"} /></label></div>
-      <h3>Contact Details</h3><ContactFields contact={primary} user={user} />
-    </fieldset>{editing ? <button className="tenant-action" type="submit" disabled={saving}>{saving ? "Saving…" : "Save Changes"}</button> : null}</form>
+      <div className="tenant-profile__grid"><label>Tenant Name<input name="name" defaultValue={data.tenant.name} required /></label><label>Legal Business Name<input name="legalName" defaultValue={profile.legalName ?? ""} /></label><label>DBA / Public Name<input name="dbaName" defaultValue={profile.dbaName ?? ""} /></label><label>Website<input name="website" type="url" defaultValue={profile.website ?? ""} placeholder="https://aquatraceleak.com" /></label><label>Timezone<select name="timezone" defaultValue={data.tenant.timezone}>{[...new Set([data.tenant.timezone, ...timezones])].map((timezone) => <option key={timezone} value={timezone}>{timezone}</option>)}</select></label><label>Subscription<select name="subscriptionPlan" value={subscriptionPlan} onChange={(event) => { const next = event.target.value as typeof subscriptionPlan; setSubscriptionPlan(next); if (next === "none") setStatus("INACTIVE"); }}><option value="none">None</option><option value="staging-tier-1">Staging Tier 1</option><option value="staging-tier-2">Staging Tier 2</option><option value="staging-tier-3">Staging Tier 3</option></select></label></div>
+    </fieldset><div className="tenant-profile__control-grid"><section className="tenant-profile__logo-control"><div><strong>Tenant Logo</strong>{displayedLogo ? <img src={displayedLogo} alt="Tenant logo preview" /> : null}</div><input ref={fileInput} name="logoFile" type="file" accept="image/png,image/jpeg,image/webp" capture="environment" onChange={chooseLogo} /><button className="tenant-action" type="button" onClick={() => { setEditing(true); fileInput.current?.click(); }}>Choose File</button><p>This logo is used throughout NexCommand, NexOps, and tenant-facing product areas.</p></section><label>Status<select name="status" value={status} disabled={!editing || saving || subscriptionPlan === "none"} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="ACTIVE">Active</option><option value="PENDING">Pending</option><option value="INACTIVE">Inactive</option><option value="CANCELLED">Cancelled</option></select><input name="lifecycleState" type="hidden" value={data.tenant.lifecycleState ?? "ACTIVE"} /></label></div><fieldset disabled={!editing || saving}><h3>Contact Details</h3><ContactFields contact={primary} user={user} /></fieldset>{editing ? <button className="tenant-action" type="submit" disabled={saving}>{saving ? "Saving…" : "Save Changes"}</button> : null}</form>
     {message ? <p className={`tenant-profile__message tenant-profile__message--${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p> : null}
   </section>;
 }

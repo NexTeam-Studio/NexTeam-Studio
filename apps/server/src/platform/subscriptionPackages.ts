@@ -11,6 +11,9 @@ export const ALL_ACCESS_TEST_PACKAGE: PlatformSubscriptionPackage = {
   active: true
 };
 
+const STAGING_MODULES = ALL_ACCESS_TEST_PACKAGE.includedModules;
+export const STAGING_SUBSCRIPTION_PACKAGES: PlatformSubscriptionPackage[] = [1, 2, 3].map((tier) => ({ id: `staging-tier-${tier}`, version: "2026-08-13", name: `Staging Tier ${tier}`, priceCents: 0, currency: "USD", includedModules: STAGING_MODULES, active: true }));
+
 export function activeSubscriptionPackages(): PlatformSubscriptionPackage[] {
-  return [ALL_ACCESS_TEST_PACKAGE];
+  return [ALL_ACCESS_TEST_PACKAGE, ...STAGING_SUBSCRIPTION_PACKAGES];
 }

@@ -192,7 +192,7 @@ const tenantProfileSchema = z.object({
   dbaName: z.string().trim().min(1).max(180).optional(),
   website: z.string().url().optional(),
   status: z.enum(["ACTIVE", "PENDING", "INACTIVE", "CANCELLED"]).optional(),
-  subscriptionPlan: z.enum(["none", "nexi", "marketing", "suite"]).optional(),
+  subscriptionPlan: z.enum(["none", "staging-tier-1", "staging-tier-2", "staging-tier-3"]).optional(),
   primaryContact: z.object({ firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), email: z.string().email().optional(), phone: z.string().trim().max(40).optional(), address: addressSchema.optional() }).optional(),
   tenant: z.object({ name: z.string().trim().min(1).max(180), timezone: z.string().trim().min(1).max(80), lifecycleState: z.enum(["ACTIVE", "DISABLED_ARCHIVED"]), logoUrl: z.string().url().optional() }).strict()
 }).strict();

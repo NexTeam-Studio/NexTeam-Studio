@@ -128,7 +128,7 @@ export interface TenantProfile {
   dbaName?: string | undefined;
   website?: string | undefined;
   status?: "ACTIVE" | "PENDING" | "INACTIVE" | "CANCELLED" | undefined;
-  subscriptionPlan?: "none" | "nexi" | "marketing" | "suite" | undefined;
+  subscriptionPlan?: "none" | "staging-tier-1" | "staging-tier-2" | "staging-tier-3" | undefined;
   primaryContact?: { firstName: string; lastName: string; email?: string | undefined; phone?: string | undefined; address?: Record<string, unknown> | undefined } | undefined;
   updatedAt: string;
   updatedBy: string;
