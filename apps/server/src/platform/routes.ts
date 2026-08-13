@@ -5,6 +5,7 @@ import { RailError, addressSchema, type JobAccessScope, type Tenant, type Tenant
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { actorIdForAccess, requireTenantCapability, requireTenantRole } from "../auth/accessContext.js";
 import { getAdminAuth, getAdminStorageBucket } from "../firebase.js";
+import { fetchAddressSuggestions } from "../shared/addressLocation/geocodingService.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 import { createJobAccessLink, customClaimsForTenantUser, upsertTenantUser, verifyJobAccessToken } from "./accessManagement.js";
 import { runTenantBackup, type StorageWriter } from "./backup.js";
@@ -637,6 +638,17 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const [profile, branding, subscription, users] = await Promise.all([deps.repository.getTenantProfile(tenantId), deps.repository.getTenantBranding(tenantId), deps.repository.getSubscription(tenantId), deps.repository.listTenantUsers(tenantId)]);
       await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand viewed tenant ${tenantId} profile.`, undefined, new Date().toISOString()));
       res.json({ ok: true, tenant, profile, branding, subscription, access: users.map((user) => ({ displayName: user.displayName, email: user.email ?? null, role: user.role, active: user.active, firebaseUidBound: Boolean(user.authUid) })) });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.get("/api/platform/admin/address-suggestions", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformTeamCapability(req, env, "platform.tenants.view", deps.repository, deps.platformOperatorAuth);
+      const query = typeof req.query.query === "string" ? req.query.query.trim() : "";
+      if (query.length < 3) return res.json({ ok: true, suggestions: [] });
+      const apiKey = env.GOOGLE_MAPS_API_KEY?.trim();
+      if (!apiKey) throw new RailError("Google address suggestions are not configured.", { provider: "platform", op: "platformAddressSuggestions", status: 503 });
+      res.json({ ok: true, suggestions: await fetchAddressSuggestions(query, apiKey) });
     } catch (error) { sendRouteError(res, error); }
   });
 
