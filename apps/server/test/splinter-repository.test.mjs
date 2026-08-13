@@ -8,6 +8,7 @@ import {
   SPLINTER_JOB_COLLECTION_PATH
 } from "../src/splinter/repository.ts";
 import { SplinterJobService } from "../src/splinter/service.ts";
+import { adjudicateSplinterLifecycle } from "../src/splinter/controllerPolicy.ts";
 import { InMemoryWorkRegistry, SPLINTER_WORK_ITEM_COLLECTION_PATH, SplinterWorkSelector, validateDependencyGraph } from "../src/splinter/workRegistry.ts";
 import { registerSplinterRelayRoutes } from "../src/splinter/routes.ts";
 import express from "express";
@@ -403,6 +404,38 @@ test("Splinter review accepts only matching autonomous commit evidence and prese
   await assert.rejects(() => service.submitReview(job.id, { ...review, reviewedCommitSha: "deadbee" }), { code: "INVALID_TRANSITION" });
 });
 
+test("Raphael rejection requires an authorized repair before a terminal failure", async () => {
+  const { job, repository, service } = await queuedService();
+  await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 });
+  await service.transition(job.id, "RUNNING");
+  await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["focused test"], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
+  await service.submitReview(job.id, { reviewResult: "REJECT", summary: "repair required", blockingFindings: ["missing coverage"], nonBlockingFindings: [], reviewedCommitSha: "abcdef1", reviewerRunId: "raphael-reject", reviewerProvider: "anthropic", reviewerModel: "claude", startedAt: timestamps[0], completedAt: timestamps[1] });
+  await assert.rejects(() => service.transition(job.id, "FAILED", { errorMessage: "premature stop" }), /bounded repair attempt/);
+  await repository.update(job.id, { attemptCount: 3 });
+  const terminal = await service.transition(job.id, "FAILED", { errorMessage: "repair capacity exhausted" });
+  assert.equal(terminal.state, "FAILED");
+});
+
+test("controller adjudicator requires stored staging authority and complete acceptance evidence", async () => {
+  const { job, repository, service } = await queuedService();
+  const approved = await approvedCodeChange(service, repository, "splinter-policy-approved");
+  assert.equal(adjudicateSplinterLifecycle(approved, { decision: "STAGING_INTEGRATION" }).allowed, true);
+  const noAuthority = await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3, state: "SUCCEEDED", result: "PASS", reviewStatus: "APPROVED" });
+  assert.equal(adjudicateSplinterLifecycle(noAuthority, { decision: "STAGING_INTEGRATION" }).allowed, false);
+  assert.equal(adjudicateSplinterLifecycle(approved, { decision: "WORK_COMPLETION", evidenceRefs: [] }).allowed, false);
+  assert.equal(adjudicateSplinterLifecycle(approved, { decision: "WORK_COMPLETION", evidenceRefs: ["acceptance:route"] }).allowed, true);
+});
+
+test("controller adjudicator rejects unsupported owner and external claims and production without authority", async () => {
+  const { job, repository } = await queuedService();
+  const active = await repository.update(job.id, { state: "RUNNING" });
+  assert.equal(adjudicateSplinterLifecycle(active, { decision: "ISSUE_CLASSIFICATION", classification: "OWNER_REQUIRED" }).allowed, false);
+  assert.equal(adjudicateSplinterLifecycle(active, { decision: "ISSUE_CLASSIFICATION", classification: "EXTERNAL_BLOCKER", supportingDetail: "" }).allowed, false);
+  assert.equal(adjudicateSplinterLifecycle(active, { decision: "ISSUE_CLASSIFICATION", classification: "EXTERNAL_BLOCKER", supportingDetail: "provider outage ticket 17" }).allowed, true);
+  assert.equal(adjudicateSplinterLifecycle(active, { decision: "PRODUCTION_TRANSITION" }).allowed, false);
+  assert.equal(adjudicateSplinterLifecycle(active, { decision: "CONTROLLER_POLICY_CHANGE", controllerOwnedPolicyPath: true, ownerAuthorizedControlPlaneWorkItem: false }).allowed, false);
+});
+
 test("Splinter bounds Raphael review cycles at three while preserving review history", async () => {
   const { job, repository, service } = await queuedService(); await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 }); await service.transition(job.id, "RUNNING");
   await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: [], testsPerformed: [], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
@@ -457,7 +490,7 @@ test("review repair preserves both Atlas run records", async () => {
 
 async function approvedCodeChange(service, repository, id = "splinter-promotion-job") {
   const created = await repository.create(validJob({ id }));
-  await repository.update(created.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 });
+  await repository.update(created.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3, workItemContext: { workItemId: "promotion-control-plane", module: "splinter", tenantScope: "platform", promotionPolicy: "STAGING_ONLY", sourceRequirementRefs: ["docs/specs/test.md#promotion"], requirementRevision: "r1" } });
   await service.transition(created.id, "RUNNING");
   await service.submitWorkerOutcome(created.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["check"], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
   return service.submitReview(created.id, { reviewResult: "PASS", summary: "approved", blockingFindings: [], nonBlockingFindings: [], reviewedCommitSha: "abcdef1", reviewerRunId: "raphael-approved", reviewerProvider: "anthropic", reviewerModel: "claude", startedAt: timestamps[0], completedAt: timestamps[1] });
