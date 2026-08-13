@@ -14,6 +14,24 @@ export interface AuthSessionValue {
   user: User | null;
 }
 
+export const VERIFIED_EMAIL_REQUIRED_MESSAGE = "Verify the email address for this account before opening NexOps.";
+
+function usesPlatformIdentityPath(pathname = window.location.pathname): boolean {
+  return pathname.startsWith("/platform") || pathname.startsWith("/nexcommand");
+}
+
+export function isVerifiedEmailRequiredError(error: unknown): boolean {
+  return error instanceof Error && error.message === VERIFIED_EMAIL_REQUIRED_MESSAGE;
+}
+
+export function authFailureMessage(error: unknown, localAuthEnabled: boolean): string {
+  if (localAuthEnabled) return "We couldn't sign you in with that local profile.";
+  if (isVerifiedEmailRequiredError(error)) return VERIFIED_EMAIL_REQUIRED_MESSAGE;
+  if (error instanceof Error && error.message === "This authenticated account is not assigned to an active NexOps workspace.") return error.message;
+  if (error instanceof Error && error.message === "This account is a NexCommand account. Open NexCommand to continue.") return error.message;
+  return "We couldn't sign you in. Check your email and password, or reset your password.";
+}
+
 const AuthSessionContext = React.createContext<AuthSessionValue | null>(null);
 
 export function AuthSessionProvider(props: { children: React.ReactNode }): React.ReactElement {
@@ -45,7 +63,7 @@ export function AuthSessionProvider(props: { children: React.ReactNode }): React
         }
         unsubscribe = onAuthStateChanged(bootstrap.auth, (nextUser) => {
           void (async () => {
-            if (nextUser) await ensureWorkspaceLink(nextUser);
+            if (nextUser && !usesPlatformIdentityPath()) await ensureWorkspaceLink(nextUser);
             if (!cancelled) setUser(nextUser);
             if (!cancelled) setAuthReady(true);
           })().catch(() => {
@@ -67,8 +85,11 @@ export function AuthSessionProvider(props: { children: React.ReactNode }): React
     const nextUser = localAuthEnabled
       ? await signInWithLocalCredentials(email, localTenantId)
       : (await signInWithEmailAndPassword(requireFirebaseAuth(auth), email, password)).user;
-    if (!localAuthEnabled) await ensureWorkspaceLink(nextUser);
-    markFreshNexCommandAuthentication();
+    if (!localAuthEnabled && usesPlatformIdentityPath()) {
+      markFreshNexCommandAuthentication();
+    } else if (!localAuthEnabled) {
+      await ensureWorkspaceLink(nextUser);
+    }
     setUser(nextUser);
   }
 
@@ -85,10 +106,16 @@ export function AuthSessionProvider(props: { children: React.ReactNode }): React
 }
 
 async function ensureWorkspaceLink(user: User): Promise<void> {
-  const token = await user.getIdToken();
+  // Refresh first so a recently verified account presents its current Firebase claim.
+  const token = await user.getIdToken(true);
   const response = await fetch("/api/auth/workspace-link", { method: "POST", headers: { authorization: `Bearer ${token}` } });
-  if (!response.ok) throw new Error("Workspace unavailable.");
-  await user.getIdToken(true);
+  if (response.ok) return;
+  const body = await response.json().catch(() => null) as { error?: unknown } | null;
+  const error = typeof body?.error === "string" ? body.error : "";
+  if (error === "A verified email is required to open this workspace.") throw new Error(VERIFIED_EMAIL_REQUIRED_MESSAGE);
+  if (error === "Platform identities do not use tenant workspace linking.") throw new Error("This account is a NexCommand account. Open NexCommand to continue.");
+  if (error === "No active workspace membership matches this verified email.") throw new Error("This authenticated account is not assigned to an active NexOps workspace.");
+  throw new Error("Workspace unavailable.");
 }
 
 function requireFirebaseAuth(auth: Auth | null): Auth {
