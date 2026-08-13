@@ -8,6 +8,7 @@ import { buildHealth } from "../health.js";
 import type { ServerRuntime } from "../app/runtime.js";
 import { configuredTenantId } from "./tenantConfig.js";
 import { requireAccessContext } from "../auth/accessContext.js";
+import { registerWorkspaceLinkRoutes } from "../auth/workspaceLinkRoutes.js";
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
@@ -35,6 +36,7 @@ function firebaseRuntimeConfig(env: NodeJS.ProcessEnv): {
 }
 
 export function registerCoreRoutes(app: Express, runtime: ServerRuntime): void {
+  registerWorkspaceLinkRoutes(app, runtime);
   app.get("/api/version", (_req: Request, res: Response) => {
     res.json(getBuildInfo());
   });
