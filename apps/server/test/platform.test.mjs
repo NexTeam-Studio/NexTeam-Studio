@@ -8,6 +8,8 @@ import { createStripeTestSubscription } from "../dist/platform/billing.js";
 import {
   createJobAccessLink,
   buildTenantUser,
+  capabilitiesForTenantUser,
+  capabilitiesWithinRoleCeiling,
   customClaimsForTenantUser,
   upsertTenantUser,
   verifyJobAccessToken
@@ -205,6 +207,8 @@ test("tenant users are provisioned explicitly and produce Firebase custom claims
     roles: ["office_admin"]
   });
   assert.throws(() => buildTenantUser({ tenantId: "aquatrace", displayName: "Over-granted admin", role: "OFFICE_ADMIN", capabilities: ["tenant.audit.read"] }), /role ceiling/);
+  assert.deepEqual(capabilitiesWithinRoleCeiling("OFFICE_ADMIN", []), []);
+  assert.deepEqual(capabilitiesForTenantUser({ role: "OFFICE_ADMIN", capabilities: ["team.manage", "tenant.audit.read"] }), ["team.manage"]);
 });
 
 test("job access links verify only one linked job and fail closed after revoke", async () => {
@@ -685,6 +689,7 @@ test("NexCommand alone lists existing tenant members and atomically transfers a 
   const server = app.listen(0);
   try {
     const base = `http://127.0.0.1:${server.address().port}`;
+    assert.equal((await fetch(`${base}/api/platform/admin/tenants/tenant-a/members`)).status, 401);
     assert.equal((await fetch(`${base}/api/platform/admin/tenants/tenant-a/members`, { headers: { authorization: "Bearer tenant-owner" } })).status, 403);
     const listed = await fetch(`${base}/api/platform/admin/tenants/tenant-a/members`, { headers: { authorization: "Bearer operator" } });
     assert.equal(listed.status, 200);
@@ -698,7 +703,7 @@ test("NexCommand alone lists existing tenant members and atomically transfers a 
     const members = await repository.listTenantUsers("tenant-a");
     assert.deepEqual(members.filter((member) => member.role === "OWNER" && member.active).map((member) => member.id), [office.id]);
     assert.equal(members.find((member) => member.id === owner.id).role, "OFFICE_ADMIN");
-    assert.equal((await repository.listTenantMembershipAudits("tenant-a")).some((audit) => audit.targetUserId === office.id && audit.detail.includes("NexCommand owner assignment")), true);
+    assert.equal((await repository.listTenantMembershipAudits("tenant-a")).some((audit) => audit.action === "member.owner_assigned" && audit.targetUserId === office.id && audit.detail.includes("NexCommand owner assignment")), true);
     assert.equal((await fetch(`${base}/api/platform/admin/tenants/tenant-a/owner`, { method: "POST", headers: { authorization: "Bearer operator", "content-type": "application/json" }, body: JSON.stringify({ toUserId: "office-b" }) })).status, 404);
   } finally { await new Promise((resolve) => server.close(resolve)); }
 });

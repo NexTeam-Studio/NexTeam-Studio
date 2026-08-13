@@ -364,7 +364,7 @@ export interface TenantUser {
 export interface TenantMembershipAudit {
   id: ID;
   tenantId: ID;
-  action: "member.upserted" | "member.claims_applied" | "tenant.cancellation_confirmation_one" | "tenant.subscription_canceled" | "tenant.resubscribed";
+  action: "member.upserted" | "member.claims_applied" | "member.owner_assigned" | "tenant.cancellation_confirmation_one" | "tenant.subscription_canceled" | "tenant.resubscribed";
   actorId: ID;
   targetUserId: ID;
   detail: string;

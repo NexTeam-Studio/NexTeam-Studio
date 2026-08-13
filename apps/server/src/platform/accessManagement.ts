@@ -42,7 +42,7 @@ export function capabilitiesWithinRoleCeiling(role: TenantUserRole, capabilities
   if (requested.some((capability) => !ceiling.includes(capability))) {
     throw new RailError("Tenant capabilities must remain within the selected role ceiling.", { provider: "platform", op: "tenantCapabilities", status: 400 });
   }
-  return ceiling.filter((capability) => requested.includes(capability));
+  return requested.filter((capability) => ceiling.includes(capability));
 }
 
 export function capabilitiesForTenantUser(user: Pick<TenantUser, "role" | "capabilities">): TenantCapability[] {
@@ -50,7 +50,7 @@ export function capabilitiesForTenantUser(user: Pick<TenantUser, "role" | "capab
   const requested = user.capabilities ?? ceiling;
   // Existing records are read fail-closed too: a legacy over-grant can never
   // become an effective capability while the record awaits repair.
-  return ceiling.filter((capability) => requested.includes(capability));
+  return requested.filter((capability) => ceiling.includes(capability));
 }
 
 export interface JobAccessLinkInput {

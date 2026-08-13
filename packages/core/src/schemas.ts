@@ -1266,7 +1266,7 @@ export const propertyAssetDefinitionSchema = z.object({
 export const tenantMembershipAuditSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
-  action: z.enum(["member.upserted", "member.claims_applied", "tenant.cancellation_confirmation_one", "tenant.subscription_canceled", "tenant.resubscribed"]),
+  action: z.enum(["member.upserted", "member.claims_applied", "member.owner_assigned", "tenant.cancellation_confirmation_one", "tenant.subscription_canceled", "tenant.resubscribed"]),
   actorId: idSchema,
   targetUserId: idSchema,
   detail: z.string().min(1).max(500),

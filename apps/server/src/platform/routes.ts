@@ -562,7 +562,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         toUserId: selected.id,
         actorId: actor.uid,
         now,
-        audit: { id: `membership_audit_${randomUUID()}`, tenantId, action: "member.upserted", actorId: actor.uid, targetUserId: selected.id, detail: "NexCommand owner assignment; existing active owner was atomically demoted to OFFICE_ADMIN when present.", createdAt: now }
+        audit: { id: `membership_audit_${randomUUID()}`, tenantId, action: "member.owner_assigned", actorId: actor.uid, targetUserId: selected.id, detail: "NexCommand owner assignment; existing active owner was atomically demoted to OFFICE_ADMIN when present.", createdAt: now }
       });
       await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand assigned tenant ${tenantId} owner to existing member ${selected.id}.`, selected.authUid, now));
       res.json({ ok: true, tenantId, owner: { id: result.owner.id, email: result.owner.email ?? null, displayName: result.owner.displayName, role: result.owner.role, active: result.owner.active, effectiveCapabilities: customClaimsForTenantUser(result.owner).tenantCapabilities }, previousOwnerId: result.previousOwner?.id ?? null });
