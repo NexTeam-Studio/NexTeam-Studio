@@ -11,7 +11,7 @@ import { runTenantBackup, type StorageWriter } from "./backup.js";
 import { createStripeTestSubscription } from "./billing.js";
 import { toolEntitlementMatrix } from "./entitlements.js";
 import { modulesForPlan, PLATFORM_PLANS } from "./plans.js";
-import { defaultTenant, defaultTenantBranding, planCatalog, subscriptionFromStripe, type PlatformRepository } from "./repository.js";
+import { defaultTenant, defaultTenantBranding, planCatalog, subscriptionFromStripe, type PlatformRepository, type TenantProfile } from "./repository.js";
 import { activeSubscriptionPackages } from "./subscriptionPackages.js";
 import { activateProspectTenant, type FirebaseOwnerActivation } from "./tenantActivation.js";
 import { confirmSubscriptionCancellation, requestSubscriptionCancellation, resubscribeTenant } from "./tenantSubscriptionLifecycle.js";
@@ -186,6 +186,20 @@ const platformUserPatchSchema = platformUserInputSchema.omit({ authUid: true }).
 const platformSelfProfilePatchSchema = platformUserSchema.pick({ firstName: true, lastName: true, email: true, telephone: true, address: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const ownershipTransferSchema = z.object({ toUserId: z.string().min(1) }).strict();
 const tenantOwnerAssignmentSchema = z.object({ toUserId: z.string().min(1) }).strict();
+const tenantProfileSchema = z.object({
+  legalName: z.string().trim().min(1).max(180).optional(),
+  dbaName: z.string().trim().min(1).max(180).optional(),
+  website: z.string().url().optional(),
+  primaryContact: z.object({ name: z.string().trim().min(1).max(120), title: z.string().trim().max(120).optional(), email: z.string().email().optional(), phone: z.string().trim().max(40).optional() }).optional(),
+  billingContact: z.object({ name: z.string().trim().min(1).max(120), title: z.string().trim().max(120).optional(), email: z.string().email().optional(), phone: z.string().trim().max(40).optional() }).optional(),
+  serviceAddress: addressSchema.optional(),
+  billingAddress: addressSchema.optional(),
+  serviceAreas: z.array(z.string().trim().min(1).max(120)).max(100).default([]),
+  taxCountry: z.string().trim().length(2).optional(),
+  taxIdLast4: z.string().trim().regex(/^[A-Za-z0-9]{4}$/).optional(),
+  locale: z.string().trim().min(2).max(35).default("en-US"),
+  tenant: z.object({ name: z.string().trim().min(1).max(180), timezone: z.string().trim().min(1).max(80), lifecycleState: z.enum(["ACTIVE", "DISABLED_ARCHIVED"]), assistantName: z.string().trim().min(1).max(80), logoUrl: z.string().url().optional() }).strict()
+}).strict();
 const PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 const profilePhotoContentTypes = ["image/png", "image/jpeg", "image/webp"] as const;
 type ProfilePhotoContentType = typeof profilePhotoContentTypes[number];
@@ -617,6 +631,37 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       // identity is platform-authorized activity and is retained in the audit log.
       await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand viewed tenant ${tenantId} membership authority.`, undefined, new Date().toISOString()));
       res.json({ ok: true, tenantId, currentOwner: owners[0] ?? null, users: users.map((member) => ({ id: member.id, email: member.email ?? null, displayName: member.displayName, role: member.role, active: member.active, effectiveCapabilities: customClaimsForTenantUser(member).tenantCapabilities })) });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.get("/api/platform/admin/tenants/:tenantId/profile", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.view", deps.repository, deps.platformOperatorAuth);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      const tenant = await deps.repository.getTenant(tenantId);
+      if (!tenant) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTenantProfile", status: 404 });
+      const [profile, branding, subscription, users] = await Promise.all([deps.repository.getTenantProfile(tenantId), deps.repository.getTenantBranding(tenantId), deps.repository.getSubscription(tenantId), deps.repository.listTenantUsers(tenantId)]);
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand viewed tenant ${tenantId} profile.`, undefined, new Date().toISOString()));
+      res.json({ ok: true, tenant, profile, branding, subscription, access: users.map((user) => ({ displayName: user.displayName, email: user.email ?? null, role: user.role, active: user.active, firebaseUidBound: Boolean(user.authUid) })) });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.patch("/api/platform/admin/tenants/:tenantId/profile", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.manage", deps.repository, deps.platformOperatorAuth);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      const current = await deps.repository.getTenant(tenantId);
+      if (!current) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTenantProfile", status: 404 });
+      const input = tenantProfileSchema.parse(req.body ?? {});
+      const now = new Date().toISOString();
+      const tenant = await deps.repository.upsertTenant({ ...current, name: input.tenant.name, timezone: input.tenant.timezone, lifecycleState: input.tenant.lifecycleState, lifecycleUpdatedAt: now, branding: { ...current.branding, assistantName: input.tenant.assistantName, ...(input.tenant.logoUrl ? { logoRef: input.tenant.logoUrl } : {}) } });
+      const profile: TenantProfile = { tenantId, legalName: input.legalName, dbaName: input.dbaName, website: input.website, primaryContact: input.primaryContact, billingContact: input.billingContact, serviceAddress: input.serviceAddress, billingAddress: input.billingAddress, serviceAreas: input.serviceAreas, taxCountry: input.taxCountry?.toUpperCase(), taxIdLast4: input.taxIdLast4, locale: input.locale, updatedAt: now, updatedBy: actor.uid };
+      const [savedProfile, branding] = await Promise.all([
+        deps.repository.saveTenantProfile(profile),
+        (async () => { const existingBranding = await deps.repository.getTenantBranding(tenantId); return deps.repository.saveTenantBranding({ ...(existingBranding ?? defaultTenantBranding(tenant)), tenantId, displayName: tenant.name, logo: input.tenant.logoUrl ? { url: input.tenant.logoUrl, alt: tenant.name, updatedAt: now } : existingBranding?.logo, source: "manual", updatedAt: now, updatedBy: actor.uid }); })()
+      ]);
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand updated tenant ${tenantId} profile fields.`, undefined, now));
+      res.json({ ok: true, tenant, profile: savedProfile, branding });
     } catch (error) { sendRouteError(res, error); }
   });
 

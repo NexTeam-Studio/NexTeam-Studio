@@ -122,6 +122,23 @@ function now(): string {
   return new Date().toISOString();
 }
 
+export interface TenantProfile {
+  tenantId: string;
+  legalName?: string | undefined;
+  dbaName?: string | undefined;
+  website?: string | undefined;
+  primaryContact?: { name: string; title?: string | undefined; email?: string | undefined; phone?: string | undefined } | undefined;
+  billingContact?: { name: string; title?: string | undefined; email?: string | undefined; phone?: string | undefined } | undefined;
+  serviceAddress?: Record<string, unknown> | undefined;
+  billingAddress?: Record<string, unknown> | undefined;
+  serviceAreas: string[];
+  taxCountry?: string | undefined;
+  taxIdLast4?: string | undefined;
+  locale: string;
+  updatedAt: string;
+  updatedBy: string;
+}
+
 function normalizedEmail(email: string | undefined): string | undefined { return email?.trim().toLowerCase(); }
 
 function assertEmailAvailable(input: { email: string | undefined; platformUsers: Iterable<Pick<PlatformUser, "id" | "email" | "authUid">>; tenantUsers: Iterable<Pick<TenantUser, "id" | "email" | "authUid">>; self: { collection: "platformUsers" | "tenantUsers"; id: string; authUid?: string | undefined } }): void {
@@ -191,6 +208,8 @@ export interface PlatformRepository {
   listTenants(): Promise<Tenant[]>;
   getTenant(tenantId: string): Promise<Tenant | null>;
   upsertTenant(tenant: Tenant): Promise<Tenant>;
+  getTenantProfile(tenantId: string): Promise<TenantProfile | null>;
+  saveTenantProfile(profile: TenantProfile): Promise<TenantProfile>;
   getTenantBranding(tenantId: string): Promise<TenantBranding | null>;
   saveTenantBranding(branding: TenantBranding): Promise<TenantBranding>;
   listTenantUsers(tenantId: string): Promise<TenantUser[]>;
@@ -246,6 +265,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   private readonly supportEscalations = new Map<string, PlatformSupportEscalation>();
   private readonly subscriptionAssignments = new Map<string, PlatformSubscriptionAssignment>();
   private readonly tenants = new Map<string, Tenant>();
+  private readonly tenantProfiles = new Map<string, TenantProfile>();
   private readonly tenantBranding = new Map<string, TenantBranding>();
   private readonly tenantUsers = new Map<string, TenantUser[]>();
   private readonly membershipAudits = new Map<string, TenantMembershipAudit[]>();
@@ -289,6 +309,9 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     }
     return parsed;
   }
+
+  async getTenantProfile(tenantId: string): Promise<TenantProfile | null> { return this.tenantProfiles.get(tenantId) ?? null; }
+  async saveTenantProfile(profile: TenantProfile): Promise<TenantProfile> { this.tenantProfiles.set(profile.tenantId, firestoreDoc(profile)); return firestoreDoc(profile); }
 
   async getTenantBranding(tenantId: string): Promise<TenantBranding | null> {
     return this.tenantBranding.get(tenantId) ?? null;
@@ -722,6 +745,16 @@ export class FirestorePlatformRepository implements PlatformRepository {
     const parsed = tenantSchema.parse(tenant) as Tenant;
     await setTenantOwnedDocument({ db: this.db, collection: "tenants", id: parsed.id, tenantId: parsed.id, data: { ...docData(parsed), tenantId: parsed.id }, label: `Tenant ${parsed.id}` });
     return parsed;
+  }
+
+  async getTenantProfile(tenantId: string): Promise<TenantProfile | null> {
+    const snapshot = await this.db.collection("tenantProfiles").doc(tenantId).get();
+    return snapshot.exists ? firestoreDoc(snapshot.data() as TenantProfile) : null;
+  }
+
+  async saveTenantProfile(profile: TenantProfile): Promise<TenantProfile> {
+    await setTenantOwnedDocument({ db: this.db, collection: "tenantProfiles", id: profile.tenantId, tenantId: profile.tenantId, data: docData(profile), label: `Tenant profile ${profile.tenantId}` });
+    return firestoreDoc(profile);
   }
 
   async getTenantBranding(tenantId: string): Promise<TenantBranding | null> {

@@ -21,6 +21,8 @@
 .tenant-overview__filters span { margin-left:auto; color:var(--ink-600); font-weight:800; }
 
 .tenant-overview__row > * { min-width: 0; overflow-wrap: anywhere; }
+.tenant-overview__identity { display:flex; align-items:center; gap:12px; }
+.tenant-overview__logo { display:grid; place-items:center; width:48px; height:48px; border-radius:16px; background:linear-gradient(135deg,#052431,#19776d); color:#baff11; font-size:1.35rem; font-weight:900; }
 
 .tenant-overview__row h2,
 .tenant-overview__row p {
@@ -82,6 +84,15 @@
   opacity: 0.5;
   cursor: default;
 }
+
+.tenant-profile__heading { display:flex; justify-content:space-between; gap:16px; align-items:center; margin:16px 0 24px; }
+.tenant-profile__heading > div { display:flex; align-items:center; gap:14px; }
+.tenant-profile__heading img,.tenant-profile__heading span { width:56px; height:56px; border-radius:18px; object-fit:cover; display:grid; place-items:center; background:#082730; color:#baff11; font-size:1.5rem; font-weight:900; }
+.tenant-profile__grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:10px 0 20px; }
+.tenant-profile label { display:grid; gap:6px; font-weight:750; color:var(--ink-700); }
+.tenant-profile input,.tenant-profile select { min-height:42px; padding:8px 10px; border:1px solid rgba(38,53,44,.22); border-radius:10px; font:inherit; }
+.tenant-profile fieldset { border:0; padding:0; margin:0; }
+@media (max-width: 680px) { .tenant-profile__grid { grid-template-columns:1fr; }.tenant-profile__heading { align-items:flex-start; flex-direction:column; } }
 
 @media (max-width: 880px) {
   .tenant-overview__row,
