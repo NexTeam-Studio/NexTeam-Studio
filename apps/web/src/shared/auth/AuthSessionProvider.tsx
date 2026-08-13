@@ -44,8 +44,14 @@ export function AuthSessionProvider(props: { children: React.ReactNode }): React
           return;
         }
         unsubscribe = onAuthStateChanged(bootstrap.auth, (nextUser) => {
-          setUser(nextUser);
-          setAuthReady(true);
+          void (async () => {
+            if (nextUser) await ensureWorkspaceLink(nextUser);
+            if (!cancelled) setUser(nextUser);
+            if (!cancelled) setAuthReady(true);
+          })().catch(() => {
+            if (!cancelled) setUser(null);
+            if (!cancelled) setAuthReady(true);
+          });
         });
       })
       .catch(() => {
@@ -61,6 +67,7 @@ export function AuthSessionProvider(props: { children: React.ReactNode }): React
     const nextUser = localAuthEnabled
       ? await signInWithLocalCredentials(email, localTenantId)
       : (await signInWithEmailAndPassword(requireFirebaseAuth(auth), email, password)).user;
+    if (!localAuthEnabled) await ensureWorkspaceLink(nextUser);
     markFreshNexCommandAuthentication();
     setUser(nextUser);
   }
@@ -75,6 +82,13 @@ export function AuthSessionProvider(props: { children: React.ReactNode }): React
       {props.children}
     </AuthSessionContext.Provider>
   );
+}
+
+async function ensureWorkspaceLink(user: User): Promise<void> {
+  const token = await user.getIdToken();
+  const response = await fetch("/api/auth/workspace-link", { method: "POST", headers: { authorization: `Bearer ${token}` } });
+  if (!response.ok) throw new Error("Workspace unavailable.");
+  await user.getIdToken(true);
 }
 
 function requireFirebaseAuth(auth: Auth | null): Auth {
