@@ -27,6 +27,7 @@ import { FirestoreReviewSequenceRepository, InMemoryReviewSequenceRepository } f
 import { ReviewSequenceService } from "./crm/reviewSequenceService.js";
 import { registerCrmRoutes } from "./modules/nexops/routes.js";
 import { getAdminAuth, getAdminDb } from "./firebase.js";
+import { registerWorkspaceLinkRoutes } from "./auth/workspaceLinkRoutes.js";
 import { FieldDocsApprovalExecutor } from "./fielddocs/approvalExecutor.js";
 import { FieldDocsService } from "./fielddocs/fieldDocsService.js";
 import { NexDocsService } from "./fielddocs/nexDocsService.js";
@@ -269,6 +270,10 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+
+// This is the Railway server entry point. Keep Firebase membership linking on
+// the composed app rather than only on the legacy createServerApp path.
+registerWorkspaceLinkRoutes(app, { env: process.env, platformRepository });
 
 registerIntegratedNexiRoutes(app, {
   env: process.env,
