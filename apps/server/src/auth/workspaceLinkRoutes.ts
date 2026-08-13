@@ -1,16 +1,21 @@
 import type { Express, Request, Response } from "express";
 import { RailError } from "@nexteam/core";
 import { getAdminAuth } from "../firebase.js";
-import type { ServerRuntime } from "../app/runtime.js";
 import { customClaimsForTenantUser } from "../platform/accessManagement.js";
+import type { PlatformRepository } from "../platform/repository.js";
 import { linkExistingWorkspaceMembership } from "./workspaceLink.js";
+
+type WorkspaceLinkRuntime = {
+  env: NodeJS.ProcessEnv;
+  platformRepository: PlatformRepository;
+};
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
   res.status(status).json({ ok: false, error: error instanceof Error ? error.message : "Workspace link failed." });
 }
 
-export function registerWorkspaceLinkRoutes(app: Express, runtime: ServerRuntime): void {
+export function registerWorkspaceLinkRoutes(app: Express, runtime: WorkspaceLinkRuntime): void {
   app.post("/api/auth/workspace-link", async (req: Request, res: Response) => {
     try {
       const token = (req.header("authorization") ?? "").match(/^Bearer\s+(.+)$/i)?.[1];
