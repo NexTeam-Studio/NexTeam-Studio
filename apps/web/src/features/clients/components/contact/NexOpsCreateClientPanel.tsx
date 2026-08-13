@@ -287,6 +287,28 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
     );
   }
 
+  function renderDesktopCustomFieldRows(scope: "client" | "property"): React.ReactElement | null {
+    const rows: CustomFieldDraftRow[] = scope === "client"
+      ? (newClient.clientCustomFieldsDraft ?? [])
+      : (newClient.propertyCustomFieldsDraft ?? []);
+    if (!rows.length) {
+      return null;
+    }
+    return (
+      <div className="nexops-custom-field-list">
+        {rows.map((row) => (
+          <div className="nexops-custom-field-row" key={row.id}>
+            <div className="nexops-field-row">
+              <label className="nexops-field"><span>Custom Field Name</span><input value={row.label} onChange={(event) => updateCustomFieldDraft(scope, row.id, { label: event.target.value })} /></label>
+              <label className="nexops-field"><span>Custom Field Value</span><input value={row.value} onChange={(event) => updateCustomFieldDraft(scope, row.id, { value: event.target.value })} /></label>
+            </div>
+            <button className="nexops-link-button danger" type="button" onClick={() => removeCustomFieldDraft(scope, row.id)}>Remove Custom Field</button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   if (pageLayout) {
     const helperCopy = clientCustomFieldValidation.hasBlockingIssues
       ? "Client custom field labels must be unique and cannot reuse built-in fields."
@@ -364,7 +386,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
           <span />
         </header>
         <div className="nexops-mobile-client-body">
-          <button className="nexops-mobile-client-row-action" type="button">Add From Contacts</button>
+          <p className="nexops-mobile-validation-note">Importing an existing contact is not available in this intake. Enter the contact details below to save them with this client.</p>
           <label className="nexops-mobile-client-field">
             <span>First Name</span>
             <input value={newClient.firstName} placeholder="First Name" onChange={(event) => patchClientDraft({ firstName: event.target.value })} />
@@ -673,18 +695,16 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
               <summary>Additional Client Details</summary>
               <div className="nexops-extra-panel-body">
                 <p>Create custom fields to track additional client-level details.</p>
-                <button type="button">Add Custom Field</button>
-                <div className="nexops-field-row">
-                  <label className="nexops-field"><span>Custom Field Name</span><input value={newClient.clientCustomFieldName} onChange={(event) => setNewClient({ ...newClient, clientCustomFieldName: event.target.value })} /></label>
-                  <label className="nexops-field"><span>Custom Field Value</span><input value={newClient.clientCustomFieldValue} onChange={(event) => setNewClient({ ...newClient, clientCustomFieldValue: event.target.value })} /></label>
-                </div>
+                {renderDesktopCustomFieldRows("client")}
+                <button type="button" onClick={() => addCustomFieldDraft("client")}>Add Custom Field</button>
+                {clientCustomFieldValidation.hasBlockingIssues ? <p className="nexops-form-note danger">Custom field labels must be unique and cannot match built-in client fields.</p> : null}
               </div>
             </details>
             <details className="nexops-extra-panel">
               <summary>Additional Contacts</summary>
               <div className="nexops-extra-panel-body">
                 <p>For contacts with access to all properties, like spouse/family for residential or property managers for commercial.</p>
-                <button type="button">Add Contact</button>
+                <p className="nexops-form-note">This intake saves one additional client contact. Add more contacts after the client is created.</p>
                 <div className="nexops-field-row">
                   <label className="nexops-field"><span>Contact Name</span><input value={newClient.additionalContactName} onChange={(event) => setNewClient({ ...newClient, additionalContactName: event.target.value })} /></label>
                   <label className="nexops-field"><span>Role</span><input value={newClient.additionalContactRole} onChange={(event) => setNewClient({ ...newClient, additionalContactRole: event.target.value })} /></label>
@@ -729,7 +749,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
               <label className="nexops-field"><span>Country</span><select value={newClient.country} onChange={(event) => setNewClient({ ...newClient, country: event.target.value })}><option value="US">United States</option><option value="CA">Canada</option></select></label>
             </div>
             {newClient.propertyGeoLat && newClient.propertyGeoLng ? <p className="nexops-form-note">Drive-time coordinates captured for scheduling. You can still overwrite the address manually.</p> : <p className="nexops-form-note">Manual addresses still save even if nothing is recognized. Suggestions only speed up the entry.</p>}
-            <label className="nexops-field"><span>Tax Rate</span><select value="none" onChange={() => undefined}><option value="none">No Tax Rate Created</option></select></label>
+            <p className="nexops-form-note">Tax rates are not configured in client intake and are not saved with this property.</p>
             <label className="nexops-check-field"><input type="checkbox" checked={newClient.billingSameAsPrimaryProperty} onChange={(event) => setNewClient({ ...newClient, billingSameAsPrimaryProperty: event.target.checked })} /> Billing Address Is the Same as Property Address</label>
             {!newClient.billingSameAsPrimaryProperty ? (
               <div className="nexops-subsection">
@@ -747,23 +767,20 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
               <summary>Property Details</summary>
               <div className="nexops-extra-panel-body">
                 <p>Create custom fields to track additional property details.</p>
-                <button type="button">Add Custom Field</button>
+                {renderDesktopCustomFieldRows("property")}
+                <button type="button" onClick={() => addCustomFieldDraft("property")}>Add Custom Field</button>
+                {propertyCustomFieldValidation.hasBlockingIssues ? <p className="nexops-form-note danger">Custom field labels must be unique and cannot match built-in property fields.</p> : null}
                 <label className="nexops-check-field inline"><input type="checkbox" checked={newClient.propertyGatedEntry} onChange={(event) => setNewClient({ ...newClient, propertyGatedEntry: event.target.checked })} /> Gated Entry</label>
                 <label className="nexops-field"><span>Gate Entry Code(s)</span><input value={newClient.propertyGateCodes} onChange={(event) => setNewClient({ ...newClient, propertyGateCodes: event.target.value })} /></label>
                 <label className="nexops-field"><span>Property Client Name</span><input value={newClient.propertyClientName} onChange={(event) => setNewClient({ ...newClient, propertyClientName: event.target.value })} /></label>
                 <label className="nexops-field"><span>Property Client Telephone Number</span><input value={newClient.propertyClientPhone} onChange={(event) => setNewClient({ ...newClient, propertyClientPhone: event.target.value })} /></label>
                 <label className="nexops-field"><span>Property Client Email Address</span><input type="email" value={newClient.propertyClientEmail} onChange={(event) => setNewClient({ ...newClient, propertyClientEmail: event.target.value })} /></label>
-                <div className="nexops-field-row">
-                  <label className="nexops-field"><span>Custom Field Name</span><input value={newClient.propertyCustomFieldName} onChange={(event) => setNewClient({ ...newClient, propertyCustomFieldName: event.target.value })} /></label>
-                  <label className="nexops-field"><span>Custom Field Value</span><input value={newClient.propertyCustomFieldValue} onChange={(event) => setNewClient({ ...newClient, propertyCustomFieldValue: event.target.value })} /></label>
-                </div>
               </div>
             </details>
             <details className="nexops-extra-panel">
               <summary>Property Contacts</summary>
               <div className="nexops-extra-panel-body single-row">
-                <p>For contacts with access limited to this property. These contacts do not receive parent-client correspondence by default.</p>
-                <button type="button">Add Contact</button>
+                <p>Property contacts are captured above with the property details and do not receive parent-client correspondence by default. Additional property contacts can be added after the property is created.</p>
               </div>
             </details>
           </div>

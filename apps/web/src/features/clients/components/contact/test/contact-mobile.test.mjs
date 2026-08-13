@@ -182,6 +182,34 @@ test("custom field drafts reject reserved labels and serialize unique rows", () 
   });
 });
 
+test("desktop intake renders saved custom-field draft rows and avoids unsupported intake actions", () => {
+  const html = renderToStaticMarkup(
+    React.createElement(NexOpsCreateClientPanel, {
+      tenantId: "tenant-a",
+      newClient: {
+        ...blankDraft(),
+        clientCustomFieldsDraft: [{ id: "client_1", label: "Preferred Crew", value: "Blue Team" }],
+        propertyCustomFieldsDraft: [{ id: "property_1", label: "Pool Finish", value: "Pebble" }]
+      },
+      setNewClient: () => {},
+      createStatus: "",
+      createClientCanSave: false,
+      createClientMissingFields: ["name", "telephone", "address"],
+      onClose: () => {},
+      onSubmit: () => {}
+    })
+  );
+
+  assert.match(html, /value="Preferred Crew"/);
+  assert.match(html, /value="Blue Team"/);
+  assert.match(html, /value="Pool Finish"/);
+  assert.match(html, /value="Pebble"/);
+  assert.match(html, /Remove Custom Field/);
+  assert.match(html, /Tax rates are not configured in client intake/);
+  assert.doesNotMatch(html, />Add Contact</);
+  assert.doesNotMatch(html, />Tax Rate</);
+});
+
 test("page-mode client intake keeps phone and address visible while collapsing secondary sections", () => {
   const html = renderToStaticMarkup(
     React.createElement(NexOpsCreateClientPanel, {
