@@ -41,7 +41,12 @@
 }
 
 .tenant-overview__row p {
-  color: #f5fff6;
+  color: #fff;
+}
+
+.tenant-overview__row strong,
+.tenant-overview__actions p {
+  color:#fff;
 }
 
 .tenant-overview__adapter-pills {
@@ -49,6 +54,9 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+.tenant-overview__modules { display:flex; flex-wrap:wrap; gap:8px; }
+.tenant-overview__modules span { padding:7px 10px; border-radius:999px; background:rgba(236,255,240,.16); color:#fff; border:1px solid rgba(227,255,232,.28); font-size:.82rem; font-weight:800; }
 
 .tenant-overview__pill {
   padding: 7px 10px;
