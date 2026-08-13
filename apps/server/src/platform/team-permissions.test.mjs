@@ -151,6 +151,10 @@ test("protected Owner photo upload is validated, UID-scoped, audited, gates tena
 
     const textReference = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ profilePhotoRef: "profiles/firebase-owner.jpg" }) });
     assert.equal(textReference.status, 400);
+    const rejectedIdentityPatch = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ email: "changed@nexteam.dev", firstName: "Changed", lastName: "Identity" }) });
+    assert.equal(rejectedIdentityPatch.status, 403);
+    const unchangedOwner = await repository.getPlatformUser("protected_owner");
+    assert.deepEqual({ email: unchangedOwner.email, firstName: unchangedOwner.firstName, lastName: unchangedOwner.lastName }, { email: "owner@nexteam.dev", firstName: "Legacy", lastName: "Profile" });
     const wrongType = await fetch(`${base}/api/platform/admin/team/me/profile-photo`, { method: "POST", headers: { ...headers, "content-type": "image/gif" }, body: png });
     assert.equal(wrongType.status, 400);
     const mismatchedImage = await fetch(`${base}/api/platform/admin/team/me/profile-photo`, { method: "POST", headers: { ...headers, "content-type": "image/jpeg" }, body: png });
@@ -167,7 +171,9 @@ test("protected Owner photo upload is validated, UID-scoped, audited, gates tena
 
     const recovered = await fetch(`${base}/api/platform/admin/team/me/recover-protected-owner-identity`, { method: "POST", headers });
     assert.equal(recovered.status, 200);
-    assert.deepEqual((await recovered.json()).user.firstName, "Christopher");
+    const recoveredBody = await recovered.json();
+    assert.deepEqual({ id: recoveredBody.user.id, authUid: recoveredBody.user.authUid, firstName: recoveredBody.user.firstName, lastName: recoveredBody.user.lastName }, { id: "protected_owner", authUid: "firebase-owner", firstName: "Christopher", lastName: "Sears" });
+    assert.equal((await repository.listPlatformUsers()).filter((user) => user.role === "Owner").length, 1);
     assert.equal((await repository.listPlatformUserAudits("protected_owner")).at(-1).action, "platform_user.protected_owner_identity_recovered");
 
     const tenant = await fetch(`${base}/api/platform/admin/session`, { method: "POST", headers: { authorization: "Bearer firebase-tenant" } });

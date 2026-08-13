@@ -49,3 +49,14 @@ test("NexCommand verifies the authoritative self profile before mounting tenant-
   assert.match(source, /fetch\("\/api\/platform\/admin\/team\/me\/profile-photo"/);
   assert.doesNotMatch(source, /profilePhotoRef.*setProfilePhotoRef/);
 });
+
+test("NexCommand Settings presents protected Owner identity as read-only without a self-service identity patch", () => {
+  const source = fs.readFileSync(new URL("../../features/platform/routes/platformSubroutes.tsx", import.meta.url), "utf8");
+  assert.match(source, /fetch\("\/api\/platform\/admin\/team\/me"\)/);
+  assert.match(source, /id="platform-owner-email"[\s\S]*disabled/);
+  assert.match(source, /id="platform-owner-first-name"[\s\S]*disabled/);
+  assert.match(source, /id="platform-owner-last-name"[\s\S]*disabled/);
+  assert.match(source, /code-controlled[\s\S]*controlled maintenance/);
+  assert.doesNotMatch(source, /<form|twoFactor|2FA/);
+  assert.doesNotMatch(source, /method:\s*"PATCH"/);
+});
