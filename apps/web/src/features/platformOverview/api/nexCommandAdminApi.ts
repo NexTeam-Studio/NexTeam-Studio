@@ -6,6 +6,8 @@ export type PlatformTeamUser = {
   id: string; authUid?: string; firstName: string; lastName: string; email?: string; telephone?: string;
   role: PlatformRole; accountStatus: "ACTIVE" | "DISABLED"; capabilityOverrides?: PlatformCapabilityOverride; updatedAt: string;
 };
+export type NexCommandTenantMember = { id: string; authUid: string | null; email: string | null; displayName: string; role: "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN"; active: boolean; effectiveCapabilities: string[] };
+export type NexCommandTenantMembers = { tenantId: string; currentOwner: NexCommandTenantMember | null; users: NexCommandTenantMember[] };
 
 async function request<T>(user: User, path: string, init?: RequestInit): Promise<T> {
   const token = await user.getIdToken();
@@ -25,3 +27,5 @@ export async function lifecycleCommand(user: User, tenantId: string, command: "f
   const path = command === "first" ? "cancel/confirmations" : command === "cancel" ? "cancel" : "resubscribe";
   return request<{ cancellationId?: string }>(user, `/api/platform/admin/tenants/${encodeURIComponent(tenantId)}/subscription/${path}`, { method: "POST", body: JSON.stringify(body) });
 }
+export async function getNexCommandTenantMembers(user: User, tenantId: string): Promise<NexCommandTenantMembers> { return request<NexCommandTenantMembers & { ok: true }>(user, `/api/platform/admin/tenants/${encodeURIComponent(tenantId)}/members`); }
+export async function assignNexCommandTenantOwner(user: User, tenantId: string, toUserId: string): Promise<{ owner: NexCommandTenantMember; previousOwnerId: string | null }> { return request<{ owner: NexCommandTenantMember; previousOwnerId: string | null }>(user, `/api/platform/admin/tenants/${encodeURIComponent(tenantId)}/owner`, { method: "POST", body: JSON.stringify({ toUserId }) }); }

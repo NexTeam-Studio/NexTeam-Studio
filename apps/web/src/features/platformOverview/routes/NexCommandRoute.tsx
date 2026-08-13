@@ -8,6 +8,7 @@ import { PlatformSupportPanel } from "../components/PlatformSupportPanel";
 import { PlatformLifecycleRecordsPanel } from "../components/PlatformLifecycleRecordsPanel";
 import { PlatformMigrationsPanel } from "../components/PlatformMigrationsPanel";
 import { PlatformSettingsPanel } from "../components/PlatformSettingsPanel";
+import { NexCommandTenantMembersPanel } from "../components/NexCommandTenantMembersPanel";
 import { usePlatformPlans } from "../hooks/usePlatformPlans";
 import { usePathname } from "../../../shared/router/usePathname";
 import "../../tenantOverview/styles/tenantOverview.css";
@@ -64,7 +65,7 @@ function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOv
   if (props.area === "dashboard") return <><section className="nexcommand__metrics"><Metric label="Active tenants" value={String(props.summary.active)} /><Metric label="Tenant records" value={String(props.summary.tenants)} /><Metric label="Pilot package" value="$0.00" /><Metric label="Staging health" value="Connected" /></section><section className="nexcommand__panel"><h2>Operator overview</h2><p>Use NexCommand to manage verified tenant onboarding and platform operations. Metrics appear only when the platform provides the underlying data.</p><a href="/nexcommand?area=team">Open Team</a></section></>;
   if (props.area === "live-status") return <LiveBuildStatusPanel user={props.user} />;
   if (props.area === "team") return <PlatformSettingsPanel user={props.user} />;
-  if (props.area === "tenants") return <section className="nexcommand__panel"><h2>Tenant administration</h2><p>Cancellation requires two deliberate confirmations. Archiving retains tenant records; resubscription restores the existing tenant.</p><TenantOverviewPanel rows={props.rows} workingTenant={props.workingTenant} onRunBackup={props.onRunBackup} onRunLifecycle={props.onRunLifecycle} /></section>;
+  if (props.area === "tenants") return <section className="nexcommand__panel"><h2>Tenant administration</h2><p>Cancellation requires two deliberate confirmations. Archiving retains tenant records; resubscription restores the existing tenant.</p><TenantOverviewPanel rows={props.rows} workingTenant={props.workingTenant} onRunBackup={props.onRunBackup} onRunLifecycle={props.onRunLifecycle} />{props.rows.map((row) => <NexCommandTenantMembersPanel key={row.tenant.id} user={props.user} tenantId={row.tenant.id} />)}</section>;
   if (props.area === "prospects") return <PlatformProspectIntakePanel user={props.user} />;
   if (props.area === "blueprints" || props.area === "subscriptions" || props.area === "onboarding") return <PlatformLifecycleRecordsPanel user={props.user} mode={props.area} />;
   if (props.area === "migrations") return <PlatformMigrationsPanel user={props.user} />;

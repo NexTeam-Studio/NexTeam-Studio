@@ -185,6 +185,7 @@ const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstNa
 const platformUserPatchSchema = platformUserInputSchema.omit({ authUid: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const platformSelfProfilePatchSchema = platformUserSchema.pick({ firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const ownershipTransferSchema = z.object({ toUserId: z.string().min(1) }).strict();
+const tenantOwnerAssignmentSchema = z.object({ toUserId: z.string().min(1) }).strict();
 
 export interface PlatformRouteDeps {
   repository: PlatformRepository;
@@ -529,6 +530,43 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
     } catch (error) {
       sendRouteError(res, error);
     }
+  });
+
+  // NexCommand is the only ownership authority. Tenant claims and tenant-local
+  // roles are deliberately not consulted by these routes.
+  app.get("/api/platform/admin/tenants/:tenantId/members", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformTeamCapability(req, env, "platform.tenants.view", deps.repository, deps.platformOperatorAuth);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      const tenant = await deps.repository.getTenant(tenantId);
+      if (!tenant) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTenantMembers", status: 404 });
+      const users = await deps.repository.listTenantUsers(tenantId);
+      const owners = users.filter((member) => member.role === "OWNER" && member.active);
+      if (owners.length > 1) throw new RailError("Tenant ownership is inconsistent and cannot be managed until repaired.", { provider: "platform", op: "nexCommandTenantMembers", status: 409 });
+      res.json({ ok: true, tenantId, currentOwner: owners[0] ?? null, users: users.map((member) => ({ id: member.id, authUid: member.authUid ?? null, email: member.email ?? null, displayName: member.displayName, role: member.role, active: member.active, effectiveCapabilities: customClaimsForTenantUser(member).tenantCapabilities })) });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.post("/api/platform/admin/tenants/:tenantId/owner", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.manage", deps.repository, deps.platformOperatorAuth);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      if (!await deps.repository.getTenant(tenantId)) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTenantOwner", status: 404 });
+      const input = tenantOwnerAssignmentSchema.parse(req.body ?? {});
+      const selected = await deps.repository.getTenantUser(tenantId, input.toUserId);
+      if (!selected) throw new RailError("Selected owner must already be a tenant member.", { provider: "platform", op: "nexCommandTenantOwner", status: 404 });
+      if (!selected.active) throw new RailError("Selected owner must be active.", { provider: "platform", op: "nexCommandTenantOwner", status: 409 });
+      const now = new Date().toISOString();
+      const result = await deps.repository.assignTenantOwner({
+        tenantId,
+        toUserId: selected.id,
+        actorId: actor.uid,
+        now,
+        audit: { id: `membership_audit_${randomUUID()}`, tenantId, action: "member.upserted", actorId: actor.uid, targetUserId: selected.id, detail: "NexCommand owner assignment; existing active owner was atomically demoted to OFFICE_ADMIN when present.", createdAt: now }
+      });
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand assigned tenant ${tenantId} owner to existing member ${selected.id}.`, selected.authUid, now));
+      res.json({ ok: true, tenantId, owner: { id: result.owner.id, email: result.owner.email ?? null, displayName: result.owner.displayName, role: result.owner.role, active: result.owner.active, effectiveCapabilities: customClaimsForTenantUser(result.owner).tenantCapabilities }, previousOwnerId: result.previousOwner?.id ?? null });
+    } catch (error) { sendRouteError(res, error); }
   });
 
   app.get("/api/platform/admin/live-build-status", async (req: Request, res: Response) => {
@@ -1294,9 +1332,8 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       }
       const access = await requireTenantCapability(req, env, "team.manage", { requestedTenantId: tenantId, op: "tenantUserUpsert" });
       const input = tenantUserBodySchema.parse(req.body ?? {});
-      if (input.role === "OWNER" && access.role !== "OWNER") {
-        throw new RailError("Only an owner can assign the owner role.", { provider: "platform", op: "tenantUserUpsert", status: 403 });
-      }
+      const existing = input.id ? await deps.repository.getTenantUser(tenantId, input.id) : null;
+      if (input.role === "OWNER" || existing?.role === "OWNER") throw new RailError("Tenant ownership can only be assigned or changed through NexCommand.", { provider: "platform", op: "tenantUserUpsert", status: 403 });
       if ((input.capabilities ?? []).some((capability) => !access.capabilities.includes(capability))) {
         throw new RailError("You cannot grant a capability you do not hold.", { provider: "platform", op: "tenantUserUpsert", status: 403 });
       }
@@ -1328,6 +1365,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       if (!user) {
         throw new RailError("Tenant user was not found.", { provider: "platform", op: "tenantUserClaims", status: 404 });
       }
+      if (user.role === "OWNER") throw new RailError("Tenant ownership can only be managed through NexCommand.", { provider: "platform", op: "tenantUserClaims", status: 403 });
       const claims = customClaimsForTenantUser(user);
       const auth = getAdminAuth(env);
       const canApply = Boolean(auth && user.authUid && env.NEXI_FIREBASE_AUTH_REQUIRED !== "false");

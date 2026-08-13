@@ -172,6 +172,10 @@ export interface PlatformRepository {
   listTenantUsers(tenantId: string): Promise<TenantUser[]>;
   getTenantUser(tenantId: string, id: string): Promise<TenantUser | null>;
   upsertTenantUser(user: TenantUser): Promise<TenantUser>;
+  /** Server-authoritative ownership assignment. The target must already be an
+   * active member; the implementation changes every affected membership and
+   * its immutable audit record in one transaction. */
+  assignTenantOwner(input: { tenantId: string; toUserId: string; actorId: string; audit: TenantMembershipAudit; now: string }): Promise<{ owner: TenantUser; previousOwner: TenantUser | null }>;
   listTenantMembershipAudits(tenantId: string): Promise<TenantMembershipAudit[]>;
   saveTenantMembershipAudit(audit: TenantMembershipAudit): Promise<TenantMembershipAudit>;
   getTenantOwnerInvite(tenantId: string, ownerUserId: string): Promise<TenantOwnerInvite | null>;
@@ -286,6 +290,29 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     current.push(parsed);
     this.tenantUsers.set(parsed.tenantId, current);
     return parsed;
+  }
+
+  async assignTenantOwner(input: { tenantId: string; toUserId: string; actorId: string; audit: TenantMembershipAudit; now: string }): Promise<{ owner: TenantUser; previousOwner: TenantUser | null }> {
+    const audit = tenantMembershipAuditSchema.parse(input.audit) as TenantMembershipAudit;
+    if (audit.tenantId !== input.tenantId || audit.actorId !== input.actorId || audit.targetUserId !== input.toUserId) throw new Error("Ownership audit does not match the requested assignment.");
+    const members = this.tenantUsers.get(input.tenantId) ?? [];
+    const target = members.find((member) => member.id === input.toUserId);
+    if (!target) throw new Error("Selected owner must already be a tenant member.");
+    if (!target.active) throw new Error("Selected owner must be active.");
+    const activeOwners = members.filter((member) => member.role === "OWNER" && member.active);
+    if (activeOwners.length > 1) throw new Error("Tenant ownership is inconsistent; competing owners must be resolved before assignment.");
+    const previousOwner = activeOwners[0] ?? null;
+    const nextMembers = members.map((member) => {
+      if (member.id === target.id) return tenantUserSchema.parse({ ...member, role: "OWNER", capabilities: undefined, updatedAt: input.now }) as TenantUser;
+      if (member.role === "OWNER" && member.active) return tenantUserSchema.parse({ ...member, role: "OFFICE_ADMIN", capabilities: undefined, updatedAt: input.now }) as TenantUser;
+      return member;
+    });
+    const owner = nextMembers.find((member) => member.id === target.id)!;
+    if (nextMembers.filter((member) => member.role === "OWNER" && member.active).length !== 1) throw new Error("Ownership assignment must result in exactly one active owner.");
+    if ((this.membershipAudits.get(input.tenantId) ?? []).some((entry) => entry.id === audit.id)) throw new Error(`Tenant membership audit ${audit.id} is immutable.`);
+    this.tenantUsers.set(input.tenantId, nextMembers);
+    this.membershipAudits.set(input.tenantId, [...(this.membershipAudits.get(input.tenantId) ?? []), audit]);
+    return { owner, previousOwner };
   }
 
   async listPlatformUsers(): Promise<PlatformUser[]> { return [...this.platformUsers.values()].map(firestoreDoc); }
@@ -690,6 +717,37 @@ export class FirestorePlatformRepository implements PlatformRepository {
     const parsed = tenantUserSchema.parse(user) as TenantUser;
     await setTenantOwnedDocument({ db: this.db, collection: "tenantUsers", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant user ${parsed.id}` });
     return parsed;
+  }
+
+  async assignTenantOwner(input: { tenantId: string; toUserId: string; actorId: string; audit: TenantMembershipAudit; now: string }): Promise<{ owner: TenantUser; previousOwner: TenantUser | null }> {
+    const audit = tenantMembershipAuditSchema.parse(input.audit) as TenantMembershipAudit;
+    if (audit.tenantId !== input.tenantId || audit.actorId !== input.actorId || audit.targetUserId !== input.toUserId) throw new Error("Ownership audit does not match the requested assignment.");
+    const membersQuery = this.db.collection("tenantUsers").where("tenantId", "==", input.tenantId);
+    const auditRef = this.db.collection("tenantMembershipAudits").doc(audit.id);
+    return this.db.runTransaction(async (transaction) => {
+      const [membersSnapshot, auditSnapshot] = await Promise.all([transaction.get(membersQuery), transaction.get(auditRef)]);
+      if (auditSnapshot.exists) throw new Error(`Tenant membership audit ${audit.id} is immutable.`);
+      const members = membersSnapshot.docs.map((document) => tenantUserSchema.parse(document.data()) as TenantUser);
+      const target = members.find((member) => member.id === input.toUserId);
+      if (!target) throw new Error("Selected owner must already be a tenant member.");
+      if (!target.active) throw new Error("Selected owner must be active.");
+      const activeOwners = members.filter((member) => member.role === "OWNER" && member.active);
+      if (activeOwners.length > 1) throw new Error("Tenant ownership is inconsistent; competing owners must be resolved before assignment.");
+      const previousOwner = activeOwners[0] ?? null;
+      const nextMembers = members.map((member) => {
+        if (member.id === target.id) return tenantUserSchema.parse({ ...member, role: "OWNER", capabilities: undefined, updatedAt: input.now }) as TenantUser;
+        if (member.role === "OWNER" && member.active) return tenantUserSchema.parse({ ...member, role: "OFFICE_ADMIN", capabilities: undefined, updatedAt: input.now }) as TenantUser;
+        return member;
+      });
+      const owner = nextMembers.find((member) => member.id === target.id)!;
+      if (nextMembers.filter((member) => member.role === "OWNER" && member.active).length !== 1) throw new Error("Ownership assignment must result in exactly one active owner.");
+      for (const member of nextMembers) {
+        const original = members.find((entry) => entry.id === member.id)!;
+        if (member !== original) transaction.set(this.db.collection("tenantUsers").doc(member.id), docData(member));
+      }
+      transaction.create(auditRef, docData({ ...audit, tenantId: audit.tenantId }));
+      return { owner, previousOwner };
+    });
   }
 
   async listPlatformUsers(): Promise<PlatformUser[]> {
