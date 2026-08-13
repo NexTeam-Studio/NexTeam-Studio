@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
 import { NexCommandMark, NexiIdentityMark, ProductLogo, type ProductBrand } from "../branding/ProductBranding";
-import { useAuthSession } from "./AuthSessionProvider";
+import { authFailureMessage, isVerifiedEmailRequiredError, useAuthSession } from "./AuthSessionProvider";
 import { hasFreshNexCommandAuthentication, hasNexCommandSession } from "./authBootstrap";
 import { requiresNexCommandReauthentication } from "./nexCommandFreshAuth";
 import { usePathname } from "../router/usePathname";
@@ -46,6 +46,7 @@ export function AuthGate(props: { children: React.ReactNode }): React.ReactEleme
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [resetMessage, setResetMessage] = useState("");
+  const [verificationRequired, setVerificationRequired] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -53,10 +54,26 @@ export function AuthGate(props: { children: React.ReactNode }): React.ReactEleme
     setWorking(true);
     setError("");
     setResetMessage("");
+    setVerificationRequired(false);
     try {
       await signIn(email.trim(), password);
+    } catch (signInError) {
+      setVerificationRequired(isVerifiedEmailRequiredError(signInError));
+      setError(authFailureMessage(signInError, localAuthEnabled));
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function handleResendVerification(): Promise<void> {
+    if (working || !auth?.currentUser) return;
+    setWorking(true);
+    setError("");
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setResetMessage("A verification email has been sent. Open its link, then sign in again.");
     } catch {
-      setError(localAuthEnabled ? "We couldn't sign you in with that local profile." : "We couldn't sign you in. Check your email and password, or reset your password.");
+      setResetMessage("We couldn't send a verification email right now. Try again shortly or contact your NexTeam administrator.");
     } finally {
       setWorking(false);
     }
@@ -97,7 +114,7 @@ export function AuthGate(props: { children: React.ReactNode }): React.ReactEleme
           <ProductLogo product={product.brand} className="auth-card-brand" alt={product.workspaceName} />
           <h1>{product.workspaceName} Sign-In</h1>
           <p>Use a configured local staff profile to unlock this tenant workspace for testing. Owner, office-admin, and technician sessions stay role-scoped after sign-in.</p>
-          <AuthForm email={email} password={password} localAuthEnabled working={working} error={error} resetMessage={resetMessage} onEmail={setEmail} onPassword={setPassword} onSubmit={handleSubmit} onForgotPassword={handleForgotPassword} />
+          <AuthForm email={email} password={password} localAuthEnabled working={working} error={error} resetMessage={resetMessage} verificationRequired={verificationRequired} onEmail={setEmail} onPassword={setPassword} onSubmit={handleSubmit} onForgotPassword={handleForgotPassword} onResendVerification={handleResendVerification} />
           <ProductSwitch product={product} />
           <div className="auth-profile-hints" aria-label="Available local role accounts">
             {localProfiles.map((profile) => <article key={profile.id}><strong>{profile.label}</strong><span>{profile.email}</span></article>)}
@@ -116,7 +133,7 @@ export function AuthGate(props: { children: React.ReactNode }): React.ReactEleme
         <h1>{product.workspaceName} Sign-In</h1>
         <p>{nexCommandReauthenticationRequired ? "For your security, sign in again to start a fresh NexCommand session." : product.signInDescription}</p>
         {ownerInviteComplete ? <p className="auth-welcome-message">Your password is set. Sign in to open your NexTeam workspace.</p> : null}
-        <AuthForm email={email} password={password} localAuthEnabled={false} working={working} error={error} resetMessage={resetMessage} onEmail={setEmail} onPassword={setPassword} onSubmit={handleSubmit} onForgotPassword={handleForgotPassword} />
+        <AuthForm email={email} password={password} localAuthEnabled={false} working={working} error={error} resetMessage={resetMessage} verificationRequired={verificationRequired} onEmail={setEmail} onPassword={setPassword} onSubmit={handleSubmit} onForgotPassword={handleForgotPassword} onResendVerification={handleResendVerification} />
         <ProductSwitch product={product} />
       </section>
     </main>
@@ -161,10 +178,12 @@ function AuthForm(props: {
   working: boolean;
   error: string;
   resetMessage: string;
+  verificationRequired: boolean;
   onEmail: (value: string) => void;
   onPassword: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onForgotPassword: () => void;
+  onResendVerification: () => void;
 }): React.ReactElement {
   const [passwordVisible, setPasswordVisible] = useState(false);
 
@@ -191,6 +210,7 @@ function AuthForm(props: {
       {props.error ? <p className="auth-error">{props.error}</p> : null}
       {props.resetMessage ? <p className="auth-reset-message">{props.resetMessage}</p> : null}
       <button type="submit" disabled={props.working || !props.email.trim() || (!props.localAuthEnabled && !props.password)}>{props.working ? "Signing in..." : "Sign In"}</button>
+      {!props.localAuthEnabled && props.verificationRequired ? <button className="auth-forgot-password" type="button" disabled={props.working} onClick={props.onResendVerification}>Send verification email</button> : null}
       {!props.localAuthEnabled ? <button className="auth-forgot-password" type="button" disabled={props.working} onClick={props.onForgotPassword}>Forgot password?</button> : null}
     </form>
   );

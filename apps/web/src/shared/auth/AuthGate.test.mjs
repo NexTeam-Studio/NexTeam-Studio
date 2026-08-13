@@ -29,3 +29,13 @@ test("owner invite handoff confirms the password reset on the branded sign-in pa
   assert.match(source, /get\("ownerInvite"\) === "1"/);
   assert.match(source, /Your password is set\. Sign in to open your NexTeam workspace\./);
 });
+
+test("tenant access errors are distinguished from a Firebase credential failure", () => {
+  const provider = fs.readFileSync(new URL("./AuthSessionProvider.tsx", import.meta.url), "utf8");
+  assert.match(provider, /pathname\.startsWith\("\/platform"\).*pathname\.startsWith\("\/nexcommand"\)/s);
+  assert.match(provider, /getIdToken\(true\)/);
+  assert.match(provider, /Verify the email address for this account before opening NexOps\./);
+  assert.match(provider, /This authenticated account is not assigned to an active NexOps workspace\./);
+  assert.match(source, /Send verification email/);
+  assert.match(source, /authFailureMessage\(signInError, localAuthEnabled\)/);
+});
