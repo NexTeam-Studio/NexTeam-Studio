@@ -582,7 +582,7 @@ export const tenantUserSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
   authUid: z.string().optional(),
-  email: z.string().email().optional(),
+  email: z.string().trim().toLowerCase().email().optional(),
   phones: z.array(z.string().min(1)).optional(),
   address: addressSchema.optional(),
   displayName: z.string().min(1),

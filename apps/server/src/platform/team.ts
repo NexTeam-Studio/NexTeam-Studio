@@ -42,8 +42,9 @@ export function resolvePlatformCapabilities(role: PlatformRole, overrides: Platf
 }
 
 export const platformUserSchema = z.object({
-  id: z.string().min(1), authUid: z.string().min(1), firstName: z.string().trim().min(1).max(100), lastName: z.string().trim().min(1).max(100), email: z.string().email(),
-  telephone: z.string().trim().min(1).max(50).optional(), address: z.object({ line1: z.string().trim().min(1).max(200), line2: z.string().trim().max(200).optional(), city: z.string().trim().min(1).max(100), region: z.string().trim().min(1).max(100), postalCode: z.string().trim().min(1).max(30), country: z.string().trim().min(2).max(2) }).optional(), profilePhotoRef: z.string().trim().min(1).max(500).optional(),
+  id: z.string().min(1), authUid: z.string().min(1), firstName: z.string().trim().min(1).max(100), lastName: z.string().trim().min(1).max(100), email: z.string().trim().toLowerCase().email(),
+  telephone: z.string().trim().min(1).max(50).optional(), address: z.object({ line1: z.string().trim().min(1).max(200), line2: z.string().trim().max(200).optional(), city: z.string().trim().min(1).max(100), region: z.string().trim().min(1).max(100), postalCode: z.string().trim().min(1).max(30), country: z.string().trim().min(2).max(2) }).optional(), profilePhotoRef: z.string().trim().min(1).max(500),
+  twoFactorState: z.enum(["NOT_ENROLLED", "ENROLLED"]),
   role: platformRoleSchema, accountClass: z.literal("internal").default("internal"), capabilityOverrides: platformCapabilityOverrideSchema.default({ grant: [], deny: [] }), accountStatus: z.enum(["ACTIVE", "DISABLED"]), createdAt: z.string().datetime(), updatedAt: z.string().datetime(), createdBy: z.string().min(1), updatedBy: z.string().min(1)
 }).strict();
 export type PlatformUser = z.infer<typeof platformUserSchema>;

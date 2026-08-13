@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import {
+  RailError,
   jobAccessLinkSchema,
   platformBackupRecordSchema,
   platformSupportEscalationSchema,
@@ -41,7 +42,7 @@ import {
 } from "@nexteam/core";
 import { PLATFORM_PLANS } from "./plans.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
-import { setPlatformOwnedDocument, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
+import { assertTenantDocumentOwner, setPlatformOwnedDocument, setTenantOwnedDocument } from "../core/tenantOwnedWrite.js";
 import type { TenantOwnerInvite } from "./tenantOwnerInvite.js";
 import { platformUserAuditSchema, platformUserSchema, type PlatformUser, type PlatformUserAudit } from "./team.js";
 import { platformSecurityAuditSchema, platformSessionSchema, type PlatformSecurityAudit, type PlatformSession } from "./sessionSecurity.js";
@@ -119,6 +120,15 @@ function docData(value: object): Record<string, unknown> {
 
 function now(): string {
   return new Date().toISOString();
+}
+
+function normalizedEmail(email: string | undefined): string | undefined { return email?.trim().toLowerCase(); }
+
+function assertEmailAvailable(input: { email: string | undefined; platformUsers: Iterable<Pick<PlatformUser, "id" | "email" | "authUid">>; tenantUsers: Iterable<Pick<TenantUser, "id" | "email" | "authUid">>; self: { collection: "platformUsers" | "tenantUsers"; id: string; authUid?: string | undefined } }): void {
+  const email = normalizedEmail(input.email);
+  if (!email) return;
+  const conflicts = (users: Iterable<{ id: string; email?: string | undefined; authUid?: string | undefined }>, collection: "platformUsers" | "tenantUsers") => [...users].some((user) => !(input.self.collection === collection && (user.id === input.self.id || collection === "platformUsers" && input.self.authUid !== undefined && user.authUid === input.self.authUid)) && normalizedEmail(user.email) === email);
+  if (conflicts(input.platformUsers, "platformUsers") || conflicts(input.tenantUsers, "tenantUsers")) throw new RailError("That email is already reserved by a platform or tenant user.", { provider: "platform", op: "platformEmailConflict", status: 409 });
 }
 
 export interface PlatformRepository {
@@ -286,6 +296,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
 
   async upsertTenantUser(user: TenantUser): Promise<TenantUser> {
     const parsed = tenantUserSchema.parse(user) as TenantUser;
+    assertEmailAvailable({ email: parsed.email, platformUsers: this.platformUsers.values(), tenantUsers: [...this.tenantUsers.values()].flat(), self: { collection: "tenantUsers", id: parsed.id, authUid: parsed.authUid } });
     const current = (this.tenantUsers.get(parsed.tenantId) ?? []).filter((entry) => entry.id !== parsed.id);
     current.push(parsed);
     this.tenantUsers.set(parsed.tenantId, current);
@@ -325,7 +336,12 @@ export class InMemoryPlatformRepository implements PlatformRepository {
     const user = active.length === 1 ? active[0] : active.length === 0 ? matches[0] : undefined;
     return user ? firestoreDoc(user) : null;
   }
-  async savePlatformUser(user: PlatformUser): Promise<PlatformUser> { const parsed = platformUserSchema.parse(user) as PlatformUser; this.platformUsers.set(parsed.id, firestoreDoc(parsed)); return firestoreDoc(parsed); }
+  async savePlatformUser(user: PlatformUser): Promise<PlatformUser> {
+    const parsed = platformUserSchema.parse(user) as PlatformUser;
+    assertEmailAvailable({ email: parsed.email, platformUsers: this.platformUsers.values(), tenantUsers: [...this.tenantUsers.values()].flat(), self: { collection: "platformUsers", id: parsed.id, authUid: parsed.authUid } });
+    this.platformUsers.set(parsed.id, firestoreDoc(parsed));
+    return firestoreDoc(parsed);
+  }
   async listPlatformUserAudits(userId?: string): Promise<PlatformUserAudit[]> { return this.platformUserAudits.filter((audit) => !userId || audit.userId === userId).map(firestoreDoc); }
   async appendPlatformUserAudit(audit: PlatformUserAudit): Promise<PlatformUserAudit> { const parsed = platformUserAuditSchema.parse(audit) as PlatformUserAudit; this.platformUserAudits.push(firestoreDoc(parsed)); return firestoreDoc(parsed); }
   async getPlatformSessionByTokenHash(tokenHash: string): Promise<PlatformSession | null> { const session = [...this.platformSessions.values()].find((entry) => entry.tokenHash === tokenHash); return session ? firestoreDoc(session) : null; }
@@ -476,6 +492,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   }
 
   async commitProspectTenantActivation(input: { prospect: Prospect; assignment: PlatformSubscriptionAssignment; tenant: Tenant; owner: TenantUser; subscription: TenantSubscription; audit: TenantMembershipAudit }): Promise<{ alreadyExisted: boolean }> {
+    assertEmailAvailable({ email: input.owner.email, platformUsers: this.platformUsers.values(), tenantUsers: [...this.tenantUsers.values()].flat(), self: { collection: "tenantUsers", id: input.owner.id, authUid: input.owner.authUid } });
     const existingAssignment = this.subscriptionAssignments.get(input.prospect.id);
     if (existingAssignment?.status === "ACTIVE") {
       if (existingAssignment.tenantId === input.tenant.id && (await this.getTenantUser(input.tenant.id, input.owner.id))?.authUid === input.owner.authUid) return { alreadyExisted: true };
@@ -715,7 +732,13 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
   async upsertTenantUser(user: TenantUser): Promise<TenantUser> {
     const parsed = tenantUserSchema.parse(user) as TenantUser;
-    await setTenantOwnedDocument({ db: this.db, collection: "tenantUsers", id: parsed.id, tenantId: parsed.tenantId, data: docData(parsed), label: `Tenant user ${parsed.id}` });
+    const ref = this.db.collection("tenantUsers").doc(parsed.id);
+    await this.db.runTransaction(async (transaction) => {
+      const [existing, platformUsers, tenantUsers] = await Promise.all([transaction.get(ref), transaction.get(this.db.collection("platformUsers")), transaction.get(this.db.collection("tenantUsers"))]);
+      if (existing.exists) assertTenantDocumentOwner(existing.data(), parsed.tenantId, `Tenant user ${parsed.id}`);
+      assertEmailAvailable({ email: parsed.email, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "email" | "authUid">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "email" | "authUid">), self: { collection: "tenantUsers", id: parsed.id, authUid: parsed.authUid } });
+      transaction.set(ref, docData(parsed));
+    });
     return parsed;
   }
 
@@ -775,7 +798,12 @@ export class FirestorePlatformRepository implements PlatformRepository {
   }
   async savePlatformUser(user: PlatformUser): Promise<PlatformUser> {
     const parsed = platformUserSchema.parse(user) as PlatformUser;
-    await setPlatformOwnedDocument({ db: this.db, collection: "platformUsers", id: parsed.id, data: docData(parsed) });
+    const ref = this.db.collection("platformUsers").doc(parsed.id);
+    await this.db.runTransaction(async (transaction) => {
+      const [platformUsers, tenantUsers] = await Promise.all([transaction.get(this.db.collection("platformUsers")), transaction.get(this.db.collection("tenantUsers"))]);
+      assertEmailAvailable({ email: parsed.email, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "email" | "authUid">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "email" | "authUid">), self: { collection: "platformUsers", id: parsed.id, authUid: parsed.authUid } });
+      transaction.set(ref, docData(parsed));
+    });
     return parsed;
   }
   async listPlatformUserAudits(userId?: string): Promise<PlatformUserAudit[]> {
@@ -959,9 +987,10 @@ export class FirestorePlatformRepository implements PlatformRepository {
     const subscriptionRef = this.db.collection("tenantSubscriptions").doc(input.subscription.id);
     const auditRef = this.db.collection("tenantMembershipAudits").doc(input.audit.id);
     return this.db.runTransaction(async (transaction) => {
-      const [prospectSnapshot, assignmentSnapshot, tenantSnapshot, ownerSnapshot, subscriptionSnapshot] = await Promise.all([
-        transaction.get(prospectRef), transaction.get(assignmentRef), transaction.get(tenantRef), transaction.get(ownerRef), transaction.get(subscriptionRef)
+      const [prospectSnapshot, assignmentSnapshot, tenantSnapshot, ownerSnapshot, subscriptionSnapshot, platformUsers, tenantUsers] = await Promise.all([
+        transaction.get(prospectRef), transaction.get(assignmentRef), transaction.get(tenantRef), transaction.get(ownerRef), transaction.get(subscriptionRef), transaction.get(this.db.collection("platformUsers")), transaction.get(this.db.collection("tenantUsers"))
       ]);
+      assertEmailAvailable({ email: input.owner.email, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "email" | "authUid">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "email" | "authUid">), self: { collection: "tenantUsers", id: input.owner.id, authUid: input.owner.authUid } });
       const currentProspect = prospectSnapshot.exists ? prospectSchema.parse(prospectSnapshot.data()) as Prospect : null;
       const currentAssignment = assignmentSnapshot.exists ? platformSubscriptionAssignmentSchema.parse(assignmentSnapshot.data()) as PlatformSubscriptionAssignment : null;
       if (currentProspect?.status === "CONVERTED" && currentAssignment?.status === "ACTIVE") {

@@ -181,7 +181,7 @@ const verifyJobAccessLinkSchema = z.object({
   token: z.string().min(16)
 });
 
-const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true, role: true, capabilityOverrides: true }).strict();
+const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true, twoFactorState: true, role: true, capabilityOverrides: true }).strict();
 const platformUserPatchSchema = platformUserInputSchema.omit({ authUid: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const platformSelfProfilePatchSchema = platformUserSchema.pick({ firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const ownershipTransferSchema = z.object({ toUserId: z.string().min(1) }).strict();
@@ -313,6 +313,13 @@ function sendRouteError(res: Response, error: unknown): void {
   res.status(status).json({ ok: false, error: message });
 }
 
+function assertOwnerIdentityIsImmutable(existing: PlatformUser, patch: Record<string, unknown>): void {
+  if (existing.role !== "Owner") return;
+  if ((typeof patch.email === "string" && patch.email !== existing.email) || typeof patch.firstName === "string" && patch.firstName !== existing.firstName || typeof patch.lastName === "string" && patch.lastName !== existing.lastName) {
+    throw new RailError("The protected Owner email and legal name can only change through a controlled identity-recovery process.", { provider: "platform", op: "platformOwnerIdentity", status: 403 });
+  }
+}
+
 function status(tenant: Tenant, adapter: TenantAdapterStatus["adapter"], provider: string, configured: boolean, detail?: string): TenantAdapterStatus {
   return {
     tenantId: tenant.id,
@@ -415,6 +422,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const existing = await deps.repository.getPlatformUserByAuthUid(actor.uid);
       if (!existing) throw new RailError("An internal platform profile is required.", { provider: "platform", op: "platformSelfProfileUpdate", status: 404 });
       const patch = platformSelfProfilePatchSchema.parse(req.body ?? {});
+      assertOwnerIdentityIsImmutable(existing, patch);
       const timestamp = new Date().toISOString();
       const user = await deps.repository.savePlatformUser({ ...existing, ...patch, updatedAt: timestamp, updatedBy: actor.uid } as PlatformUser);
       await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Self-service profile metadata updated.", timestamp));
@@ -457,7 +465,8 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const existing = await deps.repository.getPlatformUser(userId);
       if (!existing) throw new RailError("Platform user was not found.", { provider: "platform", op: "platformTeamUpdate", status: 404 });
       const patch = platformUserPatchSchema.parse(req.body ?? {});
-      if ((existing.role === "Owner" || patch.role === "Owner") && !actor.capabilities.includes("platform.ownership.manage")) throw new RailError("Only an Owner can change platform ownership.", { provider: "platform", op: "platformTeamUpdate", status: 403 });
+      assertOwnerIdentityIsImmutable(existing, patch);
+      if (existing.role === "Owner" || patch.role === "Owner") throw new RailError("Platform ownership can only change through the controlled ownership-transfer action.", { provider: "platform", op: "platformTeamUpdate", status: 403 });
       const timestamp = new Date().toISOString();
       const user = await deps.repository.savePlatformUser({ ...existing, ...patch, updatedAt: timestamp, updatedBy: actor.uid } as PlatformUser);
       await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Profile metadata updated.", timestamp));

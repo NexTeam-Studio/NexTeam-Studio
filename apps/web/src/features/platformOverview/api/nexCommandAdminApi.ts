@@ -3,8 +3,8 @@ import type { User } from "firebase/auth";
 export type PlatformRole = "Owner" | "Super Admin" | "Administrator" | "Developer" | "Developer Admin" | "Support" | "Sales & Onboarding" | "Marketing" | "Finance" | "Read Only";
 export type PlatformCapabilityOverride = { grant: string[]; deny: string[] };
 export type PlatformTeamUser = {
-  id: string; authUid?: string; firstName: string; lastName: string; email?: string; telephone?: string;
-  role: PlatformRole; accountStatus: "ACTIVE" | "DISABLED"; capabilityOverrides?: PlatformCapabilityOverride; updatedAt: string;
+  id: string; authUid?: string; firstName: string; lastName: string; email?: string; telephone?: string; profilePhotoRef: string;
+  twoFactorState: "NOT_ENROLLED" | "ENROLLED"; role: PlatformRole; accountStatus: "ACTIVE" | "DISABLED"; capabilityOverrides?: PlatformCapabilityOverride; updatedAt: string;
 };
 export type NexCommandTenantMember = { id: string; authUid?: string | null; email: string | null; displayName: string; role: "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN"; active: boolean; effectiveCapabilities: string[] };
 export type NexCommandTenantMembers = { tenantId: string; currentOwner: NexCommandTenantMember | null; users: NexCommandTenantMember[] };
@@ -18,7 +18,7 @@ async function request<T>(user: User, path: string, init?: RequestInit): Promise
 }
 
 export async function getMyPlatformProfile(user: User): Promise<PlatformTeamUser> { return (await request<{ user: PlatformTeamUser }>(user, "/api/platform/admin/team/me")).user; }
-export async function saveMyPlatformProfile(user: User, patch: Pick<PlatformTeamUser, "firstName" | "lastName" | "email">): Promise<PlatformTeamUser> { return (await request<{ user: PlatformTeamUser }>(user, "/api/platform/admin/team/me", { method: "PATCH", body: JSON.stringify(patch) })).user; }
+export async function saveMyPlatformProfile(user: User, patch: Pick<PlatformTeamUser, "firstName" | "lastName" | "email" | "telephone" | "profilePhotoRef">): Promise<PlatformTeamUser> { return (await request<{ user: PlatformTeamUser }>(user, "/api/platform/admin/team/me", { method: "PATCH", body: JSON.stringify(patch) })).user; }
 export async function getPlatformTeam(user: User): Promise<PlatformTeamUser[]> { return (await request<{ users: PlatformTeamUser[] }>(user, "/api/platform/admin/team")).users; }
 export async function updatePlatformTeamUser(user: User, id: string, patch: Partial<Pick<PlatformTeamUser, "firstName" | "lastName" | "email" | "role" | "capabilityOverrides">>): Promise<PlatformTeamUser> { return (await request<{ user: PlatformTeamUser }>(user, `/api/platform/admin/team/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(patch) })).user; }
 export async function setPlatformTeamUserStatus(user: User, id: string, active: boolean): Promise<PlatformTeamUser> { return (await request<{ user: PlatformTeamUser }>(user, `/api/platform/admin/team/${encodeURIComponent(id)}/${active ? "reactivate" : "disable"}`, { method: "POST", body: "{}" })).user; }
