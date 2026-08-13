@@ -3,6 +3,19 @@ import fs from "node:fs";
 import test from "node:test";
 
 const source = fs.readFileSync(new URL("./AppRouter.tsx", import.meta.url), "utf8");
+const authGateSource = fs.readFileSync(new URL("../auth/AuthGate.tsx", import.meta.url), "utf8");
+const nexOpsWorkspaceSource = fs.readFileSync(new URL("../../features/nexopsShell/NexOpsWorkspace.tsx", import.meta.url), "utf8");
+
+test("NexOps sign-in visibly links global operators to the supported NexCommand sign-in", () => {
+  assert.match(authGateSource, /props\.product\.path === "\/nexops"\s*\? \{ path: "\/nexcommand\/sign-in", label: "Open NexCommand" \}/);
+  assert.match(authGateSource, /<a className="auth-product-link" href=\{alternate\.path\}>\{alternate\.label\}<\/a>/);
+});
+
+test("NexOps tenant denial preserves denial and signs out before opening NexCommand sign-in", () => {
+  assert.match(nexOpsWorkspaceSource, /if \(accessState\.status === "denied"\)/);
+  assert.match(nexOpsWorkspaceSource, /NexOps access denied/);
+  assert.match(nexOpsWorkspaceSource, /signOutOperator\(props\.auth, "\/nexcommand\/sign-in"\)\}>Open NexCommand<\/button>/);
+});
 
 test("NexCommand only presents profile denial after the server session endpoint is attempted", () => {
   assert.doesNotMatch(source, /if \(!hasFreshNexCommandAuthentication\(\)\) \{ setDenied\(true\); return; \}/);

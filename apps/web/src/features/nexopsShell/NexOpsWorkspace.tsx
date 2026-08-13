@@ -70,7 +70,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
     return <main className="nexops-app-shell"><section className="nexops-module-card"><p className="eyebrow">NexOps</p><h1>Verifying access</h1><p>Checking your active workspace membership.</p></section></main>;
   }
   if (accessState.status === "denied") {
-    return <main className="nexops-app-shell"><section className="nexops-module-card"><p className="eyebrow">NexOps access denied</p><h1>Workspace unavailable</h1><p>{accessState.message}</p><button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button></section></main>;
+    return <main className="nexops-app-shell"><section className="nexops-module-card"><p className="eyebrow">NexOps access denied</p><h1>Workspace unavailable</h1><p>{accessState.message}</p><button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button><button type="button" onClick={() => void signOutOperator(props.auth, "/nexcommand/sign-in")}>Open NexCommand</button></section></main>;
   }
   return <NexOpsWorkspaceContent {...props} operatorContext={accessState.context} />;
 }
