@@ -665,11 +665,11 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       if (!current) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTenantProfile", status: 404 });
       const input = tenantProfileSchema.parse(req.body ?? {});
       const now = new Date().toISOString();
-      const tenant = await deps.repository.upsertTenant({ ...current, name: input.tenant.name, timezone: input.tenant.timezone, lifecycleState: input.tenant.lifecycleState, lifecycleUpdatedAt: now, branding: { ...current.branding, ...(input.tenant.logoUrl ? { logoRef: input.tenant.logoUrl } : {}) } });
+      const tenant = await deps.repository.upsertTenant({ ...current, name: input.tenant.name, timezone: input.tenant.timezone, lifecycleState: input.tenant.lifecycleState, lifecycleUpdatedAt: now });
       const profile: TenantProfile = { tenantId, legalName: input.legalName, dbaName: input.dbaName, website: input.website, primaryContact: input.primaryContact, billingContact: input.billingContact, updatedAt: now, updatedBy: actor.uid };
       const [savedProfile, branding] = await Promise.all([
         deps.repository.saveTenantProfile(profile),
-        (async () => { const existingBranding = await deps.repository.getTenantBranding(tenantId); return deps.repository.saveTenantBranding({ ...(existingBranding ?? defaultTenantBranding(tenant)), tenantId, displayName: tenant.name, logo: input.tenant.logoUrl ? { url: input.tenant.logoUrl, alt: tenant.name, updatedAt: now } : existingBranding?.logo, source: "manual", updatedAt: now, updatedBy: actor.uid }); })()
+        (async () => { const existingBranding = await deps.repository.getTenantBranding(tenantId); return deps.repository.saveTenantBranding({ ...(existingBranding ?? defaultTenantBranding(tenant)), tenantId, displayName: tenant.name, logo: existingBranding?.logo, source: "manual", updatedAt: now, updatedBy: actor.uid }); })()
       ]);
       await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand updated tenant ${tenantId} profile fields.`, undefined, now));
       res.json({ ok: true, tenant, profile: savedProfile, branding });
