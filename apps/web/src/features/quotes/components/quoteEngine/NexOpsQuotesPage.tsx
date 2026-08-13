@@ -340,6 +340,7 @@ interface NexOpsQuotesPageProps {
   tenantUsers: TenantUserRecord[];
   onCrmMutation?: () => void;
   focusedQuoteId?: string;
+  initialClientId?: string;
   initialFilter?: QuoteFilter;
 }
 
@@ -821,9 +822,10 @@ function composerFromDefaults(
   tenantUsers: TenantUserRecord[],
   settingsRecord: CrmSettingsRecord | null,
   settings: SettingsDraft | null,
-  template: QuoteTemplateRecord | undefined
+  template: QuoteTemplateRecord | undefined,
+  initialClientId?: string
 ): QuoteComposerDraft {
-  const client = clients[0];
+  const client = clients.find((candidate) => candidate.id === initialClientId) ?? clients[0];
   const items = template?.defaultLineItems?.length
     ? template.defaultLineItems.map(lineDraftFromQuoteItem)
     : [];
@@ -1015,7 +1017,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [settingsDraft, setSettingsDraft] = useState<SettingsDraft | null>(null);
   const [templateDraft, setTemplateDraft] = useState<TemplateDraft>(emptyTemplateDraft(null));
   const [captureComposerLinesInTemplate, setCaptureComposerLinesInTemplate] = useState(false);
-  const [composer, setComposer] = useState<QuoteComposerDraft>(() => composerFromDefaults(props.clients, props.tenantUsers, null, null, undefined));
+  const [composer, setComposer] = useState<QuoteComposerDraft>(() => composerFromDefaults(props.clients, props.tenantUsers, null, null, undefined, props.initialClientId));
   const [quoteSearch, setQuoteSearch] = useState("");
   const [quoteFilter, setQuoteFilter] = useState<QuoteFilter>("all");
   const [selectedQuoteId, setSelectedQuoteId] = useState("");
@@ -1148,7 +1150,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
 
   function resetComposer(templateId = templates[0]?.id ?? ""): void {
     const template = templates.find((candidate) => candidate.id === templateId) ?? templates[0];
-    setComposer(composerFromDefaults(props.clients, props.tenantUsers, settingsRecord, settingsDraft, template));
+    setComposer(composerFromDefaults(props.clients, props.tenantUsers, settingsRecord, settingsDraft, template, props.initialClientId));
   }
 
   function applyTemplate(templateId: string): void {

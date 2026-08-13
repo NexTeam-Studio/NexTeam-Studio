@@ -39,6 +39,7 @@ const UsersSurface = React.lazy(async () => ({ default: (await import("../../fea
 
 import type { OperatorContext, TenantBranding, TenantBrandingResponse, ScheduleScope, WorkspaceTarget } from "./contracts/workspaceContracts";
 import { formatPhoneDisplay, personDisplayName, clientDisplayName, clientContactDisplayName, clientPrimaryAddress, clientStatusLabel, contactSummary, NexOpsNavGlyph, MobileClientSummaryGlyph, MobileClientEditGlyph, MOBILE_CLIENT_VIEWPORT_MAX } from "./workspaceSupport";
+import { resolveClientScopedCreateId } from "./clientCreateHandoff";
 export type * from "./contracts/workspaceContracts";
 export * from "./workspaceSupport";
 
@@ -116,6 +117,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   const [scheduleScopeIntent, setScheduleScopeIntent] = useState<ScheduleScope | undefined>();
   const [moduleSwitcherOpen, setModuleSwitcherOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [createClientContextId, setCreateClientContextId] = useState("");
   const [mobileCreateFabCollapsed, setMobileCreateFabCollapsed] = useState(false);
   const [mobileCreateFabPulse, setMobileCreateFabPulse] = useState(false);
   const [creatingClientPage, setCreatingClientPage] = useState(initialPathState.clientDraft === "new");
@@ -355,6 +357,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     clearWorkspaceTargets();
     clearWorkspaceFilters();
     closeHeaderPanels();
+    setCreateClientContextId("");
     setCreatingClientPage(false);
     setActiveModule(module);
     if (module !== "clients") {
@@ -485,6 +488,9 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     }
     closeHeaderPanels();
     setModule(option.workflow.module);
+    if (activeClientProfileTab && selectedClient && (option.workflow.module === "requests" || option.workflow.module === "quotes" || option.workflow.module === "jobs")) {
+      setCreateClientContextId(resolveClientScopedCreateId(selectedClient.id, clients.map((client) => client.id)));
+    }
   }
 
   function openInvoiceWorkspace(invoiceId: string): void {
@@ -837,6 +843,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           properties={properties}
           tenantUsers={tenantUsers}
           focusedRequestId={focusedRequestId}
+          initialClientId={createClientContextId || undefined}
           initialFilter={requestFilterIntent}
           captureIntent={captureRequestIntent}
           onCaptureRequestCreated={handleCaptureRequestCreated}
@@ -851,6 +858,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           clients={clients}
           tenantUsers={tenantUsers}
           focusedQuoteId={focusedQuoteId}
+          initialClientId={createClientContextId || undefined}
           initialFilter={quoteFilterIntent}
           onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
         />
@@ -865,6 +873,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
           onOpenInvoice={openInvoiceWorkspace}
           focusedJobId={focusedJobId}
+          initialClientId={createClientContextId || undefined}
           initialFilter={jobFilterIntent}
         />
       );
