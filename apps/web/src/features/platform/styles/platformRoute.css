@@ -35,3 +35,5 @@
 .platform-profile-completion-card form { display: grid; gap: 10px; margin-top: 20px; }
 .platform-profile-completion-card input, .platform-profile-completion-card button { min-height: 42px; border-radius: 8px; padding: 0 12px; }
 .platform-profile-completion-card button { border: 0; background: #183b73; color: #fff; font-weight: 700; }
+.platform-profile-completion-card input[type="file"] { padding: 8px 12px; }
+.platform-profile-photo-help { margin: 0; color: #52627b; font-size: .9rem; }

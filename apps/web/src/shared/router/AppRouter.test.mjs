@@ -32,4 +32,7 @@ test("NexCommand verifies the authoritative self profile before mounting tenant-
   assert.match(source, /if \(profileGate === "incomplete"\) return <PlatformProfileCompletion/);
   assert.match(source, /if \(pathname !== "\/platform\/profile-completion"\) navigateToProfileCompletion\(\)/);
   assert.ok(source.indexOf('if (profileGate === "incomplete")') < source.indexOf("<NexCommandRoute />"));
+  assert.match(source, /type="file" accept="image\/png,image\/jpeg,image\/webp"/);
+  assert.match(source, /fetch\("\/api\/platform\/admin\/team\/me\/profile-photo"/);
+  assert.doesNotMatch(source, /profilePhotoRef.*setProfilePhotoRef/);
 });

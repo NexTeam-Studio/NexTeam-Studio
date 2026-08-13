@@ -58,17 +58,21 @@ function navigateToNexCommand(): void {
 }
 
 function PlatformProfileCompletion({ onCompleted }: { onCompleted: () => void }): React.ReactElement {
-  const [profilePhotoRef, setProfilePhotoRef] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "saving" | "error" | "complete">("idle");
 
   async function completeProfile(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
+    if (!profilePhoto) {
+      setStatus("error");
+      return;
+    }
     setStatus("saving");
     try {
-      const response = await fetch("/api/platform/admin/team/me", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ profilePhotoRef: profilePhotoRef.trim() })
+      const response = await fetch("/api/platform/admin/team/me/profile-photo", {
+        method: "POST",
+        headers: { "content-type": profilePhoto.type },
+        body: profilePhoto
       });
       if (!response.ok) throw new Error("Profile completion was denied.");
       setStatus("complete");
@@ -85,8 +89,9 @@ function PlatformProfileCompletion({ onCompleted }: { onCompleted: () => void })
       <h1 id="profile-completion-title">Add your required profile photo</h1>
       <p>Access to NexCommand is limited until your profile photo is saved.</p>
       <form onSubmit={(event) => void completeProfile(event)}>
-        <label htmlFor="platform-profile-photo">Profile photo reference</label>
-        <input id="platform-profile-photo" value={profilePhotoRef} onChange={(event) => setProfilePhotoRef(event.target.value)} required />
+        <label htmlFor="platform-profile-photo">Profile photo</label>
+        <input id="platform-profile-photo" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="platform-profile-photo-help" onChange={(event) => setProfilePhoto(event.target.files?.[0] ?? null)} required />
+        <p className="platform-profile-photo-help" id="platform-profile-photo-help">Choose a PNG, JPEG, or WebP image up to 5 MB.</p>
         <button type="submit" disabled={status === "saving"}>{status === "saving" ? "Saving…" : "Complete profile"}</button>
       </form>
       {status === "error" && <p role="alert">We could not complete your profile. Please try again.</p>}

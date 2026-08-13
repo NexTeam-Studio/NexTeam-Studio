@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { RailError, addressSchema, type JobAccessScope, type Tenant, type TenantAdapterStatus, type TenantPlan } from "@nexteam/core";
@@ -181,11 +181,14 @@ const verifyJobAccessLinkSchema = z.object({
   token: z.string().min(16)
 });
 
-const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true, role: true, capabilityOverrides: true }).strict();
+const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, role: true, capabilityOverrides: true }).strict();
 const platformUserPatchSchema = platformUserInputSchema.omit({ authUid: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
-const platformSelfProfilePatchSchema = platformUserSchema.pick({ firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
+const platformSelfProfilePatchSchema = platformUserSchema.pick({ firstName: true, lastName: true, email: true, telephone: true, address: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const ownershipTransferSchema = z.object({ toUserId: z.string().min(1) }).strict();
 const tenantOwnerAssignmentSchema = z.object({ toUserId: z.string().min(1) }).strict();
+const PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+const profilePhotoContentTypes = ["image/png", "image/jpeg", "image/webp"] as const;
+type ProfilePhotoContentType = typeof profilePhotoContentTypes[number];
 
 export interface PlatformRouteDeps {
   repository: PlatformRepository;
@@ -313,6 +316,25 @@ function sendRouteError(res: Response, error: unknown): void {
   res.status(status).json({ ok: false, error: message });
 }
 
+function profilePhotoType(contentType: string | undefined, body: unknown): { contentType: ProfilePhotoContentType; extension: "png" | "jpg" | "webp" } {
+  const normalized = contentType?.split(";", 1)[0]?.trim().toLowerCase();
+  if (!profilePhotoContentTypes.includes(normalized as ProfilePhotoContentType) || !Buffer.isBuffer(body) || body.length === 0 || body.length > PROFILE_PHOTO_MAX_BYTES) {
+    throw new RailError("Profile photo must be a PNG, JPEG, or WebP image no larger than 5 MB.", { provider: "platform", op: "profilePhotoUpload", status: 400 });
+  }
+  const signatures: Record<ProfilePhotoContentType, (data: Buffer) => boolean> = {
+    "image/png": (data) => data.length >= 8 && data.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+    "image/jpeg": (data) => data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff,
+    "image/webp": (data) => data.length >= 12 && data.subarray(0, 4).equals(Buffer.from("RIFF")) && data.subarray(8, 12).equals(Buffer.from("WEBP"))
+  };
+  if (!signatures[normalized as ProfilePhotoContentType](body)) {
+    throw new RailError("Profile photo content does not match its declared image type.", { provider: "platform", op: "profilePhotoUpload", status: 400 });
+  }
+  return {
+    contentType: normalized as ProfilePhotoContentType,
+    extension: normalized === "image/png" ? "png" : normalized === "image/jpeg" ? "jpg" : "webp"
+  };
+}
+
 function assertOwnerIdentityIsImmutable(existing: PlatformUser, patch: Record<string, unknown>): void {
   if (existing.role !== "Owner") return;
   if ((typeof patch.email === "string" && patch.email !== existing.email) || typeof patch.firstName === "string" && patch.firstName !== existing.firstName || typeof patch.lastName === "string" && patch.lastName !== existing.lastName) {
@@ -421,6 +443,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const actor = await requirePlatformTeamCapability(req, env, "platform.profile.self", deps.repository, deps.platformOperatorAuth);
       const existing = await deps.repository.getPlatformUserByAuthUid(actor.uid);
       if (!existing) throw new RailError("An internal platform profile is required.", { provider: "platform", op: "platformSelfProfileUpdate", status: 404 });
+      if (Object.hasOwn(req.body ?? {}, "profilePhotoRef")) throw new RailError("Profile photos must be uploaded as image files.", { provider: "platform", op: "platformSelfProfileUpdate", status: 400 });
       const patch = platformSelfProfilePatchSchema.parse(req.body ?? {});
       assertOwnerIdentityIsImmutable(existing, patch);
       const timestamp = new Date().toISOString();
@@ -428,6 +451,25 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Self-service profile metadata updated.", timestamp));
       await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, "Platform self-service profile updated.", user.authUid, timestamp));
       res.json({ ok: true, user });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  // Profile images are server-written, UID-scoped storage objects. The client
+  // never supplies the durable storage reference that completes this gate.
+  app.post("/api/platform/admin/team/me/profile-photo", express.raw({ type: [...profilePhotoContentTypes], limit: PROFILE_PHOTO_MAX_BYTES }), async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.profile.self", deps.repository, deps.platformOperatorAuth);
+      const existing = await deps.repository.getPlatformUserByAuthUid(actor.uid);
+      if (!existing) throw new RailError("An internal platform profile is required.", { provider: "platform", op: "profilePhotoUpload", status: 404 });
+      if (!deps.storage) throw new RailError("Firebase Storage is not configured for platform profile photos.", { provider: "firebase", op: "profilePhotoUpload", status: 503 });
+      const image = profilePhotoType(req.header("content-type"), req.body);
+      const uidPath = encodeURIComponent(actor.uid);
+      const storageRef = await deps.storage.writeImage(`platform-profiles/${uidPath}/profile.${image.extension}`, req.body as Buffer, image.contentType);
+      const timestamp = new Date().toISOString();
+      const user = await deps.repository.savePlatformUser({ ...existing, profilePhotoRef: storageRef, updatedAt: timestamp, updatedBy: actor.uid });
+      await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Self-service profile photo uploaded to UID-scoped platform storage.", timestamp));
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, "Platform self-service profile photo uploaded.", user.authUid, timestamp));
+      res.status(201).json({ ok: true, user: platformUserSummary(user) });
     } catch (error) { sendRouteError(res, error); }
   });
 
