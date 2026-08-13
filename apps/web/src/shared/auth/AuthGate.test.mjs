@@ -35,6 +35,7 @@ test("tenant access errors are distinguished from a Firebase credential failure"
   assert.match(provider, /pathname\.startsWith\("\/platform"\).*pathname\.startsWith\("\/nexcommand"\)/s);
   assert.match(provider, /getIdToken\(true\)/);
   assert.match(provider, /Verify the email address for this account before opening NexOps\./);
+  assert.match(provider, /No active workspace membership matches this sign-in\./);
   assert.match(provider, /This authenticated account is not assigned to an active NexOps workspace\./);
   assert.match(source, /Send verification email/);
   assert.match(source, /authFailureMessage\(signInError, localAuthEnabled\)/);
