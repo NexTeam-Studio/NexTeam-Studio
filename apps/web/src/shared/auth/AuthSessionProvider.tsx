@@ -114,7 +114,7 @@ async function ensureWorkspaceLink(user: User): Promise<void> {
   const error = typeof body?.error === "string" ? body.error : "";
   if (error === "A verified email is required to open this workspace.") throw new Error(VERIFIED_EMAIL_REQUIRED_MESSAGE);
   if (error === "Platform identities do not use tenant workspace linking.") throw new Error("This account is a NexCommand account. Open NexCommand to continue.");
-  if (error === "No active workspace membership matches this verified email.") throw new Error("This authenticated account is not assigned to an active NexOps workspace.");
+  if (error === "No active workspace membership matches this sign-in.") throw new Error("This authenticated account is not assigned to an active NexOps workspace.");
   throw new Error("Workspace unavailable.");
 }
 
