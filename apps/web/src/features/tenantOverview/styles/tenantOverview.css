@@ -12,8 +12,8 @@
   padding: 20px;
   border: 1px solid rgba(38, 53, 44, 0.12);
   border-radius: 28px;
-  background: rgba(255, 250, 240, 0.94);
-  box-shadow: 0 18px 54px rgba(48, 44, 32, 0.12);
+  background:linear-gradient(135deg,#ffffff,#f2f8f0 74%,#e5f5e9);
+  box-shadow:0 14px 38px rgba(12,17,24,.10);
 }
 .tenant-overview__filters { display:flex; flex-wrap:wrap; align-items:end; gap:12px; padding:12px; border:1px solid rgba(38,53,44,.12); border-radius:16px; background:#fff; }
 .tenant-overview__filters label { display:grid; gap:5px; color:var(--ink-600); font-size:.8rem; font-weight:800; }
@@ -22,7 +22,7 @@
 
 .tenant-overview__row > * { min-width: 0; overflow-wrap: anywhere; }
 .tenant-overview__identity { display:flex; align-items:center; gap:12px; }
-.tenant-overview__logo { display:grid; place-items:center; width:48px; height:48px; border-radius:16px; background:linear-gradient(135deg,#052431,#19776d); color:#baff11; font-size:1.35rem; font-weight:900; }
+.tenant-overview__logo { display:grid; place-items:center; width:60px; height:60px; overflow:hidden; border-radius:16px; background:linear-gradient(135deg,#052431,#19776d); color:#baff11; font-size:1rem; font-weight:900; box-shadow:0 8px 18px rgba(12,17,24,.16); }.tenant-overview__logo img { width:100%; height:100%; object-fit:contain; background:#fff; padding:5px; }
 
 .tenant-overview__row h2,
 .tenant-overview__row p {
@@ -68,30 +68,21 @@
   align-items: stretch;
 }
 
-.tenant-overview__actions a,
-.tenant-overview__actions button {
-  border: 0;
-  border-radius: 999px;
-  padding: 12px 16px;
-  color: var(--paper);
-  background: var(--ink-700);
-  font-weight: 850;
-  text-align: center;
-  text-decoration: none;
-}
+.tenant-action { border:0; border-radius:999px; padding:11px 18px; color:#0c1118; background:linear-gradient(135deg,#d4ff20,#25d238); box-shadow:0 7px 16px rgba(37,210,56,.22); font:inherit; font-weight:900; text-align:center; text-decoration:none; cursor:pointer; }.tenant-action:hover { filter:brightness(.97); transform:translateY(-1px); }.tenant-action--secondary { color:#f7faf8; background:linear-gradient(135deg,#0c1118,#202b35); box-shadow:none; }
 
 .tenant-overview__actions button:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-.tenant-profile__heading { display:flex; justify-content:space-between; gap:16px; align-items:center; margin:16px 0 24px; }
+.tenant-profile { background:linear-gradient(145deg,#ffffff,#f2f9f3 72%,#e7f4e9); }.tenant-profile__heading { display:flex; justify-content:space-between; gap:16px; align-items:center; margin:18px 0 28px; padding:18px; border-radius:18px; background:linear-gradient(135deg,#0c1118,#17383a); color:#fff; }.tenant-profile__heading h2 { color:#fff; }.tenant-profile__heading p { color:#d6e0dc; }
 .tenant-profile__heading > div { display:flex; align-items:center; gap:14px; }
 .tenant-profile__heading img,.tenant-profile__heading span { width:56px; height:56px; border-radius:18px; object-fit:cover; display:grid; place-items:center; background:#082730; color:#baff11; font-size:1.5rem; font-weight:900; }
-.tenant-profile__grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:10px 0 20px; }
+.tenant-profile__grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:10px 0 22px; }
 .tenant-profile label { display:grid; gap:6px; font-weight:750; color:var(--ink-700); }
 .tenant-profile input,.tenant-profile select { min-height:42px; padding:8px 10px; border:1px solid rgba(38,53,44,.22); border-radius:10px; font:inherit; }
 .tenant-profile fieldset { border:0; padding:0; margin:0; }
+.tenant-profile h3 { margin:28px 0 12px; color:#0c1118; }.tenant-profile h4 { margin:14px 0 8px; color:#2e4d4b; }.tenant-profile__check { display:flex; align-items:center; gap:9px; margin:4px 0 14px; padding:10px 12px; border-radius:12px; background:#e6f7e9; color:#183d2b; font-weight:750; }.tenant-profile__check input { min-height:0; width:17px; height:17px; }.tenant-profile__upload small { color:#68717c; font-weight:500; }
 @media (max-width: 680px) { .tenant-profile__grid { grid-template-columns:1fr; }.tenant-profile__heading { align-items:flex-start; flex-direction:column; } }
 
 @media (max-width: 880px) {

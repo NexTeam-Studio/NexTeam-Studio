@@ -127,14 +127,8 @@ export interface TenantProfile {
   legalName?: string | undefined;
   dbaName?: string | undefined;
   website?: string | undefined;
-  primaryContact?: { name: string; title?: string | undefined; email?: string | undefined; phone?: string | undefined } | undefined;
-  billingContact?: { name: string; title?: string | undefined; email?: string | undefined; phone?: string | undefined } | undefined;
-  serviceAddress?: Record<string, unknown> | undefined;
-  billingAddress?: Record<string, unknown> | undefined;
-  serviceAreas: string[];
-  taxCountry?: string | undefined;
-  taxIdLast4?: string | undefined;
-  locale: string;
+  primaryContact?: { firstName: string; lastName: string; email?: string | undefined; phone?: string | undefined; physicalAddress?: Record<string, unknown> | undefined; mailingAddress?: Record<string, unknown> | undefined; mailingSameAsPhysical: boolean } | undefined;
+  billingContact?: { firstName: string; lastName: string; email?: string | undefined; phone?: string | undefined; physicalAddress?: Record<string, unknown> | undefined; mailingAddress?: Record<string, unknown> | undefined; mailingSameAsPhysical: boolean; sameAsPrimary: boolean } | undefined;
   updatedAt: string;
   updatedBy: string;
 }

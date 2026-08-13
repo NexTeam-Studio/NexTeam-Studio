@@ -190,15 +190,9 @@ const tenantProfileSchema = z.object({
   legalName: z.string().trim().min(1).max(180).optional(),
   dbaName: z.string().trim().min(1).max(180).optional(),
   website: z.string().url().optional(),
-  primaryContact: z.object({ name: z.string().trim().min(1).max(120), title: z.string().trim().max(120).optional(), email: z.string().email().optional(), phone: z.string().trim().max(40).optional() }).optional(),
-  billingContact: z.object({ name: z.string().trim().min(1).max(120), title: z.string().trim().max(120).optional(), email: z.string().email().optional(), phone: z.string().trim().max(40).optional() }).optional(),
-  serviceAddress: addressSchema.optional(),
-  billingAddress: addressSchema.optional(),
-  serviceAreas: z.array(z.string().trim().min(1).max(120)).max(100).default([]),
-  taxCountry: z.string().trim().length(2).optional(),
-  taxIdLast4: z.string().trim().regex(/^[A-Za-z0-9]{4}$/).optional(),
-  locale: z.string().trim().min(2).max(35).default("en-US"),
-  tenant: z.object({ name: z.string().trim().min(1).max(180), timezone: z.string().trim().min(1).max(80), lifecycleState: z.enum(["ACTIVE", "DISABLED_ARCHIVED"]), assistantName: z.string().trim().min(1).max(80), logoUrl: z.string().url().optional() }).strict()
+  primaryContact: z.object({ firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), email: z.string().email().optional(), phone: z.string().trim().max(40).optional(), physicalAddress: addressSchema.optional(), mailingAddress: addressSchema.optional(), mailingSameAsPhysical: z.boolean().default(false) }).optional(),
+  billingContact: z.object({ firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), email: z.string().email().optional(), phone: z.string().trim().max(40).optional(), physicalAddress: addressSchema.optional(), mailingAddress: addressSchema.optional(), mailingSameAsPhysical: z.boolean().default(false), sameAsPrimary: z.boolean().default(false) }).optional(),
+  tenant: z.object({ name: z.string().trim().min(1).max(180), timezone: z.string().trim().min(1).max(80), lifecycleState: z.enum(["ACTIVE", "DISABLED_ARCHIVED"]), logoUrl: z.string().url().optional() }).strict()
 }).strict();
 const PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 const profilePhotoContentTypes = ["image/png", "image/jpeg", "image/webp"] as const;
@@ -646,6 +640,23 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
     } catch (error) { sendRouteError(res, error); }
   });
 
+  app.post("/api/platform/admin/tenants/:tenantId/logo", express.raw({ type: [...profilePhotoContentTypes], limit: PROFILE_PHOTO_MAX_BYTES }), async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.manage", deps.repository, deps.platformOperatorAuth);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      if (!await deps.repository.getTenant(tenantId)) throw new RailError("Tenant was not found.", { provider: "platform", op: "tenantLogoUpload", status: 404 });
+      if (!deps.storage) throw new RailError("Firebase Storage is not configured for tenant logos.", { provider: "firebase", op: "tenantLogoUpload", status: 503 });
+      const image = profilePhotoType(req.header("content-type"), req.body);
+      const storageRef = await deps.storage.writeImage(`tenant-branding/${encodeURIComponent(tenantId)}/logo.${image.extension}`, req.body as Buffer, image.contentType);
+      const now = new Date().toISOString();
+      const tenant = await deps.repository.getTenant(tenantId);
+      if (!tenant) throw new RailError("Tenant was not found.", { provider: "platform", op: "tenantLogoUpload", status: 404 });
+      await deps.repository.saveTenantBranding({ ...(await deps.repository.getTenantBranding(tenantId) ?? defaultTenantBranding(tenant)), tenantId, displayName: tenant.name, logo: { storageRef, mimeType: image.contentType, alt: tenant.name, updatedAt: now }, source: "manual", updatedAt: now, updatedBy: actor.uid });
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand uploaded a logo for tenant ${tenantId}.`, undefined, now));
+      res.status(201).json({ ok: true, logoUrl: `/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(tenantId)}` });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
   app.patch("/api/platform/admin/tenants/:tenantId/profile", async (req: Request, res: Response) => {
     try {
       const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.manage", deps.repository, deps.platformOperatorAuth);
@@ -654,8 +665,8 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       if (!current) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTenantProfile", status: 404 });
       const input = tenantProfileSchema.parse(req.body ?? {});
       const now = new Date().toISOString();
-      const tenant = await deps.repository.upsertTenant({ ...current, name: input.tenant.name, timezone: input.tenant.timezone, lifecycleState: input.tenant.lifecycleState, lifecycleUpdatedAt: now, branding: { ...current.branding, assistantName: input.tenant.assistantName, ...(input.tenant.logoUrl ? { logoRef: input.tenant.logoUrl } : {}) } });
-      const profile: TenantProfile = { tenantId, legalName: input.legalName, dbaName: input.dbaName, website: input.website, primaryContact: input.primaryContact, billingContact: input.billingContact, serviceAddress: input.serviceAddress, billingAddress: input.billingAddress, serviceAreas: input.serviceAreas, taxCountry: input.taxCountry?.toUpperCase(), taxIdLast4: input.taxIdLast4, locale: input.locale, updatedAt: now, updatedBy: actor.uid };
+      const tenant = await deps.repository.upsertTenant({ ...current, name: input.tenant.name, timezone: input.tenant.timezone, lifecycleState: input.tenant.lifecycleState, lifecycleUpdatedAt: now, branding: { ...current.branding, ...(input.tenant.logoUrl ? { logoRef: input.tenant.logoUrl } : {}) } });
+      const profile: TenantProfile = { tenantId, legalName: input.legalName, dbaName: input.dbaName, website: input.website, primaryContact: input.primaryContact, billingContact: input.billingContact, updatedAt: now, updatedBy: actor.uid };
       const [savedProfile, branding] = await Promise.all([
         deps.repository.saveTenantProfile(profile),
         (async () => { const existingBranding = await deps.repository.getTenantBranding(tenantId); return deps.repository.saveTenantBranding({ ...(existingBranding ?? defaultTenantBranding(tenant)), tenantId, displayName: tenant.name, logo: input.tenant.logoUrl ? { url: input.tenant.logoUrl, alt: tenant.name, updatedAt: now } : existingBranding?.logo, source: "manual", updatedAt: now, updatedBy: actor.uid }); })()
