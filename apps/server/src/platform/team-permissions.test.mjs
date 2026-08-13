@@ -125,6 +125,10 @@ test("protected Owner recovery is audited, profile completion gates NexCommand, 
     const { token } = await session.json();
     const headers = { "content-type": "application/json", authorization: `Bearer ${token}` };
 
+    const incompleteProfile = await fetch(`${base}/api/platform/admin/team/me`, { headers });
+    assert.equal(incompleteProfile.status, 200);
+    assert.equal((await incompleteProfile.json()).user.profilePhotoRef, undefined);
+
     const restricted = await fetch(`${base}/api/platform/admin/summary`, { headers });
     assert.equal(restricted.status, 403);
 
@@ -135,6 +139,8 @@ test("protected Owner recovery is audited, profile completion gates NexCommand, 
 
     const completed = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ profilePhotoRef: "profiles/firebase-owner.jpg" }) });
     assert.equal(completed.status, 200);
+    const completedProfile = await fetch(`${base}/api/platform/admin/team/me`, { headers });
+    assert.equal((await completedProfile.json()).user.profilePhotoRef, "profiles/firebase-owner.jpg");
     const allowed = await fetch(`${base}/api/platform/admin/summary`, { headers });
     assert.equal(allowed.status, 200);
 

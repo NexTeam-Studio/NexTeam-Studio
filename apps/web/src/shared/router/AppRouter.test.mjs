@@ -24,3 +24,12 @@ test("NexCommand's request bridge covers every internal platform route, includin
   assert.match(source, /requestUrl\.includes\("\/api\/platform\/"\)/);
   assert.match(source, /const nexCommandToken = isNexCommandApiRequest\(requestUrl\)/);
 });
+
+test("NexCommand verifies the authoritative self profile before mounting tenant-capable routes", () => {
+  const source = fs.readFileSync(new URL("../../features/platform/routes/PlatformRoute.tsx", import.meta.url), "utf8");
+  assert.match(source, /fetch\("\/api\/platform\/admin\/team\/me"\)/);
+  assert.match(source, /if \(profileGate === "checking"\) return <main className="platform-profile-gate"/);
+  assert.match(source, /if \(profileGate === "incomplete"\) return <PlatformProfileCompletion/);
+  assert.match(source, /if \(pathname !== "\/platform\/profile-completion"\) navigateToProfileCompletion\(\)/);
+  assert.ok(source.indexOf('if (profileGate === "incomplete")') < source.indexOf("<NexCommandRoute />"));
+});

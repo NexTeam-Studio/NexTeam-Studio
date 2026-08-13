@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../styles/platformRoute.css";
 import { renderPlatformSubroute } from "./platformSubroutes";
 import { resolvePlatformSubroute } from "./resolvePlatformSubroute";
@@ -8,8 +8,33 @@ import { NexCommandRoute } from "../../platformOverview/routes/NexCommandRoute";
 export function PlatformRoute(): React.ReactElement {
   const pathname = usePathname();
   const subroute = resolvePlatformSubroute(pathname);
+  const [profileGate, setProfileGate] = useState<"checking" | "incomplete" | "ready" | "error">("checking");
 
-  if (pathname === "/platform/profile-completion") return <PlatformProfileCompletion />;
+  useEffect(() => {
+    let active = true;
+    setProfileGate("checking");
+    void fetch("/api/platform/admin/team/me")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("NexCommand profile could not be loaded.");
+        return response.json() as Promise<{ user?: { profilePhotoRef?: string } }>;
+      })
+      .then(({ user }) => {
+        if (!active) return;
+        if (user?.profilePhotoRef?.trim()) {
+          setProfileGate("ready");
+          if (pathname === "/platform/profile-completion") navigateToNexCommand();
+          return;
+        }
+        setProfileGate("incomplete");
+        if (pathname !== "/platform/profile-completion") navigateToProfileCompletion();
+      })
+      .catch(() => { if (active) setProfileGate("error"); });
+    return () => { active = false; };
+  }, [pathname]);
+
+  if (profileGate === "checking") return <main className="platform-profile-gate" role="status">Checking your NexCommand profile…</main>;
+  if (profileGate === "error") return <main className="platform-profile-gate" role="alert">Your NexCommand profile could not be verified. Please try again.</main>;
+  if (profileGate === "incomplete") return <PlatformProfileCompletion onCompleted={() => setProfileGate("checking")} />;
 
   if (pathname === "/platform" || pathname === "/platform/" || pathname.startsWith("/nexcommand")) {
     return <main className="platform-route"><NexCommandRoute /></main>;
@@ -22,7 +47,17 @@ export function PlatformRoute(): React.ReactElement {
   );
 }
 
-function PlatformProfileCompletion(): React.ReactElement {
+function navigateToProfileCompletion(): void {
+  window.history.replaceState({}, "", "/platform/profile-completion");
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+function navigateToNexCommand(): void {
+  window.history.replaceState({}, "", "/platform");
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+function PlatformProfileCompletion({ onCompleted }: { onCompleted: () => void }): React.ReactElement {
   const [profilePhotoRef, setProfilePhotoRef] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "error" | "complete">("idle");
 
@@ -33,12 +68,12 @@ function PlatformProfileCompletion(): React.ReactElement {
       const response = await fetch("/api/platform/admin/team/me", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ profilePhotoRef })
+        body: JSON.stringify({ profilePhotoRef: profilePhotoRef.trim() })
       });
       if (!response.ok) throw new Error("Profile completion was denied.");
       setStatus("complete");
-      window.history.replaceState({}, "", "/platform");
-      window.dispatchEvent(new PopStateEvent("popstate"));
+      onCompleted();
+      navigateToNexCommand();
     } catch {
       setStatus("error");
     }
