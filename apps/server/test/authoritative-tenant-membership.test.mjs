@@ -21,3 +21,10 @@ test("tenant authorization denies inactive, foreign, and duplicate memberships",
   await assert.rejects(() => resolveAuthoritativeTenantMembership(db([membership({ tenantId: "tenant-aquatrace" })]), "uid_chris", "tenant-candela"), { status: 403 });
   await assert.rejects(() => resolveAuthoritativeTenantMembership(db([membership(), membership({ id: "second" })]), "uid_chris", "tenant-candela"), { status: 403 });
 });
+
+test("tenant authorization denies an identity that has no active membership despite a claim-like owner role", async () => {
+  await assert.rejects(
+    () => resolveAuthoritativeTenantMembership(db([]), "uid_claims_owner", "tenant-aquatrace"),
+    { status: 403 }
+  );
+});

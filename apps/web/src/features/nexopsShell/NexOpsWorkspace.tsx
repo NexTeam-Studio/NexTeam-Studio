@@ -18,7 +18,7 @@ import { NexOpsCreateClientPanel } from "../clients/components/contact/NexOpsCre
 import "../clients/components/contact/contact.css";
 import { signOutOperator } from "../../shared/auth/authBootstrap";
 import { ApprovalQueuePanel } from "../approvalQueue/areas/queue/components/ApprovalQueuePanel";
-import { fallbackOperatorContext, loadOperatorContext } from "../operatorContext/resolveOperatorContext";
+import { loadOperatorContext, type ResolvedOperatorContext } from "../operatorContext/resolveOperatorContext";
 import { useNexOpsCaptureController } from "../nexcam/areas/capture/hooks/useNexOpsCaptureController";
 import { useNexOpsNotifications } from "./hooks/useNexOpsNotifications";
 import { useNexOpsWorkspaceRecords } from "./hooks/useNexOpsWorkspaceRecords";
@@ -43,11 +43,44 @@ export type * from "./contracts/workspaceContracts";
 export * from "./workspaceSupport";
 
 export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React.ReactElement {
+  const [accessState, setAccessState] = useState<
+    { status: "loading" }
+    | { status: "ready"; context: ResolvedOperatorContext }
+    | { status: "denied"; message: string }
+  >({ status: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+    loadOperatorContext(props.user)
+      .then((context) => {
+        if (!cancelled) setAccessState({ status: "ready", context });
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setAccessState({
+          status: "denied",
+          message: error instanceof Error ? error.message : "Your active NexOps membership could not be verified."
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [props.user]);
+
+  if (accessState.status === "loading") {
+    return <main className="nexops-app-shell"><section className="nexops-module-card"><p className="eyebrow">NexOps</p><h1>Verifying access</h1><p>Checking your active workspace membership.</p></section></main>;
+  }
+  if (accessState.status === "denied") {
+    return <main className="nexops-app-shell"><section className="nexops-module-card"><p className="eyebrow">NexOps access denied</p><h1>Workspace unavailable</h1><p>{accessState.message}</p><button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button></section></main>;
+  }
+  return <NexOpsWorkspaceContent {...props} operatorContext={accessState.context} />;
+}
+
+function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operatorContext: ResolvedOperatorContext }): React.ReactElement {
   const profileName = operatorProfileName(props.user);
   const profileFullName = operatorProfileFullName(props.user);
   const profileInitials = operatorProfileInitials(profileName);
   const initialPathState = parseNexOpsLocation(window.location.pathname);
-  const [operatorContext, setOperatorContext] = useState<OperatorContext>(() => fallbackOperatorContext(props.user));
+  const operatorContext: OperatorContext = props.operatorContext;
   const [tenantBranding, setTenantBranding] = useState<TenantBranding | null>(null);
   const [query, setQuery] = useState("");
   const [selectedClientId, setSelectedClientId] = useState(initialPathState.clientId ?? "");
@@ -527,24 +560,6 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
         return;
     }
   }
-
-  useEffect(() => {
-    let cancelled = false;
-    loadOperatorContext(props.user)
-      .then((context) => {
-        if (!cancelled) {
-          setOperatorContext(context);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setOperatorContext(fallbackOperatorContext(props.user));
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [props.user]);
 
   useEffect(() => {
     let cancelled = false;
