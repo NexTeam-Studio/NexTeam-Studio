@@ -192,6 +192,7 @@ const tenantProfileSchema = z.object({
   dbaName: z.string().trim().min(1).max(180).optional(),
   website: z.string().url().optional(),
   status: z.enum(["ACTIVE", "PENDING", "INACTIVE", "CANCELLED"]).optional(),
+  subscriptionPlan: z.enum(["none", "nexi", "marketing", "suite"]).optional(),
   primaryContact: z.object({ firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), email: z.string().email().optional(), phone: z.string().trim().max(40).optional(), address: addressSchema.optional() }).optional(),
   tenant: z.object({ name: z.string().trim().min(1).max(180), timezone: z.string().trim().min(1).max(80), lifecycleState: z.enum(["ACTIVE", "DISABLED_ARCHIVED"]), logoUrl: z.string().url().optional() }).strict()
 }).strict();
@@ -678,7 +679,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const input = tenantProfileSchema.parse(req.body ?? {});
       const now = new Date().toISOString();
       const tenant = await deps.repository.upsertTenant({ ...current, name: input.tenant.name, timezone: input.tenant.timezone, lifecycleState: input.tenant.lifecycleState, lifecycleUpdatedAt: now });
-      const profile: TenantProfile = { tenantId, legalName: input.legalName, dbaName: input.dbaName, website: input.website, status: input.status, primaryContact: input.primaryContact, updatedAt: now, updatedBy: actor.uid };
+      const profile: TenantProfile = { tenantId, legalName: input.legalName, dbaName: input.dbaName, website: input.website, status: input.subscriptionPlan === "none" ? "INACTIVE" : input.status, subscriptionPlan: input.subscriptionPlan, primaryContact: input.primaryContact, updatedAt: now, updatedBy: actor.uid };
       const [savedProfile, branding] = await Promise.all([
         deps.repository.saveTenantProfile(profile),
         (async () => { const existingBranding = await deps.repository.getTenantBranding(tenantId); return deps.repository.saveTenantBranding({ ...(existingBranding ?? defaultTenantBranding(tenant)), tenantId, displayName: tenant.name, logo: existingBranding?.logo, source: "manual", updatedAt: now, updatedBy: actor.uid }); })()

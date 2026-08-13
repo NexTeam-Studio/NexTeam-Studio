@@ -128,6 +128,7 @@ export interface TenantProfile {
   dbaName?: string | undefined;
   website?: string | undefined;
   status?: "ACTIVE" | "PENDING" | "INACTIVE" | "CANCELLED" | undefined;
+  subscriptionPlan?: "none" | "nexi" | "marketing" | "suite" | undefined;
   primaryContact?: { firstName: string; lastName: string; email?: string | undefined; phone?: string | undefined; address?: Record<string, unknown> | undefined } | undefined;
   updatedAt: string;
   updatedBy: string;
