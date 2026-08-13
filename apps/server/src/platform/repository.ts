@@ -127,6 +127,7 @@ export interface TenantProfile {
   legalName?: string | undefined;
   dbaName?: string | undefined;
   website?: string | undefined;
+  status?: "ACTIVE" | "PENDING" | "INACTIVE" | "CANCELLED" | undefined;
   primaryContact?: { firstName: string; lastName: string; email?: string | undefined; phone?: string | undefined; address?: Record<string, unknown> | undefined } | undefined;
   updatedAt: string;
   updatedBy: string;
