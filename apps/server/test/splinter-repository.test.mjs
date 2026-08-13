@@ -8,7 +8,7 @@ import {
   SPLINTER_JOB_COLLECTION_PATH
 } from "../src/splinter/repository.ts";
 import { SplinterJobService } from "../src/splinter/service.ts";
-import { adjudicateSplinterLifecycle } from "../src/splinter/controllerPolicy.ts";
+import { splinterLifecycleController } from "../src/splinter/lifecycleController.ts";
 import { InMemoryWorkRegistry, SPLINTER_WORK_ITEM_COLLECTION_PATH, SplinterWorkSelector, validateDependencyGraph } from "../src/splinter/workRegistry.ts";
 import { registerSplinterRelayRoutes } from "../src/splinter/routes.ts";
 import express from "express";
@@ -409,6 +409,7 @@ test("Raphael rejection requires an authorized repair before a terminal failure"
   await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3 });
   await service.transition(job.id, "RUNNING");
   await service.submitWorkerOutcome(job.id, { workerRunId: "builder", status: "SUCCEEDED", summary: "done", filesInspected: [], filesChanged: ["apps/server/src/splinter/routes.ts"], testsPerformed: ["focused test"], commitSha: "abcdef1", startedAt: timestamps[0], completedAt: timestamps[1] });
+  await assert.rejects(() => service.transition(job.id, "FAILED", { errorMessage: "premature stop before review" }), /Preserve the review path/);
   await service.submitReview(job.id, { reviewResult: "REJECT", summary: "repair required", blockingFindings: ["missing coverage"], nonBlockingFindings: [], reviewedCommitSha: "abcdef1", reviewerRunId: "raphael-reject", reviewerProvider: "anthropic", reviewerModel: "claude", startedAt: timestamps[0], completedAt: timestamps[1] });
   await assert.rejects(() => service.transition(job.id, "FAILED", { errorMessage: "premature stop" }), /bounded repair attempt/);
   await repository.update(job.id, { attemptCount: 3 });
@@ -419,21 +420,25 @@ test("Raphael rejection requires an authorized repair before a terminal failure"
 test("controller adjudicator requires stored staging authority and complete acceptance evidence", async () => {
   const { job, repository, service } = await queuedService();
   const approved = await approvedCodeChange(service, repository, "splinter-policy-approved");
-  assert.equal(adjudicateSplinterLifecycle(approved, { decision: "STAGING_INTEGRATION" }).allowed, true);
+  assert.equal(splinterLifecycleController.authorizeStagingIntegration(approved).allowed, true);
   const noAuthority = await repository.update(job.id, { executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/server/src/splinter/routes.ts"], acceptanceCriteria: ["route"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], maxAttempts: 3, state: "SUCCEEDED", result: "PASS", reviewStatus: "APPROVED" });
-  assert.equal(adjudicateSplinterLifecycle(noAuthority, { decision: "STAGING_INTEGRATION" }).allowed, false);
-  assert.equal(adjudicateSplinterLifecycle(approved, { decision: "WORK_COMPLETION", evidenceRefs: [] }).allowed, false);
-  assert.equal(adjudicateSplinterLifecycle(approved, { decision: "WORK_COMPLETION", evidenceRefs: ["acceptance:route"] }).allowed, true);
+  assert.equal(splinterLifecycleController.authorizeStagingIntegration(noAuthority).allowed, false);
+  assert.equal(splinterLifecycleController.authorizeWorkCompletion(approved, []).allowed, false);
+  assert.equal(splinterLifecycleController.authorizeWorkCompletion(approved, ["acceptance:route"]).allowed, true);
 });
 
 test("controller adjudicator rejects unsupported owner and external claims and production without authority", async () => {
   const { job, repository } = await queuedService();
   const active = await repository.update(job.id, { state: "RUNNING" });
-  assert.equal(adjudicateSplinterLifecycle(active, { decision: "ISSUE_CLASSIFICATION", classification: "OWNER_REQUIRED" }).allowed, false);
-  assert.equal(adjudicateSplinterLifecycle(active, { decision: "ISSUE_CLASSIFICATION", classification: "EXTERNAL_BLOCKER", supportingDetail: "" }).allowed, false);
-  assert.equal(adjudicateSplinterLifecycle(active, { decision: "ISSUE_CLASSIFICATION", classification: "EXTERNAL_BLOCKER", supportingDetail: "provider outage ticket 17" }).allowed, true);
-  assert.equal(adjudicateSplinterLifecycle(active, { decision: "PRODUCTION_TRANSITION" }).allowed, false);
-  assert.equal(adjudicateSplinterLifecycle(active, { decision: "CONTROLLER_POLICY_CHANGE", controllerOwnedPolicyPath: true, ownerAuthorizedControlPlaneWorkItem: false }).allowed, false);
+  assert.equal(splinterLifecycleController.authorizeIssueClassification(active, "OWNER_REQUIRED", "owner decision").allowed, false);
+  assert.equal(splinterLifecycleController.authorizeIssueClassification(active, "EXTERNAL_BLOCKER", "").allowed, false);
+  assert.equal(splinterLifecycleController.authorizeIssueClassification(active, "EXTERNAL_BLOCKER", "provider outage ticket 17").allowed, true);
+  const ownerSupported = await repository.update(job.id, { rfi: { rfiId: "policy-owner-rfi", jobId: job.id, category: "OWNER_REQUIRED", title: "Owner choice", decisionNeeded: "Choose a supported option.", whyAutomationCannotDecide: "The approved requirement is ambiguous.", knownFacts: ["Two approved options remain."], options: [{ id: "a", label: "Option A" }, { id: "b", label: "Option B" }], recommendedOption: "a", affectedScope: "splinter policy test", currentSafeState: "No transition has been made.", blocking: true, createdAt: timestamps[0] } });
+  assert.equal(splinterLifecycleController.authorizeIssueClassification(ownerSupported, "OWNER_REQUIRED", "owner decision").allowed, true);
+  assert.equal(splinterLifecycleController.authorizeProductionTransition(active, false).allowed, false);
+  assert.equal(splinterLifecycleController.authorizeProductionTransition(active, true).allowed, true);
+  assert.equal(splinterLifecycleController.authorizeControllerPolicyChange(active, false).allowed, false);
+  assert.equal(splinterLifecycleController.authorizeControllerPolicyChange(active, true).allowed, true);
 });
 
 test("Splinter bounds Raphael review cycles at three while preserving review history", async () => {

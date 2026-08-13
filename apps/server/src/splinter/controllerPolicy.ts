@@ -57,6 +57,9 @@ function completeAcceptanceEvidence(job: SplinterJob, evidenceRefs: readonly str
 export function adjudicateSplinterLifecycle(job: SplinterJob, input: SplinterAdjudicationInput): SplinterAdjudication {
   switch (input.decision) {
     case "STATE_TRANSITION":
+      if (input.targetState === "FAILED" && job.executionMode === "CODE_CHANGE" && job.reviewStatus === "AWAITING_REVIEW") {
+        return deny("An independent Raphael review is still authorized and pending.", "Preserve the review path until Raphael records PASS, REJECT, or an infrastructure failure.");
+      }
       if (input.targetState === "FAILED" && hasAuthorizedRepairCapacity(job)) {
         return deny("Raphael rejected the current change and an authorized repair attempt remains.", "Record a bounded repair attempt and submit the repaired commit for Raphael review.");
       }
@@ -82,6 +85,9 @@ export function adjudicateSplinterLifecycle(job: SplinterJob, input: SplinterAdj
       return allow("Stored successful job state and complete acceptance evidence permit work completion.");
 
     case "ISSUE_CLASSIFICATION":
+      if (input.classification !== "SAFETY_STOP" && job.executionMode === "CODE_CHANGE" && job.reviewStatus === "AWAITING_REVIEW") {
+        return deny("An independent Raphael review remains before a non-safety escalation can be claimed.", "Preserve the review path until Raphael records its deterministic result.");
+      }
       if (input.classification === "OWNER_REQUIRED") {
         const rfi = job.rfi;
         if (!rfi || rfi.jobId !== job.id || rfi.category !== "OWNER_REQUIRED" || rfi.resolvedAt || !rfi.blocking) {

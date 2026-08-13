@@ -1,6 +1,6 @@
 import { idSchema, splinterDeploymentSchema, splinterEscalationClassSchema, splinterIntegrationSchema, splinterJobStateSchema, splinterResolutionScopeSchema, splinterReviewSchema, splinterRfiSchema, splinterWorkerResultSchema, type SplinterJob, type SplinterJobState, type SplinterReview, type SplinterWorkerResult } from "@nexteam/core";
 import type { SplinterRepository } from "./repository.js";
-import { adjudicateSplinterLifecycle, hasStoredStagingAuthority } from "./controllerPolicy.js";
+import { splinterLifecycleController } from "./lifecycleController.js";
 
 const ALLOWED_TRANSITIONS: Readonly<Record<SplinterJobState, readonly SplinterJobState[]>> = {
   QUEUED: ["RUNNING"],
@@ -58,7 +58,7 @@ function retryEligible(job: SplinterJob): boolean {
   const candidate = job.integration.integratedCandidateSha;
   const stagingBase = job.integration.stagingBaseSha;
   return promotionEligible(job)
-    && hasStoredStagingAuthority(job)
+    && splinterLifecycleController.hasStagingAuthority(job)
     && job.deployment.status === "FAILED"
     && job.integration.status === "PASSED"
     && Boolean(candidate)
@@ -129,7 +129,7 @@ export class SplinterJobService {
         `Splinter job ${id} cannot transition from ${existing.state} to ${parsedTargetState}.`
       );
     }
-    const adjudication = adjudicateSplinterLifecycle(existing, { decision: "STATE_TRANSITION", targetState: parsedTargetState });
+    const adjudication = splinterLifecycleController.authorizeTransition(existing, parsedTargetState);
     if (!adjudication.allowed) {
       throw new SplinterTransitionError("INVALID_TRANSITION", adjudication.requiredAction ?? adjudication.reason);
     }
@@ -232,7 +232,7 @@ export class SplinterJobService {
   async beginIntegration(id: string, stagingBaseSha: string, approvedCommitSha: string): Promise<SplinterJob> {
     const job = await this.repository.get(id);
     if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
-    const adjudication = adjudicateSplinterLifecycle(job, { decision: "STAGING_INTEGRATION" });
+    const adjudication = splinterLifecycleController.authorizeStagingIntegration(job);
     if (!adjudication.allowed || !promotionEligible(job) || job.workerResult?.commitSha !== approvedCommitSha || !/^[a-f0-9]{7,64}$/i.test(stagingBaseSha)) {
       throw new SplinterTransitionError("INVALID_TRANSITION", "Splinter job is not eligible for staging integration.");
     }
@@ -256,7 +256,7 @@ export class SplinterJobService {
   async beginDeployment(id: string, previousKnownGoodStagingSha: string, requestedCandidateSha: string): Promise<SplinterJob> {
     const job = await this.repository.get(id);
     if (!job) throw new SplinterTransitionError("NOT_FOUND", `Splinter job ${id} was not found.`);
-    const adjudication = adjudicateSplinterLifecycle(job, { decision: "STAGING_DEPLOYMENT" });
+    const adjudication = splinterLifecycleController.authorizeStagingDeployment(job);
     if (!adjudication.allowed || !promotionEligible(job) || job.deployment.status !== "NOT_REQUESTED" || job.integration.status !== "PASSED" || job.integration.integratedCandidateSha !== requestedCandidateSha || job.integration.stagingBaseSha !== previousKnownGoodStagingSha) throw new SplinterTransitionError("INVALID_TRANSITION", adjudication.requiredAction ?? "Splinter candidate is not eligible for staging deployment.");
     const updated = await this.repository.claimDeploymentStart(id, { deployment: { status: "DEPLOYING", previousKnownGoodStagingSha, requestedCandidateSha, verification: [] } });
     if (!updated) throw new SplinterTransitionError("CONFLICT", "Splinter job changed before deployment could begin.");
@@ -302,13 +302,13 @@ export class SplinterJobService {
     if (classification === "OWNER_REQUIRED") {
       const rfi = splinterRfiSchema.parse(input.rfi);
       if (rfi.jobId !== id || rfi.category !== "OWNER_REQUIRED" || rfi.resolvedAt) throw new SplinterTransitionError("INVALID_TRANSITION", "Owner RFI does not match the active job.");
-      const adjudication = adjudicateSplinterLifecycle({ ...job, rfi }, { decision: "ISSUE_CLASSIFICATION", classification, supportingDetail: detail });
+      const adjudication = splinterLifecycleController.authorizeIssueClassification({ ...job, rfi }, classification, detail);
       if (!adjudication.allowed) throw new SplinterTransitionError("INVALID_TRANSITION", adjudication.requiredAction ?? adjudication.reason);
       const updated = await this.repository.compareAndSet(id, job.state, { state: "AWAITING_HUMAN", next: { owner: "human", action: rfi.decisionNeeded }, result: "PENDING", escalation: { classification, detail }, rfi });
       if (updated) return updated;
       throw new SplinterTransitionError("CONFLICT", "Job changed before RFI could be recorded.");
     }
-    const adjudication = adjudicateSplinterLifecycle(job, { decision: "ISSUE_CLASSIFICATION", classification, supportingDetail: detail });
+    const adjudication = splinterLifecycleController.authorizeIssueClassification(job, classification, detail);
     if (!adjudication.allowed) throw new SplinterTransitionError("INVALID_TRANSITION", adjudication.requiredAction ?? adjudication.reason);
     const patch = classification === "SAFETY_STOP"
       ? { state: "FAILED" as const, result: "FAIL" as const, next: { owner: "splinter" as const, action: "Safety stop: do not continue." }, lastError: { message: detail, at: this.now() }, escalation: { classification, detail } }
