@@ -43,12 +43,11 @@ export function resolvePlatformCapabilities(role: PlatformRole, overrides: Platf
 
 export const platformUserSchema = z.object({
   id: z.string().min(1), authUid: z.string().min(1), firstName: z.string().trim().min(1).max(100), lastName: z.string().trim().min(1).max(100), email: z.string().trim().toLowerCase().email(),
-  telephone: z.string().trim().min(1).max(50).optional(), address: z.object({ line1: z.string().trim().min(1).max(200), line2: z.string().trim().max(200).optional(), city: z.string().trim().min(1).max(100), region: z.string().trim().min(1).max(100), postalCode: z.string().trim().min(1).max(30), country: z.string().trim().min(2).max(2) }).optional(), profilePhotoRef: z.string().trim().min(1).max(500),
-  twoFactorState: z.enum(["NOT_ENROLLED", "ENROLLED"]),
+  telephone: z.string().trim().min(1).max(50).optional(), address: z.object({ line1: z.string().trim().min(1).max(200), line2: z.string().trim().max(200).optional(), city: z.string().trim().min(1).max(100), region: z.string().trim().min(1).max(100), postalCode: z.string().trim().min(1).max(30), country: z.string().trim().min(2).max(2) }).optional(), profilePhotoRef: z.string().trim().min(1).max(500).optional(),
   role: platformRoleSchema, accountClass: z.literal("internal").default("internal"), capabilityOverrides: platformCapabilityOverrideSchema.default({ grant: [], deny: [] }), accountStatus: z.enum(["ACTIVE", "DISABLED"]), createdAt: z.string().datetime(), updatedAt: z.string().datetime(), createdBy: z.string().min(1), updatedBy: z.string().min(1)
-}).strict();
+});
 export type PlatformUser = z.infer<typeof platformUserSchema>;
-export const platformUserAuditSchema = z.object({ id: z.string().min(1), userId: z.string().min(1), action: z.enum(["platform_user.added", "platform_user.updated", "platform_user.disabled", "platform_user.reactivated", "platform_user.ownership_transferred"]), actorUid: z.string().min(1), createdAt: z.string().datetime(), detail: z.string().max(500) }).strict();
+export const platformUserAuditSchema = z.object({ id: z.string().min(1), userId: z.string().min(1), action: z.enum(["platform_user.added", "platform_user.updated", "platform_user.disabled", "platform_user.reactivated", "platform_user.ownership_transferred", "platform_user.protected_owner_identity_recovered"]), actorUid: z.string().min(1), createdAt: z.string().datetime(), detail: z.string().max(500) }).strict();
 export type PlatformUserAudit = z.infer<typeof platformUserAuditSchema>;
 export function platformUserSummary(user: PlatformUser): Pick<PlatformUser, "id" | "firstName" | "lastName" | "role" | "accountStatus" | "profilePhotoRef" | "updatedAt"> { return { id: user.id, firstName: user.firstName, lastName: user.lastName, role: user.role, accountStatus: user.accountStatus, profilePhotoRef: user.profilePhotoRef, updatedAt: user.updatedAt }; }
 export function newPlatformUserAudit(userId: string, action: PlatformUserAudit["action"], actorUid: string, detail: string, now = new Date().toISOString()): PlatformUserAudit { return platformUserAuditSchema.parse({ id: `platform_user_audit_${randomUUID()}`, userId, action, actorUid, createdAt: now, detail }); }

@@ -131,11 +131,25 @@ function assertEmailAvailable(input: { email: string | undefined; platformUsers:
   if (conflicts(input.platformUsers, "platformUsers") || conflicts(input.tenantUsers, "tenantUsers")) throw new RailError("That email is already reserved by a platform or tenant user.", { provider: "platform", op: "platformEmailConflict", status: 409 });
 }
 
+function assertNoCompetingActiveOwner(candidate: PlatformUser, users: Iterable<PlatformUser>): void {
+  if (candidate.role !== "Owner" || candidate.accountStatus !== "ACTIVE") return;
+  if ([...users].some((user) => user.id !== candidate.id && user.role === "Owner" && user.accountStatus === "ACTIVE")) {
+    throw new RailError("A second active platform Owner cannot be created.", { provider: "platform", op: "platformOwnerConflict", status: 409 });
+  }
+}
+
+function assertAuthUidAvailable(input: { authUid: string | undefined; platformUsers: Iterable<Pick<PlatformUser, "id" | "authUid">>; tenantUsers: Iterable<Pick<TenantUser, "id" | "authUid">>; self: { collection: "platformUsers" | "tenantUsers"; id: string } }): void {
+  if (!input.authUid) return;
+  const conflicts = (users: Iterable<{ id: string; authUid?: string | undefined }>, collection: "platformUsers" | "tenantUsers") => [...users].some((user) => !(input.self.collection === collection && user.id === input.self.id) && user.authUid === input.authUid);
+  if (conflicts(input.platformUsers, "platformUsers") || conflicts(input.tenantUsers, "tenantUsers")) throw new RailError("A Firebase identity can belong to only one platform or tenant profile.", { provider: "platform", op: "platformIdentityConflict", status: 409 });
+}
+
 export interface PlatformRepository {
   listPlatformUsers(): Promise<PlatformUser[]>;
   getPlatformUser(userId: string): Promise<PlatformUser | null>;
   getPlatformUserByAuthUid(authUid: string): Promise<PlatformUser | null>;
   savePlatformUser(user: PlatformUser): Promise<PlatformUser>;
+  recoverProtectedOwnerIdentity(input: { userId: string; actorUid: string; now: string; audit: PlatformUserAudit }): Promise<PlatformUser>;
   listPlatformUserAudits(userId?: string): Promise<PlatformUserAudit[]>;
   appendPlatformUserAudit(audit: PlatformUserAudit): Promise<PlatformUserAudit>;
   getPlatformSessionByTokenHash(tokenHash: string): Promise<PlatformSession | null>;
@@ -297,6 +311,7 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   async upsertTenantUser(user: TenantUser): Promise<TenantUser> {
     const parsed = tenantUserSchema.parse(user) as TenantUser;
     assertEmailAvailable({ email: parsed.email, platformUsers: this.platformUsers.values(), tenantUsers: [...this.tenantUsers.values()].flat(), self: { collection: "tenantUsers", id: parsed.id, authUid: parsed.authUid } });
+    assertAuthUidAvailable({ authUid: parsed.authUid, platformUsers: this.platformUsers.values(), tenantUsers: [...this.tenantUsers.values()].flat(), self: { collection: "tenantUsers", id: parsed.id } });
     const current = (this.tenantUsers.get(parsed.tenantId) ?? []).filter((entry) => entry.id !== parsed.id);
     current.push(parsed);
     this.tenantUsers.set(parsed.tenantId, current);
@@ -339,8 +354,20 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   async savePlatformUser(user: PlatformUser): Promise<PlatformUser> {
     const parsed = platformUserSchema.parse(user) as PlatformUser;
     assertEmailAvailable({ email: parsed.email, platformUsers: this.platformUsers.values(), tenantUsers: [...this.tenantUsers.values()].flat(), self: { collection: "platformUsers", id: parsed.id, authUid: parsed.authUid } });
+    assertAuthUidAvailable({ authUid: parsed.authUid, platformUsers: this.platformUsers.values(), tenantUsers: [...this.tenantUsers.values()].flat(), self: { collection: "platformUsers", id: parsed.id } });
+    assertNoCompetingActiveOwner(parsed, this.platformUsers.values());
     this.platformUsers.set(parsed.id, firestoreDoc(parsed));
     return firestoreDoc(parsed);
+  }
+  async recoverProtectedOwnerIdentity(input: { userId: string; actorUid: string; now: string; audit: PlatformUserAudit }): Promise<PlatformUser> {
+    const current = this.platformUsers.get(input.userId);
+    if (!current || current.role !== "Owner" || current.authUid !== input.actorUid || current.accountStatus !== "ACTIVE") throw new RailError("Only the existing active protected Owner can recover this identity.", { provider: "platform", op: "protectedOwnerRecovery", status: 403 });
+    if ([...this.platformUsers.values()].filter((user) => user.role === "Owner" && user.accountStatus === "ACTIVE").length !== 1) throw new RailError("Protected Owner recovery requires exactly one active Owner.", { provider: "platform", op: "protectedOwnerRecovery", status: 409 });
+    if (input.audit.userId !== current.id || input.audit.actorUid !== input.actorUid) throw new Error("Protected Owner recovery audit does not match the requested maintenance.");
+    const recovered = platformUserSchema.parse({ ...current, firstName: "Christopher", lastName: "Sears", updatedAt: input.now, updatedBy: input.actorUid }) as PlatformUser;
+    this.platformUsers.set(recovered.id, firestoreDoc(recovered));
+    this.platformUserAudits.push(firestoreDoc(platformUserAuditSchema.parse(input.audit) as PlatformUserAudit));
+    return firestoreDoc(recovered);
   }
   async listPlatformUserAudits(userId?: string): Promise<PlatformUserAudit[]> { return this.platformUserAudits.filter((audit) => !userId || audit.userId === userId).map(firestoreDoc); }
   async appendPlatformUserAudit(audit: PlatformUserAudit): Promise<PlatformUserAudit> { const parsed = platformUserAuditSchema.parse(audit) as PlatformUserAudit; this.platformUserAudits.push(firestoreDoc(parsed)); return firestoreDoc(parsed); }
@@ -737,6 +764,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
       const [existing, platformUsers, tenantUsers] = await Promise.all([transaction.get(ref), transaction.get(this.db.collection("platformUsers")), transaction.get(this.db.collection("tenantUsers"))]);
       if (existing.exists) assertTenantDocumentOwner(existing.data(), parsed.tenantId, `Tenant user ${parsed.id}`);
       assertEmailAvailable({ email: parsed.email, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "email" | "authUid">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "email" | "authUid">), self: { collection: "tenantUsers", id: parsed.id, authUid: parsed.authUid } });
+      assertAuthUidAvailable({ authUid: parsed.authUid, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "authUid">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "authUid">), self: { collection: "tenantUsers", id: parsed.id } });
       transaction.set(ref, docData(parsed));
     });
     return parsed;
@@ -802,9 +830,27 @@ export class FirestorePlatformRepository implements PlatformRepository {
     await this.db.runTransaction(async (transaction) => {
       const [platformUsers, tenantUsers] = await Promise.all([transaction.get(this.db.collection("platformUsers")), transaction.get(this.db.collection("tenantUsers"))]);
       assertEmailAvailable({ email: parsed.email, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "email" | "authUid">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "email" | "authUid">), self: { collection: "platformUsers", id: parsed.id, authUid: parsed.authUid } });
+      assertAuthUidAvailable({ authUid: parsed.authUid, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "authUid">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "authUid">), self: { collection: "platformUsers", id: parsed.id } });
+      assertNoCompetingActiveOwner(parsed, platformUsers.docs.map((doc) => platformUserSchema.parse(doc.data()) as PlatformUser));
       transaction.set(ref, docData(parsed));
     });
     return parsed;
+  }
+  async recoverProtectedOwnerIdentity(input: { userId: string; actorUid: string; now: string; audit: PlatformUserAudit }): Promise<PlatformUser> {
+    const ref = this.db.collection("platformUsers").doc(input.userId);
+    const auditRef = this.db.collection("platformUserAudits").doc(input.audit.id);
+    return this.db.runTransaction(async (transaction) => {
+      const [target, users] = await Promise.all([transaction.get(ref), transaction.get(this.db.collection("platformUsers"))]);
+      const current = target.exists ? platformUserSchema.parse(target.data()) as PlatformUser : null;
+      const activeOwners = users.docs.map((document) => platformUserSchema.safeParse(document.data())).filter((result): result is { success: true; data: PlatformUser } => result.success).map((result) => result.data).filter((user) => user.role === "Owner" && user.accountStatus === "ACTIVE");
+      if (!current || current.role !== "Owner" || current.authUid !== input.actorUid || current.accountStatus !== "ACTIVE") throw new RailError("Only the existing active protected Owner can recover this identity.", { provider: "platform", op: "protectedOwnerRecovery", status: 403 });
+      if (activeOwners.length !== 1 || activeOwners[0]?.id !== current.id) throw new RailError("Protected Owner recovery requires exactly one active Owner.", { provider: "platform", op: "protectedOwnerRecovery", status: 409 });
+      if (input.audit.userId !== current.id || input.audit.actorUid !== input.actorUid) throw new Error("Protected Owner recovery audit does not match the requested maintenance.");
+      const recovered = platformUserSchema.parse({ ...current, firstName: "Christopher", lastName: "Sears", updatedAt: input.now, updatedBy: input.actorUid }) as PlatformUser;
+      transaction.set(ref, docData(recovered));
+      transaction.create(auditRef, docData(platformUserAuditSchema.parse(input.audit)));
+      return recovered;
+    });
   }
   async listPlatformUserAudits(userId?: string): Promise<PlatformUserAudit[]> {
     let query = this.db.collection("platformUserAudits").orderBy("createdAt", "desc");

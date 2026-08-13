@@ -31,6 +31,29 @@ async function close(server) {
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 }
 
+async function startProtectedOwnerApp() {
+  const app = express();
+  app.use(express.json());
+  const repository = new InMemoryPlatformRepository();
+  await repository.savePlatformUser({
+    id: "protected_owner", authUid: "firebase-owner", firstName: "Legacy", lastName: "Profile", email: "owner@nexteam.dev",
+    role: "Owner", accountClass: "internal", capabilityOverrides: { grant: [], deny: [] }, accountStatus: "ACTIVE",
+    createdAt: "2026-08-11T00:00:00.000Z", updatedAt: "2026-08-11T00:00:00.000Z", createdBy: "seed", updatedBy: "seed"
+  });
+  registerPlatformRoutes(app, {
+    repository,
+    storage: null,
+    env: { NEXCOMMAND_STRICT_SESSION: "true", NEXCOMMAND_REQUIRE_INTERNAL_PROFILE: "true" },
+    platformOperatorAuth: { async verifyIdToken(token) { return { uid: token, email: `${token}@example.test` }; } }
+  });
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+  const address = server.address();
+  assert.equal(typeof address, "object");
+  return { server, base: `http://127.0.0.1:${address.port}`, repository };
+}
+
 test("tenant membership is capability-gated, tenant-scoped, and audited", async () => {
   const { server, base } = await startApp();
   try {
@@ -50,11 +73,11 @@ test("tenant membership is capability-gated, tenant-scoped, and audited", async 
 
     const created = await fetch(`${base}/api/platform/tenants/tenant_demo/users`, {
       method: "POST", headers: ownerHeaders,
-      body: JSON.stringify({ id: "custom_tech", displayName: "Custom Technician", role: "TECHNICIAN", customRoleName: "Dispatcher", capabilities: ["team.view"] })
+      body: JSON.stringify({ id: "custom_tech", displayName: "Custom Technician", role: "TECHNICIAN", customRoleName: "Dispatcher" })
     });
     assert.equal(created.status, 201);
     const createdBody = await created.json();
-    assert.deepEqual(createdBody.claimsPreview.tenantCapabilities, ["team.view"]);
+    assert.deepEqual(createdBody.claimsPreview.tenantCapabilities, []);
 
     const tenantBoundToken = createLocalDevSession("owner@local.dev", undefined, "tenant_demo", { TENANT_ID: "tenant_demo", NEXI_FIREBASE_AUTH_REQUIRED: "false" }).token;
     const wrongTenant = await fetch(`${base}/api/platform/tenants/tenant_other/users`, { headers: { ...ownerHeaders, authorization: `Bearer ${tenantBoundToken}` } });
@@ -75,9 +98,9 @@ test("platform self-profile and lifecycle routes persist authorized platform act
   try {
     const headers = { "content-type": "application/json" };
     const tenantId = (await repository.listTenants())[0].id;
-    const updated = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ firstName: "Staging", lastName: "Operator", email: "staging.operator@local.dev" }) });
+    const updated = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ profilePhotoRef: "profiles/local-operator.jpg" }) });
     assert.equal(updated.status, 200);
-    assert.equal((await updated.json()).user.firstName, "Staging");
+    assert.equal((await updated.json()).user.profilePhotoRef, "profiles/local-operator.jpg");
 
     const first = await fetch(`${base}/api/platform/admin/tenants/${tenantId}/subscription/cancel/confirmations`, { method: "POST", headers, body: JSON.stringify({ confirmation: "I_UNDERSTAND_CANCEL_ARCHIVE", idempotencyKey: "platform-cancel-intent-001" }) });
     assert.equal(first.status, 201);
@@ -89,6 +112,46 @@ test("platform self-profile and lifecycle routes persist authorized platform act
     const restored = await fetch(`${base}/api/platform/admin/tenants/${tenantId}/subscription/resubscribe`, { method: "POST", headers, body: JSON.stringify({ confirmation: "RESUBSCRIBE", idempotencyKey: "platform-resubscribe-001" }) });
     assert.equal(restored.status, 201);
     assert.equal((await repository.getTenant(tenantId)).lifecycleState, "ACTIVE");
+  } finally {
+    await close(server);
+  }
+});
+
+test("protected Owner recovery is audited, profile completion gates NexCommand, and tenant identities remain denied", async () => {
+  const { server, base, repository } = await startProtectedOwnerApp();
+  try {
+    const session = await fetch(`${base}/api/platform/admin/session`, { method: "POST", headers: { authorization: "Bearer firebase-owner" } });
+    assert.equal(session.status, 201);
+    const { token } = await session.json();
+    const headers = { "content-type": "application/json", authorization: `Bearer ${token}` };
+
+    const restricted = await fetch(`${base}/api/platform/admin/summary`, { headers });
+    assert.equal(restricted.status, 403);
+
+    const legacy = await repository.getPlatformUser("protected_owner");
+    await repository.savePlatformUser({ ...legacy, ["two" + "FactorState"]: "ENROLLED" });
+    const saved = await repository.getPlatformUser("protected_owner");
+    assert.equal(Object.hasOwn(saved, "two" + "FactorState"), false);
+
+    const completed = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ profilePhotoRef: "profiles/firebase-owner.jpg" }) });
+    assert.equal(completed.status, 200);
+    const allowed = await fetch(`${base}/api/platform/admin/summary`, { headers });
+    assert.equal(allowed.status, 200);
+
+    const recovered = await fetch(`${base}/api/platform/admin/team/me/recover-protected-owner-identity`, { method: "POST", headers });
+    assert.equal(recovered.status, 200);
+    assert.deepEqual((await recovered.json()).user.firstName, "Christopher");
+    assert.equal((await repository.listPlatformUserAudits("protected_owner")).at(-1).action, "platform_user.protected_owner_identity_recovered");
+
+    const tenant = await fetch(`${base}/api/platform/admin/session`, { method: "POST", headers: { authorization: "Bearer firebase-tenant" } });
+    assert.equal(tenant.status, 403);
+    await assert.rejects(() => repository.savePlatformUser({
+      id: "duplicate_owner", authUid: "different-owner", firstName: "Another", lastName: "Owner", email: "another@nexteam.dev",
+      profilePhotoRef: "profiles/another.jpg", role: "Owner", accountClass: "internal", capabilityOverrides: { grant: [], deny: [] }, accountStatus: "ACTIVE",
+      createdAt: "2026-08-11T00:00:00.000Z", updatedAt: "2026-08-11T00:00:00.000Z", createdBy: "seed", updatedBy: "seed"
+    }));
+    const tenantMember = (await repository.listTenantUsers("tenant_demo"))[0];
+    await assert.rejects(() => repository.upsertTenantUser({ ...tenantMember, id: "tenant_identity_conflict", authUid: "firebase-owner", email: "tenant-conflict@nexteam.dev" }));
   } finally {
     await close(server);
   }

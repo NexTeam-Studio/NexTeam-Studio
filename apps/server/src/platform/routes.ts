@@ -181,7 +181,7 @@ const verifyJobAccessLinkSchema = z.object({
   token: z.string().min(16)
 });
 
-const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true, twoFactorState: true, role: true, capabilityOverrides: true }).strict();
+const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true, role: true, capabilityOverrides: true }).strict();
 const platformUserPatchSchema = platformUserInputSchema.omit({ authUid: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const platformSelfProfilePatchSchema = platformUserSchema.pick({ firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const ownershipTransferSchema = z.object({ toUserId: z.string().min(1) }).strict();
@@ -271,7 +271,7 @@ async function requireNexCommandSession(req: Request, repository: PlatformReposi
   await repository.savePlatformSession({ ...session, lastActivityAt: now.toISOString() });
   const profile = await repository.getPlatformUserByAuthUid(session.actorUid);
   if (!profile || profile.accountStatus !== "ACTIVE") throw new RailError("An active NexTeam internal user profile is required for NexCommand.", { provider: "platform", op: "platformSession", status: 403 });
-  return { uid: session.actorUid, capabilities: resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) };
+  return { uid: session.actorUid, capabilities: profile.profilePhotoRef ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : ["platform.profile.self"] };
 }
 async function requireNexCommandSessionOrTestIdentity(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }, strictSession = false): Promise<{ uid: string; capabilities: PlatformCapability[] }> {
   // The injected verifier is an isolated-test seam. Production has no override,
@@ -295,7 +295,7 @@ async function requireFirebasePlatformIdentity(req: Request, env: NodeJS.Process
     return { uid: decoded.uid, capabilities: claimedPlatformCapabilities(decoded) };
   }
   if (profile.accountStatus !== "ACTIVE") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformAuth", status: 403 });
-  return { uid: decoded.uid, capabilities: resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) };
+  return { uid: decoded.uid, capabilities: profile.profilePhotoRef ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : ["platform.profile.self"] };
 }
 
 async function requirePlatformTeamCapability(req: Request, env: NodeJS.ProcessEnv, capability: PlatformCapability, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<{ uid: string; capabilities: PlatformCapability[]; role?: string }> {
@@ -427,6 +427,25 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const user = await deps.repository.savePlatformUser({ ...existing, ...patch, updatedAt: timestamp, updatedBy: actor.uid } as PlatformUser);
       await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Self-service profile metadata updated.", timestamp));
       await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, "Platform self-service profile updated.", user.authUid, timestamp));
+      res.json({ ok: true, user });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  // This narrowly scoped maintenance action is intentionally separate from
+  // authentication reads. It never accepts identity fields from the client.
+  app.post("/api/platform/admin/team/me/recover-protected-owner-identity", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.profile.self", deps.repository, deps.platformOperatorAuth);
+      const existing = await deps.repository.getPlatformUserByAuthUid(actor.uid);
+      if (!existing) throw new RailError("An internal platform profile is required.", { provider: "platform", op: "protectedOwnerRecovery", status: 404 });
+      const timestamp = new Date().toISOString();
+      const user = await deps.repository.recoverProtectedOwnerIdentity({
+        userId: existing.id,
+        actorUid: actor.uid,
+        now: timestamp,
+        audit: newPlatformUserAudit(existing.id, "platform_user.protected_owner_identity_recovered", actor.uid, "Controlled maintenance restored the protected Owner legal name.", timestamp)
+      });
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, "Controlled protected Owner identity maintenance completed.", user.authUid, timestamp));
       res.json({ ok: true, user });
     } catch (error) { sendRouteError(res, error); }
   });

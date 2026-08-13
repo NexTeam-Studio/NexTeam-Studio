@@ -6,3 +6,24 @@
   max-width: 100%;
   overflow-x: clip;
 }
+
+.platform-profile-completion {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.platform-profile-completion-card {
+  width: min(100%, 440px);
+  padding: 28px;
+  border: 1px solid #d7deea;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgb(26 38 61 / 12%);
+}
+
+.platform-profile-completion-eyebrow { color: #52627b; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.platform-profile-completion-card form { display: grid; gap: 10px; margin-top: 20px; }
+.platform-profile-completion-card input, .platform-profile-completion-card button { min-height: 42px; border-radius: 8px; padding: 0 12px; }
+.platform-profile-completion-card button { border: 0; background: #183b73; color: #fff; font-weight: 700; }
