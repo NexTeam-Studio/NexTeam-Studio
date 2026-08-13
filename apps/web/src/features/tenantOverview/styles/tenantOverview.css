@@ -81,6 +81,7 @@
   gap: 8px;
   align-items: stretch;
 }
+.tenant-overview__row--minimal { grid-template-columns:minmax(0,1fr) auto auto; }.tenant-overview__pricing { display:grid; gap:4px; justify-items:end; text-align:right; }.tenant-overview__pricing p { margin:0; color:#fff; font-weight:800; }
 
 .tenant-action { border:0; border-radius:999px; padding:11px 18px; color:#0c1118; background:linear-gradient(135deg,#d4ff20,#25d238); box-shadow:0 7px 16px rgba(37,210,56,.22); font:inherit; font-weight:900; text-align:center; text-decoration:none; cursor:pointer; }.tenant-action:hover { filter:brightness(.97); transform:translateY(-1px); }.tenant-action--secondary { color:#f7faf8; background:linear-gradient(135deg,#0c1118,#202b35); box-shadow:none; }
 

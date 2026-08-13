@@ -1270,11 +1270,18 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const rows = await Promise.all(tenants.map(async (tenant) => {
         const runtimeStatuses = runtimeAdapterStatuses(tenant, env);
         await deps.repository.saveAdapterStatuses(runtimeStatuses);
+        const [profile, ledgerSubscription] = await Promise.all([deps.repository.getTenantProfile(tenant.id), deps.repository.getSubscription(tenant.id)]);
+        const packageId = profile?.subscriptionPlan;
+        const stagingPackage = packageId && packageId !== "none" ? activeSubscriptionPackages().find((entry) => entry.id === packageId) : undefined;
+        const subscriptionDisplay = stagingPackage
+          ? { name: stagingPackage.name, status: profile?.status ?? "ACTIVE", monthlyUsd: stagingPackage.priceCents / 100, annualUsd: 0 }
+          : { name: PLATFORM_PLANS[tenant.plan].name, status: ledgerSubscription?.status ?? "no subscription", monthlyUsd: PLATFORM_PLANS[tenant.plan].monthlyUsd, annualUsd: PLATFORM_PLANS[tenant.plan].monthlyUsd * 12 };
         return {
           tenant,
           plan: PLATFORM_PLANS[tenant.plan],
           modules: [...modulesForPlan(tenant.plan)],
-          subscription: await deps.repository.getSubscription(tenant.id),
+          subscription: ledgerSubscription,
+          subscriptionDisplay,
           adapterStatuses: await deps.repository.listAdapterStatuses(tenant.id),
           cost: await deps.repository.summarizeCost(tenant.id, period)
         };

@@ -8,14 +8,17 @@ const tenantLogos: Record<string, string> = {
 
 export function TenantOverviewPanel(props: { rows: PlatformTenantRow[]; onViewDetails: (tenantId: string) => void }): React.ReactElement {
   const [query, setQuery] = useState("");
-  const visibleRows = useMemo(() => props.rows.filter((row) => `${row.tenant.name} ${row.tenant.id} ${row.plan.name}`.toLowerCase().includes(query.trim().toLowerCase())), [props.rows, query]);
-  return <section className="tenant-overview" aria-label="Tenant roster">
-    <div className="tenant-overview__filters"><label>Find Tenant<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or plan" /></label><span>{visibleRows.length} shown</span></div>
-    {visibleRows.map((row) => <article className="tenant-overview__row" key={row.tenant.id}>
-      <div className="tenant-overview__identity"><TenantLogo tenantId={row.tenant.id} tenantName={row.tenant.name} /><div><h2>{row.tenant.name}</h2><p>{row.plan.name} · {row.subscription?.status ?? "no subscription"}</p><p><strong>{row.tenant.lifecycleState === "DISABLED_ARCHIVED" ? "Archived" : "Active"}</strong></p></div></div>
-      <div className="tenant-overview__adapter-pills">{row.modules.map((module) => <span className="tenant-overview__pill tenant-overview__pill--ok" key={module}>{module}</span>)}</div>
-      <div className="tenant-overview__actions"><p>${row.cost.estimatedCostUsd.toFixed(2)} tracked</p><button className="tenant-action" type="button" onClick={() => props.onViewDetails(row.tenant.id)}>View Details</button></div>
-    </article>)}
+  const visibleRows = useMemo(() => props.rows.filter((row) => `${row.tenant.name} ${row.tenant.id} ${row.subscriptionDisplay?.name ?? row.plan.name}`.toLowerCase().includes(query.trim().toLowerCase())), [props.rows, query]);
+  return <section className="tenant-overview" aria-label="Tenant Roster">
+    <div className="tenant-overview__filters"><label>Find Tenant<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or Subscription" /></label><span>{visibleRows.length} shown</span></div>
+    {visibleRows.map((row) => {
+      const subscription = row.subscriptionDisplay ?? { name: row.plan.name, status: row.subscription?.status ?? "no subscription", monthlyUsd: row.plan.monthlyUsd, annualUsd: row.plan.monthlyUsd * 12 };
+      return <article className="tenant-overview__row tenant-overview__row--minimal" key={row.tenant.id}>
+        <div className="tenant-overview__identity"><TenantLogo tenantId={row.tenant.id} tenantName={row.tenant.name} /><div><h2>{row.tenant.name}</h2><p>{subscription.name} · {subscription.status}</p><p><strong>{row.tenant.lifecycleState === "DISABLED_ARCHIVED" ? "Archived" : "Active"}</strong></p></div></div>
+        <div className="tenant-overview__pricing"><p>${subscription.monthlyUsd.toFixed(2)} Monthly</p><p>${subscription.annualUsd.toFixed(2)} Annually</p></div>
+        <div className="tenant-overview__actions"><button className="tenant-action" type="button" onClick={() => props.onViewDetails(row.tenant.id)}>View Details</button></div>
+      </article>;
+    })}
     {!visibleRows.length ? <p>No tenants match that search.</p> : null}
   </section>;
 }
