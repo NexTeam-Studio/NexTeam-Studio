@@ -16,6 +16,7 @@ import {
   type CustomFieldDraftRow
 } from "../contact/domain/clientProfile";
 import { isProtectedLegacyClient } from "./domain/clientDeletionPolicy";
+import { buildClientRelationshipHistory } from "./domain/clientRelationshipHistory";
 import { PropertyAssetsManager } from "./PropertyAssetsManager";
 import type {
   ClientPortalActivityEntry,
@@ -144,6 +145,28 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
     setModule,
     toggleCreateMenu
   } = bindings;
+
+  const relationshipHistory = buildClientRelationshipHistory({
+    requests: selectedRequests,
+    quotes: selectedQuotes,
+    jobs: selectedJobs,
+    invoices: selectedInvoices,
+    payments: selectedPayments,
+    portalActivity: clientPortalActivity,
+    reviewSequences: clientReviewSequences,
+    // Field technicians do not receive finance rows through the client history.
+    financialVisible: operatorContext.role !== "TECHNICIAN"
+  });
+
+  function openHistoryEntry(entry: { module?: "requests" | "quotes" | "jobs" | "invoices" | "payments" | "nexreach"; objectId?: string }): void {
+    if (entry.module === "nexreach") {
+      setModule("nexreach");
+      return;
+    }
+    if (entry.module) {
+      openWorkspaceTarget({ module: entry.module, ...(entry.objectId ? { objectId: entry.objectId } : {}) });
+    }
+  }
 
   function renderMobileClientProfile(): React.ReactElement {
     if (!selectedClient) {
@@ -365,12 +388,21 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
             <div className="nexops-mobile-section-head">
               <div>
                 <p className="eyebrow">Notes & Communications</p>
-                <h2>{clientDisplayName(selectedClient)} has no notes</h2>
+                <h2>Relationship history</h2>
               </div>
             </div>
             <div className="nexops-mobile-note-actions">
-              <button type="button">Add Note</button>
+              <span>Notes are not yet stored in this client record.</span>
               <button type="button" onClick={() => openWorkspaceTarget({ module: "capture" })}>📷</button>
+            </div>
+            <div className="nexops-mobile-work-list">
+              {relationshipHistory.map((entry) => entry.module ? (
+                <button className="nexops-mobile-work-row" key={entry.id} type="button" onClick={() => openHistoryEntry(entry)}>
+                  <div><strong>{entry.title}</strong><small>{entry.occurredAt ? new Date(entry.occurredAt).toLocaleString() : "Date unavailable"}</small></div>
+                  <span>{entry.status}</span>
+                </button>
+              ) : <article className="nexops-mobile-client-list-row" key={entry.id}><strong>{entry.title}</strong><small>{entry.occurredAt ? new Date(entry.occurredAt).toLocaleString() : "Date unavailable"}</small><small>{entry.status}</small></article>)}
+              {!relationshipHistory.length ? <p className="nexops-empty-copy">No relationship activity is recorded for this client yet.</p> : null}
             </div>
           </section>
         );
@@ -905,6 +937,18 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
               </div>
             </div>
             <div className="nexops-client-profile-grid two-up">
+              <article className="nexops-client-profile-card">
+                <h3>Relationship history</h3>
+                {relationshipHistory.length ? (
+                  <ul className="nexops-mini-list">
+                    {relationshipHistory.map((entry) => (
+                      <li key={entry.id}>
+                        {entry.module ? <button type="button" onClick={() => openHistoryEntry(entry)}><strong>{entry.title}</strong><small>{entry.occurredAt ? new Date(entry.occurredAt).toLocaleString() : "Date unavailable"} · {entry.status}</small></button> : <><strong>{entry.title}</strong><small>{entry.occurredAt ? new Date(entry.occurredAt).toLocaleString() : "Date unavailable"} · {entry.status}</small></>}
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p>No relationship activity is recorded for this client yet.</p>}
+              </article>
               <article className="nexops-client-profile-card">
                 <h3>Recent portal activity</h3>
                 {recentPortalEntries.length ? (
