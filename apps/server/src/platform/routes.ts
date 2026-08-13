@@ -536,14 +536,17 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
   // roles are deliberately not consulted by these routes.
   app.get("/api/platform/admin/tenants/:tenantId/members", async (req: Request, res: Response) => {
     try {
-      await requirePlatformTeamCapability(req, env, "platform.tenants.view", deps.repository, deps.platformOperatorAuth);
+      const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.view", deps.repository, deps.platformOperatorAuth);
       const tenantId = requiredTenantId(req.params.tenantId);
       const tenant = await deps.repository.getTenant(tenantId);
       if (!tenant) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTenantMembers", status: 404 });
       const users = await deps.repository.listTenantUsers(tenantId);
       const owners = users.filter((member) => member.role === "OWNER" && member.active);
       if (owners.length > 1) throw new RailError("Tenant ownership is inconsistent and cannot be managed until repaired.", { provider: "platform", op: "nexCommandTenantMembers", status: 409 });
-      res.json({ ok: true, tenantId, currentOwner: owners[0] ?? null, users: users.map((member) => ({ id: member.id, authUid: member.authUid ?? null, email: member.email ?? null, displayName: member.displayName, role: member.role, active: member.active, effectiveCapabilities: customClaimsForTenantUser(member).tenantCapabilities })) });
+      // Firebase UIDs are not needed by the management UI. Reading membership
+      // identity is platform-authorized activity and is retained in the audit log.
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand viewed tenant ${tenantId} membership authority.`, undefined, new Date().toISOString()));
+      res.json({ ok: true, tenantId, currentOwner: owners[0] ?? null, users: users.map((member) => ({ id: member.id, email: member.email ?? null, displayName: member.displayName, role: member.role, active: member.active, effectiveCapabilities: customClaimsForTenantUser(member).tenantCapabilities })) });
     } catch (error) { sendRouteError(res, error); }
   });
 

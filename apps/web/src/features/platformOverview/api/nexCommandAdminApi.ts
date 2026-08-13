@@ -6,7 +6,7 @@ export type PlatformTeamUser = {
   id: string; authUid?: string; firstName: string; lastName: string; email?: string; telephone?: string;
   role: PlatformRole; accountStatus: "ACTIVE" | "DISABLED"; capabilityOverrides?: PlatformCapabilityOverride; updatedAt: string;
 };
-export type NexCommandTenantMember = { id: string; authUid: string | null; email: string | null; displayName: string; role: "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN"; active: boolean; effectiveCapabilities: string[] };
+export type NexCommandTenantMember = { id: string; authUid?: string | null; email: string | null; displayName: string; role: "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN"; active: boolean; effectiveCapabilities: string[] };
 export type NexCommandTenantMembers = { tenantId: string; currentOwner: NexCommandTenantMember | null; users: NexCommandTenantMember[] };
 
 async function request<T>(user: User, path: string, init?: RequestInit): Promise<T> {
