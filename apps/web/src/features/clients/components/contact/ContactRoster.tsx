@@ -1,6 +1,13 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import { isImportedHistoryRecord } from "./domain/clientProfile";
+import {
+  clientRosterStatusLabel,
+  filterAndSortRosterClients,
+  rosterTagOptions,
+  type ClientRosterSort,
+  type ClientRosterStatus
+} from "./domain/clientRoster";
 
 export interface ContactRosterClient {
   id: string;
@@ -32,6 +39,18 @@ interface ContactRosterProps<Client extends ContactRosterClient> {
 }
 
 export function ContactRoster<Client extends ContactRosterClient>(props: ContactRosterProps<Client>): React.ReactElement {
+  const [statusFilter, setStatusFilter] = useState<"all" | ClientRosterStatus>("all");
+  const [tagFilter, setTagFilter] = useState("");
+  const [sort, setSort] = useState<ClientRosterSort>("name-asc");
+  const tagOptions = useMemo(() => rosterTagOptions(props.clients), [props.clients]);
+  const visibleClients = useMemo(() => filterAndSortRosterClients({
+    clients: props.clients,
+    status: statusFilter,
+    tag: tagFilter,
+    sort,
+    displayName: props.clientDisplayName
+  }), [props.clients, props.clientDisplayName, sort, statusFilter, tagFilter]);
+
   return (
     <section className="nexops-clients-workspace">
       <div className="nexops-clients-heading">
@@ -54,9 +73,31 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
       </div>
 
       <div className="nexops-client-controls">
-        <button type="button">Filter by Tag +</button>
-        <button type="button">Status | Leads and Active</button>
-        <label>
+        <label className="nexops-client-control-field">
+          <span>Filter by Tag +</span>
+          <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} aria-label="Filter clients by tag">
+            <option value="">All tags</option>
+            {tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+          </select>
+        </label>
+        <label className="nexops-client-control-field">
+          <span>Status</span>
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "all" | ClientRosterStatus)} aria-label="Filter clients by status">
+            <option value="all">All statuses</option>
+            <option value="active">Active clients</option>
+            <option value="lead">Leads &amp; prospects</option>
+            <option value="archived">Archived clients</option>
+          </select>
+        </label>
+        <label className="nexops-client-control-field">
+          <span>Sort</span>
+          <select value={sort} onChange={(event) => setSort(event.target.value as ClientRosterSort)} aria-label="Sort clients">
+            <option value="name-asc">Name, A–Z</option>
+            <option value="name-desc">Name, Z–A</option>
+            <option value="status">Status</option>
+          </select>
+        </label>
+        <label className="nexops-client-search-field">
           <span className="sr-only">Search Clients</span>
           <input value={props.query} placeholder="Search Clients..." onChange={(event) => props.onQueryChange(event.target.value)} />
         </label>
@@ -68,7 +109,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
             <div className="nexops-client-table-head">
               <span>Name</span><span>Primary Address</span><span>Contact</span><span>Status</span><span>Last Activity</span>
             </div>
-            {props.clients.map((client) => (
+            {visibleClients.map((client) => (
               <button
                 className={`nexops-client-table-row ${props.selectedClientId === client.id ? "selected" : ""}`}
                 key={client.id}
@@ -82,11 +123,11 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
                 </span>
                 <span>{props.clientPrimaryAddress(client)}</span>
                 <span>{props.selectedClientId === client.id ? "Open Now" : (client.phones[0] ?? client.emails[0] ?? "No Contact Saved")}</span>
-                <span><mark>{props.clientStatusLabel(client)}</mark></span>
+                <span><mark>{clientRosterStatusLabel(client, props.clientStatusLabel(client))}</mark></span>
                 <span>{client.tags?.[0] ?? "Native Record"}</span>
               </button>
             ))}
-            {!props.clients.length ? (
+            {!visibleClients.length ? (
               <div className="nexops-client-empty"><h2>No clients match this view yet</h2><p>Create one, import a CSV, or start from a native request.</p></div>
             ) : null}
           </div>
