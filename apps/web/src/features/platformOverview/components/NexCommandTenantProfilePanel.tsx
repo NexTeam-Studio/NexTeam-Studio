@@ -24,13 +24,6 @@ async function request(user: User, path: string, init?: RequestInit): Promise<Te
   return body;
 }
 
-async function postTenantAction(user: User, path: string): Promise<void> {
-  const token = await user.getIdToken();
-  const response = await fetch(path, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: "{}" });
-  const body = await response.json() as { error?: string };
-  if (!response.ok) throw new Error(body.error ?? "The tenant action could not be completed.");
-}
-
 function logoFor(data: TenantProfileResponse): string | undefined {
   const logo = data.branding?.logo;
   return logo?.url ?? (logo?.storageRef ? `/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(data.tenant.id)}&v=${encodeURIComponent(logo.updatedAt ?? "current")}` : fallbackLogo[data.tenant.id]);
@@ -50,7 +43,6 @@ export function NexCommandTenantProfilePanel({ user, tenantId, onBack }: { user:
   const [resetOpen, setResetOpen] = useState(false);
   const [operatorPassword, setOperatorPassword] = useState("");
   const [resetWorking, setResetWorking] = useState(false);
-  const [onboardingWorking, setOnboardingWorking] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const load = async (): Promise<void> => { if (user) setData(await request(user, `/api/platform/admin/tenants/${encodeURIComponent(tenantId)}/profile`)); };
   useEffect(() => { void load().catch(() => setMessage("Tenant profile could not be loaded.")); }, [tenantId, user]);
@@ -78,17 +70,6 @@ export function NexCommandTenantProfilePanel({ user, tenantId, onBack }: { user:
     } finally { setResetWorking(false); }
   }
 
-  async function sendOnboardingEmail(): Promise<void> {
-    if (!user || onboardingWorking) return;
-    setOnboardingWorking(true); setMessage("");
-    try {
-      await postTenantAction(user, `/api/platform/admin/tenants/${encodeURIComponent(tenantId)}/onboarding-email`);
-      setMessageTone("success"); setMessage(`Onboarding email sent to ${primary.email ?? "the Primary Contact"}.`);
-    } catch (error) {
-      setMessageTone("error"); setMessage(error instanceof Error ? error.message : "The onboarding email could not be sent.");
-    } finally { setOnboardingWorking(false); }
-  }
-
   async function uploadLogo(file: File): Promise<string> {
     if (!user) throw new Error("You must be signed in to upload a logo.");
     const token = await user.getIdToken();
@@ -109,7 +90,7 @@ export function NexCommandTenantProfilePanel({ user, tenantId, onBack }: { user:
 
   return <section className="nexcommand__panel tenant-profile">
     <button className="tenant-action" type="button" onClick={onBack}>Back to Tenant Roster</button>
-    <div className="tenant-profile__heading"><div className="tenant-profile__heading-copy"><p className="ui-eyebrow">Tenant Profile</p><small>Tenant ID: {profile.tenantNumber ?? "Pending"}</small><div className="tenant-profile__tenant-line"><h2>{data.tenant.name}</h2>{displayedLogo ? <img src={displayedLogo} alt={`${data.tenant.name} logo`} /> : <span>{data.tenant.name.slice(0, 1)}</span>}</div><p>{data.subscription?.plan ?? "No plan"} · {data.subscription?.status ?? "No subscription"}</p></div><div className="tenant-profile__banner-actions"><button className="tenant-action" type="button" onClick={() => void sendOnboardingEmail()} disabled={onboardingWorking}>{onboardingWorking ? "Sending…" : "Send Onboarding Email"}</button><button className="tenant-action" type="button" onClick={() => setEditing((value) => !value)}>{editing ? "Cancel" : "Edit Tenant"}</button><button className="tenant-action" type="button" onClick={() => setResetOpen((value) => !value)}>Send Password Reset</button></div></div>
+    <div className="tenant-profile__heading"><div className="tenant-profile__heading-copy"><p className="ui-eyebrow">Tenant Profile</p><small>Tenant ID: {profile.tenantNumber ?? "Pending"}</small><div className="tenant-profile__tenant-line"><h2>{data.tenant.name}</h2>{displayedLogo ? <img src={displayedLogo} alt={`${data.tenant.name} logo`} /> : <span>{data.tenant.name.slice(0, 1)}</span>}</div><p>{data.subscription?.plan ?? "No plan"} · {data.subscription?.status ?? "No subscription"}</p></div><div className="tenant-profile__banner-actions"><button className="tenant-action" type="button" onClick={() => setEditing((value) => !value)}>{editing ? "Cancel" : "Edit Tenant"}</button><button className="tenant-action" type="button" onClick={() => setResetOpen((value) => !value)}>Send Password Reset</button></div></div>
     {resetOpen ? <form className="tenant-profile__reset" onSubmit={(event) => void sendPasswordReset(event)}><strong>Confirm Password Reset</strong><p>Re-enter your current NexCommand password to send a reset link to the tenant Primary Contact: <b>{primary.email ?? "No email on file"}</b>. Your password is used only to re-authenticate this action and is never saved.</p><label>Current NexCommand Password<input type="password" value={operatorPassword} onChange={(event) => setOperatorPassword(event.target.value)} autoComplete="current-password" required /></label><div><button className="tenant-action tenant-action--secondary" type="button" onClick={() => { setOperatorPassword(""); setResetOpen(false); }}>Cancel</button><button className="tenant-action" type="submit" disabled={resetWorking || !primary.email}>{resetWorking ? "Sending…" : "Send Reset Email"}</button></div></form> : null}
     <form onSubmit={(event) => void save(event)}>
       <fieldset disabled={!editing || saving}>

@@ -10,6 +10,7 @@ import { PlatformSubscriptionCatalogPanel } from "../components/PlatformSubscrip
 import { PlatformMigrationsPanel } from "../components/PlatformMigrationsPanel";
 import { PlatformSettingsPanel } from "../components/PlatformSettingsPanel";
 import { NexCommandTenantProfilePanel } from "../components/NexCommandTenantProfilePanel";
+import { PlatformTenantOnboardingPanel } from "../components/PlatformTenantOnboardingPanel";
 import { usePlatformPlans } from "../hooks/usePlatformPlans";
 import { usePathname } from "../../../shared/router/usePathname";
 import "../../tenantOverview/styles/tenantOverview.css";
@@ -71,7 +72,8 @@ function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOv
   if (props.area === "tenants") return <section className="nexcommand__panel tenant-roster-panel"><div className="tenant-roster-panel__banner"><div><p className="ui-eyebrow">NexCommand tenant administration</p><h2>Tenant Roster</h2><p>Each tenant has one profile. View details to manage its business profile and review secure access.</p></div><span>{props.rows.length} Active Profiles</span></div><TenantOverviewPanel rows={props.rows} onViewDetails={props.onViewTenant} /></section>;
   if (props.area === "prospects") return <PlatformProspectIntakePanel user={props.user} />;
   if (props.area === "subscriptions") return <PlatformSubscriptionCatalogPanel user={props.user} />;
-  if (props.area === "blueprints" || props.area === "onboarding") return <PlatformLifecycleRecordsPanel user={props.user} mode={props.area} />;
+  if (props.area === "blueprints") return <PlatformLifecycleRecordsPanel user={props.user} mode="blueprints" />;
+  if (props.area === "onboarding") return <PlatformTenantOnboardingPanel user={props.user} rows={props.rows} />;
   if (props.area === "migrations") return <PlatformMigrationsPanel user={props.user} />;
   if (props.area === "support") return <PlatformSupportPanel user={props.user} />;
   if (props.area === "modules") return <Directory title="Module directory" items={moduleDirectory} />;
