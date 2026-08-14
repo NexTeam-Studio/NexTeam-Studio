@@ -548,6 +548,8 @@ export function NexDocsClientWorkspace(props: NexDocsClientWorkspaceProps): Reac
                 </div>
                 <p className="nexdocs-entry-meta">
                   {entry.propertyLabel}
+                  {entry.jobId ? ` | Job ${entry.jobId}` : ""}
+                  {entry.visitId ? ` | Visit ${entry.visitId}` : ""}
                   {entry.folderLabel ? ` | ${entry.folderLabel}` : ""}
                   {fileSizeLabel(entry.sizeBytes) ? ` | ${fileSizeLabel(entry.sizeBytes)}` : ""}
                   {entry.searchText ? " | Searchable" : ""}

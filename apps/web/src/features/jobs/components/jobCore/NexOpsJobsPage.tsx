@@ -576,6 +576,7 @@ export function NexOpsJobsPage(props: {
   const [visitEndDate, setVisitEndDate] = useState("");
   const [visitEndTime, setVisitEndTime] = useState("");
   const [activeVisitDocumentsId, setActiveVisitDocumentsId] = useState("");
+  const [jobDocumentsOpen, setJobDocumentsOpen] = useState(false);
   const [actionBusy, setActionBusy] = useState<JobAction | null>(null);
   const [statusFilter, setStatusFilter] = useState<JobFilter>("All");
   const [jobSearch, setJobSearch] = useState("");
@@ -1731,7 +1732,12 @@ export function NexOpsJobsPage(props: {
               <div className="nexops-jobs-section">
                 <div className="nexops-jobs-card-heading">
                   <h3>Visits</h3>
-                  <span>{detail.visits.length} total</span>
+                  <div className="nexops-inline-actions">
+                    <span>{detail.visits.length} total</span>
+                    <button type="button" className="nexops-link-button" onClick={() => setJobDocumentsOpen((current) => !current)}>
+                      {jobDocumentsOpen ? "Hide Job Files" : "Job Files / Closeout Documents"}
+                    </button>
+                  </div>
                 </div>
                 <form className="nexops-jobs-form inline" onSubmit={(event) => void scheduleVisit(event)}>
                   <input aria-label="Visit Title" value={visitTitle} onChange={(event) => setVisitTitle(event.target.value)} placeholder="Visit Title" />
@@ -1769,6 +1775,18 @@ export function NexOpsJobsPage(props: {
                     jobId={detail.id}
                     visitId={activeVisitDocumentsId}
                     contextLabel={`Visit ${activeVisitDocumentsId}`}
+                    nexcamCounts={{ media: fieldDocsMedia.length, reports: fieldDocsReports.length, signedDocuments: signedDocuments.length }}
+                  />
+                ) : null}
+                {jobDocumentsOpen ? (
+                  <NexDocsClientWorkspace
+                    tenantId={props.tenantId}
+                    clientId={detail.clientId}
+                    clientName={detail.client?.name ?? "this client"}
+                    role={props.role}
+                    propertyId={detail.propertyId}
+                    jobId={detail.id}
+                    contextLabel={`Job ${detail.number ?? detail.id} files`}
                     nexcamCounts={{ media: fieldDocsMedia.length, reports: fieldDocsReports.length, signedDocuments: signedDocuments.length }}
                   />
                 ) : null}
