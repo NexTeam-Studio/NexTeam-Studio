@@ -6,9 +6,11 @@ import { useTenantOverview } from "../../tenantOverview/hooks/useTenantOverview"
 import { PlatformProspectIntakePanel } from "../components/PlatformProspectIntakePanel";
 import { PlatformSupportPanel } from "../components/PlatformSupportPanel";
 import { PlatformLifecycleRecordsPanel } from "../components/PlatformLifecycleRecordsPanel";
+import { PlatformSubscriptionCatalogPanel } from "../components/PlatformSubscriptionCatalogPanel";
 import { PlatformMigrationsPanel } from "../components/PlatformMigrationsPanel";
 import { PlatformSettingsPanel } from "../components/PlatformSettingsPanel";
-import { NexCommandTenantMembersPanel } from "../components/NexCommandTenantMembersPanel";
+import { NexCommandTenantProfilePanel } from "../components/NexCommandTenantProfilePanel";
+import { PlatformTenantOnboardingPanel } from "../components/PlatformTenantOnboardingPanel";
 import { usePlatformPlans } from "../hooks/usePlatformPlans";
 import { usePathname } from "../../../shared/router/usePathname";
 import "../../tenantOverview/styles/tenantOverview.css";
@@ -43,31 +45,35 @@ export function NexCommandRoute(): React.ReactElement {
   const [area, setArea] = useState<Area>(areaFromLocation);
   const [open, setOpen] = useState(false);
   const [liveState, setLiveState] = useState("COMPLETE");
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(new URLSearchParams(window.location.search).get("tenant"));
   const { status: planStatus } = usePlatformPlans(user);
-  const { rows, runBackup, runLifecycle, status: tenantStatus, workingTenant } = useTenantOverview(user);
+  const { rows, refresh: refreshTenantRoster, runBackup, runLifecycle, status: tenantStatus, workingTenant } = useTenantOverview(user);
   const issue = safeOperatorMessage(planStatus || tenantStatus);
   const summary = useMemo(() => ({ tenants: rows.length, active: rows.filter((row) => row.subscription?.status === "active").length }), [rows]);
   useEffect(() => { if (!user) return; const refresh = async () => { try { const token = await user.getIdToken(); const body = await fetch("/api/platform/admin/live-build-status", { headers: { authorization: `Bearer ${token}` } }).then((response) => response.json() as Promise<LiveBuildStatus>); setLiveState(body.controlState); } catch { setLiveState("FAILED"); } }; void refresh(); const timer = window.setInterval(() => void refresh(), 30_000); return () => window.clearInterval(timer); }, [user]);
 
   function selectArea(next: Area): void {
     window.history.pushState({}, "", `${pathname.startsWith("/platform") ? "/platform" : "/nexcommand"}?area=${next}`);
+    setSelectedTenantId(null);
     setArea(next);
   }
 
   return <div className="nexcommand">
     <header className="nexcommand__topbar"><button className="nexcommand__menu" aria-label="Open NexCommand navigation" onClick={() => setOpen((value) => !value)}>☰</button><div className="nexcommand__brand"><PlatformMark decorative /><span>NexCommand</span></div><div className="nexcommand__environment"><span>STAGING</span><small>nexstage.nexteam.studio</small></div><button className="nexcommand__signout" onClick={() => void signOut()}>Sign out</button></header>
     <aside className={`nexcommand__nav ${open ? "nexcommand__nav--open" : ""}`} aria-label="NexCommand navigation"><div className="nexcommand__nav-title"><PlatformMark decorative /><div><strong>NexCommand</strong><span>Internal operating console</span></div></div>{navigation.map(([key, label, icon]) => <button key={key} className={area === key ? "is-active" : ""} onClick={() => { selectArea(key); setOpen(false); }}><i aria-hidden="true">{icon}</i><span>{label}</span>{key === "live-status" ? <b className={`nexcommand__live-status-icon nexcommand__live-status-icon--${liveStatusTone(liveState)}`} aria-label={`Live build status: ${liveState}`} /> : null}</button>)}</aside>
-    <main className="nexcommand__workspace"><section className="nexcommand__heading"><div><p className="ui-eyebrow">NexTeam internal operations</p><h1>{navigation.find(([key]) => key === area)?.[1]}</h1><p>{user?.email ?? "Authorized NexTeam operator"}</p></div><span className="nexcommand__health">Staging connected</span></section>{issue ? <p className="nexcommand__notice">{issue}</p> : null}<NexCommandArea area={area} rows={rows} workingTenant={workingTenant} onRunBackup={runBackup} onRunLifecycle={runLifecycle} user={user} summary={summary} /></main>
+    <main className="nexcommand__workspace"><section className="nexcommand__heading"><div><p className="ui-eyebrow">NexTeam internal operations</p><h1>{selectedTenantId ? "Tenant details" : navigation.find(([key]) => key === area)?.[1]}</h1><p>{user?.email ?? "Authorized NexTeam operator"}</p></div><span className="nexcommand__health">Staging connected</span></section>{issue ? <p className="nexcommand__notice">{issue}</p> : null}{selectedTenantId ? <NexCommandTenantProfilePanel user={user} tenantId={selectedTenantId} onBack={() => { void refreshTenantRoster(); window.history.pushState({}, "", "/nexcommand?area=tenants"); setArea("tenants"); setSelectedTenantId(null); }} /> : <NexCommandArea area={area} rows={rows} workingTenant={workingTenant} onRunBackup={runBackup} onRunLifecycle={runLifecycle} user={user} summary={summary} onViewTenant={(tenantId) => { window.history.pushState({}, "", `/nexcommand?area=tenants&tenant=${encodeURIComponent(tenantId)}`); setSelectedTenantId(tenantId); }} />}</main>
   </div>;
 }
 
-function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOverview>["rows"]; workingTenant: string; onRunBackup: ReturnType<typeof useTenantOverview>["runBackup"]; onRunLifecycle: ReturnType<typeof useTenantOverview>["runLifecycle"]; user: ReturnType<typeof useAuthSession>["user"]; summary: { tenants: number; active: number } }): React.ReactElement {
+function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOverview>["rows"]; workingTenant: string; onRunBackup: ReturnType<typeof useTenantOverview>["runBackup"]; onRunLifecycle: ReturnType<typeof useTenantOverview>["runLifecycle"]; user: ReturnType<typeof useAuthSession>["user"]; summary: { tenants: number; active: number }; onViewTenant: (tenantId: string) => void }): React.ReactElement {
   if (props.area === "dashboard") return <><section className="nexcommand__metrics"><Metric label="Active tenants" value={String(props.summary.active)} /><Metric label="Tenant records" value={String(props.summary.tenants)} /><Metric label="Pilot package" value="$0.00" /><Metric label="Staging health" value="Connected" /></section><section className="nexcommand__panel"><h2>Operator overview</h2><p>Use NexCommand to manage verified tenant onboarding and platform operations. Metrics appear only when the platform provides the underlying data.</p><a href="/nexcommand?area=team">Open Team</a></section></>;
   if (props.area === "live-status") return <LiveBuildStatusPanel user={props.user} />;
   if (props.area === "team") return <PlatformSettingsPanel user={props.user} />;
-  if (props.area === "tenants") return <section className="nexcommand__panel"><h2>Tenant administration</h2><p>Cancellation requires two deliberate confirmations. Archiving retains tenant records; resubscription restores the existing tenant.</p><TenantOverviewPanel rows={props.rows} workingTenant={props.workingTenant} onRunBackup={props.onRunBackup} onRunLifecycle={props.onRunLifecycle} />{props.rows.map((row) => <NexCommandTenantMembersPanel key={row.tenant.id} user={props.user} tenantId={row.tenant.id} />)}</section>;
+  if (props.area === "tenants") return <section className="nexcommand__panel tenant-roster-panel"><div className="tenant-roster-panel__banner"><div><p className="ui-eyebrow">NexCommand tenant administration</p><h2>Tenant Roster</h2><p>Each tenant has one profile. View details to manage its business profile and review secure access.</p></div><span>{props.rows.length} Active Profiles</span></div><TenantOverviewPanel rows={props.rows} onViewDetails={props.onViewTenant} /></section>;
   if (props.area === "prospects") return <PlatformProspectIntakePanel user={props.user} />;
-  if (props.area === "blueprints" || props.area === "subscriptions" || props.area === "onboarding") return <PlatformLifecycleRecordsPanel user={props.user} mode={props.area} />;
+  if (props.area === "subscriptions") return <PlatformSubscriptionCatalogPanel user={props.user} />;
+  if (props.area === "blueprints") return <PlatformLifecycleRecordsPanel user={props.user} mode="blueprints" />;
+  if (props.area === "onboarding") return <PlatformTenantOnboardingPanel user={props.user} rows={props.rows} />;
   if (props.area === "migrations") return <PlatformMigrationsPanel user={props.user} />;
   if (props.area === "support") return <PlatformSupportPanel user={props.user} />;
   if (props.area === "modules") return <Directory title="Module directory" items={moduleDirectory} />;

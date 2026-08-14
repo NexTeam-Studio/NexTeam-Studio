@@ -40,28 +40,32 @@ function timestamp(input?: string): string {
   return input ?? new Date().toISOString();
 }
 
-async function getOrCreateOwner(auth: FirebaseOwnerActivation, input: ActivateProspectTenantInput): Promise<{ user: FirebaseActivationUser; created: boolean }> {
+export async function getOrCreateFirebaseOwner(auth: FirebaseOwnerActivation, input: { email: string; displayName?: string | undefined }): Promise<{ user: FirebaseActivationUser; created: boolean }> {
   try {
-    return { user: await auth.getUserByEmail(input.ownerEmail), created: false };
+    return { user: await auth.getUserByEmail(input.email), created: false };
   } catch (error) {
     const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
     if (code !== "auth/user-not-found") throw error;
     try {
       return {
         user: await auth.createUser({
-          email: input.ownerEmail,
+          email: input.email,
           emailVerified: false,
           disabled: false,
-          ...(input.ownerDisplayName ? { displayName: input.ownerDisplayName } : {})
+          ...(input.displayName ? { displayName: input.displayName } : {})
         }),
         created: true
       };
     } catch (createError) {
       const createCode = typeof createError === "object" && createError !== null && "code" in createError ? String(createError.code) : "";
       if (createCode !== "auth/email-already-exists") throw createError;
-      return { user: await auth.getUserByEmail(input.ownerEmail), created: false };
+      return { user: await auth.getUserByEmail(input.email), created: false };
     }
   }
+}
+
+async function getOrCreateOwner(auth: FirebaseOwnerActivation, input: ActivateProspectTenantInput): Promise<{ user: FirebaseActivationUser; created: boolean }> {
+  return getOrCreateFirebaseOwner(auth, { email: input.ownerEmail, displayName: input.ownerDisplayName });
 }
 
 /**

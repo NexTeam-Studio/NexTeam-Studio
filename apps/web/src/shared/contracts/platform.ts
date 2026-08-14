@@ -19,6 +19,13 @@ export interface PlatformTenantRow {
     status: string;
     stripeSubscriptionId?: string;
   } | null;
+  subscriptionDisplay?: {
+    name: string;
+    status: string;
+    monthlyUsd: number;
+    annualUsd: number;
+  };
+  logoVersion?: string;
   adapterStatuses: Array<{
     adapter: string;
     provider: string;

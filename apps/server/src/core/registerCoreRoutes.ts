@@ -9,6 +9,7 @@ import type { ServerRuntime } from "../app/runtime.js";
 import { configuredTenantId } from "./tenantConfig.js";
 import { registerWorkspaceLinkRoutes } from "../auth/workspaceLinkRoutes.js";
 import { requireAccessContext } from "../auth/accessContext.js";
+import { registerWorkspaceLinkRoutes } from "../auth/workspaceLinkRoutes.js";
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
