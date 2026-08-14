@@ -671,6 +671,8 @@ export function NexOpsJobsPage(props: {
   }
 
   async function loadDetail(jobId: string): Promise<void> {
+    setActiveVisitDocumentsId("");
+    setJobDocumentsOpen(false);
     if (!jobId) {
       setDetail(null);
       setBookingPreview(null);
