@@ -82,6 +82,7 @@ export interface PrepareCustomerDocumentPackageDeliveryInput {
   tenantId: string;
   jobId: string;
   artifacts: Array<{ artifactId: string; source: "nexdocs" | "nexcam" | "generated"; kind: string; label: string; fileName: string; visitId?: string | undefined }>;
+  recipient?: string | undefined;
 }
 
 export interface CustomerDocumentPackageDeliveryPreview {
@@ -524,7 +525,7 @@ export class JobLifecycleService {
       }
     });
     const attempts = await this.deps.lifecycleRepository.listCustomerDocumentPackageDeliveryAttempts(input.tenantId, input.jobId);
-    const recipient = pkg.recipient.email?.trim() || job.client?.emails?.[0]?.trim();
+    const recipient = input.recipient?.trim() || pkg.recipient.email?.trim() || job.client?.emails?.[0]?.trim();
     return {
       package: pkg,
       job,
@@ -538,7 +539,8 @@ export class JobLifecycleService {
   }
 
   async sendCustomerDocumentPackageDelivery(input: SendCustomerDocumentPackageDeliveryInput): Promise<CustomerDocumentPackageDeliveryPreview> {
-    const preview = await this.prepareCustomerDocumentPackageDelivery({ tenantId: input.tenantId, jobId: input.jobId, artifacts: input.artifacts });
+    const recipient = input.recipient.trim();
+    const preview = await this.prepareCustomerDocumentPackageDelivery({ tenantId: input.tenantId, jobId: input.jobId, artifacts: input.artifacts, recipient });
     if (preview.package.manifestStatus !== "draft") {
       throw new RailError("Only a draft closeout package can be sent for review.", { provider: "native", op: "sendCustomerDocumentPackageDelivery", status: 409 });
     }
@@ -550,7 +552,6 @@ export class JobLifecycleService {
     if (selectedKeys.size !== packageKeys.size || [...selectedKeys].some((key) => !packageKeys.has(key))) {
       throw new RailError("Save the package selection before sending it.", { provider: "native", op: "sendCustomerDocumentPackageDelivery", status: 409 });
     }
-    const recipient = input.recipient.trim();
     const subject = input.subject.trim();
     const bodyText = input.bodyText.trim();
     if (!recipient || !subject || !bodyText) {

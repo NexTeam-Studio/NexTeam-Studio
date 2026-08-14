@@ -186,6 +186,20 @@ test("closeout delivery records a separate email attempt against the saved artif
   assert.ok(fixture.emittedEvents.some((event) => event.type === "closeout.package_delivery_sent"));
 });
 
+test("closeout delivery accepts an approved manual recipient when the saved package and client have no email", async () => {
+  const fixture = makeFixture({ clients: [{ ...clientRecord(), emails: [] }] });
+  const job = await fixture.jobLifecycleService.createJob({ tenantId: "aquatrace", clientId: "client_1", title: "Manual recipient closeout delivery" });
+  const artifact = { artifactId: "nexdocs_manual_recipient_file", source: "nexdocs", kind: "upload", label: "Inspection.pdf", fileName: "Inspection.pdf" };
+  const selected = [{ artifactId: artifact.artifactId, source: artifact.source, kind: artifact.kind }];
+  await fixture.jobLifecycleService.saveCustomerDocumentPackageSelection({ tenantId: "aquatrace", jobId: job.id, actorId: "owner_1", selectedArtifactRefs: selected });
+  const before = await fixture.jobLifecycleService.prepareCustomerDocumentPackageDelivery({ tenantId: "aquatrace", jobId: job.id, artifacts: [artifact] });
+  assert.equal(before.email.available, false);
+  const after = await fixture.jobLifecycleService.sendCustomerDocumentPackageDelivery({ tenantId: "aquatrace", jobId: job.id, actorId: "owner_1", recipient: "staging@example.test", subject: "Closeout ready", bodyText: "Your package is ready.", selectedArtifactRefs: selected, artifacts: [artifact] });
+  assert.equal(fixture.sentEmails.length, 1);
+  assert.equal(after.attempts[0].recipient, "staging@example.test");
+  assert.equal(after.email.recipient, "staging@example.test");
+});
+
 test("closeout delivery refuses a direct send when the tenant template disables email", async () => {
   const fixture = makeFixture();
   const settings = await fixture.repository.getCrmSettings("aquatrace");
