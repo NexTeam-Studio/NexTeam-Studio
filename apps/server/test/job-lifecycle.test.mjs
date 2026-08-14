@@ -186,6 +186,22 @@ test("closeout delivery records a separate email attempt against the saved artif
   assert.ok(fixture.emittedEvents.some((event) => event.type === "closeout.package_delivery_sent"));
 });
 
+test("closeout delivery refuses a direct send when the tenant template disables email", async () => {
+  const fixture = makeFixture();
+  const settings = await fixture.repository.getCrmSettings("aquatrace");
+  await fixture.repository.saveCrmSettings({
+    ...settings,
+    communicationTemplates: settings.communicationTemplates.map((template) => template.category === "customer_document_package" ? { ...template, emailEnabled: false } : template)
+  });
+  const job = await fixture.jobLifecycleService.createJob({ tenantId: "aquatrace", clientId: "client_1", title: "Disabled closeout delivery" });
+  const artifact = { artifactId: "nexdocs_disabled_file", source: "nexdocs", kind: "upload", label: "Inspection.pdf", fileName: "Inspection.pdf" };
+  const selected = [{ artifactId: artifact.artifactId, source: artifact.source, kind: artifact.kind }];
+  await fixture.jobLifecycleService.saveCustomerDocumentPackageSelection({ tenantId: "aquatrace", jobId: job.id, actorId: "owner_1", selectedArtifactRefs: selected });
+  await assert.rejects(() => fixture.jobLifecycleService.sendCustomerDocumentPackageDelivery({ tenantId: "aquatrace", jobId: job.id, actorId: "owner_1", recipient: "staging@example.test", subject: "Closeout ready", bodyText: "Your package is ready.", selectedArtifactRefs: selected, artifacts: [artifact] }), /disabled/i);
+  assert.equal(fixture.sentEmails.length, 0);
+  assert.equal((await fixture.lifecycleRepository.listCustomerDocumentPackageDeliveryAttempts("aquatrace", job.id)).length, 0);
+});
+
 test("request and quote conversions land as Unscheduled and invoice reminders clear only by invoice or dismissal", async () => {
   const fixture = makeFixture();
 

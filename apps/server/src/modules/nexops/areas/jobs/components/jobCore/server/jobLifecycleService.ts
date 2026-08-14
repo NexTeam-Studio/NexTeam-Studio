@@ -556,7 +556,11 @@ export class JobLifecycleService {
     if (!recipient || !subject || !bodyText) {
       throw new RailError("Recipient, subject, and message are required before sending.", { provider: "native", op: "sendCustomerDocumentPackageDelivery", status: 400 });
     }
-    if (!this.deps.commsRail?.sendAdapter) {
+    if (!preview.email.available) {
+      throw new RailError(preview.email.unavailableReason ?? "Email delivery is unavailable for this Closeout package.", { provider: "native", op: "sendCustomerDocumentPackageDelivery", status: 409 });
+    }
+    const sendAdapter = this.deps.commsRail?.sendAdapter;
+    if (!sendAdapter) {
       throw new RailError("Email delivery is not configured for this tenant.", { provider: "native", op: "sendCustomerDocumentPackageDelivery", status: 501 });
     }
     const manifest = [
@@ -566,9 +570,9 @@ export class JobLifecycleService {
       "Selected authoritative artifacts:",
       ...preview.selectedArtifacts.map((artifact) => `- ${artifact.fileName || artifact.label} | ${artifact.kind} | ${artifact.source}${artifact.visitId ? ` | Visit ${artifact.visitId}` : ""}`)
     ].join("\n");
-    const receipt = await this.deps.commsRail.sendAdapter.sendEmail({
+    const receipt = await sendAdapter.sendEmail({
       tenantId: input.tenantId,
-      mailbox: this.deps.commsRail.sendAdapter.mailbox,
+      mailbox: sendAdapter.mailbox,
       to: [recipient],
       ...(input.copyTarget?.trim() && input.sendCopy !== false ? { cc: [input.copyTarget.trim()] } : {}),
       subject,
