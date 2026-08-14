@@ -649,6 +649,8 @@ export function NexOpsJobsPage(props: {
   const [detailPaymentSchedule, setDetailPaymentSchedule] = useState<PaymentScheduleDraft>(() => blankPaymentSchedule());
   const [bookingPreview, setBookingPreview] = useState<BookingConfirmationPreview | null>(null);
   const [bookingDraft, setBookingDraft] = useState<BookingConfirmationDraft | null>(null);
+  const jobDetailRef = React.useRef<HTMLElement | null>(null);
+  const mobileDetailFocusJobIdRef = React.useRef("");
   const [bookingSheetOpen, setBookingSheetOpen] = useState(false);
   const [bookingBusy, setBookingBusy] = useState(false);
   const [reviewSequences, setReviewSequences] = useState<ReviewSequenceRecord[]>([]);
@@ -995,6 +997,22 @@ export function NexOpsJobsPage(props: {
   useEffect(() => {
     void loadDetail(selectedJobId);
   }, [selectedJobId]);
+
+  useEffect(() => {
+    if (!detail?.id || mobileDetailFocusJobIdRef.current !== detail.id || !window.matchMedia("(max-width: 1080px)").matches) {
+      return;
+    }
+    mobileDetailFocusJobIdRef.current = "";
+    const detailElement = jobDetailRef.current;
+    if (!detailElement) {
+      return;
+    }
+    detailElement.focus({ preventScroll: true });
+    detailElement.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start"
+    });
+  }, [detail?.id]);
 
   useEffect(() => {
     if (!filteredJobs.length) {
@@ -1555,6 +1573,11 @@ export function NexOpsJobsPage(props: {
     }
   }
 
+  function selectJobFromRoster(jobId: string): void {
+    mobileDetailFocusJobIdRef.current = jobId;
+    setSelectedJobId(jobId);
+  }
+
   return (
     <section className="nexops-module-page">
       <header className="nexops-page-heading">
@@ -1697,7 +1720,7 @@ export function NexOpsJobsPage(props: {
                 key={job.id}
                 type="button"
                 className={`nexops-jobs-list-item${job.id === selectedJobId ? " active" : ""}`}
-                onClick={() => setSelectedJobId(job.id)}
+                onClick={() => selectJobFromRoster(job.id)}
               >
                 <div>
                   <strong>{job.title}</strong>
@@ -1715,7 +1738,7 @@ export function NexOpsJobsPage(props: {
         </article>
       </section>
 
-      <section className="nexops-two-column">
+      <section className="nexops-two-column nexops-jobs-detail-shell" ref={jobDetailRef} tabIndex={-1} aria-label="Job details">
         <article className="nexops-module-card">
           <div className="nexops-jobs-card-heading">
             <div>
