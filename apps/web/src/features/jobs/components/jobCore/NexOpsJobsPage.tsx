@@ -547,6 +547,7 @@ export function NexOpsJobsPage(props: {
   const [visitTitle, setVisitTitle] = useState("");
   const [visitDate, setVisitDate] = useState("");
   const [visitStartTime, setVisitStartTime] = useState("");
+  const [visitEndDate, setVisitEndDate] = useState("");
   const [visitEndTime, setVisitEndTime] = useState("");
   const [actionBusy, setActionBusy] = useState<JobAction | null>(null);
   const [statusFilter, setStatusFilter] = useState<JobFilter>("All");
@@ -1057,8 +1058,14 @@ export function NexOpsJobsPage(props: {
 
   async function scheduleVisit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (!detail || !visitDate || !visitStartTime || !visitEndTime) {
-      setDetailStatus("Pick a date, start time, and end time before booking the visit.");
+    if (!detail || !visitDate || !visitStartTime || !visitEndDate || !visitEndTime) {
+      setDetailStatus("Pick start and end dates and times before booking the visit.");
+      return;
+    }
+    const start = new Date(`${visitDate}T${visitStartTime}`);
+    const end = new Date(`${visitEndDate}T${visitEndTime}`);
+    if (!(end.getTime() > start.getTime())) {
+      setDetailStatus("Visit end must be after the start.");
       return;
     }
     setActionBusy("close");
@@ -1069,8 +1076,8 @@ export function NexOpsJobsPage(props: {
         body: JSON.stringify({
           tenantId: props.tenantId,
           title: visitTitle.trim() || detail.title,
-          start: new Date(`${visitDate}T${visitStartTime}`).toISOString(),
-          end: new Date(`${visitDate}T${visitEndTime}`).toISOString()
+          start: start.toISOString(),
+          end: end.toISOString()
         })
       }).then((response) => response.json() as Promise<JobMutationResponse>);
       if (!body.ok) {
@@ -1699,6 +1706,7 @@ export function NexOpsJobsPage(props: {
                   <input aria-label="Visit Title" value={visitTitle} onChange={(event) => setVisitTitle(event.target.value)} placeholder="Visit Title" />
                   <input aria-label="Visit Date" type="date" value={visitDate} onChange={(event) => setVisitDate(event.target.value)} />
                   <input aria-label="Visit Start Time" type="time" value={visitStartTime} onChange={(event) => setVisitStartTime(event.target.value)} />
+                  <input aria-label="Visit End Date" type="date" value={visitEndDate} onChange={(event) => setVisitEndDate(event.target.value)} />
                   <input aria-label="Visit End Time" type="time" value={visitEndTime} onChange={(event) => setVisitEndTime(event.target.value)} />
                   <button type="submit" disabled={actionBusy !== null}>Book Visit</button>
                 </form>
