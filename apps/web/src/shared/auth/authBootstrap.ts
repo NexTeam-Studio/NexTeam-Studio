@@ -71,6 +71,7 @@ function clearLocalSessionToken(): void {
 
 function readNexCommandSessionToken(): string | null { try { return window.sessionStorage.getItem(NEXCOMMAND_SESSION_TOKEN_KEY); } catch { return null; } }
 function clearNexCommandSession(): void { try { window.sessionStorage.removeItem(NEXCOMMAND_SESSION_TOKEN_KEY); window.sessionStorage.removeItem(NEXCOMMAND_FRESH_AUTH_KEY); } catch { /* session storage is optional */ } }
+export function invalidateNexCommandSession(): void { clearNexCommandSession(); }
 export function markFreshNexCommandAuthentication(): void { try { window.sessionStorage.setItem(NEXCOMMAND_FRESH_AUTH_KEY, "1"); } catch { /* session storage is optional */ } }
 export function hasFreshNexCommandAuthentication(): boolean { try { return window.sessionStorage.getItem(NEXCOMMAND_FRESH_AUTH_KEY) === "1"; } catch { return false; } }
 export function hasNexCommandSession(): boolean { return Boolean(readNexCommandSessionToken()); }

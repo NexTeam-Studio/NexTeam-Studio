@@ -4,6 +4,7 @@ import { renderPlatformSubroute } from "./platformSubroutes";
 import { resolvePlatformSubroute } from "./resolvePlatformSubroute";
 import { usePathname } from "../../../shared/router/usePathname";
 import { NexCommandRoute } from "../../platformOverview/routes/NexCommandRoute";
+import { invalidateNexCommandSession } from "../../../shared/auth/authBootstrap";
 
 export function PlatformRoute(): React.ReactElement {
   const pathname = usePathname();
@@ -28,7 +29,15 @@ export function PlatformRoute(): React.ReactElement {
         setProfileGate("incomplete");
         if (pathname !== "/platform/profile-completion") navigateToProfileCompletion();
       })
-      .catch(() => { if (active) setProfileGate("error"); });
+      .catch(() => {
+        if (!active) return;
+        // A rejected platform-profile request means the short-lived console
+        // session can no longer authorize this route. Clear only that marker
+        // and return to the normal fresh NexCommand sign-in screen.
+        invalidateNexCommandSession();
+        window.history.replaceState({}, "", "/nexcommand/sign-in");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      });
     return () => { active = false; };
   }, [pathname]);
 
