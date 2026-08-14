@@ -20,6 +20,7 @@ import {
   type SignatureCaptureValue
 } from "../../../../shared/signature/NexOpsSignatureCapture";
 import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
+import { NexDocsClientWorkspace } from "../../../nexdocs/areas/clientWorkspace/components/NexDocsClientWorkspace";
 
 type JobStatus = "Upcoming" | "Today" | "Late" | "Unscheduled" | "Action Required" | "Requires Invoicing" | "Archived";
 type JobAction = "close" | "invoice" | "close_and_invoice" | "dismiss_invoice_reminder";
@@ -574,6 +575,7 @@ export function NexOpsJobsPage(props: {
   const [visitStartTime, setVisitStartTime] = useState("");
   const [visitEndDate, setVisitEndDate] = useState("");
   const [visitEndTime, setVisitEndTime] = useState("");
+  const [activeVisitDocumentsId, setActiveVisitDocumentsId] = useState("");
   const [actionBusy, setActionBusy] = useState<JobAction | null>(null);
   const [statusFilter, setStatusFilter] = useState<JobFilter>("All");
   const [jobSearch, setJobSearch] = useState("");
@@ -1752,10 +1754,24 @@ export function NexOpsJobsPage(props: {
                         {visit.status !== "complete" ? (
                           <button type="button" disabled={actionBusy !== null} onClick={() => void completeVisit(visit.id)}>Complete</button>
                         ) : null}
+                        <button type="button" className="nexops-link-button" onClick={() => setActiveVisitDocumentsId(visit.id)}>Files / Documents</button>
                       </div>
                     </div>
                   ))}
                 </div>
+                {activeVisitDocumentsId ? (
+                  <NexDocsClientWorkspace
+                    tenantId={props.tenantId}
+                    clientId={detail.clientId}
+                    clientName={detail.client?.name ?? "this client"}
+                    role={props.role}
+                    propertyId={detail.propertyId}
+                    jobId={detail.id}
+                    visitId={activeVisitDocumentsId}
+                    contextLabel={`Visit ${activeVisitDocumentsId}`}
+                    nexcamCounts={{ media: fieldDocsMedia.length, reports: fieldDocsReports.length, signedDocuments: signedDocuments.length }}
+                  />
+                ) : null}
               </div>
 
               <details className="nexops-quote-panel nexops-density-disclosure-panel">

@@ -148,6 +148,10 @@ export interface NexDocsClientWorkspaceProps {
     reports: number;
     signedDocuments: number;
   };
+  propertyId?: string;
+  jobId?: string;
+  visitId?: string;
+  contextLabel?: string;
 }
 
 function formatDateTime(value: string): string {
@@ -274,7 +278,7 @@ export function NexDocsClientWorkspace(props: NexDocsClientWorkspaceProps): Reac
     setUploadQueue([]);
     setActiveSection("folders");
     void refreshLibrary("");
-  }, [props.tenantId, props.clientId]);
+  }, [props.tenantId, props.clientId, props.propertyId, props.jobId, props.visitId]);
 
   async function refreshLibrary(query = searchQuery): Promise<void> {
     setBusy((current) => current || "refresh");
@@ -400,6 +404,9 @@ export function NexDocsClientWorkspace(props: NexDocsClientWorkspaceProps): Reac
           tenantId: props.tenantId,
           ...(uploadFolderId ? { folderId: uploadFolderId } : {}),
           ...(uploadLabel.trim() ? { label: uploadLabel.trim() } : {}),
+          ...(props.propertyId ? { propertyId: props.propertyId } : {}),
+          ...(props.jobId ? { jobId: props.jobId } : {}),
+          ...(props.visitId ? { visitId: props.visitId } : {}),
           fileName: uploadFile.name,
           mimeType: uploadFile.type || "application/octet-stream",
           fileBase64
@@ -521,12 +528,13 @@ export function NexDocsClientWorkspace(props: NexDocsClientWorkspaceProps): Reac
   }
 
   function renderEntryList(entries: NexDocsLibraryEntry[], emptyTitle: string, emptyDetail: string): React.ReactElement {
-    if (!entries.length) {
+    const scopedEntries = entries.filter((entry) => (!props.jobId || entry.jobId === props.jobId) && (!props.visitId || entry.visitId === props.visitId) && (!props.propertyId || entry.propertyId === props.propertyId));
+    if (!scopedEntries.length) {
       return <NexopsEmptyState kind="fresh" title={emptyTitle} detail={emptyDetail} />;
     }
     return (
       <ul className="nexdocs-entry-list">
-        {entries.map((entry) => (
+        {scopedEntries.map((entry) => (
           <li key={entry.id} className="nexdocs-entry-card">
             <div className="nexdocs-entry-main">
               <div>
@@ -689,8 +697,8 @@ export function NexDocsClientWorkspace(props: NexDocsClientWorkspaceProps): Reac
   return (
     <NexopsSectionCard
       eyebrow="NexDocs"
-      title="Unified client library"
-      detail="One search across custom folders, office PDFs, and the unchanged NexCam field rail."
+      title={props.contextLabel ?? "Unified client library"}
+      detail={props.contextLabel ? "Files created here inherit the selected client, job, and visit context automatically." : "One search across custom folders, office PDFs, and the unchanged NexCam field rail."}
       actions={<NexopsStatusPill label={`${library?.counts.total ?? 0} total`} tone="quiet" />}
       className="nexdocs-workspace"
     >
@@ -740,7 +748,7 @@ export function NexDocsClientWorkspace(props: NexDocsClientWorkspaceProps): Reac
           <div className="nexdocs-inline-panel-header">
             <div>
               <strong>Upload into NexDocs</strong>
-              <p>Staff uploads land here immediately and show in NexPortal unless you later hide them per document.</p>
+              <p>{props.contextLabel ? `This file will stay linked to ${props.contextLabel}.` : "Staff uploads land here immediately and show in NexPortal unless you later hide them per document."}</p>
             </div>
           </div>
           <div className="nexdocs-inline-grid">
