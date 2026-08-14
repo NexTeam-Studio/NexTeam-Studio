@@ -21,11 +21,11 @@ test("persisted role overrides, disabled profiles, ownership protections, and pl
   try {
     const base = `http://127.0.0.1:${server.address().port}`;
     const headers = (token) => ({ authorization: `Bearer ${token}`, "content-type": "application/json" });
-    const create = async (authUid, role, overrides = { grant: [], deny: [] }) => fetch(`${base}/api/platform/admin/team`, { method: "POST", headers: headers("owner"), body: JSON.stringify({ authUid, firstName: authUid, lastName: "User", email: `${authUid}@example.test`, role, capabilityOverrides: overrides }) });
+    const create = async (authUid, role, overrides = { grant: [], deny: [] }) => fetch(`${base}/api/platform/admin/team`, { method: "POST", headers: headers("owner"), body: JSON.stringify({ authUid, firstName: authUid, lastName: "User", email: `${authUid}@example.test`, profilePhotoRef: `media/platform/${authUid}`, twoFactorState: "ENROLLED", role, capabilityOverrides: overrides }) });
     const owner = (await (await create("owner", "Owner")).json()).user;
     const admin = (await (await create("admin", "Support", { grant: [], deny: ["platform.team.manage"] })).json()).user;
     assert.equal((await fetch(`${base}/api/platform/admin/team`, { headers: headers("tenant") })).status, 403);
-    assert.equal((await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers: headers("admin"), body: JSON.stringify({ authUid: "x", firstName: "X", lastName: "X", email: "x@example.test", role: "Read Only" }) })).status, 403);
+    assert.equal((await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers: headers("admin"), body: JSON.stringify({ authUid: "x", firstName: "X", lastName: "X", email: "x@example.test", profilePhotoRef: "media/platform/x", twoFactorState: "NOT_ENROLLED", role: "Read Only" }) })).status, 403);
     assert.equal((await fetch(`${base}/api/platform/admin/team/${owner.id}/disable`, { method: "POST", headers: headers("admin") })).status, 403);
     assert.equal((await fetch(`${base}/api/platform/admin/summary`, { headers: headers("admin") })).status, 200);
     assert.equal((await fetch(`${base}/api/platform/admin/prospects`, { method: "POST", headers: headers("admin"), body: JSON.stringify({ businessName: "Not persisted", industry: "test" }) })).status, 403);

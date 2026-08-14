@@ -8,6 +8,8 @@ import { createStripeTestSubscription } from "../dist/platform/billing.js";
 import {
   createJobAccessLink,
   buildTenantUser,
+  capabilitiesForTenantUser,
+  capabilitiesWithinRoleCeiling,
   customClaimsForTenantUser,
   upsertTenantUser,
   verifyJobAccessToken
@@ -204,6 +206,9 @@ test("tenant users are provisioned explicitly and produce Firebase custom claims
     tenantCapabilities: ["team.view", "team.manage", "team.invite"],
     roles: ["office_admin"]
   });
+  assert.throws(() => buildTenantUser({ tenantId: "aquatrace", displayName: "Over-granted admin", role: "OFFICE_ADMIN", capabilities: ["tenant.audit.read"] }), /role ceiling/);
+  assert.deepEqual(capabilitiesWithinRoleCeiling("OFFICE_ADMIN", []), []);
+  assert.deepEqual(capabilitiesForTenantUser({ role: "OFFICE_ADMIN", capabilities: ["team.manage", "tenant.audit.read"] }), ["team.manage"]);
 });
 
 test("job access links verify only one linked job and fail closed after revoke", async () => {
@@ -609,6 +614,13 @@ test("platform routes manage tenant users and job links without leaking token ha
     assert.equal(createdUser.ok, true);
     assert.equal(createdUser.claimsPreview.tenantRole, "OFFICE_ADMIN");
 
+    const ownerWrite = await fetch(`${base}/api/platform/tenants/aquatrace/users`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: "owner_denied", displayName: "Owner Denied", role: "OWNER" })
+    });
+    assert.equal(ownerWrite.status, 403);
+
     const claims = await fetch(`${base}/api/platform/tenants/aquatrace/users/office_admin_1/custom-claims`, {
       method: "POST"
     }).then((response) => response.json());
@@ -665,6 +677,35 @@ test("platform routes manage tenant users and job links without leaking token ha
   } finally {
     server.close();
   }
+});
+
+test("NexCommand alone lists existing tenant members and atomically transfers a tenant owner", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("tenant-a", "suite"), defaultTenant("tenant-b", "suite")]);
+  const owner = await upsertTenantUser(repository, { tenantId: "tenant-a", id: "owner-a", authUid: "owner-auth", email: "owner@example.test", displayName: "Owner A", role: "OWNER", now: "2026-08-12T12:00:00.000Z" });
+  const office = await upsertTenantUser(repository, { tenantId: "tenant-a", id: "office-a", authUid: "office-auth", email: "office@example.test", displayName: "Office A", role: "OFFICE_ADMIN", now: "2026-08-12T12:00:00.000Z" });
+  await upsertTenantUser(repository, { tenantId: "tenant-b", id: "office-b", authUid: "office-b-auth", email: "office-b@example.test", displayName: "Office B", role: "OFFICE_ADMIN", now: "2026-08-12T12:00:00.000Z" });
+  const app = express(); app.use(express.json());
+  registerPlatformRoutes(app, { repository, storage: null, env: { NEXI_FIREBASE_AUTH_REQUIRED: "true" }, platformOperatorAuth: { async verifyIdToken(token) { return token === "operator" ? { uid: "operator", platform_operator: true } : { uid: "owner-auth", tenantRole: "OWNER", tenantId: "tenant-a" }; } } });
+  const server = app.listen(0);
+  try {
+    const base = `http://127.0.0.1:${server.address().port}`;
+    assert.equal((await fetch(`${base}/api/platform/admin/tenants/tenant-a/members`)).status, 401);
+    assert.equal((await fetch(`${base}/api/platform/admin/tenants/tenant-a/members`, { headers: { authorization: "Bearer tenant-owner" } })).status, 403);
+    const listed = await fetch(`${base}/api/platform/admin/tenants/tenant-a/members`, { headers: { authorization: "Bearer operator" } });
+    assert.equal(listed.status, 200);
+    const body = await listed.json();
+    assert.equal(body.currentOwner.id, owner.id);
+    assert.deepEqual(body.users.find((member) => member.id === office.id).effectiveCapabilities, ["team.view", "team.manage", "team.invite"]);
+    assert.equal((await fetch(`${base}/api/platform/admin/tenants/tenant-a/owner`, { method: "POST", headers: { authorization: "Bearer tenant-owner", "content-type": "application/json" }, body: JSON.stringify({ toUserId: office.id }) })).status, 403);
+    const transferred = await fetch(`${base}/api/platform/admin/tenants/tenant-a/owner`, { method: "POST", headers: { authorization: "Bearer operator", "content-type": "application/json" }, body: JSON.stringify({ toUserId: office.id }) });
+    assert.equal(transferred.status, 200);
+    assert.equal((await transferred.json()).owner.id, office.id);
+    const members = await repository.listTenantUsers("tenant-a");
+    assert.deepEqual(members.filter((member) => member.role === "OWNER" && member.active).map((member) => member.id), [office.id]);
+    assert.equal(members.find((member) => member.id === owner.id).role, "OFFICE_ADMIN");
+    assert.equal((await repository.listTenantMembershipAudits("tenant-a")).some((audit) => audit.action === "member.owner_assigned" && audit.targetUserId === office.id && audit.detail.includes("NexCommand owner assignment")), true);
+    assert.equal((await fetch(`${base}/api/platform/admin/tenants/tenant-a/owner`, { method: "POST", headers: { authorization: "Bearer operator", "content-type": "application/json" }, body: JSON.stringify({ toUserId: "office-b" }) })).status, 404);
+  } finally { await new Promise((resolve) => server.close(resolve)); }
 });
 
 test("tenancy scanner catches the planted unscoped query fixture", () => {

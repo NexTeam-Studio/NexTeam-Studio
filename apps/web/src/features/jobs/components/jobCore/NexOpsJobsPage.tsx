@@ -527,6 +527,7 @@ export function NexOpsJobsPage(props: {
   onCrmMutation: () => void;
   onOpenInvoice?: (invoiceId: string) => void;
   focusedJobId?: string;
+  initialClientId?: string;
   initialFilter?: JobFilter;
 }): React.ReactElement {
   const [jobs, setJobs] = useState<JobSummary[]>([]);
@@ -534,7 +535,7 @@ export function NexOpsJobsPage(props: {
   const [detail, setDetail] = useState<JobDetail | null>(null);
   const [status, setStatus] = useState("Loading jobs...");
   const [detailStatus, setDetailStatus] = useState("Select a job to review visits and actions.");
-  const [createClientId, setCreateClientId] = useState(props.clients[0]?.id ?? "");
+  const [createClientId, setCreateClientId] = useState(() => props.initialClientId && props.clients.some((client) => client.id === props.initialClientId) ? props.initialClientId : props.clients[0]?.id ?? "");
   const [showInlineClientCreate, setShowInlineClientCreate] = useState(props.clients.length === 0);
   const [inlineClientDraft, setInlineClientDraft] = useState<InlineJobClientDraft>(() => blankInlineJobClientDraft());
   const [inlineClientBusy, setInlineClientBusy] = useState(false);

@@ -1,6 +1,15 @@
 {
   "indexes": [
     {
+      "collectionGroup": "splinterJobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "state", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" },
+        { "fieldPath": "id", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "agentSessions",
       "queryScope": "COLLECTION",
       "fields": [

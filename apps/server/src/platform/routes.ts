@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { RailError, addressSchema, type JobAccessScope, type Tenant, type TenantAdapterStatus, type TenantPlan } from "@nexteam/core";
@@ -181,10 +181,14 @@ const verifyJobAccessLinkSchema = z.object({
   token: z.string().min(16)
 });
 
-const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true, role: true, capabilityOverrides: true }).strict();
+const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, role: true, capabilityOverrides: true }).strict();
 const platformUserPatchSchema = platformUserInputSchema.omit({ authUid: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
-const platformSelfProfilePatchSchema = platformUserSchema.pick({ firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
+const platformSelfProfilePatchSchema = platformUserSchema.pick({ firstName: true, lastName: true, email: true, telephone: true, address: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const ownershipTransferSchema = z.object({ toUserId: z.string().min(1) }).strict();
+const tenantOwnerAssignmentSchema = z.object({ toUserId: z.string().min(1) }).strict();
+const PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+const profilePhotoContentTypes = ["image/png", "image/jpeg", "image/webp"] as const;
+type ProfilePhotoContentType = typeof profilePhotoContentTypes[number];
 
 export interface PlatformRouteDeps {
   repository: PlatformRepository;
@@ -270,7 +274,7 @@ async function requireNexCommandSession(req: Request, repository: PlatformReposi
   await repository.savePlatformSession({ ...session, lastActivityAt: now.toISOString() });
   const profile = await repository.getPlatformUserByAuthUid(session.actorUid);
   if (!profile || profile.accountStatus !== "ACTIVE") throw new RailError("An active NexTeam internal user profile is required for NexCommand.", { provider: "platform", op: "platformSession", status: 403 });
-  return { uid: session.actorUid, capabilities: resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) };
+  return { uid: session.actorUid, capabilities: profile.profilePhotoRef ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : ["platform.profile.self"] };
 }
 async function requireNexCommandSessionOrTestIdentity(req: Request, env: NodeJS.ProcessEnv, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }, strictSession = false): Promise<{ uid: string; capabilities: PlatformCapability[] }> {
   // The injected verifier is an isolated-test seam. Production has no override,
@@ -294,7 +298,7 @@ async function requireFirebasePlatformIdentity(req: Request, env: NodeJS.Process
     return { uid: decoded.uid, capabilities: claimedPlatformCapabilities(decoded) };
   }
   if (profile.accountStatus !== "ACTIVE") throw new RailError("Platform profile is disabled.", { provider: "platform", op: "platformAuth", status: 403 });
-  return { uid: decoded.uid, capabilities: resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) };
+  return { uid: decoded.uid, capabilities: profile.profilePhotoRef ? resolvePlatformCapabilities(profile.role, profile.capabilityOverrides) : ["platform.profile.self"] };
 }
 
 async function requirePlatformTeamCapability(req: Request, env: NodeJS.ProcessEnv, capability: PlatformCapability, repository: PlatformRepository, authOverride?: { verifyIdToken(token: string): Promise<DecodedIdToken> }): Promise<{ uid: string; capabilities: PlatformCapability[]; role?: string }> {
@@ -310,6 +314,32 @@ function sendRouteError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
   const message = error instanceof Error ? error.message : "Unknown platform route error";
   res.status(status).json({ ok: false, error: message });
+}
+
+function profilePhotoType(contentType: string | undefined, body: unknown): { contentType: ProfilePhotoContentType; extension: "png" | "jpg" | "webp" } {
+  const normalized = contentType?.split(";", 1)[0]?.trim().toLowerCase();
+  if (!profilePhotoContentTypes.includes(normalized as ProfilePhotoContentType) || !Buffer.isBuffer(body) || body.length === 0 || body.length > PROFILE_PHOTO_MAX_BYTES) {
+    throw new RailError("Profile photo must be a PNG, JPEG, or WebP image no larger than 5 MB.", { provider: "platform", op: "profilePhotoUpload", status: 400 });
+  }
+  const signatures: Record<ProfilePhotoContentType, (data: Buffer) => boolean> = {
+    "image/png": (data) => data.length >= 8 && data.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+    "image/jpeg": (data) => data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff,
+    "image/webp": (data) => data.length >= 12 && data.subarray(0, 4).equals(Buffer.from("RIFF")) && data.subarray(8, 12).equals(Buffer.from("WEBP"))
+  };
+  if (!signatures[normalized as ProfilePhotoContentType](body)) {
+    throw new RailError("Profile photo content does not match its declared image type.", { provider: "platform", op: "profilePhotoUpload", status: 400 });
+  }
+  return {
+    contentType: normalized as ProfilePhotoContentType,
+    extension: normalized === "image/png" ? "png" : normalized === "image/jpeg" ? "jpg" : "webp"
+  };
+}
+
+function assertOwnerIdentityIsImmutable(existing: PlatformUser, patch: Record<string, unknown>): void {
+  if (existing.role !== "Owner") return;
+  if ((typeof patch.email === "string" && patch.email !== existing.email) || typeof patch.firstName === "string" && patch.firstName !== existing.firstName || typeof patch.lastName === "string" && patch.lastName !== existing.lastName) {
+    throw new RailError("The protected Owner email and legal name can only change through a controlled identity-recovery process.", { provider: "platform", op: "platformOwnerIdentity", status: 403 });
+  }
 }
 
 function status(tenant: Tenant, adapter: TenantAdapterStatus["adapter"], provider: string, configured: boolean, detail?: string): TenantAdapterStatus {
@@ -413,11 +443,51 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const actor = await requirePlatformTeamCapability(req, env, "platform.profile.self", deps.repository, deps.platformOperatorAuth);
       const existing = await deps.repository.getPlatformUserByAuthUid(actor.uid);
       if (!existing) throw new RailError("An internal platform profile is required.", { provider: "platform", op: "platformSelfProfileUpdate", status: 404 });
+      if (Object.hasOwn(req.body ?? {}, "profilePhotoRef")) throw new RailError("Profile photos must be uploaded as image files.", { provider: "platform", op: "platformSelfProfileUpdate", status: 400 });
       const patch = platformSelfProfilePatchSchema.parse(req.body ?? {});
+      assertOwnerIdentityIsImmutable(existing, patch);
       const timestamp = new Date().toISOString();
       const user = await deps.repository.savePlatformUser({ ...existing, ...patch, updatedAt: timestamp, updatedBy: actor.uid } as PlatformUser);
       await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Self-service profile metadata updated.", timestamp));
       await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, "Platform self-service profile updated.", user.authUid, timestamp));
+      res.json({ ok: true, user });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  // Profile images are server-written, UID-scoped storage objects. The client
+  // never supplies the durable storage reference that completes this gate.
+  app.post("/api/platform/admin/team/me/profile-photo", express.raw({ type: [...profilePhotoContentTypes], limit: PROFILE_PHOTO_MAX_BYTES }), async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.profile.self", deps.repository, deps.platformOperatorAuth);
+      const existing = await deps.repository.getPlatformUserByAuthUid(actor.uid);
+      if (!existing) throw new RailError("An internal platform profile is required.", { provider: "platform", op: "profilePhotoUpload", status: 404 });
+      if (!deps.storage) throw new RailError("Firebase Storage is not configured for platform profile photos.", { provider: "firebase", op: "profilePhotoUpload", status: 503 });
+      const image = profilePhotoType(req.header("content-type"), req.body);
+      const uidPath = encodeURIComponent(actor.uid);
+      const storageRef = await deps.storage.writeImage(`platform-profiles/${uidPath}/profile.${image.extension}`, req.body as Buffer, image.contentType);
+      const timestamp = new Date().toISOString();
+      const user = await deps.repository.savePlatformUser({ ...existing, profilePhotoRef: storageRef, updatedAt: timestamp, updatedBy: actor.uid });
+      await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Self-service profile photo uploaded to UID-scoped platform storage.", timestamp));
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, "Platform self-service profile photo uploaded.", user.authUid, timestamp));
+      res.status(201).json({ ok: true, user: platformUserSummary(user) });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  // This narrowly scoped maintenance action is intentionally separate from
+  // authentication reads. It never accepts identity fields from the client.
+  app.post("/api/platform/admin/team/me/recover-protected-owner-identity", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.profile.self", deps.repository, deps.platformOperatorAuth);
+      const existing = await deps.repository.getPlatformUserByAuthUid(actor.uid);
+      if (!existing) throw new RailError("An internal platform profile is required.", { provider: "platform", op: "protectedOwnerRecovery", status: 404 });
+      const timestamp = new Date().toISOString();
+      const user = await deps.repository.recoverProtectedOwnerIdentity({
+        userId: existing.id,
+        actorUid: actor.uid,
+        now: timestamp,
+        audit: newPlatformUserAudit(existing.id, "platform_user.protected_owner_identity_recovered", actor.uid, "Controlled maintenance restored the protected Owner legal name.", timestamp)
+      });
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, "Controlled protected Owner identity maintenance completed.", user.authUid, timestamp));
       res.json({ ok: true, user });
     } catch (error) { sendRouteError(res, error); }
   });
@@ -456,7 +526,8 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const existing = await deps.repository.getPlatformUser(userId);
       if (!existing) throw new RailError("Platform user was not found.", { provider: "platform", op: "platformTeamUpdate", status: 404 });
       const patch = platformUserPatchSchema.parse(req.body ?? {});
-      if ((existing.role === "Owner" || patch.role === "Owner") && !actor.capabilities.includes("platform.ownership.manage")) throw new RailError("Only an Owner can change platform ownership.", { provider: "platform", op: "platformTeamUpdate", status: 403 });
+      assertOwnerIdentityIsImmutable(existing, patch);
+      if (existing.role === "Owner" || patch.role === "Owner") throw new RailError("Platform ownership can only change through the controlled ownership-transfer action.", { provider: "platform", op: "platformTeamUpdate", status: 403 });
       const timestamp = new Date().toISOString();
       const user = await deps.repository.savePlatformUser({ ...existing, ...patch, updatedAt: timestamp, updatedBy: actor.uid } as PlatformUser);
       await deps.repository.appendPlatformUserAudit(newPlatformUserAudit(user.id, "platform_user.updated", actor.uid, "Profile metadata updated.", timestamp));
@@ -529,6 +600,46 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
     } catch (error) {
       sendRouteError(res, error);
     }
+  });
+
+  // NexCommand is the only ownership authority. Tenant claims and tenant-local
+  // roles are deliberately not consulted by these routes.
+  app.get("/api/platform/admin/tenants/:tenantId/members", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.view", deps.repository, deps.platformOperatorAuth);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      const tenant = await deps.repository.getTenant(tenantId);
+      if (!tenant) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTenantMembers", status: 404 });
+      const users = await deps.repository.listTenantUsers(tenantId);
+      const owners = users.filter((member) => member.role === "OWNER" && member.active);
+      if (owners.length > 1) throw new RailError("Tenant ownership is inconsistent and cannot be managed until repaired.", { provider: "platform", op: "nexCommandTenantMembers", status: 409 });
+      // Firebase UIDs are not needed by the management UI. Reading membership
+      // identity is platform-authorized activity and is retained in the audit log.
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand viewed tenant ${tenantId} membership authority.`, undefined, new Date().toISOString()));
+      res.json({ ok: true, tenantId, currentOwner: owners[0] ?? null, users: users.map((member) => ({ id: member.id, email: member.email ?? null, displayName: member.displayName, role: member.role, active: member.active, effectiveCapabilities: customClaimsForTenantUser(member).tenantCapabilities })) });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.post("/api/platform/admin/tenants/:tenantId/owner", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.manage", deps.repository, deps.platformOperatorAuth);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      if (!await deps.repository.getTenant(tenantId)) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTenantOwner", status: 404 });
+      const input = tenantOwnerAssignmentSchema.parse(req.body ?? {});
+      const selected = await deps.repository.getTenantUser(tenantId, input.toUserId);
+      if (!selected) throw new RailError("Selected owner must already be a tenant member.", { provider: "platform", op: "nexCommandTenantOwner", status: 404 });
+      if (!selected.active) throw new RailError("Selected owner must be active.", { provider: "platform", op: "nexCommandTenantOwner", status: 409 });
+      const now = new Date().toISOString();
+      const result = await deps.repository.assignTenantOwner({
+        tenantId,
+        toUserId: selected.id,
+        actorId: actor.uid,
+        now,
+        audit: { id: `membership_audit_${randomUUID()}`, tenantId, action: "member.owner_assigned", actorId: actor.uid, targetUserId: selected.id, detail: "NexCommand owner assignment; existing active owner was atomically demoted to OFFICE_ADMIN when present.", createdAt: now }
+      });
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand assigned tenant ${tenantId} owner to existing member ${selected.id}.`, selected.authUid, now));
+      res.json({ ok: true, tenantId, owner: { id: result.owner.id, email: result.owner.email ?? null, displayName: result.owner.displayName, role: result.owner.role, active: result.owner.active, effectiveCapabilities: customClaimsForTenantUser(result.owner).tenantCapabilities }, previousOwnerId: result.previousOwner?.id ?? null });
+    } catch (error) { sendRouteError(res, error); }
   });
 
   app.get("/api/platform/admin/live-build-status", async (req: Request, res: Response) => {
@@ -1294,9 +1405,8 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       }
       const access = await requireTenantCapability(req, env, "team.manage", { requestedTenantId: tenantId, op: "tenantUserUpsert" });
       const input = tenantUserBodySchema.parse(req.body ?? {});
-      if (input.role === "OWNER" && access.role !== "OWNER") {
-        throw new RailError("Only an owner can assign the owner role.", { provider: "platform", op: "tenantUserUpsert", status: 403 });
-      }
+      const existing = input.id ? await deps.repository.getTenantUser(tenantId, input.id) : null;
+      if (input.role === "OWNER" || existing?.role === "OWNER") throw new RailError("Tenant ownership can only be assigned or changed through NexCommand.", { provider: "platform", op: "tenantUserUpsert", status: 403 });
       if ((input.capabilities ?? []).some((capability) => !access.capabilities.includes(capability))) {
         throw new RailError("You cannot grant a capability you do not hold.", { provider: "platform", op: "tenantUserUpsert", status: 403 });
       }
@@ -1328,6 +1438,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       if (!user) {
         throw new RailError("Tenant user was not found.", { provider: "platform", op: "tenantUserClaims", status: 404 });
       }
+      if (user.role === "OWNER") throw new RailError("Tenant ownership can only be managed through NexCommand.", { provider: "platform", op: "tenantUserClaims", status: 403 });
       const claims = customClaimsForTenantUser(user);
       const auth = getAdminAuth(env);
       const canApply = Boolean(auth && user.authUid && env.NEXI_FIREBASE_AUTH_REQUIRED !== "false");

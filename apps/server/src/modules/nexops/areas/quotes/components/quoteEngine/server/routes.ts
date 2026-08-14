@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import type { Quote } from "@nexteam/core";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
-import { createInvoiceFromQuoteBodySchema, createQuoteRouteBodySchema, quoteManualApprovalBodySchema, quoteSendBodySchema, updateQuoteRouteBodySchema } from "./routeSchemas.js";
+import { createInvoiceFromQuoteBodySchema, createQuoteRouteBodySchema, quoteArchiveBodySchema, quoteManualApprovalBodySchema, quoteSendBodySchema, updateQuoteRouteBodySchema } from "./routeSchemas.js";
 import { portalSessionQuoteApprovalBodySchema, portalSessionQuoteChangeRequestBodySchema } from "../../../../../../nexportal/components/portalCore/server/routeSchemas.js";
 import { approveQuoteAfterDepositPreflight } from "../domain/atomicDepositApproval.js";
 
@@ -257,6 +257,30 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         payload: { quoteId: approved.id, clientId: approved.clientId, approvedAt, approvedBy: access.tenantUserId, approvedByRole: access.role }
       });
       res.json({ ok: true, tenantId, actorRole: access.role, quote: approved });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/crm/quotes/:id/archive", async (req: Request, res: Response) => {
+    try {
+      const quoteId = req.params.id;
+      if (!quoteId) {
+        throw new RailError("Quote id is required.", { provider: "native", op: "archiveQuote", status: 400 });
+      }
+      const input = quoteArchiveBodySchema.parse(req.body);
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      const access = await requireQuoteAccess(req, tenantId, "archiveQuote");
+      const { provider, quote } = await getQuoteAndClient(tenantId, quoteId);
+      if (quote.status !== "draft") {
+        throw new RailError("Only draft quotes can be archived.", { provider: "native", op: "archiveQuote", status: 409 });
+      }
+      const archivedAt = new Date().toISOString();
+      const archived = await provider.updateQuote(quote.id, {
+        status: "archived",
+        updatedAt: archivedAt
+      });
+      res.json({ ok: true, tenantId, actorRole: access.role, quote: archived });
     } catch (error) {
       sendRouteError(res, error);
     }

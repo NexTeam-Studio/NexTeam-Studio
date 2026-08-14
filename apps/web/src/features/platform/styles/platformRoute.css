@@ -6,3 +6,56 @@
   max-width: 100%;
   overflow-x: clip;
 }
+
+.platform-profile-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #52627b;
+}
+
+.platform-profile-completion {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.platform-profile-completion-card {
+  width: min(100%, 440px);
+  padding: 28px;
+  border: 1px solid #d7deea;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgb(26 38 61 / 12%);
+}
+
+.platform-profile-completion-eyebrow { color: #52627b; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.platform-profile-completion-card form { display: grid; gap: 10px; margin-top: 20px; }
+.platform-profile-completion-card input, .platform-profile-completion-card button { min-height: 42px; border-radius: 8px; padding: 0 12px; }
+.platform-profile-completion-card button { border: 0; background: #183b73; color: #fff; font-weight: 700; }
+.platform-profile-completion-card input[type="file"] { padding: 8px 12px; }
+.platform-profile-photo-help { margin: 0; color: #52627b; font-size: .9rem; }
+
+.platform-owner-profile {
+  width: min(880px, 100%);
+  display: grid;
+  gap: 12px;
+  margin: 0 auto 18px;
+  padding: 24px;
+  border: 1px solid #d7deea;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.platform-owner-profile > * { margin: 0; }
+.platform-owner-profile__eyebrow { color: #52627b; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.platform-owner-profile > p { color: #52627b; line-height: 1.5; }
+.platform-owner-profile__fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.platform-owner-profile__fields label { display: grid; gap: 6px; color: #25334d; font-weight: 700; }
+.platform-owner-profile__fields input { min-height: 42px; box-sizing: border-box; border: 1px solid #c6d0df; border-radius: 8px; padding: 0 12px; background: #f1f4f8; color: #52627b; cursor: not-allowed; }
+
+@media (max-width: 720px) {
+  .platform-owner-profile__fields { grid-template-columns: 1fr; }
+}

@@ -8,6 +8,7 @@ import { buildHealth } from "../health.js";
 import type { ServerRuntime } from "../app/runtime.js";
 import { configuredTenantId } from "./tenantConfig.js";
 import { registerWorkspaceLinkRoutes } from "../auth/workspaceLinkRoutes.js";
+import { requireAccessContext } from "../auth/accessContext.js";
 
 function sendError(res: Response, error: unknown): void {
   const status = error instanceof RailError ? error.status ?? 500 : 500;
@@ -55,6 +56,20 @@ export function registerCoreRoutes(app: Express, runtime: ServerRuntime): void {
       firebase,
       firebaseConfigured: Object.values(firebase).every((value) => value.length > 0)
     });
+  });
+
+  app.get("/api/auth/access-context", async (req: Request, res: Response) => {
+    try {
+      const access = await requireAccessContext(req, runtime.env, { op: "shellAccessContext" });
+      res.json({
+        ok: true,
+        tenantId: access.tenantId,
+        tenantUserId: access.tenantUserId,
+        role: access.role
+      });
+    } catch (error) {
+      sendError(res, error);
+    }
   });
 
   app.get("/api/media/:id", async (req: Request, res: Response) => {

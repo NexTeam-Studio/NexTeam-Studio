@@ -3,7 +3,7 @@ import { getBuildInfo } from "../buildInfo.js";
 import { buildHealth } from "../health.js";
 import { sendHttpError } from "./httpError.js";
 import { inspectRuntimeIdentity } from "../app/runtimeIdentity.js";
-import { isLocalDevAuthEnabled } from "../auth/accessContext.js";
+import { isLocalDevAuthEnabled, requireAccessContext } from "../auth/accessContext.js";
 
 export function registerSystemRoutes(
   app: Express,
@@ -39,5 +39,19 @@ export function registerSystemRoutes(
       localAuthEnabled: isLocalDevAuthEnabled(input.env),
       localProfiles: isLocalDevAuthEnabled(input.env) ? input.localProfiles(input.tenantId) : []
     });
+  });
+
+  app.get("/api/auth/access-context", async (req: Request, res: Response) => {
+    try {
+      const access = await requireAccessContext(req, input.env, { op: "shellAccessContext" });
+      res.json({
+        ok: true,
+        tenantId: access.tenantId,
+        tenantUserId: access.tenantUserId,
+        role: access.role
+      });
+    } catch (error) {
+      sendHttpError(res, error);
+    }
   });
 }

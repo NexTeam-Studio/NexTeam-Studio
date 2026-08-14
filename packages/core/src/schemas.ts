@@ -14,6 +14,186 @@ const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
 
 export const idSchema = z.string().min(1).max(128);
 
+export const splinterJobStateSchema = z.enum([
+  "QUEUED",
+  "RUNNING",
+  "AWAITING_HUMAN",
+  "SUCCEEDED",
+  "FAILED"
+]);
+
+export const splinterJobOwnerSchema = z.enum(["splinter", "worker", "human"]);
+
+export const splinterJobResultSchema = z.enum(["PENDING", "PASS", "FAIL"]);
+
+export const splinterExecutionModeSchema = z.enum(["READ_ONLY", "CODE_CHANGE"]);
+export const splinterRepositoryTargetSchema = z.enum(["NEXTEAM", "CONTROL_RELAY"]);
+export const splinterWorkItemStatusSchema = z.enum(["DRAFT", "APPROVED", "CLAIMED", "BLOCKED", "OWNER_REQUIRED", "SAFETY_STOP", "COMPLETED", "OBSOLETE"]);
+export const splinterWorkPrioritySchema = z.number().int().min(1).max(5);
+export const splinterPromotionPolicySchema = z.enum(["NONE", "STAGING_ONLY"]);
+export const splinterPathDiscoveryPolicySchema = z.enum(["EXPLICIT_PATHS", "APPROVED_DISCOVERY"]);
+export const splinterWorkBlockerSchema = z.object({ classification: z.enum(["EXTERNAL_BLOCKER", "OWNER_REQUIRED", "SAFETY_STOP"]), detail: z.string().min(1).max(500), resolvedAt: z.string().min(1).optional() }).strict();
+export const splinterReconciliationStatusSchema = z.enum(["VERIFIED_COMPLETE", "PARTIALLY_VERIFIED", "NOT_COMPLETE"]);
+export const splinterReconciliationReviewResultSchema = z.enum(["PASS", "REJECT", "INSUFFICIENT_EVIDENCE"]);
+export const splinterReconciliationEvidenceSchema = z.object({
+  reconciliationId: idSchema,
+  sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20),
+  requirementRevision: z.string().min(1).max(128),
+  stagingShaVerified: z.string().regex(/^[a-f0-9]{7,64}$/i),
+  deterministicChecks: z.array(z.string().min(1).max(500)).min(1).max(30),
+  liveChecks: z.array(z.string().min(1).max(500)).max(30).default([]),
+  reviewResult: splinterReconciliationReviewResultSchema,
+  reviewedEvidence: z.array(z.string().min(1).max(500)).max(30).default([]),
+  missingEvidence: z.array(z.string().min(1).max(500)).max(20).default([]),
+  reconciledAt: z.string().min(1),
+  reconciledBy: z.literal("splinter"),
+  completionStatus: splinterReconciliationStatusSchema
+}).strict();
+export const splinterWorkItemSchema = z.object({
+  workItemId: idSchema, title: z.string().min(1).max(200), goal: z.string().min(1).max(4000), module: z.string().min(1).max(100), tenantScope: z.string().min(1).max(100), priority: splinterWorkPrioritySchema,
+  launchCritical: z.boolean().default(false), status: splinterWorkItemStatusSchema, dependencies: z.array(idSchema).max(30).default([]), blockedBy: splinterWorkBlockerSchema.optional(),
+  acceptanceCriteria: z.array(z.string().min(1).max(1000)).max(50).default([]), requiredChecks: z.array(z.enum(["SPLINTER_FOCUSED_TESTS", "SPLINTER_FOCUSED_TYPECHECK"])).max(10).default([]), allowedPaths: z.array(z.string().min(1).max(256).refine((value) => !value.startsWith("/") && !value.startsWith("\\") && !value.includes("..") && !value.includes(":"))).max(50).default([]), pathDiscoveryPolicy: splinterPathDiscoveryPolicySchema.default("EXPLICIT_PATHS"),
+  executionMode: splinterExecutionModeSchema.default("READ_ONLY"), repositoryTarget: splinterRepositoryTargetSchema.default("NEXTEAM"), reviewRequired: z.boolean().default(false), maxAttempts: z.number().int().min(1).max(3).default(1),
+  ownerDecisionRequired: z.boolean().default(false), promotionPolicy: splinterPromotionPolicySchema.default("NONE"), sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128), nonPromotable: z.boolean().default(false), reconciliationMode: z.boolean().default(false), reconciliation: splinterReconciliationEvidenceSchema.optional(), completedEvidenceRefs: z.array(z.string().min(1).max(256)).max(30).default([]), selectedStagingBaseSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), activeSplinterJobId: idSchema.optional(), createdAt: z.string().min(1), updatedAt: z.string().min(1)
+}).strict().superRefine((item, context) => {
+  if (item.executionMode !== "CODE_CHANGE") return;
+  if (item.acceptanceCriteria.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["acceptanceCriteria"], message: "CODE_CHANGE work requires acceptance criteria." });
+  if (item.requiredChecks.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["requiredChecks"], message: "CODE_CHANGE work requires deterministic checks." });
+  if (item.allowedPaths.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["allowedPaths"], message: "CODE_CHANGE work requires an explicit bounded write envelope." });
+  if (!item.reviewRequired) context.addIssue({ code: z.ZodIssueCode.custom, path: ["reviewRequired"], message: "CODE_CHANGE work requires independent review." });
+  if (item.maxAttempts !== 3) context.addIssue({ code: z.ZodIssueCode.custom, path: ["maxAttempts"], message: "CODE_CHANGE work uses the controller-owned maximum of three attempts." });
+});
+export const splinterEscalationClassSchema = z.enum(["AUTONOMOUS", "EXTERNAL_BLOCKER", "OWNER_REQUIRED", "SAFETY_STOP"]);
+export const splinterResolutionScopeSchema = z.enum(["JOB_ONLY", "MODULE", "TENANT", "GLOBAL"]);
+export const splinterRfiOptionSchema = z.object({ id: z.string().min(1).max(64), label: z.string().min(1).max(300) }).strict();
+export const splinterRfiSchema = z.object({
+  rfiId: idSchema, jobId: idSchema, category: z.literal("OWNER_REQUIRED"), title: z.string().min(1).max(200),
+  decisionNeeded: z.string().min(1).max(500), whyAutomationCannotDecide: z.string().min(1).max(500),
+  knownFacts: z.array(z.string().min(1).max(500)).min(1).max(10), options: z.array(splinterRfiOptionSchema).min(2).max(5),
+  recommendedOption: z.string().min(1).max(64), affectedScope: z.string().min(1).max(300), currentSafeState: z.string().min(1).max(300),
+  blocking: z.boolean(), createdAt: z.string().min(1), resolvedAt: z.string().min(1).optional(), resolution: z.string().min(1).max(500).optional(), resolutionScope: splinterResolutionScopeSchema.optional()
+}).strict();
+
+export const splinterRequiredCheckSchema = z.enum([
+  "SPLINTER_FOCUSED_TESTS",
+  "SPLINTER_FOCUSED_TYPECHECK"
+]);
+
+export const splinterRepairProofInjectionSchema = z.enum(["FOCUSED_TEST_ONCE"]);
+
+export const splinterReviewSchema = z.object({
+  reviewResult: z.enum(["PASS", "REJECT", "INFRASTRUCTURE_FAILURE"]),
+  summary: z.string().min(1).max(500),
+  blockingFindings: z.array(z.string().min(1).max(500)).max(20),
+  nonBlockingFindings: z.array(z.string().min(1).max(500)).max(20),
+  reviewedCommitSha: z.string().regex(/^[a-f0-9]{7,64}$/i),
+  reviewerRunId: z.string().min(1).max(128),
+  reviewerProvider: z.literal("anthropic"),
+  reviewerModel: z.string().min(1).max(128),
+  startedAt: z.string().min(1),
+  completedAt: z.string().min(1)
+}).strict();
+
+export const splinterReviewStatusSchema = z.enum(["NOT_REQUIRED", "AWAITING_REVIEW", "APPROVED", "REJECTED", "INFRASTRUCTURE_FAILURE"]);
+export const splinterIntegrationStatusSchema = z.enum(["NOT_REQUESTED", "IN_PROGRESS", "PASSED", "FAILED", "STALE"]);
+export const splinterIntegrationSchema = z.object({
+  status: splinterIntegrationStatusSchema,
+  stagingBaseSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  approvedCommitSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  integratedCandidateSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  verification: z.array(z.string().min(1).max(256)).max(20).default([]),
+  error: z.string().min(1).max(500).optional()
+}).strict();
+export const splinterDeploymentStatusSchema = z.enum(["NOT_REQUESTED", "DEPLOYING", "PASSED", "FAILED", "ROLLED_BACK", "ROLLBACK_FAILED", "STALE"]);
+export const splinterDeploymentSchema = z.object({
+  status: splinterDeploymentStatusSchema,
+  previousKnownGoodStagingSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  requestedCandidateSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  actualLiveSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(),
+  deploymentRunId: z.string().min(1).max(128).optional(),
+  verification: z.array(z.string().min(1).max(256)).max(20).default([]),
+  error: z.string().min(1).max(500).optional()
+}).strict();
+export const splinterDeploymentHistorySchema = z.object({
+  deployment: splinterDeploymentSchema,
+  retriedAt: z.string().min(1),
+  retriedBy: z.literal("splinter")
+}).strict();
+
+const splinterAllowedPathSchema = z.string().min(1).max(256).refine(
+  (value) => !value.startsWith("/") && !value.startsWith("\\") && !value.includes("..") && !value.includes(":"),
+  "Splinter allowed paths must be repository-relative."
+);
+
+export const splinterLastErrorSchema = z.object({
+  message: z.string().min(1).max(500),
+  at: z.string().min(1)
+});
+
+export const splinterWorkerResultSchema = z.object({
+  workerRunId: z.string().min(1).max(128), builderDisplayName: z.literal("Donatello").default("Donatello"), status: z.enum(["SUCCEEDED", "FAILED", "AWAITING_HUMAN"]), summary: z.string().min(1).max(500),
+  filesInspected: z.array(z.string().min(1).max(256)).max(50), filesChanged: z.array(z.string().min(1).max(256)).max(50), testsPerformed: z.array(z.string().min(1).max(256)).max(50),
+  baseSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), branch: z.string().min(1).max(256).optional(), commitSha: z.string().regex(/^[a-f0-9]{7,64}$/i).optional(), error: z.string().min(1).max(500).optional(), startedAt: z.string().min(1), completedAt: z.string().min(1)
+}).strict();
+
+export const splinterJobSchema = z.object({
+  id: idSchema,
+  goal: z.string().min(1).max(4_000),
+  executionMode: splinterExecutionModeSchema.default("READ_ONLY"),
+  repositoryTarget: splinterRepositoryTargetSchema.default("NEXTEAM"),
+  allowedPaths: z.array(splinterAllowedPathSchema).max(50).default([]),
+  pathDiscoveryPolicy: splinterPathDiscoveryPolicySchema.default("EXPLICIT_PATHS"),
+  workItemContext: z.object({ workItemId: idSchema, module: z.string().min(1).max(100), tenantScope: z.string().min(1).max(100), promotionPolicy: splinterPromotionPolicySchema, sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128) }).strict().optional(),
+  acceptanceCriteria: z.array(z.string().min(1).max(1_000)).max(50).default([]),
+  requiredChecks: z.array(splinterRequiredCheckSchema).max(10).default([]),
+  attemptCount: z.number().int().min(0).default(0),
+  maxAttempts: z.number().int().min(1).max(3).default(1),
+  lastCheckFailures: z.array(z.string().min(1).max(500)).max(10).default([]),
+  repairProofInjection: splinterRepairProofInjectionSchema.optional(),
+  nonPromotable: z.boolean().default(false),
+  reviewRequired: z.boolean().default(false),
+  reviewStatus: splinterReviewStatusSchema.default("NOT_REQUIRED"),
+  workerHistory: z.array(z.lazy(() => splinterWorkerResultSchema)).max(6).default([]),
+  integration: splinterIntegrationSchema.default({ status: "NOT_REQUESTED", verification: [] }),
+  deployment: splinterDeploymentSchema.default({ status: "NOT_REQUESTED", verification: [] }),
+  deploymentHistory: z.array(splinterDeploymentHistorySchema).max(3).optional(),
+  review: splinterReviewSchema.optional(),
+  reviewCycleCount: z.number().int().min(0).default(0),
+  maxReviewCycles: z.number().int().min(1).max(3).default(3),
+  reviewHistory: z.array(splinterReviewSchema).max(3).default([]),
+  escalation: z.object({ classification: splinterEscalationClassSchema, detail: z.string().min(1).max(500) }).optional(),
+  rfi: splinterRfiSchema.optional(),
+  state: splinterJobStateSchema,
+  next: z.object({
+    owner: splinterJobOwnerSchema,
+    action: z.string().min(1).max(1_000)
+  }),
+  result: splinterJobResultSchema,
+  lastError: splinterLastErrorSchema.nullable(),
+  workerResult: splinterWorkerResultSchema.optional(),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1)
+});
+
+function validateSplinterCodeChange(job: { executionMode: "READ_ONLY" | "CODE_CHANGE"; allowedPaths: string[]; acceptanceCriteria: string[]; requiredChecks: string[]; maxAttempts: number }, context: z.RefinementCtx): void {
+  if (job.executionMode === "CODE_CHANGE") {
+    if (job.allowedPaths.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["allowedPaths"], message: "CODE_CHANGE jobs require allowed paths." });
+    if (job.acceptanceCriteria.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["acceptanceCriteria"], message: "CODE_CHANGE jobs require acceptance criteria." });
+    if (job.requiredChecks.length === 0) context.addIssue({ code: z.ZodIssueCode.custom, path: ["requiredChecks"], message: "CODE_CHANGE jobs require deterministic checks." });
+    if (job.maxAttempts !== 3) context.addIssue({ code: z.ZodIssueCode.custom, path: ["maxAttempts"], message: "CODE_CHANGE jobs use the controller-owned maximum of three attempts." });
+  }
+}
+
+const splinterJobCreateBaseSchema = splinterJobSchema.omit({
+  createdAt: true,
+  updatedAt: true
+});
+
+export const splinterJobCreateSchema = splinterJobCreateBaseSchema.superRefine(validateSplinterCodeChange);
+
+export const splinterJobUpdateSchema = splinterJobCreateBaseSchema.omit({ id: true }).partial();
+
+
 export const addressSchema = z.object({
   street1: z.string(),
   street2: z.string().optional(),
@@ -402,7 +582,7 @@ export const tenantUserSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
   authUid: z.string().optional(),
-  email: z.string().email().optional(),
+  email: z.string().trim().toLowerCase().email().optional(),
   phones: z.array(z.string().min(1)).optional(),
   address: addressSchema.optional(),
   displayName: z.string().min(1),
@@ -1086,7 +1266,7 @@ export const propertyAssetDefinitionSchema = z.object({
 export const tenantMembershipAuditSchema = z.object({
   id: idSchema,
   tenantId: idSchema,
-  action: z.enum(["member.upserted", "member.claims_applied", "tenant.cancellation_confirmation_one", "tenant.subscription_canceled", "tenant.resubscribed"]),
+  action: z.enum(["member.upserted", "member.claims_applied", "member.owner_assigned", "tenant.cancellation_confirmation_one", "tenant.subscription_canceled", "tenant.resubscribed"]),
   actorId: idSchema,
   targetUserId: idSchema,
   detail: z.string().min(1).max(500),
@@ -1775,6 +1955,14 @@ export const healthResponseSchema = z.object({
 });
 
 export type TenantDoc = z.infer<typeof tenantSchema>;
+export type SplinterJob = z.infer<typeof splinterJobSchema>;
+export type SplinterJobCreate = z.infer<typeof splinterJobCreateSchema>;
+export type SplinterJobUpdate = z.infer<typeof splinterJobUpdateSchema>;
+export type SplinterJobState = z.infer<typeof splinterJobStateSchema>;
+export type SplinterWorkerResult = z.infer<typeof splinterWorkerResultSchema>;
+export type SplinterReview = z.infer<typeof splinterReviewSchema>;
+export type SplinterWorkItem = z.infer<typeof splinterWorkItemSchema>;
+export type SplinterReconciliationEvidence = z.infer<typeof splinterReconciliationEvidenceSchema>;
 export type TenantBrandingDoc = z.infer<typeof tenantBrandingSchema>;
 export type PlatformPlanDoc = z.infer<typeof platformPlanSchema>;
 export type TenantSubscriptionDoc = z.infer<typeof tenantSubscriptionSchema>;

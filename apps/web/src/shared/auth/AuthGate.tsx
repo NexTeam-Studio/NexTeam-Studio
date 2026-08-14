@@ -166,7 +166,7 @@ function AccessCard(props: { product: AuthProduct; title: string; body: string }
 function ProductSwitch(props: { product: AuthProduct }): React.ReactElement {
   if (props.product.path === "/nexcommand") return <></>;
   const alternate = props.product.path === "/nexops"
-    ? { path: "/nexi", label: "Open Nexi" }
+    ? { path: "/nexcommand/sign-in", label: "Open NexCommand" }
     : { path: "/nexops", label: "Open NexOps" };
   return <a className="auth-product-link" href={alternate.path}>{alternate.label}</a>;
 }

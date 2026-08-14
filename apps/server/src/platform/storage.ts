@@ -11,4 +11,10 @@ export class FirebaseStorageWriter implements StorageWriter {
       resumable: false
     });
   }
+
+  async writeImage(path: string, data: Buffer, contentType: "image/png" | "image/jpeg" | "image/webp"): Promise<string> {
+    const bucket = this.bucketName ? getStorage().bucket(this.bucketName) : getStorage().bucket();
+    await bucket.file(path).save(data, { contentType, resumable: false });
+    return `gs://${bucket.name}/${path}`;
+  }
 }

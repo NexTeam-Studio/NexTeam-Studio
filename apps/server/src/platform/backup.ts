@@ -4,6 +4,7 @@ import type { PlatformRepository } from "./repository.js";
 
 export interface StorageWriter {
   writeJson(path: string, data: unknown): Promise<void>;
+  writeImage(path: string, data: Buffer, contentType: "image/png" | "image/jpeg" | "image/webp"): Promise<string>;
 }
 
 export class MemoryStorageWriter implements StorageWriter {
@@ -11,6 +12,11 @@ export class MemoryStorageWriter implements StorageWriter {
 
   async writeJson(path: string, data: unknown): Promise<void> {
     this.files.set(path, data);
+  }
+
+  async writeImage(path: string, data: Buffer, contentType: "image/png" | "image/jpeg" | "image/webp"): Promise<string> {
+    this.files.set(path, { data, contentType });
+    return path;
   }
 }
 

@@ -278,20 +278,34 @@
   margin: 26px 0 18px;
 }
 
-.nexops-client-controls button {
+.nexops-client-control-field {
+  display: grid;
+  gap: 5px;
+  color: #526675;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.nexops-client-control-field select {
+  min-height: 42px;
   border: 1px solid rgba(8, 33, 49, 0.14);
-  border-radius: 999px;
-  padding: 12px 16px;
+  border-radius: 11px;
+  padding: 9px 34px 9px 12px;
   color: #082131;
   background: #fff;
+  font: inherit;
   font-weight: 850;
 }
 
-.nexops-client-controls button:nth-child(2) {
-  background: #dedbd2;
+.nexops-client-control-field select:focus,
+.nexops-client-controls input:focus {
+  outline: 3px solid rgba(37, 210, 56, 0.24);
+  outline-offset: 2px;
 }
 
-.nexops-client-controls label {
+.nexops-client-search-field {
   margin-left: auto;
 }
 
@@ -757,7 +771,7 @@
     grid-template-columns: 1fr;
   }
 
-  .nexops-client-controls label {
+  .nexops-client-search-field {
     width: 100%;
     margin-left: 0;
   }

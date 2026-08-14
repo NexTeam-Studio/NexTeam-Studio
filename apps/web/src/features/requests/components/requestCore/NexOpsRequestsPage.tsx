@@ -163,6 +163,7 @@ interface NexOpsRequestsPageProps {
   tenantUsers: TenantUserRecord[];
   onCrmMutation?: () => void;
   focusedRequestId?: string;
+  initialClientId?: string;
   initialFilter?: "all" | RequestStatus;
   captureIntent?: { batchId: string; mediaIds: string[] } | null;
   onCaptureRequestCreated?: (request: { id: string; clientName: string; selectedClientId?: string }) => Promise<void> | void;
@@ -371,8 +372,9 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   const [requestFilter, setRequestFilter] = useState<"all" | RequestStatus>("all");
   const [selectedRequestId, setSelectedRequestId] = useState("");
   const [selectedFormId, setSelectedFormId] = useState("");
-  const [officeMode, setOfficeMode] = useState<"new_client" | "existing_client">("new_client");
-  const [selectedClientId, setSelectedClientId] = useState("");
+  const initialClientId = props.initialClientId && props.clients.some((client) => client.id === props.initialClientId) ? props.initialClientId : "";
+  const [officeMode, setOfficeMode] = useState<"new_client" | "existing_client">(initialClientId ? "existing_client" : "new_client");
+  const [selectedClientId, setSelectedClientId] = useState(initialClientId);
   const [propertyMode, setPropertyMode] = useState<"existing_property" | "new_property">("existing_property");
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [fieldDraft, setFieldDraft] = useState<Record<string, string | boolean | string[]>>({});

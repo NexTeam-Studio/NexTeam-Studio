@@ -63,6 +63,26 @@ export const QUOTE_ENGINE_COMMANDS: LifecycleCommandContract[] = [
     policyDependencies: ["D9"]
   },
   {
+    commandId: "quote.archive",
+    type: "command",
+    actorSurface: "office_web",
+    requiredPermission: "quote.send",
+    currentConditions: [{ code: "quote_draft", when: "quote is a draft and has not entered approval, delivery, expiry, or renewal flow" }],
+    dominantLabel: "Archive quote",
+    secondaryActions: ["Save draft", "Preview PDF"],
+    requiredFields: [],
+    blockingConditions: [{ code: "invalid_state", when: "quote is not draft", blockerCopy: "Only draft quotes can be archived." }],
+    transitionResult: "Moves quote_status from draft to archived while retaining the quote identity, number, and commercial history.",
+    createdEntities: [],
+    sideEffects: [{ kind: "entity_update", detail: "quote.archive" }, { kind: "audit", detail: "quote.archived" }],
+    communicationTriggers: [],
+    auditEvent: "quote.archived",
+    confirmationTier: "standard",
+    offlineBehavior: { supported: false, behavior: "Archiving is online only." },
+    idempotencyScope: { keys: ["tenantId", "quoteId", "clientOperationId"], description: "A quote can transition to archived only once from draft." },
+    policyDependencies: []
+  },
+  {
     commandId: "portal.quote_view",
     type: "query",
     actorSurface: "portal",

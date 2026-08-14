@@ -36,8 +36,21 @@ export const ROLE_CAPABILITIES: Record<TenantUserRole, TenantCapability[]> = {
   TECHNICIAN: []
 };
 
+export function capabilitiesWithinRoleCeiling(role: TenantUserRole, capabilities: TenantCapability[] | undefined): TenantCapability[] {
+  const ceiling = ROLE_CAPABILITIES[role];
+  const requested = capabilities ?? ceiling;
+  if (requested.some((capability) => !ceiling.includes(capability))) {
+    throw new RailError("Tenant capabilities must remain within the selected role ceiling.", { provider: "platform", op: "tenantCapabilities", status: 400 });
+  }
+  return requested.filter((capability) => ceiling.includes(capability));
+}
+
 export function capabilitiesForTenantUser(user: Pick<TenantUser, "role" | "capabilities">): TenantCapability[] {
-  return [...new Set(user.capabilities ?? ROLE_CAPABILITIES[user.role])];
+  const ceiling = ROLE_CAPABILITIES[user.role];
+  const requested = user.capabilities ?? ceiling;
+  // Existing records are read fail-closed too: a legacy over-grant can never
+  // become an effective capability while the record awaits repair.
+  return requested.filter((capability) => ceiling.includes(capability));
 }
 
 export interface JobAccessLinkInput {
@@ -89,7 +102,7 @@ export function buildTenantUser(input: TenantUserInput): TenantUser {
     displayName: input.displayName,
     role: input.role,
     customRoleName: input.customRoleName,
-    capabilities: input.capabilities,
+    capabilities: input.capabilities ? capabilitiesWithinRoleCeiling(input.role, input.capabilities) : undefined,
     active: input.active ?? true,
     createdAt: timestamp,
     updatedAt: timestamp
