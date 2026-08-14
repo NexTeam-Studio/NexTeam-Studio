@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import type { User } from "firebase/auth";
+import { EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, type User } from "firebase/auth";
+import { loadFirebaseAuth } from "../../../shared/auth/firebaseAuth";
 
 type Address = { street1?: string; street2?: string; city?: string; province?: string; postalCode?: string; country?: string };
 type AddressSuggestion = Required<Pick<Address, "street1" | "city" | "province" | "postalCode" | "country">>;
 type Contact = { firstName?: string; lastName?: string; email?: string; phone?: string; address?: Address; physicalAddress?: Address; mailingAddress?: Address };
 type TenantProfileResponse = {
   tenant: { id: string; name: string; timezone: string; lifecycleState?: "ACTIVE" | "DISABLED_ARCHIVED"; branding: { assistantName: string } };
-  profile: { legalName?: string; dbaName?: string; website?: string; status?: "ACTIVE" | "PENDING" | "INACTIVE" | "CANCELLED"; subscriptionPlan?: "none" | "staging-tier-1" | "staging-tier-2" | "staging-tier-3"; primaryContact?: Contact } | null;
+  profile: { tenantNumber?: number; legalName?: string; dbaName?: string; website?: string; status?: "ACTIVE" | "PENDING" | "INACTIVE" | "CANCELLED"; subscriptionPlan?: "none" | "staging-tier-1" | "staging-tier-2" | "staging-tier-3"; primaryContact?: Contact } | null;
   branding: { logo?: { url?: string; storageRef?: string; updatedAt?: string } } | null;
   subscription: { plan: string; status: string } | null;
   access: Array<{ displayName: string; email: string | null; role: string; active: boolean; firebaseUidBound: boolean }>;
@@ -39,6 +40,9 @@ export function NexCommandTenantProfilePanel({ user, tenantId, onBack }: { user:
   const [pendingLogoUrl, setPendingLogoUrl] = useState("");
   const [subscriptionPlan, setSubscriptionPlan] = useState<"none" | "staging-tier-1" | "staging-tier-2" | "staging-tier-3">("none");
   const [status, setStatus] = useState<"ACTIVE" | "PENDING" | "INACTIVE" | "CANCELLED">("INACTIVE");
+  const [resetOpen, setResetOpen] = useState(false);
+  const [operatorPassword, setOperatorPassword] = useState("");
+  const [resetWorking, setResetWorking] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const load = async (): Promise<void> => { if (user) setData(await request(user, `/api/platform/admin/tenants/${encodeURIComponent(tenantId)}/profile`)); };
   useEffect(() => { void load().catch(() => setMessage("Tenant profile could not be loaded.")); }, [tenantId, user]);
@@ -48,6 +52,23 @@ export function NexCommandTenantProfilePanel({ user, tenantId, onBack }: { user:
   const profile = data.profile ?? {};
   const primary = profile.primaryContact ?? {};
   const displayedLogo = pendingLogoUrl || logoFor(data);
+
+  async function sendPasswordReset(event: React.FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    const targetEmail = primary.email?.trim();
+    const operatorEmail = user?.email?.trim();
+    if (!user || !operatorEmail || !targetEmail) { setMessageTone("error"); setMessage("A signed-in NexCommand operator and a Primary Contact email are required."); return; }
+    setResetWorking(true); setMessage("");
+    try {
+      const auth = await loadFirebaseAuth();
+      if (!auth?.currentUser || auth.currentUser.uid !== user.uid) throw new Error("Your NexCommand session must be refreshed before sending a reset email.");
+      await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(operatorEmail, operatorPassword));
+      await sendPasswordResetEmail(auth, targetEmail);
+      setOperatorPassword(""); setResetOpen(false); setMessageTone("success"); setMessage(`Password reset email sent to ${targetEmail}.`);
+    } catch (error) {
+      setMessageTone("error"); setMessage(error instanceof Error && error.message.includes("password") ? "Your NexCommand password was not accepted. No reset email was sent." : "The password reset email could not be sent. Verify the active NexCommand session and try again.");
+    } finally { setResetWorking(false); }
+  }
 
   async function uploadLogo(file: File): Promise<string> {
     if (!user) throw new Error("You must be signed in to upload a logo.");
@@ -69,7 +90,9 @@ export function NexCommandTenantProfilePanel({ user, tenantId, onBack }: { user:
 
   return <section className="nexcommand__panel tenant-profile">
     <button className="tenant-action" type="button" onClick={onBack}>Back to Tenant Roster</button>
-    <div className="tenant-profile__heading"><div className="tenant-profile__heading-copy"><p className="ui-eyebrow">Tenant Profile</p><div className="tenant-profile__tenant-line"><h2>{data.tenant.name}</h2>{displayedLogo ? <img src={displayedLogo} alt={`${data.tenant.name} logo`} /> : <span>{data.tenant.name.slice(0, 1)}</span>}</div><p>{data.subscription?.plan ?? "No plan"} · {data.subscription?.status ?? "No subscription"}</p></div><button className="tenant-action" type="button" onClick={() => setEditing((value) => !value)}>{editing ? "Cancel" : "Edit Tenant"}</button></div>
+    <div className="tenant-profile__heading"><div className="tenant-profile__heading-copy"><p className="ui-eyebrow">Tenant Profile</p><small>Tenant ID: {profile.tenantNumber ?? "Pending"}</small><div className="tenant-profile__tenant-line"><h2>{data.tenant.name}</h2>{displayedLogo ? <img src={displayedLogo} alt={`${data.tenant.name} logo`} /> : <span>{data.tenant.name.slice(0, 1)}</span>}</div><p>{data.subscription?.plan ?? "No plan"} · {data.subscription?.status ?? "No subscription"}</p></div><button className="tenant-action" type="button" onClick={() => setEditing((value) => !value)}>{editing ? "Cancel" : "Edit Tenant"}</button></div>
+    {resetOpen ? <form className="tenant-profile__reset" onSubmit={(event) => void sendPasswordReset(event)}><strong>Confirm Password Reset</strong><p>Re-enter your current NexCommand password to send a reset link to the tenant Primary Contact: <b>{primary.email ?? "No email on file"}</b>. Your password is used only to re-authenticate this action and is never saved.</p><label>Current NexCommand Password<input type="password" value={operatorPassword} onChange={(event) => setOperatorPassword(event.target.value)} autoComplete="current-password" required /></label><div><button className="tenant-action tenant-action--secondary" type="button" onClick={() => { setOperatorPassword(""); setResetOpen(false); }}>Cancel</button><button className="tenant-action" type="submit" disabled={resetWorking || !primary.email}>{resetWorking ? "Sending…" : "Send Reset Email"}</button></div></form> : null}
+    <div className="tenant-profile__security-actions"><button className="tenant-action tenant-action--secondary" type="button" onClick={() => setResetOpen((value) => !value)}>Send Password Reset</button></div>
     <form onSubmit={(event) => void save(event)}>
       <fieldset disabled={!editing || saving}>
       <div className="tenant-profile__grid"><label>Tenant Name<input name="name" defaultValue={data.tenant.name} required /></label><label>Legal Business Name<input name="legalName" defaultValue={profile.legalName ?? ""} /></label><label>DBA / Public Name<input name="dbaName" defaultValue={profile.dbaName ?? ""} /></label><label>Website<input name="website" type="url" defaultValue={profile.website ?? ""} placeholder="https://aquatraceleak.com" /></label><label>Timezone<select name="timezone" defaultValue={data.tenant.timezone}>{[...new Set([data.tenant.timezone, ...timezones])].map((timezone) => <option key={timezone} value={timezone}>{timezone}</option>)}</select></label><label>Subscription<select name="subscriptionPlan" value={subscriptionPlan} onChange={(event) => { const next = event.target.value as typeof subscriptionPlan; setSubscriptionPlan(next); if (next === "none") setStatus("INACTIVE"); }}><option value="none">None</option><option value="staging-tier-1">Staging Tier 1</option><option value="staging-tier-2">Staging Tier 2</option><option value="staging-tier-3">Staging Tier 3</option></select></label></div>
@@ -77,7 +100,7 @@ export function NexCommandTenantProfilePanel({ user, tenantId, onBack }: { user:
     {message ? <p className={`tenant-profile__message tenant-profile__message--${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p> : null}
   </section>;
 }
-function ContactFields({ contact, user }: { contact: Contact; user: User | null }): React.ReactElement { return <><div className="tenant-profile__grid"><label>First Name<input name="firstName" defaultValue={contact.firstName ?? ""} required /></label><label>Last Name<input name="lastName" defaultValue={contact.lastName ?? ""} required /></label><label>Email<input type="email" name="email" defaultValue={contact.email ?? ""} /></label><label>Telephone<input name="phone" defaultValue={contact.phone ?? ""} /></label></div><h4>Address</h4><AddressFields address={currentAddress(contact)} user={user} /></>; }
+function ContactFields({ contact, user }: { contact: Contact; user: User | null }): React.ReactElement { return <><div className="tenant-profile__grid"><label>First Name<input name="firstName" defaultValue={contact.firstName ?? ""} required /></label><label>Last Name<input name="lastName" defaultValue={contact.lastName ?? ""} required /></label><label>Email<input type="email" name="email" defaultValue={contact.email ?? ""} required /></label><label>Telephone<input name="phone" defaultValue={contact.phone ?? ""} /></label></div><h4>Address</h4><AddressFields address={currentAddress(contact)} user={user} /></>; }
 function AddressFields({ address, user }: { address?: Address; user: User | null }): React.ReactElement {
   const [value, setValue] = useState<Address>(address ?? {});
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);

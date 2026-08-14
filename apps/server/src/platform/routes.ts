@@ -326,6 +326,60 @@ function sendRouteError(res: Response, error: unknown): void {
   res.status(status).json({ ok: false, error: message });
 }
 
+function primaryContactEmail(profile: Pick<TenantProfile, "primaryContact">): string {
+  const email = profile.primaryContact?.email?.trim().toLowerCase();
+  if (!email) {
+    throw new RailError("A Primary Contact email is required because it is the tenant's sole NexOps owner identity.", { provider: "platform", op: "tenantOwnerProvisioning", status: 400 });
+  }
+  return email;
+}
+
+async function systemTenantNumber(repository: PlatformRepository, tenantId: string, current?: TenantProfile | null): Promise<number> {
+  if (Number.isInteger(current?.tenantNumber) && (current?.tenantNumber ?? 0) > 0) return current!.tenantNumber!;
+  const tenants = await repository.listTenants();
+  const profiles = await Promise.all(tenants.map((tenant) => repository.getTenantProfile(tenant.id)));
+  const assigned = profiles.flatMap((profile) => Number.isInteger(profile?.tenantNumber) && (profile?.tenantNumber ?? 0) > 0 ? [profile!.tenantNumber!] : []);
+  const firstUnassigned = tenants.filter((tenant) => !profiles.find((profile) => profile?.tenantId === tenant.id && Number.isInteger(profile.tenantNumber) && (profile.tenantNumber ?? 0) > 0)).sort((left, right) => left.id.localeCompare(right.id));
+  return Math.max(0, ...assigned) + firstUnassigned.findIndex((tenant) => tenant.id === tenantId) + 1;
+}
+
+async function provisionPrimaryContactOwner(input: { repository: PlatformRepository; tenantId: string; profile: TenantProfile; actorId: string; now: string }): Promise<void> {
+  const email = primaryContactEmail(input.profile);
+  const contact = input.profile.primaryContact!;
+  const members = await input.repository.listTenantUsers(input.tenantId);
+  const existing = members.find((member) => member.email?.trim().toLowerCase() === email);
+  const wasSoleOwner = existing?.role === "OWNER" && existing.active && members.filter((member) => member.role === "OWNER" && member.active).length === 1;
+  const owner = await upsertTenantUser(input.repository, {
+    tenantId: input.tenantId,
+    id: existing?.id,
+    authUid: existing?.authUid,
+    email,
+    phones: contact.phone ? [contact.phone] : existing?.phones,
+    displayName: `${contact.firstName} ${contact.lastName}`.trim(),
+    // Do not introduce a second active owner before the repository transaction
+    // has atomically demoted the previous one.
+    role: wasSoleOwner ? "OWNER" : existing?.role === "OWNER" ? "OFFICE_ADMIN" : existing?.role ?? "OFFICE_ADMIN",
+    active: true,
+    now: input.now
+  });
+  if (wasSoleOwner) return;
+  await input.repository.assignTenantOwner({
+    tenantId: input.tenantId,
+    toUserId: owner.id,
+    actorId: input.actorId,
+    now: input.now,
+    audit: {
+      id: `membership_audit_${randomUUID()}`,
+      tenantId: input.tenantId,
+      action: "member.owner_assigned",
+      actorId: input.actorId,
+      targetUserId: owner.id,
+      detail: "NexCommand synchronized the verified Primary Contact as the tenant's sole active NexOps owner; any previous active owner was atomically demoted to OFFICE_ADMIN.",
+      createdAt: input.now
+    }
+  });
+}
+
 function profilePhotoType(contentType: string | undefined, body: unknown): { contentType: ProfilePhotoContentType; extension: "png" | "jpg" | "webp" } {
   const normalized = contentType?.split(";", 1)[0]?.trim().toLowerCase();
   if (!profilePhotoContentTypes.includes(normalized as ProfilePhotoContentType) || !Buffer.isBuffer(body) || body.length === 0 || body.length > PROFILE_PHOTO_MAX_BYTES) {
@@ -637,8 +691,9 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const tenant = await deps.repository.getTenant(tenantId);
       if (!tenant) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTenantProfile", status: 404 });
       const [profile, branding, subscription, users] = await Promise.all([deps.repository.getTenantProfile(tenantId), deps.repository.getTenantBranding(tenantId), deps.repository.getSubscription(tenantId), deps.repository.listTenantUsers(tenantId)]);
+      const tenantNumber = await systemTenantNumber(deps.repository, tenantId, profile);
       await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand viewed tenant ${tenantId} profile.`, undefined, new Date().toISOString()));
-      res.json({ ok: true, tenant, profile, branding, subscription, access: users.map((user) => ({ displayName: user.displayName, email: user.email ?? null, role: user.role, active: user.active, firebaseUidBound: Boolean(user.authUid) })) });
+      res.json({ ok: true, tenant, profile: { ...(profile ?? { tenantId }), tenantNumber }, branding, subscription, access: users.map((user) => ({ displayName: user.displayName, email: user.email ?? null, role: user.role, active: user.active, firebaseUidBound: Boolean(user.authUid) })) });
     } catch (error) { sendRouteError(res, error); }
   });
 
@@ -678,13 +733,17 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       if (!current) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTenantProfile", status: 404 });
       const input = tenantProfileSchema.parse(req.body ?? {});
       const now = new Date().toISOString();
+      const existingProfile = await deps.repository.getTenantProfile(tenantId);
+      const tenantNumber = await systemTenantNumber(deps.repository, tenantId, existingProfile);
+      const profile: TenantProfile = { tenantId, tenantNumber, legalName: input.legalName, dbaName: input.dbaName, website: input.website, status: input.subscriptionPlan === "none" ? "INACTIVE" : input.status, subscriptionPlan: input.subscriptionPlan, primaryContact: input.primaryContact, updatedAt: now, updatedBy: actor.uid };
+      primaryContactEmail(profile);
       const tenant = await deps.repository.upsertTenant({ ...current, name: input.tenant.name, timezone: input.tenant.timezone, lifecycleState: input.tenant.lifecycleState, lifecycleUpdatedAt: now });
-      const profile: TenantProfile = { tenantId, legalName: input.legalName, dbaName: input.dbaName, website: input.website, status: input.subscriptionPlan === "none" ? "INACTIVE" : input.status, subscriptionPlan: input.subscriptionPlan, primaryContact: input.primaryContact, updatedAt: now, updatedBy: actor.uid };
       const [savedProfile, branding] = await Promise.all([
         deps.repository.saveTenantProfile(profile),
         (async () => { const existingBranding = await deps.repository.getTenantBranding(tenantId); return deps.repository.saveTenantBranding({ ...(existingBranding ?? defaultTenantBranding(tenant)), tenantId, displayName: tenant.name, logo: existingBranding?.logo, source: "manual", updatedAt: now, updatedBy: actor.uid }); })()
       ]);
-      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand updated tenant ${tenantId} profile fields.`, undefined, now));
+      await provisionPrimaryContactOwner({ repository: deps.repository, tenantId, profile: savedProfile, actorId: actor.uid, now });
+      await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand updated tenant ${tenantId} profile fields and synchronized its sole Primary Contact owner.`, undefined, now));
       res.json({ ok: true, tenant, profile: savedProfile, branding });
     } catch (error) { sendRouteError(res, error); }
   });

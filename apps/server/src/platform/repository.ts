@@ -124,6 +124,8 @@ function now(): string {
 
 export interface TenantProfile {
   tenantId: string;
+  /** Immutable, system-issued business identifier retained for the planned SQL migration. */
+  tenantNumber?: number | undefined;
   legalName?: string | undefined;
   dbaName?: string | undefined;
   website?: string | undefined;
