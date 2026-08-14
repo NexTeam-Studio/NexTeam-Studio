@@ -14,7 +14,7 @@ import { toolEntitlementMatrix } from "./entitlements.js";
 import { modulesForPlan, PLATFORM_PLANS } from "./plans.js";
 import { defaultTenant, defaultTenantBranding, planCatalog, subscriptionFromStripe, type PlatformRepository, type TenantProfile } from "./repository.js";
 import { activeSubscriptionPackages } from "./subscriptionPackages.js";
-import { activateProspectTenant, type FirebaseOwnerActivation } from "./tenantActivation.js";
+import { activateProspectTenant, getOrCreateFirebaseOwner, mergeTenantOwnerClaims, type FirebaseOwnerActivation } from "./tenantActivation.js";
 import { confirmSubscriptionCancellation, requestSubscriptionCancellation, resubscribeTenant } from "./tenantSubscriptionLifecycle.js";
 import { newOwnerInvite, type OwnerInviteSender } from "./tenantOwnerInvite.js";
 import { stagingOwnerInvitationGmailProviderStatus } from "../comms/gmailRegistry.js";
@@ -332,6 +332,19 @@ function primaryContactEmail(profile: Pick<TenantProfile, "primaryContact">): st
     throw new RailError("A Primary Contact email is required because it is the tenant's sole NexOps owner identity.", { provider: "platform", op: "tenantOwnerProvisioning", status: 400 });
   }
   return email;
+}
+
+async function assertTenantEmailExclusive(repository: PlatformRepository, tenantId: string, email: string): Promise<void> {
+  const normalized = email.trim().toLowerCase();
+  const platformUsers = await repository.listPlatformUsers();
+  if (platformUsers.some((user) => user.email.trim().toLowerCase() === normalized)) {
+    throw new RailError("A NexCommand internal email cannot also be used as a tenant email. Use a distinct tenant Primary Contact email.", { provider: "platform", op: "tenantOwnerProvisioning", status: 409 });
+  }
+  const tenants = await repository.listTenants();
+  const memberships = await Promise.all(tenants.map(async (tenant) => ({ tenantId: tenant.id, users: await repository.listTenantUsers(tenant.id) })));
+  if (memberships.some((entry) => entry.tenantId !== tenantId && entry.users.some((user) => user.email?.trim().toLowerCase() === normalized))) {
+    throw new RailError("A tenant email can belong to only one tenant workspace. Use a distinct Primary Contact email.", { provider: "platform", op: "tenantOwnerProvisioning", status: 409 });
+  }
 }
 
 async function systemTenantNumber(repository: PlatformRepository, tenantId: string, current?: TenantProfile | null): Promise<number> {
@@ -736,7 +749,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const existingProfile = await deps.repository.getTenantProfile(tenantId);
       const tenantNumber = await systemTenantNumber(deps.repository, tenantId, existingProfile);
       const profile: TenantProfile = { tenantId, tenantNumber, legalName: input.legalName, dbaName: input.dbaName, website: input.website, status: input.subscriptionPlan === "none" ? "INACTIVE" : input.status, subscriptionPlan: input.subscriptionPlan, primaryContact: input.primaryContact, updatedAt: now, updatedBy: actor.uid };
-      primaryContactEmail(profile);
+      await assertTenantEmailExclusive(deps.repository, tenantId, primaryContactEmail(profile));
       const tenant = await deps.repository.upsertTenant({ ...current, name: input.tenant.name, timezone: input.tenant.timezone, lifecycleState: input.tenant.lifecycleState, lifecycleUpdatedAt: now });
       const [savedProfile, branding] = await Promise.all([
         deps.repository.saveTenantProfile(profile),
@@ -745,6 +758,40 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       await provisionPrimaryContactOwner({ repository: deps.repository, tenantId, profile: savedProfile, actorId: actor.uid, now });
       await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("platform_user.profile_or_permission_changed", actor.uid, `NexCommand updated tenant ${tenantId} profile fields and synchronized its sole Primary Contact owner.`, undefined, now));
       res.json({ ok: true, tenant, profile: savedProfile, branding });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.post("/api/platform/admin/tenants/:tenantId/onboarding-email", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformTeamCapability(req, env, "platform.tenants.manage", deps.repository, deps.platformOperatorAuth);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      const tenant = await deps.repository.getTenant(tenantId);
+      const profile = await deps.repository.getTenantProfile(tenantId);
+      if (!tenant || !profile) throw new RailError("Save the tenant profile with a Primary Contact before sending onboarding.", { provider: "platform", op: "sendTenantOnboarding", status: 409 });
+      const email = primaryContactEmail(profile);
+      await assertTenantEmailExclusive(deps.repository, tenantId, email);
+      const now = new Date().toISOString();
+      await provisionPrimaryContactOwner({ repository: deps.repository, tenantId, profile, actorId: actor.uid, now });
+      const owner = (await deps.repository.listTenantUsers(tenantId)).find((member) => member.role === "OWNER" && member.active && member.email?.trim().toLowerCase() === email);
+      if (!owner) throw new RailError("The Primary Contact could not be established as the active tenant owner.", { provider: "platform", op: "sendTenantOnboarding", status: 409 });
+      const auth = deps.firebaseOwnerActivation ?? getAdminAuth(env);
+      if (!auth || !deps.ownerInviteSender) throw new RailError("Tenant onboarding email delivery is not configured.", { provider: "gmail", op: "sendTenantOnboarding", status: 503 });
+      const firebaseOwner = await getOrCreateFirebaseOwner(auth, { email, displayName: owner.displayName });
+      const boundOwner = await upsertTenantUser(deps.repository, { tenantId, id: owner.id, authUid: firebaseOwner.user.uid, email, phones: owner.phones, displayName: owner.displayName, role: "OWNER", active: true, now });
+      await auth.setCustomUserClaims(firebaseOwner.user.uid, mergeTenantOwnerClaims(firebaseOwner.user.customClaims, boundOwner));
+      const existing = await deps.repository.getTenantOwnerInvite(tenantId, boundOwner.id);
+      let invite = newOwnerInvite({ tenantId, ownerUserId: boundOwner.id, ownerEmail: email, status: "NOT_SENT", attemptCount: existing?.attemptCount ?? 0, now });
+      try {
+        const receipt = await deps.ownerInviteSender.send({ tenantId, ownerEmail: email, ownerName: boundOwner.displayName, tenantName: tenant.name });
+        invite = { ...invite, status: "SENT_TO_PROVIDER", attemptCount: invite.attemptCount + 1, provider: receipt.provider, providerMessageId: receipt.messageId, updatedAt: now };
+        await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("tenant_owner_invite.sent", actor.uid, `Tenant onboarding email accepted by ${receipt.provider} for ${tenantId}.`, firebaseOwner.user.uid, now));
+      } catch (error) {
+        invite = { ...invite, status: "FAILED", attemptCount: invite.attemptCount + 1, lastError: error instanceof Error ? error.message : "Tenant onboarding email failed.", updatedAt: now };
+        await deps.repository.appendPlatformSecurityAudit(newPlatformSecurityAudit("tenant_owner_invite.failed", actor.uid, `Tenant onboarding email was not accepted for ${tenantId}.`, firebaseOwner.user.uid, now));
+      }
+      await deps.repository.saveTenantOwnerInvite(invite);
+      if (invite.status !== "SENT_TO_PROVIDER") throw new RailError("The onboarding email provider did not accept this request.", { provider: "gmail", op: "sendTenantOnboarding", status: 502 });
+      res.status(201).json({ ok: true, tenant: { id: tenant.id, name: tenant.name }, owner: { id: boundOwner.id, email }, invite: { status: invite.status, provider: invite.provider, messageId: invite.providerMessageId, attemptCount: invite.attemptCount } });
     } catch (error) { sendRouteError(res, error); }
   });
 
