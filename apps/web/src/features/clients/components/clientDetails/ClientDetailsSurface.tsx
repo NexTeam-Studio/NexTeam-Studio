@@ -238,11 +238,6 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
       statusTone: "#1f77b4",
       onClick: () => payment.invoiceId ? openWorkspaceTarget({ module: "payments", objectId: payment.invoiceId }) : setModule("payments")
     }));
-    const fileDocumentTiles = [...clientFieldReports, ...clientSignedDocuments].map((entry) => ({
-      id: `doc-${entry.id}`,
-      label: entry.title,
-      kind: "document" as const
-    }));
     const fileMediaTiles = orderedClientFieldMedia.map((media) => ({
       id: `media-${media.id}`,
       label: media.aiCaption ?? media.type,
@@ -477,22 +472,17 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
       case "nexdocs":
         sectionContent = (
           <section className="nexops-mobile-profile-section">
-            <div className="nexops-mobile-section-head">
-              <div>
-                <p className="eyebrow">NexDocs</p>
-                <h2>Documents on file</h2>
-              </div>
-            </div>
-            <button className="nexops-mobile-filter-button" type="button">Filter Files</button>
-            <div className="nexops-mobile-file-grid">
-              {fileDocumentTiles.map((tile) => (
-                <div className={`nexops-mobile-file-tile ${tile.kind}`} key={tile.id}>
-                  <span>File</span>
-                  <strong>{tile.label}</strong>
-                </div>
-              ))}
-            </div>
-            {!fileDocumentTiles.length ? <p className="nexops-empty-copy">No NexDocs files are attached to this client yet.</p> : null}
+            <NexDocsClientWorkspace
+              tenantId={operatorContext.tenantId}
+              clientId={selectedClient.id}
+              clientName={clientDisplayName(selectedClient)}
+              role={operatorContext.role}
+              nexcamCounts={{
+                media: clientFieldMedia.length,
+                reports: clientFieldReports.length,
+                signedDocuments: clientSignedDocuments.length
+              }}
+            />
           </section>
         );
         break;
