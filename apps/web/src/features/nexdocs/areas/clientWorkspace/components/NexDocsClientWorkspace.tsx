@@ -592,6 +592,9 @@ export function NexDocsClientWorkspace(props: NexDocsClientWorkspaceProps): Reac
 
   function renderFoldersSection(): React.ReactElement {
     if (!library) {
+      if (busy === "refresh") {
+        return <NexopsEmptyState kind="fresh" title="Loading NexDocs" detail="Retrieving the client library and connected NexCam records." />;
+      }
       return <NexopsEmptyState kind="offline" title="NexDocs offline" detail="The unified client library could not load yet." />;
     }
     return (
@@ -639,6 +642,9 @@ export function NexDocsClientWorkspace(props: NexDocsClientWorkspaceProps): Reac
 
   function renderNexCamSection(): React.ReactElement {
     if (!library) {
+      if (busy === "refresh") {
+        return <NexopsEmptyState kind="fresh" title="Loading NexCam" detail="Retrieving field media and reports from the unified document library." />;
+      }
       return <NexopsEmptyState kind="offline" title="NexCam rail offline" detail="The field rail could not load from the unified document library yet." />;
     }
     return (
