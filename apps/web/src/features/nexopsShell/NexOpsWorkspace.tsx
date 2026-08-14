@@ -655,7 +655,7 @@ export function NexOpsWorkspace(props: { auth: Auth | null; user: User }): React
         activeClientProfileTab,
         clientContactDisplayName,
         clientDisplayName,
-        clientFieldMedia,
+        clientFieldMedia: orderedClientFieldMedia,
         clientFieldReports,
         clientOverviewCustomFieldValidation,
         clientOverviewCustomFieldsDraft,
