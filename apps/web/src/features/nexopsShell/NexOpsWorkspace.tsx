@@ -483,6 +483,10 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
       return;
     }
     if (option.workflow.kind === "drawer") {
+      if (selectedClient && activeClientProfileTab && (option.workflow.surface === "contact" || option.workflow.surface === "property")) {
+        openEditClientWorkspace();
+        return;
+      }
       openCreateClientDrawer(option.workflow.surface);
       return;
     }

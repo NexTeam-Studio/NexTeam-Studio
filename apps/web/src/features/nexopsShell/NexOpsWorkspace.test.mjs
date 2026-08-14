@@ -16,6 +16,8 @@ test("selected-client Create carries validated context without requiring a profi
   }
   assert.match(source, /option\.workflow\.module === "invoices"/);
   assert.match(source, /option\.workflow\.module === "payments"/);
+  assert.match(source, /selectedClient && activeClientProfileTab && \(option\.workflow\.surface === "contact" \|\| option\.workflow\.surface === "property"\)/);
+  assert.match(source, /openEditClientWorkspace\(\);/);
   assert.match(source, /presentation=\{createMenuPresentation\(window\.innerWidth\)\}/);
 });
 
