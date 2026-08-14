@@ -488,7 +488,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     }
     closeHeaderPanels();
     setModule(option.workflow.module);
-    if (activeClientProfileTab && selectedClient && (option.workflow.module === "requests" || option.workflow.module === "quotes" || option.workflow.module === "jobs")) {
+    if (selectedClient && (option.workflow.module === "requests" || option.workflow.module === "quotes" || option.workflow.module === "jobs")) {
       setCreateClientContextId(resolveClientScopedCreateId(selectedClient.id, clients.map((client) => client.id)));
     }
   }
