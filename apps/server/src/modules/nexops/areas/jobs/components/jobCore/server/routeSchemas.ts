@@ -25,3 +25,14 @@ export const jobActionSchema = z.object({
   tenantId: z.string().min(1).optional(),
   action: z.enum(["close", "invoice", "close_and_invoice", "dismiss_invoice_reminder"])
 });
+
+export const customerDocumentPackageSelectionSchema = z.object({
+  tenantId: z.string().min(1).optional(),
+  expectedPackageVersion: z.number().int().min(1).optional(),
+  selectedArtifactRefs: z.array(z.object({
+    artifactId: z.string().min(1),
+    source: z.enum(["nexdocs", "nexcam", "generated"]),
+    kind: z.string().min(1).max(100),
+    visitId: z.string().min(1).optional()
+  })).max(200)
+});

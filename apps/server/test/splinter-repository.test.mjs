@@ -251,6 +251,50 @@ test("Splinter classifies ordinary failures without creating an owner RFI", asyn
   assert.equal(updated.state, "RUNNING"); assert.equal(updated.escalation.classification, "AUTONOMOUS"); assert.equal(updated.rfi, undefined);
 });
 
+test("Splinter denies nonterminal returns while a repair, deployment, or browser acceptance action remains", async () => {
+  const { job, repository, service } = await queuedService();
+  await repository.update(job.id, {
+    executionMode: "CODE_CHANGE",
+    reviewRequired: true,
+    allowedPaths: ["apps/server/src/splinter/controllerPolicy.ts"],
+    acceptanceCriteria: ["browser acceptance"],
+    requiredChecks: ["SPLINTER_FOCUSED_TESTS"],
+    maxAttempts: 2
+  });
+  await service.transition(job.id, "RUNNING");
+  const active = await repository.get(job.id);
+  assert.equal(splinterLifecycleController.authorizeTerminalReturn(active, "COMPLETE", "run focused implementation").allowed, false);
+  const reviewPending = { ...active, reviewStatus: "AWAITING_REVIEW" };
+  assert.equal(splinterLifecycleController.authorizeTerminalReturn(reviewPending, "FAIL").allowed, false);
+  const repairAvailable = {
+    ...active,
+    reviewStatus: "REJECTED",
+    review: { reviewedCommitSha: "a".repeat(40), reviewer: "Raphael", reviewResult: "REJECT", summary: "repair", blockingFindings: ["fix"], nonBlockingFindings: [], reviewedAt: timestamps[1] },
+    attemptCount: 1,
+    maxAttempts: 2
+  };
+  assert.equal(splinterLifecycleController.authorizeTerminalReturn(repairAvailable, "FAIL").allowed, false);
+  const deploymentPending = { ...active, state: "SUCCEEDED", result: "PASS", next: { owner: "splinter", action: "Deploy accepted SHA to staging" } };
+  assert.equal(splinterLifecycleController.authorizeTerminalReturn(deploymentPending, "COMPLETE").allowed, false);
+  const browserPending = { ...deploymentPending, next: { owner: "splinter", action: "Run browser acceptance" } };
+  assert.equal(splinterLifecycleController.authorizeTerminalReturn(browserPending, "COMPLETE").allowed, false);
+});
+
+test("Splinter permits only durable terminal returns when no continuation remains", async () => {
+  const { job, repository, service } = await queuedService();
+  await service.transition(job.id, "RUNNING");
+  const complete = await service.transition(job.id, "SUCCEEDED");
+  assert.equal(splinterLifecycleController.authorizeTerminalReturn(complete, "COMPLETE").allowed, true);
+
+  const owner = { ...job, state: "AWAITING_HUMAN", rfi: { rfiId: "rfi-terminal-1", jobId: job.id, category: "OWNER_REQUIRED", title: "Decision", decisionNeeded: "Choose", whyAutomationCannotDecide: "Needs owner", knownFacts: ["None"], options: [{ id: "one", label: "One" }, { id: "two", label: "Two" }], recommendedOption: "one", affectedScope: "test", currentSafeState: "paused", blocking: true, createdAt: timestamps[1] } };
+  assert.equal(splinterLifecycleController.authorizeTerminalReturn(owner, "OWNER_REQUIRED").allowed, true);
+  const external = { ...job, state: "FAILED", result: "FAIL", escalation: { classification: "EXTERNAL_BLOCKER", detail: "provider unavailable" } };
+  assert.equal(splinterLifecycleController.authorizeTerminalReturn(external, "EXTERNAL_BLOCKER").allowed, true);
+  const safety = { ...external, escalation: { classification: "SAFETY_STOP", detail: "boundary" } };
+  assert.equal(splinterLifecycleController.authorizeTerminalReturn(safety, "SAFETY_STOP").allowed, true);
+  assert.equal(splinterLifecycleController.authorizeTerminalReturn(external, "FAIL").allowed, true);
+});
+
 test("Splinter records an owner RFI and resumes only after an authorized resolution", async () => {
   const { job, service } = await queuedService(); await service.transition(job.id, "RUNNING");
   const rfi = { rfiId: "rfi-owner-choice-1", jobId: job.id, category: "OWNER_REQUIRED", title: "Status vocabulary", decisionNeeded: "Choose a status label.", whyAutomationCannotDecide: "No approved requirement selects either valid term.", knownFacts: ["Both labels are valid."], options: [{ id: "ready", label: "Use ready" }, { id: "available", label: "Use available" }], recommendedOption: "ready", affectedScope: "Test-only Splinter proof", currentSafeState: "No source change has been made.", blocking: true, createdAt: timestamps[1] };
@@ -299,6 +343,16 @@ test("Splinter work selector requires completed dependency evidence and linked j
   await work.create(workItem({ workItemId: "dependency" })); await work.update("dependency", { status: "COMPLETED", completedEvidenceRefs: ["job:done"] });
   await work.create(workItem({ workItemId: "dependent", dependencies: ["dependency"] })); await selector.approve("dependent");
   const next = await selector.select("abcdef1"); assert.equal(next.item.workItemId, "dependent"); await assert.rejects(() => selector.reconcile("dependent", ["claim-only"]), /not complete/);
+});
+
+test("Splinter work completion route denies a return while browser acceptance remains", async () => {
+  const work = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository(); const selector = new SplinterWorkSelector(work, jobs);
+  await work.create(workItem({ workItemId: "browser-proof", acceptanceCriteria: ["browser evidence"], nonPromotable: true }));
+  await selector.approve("browser-proof");
+  const selected = await selector.select("abcdef1");
+  await jobs.update(selected.job.id, { state: "SUCCEEDED", result: "PASS", next: { owner: "splinter", action: "Run browser acceptance" } });
+  await assert.rejects(() => selector.reconcile("browser-proof", ["browser:pending"]), /Continue the authorized action/);
+  assert.equal((await work.get("browser-proof")).status, "CLAIMED");
 });
 
 test("Splinter work selector preserves safe READ_ONLY defaults for pre-code-change registry records", async () => {

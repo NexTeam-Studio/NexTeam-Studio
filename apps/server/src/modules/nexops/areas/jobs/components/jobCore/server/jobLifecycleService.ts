@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { RailError, type Client, type EventBus, type Invoice, type Job, type JobDetail, type JobStatus, type LineItem, type Property, type Quote, type ServiceRequest, type TenantUser } from "@nexteam/core";
+import { RailError, type Client, type CustomerDocumentPackage, type CustomerDocumentPackageArtifactRef, type EventBus, type Invoice, type Job, type JobDetail, type JobStatus, type LineItem, type Property, type Quote, type ServiceRequest, type TenantUser } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../../../../../../../comms/gmailRegistry.js";
 import type { PlatformRepository } from "../../../../../../../platform/repository.js";
@@ -68,6 +68,14 @@ export interface PrepareJobActionPreview {
   action: PerformJobActionInput["action"];
   title: string;
   body: string;
+}
+
+export interface SaveCustomerDocumentPackageSelectionInput {
+  tenantId: string;
+  jobId: string;
+  actorId: string;
+  selectedArtifactRefs: CustomerDocumentPackageArtifactRef[];
+  expectedPackageVersion?: number | undefined;
 }
 
 export interface BookingConfirmationPreview {
@@ -395,6 +403,62 @@ export class JobLifecycleService {
 
   private async tenantUsers(tenantId: string): Promise<TenantUser[]> {
     return this.deps.platformRepository ? await this.deps.platformRepository.listTenantUsers(tenantId) : [];
+  }
+
+  async getCustomerDocumentPackage(tenantId: string, jobId: string): Promise<CustomerDocumentPackage> {
+    requireJobLifecycleRecord(await this.getJobDetail(tenantId, jobId), `Native job ${jobId} was not found.`, "getCustomerDocumentPackage");
+    const existing = await this.deps.lifecycleRepository.getCustomerDocumentPackage(tenantId, jobId);
+    if (existing) return existing;
+    return {
+      id: `customer_document_package_${jobId}`,
+      tenantId,
+      jobId,
+      workPackageIds: [],
+      recipient: {},
+      approvedReportVersionIds: [],
+      invoiceVersionIds: [],
+      receiptIds: [],
+      selectedArtifactRefs: [],
+      packageVersion: 1,
+      manifestStatus: "draft",
+      deliveryAttemptIds: [],
+      createdBy: "system",
+      createdAt: now(),
+      updatedAt: now()
+    };
+  }
+
+  async saveCustomerDocumentPackageSelection(input: SaveCustomerDocumentPackageSelectionInput): Promise<CustomerDocumentPackage> {
+    const detail = requireJobLifecycleRecord(await this.getJobDetail(input.tenantId, input.jobId), `Native job ${input.jobId} was not found.`, "saveCustomerDocumentPackageSelection");
+    const existing = await this.deps.lifecycleRepository.getCustomerDocumentPackage(input.tenantId, input.jobId);
+    if (existing && existing.manifestStatus !== "draft") {
+      throw new RailError("A finalized or superseded closeout package cannot be edited.", { provider: "native", op: "saveCustomerDocumentPackageSelection", status: 409 });
+    }
+    if (existing && input.expectedPackageVersion !== undefined && existing.packageVersion !== input.expectedPackageVersion) {
+      throw new RailError("This closeout package changed elsewhere. Refresh it before saving.", { provider: "native", op: "saveCustomerDocumentPackageSelection", status: 409 });
+    }
+    const timestamp = now();
+    const selectedArtifactRefs = [...new Map(input.selectedArtifactRefs.map((reference) => [`${reference.source}:${reference.artifactId}`, reference])).values()];
+    const saved: CustomerDocumentPackage = {
+      ...(existing ?? {
+        id: `customer_document_package_${detail.id}`,
+        tenantId: input.tenantId,
+        jobId: detail.id,
+        workPackageIds: [],
+        recipient: {},
+        approvedReportVersionIds: [],
+        invoiceVersionIds: [],
+        receiptIds: [],
+        manifestStatus: "draft" as const,
+        deliveryAttemptIds: [],
+        createdBy: input.actorId,
+        createdAt: timestamp
+      }),
+      selectedArtifactRefs,
+      packageVersion: (existing?.packageVersion ?? 0) + 1,
+      updatedAt: timestamp
+    };
+    return this.deps.lifecycleRepository.upsertCustomerDocumentPackage(saved);
   }
 
   private async hydratedState(tenantId: string, jobId?: string): Promise<{

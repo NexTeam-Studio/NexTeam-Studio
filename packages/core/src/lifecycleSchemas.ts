@@ -229,11 +229,18 @@ export const customerDocumentPackageSchema = z.object({
   approvedReportVersionIds: z.array(idSchema),
   invoiceVersionIds: z.array(idSchema),
   receiptIds: z.array(idSchema),
+  selectedArtifactRefs: z.array(z.object({
+    artifactId: idSchema,
+    source: z.enum(["nexdocs", "nexcam", "generated"]),
+    kind: z.string().min(1).max(100),
+    visitId: idSchema.optional()
+  })).default([]),
   packageVersion: z.number().int().min(1),
   manifestStatus: customerDocumentPackageManifestStatusSchema,
   deliveryAttemptIds: z.array(idSchema),
   createdBy: idSchema,
   createdAt: z.string().min(1),
+  updatedAt: z.string().min(1).optional(),
   deliveryStatus: invoiceDeliveryStatusSchema.optional()
 });
 

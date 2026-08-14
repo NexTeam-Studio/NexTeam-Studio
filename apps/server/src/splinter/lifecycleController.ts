@@ -3,7 +3,8 @@ import {
   adjudicateSplinterLifecycle,
   hasStoredStagingAuthority,
   type SplinterAdjudication,
-  type SplinterAdjudicationInput
+  type SplinterAdjudicationInput,
+  type SplinterTerminalReturnStatus
 } from "./controllerPolicy.js";
 
 /**
@@ -45,6 +46,10 @@ export class SplinterLifecycleController {
       controllerOwnedPolicyPath: true,
       ownerAuthorizedControlPlaneWorkItem
     });
+  }
+
+  authorizeTerminalReturn(job: SplinterJob, status: SplinterTerminalReturnStatus, authorizedNextAction?: string): SplinterAdjudication {
+    return this.adjudicate(job, { decision: "TERMINAL_RETURN", returnStatus: status, ...(authorizedNextAction ? { authorizedNextAction } : {}) });
   }
 
   hasStagingAuthority(job: SplinterJob): boolean {

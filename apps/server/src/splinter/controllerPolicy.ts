@@ -12,7 +12,20 @@ export type SplinterLifecycleDecision =
   | "WORK_COMPLETION"
   | "ISSUE_CLASSIFICATION"
   | "PRODUCTION_TRANSITION"
-  | "CONTROLLER_POLICY_CHANGE";
+  | "CONTROLLER_POLICY_CHANGE"
+  | "TERMINAL_RETURN";
+
+/**
+ * The only statuses that may be shown as a terminal controller hand-off.  This
+ * deliberately has no generic "in progress" value: active work remains owned
+ * by the controller until one of these durable outcomes is true.
+ */
+export type SplinterTerminalReturnStatus =
+  | "COMPLETE"
+  | "OWNER_REQUIRED"
+  | "EXTERNAL_BLOCKER"
+  | "SAFETY_STOP"
+  | "FAIL";
 
 export interface SplinterAdjudicationInput {
   decision: SplinterLifecycleDecision;
@@ -23,6 +36,9 @@ export interface SplinterAdjudicationInput {
   explicitProductionAuthority?: boolean;
   ownerAuthorizedControlPlaneWorkItem?: boolean;
   controllerOwnedPolicyPath?: boolean;
+  returnStatus?: SplinterTerminalReturnStatus;
+  /** Evidence from the executor that a safe, authorized next action exists. */
+  authorizedNextAction?: string;
 }
 
 export interface SplinterAdjudication {
@@ -48,6 +64,14 @@ export function hasStoredStagingAuthority(job: SplinterJob): boolean {
 function completeAcceptanceEvidence(job: SplinterJob, evidenceRefs: readonly string[] = []): boolean {
   const requiredEvidenceCount = Math.max(1, job.acceptanceCriteria.length);
   return evidenceRefs.filter((reference) => reference.trim().length > 0).length >= requiredEvidenceCount;
+}
+
+function inherentContinuation(job: SplinterJob): string | undefined {
+  if (job.executionMode === "CODE_CHANGE" && job.reviewStatus === "AWAITING_REVIEW") return "Raphael review";
+  if (hasAuthorizedRepairCapacity(job)) return "authorized repair cycle";
+  if (job.state === "SUCCEEDED" && job.result === "PASS" && hasStoredStagingAuthority(job) && job.deployment.status !== "PASSED") return "staging deployment";
+  if ((job.state === "QUEUED" || job.state === "RUNNING" || job.state === "SUCCEEDED") && job.next.action !== "No further action required.") return job.next.action;
+  return undefined;
 }
 
 /**
@@ -110,5 +134,35 @@ export function adjudicateSplinterLifecycle(job: SplinterJob, input: SplinterAdj
         return deny("Critical policy changes require a controller-owned path and owner-authorized control-plane work item.", "Use an owner-authorized control-plane work item in the controller policy path.");
       }
       return allow("The critical policy change is controller-owned and owner-authorized.");
+
+    case "TERMINAL_RETURN": {
+      const requested = input.returnStatus;
+      if (!requested) return deny("A terminal return must name a durable terminal status.", "Use COMPLETE, OWNER_REQUIRED, EXTERNAL_BLOCKER, SAFETY_STOP, or FAIL.");
+      if (requested === "OWNER_REQUIRED") {
+        const rfi = job.rfi;
+        if (job.state !== "AWAITING_HUMAN" || !rfi || rfi.category !== "OWNER_REQUIRED" || rfi.resolvedAt || !rfi.blocking) {
+          return deny("OWNER_REQUIRED requires an active unresolved owner RFI.", "Record the blocking owner RFI before returning OWNER_REQUIRED.");
+        }
+        return allow("A durable unresolved owner RFI permits OWNER_REQUIRED.");
+      }
+      if (requested === "EXTERNAL_BLOCKER") {
+        if (job.escalation?.classification !== "EXTERNAL_BLOCKER") return deny("EXTERNAL_BLOCKER requires persisted external dependency evidence.", "Classify and record the external blocker before returning it.");
+        return allow("A persisted external blocker permits the terminal return.");
+      }
+      if (requested === "SAFETY_STOP") {
+        if (job.escalation?.classification !== "SAFETY_STOP") return deny("SAFETY_STOP requires a persisted safety classification.", "Record the safety boundary before returning it.");
+        return allow("A persisted safety boundary permits the terminal return.");
+      }
+      const continuation = input.authorizedNextAction?.trim() || inherentContinuation(job);
+      if (continuation) {
+        return deny(`Terminal return is denied while an authorized executable next action remains: ${continuation}.`, "Continue the authorized action instead of returning a nonterminal status.");
+      }
+      if (requested === "COMPLETE") {
+        if (job.state !== "SUCCEEDED" || job.result !== "PASS") return deny("COMPLETE requires a persisted PASS job result.", "Finish the job and record PASS before returning COMPLETE.");
+        return allow("The job has a durable PASS result and no authorized continuation.");
+      }
+      if (job.state !== "FAILED" || job.result !== "FAIL") return deny("FAIL requires a durable failed job result.", "Exhaust authorized repair paths and persist FAIL before returning it.");
+      return allow("The job has a durable failed result and no authorized continuation.");
+    }
   }
 }

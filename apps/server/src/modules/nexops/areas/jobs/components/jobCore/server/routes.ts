@@ -1,6 +1,49 @@
 import type { Request, Response } from "express";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
-import { createJobBodySchema, jobActionSchema, updateJobBodySchema } from "./routeSchemas.js";
+import { createJobBodySchema, customerDocumentPackageSelectionSchema, jobActionSchema, updateJobBodySchema } from "./routeSchemas.js";
+
+function packageArtifactKey(entry: { id: string; source: string }): string {
+  return `${entry.source}:${entry.id}`;
+}
+
+function isFinancialArtifact(entry: { kind: string }): boolean {
+  return entry.kind === "invoice" || entry.kind === "receipt";
+}
+
+async function resolveCloseoutArtifacts(input: {
+  tenantId: string;
+  job: { id: string; clientId: string; propertyId?: string | undefined };
+  role: "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
+  nexDocsService: () => { listClientLibrary(input: { tenantId: string; clientId: string; propertyId?: string; viewer: "staff"; includeClientStatement: false }): Promise<any> };
+}) {
+  const library = await input.nexDocsService().listClientLibrary({
+    tenantId: input.tenantId,
+    clientId: input.job.clientId,
+    ...(input.job.propertyId ? { propertyId: input.job.propertyId } : {}),
+    viewer: "staff",
+    includeClientStatement: false
+  });
+  const entries = [
+    ...library.folders.flatMap((folder: any) => folder.documents),
+    ...library.unfiled,
+    ...library.officeRecords,
+    ...library.nexcam.reports,
+    ...library.nexcam.signedDocuments,
+    ...library.nexcam.media
+  ].filter((entry: any) => entry.jobId === input.job.id)
+    .filter((entry: any) => input.role !== "TECHNICIAN" || !isFinancialArtifact(entry));
+  return [...new Map(entries.map((entry: any) => [packageArtifactKey(entry), entry])).values()].map((entry: any) => ({
+    artifactId: entry.id,
+    source: entry.source === "nexcam" ? "nexcam" : entry.source === "generated" ? "generated" : "nexdocs",
+    kind: entry.kind,
+    label: entry.label,
+    fileName: entry.fileName,
+    mimeType: entry.mimeType,
+    occurredAt: entry.occurredAt,
+    ...(entry.propertyId ? { propertyId: entry.propertyId } : {}),
+    ...(entry.visitId ? { visitId: entry.visitId } : {})
+  }));
+}
 import { quickPaymentRequestBodySchema } from "../../../../invoices/components/paymentRails/server/routeSchemas.js";
 
 export function registerJobCoreRoutes(context: CrmRouteContext): void {
@@ -13,6 +56,7 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
     env,
     fieldDocsService,
     jobLifecycle,
+    nexDocsService,
     providerForTenant,
     publicOrigin,
     requireTenantRole,
@@ -52,6 +96,45 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
     } catch (error) {
       sendRouteError(res, error);
     }
+  });
+
+  app.get("/api/crm/jobs/:id/closeout-package", async (req: Request, res: Response) => {
+    try {
+      const jobId = req.params.id;
+      if (!jobId) throw new RailError("Job id is required.", { provider: "native", op: "getCloseoutPackage", status: 400 });
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim() ? req.query.tenantId : defaultTenantId(env);
+      const access = await requireQuoteAccess(req, tenantId, "getCloseoutPackage");
+      const job = await jobLifecycle().getJobDetail(tenantId, jobId);
+      if (!job) throw new RailError(`Native job ${jobId} was not found.`, { provider: "native", op: "getCloseoutPackage", status: 404 });
+      const [pkg, artifacts] = await Promise.all([
+        jobLifecycle().getCustomerDocumentPackage(tenantId, jobId),
+        resolveCloseoutArtifacts({ tenantId, job, role: access.role, nexDocsService })
+      ]);
+      res.json({ ok: true, tenantId, actorRole: access.role, package: pkg, artifacts });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.put("/api/crm/jobs/:id/closeout-package", async (req: Request, res: Response) => {
+    try {
+      const jobId = req.params.id;
+      if (!jobId) throw new RailError("Job id is required.", { provider: "native", op: "saveCloseoutPackage", status: 400 });
+      const input = customerDocumentPackageSelectionSchema.parse(req.body);
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      const access = await requireQuoteAccess(req, tenantId, "saveCloseoutPackage");
+      const job = await jobLifecycle().getJobDetail(tenantId, jobId);
+      if (!job) throw new RailError(`Native job ${jobId} was not found.`, { provider: "native", op: "saveCloseoutPackage", status: 404 });
+      const artifacts = await resolveCloseoutArtifacts({ tenantId, job, role: access.role, nexDocsService });
+      const eligible = new Map(artifacts.map((artifact: any) => [`${artifact.source}:${artifact.artifactId}`, artifact]));
+      const selectedArtifactRefs = input.selectedArtifactRefs.map((reference) => {
+        const artifact = eligible.get(`${reference.source}:${reference.artifactId}`);
+        if (!artifact || artifact.kind !== reference.kind || artifact.visitId !== reference.visitId) {
+          throw new RailError("A selected closeout artifact is no longer eligible for this Job.", { provider: "native", op: "saveCloseoutPackage", status: 400 });
+        }
+        return { artifactId: artifact.artifactId, source: artifact.source, kind: artifact.kind, ...(artifact.visitId ? { visitId: artifact.visitId } : {}) };
+      });
+      const pkg = await jobLifecycle().saveCustomerDocumentPackageSelection({ tenantId, jobId, actorId: access.tenantUserId, selectedArtifactRefs, ...(input.expectedPackageVersion ? { expectedPackageVersion: input.expectedPackageVersion } : {}) });
+      res.json({ ok: true, tenantId, actorRole: access.role, package: pkg, artifacts });
+    } catch (error) { sendRouteError(res, error); }
   });
 
   app.post("/api/crm/jobs", async (req: Request, res: Response) => {

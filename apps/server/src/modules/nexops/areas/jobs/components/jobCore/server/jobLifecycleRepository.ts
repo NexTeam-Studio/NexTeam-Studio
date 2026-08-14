@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
-import { RailError, eventTypeSchema, type EventType } from "@nexteam/core";
+import { RailError, customerDocumentPackageSchema, eventTypeSchema, type CustomerDocumentPackage, type EventType } from "@nexteam/core";
 import { z } from "zod";
 import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 import {
@@ -118,6 +118,8 @@ export interface JobLifecycleRepository extends VisitReminderRepository {
   upsertJobActionAlert(record: JobActionAlertRecord): Promise<JobActionAlertRecord>;
   listLifecycleEvents(tenantId: string, jobId?: string): Promise<JobLifecycleEventRecord[]>;
   appendLifecycleEvent(record: Omit<JobLifecycleEventRecord, "id">): Promise<JobLifecycleEventRecord>;
+  getCustomerDocumentPackage(tenantId: string, jobId: string): Promise<CustomerDocumentPackage | null>;
+  upsertCustomerDocumentPackage(record: CustomerDocumentPackage): Promise<CustomerDocumentPackage>;
 }
 
 export class MemoryJobLifecycleRepository implements JobLifecycleRepository {
@@ -125,6 +127,7 @@ export class MemoryJobLifecycleRepository implements JobLifecycleRepository {
   private readonly visitReminders = new MemoryVisitReminderRepository();
   private readonly jobActionAlerts = new Map<string, JobActionAlertRecord>();
   private readonly lifecycleEvents = new Map<string, JobLifecycleEventRecord>();
+  private readonly customerDocumentPackages = new Map<string, CustomerDocumentPackage>();
 
   async listInvoiceReminders(tenantId: string): Promise<InvoiceReminderRecord[]> {
     return [...this.invoiceReminders.values()].filter((record) => record.tenantId === tenantId);
@@ -166,6 +169,17 @@ export class MemoryJobLifecycleRepository implements JobLifecycleRepository {
   async appendLifecycleEvent(record: Omit<JobLifecycleEventRecord, "id">): Promise<JobLifecycleEventRecord> {
     const parsed = lifecycleEventSchema.parse({ ...record, id: `job_evt_${randomUUID()}` }) as JobLifecycleEventRecord;
     this.lifecycleEvents.set(parsed.id, parsed);
+    return parsed;
+  }
+
+  async getCustomerDocumentPackage(tenantId: string, jobId: string): Promise<CustomerDocumentPackage | null> {
+    return [...this.customerDocumentPackages.values()].find((record) => record.tenantId === tenantId && record.jobId === jobId) ?? null;
+  }
+
+  async upsertCustomerDocumentPackage(record: CustomerDocumentPackage): Promise<CustomerDocumentPackage> {
+    const parsed = customerDocumentPackageSchema.parse(record) as CustomerDocumentPackage;
+    assertMemoryTenantOwner(this.customerDocumentPackages.get(parsed.id), parsed.tenantId, `Customer document package ${parsed.id}`);
+    this.customerDocumentPackages.set(parsed.id, parsed);
     return parsed;
   }
 }
@@ -220,6 +234,17 @@ export class FirestoreJobLifecycleRepository implements JobLifecycleRepository {
   async appendLifecycleEvent(record: Omit<JobLifecycleEventRecord, "id">): Promise<JobLifecycleEventRecord> {
     const parsed = lifecycleEventSchema.parse({ ...record, id: `job_evt_${randomUUID()}` }) as JobLifecycleEventRecord;
     await setTenantOwnedDocument({ db: this.db, collection: "jobLifecycleEvents", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Job lifecycle event ${parsed.id}` });
+    return parsed;
+  }
+
+  async getCustomerDocumentPackage(tenantId: string, jobId: string): Promise<CustomerDocumentPackage | null> {
+    const records = await this.listByTenant("customerDocumentPackages", tenantId, customerDocumentPackageSchema) as CustomerDocumentPackage[];
+    return records.find((record) => record.jobId === jobId) ?? null;
+  }
+
+  async upsertCustomerDocumentPackage(record: CustomerDocumentPackage): Promise<CustomerDocumentPackage> {
+    const parsed = customerDocumentPackageSchema.parse(record) as CustomerDocumentPackage;
+    await setTenantOwnedDocument({ db: this.db, collection: "customerDocumentPackages", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Customer document package ${parsed.id}` });
     return parsed;
   }
 }

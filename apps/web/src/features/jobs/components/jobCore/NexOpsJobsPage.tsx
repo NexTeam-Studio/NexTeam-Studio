@@ -366,6 +366,32 @@ export function followUpDraftFromHistory(job: Pick<JobSummary, "clientId" | "tit
   };
 }
 
+interface CloseoutArtifact {
+  artifactId: string;
+  source: "nexdocs" | "nexcam" | "generated";
+  kind: string;
+  label: string;
+  fileName: string;
+  mimeType: string;
+  occurredAt: string;
+  propertyId?: string;
+  visitId?: string;
+}
+
+interface CloseoutPackage {
+  id: string;
+  packageVersion: number;
+  manifestStatus: "draft" | "finalized" | "superseded";
+  selectedArtifactRefs: Array<Pick<CloseoutArtifact, "artifactId" | "source" | "kind" | "visitId">>;
+}
+
+interface CloseoutPackageResponse {
+  ok: boolean;
+  package?: CloseoutPackage;
+  artifacts?: CloseoutArtifact[];
+  error?: string;
+}
+
 /**
  * Keeps the visit scheduler operable where native date/time pickers are not
  * available to the interaction surface. Browser-local semantics stay the
@@ -577,6 +603,11 @@ export function NexOpsJobsPage(props: {
   const [visitEndTime, setVisitEndTime] = useState("");
   const [activeVisitDocumentsId, setActiveVisitDocumentsId] = useState("");
   const [jobDocumentsOpen, setJobDocumentsOpen] = useState(false);
+  const [closeoutPackage, setCloseoutPackage] = useState<CloseoutPackage | null>(null);
+  const [closeoutArtifacts, setCloseoutArtifacts] = useState<CloseoutArtifact[]>([]);
+  const [closeoutSelection, setCloseoutSelection] = useState<string[]>([]);
+  const [closeoutStatus, setCloseoutStatus] = useState("Load the Job to review closeout artifacts.");
+  const [closeoutBusy, setCloseoutBusy] = useState(false);
   const [actionBusy, setActionBusy] = useState<JobAction | null>(null);
   const [statusFilter, setStatusFilter] = useState<JobFilter>("All");
   const [jobSearch, setJobSearch] = useState("");
@@ -673,6 +704,9 @@ export function NexOpsJobsPage(props: {
   async function loadDetail(jobId: string): Promise<void> {
     setActiveVisitDocumentsId("");
     setJobDocumentsOpen(false);
+    setCloseoutPackage(null);
+    setCloseoutArtifacts([]);
+    setCloseoutSelection([]);
     if (!jobId) {
       setDetail(null);
       setBookingPreview(null);
@@ -695,12 +729,56 @@ export function NexOpsJobsPage(props: {
       setDetailStatus(`Viewing ${body.job.title}.`);
       setVisitTitle(body.job.title);
       setDetailPaymentSchedule(paymentScheduleFromRecord(body.job.paymentSchedule));
+      void loadCloseoutPackage(body.job.id);
     } catch {
       setDetail(null);
       setBookingPreview(null);
       setBookingDraft(null);
       setDetailStatus("Job detail API unreachable.");
     }
+  }
+
+  async function loadCloseoutPackage(jobId: string): Promise<void> {
+    setCloseoutStatus("Loading eligible Closeout artifacts...");
+    try {
+      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(jobId)}/closeout-package?tenantId=${encodeURIComponent(props.tenantId)}`)
+        .then((response) => response.json() as Promise<CloseoutPackageResponse>);
+      if (!body.ok || !body.package) {
+        setCloseoutStatus(body.error ?? "Closeout artifacts are unavailable right now.");
+        return;
+      }
+      setCloseoutPackage(body.package);
+      setCloseoutArtifacts(body.artifacts ?? []);
+      setCloseoutSelection((body.package.selectedArtifactRefs ?? []).map((artifact) => `${artifact.source}:${artifact.artifactId}`));
+      setCloseoutStatus((body.artifacts ?? []).length ? "Choose the artifacts to include in the customer package." : "No eligible Job artifacts are available yet.");
+    } catch {
+      setCloseoutStatus("Closeout artifacts are unavailable right now.");
+    }
+  }
+
+  async function saveCloseoutPackage(): Promise<void> {
+    if (!detail || !closeoutPackage) return;
+    setCloseoutBusy(true);
+    try {
+      const selectedArtifactRefs = closeoutArtifacts
+        .filter((artifact) => closeoutSelection.includes(`${artifact.source}:${artifact.artifactId}`))
+        .map((artifact) => ({ artifactId: artifact.artifactId, source: artifact.source, kind: artifact.kind, ...(artifact.visitId ? { visitId: artifact.visitId } : {}) }));
+      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}/closeout-package`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: props.tenantId, expectedPackageVersion: closeoutPackage.packageVersion, selectedArtifactRefs })
+      }).then((response) => response.json() as Promise<CloseoutPackageResponse>);
+      if (!body.ok || !body.package) {
+        setCloseoutStatus(body.error ?? "Closeout selection could not be saved.");
+        return;
+      }
+      setCloseoutPackage(body.package);
+      setCloseoutArtifacts(body.artifacts ?? closeoutArtifacts);
+      setCloseoutSelection((body.package.selectedArtifactRefs ?? []).map((artifact) => `${artifact.source}:${artifact.artifactId}`));
+      setCloseoutStatus(body.package.selectedArtifactRefs.length ? `${body.package.selectedArtifactRefs.length} artifact${body.package.selectedArtifactRefs.length === 1 ? "" : "s"} selected. Package remains draft until delivery review.` : "No artifacts selected. Package remains a draft.");
+    } catch {
+      setCloseoutStatus("Closeout selection could not be saved.");
+    } finally { setCloseoutBusy(false); }
   }
 
   async function loadBookingPreview(jobId: string, visitId?: string): Promise<void> {
@@ -1994,14 +2072,34 @@ export function NexOpsJobsPage(props: {
 
                   <div className="nexops-jobs-section">
                     <div className="nexops-jobs-card-heading">
-                      <h3>Customer Package Preview</h3>
-                      <span>{deriveDocumentPackagePreview(detail).stage}</span>
+                      <h3>Closeout Package Review</h3>
+                      <span>{closeoutPackage?.selectedArtifactRefs.length ?? 0} selected</span>
                     </div>
-                    <ul className="nexops-jobs-bullets">
-                      <li>{deriveDocumentPackagePreview(detail).note}</li>
-                      <li>{detail.invoices.length ? `${detail.invoices.length} invoice record${detail.invoices.length === 1 ? "" : "s"} currently linked.` : "No invoice linked yet."}</li>
-                      <li>{detail.paymentSchedule?.enabled ? "Payment schedule stays attached to the same work rail." : "No active payment schedule on this job."}</li>
-                    </ul>
+                    <p className="nexops-empty-copy">{closeoutStatus}</p>
+                    <div className="nexops-jobs-sublist">
+                      {closeoutArtifacts.map((artifact) => {
+                        const key = `${artifact.source}:${artifact.artifactId}`;
+                        return (
+                          <label key={key} className="nexops-jobs-sublist-item">
+                            <input
+                              type="checkbox"
+                              checked={closeoutSelection.includes(key)}
+                              onChange={(event) => setCloseoutSelection((current) => event.target.checked ? [...new Set([...current, key])] : current.filter((value) => value !== key))}
+                            />
+                            <div>
+                              <strong>{artifact.label || artifact.fileName}</strong>
+                              <span>{artifact.kind} · {artifact.source}</span>
+                              <small>{artifact.visitId ? `Originating Visit: ${artifact.visitId}` : "Job-wide artifact"} · {formatDateTime(artifact.occurredAt)}</small>
+                            </div>
+                          </label>
+                        );
+                      })}
+                      {!closeoutArtifacts.length ? <p className="nexops-empty-copy">Visit files, Job documents, NexCam media, and eligible records appear here when they exist.</p> : null}
+                    </div>
+                    <div className="nexops-inline-actions">
+                      <button type="button" disabled={closeoutBusy || !closeoutPackage} onClick={() => void saveCloseoutPackage()}>{closeoutBusy ? "Saving..." : "Save Closeout Selection"}</button>
+                      <span>{closeoutPackage?.manifestStatus === "draft" ? "Draft only — delivery remains a separate review." : "Package is not editable after finalization."}</span>
+                    </div>
                   </div>
 
                   <div className="nexops-jobs-section">

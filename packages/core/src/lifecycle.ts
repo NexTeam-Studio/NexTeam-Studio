@@ -228,12 +228,22 @@ export interface CustomerDocumentPackage {
   approvedReportVersionIds: ID[];
   invoiceVersionIds: ID[];
   receiptIds: ID[];
+  /** References only: the authoritative file/media remains in NexDocs/NexCam. */
+  selectedArtifactRefs: CustomerDocumentPackageArtifactRef[];
   packageVersion: number;
   manifestStatus: CustomerDocumentPackageManifestStatus;
   deliveryAttemptIds: ID[];
   createdBy: ID;
   createdAt: string;
+  updatedAt?: string | undefined;
   deliveryStatus?: InvoiceDeliveryStatus | undefined;
+}
+
+export interface CustomerDocumentPackageArtifactRef {
+  artifactId: ID;
+  source: "nexdocs" | "nexcam" | "generated";
+  kind: string;
+  visitId?: ID | undefined;
 }
 
 export interface ContactInteraction {
