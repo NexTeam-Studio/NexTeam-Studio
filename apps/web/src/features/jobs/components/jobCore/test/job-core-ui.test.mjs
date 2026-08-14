@@ -7,7 +7,8 @@ import {
   inlineJobClientDraftMissingFields,
   isHistoricalJob,
   matchesJobSearch,
-  mergeJobClientOptions
+  mergeJobClientOptions,
+  parseVisitDateTime
 } from "../NexOpsJobsPage.tsx";
 
 test("inline job client draft requires name, telephone, and address before save", () => {
@@ -93,4 +94,10 @@ test("a historical record prepares new work for the same client without modifyin
     followUpDraftFromHistory({ clientId: "client_1", propertyId: "property_1", title: "Annual service visit" }),
     { clientId: "client_1", propertyId: "property_1", title: "Follow-up: Annual service visit" }
   );
+});
+
+test("visit scheduler parses accessible text controls", () => {
+  assert.equal(parseVisitDateTime("2026-08-15", "10:00") instanceof Date, true);
+  assert.equal(parseVisitDateTime("08/15/2026", "10:00"), null);
+  assert.equal(parseVisitDateTime("2026-08-15", "10:00 AM"), null);
 });

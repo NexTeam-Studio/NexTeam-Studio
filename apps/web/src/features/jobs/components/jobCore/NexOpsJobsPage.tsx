@@ -365,6 +365,19 @@ export function followUpDraftFromHistory(job: Pick<JobSummary, "clientId" | "tit
   };
 }
 
+/**
+ * Keeps the visit scheduler operable where native date/time pickers are not
+ * available to the interaction surface. Browser-local semantics stay the
+ * same as the previous datetime-local controls before API serialization.
+ */
+export function parseVisitDateTime(dateValue: string, timeValue: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue) || !/^\d{2}:\d{2}$/.test(timeValue)) {
+    return null;
+  }
+  const parsed = new Date(`${dateValue}T${timeValue}`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 interface BookingConfirmationDraft {
   visitId: string;
   mode: "email" | "sms";
@@ -1062,8 +1075,12 @@ export function NexOpsJobsPage(props: {
       setDetailStatus("Pick start and end dates and times before booking the visit.");
       return;
     }
-    const start = new Date(`${visitDate}T${visitStartTime}`);
-    const end = new Date(`${visitEndDate}T${visitEndTime}`);
+    const start = parseVisitDateTime(visitDate, visitStartTime);
+    const end = parseVisitDateTime(visitEndDate, visitEndTime);
+    if (!start || !end) {
+      setDetailStatus("Enter dates as YYYY-MM-DD and times as HH:MM before booking the visit.");
+      return;
+    }
     if (!(end.getTime() > start.getTime())) {
       setDetailStatus("Visit end must be after the start.");
       return;
@@ -1704,10 +1721,10 @@ export function NexOpsJobsPage(props: {
                 </div>
                 <form className="nexops-jobs-form inline" onSubmit={(event) => void scheduleVisit(event)}>
                   <input aria-label="Visit Title" value={visitTitle} onChange={(event) => setVisitTitle(event.target.value)} placeholder="Visit Title" />
-                  <input aria-label="Visit Date" type="date" value={visitDate} onChange={(event) => setVisitDate(event.target.value)} />
-                  <input aria-label="Visit Start Time" type="time" value={visitStartTime} onChange={(event) => setVisitStartTime(event.target.value)} />
-                  <input aria-label="Visit End Date" type="date" value={visitEndDate} onChange={(event) => setVisitEndDate(event.target.value)} />
-                  <input aria-label="Visit End Time" type="time" value={visitEndTime} onChange={(event) => setVisitEndTime(event.target.value)} />
+                  <input aria-label="Visit Date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={visitDate} onChange={(event) => setVisitDate(event.target.value)} />
+                  <input aria-label="Visit Start Time" type="text" inputMode="numeric" placeholder="HH:MM" value={visitStartTime} onChange={(event) => setVisitStartTime(event.target.value)} />
+                  <input aria-label="Visit End Date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={visitEndDate} onChange={(event) => setVisitEndDate(event.target.value)} />
+                  <input aria-label="Visit End Time" type="text" inputMode="numeric" placeholder="HH:MM" value={visitEndTime} onChange={(event) => setVisitEndTime(event.target.value)} />
                   <button type="submit" disabled={actionBusy !== null}>Book Visit</button>
                 </form>
                 <div className="nexops-jobs-sublist">
