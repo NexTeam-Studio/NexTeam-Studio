@@ -1143,7 +1143,7 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
 
     return (
       <section className="nexops-client-profile">
-        <div className="nexops-client-profile-header-card">
+        <div className="nexops-client-profile-header-card nexops-client-profile-brand-header">
           <div className="nexops-client-profile-header-actions">
             <button className="nexops-link-button" type="button" onClick={returnToClientRoster}>Back to clients</button>
             <span className="nexops-status-pill">{clientStatusLabel(selectedClient)}</span>

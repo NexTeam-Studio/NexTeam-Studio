@@ -132,6 +132,7 @@ test("client roster and profile keep the mobile-first client workspace actions a
   assert.match(clientDetailsSource, /Recent relationship history/);
   assert.match(clientDetailsSource, /See all/);
   assert.match(clientDetailsSource, /nexops-client-profile-create-action/);
-  assert.match(clientDetailsCss, /\.nexops-client-profile-header-card\s*\{/);
+  assert.match(clientDetailsSource, /nexops-client-profile-brand-header/);
+  assert.match(clientDetailsCss, /\.nexops-client-profile-header-card\.nexops-client-profile-brand-header\s*\{/);
   assert.match(clientDetailsCss, /\.nexops-mobile-profile-summary\s*\{/);
 });

@@ -8,7 +8,7 @@
   flex-wrap: wrap;
 }
 
-.nexops-client-profile-header-card {
+.nexops-client-profile-header-card.nexops-client-profile-brand-header {
   position: relative;
   overflow: hidden;
   border-color: rgba(84, 222, 125, 0.24);
