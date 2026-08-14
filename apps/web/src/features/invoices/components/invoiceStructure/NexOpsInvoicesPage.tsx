@@ -336,6 +336,7 @@ interface NexOpsInvoicesPageProps {
   clients: ClientOption[];
   entryPoint: "invoices" | "payments";
   focusedInvoiceId?: string;
+  initialClientId?: string;
   initialFilter?: InvoiceFilter;
   onCrmMutation?: () => void;
 }
@@ -692,10 +693,14 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
   const [recoveryHint, setRecoveryHint] = useState("");
   const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState("");
+  const clientContext = props.clients.find((client) => client.id === props.initialClientId);
 
   const filteredInvoices = useMemo(() => {
     const needle = invoiceSearch.trim().toLowerCase();
     return invoices.filter((invoice) => {
+      if (clientContext && invoice.clientId !== clientContext.id) {
+        return false;
+      }
       if (!invoiceMatchesFilter(invoice, invoiceFilter)) {
         return false;
       }
@@ -710,11 +715,11 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
         clientDisplayName(client)
       ].some((value) => String(value ?? "").toLowerCase().includes(needle));
     });
-  }, [invoiceFilter, invoiceSearch, invoices, props.clients]);
+  }, [clientContext, invoiceFilter, invoiceSearch, invoices, props.clients]);
 
   const combineCandidates = useMemo(
-    () => jobs.filter((job) => job.status === "Requires Invoicing" || job.status === "Action Required"),
-    [jobs]
+    () => jobs.filter((job) => (job.status === "Requires Invoicing" || job.status === "Action Required") && (!clientContext || job.clientId === clientContext.id)),
+    [clientContext, jobs]
   );
 
   const selectedClient = props.clients.find((client) => client.id === detail?.invoice?.clientId);
@@ -1260,6 +1265,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
             {props.entryPoint === "payments" ? "Payments" : "Invoices"}
           </NexOpsPageTitle>
           <p>Draft, send, collect, recover, and pause at receipt review before anything goes out the door.</p>
+          {clientContext ? <p className="nexops-module-status">Client context: {clientDisplayName(clientContext)}. This rail only shows that client's records and ready-to-invoice jobs.</p> : null}
         </div>
         <div className="nexops-inline-actions">
           <button type="button" onClick={() => void loadWorkspace()} disabled={Boolean(busy)}>Refresh</button>

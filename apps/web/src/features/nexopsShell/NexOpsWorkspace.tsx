@@ -488,7 +488,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     }
     closeHeaderPanels();
     setModule(option.workflow.module);
-    if (selectedClient && (option.workflow.module === "requests" || option.workflow.module === "quotes" || option.workflow.module === "jobs")) {
+    if (selectedClient && (option.workflow.module === "requests" || option.workflow.module === "quotes" || option.workflow.module === "jobs" || option.workflow.module === "invoices" || option.workflow.module === "payments")) {
       setCreateClientContextId(resolveClientScopedCreateId(selectedClient.id, clients.map((client) => client.id)));
     }
   }
@@ -885,6 +885,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           clients={clients}
           entryPoint={activeModule}
           focusedInvoiceId={focusedInvoiceId}
+          initialClientId={createClientContextId || undefined}
           initialFilter={invoiceFilterIntent}
           onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
         />
