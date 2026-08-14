@@ -127,22 +127,15 @@ export function resolveCommunicationDeliveryAvailability(
   }
 
   if (input.channel === "sms") {
-    if (input.smsProviderConfigured !== true) {
-      return {
-        channel: input.channel,
-        available: false,
-        recipient,
-        reason: "SMS delivery is not available for this tenant yet."
-      };
-    }
-    if (input.smsConsent !== true) {
-      return {
-        channel: input.channel,
-        available: false,
-        recipient,
-        reason: "This client has not consented to SMS messages."
-      };
-    }
+    // SMS is deliberately future-only in this phase. Client-side capability,
+    // consent, and provider flags can inform a later server-authorized rail,
+    // but they must never enable an operator send affordance by themselves.
+    return {
+      channel: input.channel,
+      available: false,
+      recipient,
+      reason: "SMS delivery is not available for this tenant yet."
+    };
   }
 
   return { channel: input.channel, available: true, recipient };
@@ -159,10 +152,13 @@ export function buildCommunicationSendPreview(input: {
   bodyText: string;
   availability: CommunicationDeliveryAvailability;
 }): CommunicationSendPreview {
+  const channelMatchesAvailability = input.channel === input.availability.channel;
   return {
     channel: input.channel,
-    available: input.availability.available,
-    unavailableReason: input.availability.reason,
+    available: channelMatchesAvailability && input.availability.available,
+    unavailableReason: channelMatchesAvailability
+      ? input.availability.reason
+      : "The selected delivery channel does not match this preview.",
     recipient: input.availability.recipient,
     subject: input.channel === "email" ? clean(input.subject) : "",
     bodyText: input.bodyText

@@ -32,7 +32,7 @@ test("email preview is available only when the message type and client email are
   });
 });
 
-test("SMS remains visibly unavailable until provider, phone, and consent are all ready", () => {
+test("SMS remains visibly unavailable in this phase even when future-rail prerequisites are present", () => {
   assert.equal(resolveCommunicationDeliveryAvailability({
     channel: "sms",
     phone: "8645550100",
@@ -40,14 +40,6 @@ test("SMS remains visibly unavailable until provider, phone, and consent are all
     smsProviderConfigured: false,
     smsConsent: true
   }).reason, "SMS delivery is not available for this tenant yet.");
-
-  assert.equal(resolveCommunicationDeliveryAvailability({
-    channel: "sms",
-    phone: "8645550100",
-    templateEnabled: true,
-    smsProviderConfigured: true,
-    smsConsent: false
-  }).reason, "This client has not consented to SMS messages.");
 
   assert.deepEqual(resolveCommunicationDeliveryAvailability({
     channel: "sms",
@@ -57,7 +49,29 @@ test("SMS remains visibly unavailable until provider, phone, and consent are all
     smsConsent: true
   }), {
     channel: "sms",
-    available: true,
-    recipient: "8645550100"
+    available: false,
+    recipient: "8645550100",
+    reason: "SMS delivery is not available for this tenant yet."
+  });
+});
+
+test("a preview cannot be treated as available when its channel and availability contract differ", () => {
+  const emailAvailability = resolveCommunicationDeliveryAvailability({
+    channel: "email",
+    email: "client@example.com",
+    templateEnabled: true
+  });
+
+  assert.deepEqual(buildCommunicationSendPreview({
+    channel: "sms",
+    bodyText: "Hi there",
+    availability: emailAvailability
+  }), {
+    channel: "sms",
+    available: false,
+    unavailableReason: "The selected delivery channel does not match this preview.",
+    recipient: "client@example.com",
+    subject: "",
+    bodyText: "Hi there"
   });
 });
