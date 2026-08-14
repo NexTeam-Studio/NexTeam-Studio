@@ -244,6 +244,28 @@ export const customerDocumentPackageSchema = z.object({
   deliveryStatus: invoiceDeliveryStatusSchema.optional()
 });
 
+export const customerDocumentPackageDeliveryAttemptSchema = z.object({
+  id: idSchema,
+  tenantId: idSchema,
+  jobId: idSchema,
+  packageId: idSchema,
+  channel: z.enum(["email", "sms"]),
+  recipient: z.string().min(1),
+  copyTarget: z.string().min(1).optional(),
+  subject: z.string().min(1).optional(),
+  bodyText: z.string().min(1),
+  selectedArtifactRefs: z.array(z.object({
+    artifactId: idSchema,
+    source: z.enum(["nexdocs", "nexcam", "generated"]),
+    kind: z.string().min(1).max(100),
+    visitId: idSchema.optional()
+  })),
+  status: z.enum(["sent", "failed"]),
+  providerReceiptId: idSchema.optional(),
+  createdBy: idSchema,
+  createdAt: z.string().min(1)
+});
+
 export const contactInteractionSchema = z.object({
   id: idSchema,
   tenantId: idSchema,

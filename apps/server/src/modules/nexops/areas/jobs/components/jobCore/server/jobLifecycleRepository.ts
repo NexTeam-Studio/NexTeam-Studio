@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
-import { RailError, customerDocumentPackageSchema, eventTypeSchema, type CustomerDocumentPackage, type EventType } from "@nexteam/core";
+import { RailError, customerDocumentPackageDeliveryAttemptSchema, customerDocumentPackageSchema, eventTypeSchema, type CustomerDocumentPackage, type CustomerDocumentPackageDeliveryAttempt, type EventType } from "@nexteam/core";
 import { z } from "zod";
 import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 import {
@@ -120,6 +120,8 @@ export interface JobLifecycleRepository extends VisitReminderRepository {
   appendLifecycleEvent(record: Omit<JobLifecycleEventRecord, "id">): Promise<JobLifecycleEventRecord>;
   getCustomerDocumentPackage(tenantId: string, jobId: string): Promise<CustomerDocumentPackage | null>;
   upsertCustomerDocumentPackage(record: CustomerDocumentPackage): Promise<CustomerDocumentPackage>;
+  listCustomerDocumentPackageDeliveryAttempts(tenantId: string, jobId: string): Promise<CustomerDocumentPackageDeliveryAttempt[]>;
+  appendCustomerDocumentPackageDeliveryAttempt(record: Omit<CustomerDocumentPackageDeliveryAttempt, "id">): Promise<CustomerDocumentPackageDeliveryAttempt>;
 }
 
 export class MemoryJobLifecycleRepository implements JobLifecycleRepository {
@@ -128,6 +130,7 @@ export class MemoryJobLifecycleRepository implements JobLifecycleRepository {
   private readonly jobActionAlerts = new Map<string, JobActionAlertRecord>();
   private readonly lifecycleEvents = new Map<string, JobLifecycleEventRecord>();
   private readonly customerDocumentPackages = new Map<string, CustomerDocumentPackage>();
+  private readonly customerDocumentPackageDeliveryAttempts = new Map<string, CustomerDocumentPackageDeliveryAttempt>();
 
   async listInvoiceReminders(tenantId: string): Promise<InvoiceReminderRecord[]> {
     return [...this.invoiceReminders.values()].filter((record) => record.tenantId === tenantId);
@@ -180,6 +183,18 @@ export class MemoryJobLifecycleRepository implements JobLifecycleRepository {
     const parsed = customerDocumentPackageSchema.parse(record) as CustomerDocumentPackage;
     assertMemoryTenantOwner(this.customerDocumentPackages.get(parsed.id), parsed.tenantId, `Customer document package ${parsed.id}`);
     this.customerDocumentPackages.set(parsed.id, parsed);
+    return parsed;
+  }
+
+  async listCustomerDocumentPackageDeliveryAttempts(tenantId: string, jobId: string): Promise<CustomerDocumentPackageDeliveryAttempt[]> {
+    return [...this.customerDocumentPackageDeliveryAttempts.values()]
+      .filter((record) => record.tenantId === tenantId && record.jobId === jobId)
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+  }
+
+  async appendCustomerDocumentPackageDeliveryAttempt(record: Omit<CustomerDocumentPackageDeliveryAttempt, "id">): Promise<CustomerDocumentPackageDeliveryAttempt> {
+    const parsed = customerDocumentPackageDeliveryAttemptSchema.parse({ ...record, id: `customer_document_package_delivery_${randomUUID()}` }) as CustomerDocumentPackageDeliveryAttempt;
+    this.customerDocumentPackageDeliveryAttempts.set(parsed.id, parsed);
     return parsed;
   }
 }
@@ -245,6 +260,17 @@ export class FirestoreJobLifecycleRepository implements JobLifecycleRepository {
   async upsertCustomerDocumentPackage(record: CustomerDocumentPackage): Promise<CustomerDocumentPackage> {
     const parsed = customerDocumentPackageSchema.parse(record) as CustomerDocumentPackage;
     await setTenantOwnedDocument({ db: this.db, collection: "customerDocumentPackages", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Customer document package ${parsed.id}` });
+    return parsed;
+  }
+
+  async listCustomerDocumentPackageDeliveryAttempts(tenantId: string, jobId: string): Promise<CustomerDocumentPackageDeliveryAttempt[]> {
+    const records = await this.listByTenant("customerDocumentPackageDeliveryAttempts", tenantId, customerDocumentPackageDeliveryAttemptSchema) as CustomerDocumentPackageDeliveryAttempt[];
+    return records.filter((record) => record.jobId === jobId).sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+  }
+
+  async appendCustomerDocumentPackageDeliveryAttempt(record: Omit<CustomerDocumentPackageDeliveryAttempt, "id">): Promise<CustomerDocumentPackageDeliveryAttempt> {
+    const parsed = customerDocumentPackageDeliveryAttemptSchema.parse({ ...record, id: `customer_document_package_delivery_${randomUUID()}` }) as CustomerDocumentPackageDeliveryAttempt;
+    await setTenantOwnedDocument({ db: this.db, collection: "customerDocumentPackageDeliveryAttempts", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Customer document package delivery ${parsed.id}` });
     return parsed;
   }
 }

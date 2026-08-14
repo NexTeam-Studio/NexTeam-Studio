@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { RailError, type Client, type CustomerDocumentPackage, type CustomerDocumentPackageArtifactRef, type EventBus, type Invoice, type Job, type JobDetail, type JobStatus, type LineItem, type Property, type Quote, type ServiceRequest, type TenantUser } from "@nexteam/core";
+import { RailError, type Client, type CustomerDocumentPackage, type CustomerDocumentPackageArtifactRef, type CustomerDocumentPackageDeliveryAttempt, type EventBus, type Invoice, type Job, type JobDetail, type JobStatus, type LineItem, type Property, type Quote, type ServiceRequest, type TenantUser } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../../../../../../../comms/gmailRegistry.js";
 import type { PlatformRepository } from "../../../../../../../platform/repository.js";
@@ -76,6 +76,34 @@ export interface SaveCustomerDocumentPackageSelectionInput {
   actorId: string;
   selectedArtifactRefs: CustomerDocumentPackageArtifactRef[];
   expectedPackageVersion?: number | undefined;
+}
+
+export interface PrepareCustomerDocumentPackageDeliveryInput {
+  tenantId: string;
+  jobId: string;
+  artifacts: Array<{ artifactId: string; source: "nexdocs" | "nexcam" | "generated"; kind: string; label: string; fileName: string; visitId?: string | undefined }>;
+}
+
+export interface CustomerDocumentPackageDeliveryPreview {
+  package: CustomerDocumentPackage;
+  job: JobDetailRecord;
+  selectedArtifacts: PrepareCustomerDocumentPackageDeliveryInput["artifacts"];
+  email: { available: boolean; recipient?: string | undefined; defaultCopyTarget?: string | undefined; subject: string; bodyText: string; unavailableReason?: string | undefined };
+  sms: { available: false; unavailableReason: string };
+  attempts: CustomerDocumentPackageDeliveryAttempt[];
+}
+
+export interface SendCustomerDocumentPackageDeliveryInput {
+  tenantId: string;
+  jobId: string;
+  actorId: string;
+  recipient: string;
+  subject: string;
+  bodyText: string;
+  copyTarget?: string | undefined;
+  sendCopy?: boolean | undefined;
+  selectedArtifactRefs: CustomerDocumentPackageArtifactRef[];
+  artifacts: PrepareCustomerDocumentPackageDeliveryInput["artifacts"];
 }
 
 export interface BookingConfirmationPreview {
@@ -459,6 +487,127 @@ export class JobLifecycleService {
       updatedAt: timestamp
     };
     return this.deps.lifecycleRepository.upsertCustomerDocumentPackage(saved);
+  }
+
+  async prepareCustomerDocumentPackageDelivery(input: PrepareCustomerDocumentPackageDeliveryInput): Promise<CustomerDocumentPackageDeliveryPreview> {
+    const job = requireJobLifecycleRecord(await this.getJobDetail(input.tenantId, input.jobId), `Native job ${input.jobId} was not found.`, "prepareCustomerDocumentPackageDelivery");
+    const pkg = await this.getCustomerDocumentPackage(input.tenantId, input.jobId);
+    const selectedByKey = new Map(pkg.selectedArtifactRefs.map((reference) => [`${reference.source}:${reference.artifactId}`, reference]));
+    const selectedArtifacts = input.artifacts.filter((artifact) => selectedByKey.has(`${artifact.source}:${artifact.artifactId}`));
+    const clientName = job.client?.name ?? "there";
+    const fallbackSubject = `Your closeout package for ${job.title}`;
+    const fileList = selectedArtifacts.length
+      ? selectedArtifacts.map((artifact) => `- ${artifact.fileName || artifact.label}${artifact.visitId ? ` (Visit ${artifact.visitId})` : ""}`).join("\n")
+      : "- No artifacts have been selected yet.";
+    const fallbackBodyText = [
+      `Hi ${clientName},`,
+      "",
+      `Your closeout package for ${job.title} is ready for review.`,
+      "",
+      "Selected package artifacts:",
+      fileList,
+      "",
+      "Reply to this email if you have any questions."
+    ].join("\n");
+    const settings = await this.deps.crmRepository.getCrmSettings(input.tenantId);
+    const template = resolveTemplateMessage({
+      settings,
+      category: "customer_document_package",
+      channel: "email",
+      fallbackSubject,
+      fallbackBodyText,
+      variables: {
+        TENANT_NAME: input.tenantId.split(/[^a-z0-9]+/i).filter(Boolean).map((part) => part.slice(0, 1).toUpperCase() + part.slice(1)).join(" "),
+        CLIENT_NAME: clientName,
+        JOB_TITLE: job.title,
+        PACKAGE_ARTIFACTS: fileList
+      }
+    });
+    const attempts = await this.deps.lifecycleRepository.listCustomerDocumentPackageDeliveryAttempts(input.tenantId, input.jobId);
+    const recipient = pkg.recipient.email?.trim() || job.client?.emails?.[0]?.trim();
+    return {
+      package: pkg,
+      job,
+      selectedArtifacts,
+      email: recipient
+        ? { available: template.enabled && Boolean(this.deps.commsRail?.sendAdapter), recipient, defaultCopyTarget: this.deps.commsRail?.operatorEmail, subject: template.subject, bodyText: template.bodyText, ...(!template.enabled ? { unavailableReason: "Email delivery is disabled for Closeout packages in Settings." } : !this.deps.commsRail?.sendAdapter ? { unavailableReason: "Email delivery is not configured for this tenant." } : {}) }
+        : { available: false, subject: template.subject, bodyText: template.bodyText, unavailableReason: "A recipient email is required before this package can be sent." },
+      sms: { available: false, unavailableReason: "SMS delivery is not connected for this tenant yet." },
+      attempts
+    };
+  }
+
+  async sendCustomerDocumentPackageDelivery(input: SendCustomerDocumentPackageDeliveryInput): Promise<CustomerDocumentPackageDeliveryPreview> {
+    const preview = await this.prepareCustomerDocumentPackageDelivery({ tenantId: input.tenantId, jobId: input.jobId, artifacts: input.artifacts });
+    if (preview.package.manifestStatus !== "draft") {
+      throw new RailError("Only a draft closeout package can be sent for review.", { provider: "native", op: "sendCustomerDocumentPackageDelivery", status: 409 });
+    }
+    if (!preview.package.selectedArtifactRefs.length) {
+      throw new RailError("Select at least one closeout artifact before sending.", { provider: "native", op: "sendCustomerDocumentPackageDelivery", status: 400 });
+    }
+    const selectedKeys = new Set(input.selectedArtifactRefs.map((reference) => `${reference.source}:${reference.artifactId}`));
+    const packageKeys = new Set(preview.package.selectedArtifactRefs.map((reference) => `${reference.source}:${reference.artifactId}`));
+    if (selectedKeys.size !== packageKeys.size || [...selectedKeys].some((key) => !packageKeys.has(key))) {
+      throw new RailError("Save the package selection before sending it.", { provider: "native", op: "sendCustomerDocumentPackageDelivery", status: 409 });
+    }
+    const recipient = input.recipient.trim();
+    const subject = input.subject.trim();
+    const bodyText = input.bodyText.trim();
+    if (!recipient || !subject || !bodyText) {
+      throw new RailError("Recipient, subject, and message are required before sending.", { provider: "native", op: "sendCustomerDocumentPackageDelivery", status: 400 });
+    }
+    if (!this.deps.commsRail?.sendAdapter) {
+      throw new RailError("Email delivery is not configured for this tenant.", { provider: "native", op: "sendCustomerDocumentPackageDelivery", status: 501 });
+    }
+    const manifest = [
+      `Closeout package: ${preview.job.title}`,
+      `Job: ${preview.job.id}`,
+      "",
+      "Selected authoritative artifacts:",
+      ...preview.selectedArtifacts.map((artifact) => `- ${artifact.fileName || artifact.label} | ${artifact.kind} | ${artifact.source}${artifact.visitId ? ` | Visit ${artifact.visitId}` : ""}`)
+    ].join("\n");
+    const receipt = await this.deps.commsRail.sendAdapter.sendEmail({
+      tenantId: input.tenantId,
+      mailbox: this.deps.commsRail.sendAdapter.mailbox,
+      to: [recipient],
+      ...(input.copyTarget?.trim() && input.sendCopy !== false ? { cc: [input.copyTarget.trim()] } : {}),
+      subject,
+      bodyText,
+      bodyHtml: `<p>${escapeHtml(bodyText).replace(/\n/g, "<br/>")}</p>`,
+      attachments: [{ filename: `closeout-package-${preview.job.id}.txt`, mime: "text/plain", contentBase64: Buffer.from(manifest, "utf8").toString("base64") }]
+    });
+    const timestamp = now();
+    const attempt = await this.deps.lifecycleRepository.appendCustomerDocumentPackageDeliveryAttempt({
+      tenantId: input.tenantId,
+      jobId: input.jobId,
+      packageId: preview.package.id,
+      channel: "email",
+      recipient,
+      ...(input.copyTarget?.trim() && input.sendCopy !== false ? { copyTarget: input.copyTarget.trim() } : {}),
+      subject,
+      bodyText,
+      selectedArtifactRefs: preview.package.selectedArtifactRefs,
+      status: "sent",
+      providerReceiptId: receipt.id,
+      createdBy: input.actorId,
+      createdAt: timestamp
+    });
+    await this.deps.lifecycleRepository.upsertCustomerDocumentPackage({
+      ...preview.package,
+      recipient: { ...preview.package.recipient, email: recipient },
+      deliveryAttemptIds: [...new Set([...preview.package.deliveryAttemptIds, attempt.id])],
+      deliveryStatus: "sent",
+      packageVersion: preview.package.packageVersion + 1,
+      updatedAt: timestamp
+    });
+    await this.emitLifecycleEvent({
+      tenantId: input.tenantId,
+      jobId: input.jobId,
+      type: "closeout.package_delivery_sent",
+      createdAt: timestamp,
+      payload: { packageId: preview.package.id, deliveryAttemptId: attempt.id, channel: "email", recipient, artifactCount: preview.package.selectedArtifactRefs.length }
+    });
+    return this.prepareCustomerDocumentPackageDelivery({ tenantId: input.tenantId, jobId: input.jobId, artifacts: input.artifacts });
   }
 
   private async hydratedState(tenantId: string, jobId?: string): Promise<{

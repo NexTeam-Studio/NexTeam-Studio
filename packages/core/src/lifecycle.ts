@@ -246,6 +246,27 @@ export interface CustomerDocumentPackageArtifactRef {
   visitId?: ID | undefined;
 }
 
+/**
+ * An immutable delivery audit record.  It references the package's selected
+ * NexDocs/NexCam artifacts; it never stores another copy of their files.
+ */
+export interface CustomerDocumentPackageDeliveryAttempt {
+  id: ID;
+  tenantId: ID;
+  jobId: ID;
+  packageId: ID;
+  channel: "email" | "sms";
+  recipient: string;
+  copyTarget?: string | undefined;
+  subject?: string | undefined;
+  bodyText: string;
+  selectedArtifactRefs: CustomerDocumentPackageArtifactRef[];
+  status: "sent" | "failed";
+  providerReceiptId?: ID | undefined;
+  createdBy: ID;
+  createdAt: string;
+}
+
 export interface ContactInteraction {
   id: ID;
   tenantId: ID;

@@ -166,6 +166,26 @@ test("legacy job schema and in-memory native repository normalize stored jobs on
   assert.equal(jobs[0].status, "Upcoming");
 });
 
+test("closeout delivery records a separate email attempt against the saved artifact selection", async () => {
+  const fixture = makeFixture();
+  const job = await fixture.jobLifecycleService.createJob({ tenantId: "aquatrace", clientId: "client_1", propertyId: "property_1", title: "Closeout delivery test" });
+  const artifact = { artifactId: "nexdocs_visit_file_1", source: "nexdocs", kind: "upload", label: "Inspection.pdf", fileName: "Inspection.pdf", visitId: "visit_1" };
+  const selected = [{ artifactId: artifact.artifactId, source: artifact.source, kind: artifact.kind, visitId: artifact.visitId }];
+  const saved = await fixture.jobLifecycleService.saveCustomerDocumentPackageSelection({ tenantId: "aquatrace", jobId: job.id, actorId: "owner_1", selectedArtifactRefs: selected });
+  assert.equal(saved.deliveryAttemptIds.length, 0);
+  const before = await fixture.jobLifecycleService.prepareCustomerDocumentPackageDelivery({ tenantId: "aquatrace", jobId: job.id, artifacts: [artifact] });
+  assert.equal(before.selectedArtifacts[0].visitId, "visit_1");
+  assert.equal(before.sms.available, false);
+  const after = await fixture.jobLifecycleService.sendCustomerDocumentPackageDelivery({ tenantId: "aquatrace", jobId: job.id, actorId: "owner_1", recipient: "staging@example.test", subject: "Closeout ready", bodyText: "Your package is ready.", selectedArtifactRefs: selected, artifacts: [artifact] });
+  assert.equal(fixture.sentEmails.length, 1);
+  assert.equal(fixture.sentEmails[0].attachments[0].filename, `closeout-package-${job.id}.txt`);
+  assert.equal(after.attempts.length, 1);
+  assert.equal(after.attempts[0].recipient, "staging@example.test");
+  assert.equal(after.package.deliveryStatus, "sent");
+  assert.equal(after.package.selectedArtifactRefs[0].visitId, "visit_1");
+  assert.ok(fixture.emittedEvents.some((event) => event.type === "closeout.package_delivery_sent"));
+});
+
 test("request and quote conversions land as Unscheduled and invoice reminders clear only by invoice or dismissal", async () => {
   const fixture = makeFixture();
 

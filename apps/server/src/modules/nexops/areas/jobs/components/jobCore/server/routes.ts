@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
-import { createJobBodySchema, customerDocumentPackageSelectionSchema, jobActionSchema, updateJobBodySchema } from "./routeSchemas.js";
+import { createJobBodySchema, customerDocumentPackageDeliverySchema, customerDocumentPackageSelectionSchema, jobActionSchema, updateJobBodySchema } from "./routeSchemas.js";
 
 function packageArtifactKey(entry: { id: string; source: string }): string {
   return `${entry.source}:${entry.id}`;
@@ -34,7 +34,7 @@ async function resolveCloseoutArtifacts(input: {
     .filter((entry: any) => input.role !== "TECHNICIAN" || !isFinancialArtifact(entry));
   return [...new Map(entries.map((entry: any) => [packageArtifactKey(entry), entry])).values()].map((entry: any) => ({
     artifactId: entry.id,
-    source: entry.source === "nexcam" ? "nexcam" : entry.source === "generated" ? "generated" : "nexdocs",
+    source: (entry.source === "nexcam" ? "nexcam" : entry.source === "generated" ? "generated" : "nexdocs") as "nexdocs" | "nexcam" | "generated",
     kind: entry.kind,
     label: entry.label,
     fileName: entry.fileName,
@@ -134,6 +134,43 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
       });
       const pkg = await jobLifecycle().saveCustomerDocumentPackageSelection({ tenantId, jobId, actorId: access.tenantUserId, selectedArtifactRefs, ...(input.expectedPackageVersion ? { expectedPackageVersion: input.expectedPackageVersion } : {}) });
       res.json({ ok: true, tenantId, actorRole: access.role, package: pkg, artifacts });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.get("/api/crm/jobs/:id/closeout-package/delivery-review", async (req: Request, res: Response) => {
+    try {
+      const jobId = req.params.id;
+      if (!jobId) throw new RailError("Job id is required.", { provider: "native", op: "getCloseoutPackageDeliveryReview", status: 400 });
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim() ? req.query.tenantId : defaultTenantId(env);
+      const access = await requireQuoteAccess(req, tenantId, "getCloseoutPackageDeliveryReview");
+      const job = await jobLifecycle().getJobDetail(tenantId, jobId);
+      if (!job) throw new RailError(`Native job ${jobId} was not found.`, { provider: "native", op: "getCloseoutPackageDeliveryReview", status: 404 });
+      const artifacts = await resolveCloseoutArtifacts({ tenantId, job, role: access.role, nexDocsService });
+      const preview = await jobLifecycle().prepareCustomerDocumentPackageDelivery({ tenantId, jobId, artifacts });
+      res.json({ ok: true, tenantId, actorRole: access.role, preview });
+    } catch (error) { sendRouteError(res, error); }
+  });
+
+  app.post("/api/crm/jobs/:id/closeout-package/delivery", async (req: Request, res: Response) => {
+    try {
+      const jobId = req.params.id;
+      if (!jobId) throw new RailError("Job id is required.", { provider: "native", op: "sendCloseoutPackageDelivery", status: 400 });
+      const input = customerDocumentPackageDeliverySchema.parse(req.body);
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      const access = await requireQuoteAccess(req, tenantId, "sendCloseoutPackageDelivery");
+      const job = await jobLifecycle().getJobDetail(tenantId, jobId);
+      if (!job) throw new RailError(`Native job ${jobId} was not found.`, { provider: "native", op: "sendCloseoutPackageDelivery", status: 404 });
+      const artifacts = await resolveCloseoutArtifacts({ tenantId, job, role: access.role, nexDocsService });
+      const eligible = new Map(artifacts.map((artifact: any) => [`${artifact.source}:${artifact.artifactId}`, artifact]));
+      const selectedArtifactRefs = input.selectedArtifactRefs.map((reference) => {
+        const artifact = eligible.get(`${reference.source}:${reference.artifactId}`);
+        if (!artifact || artifact.kind !== reference.kind || artifact.visitId !== reference.visitId) {
+          throw new RailError("A selected closeout artifact is no longer eligible for this Job.", { provider: "native", op: "sendCloseoutPackageDelivery", status: 400 });
+        }
+        return { artifactId: artifact.artifactId, source: artifact.source, kind: artifact.kind, ...(artifact.visitId ? { visitId: artifact.visitId } : {}) };
+      });
+      const preview = await jobLifecycle().sendCustomerDocumentPackageDelivery({ tenantId, jobId, actorId: access.tenantUserId, recipient: input.recipient, subject: input.subject, bodyText: input.bodyText, ...(input.copyTarget ? { copyTarget: input.copyTarget } : {}), ...(input.sendCopy !== undefined ? { sendCopy: input.sendCopy } : {}), selectedArtifactRefs, artifacts });
+      res.json({ ok: true, tenantId, actorRole: access.role, preview });
     } catch (error) { sendRouteError(res, error); }
   });
 

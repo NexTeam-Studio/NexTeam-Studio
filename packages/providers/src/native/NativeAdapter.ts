@@ -297,6 +297,19 @@ function defaultCommunicationTemplates(tenantId: string) {
       updatedAt: timestamp
     },
     {
+      id: `comms_customer_document_package_${tenantId}`,
+      tenantId,
+      category: "customer_document_package",
+      label: "Closeout package delivery",
+      description: "Client-facing closeout package review delivery.",
+      emailEnabled: true,
+      smsEnabled: false,
+      emailSubject: "Your closeout package from {{TENANT_NAME}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nYour closeout package for {{JOB_TITLE}} is ready for review.\n\n{{PACKAGE_ARTIFACTS}}\n\n{{TENANT_NAME}}",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
       id: `comms_review_initial_${tenantId}`,
       tenantId,
       category: "review_request_initial",

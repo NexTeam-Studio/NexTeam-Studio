@@ -19,6 +19,7 @@ export type CommunicationCategory =
   | "invoice_reminder"
   | "payment_receipt"
   | "statement_send"
+  | "customer_document_package"
   | "review_request_initial"
   | "review_request_nudge";
 

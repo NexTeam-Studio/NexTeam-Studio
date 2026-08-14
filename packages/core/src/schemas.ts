@@ -1788,6 +1788,7 @@ export const eventTypeSchema = z.enum([
   "visit.booked",
   "visit.confirmed",
   "visit.booking_confirmation_sent",
+  "closeout.package_delivery_sent",
   "visit.completed",
   "invoice.reminder_due",
   "media.uploaded",

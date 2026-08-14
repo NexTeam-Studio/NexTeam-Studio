@@ -36,3 +36,13 @@ export const customerDocumentPackageSelectionSchema = z.object({
     visitId: z.string().min(1).optional()
   })).max(200)
 });
+
+export const customerDocumentPackageDeliverySchema = z.object({
+  tenantId: z.string().min(1).optional(),
+  recipient: z.string().email(),
+  subject: z.string().min(1).max(240),
+  bodyText: z.string().min(1).max(20_000),
+  copyTarget: z.string().email().optional(),
+  sendCopy: z.boolean().optional(),
+  selectedArtifactRefs: customerDocumentPackageSelectionSchema.shape.selectedArtifactRefs
+});

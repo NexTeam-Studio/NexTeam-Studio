@@ -392,6 +392,37 @@ interface CloseoutPackageResponse {
   error?: string;
 }
 
+interface CloseoutDeliveryAttempt {
+  id: string;
+  channel: "email" | "sms";
+  recipient: string;
+  subject?: string;
+  status: "sent" | "failed";
+  createdAt: string;
+}
+
+interface CloseoutDeliveryPreview {
+  package: CloseoutPackage;
+  selectedArtifacts: CloseoutArtifact[];
+  email: { available: boolean; recipient?: string; defaultCopyTarget?: string; subject: string; bodyText: string; unavailableReason?: string };
+  sms: { available: false; unavailableReason: string };
+  attempts: CloseoutDeliveryAttempt[];
+}
+
+interface CloseoutDeliveryResponse {
+  ok: boolean;
+  preview?: CloseoutDeliveryPreview;
+  error?: string;
+}
+
+interface CloseoutDeliveryDraft {
+  recipient: string;
+  subject: string;
+  bodyText: string;
+  copyTarget: string;
+  sendCopy: boolean;
+}
+
 /**
  * Keeps the visit scheduler operable where native date/time pickers are not
  * available to the interaction surface. Browser-local semantics stay the
@@ -608,6 +639,10 @@ export function NexOpsJobsPage(props: {
   const [closeoutSelection, setCloseoutSelection] = useState<string[]>([]);
   const [closeoutStatus, setCloseoutStatus] = useState("Load the Job to review closeout artifacts.");
   const [closeoutBusy, setCloseoutBusy] = useState(false);
+  const [closeoutDelivery, setCloseoutDelivery] = useState<CloseoutDeliveryPreview | null>(null);
+  const [closeoutDeliveryDraft, setCloseoutDeliveryDraft] = useState<CloseoutDeliveryDraft | null>(null);
+  const [closeoutDeliveryStatus, setCloseoutDeliveryStatus] = useState("");
+  const [closeoutDeliveryBusy, setCloseoutDeliveryBusy] = useState(false);
   const [actionBusy, setActionBusy] = useState<JobAction | null>(null);
   const [statusFilter, setStatusFilter] = useState<JobFilter>("All");
   const [jobSearch, setJobSearch] = useState("");
@@ -707,6 +742,9 @@ export function NexOpsJobsPage(props: {
     setCloseoutPackage(null);
     setCloseoutArtifacts([]);
     setCloseoutSelection([]);
+    setCloseoutDelivery(null);
+    setCloseoutDeliveryDraft(null);
+    setCloseoutDeliveryStatus("");
     if (!jobId) {
       setDetail(null);
       setBookingPreview(null);
@@ -779,6 +817,63 @@ export function NexOpsJobsPage(props: {
     } catch {
       setCloseoutStatus("Closeout selection could not be saved.");
     } finally { setCloseoutBusy(false); }
+  }
+
+  async function loadCloseoutDeliveryReview(): Promise<void> {
+    if (!detail) return;
+    setCloseoutDeliveryStatus("Loading the saved Closeout package for delivery review...");
+    try {
+      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}/closeout-package/delivery-review?tenantId=${encodeURIComponent(props.tenantId)}`)
+        .then((response) => response.json() as Promise<CloseoutDeliveryResponse>);
+      if (!body.ok || !body.preview) {
+        setCloseoutDelivery(null);
+        setCloseoutDeliveryDraft(null);
+        setCloseoutDeliveryStatus(body.error ?? "Delivery review is unavailable right now.");
+        return;
+      }
+      setCloseoutDelivery(body.preview);
+      setCloseoutPackage(body.preview.package);
+      setCloseoutDeliveryDraft({
+        recipient: body.preview.email.recipient ?? "",
+        subject: body.preview.email.subject,
+        bodyText: body.preview.email.bodyText,
+        copyTarget: body.preview.email.defaultCopyTarget ?? "",
+        sendCopy: Boolean(body.preview.email.defaultCopyTarget)
+      });
+      setCloseoutDeliveryStatus(body.preview.package.selectedArtifactRefs.length ? "Review this package before a separate delivery action." : "Select and save at least one artifact before delivery review.");
+    } catch {
+      setCloseoutDeliveryStatus("Delivery review is unavailable right now.");
+    }
+  }
+
+  async function sendCloseoutPackageDelivery(): Promise<void> {
+    if (!detail || !closeoutDelivery || !closeoutDeliveryDraft) return;
+    setCloseoutDeliveryBusy(true);
+    try {
+      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}/closeout-package/delivery`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: props.tenantId,
+          recipient: closeoutDeliveryDraft.recipient,
+          subject: closeoutDeliveryDraft.subject,
+          bodyText: closeoutDeliveryDraft.bodyText,
+          ...(closeoutDeliveryDraft.copyTarget ? { copyTarget: closeoutDeliveryDraft.copyTarget } : {}),
+          sendCopy: closeoutDeliveryDraft.sendCopy,
+          selectedArtifactRefs: closeoutDelivery.package.selectedArtifactRefs
+        })
+      }).then((response) => response.json() as Promise<CloseoutDeliveryResponse>);
+      if (!body.ok || !body.preview) {
+        setCloseoutDeliveryStatus(body.error ?? "Closeout package delivery could not be sent.");
+        return;
+      }
+      setCloseoutDelivery(body.preview);
+      setCloseoutPackage(body.preview.package);
+      setCloseoutDeliveryStatus("Closeout package email sent. Package selection and delivery history remain separate records.");
+      await loadDetail(detail.id);
+    } catch {
+      setCloseoutDeliveryStatus("Closeout package delivery could not be sent.");
+    } finally { setCloseoutDeliveryBusy(false); }
   }
 
   async function loadBookingPreview(jobId: string, visitId?: string): Promise<void> {
@@ -2098,8 +2193,28 @@ export function NexOpsJobsPage(props: {
                     </div>
                     <div className="nexops-inline-actions">
                       <button type="button" disabled={closeoutBusy || !closeoutPackage} onClick={() => void saveCloseoutPackage()}>{closeoutBusy ? "Saving..." : "Save Closeout Selection"}</button>
+                      <button type="button" disabled={closeoutBusy || !closeoutPackage?.selectedArtifactRefs.length} onClick={() => void loadCloseoutDeliveryReview()}>Continue to Delivery Review</button>
                       <span>{closeoutPackage?.manifestStatus === "draft" ? "Draft only — delivery remains a separate review." : "Package is not editable after finalization."}</span>
                     </div>
+                    {closeoutDelivery ? (
+                      <section className="nexops-jobs-section" aria-label="Closeout Delivery Review">
+                        <div className="nexops-jobs-card-heading"><h3>Closeout Delivery Review</h3><span>{closeoutDelivery.package.selectedArtifactRefs.length} saved artifact{closeoutDelivery.package.selectedArtifactRefs.length === 1 ? "" : "s"}</span></div>
+                        <p className="nexops-empty-copy">{closeoutDeliveryStatus}</p>
+                        <div className="nexops-jobs-sublist">
+                          {closeoutDelivery.selectedArtifacts.map((artifact) => <div key={`${artifact.source}:${artifact.artifactId}`} className="nexops-jobs-sublist-item"><div><strong>{artifact.fileName || artifact.label}</strong><span>{artifact.kind} Â· {artifact.source}</span><small>{artifact.visitId ? `Originating Visit: ${artifact.visitId}` : "Job-wide artifact"}</small></div></div>)}
+                        </div>
+                        <div className="nexops-density-form-grid">
+                          <label>Recipient email<input type="email" value={closeoutDeliveryDraft?.recipient ?? ""} onChange={(event) => setCloseoutDeliveryDraft((current) => current ? { ...current, recipient: event.target.value } : current)} /></label>
+                          <label>Email subject<input value={closeoutDeliveryDraft?.subject ?? ""} onChange={(event) => setCloseoutDeliveryDraft((current) => current ? { ...current, subject: event.target.value } : current)} /></label>
+                          <label className="nexops-density-form-full">Email message<textarea rows={7} value={closeoutDeliveryDraft?.bodyText ?? ""} onChange={(event) => setCloseoutDeliveryDraft((current) => current ? { ...current, bodyText: event.target.value } : current)} /></label>
+                          <label>Copy to self/company<input type="email" value={closeoutDeliveryDraft?.copyTarget ?? ""} onChange={(event) => setCloseoutDeliveryDraft((current) => current ? { ...current, copyTarget: event.target.value } : current)} /></label>
+                          <label className="nexops-jobs-sublist-item"><input type="checkbox" checked={closeoutDeliveryDraft?.sendCopy ?? false} onChange={(event) => setCloseoutDeliveryDraft((current) => current ? { ...current, sendCopy: event.target.checked } : current)} />Send the copy</label>
+                        </div>
+                        <div className="nexops-density-inline-facts"><article><h3>Email</h3><p>{closeoutDelivery.email.available ? "Available for this reviewed package" : closeoutDelivery.email.unavailableReason}</p></article><article><h3>SMS</h3><p>{closeoutDelivery.sms.unavailableReason}</p></article><article><h3>Both</h3><p>Unavailable until the SMS provider is connected.</p></article></div>
+                        <div className="nexops-inline-actions"><button type="button" disabled={closeoutDeliveryBusy || !closeoutDelivery.email.available} onClick={() => void sendCloseoutPackageDelivery()}>{closeoutDeliveryBusy ? "Sending..." : "Send Closeout Email"}</button><span>Sending records delivery separately; selecting an artifact never marks it delivered.</span></div>
+                        {closeoutDelivery.attempts.length ? <div className="nexops-jobs-history">{closeoutDelivery.attempts.map((attempt) => <div key={attempt.id}><strong>{attempt.channel} {attempt.status}</strong><span>{attempt.recipient} Â· {formatDateTime(attempt.createdAt)}</span></div>)}</div> : null}
+                      </section>
+                    ) : null}
                   </div>
 
                   <div className="nexops-jobs-section">
