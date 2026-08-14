@@ -146,6 +146,31 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
     toggleCreateMenu
   } = bindings;
 
+  const [closeoutDeliveries, setCloseoutDeliveries] = React.useState<Array<{ id: string; jobId: string; jobTitle: string; occurredAt: string; recipient: string; status: string }>>([]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!selectedClient || !selectedJobs.length) {
+      setCloseoutDeliveries([]);
+      return () => { cancelled = true; };
+    }
+    void Promise.all(selectedJobs.map(async (job) => {
+      try {
+        const response = await fetch(`/api/crm/jobs/${encodeURIComponent(job.id)}?tenantId=${encodeURIComponent(operatorContext.tenantId)}`);
+        const body = await response.json() as { ok?: boolean; job?: { history?: Array<{ id: string; type: string; createdAt: string; detail?: string }> } };
+        if (!body.ok || !body.job?.history) return [];
+        return body.job.history
+          .filter((event) => event.type === "closeout.package_delivery_sent")
+          .map((event) => ({ id: event.id, jobId: job.id, jobTitle: job.number?.trim() ? `${job.number} · ${job.title}` : job.title, occurredAt: event.createdAt, recipient: event.detail?.match(/to\s+([^\s]+)/i)?.[1] ?? "reviewed recipient", status: "email sent" }));
+      } catch {
+        return [];
+      }
+    })).then((groups) => {
+      if (!cancelled) setCloseoutDeliveries(groups.flat());
+    });
+    return () => { cancelled = true; };
+  }, [operatorContext.tenantId, selectedClient?.id, selectedJobs]);
+
   const relationshipHistory = buildClientRelationshipHistory({
     requests: selectedRequests,
     quotes: selectedQuotes,
@@ -154,6 +179,7 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
     payments: selectedPayments,
     portalActivity: clientPortalActivity,
     reviewSequences: clientReviewSequences,
+    closeoutDeliveries,
     // Field technicians do not receive finance rows through the client history.
     financialVisible: operatorContext.role !== "TECHNICIAN"
   });

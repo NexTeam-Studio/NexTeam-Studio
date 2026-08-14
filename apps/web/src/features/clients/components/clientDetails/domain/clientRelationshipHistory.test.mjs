@@ -41,3 +41,13 @@ test("buildClientRelationshipHistory keeps review and portal events truthful whe
   assert.deepEqual(history.map((entry) => entry.kind), ["review", "portal"]);
   assert.equal(history.find((entry) => entry.kind === "review")?.title, "Review follow-up");
 });
+
+test("buildClientRelationshipHistory exposes an authoritative closeout delivery against its originating job", () => {
+  const history = buildClientRelationshipHistory(baseInput({
+    financialVisible: false,
+    closeoutDeliveries: [{ id: "delivery-1", jobId: "job-1", jobTitle: "JOB-0001 · Leak visit", occurredAt: "2026-08-05T09:00:00.000Z", recipient: "safe@example.test", status: "email sent" }]
+  }));
+  assert.deepEqual(history.map((entry) => entry.kind), ["communication"]);
+  assert.equal(history[0].objectId, "job-1");
+  assert.equal(history[0].status, "email sent to safe@example.test");
+});

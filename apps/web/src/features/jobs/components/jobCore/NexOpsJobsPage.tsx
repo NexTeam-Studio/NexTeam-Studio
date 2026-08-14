@@ -870,7 +870,6 @@ export function NexOpsJobsPage(props: {
       setCloseoutDelivery(body.preview);
       setCloseoutPackage(body.preview.package);
       setCloseoutDeliveryStatus("Closeout package email sent. Package selection and delivery history remain separate records.");
-      await loadDetail(detail.id);
     } catch {
       setCloseoutDeliveryStatus("Closeout package delivery could not be sent.");
     } finally { setCloseoutDeliveryBusy(false); }

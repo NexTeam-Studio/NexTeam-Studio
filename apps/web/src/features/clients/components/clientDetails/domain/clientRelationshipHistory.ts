@@ -15,7 +15,8 @@ export type ClientRelationshipHistoryKind =
   | "invoice"
   | "payment"
   | "portal"
-  | "review";
+  | "review"
+  | "communication";
 
 export interface ClientRelationshipHistoryEntry {
   id: string;
@@ -35,6 +36,7 @@ export interface ClientRelationshipHistoryInput {
   payments: CrmPaymentSummary[];
   portalActivity: ClientPortalActivityEntry[];
   reviewSequences: ReviewSequenceRecord[];
+  closeoutDeliveries?: Array<{ id: string; jobId: string; jobTitle: string; occurredAt: string; recipient: string; status: string }>;
   financialVisible: boolean;
 }
 
@@ -102,6 +104,15 @@ export function buildClientRelationshipHistory(input: ClientRelationshipHistoryI
       occurredAt: sequence.reviewedAt ?? sequence.stoppedAt ?? sequence.nextSendAt ?? sequence.createdAt,
       objectId: sequence.id,
       module: "nexreach"
+    })),
+    ...(input.closeoutDeliveries ?? []).map((delivery) => ({
+      id: `closeout-delivery-${delivery.id}`,
+      kind: "communication" as const,
+      title: `Closeout package email · ${delivery.jobTitle}`,
+      status: `${normalizedStatus(delivery.status, "Email sent")} to ${delivery.recipient}`,
+      occurredAt: delivery.occurredAt,
+      objectId: delivery.jobId,
+      module: "jobs" as const
     }))
   ];
 
