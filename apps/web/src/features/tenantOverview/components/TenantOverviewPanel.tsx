@@ -24,9 +24,11 @@ export function TenantOverviewPanel(props: { rows: PlatformTenantRow[]; onViewDe
 }
 
 function TenantLogo({ tenantId, tenantName, logoVersion }: { tenantId: string; tenantName: string; logoVersion?: string }): React.ReactElement {
-  const [source, setSource] = useState(`/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(tenantId)}&v=${encodeURIComponent(logoVersion ?? "current")}`);
+  const storedSource = `/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(tenantId)}&v=${encodeURIComponent(logoVersion ?? "current")}`;
+  const [source, setSource] = useState(storedSource);
   const [failed, setFailed] = useState(false);
   const fallback = tenantLogos[tenantId];
+  React.useEffect(() => { setSource(storedSource); setFailed(false); }, [storedSource]);
   if (failed) return <span className="tenant-overview__logo"><b>{tenantName.split(/\s+/).map((word) => word[0]).join("").slice(0, 3)}</b></span>;
   return <span className="tenant-overview__logo"><img src={source} alt={`${tenantName} logo`} onError={() => fallback && source !== fallback ? setSource(fallback) : setFailed(true)} /></span>;
 }
