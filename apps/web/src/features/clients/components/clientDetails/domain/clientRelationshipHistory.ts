@@ -40,6 +40,23 @@ export interface ClientRelationshipHistoryInput {
   financialVisible: boolean;
 }
 
+export function closeoutDeliveryHistoryFromJobEvents(input: {
+  jobId: string;
+  jobTitle: string;
+  events: Array<{ id: string; type: string; createdAt: string; payload?: { recipient?: unknown } }>;
+}): NonNullable<ClientRelationshipHistoryInput["closeoutDeliveries"]> {
+  return input.events
+    .filter((event) => event.type === "closeout.package_delivery_sent")
+    .map((event) => ({
+      id: event.id,
+      jobId: input.jobId,
+      jobTitle: input.jobTitle,
+      occurredAt: event.createdAt,
+      recipient: typeof event.payload?.recipient === "string" && event.payload.recipient.trim() ? event.payload.recipient.trim() : "reviewed recipient",
+      status: "email sent"
+    }));
+}
+
 function normalizedStatus(value: string | undefined, fallback: string): string {
   const text = value?.trim();
   return text ? text.replaceAll("_", " ") : fallback;

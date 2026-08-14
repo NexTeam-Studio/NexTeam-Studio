@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildClientRelationshipHistory } from "./clientRelationshipHistory.ts";
+import { buildClientRelationshipHistory, closeoutDeliveryHistoryFromJobEvents } from "./clientRelationshipHistory.ts";
 
 const tenantId = "tenant-a";
 
@@ -50,4 +50,13 @@ test("buildClientRelationshipHistory exposes an authoritative closeout delivery 
   assert.deepEqual(history.map((entry) => entry.kind), ["communication"]);
   assert.equal(history[0].objectId, "job-1");
   assert.equal(history[0].status, "email sent to safe@example.test");
+});
+
+test("closeoutDeliveryHistoryFromJobEvents reads the lifecycle recipient payload", () => {
+  const deliveries = closeoutDeliveryHistoryFromJobEvents({
+    jobId: "job-1",
+    jobTitle: "JOB-0001 · Leak visit",
+    events: [{ id: "event-1", type: "closeout.package_delivery_sent", createdAt: "2026-08-05T09:00:00.000Z", payload: { recipient: "safe@example.test" } }]
+  });
+  assert.deepEqual(deliveries, [{ id: "event-1", jobId: "job-1", jobTitle: "JOB-0001 · Leak visit", occurredAt: "2026-08-05T09:00:00.000Z", recipient: "safe@example.test", status: "email sent" }]);
 });

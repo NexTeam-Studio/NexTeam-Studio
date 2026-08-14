@@ -16,7 +16,7 @@ import {
   type CustomFieldDraftRow
 } from "../contact/domain/clientProfile";
 import { isProtectedLegacyClient } from "./domain/clientDeletionPolicy";
-import { buildClientRelationshipHistory } from "./domain/clientRelationshipHistory";
+import { buildClientRelationshipHistory, closeoutDeliveryHistoryFromJobEvents } from "./domain/clientRelationshipHistory";
 import { PropertyAssetsManager } from "./PropertyAssetsManager";
 import type {
   ClientPortalActivityEntry,
@@ -157,11 +157,13 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
     void Promise.all(selectedJobs.map(async (job) => {
       try {
         const response = await fetch(`/api/crm/jobs/${encodeURIComponent(job.id)}?tenantId=${encodeURIComponent(operatorContext.tenantId)}`);
-        const body = await response.json() as { ok?: boolean; job?: { history?: Array<{ id: string; type: string; createdAt: string; detail?: string }> } };
+        const body = await response.json() as { ok?: boolean; job?: { history?: Array<{ id: string; type: string; createdAt: string; payload?: { recipient?: unknown } }> } };
         if (!body.ok || !body.job?.history) return [];
-        return body.job.history
-          .filter((event) => event.type === "closeout.package_delivery_sent")
-          .map((event) => ({ id: event.id, jobId: job.id, jobTitle: job.number?.trim() ? `${job.number} · ${job.title}` : job.title, occurredAt: event.createdAt, recipient: event.detail?.match(/to\s+([^\s]+)/i)?.[1] ?? "reviewed recipient", status: "email sent" }));
+        return closeoutDeliveryHistoryFromJobEvents({
+          jobId: job.id,
+          jobTitle: job.number?.trim() ? `${job.number} · ${job.title}` : job.title,
+          events: body.job.history
+        });
       } catch {
         return [];
       }
