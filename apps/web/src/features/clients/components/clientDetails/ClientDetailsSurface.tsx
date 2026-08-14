@@ -632,6 +632,9 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
       <section className="nexops-mobile-client-profile">
         <div className="nexops-mobile-profile-body">
           <div className="nexops-mobile-profile-summary">
+            <button className="nexops-mobile-profile-back-bubble" type="button" onClick={returnToClientRoster}>
+              ← Client Roster
+            </button>
             <div className="nexops-mobile-profile-summary-head">
               <h1>{clientDisplayName(selectedClient)}</h1>
               <button className="nexops-mobile-profile-edit-button" type="button" aria-label="Edit client details" onClick={openEditClientWorkspace}>
@@ -736,7 +739,7 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
       return (
         <section className="nexops-client-profile">
           <div className="nexops-client-profile-header-card">
-            <button className="nexops-link-button" type="button" onClick={returnToClientRoster}>Back to clients</button>
+            <button className="nexops-link-button nexops-client-profile-back-bubble" type="button" onClick={returnToClientRoster}>← Back to Client Roster</button>
             <h1>Client profile unavailable</h1>
             <p>The requested client record is not loaded for this tenant right now. Return to the roster and reopen an active record.</p>
           </div>
@@ -1145,7 +1148,7 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
       <section className="nexops-client-profile">
         <div className="nexops-client-profile-header-card nexops-client-profile-brand-header">
           <div className="nexops-client-profile-header-actions">
-            <button className="nexops-link-button" type="button" onClick={returnToClientRoster}>Back to clients</button>
+            <button className="nexops-link-button nexops-client-profile-back-bubble" type="button" onClick={returnToClientRoster}>← Back to Client Roster</button>
             <span className="nexops-status-pill">{clientStatusLabel(selectedClient)}</span>
           </div>
           <div className="nexops-client-profile-heading">

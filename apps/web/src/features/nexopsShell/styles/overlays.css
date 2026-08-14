@@ -179,9 +179,12 @@
   justify-content: space-between;
   gap: 18px;
   padding: 18px;
-  border: 1px solid rgba(8, 33, 49, 0.08);
+  border: 1px solid rgba(84, 222, 125, 0.24);
   border-radius: 24px;
-  background: linear-gradient(135deg, rgba(213, 255, 47, 0.16), rgba(37, 210, 56, 0.08) 55%, rgba(255, 255, 255, 0.96));
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 88% 14%, rgba(212, 255, 32, 0.18), transparent 30%),
+    linear-gradient(118deg, #061a2a 0%, #08343b 54%, #0d6d3d 100%);
 }
 
 .nexops-create-menu-head > div {
@@ -197,23 +200,23 @@
 }
 
 .nexops-create-menu-head h2 {
-  color: #082131;
+  color: #d4ff20;
   font-size: clamp(1.8rem, 4vw, 2.4rem);
   line-height: 1;
 }
 
 .nexops-create-menu-head p:last-child {
-  color: #526675;
+  color: rgba(255, 255, 255, 0.86);
   line-height: 1.5;
 }
 
 .nexops-create-menu-head button {
   flex: 0 0 auto;
-  border: 1px solid rgba(8, 33, 49, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
   padding: 10px 14px;
-  color: #082131;
-  background: #f7faf7;
+  color: #08180f;
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%));
   font-weight: 800;
   cursor: pointer;
 }

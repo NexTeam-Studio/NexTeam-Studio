@@ -247,6 +247,27 @@
   box-shadow: 0 18px 36px rgba(7, 28, 36, 0.16);
 }
 
+.nexops-mobile-profile-back-bubble {
+  justify-self: start;
+  min-height: 32px;
+  padding: 6px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(5, 26, 38, 0.48);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.nexops-mobile-profile-back-bubble:hover,
+.nexops-mobile-profile-back-bubble:focus-visible {
+  border-color: #d4ff20;
+  color: #d4ff20;
+  outline: none;
+}
+
 .nexops-mobile-profile-summary-head {
   display: flex;
   align-items: flex-start;
@@ -392,4 +413,120 @@
   .nexops-client-profile-card-head {
     align-items: center;
   }
+}
+
+/* Owner-approved Client workspace refinement: a NexCommand-family banner,
+   calm record surfaces, and a consistent rounded control language. */
+.nexops-client-profile-back-bubble {
+  width: fit-content;
+  min-height: 38px;
+  padding: 8px 13px !important;
+  border-radius: 999px !important;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+.nexops-client-profile-header-card.nexops-client-profile-brand-header::after {
+  content: "";
+  position: absolute;
+  inset: auto 24px 0;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%));
+}
+
+.nexops-client-profile-header-card .nexops-client-profile-back-bubble {
+  color: #08180f;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+}
+
+.nexops-client-profile-heading {
+  align-items: center;
+}
+
+.nexops-client-profile-heading > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.nexops-client-profile-panel {
+  gap: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf8 100%);
+}
+
+.nexops-client-profile-section-head {
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(8, 33, 49, 0.1);
+}
+
+.nexops-client-profile-section-head h2 {
+  color: #082131;
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+  line-height: 1.1;
+}
+
+.nexops-client-profile-section-head .eyebrow,
+.nexops-client-profile-card .eyebrow {
+  color: #0b6b43;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.nexops-client-profile-tabs {
+  border-color: rgba(84, 222, 125, 0.2);
+  background: linear-gradient(115deg, #061a2a, #08343b 58%, #0d6d3d);
+  box-shadow: 0 14px 30px rgba(8, 33, 49, 0.1);
+}
+
+.nexops-client-profile-tabs button {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nexops-client-profile-row {
+  background: linear-gradient(110deg, rgba(8, 33, 49, 0.025), rgba(37, 210, 56, 0.035));
+}
+
+.nexops-client-profile-row:not(.static):hover,
+.nexops-client-profile-row:not(.static):focus-visible {
+  border-color: rgba(37, 210, 56, 0.34);
+  background: linear-gradient(90deg, rgba(212, 255, 32, 0.15), rgba(37, 210, 56, 0.1));
+  box-shadow: 0 10px 20px rgba(8, 33, 49, 0.07);
+  outline: none;
+}
+
+.nexops-mobile-profile-section .nexops-empty-copy,
+.nexops-client-profile-panel > .nexops-empty-copy,
+.nexops-client-profile-list > .nexops-empty-copy {
+  margin: 0;
+  padding: 16px;
+  border: 1px dashed rgba(11, 107, 67, 0.26);
+  border-radius: 16px;
+  color: #47616d;
+  background: linear-gradient(135deg, #f9ffef, #f2faf4);
+  line-height: 1.5;
+}
+
+.nexops-mobile-profile-nav .nexops-mobile-bucket-tabs {
+  padding: 8px;
+  border: 1px solid rgba(84, 222, 125, 0.2);
+  border-radius: 20px;
+  background: linear-gradient(115deg, #061a2a, #08343b 58%, #0d6d3d);
+  box-shadow: 0 12px 24px rgba(7, 28, 36, 0.1);
+}
+
+.nexops-mobile-profile-nav .nexops-mobile-bucket-tabs button {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nexops-mobile-profile-nav .nexops-mobile-bucket-tabs button.active {
+  color: #08180f;
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%));
 }

@@ -75,7 +75,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
 
       <div className="nexops-client-controls">
         <label className="nexops-client-control-field">
-          <span>Filter by Tag +</span>
+          <span>Tags</span>
           <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} aria-label="Filter clients by tag">
             <option value="">All tags</option>
             {tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}

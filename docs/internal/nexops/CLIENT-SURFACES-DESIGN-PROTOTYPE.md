@@ -43,3 +43,11 @@ Official sources reviewed:
 8. Communication spotlight card
 
 Broader use of these primitives remains gated on Chris's visual review of this prototype.
+
+## Owner-refinement rules
+
+- Treat the dark navy/teal-to-green banner as a product-family surface, not a one-off page hero. It carries white secondary copy, lime headings, and restrained radial highlight only on major workspace headers and Create/review overlays.
+- Use the lime-to-green gradient only for the primary action or selected control. Secondary actions stay white or translucent, rounded, and calm.
+- Client tabs, mobile buckets, section cards, record rows, and empty states share the same rounded rhythm: dark navigation shell, clean light content, and a clear selected state.
+- A Client Details workspace begins with a compact back bubble. The route determines its destination; the default is **Back to Client Roster**. The bubble is subordinate to Client identity and the Create action.
+- Empty states are bordered, readable surfaces with a next-step explanation. Never leave an isolated line of faint text as the only state signal.

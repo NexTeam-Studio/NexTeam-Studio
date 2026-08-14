@@ -133,6 +133,10 @@ test("client roster and profile keep the mobile-first client workspace actions a
   assert.match(clientDetailsSource, /See all/);
   assert.match(clientDetailsSource, /nexops-client-profile-create-action/);
   assert.match(clientDetailsSource, /nexops-client-profile-brand-header/);
+  assert.match(clientDetailsSource, /nexops-client-profile-back-bubble/);
+  assert.match(clientDetailsSource, /Back to Client Roster/);
+  assert.match(clientDetailsSource, /nexops-mobile-profile-back-bubble/);
   assert.match(clientDetailsCss, /\.nexops-client-profile-header-card\.nexops-client-profile-brand-header\s*\{/);
+  assert.match(clientDetailsCss, /\.nexops-client-profile-tabs\s*\{[\s\S]*linear-gradient/);
   assert.match(clientDetailsCss, /\.nexops-mobile-profile-summary\s*\{/);
 });

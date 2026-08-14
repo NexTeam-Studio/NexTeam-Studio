@@ -204,8 +204,8 @@
 
 .nexops-mobile-bucket-tabs button.active,
 .nexops-mobile-filter-pills button.active {
-  background: #113248;
-  color: #ffffff;
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%));
+  color: #08180f;
 }
 
 .nexops-mobile-subsection-tabs button {

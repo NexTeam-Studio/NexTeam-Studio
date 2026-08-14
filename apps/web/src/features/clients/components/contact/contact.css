@@ -258,6 +258,15 @@
   gap: 8px;
 }
 
+.nexops-client-actions button {
+  min-height: 42px;
+  border-radius: 999px;
+  padding: 10px 15px;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
 .nexops-client-actions button:first-child {
   border: 0;
   color: #08180f;
@@ -444,8 +453,12 @@
 }
 
 .nexops-client-empty {
+  margin: 12px;
   padding: 28px;
+  border: 1px dashed rgba(11, 107, 67, 0.26);
+  border-radius: 18px;
   color: #526675;
+  background: linear-gradient(135deg, #f9ffef, #f2faf4);
 }
 
 .nexops-client-empty h2,
