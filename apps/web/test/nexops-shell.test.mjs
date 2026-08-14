@@ -117,3 +117,21 @@ test("client workspace exposes a confirmation-backed delete action instead of le
   assert.match(clientDetailsRailsSource, /fetch\(`\/api\/crm\/clients\/\$\{encodeURIComponent\(clientId\)\}\?tenantId=\$\{encodeURIComponent\(options\.tenantId\)\}`/);
   assert.match(clientDetailsSource, /Delete client/);
 });
+
+test("client roster and profile keep the mobile-first client workspace actions and relationships discoverable", () => {
+  const rosterSource = readFileSync(new URL("../src/features/clients/components/contact/ContactRoster.tsx", import.meta.url), "utf8");
+  const rosterCss = readFileSync(new URL("../src/features/clients/components/contact/contact.css", import.meta.url), "utf8");
+  const clientDetailsSource = readFileSync(new URL("../src/features/clients/components/clientDetails/ClientDetailsSurface.tsx", import.meta.url), "utf8");
+  const clientDetailsCss = readFileSync(new URL("../src/features/clients/components/clientDetails/clientDetails.css", import.meta.url), "utf8");
+
+  assert.match(rosterSource, /NexOps client manager/);
+  assert.match(rosterSource, /data-label="Primary address"/);
+  assert.match(rosterSource, /data-label="Contact"/);
+  assert.doesNotMatch(rosterCss, /min-width:\s*920px/);
+  assert.match(rosterCss, /\.nexops-client-table-head\s*\{\s*display:\s*none;/);
+  assert.match(clientDetailsSource, /Recent relationship history/);
+  assert.match(clientDetailsSource, /See all/);
+  assert.match(clientDetailsSource, /nexops-client-profile-create-action/);
+  assert.match(clientDetailsCss, /\.nexops-client-profile-header-card\s*\{/);
+  assert.match(clientDetailsCss, /\.nexops-mobile-profile-summary\s*\{/);
+});

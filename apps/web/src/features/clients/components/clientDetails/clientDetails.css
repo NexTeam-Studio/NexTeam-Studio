@@ -8,6 +8,59 @@
   flex-wrap: wrap;
 }
 
+.nexops-client-profile-header-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(84, 222, 125, 0.24);
+  color: #fff;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(143, 255, 49, 0.16), transparent 24%),
+    radial-gradient(circle at 70% 100%, rgba(44, 189, 123, 0.14), transparent 28%),
+    linear-gradient(118deg, #061a2a 0%, #08343b 52%, #0d6d3d 100%);
+  box-shadow: 0 22px 48px rgba(7, 28, 36, 0.16);
+}
+
+.nexops-client-profile-header-card .nexops-link-button,
+.nexops-client-profile-header-card .nexops-inline-actions > button:not(.nexops-client-profile-create-action) {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.nexops-client-profile-header-card .nexops-link-button:hover,
+.nexops-client-profile-header-card .nexops-inline-actions > button:not(.nexops-client-profile-create-action):hover {
+  background: rgba(255, 255, 255, 0.17);
+}
+
+.nexops-client-profile-header-card .nexops-client-profile-heading h1 {
+  color: #d4ff20;
+}
+
+.nexops-client-profile-header-card .nexops-client-profile-heading p,
+.nexops-client-profile-header-card .eyebrow {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.nexops-client-profile-header-card .nexops-client-profile-meta article {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nexops-client-profile-header-card .nexops-client-profile-meta span {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.nexops-client-profile-header-card .nexops-client-profile-meta strong {
+  color: #fff;
+}
+
+.nexops-client-profile-create-action {
+  border: 0 !important;
+  color: #08180f !important;
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%)) !important;
+  box-shadow: 0 14px 30px rgba(37, 210, 56, 0.28);
+}
+
 .nexops-client-profile-section-head h2,
 .nexops-client-profile-section-head p,
 .nexops-client-profile-card h3,
@@ -36,6 +89,7 @@
   border: 1px solid rgba(8, 33, 49, 0.1);
   border-radius: 18px;
   background: linear-gradient(180deg, #ffffff, #f5faf7);
+  box-shadow: 0 10px 24px rgba(8, 33, 49, 0.045);
 }
 
 .nexops-client-profile-metrics span {
@@ -63,6 +117,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 10px 22px rgba(8, 33, 49, 0.04);
 }
 
 .nexops-client-profile-tabs button {
@@ -80,6 +139,37 @@
   color: #08100c;
   background: var(--nexops-brand-gradient, var(--nexteam-gradient));
   box-shadow: 0 14px 28px rgba(37, 210, 56, 0.18);
+}
+
+.nexops-client-profile-card-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nexops-client-profile-card-head h3,
+.nexops-client-profile-card-head p {
+  margin: 0;
+}
+
+.nexops-client-profile-card-head button,
+.nexops-client-profile-section-head > button {
+  flex: 0 0 auto;
+  border: 1px solid rgba(11, 95, 96, 0.2);
+  border-radius: 999px;
+  padding: 9px 13px;
+  color: #0b5f60;
+  background: #fff;
+  font-weight: 850;
+}
+
+.nexops-client-profile-communication-spotlight {
+  grid-column: 1 / -1;
+  border-color: rgba(37, 210, 56, 0.2);
+  background:
+    radial-gradient(circle at right top, rgba(212, 255, 32, 0.17), transparent 24%),
+    linear-gradient(135deg, #f9ffef 0%, #edf9f1 100%);
 }
 
 .nexops-client-profile-list {
@@ -147,6 +237,14 @@
 .nexops-mobile-profile-summary {
   display: grid;
   gap: 12px;
+  padding: 22px 20px;
+  border: 1px solid rgba(84, 222, 125, 0.24);
+  border-radius: 24px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 90% 6%, rgba(143, 255, 49, 0.18), transparent 30%),
+    linear-gradient(132deg, #061a2a 0%, #08343b 58%, #0d6d3d 100%);
+  box-shadow: 0 18px 36px rgba(7, 28, 36, 0.16);
 }
 
 .nexops-mobile-profile-summary-head {
@@ -165,7 +263,7 @@
   font-size: 2.1rem;
   line-height: 1.05;
   font-weight: 800;
-  color: #113248;
+  color: #d4ff20;
 }
 
 .nexops-mobile-profile-edit-button {
@@ -188,7 +286,7 @@
 
 .nexops-mobile-profile-subtitle {
   margin: -4px 0 0;
-  color: #5f7180;
+  color: rgba(255, 255, 255, 0.84);
   font-size: 0.98rem;
   font-weight: 700;
 }
@@ -203,7 +301,7 @@
   grid-template-columns: 24px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  color: #183545;
+  color: #fff;
   text-decoration: none;
   font-weight: 600;
 }
@@ -218,7 +316,7 @@
   height: 24px;
   display: inline-grid;
   place-items: center;
-  color: #4d991f;
+  color: #d4ff20;
 }
 
 .nexops-mobile-profile-contact-icon svg {
@@ -234,6 +332,20 @@
   gap: 8px;
   padding: 10px 0 12px;
   background: linear-gradient(180deg, #f6f7f2 0%, #f6f7f2 78%, rgba(246, 247, 242, 0.92) 100%);
+}
+
+.nexops-mobile-profile-summary .nexops-mobile-balance-row {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.nexops-mobile-profile-summary .nexops-mobile-balance-row strong {
+  color: #fff;
+}
+
+.nexops-mobile-profile-summary .nexops-mobile-create-button {
+  margin-top: 2px;
 }
 
 .nexops-mobile-profile-content,
@@ -253,5 +365,31 @@
   .nexops-client-profile-grid.two-up,
   .nexops-client-profile-metrics {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nexops-mobile-profile-body {
+    gap: 16px;
+    padding: 14px 14px 108px;
+  }
+
+  .nexops-mobile-profile-summary {
+    padding: 20px 18px;
+  }
+
+  .nexops-mobile-profile-summary h1 {
+    font-size: clamp(1.9rem, 9vw, 2.35rem);
+  }
+
+  .nexops-mobile-profile-contact-link {
+    font-size: 0.95rem;
+  }
+
+  .nexops-mobile-profile-nav {
+    margin: 0 -14px;
+    padding: 10px 14px 12px;
+  }
+
+  .nexops-client-profile-card-head {
+    align-items: center;
   }
 }

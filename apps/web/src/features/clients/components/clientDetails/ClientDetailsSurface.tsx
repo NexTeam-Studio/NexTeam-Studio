@@ -1117,6 +1117,24 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
                   <button type="button" onClick={() => setClientProfileTabRoute("portal")}>Portal activity</button>
                 </div>
               </article>
+              <article className="nexops-client-profile-card nexops-client-profile-communication-spotlight">
+                <div className="nexops-client-profile-card-head">
+                  <div>
+                    <p className="eyebrow">Notes & communications</p>
+                    <h3>Recent relationship history</h3>
+                  </div>
+                  <button type="button" onClick={() => setClientProfileTabRoute("notes")}>See all</button>
+                </div>
+                {relationshipHistory.length ? (
+                  <ul className="nexops-mini-list">
+                    {relationshipHistory.slice(0, 3).map((entry) => (
+                      <li key={entry.id}>
+                        {entry.module ? <button type="button" onClick={() => openHistoryEntry(entry)}><strong>{entry.title}</strong><small>{entry.occurredAt ? new Date(entry.occurredAt).toLocaleString() : "Date unavailable"} · {entry.status}</small></button> : <><strong>{entry.title}</strong><small>{entry.occurredAt ? new Date(entry.occurredAt).toLocaleString() : "Date unavailable"} · {entry.status}</small></>}
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p>No relationship activity is recorded for this client yet.</p>}
+              </article>
             </div>
           </section>
         );
@@ -1140,7 +1158,7 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
               {selectedPhone ? <a className="nexops-link-button" href={`tel:${selectedPhone.value}`}>Call</a> : <button type="button" disabled>Call</button>}
               {selectedEmail ? <a className="nexops-link-button" href={`mailto:${selectedEmail}`}>Email</a> : <button type="button" disabled>Email</button>}
               <button type="button" onClick={() => setClientProfileTabRoute("portal")}>More actions</button>
-              <button type="button" onClick={toggleCreateMenu}>Create for client</button>
+              <button className="nexops-client-profile-create-action" type="button" onClick={toggleCreateMenu}>Create</button>
               {!isProtectedLegacyClient(selectedClient) ? (
                 <button
                   type="button"

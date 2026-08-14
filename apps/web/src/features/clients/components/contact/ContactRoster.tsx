@@ -54,7 +54,8 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
   return (
     <section className="nexops-clients-workspace">
       <div className="nexops-clients-heading">
-        <div>
+        <div className="nexops-clients-heading-copy">
+          <span className="nexops-clients-heading-eyebrow">NexOps client manager</span>
           <h1 className="nexops-page-title-with-icon"><NexOpsNavGlyph module="clients" /><span>Clients</span></h1>
           <p>{props.status} Open any row to move into the full client workspace.</p>
         </div>
@@ -116,15 +117,15 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
                 type="button"
                 onClick={() => props.onOpenClient(client.id)}
               >
-                <span>
+                <span className="nexops-client-row-identity" data-label="Client">
                   <strong>{props.clientDisplayName(client)}</strong>
                   <small>{client.company?.trim() ? client.company : props.contactSummary(client)}</small>
                   {isImportedHistoryRecord(client) ? <small className="nexops-client-imported-history">Imported History</small> : null}
                 </span>
-                <span>{props.clientPrimaryAddress(client)}</span>
-                <span>{props.selectedClientId === client.id ? "Open Now" : (client.phones[0] ?? client.emails[0] ?? "No Contact Saved")}</span>
-                <span><mark>{clientRosterStatusLabel(client, props.clientStatusLabel(client))}</mark></span>
-                <span>{client.tags?.[0] ?? "Native Record"}</span>
+                <span className="nexops-client-row-address" data-label="Primary address">{props.clientPrimaryAddress(client)}</span>
+                <span className="nexops-client-row-contact" data-label="Contact">{props.selectedClientId === client.id ? "Open now" : (client.phones[0] ?? client.emails[0] ?? "No contact saved")}</span>
+                <span className="nexops-client-row-status" data-label="Status"><mark>{clientRosterStatusLabel(client, props.clientStatusLabel(client))}</mark></span>
+                <span className="nexops-client-row-activity" data-label="Record">{client.tags?.[0] ?? "Native record"}<small>Open client</small></span>
               </button>
             ))}
             {!visibleClients.length ? (

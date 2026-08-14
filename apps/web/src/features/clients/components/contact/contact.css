@@ -203,26 +203,52 @@
 }
 
 .nexops-clients-workspace {
-  padding: 34px 28px 48px;
+  max-width: 1480px;
+  padding: 28px 28px 56px;
+  margin: 0 auto;
 }
 
 .nexops-clients-heading {
   display: flex;
-  align-items: start;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
+  padding: 28px 30px;
+  border: 1px solid rgba(84, 222, 125, 0.24);
+  border-radius: 28px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 88% 14%, rgba(144, 255, 46, 0.18), transparent 26%),
+    linear-gradient(120deg, #061a2a 0%, #07393d 54%, #107641 100%);
+  box-shadow: 0 20px 46px rgba(7, 28, 36, 0.16);
+}
+
+.nexops-clients-heading-copy {
+  min-width: 0;
+}
+
+.nexops-clients-heading-eyebrow {
+  display: block;
+  margin-bottom: 9px;
+  color: #f4fff4;
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .nexops-clients-heading h1 {
   margin: 0;
-  color: #082131;
-  font-size: clamp(2rem, 5vw, 2.65rem);
+  color: #d4ff20;
+  font-size: clamp(2.25rem, 5vw, 3.1rem);
   line-height: 1;
 }
 
 .nexops-clients-heading p {
   margin: 10px 0 0;
-  color: #526675;
+  max-width: 700px;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.5;
 }
 
 .nexops-client-actions {
@@ -232,18 +258,24 @@
   gap: 8px;
 }
 
+.nexops-client-actions button:first-child {
+  border: 0;
+  color: #08180f;
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%));
+  box-shadow: 0 12px 28px rgba(37, 210, 56, 0.28);
+}
+
 .nexops-client-actions button:nth-child(n+2) {
-  color: #0b5f60;
-  border: 1px solid rgba(11, 95, 96, 0.18);
-  background: #fff;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .nexops-client-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  max-width: 1110px;
-  margin-top: 26px;
+  margin-top: 18px;
 }
 
 .nexops-client-stats article {
@@ -251,9 +283,10 @@
   display: grid;
   align-content: center;
   border: 1px solid rgba(8, 33, 49, 0.12);
-  border-radius: 9px;
+  border-radius: 18px;
   padding: 18px;
-  background: var(--nexops-brand-surface, #fff);
+  background: linear-gradient(160deg, #fff 0%, #f2faf4 100%);
+  box-shadow: 0 10px 22px rgba(8, 33, 49, 0.05);
 }
 
 .nexops-client-stats span,
@@ -275,7 +308,12 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin: 26px 0 18px;
+  margin: 20px 0 14px;
+  padding: 14px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 12px 26px rgba(8, 33, 49, 0.045);
 }
 
 .nexops-client-control-field {
@@ -319,8 +357,9 @@
 .nexops-client-table-card,
 .nexops-client-detail-card {
   border: 1px solid rgba(8, 33, 49, 0.12);
-  border-radius: 10px;
+  border-radius: 24px;
   background: #fff;
+  box-shadow: 0 16px 36px rgba(8, 33, 49, 0.06);
 }
 
 .nexops-client-table {
@@ -337,7 +376,7 @@
 }
 
 .nexops-client-table-head {
-  min-height: 44px;
+  min-height: 48px;
   border-bottom: 1px solid rgba(8, 33, 49, 0.14);
   color: #526675;
   font-size: 0.84rem;
@@ -346,7 +385,7 @@
 
 .nexops-client-table-row {
   width: 100%;
-  min-height: 58px;
+  min-height: 70px;
   border: 0;
   border-bottom: 1px solid rgba(8, 33, 49, 0.12);
   color: #082131;
@@ -357,12 +396,25 @@
 
 .nexops-client-table-row:hover,
 .nexops-client-table-row.selected {
-  background: #edeae2;
+  background: linear-gradient(90deg, rgba(212, 255, 32, 0.13), rgba(37, 210, 56, 0.08));
 }
 
 .nexops-client-table-row strong,
 .nexops-client-table-row small {
   display: block;
+}
+
+.nexops-client-row-activity {
+  display: grid;
+  gap: 4px;
+  color: #526675;
+  font-size: 0.82rem;
+}
+
+.nexops-client-row-activity small {
+  margin: 0;
+  color: #0b6b43;
+  font-weight: 850;
 }
 
 .nexops-client-table-row small {
@@ -764,6 +816,7 @@
   .nexops-clients-heading {
     align-items: stretch;
     flex-direction: column;
+    padding: 24px 20px;
   }
 
   .nexops-client-stats,
@@ -781,12 +834,66 @@
   }
 
   .nexops-client-table-card {
-    overflow-x: auto;
+    overflow: visible;
   }
 
-  .nexops-client-table-head,
-.nexops-client-table-row {
-    min-width: 920px;
+  .nexops-client-table {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .nexops-client-table-head {
+    display: none;
+  }
+
+  .nexops-client-table-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px 18px;
+    min-height: 0;
+    padding: 17px;
+    border: 1px solid rgba(8, 33, 49, 0.1);
+    border-radius: 18px;
+    background: linear-gradient(180deg, #fff 0%, #f8fcf8 100%);
+  }
+
+  .nexops-client-row-identity {
+    grid-column: 1 / -1;
+  }
+
+  .nexops-client-row-address,
+  .nexops-client-row-contact,
+  .nexops-client-row-status,
+  .nexops-client-row-activity {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    color: #23404d;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+  }
+
+  .nexops-client-row-address::before,
+  .nexops-client-row-contact::before,
+  .nexops-client-row-status::before,
+  .nexops-client-row-activity::before {
+    content: attr(data-label);
+    color: #667884;
+    font-size: 0.69rem;
+    font-weight: 850;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .nexops-client-row-address,
+  .nexops-client-row-contact {
+    grid-column: 1 / -1;
+  }
+
+  .nexops-client-row-activity {
+    justify-self: end;
+    text-align: right;
   }
 
   .nexops-client-detail-card {
@@ -839,6 +946,41 @@
 }
 
 @media (max-width: 720px) {
+
+  .nexops-clients-workspace {
+    padding: 14px 14px 36px;
+  }
+
+  .nexops-clients-heading h1 {
+    font-size: 2.2rem;
+  }
+
+  .nexops-client-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .nexops-client-actions button:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .nexops-client-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nexops-client-stats article {
+    min-height: 84px;
+    padding: 14px;
+  }
+
+  .nexops-client-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .nexops-client-search-field {
+    grid-column: 1 / -1;
+  }
 
   .nexops-client-profile-heading,
 .nexops-client-profile-meta {
