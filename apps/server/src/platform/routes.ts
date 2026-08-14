@@ -1270,7 +1270,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const rows = await Promise.all(tenants.map(async (tenant) => {
         const runtimeStatuses = runtimeAdapterStatuses(tenant, env);
         await deps.repository.saveAdapterStatuses(runtimeStatuses);
-        const [profile, ledgerSubscription] = await Promise.all([deps.repository.getTenantProfile(tenant.id), deps.repository.getSubscription(tenant.id)]);
+        const [profile, ledgerSubscription, branding] = await Promise.all([deps.repository.getTenantProfile(tenant.id), deps.repository.getSubscription(tenant.id), deps.repository.getTenantBranding(tenant.id)]);
         const packageId = profile?.subscriptionPlan;
         const stagingPackage = packageId && packageId !== "none" ? activeSubscriptionPackages().find((entry) => entry.id === packageId) : undefined;
         const subscriptionDisplay = stagingPackage
@@ -1282,6 +1282,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
           modules: [...modulesForPlan(tenant.plan)],
           subscription: ledgerSubscription,
           subscriptionDisplay,
+          logoVersion: branding?.logo?.updatedAt,
           adapterStatuses: await deps.repository.listAdapterStatuses(tenant.id),
           cost: await deps.repository.summarizeCost(tenant.id, period)
         };

@@ -7,6 +7,7 @@ import { lifecycleCommand } from "../../platformOverview/api/nexCommandAdminApi"
 
 export function useTenantOverview(user: User | null): {
   rows: PlatformTenantRow[];
+  refresh: () => Promise<void>;
   runBackup: (tenantId: string) => Promise<void>;
   status: string;
   workingTenant: string;
@@ -16,37 +17,18 @@ export function useTenantOverview(user: User | null): {
   const [status, setStatus] = useState("Loading tenant overview...");
   const [workingTenant, setWorkingTenant] = useState("");
 
-  useEffect(() => {
+  async function refresh(): Promise<void> {
     if (!user) {
       setRows([]);
       setStatus("Tenant overview requires a signed-in operator.");
       return;
     }
-
-    let cancelled = false;
     setStatus("Loading tenant overview...");
+    try { setRows(await fetchTenantOverview(user)); setStatus(""); }
+    catch (error) { recordBrowserEvent("tenant_overview.load_failed", { error: error instanceof Error ? error.message : "unknown" }); setRows([]); setStatus("Data query needs attention. NexTeam has logged the issue."); }
+  }
 
-    fetchTenantOverview(user)
-      .then((nextRows) => {
-        if (!cancelled) {
-          setRows(nextRows);
-          setStatus("");
-        }
-      })
-      .catch((error) => {
-        recordBrowserEvent("tenant_overview.load_failed", {
-          error: error instanceof Error ? error.message : "unknown"
-        });
-        if (!cancelled) {
-          setRows([]);
-          setStatus("Data query needs attention. NexTeam has logged the issue.");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+  useEffect(() => { void refresh(); }, [user]);
 
   async function runBackupForTenant(tenantId: string): Promise<void> {
     if (!user) {
@@ -89,6 +71,7 @@ export function useTenantOverview(user: User | null): {
 
   return {
     rows,
+    refresh,
     runBackup: runBackupForTenant,
     status,
     workingTenant,

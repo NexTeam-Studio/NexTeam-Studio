@@ -25,6 +25,7 @@ export interface PlatformTenantRow {
     monthlyUsd: number;
     annualUsd: number;
   };
+  logoVersion?: string;
   adapterStatuses: Array<{
     adapter: string;
     provider: string;

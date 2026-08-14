@@ -14,7 +14,7 @@ export function TenantOverviewPanel(props: { rows: PlatformTenantRow[]; onViewDe
     {visibleRows.map((row) => {
       const subscription = row.subscriptionDisplay ?? { name: row.plan.name, status: row.subscription?.status ?? "no subscription", monthlyUsd: row.plan.monthlyUsd, annualUsd: row.plan.monthlyUsd * 12 };
       return <article className="tenant-overview__row tenant-overview__row--minimal" key={row.tenant.id}>
-        <div className="tenant-overview__identity"><TenantLogo tenantId={row.tenant.id} tenantName={row.tenant.name} /><div><h2>{row.tenant.name}</h2><p>{subscription.name} · {subscription.status}</p><p><strong>{row.tenant.lifecycleState === "DISABLED_ARCHIVED" ? "Archived" : "Active"}</strong></p></div></div>
+        <div className="tenant-overview__identity"><TenantLogo tenantId={row.tenant.id} tenantName={row.tenant.name} logoVersion={row.logoVersion} /><div><h2>{row.tenant.name}</h2><p>{subscription.name} · {subscription.status}</p><p><strong>{row.tenant.lifecycleState === "DISABLED_ARCHIVED" ? "Archived" : "Active"}</strong></p></div></div>
         <div className="tenant-overview__pricing"><p>${subscription.monthlyUsd.toFixed(2)} Monthly</p><p>${subscription.annualUsd.toFixed(2)} Annually</p></div>
         <div className="tenant-overview__actions"><button className="tenant-action" type="button" onClick={() => props.onViewDetails(row.tenant.id)}>View Details</button></div>
       </article>;
@@ -23,8 +23,8 @@ export function TenantOverviewPanel(props: { rows: PlatformTenantRow[]; onViewDe
   </section>;
 }
 
-function TenantLogo({ tenantId, tenantName }: { tenantId: string; tenantName: string }): React.ReactElement {
-  const [source, setSource] = useState(`/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(tenantId)}`);
+function TenantLogo({ tenantId, tenantName, logoVersion }: { tenantId: string; tenantName: string; logoVersion?: string }): React.ReactElement {
+  const [source, setSource] = useState(`/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(tenantId)}&v=${encodeURIComponent(logoVersion ?? "current")}`);
   const [failed, setFailed] = useState(false);
   const fallback = tenantLogos[tenantId];
   if (failed) return <span className="tenant-overview__logo"><b>{tenantName.split(/\s+/).map((word) => word[0]).join("").slice(0, 3)}</b></span>;
