@@ -15,6 +15,33 @@ export interface CommunicationTemplateRecord {
   updatedAt: string;
 }
 
+export type CommunicationDeliveryChannel = "email" | "sms";
+
+export interface CommunicationDeliveryAvailabilityInput {
+  channel: CommunicationDeliveryChannel;
+  email?: string | undefined;
+  phone?: string | undefined;
+  templateEnabled?: boolean | undefined;
+  smsProviderConfigured?: boolean | undefined;
+  smsConsent?: boolean | undefined;
+}
+
+export interface CommunicationDeliveryAvailability {
+  channel: CommunicationDeliveryChannel;
+  available: boolean;
+  reason?: string | undefined;
+  recipient: string;
+}
+
+export interface CommunicationSendPreview {
+  channel: CommunicationDeliveryChannel;
+  available: boolean;
+  unavailableReason?: string | undefined;
+  recipient: string;
+  subject: string;
+  bodyText: string;
+}
+
 interface ClientLike {
   id: string;
   name: string;
@@ -67,6 +94,79 @@ interface VisitLike {
 
 function clean(value: string | undefined | null): string {
   return value?.trim() ?? "";
+}
+
+/**
+ * Resolves whether a channel may be offered to an operator. This is deliberately
+ * a client-safe availability contract, not a send authorization: a later action
+ * must still perform server-side tenant, approval, and provider checks.
+ */
+export function resolveCommunicationDeliveryAvailability(
+  input: CommunicationDeliveryAvailabilityInput
+): CommunicationDeliveryAvailability {
+  const email = clean(input.email);
+  const phone = clean(input.phone);
+  const recipient = input.channel === "email" ? email : phone;
+
+  if (input.templateEnabled === false) {
+    return {
+      channel: input.channel,
+      available: false,
+      recipient,
+      reason: `${input.channel === "email" ? "Email" : "SMS"} is disabled for this message type.`
+    };
+  }
+
+  if (!recipient) {
+    return {
+      channel: input.channel,
+      available: false,
+      recipient,
+      reason: input.channel === "email" ? "This client does not have an email address." : "This client does not have a mobile number."
+    };
+  }
+
+  if (input.channel === "sms") {
+    if (input.smsProviderConfigured !== true) {
+      return {
+        channel: input.channel,
+        available: false,
+        recipient,
+        reason: "SMS delivery is not available for this tenant yet."
+      };
+    }
+    if (input.smsConsent !== true) {
+      return {
+        channel: input.channel,
+        available: false,
+        recipient,
+        reason: "This client has not consented to SMS messages."
+      };
+    }
+  }
+
+  return { channel: input.channel, available: true, recipient };
+}
+
+/**
+ * Produces the exact operator-facing preview model without dispatching a
+ * communication. UI surfaces can use this for the confirmation step before a
+ * separately authorized server-side send.
+ */
+export function buildCommunicationSendPreview(input: {
+  channel: CommunicationDeliveryChannel;
+  subject?: string | undefined;
+  bodyText: string;
+  availability: CommunicationDeliveryAvailability;
+}): CommunicationSendPreview {
+  return {
+    channel: input.channel,
+    available: input.availability.available,
+    unavailableReason: input.availability.reason,
+    recipient: input.availability.recipient,
+    subject: input.channel === "email" ? clean(input.subject) : "",
+    bodyText: input.bodyText
+  };
 }
 
 function money(value: number): string {
