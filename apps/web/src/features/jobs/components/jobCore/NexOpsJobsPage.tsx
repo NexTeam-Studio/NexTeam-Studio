@@ -374,8 +374,20 @@ export function parseVisitDateTime(dateValue: string, timeValue: string): Date |
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue) || !/^\d{2}:\d{2}$/.test(timeValue)) {
     return null;
   }
-  const parsed = new Date(`${dateValue}T${timeValue}`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const [hour, minute] = timeValue.split(":").map(Number);
+  const parsed = new Date(year, month - 1, day, hour, minute);
+  if (
+    Number.isNaN(parsed.getTime())
+    || parsed.getFullYear() !== year
+    || parsed.getMonth() !== month - 1
+    || parsed.getDate() !== day
+    || parsed.getHours() !== hour
+    || parsed.getMinutes() !== minute
+  ) {
+    return null;
+  }
+  return parsed;
 }
 
 interface BookingConfirmationDraft {

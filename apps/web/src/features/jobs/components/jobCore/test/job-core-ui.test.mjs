@@ -100,4 +100,6 @@ test("visit scheduler parses accessible text controls", () => {
   assert.equal(parseVisitDateTime("2026-08-15", "10:00") instanceof Date, true);
   assert.equal(parseVisitDateTime("08/15/2026", "10:00"), null);
   assert.equal(parseVisitDateTime("2026-08-15", "10:00 AM"), null);
+  assert.equal(parseVisitDateTime("2026-02-30", "10:00"), null);
+  assert.equal(parseVisitDateTime("2026-08-15", "24:00"), null);
 });
