@@ -16,7 +16,7 @@ export function PlatformRoute(): React.ReactElement {
     setProfileGate("checking");
     void fetch("/api/platform/admin/team/me")
       .then(async (response) => {
-        if (!response.ok) throw new Error("NexCommand profile could not be loaded.");
+        if (!response.ok) throw new Error(`NexCommand profile could not be loaded (${response.status}).`);
         return response.json() as Promise<{ user?: { profilePhotoRef?: string } }>;
       })
       .then(({ user }) => {
@@ -29,14 +29,17 @@ export function PlatformRoute(): React.ReactElement {
         setProfileGate("incomplete");
         if (pathname !== "/platform/profile-completion") navigateToProfileCompletion();
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (!active) return;
         // A rejected platform-profile request means the short-lived console
         // session can no longer authorize this route. Clear only that marker
         // and return to the normal fresh NexCommand sign-in screen.
-        invalidateNexCommandSession();
-        window.history.replaceState({}, "", "/nexcommand/sign-in");
-        window.dispatchEvent(new PopStateEvent("popstate"));
+        if (error instanceof Error && /\(401\)|\(403\)/.test(error.message)) {
+          invalidateNexCommandSession();
+          window.location.assign("/nexcommand/sign-in");
+          return;
+        }
+        setProfileGate("error");
       });
     return () => { active = false; };
   }, [pathname]);
