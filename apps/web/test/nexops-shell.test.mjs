@@ -123,9 +123,12 @@ test("client roster and profile keep the mobile-first client workspace actions a
   const rosterCss = readFileSync(new URL("../src/features/clients/components/contact/contact.css", import.meta.url), "utf8");
   const clientDetailsSource = readFileSync(new URL("../src/features/clients/components/clientDetails/ClientDetailsSurface.tsx", import.meta.url), "utf8");
   const clientDetailsCss = readFileSync(new URL("../src/features/clients/components/clientDetails/clientDetails.css", import.meta.url), "utf8");
+  const workspaceSource = readFileSync(new URL("../src/features/nexopsShell/NexOpsWorkspace.tsx", import.meta.url), "utf8");
+  const headerSource = readFileSync(new URL("../src/features/nexopsShell/components/NexOpsHeader.tsx", import.meta.url), "utf8");
+  const createPanelSource = readFileSync(new URL("../src/features/clients/components/contact/NexOpsCreateClientPanel.tsx", import.meta.url), "utf8");
 
   assert.match(rosterSource, /NexOps client manager/);
-  assert.match(rosterSource, /data-label="Primary address"/);
+  assert.match(rosterSource, /data-label="Primary Address"/);
   assert.match(rosterSource, /data-label="Contact"/);
   assert.doesNotMatch(rosterCss, /min-width:\s*920px/);
   assert.match(rosterCss, /\.nexops-client-table-head\s*\{\s*display:\s*none;/);
@@ -136,7 +139,14 @@ test("client roster and profile keep the mobile-first client workspace actions a
   assert.match(clientDetailsSource, /nexops-client-profile-back-bubble/);
   assert.match(clientDetailsSource, /Back to Client Roster/);
   assert.match(clientDetailsSource, /nexops-mobile-profile-back-bubble/);
+  assert.match(clientDetailsSource, /nexops-client-profile-tab-groups/);
+  assert.match(clientDetailsSource, /mobileTabsForBucket\(bucket\)/);
+  assert.match(workspaceSource, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
+  assert.match(headerSource, /nexops-web-platform-lockup/);
+  assert.match(createPanelSource, /aria-label="Close">×/);
+  assert.doesNotMatch(createPanelSource, /Ã—|â†/);
   assert.match(clientDetailsCss, /\.nexops-client-profile-header-card\.nexops-client-profile-brand-header\s*\{/);
+  assert.match(clientDetailsCss, /\.nexops-client-profile-tab-groups\s*\{/);
   assert.match(clientDetailsCss, /\.nexops-client-profile-tabs\s*\{[\s\S]*linear-gradient/);
   assert.match(clientDetailsCss, /\.nexops-mobile-profile-summary\s*\{/);
 });

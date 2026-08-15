@@ -530,3 +530,59 @@
   color: #08180f;
   background: var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%));
 }
+
+/* Client workspace navigation has one shared shell across Client, Work, Notes,
+   and Files.  Group labels make the information hierarchy explicit without
+   creating visually unrelated mini-products. */
+.nexops-client-profile-tab-groups {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(84, 222, 125, 0.22);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at right top, rgba(84, 222, 125, 0.16), transparent 34%),
+    linear-gradient(115deg, #061a2a, #08343b 58%, #0d6d3d);
+  box-shadow: 0 16px 34px rgba(8, 33, 49, 0.12);
+}
+
+.nexops-client-profile-tab-group {
+  display: grid;
+  gap: 7px;
+}
+
+.nexops-client-profile-tab-group .eyebrow {
+  margin: 0 4px;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.nexops-client-profile-tab-group .nexops-client-profile-tabs {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.nexops-client-profile-tab-group .nexops-client-profile-tabs button {
+  color: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.nexops-client-profile-tab-group .nexops-client-profile-tabs button:hover,
+.nexops-client-profile-tab-group .nexops-client-profile-tabs button:focus-visible {
+  border-color: rgba(212, 255, 32, 0.72);
+  color: #fff;
+  background: rgba(212, 255, 32, 0.16);
+  outline: none;
+}
+
+.nexops-client-profile-tab-group .nexops-client-profile-tabs button.active {
+  border-color: transparent;
+  color: #08180f;
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%));
+}

@@ -36,9 +36,9 @@ export function ContactEditorSurface(props: ContactEditorSurfaceProps): React.Re
 
   return (
     <section className="nexops-client-profile">
-      <div className="nexops-client-profile-header-card">
+      <div className="nexops-client-profile-header-card nexops-client-profile-brand-header nexops-client-form-workspace-header">
         <div className="nexops-client-profile-header-actions">
-          <button className="nexops-link-button" type="button" onClick={props.onClose}>{editing ? "Back to profile" : "Back to clients"}</button>
+          <button className="nexops-link-button nexops-client-profile-back-bubble" type="button" onClick={props.onClose}>← {editing ? "Back to Client Overview" : "Back to Client Roster"}</button>
           <span className="nexops-status-pill">{editing ? "Edit client" : "New client"}</span>
         </div>
         <div className="nexops-client-profile-heading">

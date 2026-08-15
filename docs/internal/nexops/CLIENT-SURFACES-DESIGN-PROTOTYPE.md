@@ -51,3 +51,7 @@ Broader use of these primitives remains gated on Chris's visual review of this p
 - Client tabs, mobile buckets, section cards, record rows, and empty states share the same rounded rhythm: dark navigation shell, clean light content, and a clear selected state.
 - A Client Details workspace begins with a compact back bubble. The route determines its destination; the default is **Back to Client Roster**. The bubble is subordinate to Client identity and the Create action.
 - Empty states are bordered, readable surfaces with a next-step explanation. Never leave an isolated line of faint text as the only state signal.
+- NexOps headers follow the NexCommand family layout: platform and product identity form a compact lockup, tenant branding remains adjacent but subordinate, and account actions use evenly sized translucent bubble controls with lime focus feedback.
+- Primary Client navigation and every subsection group follow one pattern: a dark rounded navigation shell, a short section label, and compact pill controls. Equivalent Client, Work, Notes, and Files structures must not receive bespoke visual treatments.
+- Opening a different Client is a new workspace entry. It resets document scroll position to the Client identity header; back/refresh behavior otherwise remains browser-native and predictable.
+- Create and Edit Client are part of the Client workspace, not standalone forms: they use the branded header/back bubble, rounded grouped form sections, clear labels, and the shared lime primary CTA.

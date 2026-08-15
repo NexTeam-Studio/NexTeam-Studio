@@ -320,7 +320,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
       return (
         <section className="nexops-mobile-client-screen nexops-mobile-client-screen-sheet">
           <header className="nexops-mobile-client-head">
-            <button type="button" onClick={() => setLeadSourcePickerOpen(false)} aria-label="Back">â†</button>
+            <button type="button" onClick={() => setLeadSourcePickerOpen(false)} aria-label="Back">←</button>
             <h1>How They Found Us</h1>
             <span />
           </header>
@@ -381,7 +381,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
     return (
       <form className="nexops-mobile-client-screen" onSubmit={(event) => void onSubmit(event)}>
         <header className="nexops-mobile-client-head">
-          <button type="button" onClick={onClose} aria-label="Close">Ã—</button>
+          <button type="button" onClick={onClose} aria-label="Close">×</button>
           <h1>{surfaceHeading}</h1>
           <span />
         </header>
@@ -527,7 +527,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
               onChange={(event) => patchClientDraft({ street1: event.target.value })}
             />
           </label>
-          {addressLookupBusy ? <p className="nexops-mobile-helper-note">Looking up matching addressesâ€¦</p> : null}
+          {addressLookupBusy ? <p className="nexops-mobile-helper-note">Looking up matching addresses…</p> : null}
           {addressSuggestions.length ? (
             <div className="nexops-mobile-client-list">
               {addressSuggestions.map((suggestion) => (

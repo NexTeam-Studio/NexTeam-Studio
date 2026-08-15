@@ -229,19 +229,38 @@
 .nexops-mobile-subsection-shell {
   display: grid;
   gap: 8px;
-  padding: 10px 12px 4px 16px;
-  margin-left: 6px;
-  border-left: 3px solid rgba(37, 210, 56, 0.22);
-  border-radius: 0 18px 18px 0;
-  background: rgba(255, 255, 255, 0.76);
+  padding: 12px;
+  margin: 0;
+  border: 1px solid rgba(84, 222, 125, 0.2);
+  border-radius: 20px;
+  background: linear-gradient(115deg, #061a2a, #08343b 58%, #0d6d3d);
+  box-shadow: 0 12px 24px rgba(7, 28, 36, 0.1);
 }
 
 .nexops-mobile-subsection-shell small {
-  color: #667784;
+  color: rgba(255, 255, 255, 0.76);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.nexops-mobile-subsection-shell .nexops-mobile-subsection-tabs {
+  padding: 0;
+  background: transparent;
+}
+
+.nexops-mobile-subsection-shell .nexops-mobile-subsection-tabs button {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nexops-mobile-subsection-shell .nexops-mobile-subsection-tabs button.active {
+  border-color: transparent;
+  color: #08180f;
+  background: var(--nexops-brand-gradient, linear-gradient(135deg, #d4ff20 0%, #25d238 100%));
+  box-shadow: 0 10px 24px rgba(37, 210, 56, 0.16);
 }
 
 .nexops-mobile-section-head {

@@ -65,7 +65,11 @@ export function NexOpsSharedWebTopbar(props: {
   return (
     <header className="nexops-web-topbar">
       <div className="nexops-web-brand">
-        <ProductLogo product={product} className="nexops-header-product-logo" alt={productLabel(product)} />
+        <div className="nexops-web-platform-lockup">
+          <PlatformMark className="nexops-header-platform-mark" alt="NexTeam" />
+          <ProductLogo product={product} className="nexops-header-product-logo" alt={productLabel(product)} />
+        </div>
+        <span className="nexops-web-brand-divider" aria-hidden="true" />
         <TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-header-tenant-logo" />
       </div>
       <div className="nexops-web-tools">

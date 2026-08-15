@@ -75,7 +75,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
 
       <div className="nexops-client-controls">
         <label className="nexops-client-control-field">
-          <span>Tags</span>
+          <span>Filter by Tag +</span>
           <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} aria-label="Filter clients by tag">
             <option value="">All tags</option>
             {tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
@@ -122,7 +122,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
                   <small>{client.company?.trim() ? client.company : props.contactSummary(client)}</small>
                   {isImportedHistoryRecord(client) ? <small className="nexops-client-imported-history">Imported History</small> : null}
                 </span>
-                <span className="nexops-client-row-address" data-label="Primary address">{props.clientPrimaryAddress(client)}</span>
+                <span className="nexops-client-row-address" data-label="Primary Address">{props.clientPrimaryAddress(client)}</span>
                 <span className="nexops-client-row-contact" data-label="Contact">{props.selectedClientId === client.id ? "Open now" : (client.phones[0] ?? client.emails[0] ?? "No contact saved")}</span>
                 <span className="nexops-client-row-status" data-label="Status"><mark>{clientRosterStatusLabel(client, props.clientStatusLabel(client))}</mark></span>
                 <span className="nexops-client-row-activity" data-label="Record">{client.tags?.[0] ?? "Native record"}<small>Open client</small></span>

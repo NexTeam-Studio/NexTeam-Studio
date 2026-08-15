@@ -1182,20 +1182,34 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
           </div>
         </div>
 
-        <div className="nexops-client-profile-tabs" role="tablist" aria-label="Client sections">
-          {CLIENT_PROFILE_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={(activeClientProfileTab ?? "overview") === tab.id}
-              className={(activeClientProfileTab ?? "overview") === tab.id ? "active" : ""}
-              onClick={() => setClientProfileTabRoute(tab.id)}
-            >
-              {tab.label}
-            </button>
+        <nav className="nexops-client-profile-tab-groups" aria-label="Client workspace sections">
+          {(Object.keys(CLIENT_PROFILE_MOBILE_BUCKET_LABELS) as ClientProfileMobileBucket[]).map((bucket) => (
+            <section className="nexops-client-profile-tab-group" key={bucket}>
+              <p className="eyebrow">{CLIENT_PROFILE_MOBILE_BUCKET_LABELS[bucket]}</p>
+              <div className="nexops-client-profile-tabs" role="tablist" aria-label={`${CLIENT_PROFILE_MOBILE_BUCKET_LABELS[bucket]} sections`}>
+                {mobileTabsForBucket(bucket).map((tabId) => {
+                  const tab = CLIENT_PROFILE_TABS.find((candidate) => candidate.id === tabId);
+                  if (!tab) {
+                    return null;
+                  }
+                  const active = (activeClientProfileTab ?? "overview") === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      className={active ? "active" : ""}
+                      onClick={() => setClientProfileTabRoute(tab.id)}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
           ))}
-        </div>
+        </nav>
 
         {tabContent}
       </section>

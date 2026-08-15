@@ -379,6 +379,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   }
 
   function openClientProfile(clientId: string, tab: ClientProfileTab = "overview"): void {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     clearWorkspaceTargets();
     clearWorkspaceFilters();
     closeHeaderPanels();
@@ -413,6 +414,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   }
 
   function openNewClientWorkspace(): void {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     clearWorkspaceTargets();
     clearWorkspaceFilters();
     closeHeaderPanels();
@@ -436,6 +438,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     clearWorkspaceTargets();
     clearWorkspaceFilters();
     closeHeaderPanels();
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     if (!contactForm.openEdit()) {
       return;
     }
@@ -593,6 +596,9 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   useEffect(() => {
     const onPopState = () => {
       const nextLocation = parseNexOpsLocation(window.location.pathname);
+      if (nextLocation.clientId) {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      }
       setActiveModule(nextLocation.module);
       setActiveClientProfileTab(nextLocation.clientTab);
       setCreatingClientPage(nextLocation.clientDraft === "new");
