@@ -345,6 +345,20 @@ test("Splinter work selector requires completed dependency evidence and linked j
   const next = await selector.select("abcdef1"); assert.equal(next.item.workItemId, "dependent"); await assert.rejects(() => selector.reconcile("dependent", ["claim-only"]), /not complete/);
 });
 
+test("Splinter selector requires the approved business-page template contract for major NexOps rails", async () => {
+  const work = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository(); const selector = new SplinterWorkSelector(work, jobs);
+  await work.create(workItem({ workItemId: "quote-without-template", module: "NexOps / CRM / Quotes", executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/web/src/features/quotes"], pathDiscoveryPolicy: "EXPLICIT_PATHS", requiredChecks: ["SPLINTER_FOCUSED_TESTS"] }));
+  await selector.approve("quote-without-template");
+  assert.equal(await selector.select("abcdef1"), null);
+  await work.create(workItem({ workItemId: "bare-quote-without-template", module: "Quotes", priority: 1, executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/web/src/features/quotes"], pathDiscoveryPolicy: "EXPLICIT_PATHS", requiredChecks: ["SPLINTER_FOCUSED_TESTS"] }));
+  await work.create(workItem({ workItemId: "reversed-quote-without-template", module: "Quotes / NexOps", priority: 1, executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/web/src/features/quotes"], pathDiscoveryPolicy: "EXPLICIT_PATHS", requiredChecks: ["SPLINTER_FOCUSED_TESTS"] }));
+  await selector.approve("bare-quote-without-template"); await selector.approve("reversed-quote-without-template");
+  assert.equal(await selector.select("abcdef1"), null);
+  await work.create(workItem({ workItemId: "quote-with-template", module: "NexOps / CRM / Quotes", executionMode: "CODE_CHANGE", reviewRequired: true, allowedPaths: ["apps/web/src/features/quotes"], pathDiscoveryPolicy: "EXPLICIT_PATHS", requiredChecks: ["SPLINTER_FOCUSED_TESTS"], sourceRequirementRefs: ["docs/internal/nexops/NEXOPS-BUSINESS-PAGE-TEMPLATE-CONTRACT.md#roster-template"] }));
+  await selector.approve("quote-with-template");
+  assert.equal((await selector.select("abcdef1")).item.workItemId, "quote-with-template");
+});
+
 test("Splinter work completion route denies a return while browser acceptance remains", async () => {
   const work = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository(); const selector = new SplinterWorkSelector(work, jobs);
   await work.create(workItem({ workItemId: "browser-proof", acceptanceCriteria: ["browser evidence"], nonPromotable: true }));

@@ -118,6 +118,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   const [moduleSwitcherOpen, setModuleSwitcherOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [createClientContextId, setCreateClientContextId] = useState("");
+  const [resumeQuoteAfterClientCreate, setResumeQuoteAfterClientCreate] = useState(false);
   const [mobileCreateFabCollapsed, setMobileCreateFabCollapsed] = useState(false);
   const [mobileCreateFabPulse, setMobileCreateFabPulse] = useState(false);
   const [creatingClientPage, setCreatingClientPage] = useState(initialPathState.clientDraft === "new");
@@ -431,6 +432,11 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     contactForm.openCreate(surface, true);
   }
 
+  function closeCreateClientDrawer(): void {
+    setResumeQuoteAfterClientCreate(false);
+    contactForm.closeDrawer();
+  }
+
   function openEditClientWorkspace(): void {
     if (!selectedClient) {
       return;
@@ -641,6 +647,15 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     selectedClientId,
     refresh,
     onSaved: (clientId) => {
+      if (resumeQuoteAfterClientCreate) {
+        setResumeQuoteAfterClientCreate(false);
+        setCreateClientContextId(clientId);
+        setCreatingClientPage(false);
+        setActiveClientProfileTab(null);
+        setActiveModule("quotes");
+        window.history.pushState({}, "", buildModulePath("quotes"));
+        return;
+      }
       setCreatingClientPage(false);
       openClientProfile(clientId, "overview");
     },
@@ -812,7 +827,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           createClientMissingFields={createClientMissingFields}
           leadSourceOptions={leadSourceOptions}
           surface={createClientSurface}
-          onClose={contactForm.closeDrawer}
+          onClose={closeCreateClientDrawer}
           onSubmit={createClientFromForm}
         />
       </Suspense>
@@ -866,10 +881,15 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
         <NexOpsQuotesPage
           tenantId={operatorContext.tenantId}
           clients={clients}
+          properties={properties}
           tenantUsers={tenantUsers}
           focusedQuoteId={focusedQuoteId}
           initialClientId={createClientContextId || undefined}
           initialFilter={quoteFilterIntent}
+          onCreateClientRequested={() => {
+            setResumeQuoteAfterClientCreate(true);
+            openCreateClientDrawer("client");
+          }}
           onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
         />
       );

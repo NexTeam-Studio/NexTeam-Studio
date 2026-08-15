@@ -12,6 +12,8 @@ import {
   quoteManualApproveBlockedReason,
   quoteSendBlockedReason
 } from "../NexOpsQuotesPage.tsx";
+import fs from "node:fs";
+import path from "node:path";
 
 function makeQuote(overrides = {}) {
   return {
@@ -103,4 +105,13 @@ test("downstream buttons stay gated with explicit reasons", () => {
     quoteInvoiceBlockedReason(draft),
     "Quote must be approved before an invoice is created."
   );
+});
+
+test("quote workspace uses the shared business templates and retains client/property context in the focused builder", () => {
+  const source = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx"), "utf8");
+  assert.match(source, /NexOpsRosterTemplate/);
+  assert.match(source, /NexOpsDetailTemplate/);
+  assert.match(source, /Service Location/);
+  assert.match(source, /Create New Client/);
+  assert.match(source, /propertyId: composer\.propertyId/);
 });

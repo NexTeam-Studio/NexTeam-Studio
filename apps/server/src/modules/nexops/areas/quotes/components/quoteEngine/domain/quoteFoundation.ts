@@ -43,6 +43,7 @@ export const quoteDeliverySelectionSchema = z.object({
 export const quoteComposerInputSchema = z.object({
   tenantId: z.string().min(1),
   clientId: z.string().min(1),
+  propertyId: z.string().min(1).optional(),
   requestId: z.string().min(1).optional(),
   jobId: z.string().min(1).optional(),
   templateId: z.string().min(1).optional(),
@@ -288,6 +289,7 @@ export async function materializeQuoteRecord(
     tenantId: input.tenantId,
     number,
     clientId: input.clientId,
+    ...(input.propertyId ? { propertyId: input.propertyId } : {}),
     ...(input.jobId ? { jobId: input.jobId } : {}),
     ...(input.requestId ? { requestId: input.requestId } : {}),
     ...(input.templateId ? { templateId: input.templateId } : template?.id ? { templateId: template.id } : {}),

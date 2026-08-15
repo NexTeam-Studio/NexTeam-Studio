@@ -2,7 +2,7 @@
 
 ## Scope
 
-This prototype intentionally applies to the NexOps Client Roster and Client Details only. It is a reviewable direction, not a mandate to restyle the rest of NexOps.
+This prototype began with the NexOps Client Roster and Client Details. Quotes are the first controlled proof that the resulting page architecture can be reused without creating a second visual system. Broader rollout remains subject to owner review.
 
 ## Research principles retained
 
@@ -70,3 +70,12 @@ Broader use of these primitives remains gated on Chris's visual review of this p
 - **Roster identity contract:** A roster record starts with one restrained dark teal-to-green identity banner, then presents operational detail in a clean light body.
 - **Sub-rail header contract:** Primary Client subsection cards use the same dark branded section banner, lime eyebrow, high-contrast title, and readable contextual action where it improves orientation.
 - **Overlay contract:** Create pickers and drawers reserve mobile safe-area space at both top and bottom so their identity, Close control, and first action are visible without an upward scroll.
+
+## NexOps Roster and Detail Template Contract
+
+- **Roster template:** Primary business rails use the same NexCommand-family hero, one obvious primary Create action, summary metrics when meaningful, search/filter controls, and a clean scan-first list or card body. Each record keeps a branded identity region separate from its light operational detail body.
+- **Detail template:** Business-object details start with a contextual back bubble, a branded identity/status banner, focused primary actions, rounded navigation pills, and light related-record cards. It is the page architecture, not a demand for identical object fields.
+- **Quote Builder contract:** Quote creation is a focused commercial workspace: Client context, Products & Services, pricing, deposit, message/terms, and Save Draft / Review & Send. Request intake remains linked but is not rendered as quote-builder clutter.
+- **Catalog contract:** Products & Services are tenant catalog records with code, name, description, category, price, taxability, visibility, and source. A Quote Builder can add an authorized reusable catalog item or a quote-only custom line; neither path creates duplicate Client records.
+- **Navigation and mobile contract:** Major template controls wrap or scroll intentionally inside their own labeled strip; content itself never depends on a nested horizontal scroll region. Major actions remain thumb reachable and clear mobile safe areas.
+- **Reuse-first enforcement:** New major business-object roster/detail work must consume `NexOpsRosterTemplate` / `NexOpsDetailTemplate` or document a concrete architecture exception in its implementation and acceptance evidence. Splinter acceptance treats an undocumented bespoke header/card/back-navigation pattern as incomplete UI acceptance.

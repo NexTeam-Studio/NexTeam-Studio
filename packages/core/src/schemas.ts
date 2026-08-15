@@ -1105,6 +1105,7 @@ export const quoteSchema = z.object({
   tenantId: idSchema,
   number: z.string().min(1).optional(),
   clientId: idSchema,
+  propertyId: idSchema.optional(),
   jobId: idSchema.optional(),
   requestId: idSchema.optional(),
   convertedJobId: idSchema.optional(),

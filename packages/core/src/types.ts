@@ -1056,6 +1056,8 @@ export interface Quote {
   tenantId: ID;
   number?: string | undefined;
   clientId: ID;
+  /** The service location selected for this quote when the client has one or more properties. */
+  propertyId?: ID | undefined;
   jobId?: ID | undefined;
   requestId?: ID | undefined;
   convertedJobId?: ID | undefined;

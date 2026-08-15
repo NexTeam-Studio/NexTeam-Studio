@@ -40,7 +40,16 @@ export class FirestoreWorkRegistry implements WorkRegistry {
 }
 
 function dependenciesComplete(item: SplinterWorkItem, all: Map<string, SplinterWorkItem>) { return item.dependencies.every(id => { const dependency = all.get(id); return dependency?.status === "COMPLETED" && dependency.completedEvidenceRefs.length > 0; }); }
-function eligible(item: SplinterWorkItem, all: Map<string, SplinterWorkItem>) { return !item.reconciliationMode && item.status === "APPROVED" && !item.activeSplinterJobId && !item.blockedBy && !item.ownerDecisionRequired && item.sourceRequirementRefs.length > 0 && item.acceptanceCriteria.length > 0 && (item.requiredChecks.length > 0 || item.pathDiscoveryPolicy === "APPROVED_DISCOVERY") && dependenciesComplete(item, all); }
+const BUSINESS_PAGE_TEMPLATE_CONTRACT = "docs/internal/nexops/NEXOPS-BUSINESS-PAGE-TEMPLATE-CONTRACT.md";
+const majorNexOpsBusinessObject = /\b(clients?|requests?|quotes?|jobs?|visits?|invoices?|payments?|tasks?)\b/i;
+
+function recordsBusinessPageTemplateEvidence(item: SplinterWorkItem): boolean {
+  if (!majorNexOpsBusinessObject.test(item.module)) return true;
+  return item.sourceRequirementRefs.some((reference) => reference.includes(BUSINESS_PAGE_TEMPLATE_CONTRACT)
+    || reference.includes("architecture-exception:nexops-business-page-template"));
+}
+
+function eligible(item: SplinterWorkItem, all: Map<string, SplinterWorkItem>) { return !item.reconciliationMode && item.status === "APPROVED" && !item.activeSplinterJobId && !item.blockedBy && !item.ownerDecisionRequired && item.sourceRequirementRefs.length > 0 && item.acceptanceCriteria.length > 0 && (item.requiredChecks.length > 0 || item.pathDiscoveryPolicy === "APPROVED_DISCOVERY") && recordsBusinessPageTemplateEvidence(item) && dependenciesComplete(item, all); }
 function rank(left: SplinterWorkItem, right: SplinterWorkItem) { return left.priority - right.priority || Number(right.launchCritical) - Number(left.launchCritical) || left.createdAt.localeCompare(right.createdAt) || left.workItemId.localeCompare(right.workItemId); }
 export function validateDependencyGraph(items: SplinterWorkItem[]): void { const byId = new Map(items.map(item => [item.workItemId, item])); const visiting = new Set<string>(), complete = new Set<string>(); const visit = (id: string) => { if (complete.has(id)) return; if (visiting.has(id)) throw new Error("Circular Splinter work dependency."); const item = byId.get(id); if (!item) throw new Error("Missing Splinter work dependency."); visiting.add(id); item.dependencies.forEach(visit); visiting.delete(id); complete.add(id); }; items.forEach(item => visit(item.workItemId)); }
 

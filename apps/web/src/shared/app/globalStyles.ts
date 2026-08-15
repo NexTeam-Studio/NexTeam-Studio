@@ -23,6 +23,7 @@ import "../../features/invoices/components/invoiceStructure/invoiceStructure.css
 import "../../features/invoices/components/paymentRails/paymentRails.css";
 import "../../features/nexopsShell/documentPrimitives.css";
 import "../../features/quotes/components/quoteEngine/quoteEngine.css";
+import "../ui/NexOpsBusinessTemplates.css";
 import "../../features/settings/components/catalog/catalog.css";
 import "../../features/settings/components/tenantConfig/tenantConfig.css";
 

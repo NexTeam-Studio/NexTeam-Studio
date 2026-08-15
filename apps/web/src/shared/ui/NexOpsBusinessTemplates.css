@@ -1,0 +1,46 @@
+.nexops-business-template {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.nexops-business-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: clamp(22px, 3vw, 36px);
+  border: 1px solid rgba(139, 255, 156, .22);
+  border-radius: 30px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 88% 16%, rgba(116, 255, 113, .28), transparent 31%),
+    linear-gradient(118deg, #06151e 0%, #07313a 54%, #08723a 100%);
+  box-shadow: 0 18px 48px rgba(6, 21, 30, .16);
+}
+
+.nexops-business-hero h1,
+.nexops-business-hero p { margin: 0; }
+.nexops-business-hero h1 { color: #d4ff20; font-size: clamp(2rem, 4vw, 3.35rem); line-height: .98; }
+.nexops-business-hero > div:first-child > p:last-child { max-width: 700px; margin-top: 10px; color: rgba(255,255,255,.88); line-height: 1.5; }
+.nexops-business-eyebrow { margin: 0 0 8px !important; color: #d4ff20 !important; font-size: .78rem; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
+.nexops-business-hero-action { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: end; gap: 10px; }
+.nexops-business-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.nexops-business-controls,
+.nexops-business-content { min-width: 0; }
+.nexops-business-controls { padding: 14px; border: 1px solid rgba(11, 36, 38, .1); border-radius: 22px; background: rgba(255,255,255,.88); box-shadow: 0 14px 34px rgba(6, 21, 30, .06); }
+.nexops-business-back { display: flex; }
+.nexops-business-back button { min-height: 42px; padding: 9px 15px; border: 0; border-radius: 999px; background: linear-gradient(135deg,#d4ff20,#25d238); color: #08151d; font: inherit; font-weight: 850; cursor: pointer; box-shadow: 0 10px 22px rgba(37,210,56,.22); }
+.nexops-business-detail-hero h1 { font-size: clamp(1.7rem, 3.2vw, 2.7rem); }
+.nexops-business-status-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.nexops-business-nav { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-radius: 24px; background: linear-gradient(110deg,#071923,#073b40 55%,#08723a); }
+.nexops-business-nav button { min-height: 42px; padding: 9px 15px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; background: rgba(255,255,255,.08); color: #fff; font: inherit; font-weight: 780; cursor: pointer; }
+.nexops-business-nav button[aria-current="page"], .nexops-business-nav button.active { border-color: transparent; background: linear-gradient(135deg,#d4ff20,#25d238); color:#07151c; }
+
+@media (max-width: 700px) {
+  .nexops-business-hero { align-items: flex-start; flex-direction: column; padding: 22px; border-radius: 26px; }
+  .nexops-business-hero-action { width: 100%; justify-content: stretch; }
+  .nexops-business-hero-action > * { flex: 1 1 auto; }
+  .nexops-business-nav { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+  .nexops-business-nav button { flex: 0 0 auto; }
+}

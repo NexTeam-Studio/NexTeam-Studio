@@ -6,3 +6,79 @@
   border-bottom: 1px solid color-mix(in srgb, var(--accent-700) 24%, transparent);
   padding-bottom: 18px;
 }
+
+.quote-engine-page .nexops-roster-template > .nexops-business-content {
+  display: grid;
+  gap: 20px;
+}
+
+.nexops-quote-primary-button {
+  min-height: 46px;
+  padding: 10px 17px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #d4ff20, #25d238);
+  color: #07151c;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(37, 210, 56, .22);
+}
+
+.nexops-quote-primary-button:disabled { opacity: .58; cursor: not-allowed; }
+
+.nexops-quote-template-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nexops-quote-template-tabs button {
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 1px solid rgba(7, 36, 40, .14);
+  border-radius: 999px;
+  background: #fff;
+  color: #112833;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nexops-quote-template-tabs button.active { border-color: transparent; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; }
+.nexops-quote-template-tabs button.quiet { background: rgba(7, 36, 40, .06); }
+
+.nexops-quote-composer-card { border-radius: 28px; overflow: hidden; }
+.nexops-quote-composer-card > .nexops-page-heading { margin: -20px -20px 20px; padding: 25px 24px; background: linear-gradient(118deg,#071923,#073b40 55%,#08723a); color: #fff; }
+.nexops-quote-composer-card > .nexops-page-heading h2 { color: #d4ff20; }
+.nexops-quote-composer-card > .nexops-page-heading .eyebrow { color: #d4ff20; }
+.nexops-quote-composer-card > .nexops-page-heading p { color: rgba(255,255,255,.86); }
+
+.nexops-quote-panel { border: 1px solid rgba(9, 49, 49, .11); border-radius: 22px; background: rgba(255,255,255,.94); box-shadow: 0 10px 24px rgba(4,24,28,.05); }
+.nexops-quote-section-head { align-items: center; padding: 16px 18px; border-radius: 21px 21px 0 0; background: linear-gradient(118deg,#071923,#073b40 58%,#08723a); color: #fff; }
+.nexops-quote-section-head h3 { color: #d4ff20; }
+.nexops-quote-section-head span { color: rgba(255,255,255,.84); }
+.nexops-quote-panel > :not(.nexops-quote-section-head) { margin-inline: 18px; }
+.nexops-quote-panel > .nexops-quote-line-list,
+.nexops-quote-panel > .nexops-catalog-picker-empty { margin-block: 16px; }
+.nexops-quote-panel > .nexops-quote-totals { margin-bottom: 18px; }
+
+.nexops-quote-client-create { display: grid; align-content: end; gap: 7px; }
+.nexops-quote-client-create span { color: #52626b; font-size: .8rem; font-weight: 750; }
+.nexops-quote-client-create button { min-height: 42px; border: 1px solid rgba(37,210,56,.32); border-radius: 999px; background: rgba(212,255,32,.12); color: #164d26; font: inherit; font-weight: 800; cursor: pointer; }
+
+.nexops-request-row-button { overflow: hidden; border-radius: 18px; background: #fff; }
+.nexops-request-row-button > span { position: relative; padding-left: 14px; }
+.nexops-request-row-button > span::before { position: absolute; inset: 0 auto 0 0; width: 5px; border-radius: 999px; background: linear-gradient(#d4ff20,#25d238); content: ""; }
+.quote-workspace-detail { grid-template-columns: minmax(0, 1fr); }
+.quote-workspace-detail > article:first-child { display: none; }
+.quote-workspace-detail .nexops-quote-roster-helper { display: grid; gap: 18px; }
+.quote-workspace-detail .nexops-detail-template { margin: -20px -20px 0; }
+
+@media (max-width: 700px) {
+  .nexops-quote-template-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+  .nexops-quote-template-tabs button { flex: 0 0 auto; }
+  .nexops-quote-composer-card > .nexops-page-heading { margin: -16px -16px 18px; padding: 22px 18px; }
+  .nexops-quote-client-create { grid-column: 1 / -1; }
+  .quote-workspace-detail .nexops-detail-template { margin: -16px -16px 0; }
+}
