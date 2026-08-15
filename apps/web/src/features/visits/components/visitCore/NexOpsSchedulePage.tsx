@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
+import { NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { visitCanBeCompleted } from "./visitCompletion";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
@@ -613,18 +614,20 @@ export function NexOpsSchedulePage(props: {
   }
 
   return (
-    <section className="nexops-dashboard nexops-schedule-surface">
-      <div className="nexops-page-heading">
-        <div>
-          <h1>Schedule</h1>
-          <p>Place approved work on the board, shift future visits cleanly, and keep unscheduled jobs visible.</p>
-        </div>
-        <button className="nexops-primary-inline-button" type="button" onClick={() => openComposer()}>
-          New Visit
-        </button>
-      </div>
-
-      <section className="nexops-module-card wide">
+    <>
+      <NexOpsRosterTemplate
+        eyebrow="Field schedule"
+        title="Visits"
+        detail="Place approved work on the board, shift future visits cleanly, and keep unscheduled jobs visible."
+        primaryAction={<button className="nexops-primary-inline-button" type="button" onClick={() => openComposer()}>New Visit</button>}
+        metrics={(
+          <>
+            <article><span>Scheduled</span><strong>{workspace?.visits.length ?? 0}</strong><small>In this view</small></article>
+            <article><span>Ready to place</span><strong>{workspace?.unscheduledJobs.length ?? 0}</strong><small>Unscheduled jobs</small></article>
+            <article><span>Team filter</span><strong>{selectedTeamIds.length || "All"}</strong><small>Active people</small></article>
+          </>
+        )}
+        controls={(
         <div className="nexops-schedule-toolbar">
           <div className="nexops-home-filter-row" role="tablist" aria-label="Schedule views">
             {(["day", "week", "month", "list"] as const).map((candidate) => (
@@ -676,6 +679,9 @@ export function NexOpsSchedulePage(props: {
             ) : null}
           </div>
         </div>
+        )}
+      >
+        <section className="nexops-schedule-surface">
         {status ? <p className="nexops-module-status">{status}</p> : null}
         {composerStatus && !composerOpen ? <p className="nexops-module-status" role="status">{composerStatus}</p> : null}
 
@@ -792,7 +798,8 @@ export function NexOpsSchedulePage(props: {
             ))}
           </div>
         ) : null}
-      </section>
+        </section>
+      </NexOpsRosterTemplate>
 
       {composerOpen ? (
         <div className="nexops-overlay-shell" role="presentation">
@@ -984,6 +991,6 @@ export function NexOpsSchedulePage(props: {
           </section>
         </div>
       ) : null}
-    </section>
+    </>
   );
 }
