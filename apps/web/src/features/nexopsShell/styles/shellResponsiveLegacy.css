@@ -47,7 +47,7 @@
     display: flex;
   }
 
-  .nexops-web-topbar {
+  .nexops-web-topbar.nexteam-product-header {
     display: none;
   }
 
