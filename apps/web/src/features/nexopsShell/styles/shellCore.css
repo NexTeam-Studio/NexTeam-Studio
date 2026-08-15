@@ -24,7 +24,7 @@
 .nexops-app-sidebar {
   position: sticky;
   top: 0;
-  height: calc(100vh - 98px);
+  height: calc(100vh - 106px);
   display: flex;
   flex-direction: column;
   gap: 12px;
