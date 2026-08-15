@@ -45,3 +45,40 @@ test("quote drafts carry an optional authoritative property relationship", async
   assert.equal(quote.clientId, "client_1");
   assert.equal(quote.propertyId, "property_1");
 });
+
+test("legacy template defaults without catalog IDs materialize as authoritative manual quote lines", async () => {
+  const legacyTemplate = {
+    id: "template_legacy",
+    tenantId,
+    name: "Legacy template",
+    defaultLineItems: [{
+      id: "legacy_line",
+      code: "LEGACY-001",
+      name: "Legacy inspection",
+      quantity: 1,
+      unitPrice: 250,
+      total: 250,
+      source: "catalog"
+    }],
+    defaultApprovalRules: { requireSignature: false, requireDeposit: false, requireCardOnFile: false },
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z"
+  };
+  const legacyRepository = {
+    ...repository(),
+    async listQuoteTemplates() { return [legacyTemplate]; }
+  };
+  const input = quoteComposerInputSchema.parse({
+    tenantId,
+    clientId: "client_1",
+    templateId: legacyTemplate.id,
+    title: "Legacy template quote",
+    items: []
+  });
+
+  const quote = await materializeQuoteRecord(legacyRepository, input);
+
+  assert.equal(quote.lineItems.length, 1);
+  assert.equal(quote.lineItems[0].source, "custom");
+  assert.equal(quote.lineItems[0].code, "LEGACY-001");
+});

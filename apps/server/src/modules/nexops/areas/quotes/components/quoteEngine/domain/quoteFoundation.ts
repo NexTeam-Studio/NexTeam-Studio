@@ -268,18 +268,24 @@ export async function materializeQuoteRecord(
   const { settings, templates } = await ensureQuoteConfiguration(repository, input.tenantId);
   const template = selectedTemplate(templates, input.templateId);
   const defaultLineItems = template?.defaultLineItems ?? EMPTY_LINE_ITEMS;
-  const lineItems = buildLineItems(settings, input.items.length ? input.items : defaultLineItems.map((item) => ({
-    kind: item.source === "custom" ? "custom" : "catalog",
-    catalogItemId: item.catalogItemId,
-    catalogCode: item.catalogCode,
-    code: item.code,
-    name: item.name,
-    description: item.description,
-    quantity: item.quantity,
-    unitPrice: item.unitPrice,
-    clientSelectable: item.clientSelectable,
-    defaultSelected: item.defaultSelected
-  })));
+  const lineItems = buildLineItems(settings, input.items.length ? input.items : defaultLineItems.map((item) => {
+    // Legacy templates predate the catalog reference. They remain valid priced
+    // defaults, but must materialize as manual lines until staff explicitly
+    // selects an authoritative catalog item.
+    const isCatalogLine = item.source !== "custom" && Boolean(item.catalogItemId);
+    return {
+      kind: isCatalogLine ? "catalog" : "custom",
+      ...(item.catalogItemId ? { catalogItemId: item.catalogItemId } : {}),
+      ...(item.catalogCode ? { catalogCode: item.catalogCode } : {}),
+      code: item.code,
+      name: item.name,
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      clientSelectable: item.clientSelectable,
+      defaultSelected: item.defaultSelected
+    };
+  }));
   const approvalRules = mergedApprovalRules(template?.defaultApprovalRules ?? settings.quoteDefaults.approvalRules, input.approvalRules);
   const totals = calculateQuoteTotals(lineItems, input.discount, input.taxRate ?? 0);
   const number = options.existingNumber ?? await reserveDocumentNumber(repository, input.tenantId, "quote");
