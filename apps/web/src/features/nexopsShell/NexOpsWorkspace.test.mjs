@@ -31,3 +31,9 @@ test("builders accept only an existing client ID and reuse their current client 
   assert.match(invoiceSource, /clientContext && invoice\.clientId !== clientContext\.id/);
   assert.match(invoiceSource, /!clientContext \|\| job\.clientId === clientContext\.id/);
 });
+
+test("NexOps uses the shared application shell while retaining product navigation", () => {
+  assert.match(source, /NexTeamApplicationShell/);
+  assert.match(source, /navigationLabel="NexOps navigation"/);
+  assert.match(source, /NexOpsSharedWebTopbar/);
+});

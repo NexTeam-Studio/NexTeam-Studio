@@ -1,0 +1,38 @@
+.nexteam-application-shell {
+  --nexteam-shell-sidebar-width: 250px;
+  --nexteam-shell-workspace-gutter: 28px;
+  min-height: calc(100vh - 36px);
+  display: grid;
+  grid-template-columns: var(--nexteam-shell-sidebar-width) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.nexteam-application-shell > .nexteam-product-header {
+  grid-column: 1 / -1;
+}
+
+.nexteam-application-shell__navigation {
+  min-width: 0;
+  min-height: 0;
+}
+
+.nexteam-application-shell__workspace {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+@media (max-width: 1050px) {
+  .nexteam-application-shell { --nexteam-shell-sidebar-width: 210px; }
+}
+
+@media (max-width: 880px) {
+  .nexteam-application-shell {
+    min-height: 100vh;
+    display: block;
+  }
+
+  .nexteam-application-shell__navigation { display: none; }
+  .nexteam-application-shell__workspace { overflow: visible; }
+}

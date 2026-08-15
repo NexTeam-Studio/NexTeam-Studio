@@ -1,7 +1,8 @@
 .nexops-app {
-  min-height: 100vh;
+  --nexteam-shell-sidebar-width: 250px;
+  min-height: calc(100vh - 36px);
   display: grid;
-  grid-template-columns: 212px minmax(0, 1fr);
+  grid-template-columns: var(--nexteam-shell-sidebar-width) minmax(0, 1fr);
   color: var(--nexops-brand-text, #082131);
   background: var(--nexops-brand-background, #f6f8f5);
   font-family: var(--nexops-font-family, "Montserrat", "Aptos", "Segoe UI", "Helvetica Neue", sans-serif);
@@ -21,21 +22,17 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   box-sizing: border-box;
-  padding: 22px 14px;
-  border-right: 1px solid rgba(212, 255, 32, 0.16);
-  background:
-    radial-gradient(circle at 88% 16%, rgba(74, 195, 170, 0.3), transparent 34%),
-    linear-gradient(135deg, #081a27 0%, #0d2830 54%, #13595a 100%);
-  box-shadow: 18px 0 52px rgba(12, 17, 24, 0.18);
+  padding: 76px 12px 16px;
+  border-right: 1px solid rgba(12, 17, 24, 0.12);
+  background: #0c1118;
+  box-shadow: none;
 }
 
 .nexops-app-logo {
-  display: grid;
-  gap: 12px;
-  justify-items: center;
-  padding: 4px 8px 12px;
+  display: block;
+  padding: 0 8px 6px;
   color: #fff;
 }
 
@@ -67,33 +64,17 @@
 }
 
 .nexops-sidebar-brand-stack {
-  width: 100%;
-  display: grid;
-  gap: 12px;
-  justify-items: center;
+  display: block;
 }
 
 .nexops-sidebar-brand-tier {
-  width: 100%;
-  min-height: 68px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 8px;
-  box-sizing: border-box;
-  border-radius: 0;
-  border: 0;
-  background: transparent;
+  display: block;
+  min-height: 0;
+  padding: 0;
 }
 
-.nexops-sidebar-brand-tier-platform {
-  min-height: 98px;
-  padding: 2px 4px;
-}
-
-.nexops-sidebar-brand-tier-tenant {
-  min-height: 82px;
-}
+.nexops-sidebar-brand-tier-platform,
+.nexops-sidebar-brand-tier-tenant { display: none; }
 
 .nexops-sidebar-brand-logo {
   width: auto;
@@ -102,7 +83,8 @@
 }
 
 .nexops-sidebar-brand-logo-product {
-  max-height: 54px;
+  width: 132px;
+  max-height: 28px;
 }
 
 .nexops-sidebar-brand-logo-platform {
@@ -727,24 +709,27 @@ body.nexops-mobile-nav-open {
 
 .nexops-create-button {
   align-self: stretch;
+  min-height: 38px;
+  border-radius: 10px;
+  box-shadow: none;
 }
 
 .nexops-nav {
   display: grid;
-  gap: 4px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(8, 33, 49, 0.14);
+  gap: 2px;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .nexops-nav a,
 .nexops-nav button {
   border: 0;
-  border-radius: 14px;
-  padding: 11px 12px;
-  color: rgba(255, 255, 255, 0.78);
+  border-radius: 10px;
+  padding: 10px;
+  color: #dce4e0;
   background: transparent;
   font-weight: 850;
-  font-size: 0.95rem;
+  font-size: 0.86rem;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -756,14 +741,14 @@ body.nexops-mobile-nav-open {
 .nexops-nav button.active {
   color: #08100c;
   background: var(--nexops-brand-gradient, var(--nexteam-gradient));
-  box-shadow: 0 10px 24px rgba(37, 210, 56, 0.18);
+  box-shadow: none;
 }
 
 .nexops-sidebar-sign-out {
   margin-top: auto;
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 999px;
-  padding: 11px 12px;
+  padding: 8px 12px;
   color: #f8fffc;
   background: rgba(255, 255, 255, 0.1);
   font: inherit;
@@ -841,8 +826,8 @@ body.nexops-mobile-nav-open {
 .nexops-dashboard,
 .nexops-module-page {
   display: grid;
-  gap: 22px;
-  padding: 34px 28px 48px;
+  gap: 20px;
+  padding: 28px;
   overflow-x: clip;
 }
 

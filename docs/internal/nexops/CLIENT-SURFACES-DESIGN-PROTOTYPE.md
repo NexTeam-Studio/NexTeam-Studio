@@ -33,6 +33,16 @@ Official sources reviewed:
 
 ## Candidate Design Contract primitives
 
+## Shared application shell
+
+All first-party NexTeam application workspaces use the shared application-shell
+contract. The contract owns the top header, primary sidebar, workspace frame,
+content gutters, responsive collapse, and primary navigation treatment. Product
+areas may supply their own identity, tenant context, navigation items, and
+business content, but may not fork the shell without an owner-approved
+architecture exception. `NexTeamApplicationShell` is the reusable React
+structure; the shared header is supplied by `NexTeamProductHeader`.
+
 1. Branded workspace header
 2. Lime primary action
 3. Soft secondary action

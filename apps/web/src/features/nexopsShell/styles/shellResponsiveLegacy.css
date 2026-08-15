@@ -18,6 +18,11 @@
     display: none;
   }
 
+  .nexops-web-topbar {
+    margin-left: 0;
+    width: 100%;
+  }
+
   .nexops-mobile-bar {
     position: sticky;
     top: 0;

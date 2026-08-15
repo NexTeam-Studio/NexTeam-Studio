@@ -2,6 +2,7 @@ import React, { Suspense, useEffect, useState } from "react";
 import { type Auth, type User } from "firebase/auth";
 import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "../../shared/branding/ProductBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./components/NexOpsHeader";
+import { NexTeamApplicationShell } from "../../shared/ui/NexTeamApplicationShell";
 import { NexOpsCreateMenu } from "./components/NexOpsCreateMenu";
 import { NexOpsNotificationPanel } from "./components/NexOpsNotificationPanel";
 import { NexOpsImportPage } from "./components/NexOpsImportPage";
@@ -983,8 +984,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   }
 
   return (
-      <main className="nexops-app" style={style}>
-        <aside className="nexops-app-sidebar" aria-label="NexOps navigation">
+      <NexTeamApplicationShell className="nexops-app" navigationLabel="NexOps navigation" navigation={<div className="nexops-app-sidebar">
           <div className="nexops-app-logo">
             <SidebarBrandStack product="nexops" branding={tenantBranding} tenantId={operatorContext.tenantId} />
           </div>
@@ -997,7 +997,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           ))}
         </nav>
         <button className="nexops-sidebar-sign-out" type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
-      </aside>
+        </div>}>
 
       <section className="nexops-web-main">
         <NexOpsSharedMobileBar
@@ -1218,7 +1218,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
         </Suspense>
       </section>
       {renderCreateClientPanel()}
-    </main>
+      </NexTeamApplicationShell>
   );
 }
 
