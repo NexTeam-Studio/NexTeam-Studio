@@ -8,8 +8,7 @@
   position: sticky;
   top: 0;
   z-index: 3;
-  margin-left: calc(-1 * var(--nexteam-shell-sidebar-width, 250px));
-  width: calc(100% + var(--nexteam-shell-sidebar-width, 250px) + 15px);
+  width: auto;
   height: 62px;
   min-height: 62px;
   box-sizing: border-box;

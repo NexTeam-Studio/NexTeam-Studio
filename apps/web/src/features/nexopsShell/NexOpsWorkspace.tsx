@@ -983,8 +983,48 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     );
   }
 
+  function renderWebTopbar(): React.ReactElement {
+    return (
+      <NexOpsSharedWebTopbar
+        tenantBranding={tenantBranding}
+        tenantId={operatorContext.tenantId}
+        moduleTitle={moduleTitle}
+        moduleSwitcherOpen={moduleSwitcherOpen}
+        onToggleModuleSwitcher={toggleModuleSwitcher}
+        accountTools={(
+          <>
+            <button className="nexops-web-icon-button" type="button" aria-label="Open camera capture" onClick={() => {
+              if (captureSession) {
+                openCaptureWorkspace("session");
+                return;
+              }
+              void startCaptureSession();
+            }}>
+              <NexOpsNavGlyph module="capture" />
+            </button>
+            <button className="nexops-web-icon-button nexops-notification-button" type="button" aria-expanded={notificationsOpen} aria-label="Open notifications" onClick={toggleNotifications}>
+              <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                <path d="M10 3.7a3.1 3.1 0 0 0-3.1 3.1v1.3c0 .8-.3 1.6-.8 2.2l-.9 1v.8h9.6v-.8l-.9-1c-.5-.6-.8-1.4-.8-2.2V6.8A3.1 3.1 0 0 0 10 3.7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                <path d="M8.3 14.7a1.8 1.8 0 0 0 3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              {notificationUnreadCount ? <span className="nexops-notification-badge">{notificationUnreadCount}</span> : null}
+            </button>
+            <button className="nexops-web-icon-button" type="button" aria-label="Open settings" onClick={() => {
+              closeHeaderPanels();
+              setModule("settings");
+            }}>
+              <NexOpsNavGlyph module="settings" />
+            </button>
+            <span>{props.user.email ?? "Operator"}</span>
+            <button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
+          </>
+        )}
+      />
+    );
+  }
+
   return (
-      <NexTeamApplicationShell className="nexops-app" navigationLabel="NexOps navigation" navigation={<div className="nexops-app-sidebar">
+      <NexTeamApplicationShell className="nexops-app" navigationLabel="NexOps navigation" header={renderWebTopbar()} navigation={<div className="nexops-app-sidebar">
           <div className="nexops-app-logo">
             <SidebarBrandStack product="nexops" branding={tenantBranding} tenantId={operatorContext.tenantId} />
           </div>
@@ -1158,46 +1198,6 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
             </aside>
           </div>
         ) : null}
-        <NexOpsSharedWebTopbar
-          tenantBranding={tenantBranding}
-          tenantId={operatorContext.tenantId}
-          moduleTitle={moduleTitle}
-          moduleSwitcherOpen={moduleSwitcherOpen}
-          onToggleModuleSwitcher={toggleModuleSwitcher}
-          accountTools={(
-            <>
-              <button
-                className="nexops-web-icon-button"
-                type="button"
-                aria-label="Open camera capture"
-                onClick={() => {
-                  if (captureSession) {
-                    openCaptureWorkspace("session");
-                    return;
-                  }
-                  void startCaptureSession();
-                }}
-              >
-                <NexOpsNavGlyph module="capture" />
-              </button>
-              <button className="nexops-web-icon-button nexops-notification-button" type="button" aria-expanded={notificationsOpen} aria-label="Open notifications" onClick={toggleNotifications}>
-                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 3.7a3.1 3.1 0 0 0-3.1 3.1v1.3c0 .8-.3 1.6-.8 2.2l-.9 1v.8h9.6v-.8l-.9-1c-.5-.6-.8-1.4-.8-2.2V6.8A3.1 3.1 0 0 0 10 3.7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                  <path d="M8.3 14.7a1.8 1.8 0 0 0 3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                </svg>
-                {notificationUnreadCount ? <span className="nexops-notification-badge">{notificationUnreadCount}</span> : null}
-              </button>
-              <button className="nexops-web-icon-button" type="button" aria-label="Open settings" onClick={() => {
-                closeHeaderPanels();
-                setModule("settings");
-              }}>
-                <NexOpsNavGlyph module="settings" />
-              </button>
-              <span>{props.user.email ?? "Operator"}</span>
-              <button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
-            </>
-          )}
-        />
         <NexOpsMobileCreateFab
           collapsed={mobileCreateFabCollapsed}
           expanded={createMenuOpen}
