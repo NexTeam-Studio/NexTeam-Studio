@@ -441,8 +441,8 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   }, [requestFilter, requestSearch, requests]);
 
   const selectedRequest = useMemo(
-    () => requests.find((request) => request.id === selectedRequestId) ?? filteredRequests[0] ?? null,
-    [filteredRequests, requests, selectedRequestId]
+    () => requests.find((request) => request.id === selectedRequestId) ?? null,
+    [requests, selectedRequestId]
   );
   const queueSummary = useMemo(() => summarizeRequestQueue(requests), [requests]);
   const requestCounts = useMemo(() => ({
@@ -537,7 +537,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       setRequests(nextRequests);
       setForms(nextForms);
       setAvailableFields(formsBody.availableFields ?? []);
-      setSelectedRequestId((current) => current && nextRequests.some((request) => request.id === current) ? current : nextRequests[0]?.id ?? "");
+      setSelectedRequestId((current) => current && nextRequests.some((request) => request.id === current) ? current : "");
       setStatusMessage(nextRequests.length ? `${nextRequests.length} request${nextRequests.length === 1 ? "" : "s"} loaded.` : "No requests yet. First intake is on you.");
     } catch (error) {
       setRequests([]);

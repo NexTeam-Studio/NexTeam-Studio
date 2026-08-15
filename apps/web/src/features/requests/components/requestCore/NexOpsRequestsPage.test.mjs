@@ -10,6 +10,9 @@ test("Requests uses the shared roster and detail templates", () => {
   assert.match(source, /<NexOpsDetailTemplate/);
   assert.match(source, /Back to Request Roster/);
   assert.match(source, /aria-label="Request status filters"/);
+  assert.match(source, /requests\.find\(\(request\) => request\.id === selectedRequestId\) \?\? null/);
+  assert.doesNotMatch(source, /\?\? filteredRequests\[0\]/);
+  assert.match(source, /setSelectedRequestId\(\(current\) => current && nextRequests\.some\(\(request\) => request\.id === current\) \? current : ""\)/);
 });
 
 test("Requests uses Title Case for named interface areas and controls", () => {
