@@ -1890,8 +1890,16 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           </div>
         </article>
 
-        <article className="nexops-module-card">
-          <p className="eyebrow">Settings and Templates</p>
+        <details className="nexops-quote-panel nexops-density-disclosure-panel nexops-quote-builder-settings">
+          <summary>
+            <div className="nexops-density-disclosure-copy">
+              <h3>Quote defaults and templates</h3>
+              <small>Office configuration stays available without interrupting this quote.</small>
+            </div>
+            <span className="nexops-density-disclosure-caret">Open</span>
+          </summary>
+          <article className="nexops-module-card">
+          <p className="eyebrow">Office Settings</p>
           <h2>Quote Defaults</h2>
           <p>{statusMessage}</p>
           {settingsDraft ? (
@@ -1998,6 +2006,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             <p>Quote defaults are still loading.</p>
           )}
         </article>
+      </details>
       </div>
 
       ) : null}

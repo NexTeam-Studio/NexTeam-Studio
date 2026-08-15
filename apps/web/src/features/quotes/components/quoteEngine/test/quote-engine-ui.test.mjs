@@ -115,3 +115,11 @@ test("quote workspace uses the shared business templates and retains client/prop
   assert.match(source, /Create New Client/);
   assert.match(source, /propertyId: composer\.propertyId/);
 });
+
+test("quote builder keeps office defaults available without mixing configuration into the primary quote flow", () => {
+  const source = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx"), "utf8");
+
+  assert.match(source, /Quote defaults and templates/);
+  assert.match(source, /Office configuration stays available without interrupting this quote\./);
+  assert.match(source, /nexops-quote-builder-settings/);
+});
