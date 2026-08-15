@@ -11,9 +11,10 @@ export function NexTeamApplicationShell(props: {
   navigation: React.ReactNode;
   children: React.ReactNode;
   navigationLabel: string;
+  mobileNavigationMode?: "collapse" | "drawer";
 }): React.ReactElement {
   return (
-    <div className={`nexteam-application-shell ${props.className}`.trim()}>
+    <div className={`nexteam-application-shell nexteam-application-shell--${props.mobileNavigationMode ?? "collapse"} ${props.className}`.trim()}>
       {props.header ?? null}
       <aside className="nexteam-application-shell__navigation" aria-label={props.navigationLabel}>{props.navigation}</aside>
       <main className="nexteam-application-shell__workspace">{props.children}</main>

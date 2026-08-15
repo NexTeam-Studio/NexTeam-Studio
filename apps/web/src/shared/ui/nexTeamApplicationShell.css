@@ -33,6 +33,6 @@
     display: block;
   }
 
-  .nexteam-application-shell__navigation { display: none; }
+  .nexteam-application-shell--collapse > .nexteam-application-shell__navigation { display: none; }
   .nexteam-application-shell__workspace { overflow: visible; }
 }

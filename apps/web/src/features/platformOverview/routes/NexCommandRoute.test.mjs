@@ -63,4 +63,6 @@ test("NexCommand keeps one clean header lockup and removes the duplicate sidebar
 test("NexCommand uses the shared NexTeam application shell", () => {
   assert.match(source, /NexTeamApplicationShell/);
   assert.match(source, /navigationLabel="NexCommand navigation"/);
+  assert.match(source, /mobileNavigationMode="drawer"/);
+  assert.match(styles, /@media \(max-width:880px\).*nexcommand__menu \{ display:block; \}/s);
 });
