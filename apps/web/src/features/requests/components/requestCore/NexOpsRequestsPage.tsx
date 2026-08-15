@@ -1,6 +1,6 @@
 import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
 import React, { useEffect, useMemo, useState } from "react";
-import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
+import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 
 type RequestStatus = "new" | "archived" | "converted_to_quote" | "converted_to_job";
 const REQUEST_FILTERS: Array<{ value: "all" | RequestStatus; label: string }> = [
@@ -862,19 +862,39 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   }
 
   return (
-    <section className="nexops-module-page">
-      <div className="nexops-page-heading">
-        <div>
-          <NexOpsPageTitle module="requests">Requests</NexOpsPageTitle>
-          <p>Real request objects, office intake, website forms, and downstream field carry-forward all live here now.</p>
-        </div>
+    <NexOpsRosterTemplate
+      eyebrow="NexOps Intake"
+      title="Requests"
+      detail="Capture, review, and move verified service requests into quotes or jobs without losing their client and property context."
+      primaryAction={(
         <div className="nexops-inline-actions">
           <button type="button" onClick={() => void refresh()} disabled={Boolean(actionBusy)}>Refresh</button>
           <button type="button" onClick={() => void backfillLeads()} disabled={Boolean(actionBusy)}>
             {actionBusy === "backfill" ? "Backfilling..." : "Backfill Legacy Leads"}
           </button>
         </div>
-      </div>
+      )}
+      metrics={(
+        <div className="nexops-density-summary-strip">
+          <article><span>Unreviewed</span><strong>{queueSummary.unreviewed}</strong><small>Needs First Review</small></article>
+          <article><span>Ready</span><strong>{queueSummary.readyToConvert}</strong><small>Can Move to Quote or Job</small></article>
+          <article><span>Converted</span><strong>{queueSummary.converted}</strong><small>Already Moved Downstream</small></article>
+          <article><span>Archived</span><strong>{queueSummary.archived}</strong><small>Off the Active Rail</small></article>
+        </div>
+      )}
+      controls={(
+        <>
+          <label className="nexops-field"><span>Search Requests</span><input placeholder="Search requests" value={requestSearch} onChange={(event) => setRequestSearch(event.target.value)} /></label>
+          <div className="nexops-jobs-filter-row" aria-label="Request status filters">
+            {REQUEST_FILTERS.map((filter) => (
+              <button key={filter.value} type="button" className={`nexops-jobs-filter-pill${requestFilter === filter.value ? " active" : ""}`} onClick={() => setRequestFilter(filter.value)}>
+                <span>{filter.label}</span><small>{requestCounts[filter.value]}</small>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    >
 
       <div className="nexops-module-grid nexops-module-grid-wide">
         <details className="nexops-module-card nexops-density-disclosure-card nexops-request-builder-card">
@@ -1111,44 +1131,6 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
               <p className="eyebrow">Request Queue</p>
               <h2>{filteredRequests.length} visible</h2>
             </div>
-            <div className="nexops-inline-actions">
-              <input placeholder="Search requests" value={requestSearch} onChange={(event) => setRequestSearch(event.target.value)} />
-            </div>
-          </div>
-          <div className="nexops-jobs-filter-row" aria-label="Request status filters">
-            {REQUEST_FILTERS.map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                className={`nexops-jobs-filter-pill${requestFilter === filter.value ? " active" : ""}`}
-                onClick={() => setRequestFilter(filter.value)}
-              >
-                <span>{filter.label}</span>
-                <small>{requestCounts[filter.value]}</small>
-              </button>
-            ))}
-          </div>
-          <div className="nexops-density-summary-strip">
-            <article>
-              <span>Unreviewed</span>
-              <strong>{queueSummary.unreviewed}</strong>
-              <small>Needs First Review</small>
-            </article>
-            <article>
-              <span>Ready</span>
-              <strong>{queueSummary.readyToConvert}</strong>
-              <small>Can Move to Quote or Job</small>
-            </article>
-            <article>
-              <span>Converted</span>
-              <strong>{queueSummary.converted}</strong>
-              <small>Already Moved Downstream</small>
-            </article>
-            <article>
-              <span>Archived</span>
-              <strong>{queueSummary.archived}</strong>
-              <small>Off the Active Rail</small>
-            </article>
           </div>
           <ul className="nexops-record-list">
             {filteredRequests.map((request) => (
@@ -1167,24 +1149,19 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
           </ul>
         </article>
 
-        <article className="nexops-module-card">
-          {selectedRequest ? (
-            <div className="nexops-request-detail">
-              <div className="nexops-page-heading">
-                <div>
-                  <p className="eyebrow">Request Detail</p>
-                  <h2>{selectedRequest.clientName}</h2>
-                  <p>{selectedRequest.subject}</p>
-                </div>
-                <div className="nexops-inline-actions">
-                  {selectedRequest.status === "archived" ? (
-                    <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "reopen")}>Reopen</button>
-                  ) : (
-                    <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "archive")}>Archive</button>
-                  )}
-                </div>
-              </div>
-              <div className="nexops-jobs-filter-row" aria-label="Request detail filters">
+        {selectedRequest ? (
+          <NexOpsDetailTemplate
+            back={<button type="button" onClick={() => setSelectedRequestId("")}>Back to Request Roster</button>}
+            eyebrow="Request Detail"
+            title={selectedRequest.clientName}
+            detail={selectedRequest.subject}
+            status={<mark>{requestStatusLabel(selectedRequest.status)}</mark>}
+            actions={selectedRequest.status === "archived" ? (
+              <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "reopen")}>Reopen</button>
+            ) : (
+              <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "archive")}>Archive</button>
+            )}
+            navigation={<div className="nexops-jobs-filter-row" aria-label="Request detail filters">
                 {REQUEST_FILTERS.map((filter) => (
                   <button
                     key={`detail-${filter.value}`}
@@ -1196,7 +1173,9 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                     <small>{requestCounts[filter.value]}</small>
                   </button>
                 ))}
-              </div>
+              </div>}
+          >
+            <div className="nexops-request-detail">
 
 {selectedRequestAction ? (
                 <section className="nexops-quote-panel">
@@ -1300,14 +1279,14 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                 </div>
               </details>
             </div>
+          </NexOpsDetailTemplate>
           ) : (
             <div className="nexops-client-empty">
               <h2>No Request Selected</h2>
               <p>Pick a request to review the exact-match rule, confirmation timestamps, and field-by-field downstream visibility.</p>
             </div>
           )}
-        </article>
       </div>
-    </section>
+    </NexOpsRosterTemplate>
   );
 }

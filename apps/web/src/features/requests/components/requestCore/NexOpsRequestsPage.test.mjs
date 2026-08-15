@@ -4,10 +4,12 @@ import { test } from "node:test";
 
 const source = readFileSync(new URL("./NexOpsRequestsPage.tsx", import.meta.url), "utf8");
 
-test("Requests opens with the shared icon page title", () => {
-  assert.match(source, /import \{ NexOpsPageTitle \} from "\.\.\/\.\.\/\.\.\/nexopsShell\/components\/NexOpsPageTitle"/);
-  assert.match(source, /<NexOpsPageTitle module="requests">Requests<\/NexOpsPageTitle>/);
-  assert.doesNotMatch(source, /<h1>Requests<\/h1>/);
+test("Requests uses the shared roster and detail templates", () => {
+  assert.match(source, /import \{ NexOpsDetailTemplate, NexOpsRosterTemplate \} from "\.\.\/\.\.\/\.\.\/\.\.\/shared\/ui\/NexOpsBusinessTemplates"/);
+  assert.match(source, /<NexOpsRosterTemplate/);
+  assert.match(source, /<NexOpsDetailTemplate/);
+  assert.match(source, /Back to Request Roster/);
+  assert.match(source, /aria-label="Request status filters"/);
 });
 
 test("Requests uses Title Case for named interface areas and controls", () => {
@@ -31,5 +33,5 @@ test("Requests uses Title Case for named interface areas and controls", () => {
 
 test("Requests keeps explanatory copy in sentence case", () => {
   assert.ok(source.includes("Open only when the office needs to enter a request by hand."));
-  assert.ok(source.includes("Real request objects, office intake, website forms, and downstream field carry-forward all live here now."));
+  assert.ok(source.includes("Capture, review, and move verified service requests into quotes or jobs without losing their client and property context."));
 });
