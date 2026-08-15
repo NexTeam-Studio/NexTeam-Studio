@@ -1,0 +1,30 @@
+.nexteam-product-header {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 60px;
+  padding: 12px 18px;
+  color: #f7faf8;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, #0c1118, #151b24);
+}
+
+.nexteam-product-header__navigation,
+.nexteam-product-header__brand,
+.nexteam-product-header__tenant,
+.nexteam-product-header__context,
+.nexteam-product-header__utilities {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.nexteam-product-header__brand { gap: 9px; }
+.nexteam-product-header__tenant { gap: 10px; }
+.nexteam-product-header__context { margin-left: auto; }
+.nexteam-product-header__utilities { gap: 10px; }
+
+@media (max-width: 760px) {
+  .nexteam-product-header { min-height: 54px; padding: 10px 12px; gap: 10px; }
+}

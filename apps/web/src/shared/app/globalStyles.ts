@@ -10,6 +10,7 @@ import "../../features/clients/components/contact/contactMobileLegacy.css";
 import "../../features/nexopsShell/styles/shellResponsiveLegacy.css";
 import "../../shared/signature/signature.css";
 import "../../shared/ui/nexOpsUiKit.css";
+import "../../shared/ui/nexTeamProductHeader.css";
 import "../../features/home/components/operationsHome/operationsHome.css";
 import "../../features/nexopsShell/styles/overlays.css";
 import "../../features/nexcam/areas/capture/styles/captureWorkspace.css";

@@ -8,17 +8,6 @@
   position: sticky;
   top: 0;
   z-index: 3;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 14px;
-  min-height: 62px;
-  padding: 12px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    radial-gradient(circle at 82% 50%, rgba(25, 128, 101, 0.2), transparent 28%),
-    linear-gradient(135deg, #0c1118 0%, #151b24 58%, #082f36 100%);
-  backdrop-filter: blur(10px);
 }
 
 .nexops-web-brand {
@@ -163,9 +152,7 @@
 
 .nexops-mobile-bar {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    radial-gradient(circle at 82% 50%, rgba(25, 128, 101, 0.22), transparent 32%),
-    linear-gradient(135deg, #0c1118 0%, #151b24 58%, #082f36 100%);
+  background: linear-gradient(135deg, #0c1118, #151b24);
 }
 
 .nexops-workspace-switcher {

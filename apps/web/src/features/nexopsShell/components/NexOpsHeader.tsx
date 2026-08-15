@@ -1,6 +1,7 @@
 import React from "react";
 import type { TenantBranding } from "@nexteam/core";
 import { PlatformMark, ProductLogo, TenantBrandMark, productLabel, type ProductBrand } from "../../../shared/branding/ProductBranding";
+import { NexTeamProductHeader } from "../../../shared/ui/NexTeamProductHeader";
 
 export function NexOpsSharedMobileBar(props: {
   tenantBranding: TenantBranding | null;
@@ -63,33 +64,39 @@ export function NexOpsSharedWebTopbar(props: {
 }): React.ReactElement {
   const product = props.product ?? "nexops";
   return (
-    <header className="nexops-web-topbar">
-      <div className="nexops-web-brand">
+    <NexTeamProductHeader
+      className="nexops-web-topbar"
+      ariaLabel="NexOps workspace header"
+      brand={(
         <div className="nexops-web-platform-lockup">
           <PlatformMark className="nexops-header-platform-mark" alt="NexTeam" />
           <ProductLogo product={product} className="nexops-header-product-logo" alt={productLabel(product)} />
         </div>
-        <span className="nexops-web-brand-divider" aria-hidden="true" />
-        <TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-header-tenant-logo" />
-      </div>
-      <div className="nexops-web-tools">
-        <label>
-          <span className="sr-only">Global search</span>
-          <input placeholder={props.searchPlaceholder ?? "Search NexOps..."} />
-        </label>
-        <button
-          className="nexops-module-switcher-button"
-          type="button"
-          aria-expanded={props.moduleSwitcherOpen}
-          onClick={props.onToggleModuleSwitcher}
-        >
-          Modules
-        </button>
-        <span>{props.moduleTitle}</span>
-        <div className="nexops-web-account-tools">
-          {props.accountTools}
+      )}
+      tenantBrand={(
+        <>
+          <span className="nexops-web-brand-divider" aria-hidden="true" />
+          <TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-header-tenant-logo" />
+        </>
+      )}
+      context={(
+        <div className="nexops-web-tools">
+          <label>
+            <span className="sr-only">Global search</span>
+            <input placeholder={props.searchPlaceholder ?? "Search NexOps..."} />
+          </label>
+          <button
+            className="nexops-module-switcher-button"
+            type="button"
+            aria-expanded={props.moduleSwitcherOpen}
+            onClick={props.onToggleModuleSwitcher}
+          >
+            Modules
+          </button>
+          <span>{props.moduleTitle}</span>
         </div>
-      </div>
-    </header>
+      )}
+      utilities={<div className="nexops-web-account-tools">{props.accountTools}</div>}
+    />
   );
 }
