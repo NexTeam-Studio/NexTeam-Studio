@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
+import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import type { Address } from "@nexteam/shared";
 import {
   PaymentScheduleEditor,
@@ -615,6 +615,7 @@ export function NexOpsJobsPage(props: {
 }): React.ReactElement {
   const [jobs, setJobs] = useState<JobSummary[]>([]);
   const [selectedJobId, setSelectedJobId] = useState("");
+  const [detailOpen, setDetailOpen] = useState(Boolean(props.focusedJobId));
   const [detail, setDetail] = useState<JobDetail | null>(null);
   const [status, setStatus] = useState("Loading jobs...");
   const [detailStatus, setDetailStatus] = useState("Select a job to review visits and actions.");
@@ -990,16 +991,17 @@ export function NexOpsJobsPage(props: {
       return;
     }
     if (jobs.some((job) => job.id === props.focusedJobId)) {
+      setDetailOpen(true);
       setSelectedJobId(props.focusedJobId);
     }
   }, [props.focusedJobId, jobs, selectedJobId]);
 
   useEffect(() => {
-    void loadDetail(selectedJobId);
-  }, [selectedJobId]);
+    void loadDetail(detailOpen ? selectedJobId : "");
+  }, [detailOpen, selectedJobId]);
 
   useEffect(() => {
-    if (!detail?.id || mobileDetailFocusJobIdRef.current !== detail.id || !window.matchMedia("(max-width: 1080px)").matches) {
+    if (!detailOpen || !detail?.id || mobileDetailFocusJobIdRef.current !== detail.id || !window.matchMedia("(max-width: 1080px)").matches) {
       return;
     }
     mobileDetailFocusJobIdRef.current = "";
@@ -1012,7 +1014,7 @@ export function NexOpsJobsPage(props: {
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
       block: "start"
     });
-  }, [detail?.id]);
+  }, [detail?.id, detailOpen]);
 
   useEffect(() => {
     if (!filteredJobs.length) {
@@ -1161,6 +1163,7 @@ export function NexOpsJobsPage(props: {
       setCreateTitle("");
       setCreatePaymentSchedule(blankPaymentSchedule());
       props.onCrmMutation();
+      setDetailOpen(true);
       await loadJobs(body.job.id);
       await loadDetail(body.job.id);
       setStatus(`Created ${body.job.title}.`);
@@ -1575,25 +1578,53 @@ export function NexOpsJobsPage(props: {
 
   function selectJobFromRoster(jobId: string): void {
     mobileDetailFocusJobIdRef.current = jobId;
+    setDetailOpen(true);
     setSelectedJobId(jobId);
   }
 
   return (
     <section className="nexops-module-page">
-      <header className="nexops-page-heading">
-        <div>
-          <p className="eyebrow">M3 Job Engine</p>
-          <NexOpsPageTitle module="jobs">Jobs</NexOpsPageTitle>
-          <p>Derived status, reminder state, visits, and office actions all live on one rail now.</p>
-        </div>
-        <div className="nexops-status-pill">{status}</div>
-      </header>
-
+      <NexOpsRosterTemplate
+        eyebrow="Job Engine"
+        title="Jobs"
+        detail="Manage active work, visits, reminders, documents, and closeout from one connected operational rail."
+        primaryAction={<button type="button" onClick={() => document.getElementById("nexops-new-job-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}>New Job</button>}
+        metrics={<>
+          <article><span>Upcoming</span><strong>{filterCounts.Upcoming}</strong><small>Scheduled work</small></article>
+          <article><span>Unscheduled</span><strong>{filterCounts.Unscheduled}</strong><small>Needs booking</small></article>
+          <article><span>Action Required</span><strong>{filterCounts["Action Required"]}</strong><small>Office follow-up</small></article>
+          <article><span>Requires Invoicing</span><strong>{filterCounts["Requires Invoicing"]}</strong><small>Billing handoff</small></article>
+        </>}
+        controls={<>
+          <div className="nexops-jobs-filter-row" aria-label="Job Status Filters">
+            {JOB_FILTERS.map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                className={`nexops-jobs-filter-pill${statusFilter === filter ? " active" : ""}`}
+                onClick={() => setStatusFilter(filter)}
+              >
+                <span>{filter}</span>
+                <small>{filterCounts[filter]}</small>
+              </button>
+            ))}
+          </div>
+          <label className="nexops-jobs-search">
+            <span>Search all jobs, including history</span>
+            <input
+              value={jobSearch}
+              onChange={(event) => setJobSearch(event.target.value)}
+              placeholder="Search by job, client, or job number"
+            />
+          </label>
+          <span className="nexops-status-pill">{status}</span>
+        </>}
+      >
       <section className="nexops-jobs-layout">
         <article className="nexops-module-card">
           <p className="eyebrow">Manual Create</p>
           <h2>New Job</h2>
-          <form className="nexops-jobs-form" onSubmit={(event) => void createJob(event)}>
+          <form id="nexops-new-job-form" className="nexops-jobs-form" onSubmit={(event) => void createJob(event)}>
             <label>
               Client
               <select value={showInlineClientCreate ? NEW_JOB_CLIENT_VALUE : createClientId} onChange={(event) => handleClientChoice(event.target.value)}>
@@ -1693,33 +1724,12 @@ export function NexOpsJobsPage(props: {
             </div>
             <span>{filteredJobs.length} shown / {jobs.length} total</span>
           </div>
-          <div className="nexops-jobs-filter-row" aria-label="Job Status Filters">
-            {JOB_FILTERS.map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                className={`nexops-jobs-filter-pill${statusFilter === filter ? " active" : ""}`}
-                onClick={() => setStatusFilter(filter)}
-              >
-                <span>{filter}</span>
-                <small>{filterCounts[filter]}</small>
-              </button>
-            ))}
-          </div>
-          <label className="nexops-jobs-search">
-            <span>Search all jobs, including history</span>
-            <input
-              value={jobSearch}
-              onChange={(event) => setJobSearch(event.target.value)}
-              placeholder="Search by job, client, or job number"
-            />
-          </label>
           <div className="nexops-jobs-list">
             {filteredJobs.map((job) => (
               <button
                 key={job.id}
                 type="button"
-                className={`nexops-jobs-list-item${job.id === selectedJobId ? " active" : ""}`}
+                className={`nexops-jobs-list-item${detailOpen && job.id === selectedJobId ? " active" : ""}`}
                 onClick={() => selectJobFromRoster(job.id)}
               >
                 <div>
@@ -1737,29 +1747,30 @@ export function NexOpsJobsPage(props: {
           </div>
         </article>
       </section>
+      </NexOpsRosterTemplate>
 
+      {detailOpen ? <NexOpsDetailTemplate
+        back={<button type="button" onClick={() => setDetailOpen(false)}>Back to Job Roster</button>}
+        eyebrow="Job Detail"
+        title={detail?.title ?? "Loading Job"}
+        detail={detail?.client?.name ?? detailStatus}
+        status={detail ? <mark>{detail.status}</mark> : null}
+        navigation={<div className="nexops-jobs-filter-row" aria-label="Job Detail Filters">
+          {JOB_FILTERS.map((filter) => (
+            <button
+              key={`detail-${filter}`}
+              type="button"
+              className={`nexops-jobs-filter-pill${statusFilter === filter ? " active" : ""}`}
+              onClick={() => setStatusFilter(filter)}
+            >
+              <span>{filter}</span>
+              <small>{filterCounts[filter]}</small>
+            </button>
+          ))}
+        </div>}
+      >
       <section className="nexops-two-column nexops-jobs-detail-shell" ref={jobDetailRef} tabIndex={-1} aria-label="Job details">
         <article className="nexops-module-card">
-          <div className="nexops-jobs-card-heading">
-            <div>
-              <p className="eyebrow">Detail</p>
-              <h2>{detail?.title ?? "Select a Job"}</h2>
-            </div>
-            {detail?.number ? <span>{detail.number}</span> : null}
-          </div>
-          <div className="nexops-jobs-filter-row" aria-label="Job Detail Filters">
-            {JOB_FILTERS.map((filter) => (
-              <button
-                key={`detail-${filter}`}
-                type="button"
-                className={`nexops-jobs-filter-pill${statusFilter === filter ? " active" : ""}`}
-                onClick={() => setStatusFilter(filter)}
-              >
-                <span>{filter}</span>
-                <small>{filterCounts[filter]}</small>
-              </button>
-            ))}
-          </div>
           <p>{detailStatus}</p>
           {detail ? (
             <div className="nexops-jobs-detail">
@@ -2274,6 +2285,7 @@ export function NexOpsJobsPage(props: {
           </div>
         </article>
       </section>
+      </NexOpsDetailTemplate> : null}
 
       {signingDocument ? (
         <div className="nexops-modal-layer" role="presentation">

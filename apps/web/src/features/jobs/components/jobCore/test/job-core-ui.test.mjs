@@ -10,6 +10,19 @@ import {
   mergeJobClientOptions,
   parseVisitDateTime
 } from "../NexOpsJobsPage.tsx";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+const pageSource = readFileSync(fileURLToPath(new URL("../NexOpsJobsPage.tsx", import.meta.url)), "utf8");
+
+test("Jobs uses the shared roster and detail templates with explicit detail exit", () => {
+  assert.match(pageSource, /import \{ NexOpsDetailTemplate, NexOpsRosterTemplate \} from "\.\.\/\.\.\/\.\.\/\.\.\/shared\/ui\/NexOpsBusinessTemplates"/);
+  assert.match(pageSource, /<NexOpsRosterTemplate/);
+  assert.match(pageSource, /<NexOpsDetailTemplate/);
+  assert.match(pageSource, /Back to Job Roster/);
+  assert.match(pageSource, /setDetailOpen\(false\)/);
+  assert.match(pageSource, /void loadDetail\(detailOpen \? selectedJobId : ""\)/);
+});
 
 test("inline job client draft requires name, telephone, and address before save", () => {
   assert.deepEqual(
