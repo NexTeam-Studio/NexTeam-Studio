@@ -270,6 +270,15 @@
   justify-content: space-between;
   gap: 12px;
   align-items: center;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(84, 222, 125, 0.22);
+  border-radius: 18px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at right center, rgba(212, 255, 32, 0.15), transparent 28%),
+    linear-gradient(118deg, #061a2a 0%, #08343b 58%, #0d6d3d 100%);
+  box-sizing: border-box;
 }
 
 .nexops-mobile-section-banner {
@@ -288,7 +297,7 @@
 
 .nexops-mobile-section-head h2 {
   margin: 0;
-  color: #173344;
+  color: #ffffff;
   font-size: 1.1rem;
   font-weight: 800;
 }
@@ -305,10 +314,13 @@
 }
 
 .nexops-mobile-section-head button {
-  border: 0;
-  background: none;
-  color: #4b991e;
-  font-size: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  padding: 8px 11px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.82rem;
+  font-weight: 850;
 }
 
 .nexops-mobile-key-value {
@@ -402,6 +414,12 @@
   color: #173344;
   font-size: 0.92rem;
   line-height: 1.3;
+}
+
+/* The client editor owns its fixed action footer on narrow screens. Do not
+   leave the global Create/Nexi control above its Save/Create action. */
+body:has(.nexops-mobile-client-form-screen) .nexops-mobile-create-fab {
+  display: none;
 }
 
 

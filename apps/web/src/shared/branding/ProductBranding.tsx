@@ -38,7 +38,11 @@ export function tenantDisplayName(branding: TenantBranding | null, tenantId: str
 
 export function tenantLogoSrc(branding: TenantBranding | null, tenantId: string): string | null {
   if (branding?.logo?.storageRef) {
-    return `/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(tenantId)}`;
+    // Keep every product on the canonical tenant branding record. The public
+    // logo resource is cacheable, so its configured revision must travel with
+    // the URL just as it does in NexCommand.
+    const revision = branding.logo.updatedAt ?? "current";
+    return `/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(tenantId)}&v=${encodeURIComponent(revision)}`;
   }
   if (branding?.logo?.url) {
     return branding.logo.url;

@@ -125,7 +125,10 @@ test("client roster and profile keep the mobile-first client workspace actions a
   const clientDetailsCss = readFileSync(new URL("../src/features/clients/components/clientDetails/clientDetails.css", import.meta.url), "utf8");
   const workspaceSource = readFileSync(new URL("../src/features/nexopsShell/NexOpsWorkspace.tsx", import.meta.url), "utf8");
   const headerSource = readFileSync(new URL("../src/features/nexopsShell/components/NexOpsHeader.tsx", import.meta.url), "utf8");
+  const headerCss = readFileSync(new URL("../src/features/nexopsShell/styles/shellHeader.css", import.meta.url), "utf8");
+  const brandingSource = readFileSync(new URL("../src/shared/branding/ProductBranding.tsx", import.meta.url), "utf8");
   const createPanelSource = readFileSync(new URL("../src/features/clients/components/contact/NexOpsCreateClientPanel.tsx", import.meta.url), "utf8");
+  const mobileClientCss = readFileSync(new URL("../src/features/clients/components/contact/contactMobileLegacy.css", import.meta.url), "utf8");
 
   assert.match(rosterSource, /NexOps Client Manager/);
   assert.match(rosterSource, /data-label="Primary address"/);
@@ -143,6 +146,10 @@ test("client roster and profile keep the mobile-first client workspace actions a
   assert.match(clientDetailsSource, /mobileTabsForBucket\(bucket\)/);
   assert.match(workspaceSource, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
   assert.match(headerSource, /nexops-web-platform-lockup/);
+  assert.match(headerCss, /linear-gradient\(135deg, #0c1118/);
+  assert.match(headerCss, /min-height: 62px/);
+  assert.match(brandingSource, /branding\.logo\.updatedAt/);
+  assert.match(brandingSource, /tenant-branding\/logo\?tenantId=.*&v=/);
   assert.match(createPanelSource, /aria-label=\{editing \? "Back to Client Overview" : "Back to Client Roster"\}>← Back/);
   assert.doesNotMatch(createPanelSource, /Ã—|â†/);
   assert.match(clientDetailsCss, /\.nexops-client-profile-header-card\.nexops-client-profile-brand-header\s*\{/);
@@ -155,6 +162,11 @@ test("client roster and profile keep the mobile-first client workspace actions a
   assert.match(createPanelSource, /nexops-client-form-action-controls/);
   assert.match(workspaceSource, /creatingClientPage \|\| showCreateClient/);
   assert.match(rosterSource, /Open Client/);
+  assert.match(rosterSource, /nexops-client-row-identity-banner/);
+  assert.match(rosterCss, /Client roster identity contract/);
+  assert.match(rosterCss, /nexops-client-row-identity-banner/);
+  assert.match(mobileClientCss, /body:has\(\.nexops-mobile-client-form-screen\) \.nexops-mobile-create-fab/);
+  assert.match(clientDetailsCss, /nexops-client-profile-section-head \{[\s\S]*linear-gradient/);
   assert.doesNotMatch(rosterSource, /Native record/);
   assert.match(rosterCss, /\.nexops-client-form-page-actions button\[type="submit"\]:disabled/);
 });

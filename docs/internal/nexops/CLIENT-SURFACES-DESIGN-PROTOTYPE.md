@@ -63,3 +63,10 @@ Broader use of these primitives remains gated on Chris's visual review of this p
 - Client Roster rows prioritize the Client name, primary contact/location, a compact status pill, and one quiet open affordance. Generic metadata such as “Native record” is not a primary visual destination.
 - Section-pill navigation may wrap at narrow widths inside its dark navigation shell. It must not expose half-clipped controls or create a nested scroll trap.
 - A floating Create/Nexi control is hidden while a full Client form or creation overlay is active. Content reserves safe-area spacing so persistent controls never cover the form action rail.
+# Owner refinement: shared Client-workspace contracts
+
+- **Header contract:** NexOps uses the same compact, dark NexCommand-family header structure: a grouped product lockup on the left, the authoritative tenant mark in its own bounded region, and evenly sized rounded utility bubbles on the right.
+- **Tenant branding contract:** Product shells resolve the configured tenant logo through the same tenant-branding record and cache revision used by NexCommand; no product may introduce a second tenant logo setting.
+- **Roster identity contract:** A roster record starts with one restrained dark teal-to-green identity banner, then presents operational detail in a clean light body.
+- **Sub-rail header contract:** Primary Client subsection cards use the same dark branded section banner, lime eyebrow, high-contrast title, and readable contextual action where it improves orientation.
+- **Overlay contract:** Create pickers and drawers reserve mobile safe-area space at both top and bottom so their identity, Close control, and first action are visible without an upward scroll.

@@ -117,10 +117,12 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
                 type="button"
                 onClick={() => props.onOpenClient(client.id)}
               >
-                <span className="nexops-client-row-identity" data-label="Client">
-                  <strong>{props.clientDisplayName(client)}</strong>
-                  <small>{client.company?.trim() ? client.company : props.contactSummary(client)}</small>
-                  {isImportedHistoryRecord(client) ? <small className="nexops-client-imported-history">Imported history</small> : null}
+                <span className="nexops-client-row-identity-banner">
+                  <span className="nexops-client-row-identity" data-label="Client">
+                    <strong>{props.clientDisplayName(client)}</strong>
+                    <small>{client.company?.trim() ? client.company : props.contactSummary(client)}</small>
+                    {isImportedHistoryRecord(client) ? <small className="nexops-client-imported-history">Imported history</small> : null}
+                  </span>
                 </span>
                 <span className="nexops-client-row-address" data-label="Primary address">{props.clientPrimaryAddress(client)}</span>
                 <span className="nexops-client-row-contact" data-label="Contact">{props.selectedClientId === client.id ? "Open now" : (client.phones[0] ?? client.emails[0] ?? "No contact saved")}</span>

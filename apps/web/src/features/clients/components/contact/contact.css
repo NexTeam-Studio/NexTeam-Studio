@@ -534,6 +534,109 @@
   padding: 18px;
 }
 
+/* Client roster identity contract: one branded identity band, then a calm
+   scannable detail body. This deliberately keeps status and actions light. */
+.nexops-client-table-card {
+  padding: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);
+}
+
+.nexops-client-table {
+  display: grid;
+  gap: 12px;
+}
+
+.nexops-client-table-head {
+  display: none;
+}
+
+.nexops-client-table-row {
+  grid-template-columns: minmax(0, 1.45fr) minmax(190px, 1fr) minmax(150px, 0.8fr) minmax(112px, 0.58fr);
+  gap: 14px;
+  min-height: 0;
+  padding: 0 18px 18px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 22px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(8, 33, 49, 0.045);
+}
+
+.nexops-client-row-identity-banner {
+  grid-column: 1 / -1;
+  display: grid;
+  margin: 0 -18px;
+  padding: 17px 20px;
+  border-radius: 21px 21px 16px 16px;
+  background:
+    radial-gradient(circle at right center, rgba(212, 255, 32, 0.18), transparent 28%),
+    linear-gradient(118deg, #061a2a 0%, #08343b 58%, #0d6d3d 100%);
+}
+
+.nexops-client-row-identity-banner strong {
+  color: #d4ff20;
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.nexops-client-row-identity-banner small {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.88rem;
+}
+
+.nexops-client-row-identity-banner .nexops-client-imported-history {
+  color: #e8ffd2;
+  background: rgba(212, 255, 32, 0.14);
+}
+
+.nexops-client-table-row:hover,
+.nexops-client-table-row.selected {
+  border-color: rgba(37, 210, 56, 0.38);
+  background: linear-gradient(180deg, #ffffff 0%, #f1fbf4 100%);
+}
+
+.nexops-client-table-row:hover .nexops-client-row-identity-banner,
+.nexops-client-table-row.selected .nexops-client-row-identity-banner {
+  background:
+    radial-gradient(circle at right center, rgba(212, 255, 32, 0.25), transparent 30%),
+    linear-gradient(118deg, #061a2a 0%, #08434a 54%, #108044 100%);
+}
+
+.nexops-client-row-address,
+.nexops-client-row-contact,
+.nexops-client-row-status,
+.nexops-client-row-activity {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  color: #23404d;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.nexops-client-row-address::before,
+.nexops-client-row-contact::before,
+.nexops-client-row-status::before,
+.nexops-client-row-activity::before {
+  content: attr(data-label);
+  color: #667884;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.nexops-client-row-activity {
+  justify-self: end;
+  text-align: right;
+}
+
+.nexops-client-row-open {
+  color: #103548;
+  font-size: 0.86rem;
+}
+
 .nexops-client-detail-heading {
   display: grid;
   gap: 5px;
@@ -1005,6 +1108,13 @@
     border: 1px solid rgba(8, 33, 49, 0.1);
     border-radius: 18px;
     background: linear-gradient(180deg, #fff 0%, #f8fcf8 100%);
+  }
+
+  .nexops-client-row-identity-banner {
+    grid-column: 1 / -1;
+    margin: -17px -17px 2px;
+    padding: 16px 17px;
+    border-radius: 17px 17px 14px 14px;
   }
 
   .nexops-client-row-identity {

@@ -234,10 +234,11 @@ body.nexops-mobile-nav-open {
 }
 
 .nexops-mobile-brand-lockup {
-  display: grid;
-  justify-items: center;
+  display: flex;
+  justify-items: initial;
+  justify-content: flex-start;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -246,7 +247,7 @@ body.nexops-mobile-nav-open {
   align-items: center;
   justify-content: flex-start;
   width: 100%;
-  min-height: 72px;
+  min-height: 52px;
   padding: 0;
   border: 0;
   background: none;
@@ -263,15 +264,15 @@ body.nexops-mobile-nav-open {
 
 .nexops-mobile-platform-mark {
   display: block;
-  width: 58px;
-  height: 58px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
 }
 
 .nexops-mobile-tenant-mark.tenant-logo {
   width: auto;
-  max-width: 144px;
-  max-height: 40px;
+  max-width: 112px;
+  max-height: 34px;
   margin: 0;
 }
 
@@ -293,8 +294,8 @@ body.nexops-mobile-nav-open {
 
 .nexops-mobile-product-logo {
   flex: 0 0 auto;
-  width: 102px;
-  max-height: 28px;
+  width: 76px;
+  max-height: 24px;
 }
 
 .nexops-mobile-controls {

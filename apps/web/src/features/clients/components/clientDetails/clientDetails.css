@@ -457,12 +457,18 @@
 }
 
 .nexops-client-profile-section-head {
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(8, 33, 49, 0.1);
+  padding: 17px 18px;
+  border: 1px solid rgba(84, 222, 125, 0.22);
+  border-radius: 19px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at right center, rgba(212, 255, 32, 0.15), transparent 28%),
+    linear-gradient(118deg, #061a2a 0%, #08343b 58%, #0d6d3d 100%);
+  box-shadow: 0 12px 25px rgba(7, 28, 36, 0.1);
 }
 
 .nexops-client-profile-section-head h2 {
-  color: #082131;
+  color: #ffffff;
   font-size: clamp(1.35rem, 2vw, 1.7rem);
   line-height: 1.1;
 }
@@ -474,6 +480,39 @@
   font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.nexops-client-profile-section-head .eyebrow {
+  color: #d4ff20;
+}
+
+.nexops-client-profile-section-head p {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.nexops-client-profile-section-head > button {
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nexops-client-profile-section-head > button:hover,
+.nexops-client-profile-section-head > button:focus-visible {
+  border-color: rgba(212, 255, 32, 0.82);
+  color: #d4ff20;
+  background: rgba(212, 255, 32, 0.12);
+}
+
+/* ClientDetails owns the responsive section surface. Keep the mobile title
+   legible even when contact-area CSS is not loaded by this route. */
+@media (max-width: 720px) {
+  .nexops-mobile-section-head h2 {
+    color: #ffffff;
+  }
+
+  .nexops-mobile-section-head .eyebrow {
+    color: #d4ff20;
+  }
 }
 
 .nexops-client-profile-tabs {
