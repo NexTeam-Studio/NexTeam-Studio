@@ -714,10 +714,14 @@ function lineDraftFromCatalogItem(item: ProductServiceCatalogItem): QuoteLineDra
 
 
 
-function lineDraftFromQuoteItem(item: QuoteLineItem): QuoteLineDraft {
+export function lineDraftFromQuoteItem(item: QuoteLineItem): QuoteLineDraft {
+  // Older tenant templates can contain a priced line before it has been linked
+  // to the newer Products & Services catalog. Preserve that authoritative line
+  // as an editable manual line instead of emitting an invalid catalog payload.
+  const isCatalogLine = item.source !== "custom" && Boolean(item.catalogItemId);
   return {
     rowId: rowId("line"),
-    kind: item.source === "custom" ? "custom" : "catalog",
+    kind: isCatalogLine ? "catalog" : "custom",
     catalogItemId: item.catalogItemId ?? "",
     catalogCode: item.catalogCode ?? "",
     code: item.code,

@@ -9,6 +9,7 @@ import {
   quoteConvertToJobBlockedReason,
   quoteDominantAction,
   quoteInvoiceBlockedReason,
+  lineDraftFromQuoteItem,
   quoteManualApproveBlockedReason,
   quoteSendBlockedReason
 } from "../NexOpsQuotesPage.tsx";
@@ -122,4 +123,20 @@ test("quote builder keeps office defaults available without mixing configuration
   assert.match(source, /Quote defaults and templates/);
   assert.match(source, /Office configuration stays available without interrupting this quote\./);
   assert.match(source, /nexops-quote-builder-settings/);
+});
+
+test("legacy template line without a catalog identifier remains saveable as an editable manual line", () => {
+  const draft = lineDraftFromQuoteItem({
+    id: "legacy_line",
+    code: "VGB-001",
+    name: "Legacy documentation line",
+    quantity: 1,
+    unitPrice: 950,
+    total: 950,
+    source: "catalog"
+  });
+
+  assert.equal(draft.kind, "custom");
+  assert.equal(draft.catalogItemId, "");
+  assert.equal(draft.name, "Legacy documentation line");
 });
