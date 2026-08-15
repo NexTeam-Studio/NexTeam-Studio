@@ -9,7 +9,7 @@
   top: 0;
   z-index: 3;
   margin-left: calc(-1 * var(--nexteam-shell-sidebar-width, 250px));
-  width: 100vw;
+  width: calc(100vw - 36px);
   height: 60px;
   min-height: 60px;
   box-sizing: border-box;
