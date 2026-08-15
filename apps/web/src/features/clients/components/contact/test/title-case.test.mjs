@@ -9,17 +9,18 @@ test("client roster names controls and columns in Title Case", () => {
   for (const label of [
     "Active Clients",
     "Text-Ready",
-    "Filter by Tag +",
+    "Filter by Tag",
     "Search Clients",
-    "Primary Address",
-    "Last Activity",
-    "Imported History"
+    "Primary address",
+    "Client record",
+    "Imported history",
+    "Open Client"
   ]) {
     assert.match(rosterSource, new RegExp(label));
   }
 
-  assert.doesNotMatch(rosterSource, /Filter by tag \+/);
-  assert.doesNotMatch(rosterSource, /Primary address/);
+  assert.doesNotMatch(rosterSource, /Filter by Tag \+/);
+  assert.doesNotMatch(rosterSource, /Native record/);
 });
 
 test("client intake names fields and actions in Title Case without changing helper sentences", () => {
@@ -27,6 +28,8 @@ test("client intake names fields and actions in Title Case without changing help
     "New Client",
     "First Name",
     "Phone Number",
+    "Phone Type",
+    "Email Type",
     "Property Address",
     "Add Another Phone Number",
     "Search Lead Sources",

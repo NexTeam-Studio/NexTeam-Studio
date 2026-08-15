@@ -248,6 +248,8 @@
 .nexops-mobile-subsection-shell .nexops-mobile-subsection-tabs {
   padding: 0;
   background: transparent;
+  flex-wrap: wrap;
+  overflow: visible;
 }
 
 .nexops-mobile-subsection-shell .nexops-mobile-subsection-tabs button {

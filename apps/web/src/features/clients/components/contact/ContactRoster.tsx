@@ -55,9 +55,9 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
     <section className="nexops-clients-workspace">
       <div className="nexops-clients-heading">
         <div className="nexops-clients-heading-copy">
-          <span className="nexops-clients-heading-eyebrow">NexOps client manager</span>
+          <span className="nexops-clients-heading-eyebrow">NexOps Client Manager</span>
           <h1 className="nexops-page-title-with-icon"><NexOpsNavGlyph module="clients" /><span>Clients</span></h1>
-          <p>{props.status} Open any row to move into the full client workspace.</p>
+          <p>{props.status} Open any row to move into the full Client workspace.</p>
         </div>
         <div className="nexops-client-actions">
           <button type="button" onClick={props.onNewClient}>New Client</button>
@@ -75,7 +75,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
 
       <div className="nexops-client-controls">
         <label className="nexops-client-control-field">
-          <span>Filter by Tag +</span>
+          <span>Filter by Tag</span>
           <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} aria-label="Filter clients by tag">
             <option value="">All tags</option>
             {tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
@@ -108,7 +108,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
         <section className="nexops-client-table-card" aria-label="Client list">
           <div className="nexops-client-table">
             <div className="nexops-client-table-head">
-              <span>Name</span><span>Primary Address</span><span>Contact</span><span>Status</span><span>Last Activity</span>
+              <span>Name</span><span>Primary Address</span><span>Contact</span><span>Status</span><span>Client record</span>
             </div>
             {visibleClients.map((client) => (
               <button
@@ -120,12 +120,15 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
                 <span className="nexops-client-row-identity" data-label="Client">
                   <strong>{props.clientDisplayName(client)}</strong>
                   <small>{client.company?.trim() ? client.company : props.contactSummary(client)}</small>
-                  {isImportedHistoryRecord(client) ? <small className="nexops-client-imported-history">Imported History</small> : null}
+                  {isImportedHistoryRecord(client) ? <small className="nexops-client-imported-history">Imported history</small> : null}
                 </span>
-                <span className="nexops-client-row-address" data-label="Primary Address">{props.clientPrimaryAddress(client)}</span>
+                <span className="nexops-client-row-address" data-label="Primary address">{props.clientPrimaryAddress(client)}</span>
                 <span className="nexops-client-row-contact" data-label="Contact">{props.selectedClientId === client.id ? "Open now" : (client.phones[0] ?? client.emails[0] ?? "No contact saved")}</span>
                 <span className="nexops-client-row-status" data-label="Status"><mark>{clientRosterStatusLabel(client, props.clientStatusLabel(client))}</mark></span>
-                <span className="nexops-client-row-activity" data-label="Record">{client.tags?.[0] ?? "Native record"}<small>Open client</small></span>
+                <span className="nexops-client-row-activity" data-label="Client record">
+                  <small>{client.tags?.[0] ? `Tag · ${client.tags[0]}` : "No recent activity"}</small>
+                  <span className="nexops-client-row-open">Open Client <span aria-hidden="true">→</span></span>
+                </span>
               </button>
             ))}
             {!visibleClients.length ? (

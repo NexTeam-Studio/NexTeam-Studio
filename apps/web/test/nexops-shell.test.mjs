@@ -127,8 +127,8 @@ test("client roster and profile keep the mobile-first client workspace actions a
   const headerSource = readFileSync(new URL("../src/features/nexopsShell/components/NexOpsHeader.tsx", import.meta.url), "utf8");
   const createPanelSource = readFileSync(new URL("../src/features/clients/components/contact/NexOpsCreateClientPanel.tsx", import.meta.url), "utf8");
 
-  assert.match(rosterSource, /NexOps client manager/);
-  assert.match(rosterSource, /data-label="Primary Address"/);
+  assert.match(rosterSource, /NexOps Client Manager/);
+  assert.match(rosterSource, /data-label="Primary address"/);
   assert.match(rosterSource, /data-label="Contact"/);
   assert.doesNotMatch(rosterCss, /min-width:\s*920px/);
   assert.match(rosterCss, /\.nexops-client-table-head\s*\{\s*display:\s*none;/);
@@ -143,10 +143,18 @@ test("client roster and profile keep the mobile-first client workspace actions a
   assert.match(clientDetailsSource, /mobileTabsForBucket\(bucket\)/);
   assert.match(workspaceSource, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
   assert.match(headerSource, /nexops-web-platform-lockup/);
-  assert.match(createPanelSource, /aria-label="Close">×/);
+  assert.match(createPanelSource, /aria-label=\{editing \? "Back to Client Overview" : "Back to Client Roster"\}>← Back/);
   assert.doesNotMatch(createPanelSource, /Ã—|â†/);
   assert.match(clientDetailsCss, /\.nexops-client-profile-header-card\.nexops-client-profile-brand-header\s*\{/);
   assert.match(clientDetailsCss, /\.nexops-client-profile-tab-groups\s*\{/);
   assert.match(clientDetailsCss, /\.nexops-client-profile-tabs\s*\{[\s\S]*linear-gradient/);
   assert.match(clientDetailsCss, /\.nexops-mobile-profile-summary\s*\{/);
+  assert.match(createPanelSource, /if \(pageLayout && mobile\)/);
+  assert.match(createPanelSource, /Phone Type/);
+  assert.match(createPanelSource, /Email Type/);
+  assert.match(createPanelSource, /nexops-client-form-action-controls/);
+  assert.match(workspaceSource, /creatingClientPage \|\| showCreateClient/);
+  assert.match(rosterSource, /Open Client/);
+  assert.doesNotMatch(rosterSource, /Native record/);
+  assert.match(rosterCss, /\.nexops-client-form-page-actions button\[type="submit"\]:disabled/);
 });

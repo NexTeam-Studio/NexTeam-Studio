@@ -1181,7 +1181,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
         <NexOpsMobileCreateFab
           collapsed={mobileCreateFabCollapsed}
           expanded={createMenuOpen}
-          hidden={mobileFabShouldHideOverlays({ mobileNavOpen, notificationsOpen, moduleSwitcherOpen })}
+          hidden={mobileFabShouldHideOverlays({ mobileNavOpen, notificationsOpen, moduleSwitcherOpen }) || creatingClientPage || showCreateClient}
           pulse={mobileCreateFabPulse}
           onClick={toggleCreateMenu}
         />

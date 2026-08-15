@@ -39,6 +39,7 @@ interface NexOpsCreateClientPanelProps {
   mode?: "create" | "edit";
   layout?: "drawer" | "page";
   surface?: "client" | "contact" | "property";
+  mobile?: boolean;
   onClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void> | void;
 }
@@ -55,6 +56,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
     mode = "create",
     layout = "drawer",
     surface = "client",
+    mobile = false,
     onClose,
     onSubmit
   } = props;
@@ -309,7 +311,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
     );
   }
 
-  if (pageLayout) {
+  if (pageLayout && mobile) {
     const helperCopy = clientCustomFieldValidation.hasBlockingIssues
       ? "Client custom field labels must be unique and cannot reuse built-in fields."
       : propertyCustomFieldValidation.hasBlockingIssues
@@ -379,9 +381,9 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
     }
 
     return (
-      <form className="nexops-mobile-client-screen" onSubmit={(event) => void onSubmit(event)}>
+      <form className="nexops-mobile-client-screen nexops-mobile-client-form-screen" onSubmit={(event) => void onSubmit(event)}>
         <header className="nexops-mobile-client-head">
-          <button type="button" onClick={onClose} aria-label="Close">×</button>
+          <button type="button" onClick={onClose} aria-label={editing ? "Back to Client Overview" : "Back to Client Roster"}>← Back</button>
           <h1>{surfaceHeading}</h1>
           <span />
         </header>
@@ -429,7 +431,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
               <input value={newClient.phone} placeholder="Phone Number" onChange={(event) => patchClientDraft({ phone: event.target.value })} />
             </label>
             <label className="nexops-mobile-client-field">
-              <span>Label</span>
+              <span>Phone Type</span>
               <select value={newClient.phoneLabel} onChange={(event) => patchClientDraft({ phoneLabel: event.target.value })}>
                 {phoneLabelOptions.map((label) => <option key={label} value={label}>{label}</option>)}
               </select>
@@ -445,7 +447,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
                   <input value={entry.value} placeholder="Phone Number" onChange={(event) => updatePhoneDraft(entry.id, { value: event.target.value })} />
                 </label>
                 <label className="nexops-mobile-client-field">
-                  <span>Label</span>
+                  <span>Phone Type</span>
                   <select value={entry.label} onChange={(event) => updatePhoneDraft(entry.id, { label: event.target.value })}>
                     {phoneLabelOptions.map((label) => <option key={label} value={label}>{label}</option>)}
                   </select>
@@ -470,7 +472,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
                 <input type="email" value={newClient.email} placeholder="Email Address" onChange={(event) => patchClientDraft({ email: event.target.value })} />
               </label>
               <label className="nexops-mobile-client-field">
-                <span>Label</span>
+                <span>Email Type</span>
                 <select value={newClient.emailLabel} onChange={(event) => patchClientDraft({ emailLabel: event.target.value })}>
                   {emailLabelOptions.map((label) => <option key={label} value={label}>{label}</option>)}
                 </select>
@@ -482,7 +484,7 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
                     <input type="email" value={entry.value} placeholder="Email Address" onChange={(event) => updateEmailDraft(entry.id, { value: event.target.value })} />
                   </label>
                   <label className="nexops-mobile-client-field">
-                    <span>Label</span>
+                    <span>Email Type</span>
                     <select value={entry.label} onChange={(event) => updateEmailDraft(entry.id, { label: event.target.value })}>
                       {emailLabelOptions.map((label) => <option key={label} value={label}>{label}</option>)}
                     </select>
@@ -617,7 +619,6 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
           </div>
           <div className="nexops-inline-actions wrap">
             <span className="nexops-client-form-page-note">Save the parent client first, then add extra contacts, properties, and billing details from the full workspace.</span>
-            <button className="nexops-link-button" type="button" onClick={onClose}>Back to Clients</button>
           </div>
         </div>
       ) : (
@@ -786,9 +787,20 @@ export function NexOpsCreateClientPanel(props: NexOpsCreateClientPanelProps): Re
           </div>
         </section>
         <div className={`nexops-drawer-actions${pageLayout ? " nexops-client-form-page-actions" : ""}`}>
-          <span>{createStatus || (createClientCanSave ? "Name, address, and telephone are present. Email is optional." : `Add ${createClientMissingFields.join(", ")} before Save becomes available.`)}</span>
-          <button type="button" onClick={onClose}>{pageLayout ? "Back to Clients" : "Cancel"}</button>
-          <button type="submit" disabled={!createClientCanSave}>Save Client</button>
+          {pageLayout ? (
+            <>
+              <p className="nexops-client-form-action-copy">{createStatus || (createClientCanSave ? "Name, address, and telephone are present. Email is optional." : `Add ${createClientMissingFields.join(", ")} before Save becomes available.`)}</p>
+              <div className="nexops-client-form-action-controls">
+                <button type="submit" disabled={!createClientCanSave}>Save Client</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <span>{createStatus || (createClientCanSave ? "Name, address, and telephone are present. Email is optional." : `Add ${createClientMissingFields.join(", ")} before Save becomes available.`)}</span>
+              <button type="button" onClick={onClose}>Cancel</button>
+              <button type="submit" disabled={!createClientCanSave}>Save Client</button>
+            </>
+          )}
         </div>
     </form>
   );

@@ -222,6 +222,7 @@ test("page-mode client intake keeps phone and address visible while collapsing s
       leadSourceOptions: ["Google", "Referral"],
       layout: "page",
       surface: "client",
+      mobile: true,
       onClose: () => {},
       onSubmit: () => {}
     })
@@ -235,6 +236,9 @@ test("page-mode client intake keeps phone and address visible while collapsing s
   assert.match(html, /Add Additional Info/i);
   assert.match(html, /Add Additional Property Info/i);
   assert.match(html, /Name, phone, and address needed to save/i);
+  assert.match(html, /aria-label="Back to Client Roster"/);
+  assert.match(html, /class="nexops-mobile-client-footer"/);
+  assert.match(html, /<p>Name, phone, and address needed to save<\/p><button[^>]*disabled[^>]*>Save<\/button>/i);
 });
 
 test("page-mode client intake only shows Referred By when Referral is selected", () => {
@@ -253,6 +257,7 @@ test("page-mode client intake only shows Referred By when Referral is selected",
       leadSourceOptions: DEFAULT_LEAD_SOURCE_OPTIONS,
       layout: "page",
       surface: "client",
+      mobile: true,
       onClose: () => {},
       onSubmit: () => {}
     })
@@ -275,6 +280,7 @@ test("page-mode client intake only shows Referred By when Referral is selected",
       leadSourceOptions: DEFAULT_LEAD_SOURCE_OPTIONS,
       layout: "page",
       surface: "client",
+      mobile: true,
       onClose: () => {},
       onSubmit: () => {}
     })

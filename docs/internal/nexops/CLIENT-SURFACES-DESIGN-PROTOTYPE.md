@@ -55,3 +55,11 @@ Broader use of these primitives remains gated on Chris's visual review of this p
 - Primary Client navigation and every subsection group follow one pattern: a dark rounded navigation shell, a short section label, and compact pill controls. Equivalent Client, Work, Notes, and Files structures must not receive bespoke visual treatments.
 - Opening a different Client is a new workspace entry. It resets document scroll position to the Client identity header; back/refresh behavior otherwise remains browser-native and predictable.
 - Create and Edit Client are part of the Client workspace, not standalone forms: they use the branded header/back bubble, rounded grouped form sections, clear labels, and the shared lime primary CTA.
+
+## Owner-cleanup additions
+
+- Desktop and mobile Client forms use the same workspace family: a branded entry header, one clear back bubble, light grouped form cards, and a dedicated action rail. Validation/help copy never shares a row with Save/Create controls.
+- Disabled primary actions retain the approved rounded shape and readable contrast. A disabled state communicates what remains required; it must never resemble a broken or invisible control.
+- Client Roster rows prioritize the Client name, primary contact/location, a compact status pill, and one quiet open affordance. Generic metadata such as “Native record” is not a primary visual destination.
+- Section-pill navigation may wrap at narrow widths inside its dark navigation shell. It must not expose half-clipped controls or create a nested scroll trap.
+- A floating Create/Nexi control is hidden while a full Client form or creation overlay is active. Content reserves safe-area spacing so persistent controls never cover the form action rail.
