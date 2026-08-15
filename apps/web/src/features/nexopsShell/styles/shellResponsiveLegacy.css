@@ -11,6 +11,8 @@
 
 @media (max-width: 880px) {
   .nexops-app {
+    height: auto;
+    min-height: 100vh;
     margin: 0;
     border: 0;
     border-radius: 0;
