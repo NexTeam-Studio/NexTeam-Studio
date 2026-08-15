@@ -24,12 +24,13 @@
 .nexops-app-sidebar {
   position: sticky;
   top: 0;
-  height: calc(100vh - 36px);
+  height: calc(100vh - 98px);
+  margin-top: 62px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   box-sizing: border-box;
-  padding: 76px 12px 16px;
+  padding: 14px 12px 16px;
   border-right: 1px solid rgba(12, 17, 24, 0.12);
   background: #0c1118;
   box-shadow: none;
