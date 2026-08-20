@@ -43,7 +43,7 @@ const tenantBodySchema = z.object({
   adapters: z.object({
     crm: z.literal("native"),
     media: z.literal("native"),
-    email: z.enum(["gmail_relay", "sendgrid"]),
+    email: z.enum(["gmail_relay", "resend", "sendgrid"]),
     sms: z.enum(["twilio"]).optional()
   }).optional(),
   approval: z.record(z.object({ autoApprove: z.boolean(), cleanStreak: z.number().int().min(0) })).optional(),
@@ -435,7 +435,14 @@ function runtimeAdapterStatuses(tenant: Tenant, env: NodeJS.ProcessEnv): TenantA
   return [
     status(tenant, "crm", tenant.adapters.crm, tenant.adapters.crm === "native"),
     status(tenant, "media", tenant.adapters.media, tenant.adapters.media === "native"),
-    status(tenant, "email", tenant.adapters.email, Boolean(env.GMAIL_READONLY_MAILBOX_1_REFRESH_TOKEN || env.GMAIL_NEXI_REFRESH_TOKEN)),
+    status(
+      tenant,
+      "email",
+      tenant.adapters.email,
+      tenant.adapters.email === "resend"
+        ? Boolean(env.RESEND_API_KEY && env.RESEND_FROM_EMAIL)
+        : Boolean(env.GMAIL_READONLY_MAILBOX_1_REFRESH_TOKEN || env.GMAIL_NEXI_REFRESH_TOKEN)
+    ),
     status(tenant, "maps", "google_maps", Boolean(env.GOOGLE_MAPS_API_KEY)),
     status(tenant, "llm", "anthropic", Boolean(env.ANTHROPIC_API_KEY)),
     status(tenant, "voice", "elevenlabs", Boolean(env.ELEVENLABS_API_KEY), "Required by M12a voice.")

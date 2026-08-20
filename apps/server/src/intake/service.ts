@@ -124,7 +124,7 @@ function buildTenant(input: {
     adapters: {
       crm: "native",
       media: "native",
-      email: "gmail_relay"
+      email: "resend"
     },
     approval: defaultApproval(),
     timezone: input.timezone,

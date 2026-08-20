@@ -1,5 +1,5 @@
 import type { EmailReadProvider, EmailSendProvider, OutboundSms, SendReceipt } from "@nexteam/core";
-import { GmailReadOnlyAdapter, GmailSendAdapter, type GmailMailboxConfig } from "@nexteam/providers";
+import { GmailReadOnlyAdapter, GmailSendAdapter, ResendTransactionalAdapter, type GmailMailboxConfig, type ResendTransactionalConfig } from "@nexteam/providers";
 import { configuredTenantId } from "../core/tenantConfig.js";
 
 export interface CommsRail {
@@ -72,6 +72,11 @@ function value(env: NodeJS.ProcessEnv, name: string): string {
   return env[name]?.trim() ?? "";
 }
 
+function tenantValue(env: NodeJS.ProcessEnv, prefix: string, tenantId: string): string {
+  const tenantKey = envKey(tenantId);
+  return value(env, `${prefix}_${tenantKey}`) || value(env, prefix);
+}
+
 function configFromEnv(env: NodeJS.ProcessEnv, prefix: string, fallbackAlias: string, tenantId: string): GmailMailboxConfig | null {
   const email = value(env, `${prefix}_EMAIL`) || (prefix === "GMAIL_NEXI" ? value(env, "GMAIL_SEND_FROM") : "");
   const alias = value(env, `${prefix}_ALIAS`) || (email ? envKey(email) : fallbackAlias);
@@ -98,6 +103,24 @@ function configFromAnyEnv(env: NodeJS.ProcessEnv, prefixes: string[], fallbackAl
     }
   }
   return null;
+}
+
+/**
+ * Railway receives this value from the authorized deployment secret reference.
+ * This registry is the only NexTeam server boundary that reads it; business
+ * modules receive the provider-neutral EmailSendProvider instead.
+ */
+function resendTransactionalConfigFromEnv(env: NodeJS.ProcessEnv, tenantId: string): ResendTransactionalConfig | null {
+  const apiKey = tenantValue(env, "RESEND_API_KEY", tenantId);
+  const fromEmail = tenantValue(env, "RESEND_FROM_EMAIL", tenantId);
+  if (!apiKey || !fromEmail) return null;
+  const fromName = tenantValue(env, "RESEND_FROM_NAME", tenantId);
+  return {
+    tenantId,
+    apiKey,
+    from: fromName ? `${fromName} <${fromEmail}>` : fromEmail,
+    mailbox: tenantValue(env, "RESEND_TRANSACTIONAL_MAILBOX", tenantId) || "TRANSACTIONAL"
+  };
 }
 
 async function sendSmsViaTwilio(env: NodeJS.ProcessEnv, message: OutboundSms): Promise<SendReceipt> {
@@ -147,6 +170,7 @@ export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
     }
   }
   const sendConfig = configFromAnyEnv(env, ["GMAIL_SEND_MAILBOX", "GMAIL_NEXI"], "NEXI_SEND", tenantId);
+  const resendConfig = resendTransactionalConfigFromEnv(env, tenantId);
   if (sendConfig && (
     value(env, "GMAIL_SEND_MAILBOX_READ_ENABLED").toLowerCase() === "true"
     || value(env, "GMAIL_NEXI_READ_ENABLED").toLowerCase() === "true"
@@ -156,7 +180,10 @@ export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
   return {
     tenantId,
     readAdapters,
-    sendAdapter: sendConfig ? new GmailSendAdapter(sendConfig) : null,
+    // Transactional sends prefer the modern provider when its deployment
+    // secret reference and tenant-generic sender identity are configured.
+    // Gmail read/search adapters remain independently registered above.
+    sendAdapter: resendConfig ? new ResendTransactionalAdapter(resendConfig) : sendConfig ? new GmailSendAdapter(sendConfig) : null,
     sendSms: value(env, "TWILIO_ACCOUNT_SID") && value(env, "TWILIO_AUTH_TOKEN") && value(env, "TWILIO_FROM_NUMBER")
       ? (message) => sendSmsViaTwilio(env, message)
       : undefined,

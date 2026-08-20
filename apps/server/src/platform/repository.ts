@@ -75,7 +75,7 @@ export function defaultTenant(tenantId = configuredTenantId(process.env, "defaul
     name: tenantId === configuredId ? process.env.TENANT_NAME?.trim() || tenantId : tenantId,
     industryPack: "pool_leak",
     branding: { assistantName: "Nexi" },
-    adapters: { crm: "native", media: "native", email: "gmail_relay" },
+    adapters: { crm: "native", media: "native", email: "resend" },
     approval: defaultApproval(),
     timezone: "America/New_York",
     plan,

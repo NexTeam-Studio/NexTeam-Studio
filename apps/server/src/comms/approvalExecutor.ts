@@ -29,6 +29,7 @@ function outboundEmail(value: unknown): OutboundEmail {
   return {
     tenantId: String(record.tenantId),
     mailbox: record.mailbox ? String(record.mailbox) : undefined,
+    idempotencyKey: record.idempotencyKey ? String(record.idempotencyKey) : undefined,
     to: record.to.map(String),
     cc: Array.isArray(record.cc) ? record.cc.map(String) : undefined,
     bcc: Array.isArray(record.bcc) ? record.bcc.map(String) : undefined,
@@ -50,16 +51,16 @@ export class CommsApprovalExecutor implements ApprovalExecutor {
       return this.fallback.execute(item);
     }
     if (!this.rail.sendAdapter) {
-      throw new RailError("The dedicated Nexi send mailbox is not configured.", { provider: "gmail", op: "sendEmail", status: 503 });
+      throw new RailError("Transactional email delivery is not configured.", { provider: "native", op: "sendEmail", status: 503 });
     }
     const args = item.execute.args && typeof item.execute.args === "object" ? item.execute.args as { mailbox?: unknown; outbound?: unknown } : {};
     const mailbox = args.mailbox ? String(args.mailbox) : "";
     if (mailbox !== this.rail.sendAdapter.mailbox) {
-      throw new RailError("Approved email artifact targets a mailbox that is not the dedicated send mailbox.", { provider: "gmail", op: "sendEmail", status: 403 });
+      throw new RailError("Approved email artifact targets a mailbox that is not the configured transactional sender.", { provider: "native", op: "sendEmail", status: 403 });
     }
     const outbound = outboundEmail(args.outbound);
     if (item.tenantId !== this.rail.tenantId || outbound.tenantId !== this.rail.tenantId) {
-      throw new RailError("Approved email artifact targets a tenant that is not bound to this email rail.", { provider: "gmail", op: "sendEmail", status: 403 });
+      throw new RailError("Approved email artifact targets a tenant that is not bound to this communication rail.", { provider: "native", op: "sendEmail", status: 403 });
     }
     return this.rail.sendAdapter.sendEmail(outbound);
   }

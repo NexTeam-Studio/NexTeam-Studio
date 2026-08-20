@@ -239,7 +239,7 @@ export const tenantSchema = z.object({
   adapters: z.object({
     crm: z.enum(["jobber", "native"]),
     media: z.enum(["companycam", "native"]),
-    email: z.enum(["gmail_relay", "sendgrid"]),
+    email: z.enum(["gmail_relay", "resend", "sendgrid"]),
     sms: z.enum(["twilio"]).optional()
   }),
   approval: z.record(artifactKindSchema, z.object({

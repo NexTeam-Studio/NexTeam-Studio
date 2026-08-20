@@ -14,6 +14,23 @@ test("Nexi sender accepts existing Google OAuth environment names", () => {
   assert.equal(rail.operatorEmail, undefined);
 });
 
+test("transactional Resend configuration is selected without changing Gmail read mailboxes", () => {
+  const rail = createCommsRailFromEnv({
+    TENANT_ID: "tenant_1",
+    RESEND_API_KEY: "configured-in-deployment-secret-manager",
+    RESEND_FROM_EMAIL: "transactions@example.test",
+    RESEND_FROM_NAME: "Tenant Operations",
+    GMAIL_SEND_FROM: "nexi@example.test",
+    GOOGLE_CLIENT_ID: "client-id",
+    GOOGLE_CLIENT_SECRET: "client-secret",
+    GOOGLE_REFRESH_TOKEN: "refresh-token"
+  });
+  assert.ok(rail.sendAdapter);
+  assert.equal(rail.sendAdapter.constructor.name, "ResendTransactionalAdapter");
+  assert.equal(rail.sendAdapter.mailbox, "TRANSACTIONAL");
+  assert.equal("searchEmail" in rail.sendAdapter, false);
+});
+
 test("staging owner invitation identity is non-secret, locked, and reports verified metadata", () => {
   const status = stagingOwnerInvitationGmailProviderStatus({
     GMAIL_OAUTH_CLIENT_ID: "non-secret-client-identifier",

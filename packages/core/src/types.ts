@@ -15,7 +15,11 @@ export interface Address {
 export type IndustryPack = "pool_leak" | "hvac" | "plumbing" | "pressure_washing";
 export type CrmAdapterKind = "jobber" | "native";
 export type MediaAdapterKind = "companycam" | "native";
-export type EmailAdapterKind = "gmail_relay" | "sendgrid";
+/**
+ * Transactional transport selected for a tenant. Mailbox search remains a
+ * separate capability and must not be inferred from this setting.
+ */
+export type EmailAdapterKind = "gmail_relay" | "resend" | "sendgrid";
 export type SmsAdapterKind = "twilio";
 export type TenantPlan = "nexi" | "marketing" | "suite";
 export type TenantUserRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
@@ -1534,6 +1538,12 @@ export interface MediaMeta {
 export interface OutboundEmail {
   tenantId: ID;
   mailbox?: string | undefined;
+  /**
+   * Optional dispatch key supplied by the calling workflow. A transport may
+   * use this to make its own retry safe without turning a deliberate resend
+   * into a duplicate suppression rule.
+   */
+  idempotencyKey?: string | undefined;
   to: string[];
   cc?: string[] | undefined;
   bcc?: string[] | undefined;

@@ -619,7 +619,7 @@ test("CommsApprovalExecutor rejects artifacts targeting read-only mailbox aliase
     createdBy: "nexi"
   });
   await approvalQueue.approve("aquatrace", item.id);
-  await assert.rejects(() => approvalQueue.executeApproved("aquatrace", item.id), /not the dedicated send mailbox/);
+  await assert.rejects(() => approvalQueue.executeApproved("aquatrace", item.id), /not the configured transactional sender/);
 });
 
 test("CommsApprovalExecutor rejects approved email artifacts from unbound tenants", async () => {
