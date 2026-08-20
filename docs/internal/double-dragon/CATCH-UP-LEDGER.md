@@ -1,6 +1,6 @@
 # NexTeam Catch-Up Ledger
 
-Last reconciled: 2026-08-20  
+Last reconciled: 2026-08-20
 Scope: staging-only Double Dragon evidence. This is a controlled progress ledger, not a substitute for the live Splinter registry or a production readiness claim.
 
 ## Status vocabulary
