@@ -134,6 +134,9 @@ function gmailSendConfigFromEnv(env: NodeJS.ProcessEnv, tenantId: string): Gmail
 
 /** Uses the same precedence as the runtime rail without revealing credentials. */
 export function transactionalProviderStatus(env: NodeJS.ProcessEnv, tenantId: string): TransactionalProviderStatus {
+  if (value(env, "NEXTEAM_EXTERNAL_INTEGRATIONS_QUARANTINED").toLowerCase() === "true") {
+    return { provider: null, configured: false };
+  }
   if (resendTransactionalConfigFromEnv(env, tenantId)) return { provider: "resend", configured: true };
   if (gmailSendConfigFromEnv(env, tenantId)) return { provider: "gmail", configured: true };
   return { provider: null, configured: false };

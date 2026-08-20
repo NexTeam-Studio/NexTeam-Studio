@@ -42,6 +42,11 @@ test("transactional provider status uses the same tenant-specific configuration 
     GOOGLE_CLIENT_SECRET: "client-secret",
     GOOGLE_REFRESH_TOKEN: "refresh-token"
   }, "tenant_1"), { provider: "gmail", configured: true });
+  assert.deepEqual(transactionalProviderStatus({
+    RESEND_API_KEY: "configured-in-deployment-secret-manager",
+    RESEND_FROM_EMAIL: "transactions@example.test",
+    NEXTEAM_EXTERNAL_INTEGRATIONS_QUARANTINED: "true"
+  }, "tenant_1"), { provider: null, configured: false });
 });
 
 test("staging owner invitation identity is non-secret, locked, and reports verified metadata", () => {
