@@ -38,11 +38,11 @@ function valueDumpCommand(command: string): boolean {
   // Railway's variable listing returns values. There is no name-only CLI form;
   // use an application status/readiness projection or a committed secret-name
   // contract instead.
-  if (/\brailway(?:\.exe)?\s+(?:variable|variables)\b/.test(command)) return true;
+  if (/\brailway(?:\.exe)?\s+(?:variable|variables|run|shell)\b/.test(command)) return true;
   // These patterns expose raw process/runtime environments regardless of the
   // provider whose credential happens to be present.
   if (/(?:^|\s)(?:env|printenv|set)(?:\s|$)/.test(command)) return true;
-  if (/get-childitem\s+env:|process\.env|\bexport\s+-p\b/.test(command)) return true;
+  if (/\b(?:get-item|get-childitem|get-content|set-item|remove-item)\s+env:|\benv:|process\.env|\bexport\s+-p\b/.test(command)) return true;
   // Google Secret Manager's payload access command deliberately returns bytes.
   if (/\bgcloud\s+secrets\s+versions\s+access\b/.test(command)) return true;
   return false;

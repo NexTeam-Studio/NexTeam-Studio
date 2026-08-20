@@ -19,6 +19,7 @@ test("Railway variable listing and raw environment dumps are denied before execu
   for (const command of [
     ["railway", "variable", "list"],
     ["railway", "run", "--", "env"],
+    ["railway", "run", "--", "powershell", "-Command", "Get-Item", "Env:*"],
     ["Get-ChildItem", "Env:"]
   ]) {
     const decision = evaluateSecretOperation({ store: "RAILWAY", kind: "COMMAND_EXECUTION", outputMode: "REDACTED", command });
@@ -62,16 +63,18 @@ test("denial is secret-safe and credential rotation never makes a value dump acc
   assert.doesNotMatch(`${decision.reason} ${decision.safeAlternative}`, /fixture-value|api key value/i);
 });
 
-test("the approved Railway wrapper rejects variable listing before reading its credential vault", () => {
-  let output = "";
-  try {
-    execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/security/invoke-railway-staging.ps1", "-RailwayArgs", "variable,list"], {
-      cwd: process.cwd(), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"]
-    });
-    assert.fail("The Railway value-listing request should have been denied.");
-  } catch (error) {
-    output = `${error.stdout ?? ""}${error.stderr ?? ""}`;
+test("the approved Railway wrapper uses the controller policy and rejects secret-output bypasses before reading its vault", () => {
+  for (const args of ["variable,list", "run,--,powershell,-Command,Get-Item,Env:*", "logs"]) {
+    let output = "";
+    try {
+      execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/security/invoke-railway-staging.ps1", "-RailwayArgs", args], {
+        cwd: process.cwd(), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"]
+      });
+      assert.fail("The Railway secret-output request should have been denied.");
+    } catch (error) {
+      output = `${error.stdout ?? ""}${error.stderr ?? ""}`;
+    }
+    assert.match(output, /denied/i);
+    assert.doesNotMatch(output, /RAILWAY_TOKEN=|API_KEY=|SECRET=/i);
   }
-  assert.match(output, /variable enumeration is denied/i);
-  assert.doesNotMatch(output, /RAILWAY_TOKEN=|API_KEY=|SECRET=/i);
 });

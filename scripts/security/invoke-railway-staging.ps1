@@ -40,11 +40,24 @@ function Assert-SafeRailwayOperation {
   param([Parameter(Mandatory = $true)][string[]]$Args)
 
   $command = (($Args -join " ").ToLowerInvariant() -replace "[,;\s]+", " ").Trim()
-  if ($command -match "(^|\s)(variable|variables)(\s|$)") {
-    throw "Railway variable enumeration is denied because the CLI can return secret values. Use a metadata-only application status or approved secret-name contract."
+  $allowed = @(
+    "status",
+    "whoami",
+    "deployment list",
+    "deployment redeploy",
+    "up"
+  )
+  if ($allowed -notcontains $command) {
+    throw "Railway operation is denied by the secret-safe staging allowlist. Use approved status, logs, deployment, or upload actions; raw variables, shells, runtime commands, and environment inspection are never allowed."
   }
-  if ($command -match "(^|\s)(env|printenv|set)(\s|$)" -or $command -match "get-childitem\s+env:|process\.env") {
-    throw "Raw environment inspection is denied because it can return secret values. Use a redacted health or provider-status projection."
+
+  $policyOutput = & node --import tsx (Join-Path $PSScriptRoot "evaluate-secret-operation.mjs") -- @Args
+  if ($LASTEXITCODE -ne 0) {
+    throw "Secret operation policy could not be evaluated; Railway execution is denied."
+  }
+  $policy = $policyOutput | ConvertFrom-Json
+  if (-not $policy.allowed) {
+    throw "Railway operation is denied by the controller secret-output policy: $($policy.reason)"
   }
 }
 
