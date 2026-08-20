@@ -49,6 +49,22 @@ test("transactional provider status uses the same tenant-specific configuration 
   }, "tenant_1"), { provider: null, configured: false });
 });
 
+test("Shadow Mode wraps the transactional rail and denies an unapproved recipient before provider delivery", async () => {
+  const rail = createCommsRailFromEnv({
+    TENANT_ID: "aquatrace",
+    RESEND_API_KEY: "test-key",
+    RESEND_FROM_EMAIL: "notifications@example.test",
+    NEXTEAM_SHADOW_MODE: "true",
+    NEXTEAM_SHADOW_EMAIL_RECIPIENTS: "approved@example.test"
+  });
+  assert.ok(rail.sendAdapter);
+  assert.equal(rail.sendAdapter.constructor.name, "ShadowModeEmailSendAdapter");
+  await assert.rejects(
+    rail.sendAdapter.sendEmail({ tenantId: "aquatrace", to: ["unapproved@example.test"], subject: "Blocked", bodyText: "Blocked" }),
+    (error) => error?.status === 403 && !String(error.message).includes("unapproved@example.test")
+  );
+});
+
 test("staging owner invitation identity is non-secret, locked, and reports verified metadata", () => {
   const status = stagingOwnerInvitationGmailProviderStatus({
     GMAIL_OAUTH_CLIENT_ID: "non-secret-client-identifier",

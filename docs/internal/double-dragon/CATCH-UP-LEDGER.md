@@ -72,7 +72,8 @@ The following was exercised against exact live SHA `e75bdce409da808787c1ef0e58b0
 1. Browser-prove reusable checklist-value hydration in the live Visit measurement workflow; this closes the currently observed checklist-data-reuse gap without transmitting a communication.
 2. Browser-accept the live NexCam responsive corrective behavior, without reopening unrelated field-media behavior.
 3. Register and prove the safe Job-first existing-Client and new-Client-return flows.
-4. Treat On My Way and reminder delivery as separate external-communication slices requiring explicit owner approval immediately before transmission.
+4. Implement and prove Shadow Mode recipient protection at the shared NexComms boundary before any additional external communications.
+5. Treat On My Way and reminder delivery as separate external-communication slices requiring explicit owner approval immediately before transmission.
 
 ## Evidence discipline
 

@@ -1,6 +1,7 @@
 import type { EmailReadProvider, EmailSendProvider, OutboundSms, SendReceipt } from "@nexteam/core";
 import { GmailReadOnlyAdapter, GmailSendAdapter, ResendTransactionalAdapter, type GmailMailboxConfig, type ResendTransactionalConfig } from "@nexteam/providers";
 import { configuredTenantId } from "../core/tenantConfig.js";
+import { ShadowModeEmailSendAdapter, shadowModeRecipientPolicyFromEnv, shadowModeSmsSender } from "./shadowModeRecipientGuard.js";
 
 export interface CommsRail {
   tenantId: string;
@@ -190,22 +191,25 @@ export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
   }
   const sendConfig = gmailSendConfigFromEnv(env, tenantId);
   const resendConfig = resendTransactionalConfigFromEnv(env, tenantId);
+  const shadowPolicy = shadowModeRecipientPolicyFromEnv(env);
   if (sendConfig && (
     value(env, "GMAIL_SEND_MAILBOX_READ_ENABLED").toLowerCase() === "true"
     || value(env, "GMAIL_NEXI_READ_ENABLED").toLowerCase() === "true"
   )) {
     readAdapters.set(sendConfig.mailbox, new GmailReadOnlyAdapter(sendConfig));
   }
+  const rawSendAdapter = resendConfig ? new ResendTransactionalAdapter(resendConfig) : sendConfig ? new GmailSendAdapter(sendConfig) : null;
+  const rawSmsSender = value(env, "TWILIO_ACCOUNT_SID") && value(env, "TWILIO_AUTH_TOKEN") && value(env, "TWILIO_FROM_NUMBER")
+    ? (message: OutboundSms) => sendSmsViaTwilio(env, message)
+    : undefined;
   return {
     tenantId,
     readAdapters,
     // Transactional sends prefer the modern provider when its deployment
     // secret reference and tenant-generic sender identity are configured.
     // Gmail read/search adapters remain independently registered above.
-    sendAdapter: resendConfig ? new ResendTransactionalAdapter(resendConfig) : sendConfig ? new GmailSendAdapter(sendConfig) : null,
-    sendSms: value(env, "TWILIO_ACCOUNT_SID") && value(env, "TWILIO_AUTH_TOKEN") && value(env, "TWILIO_FROM_NUMBER")
-      ? (message) => sendSmsViaTwilio(env, message)
-      : undefined,
+    sendAdapter: rawSendAdapter ? (shadowPolicy.enabled ? new ShadowModeEmailSendAdapter(rawSendAdapter, shadowPolicy) : rawSendAdapter) : null,
+    sendSms: shadowPolicy.enabled ? shadowModeSmsSender(rawSmsSender, shadowPolicy) : rawSmsSender,
     operatorEmail: value(env, "NEXI_OPERATOR_EMAIL") || value(env, "OPERATOR_EMAIL") || undefined
   };
 }
