@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { type Auth, type User } from "firebase/auth";
-import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "../../shared/branding/ProductBranding";
+import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, hasTenantLogo, tenantDisplayName } from "../../shared/branding/ProductBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./components/NexOpsHeader";
 import { NexTeamApplicationShell } from "../../shared/ui/NexTeamApplicationShell";
 import { NexOpsCreateMenu } from "./components/NexOpsCreateMenu";
@@ -1095,9 +1095,9 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
                   <PlatformMark className="nexops-mobile-platform-mark" alt="NexTeam" />
                   <ProductLogo product="nexops" className="nexops-mobile-product-logo" alt="NexOps" />
                 </div>
-                <div className="nexops-mobile-nav-tenant-slot">
+                {hasTenantLogo(tenantBranding, operatorContext.tenantId) ? <div className="nexops-mobile-nav-tenant-slot">
                   <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} className="nexops-mobile-tenant-mark" />
-                </div>
+                </div> : null}
                 <button className="nexops-mobile-close-button" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)}>
                   <span aria-hidden="true">×</span>
                 </button>

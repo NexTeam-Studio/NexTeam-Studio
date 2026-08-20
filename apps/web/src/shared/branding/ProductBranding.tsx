@@ -13,7 +13,6 @@ const PRODUCT_LOGO_SRC: Record<ProductBrand, string> = {
 };
 
 const SIDEBAR_STACK_TOP_LOGO_SRC = "/assets/brand/nexteam-block-logo.png";
-const NEXTEAM_WORDMARK_SRC = "/assets/brand/nexteam-wordmark.png";
 
 const PRODUCT_LABEL: Record<ProductBrand, string> = {
   nexops: "NexOps",
@@ -51,6 +50,10 @@ export function tenantLogoSrc(branding: TenantBranding | null, tenantId: string)
     return `/api/media/${encodeURIComponent(branding.logo.mediaId)}?tenantId=${encodeURIComponent(tenantId)}`;
   }
   return null;
+}
+
+export function hasTenantLogo(branding: TenantBranding | null, tenantId: string): boolean {
+  return tenantLogoSrc(branding, tenantId) !== null;
 }
 
 export function ProductLogo(props: {
@@ -105,7 +108,7 @@ export function TenantBrandMark(props: {
   branding: TenantBranding | null;
   tenantId: string;
   className?: string;
-}): React.ReactElement {
+}): React.ReactElement | null {
   const displayName = tenantDisplayName(props.branding, props.tenantId);
   const logoSrc = tenantLogoSrc(props.branding, props.tenantId);
   if (logoSrc) {
@@ -117,13 +120,7 @@ export function TenantBrandMark(props: {
       />
     );
   }
-  return (
-    <img
-      alt={`${displayName} logo placeholder`}
-      className={`tenant-logo tenant-logo-placeholder ${props.className ?? ""}`.trim()}
-      src={NEXTEAM_WORDMARK_SRC}
-    />
-  );
+  return null;
 }
 
 export function SidebarBrandStack(props: {
@@ -139,9 +136,9 @@ export function SidebarBrandStack(props: {
       <div className="nexops-sidebar-brand-tier">
         <ProductLogo product={props.product} className="nexops-sidebar-brand-logo nexops-sidebar-brand-logo-product" alt={productLabel(props.product)} />
       </div>
-      <div className="nexops-sidebar-brand-tier nexops-sidebar-brand-tier-tenant">
+      {hasTenantLogo(props.branding, props.tenantId) ? <div className="nexops-sidebar-brand-tier nexops-sidebar-brand-tier-tenant">
         <TenantBrandMark branding={props.branding} tenantId={props.tenantId} className="nexops-sidebar-tenant-mark" />
-      </div>
+      </div> : null}
     </div>
   );
 }
