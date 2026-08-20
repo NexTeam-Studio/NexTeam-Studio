@@ -4,6 +4,7 @@ import test from "node:test";
 
 const source = fs.readFileSync(new URL("./NexCommandRoute.tsx", import.meta.url), "utf8");
 const styles = fs.readFileSync(new URL("../styles/nexCommand.css", import.meta.url), "utf8");
+const templates = fs.readFileSync(new URL("../components/TemplatesRoster.tsx", import.meta.url), "utf8");
 const brandAsset = new URL("../../../../public/assets/brand/nexcommand-wordmark.png", import.meta.url);
 
 test("NexCommand provides the required platform-console areas and canonical routes", () => {
@@ -67,15 +68,13 @@ test("NexCommand uses the shared NexTeam application shell", () => {
   assert.match(styles, /@media \(max-width:880px\).*nexcommand__menu \{ display:block; \}/s);
 });
 
-test("NexCommand opens Templates as a roster with a recursively expandable configuration tree", () => {
-  assert.match(source, /type TemplateTreeNode/);
-  assert.match(source, /const templateTree: TemplateTreeNode\[\]/);
-  for (const label of ["Templates", "Design", "NexSuite", "Global", "Header"]) assert.match(source, new RegExp(`label: "${label}"`));
-  assert.match(source, /href: "\/design-system\/layout-parts\/header"/);
+test("NexCommand opens Templates as successive configuration-driven roster pages", () => {
+  for (const label of ["Templates", "Design", "NexSuite", "Global", "Header"]) assert.match(templates, new RegExp(`label: "${label}"`));
+  assert.match(templates, /href: "\/design-system\/layout-parts\/header"/);
+  assert.match(templates, /rosterHref: "\/nexcommand\?area=templates&template=design"/);
   assert.match(source, /\["templates", "Templates", "▤"\]/);
-  assert.match(source, /function TemplatesRoster/);
-  assert.match(source, /function TemplateRosterTree/);
-  assert.match(source, /aria-expanded=\{isExpanded\}/);
-  assert.match(styles, /nexcommand__template-tree/);
+  assert.match(source, /<TemplatesRoster rosterId=/);
+  assert.match(templates, /function findNode/);
+  assert.match(styles, /nexcommand__template-roster-list/);
   assert.doesNotMatch(source, /nexcommand__template-navigation/);
 });

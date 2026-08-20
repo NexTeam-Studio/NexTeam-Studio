@@ -13,8 +13,10 @@ test("Header review route is a permanent, auth-independent preview surface", () 
   assert.match(page, /Tenant \/ Operational/);
   assert.match(page, /Internal \/ Admin/);
   assert.match(page, /Harbor & Hearth Services/);
-  assert.match(page, /Back to Templates/);
+  assert.match(page, /NexTeamApplicationShell/);
+  assert.match(page, /NexSuite design navigation/);
   assert.match(page, /href="\/nexcommand\?area=templates"/);
+  assert.doesNotMatch(page, /Back to Templates/);
   assert.match(bootstrap, /\/design-system\/layout-parts\/header/);
   assert.match(server, /nexcommand\|design-system/);
   assert.match(branding, /export function hasTenantLogo/);
