@@ -21,7 +21,7 @@ function outboundAttachments(value: unknown): OutboundEmailAttachment[] | undefi
   });
 }
 
-function outboundEmail(value: unknown): OutboundEmail {
+function outboundEmail(value: unknown, stableIdempotencyKey?: string): OutboundEmail {
   const record = value && typeof value === "object" ? value as Partial<OutboundEmail> : {};
   if (!Array.isArray(record.to) || !record.subject || !record.bodyText || !record.tenantId) {
     throw new RailError("Approved email artifact is missing required outbound email fields.", { provider: "approval", op: "sendEmail", status: 400 });
@@ -29,7 +29,9 @@ function outboundEmail(value: unknown): OutboundEmail {
   return {
     tenantId: String(record.tenantId),
     mailbox: record.mailbox ? String(record.mailbox) : undefined,
-    idempotencyKey: record.idempotencyKey ? String(record.idempotencyKey) : undefined,
+    // The approval item is durable across executor retries. It is the only
+    // safe source for an idempotency key at this boundary.
+    idempotencyKey: stableIdempotencyKey || (record.idempotencyKey ? String(record.idempotencyKey) : undefined),
     to: record.to.map(String),
     cc: Array.isArray(record.cc) ? record.cc.map(String) : undefined,
     bcc: Array.isArray(record.bcc) ? record.bcc.map(String) : undefined,
@@ -58,7 +60,7 @@ export class CommsApprovalExecutor implements ApprovalExecutor {
     if (mailbox !== this.rail.sendAdapter.mailbox) {
       throw new RailError("Approved email artifact targets a mailbox that is not the configured transactional sender.", { provider: "native", op: "sendEmail", status: 403 });
     }
-    const outbound = outboundEmail(args.outbound);
+    const outbound = outboundEmail(args.outbound, `approval-${item.id}`);
     if (item.tenantId !== this.rail.tenantId || outbound.tenantId !== this.rail.tenantId) {
       throw new RailError("Approved email artifact targets a tenant that is not bound to this communication rail.", { provider: "native", op: "sendEmail", status: 403 });
     }

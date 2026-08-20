@@ -10,6 +10,11 @@ export interface CommsRail {
   operatorEmail?: string | undefined;
 }
 
+export type TransactionalProviderStatus = {
+  provider: "resend" | "gmail" | null;
+  configured: boolean;
+};
+
 /**
  * Authoritative non-secret deployment identity for the separately gated owner
  * invitation rail. This is platform infrastructure, never tenant data.
@@ -123,6 +128,17 @@ function resendTransactionalConfigFromEnv(env: NodeJS.ProcessEnv, tenantId: stri
   };
 }
 
+function gmailSendConfigFromEnv(env: NodeJS.ProcessEnv, tenantId: string): GmailMailboxConfig | null {
+  return configFromAnyEnv(env, ["GMAIL_SEND_MAILBOX", "GMAIL_NEXI"], "NEXI_SEND", tenantId);
+}
+
+/** Uses the same precedence as the runtime rail without revealing credentials. */
+export function transactionalProviderStatus(env: NodeJS.ProcessEnv, tenantId: string): TransactionalProviderStatus {
+  if (resendTransactionalConfigFromEnv(env, tenantId)) return { provider: "resend", configured: true };
+  if (gmailSendConfigFromEnv(env, tenantId)) return { provider: "gmail", configured: true };
+  return { provider: null, configured: false };
+}
+
 async function sendSmsViaTwilio(env: NodeJS.ProcessEnv, message: OutboundSms): Promise<SendReceipt> {
   const accountSid = value(env, "TWILIO_ACCOUNT_SID");
   const authToken = value(env, "TWILIO_AUTH_TOKEN");
@@ -169,7 +185,7 @@ export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
       readAdapters.set(config.mailbox, new GmailReadOnlyAdapter(config));
     }
   }
-  const sendConfig = configFromAnyEnv(env, ["GMAIL_SEND_MAILBOX", "GMAIL_NEXI"], "NEXI_SEND", tenantId);
+  const sendConfig = gmailSendConfigFromEnv(env, tenantId);
   const resendConfig = resendTransactionalConfigFromEnv(env, tenantId);
   if (sendConfig && (
     value(env, "GMAIL_SEND_MAILBOX_READ_ENABLED").toLowerCase() === "true"

@@ -17,7 +17,7 @@ import { activeSubscriptionPackages } from "./subscriptionPackages.js";
 import { activateProspectTenant, getOrCreateFirebaseOwner, mergeTenantOwnerClaims, type FirebaseOwnerActivation } from "./tenantActivation.js";
 import { confirmSubscriptionCancellation, requestSubscriptionCancellation, resubscribeTenant } from "./tenantSubscriptionLifecycle.js";
 import { newOwnerInvite, type OwnerInviteSender } from "./tenantOwnerInvite.js";
-import { stagingOwnerInvitationGmailProviderStatus } from "../comms/gmailRegistry.js";
+import { stagingOwnerInvitationGmailProviderStatus, transactionalProviderStatus } from "../comms/gmailRegistry.js";
 import { buildOnboardingPlanInsights } from "./onboardingInsights.js";
 import { readLiveBuildStatus } from "./liveBuildStatus.js";
 import { newPlatformUserAudit, PLATFORM_CAPABILITIES, platformCapabilitySchema, platformUserSchema, platformUserSummary, resolvePlatformCapabilities, type PlatformCapability, type PlatformUser } from "./team.js";
@@ -432,16 +432,15 @@ function status(tenant: Tenant, adapter: TenantAdapterStatus["adapter"], provide
 }
 
 function runtimeAdapterStatuses(tenant: Tenant, env: NodeJS.ProcessEnv): TenantAdapterStatus[] {
+  const transactional = transactionalProviderStatus(env, tenant.id);
   return [
     status(tenant, "crm", tenant.adapters.crm, tenant.adapters.crm === "native"),
     status(tenant, "media", tenant.adapters.media, tenant.adapters.media === "native"),
     status(
       tenant,
       "email",
-      tenant.adapters.email,
-      tenant.adapters.email === "resend"
-        ? Boolean(env.RESEND_API_KEY && env.RESEND_FROM_EMAIL)
-        : Boolean(env.GMAIL_READONLY_MAILBOX_1_REFRESH_TOKEN || env.GMAIL_NEXI_REFRESH_TOKEN)
+      transactional.provider ?? tenant.adapters.email,
+      transactional.configured
     ),
     status(tenant, "maps", "google_maps", Boolean(env.GOOGLE_MAPS_API_KEY)),
     status(tenant, "llm", "anthropic", Boolean(env.ANTHROPIC_API_KEY)),

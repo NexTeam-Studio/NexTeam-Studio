@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createCommsRailFromEnv, stagingOwnerInvitationGmailProviderStatus } from "./gmailRegistry.ts";
+import { createCommsRailFromEnv, stagingOwnerInvitationGmailProviderStatus, transactionalProviderStatus } from "./gmailRegistry.ts";
 
 test("Nexi sender accepts existing Google OAuth environment names", () => {
   const rail = createCommsRailFromEnv({
@@ -29,6 +29,19 @@ test("transactional Resend configuration is selected without changing Gmail read
   assert.equal(rail.sendAdapter.constructor.name, "ResendTransactionalAdapter");
   assert.equal(rail.sendAdapter.mailbox, "TRANSACTIONAL");
   assert.equal("searchEmail" in rail.sendAdapter, false);
+});
+
+test("transactional provider status uses the same tenant-specific configuration and Gmail fallback as the rail", () => {
+  assert.deepEqual(transactionalProviderStatus({
+    RESEND_API_KEY_TENANT_1: "configured-in-deployment-secret-manager",
+    RESEND_FROM_EMAIL_TENANT_1: "transactions@example.test"
+  }, "tenant_1"), { provider: "resend", configured: true });
+  assert.deepEqual(transactionalProviderStatus({
+    GMAIL_SEND_FROM: "nexi@example.test",
+    GOOGLE_CLIENT_ID: "client-id",
+    GOOGLE_CLIENT_SECRET: "client-secret",
+    GOOGLE_REFRESH_TOKEN: "refresh-token"
+  }, "tenant_1"), { provider: "gmail", configured: true });
 });
 
 test("staging owner invitation identity is non-secret, locked, and reports verified metadata", () => {

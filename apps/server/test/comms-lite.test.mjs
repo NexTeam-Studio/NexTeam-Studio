@@ -514,6 +514,37 @@ test("CommsApprovalExecutor sends only approved dedicated-mailbox artifacts", as
   assert.equal(executed.item.status, "executed");
   assert.equal(sentMessages.length, 1);
   assert.equal(sentMessages[0].mailbox, "nexi-send");
+  assert.equal(sentMessages[0].idempotencyKey, `approval-${item.id}`);
+});
+
+test("CommsApprovalExecutor reuses the approval idempotency key after an ambiguous provider attempt", async () => {
+  const sentMessages = [];
+  const rail = {
+    tenantId: "aquatrace",
+    readAdapters: new Map(),
+    sendAdapter: {
+      mailbox: "TRANSACTIONAL",
+      async sendEmail(message) {
+        sentMessages.push(message);
+        if (sentMessages.length === 1) throw new Error("provider outcome was not confirmed");
+        return { provider: "resend", id: "resend_1", acceptedAt: "2026-08-20T12:00:00.000Z", mailbox: "TRANSACTIONAL" };
+      }
+    }
+  };
+  const executor = new CommsApprovalExecutor(rail);
+  const item = {
+    id: "appr_stable_send",
+    tenantId: "aquatrace",
+    kind: "email",
+    preview: { title: "Retry", body: "Retry safely." },
+    execute: { service: "comms", op: "sendEmail", args: { mailbox: "TRANSACTIONAL", outbound: { tenantId: "aquatrace", to: ["safe@example.test"], subject: "Retry", bodyText: "Retry safely." } } },
+    status: "approved",
+    createdBy: "nexi"
+  };
+  await assert.rejects(() => executor.execute(item), /provider outcome was not confirmed/);
+  await executor.execute(item);
+  assert.equal(sentMessages.length, 2);
+  assert.deepEqual(sentMessages.map((message) => message.idempotencyKey), ["approval-appr_stable_send", "approval-appr_stable_send"]);
 });
 
 test("CommsApprovalExecutor preserves approved email attachments for dedicated send adapter", async () => {
