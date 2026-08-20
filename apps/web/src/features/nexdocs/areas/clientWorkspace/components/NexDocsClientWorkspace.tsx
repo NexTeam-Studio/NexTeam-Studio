@@ -283,7 +283,7 @@ export function NexDocsClientWorkspace(props: NexDocsClientWorkspaceProps): Reac
   async function refreshLibrary(query = searchQuery): Promise<void> {
     setBusy((current) => current || "refresh");
     try {
-      const suffix = query.trim() ? `&q=${encodeURIComponent(query.trim())}` : "";
+      const suffix = `${query.trim() ? `&q=${encodeURIComponent(query.trim())}` : ""}${props.jobId ? `&jobId=${encodeURIComponent(props.jobId)}` : ""}${props.visitId ? `&visitId=${encodeURIComponent(props.visitId)}` : ""}`;
       const body = await fetch(`/api/nexdocs/clients/${encodeURIComponent(props.clientId)}/library?tenantId=${encodeURIComponent(props.tenantId)}${suffix}`)
         .then((response) => response.json() as Promise<NexDocsLibraryResponse>);
       if (!body.ok || !body.library || !body.permissions) {

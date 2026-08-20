@@ -391,6 +391,23 @@ test("NexDocs validates tenant-owned client, property, job, and visit links befo
   assert.equal(linked.propertyId, "property_1");
   assert.equal(linked.jobId, "job_1");
   assert.equal(linked.visitId, "visit_1");
+  const jobOnly = await nexDocsService.uploadDocument({ ...input, fileName: "job-summary.txt", label: "Job summary", jobId: "job_1" });
+  const visitLibrary = await nexDocsService.listClientLibrary({
+    tenantId: tenant.id,
+    clientId: "client_1",
+    jobId: "job_1",
+    visitId: "visit_1",
+    viewer: "staff"
+  });
+  assert.deepEqual(visitLibrary.unfiled.map((entry) => entry.id), [linked.id]);
+  const jobLibrary = await nexDocsService.listClientLibrary({
+    tenantId: tenant.id,
+    clientId: "client_1",
+    jobId: "job_1",
+    viewer: "staff"
+  });
+  assert.ok(jobLibrary.unfiled.some((entry) => entry.id === linked.id));
+  assert.ok(jobLibrary.unfiled.some((entry) => entry.id === jobOnly.id));
   await assert.rejects(() => nexDocsService.uploadDocument({ ...input, propertyId: "property_2" }), /property does not belong/i);
   await assert.rejects(() => nexDocsService.uploadDocument({ ...input, jobId: "job_2" }), /job does not belong/i);
   await assert.rejects(() => nexDocsService.uploadDocument({ ...input, jobId: "job_1", visitId: "missing_visit" }), /visit .* not found/i);

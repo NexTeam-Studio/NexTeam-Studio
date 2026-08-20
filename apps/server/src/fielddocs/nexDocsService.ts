@@ -314,6 +314,14 @@ function recordMatchesClientScope(
   return record.jobId ? jobsById.get(record.jobId)?.propertyId === propertyId : false;
 }
 
+function recordMatchesWorkScope(
+  record: { jobId?: string | undefined; visitId?: string | undefined },
+  jobId: string | undefined,
+  visitId: string | undefined
+): boolean {
+  return (!jobId || record.jobId === jobId) && (!visitId || record.visitId === visitId);
+}
+
 function jobAllowsPortalFieldDocs(job: Job | undefined): boolean {
   return job?.clientVisibility?.hideFieldDocsFromPortal !== true;
 }
@@ -762,6 +770,8 @@ export class NexDocsService {
     tenantId: string;
     clientId: string;
     propertyId?: string | undefined;
+    jobId?: string | undefined;
+    visitId?: string | undefined;
     viewer: "staff" | "portal";
     includeClientStatement?: boolean | undefined;
     q?: string | undefined;
@@ -780,45 +790,70 @@ export class NexDocsService {
     ]);
     const jobsById = new Map(jobs.map((job) => [job.id, job]));
     const propertiesById = new Map(properties.map((property) => [property.id, property]));
+    let scopedJobId = input.jobId;
+    if (scopedJobId) {
+      const job = jobsById.get(scopedJobId);
+      if (!job || job.clientId !== input.clientId) {
+        throw new RailError("Selected job does not belong to this client.", { provider: "native", op: "listNexDocsLibrary", status: 404 });
+      }
+    }
+    if (input.visitId) {
+      if (!this.deps.schedulingRepository) {
+        throw new RailError("Visit filtering is not configured for NexDocs.", { provider: "native", op: "listNexDocsLibrary", status: 503 });
+      }
+      const visit = await this.deps.schedulingRepository.getVisit(input.tenantId, input.visitId);
+      const visitJob = visit ? jobsById.get(visit.jobId) : undefined;
+      if (!visit || !visitJob || visitJob.clientId !== input.clientId || (scopedJobId && visit.jobId !== scopedJobId)) {
+        throw new RailError("Selected visit does not belong to this client and job.", { provider: "native", op: "listNexDocsLibrary", status: 404 });
+      }
+      scopedJobId = visit.jobId;
+    }
     const folderList = folders
       .filter((folder) => folder.clientId === input.clientId)
       .sort((left, right) => left.label.localeCompare(right.label));
     const foldersById = new Map(folderList.map((folder) => [folder.id, folder]));
     const visibleUploadedDocs = uploadedDocs
       .filter((document) => recordMatchesClientScope(document, input.clientId, input.propertyId, jobsById, propertiesById))
+      .filter((document) => recordMatchesWorkScope(document, scopedJobId, input.visitId))
       .filter((document) => input.viewer === "staff" || document.hiddenFromClient !== true)
       .map((document) => uploadedDocumentEntry(document, properties, jobsById, foldersById))
       .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
     const visibleQuotes = quotes
       .filter((quote) => quote.clientId === input.clientId)
+      .filter((quote) => recordMatchesWorkScope(quote, scopedJobId, input.visitId))
       .filter((quote) => !input.propertyId || jobsById.get(quote.jobId ?? "")?.propertyId === input.propertyId)
       .map((quote) => quoteDocumentEntry(quote, properties, jobsById));
     const visibleInvoices = invoices
       .filter((invoice) => invoice.clientId === input.clientId)
+      .filter((invoice) => recordMatchesWorkScope(invoice, scopedJobId, input.visitId))
       .filter((invoice) => !input.propertyId || jobsById.get(invoice.jobId ?? "")?.propertyId === input.propertyId)
       .map((invoice) => invoiceDocumentEntry(invoice, properties, jobsById));
     const visibleReceipts = receiptReviews
       .filter((review) => review.clientId === input.clientId)
+      .filter((review) => recordMatchesWorkScope(review, scopedJobId, input.visitId))
       .filter((review) => !input.propertyId || jobsById.get(review.jobId ?? "")?.propertyId === input.propertyId)
       .map((review) => receiptDocumentEntry(review, properties, jobsById));
     const officeRecords = [
       ...visibleQuotes,
       ...visibleInvoices,
       ...visibleReceipts,
-      ...(input.includeClientStatement === false || input.propertyId ? [] : [statementDocumentEntry(input.clientId)])
+      ...(input.includeClientStatement === false || input.propertyId || scopedJobId || input.visitId ? [] : [statementDocumentEntry(input.clientId)])
     ].sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
     const visibleReports = reports
       .filter((report) => recordMatchesClientScope(report, input.clientId, input.propertyId, jobsById, propertiesById))
+      .filter((report) => recordMatchesWorkScope(report, scopedJobId, input.visitId))
       .filter((report) => input.viewer === "staff" || jobAllowsPortalFieldDocs(jobsById.get(report.jobId)))
       .map((report) => reportDocumentEntry(report, properties, jobsById))
       .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
     const visibleSignedDocuments = signedDocuments
       .filter((record) => recordMatchesClientScope(record, input.clientId, input.propertyId, jobsById, propertiesById))
+      .filter((record) => recordMatchesWorkScope(record, scopedJobId, input.visitId))
       .filter((record) => input.viewer === "staff" || jobAllowsPortalFieldDocs(record.jobId ? jobsById.get(record.jobId) : undefined))
       .map((record) => signedDocumentEntry(record, properties, jobsById))
       .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
     const visibleMedia = media
       .filter((record) => recordMatchesClientScope(record, input.clientId, input.propertyId, jobsById, propertiesById))
+      .filter((record) => recordMatchesWorkScope(record, scopedJobId, input.visitId))
       .filter((record) => input.viewer === "staff" || record.hiddenFromClient !== true)
       .filter((record) => input.viewer === "staff" || jobAllowsPortalFieldDocs(record.jobId ? jobsById.get(record.jobId) : undefined))
       .sort((left, right) => (right.exif?.ts ?? "").localeCompare(left.exif?.ts ?? ""));

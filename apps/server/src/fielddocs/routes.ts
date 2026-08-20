@@ -265,7 +265,9 @@ const signedDocumentSignInputSchema = z.object({
 
 const nexDocsLibraryQuerySchema = z.object({
   tenantId: z.string().min(1),
-  q: z.string().trim().optional()
+  q: z.string().trim().optional(),
+  jobId: z.string().trim().min(1).optional(),
+  visitId: z.string().trim().min(1).optional()
 });
 
 const nexDocsFolderCreateInputSchema = z.object({
@@ -1680,7 +1682,9 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         tenantId: input.tenantId,
         clientId,
         viewer: "staff",
-        ...(input.q ? { q: input.q } : {})
+        ...(input.q ? { q: input.q } : {}),
+        ...(input.jobId ? { jobId: input.jobId } : {}),
+        ...(input.visitId ? { visitId: input.visitId } : {})
       });
       res.json({
         ok: true,
