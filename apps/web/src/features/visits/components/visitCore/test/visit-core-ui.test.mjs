@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { dateRange, scheduleScopeLabel, scheduleViewLabel, visitToneClass } from "../NexOpsSchedulePage.tsx";
+import { dateRange, isScheduleAnchorDate, scheduleScopeLabel, scheduleViewLabel, visitToneClass } from "../NexOpsSchedulePage.tsx";
 
 test("schedule ranges keep day and month reads tenant-query bounded", () => {
   assert.deepEqual(dateRange("2026-07-26", "day", "all"), {
@@ -29,4 +29,10 @@ test("schedule named controls use shared title capitalization", () => {
     ["all", "today", "upcoming"].map(scheduleScopeLabel),
     ["All", "Today", "Upcoming"]
   );
+});
+
+test("schedule anchor date accepts real calendar dates without relying on a native date picker", () => {
+  assert.equal(isScheduleAnchorDate("2026-08-15"), true);
+  assert.equal(isScheduleAnchorDate("2026-02-30"), false);
+  assert.equal(isScheduleAnchorDate("08/15/2026"), false);
 });

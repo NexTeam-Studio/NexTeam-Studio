@@ -201,6 +201,14 @@ export function dateRange(date: string, view: ScheduleView, scope: ScheduleScope
   return { from: startOfWeek(date), to: endOfWeek(date) };
 }
 
+export function isScheduleAnchorDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+  const parsed = new Date(`${value}T12:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 function defaultView(): ScheduleView {
   if (typeof window !== "undefined" && window.innerWidth < 780) {
     return "list";
@@ -295,6 +303,7 @@ export function NexOpsSchedulePage(props: {
   const [view, setView] = useState<ScheduleView>(() => defaultView());
   const [scope, setScope] = useState<ScheduleScope>(() => props.initialScope ?? defaultScope());
   const [anchorDate, setAnchorDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [anchorDateDraft, setAnchorDateDraft] = useState(() => new Date().toISOString().slice(0, 10));
   const [workspace, setWorkspace] = useState<ScheduleWorkspace | null>(null);
   const [jobOptions, setJobOptions] = useState<JobSummary[]>([]);
   const [status, setStatus] = useState("Loading schedule...");
@@ -320,6 +329,14 @@ export function NexOpsSchedulePage(props: {
   const groupedByDay = useMemo(() => byDay(workspace?.visits ?? []), [workspace?.visits]);
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(dayKey(range.from), index)), [range.from]);
   const hours = useMemo(() => Array.from({ length: 12 }, (_, index) => index + 7), []);
+
+  function commitAnchorDate(): void {
+    if (isScheduleAnchorDate(anchorDateDraft)) {
+      setAnchorDate(anchorDateDraft);
+      return;
+    }
+    setAnchorDateDraft(anchorDate);
+  }
 
   async function loadWorkspace(): Promise<void> {
     setStatus("Loading schedule...");
@@ -682,7 +699,7 @@ export function NexOpsSchedulePage(props: {
                 </button>
               ))}
             </div>
-            <input aria-label="Schedule anchor date" type="date" value={anchorDate} onChange={(event) => setAnchorDate(event.target.value)} />
+            <input aria-label="Schedule anchor date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={anchorDateDraft} onChange={(event) => setAnchorDateDraft(event.target.value)} onBlur={commitAnchorDate} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); commitAnchorDate(); event.currentTarget.blur(); } }} />
             {props.role !== "TECHNICIAN" ? (
               <details className="nexops-schedule-team-filter">
                 <summary>Team {selectedTeamIds.length ? `(${selectedTeamIds.length})` : "(all)"}</summary>
