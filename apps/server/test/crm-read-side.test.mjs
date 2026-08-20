@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash, createHmac } from "node:crypto";
 import express from "express";
-import { ApprovalQueueService, clientSchema, InMemoryApprovalQueueRepository, invoiceSchema, quoteSchema } from "@nexteam/core";
+import { ApprovalQueueService, clientSchema, InMemoryApprovalQueueRepository, InMemoryEventBus, invoiceSchema, quoteSchema } from "@nexteam/core";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
 import { CrmApprovalExecutor } from "../dist/crm/approvalExecutor.js";
 import { JobLifecycleService } from "../dist/crm/jobLifecycle.js";
@@ -189,6 +189,19 @@ test("quote conversion claims and deterministic Job creation are retry-safe", as
   const retryJob = await repository.createJobIfAbsent(jobCandidate);
   assert.equal(retryClaim.claimed, false);
   assert.equal(retryJob.created, false);
+});
+
+test("quote conversion event outbox is idempotent across a post-create retry", async () => {
+  const eventBus = new InMemoryEventBus();
+  const event = {
+    tenantId: "aquatrace",
+    type: "quote.converted_to_job",
+    payload: { quoteId: "quote_conversion_1", jobId: "job_quote_quote_conversion_1", automatic: true }
+  };
+  await eventBus.emitOnce("quote-converted-to-job-quote_conversion_1", event);
+  await eventBus.emitOnce("quote-converted-to-job-quote_conversion_1", event);
+  const events = await eventBus.listEvents({ tenantId: "aquatrace", types: ["quote.converted_to_job"] });
+  assert.equal(events.length, 1);
 });
 
 test("NexOps 3.2 client records preserve display, billing, and one-way SMS settings", async () => {

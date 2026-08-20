@@ -286,6 +286,7 @@ function uniqueSections(template: ChecklistTemplate): ChecklistTemplateSection[]
 }
 
 export function createChecklistFromTemplate(input: {
+  id?: string | undefined;
   tenantId: string;
   template: ChecklistTemplate;
   propertyId?: string | undefined;
@@ -296,7 +297,7 @@ export function createChecklistFromTemplate(input: {
   const createdAt = nowIso();
   const sections = uniqueSections(input.template);
   return checklistInstanceSchema.parse({
-    id: `checklist_${randomUUID()}`,
+    id: input.id ?? `checklist_${randomUUID()}`,
     tenantId: input.tenantId,
     templateId: input.template.id,
     propertyId: input.propertyId,

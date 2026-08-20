@@ -11,9 +11,19 @@ export class InMemoryEventBus implements EventBus {
   private readonly handlers = new Map<EventType, Array<{ name: string; h: (e: BusEvent) => Promise<void> }>>();
 
   async emit(e: Omit<BusEvent, "id" | "ts" | "processedBy">): Promise<void> {
+    await this.emitWithId(makeId(), e);
+  }
+
+  async emitOnce(idempotencyKey: ID, e: Omit<BusEvent, "id" | "ts" | "processedBy">): Promise<void> {
+    const id = `evt_${idempotencyKey}`;
+    if (this.events.some((event) => event.id === id)) return;
+    await this.emitWithId(id, e);
+  }
+
+  private async emitWithId(id: ID, e: Omit<BusEvent, "id" | "ts" | "processedBy">): Promise<void> {
     const event = busEventSchema.parse({
       ...e,
-      id: makeId(),
+      id,
       ts: new Date().toISOString(),
       processedBy: []
     }) as BusEvent;
@@ -51,9 +61,17 @@ export class FirestoreEventBus implements EventBus {
   constructor(private readonly db: Firestore) {}
 
   async emit(e: Omit<BusEvent, "id" | "ts" | "processedBy">): Promise<void> {
+    await this.emitWithId(makeId(), e);
+  }
+
+  async emitOnce(idempotencyKey: ID, e: Omit<BusEvent, "id" | "ts" | "processedBy">): Promise<void> {
+    await this.emitWithId(`evt_${idempotencyKey}`, e);
+  }
+
+  private async emitWithId(id: ID, e: Omit<BusEvent, "id" | "ts" | "processedBy">): Promise<void> {
     const event = busEventSchema.parse({
       ...e,
-      id: makeId(),
+      id,
       ts: new Date().toISOString(),
       processedBy: []
     }) as BusEvent;
@@ -65,6 +83,7 @@ export class FirestoreEventBus implements EventBus {
         if (current.tenantId !== event.tenantId) {
           throw new Error(`Event ${event.id} belongs to another tenant.`);
         }
+        return;
       }
       transaction.set(ref, event);
     });

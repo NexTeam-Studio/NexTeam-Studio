@@ -208,6 +208,7 @@ export class FieldDocsService {
   }
 
   async createChecklist(input: {
+    id?: string | undefined;
     tenantId: string;
     templateId: string;
     propertyId?: string | undefined;
@@ -219,6 +220,7 @@ export class FieldDocsService {
     const property = propertyId ? await this.getProperty(input.tenantId, propertyId) : null;
     const checklist = createChecklistFromTemplate({
       tenantId: input.tenantId,
+      ...(input.id ? { id: input.id } : {}),
       template,
       propertyId: propertyId ?? undefined,
       jobId: input.jobId,
@@ -354,6 +356,7 @@ export class FieldDocsService {
       jobId: input.job.id
     })).find((record) => record.templateId === bundle.checklistTemplateId);
     const checklist = existingChecklist ?? await this.createChecklist({
+      id: `checklist_bundle_${input.job.id}_${bundle.checklistTemplateId}`,
       tenantId: input.tenantId,
       templateId: bundle.checklistTemplateId,
       propertyId: input.job.propertyId,
@@ -362,6 +365,7 @@ export class FieldDocsService {
     const existingReport = (await this.deps.mediaRepository.listReports(input.tenantId))
       .find((record) => record.jobId === input.job.id && record.templateId === reportTemplate.id && record.status === "draft");
     const report = existingReport ?? await this.deps.mediaRepository.saveReport(createFieldReportRecord({
+      id: `report_bundle_${input.job.id}_${reportTemplate.id}`,
       tenantId: input.tenantId,
       jobId: input.job.id,
       propertyId: input.job.propertyId,

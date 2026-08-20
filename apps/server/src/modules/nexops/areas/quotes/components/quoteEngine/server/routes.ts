@@ -81,17 +81,12 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
       intake: convertedQuote.intake,
       createdBy
     });
-    const sideEffectsClaimed = claim.claimed || ensured.created;
-    const bundleAttachment = sideEffectsClaimed
-      ? await fieldDocsService().maybeAttachBundleForJob({ tenantId: convertedQuote.tenantId, job: ensured.job })
-      : null;
-    if (sideEffectsClaimed) {
-      await eventBus.emit({
-        tenantId: convertedQuote.tenantId,
-        type: "quote.converted_to_job",
-        payload: { quoteId: convertedQuote.id, jobId: ensured.job.id, clientId: ensured.job.clientId, automatic: true }
-      });
-    }
+    const bundleAttachment = await fieldDocsService().maybeAttachBundleForJob({ tenantId: convertedQuote.tenantId, job: ensured.job });
+    await eventBus.emitOnce(`quote-converted-to-job-${convertedQuote.id}`, {
+      tenantId: convertedQuote.tenantId,
+      type: "quote.converted_to_job",
+      payload: { quoteId: convertedQuote.id, jobId: ensured.job.id, clientId: ensured.job.clientId, automatic: true }
+    });
     return {
       quote: convertedQuote,
       job: ensured.job,
