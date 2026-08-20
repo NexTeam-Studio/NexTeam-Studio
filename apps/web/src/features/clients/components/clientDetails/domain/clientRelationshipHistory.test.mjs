@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildClientRelationshipHistory, closeoutDeliveryHistoryFromJobEvents } from "./clientRelationshipHistory.ts";
+import { buildClientRelationshipHistory, communicationHistoryFromJobEvents } from "./clientRelationshipHistory.ts";
 
 const tenantId = "tenant-a";
 
@@ -45,18 +45,24 @@ test("buildClientRelationshipHistory keeps review and portal events truthful whe
 test("buildClientRelationshipHistory exposes an authoritative closeout delivery against its originating job", () => {
   const history = buildClientRelationshipHistory(baseInput({
     financialVisible: false,
-    closeoutDeliveries: [{ id: "delivery-1", jobId: "job-1", jobTitle: "JOB-0001 · Leak visit", occurredAt: "2026-08-05T09:00:00.000Z", recipient: "safe@example.test", status: "email sent" }]
+    communicationDeliveries: [{ id: "delivery-1", jobId: "job-1", jobTitle: "JOB-0001 · Leak visit", occurredAt: "2026-08-05T09:00:00.000Z", recipient: "safe@example.test", status: "email sent", title: "Closeout package email · JOB-0001 · Leak visit" }]
   }));
   assert.deepEqual(history.map((entry) => entry.kind), ["communication"]);
   assert.equal(history[0].objectId, "job-1");
   assert.equal(history[0].status, "email sent to safe@example.test");
 });
 
-test("closeoutDeliveryHistoryFromJobEvents reads the lifecycle recipient payload", () => {
-  const deliveries = closeoutDeliveryHistoryFromJobEvents({
+test("communicationHistoryFromJobEvents reads authoritative closeout and booking recipient payloads", () => {
+  const deliveries = communicationHistoryFromJobEvents({
     jobId: "job-1",
     jobTitle: "JOB-0001 · Leak visit",
-    events: [{ id: "event-1", type: "closeout.package_delivery_sent", createdAt: "2026-08-05T09:00:00.000Z", payload: { recipient: "safe@example.test" } }]
+    events: [
+      { id: "event-1", type: "closeout.package_delivery_sent", createdAt: "2026-08-05T09:00:00.000Z", payload: { recipient: "safe@example.test" } },
+      { id: "event-2", type: "visit.booking_confirmation_sent", createdAt: "2026-08-06T09:00:00.000Z", payload: { target: "booking@example.test", mode: "email" } }
+    ]
   });
-  assert.deepEqual(deliveries, [{ id: "event-1", jobId: "job-1", jobTitle: "JOB-0001 · Leak visit", occurredAt: "2026-08-05T09:00:00.000Z", recipient: "safe@example.test", status: "email sent" }]);
+  assert.deepEqual(deliveries, [
+    { id: "event-1", jobId: "job-1", jobTitle: "JOB-0001 · Leak visit", occurredAt: "2026-08-05T09:00:00.000Z", recipient: "safe@example.test", status: "email sent", title: "Closeout package email · JOB-0001 · Leak visit" },
+    { id: "event-2", jobId: "job-1", jobTitle: "JOB-0001 · Leak visit", occurredAt: "2026-08-06T09:00:00.000Z", recipient: "booking@example.test", status: "email sent", title: "Booking confirmation · JOB-0001 · Leak visit" }
+  ]);
 });

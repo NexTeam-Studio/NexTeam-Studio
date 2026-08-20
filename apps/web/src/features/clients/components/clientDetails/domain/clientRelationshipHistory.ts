@@ -36,25 +36,42 @@ export interface ClientRelationshipHistoryInput {
   payments: CrmPaymentSummary[];
   portalActivity: ClientPortalActivityEntry[];
   reviewSequences: ReviewSequenceRecord[];
-  closeoutDeliveries?: Array<{ id: string; jobId: string; jobTitle: string; occurredAt: string; recipient: string; status: string }>;
+  communicationDeliveries?: Array<{ id: string; jobId: string; jobTitle: string; occurredAt: string; recipient: string; status: string; title: string }>;
   financialVisible: boolean;
 }
 
-export function closeoutDeliveryHistoryFromJobEvents(input: {
+export function communicationHistoryFromJobEvents(input: {
   jobId: string;
   jobTitle: string;
-  events: Array<{ id: string; type: string; createdAt: string; payload?: { recipient?: unknown } }>;
-}): NonNullable<ClientRelationshipHistoryInput["closeoutDeliveries"]> {
+  events: Array<{ id: string; type: string; createdAt: string; payload?: { recipient?: unknown; target?: unknown; mode?: unknown } }>;
+}): NonNullable<ClientRelationshipHistoryInput["communicationDeliveries"]> {
   return input.events
-    .filter((event) => event.type === "closeout.package_delivery_sent")
-    .map((event) => ({
-      id: event.id,
-      jobId: input.jobId,
-      jobTitle: input.jobTitle,
-      occurredAt: event.createdAt,
-      recipient: typeof event.payload?.recipient === "string" && event.payload.recipient.trim() ? event.payload.recipient.trim() : "reviewed recipient",
-      status: "email sent"
-    }));
+    .flatMap((event) => {
+      if (event.type === "closeout.package_delivery_sent") {
+        return [{
+          id: event.id,
+          jobId: input.jobId,
+          jobTitle: input.jobTitle,
+          occurredAt: event.createdAt,
+          recipient: typeof event.payload?.recipient === "string" && event.payload.recipient.trim() ? event.payload.recipient.trim() : "reviewed recipient",
+          status: "email sent",
+          title: `Closeout package email · ${input.jobTitle}`
+        }];
+      }
+      if (event.type === "visit.booking_confirmation_sent") {
+        const mode = event.payload?.mode === "sms" ? "text message" : "email";
+        return [{
+          id: event.id,
+          jobId: input.jobId,
+          jobTitle: input.jobTitle,
+          occurredAt: event.createdAt,
+          recipient: typeof event.payload?.target === "string" && event.payload.target.trim() ? event.payload.target.trim() : "reviewed recipient",
+          status: `${mode} sent`,
+          title: `Booking confirmation · ${input.jobTitle}`
+        }];
+      }
+      return [];
+    });
 }
 
 function normalizedStatus(value: string | undefined, fallback: string): string {
@@ -122,10 +139,10 @@ export function buildClientRelationshipHistory(input: ClientRelationshipHistoryI
       objectId: sequence.id,
       module: "nexreach"
     })),
-    ...(input.closeoutDeliveries ?? []).map((delivery) => ({
+    ...(input.communicationDeliveries ?? []).map((delivery) => ({
       id: `closeout-delivery-${delivery.id}`,
       kind: "communication" as const,
-      title: `Closeout package email · ${delivery.jobTitle}`,
+      title: delivery.title,
       status: `${normalizedStatus(delivery.status, "Email sent")} to ${delivery.recipient}`,
       occurredAt: delivery.occurredAt,
       objectId: delivery.jobId,

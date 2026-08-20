@@ -16,7 +16,7 @@ import {
   type CustomFieldDraftRow
 } from "../contact/domain/clientProfile";
 import { isProtectedLegacyClient } from "./domain/clientDeletionPolicy";
-import { buildClientRelationshipHistory, closeoutDeliveryHistoryFromJobEvents } from "./domain/clientRelationshipHistory";
+import { buildClientRelationshipHistory, communicationHistoryFromJobEvents } from "./domain/clientRelationshipHistory";
 import { PropertyAssetsManager } from "./PropertyAssetsManager";
 import type {
   ClientPortalActivityEntry,
@@ -146,20 +146,20 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
     toggleCreateMenu
   } = bindings;
 
-  const [closeoutDeliveries, setCloseoutDeliveries] = React.useState<Array<{ id: string; jobId: string; jobTitle: string; occurredAt: string; recipient: string; status: string }>>([]);
+  const [communicationDeliveries, setCommunicationDeliveries] = React.useState<Array<{ id: string; jobId: string; jobTitle: string; occurredAt: string; recipient: string; status: string; title: string }>>([]);
 
   React.useEffect(() => {
     let cancelled = false;
     if (!selectedClient || !selectedJobs.length) {
-      setCloseoutDeliveries([]);
+      setCommunicationDeliveries([]);
       return () => { cancelled = true; };
     }
     void Promise.all(selectedJobs.map(async (job) => {
       try {
         const response = await fetch(`/api/crm/jobs/${encodeURIComponent(job.id)}?tenantId=${encodeURIComponent(operatorContext.tenantId)}`);
-        const body = await response.json() as { ok?: boolean; job?: { history?: Array<{ id: string; type: string; createdAt: string; payload?: { recipient?: unknown } }> } };
+        const body = await response.json() as { ok?: boolean; job?: { history?: Array<{ id: string; type: string; createdAt: string; payload?: { recipient?: unknown; target?: unknown; mode?: unknown } }> } };
         if (!body.ok || !body.job?.history) return [];
-        return closeoutDeliveryHistoryFromJobEvents({
+        return communicationHistoryFromJobEvents({
           jobId: job.id,
           jobTitle: job.number?.trim() ? `${job.number} · ${job.title}` : job.title,
           events: body.job.history
@@ -168,7 +168,7 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
         return [];
       }
     })).then((groups) => {
-      if (!cancelled) setCloseoutDeliveries(groups.flat());
+      if (!cancelled) setCommunicationDeliveries(groups.flat());
     });
     return () => { cancelled = true; };
   }, [operatorContext.tenantId, selectedClient?.id, selectedJobs]);
@@ -181,7 +181,7 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
     payments: selectedPayments,
     portalActivity: clientPortalActivity,
     reviewSequences: clientReviewSequences,
-    closeoutDeliveries,
+    communicationDeliveries,
     // Field technicians do not receive finance rows through the client history.
     financialVisible: operatorContext.role !== "TECHNICIAN"
   });
