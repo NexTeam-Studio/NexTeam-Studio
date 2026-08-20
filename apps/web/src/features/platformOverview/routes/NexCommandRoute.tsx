@@ -19,11 +19,14 @@ import "../../tenantOverview/styles/tenantOverview.css";
 import "../styles/nexCommand.css";
 
 type Area = "dashboard" | "live-status" | "team" | "tenants" | "prospects" | "blueprints" | "subscriptions" | "onboarding" | "migrations" | "support" | "modules" | "integrations" | "system" | "releases" | "usage" | "billing" | "security" | "settings";
+type TemplateTreeNode = { id: string; label: string; href?: string; children?: TemplateTreeNode[] };
 
 const navigation: Array<[Area, string, string]> = [
   ["dashboard", "Dashboard", "⌂"], ["tenants", "Tenants", "◫"], ["prospects", "Prospects", "◌"], ["blueprints", "Blueprints", "◇"], ["subscriptions", "Subscriptions", "◈"], ["onboarding", "Onboarding", "→"], ["migrations", "Migrations", "↻"], ["support", "Support", "?"], ["modules", "Modules", "▦"], ["integrations", "Integrations", "⌁"], ["system", "Code & System", "⌘"], ["releases", "Releases", "↑"], ["usage", "Usage", "▥"], ["billing", "Billing", "$"], ["security", "Security & Audit", "◉"], ["settings", "Settings", "⚙"]
 ];
 navigation.splice(1, 0, ["live-status", "Live Build Status", "●"]);
+
+const templateTree: TemplateTreeNode[] = [{ id: "templates", label: "Templates", children: [{ id: "design", label: "Design", children: [{ id: "nexsuite", label: "NexSuite", children: [{ id: "global", label: "Global", children: [{ id: "header", label: "Header", href: "/design-system/layout-parts/header" }] }] }] }] }];
 
 const moduleDirectory = [
   ["NexOps", "Business operations workspace", "/nexops"], ["Nexi", "Tool-backed operating assistant", "/nexi"], ["Tenant onboarding", "Prospect, onboarding plan, subscription, and activation workflow", "/nexcommand?area=onboarding"], ["Settings", "Tenant configuration controls", "/platform/settings"], ["Authentication", "Platform and tenant access boundaries", "/nexcommand?area=security"], ["Integrations", "Configured provider health and quick access", "/nexcommand?area=integrations"], ["Global Control", "Build and verification coordination", "/nexcommand?area=system"], ["Code & System", "Build identity and diagnostic foundation", "/nexcommand?area=system"]
@@ -41,11 +44,16 @@ function areaFromLocation(): Area {
   return navigation.some(([area]) => area === requested) ? requested as Area : "dashboard";
 }
 
+function TemplateTree({ nodes, expanded, onToggle }: { nodes: TemplateTreeNode[]; expanded: Set<string>; onToggle: (id: string) => void }): React.ReactElement {
+  return <ul className="nexcommand__template-tree">{nodes.map((node) => { const branch = Boolean(node.children?.length); const isExpanded = expanded.has(node.id); return <li key={node.id}>{branch ? <button type="button" className="nexcommand__template-branch" aria-expanded={isExpanded} onClick={() => onToggle(node.id)}><i aria-hidden="true">{isExpanded ? "⌄" : "›"}</i><span>{node.label}</span></button> : <a className="nexcommand__template-leaf" href={node.href}>{node.label}</a>}{branch && isExpanded ? <TemplateTree nodes={node.children!} expanded={expanded} onToggle={onToggle} /> : null}</li>; })}</ul>;
+}
+
 export function NexCommandRoute(): React.ReactElement {
   const { signOut, user } = useAuthSession();
   const pathname = usePathname();
   const [area, setArea] = useState<Area>(areaFromLocation);
   const [open, setOpen] = useState(false);
+  const [expandedTemplates, setExpandedTemplates] = useState<Set<string>>(() => new Set());
   const [liveState, setLiveState] = useState("COMPLETE");
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(new URLSearchParams(window.location.search).get("tenant"));
   const { status: planStatus } = usePlatformPlans(user);
@@ -60,12 +68,14 @@ export function NexCommandRoute(): React.ReactElement {
     setArea(next);
   }
 
+  function toggleTemplate(id: string): void { setExpandedTemplates((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; }); }
+
   return <NexTeamApplicationShell
     className="nexcommand"
     navigationLabel="NexCommand navigation"
     mobileNavigationMode="drawer"
     header={<NexTeamProductHeader className="nexcommand__topbar" ariaLabel="NexCommand header" navigation={<button className="nexcommand__menu" aria-label="Open NexCommand navigation" onClick={() => setOpen((value) => !value)}>☰</button>} brand={<div className="nexcommand__brand"><PlatformMark decorative /><span>NexCommand</span></div>} context={<div className="nexcommand__environment"><span>STAGING</span><small>nexstage.nexteam.studio</small></div>} utilities={<button className="nexcommand__signout" onClick={() => void signOut()}>Sign out</button>} />}
-    navigation={<div className={`nexcommand__nav ${open ? "nexcommand__nav--open" : ""}`}><div className="nexcommand__nav-title"><PlatformMark decorative /><div><strong>NexCommand</strong><span>Internal operating console</span></div></div>{navigation.map(([key, label, icon]) => <button key={key} className={area === key ? "is-active" : ""} onClick={() => { selectArea(key); setOpen(false); }}><i aria-hidden="true">{icon}</i><span>{label}</span>{key === "live-status" ? <b className={`nexcommand__live-status-icon nexcommand__live-status-icon--${liveStatusTone(liveState)}`} aria-label={`Live build status: ${liveState}`} /> : null}</button>)}</div>}
+    navigation={<div className={`nexcommand__nav ${open ? "nexcommand__nav--open" : ""}`}><div className="nexcommand__nav-title"><PlatformMark decorative /><div><strong>NexCommand</strong><span>Internal operating console</span></div></div>{navigation.map(([key, label, icon]) => <button key={key} className={area === key ? "is-active" : ""} onClick={() => { selectArea(key); setOpen(false); }}><i aria-hidden="true">{icon}</i><span>{label}</span>{key === "live-status" ? <b className={`nexcommand__live-status-icon nexcommand__live-status-icon--${liveStatusTone(liveState)}`} aria-label={`Live build status: ${liveState}`} /> : null}</button>)}<nav className="nexcommand__template-navigation" aria-label="NexCommand templates"><TemplateTree nodes={templateTree} expanded={expandedTemplates} onToggle={toggleTemplate} /></nav></div>}
   ><section className="nexcommand__workspace"><section className="nexcommand__heading"><div><p className="ui-eyebrow">NexTeam internal operations</p><h1>{selectedTenantId ? "Tenant details" : navigation.find(([key]) => key === area)?.[1]}</h1><p>{user?.email ?? "Authorized NexTeam operator"}</p></div><span className="nexcommand__health">Staging connected</span></section>{issue ? <p className="nexcommand__notice">{issue}</p> : null}{selectedTenantId ? <NexCommandTenantProfilePanel user={user} tenantId={selectedTenantId} onBack={() => { void refreshTenantRoster(); window.history.pushState({}, "", "/nexcommand?area=tenants"); setArea("tenants"); setSelectedTenantId(null); }} /> : <NexCommandArea area={area} rows={rows} workingTenant={workingTenant} onRunBackup={runBackup} onRunLifecycle={runLifecycle} user={user} summary={summary} onViewTenant={(tenantId) => { window.history.pushState({}, "", `/nexcommand?area=tenants&tenant=${encodeURIComponent(tenantId)}`); setSelectedTenantId(tenantId); }} />}</section></NexTeamApplicationShell>;
 }
 

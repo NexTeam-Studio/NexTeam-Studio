@@ -12,6 +12,7 @@ import "../../shared/signature/signature.css";
 import "../../shared/ui/nexOpsUiKit.css";
 import "../../shared/ui/nexTeamProductHeader.css";
 import "../../shared/ui/nexTeamApplicationShell.css";
+import "../../shared/ui/headerReview.css";
 import "../../features/home/components/operationsHome/operationsHome.css";
 import "../../features/nexopsShell/styles/overlays.css";
 import "../../features/nexcam/areas/capture/styles/captureWorkspace.css";

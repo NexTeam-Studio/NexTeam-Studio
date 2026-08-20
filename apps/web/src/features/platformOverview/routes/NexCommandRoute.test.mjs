@@ -66,3 +66,13 @@ test("NexCommand uses the shared NexTeam application shell", () => {
   assert.match(source, /mobileNavigationMode="drawer"/);
   assert.match(styles, /@media \(max-width:880px\).*nexcommand__menu \{ display:block; \}/s);
 });
+
+test("NexCommand renders templates from a recursively expandable configuration tree", () => {
+  assert.match(source, /type TemplateTreeNode/);
+  assert.match(source, /const templateTree: TemplateTreeNode\[\]/);
+  for (const label of ["Templates", "Design", "NexSuite", "Global", "Header"]) assert.match(source, new RegExp(`label: "${label}"`));
+  assert.match(source, /href: "\/design-system\/layout-parts\/header"/);
+  assert.match(source, /function TemplateTree/);
+  assert.match(source, /aria-expanded=\{isExpanded\}/);
+  assert.match(styles, /nexcommand__template-tree/);
+});
