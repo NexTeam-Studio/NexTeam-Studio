@@ -14,7 +14,7 @@ Scope: staging-only Double Dragon evidence. This is a controlled progress ledger
 
 ## Evidence and deployment order
 
-The exact live staging build returned by `/api/version` at reconciliation is `e75bdce409da808787c1ef0e58b0063bfed07114`. The deployment branch has a later source successor, `63199277ef07d3feb05543477f040551954fa781`; that source-branch position is not treated as live until `/api/version` reports it.
+The exact live staging build returned by `/api/version` at reconciliation is `418e1714f042fd15a440aef2aecac12094161c6d`. This ledger records browser evidence separately from owner acceptance.
 
 | Candidate | Purpose | Current evidence | Deployment relationship |
 | --- | --- | --- | --- |
@@ -22,7 +22,8 @@ The exact live staging build returned by `/api/version` at reconciliation is `e7
 | `7217c2a556e3188c388fc1b0b51c4af302b1c6f2` | Transactional email provider | Accepted review evidence | Must be browser-proven with one safe approved staging send |
 | `a7705bbeab859619a201f524a1203edd398f55a0` | NexCam long-caption responsive repair | Included in the current live ancestry | Final responsive browser re-proof remains pending; no separate deployment is required for this commit |
 | `afc14538b94c7e7a264be695366bec6469296a37` | Reviewed evaporation persistence | Included in the live ancestry | Browser-proven below |
-| `e75bdce409da808787c1ef0e58b0063bfed07114` | Legacy checklist read compatibility | Live and browser-proven below | Current staging build |
+| `e75bdce409da808787c1ef0e58b0063bfed07114` | Legacy checklist read compatibility | Included in current live ancestry | Preserved by the current staging build |
+| `418e1714f042fd15a440aef2aecac12094161c6d` | Booking-confirmation history projection | Live and browser-proven | Current staging build |
 
 ## Golden-path reconciliation
 
@@ -36,7 +37,8 @@ The exact live staging build returned by `/api/version` at reconciliation is `e7
 | Quote approval to Job | Quotes, Jobs | IMPLEMENTED | Durable conversion reconciliation accepted at `37ddcddce6b2454366f06e102ce5fac5085508d0` | QA Job `JOB-0003` exists from an internally approved QA Quote | Browser-proof retry/failure convergence after the exact candidate is live |
 | Job-first existing/new Client and return | Jobs, Clients | IMPLEMENTED | Job entry exists; no controlled end-to-end proof recorded in this ledger | None | Register and prove after current field-documentation acceptance |
 | Booking and Visit | Schedule, Visits | BROWSER-PROVEN | Visits roster and detail template work are in current live ancestry | QA Visit `QA Evaporation Review Visit 2026-08-20` opened normally | Preserve schedule behavior |
-| Booking confirmation and reminders | Schedule, Communications | IMPLEMENTED | UI exposes prepared paths; a safe send is not yet re-proven through the active provider rail | No current safe staging communication proof | Transactional-email proof after exact provider identity is live |
+| Booking confirmation | Schedule, Communications | BROWSER-PROVEN | `418e1714...` persists the Visit as `Already Sent` and projects the event into Client Notes & Communications | One approved staging email reached `nexteamai@gmail.com`; no office-copy recipient, reload persistence, console, runtime, and browser checks passed | Preserve as browser proof; do not classify as owner proof without separate usability acceptance |
+| Visit reminders | Schedule, Communications | IMPLEMENTED | Prepared communication path exists | No controlled current-provider reminder acceptance | Require separate approval before any external reminder send |
 | On My Way | Schedule, Communications | PLANNED | No accepted end-to-end proof found | None | Register after booking communications are proven |
 | Field checklist | NexCam / NexDocs | IMPLEMENTED | Checklist persistence and legacy compatibility are live | Evaporation creates and links a checklist; field-template completion flow remains unproven | Prove checklist-driven visit completion and reuse separately |
 | Visit media capture | NexCam | BROWSER-PROVEN | Normal safe QA capture previously created a legitimate Visit artifact; the responsive corrective commit is in the current live ancestry | Visit, Job roll-up, NexDocs and Closeout selection were proven; final responsive browser re-proof remains pending | Re-prove the responsive corrective behavior on the current live build before closing the mobile refinement |
@@ -51,7 +53,7 @@ The exact live staging build returned by `/api/version` at reconciliation is `e7
 | Closeout delivery review | Jobs, Communications | BROWSER-PROVEN | Existing delivery-review rail | Prior safe staging proof accepted; no resend re-proof on current provider baseline | Re-prove only after provider identity is verified |
 | Transactional email | NexComms, provider integration | IMPLEMENTED | Resend adapter accepted at `7217c2...`; secret guard accepted at `e3c92f...` | Safe send/historical proof must be performed after exact provider runtime verification | Highest external-facing dependency once provider health is truthful |
 | Feedback and review workflow | Reputation, Communications | IMPLEMENTED | Review follow-up UI exists | No safe end-to-end sequence proof | Queue after delivery and final-payment policy |
-| Client relationship history | Clients, Communications | BROWSER-PROVEN | Closeout delivery history was accepted in a prior staging proof | Current QA evaporation document evidence is in NexDocs, not a client communication | Re-prove alongside transactional email |
+| Client relationship history | Clients, Communications | BROWSER-PROVEN | `418e1714...` projects the authoritative booking-confirmation lifecycle event into Notes & Communications | The one booking event persisted across reload with no duplicate event | Preserve scoped event mapping and tenant-authorized Job reads |
 
 ## Current staging proof package
 
@@ -67,10 +69,10 @@ The following was exercised against exact live SHA `e75bdce409da808787c1ef0e58b0
 
 ## Immediate prioritized queue
 
-1. Verify the live transactional provider through non-secret runtime metadata; if it resolves to the approved provider, perform exactly one approved safe staging Closeout send and verify durable Client communication history.
+1. Browser-prove reusable checklist-value hydration in the live Visit measurement workflow; this closes the currently observed checklist-data-reuse gap without transmitting a communication.
 2. Browser-accept the live NexCam responsive corrective behavior, without reopening unrelated field-media behavior.
-3. Repair and prove reusable checklist-value hydration for the Visit measurement workflow; this closes the currently observed checklist-data-reuse gap.
-4. Register and prove the safe Job-first existing-Client and new-Client-return flows, then prove booking communication and On My Way as separate controlled slices.
+3. Register and prove the safe Job-first existing-Client and new-Client-return flows.
+4. Treat On My Way and reminder delivery as separate external-communication slices requiring explicit owner approval immediately before transmission.
 
 ## Evidence discipline
 
