@@ -250,6 +250,53 @@ test("runEvaporation Nexi tool returns report, PDF URL, and native source", asyn
   assert.match(result.result.pdfUrl, /\/api\/evaporation\/reports\/evap_/);
 });
 
+test("runEvaporation Nexi tool rejects mismatched Visit and checklist provenance before persistence", async () => {
+  const repository = new MemoryEvaporationRepository();
+  const baseInput = {
+    repository,
+    weatherProvider,
+    crmRepository: {
+      async listJobs() {
+        return [{ id: "job_1", tenantId: "aquatrace", clientId: "client_1", propertyId: "property_1" }];
+      }
+    },
+    schedulingRepository: {
+      async getVisit(_tenantId, visitId) {
+        return visitId === "visit_other"
+          ? { id: "visit_other", tenantId: "aquatrace", jobId: "job_other" }
+          : { id: "visit_1", tenantId: "aquatrace", jobId: "job_1" };
+      }
+    },
+    fieldDocsService: {
+      async getChecklist(_tenantId, checklistId) {
+        return checklistId === "checklist_other_tenant"
+          ? { id: checklistId, tenantId: "other", jobId: "job_1", propertyId: "property_1", visitId: "visit_1", fields: [] }
+          : null;
+      },
+      async updateChecklist() {
+        throw new Error("a rejected evaporation report must not update a checklist");
+      }
+    }
+  };
+  const tool = createEvaporationNexiTools(baseInput).find((candidate) => candidate.name === "runEvaporation");
+  assert.ok(tool);
+  const common = { address: "Bryson City, NC 28713", surfaceAreaFt2: 500, waterTempF: 82, jobId: "job_1" };
+
+  await assert.rejects(
+    () => tool.handler(tenant, { ...common, visitId: "visit_other" }),
+    /selected visit does not belong to this job/i
+  );
+  await assert.rejects(
+    () => tool.handler(tenant, { ...common, visitId: "visit_1", checklistId: "checklist_other_tenant" }),
+    /selected checklist does not belong to this job context/i
+  );
+  await assert.rejects(
+    () => tool.handler(tenant, { ...common, tenantId: "other" }),
+    /requested tenant does not match the authorized evaporation context/i
+  );
+  assert.equal(await repository.getReport("aquatrace", "evap_1"), null);
+});
+
 test("evaporation PDF renderer produces a PDF buffer", async () => {
   const repository = new MemoryEvaporationRepository();
   const tool = createEvaporationNexiTools({ repository, weatherProvider }).find((candidate) => candidate.name === "runEvaporation");

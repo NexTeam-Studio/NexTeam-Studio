@@ -304,7 +304,13 @@ registerIntegratedNexiRoutes(app, {
   },
   comms: { rail: commsRail, approvalQueue },
   scheduling: { repository: schedulingRepository, approvalQueue, env: process.env, jobLifecycleService },
-  evaporation: { repository: evaporationRepository, env: process.env },
+  evaporation: {
+    repository: evaporationRepository,
+    crmRepository: nativeCrmRepository,
+    schedulingRepository,
+    fieldDocsService,
+    env: process.env
+  },
   fieldDocs: {
     mediaRepository,
     crmRepository: nativeCrmRepository,
