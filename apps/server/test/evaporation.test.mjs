@@ -137,6 +137,31 @@ test("evaporation preview retrieves weather and calculations without persisting 
   });
 });
 
+test("a reviewed preview token preserves the reviewed weather and rejects changed inputs", async () => {
+  const app = express();
+  const repository = new MemoryEvaporationRepository();
+  let weatherReads = 0;
+  app.use(express.json());
+  registerEvaporationRoutes(app, {
+    repository,
+    weatherProvider: { async getWeather() { weatherReads += 1; return { current: { city: weatherReads === 1 ? "Reviewed weather" : "Changed weather", airTempF: 84, relativeHumidityPct: 62, windMph: 5, fetchedAt: "2026-08-20T00:00:00.000Z" }, forecast: [] }; } },
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+  const input = { address: "Bryson City, NC 28713", surfaceAreaFt2: 500, waterTempF: 82 };
+  await withServer(app, async (baseUrl) => {
+    const previewResponse = await fetch(`${baseUrl}/api/evaporation/preview`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    const preview = await previewResponse.json();
+    assert.equal(previewResponse.status, 200);
+    assert.equal(preview.preview.currentWeather.city, "Reviewed weather");
+    const finalResponse = await fetch(`${baseUrl}/api/evaporation/run`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...input, reviewToken: preview.reviewToken }) });
+    assert.equal(finalResponse.status, 201);
+    assert.equal((await finalResponse.json()).report.currentWeather.city, "Reviewed weather");
+    assert.equal(weatherReads, 1);
+    const changedInput = await fetch(`${baseUrl}/api/evaporation/run`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...input, surfaceAreaFt2: 600, reviewToken: preview.reviewToken }) });
+    assert.equal(changedInput.status, 409);
+  });
+});
+
 test("a Visit-linked evaporation report persists as one NexCam report and updates the matching checklist measurements", async () => {
   const app = express();
   const mediaRepository = new MemoryMediaRepository();

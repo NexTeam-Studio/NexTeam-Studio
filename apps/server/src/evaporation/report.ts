@@ -110,8 +110,9 @@ export async function createEvaporationReport(input: {
   body: unknown;
   repository: EvaporationRepository;
   weatherProvider: EvaporationWeatherProvider;
+  preview?: EvaporationPreview | undefined;
 }): Promise<EvaporationReportRecord> {
-  const preview = await previewEvaporationReport(input);
+  const preview = input.preview ?? await previewEvaporationReport(input);
   const parsed = preview.input;
   const tenantId = parsed.tenantId ?? input.tenantId;
   const id = `evap_${randomUUID()}`;
