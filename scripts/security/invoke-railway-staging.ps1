@@ -47,7 +47,13 @@ function Assert-SafeRailwayOperation {
     throw "Railway operation is denied by the secret-safe staging allowlist. Use approved status, deployment listing, or the explicit staging upload action; raw variables, shells, runtime commands, logs, and environment inspection are never allowed."
   }
 
-  $policyOutput = & node --import tsx (Join-Path $PSScriptRoot "evaluate-secret-operation.mjs") -- @Args
+  $repositoryRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+  $tsxLoader = Join-Path $repositoryRoot "node_modules\tsx\dist\loader.mjs"
+  if (-not (Test-Path -LiteralPath $tsxLoader)) {
+    throw "Secret operation policy loader is unavailable; Railway execution is denied."
+  }
+  $tsxLoaderUri = ([Uri]$tsxLoader).AbsoluteUri
+  $policyOutput = & node --import $tsxLoaderUri (Join-Path $PSScriptRoot "evaluate-secret-operation.mjs") -- @Args
   if ($LASTEXITCODE -ne 0) {
     throw "Secret operation policy could not be evaluated; Railway execution is denied."
   }

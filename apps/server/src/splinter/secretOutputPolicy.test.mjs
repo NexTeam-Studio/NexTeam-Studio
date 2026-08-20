@@ -117,4 +117,5 @@ test("the guarded Railway wrapper tokenizes its documented comma-safe invocation
   const source = readFileSync("scripts/security/invoke-railway-staging.ps1", "utf8");
   assert.match(source, /\$normalizedRailwayArgs\s*=.*-split\s+","/);
   assert.match(source, /&\s+\$railway\.Source\s+@normalizedRailwayArgs/);
+  assert.match(source, /node_modules\\tsx\\dist\\loader\.mjs/);
 });
