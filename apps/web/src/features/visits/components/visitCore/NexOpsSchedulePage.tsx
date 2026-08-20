@@ -208,6 +208,15 @@ interface ChecklistRecord {
   visitId?: string;
   propertyId?: string;
   status: "draft" | "completed";
+  fields?: Array<{ label: string; numberValue?: number }>;
+}
+
+interface EvaporationDraft {
+  surfaceAreaFt2: string;
+  waterTempF: string;
+  observedLossInches: string;
+  zip: string;
+  windMphOverride: string;
 }
 
 interface EvaporationPreview {
@@ -229,6 +238,25 @@ export function isScheduleAnchorDate(value: string): boolean {
   }
   const parsed = new Date(`${value}T12:00:00.000Z`);
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+export function hydrateEvaporationDraft(checklist: ChecklistRecord | null, current: EvaporationDraft): EvaporationDraft {
+  if (!checklist?.fields?.length) {
+    return current;
+  }
+  const numberFor = (...labels: string[]): string | undefined => {
+    const value = checklist.fields?.find((field) => labels.includes(field.label))?.numberValue;
+    return typeof value === "number" && Number.isFinite(value) ? String(value) : undefined;
+  };
+  const surfaceAreaFt2 = numberFor("Pool surface area", "Pool/spa surface area");
+  const waterTempF = numberFor("Water temperature");
+  const observedLossInches = numberFor("Reported daily water loss");
+  return {
+    ...current,
+    ...(surfaceAreaFt2 ? { surfaceAreaFt2 } : {}),
+    ...(waterTempF ? { waterTempF } : {}),
+    ...(observedLossInches ? { observedLossInches } : {})
+  };
 }
 
 function defaultView(): ScheduleView {
@@ -697,7 +725,9 @@ export function NexOpsSchedulePage(props: {
         setEvaporationStatus(checklistBody.error ?? libraryBody.error ?? "The measurement workspace is unavailable right now.");
         return;
       }
-      setEvaporationChecklist((checklistBody.checklists ?? []).find((entry) => entry.status === "draft") ?? null);
+      const activeChecklist = (checklistBody.checklists ?? []).find((entry) => entry.status === "draft") ?? null;
+      setEvaporationChecklist(activeChecklist);
+      setEvaporationDraft((current) => hydrateEvaporationDraft(activeChecklist, current));
       const library = libraryBody.library;
       const entries = [...(library?.unfiled ?? []), ...(library?.officeRecords ?? [])]
         .filter((entry) => entry.jobId === visit.jobId && entry.visitId === visit.id);
