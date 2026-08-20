@@ -6,6 +6,7 @@ export type TemplateNavigationNode = {
   description?: string;
   rosterHref?: string;
   href?: string;
+  disabled?: boolean;
   children?: TemplateNavigationNode[];
 };
 
@@ -32,6 +33,21 @@ const templatesRoot: TemplateNavigationNode = {
           label: "Header",
           description: "Reusable tenant and internal Header review.",
           href: "/design-system/layout-parts/header"
+        }, {
+          id: "sidebar",
+          label: "Sidebar",
+          description: "Current NexCommand Sidebar reference specimen.",
+          href: "/design-system/layout-parts/sidebar"
+        }, {
+          id: "application-shell",
+          label: "Application Shell",
+          description: "Future Global review item.",
+          disabled: true
+        }, {
+          id: "footer",
+          label: "Footer",
+          description: "Future Global review item.",
+          disabled: true
         }]
       }]
     }]
@@ -65,6 +81,6 @@ export function TemplatesRoster(props: { rosterId: string | null }): React.React
     <h2>{roster.label}</h2>
     <p>{roster.id === "templates" ? "Browse template categories and reusable design elements." : `Browse ${roster.label} design elements.`}</p>
     <nav className="nexcommand__template-breadcrumb" aria-label="Template location">{trail.map((node, index) => node.rosterHref && index < trail.length - 1 ? <a key={node.id} href={node.rosterHref}>{node.label}</a> : <span key={node.id}>{node.label}</span>)}</nav>
-    <ul className="nexcommand__template-roster-list">{(roster.children ?? []).map((node) => <li key={node.id}><a href={node.href ?? node.rosterHref}>{node.label}<small>{node.description}</small></a></li>)}</ul>
+    <ul className="nexcommand__template-roster-list">{(roster.children ?? []).map((node) => <li key={node.id}>{node.disabled ? <span aria-disabled="true">{node.label}<small>{node.description}</small></span> : <a href={node.href ?? node.rosterHref}>{node.label}<small>{node.description}</small></a>}</li>)}</ul>
   </section>;
 }

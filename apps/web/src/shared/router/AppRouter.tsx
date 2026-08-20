@@ -5,6 +5,7 @@ import { NexOpsWorkspace } from "../../features/nexopsShell/NexOpsWorkspace";
 import { PlatformRoute } from "../../features/platform/routes/PlatformRoute";
 import { NexCommandMark } from "../branding/ProductBranding";
 import { HeaderReviewPage } from "../ui/HeaderReviewPage";
+import { SidebarReviewPage } from "../ui/SidebarReviewPage";
 import { useAuthSession } from "../auth/AuthSessionProvider";
 import { establishNexCommandSession, hasFreshNexCommandAuthentication, hasNexCommandSession, signOutOperator } from "../auth/authBootstrap";
 import { usePathname } from "./usePathname";
@@ -15,6 +16,7 @@ export function AppRouter(): React.ReactElement | null {
   const { auth, user } = useAuthSession();
   const pathname = usePathname();
   if (pathname === "/design-system/layout-parts/header") return <HeaderReviewPage />;
+  if (pathname === "/design-system/layout-parts/sidebar") return <SidebarReviewPage />;
   if (!user) return null;
   if (pathname.startsWith("/platform") || pathname.startsWith("/nexcommand")) return <NexCommandSessionGate />;
   if (pathname.startsWith("/nexcam")) return <NexCamPage auth={auth} user={user} />;
