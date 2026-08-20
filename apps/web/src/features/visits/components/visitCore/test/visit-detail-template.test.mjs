@@ -7,6 +7,7 @@ const source = await readFile(new URL("../NexOpsSchedulePage.tsx", import.meta.u
 test("Visit Detail keeps document and visual-workflow actions reachable", () => {
   assert.match(source, /NexDocsClientWorkspace/);
   assert.match(source, /visitId=\{detail\.id\}/);
+  assert.match(source, /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\);\s*setVisitDetailSection\("overview"\);/);
   assert.match(source, /setVisitDetail\(null\); openEdit\(detail\);/);
   assert.match(source, /setVisitDetail\(null\); void openFieldDocsRail\(detail\);/);
 });

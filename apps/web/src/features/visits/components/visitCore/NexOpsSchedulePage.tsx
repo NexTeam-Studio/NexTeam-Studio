@@ -606,7 +606,8 @@ export function NexOpsSchedulePage(props: {
         draggable={!visit.readOnly && (view === "day" || view === "week")}
         onDragStart={(event) => event.dataTransfer.setData("text/plain", visit.id)}
       >
-        <button className="nexops-schedule-visit-main" type="button" onClick={() => {
+        <button className="nexops-schedule-visit-main" type="button" onClick={(event) => {
+          event.stopPropagation();
           setVisitDetailSection("overview");
           setVisitDetail(visit);
           window.scrollTo({ top: 0, left: 0, behavior: "auto" });
