@@ -1,4 +1,5 @@
 import type { SplinterJob, SplinterJobState } from "@nexteam/core";
+import { evaluateSecretOperation, type SplinterSecretOperation } from "./secretOutputPolicy.js";
 
 /**
  * Controller-owned, deterministic policy for critical Splinter lifecycle choices.
@@ -13,7 +14,8 @@ export type SplinterLifecycleDecision =
   | "ISSUE_CLASSIFICATION"
   | "PRODUCTION_TRANSITION"
   | "CONTROLLER_POLICY_CHANGE"
-  | "TERMINAL_RETURN";
+  | "TERMINAL_RETURN"
+  | "SECRET_OPERATION";
 
 /**
  * The only statuses that may be shown as a terminal controller hand-off.  This
@@ -37,6 +39,7 @@ export interface SplinterAdjudicationInput {
   ownerAuthorizedControlPlaneWorkItem?: boolean;
   controllerOwnedPolicyPath?: boolean;
   returnStatus?: SplinterTerminalReturnStatus;
+  secretOperation?: SplinterSecretOperation;
   /** Evidence from the executor that a safe, authorized next action exists. */
   authorizedNextAction?: string;
 }
@@ -134,6 +137,14 @@ export function adjudicateSplinterLifecycle(job: SplinterJob, input: SplinterAdj
         return deny("Critical policy changes require a controller-owned path and owner-authorized control-plane work item.", "Use an owner-authorized control-plane work item in the controller policy path.");
       }
       return allow("The critical policy change is controller-owned and owner-authorized.");
+
+    case "SECRET_OPERATION": {
+      if (!input.secretOperation) return deny("A secret operation requires a declared store, operation type, and output contract.", "Submit the proposed operation to the controller before execution.");
+      const decision = evaluateSecretOperation(input.secretOperation);
+      return decision.allowed
+        ? allow(decision.reason)
+        : deny(decision.reason, decision.safeAlternative ?? "Use a safe metadata-only inspection path.");
+    }
 
     case "TERMINAL_RETURN": {
       const requested = input.returnStatus;

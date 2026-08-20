@@ -36,12 +36,26 @@ function Get-RailwayTokenFromVault {
   Convert-SecureStringToPlainText -SecureString $secure
 }
 
+function Assert-SafeRailwayOperation {
+  param([Parameter(Mandatory = $true)][string[]]$Args)
+
+  $command = (($Args -join " ").ToLowerInvariant() -replace "[,;\s]+", " ").Trim()
+  if ($command -match "(^|\s)(variable|variables)(\s|$)") {
+    throw "Railway variable enumeration is denied because the CLI can return secret values. Use a metadata-only application status or approved secret-name contract."
+  }
+  if ($command -match "(^|\s)(env|printenv|set)(\s|$)" -or $command -match "get-childitem\s+env:|process\.env") {
+    throw "Raw environment inspection is denied because it can return secret values. Use a redacted health or provider-status projection."
+  }
+}
+
 if (-not $RailwayArgs -or $RailwayArgs.Count -eq 0) {
   Write-Host "Usage:"
   Write-Host ".\scripts\security\invoke-railway-staging.ps1 status"
   Write-Host ".\scripts\security\invoke-railway-staging.ps1 up --service NexTeam-Studio --environment staging --detach"
   exit 64
 }
+
+Assert-SafeRailwayOperation -Args $RailwayArgs
 
 $railway = Get-Command railway -ErrorAction Stop
 $token = Get-RailwayTokenFromVault -Path $VaultPath

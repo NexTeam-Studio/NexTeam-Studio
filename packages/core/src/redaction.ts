@@ -1,4 +1,4 @@
-const assignment = /\b([A-Z][A-Z0-9_]*(?:API_KEY|CLIENT_SECRET|PRIVATE_KEY|REFRESH_TOKEN|APP_PASSWORD|PASSWORD|SECRET|TOKEN)[A-Z0-9_]*)\s*[=:]\s*([^\s,;]+)/gi;
+const assignment = /(["']?\b[A-Z][A-Z0-9_]*(?:API_KEY|CLIENT_SECRET|PRIVATE_KEY|REFRESH_TOKEN|APP_PASSWORD|PASSWORD|SECRET|TOKEN)[A-Z0-9_]*["']?\s*[=:]\s*)(?:"[^"]*"|'[^']*'|[^\s,;}]+)/gi;
 const bearer = /(Authorization\s*:\s*Bearer\s+)[^\s,;]+/gi;
 const knownFormats = /(?:GOCSPX-[\w-]+|1\/\/[\w-]+|sk_[\w-]+|whsec_[\w-]+|re_[\w-]+|AIza[\w-]+)/g;
 
@@ -6,7 +6,7 @@ const knownFormats = /(?:GOCSPX-[\w-]+|1\/\/[\w-]+|sk_[\w-]+|whsec_[\w-]+|re_[\w
 export function redactSecrets(value: unknown): unknown {
   if (typeof value === "string") {
     return value
-      .replace(assignment, "$1=[REDACTED]")
+      .replace(assignment, "$1[REDACTED]")
       .replace(bearer, "$1[REDACTED]")
       .replace(knownFormats, "[REDACTED]");
   }

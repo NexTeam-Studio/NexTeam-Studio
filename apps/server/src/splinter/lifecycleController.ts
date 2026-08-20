@@ -6,6 +6,7 @@ import {
   type SplinterAdjudicationInput,
   type SplinterTerminalReturnStatus
 } from "./controllerPolicy.js";
+import type { SplinterSecretOperation } from "./secretOutputPolicy.js";
 
 /**
  * The only runtime entry point for critical Splinter lifecycle policy.
@@ -46,6 +47,10 @@ export class SplinterLifecycleController {
       controllerOwnedPolicyPath: true,
       ownerAuthorizedControlPlaneWorkItem
     });
+  }
+
+  authorizeSecretOperation(operation: SplinterSecretOperation): SplinterAdjudication {
+    return this.adjudicate({} as SplinterJob, { decision: "SECRET_OPERATION", secretOperation: operation });
   }
 
   authorizeTerminalReturn(job: SplinterJob, status: SplinterTerminalReturnStatus, authorizedNextAction?: string): SplinterAdjudication {
