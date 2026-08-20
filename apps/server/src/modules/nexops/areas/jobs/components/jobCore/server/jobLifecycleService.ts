@@ -949,13 +949,13 @@ export class JobLifecycleService {
   }
 
   async createJob(input: CreateJobInput): Promise<Job> {
-    if (input.id) {
-      const existing = (await this.deps.crmRepository.listJobs(input.tenantId)).find((job) => job.id === input.id);
-      if (existing) return existing;
-    }
+    return (await this.createJobIfAbsent(input)).job;
+  }
+
+  async createJobIfAbsent(input: CreateJobInput): Promise<{ job: Job; created: boolean }> {
     const timestamp = now();
     const lineItems = input.lineItems ?? [];
-    const job = await this.deps.crmRepository.upsertJob({
+    const result = await this.deps.crmRepository.createJobIfAbsent({
       id: input.id ?? `job_${randomUUID()}`,
       tenantId: input.tenantId,
       number: await this.deps.crmRepository.reserveDocumentNumber(input.tenantId, "job"),
@@ -972,17 +972,18 @@ export class JobLifecycleService {
       createdAt: timestamp,
       updatedAt: timestamp
     });
+    if (!result.created) return result;
     await this.emitLifecycleEvent({
-      tenantId: job.tenantId,
-      jobId: job.id,
+      tenantId: result.job.tenantId,
+      jobId: result.job.id,
       type: "job.created",
       createdAt: timestamp,
       payload: {
-        title: job.title,
+        title: result.job.title,
         createdBy: input.createdBy ?? "system"
       }
     });
-    return job;
+    return result;
   }
 
   async markInvoiceCreated(input: {

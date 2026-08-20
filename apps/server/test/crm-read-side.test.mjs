@@ -152,6 +152,45 @@ test("NativeAdapter writes native clients and approval-gated quote drafts", asyn
   assert.equal(pdf.subarray(0, 5).toString("utf8"), "%PDF-");
 });
 
+test("quote conversion claims and deterministic Job creation are retry-safe", async () => {
+  const repository = new MemoryNativeCrmRepository({ clients: [client], properties: [property], jobs: [] });
+  const quote = quoteSchema.parse({
+    id: "quote_conversion_1",
+    tenantId: "aquatrace",
+    clientId: client.id,
+    propertyId: property.id,
+    status: "approved",
+    title: "Approved conversion",
+    lineItems: [],
+    totals: { subtotal: 0, tax: 0, total: 0 },
+    approvalRules: { requireSignature: false, requireDeposit: false, requireCardOnFile: false },
+    autoSavedCardOnFile: false,
+    createdAt: "2026-08-20T00:00:00.000Z",
+    updatedAt: "2026-08-20T00:00:00.000Z"
+  });
+  await repository.createQuote(quote);
+  const convertedJobId = "job_quote_quote_conversion_1";
+  const claims = await Promise.all([
+    repository.claimQuoteJobConversion("aquatrace", quote.id, convertedJobId),
+    repository.claimQuoteJobConversion("aquatrace", quote.id, convertedJobId)
+  ]);
+  assert.equal(claims.filter((claim) => claim.claimed).length, 1);
+  assert.ok(claims.every((claim) => claim.quote.convertedJobId === convertedJobId));
+
+  const jobCandidate = { ...job, id: convertedJobId, quoteId: quote.id, title: quote.title };
+  const creates = await Promise.all([
+    repository.createJobIfAbsent(jobCandidate),
+    repository.createJobIfAbsent(jobCandidate)
+  ]);
+  assert.equal(creates.filter((result) => result.created).length, 1);
+  assert.equal((await repository.listJobs("aquatrace")).filter((record) => record.id === convertedJobId).length, 1);
+
+  const retryClaim = await repository.claimQuoteJobConversion("aquatrace", quote.id, convertedJobId);
+  const retryJob = await repository.createJobIfAbsent(jobCandidate);
+  assert.equal(retryClaim.claimed, false);
+  assert.equal(retryJob.created, false);
+});
+
 test("NexOps 3.2 client records preserve display, billing, and one-way SMS settings", async () => {
   const repository = new MemoryNativeCrmRepository();
   const adapter = new NativeAdapter(repository, "aquatrace");

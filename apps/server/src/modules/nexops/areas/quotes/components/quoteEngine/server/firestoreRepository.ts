@@ -56,6 +56,27 @@ export function createQuoteFirestoreRepository(db: Firestore) {
         return parsed;
       },
 
+    async claimQuoteJobConversion(tenantId: string, quoteId: string, jobId: string): Promise<{ quote: Quote; claimed: boolean }> {
+        const ref = db.collection("quotes").doc(quoteId);
+        return db.runTransaction(async (transaction) => {
+          const snapshot = await transaction.get(ref);
+          if (!snapshot.exists) {
+            throw new RailError(`Native quote ${quoteId} was not found.`, { provider: "native", op: "claimQuoteJobConversion", status: 404 });
+          }
+          const existing = snapshot.data();
+          if (existing?.tenantId !== tenantId) {
+            throw new RailError(`Native quote ${quoteId} belongs to another tenant.`, { provider: "native", op: "claimQuoteJobConversion", status: 409 });
+          }
+          const quote = normalizeQuoteRecord(existing);
+          if (quote.convertedJobId) {
+            return { quote, claimed: false };
+          }
+          const claimed = normalizeQuoteRecord({ ...quote, convertedJobId: jobId, jobId, updatedAt: new Date().toISOString() });
+          transaction.set(ref, asDocumentData(claimed));
+          return { quote: claimed, claimed: true };
+        });
+      },
+
     async updateQuote(id: string, patch: Partial<Quote>): Promise<Quote> {
         if (!patch.tenantId) throw new RailError("Quote update requires tenant context.", { provider: "native", op: "updateQuote", status: 400 });
         const next = await updateTenantOwnedDocument({

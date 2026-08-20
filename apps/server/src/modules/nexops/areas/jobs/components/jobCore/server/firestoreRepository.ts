@@ -3,7 +3,7 @@ import { jobSchema, RailError, type Job } from "@nexteam/core";
 
 
 import { asDocumentData, createTenantFirestoreReader } from "../../../../../shared/persistence/firestoreRepositoryBase.js";
-import { setTenantOwnedDocument, updateTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
+import { assertTenantDocumentOwner, setTenantOwnedDocument, updateTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createJobFirestoreRepository(db: Firestore) {
   const { listByTenant } = createTenantFirestoreReader(db);
@@ -16,6 +16,20 @@ export function createJobFirestoreRepository(db: Firestore) {
         const parsed = jobSchema.parse(job) as Job;
         await setTenantOwnedDocument({ db, collection: "jobs", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Job ${parsed.id}` });
         return parsed;
+      },
+
+    async createJobIfAbsent(job: Job): Promise<{ job: Job; created: boolean }> {
+        const parsed = jobSchema.parse(job) as Job;
+        const ref = db.collection("jobs").doc(parsed.id);
+        return db.runTransaction(async (transaction) => {
+          const existing = await transaction.get(ref);
+          if (existing.exists) {
+            assertTenantDocumentOwner(existing.data(), parsed.tenantId, `Job ${parsed.id}`);
+            return { job: jobSchema.parse(existing.data()) as Job, created: false };
+          }
+          transaction.set(ref, asDocumentData(parsed));
+          return { job: parsed, created: true };
+        });
       },
 
     async updateJob(id: string, patch: Partial<Job>): Promise<Job> {

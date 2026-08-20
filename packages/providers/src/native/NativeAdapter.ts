@@ -50,8 +50,10 @@ export interface NativeCrmRepository {
   upsertClient(client: Client): Promise<Client>;
   upsertProperty(property: Property): Promise<Property>;
   upsertJob(job: Job): Promise<Job>;
+  createJobIfAbsent(job: Job): Promise<{ job: Job; created: boolean }>;
   createQuote(quote: Quote): Promise<Quote>;
   createInvoice(invoice: Invoice): Promise<Invoice>;
+  claimQuoteJobConversion(tenantId: string, quoteId: string, jobId: string): Promise<{ quote: Quote; claimed: boolean }>;
   updateQuote(id: string, patch: TenantOwnedPatch<Quote>): Promise<Quote>;
   updateInvoice(id: string, patch: TenantOwnedPatch<Invoice>): Promise<Invoice>;
   updateJob(id: string, patch: TenantOwnedPatch<Job>): Promise<Job>;
@@ -73,6 +75,12 @@ export interface NativeCrmRecords {
 function matchesQuery(values: Array<string | undefined>, query: string): boolean {
   const needle = query.trim().toLowerCase();
   return !needle || values.filter(Boolean).join(" ").toLowerCase().includes(needle);
+}
+
+function assertOwnedByTenant(record: { tenantId: string }, tenantId: string, label: string): void {
+  if (record.tenantId !== tenantId) {
+    throw new RailError(`${label} belongs to another tenant.`, { provider: "native", op: "tenantOwnedWrite", status: 409 });
+  }
 }
 
 function clientSearchValues(client: Client): Array<string | undefined> {
@@ -713,9 +721,38 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
     return next;
   }
 
+  async createJobIfAbsent(job: Job): Promise<{ job: Job; created: boolean }> {
+    const normalized = normalizeJobRecord(job);
+    const existing = this.records.jobs.find((record) => record.id === normalized.id);
+    if (existing) {
+      assertOwnedByTenant(existing, normalized.tenantId, `Native job ${normalized.id}`);
+      return { job: existing, created: false };
+    }
+    this.records.jobs.push(normalized);
+    return { job: normalized, created: true };
+  }
+
   async createQuote(quote: Quote): Promise<Quote> {
     this.records.quotes.push(quote);
     return quote;
+  }
+
+  async claimQuoteJobConversion(tenantId: string, quoteId: string, jobId: string): Promise<{ quote: Quote; claimed: boolean }> {
+    const index = this.records.quotes.findIndex((quote) => quote.id === quoteId);
+    if (index === -1) {
+      throw new RailError(`Native quote ${quoteId} was not found.`, { provider: "native", op: "claimQuoteJobConversion", status: 404 });
+    }
+    const existing = this.records.quotes[index];
+    if (!existing) {
+      throw new RailError(`Native quote ${quoteId} was not found.`, { provider: "native", op: "claimQuoteJobConversion", status: 404 });
+    }
+    assertOwnedByTenant(existing, tenantId, `Native quote ${quoteId}`);
+    if (existing.convertedJobId) {
+      return { quote: existing, claimed: false };
+    }
+    const quote: Quote = { ...existing, convertedJobId: jobId, jobId, updatedAt: new Date().toISOString() };
+    this.records.quotes[index] = quote;
+    return { quote, claimed: true };
   }
 
   async createInvoice(invoice: Invoice): Promise<Invoice> {

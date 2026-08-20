@@ -65,39 +65,37 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
   } = context;
 
   async function convertApprovedQuoteToJob(quote: Quote, createdBy: string) {
-    if (quote.convertedJobId) {
-      const existingJob = await jobLifecycle().getJobDetail(quote.tenantId, quote.convertedJobId);
-      return { quote, job: existingJob, reused: true };
-    }
-    const created = await jobLifecycle().createJob({
-      id: `job_quote_${quote.id}`,
-      tenantId: quote.tenantId,
-      clientId: quote.clientId,
-      ...(quote.propertyId ? { propertyId: quote.propertyId } : {}),
-      ...(quote.requestId ? { requestId: quote.requestId } : {}),
-      quoteId: quote.id,
-      title: quote.title,
-      lineItems: quote.lineItems,
-      ...(quote.paymentSchedule ? { paymentSchedule: quote.paymentSchedule } : {}),
-      intake: quote.intake,
+    const jobId = quote.convertedJobId ?? `job_quote_${quote.id}`;
+    const claim = await repositoryForTenant().claimQuoteJobConversion(quote.tenantId, quote.id, jobId);
+    const convertedQuote = claim.quote;
+    const ensured = await jobLifecycle().createJobIfAbsent({
+      id: jobId,
+      tenantId: convertedQuote.tenantId,
+      clientId: convertedQuote.clientId,
+      ...(convertedQuote.propertyId ? { propertyId: convertedQuote.propertyId } : {}),
+      ...(convertedQuote.requestId ? { requestId: convertedQuote.requestId } : {}),
+      quoteId: convertedQuote.id,
+      title: convertedQuote.title,
+      lineItems: convertedQuote.lineItems,
+      ...(convertedQuote.paymentSchedule ? { paymentSchedule: convertedQuote.paymentSchedule } : {}),
+      intake: convertedQuote.intake,
       createdBy
     });
-    const bundleAttachment = await fieldDocsService().maybeAttachBundleForJob({ tenantId: quote.tenantId, job: created });
-    const job = await jobLifecycle().getJobDetail(quote.tenantId, created.id);
-    const convertedQuote = await providerForTenant(quote.tenantId).updateQuote(quote.id, {
-      convertedJobId: created.id,
-      jobId: created.id,
-      updatedAt: new Date().toISOString()
-    });
-    await eventBus.emit({
-      tenantId: quote.tenantId,
-      type: "quote.converted_to_job",
-      payload: { quoteId: quote.id, jobId: created.id, clientId: created.clientId, automatic: true }
-    });
+    const sideEffectsClaimed = claim.claimed || ensured.created;
+    const bundleAttachment = sideEffectsClaimed
+      ? await fieldDocsService().maybeAttachBundleForJob({ tenantId: convertedQuote.tenantId, job: ensured.job })
+      : null;
+    if (sideEffectsClaimed) {
+      await eventBus.emit({
+        tenantId: convertedQuote.tenantId,
+        type: "quote.converted_to_job",
+        payload: { quoteId: convertedQuote.id, jobId: ensured.job.id, clientId: ensured.job.clientId, automatic: true }
+      });
+    }
     return {
       quote: convertedQuote,
-      job: job ?? created,
-      reused: false,
+      job: ensured.job,
+      reused: !claim.claimed,
       ...(bundleAttachment ? {
         fieldDocsBundle: {
           bundleId: bundleAttachment.bundle.id,
