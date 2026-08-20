@@ -102,10 +102,32 @@ test("evaporation routes create a report and render a PDF", async () => {
     assert.match(created.pdfUrl, /\/api\/evaporation\/reports\/evap_/);
     assert.equal(created.attachment.mime, "application/pdf");
 
+    const inputsResponse = await fetch(`${baseUrl}/api/evaporation/reports/${created.report.id}?tenantId=aquatrace&jobId=job_wrong&visitId=visit_wrong`);
+    assert.equal(inputsResponse.status, 404);
+
     const pdfResponse = await fetch(`${baseUrl}${created.pdfUrl}`);
     assert.equal(pdfResponse.status, 200);
     const pdf = Buffer.from(await pdfResponse.arrayBuffer());
     assert.equal(pdf.subarray(0, 5).toString("utf8"), "%PDF-");
+  });
+});
+
+test("evaporation setup inputs are readable only through the report's owning Visit context", async () => {
+  const app = express();
+  const repository = new MemoryEvaporationRepository();
+  await repository.saveReport({
+    id: "evap_saved_inputs", tenantId: "aquatrace", jobId: "job_1", visitId: "visit_1", address: "Bryson City, NC 28713", zip: "28713", surfaceAreaFt2: 500, waterTempF: 82, windMphOverride: 3,
+    createdAt: "2026-08-20T00:00:00.000Z", currentWeather: { city: "Bryson City", airTempF: 84, relativeHumidityPct: 62, windMph: 5.5, fetchedAt: "2026-08-20T00:00:00.000Z" }, forecast: [],
+    result: { ...calculateEvaporation({ surfaceAreaFt2: 500, waterTempF: 82, currentWeather: { city: "Bryson City", airTempF: 84, relativeHumidityPct: 62, windMph: 5.5, fetchedAt: "2026-08-20T00:00:00.000Z" } }), observedLossInchesPerDay: .25 }, pdfRef: "native://tenants/aquatrace/evaporationReports/evap_saved_inputs.pdf", status: "posted"
+  });
+  app.use(express.json());
+  registerEvaporationRoutes(app, { repository, weatherProvider, env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" } });
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/evaporation/reports/evap_saved_inputs?tenantId=aquatrace&jobId=job_1&visitId=visit_1`);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, report: { id: "evap_saved_inputs", surfaceAreaFt2: 500, waterTempF: 82, observedLossInches: .25, zip: "28713", windMphOverride: 3 } });
+    const mismatch = await fetch(`${baseUrl}/api/evaporation/reports/evap_saved_inputs?tenantId=aquatrace&jobId=job_1&visitId=visit_other`);
+    assert.equal(mismatch.status, 404);
   });
 });
 

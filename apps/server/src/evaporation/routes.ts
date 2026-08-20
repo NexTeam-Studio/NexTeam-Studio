@@ -82,6 +82,36 @@ export function registerEvaporationRoutes(app: Express, deps: EvaporationRouteDe
     }
   });
 
+  app.get("/api/evaporation/reports/:id", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "readEvaporationInputs" });
+      const reportId = req.params.id;
+      const jobId = typeof req.query.jobId === "string" ? req.query.jobId : "";
+      const visitId = typeof req.query.visitId === "string" ? req.query.visitId : "";
+      if (!reportId || !jobId || !visitId) {
+        throw new RailError("An evaporation report, job, and Visit are required.", { provider: "native", op: "readEvaporationInputs", status: 400 });
+      }
+      const report = await repository.getReport(tenantId, reportId);
+      if (!report || report.jobId !== jobId || report.visitId !== visitId) {
+        throw new RailError("The evaporation report was not found for this Visit.", { provider: "native", op: "readEvaporationInputs", status: 404 });
+      }
+      res.json({
+        ok: true,
+        report: {
+          id: report.id,
+          surfaceAreaFt2: report.surfaceAreaFt2,
+          waterTempF: report.waterTempF,
+          observedLossInches: report.result.observedLossInchesPerDay,
+          ...(report.zip ? { zip: report.zip } : {}),
+          ...(report.windMphOverride !== undefined ? { windMphOverride: report.windMphOverride } : {})
+        }
+      });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.get("/api/evaporation/reports/:id/pdf", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : defaultTenantId(env);

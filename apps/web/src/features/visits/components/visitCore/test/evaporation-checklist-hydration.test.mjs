@@ -33,3 +33,11 @@ test("reopens stored evaporation measurements from the linked Visit checklist", 
 test("does not replace unsaved measurement input when the checklist has no matching values", () => {
   assert.deepEqual(hydrateEvaporationDraft({ id: "checklist-2", status: "draft", fields: [{ label: "Daily evaporation index", numberValue: 0.4 }] }, emptyDraft), emptyDraft);
 });
+
+test("uses the authoritative linked report when the checklist template does not store setup measurements", () => {
+  assert.deepEqual(hydrateEvaporationDraft({ id: "checklist-3", status: "draft", fields: [{ label: "Reported daily water loss", numberValue: 0.25 }] }, emptyDraft, {
+    surfaceAreaFt2: 500, waterTempF: 82, observedLossInches: 0.25, zip: "29643", windMphOverride: 3
+  }), {
+    surfaceAreaFt2: "500", waterTempF: "82", observedLossInches: "0.25", zip: "29643", windMphOverride: "3"
+  });
+});
