@@ -73,9 +73,13 @@ if (-not $RailwayArgs -or $RailwayArgs.Count -eq 0) {
 $normalizedRailwayArgs = @($RailwayArgs | ForEach-Object { $_ -split "," } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 Assert-SafeRailwayOperation -Args $normalizedRailwayArgs
 
-$railway = Get-Command railway -ErrorAction Stop
-$token = Get-RailwayTokenFromVault -Path $VaultPath
-
+$repositoryRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$normalizedCommand = (($normalizedRailwayArgs -join " ").ToLowerInvariant() -replace "[,;\s]+", " ").Trim()
+$buildStampPath = Join-Path $repositoryRoot "nexteam-build-sha.txt"
+$hadBuildStamp = Test-Path -LiteralPath $buildStampPath
+$previousBuildStamp = if ($hadBuildStamp) { Get-Content -LiteralPath $buildStampPath -Raw } else { $null }
+$railway = $null
+$token = $null
 $hadRailwayToken = Test-Path Env:RAILWAY_TOKEN
 $oldRailwayToken = $env:RAILWAY_TOKEN
 $hadRailwayApiToken = Test-Path Env:RAILWAY_API_TOKEN
@@ -83,6 +87,16 @@ $oldRailwayApiToken = $env:RAILWAY_API_TOKEN
 $exitCode = 0
 
 try {
+  if ($normalizedCommand -eq "up --service nexteam-studio --environment staging --detach") {
+    $buildSha = (& git -C $repositoryRoot rev-parse HEAD).Trim()
+    if (-not $buildSha) {
+      throw "Unable to create the non-secret staging build identity stamp; Railway upload is denied."
+    }
+    Set-Content -LiteralPath $buildStampPath -Value $buildSha -NoNewline
+  }
+
+  $railway = Get-Command railway -ErrorAction Stop
+  $token = Get-RailwayTokenFromVault -Path $VaultPath
   $env:RAILWAY_TOKEN = $token
   Remove-Item Env:RAILWAY_API_TOKEN -ErrorAction SilentlyContinue
 
@@ -95,10 +109,19 @@ try {
     Write-SafeOutput -InputObject $item -KnownSecrets @($token)
   }
 } catch {
-  $message = Redact-SecretOutput -Text $_.Exception.Message -KnownSecrets @($token)
+  $knownSecrets = if ($token) { @($token) } else { @() }
+  $message = Redact-SecretOutput -Text $_.Exception.Message -KnownSecrets $knownSecrets
   Write-Error $message
   $exitCode = 1
 } finally {
+  if ($normalizedCommand -eq "up --service nexteam-studio --environment staging --detach") {
+    if ($hadBuildStamp) {
+      Set-Content -LiteralPath $buildStampPath -Value $previousBuildStamp -NoNewline
+    } else {
+      Remove-Item -LiteralPath $buildStampPath -ErrorAction SilentlyContinue
+    }
+  }
+
   if ($hadRailwayToken) {
     $env:RAILWAY_TOKEN = $oldRailwayToken
   } else {
