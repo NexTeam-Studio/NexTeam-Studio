@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
 import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexDocsClientWorkspace } from "../../../nexdocs/areas/clientWorkspace/components/NexDocsClientWorkspace";
 import { visitCanBeCompleted } from "./visitCompletion";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
@@ -628,13 +629,13 @@ export function NexOpsSchedulePage(props: {
         title={detail.clientName}
         detail={`${detail.arrivalWindow} · ${detail.jobTitle}`}
         status={<><span className={`nexops-status-pill nexops-tone-${visitToneClass(detail.statusTone)}`}>{detail.status}</span><span className="nexops-status-pill">{detail.assignedTeam.map((member) => member.name).join(", ") || "Unassigned"}</span></>}
-        actions={<><button className="nexops-primary-inline-button" type="button" onClick={() => openEdit(detail)}>Edit visit</button><button type="button" onClick={() => props.onOpenJob(detail.jobId)}>Open Job</button></>}
+        actions={<>{!detail.readOnly ? <button className="nexops-primary-inline-button" type="button" onClick={() => { setVisitDetail(null); openEdit(detail); }}>Edit visit</button> : null}<button type="button" onClick={() => props.onOpenJob(detail.jobId)}>Open Job</button></>}
         navigation={<><button type="button" className={visitDetailSection === "overview" ? "active" : ""} aria-current={visitDetailSection === "overview" ? "page" : undefined} onClick={() => setVisitDetailSection("overview")}>Visit</button><button type="button" className={visitDetailSection === "files" ? "active" : ""} aria-current={visitDetailSection === "files" ? "page" : undefined} onClick={() => setVisitDetailSection("files")}>Files</button><button type="button" className={visitDetailSection === "nexcam" ? "active" : ""} aria-current={visitDetailSection === "nexcam" ? "page" : undefined} onClick={() => setVisitDetailSection("nexcam")}>NexCam</button></>}
       >
         <section className="nexops-module-card nexops-visit-detail-card">
           {visitDetailSection === "overview" ? <><p className="eyebrow">Visit context</p><h2>{detail.jobTitle}</h2><dl className="nexops-visit-detail-facts"><div><dt>Client</dt><dd>{detail.clientName}</dd></div><div><dt>Property</dt><dd>{detail.propertyAddress}</dd></div><div><dt>Schedule</dt><dd>{new Date(detail.start).toLocaleString()} – {new Date(detail.end).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</dd></div><div><dt>Team</dt><dd>{detail.assignedTeam.map((member) => member.name).join(", ") || "Unassigned"}</dd></div></dl>{detail.details ? <p>{detail.details}</p> : <p className="nexops-empty-copy">No additional visit instructions are recorded.</p>}</> : null}
-          {visitDetailSection === "files" ? <><p className="eyebrow">Visit files</p><h2>Documents and reports</h2><p>Visit files are preserved on the parent Job and remain available through the documented job file rail.</p><button type="button" onClick={() => props.onOpenJob(detail.jobId)}>Open Job Files</button></> : null}
-          {visitDetailSection === "nexcam" ? <><p className="eyebrow"><ProductInlineLabel product="nexcam" /></p><h2>Visit media and reports</h2><p>Open the visual documentation rail for this Visit.</p><button type="button" onClick={() => void openFieldDocsRail(detail)}>Open NexCam</button></> : null}
+          {visitDetailSection === "files" ? <NexDocsClientWorkspace tenantId={props.tenantId} clientId={detail.clientId} clientName={detail.clientName} role={props.role} jobId={detail.jobId} visitId={detail.id} contextLabel={`Visit ${detail.id} files`} nexcamCounts={{ media: fieldDocsMedia.length, reports: fieldDocsReports.length, signedDocuments: 0 }} /> : null}
+          {visitDetailSection === "nexcam" ? <><p className="eyebrow"><ProductInlineLabel product="nexcam" /></p><h2>Visit media and reports</h2><p>Open the visual documentation rail for this Visit.</p><button type="button" onClick={() => { setVisitDetail(null); void openFieldDocsRail(detail); }}>Open NexCam</button></> : null}
         </section>
       </NexOpsDetailTemplate>
     );
