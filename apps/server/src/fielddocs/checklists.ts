@@ -92,6 +92,58 @@ export const checklistInstanceSchema = z.object({
   completedBy: z.string().optional()
 });
 
+// Checklist records created before the field-response model used `items` and did
+// not record an update timestamp.  Read them compatibly so one historical record
+// cannot make a scoped field workspace unavailable.  This is intentionally
+// read-only: a subsequent checklist update writes the current canonical shape.
+const legacyChecklistItemSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  required: z.boolean().default(true),
+  status: checklistPassFailSchema.default("pending"),
+  note: z.string().optional()
+});
+
+const legacyChecklistInstanceSchema = z.object({
+  id: z.string().min(1),
+  tenantId: z.string().min(1),
+  templateId: z.string().min(1),
+  propertyId: z.string().min(1).optional(),
+  jobId: z.string().min(1).optional(),
+  visitId: z.string().min(1).optional(),
+  title: z.string().min(1),
+  items: z.array(legacyChecklistItemSchema),
+  createdAt: z.string().min(1)
+});
+
+export function parseStoredChecklist(value: unknown): ChecklistInstance {
+  const canonical = checklistInstanceSchema.safeParse(value);
+  if (canonical.success) {
+    return canonical.data as ChecklistInstance;
+  }
+  const legacy = legacyChecklistInstanceSchema.safeParse(value);
+  if (!legacy.success) {
+    return checklistInstanceSchema.parse(value) as ChecklistInstance;
+  }
+  return checklistInstanceSchema.parse({
+    ...legacy.data,
+    status: "draft",
+    sectionStates: [],
+    fields: legacy.data.items.map((item) => ({
+      fieldId: item.id,
+      label: item.label,
+      section: "Legacy checklist",
+      type: "free_text",
+      memory: "visit",
+      required: item.required,
+      photoRequired: false,
+      status: item.status,
+      ...(item.note ? { note: item.note } : {})
+    })),
+    updatedAt: legacy.data.createdAt
+  }) as ChecklistInstance;
+}
+
 export type ChecklistTemplateSection = z.infer<typeof checklistTemplateSectionSchema>;
 export type ChecklistTemplateField = z.infer<typeof checklistTemplateFieldSchema>;
 export type ChecklistTemplate = z.infer<typeof checklistTemplateSchema>;
