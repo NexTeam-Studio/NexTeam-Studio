@@ -78,3 +78,26 @@ test("the approved Railway wrapper uses the controller policy and rejects secret
     assert.doesNotMatch(output, /RAILWAY_TOKEN=|API_KEY=|SECRET=/i);
   }
 });
+
+test("the approved Railway wrapper admits only the documented staging deployment shape", () => {
+  let safeOutput = "";
+  try {
+    execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/security/invoke-railway-staging.ps1", "-VaultPath", "C:\\nonexistent\\secret-vault.dpapi", "-RailwayArgs", "up,--service,NexTeam-Studio,--environment,staging,--detach"], {
+      cwd: process.cwd(), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"]
+    });
+  } catch (error) {
+    safeOutput = `${error.stdout ?? ""}${error.stderr ?? ""}`;
+  }
+  assert.match(safeOutput, /token vault not found/i);
+  assert.doesNotMatch(safeOutput, /allowlist|API_KEY=|SECRET=/i);
+
+  let deniedOutput = "";
+  try {
+    execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/security/invoke-railway-staging.ps1", "-RailwayArgs", "up,--service,other-service,--environment,staging,--detach"], {
+      cwd: process.cwd(), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"]
+    });
+  } catch (error) {
+    deniedOutput = `${error.stdout ?? ""}${error.stderr ?? ""}`;
+  }
+  assert.match(deniedOutput, /allowlist/i);
+});

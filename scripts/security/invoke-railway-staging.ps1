@@ -40,14 +40,11 @@ function Assert-SafeRailwayOperation {
   param([Parameter(Mandatory = $true)][string[]]$Args)
 
   $command = (($Args -join " ").ToLowerInvariant() -replace "[,;\s]+", " ").Trim()
-  $allowed = @(
-    "status",
-    "whoami",
-    "deployment list",
-    "deployment redeploy",
-    "up"
-  )
-  if ($allowed -notcontains $command) {
+  $allowed = $command -eq "status" -or $command -eq "whoami" -or
+    $command -match "^deployment list(?: --service nexteam-studio)?(?: --environment staging)?(?: --limit [0-9]+)?(?: --json)?$" -or
+    $command -match "^deployment redeploy(?: --service nexteam-studio)?(?: --yes)?$" -or
+    $command -eq "up --service nexteam-studio --environment staging --detach"
+  if (-not $allowed) {
     throw "Railway operation is denied by the secret-safe staging allowlist. Use approved status, logs, deployment, or upload actions; raw variables, shells, runtime commands, and environment inspection are never allowed."
   }
 
