@@ -13,20 +13,18 @@ import { PlatformMigrationsPanel } from "../components/PlatformMigrationsPanel";
 import { PlatformSettingsPanel } from "../components/PlatformSettingsPanel";
 import { NexCommandTenantProfilePanel } from "../components/NexCommandTenantProfilePanel";
 import { PlatformTenantOnboardingPanel } from "../components/PlatformTenantOnboardingPanel";
+import { TemplatesRoster } from "../components/TemplatesRoster";
 import { usePlatformPlans } from "../hooks/usePlatformPlans";
 import { usePathname } from "../../../shared/router/usePathname";
 import "../../tenantOverview/styles/tenantOverview.css";
 import "../styles/nexCommand.css";
 
 type Area = "dashboard" | "live-status" | "team" | "tenants" | "prospects" | "blueprints" | "subscriptions" | "onboarding" | "migrations" | "support" | "modules" | "templates" | "integrations" | "system" | "releases" | "usage" | "billing" | "security" | "settings";
-type TemplateTreeNode = { id: string; label: string; href?: string; children?: TemplateTreeNode[] };
 
 const navigation: Array<[Area, string, string]> = [
   ["dashboard", "Dashboard", "⌂"], ["tenants", "Tenants", "◫"], ["prospects", "Prospects", "◌"], ["blueprints", "Blueprints", "◇"], ["subscriptions", "Subscriptions", "◈"], ["onboarding", "Onboarding", "→"], ["migrations", "Migrations", "↻"], ["support", "Support", "?"], ["modules", "Modules", "▦"], ["templates", "Templates", "▤"], ["integrations", "Integrations", "⌁"], ["system", "Code & System", "⌘"], ["releases", "Releases", "↑"], ["usage", "Usage", "▥"], ["billing", "Billing", "$"], ["security", "Security & Audit", "◉"], ["settings", "Settings", "⚙"]
 ];
 navigation.splice(1, 0, ["live-status", "Live Build Status", "●"]);
-
-const templateTree: TemplateTreeNode[] = [{ id: "templates", label: "Templates", children: [{ id: "design", label: "Design", children: [{ id: "nexsuite", label: "NexSuite", children: [{ id: "global", label: "Global", children: [{ id: "header", label: "Header", href: "/design-system/layout-parts/header" }] }] }] }] }];
 
 const moduleDirectory = [
   ["NexOps", "Business operations workspace", "/nexops"], ["Nexi", "Tool-backed operating assistant", "/nexi"], ["Tenant onboarding", "Prospect, onboarding plan, subscription, and activation workflow", "/nexcommand?area=onboarding"], ["Settings", "Tenant configuration controls", "/platform/settings"], ["Authentication", "Platform and tenant access boundaries", "/nexcommand?area=security"], ["Integrations", "Configured provider health and quick access", "/nexcommand?area=integrations"], ["Global Control", "Build and verification coordination", "/nexcommand?area=system"], ["Code & System", "Build identity and diagnostic foundation", "/nexcommand?area=system"]
@@ -43,14 +41,6 @@ function areaFromLocation(): Area {
   const requested = new URLSearchParams(window.location.search).get("area");
   return navigation.some(([area]) => area === requested) ? requested as Area : "dashboard";
 }
-
-function TemplateRosterTree({ nodes }: { nodes: TemplateTreeNode[] }): React.ReactElement {
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
-  const toggle = (id: string): void => setExpanded((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
-  return <ul className="nexcommand__template-tree">{nodes.map((node) => { const branch = Boolean(node.children?.length); const isExpanded = expanded.has(node.id); return <li key={node.id}>{branch ? <button type="button" className="nexcommand__template-branch" aria-expanded={isExpanded} onClick={() => toggle(node.id)}><i aria-hidden="true">{isExpanded ? "⌄" : "›"}</i><span>{node.label}</span></button> : <a className="nexcommand__template-leaf" href={node.href}>{node.label}</a>}{branch && isExpanded ? <TemplateRosterTree nodes={node.children!} /> : null}</li>; })}</ul>;
-}
-
-function TemplatesRoster(): React.ReactElement { return <section className="nexcommand__panel nexcommand__templates-roster"><p className="ui-eyebrow">NexSuite design inventory</p><h2>Templates</h2><p>Browse reusable templates and review elements. This roster is configuration-driven so branches can grow without changing its navigation behavior.</p><TemplateRosterTree nodes={templateTree} /></section>; }
 
 export function NexCommandRoute(): React.ReactElement {
   const { signOut, user } = useAuthSession();
@@ -92,7 +82,7 @@ function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOv
   if (props.area === "migrations") return <PlatformMigrationsPanel user={props.user} />;
   if (props.area === "support") return <PlatformSupportPanel user={props.user} />;
   if (props.area === "modules") return <Directory title="Module directory" items={moduleDirectory} />;
-  if (props.area === "templates") return <TemplatesRoster />;
+  if (props.area === "templates") return <TemplatesRoster rosterId={new URLSearchParams(window.location.search).get("template")} />;
   if (props.area === "integrations") return <ProviderCredentialsPanel user={props.user} />;
   if (props.area === "system") return <section className="nexcommand__panel"><h2>Code &amp; System</h2><p>Current system identity, diagnostics, provider health, and green-gate evidence belong here. Embedded build controls are intentionally not enabled in this release.</p><dl className="nexcommand__facts"><div><dt>Staging</dt><dd>nexstage.nexteam.studio</dd></div><div><dt>Production</dt><dd>nexapp.nexteam.studio</dd></div><div><dt>Global Control</dt><dd>Local diagnostic access available to authorized operators.</dd></div></dl></section>;
   if (props.area === "security") return <section className="nexcommand__panel"><h2>Security &amp; audit</h2><p>NexCommand is for authorized NexTeam platform personnel. Tenant ownership alone does not grant NexCommand access. Provider credentials and tenant secrets remain masked.</p><p>Support access is not active. A future request-and-approval session will require tenant approval, explicit scope, a time limit, revocation, and audit history.</p></section>;
