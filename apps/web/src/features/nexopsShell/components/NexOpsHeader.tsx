@@ -1,6 +1,6 @@
 import React from "react";
 import type { TenantBranding } from "@nexteam/core";
-import { PlatformMark, ProductLogo, TenantBrandMark, productLabel, type ProductBrand } from "../../../shared/branding/ProductBranding";
+import { PlatformMark, ProductLogo, TenantBrandMark, hasTenantLogo, productLabel, type ProductBrand } from "../../../shared/branding/ProductBranding";
 import { NexTeamProductHeader } from "../../../shared/ui/NexTeamProductHeader";
 
 export function NexOpsSharedMobileBar(props: {
@@ -13,6 +13,7 @@ export function NexOpsSharedMobileBar(props: {
   brandAriaLabel?: string;
 }): React.ReactElement {
   const product = props.product ?? "nexops";
+  const tenantLogoAvailable = hasTenantLogo(props.tenantBranding, props.tenantId);
   const brandLockup = (
     <div className="nexops-mobile-brand-lockup">
       <PlatformMark className="nexops-mobile-platform-mark" alt="NexTeam" />
@@ -34,9 +35,9 @@ export function NexOpsSharedMobileBar(props: {
             </button>
           ) : brandLockup}
         </div>
-        <div className="nexops-mobile-header-center">
+        {tenantLogoAvailable ? <div className="nexops-mobile-header-center">
           <TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-mobile-tenant-mark" />
-        </div>
+        </div> : null}
         <div className="nexops-mobile-header-right">
           <div className="nexops-mobile-controls">
             {props.rightControls}
@@ -63,6 +64,7 @@ export function NexOpsSharedWebTopbar(props: {
   searchPlaceholder?: string;
 }): React.ReactElement {
   const product = props.product ?? "nexops";
+  const tenantLogoAvailable = hasTenantLogo(props.tenantBranding, props.tenantId);
   return (
     <NexTeamProductHeader
       className="nexops-web-topbar"
@@ -73,12 +75,12 @@ export function NexOpsSharedWebTopbar(props: {
           <ProductLogo product={product} className="nexops-header-product-logo" alt={productLabel(product)} />
         </div>
       )}
-      tenantBrand={(
+      tenantBrand={tenantLogoAvailable ? (
         <>
           <span className="nexops-web-brand-divider" aria-hidden="true" />
           <TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-header-tenant-logo" />
         </>
-      )}
+      ) : undefined}
       context={(
         <div className="nexops-web-tools">
           <label>
