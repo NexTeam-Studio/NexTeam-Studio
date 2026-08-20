@@ -324,6 +324,7 @@ export function NexOpsSchedulePage(props: {
   const [fieldDocsMedia, setFieldDocsMedia] = useState<FieldDocsMediaRecord[]>([]);
   const [fieldDocsReports, setFieldDocsReports] = useState<FieldDocsReportRecord[]>([]);
   const [fieldDocsStatus, setFieldDocsStatus] = useState("");
+  const [isNarrowSchedule, setIsNarrowSchedule] = useState(() => window.matchMedia("(max-width: 800px)").matches);
 
   const range = useMemo(() => dateRange(anchorDate, view, scope), [anchorDate, scope, view]);
   const groupedByDay = useMemo(() => byDay(workspace?.visits ?? []), [workspace?.visits]);
@@ -405,6 +406,14 @@ export function NexOpsSchedulePage(props: {
   useEffect(() => {
     void loadJobs();
   }, [props.tenantId]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 800px)");
+    const updateLayout = () => setIsNarrowSchedule(mediaQuery.matches);
+    updateLayout();
+    mediaQuery.addEventListener("change", updateLayout);
+    return () => mediaQuery.removeEventListener("change", updateLayout);
+  }, []);
 
   function openComposer(jobId?: string, seedDate?: string, seedHour?: string): void {
     setComposerStatus("");
@@ -643,6 +652,40 @@ export function NexOpsSchedulePage(props: {
     );
   }
 
+  function renderUnscheduledJobs(): React.ReactElement | null {
+    if (!workspace?.unscheduledJobs.length) {
+      return null;
+    }
+    return (
+      <section className="nexops-schedule-unscheduled">
+        <div className="nexops-home-section-head">
+          <p className="eyebrow">Unscheduled</p>
+          <h2>Ready to Place</h2>
+        </div>
+        <div className="nexops-schedule-unscheduled-list">
+          {workspace.unscheduledJobs.map((job) => (
+            <button
+              className="nexops-schedule-unscheduled-row"
+              key={job.jobId}
+              type="button"
+              onClick={() => openComposer(job.jobId)}
+            >
+              <div>
+                <strong>{job.clientName}</strong>
+                <p>{job.title}</p>
+                <small>{job.propertyAddress}</small>
+              </div>
+              <div className="nexops-schedule-unscheduled-meta">
+                <span>{job.number ?? "No #"}</span>
+                <small>${job.totalValue.toFixed(0)}</small>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   if (visitDetail) {
     const detail = visitDetail;
     return (
@@ -736,34 +779,7 @@ export function NexOpsSchedulePage(props: {
         {status ? <p className="nexops-module-status">{status}</p> : null}
         {composerStatus && !composerOpen ? <p className="nexops-module-status" role="status">{composerStatus}</p> : null}
 
-        {workspace?.unscheduledJobs.length ? (
-          <section className="nexops-schedule-unscheduled">
-            <div className="nexops-home-section-head">
-              <p className="eyebrow">Unscheduled</p>
-              <h2>Ready to Place</h2>
-            </div>
-            <div className="nexops-schedule-unscheduled-list">
-              {workspace.unscheduledJobs.map((job) => (
-                <button
-                  className="nexops-schedule-unscheduled-row"
-                  key={job.jobId}
-                  type="button"
-                  onClick={() => openComposer(job.jobId)}
-                >
-                  <div>
-                    <strong>{job.clientName}</strong>
-                    <p>{job.title}</p>
-                    <small>{job.propertyAddress}</small>
-                  </div>
-                  <div className="nexops-schedule-unscheduled-meta">
-                    <span>{job.number ?? "No #"}</span>
-                    <small>${job.totalValue.toFixed(0)}</small>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
-        ) : null}
+        {!isNarrowSchedule ? renderUnscheduledJobs() : null}
 
         {view === "list" ? (
           <div className="nexops-schedule-list">
@@ -849,6 +865,7 @@ export function NexOpsSchedulePage(props: {
             ))}
           </div>
         ) : null}
+        {isNarrowSchedule ? renderUnscheduledJobs() : null}
         </section>
       </NexOpsRosterTemplate>
 
