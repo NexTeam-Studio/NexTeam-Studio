@@ -1073,6 +1073,8 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     assert.equal(approveBody.quote.status, "approved");
     assert.equal(approveBody.quote.signature.typedName, "Deborah Justice");
     assert.equal(approveBody.quote.deposit.cardOnFileAuthorized, true);
+    assert.match(approveBody.job.number, /^JOB-/);
+    assert.equal(approveBody.quote.convertedJobId, approveBody.job.id);
     const depositPaidEmail = sentEmails.find((message) =>
       Array.isArray(message.to)
       && message.to.includes("owner@example.test")
@@ -1110,6 +1112,8 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     const jobBody = await jobResponse.json();
     assert.equal(jobBody.ok, true);
     assert.match(jobBody.job.number, /^JOB-/);
+    assert.equal(jobBody.reused, true);
+    assert.equal(jobBody.job.id, approveBody.job.id);
 
     const secondJobResponse = await fetch(`${base}/api/crm/quotes/${createBody.quote.id}/convert-to-job`, {
       method: "POST",

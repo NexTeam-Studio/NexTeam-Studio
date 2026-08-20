@@ -44,6 +44,7 @@ export interface JobDetailRecord extends JobDetail {
 }
 
 export interface CreateJobInput {
+  id?: string | undefined;
   tenantId: string;
   clientId: string;
   propertyId?: string | undefined;
@@ -948,10 +949,14 @@ export class JobLifecycleService {
   }
 
   async createJob(input: CreateJobInput): Promise<Job> {
+    if (input.id) {
+      const existing = (await this.deps.crmRepository.listJobs(input.tenantId)).find((job) => job.id === input.id);
+      if (existing) return existing;
+    }
     const timestamp = now();
     const lineItems = input.lineItems ?? [];
     const job = await this.deps.crmRepository.upsertJob({
-      id: `job_${randomUUID()}`,
+      id: input.id ?? `job_${randomUUID()}`,
       tenantId: input.tenantId,
       number: await this.deps.crmRepository.reserveDocumentNumber(input.tenantId, "job"),
       clientId: input.clientId,

@@ -64,6 +64,51 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
     syncExpiredQuote,
   } = context;
 
+  async function convertApprovedQuoteToJob(quote: Quote, createdBy: string) {
+    if (quote.convertedJobId) {
+      const existingJob = await jobLifecycle().getJobDetail(quote.tenantId, quote.convertedJobId);
+      return { quote, job: existingJob, reused: true };
+    }
+    const created = await jobLifecycle().createJob({
+      id: `job_quote_${quote.id}`,
+      tenantId: quote.tenantId,
+      clientId: quote.clientId,
+      ...(quote.propertyId ? { propertyId: quote.propertyId } : {}),
+      ...(quote.requestId ? { requestId: quote.requestId } : {}),
+      quoteId: quote.id,
+      title: quote.title,
+      lineItems: quote.lineItems,
+      ...(quote.paymentSchedule ? { paymentSchedule: quote.paymentSchedule } : {}),
+      intake: quote.intake,
+      createdBy
+    });
+    const bundleAttachment = await fieldDocsService().maybeAttachBundleForJob({ tenantId: quote.tenantId, job: created });
+    const job = await jobLifecycle().getJobDetail(quote.tenantId, created.id);
+    const convertedQuote = await providerForTenant(quote.tenantId).updateQuote(quote.id, {
+      convertedJobId: created.id,
+      jobId: created.id,
+      updatedAt: new Date().toISOString()
+    });
+    await eventBus.emit({
+      tenantId: quote.tenantId,
+      type: "quote.converted_to_job",
+      payload: { quoteId: quote.id, jobId: created.id, clientId: created.clientId, automatic: true }
+    });
+    return {
+      quote: convertedQuote,
+      job: job ?? created,
+      reused: false,
+      ...(bundleAttachment ? {
+        fieldDocsBundle: {
+          bundleId: bundleAttachment.bundle.id,
+          checklistId: bundleAttachment.checklist.id,
+          reportId: bundleAttachment.report.id,
+          reportTemplateId: bundleAttachment.reportTemplate.id
+        }
+      } : {})
+    };
+  }
+
   app.get("/api/crm/quotes", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
@@ -274,7 +319,8 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         type: "quote.approved",
         payload: { quoteId: approved.id, clientId: approved.clientId, approvedAt, approvedBy: access.tenantUserId, approvedByRole: access.role }
       });
-      res.json({ ok: true, tenantId, actorRole: access.role, quote: approved });
+      const converted = await convertApprovedQuoteToJob(approved, access.tenantUserId);
+      res.json({ ok: true, tenantId, actorRole: access.role, ...converted });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -369,56 +415,12 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
       if (!["approved", "approved_internal"].includes(quote.status)) {
         throw new RailError("Only approved quotes can convert into jobs.", { provider: "native", op: "convertQuoteToJob", status: 409 });
       }
-      if (quote.convertedJobId) {
-        const existingJob = await jobLifecycle().getJobDetail(tenantId, quote.convertedJobId);
-        res.json({ ok: true, tenantId, actorRole: access.role, quote, job: existingJob, reused: true });
-        return;
-      }
-      const created = await jobLifecycle().createJob({
-        tenantId,
-        clientId: quote.clientId,
-        ...(quote.propertyId ? { propertyId: quote.propertyId } : {}),
-        ...(quote.requestId ? { requestId: quote.requestId } : {}),
-        quoteId: quote.id,
-        title: quote.title,
-        lineItems: quote.lineItems,
-        ...(quote.paymentSchedule ? { paymentSchedule: quote.paymentSchedule } : {}),
-        intake: quote.intake,
-        createdBy: access.tenantUserId
-      });
-      const bundleAttachment = await fieldDocsService().maybeAttachBundleForJob({
-        tenantId,
-        job: created
-      });
-      const job = await jobLifecycle().getJobDetail(tenantId, created.id);
-      const updatedQuote = await provider.updateQuote(quote.id, {
-        convertedJobId: created.id,
-        jobId: created.id,
-        updatedAt: new Date().toISOString()
-      });
-      await eventBus.emit({
-        tenantId,
-        type: "quote.converted_to_job",
-        payload: {
-          quoteId: quote.id,
-          jobId: created.id,
-          clientId: created.clientId
-        }
-      });
+      const converted = await convertApprovedQuoteToJob(quote, access.tenantUserId);
       res.status(201).json({
         ok: true,
         tenantId,
         actorRole: access.role,
-        quote: updatedQuote,
-        job: job ?? created,
-        ...(bundleAttachment ? {
-          fieldDocsBundle: {
-            bundleId: bundleAttachment.bundle.id,
-            checklistId: bundleAttachment.checklist.id,
-            reportId: bundleAttachment.report.id,
-            reportTemplateId: bundleAttachment.reportTemplate.id
-          }
-        } : {})
+        ...converted
       });
     } catch (error) {
       sendRouteError(res, error);
@@ -714,7 +716,8 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
           });
         }
       }
-      res.json({ ok: true, quote: approved });
+      const converted = await convertApprovedQuoteToJob(approved, approved.approvedBy ?? "portal");
+      res.json({ ok: true, ...converted });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -939,7 +942,8 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
           });
         }
       }
-      res.json({ ok: true, quote: approved });
+      const converted = await convertApprovedQuoteToJob(approved, approved.approvedBy ?? "portal");
+      res.json({ ok: true, ...converted });
     } catch (error) {
       sendRouteError(res, error);
     }
