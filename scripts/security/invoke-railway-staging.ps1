@@ -42,10 +42,9 @@ function Assert-SafeRailwayOperation {
   $command = (($Args -join " ").ToLowerInvariant() -replace "[,;\s]+", " ").Trim()
   $allowed = $command -eq "status" -or $command -eq "whoami" -or
     $command -match "^deployment list(?: --service nexteam-studio)?(?: --environment staging)?(?: --limit [0-9]+)?(?: --json)?$" -or
-    $command -match "^deployment redeploy(?: --service nexteam-studio)?(?: --yes)?$" -or
     $command -eq "up --service nexteam-studio --environment staging --detach"
   if (-not $allowed) {
-    throw "Railway operation is denied by the secret-safe staging allowlist. Use approved status, logs, deployment, or upload actions; raw variables, shells, runtime commands, and environment inspection are never allowed."
+    throw "Railway operation is denied by the secret-safe staging allowlist. Use approved status, deployment listing, or the explicit staging upload action; raw variables, shells, runtime commands, logs, and environment inspection are never allowed."
   }
 
   $policyOutput = & node --import tsx (Join-Path $PSScriptRoot "evaluate-secret-operation.mjs") -- @Args

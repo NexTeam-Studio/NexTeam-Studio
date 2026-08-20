@@ -100,4 +100,14 @@ test("the approved Railway wrapper admits only the documented staging deployment
     deniedOutput = `${error.stdout ?? ""}${error.stderr ?? ""}`;
   }
   assert.match(deniedOutput, /allowlist/i);
+
+  let redeployOutput = "";
+  try {
+    execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/security/invoke-railway-staging.ps1", "-RailwayArgs", "deployment,redeploy,--service,NexTeam-Studio,--yes"], {
+      cwd: process.cwd(), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"]
+    });
+  } catch (error) {
+    redeployOutput = `${error.stdout ?? ""}${error.stderr ?? ""}`;
+  }
+  assert.match(redeployOutput, /allowlist/i);
 });
