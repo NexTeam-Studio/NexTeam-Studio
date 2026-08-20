@@ -1,4 +1,4 @@
-import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
+import { createCommsRailFromEnv, transactionalProviderStatus } from "./comms/gmailRegistry.js";
 import { getAdminDb } from "./firebase.js";
 import { inspectRuntimeIdentity, type RuntimeIdentity } from "./app/runtimeIdentity.js";
 
@@ -19,6 +19,7 @@ export async function buildHealth(
   runtime: RuntimeIdentity = inspectRuntimeIdentity(env, Boolean(getAdminDb(env)))
 ): Promise<{ ok: boolean; checkedAt: string; rails: Record<string, HealthRail>; runtime: RuntimeIdentity }> {
   const comms = createCommsRailFromEnv(env);
+  const transactional = transactionalProviderStatus(env, comms.tenantId);
   const rails: Record<string, HealthRail> = {};
   const firebaseConfigured = runtime.crmRepositoryDriver === "firestore";
 
@@ -40,7 +41,9 @@ export async function buildHealth(
   rails.comms = {
     ok: runtime.isolatedMemoryMode || comms.readAdapters.size > 0 || Boolean(comms.sendAdapter),
     configured: comms.readAdapters.size > 0 || Boolean(comms.sendAdapter),
-    provider: "gmail",
+    // Keep health aligned with the provider-neutral send rail. This reports
+    // configuration metadata only; it never reads or serializes credentials.
+    provider: transactional.provider ?? (comms.readAdapters.size > 0 ? "gmail" : "unconfigured"),
     op: "configured_no_secret_values",
     latencyMs: 0,
     detail: `tenantId=${comms.tenantId}; readMailboxes=${comms.readAdapters.size}; sendConfigured=${Boolean(comms.sendAdapter)}; operatorEmailConfigured=${Boolean(comms.operatorEmail)}`

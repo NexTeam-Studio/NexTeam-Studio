@@ -4,6 +4,7 @@ import test from "node:test";
 import express from "express";
 import { assertRequiredPersistence, assertTenantRuntimePersistence } from "../src/app/persistencePolicy.ts";
 import { registerSystemRoutes } from "../src/core/systemRoutes.ts";
+import { buildHealth } from "../src/health.ts";
 
 const unavailableDurableRepositories = {
   ApprovalQueue: false,
@@ -100,6 +101,19 @@ test("system HTTP routes expose sanitized runtime identity and fail unhealthy co
     "FIREBASE_ADMIN_PRIVATE_KEY"
   ]);
   assert.equal(JSON.stringify(health.body).includes(secretSentinel), false);
+});
+
+test("health reports the active transactional provider without exposing Resend configuration", async () => {
+  const apiKeySentinel = "configured-by-secret-manager";
+  const health = await buildHealth({
+    TENANT_ID: "tenant-a",
+    RESEND_API_KEY: apiKeySentinel,
+    RESEND_FROM_EMAIL: "notifications@example.test"
+  });
+
+  assert.equal(health.rails.comms.provider, "resend");
+  assert.equal(health.rails.comms.configured, true);
+  assert.equal(JSON.stringify(health).includes(apiKeySentinel), false);
 });
 
 test("the composed server can serve an explicitly isolated memory runtime over local HTTP", async (t) => {
