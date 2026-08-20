@@ -20,6 +20,8 @@ import { NexDocsService } from "./nexDocsService.js";
 import type { NexDocsOcrFetch } from "./nexDocsOcr.js";
 import { searchMediaWithVisionFallback } from "./photoSearch.js";
 import { createFieldReportRecord, renderFieldReportPdf, renderSignedDocumentPdf } from "./reportService.js";
+import { renderEvaporationReportPdf } from "../evaporation/report.js";
+import type { EvaporationRepository } from "../evaporation/repository.js";
 import { createNativeMediaFromUpload, storeUploadedMediaBytes, uploadMediaInputSchema } from "./uploadService.js";
 import { maybeRunVision } from "./visionPipeline.js";
 import { formSchema } from "./forms.js";
@@ -305,6 +307,7 @@ export interface FieldDocsRouteDeps {
   crmRepository?: NativeCrmRepository | undefined;
   schedulingRepository?: SchedulingRepository | undefined;
   ledgerService?: Pick<LedgerService, "listReceiptReviews"> | undefined;
+  evaporationRepository?: EvaporationRepository | undefined;
   platformRepository?: Pick<PlatformRepository, "getTenantBranding"> | undefined;
   eventBus?: EventBus | undefined;
   usageLog?: UsageLogWriter | undefined;
@@ -1513,6 +1516,15 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
       const report = await repo.getReport(tenantId, reportId);
       if (!report) {
         throw new RailError(`Field report ${reportId} was not found.`, { provider: "native", op: "renderFieldReportPdf", status: 404 });
+      }
+      if (report.kind === "evaporation" && report.evaporationReportId) {
+        const evaporation = await deps.evaporationRepository?.getReport(tenantId, report.evaporationReportId);
+        if (!evaporation) {
+          throw new RailError("The linked evaporation report is not available.", { provider: "native", op: "renderFieldReportPdf", status: 404 });
+        }
+        res.setHeader("content-type", "application/pdf");
+        res.send(renderEvaporationReportPdf(evaporation));
+        return;
       }
       const media = (await Promise.all(report.mediaIds.map((id) => repo.getMedia(report.tenantId, id))))
         .filter((item): item is NonNullable<typeof item> => Boolean(item));

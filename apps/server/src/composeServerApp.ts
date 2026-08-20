@@ -43,7 +43,7 @@ import { FirestoreContentRepository, InMemoryContentRepository } from "./content
 import { registerContentRoutes } from "./content/routes.js";
 import { CrmApprovalExecutor } from "./modules/nexops/shared/approval/executor.js";
 import { FirestoreNativeCrmRepository } from "./modules/nexops/shared/persistence/nativeRepository.js";
-import { MemoryEvaporationRepository } from "./evaporation/repository.js";
+import { FieldDocsEvaporationRepository, FirestoreEvaporationRepository, MemoryEvaporationRepository } from "./evaporation/repository.js";
 import { registerEvaporationRoutes } from "./evaporation/routes.js";
 import { IntakeApprovalExecutor } from "./intake/approvalExecutor.js";
 import { FirestoreIntakeRepository, InMemoryIntakeRepository } from "./intake/repository.js";
@@ -219,7 +219,8 @@ const approvalQueue = new ApprovalQueueService(approvalQueueRepository, new Comp
     executor: new IntakeApprovalExecutor(intakeService)
   }
 ]));
-const evaporationRepository = new MemoryEvaporationRepository();
+const rawEvaporationRepository = adminDb ? new FirestoreEvaporationRepository(adminDb) : new MemoryEvaporationRepository();
+const evaporationRepository = new FieldDocsEvaporationRepository(rawEvaporationRepository, mediaRepository);
 const mobileRepository = new InMemoryMobileRepository();
 const sitesRepository = adminDb ? new FirestoreSitesRepository(adminDb) : new InMemorySitesRepository();
 const selfRepairRepository = adminDb ? new FirestoreSelfRepairRepository(adminDb) : new InMemorySelfRepairRepository();
@@ -354,6 +355,7 @@ registerFieldDocsRoutes(app, {
   repository: mediaRepository,
   crmRepository: nativeCrmRepository,
   ledgerService,
+  evaporationRepository,
   usageLog: fieldDocsUsageLog
 });
 registerContentRoutes(app, { repository: contentRepository, approvalQueue, eventBus, env: process.env });
@@ -361,7 +363,13 @@ registerNexReachRoutes(app, { service: nexReachService, eventBus, env: process.e
 registerCampaignRoutes(app, { repository: campaignRepository, approvalQueue, env: process.env });
 registerReputationRoutes(app, { repository: reputationRepository, approvalQueue, eventBus, gbpProvider: gbpReviewProvider, env: process.env });
 registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env, jobLifecycleService });
-registerEvaporationRoutes(app, { repository: evaporationRepository, env: process.env });
+registerEvaporationRoutes(app, {
+  repository: evaporationRepository,
+  crmRepository: nativeCrmRepository,
+  schedulingRepository,
+  fieldDocsService,
+  env: process.env
+});
 registerIntakeRoutes(app, { service: intakeService, approvalQueue, env: process.env });
 registerMobileRoutes(app, {
   repository: mobileRepository,

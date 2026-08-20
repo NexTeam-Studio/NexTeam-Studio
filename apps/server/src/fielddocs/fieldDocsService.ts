@@ -203,6 +203,10 @@ export class FieldDocsService {
       .sort((left, right) => stableChecklistTimestamp(right).localeCompare(stableChecklistTimestamp(left)));
   }
 
+  async getChecklist(tenantId: string, checklistId: string): Promise<ChecklistInstance | null> {
+    return this.deps.mediaRepository.getChecklist(tenantId, checklistId);
+  }
+
   async createChecklist(input: {
     tenantId: string;
     templateId: string;

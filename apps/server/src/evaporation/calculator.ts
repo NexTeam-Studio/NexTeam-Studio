@@ -10,6 +10,9 @@ export const evaporationLossInputSchema = z.object({
 export const evaporationRunInputSchema = z.object({
   tenantId: z.string().min(1).optional(),
   jobId: z.string().min(1).optional(),
+  propertyId: z.string().min(1).optional(),
+  visitId: z.string().min(1).optional(),
+  checklistId: z.string().min(1).optional(),
   clientName: z.string().min(1).optional(),
   address: z.string().min(1),
   zip: z.string().regex(/^\d{5}$/).optional(),

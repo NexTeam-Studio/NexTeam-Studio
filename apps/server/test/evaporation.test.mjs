@@ -4,8 +4,10 @@ import express from "express";
 import { calcEvapInchesPerDay, calculateEvaporation, gallonsPerInch } from "../dist/evaporation/calculator.js";
 import { createEvaporationNexiTools } from "../dist/evaporation/nexiTools.js";
 import { renderEvaporationReportPdf } from "../dist/evaporation/report.js";
-import { MemoryEvaporationRepository } from "../dist/evaporation/repository.js";
+import { FieldDocsEvaporationRepository, MemoryEvaporationRepository } from "../dist/evaporation/repository.js";
 import { registerEvaporationRoutes } from "../dist/evaporation/routes.js";
+import { MemoryMediaRepository } from "../dist/fielddocs/mediaRepository.js";
+import { registerFieldDocsRoutes } from "../dist/fielddocs/routes.js";
 
 const weatherProvider = {
   async getWeather() {
@@ -108,6 +110,127 @@ test("evaporation routes create a report and render a PDF", async () => {
     assert.equal(pdfResponse.status, 200);
     const pdf = Buffer.from(await pdfResponse.arrayBuffer());
     assert.equal(pdf.subarray(0, 5).toString("utf8"), "%PDF-");
+  });
+});
+
+test("a Visit-linked evaporation report persists as one NexCam report and updates the matching checklist measurements", async () => {
+  const app = express();
+  const mediaRepository = new MemoryMediaRepository();
+  const updatedChecklistInputs = [];
+  app.use(express.json());
+  registerEvaporationRoutes(app, {
+    repository: new FieldDocsEvaporationRepository(new MemoryEvaporationRepository(), mediaRepository),
+    weatherProvider,
+    crmRepository: {
+      async listJobs() {
+        return [{ id: "job_1", tenantId: "aquatrace", clientId: "client_1", propertyId: "property_1" }];
+      }
+    },
+    schedulingRepository: {
+      async getVisit() {
+        return { id: "visit_1", tenantId: "aquatrace", jobId: "job_1" };
+      }
+    },
+    fieldDocsService: {
+      async getChecklist() {
+        return {
+          id: "checklist_1",
+          tenantId: "aquatrace",
+          jobId: "job_1",
+          propertyId: "property_1",
+          visitId: "visit_1",
+          fields: [
+            { fieldId: "evap", label: "Daily evaporation index" },
+            { fieldId: "loss", label: "Reported daily water loss" }
+          ]
+        };
+      },
+      async updateChecklist(input) {
+        updatedChecklistInputs.push(input);
+        return input;
+      }
+    },
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/evaporation/run`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jobId: "job_1",
+        visitId: "visit_1",
+        checklistId: "checklist_1",
+        address: "Bryson City, NC 28713",
+        surfaceAreaFt2: 500,
+        waterTempF: 82,
+        observedLoss: { inches: 1, observationDays: 1 }
+      })
+    });
+    assert.equal(response.status, 201);
+    const created = await response.json();
+    const stored = await mediaRepository.getReport("aquatrace", created.report.id);
+    assert.equal(stored.kind, "evaporation");
+    assert.equal(stored.jobId, "job_1");
+    assert.equal(stored.visitId, "visit_1");
+    assert.equal(stored.evaporationReportId, created.report.id);
+    assert.deepEqual(updatedChecklistInputs[0].updates.map((update) => update.fieldId), ["evap", "loss"]);
+  });
+});
+
+test("a Visit cannot be attached to an evaporation report for another job", async () => {
+  const app = express();
+  app.use(express.json());
+  registerEvaporationRoutes(app, {
+    repository: new MemoryEvaporationRepository(),
+    weatherProvider,
+    crmRepository: { async listJobs() { return [{ id: "job_1", tenantId: "aquatrace", clientId: "client_1" }]; } },
+    schedulingRepository: { async getVisit() { return { id: "visit_other", tenantId: "aquatrace", jobId: "job_other" }; } },
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/evaporation/run`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jobId: "job_1", visitId: "visit_other", address: "Bryson City, NC 28713", surfaceAreaFt2: 500, waterTempF: 82 })
+    });
+    assert.equal(response.status, 400);
+  });
+});
+
+test("the NexDocs field-report URL renders the authoritative linked evaporation PDF", async () => {
+  const app = express();
+  const mediaRepository = new MemoryMediaRepository();
+  const evaporationRepository = new FieldDocsEvaporationRepository(new MemoryEvaporationRepository(), mediaRepository);
+  const report = await evaporationRepository.saveReport({
+    id: "evap_linked_1",
+    tenantId: "aquatrace",
+    jobId: "job_1",
+    propertyId: "property_1",
+    visitId: "visit_1",
+    address: "Bryson City, NC 28713",
+    surfaceAreaFt2: 500,
+    waterTempF: 82,
+    createdAt: "2026-08-20T00:00:00.000Z",
+    currentWeather: { city: "Bryson City", airTempF: 84, relativeHumidityPct: 62, windMph: 5.5, fetchedAt: "2026-08-20T00:00:00.000Z" },
+    forecast: [],
+    result: calculateEvaporation({
+      surfaceAreaFt2: 500,
+      waterTempF: 82,
+      currentWeather: { city: "Bryson City", airTempF: 84, relativeHumidityPct: 62, windMph: 5.5, fetchedAt: "2026-08-20T00:00:00.000Z" }
+    }),
+    pdfRef: "native://tenants/aquatrace/evaporationReports/evap_linked_1.pdf",
+    status: "posted"
+  });
+  app.use(express.json());
+  registerFieldDocsRoutes(app, {
+    repository: mediaRepository,
+    evaporationRepository,
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/fielddocs/reports/${report.id}/pdf?tenantId=aquatrace`);
+    assert.equal(response.status, 200);
+    assert.equal(Buffer.from(await response.arrayBuffer()).subarray(0, 5).toString("utf8"), "%PDF-");
   });
 });
 

@@ -8,7 +8,7 @@ export interface FieldReportInput {
   jobId: string;
   propertyId?: string | undefined;
   visitId?: string | undefined;
-  kind?: "field_report" | "ai_recap" | undefined;
+  kind?: "field_report" | "ai_recap" | "evaporation" | undefined;
   title: string;
   findings: string[];
   media: Media[];
@@ -24,7 +24,7 @@ export const fieldReportRecordSchema = z.object({
   jobId: z.string().min(1),
   propertyId: z.string().optional(),
   visitId: z.string().optional(),
-  kind: z.enum(["field_report", "ai_recap"]).default("field_report"),
+  kind: z.enum(["field_report", "ai_recap", "evaporation"]).default("field_report"),
   title: z.string().min(1),
   findings: z.array(z.string()),
   mediaIds: z.array(z.string()),
@@ -32,6 +32,7 @@ export const fieldReportRecordSchema = z.object({
   templateId: z.string().optional(),
   snippetIds: z.array(z.string()).optional(),
   watermarkEnabled: z.boolean().optional(),
+  evaporationReportId: z.string().min(1).optional(),
   pdfRef: z.string().min(1),
   status: z.enum(["draft", "posted"]),
   createdAt: z.string(),
@@ -45,7 +46,7 @@ export function createFieldReportRecord(input: {
   jobId: string;
   propertyId?: string | undefined;
   visitId?: string | undefined;
-  kind?: "field_report" | "ai_recap" | undefined;
+  kind?: "field_report" | "ai_recap" | "evaporation" | undefined;
   title: string;
   findings: string[];
   mediaIds: string[];
@@ -53,10 +54,15 @@ export function createFieldReportRecord(input: {
   templateId?: string | undefined;
   snippetIds?: string[] | undefined;
   watermarkEnabled?: boolean | undefined;
+  id?: string | undefined;
+  pdfRef?: string | undefined;
+  createdAt?: string | undefined;
+  postedAt?: string | undefined;
+  evaporationReportId?: string | undefined;
   status?: "draft" | "posted" | undefined;
 }): FieldReportRecord {
-  const id = `report_${randomUUID()}`;
-  const createdAt = new Date().toISOString();
+  const id = input.id ?? `report_${randomUUID()}`;
+  const createdAt = input.createdAt ?? new Date().toISOString();
   const status = input.status ?? "posted";
   const base = {
     id,
@@ -71,14 +77,15 @@ export function createFieldReportRecord(input: {
     ...(input.templateId ? { templateId: input.templateId } : {}),
     ...(input.snippetIds?.length ? { snippetIds: input.snippetIds } : {}),
     ...(input.watermarkEnabled !== undefined ? { watermarkEnabled: input.watermarkEnabled } : {}),
-    pdfRef: `native://tenants/${input.tenantId}/fieldReports/${id}.pdf`,
+    pdfRef: input.pdfRef ?? `native://tenants/${input.tenantId}/fieldReports/${id}.pdf`,
     status,
     createdAt
   };
   return fieldReportRecordSchema.parse({
     ...base,
     ...(input.checklistId ? { checklistId: input.checklistId } : {}),
-    ...(status === "posted" ? { postedAt: createdAt } : {})
+    ...(input.evaporationReportId ? { evaporationReportId: input.evaporationReportId } : {}),
+    ...(status === "posted" ? { postedAt: input.postedAt ?? createdAt } : {})
   }) as FieldReportRecord;
 }
 
@@ -95,7 +102,7 @@ function reportLines(input: FieldReportInput): string[] {
   const visibleFields = (input.checklist?.fields ?? []).filter((field) => !blockedSections.has(field.section));
   const narrationLines = input.media.flatMap((item) => (item.comments ?? []).map((comment) => `${item.id}: ${comment.text}`));
   return [
-    input.kind === "ai_recap" ? "NexCam AI Recap" : "NexCam Field Report",
+    input.kind === "ai_recap" ? "NexCam AI Recap" : input.kind === "evaporation" ? "NexCam Evaporation Report" : "NexCam Field Report",
     ...(input.watermarkLabel ? [`Watermark: ${input.watermarkLabel}`] : []),
     ...(input.watermarkAssetUrl ? [`Watermark asset: ${input.watermarkAssetUrl}`] : []),
     `Title: ${input.title}`,
