@@ -1,7 +1,15 @@
 import { randomUUID } from "node:crypto";
+import type { z } from "zod";
 import { calculateEvaporation, evaporationRunInputSchema, toImperialInches } from "./calculator.js";
 import type { EvaporationReportRecord, EvaporationRepository } from "./repository.js";
 import type { EvaporationWeatherProvider } from "./weather.js";
+
+export interface EvaporationPreview {
+  input: z.infer<typeof evaporationRunInputSchema>;
+  currentWeather: Awaited<ReturnType<EvaporationWeatherProvider["getWeather"]>>["current"];
+  forecast: Awaited<ReturnType<EvaporationWeatherProvider["getWeather"]>>["forecast"];
+  result: ReturnType<typeof calculateEvaporation>;
+}
 
 function escapePdfText(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
@@ -19,6 +27,7 @@ function reportLines(report: EvaporationReportRecord): string[] {
     line("Client", report.clientName),
     line("Address", report.address),
     line("Generated", report.createdAt),
+    line("Measurement evidence", report.measurementDocumentId),
     "",
     "Pool Inputs",
     line("Surface area", `${report.surfaceAreaFt2} sq ft`),
@@ -74,23 +83,37 @@ export function renderEvaporationReportPdf(report: EvaporationReportRecord): Buf
   return Buffer.from(pdf, "utf8");
 }
 
+export async function previewEvaporationReport(input: {
+  tenantId: string;
+  body: unknown;
+  weatherProvider: EvaporationWeatherProvider;
+}): Promise<EvaporationPreview> {
+  const parsed = evaporationRunInputSchema.parse(input.body);
+  const weather = await input.weatherProvider.getWeather({ address: parsed.address, zip: parsed.zip });
+  return {
+    input: parsed,
+    currentWeather: weather.current,
+    forecast: weather.forecast,
+    result: calculateEvaporation({
+      surfaceAreaFt2: parsed.surfaceAreaFt2,
+      waterTempF: parsed.waterTempF,
+      currentWeather: weather.current,
+      forecast: weather.forecast,
+      observedLoss: parsed.observedLoss,
+      windMphOverride: parsed.windMphOverride
+    })
+  };
+}
+
 export async function createEvaporationReport(input: {
   tenantId: string;
   body: unknown;
   repository: EvaporationRepository;
   weatherProvider: EvaporationWeatherProvider;
 }): Promise<EvaporationReportRecord> {
-  const parsed = evaporationRunInputSchema.parse(input.body);
+  const preview = await previewEvaporationReport(input);
+  const parsed = preview.input;
   const tenantId = parsed.tenantId ?? input.tenantId;
-  const weather = await input.weatherProvider.getWeather({ address: parsed.address, zip: parsed.zip });
-  const result = calculateEvaporation({
-    surfaceAreaFt2: parsed.surfaceAreaFt2,
-    waterTempF: parsed.waterTempF,
-    currentWeather: weather.current,
-    forecast: weather.forecast,
-    observedLoss: parsed.observedLoss,
-    windMphOverride: parsed.windMphOverride
-  });
   const id = `evap_${randomUUID()}`;
   const report: EvaporationReportRecord = {
     id,
@@ -99,16 +122,17 @@ export async function createEvaporationReport(input: {
     ...(parsed.propertyId ? { propertyId: parsed.propertyId } : {}),
     ...(parsed.visitId ? { visitId: parsed.visitId } : {}),
     ...(parsed.checklistId ? { checklistId: parsed.checklistId } : {}),
+    ...(parsed.measurementDocumentId ? { measurementDocumentId: parsed.measurementDocumentId } : {}),
     ...(parsed.clientName ? { clientName: parsed.clientName } : {}),
     address: parsed.address,
-    ...(parsed.zip ?? weather.current.zip ? { zip: parsed.zip ?? weather.current.zip } : {}),
+    ...(parsed.zip ?? preview.currentWeather.zip ? { zip: parsed.zip ?? preview.currentWeather.zip } : {}),
     surfaceAreaFt2: parsed.surfaceAreaFt2,
     waterTempF: parsed.waterTempF,
     createdAt: new Date().toISOString(),
-    currentWeather: weather.current,
-    forecast: weather.forecast,
+    currentWeather: preview.currentWeather,
+    forecast: preview.forecast,
     ...(parsed.windMphOverride !== undefined ? { windMphOverride: parsed.windMphOverride } : {}),
-    result,
+    result: preview.result,
     pdfRef: `native://tenants/${tenantId}/evaporationReports/${id}.pdf`,
     status: "posted"
   };

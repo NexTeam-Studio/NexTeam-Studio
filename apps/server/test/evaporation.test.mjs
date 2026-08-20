@@ -113,6 +113,30 @@ test("evaporation routes create a report and render a PDF", async () => {
   });
 });
 
+test("evaporation preview retrieves weather and calculations without persisting a report", async () => {
+  const app = express();
+  const repository = new MemoryEvaporationRepository();
+  app.use(express.json());
+  registerEvaporationRoutes(app, {
+    repository,
+    weatherProvider,
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/evaporation/preview`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ address: "Bryson City, NC 28713", surfaceAreaFt2: 500, waterTempF: 82 })
+    });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.preview.currentWeather.city, "Bryson City");
+    assert.ok(body.preview.result.evapGallonsPerDay > 0);
+    assert.equal(await repository.getReport("aquatrace", "evap_preview_should_not_exist"), null);
+  });
+});
+
 test("a Visit-linked evaporation report persists as one NexCam report and updates the matching checklist measurements", async () => {
   const app = express();
   const mediaRepository = new MemoryMediaRepository();
@@ -194,6 +218,26 @@ test("a Visit cannot be attached to an evaporation report for another job", asyn
       body: JSON.stringify({ jobId: "job_1", visitId: "visit_other", address: "Bryson City, NC 28713", surfaceAreaFt2: 500, waterTempF: 82 })
     });
     assert.equal(response.status, 400);
+  });
+});
+
+test("a measurement document must belong to the same tenant, job, property, and Visit", async () => {
+  const app = express();
+  app.use(express.json());
+  registerEvaporationRoutes(app, {
+    repository: new MemoryEvaporationRepository(), weatherProvider,
+    crmRepository: { async listJobs() { return [{ id: "job_1", tenantId: "aquatrace", clientId: "client_1", propertyId: "property_1" }]; } },
+    schedulingRepository: { async getVisit() { return { id: "visit_1", tenantId: "aquatrace", jobId: "job_1" }; } },
+    mediaRepository: { async getNexDocsDocument() { return { id: "doc_other", tenantId: "aquatrace", clientId: "client_1", jobId: "job_other", propertyId: "property_1", visitId: "visit_1" }; } },
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/evaporation/preview`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jobId: "job_1", propertyId: "property_1", visitId: "visit_1", measurementDocumentId: "doc_other", address: "Bryson City, NC 28713", surfaceAreaFt2: 500, waterTempF: 82 })
+    });
+    assert.equal(response.status, 400);
+    assert.match((await response.json()).error, /measurement document does not belong/i);
   });
 });
 

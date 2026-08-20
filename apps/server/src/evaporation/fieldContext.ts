@@ -1,6 +1,7 @@
 import { RailError } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { FieldDocsService } from "../fielddocs/fieldDocsService.js";
+import type { MediaRepository } from "../fielddocs/mediaRepository.js";
 import type { SchedulingRepository } from "../scheduling/repository.js";
 import { evaporationRunInputSchema } from "./calculator.js";
 import type { EvaporationReportRecord } from "./record.js";
@@ -10,6 +11,7 @@ export interface EvaporationFieldContextDeps {
   crmRepository?: NativeCrmRepository | undefined;
   schedulingRepository?: SchedulingRepository | undefined;
   fieldDocsService?: Pick<FieldDocsService, "getChecklist" | "updateChecklist"> | undefined;
+  mediaRepository?: Pick<MediaRepository, "getNexDocsDocument"> | undefined;
 }
 
 export async function resolveEvaporationFieldContext(
@@ -65,6 +67,19 @@ export async function resolveEvaporationFieldContext(
       throw new RailError("The selected checklist does not belong to this job context.", { provider: "native", op: "runEvaporationReport", status: 400 });
     }
   }
+  if (input.measurementDocumentId) {
+    if (!deps.mediaRepository) {
+      throw new RailError("Measurement-document verification is not configured for evaporation reports.", {
+        provider: "native", op: "runEvaporationReport", status: 503
+      });
+    }
+    const document = await deps.mediaRepository.getNexDocsDocument(tenantId, input.measurementDocumentId);
+    if (!document || document.clientId !== job.clientId || document.jobId !== job.id || (input.visitId && document.visitId !== input.visitId) || (propertyId && document.propertyId !== propertyId)) {
+      throw new RailError("The selected measurement document does not belong to this visit context.", {
+        provider: "native", op: "runEvaporationReport", status: 400
+      });
+    }
+  }
   return { ...input, tenantId, ...(propertyId ? { propertyId } : {}) };
 }
 
@@ -81,6 +96,12 @@ export async function applyEvaporationToChecklist(
     }
     if (field.label === "Reported daily water loss" && report.result.observedLossInchesPerDay !== null) {
       return [{ fieldId: field.fieldId, numberValue: report.result.observedLossInchesPerDay }];
+    }
+    if (field.label === "Pool surface area" || field.label === "Pool/spa surface area") {
+      return [{ fieldId: field.fieldId, numberValue: report.surfaceAreaFt2 }];
+    }
+    if (field.label === "Water temperature") {
+      return [{ fieldId: field.fieldId, numberValue: report.waterTempF }];
     }
     return [];
   });

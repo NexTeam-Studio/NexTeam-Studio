@@ -13,6 +13,7 @@ export const evaporationRunInputSchema = z.object({
   propertyId: z.string().min(1).optional(),
   visitId: z.string().min(1).optional(),
   checklistId: z.string().min(1).optional(),
+  measurementDocumentId: z.string().min(1).optional(),
   clientName: z.string().min(1).optional(),
   address: z.string().min(1),
   zip: z.string().regex(/^\d{5}$/).optional(),

@@ -27,6 +27,7 @@ export interface ScheduleWorkspaceVisit {
   clientId: string;
   clientName: string;
   jobTitle: string;
+  propertyId?: string | undefined;
   propertyAddress: string;
   status: JobSummaryRecord["status"];
   statusTone: "success" | "warning" | "danger" | "secondary";
@@ -512,6 +513,7 @@ export class OperationsHubService {
           clientId: detail?.clientId ?? job?.clientId ?? "unknown-client",
           clientName,
           jobTitle: detail?.title ?? job?.title ?? visit.title,
+          ...(detail?.propertyId ? { propertyId: detail.propertyId } : {}),
           propertyAddress: detail ? propertyAddress(detail) : visit.location.label,
           status: (detail?.status ?? "Unscheduled") as JobSummaryRecord["status"],
           statusTone: statusTone((detail?.status ?? "Unscheduled") as JobSummaryRecord["status"]),

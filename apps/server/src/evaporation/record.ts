@@ -13,6 +13,7 @@ export const evaporationReportRecordSchema = z.object({
   propertyId: z.string().min(1).optional(),
   visitId: z.string().min(1).optional(),
   checklistId: z.string().min(1).optional(),
+  measurementDocumentId: z.string().min(1).optional(),
   clientName: z.string().optional(),
   address: z.string().min(1),
   zip: z.string().optional(),

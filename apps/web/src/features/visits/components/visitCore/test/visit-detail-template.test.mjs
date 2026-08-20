@@ -16,3 +16,12 @@ test("Visit Detail keeps document and visual-workflow actions reachable", () => 
 test("Visit Detail respects the roster read-only edit rule", () => {
   assert.match(source, /!detail\.readOnly \? <button className="nexops-primary-inline-button"/);
 });
+
+test("Visit Detail keeps evaporation calculation review separate from report generation", () => {
+  assert.match(source, /setVisitDetailSection\("measurements"\); void loadEvaporationWorkspace\(detail\)/);
+  assert.match(source, /\/api\/evaporation\/preview/);
+  assert.match(source, /Calculate expected evaporation/);
+  assert.match(source, /Generate evaporation report/);
+  assert.match(source, /measurementDocumentId/);
+  assert.match(source, /Upload Moasure report in Files/);
+});

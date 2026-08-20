@@ -29,6 +29,7 @@ interface ScheduleWorkspaceVisit {
   clientId: string;
   clientName: string;
   jobTitle: string;
+  propertyId?: string;
   propertyAddress: string;
   status: string;
   statusTone: "success" | "warning" | "danger" | "secondary";
@@ -201,6 +202,27 @@ export function dateRange(date: string, view: ScheduleView, scope: ScheduleScope
   return { from: startOfWeek(date), to: endOfWeek(date) };
 }
 
+interface ChecklistRecord {
+  id: string;
+  jobId?: string;
+  visitId?: string;
+  propertyId?: string;
+  status: "draft" | "completed";
+}
+
+interface EvaporationPreview {
+  currentWeather: { city: string; airTempF: number; relativeHumidityPct: number; windMph: number; fetchedAt: string };
+  result: { evapInchesPerDay: number; evapGallonsPerDay: number; observedLossInchesPerDay: number | null; leakInchesPerDay: number | null; leakGallonsPerDay: number | null; severity: string; note: string };
+}
+
+interface NexDocsMeasurementEntry {
+  id: string;
+  label: string;
+  fileName: string;
+  jobId?: string;
+  visitId?: string;
+}
+
 export function isScheduleAnchorDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return false;
@@ -320,11 +342,18 @@ export function NexOpsSchedulePage(props: {
   const [workingVisitId, setWorkingVisitId] = useState("");
   const [fieldDocsVisit, setFieldDocsVisit] = useState<ScheduleWorkspaceVisit | null>(null);
   const [visitDetail, setVisitDetail] = useState<ScheduleWorkspaceVisit | null>(null);
-  const [visitDetailSection, setVisitDetailSection] = useState<"overview" | "files" | "nexcam">("overview");
+  const [visitDetailSection, setVisitDetailSection] = useState<"overview" | "measurements" | "files" | "nexcam">("overview");
   const [fieldDocsMedia, setFieldDocsMedia] = useState<FieldDocsMediaRecord[]>([]);
   const [fieldDocsReports, setFieldDocsReports] = useState<FieldDocsReportRecord[]>([]);
   const [fieldDocsStatus, setFieldDocsStatus] = useState("");
   const [isNarrowSchedule, setIsNarrowSchedule] = useState(() => window.matchMedia("(max-width: 800px)").matches);
+  const [evaporationChecklist, setEvaporationChecklist] = useState<ChecklistRecord | null>(null);
+  const [measurementDocuments, setMeasurementDocuments] = useState<NexDocsMeasurementEntry[]>([]);
+  const [selectedMeasurementDocumentId, setSelectedMeasurementDocumentId] = useState("");
+  const [evaporationStatus, setEvaporationStatus] = useState("");
+  const [evaporationBusy, setEvaporationBusy] = useState("");
+  const [evaporationPreview, setEvaporationPreview] = useState<EvaporationPreview | null>(null);
+  const [evaporationDraft, setEvaporationDraft] = useState({ surfaceAreaFt2: "", waterTempF: "", observedLossInches: "", zip: "", windMphOverride: "" });
 
   const range = useMemo(() => dateRange(anchorDate, view, scope), [anchorDate, scope, view]);
   const groupedByDay = useMemo(() => byDay(workspace?.visits ?? []), [workspace?.visits]);
@@ -652,6 +681,91 @@ export function NexOpsSchedulePage(props: {
     );
   }
 
+  async function loadEvaporationWorkspace(visit: ScheduleWorkspaceVisit): Promise<void> {
+    setEvaporationStatus("Loading the Visit measurement context...");
+    setEvaporationPreview(null);
+    try {
+      const checklistParams = new URLSearchParams({ tenantId: props.tenantId, jobId: visit.jobId, visitId: visit.id });
+      const libraryParams = new URLSearchParams({ tenantId: props.tenantId, jobId: visit.jobId, visitId: visit.id });
+      const [checklistBody, libraryBody] = await Promise.all([
+        fetch(`/api/fielddocs/checklists?${checklistParams}`).then((response) => response.json() as Promise<{ ok: boolean; checklists?: ChecklistRecord[]; error?: string }>),
+        fetch(`/api/nexdocs/clients/${encodeURIComponent(visit.clientId)}/library?${libraryParams}`).then((response) => response.json() as Promise<{ ok: boolean; library?: { unfiled?: NexDocsMeasurementEntry[]; officeRecords?: NexDocsMeasurementEntry[]; nexcam?: { reports?: NexDocsMeasurementEntry[]; media?: NexDocsMeasurementEntry[]; signedDocuments?: NexDocsMeasurementEntry[] } }; error?: string }>)
+      ]);
+      if (!checklistBody.ok || !libraryBody.ok) {
+        setEvaporationStatus(checklistBody.error ?? libraryBody.error ?? "The measurement workspace is unavailable right now.");
+        return;
+      }
+      setEvaporationChecklist((checklistBody.checklists ?? []).find((entry) => entry.status === "draft") ?? null);
+      const library = libraryBody.library;
+      const entries = [...(library?.unfiled ?? []), ...(library?.officeRecords ?? [])]
+        .filter((entry) => entry.jobId === visit.jobId && entry.visitId === visit.id);
+      setMeasurementDocuments(entries);
+      setSelectedMeasurementDocumentId((current) => entries.some((entry) => entry.id === current) ? current : "");
+      setEvaporationStatus(visit.propertyId ? "Review measurements, then calculate before generating the report." : "This Visit is not linked to a property, so an evaporation report cannot be attached yet.");
+    } catch {
+      setEvaporationStatus("The measurement workspace is unavailable right now.");
+    }
+  }
+
+  async function ensureEvaporationChecklist(visit: ScheduleWorkspaceVisit): Promise<string | null> {
+    if (evaporationChecklist?.id) return evaporationChecklist.id;
+    if (!visit.propertyId) return null;
+    const body = await fetch("/api/fielddocs/checklists", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: props.tenantId, propertyId: visit.propertyId, jobId: visit.jobId, visitId: visit.id })
+    }).then((response) => response.json() as Promise<{ ok: boolean; checklist?: ChecklistRecord; error?: string }>);
+    if (!body.ok || !body.checklist) {
+      setEvaporationStatus(body.error ?? "A Visit checklist could not be created.");
+      return null;
+    }
+    setEvaporationChecklist(body.checklist);
+    return body.checklist.id;
+  }
+
+  function evaporationRequestBody(visit: ScheduleWorkspaceVisit, checklistId?: string): Record<string, unknown> | null {
+    const surfaceAreaFt2 = Number(evaporationDraft.surfaceAreaFt2);
+    const waterTempF = Number(evaporationDraft.waterTempF);
+    if (!visit.propertyId || !Number.isFinite(surfaceAreaFt2) || surfaceAreaFt2 <= 0 || !Number.isFinite(waterTempF)) {
+      setEvaporationStatus("A property, positive surface area, and water temperature are required.");
+      return null;
+    }
+    const observed = evaporationDraft.observedLossInches.trim() ? Number(evaporationDraft.observedLossInches) : null;
+    const wind = evaporationDraft.windMphOverride.trim() ? Number(evaporationDraft.windMphOverride) : null;
+    if ((observed !== null && (!Number.isFinite(observed) || observed < 0)) || (wind !== null && (!Number.isFinite(wind) || wind < 0))) {
+      setEvaporationStatus("Observed loss and wind override must be valid non-negative values.");
+      return null;
+    }
+    return {
+      tenantId: props.tenantId, jobId: visit.jobId, propertyId: visit.propertyId, visitId: visit.id,
+      ...(checklistId ? { checklistId } : {}), ...(selectedMeasurementDocumentId ? { measurementDocumentId: selectedMeasurementDocumentId } : {}),
+      clientName: visit.clientName, address: visit.propertyAddress, ...(evaporationDraft.zip.trim() ? { zip: evaporationDraft.zip.trim() } : {}),
+      surfaceAreaFt2, waterTempF, ...(observed === null ? {} : { observedLoss: { inches: observed, observationDays: 1 } }), ...(wind === null ? {} : { windMphOverride: wind })
+    };
+  }
+
+  async function previewEvaporation(visit: ScheduleWorkspaceVisit): Promise<void> {
+    const body = evaporationRequestBody(visit, evaporationChecklist?.id);
+    if (!body) return;
+    setEvaporationBusy("preview"); setEvaporationStatus("Calculating with the current weather snapshot...");
+    try {
+      const response = await fetch("/api/evaporation/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then((value) => value.json() as Promise<{ ok: boolean; preview?: EvaporationPreview; error?: string }>);
+      if (!response.ok || !response.preview) { setEvaporationStatus(response.error ?? "The evaporation preview could not be calculated."); return; }
+      setEvaporationPreview(response.preview); setEvaporationStatus("Review the calculated values and weather snapshot before generating the report.");
+    } catch { setEvaporationStatus("The evaporation preview could not be calculated."); } finally { setEvaporationBusy(""); }
+  }
+
+  async function finalizeEvaporation(visit: ScheduleWorkspaceVisit): Promise<void> {
+    if (!evaporationPreview) { setEvaporationStatus("Calculate and review expected evaporation before generating the report."); return; }
+    setEvaporationBusy("finalize"); setEvaporationStatus("Creating the authoritative evaporation report...");
+    try {
+      const checklistId = await ensureEvaporationChecklist(visit); const body = checklistId ? evaporationRequestBody(visit, checklistId) : null;
+      if (!body) return;
+      const response = await fetch("/api/evaporation/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then((value) => value.json() as Promise<{ ok: boolean; report?: { id: string }; error?: string }>);
+      if (!response.ok || !response.report) { setEvaporationStatus(response.error ?? "The evaporation report could not be generated."); return; }
+      setEvaporationStatus("Evaporation report generated. It is now linked to this Visit, Job, NexDocs, and checklist."); setVisitDetail(null); await openFieldDocsRail(visit);
+    } catch { setEvaporationStatus("The evaporation report could not be generated."); } finally { setEvaporationBusy(""); }
+  }
+
   function renderUnscheduledJobs(): React.ReactElement | null {
     if (!workspace?.unscheduledJobs.length) {
       return null;
@@ -696,10 +810,11 @@ export function NexOpsSchedulePage(props: {
         detail={`${detail.arrivalWindow} · ${detail.jobTitle}`}
         status={<><span className={`nexops-status-pill nexops-tone-${visitToneClass(detail.statusTone)}`}>{detail.status}</span><span className="nexops-status-pill">{detail.assignedTeam.map((member) => member.name).join(", ") || "Unassigned"}</span></>}
         actions={<>{!detail.readOnly ? <button className="nexops-primary-inline-button" type="button" onClick={() => { setVisitDetail(null); openEdit(detail); }}>Edit visit</button> : null}<button type="button" onClick={() => props.onOpenJob(detail.jobId)}>Open Job</button></>}
-        navigation={<><button type="button" className={visitDetailSection === "overview" ? "active" : ""} aria-current={visitDetailSection === "overview" ? "page" : undefined} onClick={() => setVisitDetailSection("overview")}>Visit</button><button type="button" className={visitDetailSection === "files" ? "active" : ""} aria-current={visitDetailSection === "files" ? "page" : undefined} onClick={() => setVisitDetailSection("files")}>Files</button><button type="button" className={visitDetailSection === "nexcam" ? "active" : ""} aria-current={visitDetailSection === "nexcam" ? "page" : undefined} onClick={() => setVisitDetailSection("nexcam")}>NexCam</button></>}
+        navigation={<><button type="button" className={visitDetailSection === "overview" ? "active" : ""} aria-current={visitDetailSection === "overview" ? "page" : undefined} onClick={() => setVisitDetailSection("overview")}>Visit</button><button type="button" className={visitDetailSection === "measurements" ? "active" : ""} aria-current={visitDetailSection === "measurements" ? "page" : undefined} onClick={() => { setVisitDetailSection("measurements"); void loadEvaporationWorkspace(detail); }}>Measurements</button><button type="button" className={visitDetailSection === "files" ? "active" : ""} aria-current={visitDetailSection === "files" ? "page" : undefined} onClick={() => setVisitDetailSection("files")}>Files</button><button type="button" className={visitDetailSection === "nexcam" ? "active" : ""} aria-current={visitDetailSection === "nexcam" ? "page" : undefined} onClick={() => setVisitDetailSection("nexcam")}>NexCam</button></>}
       >
         <section className="nexops-module-card nexops-visit-detail-card">
           {visitDetailSection === "overview" ? <><p className="eyebrow">Visit context</p><h2>{detail.jobTitle}</h2><dl className="nexops-visit-detail-facts"><div><dt>Client</dt><dd>{detail.clientName}</dd></div><div><dt>Property</dt><dd>{detail.propertyAddress}</dd></div><div><dt>Schedule</dt><dd>{new Date(detail.start).toLocaleString()} – {new Date(detail.end).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</dd></div><div><dt>Team</dt><dd>{detail.assignedTeam.map((member) => member.name).join(", ") || "Unassigned"}</dd></div></dl>{detail.details ? <p>{detail.details}</p> : <p className="nexops-empty-copy">No additional visit instructions are recorded.</p>}</> : null}
+          {visitDetailSection === "measurements" ? <div className="nexops-evaporation-workspace"><header><p className="eyebrow">Measurements → Environment → Calculation → Review → Report</p><h2>Evaporation review</h2><p>Use a linked NexDocs measurement artifact when available, or enter and correct the field measurements manually.</p></header><div className="nexops-evaporation-grid"><section><h3>Measurements</h3><p className="nexops-empty-copy">Original Moasure evidence stays in NexDocs. Upload it from Files, then select it here when it is linked to this Visit.</p><label>Measurement evidence<select aria-label="Measurement evidence" value={selectedMeasurementDocumentId} onChange={(event) => setSelectedMeasurementDocumentId(event.target.value)}><option value="">Manual entry / no linked document</option>{measurementDocuments.map((entry) => <option key={entry.id} value={entry.id}>{entry.label || entry.fileName}</option>)}</select></label><button type="button" onClick={() => setVisitDetailSection("files")}>Upload Moasure report in Files</button><label>Surface area (sq ft)<input inputMode="decimal" value={evaporationDraft.surfaceAreaFt2} onChange={(event) => setEvaporationDraft((current) => ({ ...current, surfaceAreaFt2: event.target.value }))} /></label><label>Water temperature (°F)<input inputMode="decimal" value={evaporationDraft.waterTempF} onChange={(event) => setEvaporationDraft((current) => ({ ...current, waterTempF: event.target.value }))} /></label><label>Observed loss (in/day, optional)<input inputMode="decimal" value={evaporationDraft.observedLossInches} onChange={(event) => setEvaporationDraft((current) => ({ ...current, observedLossInches: event.target.value }))} /></label></section><section><h3>Environment</h3><label>ZIP (optional)<input inputMode="numeric" value={evaporationDraft.zip} onChange={(event) => setEvaporationDraft((current) => ({ ...current, zip: event.target.value }))} /></label><label>Wind override (mph, optional)<input inputMode="decimal" value={evaporationDraft.windMphOverride} onChange={(event) => setEvaporationDraft((current) => ({ ...current, windMphOverride: event.target.value }))} /></label><p className="nexops-empty-copy">Current air temperature, humidity, and wind are retrieved from the validated weather service at calculation time and remain visible for technician review.</p><button className="nexops-primary-inline-button" type="button" disabled={evaporationBusy !== "" || !detail.propertyId} onClick={() => void previewEvaporation(detail)}>{evaporationBusy === "preview" ? "Calculating…" : "Calculate expected evaporation"}</button></section></div>{evaporationPreview ? <section className="nexops-evaporation-review"><p className="eyebrow">Technician review</p><h3>{evaporationPreview.result.evapInchesPerDay} in/day · {evaporationPreview.result.evapGallonsPerDay} gal/day</h3><p>{evaporationPreview.result.note}</p><dl className="nexops-visit-detail-facts"><div><dt>Weather source</dt><dd>{evaporationPreview.currentWeather.city}</dd></div><div><dt>Air / humidity</dt><dd>{evaporationPreview.currentWeather.airTempF}°F · {evaporationPreview.currentWeather.relativeHumidityPct}%</dd></div><div><dt>Wind</dt><dd>{evaporationPreview.currentWeather.windMph} mph</dd></div><div><dt>Possible loss after evaporation</dt><dd>{evaporationPreview.result.leakInchesPerDay === null ? "Not provided" : `${evaporationPreview.result.leakInchesPerDay} in/day · ${evaporationPreview.result.leakGallonsPerDay} gal/day`}</dd></div></dl><button className="nexops-primary-inline-button" type="button" disabled={evaporationBusy !== "" || !detail.propertyId} onClick={() => void finalizeEvaporation(detail)}>{evaporationBusy === "finalize" ? "Generating…" : "Generate evaporation report"}</button></section> : null}<p className="nexops-module-status" role="status">{evaporationStatus}</p></div> : null}
           {visitDetailSection === "files" ? <NexDocsClientWorkspace tenantId={props.tenantId} clientId={detail.clientId} clientName={detail.clientName} role={props.role} jobId={detail.jobId} visitId={detail.id} contextLabel={`Visit ${detail.id} files`} nexcamCounts={{ media: fieldDocsMedia.length, reports: fieldDocsReports.length, signedDocuments: 0 }} /> : null}
           {visitDetailSection === "nexcam" ? <><p className="eyebrow"><ProductInlineLabel product="nexcam" /></p><h2>Visit media and reports</h2><p>Open the visual documentation rail for this Visit.</p><button type="button" onClick={() => { setVisitDetail(null); void openFieldDocsRail(detail); }}>Open NexCam</button></> : null}
         </section>

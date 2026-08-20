@@ -324,3 +324,90 @@
     left: 0;
   }
 }
+
+.nexops-evaporation-workspace {
+  display: grid;
+  gap: 18px;
+}
+
+.nexops-evaporation-workspace > header,
+.nexops-evaporation-review {
+  padding: 18px;
+  border-radius: 20px;
+  background: linear-gradient(125deg, #071d2b, #075d50 58%, #147343);
+  color: #f7fffb;
+}
+
+.nexops-evaporation-workspace > header p,
+.nexops-evaporation-review p {
+  margin: 0;
+}
+
+.nexops-evaporation-workspace > header h2,
+.nexops-evaporation-review h3 {
+  margin: 6px 0;
+}
+
+.nexops-evaporation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.nexops-evaporation-grid > section {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(12, 24, 37, 0.1);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.nexops-evaporation-grid h3,
+.nexops-evaporation-grid p {
+  margin: 0;
+}
+
+.nexops-evaporation-grid label {
+  display: grid;
+  gap: 6px;
+  color: #172535;
+  font-weight: 700;
+}
+
+.nexops-evaporation-grid input,
+.nexops-evaporation-grid select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border: 1px solid rgba(12, 24, 37, 0.16);
+  border-radius: 12px;
+  background: #fff;
+  color: #172535;
+}
+
+.nexops-evaporation-grid button:not(.nexops-primary-inline-button) {
+  justify-self: start;
+  border: 1px solid rgba(12, 24, 37, 0.16);
+  border-radius: 999px;
+  padding: 9px 12px;
+  background: #f2f8f3;
+  color: #164f38;
+  font-weight: 700;
+}
+
+.nexops-evaporation-review .nexops-visit-detail-facts {
+  margin: 14px 0;
+}
+
+@media (max-width: 800px) {
+  .nexops-evaporation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nexops-evaporation-workspace > header,
+  .nexops-evaporation-grid > section,
+  .nexops-evaporation-review {
+    padding: 15px;
+  }
+}

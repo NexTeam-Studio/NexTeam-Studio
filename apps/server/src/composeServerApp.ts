@@ -374,6 +374,7 @@ registerEvaporationRoutes(app, {
   crmRepository: nativeCrmRepository,
   schedulingRepository,
   fieldDocsService,
+  mediaRepository,
   env: process.env
 });
 registerIntakeRoutes(app, { service: intakeService, approvalQueue, env: process.env });

@@ -4,7 +4,7 @@ import { configuredTenantId } from "../core/tenantConfig.js";
 import { requireTenantRole } from "../auth/accessContext.js";
 import { evaporationRunInputSchema } from "./calculator.js";
 import { applyEvaporationToChecklist, resolveEvaporationFieldContext, type EvaporationFieldContextDeps } from "./fieldContext.js";
-import { createEvaporationReport, evaporationAttachmentFor, renderEvaporationReportPdf } from "./report.js";
+import { createEvaporationReport, evaporationAttachmentFor, previewEvaporationReport, renderEvaporationReportPdf } from "./report.js";
 import { MemoryEvaporationRepository, type EvaporationRepository } from "./repository.js";
 import { OpenWeatherMapProvider, type EvaporationWeatherProvider } from "./weather.js";
 
@@ -28,6 +28,19 @@ export function registerEvaporationRoutes(app: Express, deps: EvaporationRouteDe
   const env = deps.env ?? process.env;
   const repository = deps.repository ?? new MemoryEvaporationRepository();
   const weatherProvider = deps.weatherProvider ?? new OpenWeatherMapProvider(env);
+
+  app.post("/api/evaporation/preview", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.body?.tenantId === "string" ? req.body.tenantId : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "previewEvaporationReport" });
+      const parsed = evaporationRunInputSchema.parse(req.body);
+      const context = await resolveEvaporationFieldContext(parsed, deps, tenantId);
+      const preview = await previewEvaporationReport({ tenantId, body: context, weatherProvider });
+      res.json({ ok: true, preview: { currentWeather: preview.currentWeather, forecast: preview.forecast, result: preview.result } });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
 
   app.post("/api/evaporation/run", async (req: Request, res: Response) => {
     try {
