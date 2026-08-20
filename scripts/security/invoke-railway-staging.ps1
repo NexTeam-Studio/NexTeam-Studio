@@ -78,6 +78,8 @@ $normalizedCommand = (($normalizedRailwayArgs -join " ").ToLowerInvariant() -rep
 $buildStampPath = Join-Path $repositoryRoot "nexteam-build-sha.txt"
 $hadBuildStamp = Test-Path -LiteralPath $buildStampPath
 $previousBuildStamp = if ($hadBuildStamp) { Get-Content -LiteralPath $buildStampPath -Raw } else { $null }
+$buildInfoPath = Join-Path $repositoryRoot "apps\server\src\buildInfo.ts"
+$originalBuildInfo = $null
 $railway = $null
 $token = $null
 $hadRailwayToken = Test-Path Env:RAILWAY_TOKEN
@@ -93,6 +95,13 @@ try {
       throw "Unable to create the non-secret staging build identity stamp; Railway upload is denied."
     }
     Set-Content -LiteralPath $buildStampPath -Value $buildSha -NoNewline
+    $originalBuildInfo = Get-Content -LiteralPath $buildInfoPath -Raw
+    if (-not $originalBuildInfo.Contains("__NEXTEAM_UPLOAD_SHA__")) {
+      throw "The guarded staging build identity marker is unavailable; Railway upload is denied."
+    }
+    $buildInfoDeclaration = 'const uploadedArchiveSha = "__NEXTEAM_UPLOAD_SHA__";'
+    $stampedBuildInfoDeclaration = 'const uploadedArchiveSha = "' + $buildSha + '";'
+    Set-Content -LiteralPath $buildInfoPath -Value ($originalBuildInfo.Replace($buildInfoDeclaration, $stampedBuildInfoDeclaration)) -NoNewline
   }
 
   $railway = Get-Command railway -ErrorAction Stop
@@ -115,6 +124,9 @@ try {
   $exitCode = 1
 } finally {
   if ($normalizedCommand -eq "up --service nexteam-studio --environment staging --detach") {
+    if ($null -ne $originalBuildInfo) {
+      Set-Content -LiteralPath $buildInfoPath -Value $originalBuildInfo -NoNewline
+    }
     if ($hadBuildStamp) {
       Set-Content -LiteralPath $buildStampPath -Value $previousBuildStamp -NoNewline
     } else {
