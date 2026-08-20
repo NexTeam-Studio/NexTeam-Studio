@@ -397,6 +397,12 @@ export function NexOpsSchedulePage(props: {
   }, [props.tenantId, range.from, range.to, selectedTeamIds.join(",")]);
 
   useEffect(() => {
+    if (visitDetail) {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [visitDetail?.id]);
+
+  useEffect(() => {
     void loadJobs();
   }, [props.tenantId]);
 
@@ -610,7 +616,6 @@ export function NexOpsSchedulePage(props: {
           event.stopPropagation();
           setVisitDetailSection("overview");
           setVisitDetail(visit);
-          window.scrollTo({ top: 0, left: 0, behavior: "auto" });
         }}>
           <strong>{visit.clientName}</strong>
           <p>{visit.jobTitle}</p>
