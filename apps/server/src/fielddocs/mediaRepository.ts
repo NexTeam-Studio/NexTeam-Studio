@@ -10,7 +10,7 @@ import {
   type NexDocsDocument,
   type NexDocsFolder
 } from "@nexteam/core";
-import { checklistInstanceSchema, checklistTemplateSchema, type ChecklistInstance, type ChecklistTemplate } from "./checklists.js";
+import { checklistInstanceSchema, checklistTemplateSchema, parseStoredChecklist, type ChecklistInstance, type ChecklistTemplate } from "./checklists.js";
 import {
   fieldDocsBundleSchema,
   fieldDocsTextSnippetSchema,
@@ -544,7 +544,7 @@ export class FirestoreMediaRepository implements MediaRepository {
 
   async listChecklists(tenantId: string): Promise<ChecklistInstance[]> {
     const snapshot = await this.db.collection("checklists").where("tenantId", "==", tenantId).get();
-    return snapshot.docs.map((doc) => checklistInstanceSchema.parse(doc.data()) as ChecklistInstance);
+    return snapshot.docs.map((doc) => parseStoredChecklist(doc.data()));
   }
 
   async saveChecklist(checklist: ChecklistInstance): Promise<ChecklistInstance> {
@@ -558,7 +558,7 @@ export class FirestoreMediaRepository implements MediaRepository {
     if (!snapshot.exists) {
       return null;
     }
-    const parsed = checklistInstanceSchema.parse(snapshot.data()) as ChecklistInstance;
+    const parsed = parseStoredChecklist(snapshot.data());
     return parsed.tenantId === tenantId ? parsed : null;
   }
   async listForms(tenantId: string): Promise<TenantForm[]> { const s = await this.db.collection("tenantForms").where("tenantId", "==", tenantId).get(); return s.docs.map((d) => formSchema.parse(d.data()) as TenantForm); }
