@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { evaluateSecretOperation } from "./secretOutputPolicy.ts";
 import { splinterLifecycleController } from "./lifecycleController.ts";
@@ -110,4 +111,10 @@ test("the approved Railway wrapper admits only the documented staging deployment
     redeployOutput = `${error.stdout ?? ""}${error.stderr ?? ""}`;
   }
   assert.match(redeployOutput, /allowlist/i);
+});
+
+test("the guarded Railway wrapper tokenizes its documented comma-safe invocation before execution", () => {
+  const source = readFileSync("scripts/security/invoke-railway-staging.ps1", "utf8");
+  assert.match(source, /\$normalizedRailwayArgs\s*=.*-split\s+","/);
+  assert.match(source, /&\s+\$railway\.Source\s+@normalizedRailwayArgs/);
 });

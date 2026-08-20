@@ -64,7 +64,8 @@ if (-not $RailwayArgs -or $RailwayArgs.Count -eq 0) {
   exit 64
 }
 
-Assert-SafeRailwayOperation -Args $RailwayArgs
+$normalizedRailwayArgs = @($RailwayArgs | ForEach-Object { $_ -split "," } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+Assert-SafeRailwayOperation -Args $normalizedRailwayArgs
 
 $railway = Get-Command railway -ErrorAction Stop
 $token = Get-RailwayTokenFromVault -Path $VaultPath
@@ -79,7 +80,7 @@ try {
   $env:RAILWAY_TOKEN = $token
   Remove-Item Env:RAILWAY_API_TOKEN -ErrorAction SilentlyContinue
 
-  $output = & $railway.Source @RailwayArgs 2>&1
+  $output = & $railway.Source @normalizedRailwayArgs 2>&1
   if ($null -ne $LASTEXITCODE) {
     $exitCode = $LASTEXITCODE
   }
