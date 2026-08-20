@@ -29,3 +29,5 @@ export const evaporationReportRecordSchema = z.object({
 });
 
 export type EvaporationReportRecord = z.infer<typeof evaporationReportRecordSchema>;
+export const evaporationReviewRecordSchema = z.object({ id: z.string().min(1), tenantId: z.string().min(1), context: z.record(z.unknown()), preview: z.unknown(), expiresAt: z.number().int().positive(), status: z.enum(["pending", "consumed"]).default("pending"), createdAt: z.string(), consumedAt: z.string().optional() });
+export type EvaporationReviewRecord = z.infer<typeof evaporationReviewRecordSchema>;

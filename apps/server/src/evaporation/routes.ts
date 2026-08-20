@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { RailError } from "@nexteam/core";
 import { configuredTenantId } from "../core/tenantConfig.js";
 import { requireTenantRole } from "../auth/accessContext.js";
@@ -15,35 +15,8 @@ export interface EvaporationRouteDeps extends EvaporationFieldContextDeps {
   env?: NodeJS.ProcessEnv | undefined;
 }
 
-interface ReviewedPreviewPayload {
-  expiresAt: number;
-  context: ReturnType<typeof evaporationRunInputSchema.parse>;
-  preview: EvaporationPreview;
-}
-
 function stableJson(value: unknown): string {
   return JSON.stringify(value);
-}
-
-function createReviewToken(key: Buffer, payload: ReviewedPreviewPayload): string {
-  const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
-  return `${encoded}.${createHmac("sha256", key).update(encoded).digest("base64url")}`;
-}
-
-function verifyReviewToken(key: Buffer, token: string, context: ReviewedPreviewPayload["context"]): EvaporationPreview | null {
-  const [encoded, signature] = token.split(".");
-  if (!encoded || !signature) return null;
-  const expected = createHmac("sha256", key).update(encoded).digest("base64url");
-  const expectedBytes = Buffer.from(expected);
-  const signatureBytes = Buffer.from(signature);
-  if (expectedBytes.length !== signatureBytes.length || !timingSafeEqual(expectedBytes, signatureBytes)) return null;
-  try {
-    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as ReviewedPreviewPayload;
-    if (payload.expiresAt < Date.now() || stableJson(payload.context) !== stableJson(context)) return null;
-    return payload.preview;
-  } catch {
-    return null;
-  }
 }
 
 function defaultTenantId(env: NodeJS.ProcessEnv): string {
@@ -60,7 +33,6 @@ export function registerEvaporationRoutes(app: Express, deps: EvaporationRouteDe
   const env = deps.env ?? process.env;
   const repository = deps.repository ?? new MemoryEvaporationRepository();
   const weatherProvider = deps.weatherProvider ?? new OpenWeatherMapProvider(env);
-  const reviewTokenKey = randomBytes(32);
 
   app.post("/api/evaporation/preview", async (req: Request, res: Response) => {
     try {
@@ -69,7 +41,8 @@ export function registerEvaporationRoutes(app: Express, deps: EvaporationRouteDe
       const parsed = evaporationRunInputSchema.parse(req.body);
       const context = await resolveEvaporationFieldContext(parsed, deps, tenantId);
       const preview = await previewEvaporationReport({ tenantId, body: context, weatherProvider });
-      const reviewToken = createReviewToken(reviewTokenKey, { expiresAt: Date.now() + 15 * 60_000, context, preview });
+      const reviewToken = `evap_review_${randomUUID()}`;
+      await repository.saveReview({ id: reviewToken, tenantId, context, preview, expiresAt: Date.now() + 15 * 60_000, status: "pending", createdAt: new Date().toISOString() });
       res.json({ ok: true, preview: { currentWeather: preview.currentWeather, forecast: preview.forecast, result: preview.result }, reviewToken });
     } catch (error) {
       sendRouteError(res, error);
@@ -83,8 +56,9 @@ export function registerEvaporationRoutes(app: Express, deps: EvaporationRouteDe
       const parsed = evaporationRunInputSchema.parse(req.body);
       const context = await resolveEvaporationFieldContext(parsed, deps, tenantId);
       const reviewToken = typeof req.body?.reviewToken === "string" ? req.body.reviewToken : "";
-      const reviewedPreview = reviewToken ? verifyReviewToken(reviewTokenKey, reviewToken, context) : undefined;
-      if (reviewToken && !reviewedPreview) {
+      const review = reviewToken ? await repository.consumeReview(tenantId, reviewToken) : null;
+      const reviewedPreview = review?.preview as EvaporationPreview | undefined;
+      if (!review || review.expiresAt < Date.now() || stableJson(review.context) !== stableJson(context)) {
         throw new RailError("The reviewed calculation expired or no longer matches the current inputs. Calculate again before generating the report.", {
           provider: "native", op: "runEvaporationReport", status: 409
         });

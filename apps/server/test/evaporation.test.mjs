@@ -89,16 +89,12 @@ test("evaporation routes create a report and render a PDF", async () => {
     env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
   await withServer(app, async (baseUrl) => {
+    const input = { clientName: "Receipt Client", address: "Bryson City, NC 28713", surfaceAreaFt2: 500, waterTempF: 82, observedLoss: { inches: 1, observationDays: 1 } };
+    const preview = await fetch(`${baseUrl}/api/evaporation/preview`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }).then(response => response.json());
     const createdResponse = await fetch(`${baseUrl}/api/evaporation/run`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        clientName: "Receipt Client",
-        address: "Bryson City, NC 28713",
-        surfaceAreaFt2: 500,
-        waterTempF: 82,
-        observedLoss: { inches: 1, observationDays: 1 }
-      })
+      body: JSON.stringify({ ...input, reviewToken: preview.reviewToken })
     });
     assert.equal(createdResponse.status, 201);
     const created = await createdResponse.json();
@@ -159,6 +155,8 @@ test("a reviewed preview token preserves the reviewed weather and rejects change
     assert.equal(weatherReads, 1);
     const changedInput = await fetch(`${baseUrl}/api/evaporation/run`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...input, surfaceAreaFt2: 600, reviewToken: preview.reviewToken }) });
     assert.equal(changedInput.status, 409);
+    const missingReview = await fetch(`${baseUrl}/api/evaporation/run`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    assert.equal(missingReview.status, 409);
   });
 });
 
@@ -202,18 +200,12 @@ test("a Visit-linked evaporation report persists as one NexCam report and update
     env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
   await withServer(app, async (baseUrl) => {
+    const input = { jobId: "job_1", visitId: "visit_1", checklistId: "checklist_1", address: "Bryson City, NC 28713", surfaceAreaFt2: 500, waterTempF: 82, observedLoss: { inches: 1, observationDays: 1 } };
+    const preview = await fetch(`${baseUrl}/api/evaporation/preview`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }).then(response => response.json());
     const response = await fetch(`${baseUrl}/api/evaporation/run`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        jobId: "job_1",
-        visitId: "visit_1",
-        checklistId: "checklist_1",
-        address: "Bryson City, NC 28713",
-        surfaceAreaFt2: 500,
-        waterTempF: 82,
-        observedLoss: { inches: 1, observationDays: 1 }
-      })
+      body: JSON.stringify({ ...input, reviewToken: preview.reviewToken })
     });
     assert.equal(response.status, 201);
     const created = await response.json();

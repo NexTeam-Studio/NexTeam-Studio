@@ -746,10 +746,10 @@ export function NexOpsSchedulePage(props: {
   }
 
   async function previewEvaporation(visit: ScheduleWorkspaceVisit): Promise<void> {
-    const body = evaporationRequestBody(visit, evaporationChecklist?.id);
-    if (!body) return;
     setEvaporationBusy("preview"); setEvaporationStatus("Calculating with the current weather snapshot...");
     try {
+      const checklistId = await ensureEvaporationChecklist(visit); const body = checklistId ? evaporationRequestBody(visit, checklistId) : null;
+      if (!body) return;
       const response = await fetch("/api/evaporation/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then((value) => value.json() as Promise<{ ok: boolean; preview?: EvaporationPreview; reviewToken?: string; error?: string }>);
       if (!response.ok || !response.preview || !response.reviewToken) { setEvaporationStatus(response.error ?? "The evaporation preview could not be calculated."); return; }
       setEvaporationPreview(response.preview); setEvaporationReviewToken(response.reviewToken); setEvaporationStatus("Review the calculated values and weather snapshot before generating the report.");
@@ -760,7 +760,7 @@ export function NexOpsSchedulePage(props: {
     if (!evaporationPreview || !evaporationReviewToken) { setEvaporationStatus("Calculate and review expected evaporation before generating the report."); return; }
     setEvaporationBusy("finalize"); setEvaporationStatus("Creating the authoritative evaporation report...");
     try {
-      const checklistId = await ensureEvaporationChecklist(visit); const body = checklistId ? evaporationRequestBody(visit, checklistId) : null;
+      const checklistId = evaporationChecklist?.id; const body = checklistId ? evaporationRequestBody(visit, checklistId) : null;
       if (!body) return;
       const response = await fetch("/api/evaporation/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, reviewToken: evaporationReviewToken }) }).then((value) => value.json() as Promise<{ ok: boolean; report?: { id: string }; error?: string }>);
       if (!response.ok || !response.report) { setEvaporationStatus(response.error ?? "The evaporation report could not be generated."); return; }
