@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
-import { NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { visitCanBeCompleted } from "./visitCompletion";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
@@ -309,6 +309,8 @@ export function NexOpsSchedulePage(props: {
   const [shiftRemaining, setShiftRemaining] = useState(false);
   const [workingVisitId, setWorkingVisitId] = useState("");
   const [fieldDocsVisit, setFieldDocsVisit] = useState<ScheduleWorkspaceVisit | null>(null);
+  const [visitDetail, setVisitDetail] = useState<ScheduleWorkspaceVisit | null>(null);
+  const [visitDetailSection, setVisitDetailSection] = useState<"overview" | "files" | "nexcam">("overview");
   const [fieldDocsMedia, setFieldDocsMedia] = useState<FieldDocsMediaRecord[]>([]);
   const [fieldDocsReports, setFieldDocsReports] = useState<FieldDocsReportRecord[]>([]);
   const [fieldDocsStatus, setFieldDocsStatus] = useState("");
@@ -586,7 +588,11 @@ export function NexOpsSchedulePage(props: {
         draggable={!visit.readOnly && (view === "day" || view === "week")}
         onDragStart={(event) => event.dataTransfer.setData("text/plain", visit.id)}
       >
-        <button className="nexops-schedule-visit-main" type="button" onClick={() => props.onOpenJob(visit.jobId)}>
+        <button className="nexops-schedule-visit-main" type="button" onClick={() => {
+          setVisitDetailSection("overview");
+          setVisitDetail(visit);
+          window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        }}>
           <strong>{visit.clientName}</strong>
           <p>{visit.jobTitle}</p>
           <small>{visit.arrivalWindow} • {visit.propertyAddress}</small>
@@ -610,6 +616,27 @@ export function NexOpsSchedulePage(props: {
           ) : null}
         </div>
       </article>
+    );
+  }
+
+  if (visitDetail) {
+    const detail = visitDetail;
+    return (
+      <NexOpsDetailTemplate
+        back={<button type="button" onClick={() => setVisitDetail(null)}>← Back to Visits</button>}
+        eyebrow="Field visit"
+        title={detail.clientName}
+        detail={`${detail.arrivalWindow} · ${detail.jobTitle}`}
+        status={<><span className={`nexops-status-pill nexops-tone-${visitToneClass(detail.statusTone)}`}>{detail.status}</span><span className="nexops-status-pill">{detail.assignedTeam.map((member) => member.name).join(", ") || "Unassigned"}</span></>}
+        actions={<><button className="nexops-primary-inline-button" type="button" onClick={() => openEdit(detail)}>Edit visit</button><button type="button" onClick={() => props.onOpenJob(detail.jobId)}>Open Job</button></>}
+        navigation={<><button type="button" className={visitDetailSection === "overview" ? "active" : ""} aria-current={visitDetailSection === "overview" ? "page" : undefined} onClick={() => setVisitDetailSection("overview")}>Visit</button><button type="button" className={visitDetailSection === "files" ? "active" : ""} aria-current={visitDetailSection === "files" ? "page" : undefined} onClick={() => setVisitDetailSection("files")}>Files</button><button type="button" className={visitDetailSection === "nexcam" ? "active" : ""} aria-current={visitDetailSection === "nexcam" ? "page" : undefined} onClick={() => setVisitDetailSection("nexcam")}>NexCam</button></>}
+      >
+        <section className="nexops-module-card nexops-visit-detail-card">
+          {visitDetailSection === "overview" ? <><p className="eyebrow">Visit context</p><h2>{detail.jobTitle}</h2><dl className="nexops-visit-detail-facts"><div><dt>Client</dt><dd>{detail.clientName}</dd></div><div><dt>Property</dt><dd>{detail.propertyAddress}</dd></div><div><dt>Schedule</dt><dd>{new Date(detail.start).toLocaleString()} – {new Date(detail.end).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</dd></div><div><dt>Team</dt><dd>{detail.assignedTeam.map((member) => member.name).join(", ") || "Unassigned"}</dd></div></dl>{detail.details ? <p>{detail.details}</p> : <p className="nexops-empty-copy">No additional visit instructions are recorded.</p>}</> : null}
+          {visitDetailSection === "files" ? <><p className="eyebrow">Visit files</p><h2>Documents and reports</h2><p>Visit files are preserved on the parent Job and remain available through the documented job file rail.</p><button type="button" onClick={() => props.onOpenJob(detail.jobId)}>Open Job Files</button></> : null}
+          {visitDetailSection === "nexcam" ? <><p className="eyebrow"><ProductInlineLabel product="nexcam" /></p><h2>Visit media and reports</h2><p>Open the visual documentation rail for this Visit.</p><button type="button" onClick={() => void openFieldDocsRail(detail)}>Open NexCam</button></> : null}
+        </section>
+      </NexOpsDetailTemplate>
     );
   }
 
