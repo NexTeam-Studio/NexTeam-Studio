@@ -76,6 +76,18 @@ export function registerSplinterRelayRoutes(app: Express, deps: SplinterRelayRou
     if (!parsed.success) return reject(res, 400, "Splinter worker heartbeat was rejected.");
     try { return res.json({ ok: true, program: await deps.programService.heartbeatWorker(req.params.id, parsed.data.workerId, parsed.data.leaseMs) }); } catch { return reject(res, 409, "Splinter worker lease was lost."); }
   });
+  app.post("/api/internal/splinter/programs/:id/approvals", async (req, res) => {
+    if (!deps.programService || !ownerAuthorized(req, env)) return reject(res, 401, "Splinter owner authorization is required.");
+    const parsed = z.object({ approvalId: idSchema, scopeFingerprint: z.string().min(1).max(256) }).strict().safeParse(req.body);
+    if (!parsed.success) return reject(res, 400, "Splinter approval was rejected.");
+    try { return res.json({ ok: true, program: await deps.programService.grantApproval(req.params.id, parsed.data.approvalId, parsed.data.scopeFingerprint) }); } catch { return reject(res, 409, "Splinter approval was rejected."); }
+  });
+  app.post("/api/internal/splinter/programs/:id/approvals/:approvalId/consume", async (req, res) => {
+    if (!deps.programService || !authorized(req, env)) return reject(res, 401, "Splinter relay authorization is required.");
+    const parsed = z.object({ scopeFingerprint: z.string().min(1).max(256) }).strict().safeParse(req.body);
+    if (!parsed.success) return reject(res, 400, "Splinter approval consumption was rejected.");
+    try { return res.json({ ok: true, program: await deps.programService.consumeApproval(req.params.id, req.params.approvalId, parsed.data.scopeFingerprint) }); } catch { return reject(res, 409, "Splinter approval is unavailable."); }
+  });
   app.post("/api/internal/splinter/jobs/:id/rfi/resolve", async (req, res) => {
     if (!ownerAuthorized(req, env)) return reject(res, 401, "Splinter owner authorization is required.");
     const parsed = z.object({ rfiId: idSchema, resolution: z.string().min(1).max(64), resolutionScope: z.enum(["JOB_ONLY", "MODULE", "TENANT", "GLOBAL"]) }).strict().safeParse(req.body);
