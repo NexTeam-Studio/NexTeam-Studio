@@ -165,7 +165,7 @@ export const splinterJobSchema = z.object({
   repositoryTarget: splinterRepositoryTargetSchema.default("NEXTEAM"),
   allowedPaths: z.array(splinterAllowedPathSchema).max(50).default([]),
   pathDiscoveryPolicy: splinterPathDiscoveryPolicySchema.default("EXPLICIT_PATHS"),
-  workItemContext: z.object({ workItemId: idSchema, module: z.string().min(1).max(100), tenantScope: z.string().min(1).max(100), promotionPolicy: splinterPromotionPolicySchema, sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128) }).strict().optional(),
+  workItemContext: z.object({ workItemId: idSchema, programId: idSchema.optional(), module: z.string().min(1).max(100), tenantScope: z.string().min(1).max(100), promotionPolicy: splinterPromotionPolicySchema, sourceRequirementRefs: z.array(z.string().min(1).max(500)).min(1).max(20), requirementRevision: z.string().min(1).max(128) }).strict().optional(),
   acceptanceCriteria: z.array(z.string().min(1).max(1_000)).max(50).default([]),
   requiredChecks: z.array(splinterRequiredCheckSchema).max(10).default([]),
   attemptCount: z.number().int().min(0).default(0),

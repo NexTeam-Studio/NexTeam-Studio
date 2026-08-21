@@ -65,7 +65,7 @@ export class SplinterProgramService {
     if (program.activeJobId?.startsWith("dispatch-")) {
       if (Date.parse(program.updatedAt) + 300000 > Date.parse(this.now())) return { program };
       const claimed = items.filter(item => item.status === "CLAIMED" && item.activeSplinterJobId);
-      const recoverable = (await Promise.all(claimed.map(async item => ({ item, job: item.activeSplinterJobId ? await this.jobs.get(item.activeSplinterJobId) : null })))).filter(candidate => candidate.job?.workItemContext?.workItemId === candidate.item.workItemId);
+      const recoverable = (await Promise.all(claimed.map(async item => ({ item, job: item.activeSplinterJobId ? await this.jobs.get(item.activeSplinterJobId) : null })))).filter(candidate => candidate.job?.workItemContext?.workItemId === candidate.item.workItemId && candidate.job.workItemContext.programId === program.programId);
       if (recoverable.length === 1) {
         const recovered = recoverable[0]!;
         await this.persistRequired(program, { activeWorkItemId: recovered.item.workItemId, activeJobId: recovered.item.activeSplinterJobId, nextAction: `Recover claimed work ${recovered.item.workItemId} after dispatch interruption.` }, "DISPATCH_CLAIM_RECOVERED");
@@ -84,7 +84,7 @@ export class SplinterProgramService {
     const reserved = await this.programs.reserveDispatch(program.programId, `dispatch-${crypto.randomUUID()}`);
     if (!reserved) return { program: await this.require(program.programId) };
     let selected: Awaited<ReturnType<SplinterWorkSelector["select"]>>;
-    try { selected = await this.selector.select(currentStagingSha, program.workItemIds); }
+    try { selected = await this.selector.select(currentStagingSha, program.workItemIds, program.programId); }
     catch (error) { await this.persistRequired(reserved, { activeJobId: undefined, activeWorkItemId: undefined, nextAction: "Release failed dispatch reservation." }, "DISPATCH_RESERVATION_RELEASED"); throw error; }
     if (selected) {
       const next = await this.persistRequired(reserved, { activeWorkItemId: selected.item.workItemId, activeJobId: selected.job.id, workerLease: undefined, ownerActionQueue: actions, nextAction: `Dispatch ${selected.item.workItemId} to a Donatello worker.` }, "WORK_DISPATCHED");
