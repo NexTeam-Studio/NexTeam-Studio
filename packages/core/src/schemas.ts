@@ -26,6 +26,28 @@ export const splinterJobOwnerSchema = z.enum(["splinter", "worker", "human"]);
 
 export const splinterJobResultSchema = z.enum(["PENDING", "PASS", "FAIL"]);
 
+// Program state is deliberately separate from a worker job. A worker result is
+// evidence for a program; it is never a program terminal condition by itself.
+export const splinterProgramStateSchema = z.enum(["ACTIVE", "COMPLETE", "GLOBAL_OWNER_REQUIRED", "GLOBAL_EXTERNAL_BLOCKER", "SAFETY_STOP", "EXHAUSTED_FAILURE"]);
+export const splinterApprovalStateSchema = z.enum(["GRANTED", "CONSUMED", "REVOKED", "INVALIDATED"]);
+export const splinterProgramApprovalSchema = z.object({
+  approvalId: idSchema, scopeFingerprint: z.string().min(1).max(256), state: splinterApprovalStateSchema,
+  grantedAt: z.string().min(1), consumedAt: z.string().min(1).optional(), invalidatedAt: z.string().min(1).optional()
+}).strict();
+export const splinterOwnerActionSchema = z.object({
+  actionId: idSchema, workItemId: idSchema, title: z.string().min(1).max(200), detail: z.string().min(1).max(500),
+  state: z.enum(["OPEN", "RESOLVED"]), createdAt: z.string().min(1), resolvedAt: z.string().min(1).optional()
+}).strict();
+export const splinterWorkerLeaseSchema = z.object({ workerId: z.string().min(1).max(128), workItemId: idSchema, claimedAt: z.string().min(1), heartbeatAt: z.string().min(1), expiresAt: z.string().min(1) }).strict();
+export const splinterProgramAuditEventSchema = z.object({ at: z.string().min(1), kind: z.string().min(1).max(64), detail: z.string().min(1).max(500) }).strict();
+export const splinterProgramSchema = z.object({
+  programId: idSchema, objective: z.string().min(1).max(4_000), state: splinterProgramStateSchema,
+  workItemIds: z.array(idSchema).min(1).max(100), activeWorkItemId: idSchema.optional(), activeJobId: idSchema.optional(),
+  workerLease: splinterWorkerLeaseSchema.optional(), ownerActionQueue: z.array(splinterOwnerActionSchema).max(50).default([]),
+  approvals: z.array(splinterProgramApprovalSchema).max(50).default([]), nextAction: z.string().min(1).max(1_000), terminalReason: z.string().min(1).max(500).optional(),
+  audit: z.array(splinterProgramAuditEventSchema).max(200).default([]), createdAt: z.string().min(1), updatedAt: z.string().min(1)
+}).strict();
+
 export const splinterExecutionModeSchema = z.enum(["READ_ONLY", "CODE_CHANGE"]);
 export const splinterRepositoryTargetSchema = z.enum(["NEXTEAM", "CONTROL_RELAY"]);
 export const splinterWorkItemStatusSchema = z.enum(["DRAFT", "APPROVED", "CLAIMED", "BLOCKED", "OWNER_REQUIRED", "SAFETY_STOP", "COMPLETED", "OBSOLETE"]);
@@ -1978,6 +2000,8 @@ export type SplinterWorkerResult = z.infer<typeof splinterWorkerResultSchema>;
 export type SplinterReview = z.infer<typeof splinterReviewSchema>;
 export type SplinterWorkItem = z.infer<typeof splinterWorkItemSchema>;
 export type SplinterReconciliationEvidence = z.infer<typeof splinterReconciliationEvidenceSchema>;
+export type SplinterProgram = z.infer<typeof splinterProgramSchema>;
+export type SplinterProgramState = z.infer<typeof splinterProgramStateSchema>;
 export type TenantBrandingDoc = z.infer<typeof tenantBrandingSchema>;
 export type PlatformPlanDoc = z.infer<typeof platformPlanSchema>;
 export type TenantSubscriptionDoc = z.infer<typeof tenantSubscriptionSchema>;

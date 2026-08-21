@@ -11,6 +11,7 @@ import { SplinterJobService } from "../src/splinter/service.ts";
 import { splinterLifecycleController } from "../src/splinter/lifecycleController.ts";
 import { InMemoryWorkRegistry, SPLINTER_WORK_ITEM_COLLECTION_PATH, SplinterWorkSelector, validateDependencyGraph } from "../src/splinter/workRegistry.ts";
 import { registerSplinterRelayRoutes } from "../src/splinter/routes.ts";
+import { InMemorySplinterProgramRepository, SplinterProgramService } from "../src/splinter/programService.ts";
 import express from "express";
 
 const timestamps = ["2026-08-11T12:00:00.000Z", "2026-08-11T12:05:00.000Z"];
@@ -782,4 +783,24 @@ test("pre-registry reconciliation route is owner-only and relay authority cannot
     assert.equal((await fetch(`${base}/api/internal/splinter/work-items/request-route/reconcile`, { method: "POST", headers: { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" }, body })).status, 401);
     assert.equal((await fetch(`${base}/api/internal/splinter/work-items/request-route/reconcile`, { method: "POST", headers: { "content-type": "application/json", "x-splinter-owner-token": "owner-secret" }, body })).status, 200);
   } finally { server.close(); }
+});
+
+test("durable program remains active after a worker result, queues scoped owner work, and dispatches independent work", async () => {
+  const work = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository({ now: () => "2026-08-21T12:00:00.000Z" });
+  const selector = new SplinterWorkSelector(work, jobs); const programStore = new InMemorySplinterProgramRepository(() => "2026-08-21T12:00:00.000Z");
+  const programs = new SplinterProgramService(programStore, work, jobs, selector, () => "2026-08-21T12:00:00.000Z");
+  const base = { module: "NexOps / CRM / Requests", tenantScope: "tenant", priority: 1, launchCritical: false, dependencies: [], acceptanceCriteria: ["accepted"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], allowedPaths: [], pathDiscoveryPolicy: "EXPLICIT_PATHS", executionMode: "READ_ONLY", repositoryTarget: "NEXTEAM", reviewRequired: false, maxAttempts: 1, promotionPolicy: "NONE", sourceRequirementRefs: ["docs/internal/nexops/NEXOPS-BUSINESS-PAGE-TEMPLATE-CONTRACT.md"], requirementRevision: "r1", nonPromotable: false, reconciliationMode: false, completedEvidenceRefs: [] };
+  await work.create({ ...base, workItemId: "owner-blocked", title: "Owner action", goal: "Await a narrow owner action.", ownerDecisionRequired: true });
+  await work.create({ ...base, workItemId: "independent", title: "Independent work", goal: "Continue without the owner action.", ownerDecisionRequired: false });
+  await selector.approve("independent");
+  const program = await programs.create({ programId: "program-continuation", objective: "Continue durable engineering work.", workItemIds: ["owner-blocked", "independent"] });
+  const first = await programs.reconcile(program.programId, "abcdef1");
+  assert.equal(first.program.state, "ACTIVE"); assert.equal(first.dispatch.workItemId, "independent"); assert.equal(first.program.ownerActionQueue[0].workItemId, "owner-blocked");
+  const claimed = await programs.claimWorker(program.programId, "donatello-1", 1); assert.equal(claimed.workerLease.workerId, "donatello-1");
+  const job = await jobs.get(first.dispatch.jobId); const service = new SplinterJobService(jobs);
+  await service.transition(job.id, "RUNNING");
+  await service.submitWorkerOutcome(job.id, { workerRunId: "donatello-1", status: "SUCCEEDED", summary: "Worker returned a status response.", filesInspected: [], filesChanged: [], testsPerformed: [], startedAt: timestamps[0], completedAt: timestamps[1] });
+  const afterWorker = await programs.reconcile(program.programId, "abcdef1");
+  assert.equal(afterWorker.program.state, "ACTIVE"); assert.equal(afterWorker.program.ownerActionQueue.length, 1);
+  const recovered = await programs.recoverExpiredLease(program.programId, "abcdef1"); assert.equal(recovered.program.state, "ACTIVE");
 });
