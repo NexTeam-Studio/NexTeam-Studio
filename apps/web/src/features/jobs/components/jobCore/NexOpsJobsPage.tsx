@@ -301,6 +301,7 @@ interface BookingConfirmationPreviewResponse {
 interface InlineJobClientCreateResponse {
   ok: boolean;
   client?: ClientOption & { id: string };
+  property?: PropertyOption | undefined;
   error?: string;
 }
 
@@ -529,6 +530,11 @@ export function defaultManualJobPropertyId(properties: PropertyOption[], clientI
   return matching.length === 1 ? matching[0]!.id : "";
 }
 
+export function mergeJobPropertyOptions(properties: PropertyOption[], created?: PropertyOption | null): PropertyOption[] {
+  if (!created || properties.some((property) => property.id === created.id)) return properties;
+  return [created, ...properties];
+}
+
 function formatDateTime(value?: string): string {
   if (!value) {
     return "Not set";
@@ -685,6 +691,7 @@ export function NexOpsJobsPage(props: {
   const [detailStatus, setDetailStatus] = useState("Select a job to review visits and actions.");
   const [createClientId, setCreateClientId] = useState(() => props.initialClientId && props.clients.some((client) => client.id === props.initialClientId) ? props.initialClientId : props.clients[0]?.id ?? "");
   const [createPropertyId, setCreatePropertyId] = useState("");
+  const [createdPropertyOption, setCreatedPropertyOption] = useState<PropertyOption | null>(null);
   const [showInlineClientCreate, setShowInlineClientCreate] = useState(props.clients.length === 0);
   const [inlineClientDraft, setInlineClientDraft] = useState<InlineJobClientDraft>(() => blankInlineJobClientDraft());
   const [inlineClientBusy, setInlineClientBusy] = useState(false);
@@ -747,10 +754,10 @@ export function NexOpsJobsPage(props: {
     () => mergeJobClientOptions(props.clients, createdClientOption),
     [props.clients, createdClientOption]
   );
-  const createClientProperties = useMemo(
-    () => props.properties.filter((property) => property.clientId === createClientId),
-    [createClientId, props.properties]
-  );
+  const createClientProperties = useMemo(() => {
+    const options = mergeJobPropertyOptions(props.properties, createdPropertyOption);
+    return options.filter((property) => property.clientId === createClientId);
+  }, [createClientId, createdPropertyOption, props.properties]);
   const inlineClientMissingFields = inlineJobClientDraftMissingFields(inlineClientDraft);
   const inlineClientCanSave = inlineClientMissingFields.length === 0;
 
@@ -1185,12 +1192,14 @@ export function NexOpsJobsPage(props: {
     if (value === NEW_JOB_CLIENT_VALUE) {
       setCreateClientId("");
       setCreatePropertyId("");
+      setCreatedPropertyOption(null);
       setShowInlineClientCreate(true);
       setInlineClientStatus("Create the client here, then the job draft continues with your title and billing plan still in place.");
       return;
     }
     setCreateClientId(value);
     setCreatePropertyId(defaultManualJobPropertyId(props.properties, value));
+    setCreatedPropertyOption(null);
     setShowInlineClientCreate(false);
     setInlineClientStatus("Using an existing client on this manual job draft.");
   }
@@ -1248,7 +1257,8 @@ export function NexOpsJobsPage(props: {
       };
       setCreatedClientOption(nextClient);
       setCreateClientId(nextClient.id);
-      setCreatePropertyId("");
+      setCreatedPropertyOption(body.property ?? null);
+      setCreatePropertyId(body.property?.id ?? "");
       setShowInlineClientCreate(false);
       setInlineClientDraft(blankInlineJobClientDraft());
       setInlineClientStatus(`${clientLabel(nextClient)} is ready. Your job title and draft billing plan stayed in place.`);

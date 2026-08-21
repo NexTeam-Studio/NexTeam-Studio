@@ -12,6 +12,7 @@ import {
   isCurrentCloseoutDeliveryReviewRequest,
   matchesJobSearch,
   mergeJobClientOptions,
+  mergeJobPropertyOptions,
   parseVisitDateTime,
   selectedCloseoutArtifactRefs
 } from "../NexOpsJobsPage.tsx";
@@ -132,6 +133,21 @@ test("manual Job creation keeps property selection within the selected Client", 
   assert.equal(defaultManualJobPropertyId(properties, "missing_client"), "");
   assert.match(pageSource, /Property \/ service location/);
   assert.match(pageSource, /propertyId: createPropertyId/);
+});
+
+test("an inline-created Client carries its returned property into the unfinished Job draft", () => {
+  const persisted = [{ id: "property_existing", clientId: "client_existing", label: "Existing" }];
+  const returned = { id: "property_new", clientId: "client_new", label: "New service location" };
+  assert.deepEqual(
+    mergeJobPropertyOptions(persisted, returned).map((property) => property.id),
+    ["property_new", "property_existing"]
+  );
+  assert.deepEqual(
+    mergeJobPropertyOptions([...persisted, returned], returned).map((property) => property.id),
+    ["property_existing", "property_new"]
+  );
+  assert.match(pageSource, /setCreatedPropertyOption\(body\.property \?\? null\)/);
+  assert.match(pageSource, /setCreatePropertyId\(body\.property\?\.id \?\? ""\)/);
 });
 
 test("Closeout saves the exact mixed NexDocs and NexCam artifact selection without duplicate relationships", () => {
