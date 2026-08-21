@@ -2,10 +2,11 @@ import { splinterLifecycleController } from "../../apps/server/src/splinter/life
 
 const separator = process.argv.indexOf("--");
 const command = separator >= 0 ? process.argv.slice(separator + 1) : [];
+const shadowModeConfigure = command.length === 4 && command[0] === "shadow-mode" && command[1] === "configure" && command[2] === "--email" && command[3].trim().length > 0;
 const decision = splinterLifecycleController.authorizeSecretOperation({
   store: "RAILWAY",
   kind: "COMMAND_EXECUTION",
-  outputMode: "REDACTED",
+  outputMode: shadowModeConfigure ? "SILENT" : "REDACTED",
   command: ["railway", ...command]
 });
 

@@ -40,11 +40,13 @@ function Assert-SafeRailwayOperation {
   param([Parameter(Mandatory = $true)][string[]]$Args)
 
   $command = (($Args -join " ").ToLowerInvariant() -replace "[,;\s]+", " ").Trim()
+  $shadowModeConfigure = $command -match "^shadow-mode configure --email [^\s]+$"
   $allowed = $command -eq "status" -or $command -eq "whoami" -or
     $command -match "^deployment list(?: --service nexteam-studio)?(?: --environment staging)?(?: --limit [0-9]+)?(?: --json)?$" -or
-    $command -eq "up --service nexteam-studio --environment staging --detach"
+    $command -eq "up --service nexteam-studio --environment staging --detach" -or
+    $shadowModeConfigure
   if (-not $allowed) {
-    throw "Railway operation is denied by the secret-safe staging allowlist. Use approved status, deployment listing, or the explicit staging upload action; raw variables, shells, runtime commands, logs, and environment inspection are never allowed."
+    throw "Railway operation is denied by the secret-safe staging allowlist. Use approved status, deployment listing, the explicit staging upload action, or the scoped Shadow Mode configuration action; raw variables, shells, runtime commands, logs, and environment inspection are never allowed."
   }
 
   $repositoryRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
@@ -53,11 +55,18 @@ function Assert-SafeRailwayOperation {
     throw "Secret operation policy loader is unavailable; Railway execution is denied."
   }
   $tsxLoaderUri = ([Uri]$tsxLoader).AbsoluteUri
+  # A fresh PowerShell process has no LASTEXITCODE value under StrictMode.
+  # Seed the automatic variable before invoking the policy subprocess so a
+  # loader failure is handled as a normal fail-closed policy error.
+  $global:LASTEXITCODE = 0
   $policyOutput = & node --import $tsxLoaderUri (Join-Path $PSScriptRoot "evaluate-secret-operation.mjs") -- @Args
   if ($LASTEXITCODE -ne 0) {
     throw "Secret operation policy could not be evaluated; Railway execution is denied."
   }
   $policy = $policyOutput | ConvertFrom-Json
+  if ($null -eq $policy -or $null -eq $policy.PSObject.Properties["allowed"]) {
+    throw "Secret operation policy did not return a valid decision; Railway execution is denied."
+  }
   if (-not $policy.allowed) {
     throw "Railway operation is denied by the controller secret-output policy: $($policy.reason)"
   }
@@ -75,6 +84,18 @@ Assert-SafeRailwayOperation -Args $normalizedRailwayArgs
 
 $repositoryRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $normalizedCommand = (($normalizedRailwayArgs -join " ").ToLowerInvariant() -replace "[,;\s]+", " ").Trim()
+$shadowModeConfigure = $normalizedCommand -match "^shadow-mode configure --email [^\s]+$"
+$shadowModeEmail = if ($shadowModeConfigure) { $normalizedRailwayArgs[3] } else { $null }
+if ($shadowModeConfigure) {
+  if ($normalizedRailwayArgs.Count -ne 4 -or $normalizedRailwayArgs[0] -ne "shadow-mode" -or $normalizedRailwayArgs[1] -ne "configure" -or $normalizedRailwayArgs[2] -ne "--email") {
+    throw "Shadow Mode configuration must use the guarded email-only command shape."
+  }
+  try {
+    [void]([System.Net.Mail.MailAddress]$shadowModeEmail)
+  } catch {
+    throw "Shadow Mode configuration requires one valid email recipient."
+  }
+}
 $buildStampPath = Join-Path $repositoryRoot "nexteam-build-sha.txt"
 $hadBuildStamp = Test-Path -LiteralPath $buildStampPath
 $previousBuildStamp = if ($hadBuildStamp) { Get-Content -LiteralPath $buildStampPath -Raw } else { $null }
@@ -109,7 +130,19 @@ try {
   $env:RAILWAY_TOKEN = $token
   Remove-Item Env:RAILWAY_API_TOKEN -ErrorAction SilentlyContinue
 
-  $output = & $railway.Source @normalizedRailwayArgs 2>&1
+  if ($shadowModeConfigure) {
+    # The only permitted variable mutation is a staging-only recipient guard.
+    # Railway output is intentionally discarded so this writer cannot become a
+    # secret-discovery path.
+    $output = & $railway.Source variable set "NEXTEAM_SHADOW_MODE=true" "NEXTEAM_SHADOW_EMAIL_RECIPIENTS=$shadowModeEmail" --service NexTeam-Studio --environment staging 2>&1
+    if ($LASTEXITCODE -ne 0) {
+      throw "Railway rejected the staging Shadow Mode configuration update."
+    }
+    Write-Host "Staging Shadow Mode configuration updated."
+    $output = @()
+  } else {
+    $output = & $railway.Source @normalizedRailwayArgs 2>&1
+  }
   if ($null -ne $LASTEXITCODE) {
     $exitCode = $LASTEXITCODE
   }

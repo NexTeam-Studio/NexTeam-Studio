@@ -49,6 +49,15 @@ function valueDumpCommand(command: string): boolean {
 }
 
 /**
+ * The local staging wrapper exposes this single, fixed configuration action
+ * rather than Railway's generic variable commands. The wrapper discards the
+ * provider response and writes only the staging Shadow Mode guard settings.
+ */
+function scopedShadowModeConfiguration(command: string): boolean {
+  return /^railway(?:\.exe)? shadow-mode configure --email \S+$/.test(command);
+}
+
+/**
  * A deterministic pre-execution check. Callers must submit command metadata
  * before running an operational tool; raw output is never an acceptable
  * inspection mode, including after credentials have been rotated.
@@ -60,6 +69,12 @@ export function evaluateSecretOperation(input: SplinterSecretOperation): SecretO
   }
   if (valueDumpCommand(command)) {
     return deny("The proposed command can return secret values and is denied before execution.", "Use provider metadata/status commands only; do not enumerate raw variables, environments, or secret payload versions.");
+  }
+  if (scopedShadowModeConfiguration(command)) {
+    if (input.kind !== "COMMAND_EXECUTION" || input.outputMode !== "SILENT" || input.requiresSecretValue) {
+      return deny("The scoped staging Shadow Mode configuration action must execute silently without credential access.", "Use the guarded staging wrapper; do not call generic Railway variable commands.");
+    }
+    return allow("The fixed staging Shadow Mode configuration action writes only guarded non-secret settings and discards provider output.");
   }
   if (input.kind === "METADATA_INSPECTION") {
     if (input.requiresSecretValue) {
