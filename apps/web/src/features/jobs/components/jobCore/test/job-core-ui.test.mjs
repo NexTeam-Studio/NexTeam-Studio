@@ -2,13 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  closeoutArtifactKey,
+  closeoutHydrationView,
   followUpDraftFromHistory,
   inlineJobClientDraftCanSave,
   inlineJobClientDraftMissingFields,
   isHistoricalJob,
   matchesJobSearch,
   mergeJobClientOptions,
-  parseVisitDateTime
+  parseVisitDateTime,
+  selectedCloseoutArtifactRefs
 } from "../NexOpsJobsPage.tsx";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -115,4 +118,39 @@ test("visit scheduler parses accessible text controls", () => {
   assert.equal(parseVisitDateTime("2026-08-15", "10:00 AM"), null);
   assert.equal(parseVisitDateTime("2026-02-30", "10:00"), null);
   assert.equal(parseVisitDateTime("2026-08-15", "24:00"), null);
+});
+
+test("Closeout saves the exact mixed NexDocs and NexCam artifact selection without duplicate relationships", () => {
+  const artifacts = [
+    { artifactId: "document_1", source: "nexdocs", kind: "upload", label: "Inspection", fileName: "Inspection.pdf", mimeType: "application/pdf", occurredAt: "2026-08-20T12:00:00.000Z", visitId: "visit_1" },
+    { artifactId: "media_1", source: "nexcam", kind: "field_report", label: "Evaporation", fileName: "Evaporation.pdf", mimeType: "application/pdf", occurredAt: "2026-08-20T12:05:00.000Z", visitId: "visit_1" }
+  ];
+  const selection = [closeoutArtifactKey(artifacts[0]), closeoutArtifactKey(artifacts[1]), closeoutArtifactKey(artifacts[1])];
+  assert.deepEqual(selectedCloseoutArtifactRefs(artifacts, selection), [
+    { artifactId: "document_1", source: "nexdocs", kind: "upload", visitId: "visit_1" },
+    { artifactId: "media_1", source: "nexcam", kind: "field_report", visitId: "visit_1" }
+  ]);
+});
+
+test("Closeout hydration never represents an in-flight package as zero selected or finalized", () => {
+  const packageRecord = {
+    id: "package_1",
+    packageVersion: 2,
+    manifestStatus: "draft",
+    selectedArtifactRefs: [{ artifactId: "document_1", source: "nexdocs", kind: "upload", visitId: "visit_1" }]
+  };
+  assert.deepEqual(closeoutHydrationView({ phase: "loading", jobId: "job_1" }, "job_1", packageRecord), {
+    loading: true,
+    ready: false,
+    selectedCount: 0,
+    editable: false
+  });
+  assert.deepEqual(closeoutHydrationView({ phase: "ready", jobId: "job_1" }, "job_1", packageRecord), {
+    loading: false,
+    ready: true,
+    selectedCount: 1,
+    editable: true
+  });
+  assert.match(pageSource, /Selection changed\. Save the package before returning to Delivery Review\./);
+  assert.match(pageSource, /Loading selection\.\.\./);
 });

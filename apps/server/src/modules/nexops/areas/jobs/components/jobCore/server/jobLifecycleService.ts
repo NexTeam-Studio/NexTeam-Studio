@@ -496,6 +496,13 @@ export class JobLifecycleService {
     const pkg = await this.getCustomerDocumentPackage(input.tenantId, input.jobId);
     const selectedByKey = new Map(pkg.selectedArtifactRefs.map((reference) => [`${reference.source}:${reference.artifactId}`, reference]));
     const selectedArtifacts = input.artifacts.filter((artifact) => selectedByKey.has(`${artifact.source}:${artifact.artifactId}`));
+    if (selectedArtifacts.length !== selectedByKey.size) {
+      throw new RailError("A saved Closeout artifact is no longer available. Refresh the package before delivery review.", {
+        provider: "native",
+        op: "prepareCustomerDocumentPackageDelivery",
+        status: 409
+      });
+    }
     const clientName = job.client?.name ?? "there";
     const fallbackSubject = `Your closeout package for ${job.title}`;
     const fileList = selectedArtifacts.length

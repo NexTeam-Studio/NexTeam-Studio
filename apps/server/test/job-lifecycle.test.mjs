@@ -186,6 +186,57 @@ test("closeout delivery records a separate email attempt against the saved artif
   assert.ok(fixture.emittedEvents.some((event) => event.type === "closeout.package_delivery_sent"));
 });
 
+test("Closeout persists an exact mixed NexDocs and NexCam selection across repeated saves and delivery review", async () => {
+  const fixture = makeFixture();
+  const job = await fixture.jobLifecycleService.createJob({ tenantId: "aquatrace", clientId: "client_1", propertyId: "property_1", title: "Mixed Closeout persistence test" });
+  const document = { artifactId: "nexdocs_visit_document", source: "nexdocs", kind: "upload", label: "Inspection.pdf", fileName: "Inspection.pdf", visitId: "visit_1" };
+  const media = { artifactId: "nexcam_visit_photo", source: "nexcam", kind: "field_report", label: "Inspection photo", fileName: "Inspection photo.jpg", visitId: "visit_1" };
+  const selected = [
+    { artifactId: document.artifactId, source: document.source, kind: document.kind, visitId: document.visitId },
+    { artifactId: media.artifactId, source: media.source, kind: media.kind, visitId: media.visitId }
+  ];
+
+  const initial = await fixture.jobLifecycleService.saveCustomerDocumentPackageSelection({ tenantId: "aquatrace", jobId: job.id, actorId: "owner_1", selectedArtifactRefs: selected });
+  assert.equal(initial.selectedArtifactRefs.length, 2);
+  assert.deepEqual(initial.selectedArtifactRefs.map((artifact) => `${artifact.source}:${artifact.artifactId}`), ["nexdocs:nexdocs_visit_document", "nexcam:nexcam_visit_photo"]);
+  assert.equal(initial.selectedArtifactRefs.every((artifact) => artifact.visitId === "visit_1"), true);
+
+  const reloaded = await fixture.jobLifecycleService.getCustomerDocumentPackage("aquatrace", job.id);
+  assert.deepEqual(reloaded.selectedArtifactRefs, initial.selectedArtifactRefs);
+  const repeated = await fixture.jobLifecycleService.saveCustomerDocumentPackageSelection({
+    tenantId: "aquatrace",
+    jobId: job.id,
+    actorId: "owner_1",
+    expectedPackageVersion: reloaded.packageVersion,
+    selectedArtifactRefs: [...selected, selected[1]]
+  });
+  assert.equal(repeated.selectedArtifactRefs.length, 2);
+
+  const preview = await fixture.jobLifecycleService.prepareCustomerDocumentPackageDelivery({ tenantId: "aquatrace", jobId: job.id, artifacts: [document, media] });
+  assert.equal(preview.package.selectedArtifactRefs.length, 2);
+  assert.equal(preview.selectedArtifacts.length, 2);
+  const delivered = await fixture.jobLifecycleService.sendCustomerDocumentPackageDelivery({
+    tenantId: "aquatrace",
+    jobId: job.id,
+    actorId: "owner_1",
+    recipient: "staging@example.test",
+    subject: "Closeout review",
+    bodyText: "Two authoritative artifacts are ready.",
+    selectedArtifactRefs: repeated.selectedArtifactRefs,
+    artifacts: [document, media]
+  });
+  assert.equal(fixture.sentEmails.length, 1);
+  assert.equal(delivered.package.selectedArtifactRefs.length, 2);
+  assert.equal(delivered.selectedArtifacts.length, 2);
+  assert.equal(delivered.selectedArtifacts.every((artifact) => artifact.visitId === "visit_1"), true);
+  const afterDeliveryReload = await fixture.jobLifecycleService.getCustomerDocumentPackage("aquatrace", job.id);
+  assert.equal(afterDeliveryReload.selectedArtifactRefs.length, 2);
+  await assert.rejects(
+    () => fixture.jobLifecycleService.prepareCustomerDocumentPackageDelivery({ tenantId: "aquatrace", jobId: job.id, artifacts: [document] }),
+    /no longer available/i
+  );
+});
+
 test("closeout delivery accepts an approved manual recipient when the saved package and client have no email", async () => {
   const fixture = makeFixture({ clients: [{ ...clientRecord(), emails: [] }] });
   const job = await fixture.jobLifecycleService.createJob({ tenantId: "aquatrace", clientId: "client_1", title: "Manual recipient closeout delivery" });

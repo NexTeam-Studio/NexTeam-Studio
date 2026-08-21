@@ -366,7 +366,7 @@ export function followUpDraftFromHistory(job: Pick<JobSummary, "clientId" | "tit
   };
 }
 
-interface CloseoutArtifact {
+export interface CloseoutArtifact {
   artifactId: string;
   source: "nexdocs" | "nexcam" | "generated";
   kind: string;
@@ -378,7 +378,7 @@ interface CloseoutArtifact {
   visitId?: string;
 }
 
-interface CloseoutPackage {
+export interface CloseoutPackage {
   id: string;
   packageVersion: number;
   manifestStatus: "draft" | "finalized" | "superseded";
@@ -390,6 +390,45 @@ interface CloseoutPackageResponse {
   package?: CloseoutPackage;
   artifacts?: CloseoutArtifact[];
   error?: string;
+}
+
+export type CloseoutHydrationState =
+  | { phase: "idle" }
+  | { phase: "loading"; jobId: string }
+  | { phase: "ready"; jobId: string }
+  | { phase: "error"; jobId: string };
+
+export function closeoutArtifactKey(artifact: Pick<CloseoutArtifact, "source" | "artifactId">): string {
+  return `${artifact.source}:${artifact.artifactId}`;
+}
+
+export function selectedCloseoutArtifactRefs(
+  artifacts: CloseoutArtifact[],
+  selection: readonly string[]
+): CloseoutPackage["selectedArtifactRefs"] {
+  const selectedKeys = new Set(selection);
+  return artifacts
+    .filter((artifact) => selectedKeys.has(closeoutArtifactKey(artifact)))
+    .map((artifact) => ({
+      artifactId: artifact.artifactId,
+      source: artifact.source,
+      kind: artifact.kind,
+      ...(artifact.visitId ? { visitId: artifact.visitId } : {})
+    }));
+}
+
+export function closeoutHydrationView(
+  state: CloseoutHydrationState,
+  jobId: string | undefined,
+  packageRecord: CloseoutPackage | null
+): { loading: boolean; ready: boolean; selectedCount: number; editable: boolean } {
+  const ready = state.phase === "ready" && state.jobId === jobId && Boolean(packageRecord);
+  return {
+    loading: state.phase === "loading" && state.jobId === jobId,
+    ready,
+    selectedCount: ready ? packageRecord!.selectedArtifactRefs.length : 0,
+    editable: ready && packageRecord!.manifestStatus === "draft"
+  };
 }
 
 interface CloseoutDeliveryAttempt {
@@ -638,6 +677,7 @@ export function NexOpsJobsPage(props: {
   const [closeoutPackage, setCloseoutPackage] = useState<CloseoutPackage | null>(null);
   const [closeoutArtifacts, setCloseoutArtifacts] = useState<CloseoutArtifact[]>([]);
   const [closeoutSelection, setCloseoutSelection] = useState<string[]>([]);
+  const [closeoutHydration, setCloseoutHydration] = useState<CloseoutHydrationState>({ phase: "idle" });
   const [closeoutStatus, setCloseoutStatus] = useState("Load the Job to review closeout artifacts.");
   const [closeoutBusy, setCloseoutBusy] = useState(false);
   const [closeoutDelivery, setCloseoutDelivery] = useState<CloseoutDeliveryPreview | null>(null);
@@ -652,6 +692,7 @@ export function NexOpsJobsPage(props: {
   const [bookingDraft, setBookingDraft] = useState<BookingConfirmationDraft | null>(null);
   const jobDetailRef = React.useRef<HTMLElement | null>(null);
   const mobileDetailFocusJobIdRef = React.useRef("");
+  const closeoutLoadSequenceRef = React.useRef(0);
   const [bookingSheetOpen, setBookingSheetOpen] = useState(false);
   const [bookingBusy, setBookingBusy] = useState(false);
   const [reviewSequences, setReviewSequences] = useState<ReviewSequenceRecord[]>([]);
@@ -706,6 +747,7 @@ export function NexOpsJobsPage(props: {
     () => signedDocuments.find((record) => record.id === signingDocumentId) ?? null,
     [signedDocuments, signingDocumentId]
   );
+  const closeoutView = closeoutHydrationView(closeoutHydration, detail?.id, closeoutPackage);
 
   function prepareFollowUpFromHistory(job: JobSummary): void {
     const draft = followUpDraftFromHistory(job);
@@ -740,6 +782,7 @@ export function NexOpsJobsPage(props: {
   }
 
   async function loadDetail(jobId: string): Promise<void> {
+    closeoutLoadSequenceRef.current += 1;
     setActiveVisitDocumentsId("");
     setJobDocumentsOpen(false);
     setCloseoutPackage(null);
@@ -748,6 +791,7 @@ export function NexOpsJobsPage(props: {
     setCloseoutDelivery(null);
     setCloseoutDeliveryDraft(null);
     setCloseoutDeliveryStatus("");
+    setCloseoutHydration({ phase: "idle" });
     if (!jobId) {
       setDetail(null);
       setBookingPreview(null);
@@ -780,42 +824,61 @@ export function NexOpsJobsPage(props: {
   }
 
   async function loadCloseoutPackage(jobId: string): Promise<void> {
+    const loadSequence = ++closeoutLoadSequenceRef.current;
+    setCloseoutPackage(null);
+    setCloseoutArtifacts([]);
+    setCloseoutSelection([]);
+    setCloseoutDelivery(null);
+    setCloseoutDeliveryDraft(null);
+    setCloseoutHydration({ phase: "loading", jobId });
     setCloseoutStatus("Loading eligible Closeout artifacts...");
     try {
       const body = await fetch(`/api/crm/jobs/${encodeURIComponent(jobId)}/closeout-package?tenantId=${encodeURIComponent(props.tenantId)}`)
         .then((response) => response.json() as Promise<CloseoutPackageResponse>);
       if (!body.ok || !body.package) {
+        if (loadSequence !== closeoutLoadSequenceRef.current) return;
+        setCloseoutHydration({ phase: "error", jobId });
         setCloseoutStatus(body.error ?? "Closeout artifacts are unavailable right now.");
         return;
       }
+      if (loadSequence !== closeoutLoadSequenceRef.current) return;
       setCloseoutPackage(body.package);
       setCloseoutArtifacts(body.artifacts ?? []);
-      setCloseoutSelection((body.package.selectedArtifactRefs ?? []).map((artifact) => `${artifact.source}:${artifact.artifactId}`));
+      setCloseoutSelection((body.package.selectedArtifactRefs ?? []).map(closeoutArtifactKey));
+      setCloseoutHydration({ phase: "ready", jobId });
       setCloseoutStatus((body.artifacts ?? []).length ? "Choose the artifacts to include in the customer package." : "No eligible Job artifacts are available yet.");
     } catch {
+      if (loadSequence !== closeoutLoadSequenceRef.current) return;
+      setCloseoutHydration({ phase: "error", jobId });
       setCloseoutStatus("Closeout artifacts are unavailable right now.");
     }
   }
 
   async function saveCloseoutPackage(): Promise<void> {
-    if (!detail || !closeoutPackage) return;
+    if (!detail || !closeoutPackage || !closeoutView.ready || !closeoutView.editable) return;
+    const jobId = detail.id;
+    const packageVersion = closeoutPackage.packageVersion;
+    const loadSequence = closeoutLoadSequenceRef.current;
+    const selectedArtifactRefs = selectedCloseoutArtifactRefs(closeoutArtifacts, closeoutSelection);
     setCloseoutBusy(true);
+    setCloseoutDelivery(null);
+    setCloseoutDeliveryDraft(null);
+    setCloseoutDeliveryStatus("Selection changed. Save and reopen Delivery Review to use the authoritative package.");
     try {
-      const selectedArtifactRefs = closeoutArtifacts
-        .filter((artifact) => closeoutSelection.includes(`${artifact.source}:${artifact.artifactId}`))
-        .map((artifact) => ({ artifactId: artifact.artifactId, source: artifact.source, kind: artifact.kind, ...(artifact.visitId ? { visitId: artifact.visitId } : {}) }));
-      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}/closeout-package`, {
+      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(jobId)}/closeout-package`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: props.tenantId, expectedPackageVersion: closeoutPackage.packageVersion, selectedArtifactRefs })
+        body: JSON.stringify({ tenantId: props.tenantId, expectedPackageVersion: packageVersion, selectedArtifactRefs })
       }).then((response) => response.json() as Promise<CloseoutPackageResponse>);
+      if (loadSequence !== closeoutLoadSequenceRef.current) return;
       if (!body.ok || !body.package) {
         setCloseoutStatus(body.error ?? "Closeout selection could not be saved.");
         return;
       }
       setCloseoutPackage(body.package);
       setCloseoutArtifacts(body.artifacts ?? closeoutArtifacts);
-      setCloseoutSelection((body.package.selectedArtifactRefs ?? []).map((artifact) => `${artifact.source}:${artifact.artifactId}`));
+      setCloseoutSelection((body.package.selectedArtifactRefs ?? []).map(closeoutArtifactKey));
+      setCloseoutHydration({ phase: "ready", jobId });
       setCloseoutStatus(body.package.selectedArtifactRefs.length ? `${body.package.selectedArtifactRefs.length} artifact${body.package.selectedArtifactRefs.length === 1 ? "" : "s"} selected. Package remains draft until delivery review.` : "No artifacts selected. Package remains a draft.");
     } catch {
       setCloseoutStatus("Closeout selection could not be saved.");
@@ -823,7 +886,7 @@ export function NexOpsJobsPage(props: {
   }
 
   async function loadCloseoutDeliveryReview(): Promise<void> {
-    if (!detail) return;
+    if (!detail || !closeoutView.ready || !closeoutPackage?.selectedArtifactRefs.length) return;
     setCloseoutDeliveryStatus("Loading the saved Closeout package for delivery review...");
     try {
       const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}/closeout-package/delivery-review?tenantId=${encodeURIComponent(props.tenantId)}`)
@@ -836,6 +899,7 @@ export function NexOpsJobsPage(props: {
       }
       setCloseoutDelivery(body.preview);
       setCloseoutPackage(body.preview.package);
+      setCloseoutSelection(body.preview.package.selectedArtifactRefs.map(closeoutArtifactKey));
       setCloseoutDeliveryDraft({
         recipient: body.preview.email.recipient ?? "",
         subject: body.preview.email.subject,
@@ -2201,18 +2265,25 @@ export function NexOpsJobsPage(props: {
                   <div className="nexops-jobs-section">
                     <div className="nexops-jobs-card-heading">
                       <h3>Closeout Package Review</h3>
-                      <span>{closeoutPackage?.selectedArtifactRefs.length ?? 0} selected</span>
+                      <span>{closeoutView.loading ? "Loading selection..." : closeoutView.ready ? `${closeoutView.selectedCount} selected` : "Selection unavailable"}</span>
                     </div>
-                    <p className="nexops-empty-copy">{closeoutStatus}</p>
-                    <div className="nexops-jobs-sublist">
+                    <p className="nexops-empty-copy" aria-live="polite">{closeoutStatus}</p>
+                    {closeoutView.loading ? <p className="nexops-empty-copy">The authoritative package and its eligible artifacts are loading.</p> : null}
+                    {closeoutView.ready ? <div className="nexops-jobs-sublist">
                       {closeoutArtifacts.map((artifact) => {
-                        const key = `${artifact.source}:${artifact.artifactId}`;
+                        const key = closeoutArtifactKey(artifact);
                         return (
                           <label key={key} className="nexops-jobs-sublist-item">
                             <input
                               type="checkbox"
                               checked={closeoutSelection.includes(key)}
-                              onChange={(event) => setCloseoutSelection((current) => event.target.checked ? [...new Set([...current, key])] : current.filter((value) => value !== key))}
+                              disabled={!closeoutView.editable || closeoutBusy}
+                              onChange={(event) => {
+                                setCloseoutSelection((current) => event.target.checked ? [...new Set([...current, key])] : current.filter((value) => value !== key));
+                                setCloseoutDelivery(null);
+                                setCloseoutDeliveryDraft(null);
+                                setCloseoutDeliveryStatus("Selection changed. Save the package before returning to Delivery Review.");
+                              }}
                             />
                             <div>
                               <strong>{artifact.label || artifact.fileName}</strong>
@@ -2223,11 +2294,11 @@ export function NexOpsJobsPage(props: {
                         );
                       })}
                       {!closeoutArtifacts.length ? <p className="nexops-empty-copy">Visit files, Job documents, NexCam media, and eligible records appear here when they exist.</p> : null}
-                    </div>
+                    </div> : null}
                     <div className="nexops-inline-actions">
-                      <button type="button" disabled={closeoutBusy || !closeoutPackage} onClick={() => void saveCloseoutPackage()}>{closeoutBusy ? "Saving..." : "Save Closeout Selection"}</button>
-                      <button type="button" disabled={closeoutBusy || !closeoutPackage?.selectedArtifactRefs.length} onClick={() => void loadCloseoutDeliveryReview()}>Continue to Delivery Review</button>
-                      <span>{closeoutPackage?.manifestStatus === "draft" ? "Draft only — delivery remains a separate review." : "Package is not editable after finalization."}</span>
+                      <button type="button" disabled={closeoutBusy || !closeoutView.editable} onClick={() => void saveCloseoutPackage()}>{closeoutBusy ? "Saving..." : "Save Closeout Selection"}</button>
+                      <button type="button" disabled={closeoutBusy || !closeoutView.ready || !closeoutPackage?.selectedArtifactRefs.length} onClick={() => void loadCloseoutDeliveryReview()}>Continue to Delivery Review</button>
+                      <span>{closeoutView.loading ? "Package lifecycle is loading." : closeoutView.ready ? closeoutView.editable ? "Draft only — delivery remains a separate review." : "Package is not editable after finalization." : "Package lifecycle is unavailable until the authoritative package loads."}</span>
                     </div>
                     {closeoutDelivery ? (
                       <section className="nexops-jobs-section" aria-label="Closeout Delivery Review">
