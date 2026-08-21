@@ -13,6 +13,7 @@ export interface SplinterProgramRepository {
   get(id: string): Promise<SplinterProgram | null>;
   update(id: string, change: Partial<SplinterProgram>): Promise<SplinterProgram | null>;
   claimLease(id: string, lease: NonNullable<SplinterProgram["workerLease"]>, now: string): Promise<SplinterProgram | null>;
+  reserveDispatch(id: string, token: string): Promise<SplinterProgram | null>;
 }
 
 function makeRecord(input: Omit<SplinterProgram, "createdAt" | "updatedAt" | "audit">, now: string) {
@@ -30,6 +31,7 @@ export class InMemorySplinterProgramRepository implements SplinterProgramReposit
   async get(id: string) { return this.values.get(id) ?? null; }
   async update(id: string, change: Partial<SplinterProgram>) { const value = this.values.get(id); if (!value) return null; const next = updated(value, change, this.now()); this.values.set(id, next); return next; }
   async claimLease(id: string, lease: NonNullable<SplinterProgram["workerLease"]>, now: string) { const value = this.values.get(id); if (!value || (value.workerLease && Date.parse(value.workerLease.expiresAt) > Date.parse(now))) return null; const next = updated(value, { workerLease: lease }, this.now()); this.values.set(id, next); return next; }
+  async reserveDispatch(id: string, token: string) { const value = this.values.get(id); if (!value || value.state !== "ACTIVE" || value.activeJobId) return null; const next = updated(value, { activeJobId: token, nextAction: "Reserve one durable work dispatch." }, this.now()); this.values.set(id, next); return next; }
 }
 
 export class FirestoreSplinterProgramRepository implements SplinterProgramRepository {
@@ -39,6 +41,7 @@ export class FirestoreSplinterProgramRepository implements SplinterProgramReposi
   async get(id: string) { const snap = await this.ref(id).get(); return snap.exists ? splinterProgramSchema.parse(snap.data()) : null; }
   async update(id: string, change: Partial<SplinterProgram>) { return this.db.runTransaction(async tx => { const ref = this.ref(id), snap = await tx.get(ref); if (!snap.exists) return null; const next = updated(splinterProgramSchema.parse(snap.data()), change, this.now()); tx.set(ref, serial(next)); return next; }); }
   async claimLease(id: string, lease: NonNullable<SplinterProgram["workerLease"]>, now: string) { return this.db.runTransaction(async tx => { const ref = this.ref(id), snap = await tx.get(ref); if (!snap.exists) return null; const current = splinterProgramSchema.parse(snap.data()); if (current.workerLease && Date.parse(current.workerLease.expiresAt) > Date.parse(now)) return null; const next = updated(current, { workerLease: lease }, this.now()); tx.set(ref, serial(next)); return next; }); }
+  async reserveDispatch(id: string, token: string) { return this.db.runTransaction(async tx => { const ref = this.ref(id), snap = await tx.get(ref); if (!snap.exists) return null; const current = splinterProgramSchema.parse(snap.data()); if (current.state !== "ACTIVE" || current.activeJobId) return null; const next = updated(current, { activeJobId: token, nextAction: "Reserve one durable work dispatch." }, this.now()); tx.set(ref, serial(next)); return next; }); }
 }
 
 export interface ProgramReconcileResult { program: SplinterProgram; dispatch?: { workItemId: string; jobId: string }; }
@@ -53,6 +56,7 @@ export class SplinterProgramService {
     const program = await this.require(id); if (["COMPLETE", "SAFETY_STOP", "EXHAUSTED_FAILURE"].includes(program.state)) return { program };
     const items = (await this.work.list()).filter(item => program.workItemIds.includes(item.workItemId));
     const actions = items.filter(item => item.ownerDecisionRequired || item.status === "OWNER_REQUIRED" || item.blockedBy?.classification === "OWNER_REQUIRED").map(item => ({ actionId: `owner-${item.workItemId}`, workItemId: item.workItemId, title: item.title, detail: item.blockedBy?.detail ?? "Owner decision required for this work item.", state: "OPEN" as const, createdAt: item.updatedAt }));
+    if (program.activeJobId?.startsWith("dispatch-")) return { program };
     const active = program.activeJobId ? await this.jobs.get(program.activeJobId) : null;
     if (active && !["SUCCEEDED", "FAILED", "AWAITING_HUMAN"].includes(active.state)) return { program: await this.persistRequired(program, { ownerActionQueue: actions, nextAction: `Worker continues ${program.activeWorkItemId}.` }, "WORKER_ACTIVE") };
     const activeItem = program.activeWorkItemId ? items.find(item => item.workItemId === program.activeWorkItemId) : null;
@@ -60,11 +64,14 @@ export class SplinterProgramService {
       return { program: await this.persistRequired(program, { ownerActionQueue: actions, nextAction: active.state === "SUCCEEDED" ? `Reconcile review, deployment, and browser evidence for ${activeItem.workItemId}.` : `Resolve the scoped result for ${activeItem.workItemId}.` }, "WORK_RESULT_RECONCILIATION_PENDING") };
     }
     if (program.activeJobId) await this.persistRequired(program, { activeJobId: undefined, activeWorkItemId: undefined, workerLease: undefined, ownerActionQueue: actions, nextAction: "Select the next eligible work item." }, "WORK_ITEM_CLEARED");
+    const reserved = await this.programs.reserveDispatch(program.programId, `dispatch-${crypto.randomUUID()}`);
+    if (!reserved) return { program: await this.require(program.programId) };
     const selected = await this.selector.select(currentStagingSha, program.workItemIds);
     if (selected) {
-      const next = await this.persistRequired(program, { activeWorkItemId: selected.item.workItemId, activeJobId: selected.job.id, workerLease: undefined, ownerActionQueue: actions, nextAction: `Dispatch ${selected.item.workItemId} to a Donatello worker.` }, "WORK_DISPATCHED");
+      const next = await this.persistRequired(reserved, { activeWorkItemId: selected.item.workItemId, activeJobId: selected.job.id, workerLease: undefined, ownerActionQueue: actions, nextAction: `Dispatch ${selected.item.workItemId} to a Donatello worker.` }, "WORK_DISPATCHED");
       return { program: next, dispatch: { workItemId: selected.item.workItemId, jobId: selected.job.id } };
     }
+    await this.persistRequired(reserved, { activeJobId: undefined, activeWorkItemId: undefined, workerLease: undefined, ownerActionQueue: actions, nextAction: "No work dispatch was selected." }, "DISPATCH_RELEASED");
     const unfinished = items.filter(item => item.status !== "COMPLETED" && item.status !== "OBSOLETE");
     const allOwnerBlocked = unfinished.length > 0 && unfinished.every(item => item.ownerDecisionRequired || item.status === "OWNER_REQUIRED" || item.blockedBy?.classification === "OWNER_REQUIRED");
     const allExternalBlocked = unfinished.length > 0 && unfinished.every(item => item.blockedBy?.classification === "EXTERNAL_BLOCKER");

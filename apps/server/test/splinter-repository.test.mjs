@@ -806,3 +806,11 @@ test("durable program remains active after a worker result, queues scoped owner 
   const recovered = await programs.recoverExpiredLease(program.programId, "abcdef1"); assert.equal(recovered.program.state, "ACTIVE");
   await assert.rejects(() => programs.create({ programId: "unknown-scope", objective: "Must reject unknown work.", workItemIds: ["missing-work"] }));
 });
+
+test("concurrent program reconciliation reserves only one dispatch", async () => {
+  const work = new InMemoryWorkRegistry(); const jobs = new InMemorySplinterRepository(); const selector = new SplinterWorkSelector(work, jobs); const programs = new SplinterProgramService(new InMemorySplinterProgramRepository(), work, jobs, selector);
+  const item = { workItemId: "race-ready", title: "Race", goal: "Race", module: "platform", tenantScope: "platform", priority: 1, launchCritical: false, dependencies: [], acceptanceCriteria: ["ok"], requiredChecks: ["SPLINTER_FOCUSED_TESTS"], allowedPaths: [], pathDiscoveryPolicy: "EXPLICIT_PATHS", executionMode: "READ_ONLY", repositoryTarget: "NEXTEAM", reviewRequired: false, maxAttempts: 1, ownerDecisionRequired: false, promotionPolicy: "NONE", sourceRequirementRefs: ["docs/r.md"], requirementRevision: "r1", nonPromotable: false, reconciliationMode: false, completedEvidenceRefs: [] };
+  await work.create(item); await selector.approve(item.workItemId); const program = await programs.create({ objective: "Race", workItemIds: [item.workItemId] });
+  const outcomes = await Promise.all([programs.reconcile(program.programId, "abcdef1"), programs.reconcile(program.programId, "abcdef1")]);
+  assert.equal(outcomes.filter(outcome => outcome.dispatch).length, 1); assert.equal((await work.get(item.workItemId)).status, "CLAIMED");
+});
