@@ -166,6 +166,24 @@ test("legacy job schema and in-memory native repository normalize stored jobs on
   assert.equal(jobs[0].status, "Upcoming");
 });
 
+test("manual Job creation rejects a property from a different Client", async () => {
+  const fixture = makeFixture({
+    properties: [
+      propertyRecord(),
+      { ...propertyRecord(), id: "property_other", clientId: "client_other", label: "Other residence" }
+    ]
+  });
+  await assert.rejects(
+    () => fixture.jobLifecycleService.createJob({
+      tenantId: "aquatrace",
+      clientId: "client_1",
+      propertyId: "property_other",
+      title: "Incorrect property association"
+    }),
+    /does not belong to the Job client/i
+  );
+});
+
 test("closeout delivery records a separate email attempt against the saved artifact selection", async () => {
   const fixture = makeFixture();
   const job = await fixture.jobLifecycleService.createJob({ tenantId: "aquatrace", clientId: "client_1", propertyId: "property_1", title: "Closeout delivery test" });

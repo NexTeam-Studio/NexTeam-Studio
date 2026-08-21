@@ -960,6 +960,16 @@ export class JobLifecycleService {
   }
 
   async createJobIfAbsent(input: CreateJobInput): Promise<{ job: Job; created: boolean }> {
+    const state = await this.hydratedState(input.tenantId);
+    if (!state.clients.some((client) => client.id === input.clientId)) {
+      throw new RailError("The selected Job client was not found.", { provider: "native", op: "createJob", status: 404 });
+    }
+    if (input.propertyId) {
+      const property = state.properties.find((candidate) => candidate.id === input.propertyId);
+      if (!property || property.clientId !== input.clientId) {
+        throw new RailError("The selected property does not belong to the Job client.", { provider: "native", op: "createJob", status: 400 });
+      }
+    }
     const timestamp = now();
     const lineItems = input.lineItems ?? [];
     const result = await this.deps.crmRepository.createJobIfAbsent({

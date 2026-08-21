@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   closeoutArtifactKey,
   closeoutHydrationView,
+  defaultManualJobPropertyId,
   followUpDraftFromHistory,
   inlineJobClientDraftCanSave,
   inlineJobClientDraftMissingFields,
@@ -119,6 +120,18 @@ test("visit scheduler parses accessible text controls", () => {
   assert.equal(parseVisitDateTime("2026-08-15", "10:00 AM"), null);
   assert.equal(parseVisitDateTime("2026-02-30", "10:00"), null);
   assert.equal(parseVisitDateTime("2026-08-15", "24:00"), null);
+});
+
+test("manual Job creation keeps property selection within the selected Client", () => {
+  const properties = [
+    { id: "property_1", clientId: "client_1", label: "Primary location" },
+    { id: "property_2", clientId: "client_2", label: "Other client location" }
+  ];
+  assert.equal(defaultManualJobPropertyId(properties, "client_1"), "property_1");
+  assert.equal(defaultManualJobPropertyId(properties, "client_2"), "property_2");
+  assert.equal(defaultManualJobPropertyId(properties, "missing_client"), "");
+  assert.match(pageSource, /Property \/ service location/);
+  assert.match(pageSource, /propertyId: createPropertyId/);
 });
 
 test("Closeout saves the exact mixed NexDocs and NexCam artifact selection without duplicate relationships", () => {

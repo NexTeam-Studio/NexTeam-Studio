@@ -39,6 +39,14 @@ interface ClientOption {
   phones: string[];
 }
 
+interface PropertyOption {
+  id: string;
+  clientId: string;
+  siteName?: string;
+  label?: string;
+  address?: Address;
+}
+
 interface InlineJobClientDraft {
   firstName: string;
   lastName: string;
@@ -512,6 +520,15 @@ function clientLabel(client: ClientOption): string {
   return person || client.name;
 }
 
+function propertyLabel(property: PropertyOption): string {
+  return property.siteName?.trim() || property.label?.trim() || property.address?.street1?.trim() || "Service location";
+}
+
+export function defaultManualJobPropertyId(properties: PropertyOption[], clientId: string): string {
+  const matching = properties.filter((property) => property.clientId === clientId);
+  return matching.length === 1 ? matching[0]!.id : "";
+}
+
 function formatDateTime(value?: string): string {
   if (!value) {
     return "Not set";
@@ -653,6 +670,7 @@ export function NexOpsJobsPage(props: {
   tenantId: string;
   role: TenantRole;
   clients: ClientOption[];
+  properties: PropertyOption[];
   onCrmMutation: () => void;
   onOpenInvoice?: (invoiceId: string) => void;
   focusedJobId?: string;
@@ -666,6 +684,7 @@ export function NexOpsJobsPage(props: {
   const [status, setStatus] = useState("Loading jobs...");
   const [detailStatus, setDetailStatus] = useState("Select a job to review visits and actions.");
   const [createClientId, setCreateClientId] = useState(() => props.initialClientId && props.clients.some((client) => client.id === props.initialClientId) ? props.initialClientId : props.clients[0]?.id ?? "");
+  const [createPropertyId, setCreatePropertyId] = useState("");
   const [showInlineClientCreate, setShowInlineClientCreate] = useState(props.clients.length === 0);
   const [inlineClientDraft, setInlineClientDraft] = useState<InlineJobClientDraft>(() => blankInlineJobClientDraft());
   const [inlineClientBusy, setInlineClientBusy] = useState(false);
@@ -727,6 +746,10 @@ export function NexOpsJobsPage(props: {
   const createClientOptions = useMemo(
     () => mergeJobClientOptions(props.clients, createdClientOption),
     [props.clients, createdClientOption]
+  );
+  const createClientProperties = useMemo(
+    () => props.properties.filter((property) => property.clientId === createClientId),
+    [createClientId, props.properties]
   );
   const inlineClientMissingFields = inlineJobClientDraftMissingFields(inlineClientDraft);
   const inlineClientCanSave = inlineClientMissingFields.length === 0;
@@ -1149,14 +1172,25 @@ export function NexOpsJobsPage(props: {
     }
   }, [createClientId, createClientOptions, showInlineClientCreate]);
 
+  useEffect(() => {
+    if (!createClientId || showInlineClientCreate) {
+      if (createPropertyId) setCreatePropertyId("");
+      return;
+    }
+    if (createClientProperties.some((property) => property.id === createPropertyId)) return;
+    setCreatePropertyId(defaultManualJobPropertyId(props.properties, createClientId));
+  }, [createClientId, createClientProperties, createPropertyId, props.properties, showInlineClientCreate]);
+
   function handleClientChoice(value: string): void {
     if (value === NEW_JOB_CLIENT_VALUE) {
       setCreateClientId("");
+      setCreatePropertyId("");
       setShowInlineClientCreate(true);
       setInlineClientStatus("Create the client here, then the job draft continues with your title and billing plan still in place.");
       return;
     }
     setCreateClientId(value);
+    setCreatePropertyId(defaultManualJobPropertyId(props.properties, value));
     setShowInlineClientCreate(false);
     setInlineClientStatus("Using an existing client on this manual job draft.");
   }
@@ -1214,6 +1248,7 @@ export function NexOpsJobsPage(props: {
       };
       setCreatedClientOption(nextClient);
       setCreateClientId(nextClient.id);
+      setCreatePropertyId("");
       setShowInlineClientCreate(false);
       setInlineClientDraft(blankInlineJobClientDraft());
       setInlineClientStatus(`${clientLabel(nextClient)} is ready. Your job title and draft billing plan stayed in place.`);
@@ -1239,6 +1274,7 @@ export function NexOpsJobsPage(props: {
         body: JSON.stringify({
           tenantId: props.tenantId,
           clientId: createClientId,
+          ...(createPropertyId ? { propertyId: createPropertyId } : {}),
           title: createTitle.trim(),
           ...(paymentScheduleToPayload(createPaymentSchedule) ? { paymentSchedule: paymentScheduleToPayload(createPaymentSchedule) } : {})
         })
@@ -1720,6 +1756,15 @@ export function NexOpsJobsPage(props: {
                 <option value={NEW_JOB_CLIENT_VALUE}>+ Create New Client</option>
               </select>
             </label>
+            {!showInlineClientCreate && createClientId ? (
+              <label>
+                Property / service location
+                <select value={createPropertyId} onChange={(event) => setCreatePropertyId(event.target.value)}>
+                  <option value="">{createClientProperties.length ? "Choose a property" : "No property on file yet"}</option>
+                  {createClientProperties.map((property) => <option key={property.id} value={property.id}>{propertyLabel(property)}</option>)}
+                </select>
+              </label>
+            ) : null}
             {showInlineClientCreate ? (
               <section className="nexops-module-card embedded">
                 <div className="nexops-jobs-card-heading">
