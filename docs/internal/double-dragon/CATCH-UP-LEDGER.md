@@ -31,9 +31,9 @@ Scope: staging-only Double Dragon evidence. This is a controlled progress ledger
 | `7217c2a556e3188c388fc1b0b51c4af302b1c6f2` | Transactional Resend adapter | Accepted; non-secret health selection is available | Needs one safe approved external send after Closeout state repair |
 | `a7705bbeab859619a201f524a1203edd398f55a0` | NexCam long-caption responsive repair | In previously observed live ancestry; final responsive re-proof remains | Browser re-proof only, no fabricated media |
 | `afc14538b94c7e7a264be695366bec6469296a37` | Reviewed evaporation persistence | Accepted | Superseded by later accepted compatibility/hydration candidates for live proof |
-| `c282c3eacaada2e9dca1ba101cf85e2277c95ec1` | Checklist-to-evaporation input hydration | Accepted | Requires staging deployment and browser proof before checklist-reuse can advance |
-| `37ddcddce6b2454366f06e102ce5fac5085508d0` | Quote-to-Job idempotent conversion reconciliation | Accepted | Requires controlled browser proof of retry/convergence |
-| `c3fd2f044f3aec125f1e04c08cdc4bdb8fece017` | Shared Shadow Mode recipient guard | Accepted | Must be live before another external test communication |
+| `c282c3eacaada2e9dca1ba101cf85e2277c95ec1` | Checklist-to-evaporation input hydration | Included in `ade246c0...` live ancestry | Browser-proven: QA Visit Measurements hydrated authoritative values at desktop/mobile without report creation |
+| `37ddcddce6b2454366f06e102ce5fac5085508d0` | Quote-to-Job idempotent conversion reconciliation | Included in `ade246c0...` live ancestry | Requires controlled browser proof of retry/convergence |
+| `c3fd2f044f3aec125f1e04c08cdc4bdb8fece017` | Shared Shadow Mode recipient guard | Included in `ade246c0...` live ancestry | Must be verified as an active guard before another external test communication |
 
 ## Full program reconciliation
 
@@ -57,16 +57,16 @@ Scope: staging-only Double Dragon evidence. This is a controlled progress ledger
 | NexDocs | BROWSER-PROVEN | `cebe819faba9b8ae11926be8f84e35c1673d2740` | PASS | Visit/Job scope and origin proven | Preserve tenant/job/Visit filtering |
 | Moasure data | IMPLEMENTED | Manual field-measurement path exists | Existing coverage | Dedicated import/device acceptance not proven | Define a safe source-specific proof; do not fabricate data |
 | Evaporation calculation | BROWSER-PROVEN | `afc14538b94c7e7a264be695366bec6469296a37` | PASS | Reviewed calculation/report flow proven | Preserve reviewed-token integrity |
-| Checklist data reuse | IMPLEMENTED | `c282c3eacaada2e9dca1ba101cf85e2277c95ec1` | PASS | Not browser-proven on live build | Deploy then browser-prove hydration |
+| Checklist data reuse | BROWSER-PROVEN | `c282c3eacaada2e9dca1ba101cf85e2277c95ec1` in `ade246c0...` live ancestry | PASS | QA Visit Measurements hydrated 500 sq ft, 82°F, 0.25 in/day, ZIP 29643, and 3 mph at desktop/mobile without a report write | Preserve checklist-first hydration and report fallback rules |
 | Job completion | IMPLEMENTED | Existing lifecycle controls | Existing coverage | Active QA Job not completed | Use a separate safe QA completion path |
 | Partial / staged invoicing | IMPLEMENTED | Payment schedule and invoice rails | Existing coverage | No controlled staging proof | Prove after safe completion policy |
 | Final-payment closeout gate | IMPLEMENTED | Job, invoice, payment lifecycle rules | Existing coverage | No end-to-end proof | Use dedicated test payment data only |
 | Stripe test-mode flow | IMPLEMENTED | Payment adapter/test coverage exists | Existing coverage | No controlled browser proof | Exercise after staged invoice proof, with safe test payment instrument |
 | Receipt | IMPLEMENTED | Invoice/payment receipt rail exists | Existing coverage | No controlled browser proof | Prove after test payment |
-| Closeout Package selection | ACTIVE | Current repair: authoritative hydration and Delivery Review invalidation | Pending exact review | Prior one-artifact proof exists; two-artifact state is not yet re-proven | Test, review, deploy, browser-prove two persisted NexDocs/NexCam selections |
+| Closeout Package selection | BROWSER-PROVEN | `ade246c0c72e12afcfd2cc718572dbfbd4ef71c1` | PASS | Two authoritative artifacts saved, reloaded, and remained editable at desktop/mobile; loading state rendered neutrally | Preserve exact selection/hydration invariants |
 | Closeout Delivery | OWNER/EXTERNAL BLOCKED | Prior Resend attempt rejected pre-provider; no email delivered | Prior provider review PASS | Browser failure diagnosed; no delivery/history event | After package repair, request one new action-time approval for exactly one safe retest |
 | Resend transactional provider | IMPLEMENTED | `7217c2a556e3188c388fc1b0b51c4af302b1c6f2` | PASS | Runtime health selection previously reports Resend without secret exposure; no successful Closeout proof | Complete only through approved safe external send |
-| Shadow Mode recipient guard | ACCEPTED-AWAITING-DEPLOY | `c3fd2f044f3aec125f1e04c08cdc4bdb8fece017` | PASS | Configuration set via guarded staging action; live enforcement SHA not yet verified | Deploy/verify before further external send |
+| Shadow Mode recipient guard | IMPLEMENTED | `c3fd2f044f3aec125f1e04c08cdc4bdb8fece017` | PASS | Included in current live ancestry; configuration was set via guarded staging action | Verify enforcement immediately before another external send |
 | Feedback | IMPLEMENTED | Review-follow-up rail | Existing coverage | No safe end-to-end proof | Queue after payment/receipt and Closeout delivery |
 | Google review workflow | IMPLEMENTED | Review sequence capability | Existing coverage | No safe end-to-end proof | Queue with feedback; requires action-time message approval |
 | Client relationship history | BROWSER-PROVEN | `418e1714f042fd15a440aef2aecac12094161c6d` | PASS | Booking confirmation projected and persisted | Preserve scoped lifecycle mapping |
@@ -81,10 +81,10 @@ Scope: staging-only Double Dragon evidence. This is a controlled progress ledger
 | Measure | Count |
 | --- | ---: |
 | Total known catch-up items | 36 |
-| Live / browser-proven or owner-proven | 14 |
+| Live / browser-proven or owner-proven | 16 |
 | Implemented but not browser-proven | 14 |
-| Accepted awaiting deployment | 1 |
-| Currently active | 2 |
+| Accepted awaiting deployment | 0 |
+| Currently active | 1 |
 | Parked | 3 |
 | Owner/external blocked | 1 |
 | Planned | 1 |
@@ -93,8 +93,8 @@ The totals classify each item once. `OWNER-PROVEN` is counted with browser-prove
 
 ## Next five dependency-ready actions
 
-1. Repair and browser-prove Closeout’s two-artifact persistence/hydration behavior without sending external communication.
-2. Stage and browser-prove checklist-to-evaporation hydration (`c282c3e...`) after the Closeout candidate is accepted and ordered.
+1. Obtain action-time owner approval, then run exactly one Closeout Delivery retest through the live Resend and Shadow Mode path.
+2. Browser re-prove checklist-to-evaporation hydration input persistence after a normal user save path, without generating a new report unless separately authorized.
 3. Browser re-prove the NexCam responsive corrective behavior already represented in prior live ancestry.
 4. Register and prove Job-first existing-Client and new-Client-return flows without transmitting external communications.
 5. Reconcile the Quote approval-to-Job candidate (`37ddcdd...`) and prove its safe deterministic conversion behavior.
