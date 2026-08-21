@@ -56,7 +56,11 @@ export class SplinterProgramService {
     const program = await this.require(id); if (["COMPLETE", "SAFETY_STOP", "EXHAUSTED_FAILURE"].includes(program.state)) return { program };
     const items = (await this.work.list()).filter(item => program.workItemIds.includes(item.workItemId));
     const actions = items.filter(item => item.ownerDecisionRequired || item.status === "OWNER_REQUIRED" || item.blockedBy?.classification === "OWNER_REQUIRED").map(item => ({ actionId: `owner-${item.workItemId}`, workItemId: item.workItemId, title: item.title, detail: item.blockedBy?.detail ?? "Owner decision required for this work item.", state: "OPEN" as const, createdAt: item.updatedAt }));
-    if (program.activeJobId?.startsWith("dispatch-")) return { program };
+    if (program.activeJobId?.startsWith("dispatch-")) {
+      if (Date.parse(program.updatedAt) + 300000 > Date.parse(this.now())) return { program };
+      await this.persistRequired(program, { activeJobId: undefined, activeWorkItemId: undefined, nextAction: "Recover an expired dispatch reservation." }, "DISPATCH_RESERVATION_EXPIRED");
+      return this.reconcile(id, currentStagingSha);
+    }
     const active = program.activeJobId ? await this.jobs.get(program.activeJobId) : null;
     if (active && !["SUCCEEDED", "FAILED", "AWAITING_HUMAN"].includes(active.state)) return { program: await this.persistRequired(program, { ownerActionQueue: actions, nextAction: `Worker continues ${program.activeWorkItemId}.` }, "WORKER_ACTIVE") };
     const activeItem = program.activeWorkItemId ? items.find(item => item.workItemId === program.activeWorkItemId) : null;
@@ -66,7 +70,9 @@ export class SplinterProgramService {
     if (program.activeJobId) await this.persistRequired(program, { activeJobId: undefined, activeWorkItemId: undefined, workerLease: undefined, ownerActionQueue: actions, nextAction: "Select the next eligible work item." }, "WORK_ITEM_CLEARED");
     const reserved = await this.programs.reserveDispatch(program.programId, `dispatch-${crypto.randomUUID()}`);
     if (!reserved) return { program: await this.require(program.programId) };
-    const selected = await this.selector.select(currentStagingSha, program.workItemIds);
+    let selected: Awaited<ReturnType<SplinterWorkSelector["select"]>>;
+    try { selected = await this.selector.select(currentStagingSha, program.workItemIds); }
+    catch (error) { await this.persistRequired(reserved, { activeJobId: undefined, activeWorkItemId: undefined, nextAction: "Release failed dispatch reservation." }, "DISPATCH_RESERVATION_RELEASED"); throw error; }
     if (selected) {
       const next = await this.persistRequired(reserved, { activeWorkItemId: selected.item.workItemId, activeJobId: selected.job.id, workerLease: undefined, ownerActionQueue: actions, nextAction: `Dispatch ${selected.item.workItemId} to a Donatello worker.` }, "WORK_DISPATCHED");
       return { program: next, dispatch: { workItemId: selected.item.workItemId, jobId: selected.job.id } };
