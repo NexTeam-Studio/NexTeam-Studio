@@ -6,7 +6,7 @@ Scope: staging-only Double Dragon evidence. This is a controlled progress ledger
 ## Evidence discipline
 
 - A deployed SHA is not browser proof; browser proof is not owner acceptance.
-- The last safely observed live `/api/version` identity is `52b15590b23947fdec17db43233ebc22ad96c351` (staging). It is the identity for this reconciliation, not evidence that later accepted candidates are live.
+- The last safely observed live `/api/version` identity is `c753c0b7c0b713f885395431e8ce7b87af75923e` (staging). It includes the Job-first Client/property handoff repairs recorded below; browser proof was performed against that exact live identity.
 - No credential values belong in this ledger. Provider status is recorded only as non-secret configuration metadata.
 - Closeout Delivery is **not** complete: one approved retest was submitted after the two-artifact repair. Browser inspection became unavailable immediately afterward and two inbox searches found no matching message; provider acceptance and history are unverified. No retry is authorized or permitted until the submitted attempt is diagnosed.
 
@@ -46,8 +46,8 @@ Scope: staging-only Double Dragon evidence. This is a controlled progress ledger
 | Quote-first existing Client | OWNER-PROVEN | Quote Builder reference | PASS | Browser/mobile accepted | Preserve selection path |
 | Quote-first new Client → return to Quote | OWNER-PROVEN | Quote Builder reference | PASS | Browser/mobile accepted | Preserve unfinished-draft return |
 | Quote approval → Job | IMPLEMENTED | `37ddcddce6b2454366f06e102ce5fac5085508d0` | PASS | QA Job exists; retry convergence not browser-proven | Deploy/reconcile candidate, then prove one controlled approval-to-Job path |
-| Job-first existing Client | IMPLEMENTED | Existing Jobs entry rail | Existing coverage | No controlled end-to-end evidence | Register and prove after current Closeout repair |
-| Job-first new Client → return to Job | IMPLEMENTED | Existing inline Client continuation | Existing coverage | No controlled end-to-end evidence | Register and prove without losing draft work |
+| Job-first existing Client | BROWSER-PROVEN | `70c43e142bcfa9e4b843c9a92418a531e437f583` | PASS | Existing QA Client → its selected service property → manual Job persisted and rendered in Job Detail | Preserve Client/property server-chain validation |
+| Job-first new Client → return to Job | BROWSER-PROVEN | `c753c0b7c0b713f885395431e8ce7b87af75923e` | PASS | New QA Client and returned authoritative property stayed selected in the unfinished Job draft; Job then persisted and rendered its property after reload | Preserve transient returned-property handoff until workspace hydration |
 | Scheduling | BROWSER-PROVEN | Shared Schedule/Visits rail | PASS | Browser-proven | Preserve scheduling contract |
 | Booking Confirmation | BROWSER-PROVEN | `418e1714f042fd15a440aef2aecac12094161c6d` | PASS | One safe send and history persistence proven | No further send without action-time owner approval |
 | Reminders | IMPLEMENTED | Existing scheduling communications path | Existing coverage | No controlled current-provider acceptance | Requires a separately approved safe send |
@@ -81,8 +81,8 @@ Scope: staging-only Double Dragon evidence. This is a controlled progress ledger
 | Measure | Count |
 | --- | ---: |
 | Total known catch-up items | 36 |
-| Live / browser-proven or owner-proven | 16 |
-| Implemented but not browser-proven | 14 |
+| Live / browser-proven or owner-proven | 18 |
+| Implemented but not browser-proven | 12 |
 | Accepted awaiting deployment | 0 |
 | Currently active | 2 |
 | Parked | 3 |
@@ -96,7 +96,7 @@ The totals classify each item once. `OWNER-PROVEN` is counted with browser-prove
 1. Diagnose the already-submitted Closeout Delivery attempt without a retry; preserve its package/history state and request new approval only if another send is truly required.
 2. Browser re-prove checklist-to-evaporation hydration input persistence after a normal user save path, without generating a new report unless separately authorized.
 3. Browser re-prove the NexCam responsive corrective behavior already represented in prior live ancestry.
-4. Register and prove Job-first existing-Client and new-Client-return flows without transmitting external communications.
+4. Reconcile Job-first Client/property handoff against the remaining Job completion and staged-invoice dependencies.
 5. Reconcile the Quote approval-to-Job candidate (`37ddcdd...`) and prove its safe deterministic conversion behavior.
 
 ## External communication boundary
