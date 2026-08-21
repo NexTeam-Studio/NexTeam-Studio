@@ -6,9 +6,9 @@ Scope: staging-only Double Dragon evidence. This is a controlled progress ledger
 ## Evidence discipline
 
 - A deployed SHA is not browser proof; browser proof is not owner acceptance.
-- The last safely observed live `/api/version` identity is `70fc4c109d3e409ed6c59d25b507bf7fa29e1835` (staging). It is the identity for this reconciliation, not evidence that later accepted candidates are live.
+- The last safely observed live `/api/version` identity is `52b15590b23947fdec17db43233ebc22ad96c351` (staging). It is the identity for this reconciliation, not evidence that later accepted candidates are live.
 - No credential values belong in this ledger. Provider status is recorded only as non-secret configuration metadata.
-- Closeout Delivery is **not** complete: the approved send was rejected before provider delivery because the UI and saved-package snapshots diverged. No approved Closeout email was delivered and no duplicate was created.
+- Closeout Delivery is **not** complete: one approved retest was submitted after the two-artifact repair. Browser inspection became unavailable immediately afterward and two inbox searches found no matching message; provider acceptance and history are unverified. No retry is authorized or permitted until the submitted attempt is diagnosed.
 
 ## Status vocabulary
 
@@ -64,7 +64,7 @@ Scope: staging-only Double Dragon evidence. This is a controlled progress ledger
 | Stripe test-mode flow | IMPLEMENTED | Payment adapter/test coverage exists | Existing coverage | No controlled browser proof | Exercise after staged invoice proof, with safe test payment instrument |
 | Receipt | IMPLEMENTED | Invoice/payment receipt rail exists | Existing coverage | No controlled browser proof | Prove after test payment |
 | Closeout Package selection | BROWSER-PROVEN | `ade246c0c72e12afcfd2cc718572dbfbd4ef71c1` | PASS | Two authoritative artifacts saved, reloaded, and remained editable at desktop/mobile; loading state rendered neutrally | Preserve exact selection/hydration invariants |
-| Closeout Delivery | OWNER/EXTERNAL BLOCKED | Prior Resend attempt rejected pre-provider; no email delivered | Prior provider review PASS | Browser failure diagnosed; no delivery/history event | After package repair, request one new action-time approval for exactly one safe retest |
+| Closeout Delivery | ACTIVE | One approved retest submitted at `52b15590...`; browser post-submit inspection was blocked and two inbox searches found no message | Provider adapter review PASS; post-submit result unverified | No retry made; provider result, Client history, and duplicate check still require diagnosis | Diagnose the already-submitted attempt without sending again; request new approval only if a retest remains necessary |
 | Resend transactional provider | IMPLEMENTED | `7217c2a556e3188c388fc1b0b51c4af302b1c6f2` | PASS | Runtime health selection previously reports Resend without secret exposure; no successful Closeout proof | Complete only through approved safe external send |
 | Shadow Mode recipient guard | IMPLEMENTED | `c3fd2f044f3aec125f1e04c08cdc4bdb8fece017` | PASS | Included in current live ancestry; configuration was set via guarded staging action | Verify enforcement immediately before another external send |
 | Feedback | IMPLEMENTED | Review-follow-up rail | Existing coverage | No safe end-to-end proof | Queue after payment/receipt and Closeout delivery |
@@ -84,16 +84,16 @@ Scope: staging-only Double Dragon evidence. This is a controlled progress ledger
 | Live / browser-proven or owner-proven | 16 |
 | Implemented but not browser-proven | 14 |
 | Accepted awaiting deployment | 0 |
-| Currently active | 1 |
+| Currently active | 2 |
 | Parked | 3 |
-| Owner/external blocked | 1 |
+| Owner/external blocked | 0 |
 | Planned | 1 |
 
 The totals classify each item once. `OWNER-PROVEN` is counted with browser-proven evidence; it is not a production-readiness score.
 
 ## Next five dependency-ready actions
 
-1. Obtain action-time owner approval, then run exactly one Closeout Delivery retest through the live Resend and Shadow Mode path.
+1. Diagnose the already-submitted Closeout Delivery attempt without a retry; preserve its package/history state and request new approval only if another send is truly required.
 2. Browser re-prove checklist-to-evaporation hydration input persistence after a normal user save path, without generating a new report unless separately authorized.
 3. Browser re-prove the NexCam responsive corrective behavior already represented in prior live ancestry.
 4. Register and prove Job-first existing-Client and new-Client-return flows without transmitting external communications.
