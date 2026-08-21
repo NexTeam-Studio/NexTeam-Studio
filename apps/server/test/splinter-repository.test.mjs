@@ -797,10 +797,12 @@ test("durable program remains active after a worker result, queues scoped owner 
   const first = await programs.reconcile(program.programId, "abcdef1");
   assert.equal(first.program.state, "ACTIVE"); assert.equal(first.dispatch.workItemId, "independent"); assert.equal(first.program.ownerActionQueue[0].workItemId, "owner-blocked");
   const claimed = await programs.claimWorker(program.programId, "donatello-1", 1); assert.equal(claimed.workerLease.workerId, "donatello-1");
+  await assert.rejects(() => programs.claimWorker(program.programId, "donatello-2", 300000));
   const job = await jobs.get(first.dispatch.jobId); const service = new SplinterJobService(jobs);
   await service.transition(job.id, "RUNNING");
   await service.submitWorkerOutcome(job.id, { workerRunId: "donatello-1", status: "SUCCEEDED", summary: "Worker returned a status response.", filesInspected: [], filesChanged: [], testsPerformed: [], startedAt: timestamps[0], completedAt: timestamps[1] });
   const afterWorker = await programs.reconcile(program.programId, "abcdef1");
   assert.equal(afterWorker.program.state, "ACTIVE"); assert.equal(afterWorker.program.ownerActionQueue.length, 1);
   const recovered = await programs.recoverExpiredLease(program.programId, "abcdef1"); assert.equal(recovered.program.state, "ACTIVE");
+  await assert.rejects(() => programs.create({ programId: "unknown-scope", objective: "Must reject unknown work.", workItemIds: ["missing-work"] }));
 });
