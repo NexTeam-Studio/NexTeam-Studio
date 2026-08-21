@@ -431,6 +431,13 @@ export function closeoutHydrationView(
   };
 }
 
+export function isCurrentCloseoutDeliveryReviewRequest(
+  expected: { loadSequence: number; selectionGeneration: number },
+  current: { loadSequence: number; selectionGeneration: number }
+): boolean {
+  return expected.loadSequence === current.loadSequence && expected.selectionGeneration === current.selectionGeneration;
+}
+
 interface CloseoutDeliveryAttempt {
   id: string;
   channel: "email" | "sms";
@@ -693,6 +700,7 @@ export function NexOpsJobsPage(props: {
   const jobDetailRef = React.useRef<HTMLElement | null>(null);
   const mobileDetailFocusJobIdRef = React.useRef("");
   const closeoutLoadSequenceRef = React.useRef(0);
+  const closeoutSelectionGenerationRef = React.useRef(0);
   const [bookingSheetOpen, setBookingSheetOpen] = useState(false);
   const [bookingBusy, setBookingBusy] = useState(false);
   const [reviewSequences, setReviewSequences] = useState<ReviewSequenceRecord[]>([]);
@@ -783,6 +791,7 @@ export function NexOpsJobsPage(props: {
 
   async function loadDetail(jobId: string): Promise<void> {
     closeoutLoadSequenceRef.current += 1;
+    closeoutSelectionGenerationRef.current += 1;
     setActiveVisitDocumentsId("");
     setJobDocumentsOpen(false);
     setCloseoutPackage(null);
@@ -825,6 +834,7 @@ export function NexOpsJobsPage(props: {
 
   async function loadCloseoutPackage(jobId: string): Promise<void> {
     const loadSequence = ++closeoutLoadSequenceRef.current;
+    closeoutSelectionGenerationRef.current += 1;
     setCloseoutPackage(null);
     setCloseoutArtifacts([]);
     setCloseoutSelection([]);
@@ -861,6 +871,7 @@ export function NexOpsJobsPage(props: {
     const loadSequence = closeoutLoadSequenceRef.current;
     const selectedArtifactRefs = selectedCloseoutArtifactRefs(closeoutArtifacts, closeoutSelection);
     setCloseoutBusy(true);
+    closeoutSelectionGenerationRef.current += 1;
     setCloseoutDelivery(null);
     setCloseoutDeliveryDraft(null);
     setCloseoutDeliveryStatus("Selection changed. Save and reopen Delivery Review to use the authoritative package.");
@@ -887,10 +898,18 @@ export function NexOpsJobsPage(props: {
 
   async function loadCloseoutDeliveryReview(): Promise<void> {
     if (!detail || !closeoutView.ready || !closeoutPackage?.selectedArtifactRefs.length) return;
+    const expectedRequest = {
+      loadSequence: closeoutLoadSequenceRef.current,
+      selectionGeneration: closeoutSelectionGenerationRef.current
+    };
     setCloseoutDeliveryStatus("Loading the saved Closeout package for delivery review...");
     try {
       const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}/closeout-package/delivery-review?tenantId=${encodeURIComponent(props.tenantId)}`)
         .then((response) => response.json() as Promise<CloseoutDeliveryResponse>);
+      if (!isCurrentCloseoutDeliveryReviewRequest(expectedRequest, {
+        loadSequence: closeoutLoadSequenceRef.current,
+        selectionGeneration: closeoutSelectionGenerationRef.current
+      })) return;
       if (!body.ok || !body.preview) {
         setCloseoutDelivery(null);
         setCloseoutDeliveryDraft(null);
@@ -909,6 +928,10 @@ export function NexOpsJobsPage(props: {
       });
       setCloseoutDeliveryStatus(body.preview.package.selectedArtifactRefs.length ? "Review this package before a separate delivery action." : "Select and save at least one artifact before delivery review.");
     } catch {
+      if (!isCurrentCloseoutDeliveryReviewRequest(expectedRequest, {
+        loadSequence: closeoutLoadSequenceRef.current,
+        selectionGeneration: closeoutSelectionGenerationRef.current
+      })) return;
       setCloseoutDeliveryStatus("Delivery review is unavailable right now.");
     }
   }
@@ -2279,6 +2302,7 @@ export function NexOpsJobsPage(props: {
                               checked={closeoutSelection.includes(key)}
                               disabled={!closeoutView.editable || closeoutBusy}
                               onChange={(event) => {
+                                closeoutSelectionGenerationRef.current += 1;
                                 setCloseoutSelection((current) => event.target.checked ? [...new Set([...current, key])] : current.filter((value) => value !== key));
                                 setCloseoutDelivery(null);
                                 setCloseoutDeliveryDraft(null);

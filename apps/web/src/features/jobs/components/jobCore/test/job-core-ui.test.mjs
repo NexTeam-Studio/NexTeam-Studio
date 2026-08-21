@@ -8,6 +8,7 @@ import {
   inlineJobClientDraftCanSave,
   inlineJobClientDraftMissingFields,
   isHistoricalJob,
+  isCurrentCloseoutDeliveryReviewRequest,
   matchesJobSearch,
   mergeJobClientOptions,
   parseVisitDateTime,
@@ -153,4 +154,12 @@ test("Closeout hydration never represents an in-flight package as zero selected 
   });
   assert.match(pageSource, /Selection changed\. Save the package before returning to Delivery Review\./);
   assert.match(pageSource, /Loading selection\.\.\./);
+});
+
+test("Closeout discards an out-of-order Delivery Review response after a selection or Job change", () => {
+  const request = { loadSequence: 4, selectionGeneration: 9 };
+  assert.equal(isCurrentCloseoutDeliveryReviewRequest(request, { loadSequence: 4, selectionGeneration: 9 }), true);
+  assert.equal(isCurrentCloseoutDeliveryReviewRequest(request, { loadSequence: 4, selectionGeneration: 10 }), false);
+  assert.equal(isCurrentCloseoutDeliveryReviewRequest(request, { loadSequence: 5, selectionGeneration: 9 }), false);
+  assert.match(pageSource, /closeoutSelectionGenerationRef\.current \+= 1/);
 });
