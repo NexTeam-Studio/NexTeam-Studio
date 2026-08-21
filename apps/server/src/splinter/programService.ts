@@ -14,6 +14,8 @@ export interface SplinterProgramRepository {
   update(id: string, change: Partial<SplinterProgram>): Promise<SplinterProgram | null>;
   claimLease(id: string, lease: NonNullable<SplinterProgram["workerLease"]>, now: string): Promise<SplinterProgram | null>;
   reserveDispatch(id: string, token: string): Promise<SplinterProgram | null>;
+  renewLease(id: string, workerId: string, workItemId: string, activeJobId: string, now: string, leaseMs: number): Promise<SplinterProgram | null>;
+  consumeApproval(id: string, approvalId: string, fingerprint: string, now: string): Promise<SplinterProgram | null>;
 }
 
 function makeRecord(input: Omit<SplinterProgram, "createdAt" | "updatedAt" | "audit">, now: string) {
@@ -32,6 +34,8 @@ export class InMemorySplinterProgramRepository implements SplinterProgramReposit
   async update(id: string, change: Partial<SplinterProgram>) { const value = this.values.get(id); if (!value) return null; const next = updated(value, change, this.now()); this.values.set(id, next); return next; }
   async claimLease(id: string, lease: NonNullable<SplinterProgram["workerLease"]>, now: string) { const value = this.values.get(id); if (!value || (value.workerLease && Date.parse(value.workerLease.expiresAt) > Date.parse(now))) return null; const next = updated(value, { workerLease: lease }, this.now()); this.values.set(id, next); return next; }
   async reserveDispatch(id: string, token: string) { const value = this.values.get(id); if (!value || value.state !== "ACTIVE" || value.activeJobId) return null; const next = updated(value, { activeJobId: token, nextAction: "Reserve one durable work dispatch." }, this.now()); this.values.set(id, next); return next; }
+  async renewLease(id: string, workerId: string, workItemId: string, activeJobId: string, now: string, leaseMs: number) { const value = this.values.get(id); const lease = value?.workerLease; if (!value || value.state !== "ACTIVE" || value.activeWorkItemId !== workItemId || value.activeJobId !== activeJobId || !lease || lease.workerId !== workerId || Date.parse(lease.expiresAt) < Date.parse(now)) return null; const next = updated(value, { workerLease: { ...lease, heartbeatAt: now, expiresAt: new Date(Date.parse(now) + leaseMs).toISOString() } }, this.now()); this.values.set(id, next); return next; }
+  async consumeApproval(id: string, approvalId: string, fingerprint: string, now: string) { const value = this.values.get(id), approval = value?.approvals.find(a => a.approvalId === approvalId); if (!value || !approval || approval.state !== "GRANTED" || approval.scopeFingerprint !== fingerprint) return null; const next = updated(value, { approvals: value.approvals.map(a => a.approvalId === approvalId ? { ...a, state: "CONSUMED", consumedAt: now } : a) }, this.now()); this.values.set(id, next); return next; }
 }
 
 export class FirestoreSplinterProgramRepository implements SplinterProgramRepository {
@@ -42,6 +46,8 @@ export class FirestoreSplinterProgramRepository implements SplinterProgramReposi
   async update(id: string, change: Partial<SplinterProgram>) { return this.db.runTransaction(async tx => { const ref = this.ref(id), snap = await tx.get(ref); if (!snap.exists) return null; const next = updated(splinterProgramSchema.parse(snap.data()), change, this.now()); tx.set(ref, serial(next)); return next; }); }
   async claimLease(id: string, lease: NonNullable<SplinterProgram["workerLease"]>, now: string) { return this.db.runTransaction(async tx => { const ref = this.ref(id), snap = await tx.get(ref); if (!snap.exists) return null; const current = splinterProgramSchema.parse(snap.data()); if (current.workerLease && Date.parse(current.workerLease.expiresAt) > Date.parse(now)) return null; const next = updated(current, { workerLease: lease }, this.now()); tx.set(ref, serial(next)); return next; }); }
   async reserveDispatch(id: string, token: string) { return this.db.runTransaction(async tx => { const ref = this.ref(id), snap = await tx.get(ref); if (!snap.exists) return null; const current = splinterProgramSchema.parse(snap.data()); if (current.state !== "ACTIVE" || current.activeJobId) return null; const next = updated(current, { activeJobId: token, nextAction: "Reserve one durable work dispatch." }, this.now()); tx.set(ref, serial(next)); return next; }); }
+  async renewLease(id: string, workerId: string, workItemId: string, activeJobId: string, now: string, leaseMs: number) { return this.db.runTransaction(async tx => { const ref = this.ref(id), snap = await tx.get(ref); if (!snap.exists) return null; const current = splinterProgramSchema.parse(snap.data()), lease = current.workerLease; if (current.state !== "ACTIVE" || current.activeWorkItemId !== workItemId || current.activeJobId !== activeJobId || !lease || lease.workerId !== workerId || Date.parse(lease.expiresAt) < Date.parse(now)) return null; const next = updated(current, { workerLease: { ...lease, heartbeatAt: now, expiresAt: new Date(Date.parse(now) + leaseMs).toISOString() } }, this.now()); tx.set(ref, serial(next)); return next; }); }
+  async consumeApproval(id: string, approvalId: string, fingerprint: string, now: string) { return this.db.runTransaction(async tx => { const ref = this.ref(id), snap = await tx.get(ref); if (!snap.exists) return null; const current = splinterProgramSchema.parse(snap.data()), approval = current.approvals.find(a => a.approvalId === approvalId); if (!approval || approval.state !== "GRANTED" || approval.scopeFingerprint !== fingerprint) return null; const next = updated(current, { approvals: current.approvals.map(a => a.approvalId === approvalId ? { ...a, state: "CONSUMED", consumedAt: now } : a) }, this.now()); tx.set(ref, serial(next)); return next; }); }
 }
 
 export interface ProgramReconcileResult { program: SplinterProgram; dispatch?: { workItemId: string; jobId: string }; }
@@ -58,6 +64,12 @@ export class SplinterProgramService {
     const actions = items.filter(item => item.ownerDecisionRequired || item.status === "OWNER_REQUIRED" || item.blockedBy?.classification === "OWNER_REQUIRED").map(item => ({ actionId: `owner-${item.workItemId}`, workItemId: item.workItemId, title: item.title, detail: item.blockedBy?.detail ?? "Owner decision required for this work item.", state: "OPEN" as const, createdAt: item.updatedAt }));
     if (program.activeJobId?.startsWith("dispatch-")) {
       if (Date.parse(program.updatedAt) + 300000 > Date.parse(this.now())) return { program };
+      const claimed = items.filter(item => item.status === "CLAIMED" && item.activeSplinterJobId);
+      if (claimed.length === 1) {
+        const recovered = claimed[0]!;
+        await this.persistRequired(program, { activeWorkItemId: recovered.workItemId, activeJobId: recovered.activeSplinterJobId, nextAction: `Recover claimed work ${recovered.workItemId} after dispatch interruption.` }, "DISPATCH_CLAIM_RECOVERED");
+        return this.reconcile(id, currentStagingSha);
+      }
       await this.persistRequired(program, { activeJobId: undefined, activeWorkItemId: undefined, nextAction: "Recover an expired dispatch reservation." }, "DISPATCH_RESERVATION_EXPIRED");
       return this.reconcile(id, currentStagingSha);
     }
@@ -92,7 +104,9 @@ export class SplinterProgramService {
     const program = await this.require(id); if (program.workerLease && Date.parse(program.workerLease.expiresAt) <= Date.parse(this.now())) await this.persistRequired(program, { workerLease: undefined, nextAction: "Reconcile expired worker lease." }, "LEASE_EXPIRED");
     return this.reconcile(id, currentStagingSha);
   }
+  async heartbeatWorker(id: string, workerId: string, leaseMs = 300000) { const p = await this.require(id); if (!p.activeWorkItemId || !p.activeJobId || p.activeJobId.startsWith("dispatch-")) throw new Error("Worker lease no longer owns active work."); const now = this.now(); const renewed = await this.programs.renewLease(id, workerId, p.activeWorkItemId, p.activeJobId, now, leaseMs); if (!renewed) throw new Error("Worker lease was lost."); return renewed; }
   async grantApproval(id: string, approvalId: string, scopeFingerprint: string) { const p = await this.require(id); return this.persistRequired(p, { approvals: [...p.approvals.filter(a => a.approvalId !== approvalId), { approvalId, scopeFingerprint, state: "GRANTED", grantedAt: this.now() }] }, "APPROVAL_GRANTED"); }
+  async consumeApproval(id: string, approvalId: string, scopeFingerprint: string) { const consumed = await this.programs.consumeApproval(id, approvalId, scopeFingerprint, this.now()); if (!consumed) throw new Error("Approval is unavailable or already consumed."); return consumed; }
   private async require(id: string) { const record = await this.programs.get(id); if (!record) throw new Error("Splinter program was not found."); return record; }
   private async persistRequired(record: SplinterProgram, change: Partial<SplinterProgram>, kind: string) { const saved = await this.programs.update(record.programId, { ...change, audit: [...record.audit, { at: this.now(), kind, detail: change.nextAction ?? record.nextAction }].slice(-200) }); if (!saved) throw new Error("Splinter program disappeared during reconciliation."); return saved; }
 }
