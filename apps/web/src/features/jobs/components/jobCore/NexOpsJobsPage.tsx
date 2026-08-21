@@ -2324,6 +2324,7 @@ export function NexOpsJobsPage(props: {
                       <button type="button" disabled={closeoutBusy || !closeoutView.ready || !closeoutPackage?.selectedArtifactRefs.length} onClick={() => void loadCloseoutDeliveryReview()}>Continue to Delivery Review</button>
                       <span>{closeoutView.loading ? "Package lifecycle is loading." : closeoutView.ready ? closeoutView.editable ? "Draft only — delivery remains a separate review." : "Package is not editable after finalization." : "Package lifecycle is unavailable until the authoritative package loads."}</span>
                     </div>
+                    {closeoutDeliveryStatus ? <p className="nexops-empty-copy" role="status" aria-live="polite">{closeoutDeliveryStatus}</p> : null}
                     {closeoutDelivery ? (
                       <section className="nexops-jobs-section" aria-label="Closeout Delivery Review">
                         <div className="nexops-jobs-card-heading"><h3>Closeout Delivery Review</h3><span>{closeoutDelivery.package.selectedArtifactRefs.length} saved artifact{closeoutDelivery.package.selectedArtifactRefs.length === 1 ? "" : "s"}</span></div>

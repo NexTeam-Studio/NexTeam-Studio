@@ -163,3 +163,9 @@ test("Closeout discards an out-of-order Delivery Review response after a selecti
   assert.equal(isCurrentCloseoutDeliveryReviewRequest(request, { loadSequence: 5, selectionGeneration: 9 }), false);
   assert.match(pageSource, /closeoutSelectionGenerationRef\.current \+= 1/);
 });
+
+test("Closeout keeps Delivery Review loading and failure state visible before a review is available", () => {
+  assert.match(pageSource, /role="status" aria-live="polite">\{closeoutDeliveryStatus\}<\/p>/);
+  assert.match(pageSource, /Loading the saved Closeout package for delivery review/);
+  assert.match(pageSource, /Delivery review is unavailable right now/);
+});
