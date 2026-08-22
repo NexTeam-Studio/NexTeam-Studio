@@ -4,9 +4,29 @@ import { linkExistingWorkspaceMembership } from "../../dist/auth/workspaceLink.j
 import { defaultTenant, InMemoryPlatformRepository } from "../../dist/platform/repository.js";
 
 test("the Railway composition mounts the workspace-link endpoint", async () => {
-  process.env.RUNTIME_MODE = "isolated";
-  process.env.TENANT_ID = "test-workspace-link";
-  const { app } = await import("../../dist/composeServerApp.js");
+  const firebaseAdminKeys = [
+    "FIREBASE_SERVICE_ACCOUNT",
+    "FIREBASE_ADMIN_PROJECT_ID",
+    "FIREBASE_ADMIN_CLIENT_EMAIL",
+    "FIREBASE_ADMIN_PRIVATE_KEY"
+  ];
+  const previous = {
+    TENANT_ID: process.env.TENANT_ID,
+    NODE_ENV: process.env.NODE_ENV,
+    RUNTIME_MODE: process.env.RUNTIME_MODE,
+    ALLOW_IN_MEMORY_PERSISTENCE: process.env.ALLOW_IN_MEMORY_PERSISTENCE
+  };
+  const previousFirebaseAdmin = Object.fromEntries(firebaseAdminKeys.map((key) => [key, process.env[key]]));
+  for (const key of firebaseAdminKeys) {
+    delete process.env[key];
+  }
+  Object.assign(process.env, {
+    NODE_ENV: "test",
+    RUNTIME_MODE: "isolated",
+    ALLOW_IN_MEMORY_PERSISTENCE: "true",
+    TENANT_ID: "test-workspace-link"
+  });
+  const { app } = await import(`../../dist/composeServerApp.js?workspaceLinkTest=${Date.now()}`);
   const server = await new Promise((resolve) => {
     const listener = app.listen(0, "127.0.0.1", () => resolve(listener));
   });
@@ -23,6 +43,20 @@ test("the Railway composition mounts the workspace-link endpoint", async () => {
     assert.deepEqual(await response.json(), { ok: false, error: "Firebase sign-in is required." });
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    for (const key of firebaseAdminKeys) {
+      if (previousFirebaseAdmin[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previousFirebaseAdmin[key];
+      }
+    }
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
   }
 });
 
