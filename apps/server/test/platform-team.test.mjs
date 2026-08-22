@@ -19,7 +19,7 @@ test("NexCommand Team persists platform-only profiles, redacts sensitive data, a
     const headers = { authorization: "Bearer manager", "content-type": "application/json" };
     const denied = await fetch(`${base}/api/platform/admin/team`, { headers: { authorization: "Bearer tenant-user" } });
     assert.equal(denied.status, 403);
-    const created = await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers, body: JSON.stringify({ authUid: "operator-two", firstName: "Avery", lastName: "Stone", email: "avery@example.test", telephone: "555-0100", address: { line1: "1 Main", city: "Town", region: "NY", postalCode: "10001", country: "US" }, profilePhotoRef: "media/platform/avery", twoFactorState: "ENROLLED", role: "Administrator" }) });
+    const created = await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers, body: JSON.stringify({ authUid: "operator-two", firstName: "Avery", lastName: "Stone", email: "avery@example.test", telephone: "555-0100", address: { line1: "1 Main", city: "Town", region: "NY", postalCode: "10001", country: "US" }, role: "Administrator" }) });
     assert.equal(created.status, 201); const member = (await created.json()).user;
     assert.equal((await repository.listTenantUsers("default")).length, 0);
     const list = await fetch(`${base}/api/platform/admin/team`, { headers: { authorization: "Bearer viewer" } }).then((response) => response.json());
@@ -35,7 +35,7 @@ test("NexCommand Team persists platform-only profiles, redacts sensitive data, a
   } finally { await new Promise((resolve) => server.close(resolve)); }
 });
 
-test("NexCommand resolves the current Firebase UID to its sole active internal profile when a disabled legacy duplicate exists", async () => {
+test("NexCommand rejects a duplicate Firebase UID even when the existing internal profile is disabled", async () => {
   const repository = new InMemoryPlatformRepository();
   const timestamp = new Date().toISOString();
   const authUid = "staging-current-owner-firebase-uid";
@@ -55,8 +55,8 @@ test("NexCommand resolves the current Firebase UID to its sole active internal p
     createdBy: "system",
     updatedBy: "system"
   });
-  await repository.savePlatformUser({
-    id: "platform_user_current_active",
+  await assert.rejects(() => repository.savePlatformUser({
+    id: "platform_user_duplicate",
     authUid,
     firstName: "Chris",
     lastName: "Sears",
@@ -70,53 +70,34 @@ test("NexCommand resolves the current Firebase UID to its sole active internal p
     updatedAt: timestamp,
     createdBy: "system",
     updatedBy: "system"
-  });
-
+  }), /only one platform or tenant profile/i);
   const resolved = await repository.getPlatformUserByAuthUid(authUid);
-  assert.equal(resolved?.id, "platform_user_current_active");
-  assert.equal(resolved?.accountStatus, "ACTIVE");
-  assert.equal(resolved?.accountClass, "internal");
-  assert.equal(resolved?.email, "nexteamstudioai@gmail.com");
-
-  await repository.savePlatformUser({
-    id: "platform_user_unexpected_second_active",
-    authUid,
-    firstName: "Chris",
-    lastName: "Sears",
-    email: "nexteamstudioai@gmail.com",
-    profilePhotoRef: "media/platform/duplicate",
-    twoFactorState: "ENROLLED",
-    role: "Owner",
-    capabilityOverrides: { grant: [], deny: [] },
-    accountStatus: "ACTIVE",
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    createdBy: "system",
-    updatedBy: "system"
-  });
-  assert.equal(await repository.getPlatformUserByAuthUid(authUid), null, "multiple active profiles fail closed");
+  assert.equal(resolved?.id, "platform_user_legacy_disabled");
+  assert.equal(resolved?.accountStatus, "DISABLED");
 });
 
 test("protected Owner identity is immutable while profile maintenance and authoritative security fields persist", async () => {
   const repository = new InMemoryPlatformRepository();
   const app = express(); app.use(express.json());
-  registerPlatformRoutes(app, { repository, storage: null, env: { NEXI_FIREBASE_AUTH_REQUIRED: "true" }, platformOperatorAuth: { async verifyIdToken() { return { uid: "owner", platform_operator: true }; } } });
+  const storage = { async writeImage(path) { return `media/${path}`; } };
+  registerPlatformRoutes(app, { repository, storage, env: { NEXI_FIREBASE_AUTH_REQUIRED: "true" }, platformOperatorAuth: { async verifyIdToken() { return { uid: "owner", platform_operator: true }; } } });
   const server = app.listen(0);
   try {
     const base = `http://127.0.0.1:${server.address().port}`;
     const headers = { authorization: "Bearer owner", "content-type": "application/json" };
-    const created = await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers, body: JSON.stringify({ authUid: "owner", firstName: "Protected", lastName: "Owner", email: "Owner@NexTeam.Test", profilePhotoRef: "media/platform/owner", twoFactorState: "ENROLLED", role: "Owner" }) });
+    const created = await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers, body: JSON.stringify({ authUid: "owner", firstName: "Protected", lastName: "Owner", email: "Owner@NexTeam.Test", role: "Owner" }) });
     assert.equal(created.status, 201);
+    const profilePhoto = await fetch(`${base}/api/platform/admin/team/me/profile-photo`, { method: "POST", headers: { authorization: "Bearer owner", "content-type": "image/png" }, body: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) });
+    assert.equal(profilePhoto.status, 201);
     const protectedOwner = (await created.json()).user;
     for (const patch of [{ email: "changed@nexteam.test" }, { firstName: "Changed" }, { lastName: "Changed" }]) assert.equal((await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify(patch) })).status, 403);
     assert.equal((await fetch(`${base}/api/platform/admin/team/${protectedOwner.id}`, { method: "PATCH", headers, body: JSON.stringify({ firstName: "Changed" }) })).status, 403);
-    assert.equal((await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers, body: JSON.stringify({ authUid: "another-user", firstName: "Another", lastName: "User", email: "OWNER@nexteam.test", profilePhotoRef: "media/platform/another", twoFactorState: "NOT_ENROLLED", role: "Administrator" }) })).status, 409);
-    const maintained = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ telephone: "555-0200", profilePhotoRef: "media/platform/owner-new" }) });
+    assert.equal((await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers, body: JSON.stringify({ authUid: "another-user", firstName: "Another", lastName: "User", email: "OWNER@nexteam.test", role: "Administrator" }) })).status, 409);
+    const maintained = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ telephone: "555-0200" }) });
     assert.equal(maintained.status, 200);
     const owner = await maintained.json();
     assert.equal(owner.user.email, "owner@nexteam.test");
-    assert.equal(owner.user.profilePhotoRef, "media/platform/owner-new");
-    assert.equal(owner.user.twoFactorState, "ENROLLED");
+    assert.equal(owner.user.telephone, "555-0200");
   } finally { await new Promise((resolve) => server.close(resolve)); }
 });
 

@@ -36,7 +36,16 @@ class FakeRef {
 
 class FakeFirestore {
   constructor(seed = {}) { this.store = new Map(Object.entries(seed)); }
-  collection(name) { return { doc: (id) => new FakeRef(this.store, `${name}/${id}`) }; }
+  collection(name) {
+    const store = this.store;
+    return {
+      doc: (id) => new FakeRef(store, `${name}/${id}`),
+      async get() {
+        const prefix = `${name}/`;
+        return { docs: [...store.entries()].filter(([key]) => key.startsWith(prefix)).map(([key, value]) => ({ id: key.slice(prefix.length), data: () => value })) };
+      }
+    };
+  }
   async runTransaction(callback) {
     return callback({
       get: (ref) => ref.get(),

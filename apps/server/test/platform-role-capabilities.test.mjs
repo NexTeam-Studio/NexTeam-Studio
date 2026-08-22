@@ -16,16 +16,20 @@ test("persisted role overrides, disabled profiles, ownership protections, and pl
   const repository = new InMemoryPlatformRepository();
   const app = express(); app.use(express.json());
   const tokens = { owner: { uid: "owner", platform_operator: true }, admin: { uid: "admin", platform_operator: true }, tenant: { uid: "tenant", roles: ["OWNER"] } };
-  registerPlatformRoutes(app, { repository, storage: null, env: { NEXI_FIREBASE_AUTH_REQUIRED: "true" }, platformOperatorAuth: { async verifyIdToken(token) { return tokens[token] ?? { uid: "unknown" }; } } });
+  const storage = { async writeImage(path) { return `media/${path}`; } };
+  registerPlatformRoutes(app, { repository, storage, env: { NEXI_FIREBASE_AUTH_REQUIRED: "true" }, platformOperatorAuth: { async verifyIdToken(token) { return tokens[token] ?? { uid: "unknown" }; } } });
   const server = app.listen(0);
   try {
     const base = `http://127.0.0.1:${server.address().port}`;
     const headers = (token) => ({ authorization: `Bearer ${token}`, "content-type": "application/json" });
-    const create = async (authUid, role, overrides = { grant: [], deny: [] }) => fetch(`${base}/api/platform/admin/team`, { method: "POST", headers: headers("owner"), body: JSON.stringify({ authUid, firstName: authUid, lastName: "User", email: `${authUid}@example.test`, profilePhotoRef: `media/platform/${authUid}`, twoFactorState: "ENROLLED", role, capabilityOverrides: overrides }) });
+    const create = async (authUid, role, overrides = { grant: [], deny: [] }) => fetch(`${base}/api/platform/admin/team`, { method: "POST", headers: headers("owner"), body: JSON.stringify({ authUid, firstName: authUid, lastName: "User", email: `${authUid}@example.test`, role, capabilityOverrides: overrides }) });
+    const completeProfile = (token) => fetch(`${base}/api/platform/admin/team/me/profile-photo`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "image/png" }, body: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) });
     const owner = (await (await create("owner", "Owner")).json()).user;
+    assert.equal((await completeProfile("owner")).status, 201);
     const admin = (await (await create("admin", "Support", { grant: [], deny: ["platform.team.manage"] })).json()).user;
+    assert.equal((await completeProfile("admin")).status, 201);
     assert.equal((await fetch(`${base}/api/platform/admin/team`, { headers: headers("tenant") })).status, 403);
-    assert.equal((await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers: headers("admin"), body: JSON.stringify({ authUid: "x", firstName: "X", lastName: "X", email: "x@example.test", profilePhotoRef: "media/platform/x", twoFactorState: "NOT_ENROLLED", role: "Read Only" }) })).status, 403);
+    assert.equal((await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers: headers("admin"), body: JSON.stringify({ authUid: "x", firstName: "X", lastName: "X", email: "x@example.test", role: "Read Only" }) })).status, 403);
     assert.equal((await fetch(`${base}/api/platform/admin/team/${owner.id}/disable`, { method: "POST", headers: headers("admin") })).status, 403);
     assert.equal((await fetch(`${base}/api/platform/admin/summary`, { headers: headers("admin") })).status, 200);
     assert.equal((await fetch(`${base}/api/platform/admin/prospects`, { method: "POST", headers: headers("admin"), body: JSON.stringify({ businessName: "Not persisted", industry: "test" }) })).status, 403);

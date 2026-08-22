@@ -147,7 +147,7 @@ test("client roster and profile keep the mobile-first client workspace actions a
   assert.match(workspaceSource, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/);
   assert.match(headerSource, /nexops-web-platform-lockup/);
   assert.match(headerCss, /linear-gradient\(135deg, #0c1118/);
-  assert.match(headerCss, /min-height: 62px/);
+  assert.match(headerCss, /min-height: 70px/);
   assert.match(brandingSource, /branding\.logo\.updatedAt/);
   assert.match(brandingSource, /tenant-branding\/logo\?tenantId=.*&v=/);
   assert.match(createPanelSource, /aria-label=\{editing \? "Back to Client Overview" : "Back to Client Roster"\}>← Back/);
