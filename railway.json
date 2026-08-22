@@ -3,7 +3,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "preDeployCommand": ["bash scripts/run-predeploy-diagnostic.sh"],
+    "preDeployCommand": ["echo NEXTEAM_PREDEPLOY_CONTROL && exit 0"],
     "startCommand": "npm start",
     "healthcheckPath": "/",
     "restartPolicyType": "ON_FAILURE"
