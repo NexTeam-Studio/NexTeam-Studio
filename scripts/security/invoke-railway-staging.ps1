@@ -125,8 +125,8 @@ try {
     Set-Content -LiteralPath $buildInfoPath -Value ($originalBuildInfo.Replace($buildInfoDeclaration, $stampedBuildInfoDeclaration)) -NoNewline
   }
 
-  $railway = Get-Command railway -ErrorAction Stop
   $token = Get-RailwayTokenFromVault -Path $VaultPath
+  $railway = Get-Command railway -ErrorAction Stop
   $env:RAILWAY_TOKEN = $token
   Remove-Item Env:RAILWAY_API_TOKEN -ErrorAction SilentlyContinue
 
