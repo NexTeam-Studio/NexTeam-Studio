@@ -25,4 +25,10 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - name: Show Firestore declaration tree
+        run: |
+          node --version
+          npm --version
+          find . -type d -path '*/node_modules/@google-cloud/firestore' -print
+          find . -type f -path '*/node_modules/@google-cloud/firestore/types/firestore.d.ts' -print
       - run: npm run build
