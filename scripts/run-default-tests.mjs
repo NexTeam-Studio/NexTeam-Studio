@@ -1,0 +1,30 @@
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+
+const testRoots = ["apps", "packages"];
+
+function collectTests(directory) {
+  const files = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...collectTests(path));
+    if (entry.isFile() && entry.name.endsWith(".test.mjs")) files.push(path);
+  }
+  return files;
+}
+
+const testFiles = testRoots.flatMap(collectTests).sort();
+
+if (testFiles.length === 0) {
+  console.error("No default test files found.");
+  process.exit(1);
+}
+
+const result = spawnSync(
+  process.execPath,
+  ["--import", "./tests/setup.mjs", "--import", "tsx", "--test", ...testFiles],
+  { stdio: "inherit" },
+);
+
+process.exit(result.status ?? 1);

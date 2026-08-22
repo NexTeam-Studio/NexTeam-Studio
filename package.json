@@ -15,7 +15,7 @@
     "dev:server": "npm --workspace @nexteam/server run dev",
     "dev:local-test": "node scripts/run-nexteam-local-test.mjs",
     "test:chris-package": "node scripts/run-chris-test-package.mjs",
-    "test": "npm run check:no-browser-tests && node --import ./tests/setup.mjs --import tsx --test \"packages/**/*.test.mjs\" \"apps/**/*.test.mjs\"",
+    "test": "npm run check:no-browser-tests && node scripts/run-default-tests.mjs",
     "test:browser": "node --import ./tests/setup.mjs --import tsx --test \"apps/web/browser-tests/*.playwright.mjs\"",
     "test:legacy": "node --test \"src/**/*.test.mjs\"",
     "test:reliability": "node --test scripts/reliability/*.test.mjs",
