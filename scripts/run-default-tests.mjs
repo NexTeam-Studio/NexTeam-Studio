@@ -17,10 +17,15 @@ function collectTests(directory) {
 const allTestFiles = testRoots.flatMap(collectTests).sort();
 const testSlice = process.env.NEXTEAM_TEST_FILE_SLICE ?? "all";
 const midpoint = Math.ceil(allTestFiles.length / 2);
+const firstQuarterEnd = Math.ceil(midpoint / 2);
 const testFiles = testSlice === "first"
   ? allTestFiles.slice(0, midpoint)
   : testSlice === "second"
     ? allTestFiles.slice(midpoint)
+    : testSlice === "first-quarter"
+      ? allTestFiles.slice(0, firstQuarterEnd)
+      : testSlice === "second-quarter"
+        ? allTestFiles.slice(firstQuarterEnd, midpoint)
     : testSlice === "all"
       ? allTestFiles
       : [];
