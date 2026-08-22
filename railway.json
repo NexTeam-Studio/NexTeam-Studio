@@ -3,7 +3,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "preDeployCommand": ["sh -c \"NEXTEAM_DEFAULT_TEST_TIMEOUT_MS=60000 NEXTEAM_TEST_FILE_SLICE_COUNT=67 npm test\""],
+    "preDeployCommand": ["sh -c \"NEXTEAM_DEFAULT_TEST_TIMEOUT_MS=60000 NEXTEAM_TEST_FILE_SLICE_COUNT=65 npm test\""],
     "startCommand": "npm start",
     "healthcheckPath": "/",
     "restartPolicyType": "ON_FAILURE"
