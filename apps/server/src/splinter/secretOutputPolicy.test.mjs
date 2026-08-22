@@ -72,7 +72,7 @@ test("denial is secret-safe and credential rotation never makes a value dump acc
   assert.doesNotMatch(`${decision.reason} ${decision.safeAlternative}`, /fixture-value|api key value/i);
 });
 
-test("the approved Railway wrapper uses the controller policy and rejects secret-output bypasses before reading its vault", () => {
+test("the approved Railway wrapper uses the controller policy and rejects secret-output bypasses before reading its vault", { skip: process.platform !== "win32" }, () => {
   for (const args of ["variable,list", "run,--,powershell,-Command,Get-Item,Env:*", "logs"]) {
     let output = "";
     try {
@@ -88,7 +88,7 @@ test("the approved Railway wrapper uses the controller policy and rejects secret
   }
 });
 
-test("the approved Railway wrapper admits only the documented staging deployment shape", () => {
+test("the approved Railway wrapper admits only the documented staging deployment shape", { skip: process.platform !== "win32" }, () => {
   let safeOutput = "";
   try {
     execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/security/invoke-railway-staging.ps1", "-VaultPath", "C:\\nonexistent\\secret-vault.dpapi", "-RailwayArgs", "up,--service,NexTeam-Studio,--environment,staging,--detach"], {
@@ -136,7 +136,7 @@ test("the one scoped staging Shadow Mode writer is silent while generic variable
   }).allowed, false);
 });
 
-test("the guarded Railway wrapper permits only its scoped Shadow Mode configuration action", () => {
+test("the guarded Railway wrapper permits only its scoped Shadow Mode configuration action", { skip: process.platform !== "win32" }, () => {
   let safeOutput = "";
   try {
     execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/security/invoke-railway-staging.ps1", "-VaultPath", "C:\\nonexistent\\secret-vault.dpapi", "-RailwayArgs", "shadow-mode,configure,--email,approved-staging@example.test"], {

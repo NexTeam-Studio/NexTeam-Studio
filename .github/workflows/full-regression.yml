@@ -9,9 +9,13 @@ permissions:
 
 jobs:
   full-regression:
-    name: Full Regression (Node 20)
-    runs-on: ubuntu-latest
+    name: Full Regression (Node 20, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
 
