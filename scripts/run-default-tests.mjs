@@ -15,15 +15,14 @@ function collectTests(directory) {
 }
 
 const testFiles = testRoots.flatMap(collectTests).sort();
+const testTimeoutMs = Number.parseInt(process.env.NEXTEAM_DEFAULT_TEST_TIMEOUT_MS ?? "", 10);
 
 if (testFiles.length === 0) {
   console.error("No default test files found.");
   process.exit(1);
 }
 
-const result = spawnSync(
-  process.execPath,
-  [
+const testArgs = [
     "--import",
     "./tests/setup.mjs",
     "--import",
@@ -32,7 +31,15 @@ const result = spawnSync(
     "dot",
     "--test",
     ...testFiles,
-  ],
+];
+
+if (Number.isFinite(testTimeoutMs) && testTimeoutMs > 0) {
+  testArgs.splice(testArgs.indexOf("--test"), 0, `--test-timeout=${testTimeoutMs}`);
+}
+
+const result = spawnSync(
+  process.execPath,
+  testArgs,
   { stdio: "inherit" },
 );
 
