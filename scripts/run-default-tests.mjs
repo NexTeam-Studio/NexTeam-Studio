@@ -14,13 +14,24 @@ function collectTests(directory) {
   return files;
 }
 
-const testFiles = testRoots.flatMap(collectTests).sort();
+const allTestFiles = testRoots.flatMap(collectTests).sort();
+const testSlice = process.env.NEXTEAM_TEST_FILE_SLICE ?? "all";
+const midpoint = Math.ceil(allTestFiles.length / 2);
+const testFiles = testSlice === "first"
+  ? allTestFiles.slice(0, midpoint)
+  : testSlice === "second"
+    ? allTestFiles.slice(midpoint)
+    : testSlice === "all"
+      ? allTestFiles
+      : [];
 const testTimeoutMs = Number.parseInt(process.env.NEXTEAM_DEFAULT_TEST_TIMEOUT_MS ?? "", 10);
 
 if (testFiles.length === 0) {
-  console.error("No default test files found.");
+  console.error(`No default test files found for slice: ${testSlice}.`);
   process.exit(1);
 }
+
+console.log(`NEXTEAM_TEST_FILE_SLICE=${testSlice} (${testFiles.length}/${allTestFiles.length} files)`);
 
 const testArgs = [
     "--import",
