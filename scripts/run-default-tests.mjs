@@ -23,7 +23,16 @@ if (testFiles.length === 0) {
 
 const result = spawnSync(
   process.execPath,
-  ["--import", "./tests/setup.mjs", "--import", "tsx", "--test", ...testFiles],
+  [
+    "--import",
+    "./tests/setup.mjs",
+    "--import",
+    "tsx",
+    "--test-reporter",
+    "dot",
+    "--test",
+    ...testFiles,
+  ],
   { stdio: "inherit" },
 );
 
