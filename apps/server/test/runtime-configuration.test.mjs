@@ -117,12 +117,22 @@ test("health reports the active transactional provider without exposing Resend c
 });
 
 test("the composed server can serve an explicitly isolated memory runtime over local HTTP", async (t) => {
+  const firebaseAdminKeys = [
+    "FIREBASE_SERVICE_ACCOUNT",
+    "FIREBASE_ADMIN_PROJECT_ID",
+    "FIREBASE_ADMIN_CLIENT_EMAIL",
+    "FIREBASE_ADMIN_PRIVATE_KEY"
+  ];
   const previous = {
     TENANT_ID: process.env.TENANT_ID,
     NODE_ENV: process.env.NODE_ENV,
     RUNTIME_MODE: process.env.RUNTIME_MODE,
     ALLOW_IN_MEMORY_PERSISTENCE: process.env.ALLOW_IN_MEMORY_PERSISTENCE
   };
+  const previousFirebaseAdmin = Object.fromEntries(firebaseAdminKeys.map((key) => [key, process.env[key]]));
+  for (const key of firebaseAdminKeys) {
+    delete process.env[key];
+  }
   Object.assign(process.env, {
     TENANT_ID: "local-runtime-proof",
     NODE_ENV: "test",
@@ -134,6 +144,13 @@ test("the composed server can serve an explicitly isolated memory runtime over l
     const instance = module.app.listen(0, "127.0.0.1", () => resolve(instance));
   });
   t.after(() => {
+    for (const key of firebaseAdminKeys) {
+      if (previousFirebaseAdmin[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = previousFirebaseAdmin[key];
+      }
+    }
     Object.assign(process.env, previous);
     return new Promise((resolve) => server.close(resolve));
   });
