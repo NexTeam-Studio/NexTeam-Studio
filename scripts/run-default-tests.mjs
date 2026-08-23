@@ -16,6 +16,7 @@ function collectTests(directory) {
 
 const testFiles = testRoots.flatMap(collectTests).sort();
 const testTimeoutMs = Number.parseInt(process.env.NEXTEAM_DEFAULT_TEST_TIMEOUT_MS ?? "", 10);
+const testReporter = process.env.NEXTEAM_TEST_REPORTER ?? "dot";
 
 if (testFiles.length === 0) {
   console.error("No default test files found.");
@@ -28,7 +29,7 @@ const testArgs = [
     "--import",
     "tsx",
     "--test-reporter",
-    "dot",
+    testReporter,
     "--test",
     ...testFiles,
 ];
