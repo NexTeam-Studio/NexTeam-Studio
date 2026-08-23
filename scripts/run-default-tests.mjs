@@ -14,39 +14,13 @@ function collectTests(directory) {
   return files;
 }
 
-const allTestFiles = testRoots.flatMap(collectTests).sort();
-const testSlice = process.env.NEXTEAM_TEST_FILE_SLICE ?? "all";
-const requestedCount = process.env.NEXTEAM_TEST_FILE_SLICE_COUNT;
-const testSliceCount = requestedCount === undefined ? undefined : Number.parseInt(requestedCount, 10);
-const midpoint = Math.ceil(allTestFiles.length / 2);
-const firstQuarterEnd = Math.ceil(midpoint / 2);
-if (requestedCount !== undefined && (!Number.isInteger(testSliceCount) || testSliceCount < 1 || testSliceCount > allTestFiles.length)) {
-  console.error(`NEXTEAM_TEST_FILE_SLICE_COUNT must be an integer from 1 to ${allTestFiles.length}; received: ${requestedCount}.`);
-  process.exit(1);
-}
-
-const testFiles = testSliceCount !== undefined
-  ? allTestFiles.slice(0, testSliceCount)
-  : testSlice === "first"
-  ? allTestFiles.slice(0, midpoint)
-  : testSlice === "second"
-    ? allTestFiles.slice(midpoint)
-    : testSlice === "first-quarter"
-      ? allTestFiles.slice(0, firstQuarterEnd)
-      : testSlice === "second-quarter"
-        ? allTestFiles.slice(firstQuarterEnd, midpoint)
-    : testSlice === "all"
-      ? allTestFiles
-      : [];
+const testFiles = testRoots.flatMap(collectTests).sort();
 const testTimeoutMs = Number.parseInt(process.env.NEXTEAM_DEFAULT_TEST_TIMEOUT_MS ?? "", 10);
 
 if (testFiles.length === 0) {
-  console.error(`No default test files found for slice: ${testSlice}.`);
+  console.error("No default test files found.");
   process.exit(1);
 }
-
-const sliceLabel = testSliceCount === undefined ? testSlice : `count:${testSliceCount}`;
-console.log(`NEXTEAM_TEST_FILE_SLICE=${sliceLabel} (${testFiles.length}/${allTestFiles.length} files)`);
 
 const testArgs = [
     "--import",

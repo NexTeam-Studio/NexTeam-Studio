@@ -2,15 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { ApprovalQueueService, InMemoryApprovalQueueRepository } from "@nexteam/core";
-import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
-import { createApprovalNexiTools } from "../dist/approval/nexiTools.js";
-import { CrmApprovalExecutor } from "../dist/crm/approvalExecutor.js";
-import { createCrmToolsWithOptions } from "../dist/crm/nexiTools.js";
-import { answerNexiMessage } from "../dist/nexi/nexiService.js";
-import { MemoryNexiRepository } from "../dist/nexi/nexiRepository.js";
-import { FirestoreNativeCrmRepository } from "../dist/modules/nexops/shared/persistence/nativeRepository.js";
-import { getAdminDb } from "../dist/firebase.js";
 
 // Default mode is an isolated local tenant. The explicitly opted-in Aquatrace
 // mode is safe only because it creates a unique, tagged QA namespace and the
@@ -155,6 +146,31 @@ function saveReport(report) {
 }
 
 test("Nexi real-world client conversations: 278 synthetic interactions through the live Claude tool gateway", { skip: !RUN_REAL }, async () => {
+  // Keep the default (skipped) suite isolated from ambient Railway Firebase
+  // credentials. These modules construct the live Nexi/CRM/Firebase graph, so
+  // loading them before the skip gate can leave Firebase handles open even
+  // though the real external-conversation scenario never runs.
+  const [
+    { ApprovalQueueService, InMemoryApprovalQueueRepository },
+    { MemoryNativeCrmRepository, NativeAdapter },
+    { createApprovalNexiTools },
+    { CrmApprovalExecutor },
+    { createCrmToolsWithOptions },
+    { answerNexiMessage },
+    { MemoryNexiRepository },
+    { FirestoreNativeCrmRepository },
+    { getAdminDb }
+  ] = await Promise.all([
+    import("@nexteam/core"),
+    import("@nexteam/providers"),
+    import("../dist/approval/nexiTools.js"),
+    import("../dist/crm/approvalExecutor.js"),
+    import("../dist/crm/nexiTools.js"),
+    import("../dist/nexi/nexiService.js"),
+    import("../dist/nexi/nexiRepository.js"),
+    import("../dist/modules/nexops/shared/persistence/nativeRepository.js"),
+    import("../dist/firebase.js")
+  ]);
   assert.ok(process.env.ANTHROPIC_API_KEY?.trim(), "ANTHROPIC_API_KEY is required for this real, non-mocked conversation run.");
   const db = RUN_LIVE_AQUATRACE ? getAdminDb(process.env) : null;
   assert.ok(!RUN_LIVE_AQUATRACE || db, "Live Aquatrace QA requires Firebase admin credentials.");
