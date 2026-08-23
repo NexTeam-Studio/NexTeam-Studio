@@ -3,11 +3,14 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { listLocalDevWebProfiles } from "../dist/auth/accessContext.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
 test("Phase R Chris package is fixed-url, isolated, and presents only explicit local test identities", async () => {
+  // accessContext imports Firebase-admin accessors. Load it only when this
+  // local-profile assertion executes so importing the test file cannot attach
+  // the ambient staging Firebase runtime to the default suite.
+  const { listLocalDevWebProfiles } = await import("../dist/auth/accessContext.js");
   const [launcher, handoff] = await Promise.all([
     readFile(path.join(repoRoot, "scripts/run-chris-test-package.mjs"), "utf8"),
     readFile(path.join(repoRoot, "docs/handoffs/PHASE-R-CHRIS-TEST-PACKAGE.md"), "utf8")
