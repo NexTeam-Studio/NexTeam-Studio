@@ -15,7 +15,16 @@ function collectTests(directory) {
 }
 
 const testFiles = testRoots.flatMap(collectTests).sort();
+const requestedCount = process.env.NEXTEAM_TEST_FILE_SLICE_COUNT;
+const testSliceCount = requestedCount === undefined ? undefined : Number.parseInt(requestedCount, 10);
 const testTimeoutMs = Number.parseInt(process.env.NEXTEAM_DEFAULT_TEST_TIMEOUT_MS ?? "", 10);
+
+if (requestedCount !== undefined && (!Number.isInteger(testSliceCount) || testSliceCount < 1 || testSliceCount > testFiles.length)) {
+  console.error(`NEXTEAM_TEST_FILE_SLICE_COUNT must be an integer from 1 to ${testFiles.length}; received: ${requestedCount}.`);
+  process.exit(1);
+}
+
+const selectedTestFiles = testSliceCount === undefined ? testFiles : testFiles.slice(0, testSliceCount);
 
 if (testFiles.length === 0) {
   console.error("No default test files found.");
@@ -30,7 +39,7 @@ const testArgs = [
     "--test-reporter",
     "dot",
     "--test",
-    ...testFiles,
+    ...selectedTestFiles,
 ];
 
 if (Number.isFinite(testTimeoutMs) && testTimeoutMs > 0) {
