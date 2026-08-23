@@ -16,7 +16,7 @@ test("Phase R Chris package is fixed-url, isolated, and presents only explicit l
     readFile(path.join(repoRoot, "docs/handoffs/PHASE-R-CHRIS-TEST-PACKAGE.md"), "utf8")
   ]);
 
-  assert.match(launcher, /const apiPort = 4301/);
+  assert.match(launcher, /const apiPort = 4302/);
   assert.match(launcher, /const webPort = 4300/);
   assert.match(launcher, /TENANT_ID: "local-chris-test"/);
   assert.match(launcher, /RUNTIME_MODE: "isolated"/);
