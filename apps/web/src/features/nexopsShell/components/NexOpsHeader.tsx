@@ -1,7 +1,7 @@
 import React from "react";
 import type { TenantBranding } from "@nexteam/core";
 import { PlatformMark, ProductLogo, TenantBrandMark, hasTenantLogo, productLabel, type ProductBrand } from "../../../shared/branding/ProductBranding";
-import { NexTeamProductHeader } from "../../../shared/ui/NexTeamProductHeader";
+import { NexSuiteHeader } from "../../../shared/ui/NexSuiteHeader";
 
 export function NexOpsSharedMobileBar(props: {
   tenantBranding: TenantBranding | null;
@@ -66,7 +66,7 @@ export function NexOpsSharedWebTopbar(props: {
   const product = props.product ?? "nexops";
   const tenantLogoAvailable = hasTenantLogo(props.tenantBranding, props.tenantId);
   return (
-    <NexTeamProductHeader
+    <NexSuiteHeader
       className="nexops-web-topbar"
       ariaLabel="NexOps workspace header"
       brand={(

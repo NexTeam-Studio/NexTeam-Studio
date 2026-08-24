@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAuthSession } from "../../../shared/auth/AuthSessionProvider";
 import { PlatformMark } from "../../../shared/branding/ProductBranding";
-import { NexTeamProductHeader } from "../../../shared/ui/NexTeamProductHeader";
+import { NexCommandHeader } from "../../../shared/ui/NexCommandHeader";
 import { NexTeamApplicationShell } from "../../../shared/ui/NexTeamApplicationShell";
 import { TenantOverviewPanel } from "../../tenantOverview/components/TenantOverviewPanel";
 import { useTenantOverview } from "../../tenantOverview/hooks/useTenantOverview";
@@ -60,7 +60,7 @@ export function NexCommandRoute(): React.ReactElement {
     className="nexcommand"
     navigationLabel="NexCommand navigation"
     mobileNavigationMode="drawer"
-    header={<NexTeamProductHeader className="nexcommand__topbar" ariaLabel="NexCommand header" navigation={<button className="nexcommand__menu" aria-label="Open NexCommand navigation" onClick={() => setOpen((value) => !value)}>☰</button>} brand={<div className="nexcommand__brand"><PlatformMark decorative /><span>NexCommand</span></div>} context={<div className="nexcommand__environment"><span>STAGING</span><small>nexstage.nexteam.studio</small></div>} utilities={<button className="nexcommand__signout" onClick={() => void signOut()}>Sign out</button>} />}
+    header={<NexCommandHeader className="nexcommand__topbar" ariaLabel="NexCommand header" navigation={<button className="nexcommand__menu" aria-label="Open NexCommand navigation" onClick={() => setOpen((value) => !value)}>☰</button>} brand={<div className="nexcommand__brand"><PlatformMark decorative /><span>NexCommand</span></div>} context={<div className="nexcommand__environment"><span>STAGING</span><small>nexstage.nexteam.studio</small></div>} utilities={<button className="nexcommand__signout" onClick={() => void signOut()}>Sign out</button>} />}
     navigation={<NexCommandSidebar area={area} open={open} liveState={liveState} onSelect={(next) => { selectArea(next); setOpen(false); }} />}
   ><section className="nexcommand__workspace"><section className="nexcommand__heading"><div><p className="ui-eyebrow">NexTeam internal operations</p><h1>{selectedTenantId ? "Tenant details" : nexCommandNavigation.find(([key]) => key === area)?.[1]}</h1><p>{user?.email ?? "Authorized NexTeam operator"}</p></div><span className="nexcommand__health">Staging connected</span></section>{issue ? <p className="nexcommand__notice">{issue}</p> : null}{selectedTenantId ? <NexCommandTenantProfilePanel user={user} tenantId={selectedTenantId} onBack={() => { void refreshTenantRoster(); window.history.pushState({}, "", "/nexcommand?area=tenants"); setArea("tenants"); setSelectedTenantId(null); }} /> : <NexCommandArea area={area} rows={rows} workingTenant={workingTenant} onRunBackup={runBackup} onRunLifecycle={runLifecycle} user={user} summary={summary} onViewTenant={(tenantId) => { window.history.pushState({}, "", `/nexcommand?area=tenants&tenant=${encodeURIComponent(tenantId)}`); setSelectedTenantId(tenantId); }} />}</section></NexTeamApplicationShell>;
 }
