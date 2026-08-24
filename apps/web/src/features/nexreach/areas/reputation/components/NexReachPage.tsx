@@ -1,6 +1,7 @@
 import React from "react";
 import type { Auth, User } from "firebase/auth";
 import { ProductInlineLabel, SidebarBrandStack, tenantDisplayName } from "../../../../../shared/branding/ProductBranding";
+import { NexSuiteHeader } from "../../../../../shared/ui/NexSuiteHeader";
 import { useNexReach } from "../hooks/useNexReach";
 import "../styles/nexreach.css";
 
@@ -61,17 +62,15 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
       </aside>
 
       <section className="nexreach-main">
-        <header className="nexreach-header">
+        <NexSuiteHeader className="nexreach-header" ariaLabel="NexReach header" brand={<div>
           <div>
             <ProductInlineLabel product="nexreach" className="nexreach-inline-label" />
             <h2>NexReach</h2>
             <p>{status}</p>
-          </div>
-          <div className="nexreach-header-actions">
+          </div></div>} utilities={<div className="nexreach-header-actions">
             <button className="nexreach-ghost-button" type="button" onClick={() => void refreshAll()}>Refresh</button>
             <button className="nexreach-primary-button" type="button" onClick={() => void issuePortfolioLink()}>Refresh preview link</button>
-          </div>
-        </header>
+          </div>} />
 
         <div className="nexreach-grid">
           <section className="nexreach-card">

@@ -1,6 +1,7 @@
 import React from "react";
 import type { Auth, User } from "firebase/auth";
-import { ProductLogo, SidebarBrandStack, tenantDisplayName } from "../../../../../shared/branding/ProductBranding";
+import { ProductLogo, SidebarBrandStack } from "../../../../../shared/branding/ProductBranding";
+import { NexSuiteHeader } from "../../../../../shared/ui/NexSuiteHeader";
 import { signOutOperator } from "../../../../../shared/auth/authBootstrap";
 import { NexCamOverviewSurface } from "../../overview/components/NexCamOverviewSurface";
 import { ChecklistTemplatesSurface } from "../../../../nexdocs/areas/checklists/components/ChecklistTemplatesSurface";
@@ -45,8 +46,6 @@ export function NexCamPage(props: { auth: Auth | null; user: User }) {
     return renderOverview();
   }
 
-  const tenantName = tenantDisplayName(tenantBranding, operatorContext.tenantId);
-
   return (
     <main className="nexops-app nexcam-app" style={style}>
       <aside className="nexops-app-sidebar" aria-label="NexCam navigation">
@@ -63,20 +62,15 @@ export function NexCamPage(props: { auth: Auth | null; user: User }) {
         </nav>
       </aside>
       <section className="nexops-web-main">
-        <header className="nexops-web-topbar">
-          <div className="nexops-web-brand">
+        <NexSuiteHeader className="nexops-web-topbar" ariaLabel="NexCam header" brand={<div className="nexops-web-brand">
             <ProductLogo product="nexcam" className="nexops-header-product-logo" alt="NexCam" />
             <div className="nexops-web-brand-copy">
               <strong>NexCam</strong>
-              <span>{tenantName}</span>
+              <span>{operatorContext.tenantId}</span>
             </div>
-          </div>
-          <div className="nexops-web-tools">
-            <span>{status}</span>
-            <span>{props.user.email ?? "Operator"}</span>
-            <button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
-          </div>
-        </header>
+        </div>} utilities={<div className="nexops-web-tools">
+          <span>{status}</span><span>{props.user.email ?? "Operator"}</span><button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
+        </div>} />
         {renderActiveModule()}
       </section>
       {<MediaReviewSurface workspace={workspace} />}
