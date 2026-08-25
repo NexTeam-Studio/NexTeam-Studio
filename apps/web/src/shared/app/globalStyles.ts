@@ -7,6 +7,7 @@ import "../../features/nexopsShell/styles/shellHeader.css";
 import "../../features/visits/components/visitCore/visitCoreLegacy.css";
 import "../../features/nexi/areas/chat/styles/legacyWorkspace.css";
 import "../../features/clients/components/contact/contactMobileLegacy.css";
+import "../../features/clients/components/clientDetails/clientDetails.css";
 import "../../features/nexopsShell/styles/shellResponsiveLegacy.css";
 import "../../shared/signature/signature.css";
 import "../../shared/ui/nexOpsUiKit.css";
