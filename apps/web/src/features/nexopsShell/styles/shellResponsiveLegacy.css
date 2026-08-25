@@ -107,9 +107,13 @@
     max-height: 32px;
   }
 
-  .nexops-mobile-bar .nexteam-product-header__tenant,
-  .nexops-mobile-bar .nexsuite-header__utility-slot {
+  .nexops-mobile-bar .nexteam-product-header__tenant {
     display: none;
+  }
+
+  .nexops-mobile-bar .nexsuite-header__utility-slot {
+    display: flex;
+    align-items: center;
   }
 
   .nexops-mobile-bar .nexteam-product-header__utilities {
