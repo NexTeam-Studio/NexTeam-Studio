@@ -123,6 +123,10 @@ test("quote workspace uses the shared business templates and retains the inline 
   assert.match(source, /Yes, Save New Line Item/);
   assert.match(source, /Quote Name/);
   assert.match(source, /Search products and services/);
+  assert.match(source, /Quote Builder/);
+  assert.match(source, /From Template/);
+  assert.match(source, /Choose a Template/);
+  assert.match(source, /quoteBuilderMode \? <>/);
   assert.match(source, /nexops-mobile-profile-summary/);
   assert.match(source, /MobileClientSummaryGlyph kind="phone"/);
   assert.match(source, /MobileClientSummaryGlyph kind="email"/);

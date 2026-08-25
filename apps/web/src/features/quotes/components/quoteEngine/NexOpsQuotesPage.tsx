@@ -1109,6 +1109,8 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [clientSearch, setClientSearch] = useState("");
   const [propertyPickerOpen, setPropertyPickerOpen] = useState(false);
   const [clientSelectionSaved, setClientSelectionSaved] = useState(false);
+  const [quoteBuilderMode, setQuoteBuilderMode] = useState<"new" | "template" | null>(null);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [catalogEditorOpen, setCatalogEditorOpen] = useState(false);
   const [catalogDraft, setCatalogDraft] = useState<CatalogItemDraft>(() => blankCatalogItemDraft());
   const [workspaceView, setWorkspaceView] = useState<"roster" | "builder" | "detail">(props.initialClientId ? "builder" : "roster");
@@ -1287,6 +1289,8 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
     resetComposer();
     setQuoteCreationLine(pickQuoteCreationLine());
     setClientSelectionSaved(false);
+    setQuoteBuilderMode(null);
+    setTemplatePickerOpen(false);
     setClientSelectionMode("existing");
     setPropertySelectionMode("existing");
     setNewPropertyDraft(blankNewPropertyDraft());
@@ -1382,6 +1386,17 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
       depositValue: template.defaultApprovalRules.depositValue ?? 0,
       expiryDate: ""
     }));
+  }
+
+  function startNewQuoteBuilder(): void {
+    setComposer((current) => ({ ...current, templateId: "", items: [] }));
+    setQuoteBuilderMode("new");
+  }
+
+  function startTemplateQuoteBuilder(templateId: string): void {
+    applyTemplate(templateId);
+    setTemplatePickerOpen(false);
+    setQuoteBuilderMode("template");
   }
 
   function updateLine(rowIdValue: string, patch: Partial<QuoteLineDraft>): void {
@@ -1836,6 +1851,19 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             </section>
 
             <section className="nexops-quote-panel">
+              <div className="nexops-quote-setup-body">
+                <section className="nexops-quote-client-hero" aria-label="Quote Builder">
+                  <h3>Quote Builder</h3>
+                  <div className="nexops-quote-choice-tabs" role="tablist" aria-label="Quote builder selection">
+                    <button type="button" role="tab" aria-selected={quoteBuilderMode === "new"} onClick={startNewQuoteBuilder}>Add New</button>
+                    <button type="button" role="tab" aria-selected={quoteBuilderMode === "template"} onClick={() => setTemplatePickerOpen(true)}>From Template</button>
+                  </div>
+                </section>
+              </div>
+            </section>
+
+            {quoteBuilderMode ? <>
+            <section className="nexops-quote-panel">
               <div className="nexops-quote-simple-heading nexops-quote-details-banner">
                 <h3>Quote Details</h3>
                 <span>Set the quote name, then add products or services.</span>
@@ -1917,6 +1945,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             <section className="nexops-quote-final-action">
               <button className="nexops-quote-primary-button" type="button" onClick={() => void saveQuote()} disabled={Boolean(busy) || !canSaveComposer(composer)}>{busy === "save-quote" ? "Saving..." : "Review & Send"}</button>
             </section>
+            </> : null}
           </div>
         </article>
 
@@ -2544,6 +2573,20 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             </div>}
             {newPropertyStatus ? <p className="nexops-form-note">{newPropertyStatus}</p> : null}
             <button className="nexops-quote-primary-button" type="button" onClick={saveClientSelection}>Save Client Selection</button>
+          </div>
+        </section>
+      </div> : null}
+      {templatePickerOpen ? <div className="nexops-modal-layer" role="presentation">
+        <button className="nexops-modal-backdrop" type="button" aria-label="Close quote template selection" onClick={() => setTemplatePickerOpen(false)} />
+        <section className="nexops-modal-card nexops-quote-client-search-modal" role="dialog" aria-modal="true" aria-label="Choose quote template">
+          <div className="nexops-modal-head">
+            <div><p className="eyebrow">Quote Builder</p><h2>Choose a Template</h2></div>
+            <button type="button" onClick={() => setTemplatePickerOpen(false)}>Close</button>
+          </div>
+          <div className="nexops-catalog-picker-list">
+            {templates.length ? templates.map((template) => <button className="nexops-catalog-picker-item" type="button" key={template.id} onClick={() => startTemplateQuoteBuilder(template.id)}>
+              <span><strong>{template.name}</strong><small>{template.description ?? "Start with this saved quote structure."}</small></span>
+            </button>) : <div className="nexops-catalog-picker-empty"><strong>No quote templates yet</strong><small>Create a template in Quote Defaults, or use Add New to start from a blank quote.</small></div>}
           </div>
         </section>
       </div> : null}
