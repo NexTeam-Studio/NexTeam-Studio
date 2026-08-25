@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { AddressLike } from "@nexteam/shared";
-import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
+import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
+import { ModuleHeroCard } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { PaymentScheduleEditor, blankPaymentSchedule, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "./PaymentScheduleEditor";
 import { NexOpsCatalogPicker, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";
 import { invoiceTemplateVariables, type CommunicationTemplateRecord, resolveTemplateDraft } from "../../../../shared/communications/communicationTemplates";
@@ -1259,19 +1260,13 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
 
   return (
     <section className="nexops-module-page">
-      <div className="nexops-page-heading">
-        <div>
-          <NexOpsPageTitle module={props.entryPoint === "payments" ? "payments" : "invoices"}>
-            {props.entryPoint === "payments" ? "Payments" : "Invoices"}
-          </NexOpsPageTitle>
-          <p>Draft, send, collect, recover, and pause at receipt review before anything goes out the door.</p>
-          {clientContext ? <p className="nexops-module-status">Client context: {clientDisplayName(clientContext)}. This rail only shows that client's records and ready-to-invoice jobs.</p> : null}
-        </div>
-        <div className="nexops-inline-actions">
-          <button type="button" onClick={() => void loadWorkspace()} disabled={Boolean(busy)}>Refresh</button>
-          {detail?.invoice ? <a href={`/api/crm/invoices/${encodeURIComponent(detail.invoice.id)}/pdf?tenantId=${encodeURIComponent(props.tenantId)}`} rel="noreferrer" target="_blank">Open PDF</a> : null}
-        </div>
-      </div>
+      <ModuleHeroCard
+        title={props.entryPoint === "payments" ? "Payments" : "Invoices"}
+        detail={clientContext ? `Draft, send, collect, recover, and pause at receipt review before anything goes out the door. Client context: ${clientDisplayName(clientContext)}.` : "Draft, send, collect, recover, and pause at receipt review before anything goes out the door."}
+        icon={<NexOpsNavGlyph module={props.entryPoint === "payments" ? "payments" : "invoices"} />}
+        primaryAction={<button type="button" onClick={() => void loadWorkspace()} disabled={Boolean(busy)}>Refresh</button>}
+        secondaryActions={detail?.invoice ? <a href={`/api/crm/invoices/${encodeURIComponent(detail.invoice.id)}/pdf?tenantId=${encodeURIComponent(props.tenantId)}`} rel="noreferrer" target="_blank">Open PDF</a> : undefined}
+      />
 
       <div className="nexops-workflow-strip">
         <article><span>Draft</span><strong>{counts.draft}</strong><p>Still editable before send.</p></article>

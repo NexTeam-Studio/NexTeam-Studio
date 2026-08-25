@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { ModuleHeroCard } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import {
   NexOpsCatalogEditorModal,
   blankCatalogItemDraft,
@@ -525,12 +527,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
 
   return (
     <section className="nexops-module-page tenant-config-page">
-      <div className="nexops-page-heading">
-        <div>
-          <h1>Settings</h1>
-          <p>One place for tenant catalog, correspondence templates, and the shared office defaults these screens reuse.</p>
-        </div>
-      </div>
+      <ModuleHeroCard title="Settings" detail="One place for tenant catalog, correspondence templates, and the shared office defaults these screens reuse." icon={<NexOpsNavGlyph module="settings" />} />
 
       <div className="nexops-density-inline-facts">
         <article>

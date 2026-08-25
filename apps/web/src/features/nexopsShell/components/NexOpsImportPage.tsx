@@ -1,5 +1,7 @@
 import React from "react";
 import { parseCsvPreview } from "../workspaceSupport";
+import { NexOpsNavGlyph } from "../workspaceSupport";
+import { ModuleHeroCard } from "../../../shared/ui/NexOpsBusinessTemplates";
 
 export function NexOpsImportPage(props: {
   csvStatus: string;
@@ -8,12 +10,7 @@ export function NexOpsImportPage(props: {
   const { csvStatus, setCsvStatus } = props;
   return (
     <section className="nexops-module-page">
-      <div className="nexops-page-heading">
-        <div>
-          <h1>Import & Sync</h1>
-          <p>CSV import for every tenant. Third-party adapters stay dormant unless a future tenant explicitly opts in.</p>
-        </div>
-      </div>
+      <ModuleHeroCard title="Import & Sync" detail="CSV import for every tenant. Third-party adapters stay dormant unless a future tenant explicitly opts in." icon={<NexOpsNavGlyph module="imports" />} />
       <div className="nexops-module-grid">
         <article className="nexops-module-card">
           <p className="eyebrow">CSV import</p>

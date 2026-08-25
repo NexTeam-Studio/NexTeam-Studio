@@ -1,4 +1,6 @@
 import React from "react";
+import { ModuleHeroCard } from "../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsNavGlyph } from "../workspaceSupport";
 import {
   NexopsAccessibleList,
   NexopsActionButton,
@@ -22,13 +24,7 @@ import {
 export function NexOpsPatternLibraryPage(): React.ReactElement {
   return (
     <section className="nexops-pattern-page">
-      <div className="nexops-page-heading">
-        <div>
-          <p className="eyebrow">Track 1</p>
-          <h1>NexOps pattern library</h1>
-          <p>Neutral placeholders only. This is the reusable action, state, and shell language for every later workflow.</p>
-        </div>
-      </div>
+      <ModuleHeroCard eyebrow="Track 1" title="NexOps Pattern Library" detail="Neutral placeholders only. This is the reusable action, state, and shell language for every later workflow." icon={<NexOpsNavGlyph module="patterns" />} />
 
       <NexopsFieldCommandHeader
         customer="Customer name"
