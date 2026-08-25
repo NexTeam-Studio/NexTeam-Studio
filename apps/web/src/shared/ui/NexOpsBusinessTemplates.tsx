@@ -5,17 +5,18 @@ import React from "react";
  * icon, copy, and actions; this component owns the shared hero structure.
  */
 export function ModuleHeroCard(props: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   detail: string;
   icon: React.ReactNode;
   primaryAction?: React.ReactNode;
   secondaryActions?: React.ReactNode;
+  className?: string;
 }): React.ReactElement {
   return (
-    <header className="nexops-business-hero module-hero-card">
+    <header className={`nexops-business-hero module-hero-card${props.className ? ` ${props.className}` : ""}`}>
       <div className="module-hero-card__copy">
-        <p className="nexops-business-eyebrow">{props.eyebrow}</p>
+        {props.eyebrow ? <p className="nexops-business-eyebrow">{props.eyebrow}</p> : null}
         <div className="module-hero-card__title">
           <span className="module-hero-card__icon" aria-hidden="true">{props.icon}</span>
           <h1>{props.title}</h1>
@@ -37,7 +38,7 @@ export function ModuleHeroCard(props: {
  * provide their domain data; this Page Template owns the roster rhythm.
  */
 export function NexOpsRosterTemplate(props: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   detail: string;
   icon?: React.ReactNode;

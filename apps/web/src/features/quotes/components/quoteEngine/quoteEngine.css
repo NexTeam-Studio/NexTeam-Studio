@@ -12,6 +12,14 @@
   gap: 20px;
 }
 
+.quote-engine-page .module-hero-card--quote .module-hero-card__title {
+  justify-content: center;
+}
+
+.quote-engine-page .module-hero-card--quote .module-hero-card__icon {
+  font-size: 1.45em;
+}
+
 .nexops-quote-primary-button {
   min-height: 46px;
   padding: 10px 17px;
