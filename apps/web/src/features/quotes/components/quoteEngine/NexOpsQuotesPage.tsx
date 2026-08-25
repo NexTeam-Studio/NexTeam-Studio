@@ -1120,7 +1120,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const normalizedClientSearch = clientSearch.trim().toLowerCase();
   const clientSearchResults = props.clients.filter((client) => {
     if (!normalizedClientSearch) {
-      return true;
+      return false;
     }
     return [clientDisplayName(client), client.company, ...client.emails, ...client.phones]
       .filter(Boolean)
@@ -1768,7 +1768,6 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             <section className="nexops-quote-panel">
               <div className="nexops-quote-setup-body">
                 <section className="nexops-quote-client-hero" aria-label="Select Client">
-                  <p className="eyebrow">Create Quote</p>
                   <h3>Select Client</h3>
                   <div className="nexops-quote-choice-tabs" role="tablist" aria-label="Client selection">
                     <button type="button" role="tab" aria-selected={clientSelectionMode === "new"} className={clientSelectionMode === "new" ? "active" : ""} onClick={() => { setClientSelectionMode("new"); props.onOpenInlineClientCreate?.(); }}>Add New</button>
@@ -1779,7 +1778,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             </section>
 
             <section className="nexops-quote-panel">
-              <div className="nexops-quote-simple-heading">
+              <div className="nexops-quote-simple-heading nexops-quote-details-banner">
                 <h3>Quote Details</h3>
                 <span>Set the quote name, then add products or services.</span>
               </div>
@@ -2458,7 +2457,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             {clientSearchResults.map((client) => <button className="nexops-catalog-picker-item" type="button" key={client.id} onClick={() => { chooseClient(client.id); setClientPickerOpen(false); setClientSearch(""); }}>
               <span><strong>{clientDisplayName(client)}</strong><small>{[client.emails[0], client.phones[0]].filter(Boolean).join(" · ") || "No email or phone saved"}</small></span>
             </button>)}
-            {!clientSearchResults.length ? <div className="nexops-catalog-picker-empty"><strong>No client matches</strong><small>Keep typing or choose Add New to create a client without leaving this quote.</small></div> : null}
+            {normalizedClientSearch && !clientSearchResults.length ? <div className="nexops-catalog-picker-empty"><strong>No client matches</strong><small>Keep typing or choose Add New to create a client without leaving this quote.</small></div> : null}
           </div>
         </section>
       </div> : null}
