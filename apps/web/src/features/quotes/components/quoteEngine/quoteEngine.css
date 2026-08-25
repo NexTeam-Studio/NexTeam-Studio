@@ -103,8 +103,14 @@
 
 /* The Create Quote Page is deliberately a short, single-column working flow. */
 .quote-engine-page .nexops-quote-composer-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-.quote-engine-page .nexops-quote-composer-card { overflow: visible; border-radius: 24px; }
-.quote-engine-page .nexops-quote-simple-heading { display: grid; gap: 5px; padding: 20px 20px 0; }
+.quote-engine-page .nexops-quote-composer-card { overflow: visible; padding: 0; border: 0; border-radius: 24px; background: transparent; box-shadow: none; }
+.quote-engine-page .nexops-quote-composer-card > .nexops-quote-composer-grid > .nexops-quote-panel { padding: 0; overflow: hidden; }
+.quote-engine-page .nexops-quote-panel > .nexops-quote-simple-heading,
+.quote-engine-page .nexops-quote-panel > .nexops-quote-setup-body,
+.quote-engine-page .nexops-quote-panel > .nexops-quote-line-list,
+.quote-engine-page .nexops-quote-panel > .nexops-catalog-picker-empty,
+.quote-engine-page .nexops-quote-panel > .nexops-quote-pricing-summary { margin-inline: 0; }
+.quote-engine-page .nexops-quote-simple-heading { display: grid; gap: 5px; padding: 24px 24px 0; }
 .quote-engine-page .nexops-quote-simple-heading h3 { margin: 0; color: #102a31; font-size: 1.35rem; }
 .quote-engine-page .nexops-quote-simple-heading span { color: #64727a; font-size: .94rem; line-height: 1.45; }
 .quote-engine-page .nexops-quote-simple-section { padding: 22px; }
@@ -113,6 +119,14 @@
 .quote-engine-page .nexops-quote-final-action { display: grid; padding: 4px 0 0; }
 .quote-engine-page .nexops-quote-final-action .nexops-quote-primary-button { width: min(100%, 460px); justify-self: center; min-height: 56px; font-size: 1.04rem; }
 .quote-engine-page .nexops-quote-line-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@media (max-width: 700px) {
+  .quote-engine-page .nexops-quote-simple-heading { padding: 20px 18px 0; }
+  .quote-engine-page .nexops-quote-setup-body { padding: 18px; }
+  .quote-engine-page .nexops-quote-client-picker,
+  .quote-engine-page .nexops-quote-property-picker,
+  .quote-engine-page .nexops-quote-new-property-form { padding: 16px; }
+}
 
 .nexops-quote-client-create { display: grid; align-content: end; gap: 7px; }
 .nexops-quote-client-create span { color: #52626b; font-size: .8rem; font-weight: 750; }
