@@ -150,6 +150,7 @@
 .quote-engine-page .nexops-quote-client-search-modal > .nexops-field { display: grid; gap: 8px; padding: 18px 22px; }
 .quote-engine-page .nexops-quote-client-search-modal .nexops-catalog-picker-list { padding: 0 22px 22px; }
 .quote-engine-page .nexops-quote-client-search-modal .nexops-catalog-picker-item { width: 100%; min-height: 0; padding: 14px; border: 1px solid rgba(8, 42, 45, .14); border-radius: 14px; background: #fff; color: #102a31; font: inherit; cursor: pointer; }
+.quote-engine-page .nexops-quote-client-search-modal .nexops-quote-template-picker-item { border: 0; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; box-shadow: 0 8px 18px rgba(37, 210, 56, .18); }
 .quote-engine-page .nexops-quote-client-search-modal .nexops-catalog-picker-empty { border: 1px dashed rgba(8, 42, 45, .18); background: #f8fbf7; }
 .nexops-quote-client-search-modal,
 .nexops-quote-client-create-modal,
