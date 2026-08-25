@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import type { Auth, User } from "firebase/auth";
 import { ProductLogo, SidebarBrandStack } from "../../../../../shared/branding/ProductBranding";
 import { NexSuiteHeader } from "../../../../../shared/ui/NexSuiteHeader";
+import "../../../../../shared/ui/nexSuiteHeaderDrawer.css";
 import { signOutOperator } from "../../../../../shared/auth/authBootstrap";
 import { NexCamOverviewSurface } from "../../overview/components/NexCamOverviewSurface";
 import { ChecklistTemplatesSurface } from "../../../../nexdocs/areas/checklists/components/ChecklistTemplatesSurface";
@@ -12,6 +13,7 @@ import { NEXCAM_MODULES, useNexCamWorkspace } from "../hooks/useNexCamWorkspace"
 import "../styles/nexcam.css";
 
 export function NexCamPage(props: { auth: Auth | null; user: User }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const workspace = useNexCamWorkspace(props);
   const {
     activeModule,
@@ -62,15 +64,8 @@ export function NexCamPage(props: { auth: Auth | null; user: User }) {
         </nav>
       </aside>
       <section className="nexops-web-main">
-        <NexSuiteHeader className="nexops-web-topbar" ariaLabel="NexCam header" brand={<div className="nexops-web-brand">
-            <ProductLogo product="nexcam" className="nexops-header-product-logo" alt="NexCam" />
-            <div className="nexops-web-brand-copy">
-              <strong>NexCam</strong>
-              <span>{operatorContext.tenantId}</span>
-            </div>
-        </div>} utilities={<div className="nexops-web-tools">
-          <span>{status}</span><span>{props.user.email ?? "Operator"}</span><button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
-        </div>} />
+        <NexSuiteHeader productName="NexCam" menuOpen={menuOpen} onToggleMenu={() => setMenuOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />
+        {menuOpen ? <nav className="nexsuite__drawer" aria-label="NexCam navigation"><button type="button" onClick={() => { void createChecklist(); setMenuOpen(false); }}>Start Checklist</button>{NEXCAM_MODULES.map((item) => <button key={item.id} type="button" onClick={() => { setModule(item.id); setMenuOpen(false); }}>{item.label}</button>)}</nav> : null}
         {renderActiveModule()}
       </section>
       {<MediaReviewSurface workspace={workspace} />}

@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import type { Auth, User } from "firebase/auth";
 import { ProductInlineLabel, SidebarBrandStack, tenantDisplayName } from "../../../../../shared/branding/ProductBranding";
 import { NexSuiteHeader } from "../../../../../shared/ui/NexSuiteHeader";
+import "../../../../../shared/ui/nexSuiteHeaderDrawer.css";
 import { useNexReach } from "../hooks/useNexReach";
 import "../styles/nexreach.css";
 
 export function NexReachPage(props: { auth: Auth | null; user: User }): React.ReactElement {
+  const [menuOpen, setMenuOpen] = useState(false);
   const {
     copyText,
     draftCopyText,
@@ -62,15 +64,8 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
       </aside>
 
       <section className="nexreach-main">
-        <NexSuiteHeader className="nexreach-header" ariaLabel="NexReach header" brand={<div>
-          <div>
-            <ProductInlineLabel product="nexreach" className="nexreach-inline-label" />
-            <h2>NexReach</h2>
-            <p>{status}</p>
-          </div></div>} utilities={<div className="nexreach-header-actions">
-            <button className="nexreach-ghost-button" type="button" onClick={() => void refreshAll()}>Refresh</button>
-            <button className="nexreach-primary-button" type="button" onClick={() => void issuePortfolioLink()}>Refresh preview link</button>
-          </div>} />
+        <NexSuiteHeader productName="NexReach" menuOpen={menuOpen} onToggleMenu={() => setMenuOpen((current) => !current)} onSignOut={() => void signOutOperator()} />
+        {menuOpen ? <nav className="nexsuite__drawer" aria-label="NexReach navigation"><button type="button" onClick={() => { void refreshAll(); setMenuOpen(false); }}>Refresh</button><button type="button" onClick={() => { void issuePortfolioLink(); setMenuOpen(false); }}>Refresh preview link</button></nav> : null}
 
         <div className="nexreach-grid">
           <section className="nexreach-card">

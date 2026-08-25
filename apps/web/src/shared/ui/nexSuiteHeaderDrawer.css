@@ -1,0 +1,3 @@
+.nexsuite__drawer { position:fixed; top:54px; left:0; z-index:5; width:min(280px,84vw); display:grid; gap:10px; padding:16px 12px; background:#0c1118; box-shadow:18px 0 35px rgba(12,17,24,.28); }
+.nexsuite__drawer button { border:0; border-radius:10px; padding:10px; color:#dce4e0; background:transparent; text-align:left; font:inherit; font-weight:700; }
+.nexsuite__drawer button:hover { color:#0c1118; background:var(--nexteam-gradient,linear-gradient(135deg,#d4ff20,#25d238)); }

@@ -1,7 +1,7 @@
 import React from "react";
 import type { TenantBranding } from "@nexteam/core";
 import { PlatformMark, ProductLogo, TenantBrandMark, hasTenantLogo, productLabel, type ProductBrand } from "../../../shared/branding/ProductBranding";
-import { NexSuiteHeader } from "../../../shared/ui/NexSuiteHeader";
+import { NexTeamProductHeader } from "../../../shared/ui/NexTeamProductHeader";
 
 export function NexOpsSharedMobileBar(props: {
   tenantBranding: TenantBranding | null;
@@ -23,23 +23,7 @@ export function NexOpsSharedMobileBar(props: {
     </div>
   );
   return (
-    <NexSuiteHeader
-      className="nexops-mobile-bar"
-      ariaLabel={`${productLabel(product)} header`}
-      navigation={props.menuControl ? <div className="nexsuite-header__menu-slot">{props.menuControl}</div> : undefined}
-      brand={props.onBrandClick ? (
-        <button className="nexops-mobile-brand-button" type="button" aria-label={props.brandAriaLabel ?? `Open ${productLabel(product)}`} onClick={props.onBrandClick}>
-          {brandLockup}
-        </button>
-      ) : brandLockup}
-      tenantBrand={tenantLogoAvailable ? <TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-mobile-tenant-mark" /> : undefined}
-      utilities={(
-        <>
-          {props.rightControls ? <div className="nexsuite-header__utility-slot">{props.rightControls}</div> : null}
-          {props.signOutControl ? <div className="nexsuite-header__signout-slot">{props.signOutControl}</div> : null}
-        </>
-      )}
-    />
+    <header className="nexops-mobile-bar"><div className="nexops-mobile-header-grid"><div className="nexops-mobile-header-left">{props.onBrandClick ? <button className="nexops-mobile-brand-button" type="button" aria-label={props.brandAriaLabel ?? `Open ${productLabel(product)}`} onClick={props.onBrandClick}>{brandLockup}</button> : brandLockup}</div>{tenantLogoAvailable ? <div className="nexops-mobile-header-center"><TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-mobile-tenant-mark" /></div> : null}<div className="nexops-mobile-header-right"><div className="nexops-mobile-controls">{props.rightControls}</div>{props.secondaryControls ? <div className="nexops-mobile-secondary-controls">{props.secondaryControls}</div> : null}</div></div></header>
   );
 }
 
@@ -56,7 +40,7 @@ export function NexOpsSharedWebTopbar(props: {
   const product = props.product ?? "nexops";
   const tenantLogoAvailable = hasTenantLogo(props.tenantBranding, props.tenantId);
   return (
-    <NexSuiteHeader
+    <NexTeamProductHeader
       className="nexops-web-topbar"
       ariaLabel="NexOps workspace header"
       brand={(

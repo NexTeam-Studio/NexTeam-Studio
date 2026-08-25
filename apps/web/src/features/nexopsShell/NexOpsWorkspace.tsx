@@ -2,6 +2,7 @@ import React, { Suspense, useEffect, useState } from "react";
 import { type Auth, type User } from "firebase/auth";
 import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, hasTenantLogo, tenantDisplayName } from "../../shared/branding/ProductBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./components/NexOpsHeader";
+import { NexSuiteHeader } from "../../shared/ui/NexSuiteHeader";
 import { NexTeamApplicationShell } from "../../shared/ui/NexTeamApplicationShell";
 import { NexOpsCreateMenu } from "./components/NexOpsCreateMenu";
 import { NexOpsNotificationPanel } from "./components/NexOpsNotificationPanel";
@@ -1041,14 +1042,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
         </div>}>
 
       <section className="nexops-web-main">
-        <NexOpsSharedMobileBar
-          tenantBranding={tenantBranding}
-          tenantId={operatorContext.tenantId}
-        onBrandClick={returnToHomeModule}
-        brandAriaLabel="Return to NexOps home"
-        menuControl={<button className="nexops-mobile-menu-button" type="button" aria-expanded={mobileNavOpen} aria-controls="nexops-mobile-nav" aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"} onClick={() => setMobileNavOpen((current) => !current)}><span className="nexops-mobile-menu-glyph" aria-hidden="true"><span /><span /><span /></span><span className="nexops-mobile-menu-label">Menu</span></button>}
-        signOutControl={<button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>}
-        />
+        <NexSuiteHeader productName="NexOps" menuOpen={mobileNavOpen} onToggleMenu={() => setMobileNavOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />
         {mobileNavOpen ? (
           <div className="nexops-mobile-nav-layer" role="presentation">
             <button className="nexops-mobile-nav-backdrop" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />
