@@ -8,6 +8,7 @@ import React from "react";
 export function NexTeamApplicationShell(props: {
   className: string;
   header?: React.ReactNode;
+  hero?: React.ReactNode;
   navigation: React.ReactNode;
   children: React.ReactNode;
   navigationLabel: string;
@@ -17,7 +18,10 @@ export function NexTeamApplicationShell(props: {
     <div className={`nexteam-application-shell nexteam-application-shell--${props.mobileNavigationMode ?? "collapse"} ${props.className}`.trim()}>
       {props.header ?? null}
       <aside className="nexteam-application-shell__navigation" aria-label={props.navigationLabel}>{props.navigation}</aside>
-      <main className="nexteam-application-shell__workspace">{props.children}</main>
+      <main className="nexteam-application-shell__workspace">
+        {props.hero ?? null}
+        {props.children}
+      </main>
     </div>
   );
 }
