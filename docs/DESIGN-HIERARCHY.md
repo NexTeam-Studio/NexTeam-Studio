@@ -16,3 +16,9 @@ Only the specifically named differences (for example, the text label) may be cha
 If following this exactly would break, conflict with, or require removing existing functionality, stop before writing any code and report the conflict for a decision. Do not silently choose which priority wins.
 
 Before reporting any "verbatim" or "identical" task as done, provide a rendered comparison (screenshot or DOM diff) of the original and the copy side by side. A verbal claim of "matches" is not sufficient evidence for this category of task.
+
+### Scope of this rule
+
+The Verbatim Copy Rule applies only to the specific action explicitly requested as a copy, duplication, or identical match. It prevents silent reinterpretation during that action; it does not permanently lock the resulting files together.
+
+Once the duplicated component exists as its own separate file, it is independent. Future normal edits to that component do not require re-duplication, comparison against the original, or changes to the original. For example, a later edit to `NexSuiteHeader` does not require touching or re-verifying `NexCommandHeader` unless a future instruction explicitly requests another copy or identical-match task.
