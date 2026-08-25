@@ -9,6 +9,7 @@ import { NexopsActionButton, NexopsActionRail, NexopsBanner, NexopsProgressStrip
 import { quoteTemplateVariables, resolveTemplateDraft } from "../../../../shared/communications/communicationTemplates";
 import { intakeDetailFacts, prominentIntakeFacts } from "../../../../shared/intake/intakePresentation";
 import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { QUOTE_CREATION_ROTATING_LINES } from "./quoteCreationCopy";
 
 type QuoteStatus =
   | "draft"
@@ -278,6 +279,10 @@ interface SettingsMutationResponse {
   ok: boolean;
   settings?: CrmSettingsRecord;
   error?: string;
+}
+
+function pickQuoteCreationLine(): string {
+  return QUOTE_CREATION_ROTATING_LINES[Math.floor(Math.random() * QUOTE_CREATION_ROTATING_LINES.length)] ?? QUOTE_CREATION_ROTATING_LINES[0];
 }
 
 interface PropertyMutationResponse {
@@ -1089,6 +1094,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [catalogEditorOpen, setCatalogEditorOpen] = useState(false);
   const [catalogDraft, setCatalogDraft] = useState<CatalogItemDraft>(() => blankCatalogItemDraft());
   const [workspaceView, setWorkspaceView] = useState<"roster" | "builder" | "detail">(props.initialClientId ? "builder" : "roster");
+  const [quoteCreationLine, setQuoteCreationLine] = useState(() => pickQuoteCreationLine());
   const [clientSelectionMode, setClientSelectionMode] = useState<"existing" | "new">("existing");
   const [propertySelectionMode, setPropertySelectionMode] = useState<"existing" | "new">("existing");
   const [newPropertyDraft, setNewPropertyDraft] = useState<NewPropertyDraft>(() => blankNewPropertyDraft());
@@ -1248,6 +1254,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
 
   function openBuilder(): void {
     resetComposer();
+    setQuoteCreationLine(pickQuoteCreationLine());
     setClientSelectionMode("existing");
     setPropertySelectionMode("existing");
     setNewPropertyDraft(blankNewPropertyDraft());
@@ -1697,8 +1704,8 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   return (
     <section className="nexops-module-page quote-engine-page">
       <NexOpsRosterTemplate
-        title={workspaceView === "builder" ? "Creating Quote" : "Quotes"}
-        detail={workspaceView === "builder" ? "Choose the client, build the work, and review the price." : "Build clear client-ready proposals, keep pricing in one place, and move the approved work forward."}
+        title={workspaceView === "builder" ? "Create Quote" : "Quotes"}
+        detail={workspaceView === "builder" ? quoteCreationLine : "Build clear client-ready proposals, keep pricing in one place, and move the approved work forward."}
         icon={<NexOpsNavGlyph module="quotes" />}
         heroClassName="module-hero-card--quote"
         primaryAction={workspaceView === "builder" ? undefined : <button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}

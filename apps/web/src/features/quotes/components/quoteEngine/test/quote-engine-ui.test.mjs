@@ -119,6 +119,18 @@ test("quote workspace uses the shared business templates and retains the inline 
   assert.match(source, /propertyId: composer\.propertyId/);
 });
 
+test("Create Quote uses the editable curated rotating helper-copy list", () => {
+  const source = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx"), "utf8");
+  const copy = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/quoteCreationCopy.ts"), "utf8");
+
+  assert.match(source, /title=\{workspaceView === "builder" \? "Create Quote" : "Quotes"\}/);
+  assert.match(source, /detail=\{workspaceView === "builder" \? quoteCreationLine/);
+  assert.match(source, /QUOTE_CREATION_ROTATING_LINES/);
+  assert.equal((copy.match(/^  ".*",?$/gm) ?? []).length, 25);
+  assert.match(copy, /This form has strong opinions about your typing speed\./);
+  assert.match(copy, /The checkbox has never once been checked with confidence\./);
+});
+
 test("quote builder keeps office defaults available without mixing configuration into the primary quote flow", () => {
   const source = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx"), "utf8");
 
