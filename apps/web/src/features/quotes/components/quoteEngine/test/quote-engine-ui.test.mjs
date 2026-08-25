@@ -123,6 +123,11 @@ test("quote workspace uses the shared business templates and retains the inline 
   assert.match(source, /Yes, Save New Line Item/);
   assert.match(source, /Quote Name/);
   assert.match(source, /Search products and services/);
+  assert.match(source, /nexops-quote-client-profile-summary/);
+  assert.match(source, /MobileClientSummaryGlyph kind="phone"/);
+  assert.match(source, /MobileClientSummaryGlyph kind="email"/);
+  assert.match(source, /MobileClientSummaryGlyph kind="directions"/);
+  assert.match(source, /Edit Client/);
 });
 
 test("Create Quote uses the editable curated rotating helper-copy list", () => {
@@ -132,6 +137,7 @@ test("Create Quote uses the editable curated rotating helper-copy list", () => {
   assert.match(source, /title=\{workspaceView === "builder" \? "Create Quote" : "Quotes"\}/);
   assert.match(source, /detail=\{workspaceView === "builder" \? quoteCreationLine/);
   assert.match(source, /QUOTE_CREATION_ROTATING_LINES/);
+  assert.match(source, /module-hero-card--quote/);
   assert.equal((copy.match(/^  ".*",?$/gm) ?? []).length, 25);
   assert.match(copy, /This form has strong opinions about your typing speed\./);
   assert.match(copy, /The checkbox has never once been checked with confidence\./);

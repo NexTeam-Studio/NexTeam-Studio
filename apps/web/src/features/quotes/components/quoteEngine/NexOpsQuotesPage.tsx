@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
-import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
+import { MobileClientEditGlyph, MobileClientSummaryGlyph, NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import type { AddressLike } from "@nexteam/shared";
 import { PaymentScheduleEditor, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "../../../../features/invoices/components/invoiceStructure/PaymentScheduleEditor";
 import { blankCatalogItemDraft, catalogItemFromDraft, NexOpsCatalogEditorModal, NexOpsCatalogPicker, type CatalogItemDraft, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";
@@ -432,6 +432,19 @@ function clientDisplayName(client?: ClientOption): string {
     return client.company;
   }
   return person || client.name;
+}
+
+function propertyDisplayAddress(property?: PropertyOption): string {
+  if (!property) {
+    return "Service property selected";
+  }
+
+  const address = property.address;
+  return [
+    property.siteName ?? property.label,
+    address?.street1,
+    [address?.city, address?.province, address?.postalCode].filter(Boolean).join(", ")
+  ].filter(Boolean).join(" · ") || "Service property selected";
 }
 
 function quoteStatusLabel(status: QuoteStatus): string {
@@ -1781,9 +1794,37 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           <div className="nexops-quote-composer-grid">
             <section className="nexops-quote-panel">
               <div className="nexops-quote-setup-body">
-                {clientSelectionSaved && composerClient ? <section className="nexops-quote-client-summary" aria-label="Client details">
-                  <div><span>Client Details</span><h3>{clientDisplayName(composerClient)}</h3><p>{composerProperty?.siteName ?? composerProperty?.label ?? composerProperty?.address?.street1 ?? "Service property selected"}</p></div>
-                  <button type="button" onClick={() => { setClientSelectionSaved(false); setClientSelectionMode("existing"); }}>Edit</button>
+                {clientSelectionSaved && composerClient ? <section className="nexops-quote-client-profile-summary" aria-label="Client details">
+                  <button className="nexops-quote-client-profile-back-bubble" type="button" onClick={() => { setClientSelectionSaved(false); setClientSelectionMode("existing"); }}>
+                    ← Change Client
+                  </button>
+                  <div className="nexops-quote-client-profile-summary-head">
+                    <h3>{clientDisplayName(composerClient)}</h3>
+                    <button className="nexops-quote-client-profile-edit-button" type="button" aria-label="Edit selected client" onClick={() => { setClientSelectionSaved(false); setClientSelectionMode("existing"); }}>
+                      <MobileClientEditGlyph />
+                    </button>
+                  </div>
+                  <div className="nexops-quote-client-profile-contact-rail">
+                    {composerClient.phones[0] ? <a className="nexops-quote-client-profile-contact-link" href={`tel:${composerClient.phones[0]}`}>
+                      <span className="nexops-quote-client-profile-contact-icon"><MobileClientSummaryGlyph kind="phone" /></span>
+                      <span>{composerClient.phones[0]}</span>
+                    </a> : null}
+                    {composerClient.emails[0] ? <a className="nexops-quote-client-profile-contact-link" href={`mailto:${composerClient.emails[0]}`}>
+                      <span className="nexops-quote-client-profile-contact-icon"><MobileClientSummaryGlyph kind="email" /></span>
+                      <span>{composerClient.emails[0]}</span>
+                    </a> : null}
+                    <span className="nexops-quote-client-profile-contact-link">
+                      <span className="nexops-quote-client-profile-contact-icon"><MobileClientSummaryGlyph kind="directions" /></span>
+                      <span>{propertyDisplayAddress(composerProperty)}</span>
+                    </span>
+                  </div>
+                  <div className="nexops-quote-client-balance-row">
+                    <span>Client balance</span>
+                    <strong>{money(0)}</strong>
+                  </div>
+                  <button className="nexops-quote-client-profile-create-button" type="button" onClick={() => { setClientSelectionSaved(false); setClientSelectionMode("existing"); }}>
+                    Edit Client
+                  </button>
                 </section> : <section className="nexops-quote-client-hero" aria-label="Select Client">
                   <h3>Select Client</h3>
                   <div className="nexops-quote-choice-tabs" role="tablist" aria-label="Client selection">
