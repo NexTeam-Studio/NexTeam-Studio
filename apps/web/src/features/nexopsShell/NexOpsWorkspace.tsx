@@ -1042,7 +1042,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
         </div>}>
 
       <section className="nexops-web-main">
-        <NexSuiteHeader productName="NexOps" menuOpen={mobileNavOpen} onToggleMenu={() => setMobileNavOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />
+        <NexSuiteHeader product="nexops" menuOpen={mobileNavOpen} onToggleMenu={() => setMobileNavOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />
         {mobileNavOpen ? (
           <div className="nexops-mobile-nav-layer" role="presentation">
             <button className="nexops-mobile-nav-backdrop" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />

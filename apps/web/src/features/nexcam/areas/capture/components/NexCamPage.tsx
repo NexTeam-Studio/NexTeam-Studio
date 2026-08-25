@@ -64,7 +64,7 @@ export function NexCamPage(props: { auth: Auth | null; user: User }) {
         </nav>
       </aside>
       <section className="nexops-web-main">
-        <NexSuiteHeader productName="NexCam" menuOpen={menuOpen} onToggleMenu={() => setMenuOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />
+        <NexSuiteHeader product="nexcam" menuOpen={menuOpen} onToggleMenu={() => setMenuOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />
         {menuOpen ? <nav className="nexsuite__drawer" aria-label="NexCam navigation"><button type="button" onClick={() => { void createChecklist(); setMenuOpen(false); }}>Start Checklist</button>{NEXCAM_MODULES.map((item) => <button key={item.id} type="button" onClick={() => { setModule(item.id); setMenuOpen(false); }}>{item.label}</button>)}</nav> : null}
         {renderActiveModule()}
       </section>

@@ -64,7 +64,7 @@ export function NexReachPage(props: { auth: Auth | null; user: User }): React.Re
       </aside>
 
       <section className="nexreach-main">
-        <NexSuiteHeader productName="NexReach" menuOpen={menuOpen} onToggleMenu={() => setMenuOpen((current) => !current)} onSignOut={() => void signOutOperator()} />
+        <NexSuiteHeader product="nexreach" menuOpen={menuOpen} onToggleMenu={() => setMenuOpen((current) => !current)} onSignOut={() => void signOutOperator()} />
         {menuOpen ? <nav className="nexsuite__drawer" aria-label="NexReach navigation"><button type="button" onClick={() => { void refreshAll(); setMenuOpen(false); }}>Refresh</button><button type="button" onClick={() => { void issuePortfolioLink(); setMenuOpen(false); }}>Refresh preview link</button></nav> : null}
 
         <div className="nexreach-grid">
