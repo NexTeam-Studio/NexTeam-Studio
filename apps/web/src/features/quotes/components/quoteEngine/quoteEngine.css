@@ -119,6 +119,29 @@
 .quote-engine-page .nexops-quote-final-action { display: grid; padding: 4px 0 0; }
 .quote-engine-page .nexops-quote-final-action .nexops-quote-primary-button { width: min(100%, 460px); justify-self: center; min-height: 56px; font-size: 1.04rem; }
 .quote-engine-page .nexops-quote-line-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.quote-engine-page .nexops-quote-client-hero {
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+  border-radius: 20px;
+  background: linear-gradient(118deg, #071923, #073b40 58%, #08723a);
+  color: #fff;
+}
+.quote-engine-page .nexops-quote-client-hero .eyebrow { margin: 0; color: #d4ff20; }
+.quote-engine-page .nexops-quote-client-hero h3 { margin: 0; color: #d4ff20; font-size: clamp(1.75rem, 6vw, 2.3rem); }
+.quote-engine-page .nexops-quote-client-hero .nexops-quote-choice-tabs button { border-color: rgba(255, 255, 255, .26); background: rgba(255, 255, 255, .96); }
+.quote-engine-page .nexops-quote-line-search > div { display: grid; grid-template-columns: minmax(0, 1fr) 52px; gap: 8px; }
+.quote-engine-page .nexops-quote-line-search button { border: 0; border-radius: 14px; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; font: inherit; font-size: 1.65rem; font-weight: 850; cursor: pointer; }
+.nexops-quote-client-search-modal,
+.nexops-quote-client-create-modal,
+.nexops-quote-property-modal,
+.nexops-quote-confirm-modal { width: min(640px, calc(100vw - 32px)); max-height: min(82vh, 760px); overflow: auto; }
+.nexops-quote-client-create-modal { padding: 0; }
+.nexops-quote-client-create-modal .nexops-client-form-page { border: 0; border-radius: 0; box-shadow: none; }
+.nexops-quote-confirm-modal { display: grid; gap: 16px; padding: 26px; }
+.nexops-quote-confirm-modal .eyebrow,
+.nexops-quote-confirm-modal h2,
+.nexops-quote-confirm-modal p { margin: 0; }
 
 @media (max-width: 700px) {
   .quote-engine-page .nexops-quote-simple-heading { padding: 20px 18px 0; }
@@ -126,6 +149,7 @@
   .quote-engine-page .nexops-quote-client-picker,
   .quote-engine-page .nexops-quote-property-picker,
   .quote-engine-page .nexops-quote-new-property-form { padding: 16px; }
+  .quote-engine-page .nexops-quote-client-hero { padding: 20px 18px; }
 }
 
 .nexops-quote-client-create { display: grid; align-content: end; gap: 7px; }

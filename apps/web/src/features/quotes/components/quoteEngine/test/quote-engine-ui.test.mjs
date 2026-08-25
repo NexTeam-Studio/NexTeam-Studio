@@ -117,6 +117,12 @@ test("quote workspace uses the shared business templates and retains the inline 
   assert.match(source, /Save New Property/);
   assert.match(source, /Gate code needed/);
   assert.match(source, /propertyId: composer\.propertyId/);
+  assert.match(source, /Find Existing Client/);
+  assert.match(source, /Type a client name, email, or phone/);
+  assert.match(source, /Save as New Line Item\?/);
+  assert.match(source, /Yes, Save New Line Item/);
+  assert.match(source, /Quote Name/);
+  assert.match(source, /Search products and services/);
 });
 
 test("Create Quote uses the editable curated rotating helper-copy list", () => {
