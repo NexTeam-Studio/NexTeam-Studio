@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
+import { ModuleHeroCard } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { isImportedHistoryRecord } from "./domain/clientProfile";
 import {
   clientRosterStatusLabel,
@@ -53,18 +54,17 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
 
   return (
     <section className="nexops-clients-workspace">
-      <div className="nexops-clients-heading">
-        <div className="nexops-clients-heading-copy">
-          <span className="nexops-clients-heading-eyebrow">NexOps Client Manager</span>
-          <h1 className="nexops-page-title-with-icon"><NexOpsNavGlyph module="clients" /><span>Clients</span></h1>
-          <p>{props.status} Open any row to move into the full Client workspace.</p>
-        </div>
-        <div className="nexops-client-actions">
-          <button type="button" onClick={props.onNewClient}>New Client</button>
+      <ModuleHeroCard
+        eyebrow="NexOps Client Manager"
+        title="Clients"
+        detail={`${props.status} Open any row to move into the full Client workspace.`}
+        icon={<NexOpsNavGlyph module="clients" />}
+        primaryAction={<button className="nexops-client-primary-action" type="button" onClick={props.onNewClient}>New Client</button>}
+        secondaryActions={<div className="nexops-client-actions">
           <button type="button" onClick={props.onImport}>Import CSV</button>
           <button type="button" onClick={props.onRefresh}>Refresh</button>
-        </div>
-      </div>
+        </div>}
+      />
 
       <div className="nexops-client-stats" aria-label="Client metrics">
         <article><span>Active Clients</span><strong>{props.activeCount}</strong><small>Native NexOps</small></article>

@@ -1,28 +1,62 @@
 import React from "react";
 
 /**
+ * Shared Layout Part for roster Pages. Consumers supply their own module
+ * icon, copy, and actions; this component owns the shared hero structure.
+ */
+export function ModuleHeroCard(props: {
+  eyebrow: string;
+  title: string;
+  detail: string;
+  icon: React.ReactNode;
+  primaryAction?: React.ReactNode;
+  secondaryActions?: React.ReactNode;
+}): React.ReactElement {
+  return (
+    <header className="nexops-business-hero module-hero-card">
+      <div className="module-hero-card__copy">
+        <p className="nexops-business-eyebrow">{props.eyebrow}</p>
+        <div className="module-hero-card__title">
+          <span className="module-hero-card__icon" aria-hidden="true">{props.icon}</span>
+          <h1>{props.title}</h1>
+        </div>
+        <p>{props.detail}</p>
+      </div>
+      {props.primaryAction || props.secondaryActions ? (
+        <div className="nexops-business-hero-action module-hero-card__actions">
+          {props.primaryAction}
+          {props.secondaryActions}
+        </div>
+      ) : null}
+    </header>
+  );
+}
+
+/**
  * Shared visual structure for primary NexOps business rails. Object modules
- * provide their domain data; this layer owns the familiar page rhythm.
+ * provide their domain data; this Page Template owns the roster rhythm.
  */
 export function NexOpsRosterTemplate(props: {
   eyebrow: string;
   title: string;
   detail: string;
+  icon?: React.ReactNode;
   metrics?: React.ReactNode;
   controls?: React.ReactNode;
   primaryAction?: React.ReactNode;
+  secondaryActions?: React.ReactNode;
   children: React.ReactNode;
 }): React.ReactElement {
   return (
     <section className="nexops-business-template nexops-roster-template">
-      <header className="nexops-business-hero">
-        <div>
-          <p className="nexops-business-eyebrow">{props.eyebrow}</p>
-          <h1>{props.title}</h1>
-          <p>{props.detail}</p>
-        </div>
-        {props.primaryAction ? <div className="nexops-business-hero-action">{props.primaryAction}</div> : null}
-      </header>
+      <ModuleHeroCard
+        eyebrow={props.eyebrow}
+        title={props.title}
+        detail={props.detail}
+        icon={props.icon ?? null}
+        primaryAction={props.primaryAction}
+        secondaryActions={props.secondaryActions}
+      />
       {props.metrics ? <div className="nexops-business-metrics">{props.metrics}</div> : null}
       {props.controls ? <div className="nexops-business-controls">{props.controls}</div> : null}
       <div className="nexops-business-content">{props.children}</div>

@@ -3,6 +3,7 @@ import { useAuthSession } from "../../../shared/auth/AuthSessionProvider";
 import { PlatformMark } from "../../../shared/branding/ProductBranding";
 import { NexCommandHeader } from "../../../shared/ui/NexCommandHeader";
 import { NexTeamApplicationShell } from "../../../shared/ui/NexTeamApplicationShell";
+import { ModuleHeroCard } from "../../../shared/ui/NexOpsBusinessTemplates";
 import { TenantOverviewPanel } from "../../tenantOverview/components/TenantOverviewPanel";
 import { useTenantOverview } from "../../tenantOverview/hooks/useTenantOverview";
 import { PlatformProspectIntakePanel } from "../components/PlatformProspectIntakePanel";
@@ -73,7 +74,7 @@ function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOv
   if (props.area === "dashboard") return <><section className="nexcommand__metrics"><Metric label="Active tenants" value={String(props.summary.active)} /><Metric label="Tenant records" value={String(props.summary.tenants)} /><Metric label="Pilot package" value="$0.00" /><Metric label="Staging health" value="Connected" /></section><section className="nexcommand__panel"><h2>Operator overview</h2><p>Use NexCommand to manage verified tenant onboarding and platform operations. Metrics appear only when the platform provides the underlying data.</p><a href="/nexcommand?area=team">Open Team</a></section></>;
   if (props.area === "live-status") return <LiveBuildStatusPanel user={props.user} />;
   if (props.area === "team") return <PlatformSettingsPanel user={props.user} />;
-  if (props.area === "tenants") return <section className="nexcommand__panel tenant-roster-panel"><div className="tenant-roster-panel__banner"><div><p className="ui-eyebrow">NexCommand tenant administration</p><h2>Tenant Roster</h2><p>Each tenant has one profile. View details to manage its business profile and review secure access.</p></div><span>{props.rows.length} Active Profiles</span></div><TenantOverviewPanel rows={props.rows} onViewDetails={props.onViewTenant} /></section>;
+  if (props.area === "tenants") return <section className="nexcommand__panel tenant-roster-panel"><ModuleHeroCard eyebrow="NexCommand tenant administration" title="Tenant Roster" detail="Each tenant has one profile. View details to manage its business profile and review secure access." icon={<span className="tenant-roster-panel__icon">{nexCommandNavigation.find(([key]) => key === "tenants")?.[2]}</span>} primaryAction={<span className="tenant-roster-panel__active-profiles">{props.rows.length} Active Profiles</span>} /><TenantOverviewPanel rows={props.rows} onViewDetails={props.onViewTenant} /></section>;
   if (props.area === "prospects") return <PlatformProspectIntakePanel user={props.user} />;
   if (props.area === "subscriptions") return <PlatformSubscriptionCatalogPanel user={props.user} />;
   if (props.area === "blueprints") return <PlatformLifecycleRecordsPanel user={props.user} mode="blueprints" />;

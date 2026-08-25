@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
+import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import type { AddressLike } from "@nexteam/shared";
 import { PaymentScheduleEditor, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "../../../../features/invoices/components/invoiceStructure/PaymentScheduleEditor";
 import { blankCatalogItemDraft, catalogItemFromDraft, NexOpsCatalogEditorModal, NexOpsCatalogPicker, type CatalogItemDraft, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";
@@ -1589,6 +1590,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         eyebrow="NexOps Commercial"
         title="Quotes"
         detail="Build clear client-ready proposals, keep pricing in one place, and move the approved work forward."
+        icon={<NexOpsNavGlyph module="quotes" />}
         primaryAction={<button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
         metrics={<div className="nexops-workflow-strip">
         <article>
