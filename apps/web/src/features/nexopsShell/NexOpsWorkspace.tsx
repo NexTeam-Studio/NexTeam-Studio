@@ -1040,7 +1040,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
 
       <section className="nexops-web-main">
         <NexSuiteHeader product="nexops" menuOpen={mobileNavOpen} onToggleMenu={() => setMobileNavOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />
-        {mobileNavOpen ? <NexSuiteSidebar id="nexops-mobile-nav" items={nexOpsSidebarItems} open onSelect={() => setMobileNavOpen(false)} /> : null}
+        {mobileNavOpen ? <NexSuiteSidebar id="nexops-mobile-nav" items={nexOpsSidebarItems} open onClose={() => setMobileNavOpen(false)} onSelect={() => setMobileNavOpen(false)} /> : null}
         <NexOpsMobileCreateFab
           collapsed={mobileCreateFabCollapsed}
           expanded={createMenuOpen}
