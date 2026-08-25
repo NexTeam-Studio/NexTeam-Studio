@@ -13,7 +13,8 @@ import { PlatformMigrationsPanel } from "../components/PlatformMigrationsPanel";
 import { PlatformSettingsPanel } from "../components/PlatformSettingsPanel";
 import { NexCommandTenantProfilePanel } from "../components/NexCommandTenantProfilePanel";
 import { PlatformTenantOnboardingPanel } from "../components/PlatformTenantOnboardingPanel";
-import { NexCommandSidebar, nexCommandNavigation, type NexCommandArea } from "../components/NexCommandSidebar";
+import { nexCommandNavigation, type NexCommandArea } from "../components/NexCommandSidebar";
+import { NexSuiteSidebar, type NexSuiteSidebarItem } from "../../../shared/ui/NexSuiteSidebar";
 import { TemplatesRoster } from "../components/TemplatesRoster";
 import { usePlatformPlans } from "../hooks/usePlatformPlans";
 import { usePathname } from "../../../shared/router/usePathname";
@@ -37,6 +38,8 @@ function areaFromLocation(): Area {
   return nexCommandNavigation.some(([area]) => area === requested) ? requested as Area : "dashboard";
 }
 
+function liveStatusTone(state: string): "green" | "yellow" | "red" { return state === "COMPLETE" || state === "SUCCEEDED" || state === "IDLE" ? "green" : state === "FAILED" || state === "STALLED" || state === "BLOCKED" ? "red" : "yellow"; }
+
 export function NexCommandRoute(): React.ReactElement {
   const { signOut, user } = useAuthSession();
   const pathname = usePathname();
@@ -55,13 +58,14 @@ export function NexCommandRoute(): React.ReactElement {
     setSelectedTenantId(null);
     setArea(next);
   }
+  const nexCommandSidebarItems: NexSuiteSidebarItem[] = nexCommandNavigation.map(([key, label, icon]) => ({ id: key, label, icon, active: key === area, trailing: key === "live-status" ? <b className={`nexsuite-sidebar__status nexsuite-sidebar__status--${liveStatusTone(liveState)}`} aria-label={`Live build status: ${liveState}`} /> : undefined, onSelect: () => selectArea(key) }));
 
   return <NexTeamApplicationShell
     className="nexcommand"
     navigationLabel="NexCommand navigation"
     mobileNavigationMode="drawer"
     header={<NexCommandHeader menuOpen={open} onToggleMenu={() => setOpen((value) => !value)} onSignOut={() => void signOut()} />}
-    navigation={<NexCommandSidebar area={area} open={open} liveState={liveState} onSelect={(next) => { selectArea(next); setOpen(false); }} />}
+    navigation={<NexSuiteSidebar items={nexCommandSidebarItems} open={open} onClose={() => setOpen(false)} onSelect={() => setOpen(false)} />}
   ><section className="nexcommand__workspace"><section className="nexcommand__heading"><div><p className="ui-eyebrow">NexTeam internal operations</p><h1>{selectedTenantId ? "Tenant details" : nexCommandNavigation.find(([key]) => key === area)?.[1]}</h1><p>{user?.email ?? "Authorized NexTeam operator"}</p></div><span className="nexcommand__health">Staging connected</span></section>{issue ? <p className="nexcommand__notice">{issue}</p> : null}{selectedTenantId ? <NexCommandTenantProfilePanel user={user} tenantId={selectedTenantId} onBack={() => { void refreshTenantRoster(); window.history.pushState({}, "", "/nexcommand?area=tenants"); setArea("tenants"); setSelectedTenantId(null); }} /> : <NexCommandArea area={area} rows={rows} workingTenant={workingTenant} onRunBackup={runBackup} onRunLifecycle={runLifecycle} user={user} summary={summary} onViewTenant={(tenantId) => { window.history.pushState({}, "", `/nexcommand?area=tenants&tenant=${encodeURIComponent(tenantId)}`); setSelectedTenantId(tenantId); }} />}</section></NexTeamApplicationShell>;
 }
 
