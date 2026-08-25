@@ -870,7 +870,7 @@ body.nexops-mobile-nav-open {
 .nexops-page-heading button,
 .nexops-inline-actions button,
 .nexops-drawer-actions button,
-.nexops-module-card a {
+.nexops-module-card a:not(.nexops-mobile-profile-contact-link) {
   border: 0;
   border-radius: 999px;
   padding: 12px 15px;
