@@ -36,13 +36,28 @@ const templatesRoot: TemplateNavigationNode = {
         }, {
           id: "sidebar",
           label: "Sidebar",
-          description: "Current NexCommand Sidebar reference specimen.",
+          description: "Reusable NexSuite Sidebar Layout Part.",
           href: "/design-system/layout-parts/sidebar"
+        }, {
+          id: "module-hero-card",
+          label: "Module Hero Card",
+          description: "Shared Page introduction Layout Part.",
+          href: "/design-system/layout-parts/module-hero-card"
         }, {
           id: "application-shell",
           label: "Application Shell",
-          description: "Future Global review item.",
-          disabled: true
+          description: "Shared Page Template with the Hero slot.",
+          href: "/design-system/page-templates/application-shell"
+        }, {
+          id: "nexops-roster-template",
+          label: "NexOps Roster Template",
+          description: "Shared roster Page Template.",
+          href: "/design-system/page-templates/nexops-roster-template"
+        }, {
+          id: "nexops-detail-template",
+          label: "NexOps Detail Template",
+          description: "Shared detail Page Template.",
+          href: "/design-system/page-templates/nexops-detail-template"
         }, {
           id: "footer",
           label: "Footer",

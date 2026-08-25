@@ -1,0 +1,22 @@
+.template-review-page,
+.template-review-application-shell { min-height: 100%; padding: 32px; color: #0c1118; background: #edf3ee; }
+.template-review-page__intro { width: min(100%, 980px); margin: 0 auto 22px; }
+.template-review-page__intro h1,
+.template-review-page__intro h2,
+.template-review-page__intro p { margin: 0; }
+.template-review-page__intro h1 { margin-top: 4px; color: #0c1825; font-size: clamp(1.65rem, 4vw, 3.25rem); line-height: 1; overflow-wrap: anywhere; }
+.template-review-page__intro h2 { margin-top: 14px; font-size: clamp(1.2rem, 2.5vw, 1.85rem); }
+.template-review-page__intro > p:last-child { margin-top: 10px; color: #526055; line-height: 1.5; }
+.template-review-page > .nexops-business-template,
+.template-review-page__specimen { width: min(100%, 980px); margin: 0 auto; }
+.template-review-page__specimen { padding: 24px; border: 1px solid rgba(12, 17, 24, .12); border-radius: 28px; background: rgba(255,255,255,.78); box-shadow: 0 18px 54px rgba(12,17,24,.12); }
+.template-review-chrome__topbar,
+.template-review-shell-specimen__topbar { min-height: 64px; padding: 10px 18px; color: #f7faf8; background: linear-gradient(135deg, #0c1118, #151b24); }
+.template-review-chrome__brand { display: flex; align-items: center; gap: 10px; font-weight: 900; }.template-review-chrome__brand .platform-mark { width: 32px; height: 32px; }
+.template-review-chrome__navigation { padding: 18px 12px; background: #0c1118; }.template-review-chrome__navigation a { color: #d4ff20; font-weight: 800; text-decoration: none; }
+.template-review-metric { padding: 16px; border: 1px solid rgba(12,17,24,.09); border-radius: 18px; background: #fff; }.template-review-metric span { display: block; color: #526055; }.template-review-metric strong { display: block; margin-top: 4px; font-size: 2rem; }
+.template-review-controls { display: flex; flex-wrap: wrap; gap: 8px; }.template-review-controls button,.template-review-controls input { min-height: 40px; border: 1px solid rgba(12,17,24,.14); border-radius: 999px; padding: 8px 14px; background: #fff; font: inherit; }.template-review-controls input { min-width: 180px; }
+.template-review-content-card,.template-review-shell-specimen__content { padding: 22px; border: 1px solid rgba(12,17,24,.1); border-radius: 22px; background: #fff; }.template-review-content-card h2,.template-review-content-card p,.template-review-shell-specimen__content h2,.template-review-shell-specimen__content p { margin: 0; }.template-review-content-card p,.template-review-shell-specimen__content p { margin-top: 8px; color: #526055; line-height: 1.5; }
+.template-review-status { display: inline-flex; padding: 7px 11px; border-radius: 999px; color: #0d4828; background: #d8ffdf; font-weight: 850; }
+.template-review-application-shell { min-height: 100vh; }.template-review-application-shell > .template-review-page__intro { width: min(100%, 1120px); }.template-review-shell-specimen { width: min(100%, 1120px); min-height: 560px; margin: 0 auto; border: 1px solid rgba(12,17,24,.12); border-radius: 28px; overflow: hidden; box-shadow: 0 18px 54px rgba(12,17,24,.12); }.template-review-shell-specimen .nexteam-application-shell__workspace { padding: 24px; background: #f4f7f2; }.template-review-shell-specimen .module-hero-card { margin-bottom: 18px; }
+@media (max-width: 880px) { .template-review-page,.template-review-application-shell { padding: 24px 16px; }.template-review-shell-specimen { border-radius: 20px; }.template-review-shell-specimen .nexteam-application-shell__workspace { padding: 16px; } }
