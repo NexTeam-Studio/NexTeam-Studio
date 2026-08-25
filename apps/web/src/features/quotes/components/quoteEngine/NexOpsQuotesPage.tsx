@@ -1949,7 +1949,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           </div>
         </article>
 
-        <details hidden className="nexops-quote-panel nexops-density-disclosure-panel nexops-quote-builder-settings">
+        {quoteBuilderMode ? <details hidden className="nexops-quote-panel nexops-density-disclosure-panel nexops-quote-builder-settings">
           <summary>
             <div className="nexops-density-disclosure-copy">
               <h3>Quote defaults and templates</h3>
@@ -2065,7 +2065,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             <p>Quote defaults are still loading.</p>
           )}
         </article>
-      </details>
+      </details> : null}
       </div>
 
       ) : null}
