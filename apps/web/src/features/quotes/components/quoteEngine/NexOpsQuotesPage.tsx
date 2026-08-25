@@ -1095,6 +1095,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
   const [propertyPickerOpen, setPropertyPickerOpen] = useState(false);
+  const [clientSelectionSaved, setClientSelectionSaved] = useState(false);
   const [catalogEditorOpen, setCatalogEditorOpen] = useState(false);
   const [catalogDraft, setCatalogDraft] = useState<CatalogItemDraft>(() => blankCatalogItemDraft());
   const [workspaceView, setWorkspaceView] = useState<"roster" | "builder" | "detail">(props.initialClientId ? "builder" : "roster");
@@ -1201,6 +1202,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
     setClientPickerOpen(false);
     setClientSearch("");
     setPropertyPickerOpen(true);
+    setClientSelectionSaved(false);
     setWorkspaceView("builder");
     props.onInlineCreatedClientHandled?.();
   }, [props.inlineCreatedClientId]);
@@ -1271,6 +1273,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   function openBuilder(): void {
     resetComposer();
     setQuoteCreationLine(pickQuoteCreationLine());
+    setClientSelectionSaved(false);
     setClientSelectionMode("existing");
     setPropertySelectionMode("existing");
     setNewPropertyDraft(blankNewPropertyDraft());
@@ -1285,6 +1288,17 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
     setNewPropertyDraft(blankNewPropertyDraft());
     setNewPropertyStatus("");
     setPropertyPickerOpen(true);
+    setClientSelectionSaved(false);
+  }
+
+  function saveClientSelection(): void {
+    if (!composer.clientId || !composer.propertyId) {
+      setNewPropertyStatus("Choose or save a service property before continuing.");
+      return;
+    }
+    setNewPropertyStatus("");
+    setClientSelectionSaved(true);
+    setPropertyPickerOpen(false);
   }
 
   async function createPropertyForQuote(): Promise<void> {
@@ -1767,13 +1781,16 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           <div className="nexops-quote-composer-grid">
             <section className="nexops-quote-panel">
               <div className="nexops-quote-setup-body">
-                <section className="nexops-quote-client-hero" aria-label="Select Client">
+                {clientSelectionSaved && composerClient ? <section className="nexops-quote-client-summary" aria-label="Client details">
+                  <div><span>Client Details</span><h3>{clientDisplayName(composerClient)}</h3><p>{composerProperty?.siteName ?? composerProperty?.label ?? composerProperty?.address?.street1 ?? "Service property selected"}</p></div>
+                  <button type="button" onClick={() => { setClientSelectionSaved(false); setClientSelectionMode("existing"); }}>Edit</button>
+                </section> : <section className="nexops-quote-client-hero" aria-label="Select Client">
                   <h3>Select Client</h3>
                   <div className="nexops-quote-choice-tabs" role="tablist" aria-label="Client selection">
                     <button type="button" role="tab" aria-selected={clientSelectionMode === "new"} className={clientSelectionMode === "new" ? "active" : ""} onClick={() => { setClientSelectionMode("new"); props.onOpenInlineClientCreate?.(); }}>Add New</button>
                     <button type="button" role="tab" aria-selected={clientSelectionMode === "existing"} className={clientSelectionMode === "existing" ? "active" : ""} onClick={() => { setClientSelectionMode("existing"); setClientSearch(""); setClientPickerOpen(true); }}>Existing</button>
                   </div>
-                </section>
+                </section>}
               </div>
             </section>
 
@@ -2471,7 +2488,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
               <button type="button" role="tab" aria-selected={propertySelectionMode === "existing"} className={propertySelectionMode === "existing" ? "active" : ""} onClick={() => setPropertySelectionMode("existing")}>Existing Property</button>
               <button type="button" role="tab" aria-selected={propertySelectionMode === "new"} className={propertySelectionMode === "new" ? "active" : ""} onClick={() => setPropertySelectionMode("new")}>New Property</button>
             </div>
-            {propertySelectionMode === "existing" ? <label className="nexops-field"><span>Property</span><select value={composer.propertyId} onChange={(event) => { setComposer((current) => ({ ...current, propertyId: event.target.value })); if (event.target.value) setPropertyPickerOpen(false); }} disabled={!composerProperties.length}><option value="">{composerProperties.length ? "Select Service Property" : "No saved properties"}</option>{composerProperties.map((property) => <option value={property.id} key={property.id}>{property.siteName ?? property.label ?? property.address?.line1 ?? property.id}</option>)}</select></label> : <div className="nexops-quote-new-property-form">
+            {propertySelectionMode === "existing" ? <label className="nexops-field"><span>Property</span><select value={composer.propertyId} onChange={(event) => setComposer((current) => ({ ...current, propertyId: event.target.value }))} disabled={!composerProperties.length}><option value="">{composerProperties.length ? "Select Service Property" : "No saved properties"}</option>{composerProperties.map((property) => <option value={property.id} key={property.id}>{property.siteName ?? property.label ?? property.address?.line1 ?? property.id}</option>)}</select></label> : <div className="nexops-quote-new-property-form">
               <div className="nexops-request-builder-grid">
                 <label className="nexops-field"><span>Property Name</span><input value={newPropertyDraft.siteName} placeholder="e.g. Northside Pool" onChange={(event) => setNewPropertyDraft((current) => ({ ...current, siteName: event.target.value }))} /></label>
                 <label className="nexops-field"><span>Property Address</span><input value={newPropertyDraft.street1} placeholder="Street address" onChange={(event) => setNewPropertyDraft((current) => ({ ...current, street1: event.target.value }))} /></label>
@@ -2484,6 +2501,8 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
               {newPropertyStatus ? <p className="nexops-form-note">{newPropertyStatus}</p> : null}
               <button className="nexops-quote-primary-button" type="button" onClick={() => void createPropertyForQuote()} disabled={newPropertyBusy}>{newPropertyBusy ? "Saving Property..." : "Save New Property"}</button>
             </div>}
+            {newPropertyStatus ? <p className="nexops-form-note">{newPropertyStatus}</p> : null}
+            <button className="nexops-quote-primary-button" type="button" onClick={saveClientSelection}>Save Client Selection</button>
           </div>
         </section>
       </div> : null}
