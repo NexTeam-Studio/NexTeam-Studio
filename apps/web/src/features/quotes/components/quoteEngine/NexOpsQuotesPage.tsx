@@ -1697,12 +1697,12 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   return (
     <section className="nexops-module-page quote-engine-page">
       <NexOpsRosterTemplate
-        title="Quotes"
-        detail="Build clear client-ready proposals, keep pricing in one place, and move the approved work forward."
+        title={workspaceView === "builder" ? "Creating Quote" : "Quotes"}
+        detail={workspaceView === "builder" ? "Choose the client, build the work, and review the price." : "Build clear client-ready proposals, keep pricing in one place, and move the approved work forward."}
         icon={<NexOpsNavGlyph module="quotes" />}
         heroClassName="module-hero-card--quote"
-        primaryAction={<button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
-        metrics={<div className="nexops-workflow-strip">
+        primaryAction={workspaceView === "builder" ? undefined : <button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
+        metrics={workspaceView === "builder" ? undefined : <div className="nexops-workflow-strip">
         <article>
           <span>Draft</span>
           <strong>{counts.draft}</strong>
@@ -1729,7 +1729,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           <p>Renew to rotate the link.</p>
         </article>
         </div>}
-        controls={<div className="nexops-quote-template-tabs" role="tablist" aria-label="Quote workspace">
+        controls={workspaceView === "builder" ? undefined : <div className="nexops-quote-template-tabs" role="tablist" aria-label="Quote workspace">
           <button type="button" className={workspaceView === "roster" ? "active" : ""} aria-current={workspaceView === "roster" ? "page" : undefined} onClick={() => setWorkspaceView("roster")}>Quote Roster</button>
           <button type="button" className={workspaceView === "builder" ? "active" : ""} aria-current={workspaceView === "builder" ? "page" : undefined} onClick={openBuilder}>Quote Builder</button>
           <button type="button" className={workspaceView === "detail" ? "active" : ""} aria-current={workspaceView === "detail" ? "page" : undefined} onClick={() => setWorkspaceView("detail")} disabled={!selectedQuote}>Quote Details</button>
@@ -1740,23 +1740,9 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
 
       <div className="nexops-module-grid nexops-module-grid-wide">
         <article className="nexops-module-card nexops-quote-composer-card">
-          <div className="nexops-page-heading">
-            <div>
-              <p className="eyebrow">Single-Page Composer</p>
-              <h2>{composer.editingQuoteId ? "Edit Quote" : "Build a Quote"}</h2>
-            </div>
-            <div className="nexops-inline-actions">
-              {composer.editingQuoteId ? <button type="button" onClick={() => resetComposer(composer.templateId)} disabled={Boolean(busy)}>Stop Editing</button> : null}
-              <button type="button" onClick={() => void saveQuote()} disabled={Boolean(busy) || !canSaveComposer(composer)}>
-                {busy === "save-quote" ? "Saving..." : composer.editingQuoteId ? "Save Changes" : "Save Draft"}
-              </button>
-              <button type="button" className="nexops-quote-primary-button" onClick={() => void saveQuote()} disabled={Boolean(busy) || !canSaveComposer(composer)}>Review &amp; Send</button>
-            </div>
-          </div>
-
           <div className="nexops-quote-composer-grid">
             <section className="nexops-quote-panel">
-              <div className="nexops-quote-section-head">
+              <div className="nexops-quote-simple-heading">
                 <h3>Quote setup</h3>
                 <span>{composer.editingQuoteId ? "Loaded from an existing quote." : "Start with the job title and client."}</span>
               </div>
@@ -1822,17 +1808,10 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                   </div> : null}
                 </div>
               </div>
-              <div className="nexops-quote-summary-pills">
-                <span>{composerClient ? clientDisplayName(composerClient) : "No Client Selected"}</span>
-                <span>{composerProperty ? (composerProperty.siteName ?? composerProperty.label ?? composerProperty.address?.line1 ?? "Selected service location") : composerClient?.billingAddress ? "Billing location on file" : "Choose a service location later"}</span>
-                <span>{selectedTemplate?.name ?? "Manual Build"}</span>
-                <span>{selectedSalesperson?.displayName ?? "Salesperson Not Assigned"}</span>
-                <span>{draftTotals.total ? `${money(draftTotals.total)} Preview Total` : "No Total Yet"}</span>
-              </div>
             </section>
 
             <section className="nexops-quote-panel">
-              <div className="nexops-quote-section-head">
+              <div className="nexops-quote-simple-heading">
                 <h3>Line Items</h3>
                 <div className="nexops-inline-actions">
                   <button className="nexops-quote-primary-button" type="button" onClick={() => setCatalogPickerOpen(true)}>Add Product or Service</button>
@@ -1848,16 +1827,6 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
               <div className="nexops-quote-line-list">
                 {composer.items.map((item) => (
                   <div className="nexops-quote-line-card" key={item.rowId}>
-                    <div className="nexops-request-builder-grid">
-                      <label className="nexops-field">
-                        <span>Catalog Code</span>
-                        <input value={item.catalogCode || item.code} readOnly />
-                      </label>
-                      <label className="nexops-field">
-                        <span>Saved Source</span>
-                        <input value={item.kind === "catalog" ? "Catalog Item" : "Manual Line"} disabled />
-                      </label>
-                    </div>
                     <div className="nexops-request-builder-grid">
                       <label className="nexops-field">
                         <span>Name</span>
@@ -1877,14 +1846,6 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                         <span>Unit Price</span>
                         <input type="number" min="0" step="0.01" value={item.unitPrice} onChange={(event) => updateLine(item.rowId, { unitPrice: Math.max(0, Number(event.target.value || 0)) })} />
                       </label>
-                      <label className="nexops-check-field inline">
-                        <input type="checkbox" checked={item.clientSelectable} onChange={(event) => updateLine(item.rowId, { clientSelectable: event.target.checked })} />
-                        Client can opt in later
-                      </label>
-                      <label className="nexops-check-field inline">
-                        <input type="checkbox" checked={item.defaultSelected} onChange={(event) => updateLine(item.rowId, { defaultSelected: event.target.checked })} />
-                        Selected by default
-                      </label>
                     </div>
                     <div className="nexops-quote-line-footer">
                       <strong>{money(roundMoney(item.quantity * item.unitPrice))}</strong>
@@ -1902,140 +1863,29 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
               </div>
             </section>
 
-            <section className="nexops-quote-panel">
-              <div className="nexops-quote-section-head">
-                <h3>Approval Rules</h3>
-                <span>Client approval must satisfy these. Internal approval can bypass them later.</span>
-              </div>
-              <div className="nexops-quote-toggle-grid">
-                <label className="nexops-check-field inline">
-                  <input type="checkbox" checked={composer.requireSignature} onChange={(event) => setComposer((current) => ({ ...current, requireSignature: event.target.checked }))} />
-                  Require Signature
-                </label>
-                <label className="nexops-check-field inline">
-                  <input type="checkbox" checked={composer.requireDeposit} onChange={(event) => setComposer((current) => ({ ...current, requireDeposit: event.target.checked }))} />
-                  Require Deposit
-                </label>
-                <label className="nexops-check-field inline">
-                  <input type="checkbox" checked={composer.requireCardOnFile} onChange={(event) => setComposer((current) => ({ ...current, requireCardOnFile: event.target.checked }))} />
-                  Require Card on File
-                </label>
-              </div>
-              {composer.requireDeposit || composer.requireCardOnFile ? (
-                <div className="nexops-request-builder-grid">
-                  <label className="nexops-field">
-                    <span>Deposit Type</span>
-                    <select value={composer.depositKind} onChange={(event) => setComposer((current) => ({ ...current, depositKind: event.target.value as DepositKind }))}>
-                      <option value="amount">Flat amount</option>
-                      <option value="percent">Percent</option>
-                    </select>
-                  </label>
-                  <label className="nexops-field">
-                    <span>Deposit Value</span>
-                    <input type="number" min="0" step="0.01" value={composer.depositValue} onChange={(event) => setComposer((current) => ({ ...current, depositValue: Math.max(0, Number(event.target.value || 0)) }))} />
-                  </label>
-                </div>
-              ) : null}
-              <p className="nexops-form-note">{approvalSummary({
-                requireSignature: composer.requireSignature,
-                requireDeposit: composer.requireDeposit,
-                requireCardOnFile: composer.requireCardOnFile,
-                depositKind: composer.depositKind,
-                depositValue: composer.depositValue
-              })}</p>
+            <section className="nexops-quote-panel nexops-quote-simple-section">
+              <h3>Client Message</h3>
+              <label className="nexops-field">
+                <span>Message for the client</span>
+                <textarea rows={4} value={composer.deliveryNote} onChange={(event) => setComposer((current) => ({ ...current, deliveryNote: event.target.value }))} placeholder="Optional message included with this quote" />
+              </label>
             </section>
 
             <section className="nexops-quote-panel">
-              <div className="nexops-quote-section-head">
-                <h3>Expiry and Terms</h3>
-                <span>Leave expiry blank to use the template or tenant default.</span>
-              </div>
-              <div className="nexops-request-builder-grid">
-                <label className="nexops-field">
-                  <span>Expiry Date Override</span>
-                  <input type="date" value={composer.expiryDate} onChange={(event) => setComposer((current) => ({ ...current, expiryDate: event.target.value }))} />
-                </label>
-                <label className="nexops-field">
-                  <span>Tax Rate (%)</span>
-                  <input type="number" min="0" step="0.01" value={composer.taxRate} onChange={(event) => setComposer((current) => ({ ...current, taxRate: Math.max(0, Number(event.target.value || 0)) }))} />
-                </label>
-              </div>
-              <div className="nexops-request-builder-grid">
-                <label className="nexops-field">
-                  <span>Discount Kind</span>
-                  <select value={composer.discountKind} onChange={(event) => setComposer((current) => ({ ...current, discountKind: event.target.value as DiscountKind }))}>
-                    <option value="amount">Flat amount</option>
-                    <option value="percent">Percent</option>
-                  </select>
-                </label>
-                <label className="nexops-field">
-                  <span>Discount Value</span>
-                  <input type="number" min="0" step="0.01" value={composer.discountValue} onChange={(event) => setComposer((current) => ({ ...current, discountValue: Math.max(0, Number(event.target.value || 0)) }))} />
-                </label>
-              </div>
+              <h3>Contract / Disclaimer</h3>
               <label className="nexops-field">
                 <span>Terms and Disclaimer</span>
                 <textarea rows={6} value={composer.terms} onChange={(event) => setComposer((current) => ({ ...current, terms: event.target.value }))} />
               </label>
-              <PaymentScheduleEditor
-                value={composer.paymentSchedule}
-                onChange={(paymentSchedule) => setComposer((current) => ({ ...current, paymentSchedule }))}
-                title="Payment Schedule"
-                hint="Set deposit and milestone billing now, then edit it again later from the job or invoice side."
-              />
             </section>
 
-            <section className="nexops-quote-panel">
-              <div className="nexops-quote-section-head">
-                <h3>Send</h3>
-                <span>Email, SMS, or mark sent without an electronic delivery.</span>
-              </div>
-              <div className="nexops-request-builder-grid">
-                <label className="nexops-field">
-                  <span>Delivery Mode</span>
-                  <select value={composer.deliveryMode} onChange={(event) => setComposer((current) => ({ ...current, deliveryMode: event.target.value as DeliveryMode }))}>
-                    <option value="draft">Save as Draft</option>
-                    <option value="email">Create and Email</option>
-                    <option value="sms">Create and Text</option>
-                    <option value="mark_sent">Create and Mark Sent</option>
-                  </select>
-                </label>
-                <label className="nexops-field">
-                  <span>Target</span>
-                  <input
-                    value={composer.deliveryTarget}
-                    onChange={(event) => setComposer((current) => ({ ...current, deliveryTarget: event.target.value }))}
-                    placeholder={composer.deliveryMode === "sms" ? (composerClient?.phones[0] ?? "Use client phone") : (composerClient?.emails[0] ?? "Use client email")}
-                  />
-                </label>
-              </div>
-              <label className="nexops-field">
-                <span>Internal Note</span>
-                <input value={composer.deliveryNote} onChange={(event) => setComposer((current) => ({ ...current, deliveryNote: event.target.value }))} placeholder="Optional delivery context" />
-              </label>
-              <div className="nexops-quote-totals">
-                <article>
-                  <span>Subtotal</span>
-                  <strong>{money(draftTotals.subtotal)}</strong>
-                </article>
-                <article>
-                  <span>Discount</span>
-                  <strong>{money(draftTotals.discount ?? 0)}</strong>
-                </article>
-                <article>
-                  <span>Tax</span>
-                  <strong>{money(draftTotals.tax)}</strong>
-                </article>
-                <article>
-                  <span>Total</span>
-                  <strong>{money(draftTotals.total)}</strong>
-                </article>
-              </div>
+            <section className="nexops-quote-final-action">
+              <button className="nexops-quote-primary-button" type="button" onClick={() => void saveQuote()} disabled={Boolean(busy) || !canSaveComposer(composer)}>{busy === "save-quote" ? "Saving..." : "Review & Send"}</button>
             </section>
           </div>
         </article>
 
-        <details className="nexops-quote-panel nexops-density-disclosure-panel nexops-quote-builder-settings">
+        <details hidden className="nexops-quote-panel nexops-density-disclosure-panel nexops-quote-builder-settings">
           <summary>
             <div className="nexops-density-disclosure-copy">
               <h3>Quote defaults and templates</h3>

@@ -101,6 +101,19 @@
 .nexops-quote-pricing-summary__total { margin: 4px -1px; border: 0 !important; background: rgba(7, 36, 40, .08); font-weight: 850; }
 .nexops-quote-pricing-summary__total strong { font-size: 1.3rem; }
 
+/* The Create Quote Page is deliberately a short, single-column working flow. */
+.quote-engine-page .nexops-quote-composer-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.quote-engine-page .nexops-quote-composer-card { overflow: visible; border-radius: 24px; }
+.quote-engine-page .nexops-quote-simple-heading { display: grid; gap: 5px; padding: 20px 20px 0; }
+.quote-engine-page .nexops-quote-simple-heading h3 { margin: 0; color: #102a31; font-size: 1.35rem; }
+.quote-engine-page .nexops-quote-simple-heading span { color: #64727a; font-size: .94rem; line-height: 1.45; }
+.quote-engine-page .nexops-quote-simple-section { padding: 22px; }
+.quote-engine-page .nexops-quote-simple-section h3,
+.quote-engine-page .nexops-quote-panel > h3 { margin: 0; color: #102a31; font-size: 1.15rem; }
+.quote-engine-page .nexops-quote-final-action { display: grid; padding: 4px 0 0; }
+.quote-engine-page .nexops-quote-final-action .nexops-quote-primary-button { width: min(100%, 460px); justify-self: center; min-height: 56px; font-size: 1.04rem; }
+.quote-engine-page .nexops-quote-line-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
 .nexops-quote-client-create { display: grid; align-content: end; gap: 7px; }
 .nexops-quote-client-create span { color: #52626b; font-size: .8rem; font-weight: 750; }
 .nexops-quote-client-create button { min-height: 42px; border: 1px solid rgba(37,210,56,.32); border-radius: 999px; background: rgba(212,255,32,.12); color: #164d26; font: inherit; font-weight: 800; cursor: pointer; }
