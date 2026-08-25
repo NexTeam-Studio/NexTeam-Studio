@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
 import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import { NexDocsClientWorkspace } from "../../../nexdocs/areas/clientWorkspace/components/NexDocsClientWorkspace";
 import { visitCanBeCompleted } from "./visitCompletion";
 
@@ -878,6 +879,7 @@ export function NexOpsSchedulePage(props: {
         eyebrow="Field schedule"
         title="Visits"
         detail="Place approved work on the board, shift future visits cleanly, and keep unscheduled jobs visible."
+        icon={<NexOpsNavGlyph module="schedule" />}
         primaryAction={<button className="nexops-primary-inline-button" type="button" onClick={() => openComposer()}>New Visit</button>}
         metrics={(
           <>

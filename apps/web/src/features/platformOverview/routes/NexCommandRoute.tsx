@@ -14,7 +14,7 @@ import { PlatformMigrationsPanel } from "../components/PlatformMigrationsPanel";
 import { PlatformSettingsPanel } from "../components/PlatformSettingsPanel";
 import { NexCommandTenantProfilePanel } from "../components/NexCommandTenantProfilePanel";
 import { PlatformTenantOnboardingPanel } from "../components/PlatformTenantOnboardingPanel";
-import { nexCommandNavigation, type NexCommandArea } from "../components/NexCommandSidebar";
+import { NexCommandNavGlyph, nexCommandNavigation, type NexCommandArea } from "../components/NexCommandSidebar";
 import { NexSuiteSidebar, type NexSuiteSidebarItem } from "../../../shared/ui/NexSuiteSidebar";
 import { TemplatesRoster } from "../components/TemplatesRoster";
 import { usePlatformPlans } from "../hooks/usePlatformPlans";
@@ -59,11 +59,11 @@ export function NexCommandRoute(): React.ReactElement {
     setSelectedTenantId(null);
     setArea(next);
   }
-  const nexCommandSidebarItems: NexSuiteSidebarItem[] = nexCommandNavigation.map(([key, label, icon]) => ({ id: key, label, icon, active: key === area, trailing: key === "live-status" ? <b className={`nexsuite-sidebar__status nexsuite-sidebar__status--${liveStatusTone(liveState)}`} aria-label={`Live build status: ${liveState}`} /> : undefined, onSelect: () => selectArea(key) }));
+  const nexCommandSidebarItems: NexSuiteSidebarItem[] = nexCommandNavigation.map(([key, label]) => ({ id: key, label, icon: <NexCommandNavGlyph area={key} />, active: key === area, trailing: key === "live-status" ? <b className={`nexsuite-sidebar__status nexsuite-sidebar__status--${liveStatusTone(liveState)}`} aria-label={`Live build status: ${liveState}`} /> : undefined, onSelect: () => selectArea(key) }));
   const navigationEntry = nexCommandNavigation.find(([key]) => key === area) ?? nexCommandNavigation[0];
   const heroTitle = selectedTenantId ? "Tenant details" : navigationEntry[1];
   const heroDetail = selectedTenantId ? "Review this tenant profile, subscription, and secure access." : `Manage ${navigationEntry[1].toLowerCase()} for NexTeam internal operations.`;
-  const hero = <ModuleHeroCard eyebrow="NexCommand" title={heroTitle} detail={heroDetail} icon={<span>{selectedTenantId ? "◫" : navigationEntry[2]}</span>} />;
+  const hero = <ModuleHeroCard eyebrow="NexCommand" title={heroTitle} detail={heroDetail} icon={<NexCommandNavGlyph area={selectedTenantId ? "tenants" : navigationEntry[0]} />} primaryAction={area === "tenants" && !selectedTenantId ? <span className="tenant-roster-panel__active-profiles">{rows.length} Active Profiles</span> : undefined} />;
 
   return <NexTeamApplicationShell
     className="nexcommand"
@@ -79,7 +79,7 @@ function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOv
   if (props.area === "dashboard") return <><section className="nexcommand__metrics"><Metric label="Active tenants" value={String(props.summary.active)} /><Metric label="Tenant records" value={String(props.summary.tenants)} /><Metric label="Pilot package" value="$0.00" /><Metric label="Staging health" value="Connected" /></section><section className="nexcommand__panel"><h2>Operator overview</h2><p>Use NexCommand to manage verified tenant onboarding and platform operations. Metrics appear only when the platform provides the underlying data.</p><a href="/nexcommand?area=team">Open Team</a></section></>;
   if (props.area === "live-status") return <LiveBuildStatusPanel user={props.user} />;
   if (props.area === "team") return <PlatformSettingsPanel user={props.user} />;
-  if (props.area === "tenants") return <section className="nexcommand__panel tenant-roster-panel"><ModuleHeroCard eyebrow="NexCommand tenant administration" title="Tenant Roster" detail="Each tenant has one profile. View details to manage its business profile and review secure access." icon={<span className="tenant-roster-panel__icon">{nexCommandNavigation.find(([key]) => key === "tenants")?.[2]}</span>} primaryAction={<span className="tenant-roster-panel__active-profiles">{props.rows.length} Active Profiles</span>} /><TenantOverviewPanel rows={props.rows} onViewDetails={props.onViewTenant} /></section>;
+  if (props.area === "tenants") return <section className="nexcommand__panel tenant-roster-panel"><TenantOverviewPanel rows={props.rows} onViewDetails={props.onViewTenant} /></section>;
   if (props.area === "prospects") return <PlatformProspectIntakePanel user={props.user} />;
   if (props.area === "subscriptions") return <PlatformSubscriptionCatalogPanel user={props.user} />;
   if (props.area === "blueprints") return <PlatformLifecycleRecordsPanel user={props.user} mode="blueprints" />;

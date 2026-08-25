@@ -1,6 +1,7 @@
 import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
 import React, { useEffect, useMemo, useState } from "react";
 import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 
 type RequestStatus = "new" | "archived" | "converted_to_quote" | "converted_to_job";
 const REQUEST_FILTERS: Array<{ value: "all" | RequestStatus; label: string }> = [
@@ -862,10 +863,11 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   }
 
   return (
-    <NexOpsRosterTemplate
-      eyebrow="NexOps Intake"
-      title="Requests"
-      detail="Capture, review, and move verified service requests into quotes or jobs without losing their client and property context."
+      <NexOpsRosterTemplate
+        eyebrow="NexOps Intake"
+        title="Requests"
+        detail="Capture, review, and move verified service requests into quotes or jobs without losing their client and property context."
+        icon={<NexOpsNavGlyph module="requests" />}
       primaryAction={(
         <div className="nexops-inline-actions">
           <button type="button" onClick={() => void refresh()} disabled={Boolean(actionBusy)}>Refresh</button>

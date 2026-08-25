@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import type { Address } from "@nexteam/shared";
 import {
   PaymentScheduleEditor,
@@ -1721,6 +1722,7 @@ export function NexOpsJobsPage(props: {
         eyebrow="Job Engine"
         title="Jobs"
         detail="Manage active work, visits, reminders, documents, and closeout from one connected operational rail."
+        icon={<NexOpsNavGlyph module="jobs" />}
         primaryAction={<button type="button" onClick={() => document.getElementById("nexops-new-job-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}>New Job</button>}
         metrics={<>
           <article><span>Upcoming</span><strong>{filterCounts.Upcoming}</strong><small>Scheduled work</small></article>
