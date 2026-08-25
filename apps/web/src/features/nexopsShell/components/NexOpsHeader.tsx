@@ -7,7 +7,9 @@ export function NexOpsSharedMobileBar(props: {
   tenantBranding: TenantBranding | null;
   tenantId: string;
   product?: ProductBrand;
-  rightControls: React.ReactNode;
+  menuControl?: React.ReactNode;
+  signOutControl?: React.ReactNode;
+  rightControls?: React.ReactNode;
   secondaryControls?: React.ReactNode;
   onBrandClick?: () => void;
   brandAriaLabel?: string;
@@ -21,35 +23,23 @@ export function NexOpsSharedMobileBar(props: {
     </div>
   );
   return (
-    <header className="nexops-mobile-bar">
-      <div className="nexops-mobile-header-grid">
-        <div className="nexops-mobile-header-left">
-          {props.onBrandClick ? (
-            <button
-              className="nexops-mobile-brand-button"
-              type="button"
-              aria-label={props.brandAriaLabel ?? `Open ${productLabel(product)}`}
-              onClick={props.onBrandClick}
-            >
-              {brandLockup}
-            </button>
-          ) : brandLockup}
-        </div>
-        {tenantLogoAvailable ? <div className="nexops-mobile-header-center">
-          <TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-mobile-tenant-mark" />
-        </div> : null}
-        <div className="nexops-mobile-header-right">
-          <div className="nexops-mobile-controls">
-            {props.rightControls}
-          </div>
-          {props.secondaryControls ? (
-            <div className="nexops-mobile-secondary-controls">
-              {props.secondaryControls}
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </header>
+    <NexSuiteHeader
+      className="nexops-mobile-bar"
+      ariaLabel={`${productLabel(product)} header`}
+      navigation={props.menuControl ? <div className="nexsuite-header__menu-slot">{props.menuControl}</div> : undefined}
+      brand={props.onBrandClick ? (
+        <button className="nexops-mobile-brand-button" type="button" aria-label={props.brandAriaLabel ?? `Open ${productLabel(product)}`} onClick={props.onBrandClick}>
+          {brandLockup}
+        </button>
+      ) : brandLockup}
+      tenantBrand={tenantLogoAvailable ? <TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-mobile-tenant-mark" /> : undefined}
+      utilities={(
+        <>
+          {props.rightControls ? <div className="nexsuite-header__utility-slot">{props.rightControls}</div> : null}
+          {props.signOutControl ? <div className="nexsuite-header__signout-slot">{props.signOutControl}</div> : null}
+        </>
+      )}
+    />
   );
 }
 

@@ -33,14 +33,15 @@
     position: sticky;
     top: 0;
     z-index: 8;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-    padding: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: linear-gradient(120deg, rgba(7, 14, 20, 0.98) 0%, rgba(10, 31, 35, 0.98) 58%, rgba(14, 84, 87, 0.96) 100%);
+    display: flex;
+    min-height: 109px;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 0;
+    border-radius: 20px 20px 0 0;
+    background: linear-gradient(135deg, #080d14 0%, #111a24 100%);
     backdrop-filter: blur(12px);
-    overflow: clip;
+    box-shadow: 0 12px 30px rgba(1, 10, 15, 0.16);
   }
 
   .nexops-mobile-nav-layer {
@@ -49,6 +50,85 @@
 
   .nexops-web-topbar.nexteam-product-header {
     display: none;
+  }
+
+  .nexops-mobile-bar .nexteam-product-header__navigation {
+    flex: 0 0 auto;
+  }
+
+  .nexops-mobile-bar .nexsuite-header__menu-slot,
+  .nexops-mobile-bar .nexsuite-header__menu-slot > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nexops-mobile-bar .nexsuite-header__menu-slot > button {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: #0c1825;
+    background: linear-gradient(135deg, #d4ff20, #25d238);
+    box-shadow: 0 8px 20px rgba(112, 224, 44, 0.22);
+  }
+
+  .nexops-mobile-bar .nexops-mobile-menu-glyph {
+    gap: 4px;
+  }
+
+  .nexops-mobile-bar .nexops-mobile-menu-glyph span {
+    width: 21px;
+    height: 2.5px;
+  }
+
+  .nexops-mobile-bar .nexteam-product-header__brand {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .nexops-mobile-bar .nexops-mobile-brand-button {
+    min-height: 56px;
+  }
+
+  .nexops-mobile-bar .nexops-mobile-brand-lockup {
+    gap: 12px;
+  }
+
+  .nexops-mobile-bar .nexops-mobile-platform-mark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .nexops-mobile-bar .nexops-mobile-product-logo {
+    width: 126px;
+    max-height: 32px;
+  }
+
+  .nexops-mobile-bar .nexteam-product-header__tenant,
+  .nexops-mobile-bar .nexsuite-header__utility-slot {
+    display: none;
+  }
+
+  .nexops-mobile-bar .nexteam-product-header__utilities {
+    flex: 0 0 auto;
+    margin-left: 0;
+  }
+
+  .nexops-mobile-bar .nexsuite-header__signout-slot > button {
+    min-width: 134px;
+    min-height: 78px;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 999px;
+    color: #0c1825;
+    background: linear-gradient(135deg, #d4ff20, #25d238);
+    font-size: 1.08rem;
+    font-weight: 900;
+    line-height: 1.05;
+    box-shadow: 0 10px 24px rgba(112, 224, 44, 0.18);
   }
 
   .nexops-dashboard,

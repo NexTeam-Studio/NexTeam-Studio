@@ -1044,48 +1044,10 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
         <NexOpsSharedMobileBar
           tenantBranding={tenantBranding}
           tenantId={operatorContext.tenantId}
-          onBrandClick={returnToHomeModule}
-          brandAriaLabel="Return to NexOps home"
-          rightControls={(
-            <>
-              <button
-                className="nexops-mobile-icon-button"
-                type="button"
-                aria-label="Open camera capture"
-                onClick={() => {
-                  if (captureSession) {
-                    openCaptureWorkspace("session");
-                    return;
-                  }
-                  void startCaptureSession();
-                }}
-              >
-                <NexOpsNavGlyph module="capture" />
-              </button>
-              <button className="nexops-mobile-icon-button nexops-notification-button" type="button" aria-expanded={notificationsOpen} aria-label="Open notifications" onClick={toggleNotifications}>
-                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 3.7a3.1 3.1 0 0 0-3.1 3.1v1.3c0 .8-.3 1.6-.8 2.2l-.9 1v.8h9.6v-.8l-.9-1c-.5-.6-.8-1.4-.8-2.2V6.8A3.1 3.1 0 0 0 10 3.7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                  <path d="M8.3 14.7a1.8 1.8 0 0 0 3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                </svg>
-                {notificationUnreadCount ? <span className="nexops-notification-badge">{notificationUnreadCount}</span> : null}
-              </button>
-              <button
-                className="nexops-mobile-menu-button"
-                type="button"
-                aria-expanded={mobileNavOpen}
-                aria-controls="nexops-mobile-nav"
-                aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"}
-                onClick={() => setMobileNavOpen((current) => !current)}
-              >
-                <span className="nexops-mobile-menu-glyph" aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                </span>
-                <span className="nexops-mobile-menu-label">Menu</span>
-              </button>
-            </>
-          )}
+        onBrandClick={returnToHomeModule}
+        brandAriaLabel="Return to NexOps home"
+        menuControl={<button className="nexops-mobile-menu-button" type="button" aria-expanded={mobileNavOpen} aria-controls="nexops-mobile-nav" aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"} onClick={() => setMobileNavOpen((current) => !current)}><span className="nexops-mobile-menu-glyph" aria-hidden="true"><span /><span /><span /></span><span className="nexops-mobile-menu-label">Menu</span></button>}
+        signOutControl={<button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>}
         />
         {mobileNavOpen ? (
           <div className="nexops-mobile-nav-layer" role="presentation">
