@@ -1590,7 +1590,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         title="Quotes"
         detail="Build clear client-ready proposals, keep pricing in one place, and move the approved work forward."
         icon={<NexOpsNavGlyph module="quotes" />}
-        className="module-hero-card--quote"
+        heroClassName="module-hero-card--quote"
         primaryAction={<button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
         metrics={<div className="nexops-workflow-strip">
         <article>

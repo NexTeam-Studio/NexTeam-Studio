@@ -46,6 +46,7 @@ export function NexOpsRosterTemplate(props: {
   controls?: React.ReactNode;
   primaryAction?: React.ReactNode;
   secondaryActions?: React.ReactNode;
+  heroClassName?: string;
   children: React.ReactNode;
 }): React.ReactElement {
   return (
@@ -57,6 +58,7 @@ export function NexOpsRosterTemplate(props: {
         icon={props.icon ?? null}
         primaryAction={props.primaryAction}
         secondaryActions={props.secondaryActions}
+        className={props.heroClassName}
       />
       {props.metrics ? <div className="nexops-business-metrics">{props.metrics}</div> : null}
       {props.controls ? <div className="nexops-business-controls">{props.controls}</div> : null}
