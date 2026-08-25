@@ -17,9 +17,9 @@ export function NexOpsSharedMobileBar(props: {
   const product = props.product ?? "nexops";
   const tenantLogoAvailable = hasTenantLogo(props.tenantBranding, props.tenantId);
   const brandLockup = (
-    <div className="nexops-mobile-brand-lockup">
-      <PlatformMark className="nexops-mobile-platform-mark" alt="NexTeam" />
-      <ProductLogo product={product} className="nexops-mobile-product-logo" alt={productLabel(product)} />
+    <div className="nexsuite-header__brand-lockup">
+      <PlatformMark className="nexsuite-header__platform-mark" alt="NexTeam" />
+      <span className="nexsuite-header__brand-name">{productLabel(product)}</span>
     </div>
   );
   return (

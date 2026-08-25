@@ -39,14 +39,12 @@
     top: 0;
     z-index: 8;
     display: flex;
-    min-height: 109px;
-    gap: 16px;
-    padding: 14px 16px;
-    border: 0;
+    gap: 14px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px 20px 0 0;
-    background: linear-gradient(135deg, #080d14 0%, #111a24 100%);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 12px 30px rgba(1, 10, 15, 0.16);
+    color: #f7faf8;
+    background: linear-gradient(135deg, #0c1118, #151b24);
   }
 
   .nexops-mobile-nav-layer {
@@ -69,24 +67,21 @@
   }
 
   .nexops-mobile-bar .nexsuite-header__menu-slot > button {
-    width: 56px;
-    height: 56px;
-    min-width: 56px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
+    border: 1px solid rgba(212, 255, 32, 0.6);
+    border-radius: 999px;
+    padding: 8px 12px;
     color: #0c1825;
-    background: linear-gradient(135deg, #d4ff20, #25d238);
-    box-shadow: 0 8px 20px rgba(112, 224, 44, 0.22);
+    background: var(--nexteam-gradient, linear-gradient(135deg, #d4ff20, #25d238));
+    font-weight: 800;
   }
 
   .nexops-mobile-bar .nexops-mobile-menu-glyph {
-    gap: 4px;
+    gap: 3px;
   }
 
   .nexops-mobile-bar .nexops-mobile-menu-glyph span {
-    width: 21px;
-    height: 2.5px;
+    width: 15px;
+    height: 2px;
   }
 
   .nexops-mobile-bar .nexteam-product-header__brand {
@@ -94,22 +89,32 @@
     min-width: 0;
   }
 
-  .nexops-mobile-bar .nexops-mobile-brand-button {
-    min-height: 56px;
+  .nexops-mobile-bar .nexsuite-header__brand-lockup {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
   }
 
-  .nexops-mobile-bar .nexops-mobile-brand-lockup {
-    gap: 12px;
+  .nexops-mobile-bar .nexsuite-header__platform-mark {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
   }
 
-  .nexops-mobile-bar .nexops-mobile-platform-mark {
-    width: 42px;
-    height: 42px;
-  }
-
-  .nexops-mobile-bar .nexops-mobile-product-logo {
-    width: 126px;
-    max-height: 32px;
+  .nexops-mobile-bar .nexsuite-header__brand-name {
+    display: block;
+    width: 144px;
+    height: 27px;
+    flex: 0 1 144px;
+    overflow: hidden;
+    color: #d4ff20;
+    font-size: 1.15rem;
+    font-weight: 900;
+    line-height: 27px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .nexops-mobile-bar .nexteam-product-header__tenant {
@@ -127,17 +132,13 @@
   }
 
   .nexops-mobile-bar .nexsuite-header__signout-slot > button {
-    min-width: 134px;
-    min-height: 78px;
-    padding: 12px 18px;
-    border: 0;
+    margin-left: auto;
+    border: 1px solid rgba(212, 255, 32, 0.6);
     border-radius: 999px;
+    padding: 8px 12px;
     color: #0c1825;
-    background: linear-gradient(135deg, #d4ff20, #25d238);
-    font-size: 1.08rem;
-    font-weight: 900;
-    line-height: 1.05;
-    box-shadow: 0 10px 24px rgba(112, 224, 44, 0.18);
+    background: var(--nexteam-gradient, linear-gradient(135deg, #d4ff20, #25d238));
+    font-weight: 800;
   }
 
   .nexops-dashboard,
