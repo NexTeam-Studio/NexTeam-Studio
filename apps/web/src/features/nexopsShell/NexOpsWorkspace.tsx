@@ -122,6 +122,8 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [createClientContextId, setCreateClientContextId] = useState("");
   const [resumeQuoteAfterClientCreate, setResumeQuoteAfterClientCreate] = useState(false);
+  const [inlineQuoteClientCreateOpen, setInlineQuoteClientCreateOpen] = useState(false);
+  const [inlineQuoteCreatedClientId, setInlineQuoteCreatedClientId] = useState("");
   const [mobileCreateFabCollapsed, setMobileCreateFabCollapsed] = useState(false);
   const [mobileCreateFabPulse, setMobileCreateFabPulse] = useState(false);
   const [creatingClientPage, setCreatingClientPage] = useState(initialPathState.clientDraft === "new");
@@ -650,6 +652,11 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     selectedClientId,
     refresh,
     onSaved: (clientId) => {
+      if (inlineQuoteClientCreateOpen) {
+        setInlineQuoteClientCreateOpen(false);
+        setInlineQuoteCreatedClientId(clientId);
+        return;
+      }
       if (resumeQuoteAfterClientCreate) {
         setResumeQuoteAfterClientCreate(false);
         setCreateClientContextId(clientId);
@@ -889,6 +896,28 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           focusedQuoteId={focusedQuoteId}
           initialClientId={createClientContextId || undefined}
           initialFilter={quoteFilterIntent}
+          inlineClientCreateForm={inlineQuoteClientCreateOpen ? <NexOpsCreateClientPanel
+            tenantId={operatorContext.tenantId}
+            newClient={newClient}
+            setNewClient={setNewClient}
+            createStatus={createStatus}
+            createClientCanSave={createClientCanSave}
+            createClientMissingFields={createClientMissingFields}
+            leadSourceOptions={leadSourceOptions}
+            layout="page"
+            mobile={mobileClientViewport}
+            onClose={() => {
+              contactForm.resetForm();
+              setInlineQuoteClientCreateOpen(false);
+            }}
+            onSubmit={createClientFromForm}
+          /> : null}
+          onOpenInlineClientCreate={() => {
+            contactForm.openCreate("client");
+            setInlineQuoteClientCreateOpen(true);
+          }}
+          inlineCreatedClientId={inlineQuoteCreatedClientId || undefined}
+          onInlineCreatedClientHandled={() => setInlineQuoteCreatedClientId("")}
           onCreateClientRequested={() => {
             setResumeQuoteAfterClientCreate(true);
             openCreateClientDrawer("client");

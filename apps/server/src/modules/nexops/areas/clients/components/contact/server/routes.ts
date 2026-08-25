@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import type { Client, Property } from "@nexteam/core";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
-import { createClientBodySchema, hasClientCreateAddress, hasClientCreatePhone, propertyAssetsBodySchema, updateClientBodySchema } from "./routeSchemas.js";
+import { createClientBodySchema, createPropertyBodySchema, hasClientCreateAddress, hasClientCreatePhone, propertyAssetsBodySchema, updateClientBodySchema } from "./routeSchemas.js";
 import { quickPaymentRequestBodySchema } from "../../../../invoices/components/paymentRails/server/routeSchemas.js";
 import { sendPortalLinkBodySchema } from "../../../../../../nexportal/components/portalCore/server/routeSchemas.js";
 import {
@@ -54,6 +54,36 @@ export function registerContactRoutes(context: CrmRouteContext): void {
       await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "listProperties" });
       const properties = await repositoryForTenant().listProperties(tenantId);
       res.json({ ok: true, properties });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/crm/properties", async (req: Request, res: Response) => {
+    try {
+      const input = createPropertyBodySchema.parse(req.body);
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "createProperty" });
+      const repository = repositoryForTenant();
+      const clients = await repository.listClients(tenantId);
+      if (!clients.some((client) => client.id === input.clientId)) {
+        throw new RailError(`Client ${input.clientId} was not found.`, { provider: "native", op: "createProperty", status: 404 });
+      }
+      const property: Property = await repository.upsertProperty({
+        id: `property_${randomUUID()}`,
+        tenantId,
+        clientId: input.clientId,
+        ...(input.siteName ? { siteName: input.siteName } : {}),
+        ...(input.label ? { label: input.label } : {}),
+        address: input.address,
+        ...(input.geo ? { geo: input.geo } : {}),
+        ...(input.billingAddressSameAsClient !== undefined ? { billingAddressSameAsClient: input.billingAddressSameAsClient } : {}),
+        ...(input.access ? { access: input.access } : {}),
+        ...(input.contacts ? { contacts: input.contacts } : {}),
+        assets: [],
+        ...(input.customFields ? { customFields: input.customFields } : {})
+      });
+      res.status(201).json({ ok: true, property });
     } catch (error) {
       sendRouteError(res, error);
     }

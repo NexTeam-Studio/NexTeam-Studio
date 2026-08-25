@@ -108,12 +108,14 @@ test("downstream buttons stay gated with explicit reasons", () => {
   );
 });
 
-test("quote workspace uses the shared business templates and retains client/property context in the focused builder", () => {
+test("quote workspace uses the shared business templates and retains the inline client/property choice flow", () => {
   const source = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx"), "utf8");
   assert.match(source, /NexOpsRosterTemplate/);
   assert.match(source, /NexOpsDetailTemplate/);
-  assert.match(source, /Service Location/);
-  assert.match(source, /Create New Client/);
+  assert.match(source, /Select Client/);
+  assert.match(source, /Existing Property/);
+  assert.match(source, /Save New Property/);
+  assert.match(source, /Gate code needed/);
   assert.match(source, /propertyId: composer\.propertyId/);
 });
 

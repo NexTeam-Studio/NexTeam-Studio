@@ -62,6 +62,17 @@ interface PropertyOption {
   address?: AddressLike;
 }
 
+interface NewPropertyDraft {
+  siteName: string;
+  street1: string;
+  street2: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  gateCodeNeeded: boolean;
+  gateCode: string;
+}
+
 interface TenantUserRecord {
   id: string;
   email?: string;
@@ -269,6 +280,12 @@ interface SettingsMutationResponse {
   error?: string;
 }
 
+interface PropertyMutationResponse {
+  ok: boolean;
+  property?: PropertyOption;
+  error?: string;
+}
+
 interface TemplateMutationResponse {
   ok: boolean;
   template?: QuoteTemplateRecord;
@@ -357,6 +374,23 @@ interface NexOpsQuotesPageProps {
   initialClientId?: string;
   initialFilter?: QuoteFilter;
   onCreateClientRequested?: () => void;
+  inlineClientCreateForm?: React.ReactNode;
+  onOpenInlineClientCreate?: () => void;
+  inlineCreatedClientId?: string;
+  onInlineCreatedClientHandled?: () => void;
+}
+
+function blankNewPropertyDraft(): NewPropertyDraft {
+  return {
+    siteName: "",
+    street1: "",
+    street2: "",
+    city: "",
+    province: "",
+    postalCode: "",
+    gateCodeNeeded: false,
+    gateCode: ""
+  };
 }
 
 function rowId(prefix: string): string {
@@ -1055,11 +1089,18 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [catalogEditorOpen, setCatalogEditorOpen] = useState(false);
   const [catalogDraft, setCatalogDraft] = useState<CatalogItemDraft>(() => blankCatalogItemDraft());
   const [workspaceView, setWorkspaceView] = useState<"roster" | "builder" | "detail">(props.initialClientId ? "builder" : "roster");
+  const [clientSelectionMode, setClientSelectionMode] = useState<"existing" | "new">("existing");
+  const [propertySelectionMode, setPropertySelectionMode] = useState<"existing" | "new">("existing");
+  const [newPropertyDraft, setNewPropertyDraft] = useState<NewPropertyDraft>(() => blankNewPropertyDraft());
+  const [newPropertyBusy, setNewPropertyBusy] = useState(false);
+  const [newPropertyStatus, setNewPropertyStatus] = useState("");
+  const [createdProperties, setCreatedProperties] = useState<PropertyOption[]>([]);
 
   const selectedQuote = quotes.find((quote) => quote.id === selectedQuoteId);
   const selectedClient = props.clients.find((client) => client.id === selectedQuote?.clientId);
   const composerClient = props.clients.find((client) => client.id === composer.clientId);
-  const composerProperties = props.properties.filter((property) => property.clientId === composer.clientId);
+  const composerProperties = [...props.properties, ...createdProperties.filter((created) => !props.properties.some((property) => property.id === created.id))]
+    .filter((property) => property.clientId === composer.clientId);
   const composerProperty = composerProperties.find((property) => property.id === composer.propertyId);
   const selectedTemplate = templates.find((template) => template.id === composer.templateId);
   const selectedSalesperson = props.tenantUsers.find((user) => user.id === composer.salespersonUserId);
@@ -1133,6 +1174,16 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   }, [props.initialClientId]);
 
   useEffect(() => {
+    if (!props.inlineCreatedClientId) {
+      return;
+    }
+    setComposer((current) => current.editingQuoteId ? current : { ...current, clientId: props.inlineCreatedClientId!, propertyId: "" });
+    setClientSelectionMode("existing");
+    setWorkspaceView("builder");
+    props.onInlineCreatedClientHandled?.();
+  }, [props.inlineCreatedClientId]);
+
+  useEffect(() => {
     function handleMutation(): void {
       void refresh();
     }
@@ -1197,8 +1248,67 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
 
   function openBuilder(): void {
     resetComposer();
+    setClientSelectionMode("existing");
+    setPropertySelectionMode("existing");
+    setNewPropertyDraft(blankNewPropertyDraft());
+    setNewPropertyStatus("");
     setWorkspaceView("builder");
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }
+
+  function chooseClient(clientId: string): void {
+    setComposer((current) => ({ ...current, clientId, propertyId: "" }));
+    setPropertySelectionMode("existing");
+    setNewPropertyDraft(blankNewPropertyDraft());
+    setNewPropertyStatus("");
+  }
+
+  async function createPropertyForQuote(): Promise<void> {
+    if (!composer.clientId || newPropertyBusy) {
+      return;
+    }
+    if (![newPropertyDraft.street1, newPropertyDraft.city, newPropertyDraft.province].every((value) => value.trim())) {
+      setNewPropertyStatus("Add the property address, city, and state before saving it to this quote.");
+      return;
+    }
+    setNewPropertyBusy(true);
+    setNewPropertyStatus("Saving the new property...");
+    try {
+      const body = await fetch("/api/crm/properties", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tenantId: props.tenantId,
+          clientId: composer.clientId,
+          siteName: newPropertyDraft.siteName.trim() || undefined,
+          label: newPropertyDraft.siteName.trim() || newPropertyDraft.street1.trim(),
+          address: {
+            street1: newPropertyDraft.street1.trim(),
+            ...(newPropertyDraft.street2.trim() ? { street2: newPropertyDraft.street2.trim() } : {}),
+            city: newPropertyDraft.city.trim(),
+            province: newPropertyDraft.province.trim(),
+            postalCode: newPropertyDraft.postalCode.trim(),
+            country: "US"
+          },
+          access: newPropertyDraft.gateCodeNeeded ? { gateCode: newPropertyDraft.gateCode.trim() || undefined } : undefined,
+          customFields: { gatedEntry: newPropertyDraft.gateCodeNeeded }
+        })
+      }).then((response) => response.json() as Promise<PropertyMutationResponse>);
+      if (!body.ok || !body.property) {
+        setNewPropertyStatus(body.error ?? "The new property could not be saved.");
+        return;
+      }
+      setCreatedProperties((current) => [...current.filter((property) => property.id !== body.property!.id), body.property!]);
+      setComposer((current) => ({ ...current, propertyId: body.property!.id }));
+      setPropertySelectionMode("existing");
+      setNewPropertyDraft(blankNewPropertyDraft());
+      setNewPropertyStatus("New property selected for this quote.");
+      props.onCrmMutation?.();
+    } catch {
+      setNewPropertyStatus("The new property could not be saved.");
+    } finally {
+      setNewPropertyBusy(false);
+    }
   }
 
   function applyTemplate(templateId: string): void {
@@ -1647,49 +1757,71 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           <div className="nexops-quote-composer-grid">
             <section className="nexops-quote-panel">
               <div className="nexops-quote-section-head">
-                <h3>Basics</h3>
-                <span>{composer.editingQuoteId ? "Loaded from an existing quote." : "Choose the client and title first."}</span>
+                <h3>Quote setup</h3>
+                <span>{composer.editingQuoteId ? "Loaded from an existing quote." : "Start with the job title and client."}</span>
               </div>
-              <div className="nexops-request-builder-grid">
-                <label className="nexops-field">
-                  <span>Client</span>
-                  <select value={composer.clientId} onChange={(event) => setComposer((current) => ({ ...current, clientId: event.target.value, propertyId: "" }))}>
-                    <option value="">Select Client</option>
-                    {props.clients.map((client) => <option value={client.id} key={client.id}>{clientDisplayName(client)}</option>)}
-                  </select>
+              <div className="nexops-quote-setup-body">
+                <label className="nexops-field nexops-quote-job-title">
+                  <span>Job Title</span>
+                  <input value={composer.title} placeholder="What is this quote for?" onChange={(event) => setComposer((current) => ({ ...current, title: event.target.value }))} />
                 </label>
-                {props.onCreateClientRequested ? <div className="nexops-quote-client-create">
-                  <span>Need a new client?</span>
-                  <button type="button" onClick={props.onCreateClientRequested}>Create New Client</button>
-                </div> : null}
-                <label className="nexops-field">
-                  <span>Service Location</span>
-                  <select value={composer.propertyId} onChange={(event) => setComposer((current) => ({ ...current, propertyId: event.target.value }))} disabled={!composer.clientId || !composerProperties.length}>
-                    <option value="">{composer.clientId ? (composerProperties.length ? "Select Service Location" : "No saved locations") : "Choose Client First"}</option>
-                    {composerProperties.map((property) => <option value={property.id} key={property.id}>{property.siteName ?? property.label ?? property.address?.line1 ?? property.id}</option>)}
-                  </select>
-                </label>
-                <label className="nexops-field">
-                  <span>Template</span>
-                  <select value={composer.templateId} onChange={(event) => applyTemplate(event.target.value)}>
-                    <option value="">No Template</option>
-                    {templates.map((template) => <option value={template.id} key={template.id}>{template.name}</option>)}
-                  </select>
-                </label>
-                <label className="nexops-field">
-                  <span>Salesperson / Rep</span>
-                  <select value={composer.salespersonUserId} onChange={(event) => setComposer((current) => ({ ...current, salespersonUserId: event.target.value }))}>
-                    <option value="">Assign Later</option>
-                    {props.tenantUsers.filter((user) => user.active).map((user) => (
-                      <option value={user.id} key={user.id}>{user.displayName} ({user.role.replaceAll("_", " ")})</option>
-                    ))}
-                  </select>
-                </label>
+                <div className="nexops-quote-client-picker">
+                  <div className="nexops-quote-client-picker__head">
+                    <div><h4>Select Client</h4><p>Choose an existing client or add one without leaving this quote.</p></div>
+                    <div className="nexops-quote-choice-tabs" role="tablist" aria-label="Client selection">
+                      <button type="button" role="tab" aria-selected={clientSelectionMode === "new"} className={clientSelectionMode === "new" ? "active" : ""} onClick={() => { setClientSelectionMode("new"); props.onOpenInlineClientCreate?.(); }}>Add New</button>
+                      <button type="button" role="tab" aria-selected={clientSelectionMode === "existing"} className={clientSelectionMode === "existing" ? "active" : ""} onClick={() => setClientSelectionMode("existing")}>Existing</button>
+                    </div>
+                  </div>
+                  {clientSelectionMode === "new" ? (
+                    props.inlineClientCreateForm ?? <div className="nexops-quote-inline-notice"><strong>New client form unavailable.</strong><button type="button" onClick={props.onCreateClientRequested}>Open the client form</button></div>
+                  ) : (
+                    <div className="nexops-request-builder-grid">
+                      <label className="nexops-field">
+                        <span>Existing Client</span>
+                        <select value={composer.clientId} onChange={(event) => chooseClient(event.target.value)}>
+                          <option value="">Select Client</option>
+                          {props.clients.map((client) => <option value={client.id} key={client.id}>{clientDisplayName(client)}</option>)}
+                        </select>
+                      </label>
+                      <label className="nexops-field">
+                        <span>Template</span>
+                        <select value={composer.templateId} onChange={(event) => applyTemplate(event.target.value)}>
+                          <option value="">No Template</option>
+                          {templates.map((template) => <option value={template.id} key={template.id}>{template.name}</option>)}
+                        </select>
+                      </label>
+                      <label className="nexops-field">
+                        <span>Salesperson / Rep</span>
+                        <select value={composer.salespersonUserId} onChange={(event) => setComposer((current) => ({ ...current, salespersonUserId: event.target.value }))}>
+                          <option value="">Assign Later</option>
+                          {props.tenantUsers.filter((user) => user.active).map((user) => <option value={user.id} key={user.id}>{user.displayName} ({user.role.replaceAll("_", " ")})</option>)}
+                        </select>
+                      </label>
+                    </div>
+                  )}
+                  {clientSelectionMode === "existing" && composer.clientId ? <div className="nexops-quote-property-picker">
+                    <div className="nexops-quote-property-picker__head"><h4>Service Property</h4><p>{composerProperties.length > 1 ? "This client has multiple properties. Choose one or add a new address." : "Choose the saved property or add a new address for this quote."}</p></div>
+                    <div className="nexops-quote-choice-tabs" role="tablist" aria-label="Property selection">
+                      <button type="button" role="tab" aria-selected={propertySelectionMode === "existing"} className={propertySelectionMode === "existing" ? "active" : ""} onClick={() => setPropertySelectionMode("existing")}>Existing Property</button>
+                      <button type="button" role="tab" aria-selected={propertySelectionMode === "new"} className={propertySelectionMode === "new" ? "active" : ""} onClick={() => setPropertySelectionMode("new")}>New Property</button>
+                    </div>
+                    {propertySelectionMode === "existing" ? <label className="nexops-field"><span>Property</span><select value={composer.propertyId} onChange={(event) => setComposer((current) => ({ ...current, propertyId: event.target.value }))} disabled={!composerProperties.length}><option value="">{composerProperties.length ? "Select Service Property" : "No saved properties"}</option>{composerProperties.map((property) => <option value={property.id} key={property.id}>{property.siteName ?? property.label ?? property.address?.line1 ?? property.id}</option>)}</select></label> : <div className="nexops-quote-new-property-form">
+                      <div className="nexops-request-builder-grid">
+                        <label className="nexops-field"><span>Property Name</span><input value={newPropertyDraft.siteName} placeholder="e.g. Northside Pool" onChange={(event) => setNewPropertyDraft((current) => ({ ...current, siteName: event.target.value }))} /></label>
+                        <label className="nexops-field"><span>Property Address</span><input value={newPropertyDraft.street1} placeholder="Street address" onChange={(event) => setNewPropertyDraft((current) => ({ ...current, street1: event.target.value }))} /></label>
+                        <label className="nexops-field"><span>City</span><input value={newPropertyDraft.city} onChange={(event) => setNewPropertyDraft((current) => ({ ...current, city: event.target.value }))} /></label>
+                        <label className="nexops-field"><span>State</span><input value={newPropertyDraft.province} onChange={(event) => setNewPropertyDraft((current) => ({ ...current, province: event.target.value }))} /></label>
+                        <label className="nexops-field"><span>ZIP Code</span><input value={newPropertyDraft.postalCode} onChange={(event) => setNewPropertyDraft((current) => ({ ...current, postalCode: event.target.value }))} /></label>
+                      </div>
+                      <label className="nexops-check-field inline"><input type="checkbox" checked={newPropertyDraft.gateCodeNeeded} onChange={(event) => setNewPropertyDraft((current) => ({ ...current, gateCodeNeeded: event.target.checked, gateCode: event.target.checked ? current.gateCode : "" }))} />Gate code needed</label>
+                      {newPropertyDraft.gateCodeNeeded ? <label className="nexops-field"><span>Gate Code</span><input value={newPropertyDraft.gateCode} onChange={(event) => setNewPropertyDraft((current) => ({ ...current, gateCode: event.target.value }))} /></label> : null}
+                      {newPropertyStatus ? <p className="nexops-form-note">{newPropertyStatus}</p> : null}
+                      <button className="nexops-quote-primary-button" type="button" onClick={() => void createPropertyForQuote()} disabled={newPropertyBusy}>{newPropertyBusy ? "Saving Property..." : "Save New Property"}</button>
+                    </div>}
+                  </div> : null}
+                </div>
               </div>
-              <label className="nexops-field">
-                <span>Quote Title</span>
-                <input value={composer.title} onChange={(event) => setComposer((current) => ({ ...current, title: event.target.value }))} />
-              </label>
               <div className="nexops-quote-summary-pills">
                 <span>{composerClient ? clientDisplayName(composerClient) : "No Client Selected"}</span>
                 <span>{composerProperty ? (composerProperty.siteName ?? composerProperty.label ?? composerProperty.address?.line1 ?? "Selected service location") : composerClient?.billingAddress ? "Billing location on file" : "Choose a service location later"}</span>
@@ -1760,6 +1892,13 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                     </div>
                   </div>
                 ))}
+              </div>
+              <div className="nexops-quote-pricing-summary" aria-label="Quote pricing summary">
+                <div><span>Subtotal</span><strong>{money(draftTotals.subtotal)}</strong></div>
+                <div><span>Discount</span><strong>{money(draftTotals.discount ?? 0)}</strong></div>
+                <div><span>Tax</span><strong>{money(draftTotals.tax)}</strong></div>
+                <div className="nexops-quote-pricing-summary__total"><span>Total</span><strong>{money(draftTotals.total)}</strong></div>
+                <div><span>Required deposit</span><strong>{composer.requireDeposit ? money(composer.depositKind === "percent" ? draftTotals.total * (composer.depositValue / 100) : composer.depositValue) : money(0)}</strong></div>
               </div>
             </section>
 

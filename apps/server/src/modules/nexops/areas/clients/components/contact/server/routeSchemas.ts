@@ -27,6 +27,11 @@ export const createClientPrimaryPropertySchema = z.object({
   customFields: z.record(customFieldValueSchema).optional()
 });
 
+export const createPropertyBodySchema = createClientPrimaryPropertySchema.extend({
+  tenantId: z.string().min(1).optional(),
+  clientId: z.string().min(1)
+});
+
 export function hasClientCreatePhone(input: {
   phones?: string[] | undefined;
   contacts?: Array<{ phones?: Array<{ value?: string | undefined }> | undefined }> | undefined;

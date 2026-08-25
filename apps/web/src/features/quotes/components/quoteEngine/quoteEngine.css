@@ -78,6 +78,29 @@
 .nexops-quote-panel > .nexops-catalog-picker-empty { margin-block: 16px; }
 .nexops-quote-panel > .nexops-quote-totals { margin-bottom: 18px; }
 
+.nexops-quote-setup-body { display: grid; gap: 18px; padding: 18px; }
+.nexops-quote-job-title input { min-height: 52px; font-size: 1.05rem; font-weight: 750; }
+.nexops-quote-client-picker,
+.nexops-quote-property-picker,
+.nexops-quote-new-property-form { display: grid; gap: 14px; padding: 16px; border: 1px solid rgba(9, 49, 49, .11); border-radius: 18px; background: #f8fbf7; }
+.nexops-quote-client-picker__head,
+.nexops-quote-property-picker__head { display: grid; gap: 4px; }
+.nexops-quote-client-picker__head h4,
+.nexops-quote-property-picker__head h4 { margin: 0; color: #102a31; font-size: 1.05rem; }
+.nexops-quote-client-picker__head p,
+.nexops-quote-property-picker__head p { margin: 0; color: #64727a; font-size: .88rem; line-height: 1.45; }
+.nexops-quote-choice-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nexops-quote-choice-tabs button { min-height: 44px; border: 1px solid rgba(8, 42, 45, .16); border-radius: 12px; background: #fff; color: #16303a; font: inherit; font-weight: 800; cursor: pointer; }
+.nexops-quote-choice-tabs button.active { border-color: transparent; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; box-shadow: 0 8px 18px rgba(37, 210, 56, .18); }
+.nexops-quote-inline-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border-radius: 14px; background: #fff9e8; color: #573c03; }
+.nexops-quote-inline-notice button { border: 0; background: none; color: inherit; font: inherit; font-weight: 850; text-decoration: underline; cursor: pointer; }
+.nexops-quote-new-property-form > .nexops-quote-primary-button { justify-self: start; }
+.nexops-quote-pricing-summary { display: grid; margin: 18px; border-top: 1px solid rgba(9, 49, 49, .12); }
+.nexops-quote-pricing-summary > div { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 50px; padding: 0 14px; border-bottom: 1px solid rgba(9, 49, 49, .09); color: #263b42; }
+.nexops-quote-pricing-summary strong { font-size: 1.05rem; color: #112831; }
+.nexops-quote-pricing-summary__total { margin: 4px -1px; border: 0 !important; background: rgba(7, 36, 40, .08); font-weight: 850; }
+.nexops-quote-pricing-summary__total strong { font-size: 1.3rem; }
+
 .nexops-quote-client-create { display: grid; align-content: end; gap: 7px; }
 .nexops-quote-client-create span { color: #52626b; font-size: .8rem; font-weight: 750; }
 .nexops-quote-client-create button { min-height: 42px; border: 1px solid rgba(37,210,56,.32); border-radius: 999px; background: rgba(212,255,32,.12); color: #164d26; font: inherit; font-weight: 800; cursor: pointer; }
