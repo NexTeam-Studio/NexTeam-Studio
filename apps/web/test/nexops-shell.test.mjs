@@ -131,7 +131,7 @@ test("client roster and profile keep the mobile-first client workspace actions a
   const mobileClientCss = readFileSync(new URL("../src/features/clients/components/contact/contactMobileLegacy.css", import.meta.url), "utf8");
 
   assert.match(rosterSource, /NexOps Client Manager/);
-  assert.match(rosterSource, /data-label="Primary address"/);
+  assert.match(rosterSource, /data-label="Primary Address"/);
   assert.match(rosterSource, /data-label="Contact"/);
   assert.doesNotMatch(rosterCss, /min-width:\s*920px/);
   assert.match(rosterCss, /\.nexops-client-table-head\s*\{\s*display:\s*none;/);
@@ -162,7 +162,7 @@ test("client roster and profile keep the mobile-first client workspace actions a
   assert.match(createPanelSource, /nexops-client-form-action-controls/);
   assert.match(workspaceSource, /creatingClientPage \|\| showCreateClient/);
   assert.match(rosterSource, /Open Client/);
-  assert.match(rosterSource, /nexops-client-row-identity-banner/);
+  assert.match(rosterSource, /nexops-quote-filtered-identity-banner/);
   assert.match(rosterCss, /Client roster identity contract/);
   assert.match(rosterCss, /nexops-client-row-identity-banner/);
   assert.match(mobileClientCss, /body:has\(\.nexops-mobile-client-form-screen\) \.nexops-mobile-create-fab/);

@@ -109,7 +109,7 @@ test("named invoice interface areas use Title Case", () => {
   const scheduleSource = readFileSync(new URL("../PaymentScheduleEditor.tsx", import.meta.url), "utf8");
 
   for (const label of [
-    "Invoice Roster",
+    "Search Invoices",
     "Combine Ready Jobs",
     "Combined Invoice Title",
     "Payment Schedule",

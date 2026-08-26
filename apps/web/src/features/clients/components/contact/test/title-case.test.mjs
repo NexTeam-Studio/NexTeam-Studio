@@ -7,13 +7,11 @@ const intakeSource = readFileSync(new URL("../NexOpsCreateClientPanel.tsx", impo
 
 test("client roster names controls and columns in Title Case", () => {
   for (const label of [
-    "Active Clients",
-    "Text-Ready",
-    "Filter by Tag",
+    "All Clients",
+    "Filter",
     "Search Clients",
-    "Primary address",
-    "Client record",
-    "Imported history",
+    "Primary Address",
+    "Client Record",
     "Open Client"
   ]) {
     assert.match(rosterSource, new RegExp(label));

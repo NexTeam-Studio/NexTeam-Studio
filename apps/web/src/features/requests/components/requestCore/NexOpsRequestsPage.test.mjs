@@ -24,7 +24,7 @@ test("Requests uses Title Case for named interface areas and controls", () => {
     "Request Form",
     "Multi-Form Library",
     "Website Intake Forms",
-    "Request Queue",
+    "Search Requests",
     "Request Detail",
     "Next Office Move",
     "Downstream Field Visibility",
