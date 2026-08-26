@@ -2137,7 +2137,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
 
       ) : null}
 
-      {false ? <div className={`nexops-two-column quote-workspace-${workspaceView}`}>
+      {workspaceView === "detail" ? <div className={`nexops-two-column quote-workspace-${workspaceView}`}>
         <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
