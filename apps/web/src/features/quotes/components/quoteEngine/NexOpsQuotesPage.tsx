@@ -1841,8 +1841,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
       >
       {workspaceView === "roster" && quoteRosterFilters.length ? <section className="nexops-quote-filtered-roster" aria-label="Filtered quote results">
         <div className="nexops-quote-filtered-roster-heading">
-          <p className="eyebrow">Quote Results</p>
-          <h2>{filteredQuotes.length} {filteredQuotes.length === 1 ? "result" : "results"}</h2>
+          <h2>{filteredQuotes.length} {filteredQuotes.length === 1 ? "Result" : "Results"}</h2>
         </div>
         <div className="nexops-quote-filtered-table">
         {filteredQuotes.length ? <div className="nexops-quote-filtered-list">
@@ -1862,7 +1861,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                 <span className="nexops-quote-filtered-status" data-label="Status"><mark>{quoteStatusLabel(quote.status)}</mark></span>
                 <span className="nexops-quote-filtered-activity" data-label="Quote record">
                   <small>{money(quote.totals.total)}</small>
-                  <span className="nexops-quote-filtered-open">Open Quote <span aria-hidden="true">→</span></span>
+                  <button className="nexops-quote-filtered-open" type="button" onClick={() => { setSelectedQuoteId(quote.id); setWorkspaceView("detail"); }}>Open Quote <span aria-hidden="true">→</span></button>
                 </span>
               </div> : null}
             </article>;
