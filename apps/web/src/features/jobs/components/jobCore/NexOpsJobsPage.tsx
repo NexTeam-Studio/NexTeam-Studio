@@ -721,6 +721,7 @@ export function NexOpsJobsPage(props: {
   const [actionBusy, setActionBusy] = useState<JobAction | null>(null);
   const [statusFilter, setStatusFilter] = useState<JobFilter>("All");
   const [jobSearch, setJobSearch] = useState("");
+  const [jobFiltersOpen, setJobFiltersOpen] = useState(false);
   const [detailPaymentSchedule, setDetailPaymentSchedule] = useState<PaymentScheduleDraft>(() => blankPaymentSchedule());
   const [bookingPreview, setBookingPreview] = useState<BookingConfirmationPreview | null>(null);
   const [bookingDraft, setBookingDraft] = useState<BookingConfirmationDraft | null>(null);
@@ -1724,14 +1725,28 @@ export function NexOpsJobsPage(props: {
         detail="Manage active work, visits, reminders, documents, and closeout from one connected operational rail."
         icon={<NexOpsNavGlyph module="jobs" />}
         primaryAction={<button type="button" onClick={() => document.getElementById("nexops-new-job-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}>New Job</button>}
-        metrics={<>
-          <article><span>Upcoming</span><strong>{filterCounts.Upcoming}</strong><small>Scheduled work</small></article>
-          <article><span>Unscheduled</span><strong>{filterCounts.Unscheduled}</strong><small>Needs booking</small></article>
-          <article><span>Action Required</span><strong>{filterCounts["Action Required"]}</strong><small>Office follow-up</small></article>
-          <article><span>Requires Invoicing</span><strong>{filterCounts["Requires Invoicing"]}</strong><small>Billing handoff</small></article>
-        </>}
-        controls={<>
-          <div className="nexops-jobs-filter-row" aria-label="Job Status Filters">
+        heroClassName="module-hero-card--jobs"
+        controls={<section className="nexops-jobs-roster-filter-card" aria-label="Search and filter jobs">
+          <h2>Search Jobs</h2>
+          <label className="nexops-jobs-roster-search">
+            <span className="sr-only">Search all jobs, including history</span>
+            <input
+              value={jobSearch}
+              onChange={(event) => setJobSearch(event.target.value)}
+              placeholder="Search jobs"
+            />
+          </label>
+          <button
+            type="button"
+            className="nexops-jobs-filter-toggle"
+            onClick={() => setJobFiltersOpen((current) => !current)}
+            aria-expanded={jobFiltersOpen}
+          >
+            <span aria-hidden="true">☷</span>
+            <b>Filter</b>
+            <small>{filteredJobs.length}</small>
+          </button>
+          {jobFiltersOpen ? <div className="nexops-jobs-filter-options" aria-label="Job Status Filters">
             {JOB_FILTERS.map((filter) => (
               <button
                 key={filter}
@@ -1743,20 +1758,12 @@ export function NexOpsJobsPage(props: {
                 <small>{filterCounts[filter]}</small>
               </button>
             ))}
-          </div>
-          <label className="nexops-jobs-search">
-            <span>Search all jobs, including history</span>
-            <input
-              value={jobSearch}
-              onChange={(event) => setJobSearch(event.target.value)}
-              placeholder="Search by job, client, or job number"
-            />
-          </label>
+          </div> : null}
           <span className="nexops-status-pill">{status}</span>
-        </>}
+        </section>}
       >
       <section className="nexops-jobs-layout">
-        <article className="nexops-module-card">
+        <article className="nexops-module-card nexops-jobs-create-card">
           <p className="eyebrow">Manual Create</p>
           <h2>New Job</h2>
           <form id="nexops-new-job-form" className="nexops-jobs-form" onSubmit={(event) => void createJob(event)}>
@@ -1860,13 +1867,14 @@ export function NexOpsJobsPage(props: {
           </form>
         </article>
 
-        <article className="nexops-module-card">
+        <article className="nexops-module-card nexops-jobs-roster-card">
           <div className="nexops-jobs-card-heading">
             <div>
-              <p className="eyebrow">Native List</p>
-              <h2>Job Roster</h2>
+              <p className="eyebrow">Job Results</p>
+              <h2>{filteredJobs.length} Results</h2>
+              <span className="sr-only">Job Roster</span>
             </div>
-            <span>{filteredJobs.length} shown / {jobs.length} total</span>
+            <span>{jobs.length} total</span>
           </div>
           <div className="nexops-jobs-list">
             {filteredJobs.map((job) => (
@@ -1876,13 +1884,17 @@ export function NexOpsJobsPage(props: {
                 className={`nexops-jobs-list-item${detailOpen && job.id === selectedJobId ? " active" : ""}`}
                 onClick={() => selectJobFromRoster(job.id)}
               >
-                <div>
-                  <strong>{job.title}</strong>
-                  <span>{job.client?.name ?? job.clientId}{isHistoricalJob(job) ? " · Historical record" : ""}</span>
+                <div className="nexops-jobs-list-banner">
+                  <strong>{job.number ?? job.id}</strong>
+                  <span>{job.client?.name ?? job.clientId}</span>
                 </div>
-                <div>
-                  <span className={`nexops-job-status status-${job.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{job.status}</span>
-                  <small>{job.visitCount} visits</small>
+                <div className="nexops-jobs-list-body">
+                  <strong>{job.title}</strong>
+                  <span>{job.property?.address?.street1 ?? job.property?.label ?? "No service property selected"}{isHistoricalJob(job) ? " · Historical record" : ""}</span>
+                  <div>
+                    <span className={`nexops-job-status status-${job.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{job.status}</span>
+                    <small>{job.visitCount} visit{job.visitCount === 1 ? "" : "s"} · {formatMoney(job.totals?.total)}</small>
+                  </div>
                 </div>
               </button>
             ))}

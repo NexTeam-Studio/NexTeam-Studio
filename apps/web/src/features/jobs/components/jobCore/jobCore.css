@@ -248,6 +248,217 @@
   gap: 8px;
 }
 
+/* Jobs Page — Roster Template and Workflow Update.
+   The Page Template supplies the visual rail; the existing Job workflow remains in NexOpsJobsPage.tsx. */
+.nexops-roster-template .module-hero-card--jobs {
+  margin-bottom: 22px;
+}
+
+.nexops-business-controls:has(.nexops-jobs-roster-filter-card) {
+  margin: 0 0 26px;
+}
+
+.nexops-jobs-roster-filter-card {
+  display: grid;
+  gap: 16px;
+  padding: 28px 30px;
+  border-radius: 28px;
+  background: linear-gradient(118deg, #071923, #073b40 55%, #08723a);
+  box-shadow: 0 20px 40px rgba(1, 32, 35, .2);
+}
+
+.nexops-jobs-roster-filter-card h2 {
+  margin: 0;
+  color: #d4ff20;
+  font-size: clamp(1.55rem, 3vw, 2.15rem);
+  line-height: 1;
+  text-align: center;
+}
+
+.nexops-jobs-roster-search {
+  display: block;
+  width: 100%;
+}
+
+.nexops-jobs-roster-search input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 18px;
+  border: 1px solid rgba(7, 36, 40, .16);
+  border-radius: 17px;
+  background: #fff;
+  color: #112833;
+  font: inherit;
+}
+
+.nexops-jobs-filter-toggle,
+.nexops-jobs-filter-options .nexops-jobs-filter-pill {
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  align-items: center;
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fff, #edf0f2);
+  color: #112833;
+  box-shadow: 0 8px 18px rgba(2, 22, 28, .12);
+  font: inherit;
+  font-weight: 800;
+}
+
+.nexops-jobs-filter-toggle > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #d4ff20, #25d238);
+  color: #07151c;
+  font-size: 1.25rem;
+}
+
+.nexops-jobs-filter-toggle b,
+.nexops-jobs-filter-options .nexops-jobs-filter-pill > span {
+  text-align: center;
+}
+
+.nexops-jobs-filter-toggle small,
+.nexops-jobs-filter-options .nexops-jobs-filter-pill small {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  min-width: 0;
+  min-height: 0;
+  justify-self: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #d4ff20, #25d238);
+  color: #07151c;
+  box-shadow: 0 4px 10px rgba(37, 210, 56, .18);
+}
+
+.nexops-jobs-filter-options {
+  display: grid;
+  gap: 10px;
+}
+
+.nexops-jobs-filter-options .nexops-jobs-filter-pill {
+  padding: 0 8px;
+}
+
+.nexops-jobs-filter-options .nexops-jobs-filter-pill.active {
+  outline: 2px solid #d4ff20;
+  outline-offset: 2px;
+}
+
+.nexops-jobs-roster-filter-card .nexops-status-pill {
+  justify-self: center;
+  margin: 0;
+  color: rgba(255, 255, 255, .82);
+  background: transparent;
+}
+
+.nexops-jobs-create-card,
+.nexops-jobs-roster-card {
+  border-radius: 28px;
+}
+
+.nexops-jobs-create-card > .eyebrow,
+.nexops-jobs-roster-card .eyebrow {
+  color: #08723a;
+}
+
+.nexops-jobs-roster-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.nexops-jobs-roster-card > .nexops-jobs-card-heading {
+  padding: 26px 28px;
+  color: #fff;
+  background: linear-gradient(118deg, #071923, #073b40 55%, #08723a);
+}
+
+.nexops-jobs-roster-card > .nexops-jobs-card-heading h2,
+.nexops-jobs-roster-card > .nexops-jobs-card-heading .eyebrow {
+  color: #d4ff20;
+}
+
+.nexops-jobs-roster-card > .nexops-jobs-card-heading > span {
+  color: rgba(255, 255, 255, .84);
+}
+
+.nexops-jobs-roster-card > .nexops-jobs-list {
+  padding: 20px;
+}
+
+.nexops-jobs-list-item {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.nexops-jobs-list-banner {
+  padding: 16px 18px;
+  background: linear-gradient(118deg, #071923, #073b40 55%, #08723a);
+  color: #fff;
+}
+
+.nexops-jobs-list-banner strong {
+  color: #d4ff20;
+  font-size: 1.12rem;
+}
+
+.nexops-jobs-list-banner span {
+  color: rgba(255, 255, 255, .9);
+}
+
+.nexops-jobs-list-body {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+}
+
+.nexops-jobs-list-body > strong {
+  color: #112833;
+  font-size: 1.1rem;
+}
+
+.nexops-jobs-list-body > span {
+  color: var(--text-muted);
+}
+
+.nexops-jobs-list-body > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.nexops-jobs-list-body small {
+  color: var(--text-muted);
+  text-align: right;
+}
+
+@media (max-width: 1080px) {
+  .nexops-jobs-roster-filter-card {
+    padding: 24px 22px;
+  }
+
+  .nexops-jobs-list-body > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nexops-jobs-list-body small {
+    text-align: left;
+  }
+}
+
 @media (max-width: 1080px) {
   .nexops-jobs-layout,
 .nexops-jobs-grid {
