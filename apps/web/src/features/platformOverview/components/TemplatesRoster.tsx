@@ -64,6 +64,37 @@ const templatesRoot: TemplateNavigationNode = {
           description: "Future Global review item.",
           disabled: true
         }]
+      }, {
+        id: "nexops",
+        label: "NexOps",
+        description: "NexOps Page Templates and current Page-owned Layout Parts.",
+        rosterHref: "/nexcommand?area=templates&template=nexops",
+        children: [{
+          id: "nexops-roster-template",
+          label: "NexOps Roster Template",
+          description: "Shared roster Page Template review.",
+          href: "/design-system/page-templates/nexops-roster-template"
+        }, {
+          id: "nexops-detail-template",
+          label: "NexOps Detail Template",
+          description: "Shared single-record Page Template review.",
+          href: "/design-system/page-templates/nexops-detail-template"
+        }, {
+          id: "quote-search-filter",
+          label: "Quote Search and Filter",
+          description: "Quotes Roster Page Layout Part: search, Filter accordion, statuses, and result tally.",
+          href: "/nexops/quotes#quote-search-filter"
+        }, {
+          id: "quote-results-roster",
+          label: "Quote Results Roster",
+          description: "Quotes Roster Page Layout Part: centered result banner and white roster body.",
+          href: "/nexops/quotes#quote-results-roster"
+        }, {
+          id: "expandable-quote-roster-record",
+          label: "Expandable Quote Roster Record",
+          description: "Quotes Roster Page Layout Part: one-at-a-time expandable quote record and Open Quote action.",
+          href: "/nexops/quotes#expandable-quote-roster-record"
+        }]
       }]
     }]
   }]

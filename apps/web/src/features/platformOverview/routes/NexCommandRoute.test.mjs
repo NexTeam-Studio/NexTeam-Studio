@@ -70,9 +70,12 @@ test("NexCommand uses the shared NexTeam application shell", () => {
 });
 
 test("NexCommand opens Templates as successive configuration-driven roster pages", () => {
-  for (const label of ["Templates", "Design", "NexSuite", "Global", "Header", "Sidebar", "Application Shell", "Footer"]) assert.match(templates, new RegExp(`label: "${label}"`));
+  for (const label of ["Templates", "Design", "NexSuite", "Global", "NexOps", "Header", "Sidebar", "Application Shell", "Quote Search and Filter", "Quote Results Roster", "Expandable Quote Roster Record", "Footer"]) assert.match(templates, new RegExp(`label: "${label}"`));
   assert.match(templates, /href: "\/design-system\/layout-parts\/header"/);
   assert.match(templates, /href: "\/design-system\/layout-parts\/sidebar"/);
+  assert.match(templates, /href: "\/nexops\/quotes#quote-search-filter"/);
+  assert.match(templates, /href: "\/nexops\/quotes#quote-results-roster"/);
+  assert.match(templates, /href: "\/nexops\/quotes#expandable-quote-roster-record"/);
   assert.match(templates, /rosterHref: "\/nexcommand\?area=templates&template=design"/);
   assert.match(sidebar, /\["templates", "Templates", "▤"\]/);
   assert.match(source, /<TemplatesRoster rosterId=/);

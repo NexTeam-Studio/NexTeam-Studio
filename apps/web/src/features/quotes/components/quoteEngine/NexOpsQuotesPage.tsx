@@ -1809,7 +1809,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         icon={<NexOpsNavGlyph module="quotes" />}
         heroClassName="module-hero-card--quote"
         primaryAction={workspaceView === "builder" ? <button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => { setWorkspaceView("roster"); setQuoteBuilderMode(null); }}>← Quotes</button> : <button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
-        metrics={workspaceView === "builder" ? undefined : <section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" aria-label="Search and filter quotes">
+        metrics={workspaceView === "builder" ? undefined : <section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" id="quote-search-filter" aria-label="Search and filter quotes">
           <h2>Search Quotes</h2>
           <label className="nexops-quote-roster-search">
             <span className="sr-only">Search quotes</span>
@@ -1839,12 +1839,12 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           </div> : null}
         </section>}
       >
-      {workspaceView === "roster" && quoteRosterFilters.length ? <section className="nexops-quote-filtered-roster" aria-label="Filtered quote results">
+      {workspaceView === "roster" && quoteRosterFilters.length ? <section className="nexops-quote-filtered-roster" id="quote-results-roster" aria-label="Filtered quote results">
         <div className="nexops-quote-filtered-roster-heading">
           <h2>{filteredQuotes.length} {filteredQuotes.length === 1 ? "Result" : "Results"}</h2>
         </div>
         <div className="nexops-quote-filtered-table">
-        {filteredQuotes.length ? <div className="nexops-quote-filtered-list">
+        {filteredQuotes.length ? <div className="nexops-quote-filtered-list" id="expandable-quote-roster-record">
           {filteredQuotes.map((quote) => {
             const client = props.clients.find((candidate) => candidate.id === quote.clientId);
             const expanded = expandedFilteredQuoteId === quote.id;
