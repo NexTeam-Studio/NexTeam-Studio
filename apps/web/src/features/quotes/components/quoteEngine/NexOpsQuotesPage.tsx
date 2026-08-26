@@ -2578,7 +2578,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
       </div> : null}
       {templatePickerOpen ? <div className="nexops-modal-layer" role="presentation">
         <button className="nexops-modal-backdrop" type="button" aria-label="Close quote template selection" onClick={() => setTemplatePickerOpen(false)} />
-        <section className="nexops-modal-card nexops-quote-client-search-modal" role="dialog" aria-modal="true" aria-label="Choose quote template">
+        <section className="nexops-modal-card nexops-quote-client-search-modal nexops-quote-template-picker-modal" role="dialog" aria-modal="true" aria-label="Choose quote template">
           <div className="nexops-modal-head">
             <div><h2>Choose a Template</h2></div>
             <button type="button" onClick={() => setTemplatePickerOpen(false)}>Close</button>
