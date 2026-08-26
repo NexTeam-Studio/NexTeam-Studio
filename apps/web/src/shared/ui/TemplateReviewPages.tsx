@@ -1,7 +1,7 @@
 import React from "react";
 import { PlatformMark } from "../branding/ProductBranding";
 import { NexOpsNavGlyph } from "../../features/nexopsShell/workspaceSupport";
-import { ModuleHeroCard, NexOpsDetailTemplate, NexOpsRosterTemplate } from "./NexOpsBusinessTemplates";
+import { ModuleHeroCard, NexOpsCreationTemplate, NexOpsDetailTemplate, NexOpsRosterTemplate } from "./NexOpsBusinessTemplates";
 import { NexSuiteSidebar, type NexSuiteSidebarItem } from "./NexSuiteSidebar";
 import { NexTeamApplicationShell } from "./NexTeamApplicationShell";
 import { NexTeamProductHeader } from "./NexTeamProductHeader";
@@ -17,6 +17,10 @@ export function ModuleHeroCardReviewPage(): React.ReactElement {
 
 export function NexOpsRosterTemplateReviewPage(): React.ReactElement {
   return <ReviewChrome sourceFile="NexOpsBusinessTemplates.tsx" level="Page Template" title="NexOpsRosterTemplate" detail="The shared roster Page Template, rendered with representative data and the actual current Hero Layout Part."><NexOpsRosterTemplate eyebrow="NexOps client manager" title="Clients" detail="Find, review, and act on client records from one connected roster." icon={<NexOpsNavGlyph module="clients" />} primaryAction={<button type="button">New Client</button>} secondaryActions={<button type="button">Refresh</button>} metrics={<><article className="template-review-metric"><span>Active clients</span><strong>24</strong></article><article className="template-review-metric"><span>Leads</span><strong>3</strong></article></>} controls={<div className="template-review-controls"><button type="button">All clients</button><button type="button">Active</button><input aria-label="Search clients" placeholder="Search clients" /></div>}><article className="template-review-content-card"><h2>Client roster content</h2><p>Representative Page content begins below the shared Hero, metrics, and controls.</p></article></NexOpsRosterTemplate></ReviewChrome>;
+}
+
+export function NexOpsCreationTemplateReviewPage(): React.ReactElement {
+  return <ReviewChrome sourceFile="NexOpsBusinessTemplates.tsx" level="Page Template" title="NexOpsCreationTemplate" detail="The shared creation Page Template. It renders the current creation Hero, back action, and creation content frame directly."><NexOpsCreationTemplate title="Create Quote" detail="Choose the client, build the work, and review the price." icon={<NexOpsNavGlyph module="quotes" />} backAction={<button type="button">← Quotes</button>} heroClassName="module-hero-card--quote"><section className="template-review-page__specimen"><article className="template-review-content-card"><h2>Select Client</h2><p>Consumer Page content chooses and saves the client inside this shared creation content region.</p><div className="template-review-controls"><button type="button">Add New</button><button type="button">Existing</button></div></article><article className="template-review-content-card"><h2>Quote Builder</h2><p>Consumer Page content supplies the creation workflow, fields, and actions without changing this Page Template.</p></article></section></NexOpsCreationTemplate></ReviewChrome>;
 }
 
 export function NexOpsDetailTemplateReviewPage(): React.ReactElement {

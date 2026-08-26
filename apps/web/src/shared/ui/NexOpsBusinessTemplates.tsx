@@ -47,11 +47,12 @@ export function NexOpsRosterTemplate(props: {
   primaryAction?: React.ReactNode;
   secondaryActions?: React.ReactNode;
   heroClassName?: string;
+  showHero?: boolean;
   children: React.ReactNode;
 }): React.ReactElement {
   return (
     <section className="nexops-business-template nexops-roster-template">
-      <ModuleHeroCard
+      {props.showHero === false ? null : <ModuleHeroCard
         eyebrow={props.eyebrow}
         title={props.title}
         detail={props.detail}
@@ -59,10 +60,39 @@ export function NexOpsRosterTemplate(props: {
         primaryAction={props.primaryAction}
         secondaryActions={props.secondaryActions}
         className={props.heroClassName}
-      />
+      />}
       {props.metrics ? <div className="nexops-business-metrics">{props.metrics}</div> : null}
       {props.controls ? <div className="nexops-business-controls">{props.controls}</div> : null}
       <div className="nexops-business-content">{props.children}</div>
+    </section>
+  );
+}
+
+/**
+ * Shared Page Template for create/composer Pages. Consumers supply their
+ * domain workflow as children while this template owns the creation Hero,
+ * back action region, and creation content frame.
+ */
+export function NexOpsCreationTemplate(props: {
+  eyebrow?: string;
+  title: string;
+  detail: string;
+  icon?: React.ReactNode;
+  backAction: React.ReactNode;
+  heroClassName?: string;
+  children: React.ReactNode;
+}): React.ReactElement {
+  return (
+    <section className="nexops-business-template nexops-creation-template">
+      <ModuleHeroCard
+        eyebrow={props.eyebrow}
+        title={props.title}
+        detail={props.detail}
+        icon={props.icon ?? null}
+        primaryAction={props.backAction}
+        className={props.heroClassName}
+      />
+      <div className="nexops-creation-content">{props.children}</div>
     </section>
   );
 }

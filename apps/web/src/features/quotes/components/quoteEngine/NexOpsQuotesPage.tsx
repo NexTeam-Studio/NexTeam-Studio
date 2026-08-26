@@ -8,7 +8,7 @@ import { QuoteTemplateEditor } from "../quoteTemplates/QuoteTemplateEditor";
 import { NexopsActionButton, NexopsActionRail, NexopsBanner, NexopsProgressStrip, NexopsSectionCard, NexopsStatusPill } from "../../../../shared/ui/NexOpsUiKit";
 import { quoteTemplateVariables, resolveTemplateDraft } from "../../../../shared/communications/communicationTemplates";
 import { intakeDetailFacts, prominentIntakeFacts } from "../../../../shared/intake/intakePresentation";
-import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsCreationTemplate, NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { QUOTE_CREATION_ROTATING_LINES } from "./quoteCreationCopy";
 
 type QuoteStatus =
@@ -1808,6 +1808,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         detail={workspaceView === "builder" ? quoteCreationLine : "Build clear client-ready proposals, keep pricing in one place, and move the approved work forward."}
         icon={<NexOpsNavGlyph module="quotes" />}
         heroClassName="module-hero-card--quote"
+        showHero={workspaceView !== "builder"}
         primaryAction={workspaceView === "builder" ? <button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => { setWorkspaceView("roster"); setQuoteBuilderMode(null); }}>← Quotes</button> : <button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
         metrics={workspaceView === "builder" ? undefined : <section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" id="quote-search-filter" aria-label="Search and filter quotes">
           <h2>Search Quotes</h2>
@@ -1870,6 +1871,13 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         </div>
       </section> : null}
       {workspaceView === "builder" ? (
+      <NexOpsCreationTemplate
+        title="Create Quote"
+        detail={quoteCreationLine}
+        icon={<NexOpsNavGlyph module="quotes" />}
+        heroClassName="module-hero-card--quote"
+        backAction={<button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => { setWorkspaceView("roster"); setQuoteBuilderMode(null); }}>← Quotes</button>}
+      >
 
       <div className="nexops-module-grid nexops-module-grid-wide">
         <article className="nexops-module-card nexops-quote-composer-card">
@@ -2134,7 +2142,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         </article>
       </details> : null}
       </div>
-
+      </NexOpsCreationTemplate>
       ) : null}
 
       {workspaceView === "detail" ? <div className={`nexops-two-column quote-workspace-${workspaceView}`}>

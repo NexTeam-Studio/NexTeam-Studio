@@ -6,7 +6,7 @@ import { PlatformRoute } from "../../features/platform/routes/PlatformRoute";
 import { NexCommandMark } from "../branding/ProductBranding";
 import { HeaderReviewPage } from "../ui/HeaderReviewPage";
 import { SidebarReviewPage } from "../ui/SidebarReviewPage";
-import { ApplicationShellReviewPage, ModuleHeroCardReviewPage, NexOpsDetailTemplateReviewPage, NexOpsRosterTemplateReviewPage } from "../ui/TemplateReviewPages";
+import { ApplicationShellReviewPage, ModuleHeroCardReviewPage, NexOpsCreationTemplateReviewPage, NexOpsDetailTemplateReviewPage, NexOpsRosterTemplateReviewPage } from "../ui/TemplateReviewPages";
 import { useAuthSession } from "../auth/AuthSessionProvider";
 import { establishNexCommandSession, hasFreshNexCommandAuthentication, hasNexCommandSession, signOutOperator } from "../auth/authBootstrap";
 import { usePathname } from "./usePathname";
@@ -21,6 +21,7 @@ export function AppRouter(): React.ReactElement | null {
   if (pathname === "/design-system/layout-parts/module-hero-card") return <ModuleHeroCardReviewPage />;
   if (pathname === "/design-system/page-templates/application-shell") return <ApplicationShellReviewPage />;
   if (pathname === "/design-system/page-templates/nexops-roster-template") return <NexOpsRosterTemplateReviewPage />;
+  if (pathname === "/design-system/page-templates/nexops-creation-template") return <NexOpsCreationTemplateReviewPage />;
   if (pathname === "/design-system/page-templates/nexops-detail-template") return <NexOpsDetailTemplateReviewPage />;
   if (!user) return null;
   if (pathname.startsWith("/platform") || pathname.startsWith("/nexcommand")) return <NexCommandSessionGate />;

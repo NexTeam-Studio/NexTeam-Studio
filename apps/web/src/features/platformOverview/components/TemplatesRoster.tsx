@@ -54,6 +54,11 @@ const templatesRoot: TemplateNavigationNode = {
           description: "Shared roster Page Template.",
           href: "/design-system/page-templates/nexops-roster-template"
         }, {
+          id: "nexops-creation-template",
+          label: "NexOps Creation Template",
+          description: "Shared create/composer Page Template.",
+          href: "/design-system/page-templates/nexops-creation-template"
+        }, {
           id: "nexops-detail-template",
           label: "NexOps Detail Template",
           description: "Shared detail Page Template.",
@@ -79,6 +84,11 @@ const templatesRoot: TemplateNavigationNode = {
           label: "NexOps Detail Template",
           description: "Shared single-record Page Template review.",
           href: "/design-system/page-templates/nexops-detail-template"
+        }, {
+          id: "nexops-creation-template",
+          label: "NexOps Creation Template",
+          description: "Shared create/composer Page Template review.",
+          href: "/design-system/page-templates/nexops-creation-template"
         }, {
           id: "quote-search-filter",
           label: "Quote Search and Filter",
