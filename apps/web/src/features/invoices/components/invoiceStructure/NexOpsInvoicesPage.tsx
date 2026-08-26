@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { AddressLike } from "@nexteam/shared";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
-import { ModuleHeroCard } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { PaymentScheduleEditor, blankPaymentSchedule, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "./PaymentScheduleEditor";
 import { NexOpsCatalogPicker, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";
 import { invoiceTemplateVariables, type CommunicationTemplateRecord, resolveTemplateDraft } from "../../../../shared/communications/communicationTemplates";
@@ -1260,15 +1260,13 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
 
   return (
     <section className="nexops-module-page">
-      <ModuleHeroCard
+      <NexOpsRosterTemplate
         title={props.entryPoint === "payments" ? "Payments" : "Invoices"}
         detail={clientContext ? `Draft, send, collect, recover, and pause at receipt review before anything goes out the door. Client context: ${clientDisplayName(clientContext)}.` : "Draft, send, collect, recover, and pause at receipt review before anything goes out the door."}
         icon={<NexOpsNavGlyph module={props.entryPoint === "payments" ? "payments" : "invoices"} />}
         primaryAction={<button type="button" onClick={() => void loadWorkspace()} disabled={Boolean(busy)}>Refresh</button>}
         secondaryActions={detail?.invoice ? <a href={`/api/crm/invoices/${encodeURIComponent(detail.invoice.id)}/pdf?tenantId=${encodeURIComponent(props.tenantId)}`} rel="noreferrer" target="_blank">Open PDF</a> : undefined}
-      />
-
-      <div className="nexops-workflow-strip">
+        metrics={<div className="nexops-workflow-strip">
         <article><span>Draft</span><strong>{counts.draft}</strong><p>Still editable before send.</p></article>
         <article><span>Awaiting</span><strong>{counts.awaiting}</strong><p>Sent or outstanding balances.</p></article>
         <article><span>Partial</span><strong>{counts.partial}</strong><p>Prompt the remaining balance immediately.</p></article>
@@ -1277,7 +1275,8 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
         <article><span>Failed Attempts</span><strong>{counts.failedPayments}</strong><p>Recovery work still needs an office move.</p></article>
         <article><span>Refunds</span><strong>{counts.refunds}</strong><p>Tracked separately from void and bad debt.</p></article>
         <article><span>Credits</span><strong>{counts.credits}</strong><p>Available client balance still on hand.</p></article>
-      </div>
+        </div>}
+      >
 
       <div className="nexops-two-column">
         <article className="nexops-module-card">
@@ -1855,6 +1854,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
           setDetailStatus("Add reusable catalog items in Settings > Catalog, then return to select them here.");
         }}
       />
+      </NexOpsRosterTemplate>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
-import { ModuleHeroCard } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { isImportedHistoryRecord } from "./domain/clientProfile";
 import {
   clientRosterStatusLabel,
@@ -54,7 +54,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
 
   return (
     <section className="nexops-clients-workspace">
-      <ModuleHeroCard
+      <NexOpsRosterTemplate
         eyebrow="NexOps Client Manager"
         title="Clients"
         detail={`${props.status} Open any row to move into the full Client workspace.`}
@@ -64,16 +64,13 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
           <button type="button" onClick={props.onImport}>Import CSV</button>
           <button type="button" onClick={props.onRefresh}>Refresh</button>
         </div>}
-      />
-
-      <div className="nexops-client-stats" aria-label="Client metrics">
+        metrics={<div className="nexops-client-stats" aria-label="Client metrics">
         <article><span>Active Clients</span><strong>{props.activeCount}</strong><small>Native NexOps</small></article>
         <article><span>Leads</span><strong>{props.leadCount}</strong><small>Ready for follow-up</small></article>
         <article><span>Text-Ready</span><strong>{props.textReadyCount}</strong><small>Mobile confirmed</small></article>
         <article><span>Sites</span><strong>{props.propertyCount}</strong><small>Multi-site hierarchy</small></article>
-      </div>
-
-      <div className="nexops-client-controls">
+        </div>}
+        controls={<div className="nexops-client-controls">
         <label className="nexops-client-control-field">
           <span>Filter by Tag</span>
           <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} aria-label="Filter clients by tag">
@@ -102,7 +99,8 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
           <span className="sr-only">Search Clients</span>
           <input value={props.query} placeholder="Search Clients..." onChange={(event) => props.onQueryChange(event.target.value)} />
         </label>
-      </div>
+        </div>}
+      >
 
       <div className="nexops-client-layout compact">
         <section className="nexops-client-table-card" aria-label="Client list">
@@ -139,6 +137,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
           </div>
         </section>
       </div>
+      </NexOpsRosterTemplate>
     </section>
   );
 }
