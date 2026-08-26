@@ -9,7 +9,7 @@ It records what exists today, where its current source of truth lives, and wheth
 | Name | Purpose | Current source location | Current scope |
 | --- | --- | --- | --- |
 | `NexTeamApplicationShell` | The outer Page Template: Header area, Sidebar/navigation area, responsive drawer behavior, workspace frame, and optional first-element Hero slot. | `apps/web/src/shared/ui/NexTeamApplicationShell.tsx` | Shared foundation for NexCommand and NexSuite consumers. |
-| `NexOpsRosterTemplate` | The archive/list Page Template for NexOps module roster Pages. Provides the Module Hero Card, Page action region, metrics/filter slot, and roster content region. | `apps/web/src/shared/ui/NexOpsBusinessTemplates.tsx` | Shared across current NexOps roster Pages. |
+| `NexOpsRosterTemplate` | The archive/list Page Template for NexOps module roster Pages. Provides the approved Quotes-derived hero, Page action region, search/filter slot, result banner, expandable roster-record styling, and roster content region. | `apps/web/src/shared/ui/NexOpsBusinessTemplates.tsx` and `NexOpsBusinessTemplates.css` | Shared across current NexOps roster Pages; Quotes and Jobs are current consumers. |
 | `NexOpsDetailTemplate` | The single-record Page Template for NexOps detail Pages. Provides back navigation, record heading, status/actions, navigation, and detail content region. | `apps/web/src/shared/ui/NexOpsBusinessTemplates.tsx` | Shared where a NexOps record-detail Page uses it. |
 
 ## Global Layout Parts
@@ -60,4 +60,3 @@ Every new **Page Template** or **Layout Part** must receive a direct review Page
 - Use **Page Template** for that Page’s skeleton.
 - Use **Layout Part** for a reusable section placed inside a Page Template.
 - Use **Component** for a smaller building block inside a Layout Part.
-
