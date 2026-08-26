@@ -46,11 +46,12 @@
 
 .nexops-quote-primary-button:disabled { opacity: .58; cursor: not-allowed; }
 
-.quote-engine-page .nexops-quote-roster-filters { display: grid; gap: 11px; padding: 16px; border: 1px solid rgba(9, 49, 49, .11); border-radius: 22px; background: rgba(255,255,255,.94); box-shadow: 0 10px 24px rgba(4,24,28,.05); }
+.quote-engine-page .nexops-quote-roster-filters { display: grid; gap: 14px; padding: clamp(22px, 3vw, 30px); }
+.quote-engine-page .nexops-quote-roster-filters h2 { margin: 0; color: #d4ff20; font-size: clamp(1.55rem, 3vw, 2.15rem); line-height: 1; }
 .quote-engine-page .nexops-quote-roster-search { display: block; }
 .quote-engine-page .nexops-quote-roster-search input { width: 100%; min-height: 50px; padding: 12px 16px; border: 1px solid rgba(7, 36, 40, .16); border-radius: 15px; background: #fff; color: #112833; font: inherit; }
 .quote-engine-page .nexops-quote-roster-filters .nexops-jobs-filter-row { display: flex; flex-wrap: wrap; gap: 8px; }
-.quote-engine-page .nexops-quote-roster-filters .nexops-jobs-filter-pill { flex: 1 1 130px; }
+.quote-engine-page .nexops-quote-roster-filters .nexops-jobs-filter-pill { flex: 1 1 130px; border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.96); }
 .quote-engine-page .nexops-quote-template-picker-modal .nexops-catalog-picker-list { padding-top: 14px; }
 
 .nexops-quote-template-tabs {

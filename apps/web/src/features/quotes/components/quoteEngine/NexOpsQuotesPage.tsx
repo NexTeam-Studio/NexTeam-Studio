@@ -1775,7 +1775,8 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         icon={<NexOpsNavGlyph module="quotes" />}
         heroClassName="module-hero-card--quote"
         primaryAction={workspaceView === "builder" ? <button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => { setWorkspaceView("roster"); setQuoteBuilderMode(null); }}>← Quotes</button> : <button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
-        metrics={workspaceView === "builder" ? undefined : <section className="nexops-quote-roster-filters" aria-label="Search and filter quotes">
+        metrics={workspaceView === "builder" ? undefined : <section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" aria-label="Search and filter quotes">
+          <h2>Search Quotes</h2>
           <label className="nexops-quote-roster-search">
             <span className="sr-only">Search quotes</span>
             <input placeholder="Search quotes" value={quoteSearch} onChange={(event) => setQuoteSearch(event.target.value)} />
@@ -2063,7 +2064,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
 
       ) : null}
 
-      {workspaceView !== "builder" ? <div className={`nexops-two-column quote-workspace-${workspaceView}`}>
+      {false ? <div className={`nexops-two-column quote-workspace-${workspaceView}`}>
         <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
