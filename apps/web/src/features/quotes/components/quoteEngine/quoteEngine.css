@@ -46,20 +46,22 @@
 
 .nexops-quote-primary-button:disabled { opacity: .58; cursor: not-allowed; }
 
-.quote-engine-page .nexops-quote-roster-filters { display: grid; gap: 14px; padding: clamp(22px, 3vw, 30px); }
+.quote-engine-page .nexops-quote-roster-filters { display: grid; gap: 14px; padding: 24px 22px; }
 .quote-engine-page .nexops-quote-roster-filters h2 { margin: 0; color: #d4ff20; font-size: clamp(1.55rem, 3vw, 2.15rem); line-height: 1; text-align: center; }
 .quote-engine-page .nexops-quote-roster-search { display: block; width: 100%; justify-self: stretch; }
 .quote-engine-page .nexops-quote-roster-search input { box-sizing: border-box; width: 100%; min-height: 50px; padding: 12px 16px; border: 1px solid rgba(7, 36, 40, .16); border-radius: 15px; background: #fff; color: #112833; font: inherit; }
 .quote-engine-page .nexops-quote-roster-filters .nexops-jobs-filter-row { display: flex; flex-wrap: wrap; gap: 8px; }
-.quote-engine-page .nexops-quote-roster-filters .nexops-jobs-filter-pill { flex: 1 1 130px; border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.96); color: #112833; }
-.quote-engine-page .nexops-quote-filter-trigger { width: 100%; min-height: 50px; justify-content: flex-start; padding-inline: 16px; }
+.quote-engine-page .nexops-quote-roster-filters .nexops-jobs-filter-pill { flex: 1 1 130px; border-color: rgba(255,255,255,.34); background: linear-gradient(135deg, #ffffff 0%, #f0f2f3 100%); color: #112833; box-shadow: 0 8px 18px rgba(2, 22, 28, .12); }
+.quote-engine-page .nexops-quote-filter-trigger { position: relative; width: 100%; min-height: 52px; justify-content: center; padding-inline: 52px; }
 .quote-engine-page .nexops-quote-filter-icon { display: inline-grid; width: 28px; height: 28px; place-items: center; border-radius: 9px; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; box-shadow: 0 5px 12px rgba(37, 210, 56, .2); }
+.quote-engine-page .nexops-quote-filter-trigger .nexops-quote-filter-icon { position: absolute; left: 16px; }
+.quote-engine-page .nexops-quote-filter-label { font-size: 1.08rem; font-weight: 850; text-align: center; }
 .quote-engine-page .nexops-quote-filter-icon svg { width: 17px; height: 17px; }
-.quote-engine-page .nexops-quote-filter-chevron { margin-left: auto; font-size: 1.25rem; line-height: 1; }
 .quote-engine-page .nexops-quote-filter-options { display: grid; gap: 8px; }
 .quote-engine-page .nexops-quote-filter-options .nexops-jobs-filter-pill { width: 100%; min-height: 48px; justify-content: flex-start; padding-inline: 16px; }
 .quote-engine-page .nexops-quote-filter-options .nexops-jobs-filter-pill small { margin-left: auto; }
 .quote-engine-page .nexops-quote-roster-filters .nexops-jobs-filter-pill small { background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; box-shadow: 0 4px 10px rgba(37, 210, 56, .18); }
+.quote-engine-page .nexops-quote-filter-trigger small { position: absolute; right: 16px; }
 .quote-engine-page .nexops-quote-filter-check:empty { display: none; }
 .quote-engine-page .nexops-quote-filter-check:not(:empty) { display: inline-grid; width: 24px; height: 24px; place-items: center; border-radius: 8px; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; font-weight: 900; box-shadow: 0 4px 10px rgba(37, 210, 56, .18); }
 .quote-engine-page .nexops-quote-template-picker-modal .nexops-catalog-picker-list { padding-top: 14px; }

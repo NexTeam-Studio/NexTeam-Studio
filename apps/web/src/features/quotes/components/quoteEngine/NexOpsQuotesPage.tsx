@@ -1810,8 +1810,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           </label>
           <button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={quoteRosterFilterOpen} aria-controls="quote-status-filter-options" onClick={() => setQuoteRosterFilterOpen((current) => !current)}>
             <span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span>
-            <span>Filter</span>
-            <span className="nexops-quote-filter-chevron" aria-hidden="true">{quoteRosterFilterOpen ? "⌃" : "⌄"}</span>
+            <span className="nexops-quote-filter-label">Filter</span>
             {quoteRosterFilters.length ? <small>{quoteRosterFilters.length}</small> : null}
           </button>
           {quoteRosterFilterOpen ? <div className="nexops-quote-filter-options" id="quote-status-filter-options" aria-label="Quote status filters">
