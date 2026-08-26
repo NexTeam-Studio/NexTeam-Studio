@@ -1123,6 +1123,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [quoteFilter, setQuoteFilter] = useState<QuoteFilter>("all");
   const [quoteRosterFilters, setQuoteRosterFilters] = useState<QuoteRosterFilter[]>([]);
   const [quoteRosterFilterOpen, setQuoteRosterFilterOpen] = useState(false);
+  const [expandedFilteredQuoteId, setExpandedFilteredQuoteId] = useState("");
   const [selectedQuoteId, setSelectedQuoteId] = useState("");
   const [statusMessage, setStatusMessage] = useState("Loading quotes...");
   const [busy, setBusy] = useState("");
@@ -1788,6 +1789,12 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
     }
   }, [filteredQuotes, selectedQuoteId]);
 
+  useEffect(() => {
+    if (expandedFilteredQuoteId && !filteredQuotes.some((quote) => quote.id === expandedFilteredQuoteId)) {
+      setExpandedFilteredQuoteId("");
+    }
+  }, [expandedFilteredQuoteId, filteredQuotes]);
+
   const selectedQuoteSalesperson = selectedQuote?.salespersonUserId
     ? props.tenantUsers.find((user) => user.id === selectedQuote.salespersonUserId)
     : undefined;
@@ -1841,20 +1848,23 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         {filteredQuotes.length ? <div className="nexops-quote-filtered-list">
           {filteredQuotes.map((quote) => {
             const client = props.clients.find((candidate) => candidate.id === quote.clientId);
-            return <article className="nexops-quote-filtered-row" key={quote.id}>
-              <span className="nexops-quote-filtered-identity-banner">
+            const expanded = expandedFilteredQuoteId === quote.id;
+            return <article className={`nexops-quote-filtered-row${expanded ? " expanded" : ""}`} key={quote.id}>
+              <button className="nexops-quote-filtered-identity-banner" type="button" aria-expanded={expanded} onClick={() => setExpandedFilteredQuoteId((current) => current === quote.id ? "" : quote.id)}>
                 <span className="nexops-quote-filtered-identity" data-label="Quote">
                   <strong>{quote.number ?? quote.id}</strong>
-                  <small>{quote.title}</small>
+                  <small>{clientDisplayName(client)}</small>
                 </span>
-              </span>
-              <span className="nexops-quote-filtered-client" data-label="Client">{clientDisplayName(client)}</span>
-              <span className="nexops-quote-filtered-updated" data-label="Updated">{formatTimestamp(quote.updatedAt ?? quote.createdAt)}</span>
-              <span className="nexops-quote-filtered-status" data-label="Status"><mark>{quoteStatusLabel(quote.status)}</mark></span>
-              <span className="nexops-quote-filtered-activity" data-label="Quote record">
-                <small>{money(quote.totals.total)}</small>
-                <span className="nexops-quote-filtered-open">Open Quote <span aria-hidden="true">→</span></span>
-              </span>
+              </button>
+              {expanded ? <div className="nexops-quote-filtered-details">
+                <span className="nexops-quote-filtered-title" data-label="Quote title">{quote.title}</span>
+                <span className="nexops-quote-filtered-updated" data-label="Updated">{formatTimestamp(quote.updatedAt ?? quote.createdAt)}</span>
+                <span className="nexops-quote-filtered-status" data-label="Status"><mark>{quoteStatusLabel(quote.status)}</mark></span>
+                <span className="nexops-quote-filtered-activity" data-label="Quote record">
+                  <small>{money(quote.totals.total)}</small>
+                  <span className="nexops-quote-filtered-open">Open Quote <span aria-hidden="true">→</span></span>
+                </span>
+              </div> : null}
             </article>;
           })}
         </div> : <div className="nexops-quote-filtered-empty"><h2>No quotes match this view yet</h2><p>Adjust the selected statuses or search terms to see quotes here.</p></div>}
