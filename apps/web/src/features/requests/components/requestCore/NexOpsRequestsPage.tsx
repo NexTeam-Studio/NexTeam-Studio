@@ -917,7 +917,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       metrics={undefined}
     >
 
-      <div className="nexops-module-grid nexops-module-grid-wide">
+      <div className="nexops-module-grid nexops-module-grid-wide nexops-roster-workflow-after">
         <details className="nexops-quote-filtered-row expanded nexops-request-builder-card">
           <summary>
             <div className="nexops-density-disclosure-copy">
@@ -1145,7 +1145,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         </details>
       </div>
 
-      <div className="nexops-two-column">
+      <div className="nexops-roster-workflow-stack">
         <NexOpsRosterSurface ariaLabel="Search and filter requests" searchTitle="Search Requests" resultNoun="Request" resultCount={filteredRequests.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search Requests</span><input placeholder="Search Requests" value={requestSearch} onChange={(event) => setRequestSearch(event.target.value)} /></label>} filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={requestFilterOpen} onClick={() => setRequestFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true">☷</span><span className="nexops-quote-filter-label">Filter</span><small>{filteredRequests.length}</small></button>} filterOptions={requestFilterOpen ? <div className="nexops-quote-filter-options" aria-label="Request status filters">{REQUEST_FILTERS.filter((filter) => filter.value !== "all").map((filter) => <button key={filter.value} type="button" role="radio" aria-checked={requestFilter === filter.value} className={`nexops-jobs-filter-pill${requestFilter === filter.value ? " active" : ""}`} onClick={() => setRequestFilter(filter.value)}><span>{filter.label}</span><small>{requestCounts[filter.value]}</small></button>)}</div> : undefined} empty={!filteredRequests.length ? <div className="nexops-quote-filtered-empty"><h2>No Requests Match This View</h2><p>Change the search or status filter to see requests.</p></div> : undefined}>{filteredRequests.map((request) => { const expanded = request.id === selectedRequest?.id; return <article className={`nexops-quote-filtered-row${expanded ? " expanded" : ""}`} key={request.id}><button className="nexops-quote-filtered-identity-banner" type="button" aria-expanded={expanded} onClick={() => setSelectedRequestId(expanded ? "" : request.id)}><span className="nexops-quote-filtered-identity"><strong>{request.clientName}</strong><small>{request.subject}</small></span></button>{expanded ? <div className="nexops-quote-filtered-details"><span className="nexops-quote-filtered-title" data-label="Request">{request.subject}</span><span className="nexops-quote-filtered-updated" data-label="Service Location">{formatAddress(request.propertyAddress) || request.email || request.phone || requestSourceLabel(request.source)}</span><span className="nexops-quote-filtered-status" data-label="Status"><mark>{requestStatusLabel(request.status)}</mark></span><span className="nexops-quote-filtered-activity" data-label="Request Record"><small>{requestSourceLabel(request.source)}</small><button className="nexops-quote-filtered-open" type="button" onClick={() => setSelectedRequestId(request.id)}>Open Request <span aria-hidden="true">→</span></button></span></div> : null}</article>; })}</NexOpsRosterSurface>
 
         {selectedRequest ? (
