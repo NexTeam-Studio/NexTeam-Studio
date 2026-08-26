@@ -128,7 +128,7 @@ test("quote workspace uses the shared business templates and retains the inline 
   assert.match(source, /Choose a Template/);
   assert.match(source, /aria-controls="quote-status-filter-options"/);
   assert.match(source, /nexops-quote-filter-icon/);
-  assert.match(source, /filteredQuotes\.length === 1 \? "Result" : "Results"/);
+  assert.match(source, /<NexOpsRosterSurface/);
   assert.match(source, /expandedFilteredQuoteId/);
   assert.match(source, /Open Quote/);
   assert.match(source, /Awaiting Response/);

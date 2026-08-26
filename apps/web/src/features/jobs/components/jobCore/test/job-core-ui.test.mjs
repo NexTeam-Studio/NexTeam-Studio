@@ -22,8 +22,9 @@ import { fileURLToPath } from "node:url";
 const pageSource = readFileSync(fileURLToPath(new URL("../NexOpsJobsPage.tsx", import.meta.url)), "utf8");
 
 test("Jobs uses the shared roster and detail templates with explicit detail exit", () => {
-  assert.match(pageSource, /import \{ NexOpsDetailTemplate, NexOpsRosterTemplate \} from "\.\.\/\.\.\/\.\.\/\.\.\/shared\/ui\/NexOpsBusinessTemplates"/);
+  assert.match(pageSource, /NexOpsRosterSurface/);
   assert.match(pageSource, /<NexOpsRosterTemplate/);
+  assert.match(pageSource, /<NexOpsRosterSurface/);
   assert.match(pageSource, /<NexOpsDetailTemplate/);
   assert.match(pageSource, /Back to Job Roster/);
   assert.match(pageSource, /setDetailOpen\(false\)/);

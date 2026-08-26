@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsCreationTemplate, NexOpsDetailTemplate, NexOpsRosterSurface, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import type { Address } from "@nexteam/shared";
 import {
@@ -1748,46 +1748,16 @@ export function NexOpsJobsPage(props: {
           ? <button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setWorkspaceView("roster")}>← Jobs</button>
           : <button className="nexops-quote-primary-button" type="button" onClick={() => setWorkspaceView("builder")}>+ New Job</button>}
         heroClassName="module-hero-card--quote"
-        metrics={workspaceView === "builder" ? undefined : <section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" aria-label="Search and filter jobs">
-          <h2>Search Jobs</h2>
-          <label className="nexops-quote-roster-search">
-            <span className="sr-only">Search all jobs, including history</span>
-            <input
-              value={jobSearch}
-              onChange={(event) => setJobSearch(event.target.value)}
-              placeholder="Search jobs"
-            />
-          </label>
-          <button
-            type="button"
-            className="nexops-jobs-filter-pill nexops-quote-filter-trigger"
-            onClick={() => setJobFiltersOpen((current) => !current)}
-            aria-expanded={jobFiltersOpen}
-          >
-            <span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span>
-            <span className="nexops-quote-filter-label">Filter</span>
-            {jobRosterFilters.length ? <small>{filteredJobs.length}</small> : null}
-          </button>
-          {jobFiltersOpen ? <div className="nexops-quote-filter-options" aria-label="Job Status Filters">
-            {JOB_ROSTER_FILTERS.map((filter) => {
-              const selected = jobRosterFilters.includes(filter);
-              return <button
-                key={filter}
-                type="button"
-                role="checkbox"
-                aria-checked={selected}
-                className={`nexops-jobs-filter-pill${selected ? " active" : ""}`}
-                onClick={() => setJobRosterFilters((current) => selected ? current.filter((value) => value !== filter) : [...current, filter])}
-              >
-                <span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span>
-                <span>{filter}</span>
-                <small>{jobRosterCounts[filter]}</small>
-              </button>
-            })}
-          </div> : null}
-        </section>}
+        showHero={workspaceView !== "builder"}
+        metrics={undefined}
       >
-      {workspaceView === "builder" ? <section className="nexops-jobs-layout">
+      {workspaceView === "builder" ? <NexOpsCreationTemplate
+        title="Create Job"
+        detail="Choose the client, define the work, and set the billing plan."
+        icon={<NexOpsNavGlyph module="jobs" />}
+        heroClassName="module-hero-card--quote"
+        backAction={<button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setWorkspaceView("roster")}>← Jobs</button>}
+      ><section className="nexops-jobs-layout">
         <article className="nexops-module-card nexops-jobs-create-card">
           <p className="eyebrow">Manual Create</p>
           <h2>New Job</h2>
@@ -1892,15 +1862,9 @@ export function NexOpsJobsPage(props: {
           </form>
         </article>
 
-      </section> : null}
+      </section></NexOpsCreationTemplate> : null}
 
-      {workspaceView === "roster" && jobRosterFilters.length ? <section className="nexops-quote-filtered-roster nexops-jobs-roster-card" aria-label="Job results">
-          <div className="nexops-quote-filtered-roster-heading">
-            <h2>{filteredJobs.length} {filteredJobs.length === 1 ? "Result" : "Results"}</h2>
-            <span className="sr-only">Job Roster</span>
-          </div>
-          <div className="nexops-quote-filtered-table">
-          <div className="nexops-quote-filtered-list">
+      {workspaceView === "roster" && jobRosterFilters.length ? <NexOpsRosterSurface ariaLabel="Search and filter jobs" searchTitle="Search Jobs" resultNoun="Job" resultCount={filteredJobs.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search all jobs, including history</span><input value={jobSearch} onChange={(event) => setJobSearch(event.target.value)} placeholder="Search jobs" /></label>} filter={<button type="button" className="nexops-jobs-filter-pill nexops-quote-filter-trigger" onClick={() => setJobFiltersOpen((current) => !current)} aria-expanded={jobFiltersOpen}><span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span><span className="nexops-quote-filter-label">Filter</span>{jobRosterFilters.length ? <small>{filteredJobs.length}</small> : null}</button>} filterOptions={jobFiltersOpen ? <div className="nexops-quote-filter-options" aria-label="Job Status Filters">{JOB_ROSTER_FILTERS.map((filter) => { const selected = jobRosterFilters.includes(filter); return <button key={filter} type="button" role="checkbox" aria-checked={selected} className={`nexops-jobs-filter-pill${selected ? " active" : ""}`} onClick={() => setJobRosterFilters((current) => selected ? current.filter((value) => value !== filter) : [...current, filter])}><span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span><span>{filter}</span><small>{jobRosterCounts[filter]}</small></button>; })}</div> : undefined} empty={!jobs.length ? <p className="nexops-empty-copy">No Jobs Yet. Requests and approved quotes can start here, and manual jobs can too.</p> : !filteredJobs.length ? <p className="nexops-empty-copy">No Jobs Match This Search Or Status Right Now.</p> : undefined}>
             {filteredJobs.map((job) => (
               <article
                 key={job.id}
@@ -1923,11 +1887,7 @@ export function NexOpsJobsPage(props: {
                 </div> : null}
               </article>
             ))}
-            {!jobs.length ? <p className="nexops-empty-copy">No jobs yet. Requests and approved quotes can start here, and manual jobs can too.</p> : null}
-            {jobs.length > 0 && !filteredJobs.length ? <p className="nexops-empty-copy">No jobs match this search or status right now.</p> : null}
-          </div>
-          </div>
-        </section> : null}
+      </NexOpsRosterSurface> : null}
       </NexOpsRosterTemplate>
 
       {detailOpen ? <NexOpsDetailTemplate

@@ -1203,3 +1203,11 @@
     padding: 18px;
   }
 }
+.nexops-creation-content .nexops-mobile-client-head {
+  display: none;
+}
+
+.nexops-creation-content .nexops-mobile-client-screen,
+.nexops-creation-content .nexops-client-form {
+  margin: 0;
+}

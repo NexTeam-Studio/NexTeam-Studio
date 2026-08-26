@@ -8,7 +8,7 @@ import { QuoteTemplateEditor } from "../quoteTemplates/QuoteTemplateEditor";
 import { NexopsActionButton, NexopsActionRail, NexopsBanner, NexopsProgressStrip, NexopsSectionCard, NexopsStatusPill } from "../../../../shared/ui/NexOpsUiKit";
 import { quoteTemplateVariables, resolveTemplateDraft } from "../../../../shared/communications/communicationTemplates";
 import { intakeDetailFacts, prominentIntakeFacts } from "../../../../shared/intake/intakePresentation";
-import { NexOpsCreationTemplate, NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsCreationTemplate, NexOpsDetailTemplate, NexOpsRosterSurface, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { QUOTE_CREATION_ROTATING_LINES } from "./quoteCreationCopy";
 
 type QuoteStatus =
@@ -1810,42 +1810,9 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         heroClassName="module-hero-card--quote"
         showHero={workspaceView !== "builder"}
         primaryAction={workspaceView === "builder" ? <button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => { setWorkspaceView("roster"); setQuoteBuilderMode(null); }}>← Quotes</button> : <button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
-        metrics={workspaceView === "builder" ? undefined : <section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" id="quote-search-filter" aria-label="Search and filter quotes">
-          <h2>Search Quotes</h2>
-          <label className="nexops-quote-roster-search">
-            <span className="sr-only">Search quotes</span>
-            <input placeholder="Search quotes" value={quoteSearch} onChange={(event) => setQuoteSearch(event.target.value)} />
-          </label>
-          <button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={quoteRosterFilterOpen} aria-controls="quote-status-filter-options" onClick={() => setQuoteRosterFilterOpen((current) => !current)}>
-            <span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span>
-            <span className="nexops-quote-filter-label">Filter</span>
-            {quoteRosterFilters.length ? <small>{filteredQuotes.length}</small> : null}
-          </button>
-          {quoteRosterFilterOpen ? <div className="nexops-quote-filter-options" id="quote-status-filter-options" aria-label="Quote status filters">
-            {QUOTE_ROSTER_FILTERS.map((filter) => {
-              const selected = quoteRosterFilters.includes(filter.value);
-              return <button
-                key={filter.value}
-                type="button"
-                role="checkbox"
-                aria-checked={selected}
-                className={`nexops-jobs-filter-pill${selected ? " active" : ""}`}
-                onClick={() => setQuoteRosterFilters((current) => selected ? current.filter((value) => value !== filter.value) : [...current, filter.value])}
-              >
-                <span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span>
-                <span>{filter.label}</span>
-                <small>{quoteRosterCounts[filter.value]}</small>
-              </button>;
-            })}
-          </div> : null}
-        </section>}
+        metrics={undefined}
       >
-      {workspaceView === "roster" && quoteRosterFilters.length ? <section className="nexops-quote-filtered-roster" id="quote-results-roster" aria-label="Filtered quote results">
-        <div className="nexops-quote-filtered-roster-heading">
-          <h2>{filteredQuotes.length} {filteredQuotes.length === 1 ? "Result" : "Results"}</h2>
-        </div>
-        <div className="nexops-quote-filtered-table">
-        {filteredQuotes.length ? <div className="nexops-quote-filtered-list" id="expandable-quote-roster-record">
+      {workspaceView === "roster" && quoteRosterFilters.length ? <NexOpsRosterSurface ariaLabel="Search and filter quotes" searchTitle="Search Quotes" resultNoun="Quote" resultCount={filteredQuotes.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search quotes</span><input placeholder="Search quotes" value={quoteSearch} onChange={(event) => setQuoteSearch(event.target.value)} /></label>} filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={quoteRosterFilterOpen} aria-controls="quote-status-filter-options" onClick={() => setQuoteRosterFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span><span className="nexops-quote-filter-label">Filter</span>{quoteRosterFilters.length ? <small>{filteredQuotes.length}</small> : null}</button>} filterOptions={quoteRosterFilterOpen ? <div className="nexops-quote-filter-options" id="quote-status-filter-options" aria-label="Quote status filters">{QUOTE_ROSTER_FILTERS.map((filter) => { const selected = quoteRosterFilters.includes(filter.value); return <button key={filter.value} type="button" role="checkbox" aria-checked={selected} className={`nexops-jobs-filter-pill${selected ? " active" : ""}`} onClick={() => setQuoteRosterFilters((current) => selected ? current.filter((value) => value !== filter.value) : [...current, filter.value])}><span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span><span>{filter.label}</span><small>{quoteRosterCounts[filter.value]}</small></button>; })}</div> : undefined} empty={!filteredQuotes.length ? <div className="nexops-quote-filtered-empty"><h2>No Quotes Match This View Yet</h2><p>Adjust the selected statuses or search terms to see quotes here.</p></div> : undefined}>
           {filteredQuotes.map((quote) => {
             const client = props.clients.find((candidate) => candidate.id === quote.clientId);
             const expanded = expandedFilteredQuoteId === quote.id;
@@ -1867,9 +1834,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
               </div> : null}
             </article>;
           })}
-        </div> : <div className="nexops-quote-filtered-empty"><h2>No quotes match this view yet</h2><p>Adjust the selected statuses or search terms to see quotes here.</p></div>}
-        </div>
-      </section> : null}
+      </NexOpsRosterSurface> : null}
       {workspaceView === "builder" ? (
       <NexOpsCreationTemplate
         title="Create Quote"

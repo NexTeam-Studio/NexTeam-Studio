@@ -69,6 +69,43 @@ export function NexOpsRosterTemplate(props: {
 }
 
 /**
+ * Shared Layout Part for the interactive portion of a roster Page.  Every
+ * consumer supplies domain data and actions only; this component owns the
+ * Search, Filter, and Results hierarchy used by the approved Quotes roster.
+ */
+export function NexOpsRosterSurface(props: {
+  ariaLabel: string;
+  searchTitle: string;
+  search: React.ReactNode;
+  filter: React.ReactNode;
+  filterOptions?: React.ReactNode;
+  resultCount: number;
+  resultNoun: string;
+  children: React.ReactNode;
+  empty?: React.ReactNode;
+}): React.ReactElement {
+  return (
+    <>
+      <section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" aria-label={props.ariaLabel}>
+        <h2>{props.searchTitle}</h2>
+        {props.search}
+        {props.filter}
+        {props.filterOptions}
+      </section>
+      <section className="nexops-quote-filtered-roster" aria-label={`${props.resultNoun} results`}>
+        <div className="nexops-quote-filtered-roster-heading">
+          <h2>{props.resultCount} {props.resultCount === 1 ? "Result" : "Results"}</h2>
+        </div>
+        <div className="nexops-quote-filtered-table">
+          <div className="nexops-quote-filtered-list">{props.children}</div>
+          {props.empty}
+        </div>
+      </section>
+    </>
+  );
+}
+
+/**
  * Shared Page Template for create/composer Pages. Consumers supply their
  * domain workflow as children while this template owns the creation Hero,
  * back action region, and creation content frame.

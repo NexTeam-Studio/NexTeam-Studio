@@ -1,6 +1,6 @@
 import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
 import React, { useEffect, useMemo, useState } from "react";
-import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsCreationTemplate, NexOpsDetailTemplate, NexOpsRosterSurface, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 
 type RequestStatus = "new" | "archived" | "converted_to_quote" | "converted_to_job";
@@ -372,6 +372,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   const [requestSearch, setRequestSearch] = useState("");
   const [requestFilter, setRequestFilter] = useState<"all" | RequestStatus>("all");
   const [requestFilterOpen, setRequestFilterOpen] = useState(false);
+  const [requestCreationOpen, setRequestCreationOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState("");
   const [selectedFormId, setSelectedFormId] = useState("");
   const initialClientId = props.initialClientId && props.clients.some((client) => client.id === props.initialClientId) ? props.initialClientId : "";
@@ -863,6 +864,40 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
     }
   }
 
+  if (requestCreationOpen) {
+    return <NexOpsCreationTemplate
+      title="Create Request"
+      detail="Capture the client, service location, and intake details without losing downstream context."
+      icon={<NexOpsNavGlyph module="requests" />}
+      heroClassName="module-hero-card--quote"
+      backAction={<button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setRequestCreationOpen(false)}>← Requests</button>}
+    >
+      <article className="nexops-module-card nexops-quote-composer-card">
+        <form className="nexops-request-builder" onSubmit={(event) => void createRequest(event)}>
+          <section className="nexops-quote-panel">
+            <div className="nexops-quote-setup-body">
+              <section className="nexops-quote-client-hero" aria-label="Client selection">
+                <h3>Select Client</h3>
+                <div className="nexops-quote-choice-tabs" role="tablist" aria-label="Client selection">
+                  <button className={officeMode === "new_client" ? "active" : ""} type="button" onClick={() => setOfficeMode("new_client")}>Add New</button>
+                  <button className={officeMode === "existing_client" ? "active" : ""} type="button" onClick={() => setOfficeMode("existing_client")}>Existing</button>
+                </div>
+              </section>
+              <label className="nexops-field"><span>Request Form</span><select value={selectedForm?.id ?? ""} onChange={(event) => setSelectedFormId(event.target.value)}>{forms.map((form) => <option value={form.id} key={form.id}>{form.title}</option>)}</select></label>
+              {officeMode === "existing_client" ? <>
+                <label className="nexops-field"><span>Existing Client</span><select value={selectedClientId} onChange={(event) => setSelectedClientId(event.target.value)}><option value="">Select Client</option>{props.clients.map((client) => <option value={client.id} key={client.id}>{clientDisplayName(client)}</option>)}</select></label>
+                <label className="nexops-field"><span>Property Handling</span><select value={propertyMode} onChange={(event) => setPropertyMode(event.target.value as "existing_property" | "new_property")}><option value="existing_property">Use Existing Property</option><option value="new_property">Capture New Property</option></select></label>
+                {propertyMode === "existing_property" ? <label className="nexops-field"><span>Existing Property</span><select value={selectedPropertyId} onChange={(event) => setSelectedPropertyId(event.target.value)}><option value="">Select Property</option>{existingProperties.map((property) => <option value={property.id} key={property.id}>{property.siteName || property.label || property.address.street1}</option>)}</select></label> : null}
+              </> : null}
+            </div>
+          </section>
+          {selectedForm ? <section className="nexops-quote-panel"><div className="nexops-quote-simple-heading nexops-quote-details-banner"><h3>Request Details</h3><span>Complete the selected intake form before saving the request.</span></div><div className="nexops-quote-setup-body">{selectedForm.fieldDefinitions.map((field) => <label className={`nexops-field ${field.prominent ? "nexops-request-prominent" : ""}`} key={field.key}><span>{field.label}</span>{field.type === "textarea" ? <textarea rows={4} value={String(currentFieldValue(field))} onChange={(event) => updateFieldValue(field.key, event.target.value)} /> : field.type === "select" || field.key === "salesperson_user_id" ? <select value={String(currentFieldValue(field))} onChange={(event) => updateFieldValue(field.key, event.target.value)}><option value="">Select</option>{field.key === "salesperson_user_id" ? activeTenantUsers.map((user) => <option value={user.id} key={user.id}>{user.displayName}</option>) : field.options?.map((option) => <option value={option} key={option}>{titleCaseUiLabel(option)}</option>)}</select> : field.type === "boolean" ? <span className="nexops-check-field inline"><input checked={Boolean(currentFieldValue(field))} type="checkbox" onChange={(event) => updateFieldValue(field.key, event.target.checked)} />{Boolean(currentFieldValue(field)) ? "Flagged" : "Not flagged"}</span> : <input type={field.type === "email" ? "email" : field.type === "phone" ? "tel" : "text"} value={String(currentFieldValue(field))} onChange={(event) => updateFieldValue(field.key, event.target.value)} />}{field.helpText ? <small>{field.helpText}</small> : null}</label>)}</div></section> : <p className="nexops-empty-copy">Create a form in the library first so the office and website can use the same intake definitions.</p>}
+          <section className="nexops-quote-final-action"><button className="nexops-quote-primary-button" type="submit" disabled={Boolean(actionBusy) || !selectedForm}>{actionBusy === "create-request" ? "Saving..." : "Create Request"}</button><small>{statusMessage}</small></section>
+        </form>
+      </article>
+    </NexOpsCreationTemplate>;
+  }
+
   return (
       <NexOpsRosterTemplate
         eyebrow="NexOps Intake"
@@ -872,21 +907,18 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         heroClassName="module-hero-card--quote"
       primaryAction={(
         <div className="nexops-inline-actions">
+          <button type="button" onClick={() => setRequestCreationOpen(true)}>+ New Request</button>
           <button type="button" onClick={() => void refresh()} disabled={Boolean(actionBusy)}>Refresh</button>
           <button type="button" onClick={() => void backfillLeads()} disabled={Boolean(actionBusy)}>
             {actionBusy === "backfill" ? "Backfilling..." : "Backfill Legacy Leads"}
           </button>
         </div>
       )}
-      metrics={<section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" aria-label="Search and filter requests">
-        <h2>Search Requests</h2><label className="nexops-quote-roster-search"><span className="sr-only">Search Requests</span><input placeholder="Search Requests" value={requestSearch} onChange={(event) => setRequestSearch(event.target.value)} /></label>
-        <button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={requestFilterOpen} onClick={() => setRequestFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true">☷</span><span className="nexops-quote-filter-label">Filter</span><small>{filteredRequests.length}</small></button>
-        {requestFilterOpen ? <div className="nexops-quote-filter-options" aria-label="Request status filters">{REQUEST_FILTERS.filter((filter) => filter.value !== "all").map((filter) => <button key={filter.value} type="button" role="radio" aria-checked={requestFilter === filter.value} className={`nexops-jobs-filter-pill${requestFilter === filter.value ? " active" : ""}`} onClick={() => setRequestFilter(filter.value)}><span>{filter.label}</span><small>{requestCounts[filter.value]}</small></button>)}</div> : null}
-      </section>}
+      metrics={undefined}
     >
 
       <div className="nexops-module-grid nexops-module-grid-wide">
-        <details className="nexops-module-card nexops-density-disclosure-card nexops-request-builder-card">
+        <details className="nexops-quote-filtered-row expanded nexops-request-builder-card">
           <summary>
             <div className="nexops-density-disclosure-copy">
               <p className="eyebrow">Office Intake</p>
@@ -1043,7 +1075,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
           </div>
         </details>
 
-        <details className="nexops-module-card nexops-density-disclosure-card nexops-request-library-card">
+        <details className="nexops-quote-filtered-row expanded nexops-request-library-card">
           <summary>
             <div className="nexops-density-disclosure-copy">
               <p className="eyebrow">Multi-Form Library</p>
@@ -1114,7 +1146,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       </div>
 
       <div className="nexops-two-column">
-        <section className="nexops-quote-filtered-roster" aria-label="Request results"><div className="nexops-quote-filtered-roster-heading"><h2>{filteredRequests.length} {filteredRequests.length === 1 ? "Result" : "Results"}</h2></div><div className="nexops-quote-filtered-table"><div className="nexops-quote-filtered-list">{filteredRequests.map((request) => { const expanded = request.id === selectedRequest?.id; return <article className={`nexops-quote-filtered-row${expanded ? " expanded" : ""}`} key={request.id}><button className="nexops-quote-filtered-identity-banner" type="button" aria-expanded={expanded} onClick={() => setSelectedRequestId(expanded ? "" : request.id)}><span className="nexops-quote-filtered-identity"><strong>{request.clientName}</strong><small>{request.subject}</small></span></button>{expanded ? <div className="nexops-quote-filtered-details"><span className="nexops-quote-filtered-title" data-label="Request">{request.subject}</span><span className="nexops-quote-filtered-updated" data-label="Service Location">{formatAddress(request.propertyAddress) || request.email || request.phone || requestSourceLabel(request.source)}</span><span className="nexops-quote-filtered-status" data-label="Status"><mark>{requestStatusLabel(request.status)}</mark></span><span className="nexops-quote-filtered-activity" data-label="Request Record"><small>{requestSourceLabel(request.source)}</small><button className="nexops-quote-filtered-open" type="button" onClick={() => setSelectedRequestId(request.id)}>Open Request <span aria-hidden="true">→</span></button></span></div> : null}</article>; })}{!filteredRequests.length ? <div className="nexops-quote-filtered-empty"><h2>No Requests Match This View</h2><p>Change the search or status filter to see requests.</p></div> : null}</div></div></section>
+        <NexOpsRosterSurface ariaLabel="Search and filter requests" searchTitle="Search Requests" resultNoun="Request" resultCount={filteredRequests.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search Requests</span><input placeholder="Search Requests" value={requestSearch} onChange={(event) => setRequestSearch(event.target.value)} /></label>} filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={requestFilterOpen} onClick={() => setRequestFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true">☷</span><span className="nexops-quote-filter-label">Filter</span><small>{filteredRequests.length}</small></button>} filterOptions={requestFilterOpen ? <div className="nexops-quote-filter-options" aria-label="Request status filters">{REQUEST_FILTERS.filter((filter) => filter.value !== "all").map((filter) => <button key={filter.value} type="button" role="radio" aria-checked={requestFilter === filter.value} className={`nexops-jobs-filter-pill${requestFilter === filter.value ? " active" : ""}`} onClick={() => setRequestFilter(filter.value)}><span>{filter.label}</span><small>{requestCounts[filter.value]}</small></button>)}</div> : undefined} empty={!filteredRequests.length ? <div className="nexops-quote-filtered-empty"><h2>No Requests Match This View</h2><p>Change the search or status filter to see requests.</p></div> : undefined}>{filteredRequests.map((request) => { const expanded = request.id === selectedRequest?.id; return <article className={`nexops-quote-filtered-row${expanded ? " expanded" : ""}`} key={request.id}><button className="nexops-quote-filtered-identity-banner" type="button" aria-expanded={expanded} onClick={() => setSelectedRequestId(expanded ? "" : request.id)}><span className="nexops-quote-filtered-identity"><strong>{request.clientName}</strong><small>{request.subject}</small></span></button>{expanded ? <div className="nexops-quote-filtered-details"><span className="nexops-quote-filtered-title" data-label="Request">{request.subject}</span><span className="nexops-quote-filtered-updated" data-label="Service Location">{formatAddress(request.propertyAddress) || request.email || request.phone || requestSourceLabel(request.source)}</span><span className="nexops-quote-filtered-status" data-label="Status"><mark>{requestStatusLabel(request.status)}</mark></span><span className="nexops-quote-filtered-activity" data-label="Request Record"><small>{requestSourceLabel(request.source)}</small><button className="nexops-quote-filtered-open" type="button" onClick={() => setSelectedRequestId(request.id)}>Open Request <span aria-hidden="true">→</span></button></span></div> : null}</article>; })}</NexOpsRosterSurface>
 
         {selectedRequest ? (
           <NexOpsDetailTemplate
