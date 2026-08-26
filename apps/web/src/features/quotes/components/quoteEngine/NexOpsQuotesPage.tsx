@@ -43,6 +43,13 @@ const QUOTE_FILTERS: Array<{ value: QuoteFilter; label: string }> = [
   { value: "expired", label: "Expired" }
 ];
 
+const QUOTE_ROSTER_FILTERS: Array<{ value: Extract<QuoteFilter, "draft" | "sent" | "change_requested" | "approved">; label: string }> = [
+  { value: "draft", label: "Draft" },
+  { value: "sent", label: "Sent" },
+  { value: "change_requested", label: "Needs Changes" },
+  { value: "approved", label: "Approved" }
+];
+
 interface ClientOption {
   id: string;
   name: string;
@@ -1767,40 +1774,26 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         detail={workspaceView === "builder" ? quoteCreationLine : "Build clear client-ready proposals, keep pricing in one place, and move the approved work forward."}
         icon={<NexOpsNavGlyph module="quotes" />}
         heroClassName="module-hero-card--quote"
-        primaryAction={workspaceView === "builder" ? undefined : <button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
-        metrics={workspaceView === "builder" ? undefined : <div className="nexops-workflow-strip">
-        <article>
-          <span>Draft</span>
-          <strong>{counts.draft}</strong>
-          <p>Still in office build mode.</p>
-        </article>
-        <article>
-          <span>Sent</span>
-          <strong>{counts.sent}</strong>
-          <p>Client approval link is live.</p>
-        </article>
-        <article>
-          <span>Needs Changes</span>
-          <strong>{counts.change_requested}</strong>
-          <p>Client asked for revisions.</p>
-        </article>
-        <article>
-          <span>Approved</span>
-          <strong>{counts.approved}</strong>
-          <p>Ready to convert to a job.</p>
-        </article>
-        <article>
-          <span>Expired</span>
-          <strong>{counts.expired}</strong>
-          <p>Renew to rotate the link.</p>
-        </article>
-        </div>}
-        controls={workspaceView === "builder" ? undefined : <div className="nexops-quote-template-tabs" role="tablist" aria-label="Quote workspace">
-          <button type="button" className={workspaceView === "roster" ? "active" : ""} aria-current={workspaceView === "roster" ? "page" : undefined} onClick={() => setWorkspaceView("roster")}>Quote Roster</button>
-          <button type="button" className={workspaceView === "builder" ? "active" : ""} aria-current={workspaceView === "builder" ? "page" : undefined} onClick={openBuilder}>Quote Builder</button>
-          <button type="button" className={workspaceView === "detail" ? "active" : ""} aria-current={workspaceView === "detail" ? "page" : undefined} onClick={() => setWorkspaceView("detail")} disabled={!selectedQuote}>Quote Details</button>
-          <button type="button" className="quiet" onClick={() => void refresh()} disabled={Boolean(busy)}>Refresh</button>
-        </div>}
+        primaryAction={workspaceView === "builder" ? <button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => { setWorkspaceView("roster"); setQuoteBuilderMode(null); }}>← Quotes</button> : <button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
+        metrics={workspaceView === "builder" ? undefined : <section className="nexops-quote-roster-filters" aria-label="Search and filter quotes">
+          <label className="nexops-quote-roster-search">
+            <span className="sr-only">Search quotes</span>
+            <input placeholder="Search quotes" value={quoteSearch} onChange={(event) => setQuoteSearch(event.target.value)} />
+          </label>
+          <div className="nexops-jobs-filter-row" aria-label="Quote status filters">
+            {QUOTE_ROSTER_FILTERS.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                className={`nexops-jobs-filter-pill${quoteFilter === filter.value ? " active" : ""}`}
+                onClick={() => setQuoteFilter((current) => current === filter.value ? "all" : filter.value)}
+              >
+                <span>{filter.label}</span>
+                <small>{counts[filter.value]}</small>
+              </button>
+            ))}
+          </div>
+        </section>}
       >
       {workspaceView === "builder" ? (
 
@@ -2077,22 +2070,6 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
               <p className="eyebrow">Quote List</p>
               <h2>{filteredQuotes.length} visible</h2>
             </div>
-            <div className="nexops-inline-actions">
-              <input placeholder="Search quotes" value={quoteSearch} onChange={(event) => setQuoteSearch(event.target.value)} />
-            </div>
-          </div>
-          <div className="nexops-jobs-filter-row" aria-label="Quote status filters">
-            {QUOTE_FILTERS.map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                className={`nexops-jobs-filter-pill${quoteFilter === filter.value ? " active" : ""}`}
-                onClick={() => setQuoteFilter(filter.value)}
-              >
-                <span>{filter.label}</span>
-                <small>{counts[filter.value]}</small>
-              </button>
-            ))}
           </div>
           <ul className="nexops-record-list">
             {filteredQuotes.map((quote) => {
