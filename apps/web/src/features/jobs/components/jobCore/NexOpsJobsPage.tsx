@@ -685,6 +685,7 @@ export function NexOpsJobsPage(props: {
   initialFilter?: JobFilter;
 }): React.ReactElement {
   const [jobs, setJobs] = useState<JobSummary[]>([]);
+  const [workspaceView, setWorkspaceView] = useState<"roster" | "builder">(props.initialClientId ? "builder" : "roster");
   const [selectedJobId, setSelectedJobId] = useState("");
   const [detailOpen, setDetailOpen] = useState(Boolean(props.focusedJobId));
   const [detail, setDetail] = useState<JobDetail | null>(null);
@@ -1721,12 +1722,14 @@ export function NexOpsJobsPage(props: {
   return (
     <section className="nexops-module-page">
       <NexOpsRosterTemplate
-        title="Jobs"
-        detail="Manage active work, visits, reminders, documents, and closeout from one connected operational rail."
+        title={workspaceView === "builder" ? "Create Job" : "Jobs"}
+        detail={workspaceView === "builder" ? "Choose the client, define the work, and set the billing plan." : "Manage active work, visits, reminders, documents, and closeout from one connected operational rail."}
         icon={<NexOpsNavGlyph module="jobs" />}
-        primaryAction={<button className="nexops-roster-primary-button" type="button" onClick={() => document.getElementById("nexops-new-job-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}>+ New Job</button>}
+        primaryAction={workspaceView === "builder"
+          ? <button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setWorkspaceView("roster")}>← Jobs</button>
+          : <button className="nexops-quote-primary-button" type="button" onClick={() => setWorkspaceView("builder")}>+ New Job</button>}
         heroClassName="module-hero-card--quote"
-        metrics={<section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" aria-label="Search and filter jobs">
+        metrics={workspaceView === "builder" ? undefined : <section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" aria-label="Search and filter jobs">
           <h2>Search Jobs</h2>
           <label className="nexops-quote-roster-search">
             <span className="sr-only">Search all jobs, including history</span>
@@ -1762,7 +1765,7 @@ export function NexOpsJobsPage(props: {
           </div> : null}
         </section>}
       >
-      <section className="nexops-jobs-layout">
+      {workspaceView === "builder" ? <section className="nexops-jobs-layout">
         <article className="nexops-module-card nexops-jobs-create-card">
           <p className="eyebrow">Manual Create</p>
           <h2>New Job</h2>
@@ -1867,7 +1870,9 @@ export function NexOpsJobsPage(props: {
           </form>
         </article>
 
-        <section className="nexops-quote-filtered-roster nexops-jobs-roster-card" aria-label="Job results">
+      </section> : null}
+
+      {workspaceView === "roster" ? <section className="nexops-quote-filtered-roster nexops-jobs-roster-card" aria-label="Job results">
           <div className="nexops-quote-filtered-roster-heading">
             <h2>{filteredJobs.length} {filteredJobs.length === 1 ? "Result" : "Results"}</h2>
             <span className="sr-only">Job Roster</span>
@@ -1900,8 +1905,7 @@ export function NexOpsJobsPage(props: {
             {jobs.length > 0 && !filteredJobs.length ? <p className="nexops-empty-copy">No jobs match this search or status right now.</p> : null}
           </div>
           </div>
-        </section>
-      </section>
+        </section> : null}
       </NexOpsRosterTemplate>
 
       {detailOpen ? <NexOpsDetailTemplate
