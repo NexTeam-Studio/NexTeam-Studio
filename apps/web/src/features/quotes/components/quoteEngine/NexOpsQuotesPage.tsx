@@ -1832,28 +1832,34 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           </div> : null}
         </section>}
       >
-      {workspaceView === "roster" && quoteRosterFilters.length ? <article className="nexops-module-card nexops-quote-filtered-roster" aria-label="Filtered quote results">
-        <div className="nexops-page-heading">
-          <div>
-            <p className="eyebrow">Quote Results</p>
-            <h2>{filteredQuotes.length} {filteredQuotes.length === 1 ? "result" : "results"}</h2>
-          </div>
+      {workspaceView === "roster" && quoteRosterFilters.length ? <section className="nexops-quote-filtered-roster" aria-label="Filtered quote results">
+        <div className="nexops-quote-filtered-roster-heading">
+          <p className="eyebrow">Quote Results</p>
+          <h2>{filteredQuotes.length} {filteredQuotes.length === 1 ? "result" : "results"}</h2>
         </div>
-        {filteredQuotes.length ? <ul className="nexops-record-list">
+        <div className="nexops-quote-filtered-table">
+        {filteredQuotes.length ? <div className="nexops-quote-filtered-list">
           {filteredQuotes.map((quote) => {
             const client = props.clients.find((candidate) => candidate.id === quote.clientId);
-            return <li key={quote.id}>
-              <span>
-                <strong>{quote.number ?? quote.id}</strong>
-                <small>{quote.title}</small>
-                <small>{clientDisplayName(client)} - {formatTimestamp(quote.updatedAt ?? quote.createdAt)}</small>
+            return <article className="nexops-quote-filtered-row" key={quote.id}>
+              <span className="nexops-quote-filtered-identity-banner">
+                <span className="nexops-quote-filtered-identity" data-label="Quote">
+                  <strong>{quote.number ?? quote.id}</strong>
+                  <small>{quote.title}</small>
+                </span>
               </span>
-              <mark>{quoteStatusLabel(quote.status)}</mark>
-              <b>{money(quote.totals.total)}</b>
-            </li>;
+              <span className="nexops-quote-filtered-client" data-label="Client">{clientDisplayName(client)}</span>
+              <span className="nexops-quote-filtered-updated" data-label="Updated">{formatTimestamp(quote.updatedAt ?? quote.createdAt)}</span>
+              <span className="nexops-quote-filtered-status" data-label="Status"><mark>{quoteStatusLabel(quote.status)}</mark></span>
+              <span className="nexops-quote-filtered-activity" data-label="Quote record">
+                <small>{money(quote.totals.total)}</small>
+                <span className="nexops-quote-filtered-open">Open Quote <span aria-hidden="true">→</span></span>
+              </span>
+            </article>;
           })}
-        </ul> : <p className="nexops-empty-state">No quotes match the selected filters.</p>}
-      </article> : null}
+        </div> : <div className="nexops-quote-filtered-empty"><h2>No quotes match this view yet</h2><p>Adjust the selected statuses or search terms to see quotes here.</p></div>}
+        </div>
+      </section> : null}
       {workspaceView === "builder" ? (
 
       <div className="nexops-module-grid nexops-module-grid-wide">
