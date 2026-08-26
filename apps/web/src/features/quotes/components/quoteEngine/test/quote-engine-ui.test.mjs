@@ -126,6 +126,11 @@ test("quote workspace uses the shared business templates and retains the inline 
   assert.match(source, /Quote Builder/);
   assert.match(source, /From Template/);
   assert.match(source, /Choose a Template/);
+  assert.match(source, /aria-controls="quote-status-filter-options"/);
+  assert.match(source, /Awaiting Response/);
+  assert.match(source, /Changes Requested/);
+  assert.match(source, /Converted/);
+  assert.match(source, /quoteRosterFilters\.some/);
   assert.match(source, /quoteBuilderMode \? <>/);
   assert.match(source, /nexops-mobile-profile-summary/);
   assert.match(source, /MobileClientSummaryGlyph kind="phone"/);

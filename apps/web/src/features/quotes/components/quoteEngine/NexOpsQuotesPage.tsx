@@ -29,6 +29,7 @@ type DiscountKind = "amount" | "percent";
 type DepositKind = "amount" | "percent";
 type DocumentKind = "request" | "quote" | "job" | "invoice" | "receipt";
 type QuoteFilter = "all" | "draft" | "sent" | "change_requested" | "approved" | "approved_pending_conversion" | "expired";
+type QuoteRosterFilter = "draft" | "awaiting_response" | "change_requested" | "approved" | "converted";
 type QuoteUiTone = "dominant" | "secondary" | "quiet" | "danger" | "success" | "warning" | "blocked";
 type QuoteSurfaceAction = "send" | "manual-approve" | "renew" | "convert-to-job" | "invoice" | "copy-portal" | "edit" | "none";
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
@@ -43,11 +44,12 @@ const QUOTE_FILTERS: Array<{ value: QuoteFilter; label: string }> = [
   { value: "expired", label: "Expired" }
 ];
 
-const QUOTE_ROSTER_FILTERS: Array<{ value: Extract<QuoteFilter, "draft" | "sent" | "change_requested" | "approved">; label: string }> = [
+const QUOTE_ROSTER_FILTERS: Array<{ value: QuoteRosterFilter; label: string }> = [
   { value: "draft", label: "Draft" },
-  { value: "sent", label: "Sent" },
-  { value: "change_requested", label: "Needs Changes" },
-  { value: "approved", label: "Approved" }
+  { value: "awaiting_response", label: "Awaiting Response" },
+  { value: "change_requested", label: "Changes Requested" },
+  { value: "approved", label: "Approved" },
+  { value: "converted", label: "Converted" }
 ];
 
 interface ClientOption {
@@ -1052,6 +1054,22 @@ function quoteMatchesFilter(quote: QuoteRecord, filter: QuoteFilter): boolean {
   return quote.status === filter;
 }
 
+function quoteMatchesRosterFilter(quote: QuoteRecord, filter: QuoteRosterFilter): boolean {
+  if (filter === "draft") {
+    return quote.status === "draft";
+  }
+  if (filter === "awaiting_response") {
+    return quote.status === "sent";
+  }
+  if (filter === "change_requested") {
+    return quote.status === "change_requested";
+  }
+  if (filter === "converted") {
+    return Boolean(quote.convertedJobId);
+  }
+  return (quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed") && !quote.convertedJobId;
+}
+
 function defaultQuoteSendDraft(
   quote: QuoteRecord,
   client: ClientOption | undefined,
@@ -1103,6 +1121,8 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [composer, setComposer] = useState<QuoteComposerDraft>(() => composerFromDefaults(props.clients, props.properties, props.tenantUsers, null, null, undefined, props.initialClientId));
   const [quoteSearch, setQuoteSearch] = useState("");
   const [quoteFilter, setQuoteFilter] = useState<QuoteFilter>("all");
+  const [quoteRosterFilters, setQuoteRosterFilters] = useState<QuoteRosterFilter[]>([]);
+  const [quoteRosterFilterOpen, setQuoteRosterFilterOpen] = useState(false);
   const [selectedQuoteId, setSelectedQuoteId] = useState("");
   const [statusMessage, setStatusMessage] = useState("Loading quotes...");
   const [busy, setBusy] = useState("");
@@ -1721,7 +1741,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   }
 
   const filteredQuotes = quotes.filter((quote) => {
-    if (!quoteMatchesFilter(quote, quoteFilter)) {
+    if (quoteRosterFilters.length && !quoteRosterFilters.some((filter) => quoteMatchesRosterFilter(quote, filter))) {
       return false;
     }
     if (!quoteSearch.trim()) {
@@ -1747,6 +1767,13 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
     approved: quotes.filter((quote) => quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed").length,
     approved_pending_conversion: quotes.filter((quote) => (quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed") && !quote.convertedJobId).length,
     expired: quotes.filter((quote) => quote.status === "expired").length
+  };
+  const quoteRosterCounts: Record<QuoteRosterFilter, number> = {
+    draft: quotes.filter((quote) => quoteMatchesRosterFilter(quote, "draft")).length,
+    awaiting_response: quotes.filter((quote) => quoteMatchesRosterFilter(quote, "awaiting_response")).length,
+    change_requested: quotes.filter((quote) => quoteMatchesRosterFilter(quote, "change_requested")).length,
+    approved: quotes.filter((quote) => quoteMatchesRosterFilter(quote, "approved")).length,
+    converted: quotes.filter((quote) => quoteMatchesRosterFilter(quote, "converted")).length
   };
 
   useEffect(() => {
@@ -1781,19 +1808,28 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             <span className="sr-only">Search quotes</span>
             <input placeholder="Search quotes" value={quoteSearch} onChange={(event) => setQuoteSearch(event.target.value)} />
           </label>
-          <div className="nexops-jobs-filter-row" aria-label="Quote status filters">
-            {QUOTE_ROSTER_FILTERS.map((filter) => (
-              <button
+          <button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={quoteRosterFilterOpen} aria-controls="quote-status-filter-options" onClick={() => setQuoteRosterFilterOpen((current) => !current)}>
+            <span>Filter</span>
+            <span className="nexops-quote-filter-chevron" aria-hidden="true">⌄</span>
+            {quoteRosterFilters.length ? <small>{quoteRosterFilters.length}</small> : null}
+          </button>
+          {quoteRosterFilterOpen ? <div className="nexops-quote-filter-options" id="quote-status-filter-options" aria-label="Quote status filters">
+            {QUOTE_ROSTER_FILTERS.map((filter) => {
+              const selected = quoteRosterFilters.includes(filter.value);
+              return <button
                 key={filter.value}
                 type="button"
-                className={`nexops-jobs-filter-pill${quoteFilter === filter.value ? " active" : ""}`}
-                onClick={() => setQuoteFilter((current) => current === filter.value ? "all" : filter.value)}
+                role="checkbox"
+                aria-checked={selected}
+                className={`nexops-jobs-filter-pill${selected ? " active" : ""}`}
+                onClick={() => setQuoteRosterFilters((current) => selected ? current.filter((value) => value !== filter.value) : [...current, filter.value])}
               >
+                <span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span>
                 <span>{filter.label}</span>
-                <small>{counts[filter.value]}</small>
-              </button>
-            ))}
-          </div>
+                <small>{quoteRosterCounts[filter.value]}</small>
+              </button>;
+            })}
+          </div> : null}
         </section>}
       >
       {workspaceView === "builder" ? (
