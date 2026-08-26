@@ -29,6 +29,7 @@ type JobFilter = "All" | JobStatus;
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 
 const JOB_FILTERS: JobFilter[] = ["All", "Upcoming", "Today", "Late", "Unscheduled", "Action Required", "Requires Invoicing", "Archived"];
+const JOB_ROSTER_FILTERS: JobStatus[] = ["Upcoming", "Today", "Late", "Unscheduled", "Action Required", "Requires Invoicing", "Archived"];
 
 interface ClientOption {
   id: string;
@@ -720,7 +721,8 @@ export function NexOpsJobsPage(props: {
   const [closeoutDeliveryStatus, setCloseoutDeliveryStatus] = useState("");
   const [closeoutDeliveryBusy, setCloseoutDeliveryBusy] = useState(false);
   const [actionBusy, setActionBusy] = useState<JobAction | null>(null);
-  const [statusFilter, setStatusFilter] = useState<JobFilter>("All");
+  const [jobRosterFilters, setJobRosterFilters] = useState<JobStatus[]>([]);
+  const [detailStatusFilter, setDetailStatusFilter] = useState<JobFilter>("All");
   const [jobSearch, setJobSearch] = useState("");
   const [jobFiltersOpen, setJobFiltersOpen] = useState(false);
   const [expandedRosterJobId, setExpandedRosterJobId] = useState("");
@@ -751,8 +753,8 @@ export function NexOpsJobsPage(props: {
   const [signatureDraft, setSignatureDraft] = useState<SignatureCaptureValue>(() => blankSignatureCaptureValue());
 
   const filteredJobs = useMemo(
-    () => jobs.filter((job) => (statusFilter === "All" || job.status === statusFilter) && matchesJobSearch(job, jobSearch)),
-    [jobs, statusFilter, jobSearch]
+    () => jobs.filter((job) => (!jobRosterFilters.length || jobRosterFilters.includes(job.status)) && matchesJobSearch(job, jobSearch)),
+    [jobs, jobRosterFilters, jobSearch]
   );
   const createClientOptions = useMemo(
     () => mergeJobClientOptions(props.clients, createdClientOption),
@@ -771,6 +773,22 @@ export function NexOpsJobsPage(props: {
       return counts;
     }, {
       All: 0,
+      Upcoming: 0,
+      Today: 0,
+      Late: 0,
+      Unscheduled: 0,
+      "Action Required": 0,
+      "Requires Invoicing": 0,
+      Archived: 0
+    }),
+    [jobs]
+  );
+
+  const jobRosterCounts = useMemo(
+    () => JOB_ROSTER_FILTERS.reduce<Record<JobStatus, number>>((counts, filter) => {
+      counts[filter] = jobs.filter((job) => job.status === filter).length;
+      return counts;
+    }, {
       Upcoming: 0,
       Today: 0,
       Late: 0,
@@ -1100,7 +1118,8 @@ export function NexOpsJobsPage(props: {
 
   useEffect(() => {
     if (props.initialFilter) {
-      setStatusFilter(props.initialFilter);
+      setDetailStatusFilter(props.initialFilter);
+      setJobRosterFilters(props.initialFilter === "All" ? [] : [props.initialFilter]);
     }
   }, [props.initialFilter]);
 
@@ -1747,21 +1766,24 @@ export function NexOpsJobsPage(props: {
           >
             <span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span>
             <span className="nexops-quote-filter-label">Filter</span>
-            <small>{filteredJobs.length}</small>
+            {jobRosterFilters.length ? <small>{filteredJobs.length}</small> : null}
           </button>
           {jobFiltersOpen ? <div className="nexops-quote-filter-options" aria-label="Job Status Filters">
-            {JOB_FILTERS.map((filter) => (
-              <button
+            {JOB_ROSTER_FILTERS.map((filter) => {
+              const selected = jobRosterFilters.includes(filter);
+              return <button
                 key={filter}
                 type="button"
-                className={`nexops-jobs-filter-pill${statusFilter === filter ? " active" : ""}`}
-                onClick={() => setStatusFilter(filter)}
+                role="checkbox"
+                aria-checked={selected}
+                className={`nexops-jobs-filter-pill${selected ? " active" : ""}`}
+                onClick={() => setJobRosterFilters((current) => selected ? current.filter((value) => value !== filter) : [...current, filter])}
               >
-                <span className="nexops-quote-filter-check" aria-hidden="true">{statusFilter === filter ? "✓" : ""}</span>
+                <span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span>
                 <span>{filter}</span>
-                <small>{filterCounts[filter]}</small>
+                <small>{jobRosterCounts[filter]}</small>
               </button>
-            ))}
+            })}
           </div> : null}
         </section>}
       >
@@ -1872,7 +1894,7 @@ export function NexOpsJobsPage(props: {
 
       </section> : null}
 
-      {workspaceView === "roster" ? <section className="nexops-quote-filtered-roster nexops-jobs-roster-card" aria-label="Job results">
+      {workspaceView === "roster" && jobRosterFilters.length ? <section className="nexops-quote-filtered-roster nexops-jobs-roster-card" aria-label="Job results">
           <div className="nexops-quote-filtered-roster-heading">
             <h2>{filteredJobs.length} {filteredJobs.length === 1 ? "Result" : "Results"}</h2>
             <span className="sr-only">Job Roster</span>
@@ -1919,8 +1941,8 @@ export function NexOpsJobsPage(props: {
             <button
               key={`detail-${filter}`}
               type="button"
-              className={`nexops-jobs-filter-pill${statusFilter === filter ? " active" : ""}`}
-              onClick={() => setStatusFilter(filter)}
+              className={`nexops-jobs-filter-pill${detailStatusFilter === filter ? " active" : ""}`}
+              onClick={() => setDetailStatusFilter(filter)}
             >
               <span>{filter}</span>
               <small>{filterCounts[filter]}</small>
