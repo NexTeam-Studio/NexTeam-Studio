@@ -1,4 +1,5 @@
 import React from "react";
+import { clientDisplayName } from "../../../../nexopsShell/workspaceSupport";
 import type { NexCamWorkspaceBindings } from "../../../../nexcam/areas/capture/hooks/useNexCamWorkspace";
 
 export function MediaLibrarySurface(props: { workspace: NexCamWorkspaceBindings }): React.ReactElement {

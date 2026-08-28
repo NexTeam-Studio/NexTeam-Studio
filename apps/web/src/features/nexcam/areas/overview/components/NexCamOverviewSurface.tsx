@@ -1,4 +1,5 @@
 import React from "react";
+import { ProductLogo } from "../../../../../shared/branding/ProductBranding";
 import type { NexCamWorkspaceBindings } from "../../capture/hooks/useNexCamWorkspace";
 
 export function NexCamOverviewSurface(props: { workspace: NexCamWorkspaceBindings }): React.ReactElement {
