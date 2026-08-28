@@ -1,7 +1,15 @@
 # NexOps NexCam Field Rail
 
-Last updated: 2026-07-18  
-Build piece: NexCam reconcile and build pass + NexCam v2 refinements + payments/signatures pass
+Last updated: 2026-08-28  
+Build piece: NexCam complete-build closure: native checklist, media, report, Nexi, and client-hub rails
+
+## Completion record
+
+- NexCam is the locked product name; legacy documentation uses this name rather than `NexLens`.
+- The default seeded template is `leak_detection_checklist_v1`, derived from the existing Aquatrace R1–R10 extraction contract rather than a second extraction path.
+- The authoritative runtime Page routes are `/nexcam`, `/nexcam/templates`, `/nexcam/photos`, and `/nexcam/reports`.
+- The Page Template and Layout Part taxonomy for the surrounding NexSuite shell is maintained in `DESIGN-HIERARCHY.md`.  NexCam supplies field-work content into that shared product structure; it does not own a separate header or sidebar implementation.
+- Direct public share links remain deliberately deferred. PDF download, receipt attachment, direct email attachment, and client-hub Documents/Appointments delivery are the current supported report-delivery paths.
 
 ## Statuses
 

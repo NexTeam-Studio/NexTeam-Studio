@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import type { Auth, User } from "firebase/auth";
-import { ProductLogo, SidebarBrandStack } from "../../../../../shared/branding/ProductBranding";
 import { NexSuiteHeader } from "../../../../../shared/ui/NexSuiteHeader";
+import { NexSuiteSidebar, type NexSuiteSidebarItem } from "../../../../../shared/ui/NexSuiteSidebar";
+import { NexTeamApplicationShell } from "../../../../../shared/ui/NexTeamApplicationShell";
 import "../../../../../shared/ui/nexSuiteHeaderDrawer.css";
 import { signOutOperator } from "../../../../../shared/auth/authBootstrap";
 import { NexCamOverviewSurface } from "../../overview/components/NexCamOverviewSurface";
@@ -22,8 +23,22 @@ export function NexCamPage(props: { auth: Auth | null; user: User }) {
     setModule,
     status,
     style,
-    tenantBranding
   } = workspace;
+
+  const navigationItems: NexSuiteSidebarItem[] = [
+    {
+      id: "start-checklist",
+      label: "Start Checklist",
+      active: false,
+      onSelect: () => void createChecklist()
+    },
+    ...NEXCAM_MODULES.map((item) => ({
+      id: item.id,
+      label: item.label,
+      active: item.id === activeModule,
+      onSelect: () => setModule(item.id)
+    }))
+  ];
 
   function renderOverview(): React.ReactElement {
     return <NexCamOverviewSurface workspace={workspace} />;
@@ -49,26 +64,16 @@ export function NexCamPage(props: { auth: Auth | null; user: User }) {
   }
 
   return (
-    <main className="nexops-app nexcam-app" style={style}>
-      <aside className="nexops-app-sidebar" aria-label="NexCam navigation">
-        <div className="nexops-app-logo">
-          <SidebarBrandStack product="nexcam" branding={tenantBranding} tenantId={operatorContext.tenantId} />
-        </div>
-        <button className="nexops-create-button" type="button" onClick={() => void createChecklist()}>Start Checklist</button>
-        <nav className="nexops-nav">
-          {NEXCAM_MODULES.map((item) => (
-            <button className={item.id === activeModule ? "active" : ""} type="button" key={item.id} onClick={() => setModule(item.id)}>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-      </aside>
-      <section className="nexops-web-main">
-        <NexSuiteHeader product="nexcam" menuOpen={menuOpen} onToggleMenu={() => setMenuOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />
-        {menuOpen ? <nav className="nexsuite__drawer" aria-label="NexCam navigation"><button type="button" onClick={() => { void createChecklist(); setMenuOpen(false); }}>Start Checklist</button>{NEXCAM_MODULES.map((item) => <button key={item.id} type="button" onClick={() => { setModule(item.id); setMenuOpen(false); }}>{item.label}</button>)}</nav> : null}
-        {renderActiveModule()}
-      </section>
-      {<MediaReviewSurface workspace={workspace} />}
-    </main>
+    <NexTeamApplicationShell
+      className="nexops-app nexcam-app"
+      style={style}
+      header={<NexSuiteHeader product="nexcam" menuOpen={menuOpen} onToggleMenu={() => setMenuOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />}
+      navigation={<NexSuiteSidebar items={navigationItems} open={menuOpen} onClose={() => setMenuOpen(false)} onSelect={() => setMenuOpen(false)} />}
+      navigationLabel="NexCam navigation"
+      mobileNavigationMode="drawer"
+    >
+      {renderActiveModule()}
+      <MediaReviewSurface workspace={workspace} />
+    </NexTeamApplicationShell>
   );
 }
