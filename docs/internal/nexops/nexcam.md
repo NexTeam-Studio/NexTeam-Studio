@@ -286,9 +286,8 @@ Build piece: NexCam complete-build closure: native checklist, media, report, Nex
 - Client-facing media surfaces intentionally show date/time only; GPS coordinates remain staff-side only even when EXIF GPS is stored internally.
 
 ### Report delivery
-- Reports render through the dedicated field-report PDF renderer today, not the quote/invoice PDF renderer.
-- This is an intentional current divergence because field reports are checklist/media-first rather than commercial-document-first.
-- Even with that dedicated renderer, the downstream delivery path is real:
+- Reports render through the shared NexTeam PDF engine used by commercial documents, with field-report-specific content supplied as the document lines.
+- The downstream delivery path is real:
   - closeout receipt review can attach the report
   - outbound receipt email sends the generated PDF bytes
   - client hub can open the same report PDF route
@@ -352,5 +351,4 @@ Current behavior:
 
 - Public share-link delivery for reports/media packages is deferred and tracked in `NEXTEAM-FUTURE-FEATURE-IDEAS.md`.
 - Client-consent gating for marketing/content reuse of photos is not built in this pass.
-- The field-report PDF renderer is still separate from the quote/invoice/receipt renderer family; this is documented intentionally rather than silently collapsed.
 - Signed-document create/sign flows are live in NexOps, but no separate Nexi toolset is exposed for them yet.
