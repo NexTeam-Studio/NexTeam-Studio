@@ -1451,7 +1451,11 @@ export function NexOpsJobsPage(props: {
       setDetailStatus("Visit end must be after the start.");
       return;
     }
-    setActionBusy("close");
+    // Clear a prior client-side validation message before the asynchronous
+    // booking request begins. Otherwise a completed booking can visibly look
+    // rejected while the request is still loading.
+    setDetailStatus("Booking visit...");
+    setActionBusy("visit");
     try {
       const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}/visits`, {
         method: "POST",
@@ -2090,11 +2094,11 @@ export function NexOpsJobsPage(props: {
                 </div>
                 <form className="nexops-jobs-form inline" onSubmit={(event) => void scheduleVisit(event)}>
                   <input aria-label="Visit Title" value={visitTitle} onChange={(event) => setVisitTitle(event.target.value)} placeholder="Visit Title" />
-                  <input aria-label="Visit Date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={visitDate} onChange={(event) => setVisitDate(event.target.value)} />
-                  <input aria-label="Visit Start Time" type="text" inputMode="numeric" placeholder="HH:MM" value={visitStartTime} onChange={(event) => setVisitStartTime(event.target.value)} />
-                  <input aria-label="Visit End Date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={visitEndDate} onChange={(event) => setVisitEndDate(event.target.value)} />
-                  <input aria-label="Visit End Time" type="text" inputMode="numeric" placeholder="HH:MM" value={visitEndTime} onChange={(event) => setVisitEndTime(event.target.value)} />
-                  <button type="submit" disabled={actionBusy !== null}>Book Visit</button>
+                  <input aria-label="Visit Date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={visitDate} onChange={(event) => { setVisitDate(event.target.value); setDetailStatus(""); }} />
+                  <input aria-label="Visit Start Time" type="text" inputMode="numeric" placeholder="HH:MM" value={visitStartTime} onChange={(event) => { setVisitStartTime(event.target.value); setDetailStatus(""); }} />
+                  <input aria-label="Visit End Date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={visitEndDate} onChange={(event) => { setVisitEndDate(event.target.value); setDetailStatus(""); }} />
+                  <input aria-label="Visit End Time" type="text" inputMode="numeric" placeholder="HH:MM" value={visitEndTime} onChange={(event) => { setVisitEndTime(event.target.value); setDetailStatus(""); }} />
+                  <button type="submit" disabled={actionBusy !== null}>{actionBusy === "visit" ? "Booking Visit..." : "Book Visit"}</button>
                 </form>
                 <div className="nexops-jobs-sublist">
                   {detail.visits.map((visit) => (

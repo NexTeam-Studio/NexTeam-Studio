@@ -124,6 +124,13 @@ test("visit scheduler parses accessible text controls", () => {
   assert.equal(parseVisitDateTime("2026-08-15", "24:00"), null);
 });
 
+test("visit booking clears stale validation feedback and reports in-progress state", () => {
+  assert.match(pageSource, /setDetailStatus\("Booking visit\.\.\."\)/);
+  assert.match(pageSource, /setActionBusy\("visit"\)/);
+  assert.match(pageSource, /actionBusy === "visit" \? "Booking Visit\.\.\." : "Book Visit"/);
+  assert.match(pageSource, /setVisitDate\(event\.target\.value\); setDetailStatus\(""\);/);
+});
+
 test("manual Job creation keeps property selection within the selected Client", () => {
   const properties = [
     { id: "property_1", clientId: "client_1", label: "Primary location" },
