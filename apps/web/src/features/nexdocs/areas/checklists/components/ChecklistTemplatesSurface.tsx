@@ -69,7 +69,7 @@ export function ChecklistTemplatesSurface(props: { workspace: NexCamWorkspaceBin
                   <article>
                     <h3>{template.visitFreshCount} visit fields</h3>
                     <p>Always blank when a new visit checklist starts.</p>
-                    <small>{template.fieldTypes?.join(", ") ?? "Mixed field types"}</small>
+                    <small>{[...new Set(template.fields.map((field) => field.type))].join(", ") || "Mixed field types"}</small>
                   </article>
                 </div>
               ) : null}
