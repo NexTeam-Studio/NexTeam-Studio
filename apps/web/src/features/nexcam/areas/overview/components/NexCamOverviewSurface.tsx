@@ -26,6 +26,7 @@ export function NexCamOverviewSurface(props: { workspace: NexCamWorkspaceBinding
     setActiveChecklistSection,
     setContextIds,
     setSelectedTemplateId,
+    status,
     template,
     templates,
     visibleChecklistFields
@@ -142,6 +143,7 @@ export function NexCamOverviewSurface(props: { workspace: NexCamWorkspaceBinding
                   <button className="nexops-link-button" type="button" onClick={() => void saveChecklist(false)}>Save draft</button>
                   <button type="button" onClick={() => void saveChecklist(true)}>Complete checklist</button>
                 </div>
+                {status ? <p className="nexops-form-note" role="status">{status}</p> : null}
               </article>
             ) : (
               <article className="nexops-module-card wide">
