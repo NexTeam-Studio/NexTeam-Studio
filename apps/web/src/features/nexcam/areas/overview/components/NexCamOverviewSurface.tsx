@@ -2,7 +2,7 @@ import React from "react";
 import { ProductLogo } from "../../../../../shared/branding/ProductBranding";
 import type { NexCamWorkspaceBindings } from "../../capture/hooks/useNexCamWorkspace";
 
-export function NexCamOverviewSurface(props: { workspace: NexCamWorkspaceBindings }): React.ReactElement {
+export function NexCamOverviewSurface(props: { workspace: NexCamWorkspaceBindings; embedded?: boolean }): React.ReactElement {
   const {
     activeChecklistSection,
     activeSectionAllowsNa,
@@ -36,16 +36,23 @@ export function NexCamOverviewSurface(props: { workspace: NexCamWorkspaceBinding
     const activeSection = activeChecklistSection || checklistSections[0] || "No section yet";
     return (
       <section className="nexops-dashboard">
-        <div className="nexops-page-heading">
-          <div>
-            <ProductLogo product="nexcam" className="nexcam-heading-logo" alt="NexCam" />
-            <p>Template-driven field capture, visit media, property carryforward, and closeout-ready reports.</p>
+        {props.embedded ? (
+          <div className="nexops-inline-actions nexcam-overview-actions">
+            <button className="nexops-link-button" type="button" onClick={() => void refreshChecklists()}>Refresh Context</button>
+            <button type="button" onClick={() => void createChecklist()}>Start Checklist</button>
           </div>
-          <div className="nexops-inline-actions">
-            <button className="nexops-link-button" type="button" onClick={() => void refreshChecklists()}>Refresh context</button>
-            <button type="button" onClick={() => void createChecklist()}>Start checklist</button>
+        ) : (
+          <div className="nexops-page-heading">
+            <div>
+              <ProductLogo product="nexcam" className="nexcam-heading-logo" alt="NexCam" />
+              <p>Template-driven field capture, visit media, property carryforward, and closeout-ready reports.</p>
+            </div>
+            <div className="nexops-inline-actions">
+              <button className="nexops-link-button" type="button" onClick={() => void refreshChecklists()}>Refresh Context</button>
+              <button type="button" onClick={() => void createChecklist()}>Start Checklist</button>
+            </div>
           </div>
-        </div>
+        )}
         <div className="nexops-workflow-strip">
           {[
             ["Templates", String(templates.length), "Reusable library, not a one-off checklist."],

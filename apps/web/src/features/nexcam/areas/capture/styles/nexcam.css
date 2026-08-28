@@ -194,3 +194,13 @@
     grid-template-columns: 1fr;
   }
 }
+.nexcam-roster-surface__copy {
+  margin: 0;
+  color: rgba(255, 255, 255, .9);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.nexcam-overview-actions {
+  justify-content: flex-end;
+}

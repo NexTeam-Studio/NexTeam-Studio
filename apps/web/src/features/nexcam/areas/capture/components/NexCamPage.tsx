@@ -3,8 +3,10 @@ import type { Auth, User } from "firebase/auth";
 import { NexSuiteHeader } from "../../../../../shared/ui/NexSuiteHeader";
 import { NexSuiteSidebar, type NexSuiteSidebarItem } from "../../../../../shared/ui/NexSuiteSidebar";
 import { NexTeamApplicationShell } from "../../../../../shared/ui/NexTeamApplicationShell";
+import { NexOpsCreationTemplate, NexOpsRosterSurface } from "../../../../../shared/ui/NexOpsBusinessTemplates";
 import "../../../../../shared/ui/nexSuiteHeaderDrawer.css";
 import { signOutOperator } from "../../../../../shared/auth/authBootstrap";
+import { NexOpsNavGlyph } from "../../../../nexopsShell/workspaceSupport";
 import { NexCamOverviewSurface } from "../../overview/components/NexCamOverviewSurface";
 import { ChecklistTemplatesSurface } from "../../../../nexdocs/areas/checklists/components/ChecklistTemplatesSurface";
 import { MediaLibrarySurface } from "../../../../nexdocs/areas/media/components/MediaLibrarySurface";
@@ -19,10 +21,11 @@ export function NexCamPage(props: { auth: Auth | null; user: User }) {
   const {
     activeModule,
     createChecklist,
-    operatorContext,
+    recentMedia,
+    reports,
     setModule,
-    status,
     style,
+    templates,
   } = workspace;
 
   const navigationItems: NexSuiteSidebarItem[] = [
@@ -41,19 +44,51 @@ export function NexCamPage(props: { auth: Auth | null; user: User }) {
   ];
 
   function renderOverview(): React.ReactElement {
-    return <NexCamOverviewSurface workspace={workspace} />;
+    return (
+      <NexOpsCreationTemplate
+        eyebrow="NexCam field documentation"
+        title="Create Field Checklist"
+        detail="Start from the property and visit rail, record the field evidence, and carry property facts forward."
+        icon={<NexOpsNavGlyph module="capture" />}
+        backAction={<button type="button" onClick={() => setModule("overview")}>NexCam Overview</button>}
+        heroClassName="module-hero-card--quote"
+      >
+        <NexCamOverviewSurface workspace={workspace} embedded />
+      </NexOpsCreationTemplate>
+    );
   }
 
   function renderTemplatesPanel(): React.ReactElement {
-    return <ChecklistTemplatesSurface workspace={workspace} />;
+    return renderRosterSurface("Checklist Templates", "Build and maintain reusable field-checklist definitions.", "Template", templates.length, <ChecklistTemplatesSurface workspace={workspace} />);
   }
 
   function renderPhotosPanel(): React.ReactElement {
-    return <MediaLibrarySurface workspace={workspace} />;
+    return renderRosterSurface("Photos & Media", "Review visit-scoped field evidence and media metadata.", "Media workspace", recentMedia.length, <MediaLibrarySurface workspace={workspace} />);
   }
 
   function renderReportsPanel(): React.ReactElement {
-    return <ReportsSurface workspace={workspace} />;
+    return renderRosterSurface("Reports", "Create and review closeout-ready field reports.", "Report", reports.length, <ReportsSurface workspace={workspace} />);
+  }
+
+  function renderRosterSurface(
+    title: string,
+    detail: string,
+    resultNoun: string,
+    resultCount: number,
+    content: React.ReactNode
+  ): React.ReactElement {
+    return (
+      <NexOpsRosterSurface
+        ariaLabel={`NexCam ${title}`}
+        searchTitle={title}
+        search={<p className="nexcam-roster-surface__copy">{detail}</p>}
+        filter={<button className="nexops-quote-filter-trigger" type="button" onClick={() => setModule("overview")}><span className="nexops-quote-filter-label">Field Checklist</span></button>}
+        resultCount={resultCount}
+        resultNoun={resultNoun}
+      >
+        {content}
+      </NexOpsRosterSurface>
+    );
   }
 
   function renderActiveModule(): React.ReactElement {
