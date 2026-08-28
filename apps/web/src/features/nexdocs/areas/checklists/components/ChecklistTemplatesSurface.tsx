@@ -64,7 +64,7 @@ export function ChecklistTemplatesSurface(props: { workspace: NexCamWorkspaceBin
                   <article>
                     <h3>{template.propertyPersistentCount} property fields</h3>
                     <p>Carry forward on the next visit for this exact property.</p>
-                    <small>{template.sections.join(", ")}</small>
+                    <small>{template.sections.map((section) => section.title).join(", ")}</small>
                   </article>
                   <article>
                     <h3>{template.visitFreshCount} visit fields</h3>
