@@ -626,6 +626,15 @@ function nexCamModuleFromPath(pathname: string): NexCamModule {
   return nested?.id ?? "overview";
 }
 
+function initialNexCamContextIds(): { propertyId: string; jobId: string; visitId: string } {
+  const query = new URLSearchParams(window.location.search);
+  return {
+    propertyId: query.get("propertyId")?.trim() || "property_demo_pool",
+    jobId: query.get("jobId")?.trim() || "job_demo_leak_detection",
+    visitId: query.get("visitId")?.trim() || "visit_demo_2026_07_18"
+  };
+}
+
 export function useNexCamWorkspace(props: { auth: Auth | null; user: User }) {
 
   const mediaStageRef = useRef<HTMLDivElement | null>(null);
@@ -666,11 +675,7 @@ export function useNexCamWorkspace(props: { auth: Auth | null; user: User }) {
   const [selectedSnippetIds, setSelectedSnippetIds] = useState<string[]>([]);
   const [watermarkEnabled, setWatermarkEnabled] = useState(false);
   const [activeChecklistSection, setActiveChecklistSection] = useState("");
-  const [contextIds, setContextIds] = useState({
-    propertyId: "property_demo_pool",
-    jobId: "job_demo_leak_detection",
-    visitId: "visit_demo_2026_07_18"
-  });
+  const [contextIds, setContextIds] = useState(initialNexCamContextIds);
   const [templateDraft, setTemplateDraft] = useState({
     title: "",
     slug: "",
@@ -1262,7 +1267,7 @@ export function useNexCamWorkspace(props: { auth: Auth | null; user: User }) {
   function setModule(module: NexCamModule): void {
     const target = NEXCAM_MODULES.find((entry) => entry.id === module) ?? NEXCAM_MODULES[0];
     setActiveModule(module);
-    window.history.pushState({}, "", target.path);
+    window.history.pushState({}, "", `${target.path}${window.location.search}`);
   }
 
   useEffect(() => {

@@ -131,6 +131,13 @@ test("visit booking clears stale validation feedback and reports in-progress sta
   assert.match(pageSource, /setVisitDate\(event\.target\.value\); setDetailStatus\(""\);/);
 });
 
+test("a Job opens NexCam with its selected property, Job, and Visit context", () => {
+  assert.match(pageSource, /Open NexCam Checklist/);
+  assert.match(pageSource, /propertyId: detail\.propertyId/);
+  assert.match(pageSource, /jobId: detail\.id/);
+  assert.match(pageSource, /visitId: detail\.visits\[0\]\?\.id \?\? ""/);
+});
+
 test("manual Job creation keeps property selection within the selected Client", () => {
   const properties = [
     { id: "property_1", clientId: "client_1", label: "Primary location" },

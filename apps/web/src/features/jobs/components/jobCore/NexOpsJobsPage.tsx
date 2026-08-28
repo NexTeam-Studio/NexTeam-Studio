@@ -2172,6 +2172,22 @@ export function NexOpsJobsPage(props: {
                       : "Client hub visibility is currently on for this job's field reports and photos."}
                   </p>
                   <p className="nexops-empty-copy">{fieldDocsStatus}</p>
+                  {detail.propertyId ? (
+                    <button
+                      className="nexops-link-button"
+                      type="button"
+                      onClick={() => {
+                        const query = new URLSearchParams({
+                          propertyId: detail.propertyId,
+                          jobId: detail.id,
+                          visitId: detail.visits[0]?.id ?? ""
+                        });
+                        window.location.assign(`/nexcam?${query.toString()}`);
+                      }}
+                    >
+                      Open NexCam Checklist
+                    </button>
+                  ) : null}
                   <div className="nexops-density-inline-facts">
                     <article>
                       <h3>Reports</h3>
