@@ -1,6 +1,7 @@
 import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { listCommunicationTemplatesInputSchema, listTeamMembersInputSchema, saveCommunicationTemplateInputSchema } from "./toolSchemas.js";
+import { normalizeCommunicationTemplates } from "./communicationTemplates.js";
 
 function slugifyToken(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "item";
@@ -100,7 +101,7 @@ export function createTenantConfigNexiTools(context: CrmToolContext, includeWrit
           : [...settings.communicationTemplates, template];
         const savedSettings = await options.requestRepository.saveCrmSettings({
           ...settings,
-          communicationTemplates: nextTemplates,
+          communicationTemplates: normalizeCommunicationTemplates({ tenantId: tenant.id, communicationTemplates: nextTemplates }),
           updatedAt: timestamp
         });
         return {

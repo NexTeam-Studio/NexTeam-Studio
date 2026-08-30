@@ -6,6 +6,7 @@ import { modulesForPlan } from "../../../../../../../platform/plans.js";
 import { hasPermissionLevel, permissionGridFor } from "../../../../../../../platform/tenantPermissionGrid.js";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
 import { detachDraftCatalogSnapshots } from "./catalogReset.js";
+import { communicationTemplateMatchesDefault, defaultCommunicationTemplate, normalizeCommunicationTemplates } from "./communicationTemplates.js";
 
 function onboardingLaunchReadiness(settings: CrmSettingsDoc, availableModules: ReadonlySet<PlatformModule>) {
   const onboarding = settings.operatingProfile.onboarding;
@@ -85,8 +86,51 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
         ? req.query.tenantId
         : defaultTenantId(env);
       const access = await requireQuoteAccess(req, tenantId, "getCrmSettings");
-      const settings = await repositoryForTenant().getCrmSettings(tenantId);
-      res.json({ ok: true, tenantId, actorRole: access.role, settings, onboardingLaunch: await launchReadinessFor(settings) });
+      const repository = repositoryForTenant();
+      const settings = await repository.getCrmSettings(tenantId);
+      const communicationTemplates = normalizeCommunicationTemplates(settings);
+      const normalized = communicationTemplates.length === settings.communicationTemplates.length
+        && communicationTemplates.every((template, index) => JSON.stringify(template) === JSON.stringify(settings.communicationTemplates[index]))
+        ? settings
+        : await repository.saveCrmSettings({ ...settings, communicationTemplates, updatedAt: new Date().toISOString() });
+      res.json({
+        ok: true,
+        tenantId,
+        actorRole: access.role,
+        settings: normalized,
+        templateDefaults: normalizeCommunicationTemplates({ tenantId, communicationTemplates: [] }),
+        onboardingLaunch: await launchReadinessFor(normalized)
+      });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/crm/settings/templates/:category/reset", async (req: Request, res: Response) => {
+    try {
+      const tenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim()
+        ? req.body.tenantId
+        : defaultTenantId(env);
+      const access = await requireAccessContext(req, env, { requestedTenantId: tenantId, op: "resetCommunicationTemplate" });
+      if (!hasPermissionLevel(permissionGridFor(access.role, access.permissionOverrides), "COMMUNICATIONS", "WRITE")) {
+        throw new RailError("Your Communications permission cannot reset templates.", { provider: "native", op: "resetCommunicationTemplate", status: 403 });
+      }
+      const fallback = defaultCommunicationTemplate(tenantId, req.params.category ?? "");
+      if (!fallback) {
+        throw new RailError("That template category does not have a registered default.", { provider: "native", op: "resetCommunicationTemplate", status: 404 });
+      }
+      const repository = repositoryForTenant();
+      const settings = await repository.getCrmSettings(tenantId);
+      const templates = normalizeCommunicationTemplates(settings);
+      const current = templates.find((template) => template.category === fallback.category);
+      const timestamp = new Date().toISOString();
+      const reset = { ...fallback, createdAt: current?.createdAt ?? fallback.createdAt, updatedAt: timestamp };
+      const saved = await repository.saveCrmSettings({
+        ...settings,
+        communicationTemplates: templates.map((template) => template.category === fallback.category ? reset : template),
+        updatedAt: timestamp
+      });
+      res.json({ ok: true, settings: saved, template: reset, wasCustomized: current ? !communicationTemplateMatchesDefault(current, fallback) : false });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -291,7 +335,9 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
         },
         ...(input.propertyAssetDefinitions ? { propertyAssetDefinitions: input.propertyAssetDefinitions } : {}),
         ...(input.catalogItems ? { catalogItems: input.catalogItems } : {}),
-        ...(input.communicationTemplates ? { communicationTemplates: input.communicationTemplates } : {}),
+        ...(input.communicationTemplates ? {
+          communicationTemplates: normalizeCommunicationTemplates({ tenantId: input.tenantId, communicationTemplates: input.communicationTemplates })
+        } : {}),
         updatedAt: new Date().toISOString()
       });
       res.json({ ok: true, tenantId: input.tenantId, actorRole: access.role, settings: saved, onboardingLaunch: await launchReadinessFor(saved) });

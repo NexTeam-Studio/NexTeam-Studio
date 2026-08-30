@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { RailError, type Client, type CrmSettings, type EventBus, type Quote, type QuoteDeliveryRecord } from "@nexteam/core";
 import type { NativeAdapter, NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../../../../../../../comms/gmailRegistry.js";
-import { quoteTemplateVariables, resolveTemplateMessage } from "../../../../settings/components/tenantConfig/server/communicationTemplates.js";
+import { quoteTemplateVariables, renderTemplateText, resolveTemplateMessage } from "../../../../settings/components/tenantConfig/server/communicationTemplates.js";
 import { createPortalToken, hashPortalToken, portalUrlForQuote, quoteDeliveryMessage, syncExpiredQuote } from "../domain/quoteFoundation.js";
 
 export function createQuoteRouteSupport(input: {
@@ -36,17 +36,24 @@ export function createQuoteRouteSupport(input: {
     const portalToken = createPortalToken();
     const portalUrl = portalUrlForQuote(request.quote, portalToken);
     const fallback = quoteDeliveryMessage(request.quote, request.mode === "mark_sent" ? "email" : request.mode, portalUrl);
+    const variables = quoteTemplateVariables({ quote: request.quote, client: request.client, portalUrl });
     const rendered = resolveTemplateMessage({
       settings: request.settings,
       category: "quote_send",
       channel: request.mode === "sms" ? "sms" : "email",
       fallbackSubject: fallback.subject,
       fallbackBodyText: fallback.bodyText,
-      variables: quoteTemplateVariables({ quote: request.quote, client: request.client, portalUrl })
+      variables
     });
     if (request.mode !== "mark_sent" && !rendered.enabled) throw new RailError(`The quote ${request.mode} channel is disabled in Settings.`, { provider: "native", op: "sendQuote", status: 409 });
-    const subject = request.subject?.trim() || rendered.subject;
-    const bodyText = request.bodyText?.trim() || rendered.bodyText;
+    const subject = request.subject?.trim() ? renderTemplateText(request.subject, variables) : rendered.subject;
+    const requestedBody = request.bodyText?.trim() ? renderTemplateText(request.bodyText, variables) : rendered.bodyText;
+    // A send-time edit is a one-off override, but it must never strip the only
+    // usable client path to the quote. This also repairs legacy drafts whose
+    // pre-send editor resolved {{PORTAL_URL}} before a token existed.
+    const bodyText = request.mode === "mark_sent" || requestedBody.includes(portalUrl)
+      ? requestedBody
+      : `${requestedBody.trim()}${requestedBody.trim() ? "\n\n" : ""}${portalUrl}`;
     const sentAt = new Date().toISOString();
     const delivery: QuoteDeliveryRecord = {
       id: `quote_delivery_${randomUUID()}`,

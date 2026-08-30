@@ -7,6 +7,7 @@ import type {
   Quote,
   ServiceRequest
 } from "@nexteam/core";
+import { defaultCommunicationTemplates } from "@nexteam/providers";
 import type { ScheduledVisit } from "../../../../../../../scheduling/schedulingEngine.js";
 
 export type CommunicationCategory =
@@ -20,6 +21,16 @@ export type CommunicationCategory =
   | "payment_receipt"
   | "statement_send"
   | "customer_document_package"
+  | "declining_work"
+  | "assessment_reminder"
+  | "checklist_copy"
+  | "job_booking_confirmation"
+  | "visit_rescheduled"
+  | "visit_reminder"
+  | "job_checklist_copy"
+  | "job_follow_up"
+  | "payment_method_request"
+  | "signed_document_copy"
   | "review_request_initial"
   | "review_request_nudge";
 
@@ -32,6 +43,64 @@ interface TemplateRecord {
   emailSubject?: string | undefined;
   emailBody?: string | undefined;
   smsBody?: string | undefined;
+}
+
+export const COMMUNICATION_TEMPLATE_CATEGORIES: readonly CommunicationCategory[] = [
+  "request_confirmation", "booking_confirmation", "declining_work", "assessment_reminder", "checklist_copy",
+  "quote_send", "quote_approval_confirmation", "job_booking_confirmation", "visit_rescheduled", "visit_reminder",
+  "job_checklist_copy", "job_follow_up", "invoice_send", "invoice_reminder", "payment_receipt",
+  "deposit_paid_confirmation", "statement_send", "payment_method_request", "signed_document_copy",
+  "review_request_initial", "review_request_nudge", "customer_document_package"
+] as const;
+
+type StoredTemplate = CrmSettings["communicationTemplates"][number];
+
+function templateContent(template: TemplateRecord): Pick<TemplateRecord, "emailEnabled" | "smsEnabled" | "emailSubject" | "emailBody" | "smsBody"> {
+  return {
+    emailEnabled: template.emailEnabled,
+    smsEnabled: template.smsEnabled,
+    ...(template.emailSubject ? { emailSubject: template.emailSubject } : {}),
+    ...(template.emailBody ? { emailBody: template.emailBody } : {}),
+    ...(template.smsBody ? { smsBody: template.smsBody } : {})
+  };
+}
+
+/**
+ * Keeps the tenant's customized copy but makes the complete first-class
+ * template catalog available to every tenant. Seed-time records are replaced
+ * wholesale so newly added channels and bodies become defaults; later edits
+ * retain the tenant's deliberate channel and copy choices.
+ */
+export function normalizeCommunicationTemplates(settings: Pick<CrmSettings, "tenantId" | "communicationTemplates">): StoredTemplate[] {
+  const defaults = defaultCommunicationTemplates(settings.tenantId) as StoredTemplate[];
+  const byCategory = new Map(settings.communicationTemplates.map((template) => [template.category, template]));
+  return defaults.map((fallback) => {
+    const existing = byCategory.get(fallback.category);
+    if (!existing || existing.updatedAt === "2026-07-12T00:00:00.000Z") return fallback;
+    return {
+      ...fallback,
+      ...existing,
+      ...templateContent(existing),
+      emailSubject: existing.emailSubject?.trim() || fallback.emailSubject,
+      emailBody: existing.emailBody?.trim() || fallback.emailBody,
+      smsBody: existing.smsBody?.trim() || fallback.smsBody
+    };
+  });
+}
+
+export function defaultCommunicationTemplate(tenantId: string, category: string): StoredTemplate | undefined {
+  return (defaultCommunicationTemplates(tenantId) as StoredTemplate[]).find((template) => template.category === category);
+}
+
+export function communicationTemplateMatchesDefault(template: TemplateRecord, fallback: TemplateRecord | undefined): boolean {
+  if (!fallback) return false;
+  const current = templateContent(template);
+  const baseline = templateContent(fallback);
+  return current.emailEnabled === baseline.emailEnabled
+    && current.smsEnabled === baseline.smsEnabled
+    && current.emailSubject === baseline.emailSubject
+    && current.emailBody === baseline.emailBody
+    && current.smsBody === baseline.smsBody;
 }
 
 function money(value: number): string {

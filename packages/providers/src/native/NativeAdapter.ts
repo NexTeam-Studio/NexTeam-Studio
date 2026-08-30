@@ -181,7 +181,7 @@ export function defaultCatalogItems(tenantId: string) {
   return [...seedItems, ...vgbItems];
 }
 
-function defaultCommunicationTemplates(tenantId: string) {
+export function defaultCommunicationTemplates(tenantId: string) {
   const timestamp = defaultCrmSettingsTimestamp();
   return [
     {
@@ -191,9 +191,10 @@ function defaultCommunicationTemplates(tenantId: string) {
       label: "Request confirmation",
       description: "Automatic confirmation after a request is submitted.",
       emailEnabled: true,
-      smsEnabled: false,
+      smsEnabled: true,
       emailSubject: "We received your request",
       emailBody: "Hi {{CLIENT_NAME}},\n\nWe received your request for {{SERVICE_ADDRESS}} and the office is reviewing it now.\n\nSummary: {{REQUEST_SUMMARY}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}} received your request for {{SERVICE_ADDRESS}}. We are reviewing it now.",
       createdAt: timestamp,
       updatedAt: timestamp
     },
@@ -218,9 +219,10 @@ function defaultCommunicationTemplates(tenantId: string) {
       label: "Quote approval confirmation",
       description: "Client-facing approval confirmation after acceptance succeeds.",
       emailEnabled: true,
-      smsEnabled: false,
+      smsEnabled: true,
       emailSubject: "Quote approved",
       emailBody: "Hi {{CLIENT_NAME}},\n\nWe recorded approval for quote {{QUOTE_NUMBER}} on {{APPROVED_AT}}.\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}} recorded approval for quote {{QUOTE_NUMBER}}. Thank you.",
       createdAt: timestamp,
       updatedAt: timestamp
     },
@@ -231,9 +233,10 @@ function defaultCommunicationTemplates(tenantId: string) {
       label: "Deposit paid confirmation",
       description: "Staff-facing alert when a deposit is captured.",
       emailEnabled: true,
-      smsEnabled: false,
+      smsEnabled: true,
       emailSubject: "Deposit paid for {{QUOTE_NUMBER}}",
       emailBody: "Deposit received.\n\nQuote: {{QUOTE_NUMBER}}\nAmount: {{DEPOSIT_AMOUNT}}\nAddress: {{SERVICE_ADDRESS}}\nContact: {{CLIENT_NAME}} {{CLIENT_PHONE}} {{CLIENT_EMAIL}}\n\n{{QUOTE_URL}}",
+      smsBody: "{{TENANT_NAME}} received your deposit of {{DEPOSIT_AMOUNT}} for quote {{QUOTE_NUMBER}}. {{QUOTE_URL}}",
       createdAt: timestamp,
       updatedAt: timestamp
     },
@@ -314,9 +317,10 @@ function defaultCommunicationTemplates(tenantId: string) {
       label: "Closeout package delivery",
       description: "Client-facing closeout package review delivery.",
       emailEnabled: true,
-      smsEnabled: false,
+      smsEnabled: true,
       emailSubject: "Your closeout package from {{TENANT_NAME}}",
       emailBody: "Hi {{CLIENT_NAME}},\n\nYour closeout package for {{JOB_TITLE}} is ready for review.\n\n{{PACKAGE_ARTIFACTS}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}}: your closeout package for {{JOB_TITLE}} is ready. {{PACKAGE_ARTIFACTS}}",
       createdAt: timestamp,
       updatedAt: timestamp
     },
@@ -347,6 +351,86 @@ function defaultCommunicationTemplates(tenantId: string) {
       smsBody: "{{TENANT_NAME}} follow-up: if you can leave a quick review, use {{REVIEW_URL}}. Stop review follow-ups here: {{REVIEW_OPTOUT_URL}}",
       createdAt: timestamp,
       updatedAt: timestamp
+    },
+    {
+      id: `comms_declining_work_${tenantId}`,
+      tenantId, category: "declining_work", label: "Declining work", description: "Respectful notice when the office cannot take the requested work.",
+      emailEnabled: true, smsEnabled: true,
+      emailSubject: "Regarding your request from {{TENANT_NAME}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nThank you for contacting {{TENANT_NAME}} about {{REQUEST_SUMMARY}}. We are unable to take this work at this time.\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}}: thank you for your request. We are unable to take this work at this time.", createdAt: timestamp, updatedAt: timestamp
+    },
+    {
+      id: `comms_assessment_reminder_${tenantId}`,
+      tenantId, category: "assessment_reminder", label: "Assessment reminder", description: "Reminder before a scheduled assessment.",
+      emailEnabled: true, smsEnabled: true,
+      emailSubject: "Assessment reminder from {{TENANT_NAME}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nThis is a reminder about your assessment for {{SERVICE_ADDRESS}} on {{JOB_DATE}}.\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}} reminder: your assessment for {{SERVICE_ADDRESS}} is {{JOB_DATE}}.", createdAt: timestamp, updatedAt: timestamp
+    },
+    {
+      id: `comms_checklist_copy_${tenantId}`,
+      tenantId, category: "checklist_copy", label: "Checklist copy", description: "Client copy of a request or assessment checklist.",
+      emailEnabled: true, smsEnabled: true,
+      emailSubject: "Your checklist from {{TENANT_NAME}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nHere is your checklist for {{SERVICE_ADDRESS}}.\n\n{{PACKAGE_ARTIFACTS}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}}: your checklist is ready. {{PACKAGE_ARTIFACTS}}", createdAt: timestamp, updatedAt: timestamp
+    },
+    {
+      id: `comms_job_booking_confirmation_${tenantId}`,
+      tenantId, category: "job_booking_confirmation", label: "Job booking confirmation", description: "Confirmation when a job booking is finalized.",
+      emailEnabled: true, smsEnabled: true,
+      emailSubject: "Your {{JOB_TITLE}} booking is confirmed",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nYour {{JOB_TITLE}} booking is confirmed for {{VISIT_WINDOW}} at {{SERVICE_ADDRESS}}.\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}}: your {{JOB_TITLE}} booking is confirmed for {{VISIT_WINDOW}}.", createdAt: timestamp, updatedAt: timestamp
+    },
+    {
+      id: `comms_visit_rescheduled_${tenantId}`,
+      tenantId, category: "visit_rescheduled", label: "Visit rescheduling", description: "Updated visit timing after a reschedule.",
+      emailEnabled: true, smsEnabled: true,
+      emailSubject: "Your visit has been rescheduled",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nYour {{JOB_TITLE}} visit is now scheduled for {{VISIT_WINDOW}} at {{SERVICE_ADDRESS}}.\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}}: your visit is now scheduled for {{VISIT_WINDOW}}.", createdAt: timestamp, updatedAt: timestamp
+    },
+    {
+      id: `comms_visit_reminder_${tenantId}`,
+      tenantId, category: "visit_reminder", label: "Visit reminder", description: "Reminder shortly before a scheduled visit.",
+      emailEnabled: true, smsEnabled: true,
+      emailSubject: "Reminder: {{JOB_TITLE}} visit",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nReminder: {{JOB_TITLE}} is scheduled for {{VISIT_WINDOW}} at {{SERVICE_ADDRESS}}.\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}} reminder: {{JOB_TITLE}} is scheduled for {{VISIT_WINDOW}}.", createdAt: timestamp, updatedAt: timestamp
+    },
+    {
+      id: `comms_job_checklist_copy_${tenantId}`,
+      tenantId, category: "job_checklist_copy", label: "Job checklist copy", description: "Client copy of a completed job checklist.",
+      emailEnabled: true, smsEnabled: true,
+      emailSubject: "Your completed checklist from {{TENANT_NAME}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nYour completed checklist for {{JOB_TITLE}} is ready.\n\n{{PACKAGE_ARTIFACTS}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}}: your completed checklist is ready. {{PACKAGE_ARTIFACTS}}", createdAt: timestamp, updatedAt: timestamp
+    },
+    {
+      id: `comms_job_follow_up_${tenantId}`,
+      tenantId, category: "job_follow_up", label: "Job follow-up / feedback request", description: "Follow-up after a completed job.",
+      emailEnabled: true, smsEnabled: true,
+      emailSubject: "How did {{JOB_TITLE}} go?",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nThank you for working with {{TENANT_NAME}}. We would appreciate your feedback about {{JOB_TITLE}}.\n\n{{REVIEW_URL}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}}: thank you for the opportunity. Share feedback here: {{REVIEW_URL}}", createdAt: timestamp, updatedAt: timestamp
+    },
+    {
+      id: `comms_payment_method_request_${tenantId}`,
+      tenantId, category: "payment_method_request", label: "Payment-method request", description: "Request for a payment method before collection.",
+      emailEnabled: true, smsEnabled: true,
+      emailSubject: "Payment method needed for {{INVOICE_NUMBER}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nPlease add a payment method for invoice {{INVOICE_NUMBER}}.\n\n{{PAY_LINK}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}}: add a payment method for invoice {{INVOICE_NUMBER}}: {{PAY_LINK}}", createdAt: timestamp, updatedAt: timestamp
+    },
+    {
+      id: `comms_signed_document_copy_${tenantId}`,
+      tenantId, category: "signed_document_copy", label: "Signed-document copy", description: "Copy of an approved or signed customer document.",
+      emailEnabled: true, smsEnabled: true,
+      emailSubject: "Your signed document from {{TENANT_NAME}}",
+      emailBody: "Hi {{CLIENT_NAME}},\n\nA signed copy of {{QUOTE_TITLE}} is available here:\n\n{{QUOTE_URL}}\n\n{{TENANT_NAME}}",
+      smsBody: "{{TENANT_NAME}}: your signed document is available here: {{QUOTE_URL}}", createdAt: timestamp, updatedAt: timestamp
     }
   ];
 }

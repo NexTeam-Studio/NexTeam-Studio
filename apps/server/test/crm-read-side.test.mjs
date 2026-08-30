@@ -926,6 +926,27 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     assert.equal(settingsBody.ok, true);
     assert.deepEqual(Object.keys(settingsBody.settings.documentNumbering).sort(), ["invoice", "job", "quote", "receipt", "request"]);
     assert.equal(settingsBody.settings.operatingProfile.onboarding.checklist.tasks.filter((task) => task.required).length, 6);
+    assert.equal(settingsBody.settings.communicationTemplates.every((template) => template.emailEnabled && template.smsEnabled && template.emailBody && template.smsBody), true);
+
+    const customizedTemplate = settingsBody.settings.communicationTemplates.map((template) => template.category === "quote_send"
+      ? { ...template, emailBody: "Temporary copy for {{CLIENT_NAME}}", updatedAt: "2026-08-30T00:00:00.000Z" }
+      : template);
+    const customizeTemplate = await fetch(`${base}/api/crm/settings`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace", communicationTemplates: customizedTemplate })
+    });
+    const customizeTemplateBody = await customizeTemplate.json();
+    assert.equal(customizeTemplateBody.ok, true);
+    assert.equal(customizeTemplateBody.settings.communicationTemplates.find((template) => template.category === "quote_send").emailBody, "Temporary copy for {{CLIENT_NAME}}");
+    const resetTemplate = await fetch(`${base}/api/crm/settings/templates/quote_send/reset`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    const resetTemplateBody = await resetTemplate.json();
+    assert.equal(resetTemplateBody.ok, true);
+    assert.match(resetTemplateBody.template.emailBody, /\{\{PORTAL_URL\}\}/);
 
     const claimOnboardingTask = await fetch(`${base}/api/crm/settings`, {
       method: "PATCH",
@@ -1082,13 +1103,17 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     const sendResponse = await fetch(`${base}/api/crm/quotes/${createBody.quote.id}/send`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tenantId: "aquatrace", mode: "email", target: "deborah@example.test" })
+      body: JSON.stringify({ tenantId: "aquatrace", mode: "email", target: "deborah@example.test", bodyText: "Hi {{CLIENT_NAME}}, a one-time office note before {{PORTAL_URL}}." })
     });
     const sendBody = await sendResponse.json();
     assert.equal(sendBody.ok, true);
     assert.equal(sendBody.quote.status, "sent");
     assert.equal(sendBody.delivery.mode, "email");
     assert.match(sendBody.portalUrl, /^\/portal\/quotes\//);
+    assert.equal(sentEmails.length, 1);
+    assert.match(sentEmails[0].bodyText, /Hi Deborah Justice, a one-time office note before/);
+    assert.equal(sentEmails[0].bodyText.includes(sendBody.portalUrl), true);
+    assert.match((await repository.getCrmSettings("aquatrace")).communicationTemplates.find((template) => template.category === "quote_send").emailBody, /\{\{PORTAL_URL\}\}/);
 
     const portalUrl = new URL(`${base}${sendBody.portalUrl}`);
     const portalResponse = await fetch(portalUrl);

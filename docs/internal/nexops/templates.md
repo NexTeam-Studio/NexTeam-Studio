@@ -1,5 +1,5 @@
-Last updated: 2026-07-15
-Build piece: Mobile UI / intake expansion / catalog / templates combined pass
+Last updated: 2026-08-30
+Build piece: Settings IA section 3 — Templates (email + SMS)
 
 ## Objects
 
@@ -51,18 +51,9 @@ Build piece: Mobile UI / intake expansion / catalog / templates combined pass
 ### Template manager
 - `GET /api/crm/settings`
 - `PATCH /api/crm/settings`
-- Settings page exposes the outbound template manager for:
-  - request confirmation
-  - quote send / resend
-  - quote approval confirmation
-  - deposit paid confirmation
-  - booking confirmation
-  - invoice send
-  - invoice reminder
-  - payment receipt
-  - statement send
-  - review request initial
-  - review request nudge
+- Settings now normalizes every tenant to the consolidated category catalog.
+- Every category has both email and SMS copy, sensible seeded content, a live sample-data preview, a soft 160/320-character SMS guide, and Reset to Default.
+- Template edits made on a quote's send surface remain one-off delivery overrides; they do not overwrite the saved tenant template.
 
 ## Cascades
 
@@ -108,3 +99,19 @@ Current behavior:
 - `statement_send`
 - `review_request_initial`
 - `review_request_nudge`
+- `declining_work`
+- `assessment_reminder`
+- `checklist_copy`
+- `job_booking_confirmation`
+- `visit_rescheduled`
+- `visit_reminder`
+- `job_checklist_copy`
+- `job_follow_up`
+- `payment_method_request`
+- `signed_document_copy`
+
+## Quote-send link safeguard
+
+- `quote_send` defaults contain `{{PORTAL_URL}}` for both channels.
+- At send time, merge tags in a one-off subject/body edit are resolved against the newly generated quote portal URL.
+- If that one-off body does not contain the generated URL, the server appends it before transport. A send-time edit therefore cannot remove the client’s only working NexPortal path.

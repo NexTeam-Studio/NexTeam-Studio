@@ -127,6 +127,7 @@ interface CrmSettingsRecord {
 interface CrmSettingsResponse {
   ok: boolean;
   settings?: CrmSettingsRecord;
+  templateDefaults?: CommunicationTemplateRecord[];
   onboardingLaunch?: OnboardingLaunch;
   error?: string;
 }
@@ -186,6 +187,28 @@ function defaultReviewStep(offsetDays = 14): ReviewSequenceStepSetting {
   };
 }
 
+function templateMatchesDefault(template: CommunicationTemplateRecord, fallback: CommunicationTemplateRecord | undefined): boolean {
+  return Boolean(fallback)
+    && template.emailEnabled === fallback.emailEnabled
+    && template.smsEnabled === fallback.smsEnabled
+    && (template.emailSubject ?? "") === (fallback.emailSubject ?? "")
+    && (template.emailBody ?? "") === (fallback.emailBody ?? "")
+    && (template.smsBody ?? "") === (fallback.smsBody ?? "");
+}
+
+function previewTemplateText(value: string, tenantName: string): string {
+  const sample: Record<string, string> = {
+    TENANT_NAME: tenantName || "NexTeam", CLIENT_NAME: "Alex Morgan", CLIENT_EMAIL: "alex@example.test", CLIENT_PHONE: "555-0100",
+    REQUEST_SUMMARY: "a pool assessment", SERVICE_ADDRESS: "100 Main Street", QUOTE_NUMBER: "Q-1042", QUOTE_TITLE: "Leak assessment",
+    QUOTE_TOTAL: "$450.00", PORTAL_URL: "https://portal.example.test/quotes/Q-1042", QUOTE_URL: "https://portal.example.test/quotes/Q-1042",
+    JOB_TITLE: "Leak assessment", JOB_DATE: "June 1, 2026", VISIT_WINDOW: "June 1, 2026, 10:00 AM–12:00 PM",
+    INVOICE_NUMBER: "INV-1042", BALANCE_DUE: "$450.00", PAYMENT_AMOUNT: "$225.00", PAY_LINK: "https://portal.example.test/pay/INV-1042",
+    STATEMENT_LINK: "https://portal.example.test/statements/1042", REVIEW_URL: "https://reviews.example.test/aquatrace",
+    REVIEW_OPTOUT_URL: "https://portal.example.test/reviews/stop", DEPOSIT_AMOUNT: "$225.00", PACKAGE_ARTIFACTS: "https://portal.example.test/documents/1042"
+  };
+  return value.replace(/\{\{([A-Z0-9_]+)\}\}/g, (_match, key: string) => sample[key] ?? "");
+}
+
 function defaultPropertyAssetDefinition(): PropertyAssetDefinition {
   return { kind: "equipment", label: "Equipment", fields: [{ key: "model", label: "Model", type: "text" }] };
 }
@@ -219,6 +242,8 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   const [catalogDraft, setCatalogDraft] = useState<CatalogItemDraft>(blankCatalogItemDraft());
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [templateDraft, setTemplateDraft] = useState<CommunicationTemplateRecord | null>(null);
+  const [templateDefaults, setTemplateDefaults] = useState<CommunicationTemplateRecord[]>([]);
+  const [templatePreviewChannel, setTemplatePreviewChannel] = useState<"email" | "sms">("email");
   const catalogSectionRef = useRef<HTMLElement | null>(null);
 
   const selectedTemplate = useMemo(
@@ -266,6 +291,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         return;
       }
       setSettings(body.settings);
+      setTemplateDefaults(body.templateDefaults ?? []);
       setOnboardingLaunch(body.onboardingLaunch ?? null);
       setSelectedTemplateId((current) => current && body.settings?.communicationTemplates.some((template) => template.id === current)
         ? current
@@ -378,6 +404,30 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
       props.onCrmMutation?.();
     } catch {
       setStatusMessage("Default settings could not be saved.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function resetTemplate(): Promise<void> {
+    if (!templateDraft) return;
+    setBusy("reset-template");
+    setStatusMessage("Restoring the tenant default...");
+    try {
+      const body = await fetch(`/api/crm/settings/templates/${encodeURIComponent(templateDraft.category)}/reset`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: props.tenantId })
+      }).then((response) => response.json() as Promise<CrmSettingsMutationResponse>);
+      if (!body.ok || !body.settings) {
+        setStatusMessage(body.error ?? "Template could not be reset.");
+        return;
+      }
+      setSettings(body.settings);
+      setStatusMessage(`${templateDraft.label} restored to its default.`);
+      props.onCrmMutation?.();
+    } catch {
+      setStatusMessage("Template reset failed.");
     } finally {
       setBusy("");
     }
@@ -965,7 +1015,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                   onClick={() => setSelectedTemplateId(template.id)}
                 >
                   <strong>{template.label}</strong>
-                  <small>{templateChannelLabel(template)}</small>
+                  <small>{templateChannelLabel(template)} · {templateMatchesDefault(template, templateDefaults.find((fallback) => fallback.category === template.category)) ? "Default" : "Customized"}</small>
                 </button>
               ))}
             </div>
@@ -976,9 +1026,14 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                     <h3>{templateDraft.label}</h3>
                     <span>{templateDraft.description ?? templateDraft.category}</span>
                   </div>
-                  <button type="button" onClick={() => void saveTemplate()} disabled={busy === "save-template"}>
-                    {busy === "save-template" ? "Saving..." : "Save Template"}
-                  </button>
+                  <div className="nexops-inline-actions">
+                    <button type="button" onClick={() => void resetTemplate()} disabled={busy === "reset-template"}>
+                      {busy === "reset-template" ? "Restoring..." : "Reset to Default"}
+                    </button>
+                    <button type="button" onClick={() => void saveTemplate()} disabled={busy === "save-template"}>
+                      {busy === "save-template" ? "Saving..." : "Save Template"}
+                    </button>
+                  </div>
                 </div>
                 <div className="nexops-quote-toggle-grid">
                   <label className="nexops-check-field inline">
@@ -1002,7 +1057,16 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                   <span>Text Body</span>
                   <textarea rows={4} value={templateDraft.smsBody ?? ""} onChange={(event) => setTemplateDraft({ ...templateDraft, smsBody: event.target.value })} disabled={!templateDraft.smsEnabled} />
                 </label>
-                <p className="nexops-form-note">Use the existing merge-field pattern such as {"{{CLIENT_NAME}}"}, {"{{QUOTE_NUMBER}}"}, and {"{{JOB_DATE}}"} inside these bodies. Footer branding still comes from the tenant branding resolver.</p>
+                <p className="nexops-form-note">Use {"{{CLIENT_NAME}}"}, {"{{QUOTE_NUMBER}}"}, {"{{PORTAL_URL}}"}, and {"{{JOB_DATE}}"}. Footer branding is rendered server-side by the tenant branding resolver; Resend only transports the completed message.</p>
+                <div className="nexops-quote-template-editor" aria-label="Template live preview">
+                  <div className="nexops-quote-section-head">
+                    <div><h3>Live Preview</h3><span>Sample merge data; the send screen remains editable for this one delivery.</span></div>
+                    <select aria-label="Preview channel" value={templatePreviewChannel} onChange={(event) => setTemplatePreviewChannel(event.target.value as "email" | "sms")}>
+                      <option value="email">Email</option><option value="sms">SMS</option>
+                    </select>
+                  </div>
+                  {templatePreviewChannel === "email" ? <><strong>{previewTemplateText(templateDraft.emailSubject ?? "", props.tenantName)}</strong><p className="nexops-form-note">{previewTemplateText(templateDraft.emailBody ?? "", props.tenantName)}</p></> : <><small>{(templateDraft.smsBody ?? "").length} characters {((templateDraft.smsBody ?? "").length > 320 ? "· over 320-character guide" : (templateDraft.smsBody ?? "").length > 160 ? "· over 160-character guide" : "· within 160-character guide")}</small><p className="nexops-form-note">{previewTemplateText(templateDraft.smsBody ?? "", props.tenantName)}</p></>}
+                </div>
               </div>
             ) : (
               <p className="nexops-empty-copy">Pick a template category to edit its channels, subject, and message bodies.</p>

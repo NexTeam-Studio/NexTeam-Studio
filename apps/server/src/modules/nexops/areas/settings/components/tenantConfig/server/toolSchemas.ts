@@ -16,7 +16,7 @@ export const saveCommunicationTemplateInputSchema = z.object({
   label: z.string().min(1),
   description: z.string().optional(),
   emailEnabled: z.boolean().default(true),
-  smsEnabled: z.boolean().default(false),
+  smsEnabled: z.boolean().default(true),
   emailSubject: z.string().optional(),
   emailBody: z.string().optional(),
   smsBody: z.string().optional()
