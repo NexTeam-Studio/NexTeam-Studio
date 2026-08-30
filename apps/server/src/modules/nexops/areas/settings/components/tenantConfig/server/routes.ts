@@ -1,8 +1,11 @@
 import type { Request, Response } from "express";
 import { RailError, tenantOnboardingSteps, type CrmSettingsDoc, type PlatformModule } from "@nexteam/core";
 import { randomUUID } from "node:crypto";
+import { requireAccessContext } from "../../../../../../../auth/accessContext.js";
 import { modulesForPlan } from "../../../../../../../platform/plans.js";
+import { hasPermissionLevel, permissionGridFor } from "../../../../../../../platform/tenantPermissionGrid.js";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
+import { detachDraftCatalogSnapshots } from "./catalogReset.js";
 
 function onboardingLaunchReadiness(settings: CrmSettingsDoc, availableModules: ReadonlySet<PlatformModule>) {
   const onboarding = settings.operatingProfile.onboarding;
@@ -89,10 +92,35 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
     }
   });
 
+  app.post("/api/crm/settings/catalog/reset-aquatrace", async (req: Request, res: Response) => {
+    try {
+      const input = req.body as { tenantId?: unknown; confirmation?: unknown };
+      if (input.tenantId !== "aquatrace" || input.confirmation !== "CLEAR_AQUATRACE_CATALOG") {
+        throw new RailError("This reset is limited to the confirmed Aquatrace catalog and requires its explicit confirmation.", { provider: "native", op: "resetAquatraceCatalog", status: 400 });
+      }
+      const access = await requireAccessContext(req, env, { requestedTenantId: "aquatrace", op: "resetAquatraceCatalog" });
+      if (!hasPermissionLevel(permissionGridFor(access.role, access.permissionOverrides), "PRODUCTS_AND_SERVICES", "MANAGE")) {
+        throw new RailError("Your Products & Services permission cannot reset the catalog.", { provider: "native", op: "resetAquatraceCatalog", status: 403 });
+      }
+      const repository = repositoryForTenant();
+      const settings = await repository.getCrmSettings("aquatrace");
+      const migration = await detachDraftCatalogSnapshots(repository, "aquatrace", settings.catalogItems.map((item) => item.id));
+      const saved = await repository.saveCrmSettings({ ...settings, catalogItems: [], updatedAt: new Date().toISOString() });
+      res.json({ ok: true, tenantId: "aquatrace", migration, catalogItems: saved.catalogItems });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.patch("/api/crm/settings", async (req: Request, res: Response) => {
     try {
       const input = crmSettingsPatchSchema.parse(req.body);
-      const access = await requireQuoteAccess(req, input.tenantId, "updateCrmSettings");
+      const access = input.catalogItems
+        ? await requireAccessContext(req, env, { requestedTenantId: input.tenantId, op: "updateProductsAndServices" })
+        : await requireQuoteAccess(req, input.tenantId, "updateCrmSettings");
+      if (input.catalogItems && !hasPermissionLevel(permissionGridFor(access.role, access.permissionOverrides), "PRODUCTS_AND_SERVICES", "MANAGE")) {
+        throw new RailError("Your Products & Services permission cannot manage the catalog.", { provider: "native", op: "updateProductsAndServices", status: 403 });
+      }
       const repository = repositoryForTenant();
       const current = await repository.getCrmSettings(input.tenantId);
       const secureChecklist = input.onboardingCommand

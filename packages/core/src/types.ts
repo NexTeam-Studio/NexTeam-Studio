@@ -24,6 +24,8 @@ export type SmsAdapterKind = "twilio";
 export type TenantPlan = "nexi" | "marketing" | "suite";
 export type TenantUserRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 export type TenantCapability = "team.view" | "team.manage" | "team.invite" | "tenant.audit.read";
+export type TenantPermissionLevel = "NONE" | "READ" | "CREATE" | "WRITE" | "MANAGE" | "DELETE" | "FULL";
+export type TenantPermissionArea = "CLIENTS" | "PROPERTIES" | "REQUESTS" | "QUOTES" | "JOBS" | "VISITS" | "SCHEDULING" | "PRODUCTS_AND_SERVICES" | "INVOICES" | "PAYMENTS" | "REPORTS" | "NEXDOCS" | "NEXCAM" | "TEAM" | "SETTINGS" | "COMMUNICATIONS" | "AUTOMATIONS" | "APPROVALS" | "IMPORTS" | "VIEW_AS_CLIENT";
 export type JobAccessScope = "job.read" | "checklist.write" | "media.upload" | "notes.write";
 export type PlatformModule =
   | "nexi"
@@ -360,6 +362,7 @@ export interface TenantUser {
   /** A named custom role retains a safe base role and grants only these capabilities. */
   customRoleName?: string | undefined;
   capabilities?: TenantCapability[] | undefined;
+  permissionOverrides?: Partial<Record<TenantPermissionArea, TenantPermissionLevel>> | undefined;
   active: boolean;
   createdAt: string;
   updatedAt: string;

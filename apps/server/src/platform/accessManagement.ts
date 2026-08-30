@@ -7,6 +7,8 @@ import {
   type JobAccessScope,
   type TenantUser,
   type TenantCapability,
+  type TenantPermissionArea,
+  type TenantPermissionLevel,
   type TenantUserRole
 } from "@nexteam/core";
 import { RailError } from "@nexteam/core";
@@ -26,6 +28,7 @@ export interface TenantUserInput {
   role: TenantUserRole;
   customRoleName?: string | undefined;
   capabilities?: TenantCapability[] | undefined;
+  permissionOverrides?: Partial<Record<TenantPermissionArea, TenantPermissionLevel>> | undefined;
   active?: boolean | undefined;
   now?: string | undefined;
 }
@@ -103,6 +106,7 @@ export function buildTenantUser(input: TenantUserInput): TenantUser {
     role: input.role,
     customRoleName: input.customRoleName,
     capabilities: input.capabilities ? capabilitiesWithinRoleCeiling(input.role, input.capabilities) : undefined,
+    permissionOverrides: input.permissionOverrides,
     active: input.active ?? true,
     createdAt: timestamp,
     updatedAt: timestamp
@@ -115,6 +119,7 @@ export function customClaimsForTenantUser(user: TenantUser): Record<string, unkn
     tenantRole: user.role,
     tenantUserId: user.id,
     tenantCapabilities: capabilitiesForTenantUser(user),
+    tenantPermissionOverrides: user.permissionOverrides ?? {},
     roles: [user.role.toLowerCase()]
   };
 }
@@ -122,8 +127,19 @@ export function customClaimsForTenantUser(user: TenantUser): Record<string, unkn
 export async function upsertTenantUser(repository: PlatformRepository, input: TenantUserInput): Promise<TenantUser> {
   const existing = input.id ? await repository.getTenantUser(input.tenantId, input.id) : null;
   const timestamp = nowIso(input.now);
+  // A normal member edit must not silently discard a saved per-user grant.
+  // A tier change is the one intentional reset boundary.
+  const roleChanged = Boolean(existing && existing.role !== input.role);
   const next = buildTenantUser({
     ...input,
+    permissionOverrides: input.permissionOverrides ?? (roleChanged ? {} : existing?.permissionOverrides),
+    authUid: input.authUid ?? existing?.authUid,
+    email: input.email ?? existing?.email,
+    phones: input.phones ?? existing?.phones,
+    address: input.address ?? existing?.address,
+    customRoleName: input.customRoleName ?? existing?.customRoleName,
+    capabilities: input.capabilities ?? existing?.capabilities,
+    active: input.active ?? existing?.active,
     id: input.id ?? existing?.id,
     createdAt: existing?.createdAt,
     now: existing?.createdAt ?? timestamp

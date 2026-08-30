@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   NexOpsCatalogEditorModal,
   blankCatalogItemDraft,
@@ -150,6 +150,8 @@ interface NexOpsSettingsPageProps {
   role: TenantRole;
   tenantUsers: TenantUserRecord[];
   onCrmMutation?: () => void;
+  catalogFocusNonce?: number;
+  onOpenCatalog?: () => void;
 }
 
 function templateChannelLabel(template: CommunicationTemplateRecord): string {
@@ -217,6 +219,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   const [catalogDraft, setCatalogDraft] = useState<CatalogItemDraft>(blankCatalogItemDraft());
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [templateDraft, setTemplateDraft] = useState<CommunicationTemplateRecord | null>(null);
+  const catalogSectionRef = useRef<HTMLElement | null>(null);
 
   const selectedTemplate = useMemo(
     () => settings?.communicationTemplates.find((template) => template.id === selectedTemplateId) ?? settings?.communicationTemplates[0] ?? null,
@@ -238,6 +241,12 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   useEffect(() => {
     void refresh();
   }, [props.tenantId]);
+
+  useEffect(() => {
+    if (props.catalogFocusNonce === undefined) return;
+    catalogSectionRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+    catalogSectionRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+  }, [props.catalogFocusNonce]);
 
   useEffect(() => {
     if (!selectedTemplate) {
@@ -530,6 +539,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           <h1>Settings</h1>
           <p>One place for tenant catalog, correspondence templates, and the shared office defaults these screens reuse.</p>
         </div>
+        {props.onOpenCatalog ? <button type="button" onClick={props.onOpenCatalog}>Products &amp; Services</button> : null}
       </div>
 
       <div className="nexops-density-inline-facts">
@@ -556,7 +566,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
       </div>
 
       <div className="nexops-two-column">
-        <article className="nexops-module-card">
+        <article className="nexops-module-card" ref={catalogSectionRef} id="products-services">
           <div className="nexops-page-heading">
             <div><p className="eyebrow">Properties</p><h2>Asset Types</h2></div>
             <div className="nexops-inline-actions">

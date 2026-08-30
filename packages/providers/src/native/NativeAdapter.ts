@@ -111,7 +111,10 @@ function defaultCrmSettingsTimestamp(): string {
   return "2026-07-12T00:00:00.000Z";
 }
 
-function defaultCatalogItems(tenantId: string) {
+export function defaultCatalogItems(tenantId: string) {
+  // Aquatrace's imported service data must never become another tenant's
+  // starter catalog. New tenants begin with an intentionally empty catalog.
+  if (tenantId !== "aquatrace") return [];
   const timestamp = defaultCrmSettingsTimestamp();
   const seedItems = [
     {

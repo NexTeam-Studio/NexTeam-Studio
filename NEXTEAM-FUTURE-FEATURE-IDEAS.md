@@ -2,6 +2,12 @@
 
 Last updated: 2026-07-22
 
+## Deferred: Tier 2 subcontractor access
+
+- A job-scoped external subcontractor tier is a locked fast-follow after the
+  Owner / Office Admin / Technician model. It must use narrowly scoped job
+  access, not a fourth broad tenant role, and remains out of this build pass.
+
 ## Deferred during Pieces 6+7
 
 ### Scheduling

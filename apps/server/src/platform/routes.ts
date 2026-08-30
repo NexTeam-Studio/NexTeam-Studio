@@ -12,7 +12,7 @@ import { runTenantBackup, type StorageWriter } from "./backup.js";
 import { createStripeTestSubscription } from "./billing.js";
 import { toolEntitlementMatrix } from "./entitlements.js";
 import { modulesForPlan, PLATFORM_PLANS } from "./plans.js";
-import { defaultTenant, defaultTenantBranding, planCatalog, subscriptionFromStripe, type PlatformRepository, type TenantProfile } from "./repository.js";
+import { defaultTenant, defaultTenantBranding, defaultTenantUsers, planCatalog, subscriptionFromStripe, type PlatformRepository, type TenantProfile } from "./repository.js";
 import { activeSubscriptionPackages } from "./subscriptionPackages.js";
 import { activateProspectTenant, getOrCreateFirebaseOwner, mergeTenantOwnerClaims, type FirebaseOwnerActivation } from "./tenantActivation.js";
 import { confirmSubscriptionCancellation, requestSubscriptionCancellation, resubscribeTenant } from "./tenantSubscriptionLifecycle.js";
@@ -163,8 +163,13 @@ const tenantUserBodySchema = z.object({
   role: z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]),
   customRoleName: z.string().trim().min(1).max(80).optional(),
   capabilities: z.array(z.enum(["team.view", "team.manage", "team.invite", "tenant.audit.read"])).optional(),
+  permissionOverrides: z.record(z.enum(["CLIENTS", "PROPERTIES", "REQUESTS", "QUOTES", "JOBS", "VISITS", "SCHEDULING", "PRODUCTS_AND_SERVICES", "INVOICES", "PAYMENTS", "REPORTS", "NEXDOCS", "NEXCAM", "TEAM", "SETTINGS", "COMMUNICATIONS", "AUTOMATIONS", "APPROVALS", "IMPORTS", "VIEW_AS_CLIENT"]), z.enum(["NONE", "READ", "CREATE", "WRITE", "MANAGE", "DELETE", "FULL"])).optional(),
   active: z.boolean().optional()
 });
+const tenantInviteBodySchema = z.object({
+  email: z.string().email(),
+  role: z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"])
+}).strict();
 
 const jobAccessLinkBodySchema = z.object({
   jobId: z.string().min(1),
@@ -1580,7 +1585,16 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantUsers", status: 400 });
       }
       await requireTenantCapability(req, env, "team.view", { requestedTenantId: tenantId, op: "tenantUsers" });
-      res.json({ ok: true, tenantId, users: await deps.repository.listTenantUsers(tenantId) });
+      let users = await deps.repository.listTenantUsers(tenantId);
+      // Persist the confirmed first-team seed only when the tenant has never
+      // stored a membership record; later reads never overwrite team changes.
+      if (!users.length) {
+        const seed = defaultTenantUsers(tenantId);
+        if (seed.length) {
+          users = await Promise.all(seed.map((member) => deps.repository.upsertTenantUser(member)));
+        }
+      }
+      res.json({ ok: true, tenantId, users });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -1610,6 +1624,37 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
         createdAt: new Date().toISOString()
       });
       res.status(201).json({ ok: true, user, claimsPreview: customClaimsForTenantUser(user) });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  // Invites are durable pending membership records only. Delivery is deliberately
+  // handled by a separate outbound service and is never triggered by this route.
+  app.post("/api/platform/tenants/:tenantId/invites", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      if (!tenantId) throw new RailError("Tenant id is required.", { provider: "platform", op: "tenantInviteCreate", status: 400 });
+      const access = await requireTenantCapability(req, env, "team.invite", { requestedTenantId: tenantId, op: "tenantInviteCreate" });
+      const input = tenantInviteBodySchema.parse(req.body ?? {});
+      if (input.role === "OWNER") throw new RailError("Owner access is assigned through NexCommand, not an invite.", { provider: "platform", op: "tenantInviteCreate", status: 403 });
+      const user = await upsertTenantUser(deps.repository, {
+        tenantId,
+        email: input.email,
+        displayName: input.email,
+        role: input.role,
+        active: false
+      });
+      await deps.repository.saveTenantMembershipAudit({
+        id: `membership_audit_${randomUUID()}`,
+        tenantId,
+        action: "member.upserted",
+        actorId: actorIdForAccess(access),
+        targetUserId: user.id,
+        detail: `pending_invite=true; role=${user.role}; delivery=not_sent`,
+        createdAt: new Date().toISOString()
+      });
+      res.status(201).json({ ok: true, invite: { ...user, status: "PENDING" }, delivery: "not_sent" });
     } catch (error) {
       sendRouteError(res, error);
     }

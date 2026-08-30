@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import type { Request } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { RailError, tenantUserSchema } from "@nexteam/core";
-import type { TenantCapability, TenantUser, TenantUserRole } from "@nexteam/core";
+import type { TenantCapability, TenantPermissionArea, TenantPermissionLevel, TenantUser, TenantUserRole } from "@nexteam/core";
 import { capabilitiesForTenantUser, ROLE_CAPABILITIES } from "../platform/accessManagement.js";
 import { getAdminAuth } from "../firebase.js";
 import { getAdminDb } from "../firebase.js";
@@ -16,6 +16,7 @@ export interface AccessContext {
   tenantUserId: string;
   role: TenantRole;
   capabilities: TenantCapability[];
+  permissionOverrides?: Partial<Record<TenantPermissionArea, TenantPermissionLevel>> | undefined;
   accessKind: AccessKind;
   jobAccessLinkId?: string | undefined;
   jobId?: string | undefined;
@@ -441,6 +442,7 @@ export async function requireAccessContext(
     tenantUserId: membership.id,
     role: membership.role,
     capabilities: capabilitiesForTenantUser(membership),
+    ...(membership.permissionOverrides ? { permissionOverrides: membership.permissionOverrides } : {}),
     accessKind: accessKind(decoded),
     ...(claimString(decoded, "jobAccessLinkId") ? { jobAccessLinkId: claimString(decoded, "jobAccessLinkId") } : {}),
     ...(claimString(decoded, "jobId") ? { jobId: claimString(decoded, "jobId") } : {}),

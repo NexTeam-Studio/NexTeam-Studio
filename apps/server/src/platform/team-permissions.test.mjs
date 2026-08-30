@@ -104,6 +104,31 @@ test("tenant membership is capability-gated, tenant-scoped, and audited", async 
   }
 });
 
+test("Team & Permissions persists overrides and pending invites without an outbound delivery", async () => {
+  const { server, base } = await startApp();
+  try {
+    const ownerHeaders = { "content-type": "application/json", "x-nexteam-local-profile": "local-owner" };
+    const officeHeaders = { "content-type": "application/json", "x-nexteam-local-profile": "local-office" };
+    const technicianHeaders = { "content-type": "application/json", "x-nexteam-local-profile": "local-technician" };
+    const created = await fetch(`${base}/api/platform/tenants/tenant_demo/users`, { method: "POST", headers: ownerHeaders, body: JSON.stringify({ id: "logan", displayName: "Logan", role: "TECHNICIAN" }) });
+    assert.equal(created.status, 201);
+    const denied = await fetch(`${base}/api/platform/tenants/tenant_demo/users`, { method: "POST", headers: technicianHeaders, body: JSON.stringify({ id: "logan", displayName: "Logan", role: "TECHNICIAN", permissionOverrides: { NEXDOCS: "MANAGE" } }) });
+    assert.equal(denied.status, 403);
+    const saved = await fetch(`${base}/api/platform/tenants/tenant_demo/users`, { method: "POST", headers: ownerHeaders, body: JSON.stringify({ id: "logan", displayName: "Logan", role: "TECHNICIAN", permissionOverrides: { NEXDOCS: "MANAGE" } }) });
+    assert.equal(saved.status, 201);
+    const reloaded = await fetch(`${base}/api/platform/tenants/tenant_demo/users`, { headers: ownerHeaders });
+    assert.equal((await reloaded.json()).users.find((user) => user.id === "logan").permissionOverrides.NEXDOCS, "MANAGE");
+    const reset = await fetch(`${base}/api/platform/tenants/tenant_demo/users`, { method: "POST", headers: ownerHeaders, body: JSON.stringify({ id: "logan", displayName: "Logan", role: "OFFICE_ADMIN", permissionOverrides: {} }) });
+    assert.equal((await reset.json()).user.permissionOverrides.NEXDOCS, undefined);
+    const invite = await fetch(`${base}/api/platform/tenants/tenant_demo/invites`, { method: "POST", headers: officeHeaders, body: JSON.stringify({ email: "safe-test@example.test", role: "TECHNICIAN" }) });
+    const inviteBody = await invite.json();
+    assert.equal(invite.status, 201);
+    assert.deepEqual({ status: inviteBody.invite.status, role: inviteBody.invite.role, delivery: inviteBody.delivery }, { status: "PENDING", role: "TECHNICIAN", delivery: "not_sent" });
+  } finally {
+    await close(server);
+  }
+});
+
 test("platform self-profile and lifecycle routes persist authorized platform actions without deleting tenant data", async () => {
   const { server, base, repository } = await startApp();
   try {

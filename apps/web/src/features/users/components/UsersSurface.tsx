@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import "../styles/users.css";
 
-type AccessLevel = "None" | "View" | "Create & edit" | "Full access";
-export type MemberRole = "Owner" | "Office Admin" | "Technician" | "Custom";
+type AccessLevel = "NONE" | "READ" | "CREATE" | "WRITE" | "MANAGE" | "DELETE" | "FULL";
+export type MemberRole = "Owner" | "Office Admin" | "Technician";
 export type UsersSurfaceView = "team" | "own-profile";
 
 export interface NexOpsSignedInUser {
@@ -21,6 +21,8 @@ export interface NexOpsTeamMember extends NexOpsSignedInUser {
   lastActive: string;
   assigned: boolean;
   color?: string;
+  permissionOverrides?: Partial<Record<string, AccessLevel>>;
+  active?: boolean;
 }
 
 export interface UsersSurfaceProps {
@@ -45,23 +47,8 @@ interface TeamMember extends NexOpsTeamMember {
   color: string;
 }
 
-const startingMembers: TeamMember[] = [
-  { id: "maria", initials: "MC", name: "Maria Chen", title: "Office Coordinator", email: "maria@nexops.demo", phone: "(555) 013-2841", role: "Office Admin", lastActive: "Today, 8:42 AM", assigned: true, color: "coral" },
-  { id: "avery", initials: "AB", name: "Avery Brooks", title: "Founder", email: "avery@nexops.demo", phone: "(555) 013-8910", role: "Owner", lastActive: "Today, 7:15 AM", assigned: true, color: "violet" },
-  { id: "nolan", initials: "NR", name: "Nolan Rivera", title: "Field Technician", email: "nolan@nexops.demo", phone: "(555) 013-1664", role: "Technician", lastActive: "Yesterday", assigned: true, color: "aqua" },
-  { id: "jordan", initials: "JP", name: "Jordan Patel", title: "Field Technician", email: "jordan@nexops.demo", phone: "(555) 013-2098", role: "Technician", lastActive: "Jul 24, 2026", assigned: false, color: "gold" },
-  { id: "riley", initials: "RW", name: "Riley Wilson", title: "Field Technician", email: "riley@nexops.demo", phone: "(555) 013-7823", role: "Technician", lastActive: "Jul 19, 2026", assigned: false, color: "pink" },
-];
-
-const permissionGroups = [
-  ["Schedule", "View and complete their own schedule", "Edit their own schedule", "Manage everyone’s schedule"],
-  ["Clients & properties", "View client details", "Create and edit client details", "Manage all client records"],
-  ["Requests", "View requests", "Create and edit requests", "Manage request lifecycle"],
-  ["Quotes & invoices", "View pricing", "Create and edit quotes", "Send invoices and record payments"],
-  ["Jobs & visits", "View assigned work", "Create and edit jobs", "Manage and close jobs"],
-  ["Files & media", "View job files and media", "Upload job files and media", "Manage shared files and media"],
-  ["Notes", "View work notes", "Add and edit notes", "Delete notes"],
-];
+const permissionAreas = ["CLIENTS", "PROPERTIES", "REQUESTS", "QUOTES", "JOBS", "VISITS", "SCHEDULING", "PRODUCTS_AND_SERVICES", "INVOICES", "PAYMENTS", "REPORTS", "NEXDOCS", "NEXCAM", "TEAM", "SETTINGS", "COMMUNICATIONS", "AUTOMATIONS", "APPROVALS", "IMPORTS", "VIEW_AS_CLIENT"];
+const permissionLevels: AccessLevel[] = ["NONE", "READ", "CREATE", "WRITE", "MANAGE", "DELETE", "FULL"];
 
 export const workingHours = [
   ["Sunday", "Unavailable"], ["Monday", "8:00 AM – 4:30 PM"], ["Tuesday", "8:00 AM – 4:30 PM"],
@@ -69,7 +56,7 @@ export const workingHours = [
 ];
 
 export function UsersSurface(props: UsersSurfaceProps = {}): React.ReactElement {
-  const [members, setMembers] = useState<TeamMember[]>(() => normalizeMembers(props.teamMembers ?? startingMembers));
+  const [members, setMembers] = useState<TeamMember[]>(() => normalizeMembers(props.teamMembers ?? []));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [view, setView] = useState<UsersSurfaceView>(props.initialView ?? "team");
   const [query, setQuery] = useState("");
@@ -88,6 +75,8 @@ export function UsersSurface(props: UsersSurfaceProps = {}): React.ReactElement 
   useEffect(() => {
     setView(props.initialView ?? "team");
   }, [props.initialView]);
+
+  useEffect(() => { let cancelled = false; if (!props.tenantId || !props.getAccessToken) return; void (async () => { try { const token = await props.getAccessToken(); const response = await fetch(`/api/platform/tenants/${encodeURIComponent(props.tenantId)}/users`, { headers: token ? { authorization: `Bearer ${token}` } : {} }); const body = await response.json() as { ok?: boolean; users?: Array<{ id: string; displayName: string; email?: string; role: "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN"; active: boolean; updatedAt: string; permissionOverrides?: Partial<Record<string, AccessLevel>> }> }; if (response.ok && body.ok && !cancelled) setMembers(normalizeMembers((body.users ?? []).map((user) => ({ id: user.id, name: user.displayName, email: user.email ?? "", role: roleLabel(user.role), lastActive: user.updatedAt, assigned: user.active, active: user.active, permissionOverrides: user.permissionOverrides })))); } catch { /* Keep any supplied tenant list visible while offline. */ } })(); return () => { cancelled = true; }; }, [props.tenantId, props.getAccessToken]);
 
   function selectMember(id: string): void {
     setSelectedId(id);
@@ -133,7 +122,7 @@ export function UsersSurface(props: UsersSurfaceProps = {}): React.ReactElement 
         <MemberTable members={filteredUnassigned} onSelect={selectMember} canManageTeam={canManageTeam} action={canManageTeam ? { label: "Assign seat", onClick: assignSeat } : undefined} />
       </section>
 
-      {inviteOpen ? <InviteDialog onClose={() => setInviteOpen(false)} onSend={() => setInviteSent(true)} sent={inviteSent} /> : null}
+      {inviteOpen ? <InviteDialog tenantId={props.tenantId} getAccessToken={props.getAccessToken} onClose={() => setInviteOpen(false)} onSend={(member) => { setMembers((current) => [...current, member]); setInviteSent(true); }} sent={inviteSent} /> : null}
     </main>
   );
 }
@@ -146,9 +135,7 @@ function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; canMana
   const [tab, setTab] = useState<"profile" | "permissions" | "preferences">("profile");
   const [role, setRole] = useState<MemberRole>(props.member.role);
   const [administrator, setAdministrator] = useState(props.member.role === "Owner");
-  const [access, setAccess] = useState<Record<string, AccessLevel>>({
-    "Schedule": "Create & edit", "Clients & properties": "View", "Requests": "Create & edit", "Quotes & invoices": "None", "Jobs & visits": "Create & edit", "Files & media": "View", "Notes": "Create & edit",
-  });
+  const [access, setAccess] = useState<Record<string, AccessLevel>>(props.member.permissionOverrides ?? {});
   const [dirty, setDirty] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -159,7 +146,7 @@ function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; canMana
   async function saveChanges(): Promise<void> {
     if (!props.tenantId || !props.getAccessToken) { setSaveError("Profile storage is not connected."); return; }
     setSaving(true); setSaveError("");
-    try { const token = await props.getAccessToken(); const response = await fetch(`/api/nexops/users/${encodeURIComponent(props.member.id)}/profile`, { method: "PUT", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ tenantId: props.tenantId, profile: profileDraft }) }); const body = await response.json() as { ok: boolean; error?: string; profile?: ProfileDraft }; if (!response.ok || !body.ok) throw new Error(body.error ?? "Unable to save profile."); if (body.profile) setProfileDraft(body.profile); props.onSave(); setDirty(false); } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to save profile."); } finally { setSaving(false); }
+    try { const token = await props.getAccessToken(); if (!props.ownProfile && props.canManageTeam) { const teamResponse = await fetch(`/api/platform/tenants/${encodeURIComponent(props.tenantId)}/users`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ id: props.member.id, displayName: props.member.name, email: props.member.email || undefined, role: roleCode(role), active: props.member.active ?? props.member.assigned, permissionOverrides: access }) }); const teamBody = await teamResponse.json() as { ok?: boolean; error?: string }; if (!teamResponse.ok || !teamBody.ok) throw new Error(teamBody.error ?? "Unable to save team permissions."); } const response = await fetch(`/api/nexops/users/${encodeURIComponent(props.member.id)}/profile`, { method: "PUT", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ tenantId: props.tenantId, profile: profileDraft }) }); const body = await response.json() as { ok: boolean; error?: string; profile?: ProfileDraft }; if (!response.ok || !body.ok) throw new Error(body.error ?? "Unable to save profile."); if (body.profile) setProfileDraft(body.profile); props.onSave(); setDirty(false); } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to save profile."); } finally { setSaving(false); }
   }
 
   async function selectProfilePhoto(file: File | undefined): Promise<void> {
@@ -182,7 +169,7 @@ function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; canMana
     <header className="users-editor-heading"><div>{props.ownProfile ? null : <p className="users-kicker">Team Member</p>}{props.ownProfile ? <h1 className="users-page-title"><PersonTitleIcon /> <span>My Profile</span></h1> : <h1>{props.member.name}</h1>}<div className="users-profile-identity"><Avatar member={props.member} large photoUrl={profileDraft.avatarDataUrl || undefined} /><label className="users-photo-action"><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => { void selectProfilePhoto(event.target.files?.[0]); event.currentTarget.value = ""; }} />{profileDraft.avatarDataUrl ? "Change Photo" : "Add Photo"}</label><div><strong>{props.member.name}</strong><span>{props.member.title}</span></div></div></div></header>
     <div className="users-tabs" role="tablist" aria-label="Team member editor"><button type="button" className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")}>Profile</button><button type="button" className={tab === "permissions" ? "active" : ""} onClick={() => setTab("permissions")}>Role & access</button><button type="button" className={tab === "preferences" ? "active" : ""} onClick={() => setTab("preferences")}>Preferences</button></div>
     {tab === "profile" ? <ProfilePanel draft={profileDraft} onChange={(patch) => { setProfileDraft((current) => ({ ...current, ...patch })); setDirty(true); }} /> : null}
-    {tab === "permissions" ? <PermissionsPanel role={role} setRole={(nextRole) => { setRole(nextRole); setDirty(true); }} administrator={administrator} setAdministrator={(value) => { setAdministrator(value); setDirty(true); }} access={access} setAccess={(nextAccess) => { setAccess(nextAccess); setDirty(true); }} editable={false} /> : null}
+    {tab === "permissions" ? <PermissionsPanel role={role} setRole={(nextRole) => { if (nextRole !== role && window.confirm(`Change ${props.member.name} to ${nextRole}? This resets their individual permission overrides to that tier's defaults.`)) { setRole(nextRole); setAccess({}); setDirty(true); } }} administrator={administrator} setAdministrator={(value) => { setAdministrator(value); setDirty(true); }} access={access} setAccess={(nextAccess) => { setAccess(nextAccess); setDirty(true); }} editable={props.canManageTeam && !props.ownProfile} /> : null}
     {tab === "preferences" ? <PreferencesPanel subscriptions={profileDraft.notificationPreferences} setSubscriptions={(notificationPreferences) => { setProfileDraft((current) => ({ ...current, notificationPreferences })); setDirty(true); }} /> : null}
     {saveError ? <p className="users-profile-error" role="alert">{saveError}</p> : null}{dirty ? <button type="button" className="users-profile-save" onClick={() => void saveChanges()} aria-label="Save changes" title="Save changes" disabled={saving}>{saving ? "…" : "✓"}</button> : null}
     {!props.ownProfile && props.canManageTeam ? <button type="button" className="users-profile-deactivate">Deactivate user</button> : null}
@@ -194,7 +181,7 @@ function ProfilePanel(props: { draft: ProfileDraft; onChange: (patch: Partial<Pr
 }
 
 function PermissionsPanel(props: { role: MemberRole; setRole: (role: MemberRole) => void; administrator: boolean; setAdministrator: (value: boolean) => void; access: Record<string, AccessLevel>; setAccess: (access: Record<string, AccessLevel>) => void; editable: boolean }): React.ReactElement {
-  return <div className="users-editor-grid"><section className="users-panel users-panel--wide"><p className="users-kicker">Access control</p><h2>Role & permissions</h2><p className="users-panel-detail">Roles and permissions are enforced by the tenant access service. They are read-only here until Integration connects its approved update contract.</p><label className="users-admin-switch"><span><strong>Administrator access</strong><small>Administrators can manage the team, business settings, and all NexOps work.</small></span><input type="checkbox" checked={props.administrator} disabled={!props.editable} onChange={(event) => props.setAdministrator(event.target.checked)} /><i /></label><div className="users-presets"><h3>Start with a role</h3><p>Choose a starting point, then fine-tune access for this person.</p><div>{(["Technician", "Office Admin", "Owner", "Custom"] as MemberRole[]).map((role) => <button type="button" key={role} disabled={!props.editable} className={props.role === role ? "selected" : ""} onClick={() => props.setRole(role)}><span className="users-radio" /> <strong>{role}</strong><small>{roleDescription(role)}</small></button>)}</div></div><div className="users-permission-list"><h3>Detailed access</h3>{permissionGroups.map(([area, ...levels]) => <div className="users-permission-row" key={area}><div><strong>{area}</strong><small>{levels[1]}</small></div><select value={props.access[area]} disabled={!props.editable} onChange={(event) => props.setAccess({ ...props.access, [area]: event.target.value as AccessLevel })} aria-label={`${area} access`}><option>None</option><option>View</option><option>Create & edit</option><option>Full access</option></select></div>)}</div></section></div>;
+  return <div className="users-editor-grid"><section className="users-panel users-panel--wide"><p className="users-kicker">Access control</p><h2>Role & permissions</h2><p className="users-panel-detail">The assigned tier remains this person’s role label. Individual settings below override only the selected area.</p><div className="users-presets"><h3>Assigned tier</h3><p>Changing a tier requires confirmation and resets individual overrides.</p><div>{(["Technician", "Office Admin", "Owner"] as MemberRole[]).map((role) => <button type="button" key={role} disabled={!props.editable} className={props.role === role ? "selected" : ""} onClick={() => props.setRole(role)}><span className="users-radio" /> <strong>{role}</strong><small>{roleDescription(role)}</small></button>)}</div></div><div className="users-permission-list"><h3>Detailed access</h3>{permissionAreas.map((area) => <div className="users-permission-row" key={area}><div><strong>{area.replaceAll("_", " ")}</strong><small>Override this area without changing the assigned tier.</small></div><select value={props.access[area] ?? ""} disabled={!props.editable} onChange={(event) => { const next = { ...props.access }; if (!event.target.value) delete next[area]; else next[area] = event.target.value as AccessLevel; props.setAccess(next); }} aria-label={`${area} access`}><option value="">Tier default</option>{permissionLevels.map((level) => <option key={level}>{level}</option>)}</select></div>)}</div></section></div>;
 }
 
 function PreferencesPanel(props: { subscriptions: Record<string, boolean>; setSubscriptions: (value: Record<string, boolean>) => void }): React.ReactElement {
@@ -202,8 +189,10 @@ function PreferencesPanel(props: { subscriptions: Record<string, boolean>; setSu
   return <div className="users-editor-grid"><section className="users-panel users-panel--wide"><p className="users-kicker">Communications</p><h2>Email preferences</h2><p className="users-panel-detail">Choose the operational updates this team member receives.</p><div className="users-subscriptions">{entries.map(([key, title, description]) => <label key={key}><input type="checkbox" checked={props.subscriptions[key]} onChange={(event) => props.setSubscriptions({ ...props.subscriptions, [key]: event.target.checked })} /><span><strong>{title}</strong><small>{description}</small></span></label>)}</div></section></div>;
 }
 
-function InviteDialog(props: { onClose: () => void; onSend: () => void; sent: boolean }): React.ReactElement {
-  return <div className="users-dialog-backdrop" role="presentation"><section className="users-dialog" role="dialog" aria-modal="true" aria-labelledby="invite-title"><button type="button" className="users-dialog-close" onClick={props.onClose} aria-label="Close invite dialog">×</button>{props.sent ? <><p className="users-kicker">Invitation Ready</p><h2 id="invite-title">Invite Sent</h2><p>They’ll receive a secure link to join your NexOps workspace.</p><button type="button" className="users-primary" onClick={props.onClose}>Done</button></> : <><p className="users-kicker">Grow Your Team</p><h2 id="invite-title">Invite a Team Member</h2><p>They’ll choose a password and see only the tools you allow.</p><div className="users-form-grid"><Field label="Full Name" value="" placeholder="e.g. Sam Carter" /><Field label="Email Address" value="" placeholder="sam@company.com" /></div><label className="users-dialog-label">Starting Role<select defaultValue="Technician"><option>Technician</option><option>Office Admin</option></select></label><div className="users-dialog-actions"><button type="button" className="users-secondary" onClick={props.onClose}>Cancel</button><button type="button" className="users-primary" onClick={props.onSend}>Send Invite</button></div></>}</section></div>;
+function InviteDialog(props: { tenantId?: string; getAccessToken?: () => Promise<string>; onClose: () => void; onSend: (member: TeamMember) => void; sent: boolean }): React.ReactElement {
+  const [email, setEmail] = useState(""); const [role, setRole] = useState<MemberRole>("Technician"); const [error, setError] = useState(""); const [saving, setSaving] = useState(false);
+  async function createInvite(): Promise<void> { if (!props.tenantId || !props.getAccessToken) { setError("Team storage is not connected."); return; } setSaving(true); setError(""); try { const token = await props.getAccessToken(); const response = await fetch(`/api/platform/tenants/${encodeURIComponent(props.tenantId)}/invites`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ email, role: roleCode(role) }) }); const body = await response.json() as { ok?: boolean; error?: string; invite?: { id: string; displayName: string; email?: string; role: "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN"; updatedAt: string; permissionOverrides?: Partial<Record<string, AccessLevel>> } }; if (!response.ok || !body.ok || !body.invite) throw new Error(body.error ?? "Unable to create pending invite."); props.onSend(normalizeMembers([{ id: body.invite.id, name: body.invite.displayName, email: body.invite.email ?? email, role: roleLabel(body.invite.role), lastActive: "Pending invite", assigned: false, active: false, permissionOverrides: body.invite.permissionOverrides }])[0]); } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to create pending invite."); } finally { setSaving(false); } }
+  return <div className="users-dialog-backdrop" role="presentation"><section className="users-dialog" role="dialog" aria-modal="true" aria-labelledby="invite-title"><button type="button" className="users-dialog-close" onClick={props.onClose} aria-label="Close invite dialog">×</button>{props.sent ? <><p className="users-kicker">Pending invitation</p><h2 id="invite-title">Invite record created</h2><p>No email was sent. Delivery is a separate, explicit outbound action.</p><button type="button" className="users-primary" onClick={props.onClose}>Done</button></> : <><p className="users-kicker">Grow Your Team</p><h2 id="invite-title">Invite a Team Member</h2><p>Create a pending access record with its assigned tier.</p><div className="users-form-grid"><Field label="Email Address" value={email} placeholder="teammate@company.com" onChange={setEmail} /></div><label className="users-dialog-label">Starting Role<select value={role} onChange={(event) => setRole(event.target.value as MemberRole)}><option>Technician</option><option>Office Admin</option></select></label>{error ? <p className="users-profile-error" role="alert">{error}</p> : null}<div className="users-dialog-actions"><button type="button" className="users-secondary" onClick={props.onClose}>Cancel</button><button type="button" className="users-primary" disabled={saving || !email} onClick={() => void createInvite()}>{saving ? "Creating…" : "Create pending invite"}</button></div></>}</section></div>;
 }
 
 function TeamTitleIcon(): React.ReactElement {
@@ -257,4 +246,6 @@ function profileDraftFor(member: TeamMember): ProfileDraft { const { firstName, 
 function nameParts(name: string): { firstName: string; middleName: string; lastName: string } { const parts = name.trim().split(/\s+/).filter(Boolean); return { firstName: parts[0] ?? "", middleName: parts.length > 2 ? parts.slice(1, -1).join(" ") : "", lastName: parts.length > 1 ? parts.at(-1) ?? "" : "" }; }
 function filterMembers(members: TeamMember[], query: string): TeamMember[] { const term = query.trim().toLowerCase(); return term ? members.filter((member) => `${member.name} ${member.email} ${member.role}`.toLowerCase().includes(term)) : members; }
 function roleTone(role: MemberRole): string { return role === "Owner" ? "owner" : role === "Office Admin" ? "admin" : role === "Technician" ? "tech" : "custom"; }
-function roleDescription(role: MemberRole): string { return role === "Technician" ? "Field work, their schedule, and assigned jobs." : role === "Office Admin" ? "Office workflow, clients, scheduling, and billing support." : role === "Owner" ? "Full business oversight and team management." : "Build access one area at a time."; }
+function roleDescription(role: MemberRole): string { return role === "Technician" ? "Field work, their schedule, and assigned jobs." : role === "Office Admin" ? "Office workflow, clients, scheduling, and billing support." : "Full business oversight and team management."; }
+function roleLabel(role: "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN"): MemberRole { return role === "OWNER" ? "Owner" : role === "OFFICE_ADMIN" ? "Office Admin" : "Technician"; }
+function roleCode(role: MemberRole): "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN" { return role === "Owner" ? "OWNER" : role === "Office Admin" ? "OFFICE_ADMIN" : "TECHNICIAN"; }

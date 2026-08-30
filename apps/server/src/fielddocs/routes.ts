@@ -5,6 +5,7 @@ import { InMemoryEventBus, RailError, type CaptureBatch, type EventBus, type Med
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { UsageLogWriter } from "@nexteam/nexi";
 import { requireTenantRole } from "../auth/accessContext.js";
+import { hasPermissionLevel, permissionGridFor } from "../platform/tenantPermissionGrid.js";
 import { FirestoreNativeCrmRepository } from "../modules/nexops/shared/persistence/nativeRepository.js";
 import type { LedgerService } from "../crm/ledgerFoundation.js";
 import { materializeRequestCaptureContext } from "../crm/requestFoundation.js";
@@ -1704,9 +1705,9 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         actorRole: access.role,
         permissions: {
           canUpload: true,
-          canManageFolders: access.role !== "TECHNICIAN",
-          canDeleteDocuments: access.role !== "TECHNICIAN",
-          canToggleVisibility: access.role !== "TECHNICIAN"
+          canManageFolders: hasPermissionLevel(permissionGridFor(access.role, access.permissionOverrides), "NEXDOCS", "MANAGE"),
+          canDeleteDocuments: hasPermissionLevel(permissionGridFor(access.role, access.permissionOverrides), "NEXDOCS", "DELETE"),
+          canToggleVisibility: hasPermissionLevel(permissionGridFor(access.role, access.permissionOverrides), "NEXDOCS", "MANAGE")
         },
         library
       });
@@ -1722,10 +1723,13 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         throw new RailError("Client id is required.", { provider: "native", op: "createNexDocsFolder", status: 400 });
       }
       const input = nexDocsFolderCreateInputSchema.parse(req.body ?? {});
-      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
         requestedTenantId: input.tenantId,
         op: "createNexDocsFolder"
       });
+      if (!hasPermissionLevel(permissionGridFor(access.role, access.permissionOverrides), "NEXDOCS", "MANAGE")) {
+        throw new RailError("Your NexDocs permission cannot manage folders.", { provider: "firebase", op: "createNexDocsFolder", status: 403 });
+      }
       const folder = await nexDocsService().createFolder({
         tenantId: input.tenantId,
         clientId,
@@ -1746,10 +1750,13 @@ export function registerFieldDocsRoutes(app: Express, deps: FieldDocsRouteDeps =
         throw new RailError("Client id and folder id are required.", { provider: "native", op: "deleteNexDocsFolder", status: 400 });
       }
       const input = nexDocsDeleteBodySchema.parse(req.body ?? {});
-      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], {
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], {
         requestedTenantId: input.tenantId,
         op: "deleteNexDocsFolder"
       });
+      if (!hasPermissionLevel(permissionGridFor(access.role, access.permissionOverrides), "NEXDOCS", "MANAGE")) {
+        throw new RailError("Your NexDocs permission cannot manage folders.", { provider: "firebase", op: "deleteNexDocsFolder", status: 403 });
+      }
       await nexDocsService().deleteFolder({
         tenantId: input.tenantId,
         clientId,

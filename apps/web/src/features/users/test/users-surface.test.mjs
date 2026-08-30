@@ -41,13 +41,17 @@ test("users surface exports the signed-in-user contract and own-profile view", a
   assert.match(source, /function Avatar/);
 });
 
-test("team controls are role-safe and profile preferences are saved", async () => {
+test("team controls use the persisted permission grid and profile preferences are saved", async () => {
   const source = await readFile(sourceUrl, "utf8");
 
   assert.match(source, /canManageTeam=\{canManageTeam\}/);
   assert.match(source, /action=\{canManageTeam \? \{ label: "Assign seat"/);
-  assert.match(source, /editable=\{false\}/);
-  assert.match(source, /tenant access service/);
+  assert.match(source, /permissionAreas/);
+  assert.match(source, /permissionLevels/);
+  assert.match(source, /permissionOverrides/);
+  assert.match(source, /Change .* resets their individual permission overrides/);
+  assert.match(source, /\/api\/platform\/tenants/);
+  assert.match(source, /Create pending invite/);
   assert.match(source, /notificationPreferences: \{ \.\.\.current\.notificationPreferences/);
 });
 

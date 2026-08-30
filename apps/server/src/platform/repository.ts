@@ -234,8 +234,16 @@ export interface PlatformRepository {
   listBackups(tenantId: string): Promise<PlatformBackupRecord[]>;
 }
 
-export function defaultTenantUsers(_tenantId = configuredTenantId(process.env, "defaultTenantUsers")): TenantUser[] {
-  return [];
+export function defaultTenantUsers(tenantId = configuredTenantId(process.env, "defaultTenantUsers")): TenantUser[] {
+  // The first live NexOps tenant has three confirmed internal seats.  No
+  // contact detail is invented; invites add verified email addresses later.
+  if (tenantId !== "aquatrace") return [];
+  const createdAt = "2026-08-30T00:00:00.000Z";
+  return [
+    { id: "chris", tenantId, displayName: "Chris", role: "OWNER", active: true, createdAt, updatedAt: createdAt },
+    { id: "catherine", tenantId, displayName: "Catherine", role: "OFFICE_ADMIN", active: true, createdAt, updatedAt: createdAt },
+    { id: "logan", tenantId, displayName: "Logan", role: "TECHNICIAN", active: true, createdAt, updatedAt: createdAt }
+  ];
 }
 
 function starterSubscription(tenant: Tenant): TenantSubscription {

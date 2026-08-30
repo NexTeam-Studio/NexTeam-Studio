@@ -577,6 +577,9 @@ export const tenantOnboardingBlueprintRevisionSchema = z.object({
 
 export const tenantUserRoleSchema = z.enum(["OWNER", "OFFICE_ADMIN", "TECHNICIAN"]);
 export const tenantCapabilitySchema = z.enum(["team.view", "team.manage", "team.invite", "tenant.audit.read"]);
+export const tenantPermissionLevelSchema = z.enum(["NONE", "READ", "CREATE", "WRITE", "MANAGE", "DELETE", "FULL"]);
+export const tenantPermissionAreaSchema = z.enum(["CLIENTS", "PROPERTIES", "REQUESTS", "QUOTES", "JOBS", "VISITS", "SCHEDULING", "PRODUCTS_AND_SERVICES", "INVOICES", "PAYMENTS", "REPORTS", "NEXDOCS", "NEXCAM", "TEAM", "SETTINGS", "COMMUNICATIONS", "AUTOMATIONS", "APPROVALS", "IMPORTS", "VIEW_AS_CLIENT"]);
+export const tenantPermissionOverridesSchema = z.record(tenantPermissionAreaSchema, tenantPermissionLevelSchema);
 
 export const tenantUserSchema = z.object({
   id: idSchema,
@@ -589,6 +592,7 @@ export const tenantUserSchema = z.object({
   role: tenantUserRoleSchema,
   customRoleName: z.string().min(1).max(80).optional(),
   capabilities: z.array(tenantCapabilitySchema).optional(),
+  permissionOverrides: tenantPermissionOverridesSchema.optional(),
   active: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string()

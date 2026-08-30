@@ -4,6 +4,7 @@ import { type ApprovalQueueService, RailError } from "@nexteam/core";
 import type { JobLifecycleService } from "../crm/jobLifecycle.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 import { requireTenantRole } from "../auth/accessContext.js";
+import { hasPermissionLevel, permissionGridFor } from "../platform/tenantPermissionGrid.js";
 import { detectConflicts, driveTimeProviderFromEnv, suggestSlots, type ScheduledVisit, type ScheduleLocation } from "./schedulingEngine.js";
 import type { SchedulingRepository } from "./repository.js";
 import { queueScheduleNotification } from "./notifications.js";
@@ -84,7 +85,7 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
     try {
       const env = deps.env ?? process.env;
       const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : configuredTenantId(env, "schedulingCalendar");
-      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "listSchedule" });
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "listSchedule" });
       const from = typeof req.query.from === "string" ? req.query.from : undefined;
       const to = typeof req.query.to === "string" ? req.query.to : undefined;
       const range: { from?: string; to?: string } = {};
@@ -94,7 +95,9 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
       if (to) {
         range.to = to;
       }
-      const nativeVisits = (await deps.repository.listVisits(tenantId, range)).map((visit) => ({ ...visit, source: visit.source ?? "native" as const }));
+      const nativeVisits = (await deps.repository.listVisits(tenantId, range))
+        .filter((visit) => hasPermissionLevel(permissionGridFor(access.role, access.permissionOverrides), "SCHEDULING", "MANAGE") || visit.assignedTo.includes(access.tenantUserId))
+        .map((visit) => ({ ...visit, source: visit.source ?? "native" as const }));
       res.json({
         ok: true,
         visits: [...nativeVisits].sort((left, right) => left.start.localeCompare(right.start)),
