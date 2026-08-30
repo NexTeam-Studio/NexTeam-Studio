@@ -11,6 +11,7 @@ export const createJobBodySchema = z.object({
   lineItems: z.array(lineItemSchema).optional(),
   paymentSchedule: paymentSchedulePlanSchema.optional(),
   intake: intakeSnapshotSchema.optional()
+  ,assignedOwnerId: z.string().min(1).optional()
 });
 export const updateJobBodySchema = z.object({
   tenantId: z.string().min(1).optional(),
@@ -18,12 +19,14 @@ export const updateJobBodySchema = z.object({
   paymentSchedule: paymentSchedulePlanSchema.optional(),
   clientVisibility: z.object({
     hideFieldDocsFromPortal: z.boolean().optional()
-  }).optional()
+  }).optional(),
+  assignedOwnerId: z.string().min(1).nullable().optional()
 });
 
 export const jobActionSchema = z.object({
   tenantId: z.string().min(1).optional(),
-  action: z.enum(["close", "invoice", "close_and_invoice", "dismiss_invoice_reminder"])
+  action: z.enum(["close", "invoice", "close_and_invoice", "dismiss_invoice_reminder"]),
+  completionOverrideReason: z.string().trim().min(1).max(2_000).optional()
 });
 
 export const customerDocumentPackageSelectionSchema = z.object({

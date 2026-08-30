@@ -8,6 +8,7 @@ import { linkExistingWorkspaceMembership } from "./workspaceLink.js";
 type WorkspaceLinkRuntime = {
   env: NodeJS.ProcessEnv;
   platformRepository: PlatformRepository;
+  auth?: Pick<NonNullable<ReturnType<typeof getAdminAuth>>, "verifyIdToken" | "setCustomUserClaims"> | undefined;
 };
 
 function sendError(res: Response, error: unknown): void {
@@ -19,7 +20,7 @@ export function registerWorkspaceLinkRoutes(app: Express, runtime: WorkspaceLink
   app.post("/api/auth/workspace-link", async (req: Request, res: Response) => {
     try {
       const token = (req.header("authorization") ?? "").match(/^Bearer\s+(.+)$/i)?.[1];
-      const auth = getAdminAuth(runtime.env);
+      const auth = runtime.auth ?? getAdminAuth(runtime.env);
       if (!token || !auth) throw new RailError("Firebase sign-in is required.", { provider: "firebase", op: "workspaceLink", status: 401 });
       const decoded = await auth.verifyIdToken(token);
       // Platform identities remain outside tenant membership linking.

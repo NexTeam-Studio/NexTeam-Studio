@@ -172,6 +172,7 @@ interface JobSummary {
   propertyId?: string;
   requestId?: string;
   quoteId?: string;
+  assignedOwnerId?: string;
   status: JobStatus;
   title: string;
   startAt?: string;
@@ -366,6 +367,13 @@ export function followUpDraftFromHistory(job: Pick<JobSummary, "clientId" | "tit
   };
 }
 
+interface TenantUserOption {
+  id: string;
+  displayName: string;
+  role: TenantRole;
+  active: boolean;
+}
+
 interface CloseoutArtifact {
   artifactId: string;
   source: "nexdocs" | "nexcam" | "generated";
@@ -389,6 +397,17 @@ interface CloseoutPackageResponse {
   ok: boolean;
   package?: CloseoutPackage;
   artifacts?: CloseoutArtifact[];
+  error?: string;
+}
+
+interface CompletionStatus {
+  evidence: { checklistComplete: boolean; photosPresent: boolean; reportPresent: boolean; signaturePresent: boolean };
+  missing: string[];
+}
+
+interface CompletionStatusResponse {
+  ok: boolean;
+  completion?: CompletionStatus;
   error?: string;
 }
 
@@ -607,6 +626,7 @@ export function NexOpsJobsPage(props: {
   tenantId: string;
   role: TenantRole;
   clients: ClientOption[];
+  tenantUsers: TenantUserOption[];
   onCrmMutation: () => void;
   onOpenInvoice?: (invoiceId: string) => void;
   focusedJobId?: string;
@@ -619,6 +639,9 @@ export function NexOpsJobsPage(props: {
   const [detail, setDetail] = useState<JobDetail | null>(null);
   const [status, setStatus] = useState("Loading jobs...");
   const [detailStatus, setDetailStatus] = useState("Select a job to review visits and actions.");
+  const [completion, setCompletion] = useState<CompletionStatus | null>(null);
+  const [completionOverrideReason, setCompletionOverrideReason] = useState("");
+  const [completionOverrideConfirmed, setCompletionOverrideConfirmed] = useState(false);
   const [createClientId, setCreateClientId] = useState(() => props.initialClientId && props.clients.some((client) => client.id === props.initialClientId) ? props.initialClientId : props.clients[0]?.id ?? "");
   const [showInlineClientCreate, setShowInlineClientCreate] = useState(props.clients.length === 0);
   const [inlineClientDraft, setInlineClientDraft] = useState<InlineJobClientDraft>(() => blankInlineJobClientDraft());
@@ -626,6 +649,7 @@ export function NexOpsJobsPage(props: {
   const [inlineClientStatus, setInlineClientStatus] = useState("Pick an existing client or create one here without losing the job draft.");
   const [createdClientOption, setCreatedClientOption] = useState<ClientOption | null>(null);
   const [createTitle, setCreateTitle] = useState("");
+  const [createAssignedOwnerId, setCreateAssignedOwnerId] = useState("");
   const [createBusy, setCreateBusy] = useState(false);
   const [createPaymentSchedule, setCreatePaymentSchedule] = useState<PaymentScheduleDraft>(() => blankPaymentSchedule());
   const [visitTitle, setVisitTitle] = useState("");
@@ -681,6 +705,7 @@ export function NexOpsJobsPage(props: {
   );
   const inlineClientMissingFields = inlineJobClientDraftMissingFields(inlineClientDraft);
   const inlineClientCanSave = inlineClientMissingFields.length === 0;
+  const activeTenantUsers = useMemo(() => props.tenantUsers.filter((user) => user.active), [props.tenantUsers]);
 
   const filterCounts = useMemo(
     () => JOB_FILTERS.reduce<Record<JobFilter, number>>((counts, filter) => {
@@ -748,6 +773,9 @@ export function NexOpsJobsPage(props: {
     setCloseoutDelivery(null);
     setCloseoutDeliveryDraft(null);
     setCloseoutDeliveryStatus("");
+    setCompletion(null);
+    setCompletionOverrideReason("");
+    setCompletionOverrideConfirmed(false);
     if (!jobId) {
       setDetail(null);
       setBookingPreview(null);
@@ -771,12 +799,21 @@ export function NexOpsJobsPage(props: {
       setVisitTitle(body.job.title);
       setDetailPaymentSchedule(paymentScheduleFromRecord(body.job.paymentSchedule));
       void loadCloseoutPackage(body.job.id);
+      void loadCompletionStatus(body.job.id);
     } catch {
       setDetail(null);
       setBookingPreview(null);
       setBookingDraft(null);
       setDetailStatus("Job detail API unreachable.");
     }
+  }
+
+  async function loadCompletionStatus(jobId: string): Promise<void> {
+    try {
+      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(jobId)}/completion-status?tenantId=${encodeURIComponent(props.tenantId)}`)
+        .then((response) => response.json() as Promise<CompletionStatusResponse>);
+      setCompletion(body.ok && body.completion ? body.completion : null);
+    } catch { setCompletion(null); }
   }
 
   async function loadCloseoutPackage(jobId: string): Promise<void> {
@@ -955,6 +992,7 @@ export function NexOpsJobsPage(props: {
       setFieldDocsMedia(nextMedia);
       setFieldDocsReports(nextReports);
       setSignedDocuments(nextSignedDocs);
+      void loadCompletionStatus(jobId);
       if (!mediaBody.ok || !reportsBody.ok || !signedDocsBody.ok) {
         setFieldDocsStatus(mediaBody.error ?? reportsBody.error ?? signedDocsBody.error ?? "NexCam read rails are unavailable right now.");
         return;
@@ -1153,6 +1191,7 @@ export function NexOpsJobsPage(props: {
           tenantId: props.tenantId,
           clientId: createClientId,
           title: createTitle.trim(),
+          ...(createAssignedOwnerId ? { assignedOwnerId: createAssignedOwnerId } : {}),
           ...(paymentScheduleToPayload(createPaymentSchedule) ? { paymentSchedule: paymentScheduleToPayload(createPaymentSchedule) } : {})
         })
       }).then((response) => response.json() as Promise<JobMutationResponse>);
@@ -1161,6 +1200,7 @@ export function NexOpsJobsPage(props: {
         return;
       }
       setCreateTitle("");
+      setCreateAssignedOwnerId("");
       setCreatePaymentSchedule(blankPaymentSchedule());
       props.onCrmMutation();
       setDetailOpen(true);
@@ -1351,7 +1391,7 @@ export function NexOpsJobsPage(props: {
     }
   }
 
-  async function performAction(action: JobAction): Promise<void> {
+  async function performAction(action: JobAction, useCompletionOverride = false): Promise<void> {
     if (!detail) {
       return;
     }
@@ -1360,7 +1400,7 @@ export function NexOpsJobsPage(props: {
       const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}/actions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: props.tenantId, action })
+        body: JSON.stringify({ tenantId: props.tenantId, action, ...(useCompletionOverride ? { completionOverrideReason } : {}) })
       }).then((response) => response.json() as Promise<JobMutationResponse>);
       if (!body.ok) {
         setDetailStatus(body.error ?? "Job action failed.");
@@ -1576,6 +1616,21 @@ export function NexOpsJobsPage(props: {
     }
   }
 
+  async function saveAssignedOwner(assignedOwnerId: string): Promise<void> {
+    if (!detail) return;
+    setActionBusy("close");
+    try {
+      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}`, {
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: props.tenantId, assignedOwnerId: assignedOwnerId || null })
+      }).then((response) => response.json() as Promise<JobMutationResponse>);
+      if (!body.ok || !body.job) { setDetailStatus(body.error ?? "Job owner could not be updated."); return; }
+      props.onCrmMutation();
+      setDetail(body.job);
+      setDetailStatus("Assigned job owner saved.");
+    } catch { setDetailStatus("Job owner update failed."); } finally { setActionBusy(null); }
+  }
+
   function selectJobFromRoster(jobId: string): void {
     mobileDetailFocusJobIdRef.current = jobId;
     setDetailOpen(true);
@@ -1704,6 +1759,13 @@ export function NexOpsJobsPage(props: {
               Job Title
               <input value={createTitle} onChange={(event) => setCreateTitle(event.target.value)} placeholder="Leak detection follow-up" />
             </label>
+            <label>
+              Assigned Job Owner
+              <select value={createAssignedOwnerId} onChange={(event) => setCreateAssignedOwnerId(event.target.value)}>
+                <option value="">Assign later</option>
+                {activeTenantUsers.map((user) => <option key={user.id} value={user.id}>{user.displayName} — {user.role}</option>)}
+              </select>
+            </label>
             <PaymentScheduleEditor
               value={createPaymentSchedule}
               onChange={setCreatePaymentSchedule}
@@ -1823,6 +1885,7 @@ export function NexOpsJobsPage(props: {
                     <span>{nextMove?.label ?? deriveWorkPackageAction(detail)}</span>
                   </div>
                 </div>
+                <label className="nexops-field"><span>Assigned Job Owner</span><select value={detail.assignedOwnerId ?? ""} onChange={(event) => void saveAssignedOwner(event.target.value)} disabled={actionBusy !== null}><option value="">Unassigned — override unavailable</option>{activeTenantUsers.map((user) => <option key={user.id} value={user.id}>{user.displayName} — {user.role}</option>)}</select><small>The selected owner alone has authority to account for a completion override.</small></label>
                 <div className="nexops-jobs-actions">
                   {bookingPreview && !bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? (
                     <button type="button" disabled={bookingBusy} onClick={() => setBookingSheetOpen(true)}>Send Booking Confirmation</button>
@@ -1834,6 +1897,12 @@ export function NexOpsJobsPage(props: {
                     <button type="button" disabled={actionBusy !== null} onClick={() => void performAction("dismiss_invoice_reminder")}>Dismiss Reminder</button>
                   ) : null}
                 </div>
+                {completion?.missing.length ? <section className="nexops-request-alert-strip" aria-label="Missing completion requirements">
+                  <div><strong>Completion requirements missing</strong><p>{completion.missing.join(" · ")}</p></div>
+                  <label className="nexops-field"><span>Override reason (assigned job owner only)</span><textarea value={completionOverrideReason} onChange={(event) => setCompletionOverrideReason(event.target.value)} placeholder="Explain why this job may close without the listed evidence." /></label>
+                  <label className="nexops-check-field inline"><input type="checkbox" checked={completionOverrideConfirmed} onChange={(event) => setCompletionOverrideConfirmed(event.target.checked)} />I confirm this is an accountable business-process override.</label>
+                  <div className="nexops-inline-actions"><button type="button" disabled={actionBusy !== null || !completionOverrideReason.trim() || !completionOverrideConfirmed} onClick={() => void performAction("close", true)}>Confirm Override and Close</button><small>The reason is added to staff-only Job history and never shown in NexPortal.</small></div>
+                </section> : <p className="nexops-empty-copy">All configured completion requirements are currently satisfied.</p>}
                 {nextMove ? <p className="nexops-empty-copy">{nextMove.detail}</p> : null}
                 <div className="nexops-request-builder-grid">
                   <label className="nexops-field">

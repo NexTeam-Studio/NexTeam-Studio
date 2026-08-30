@@ -208,9 +208,9 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         ...(input.templateId !== undefined ? { templateId: input.templateId } : existing.quote.templateId ? { templateId: existing.quote.templateId } : {}),
         title: input.title ?? existing.quote.title,
         items: input.items ?? existing.quote.lineItems.map((item) => ({
-          kind: item.source === "custom" ? "custom" as const : "catalog" as const,
-          ...(item.catalogItemId ? { catalogItemId: item.catalogItemId } : {}),
-          ...(item.catalogCode ? { catalogCode: item.catalogCode } : {}),
+          // Existing document lines are always snapshots, including legacy
+          // records that still carry a catalog id before migration runs.
+          kind: "custom" as const,
           code: item.code,
           name: item.name,
           description: item.description,
@@ -469,8 +469,9 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         throw new RailError("Quote id is required.", { provider: "native", op: "renderQuotePdf", status: 400 });
       }
       const { quote, client } = await getQuoteAndClient(tenantId, quoteId);
+      const settings = await repositoryForTenant().getCrmSettings(tenantId);
       res.setHeader("content-type", "application/pdf");
-      res.send(renderQuotePdf(quote, client));
+      res.send(renderQuotePdf(quote, client, settings.documentDesign));
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -485,13 +486,14 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         throw new RailError("Quote id and token are required.", { provider: "native", op: "renderPortalQuotePdf", status: 400 });
       }
       const { quote, client } = await getQuoteAndClient(tenantId, quoteId);
+      const settings = await repositoryForTenant().getCrmSettings(tenantId);
       if (!quote.portal?.tokenHash || quote.portal.tokenHash !== hashPortalToken(token)) {
         throw new RailError("Quote portal token is invalid.", { provider: "native", op: "renderPortalQuotePdf", status: 403 });
       }
       const filename = `${quote.number ?? quote.id}.pdf`;
       res.setHeader("content-type", "application/pdf");
       res.setHeader("content-disposition", `attachment; filename="${filename}"`);
-      res.send(renderQuotePdf(quote, client));
+      res.send(renderQuotePdf(quote, client, settings.documentDesign));
     } catch (error) {
       sendRouteError(res, error);
     }

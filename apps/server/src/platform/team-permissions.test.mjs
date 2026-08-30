@@ -104,7 +104,7 @@ test("tenant membership is capability-gated, tenant-scoped, and audited", async 
   }
 });
 
-test("Team & Permissions persists overrides and pending invites without an outbound delivery", async () => {
+test("Team & Permissions persists overrides; staff invite/login flow is acceptance-tested separately", async () => {
   const { server, base } = await startApp();
   try {
     const ownerHeaders = { "content-type": "application/json", "x-nexteam-local-profile": "local-owner" };
@@ -120,10 +120,6 @@ test("Team & Permissions persists overrides and pending invites without an outbo
     assert.equal((await reloaded.json()).users.find((user) => user.id === "logan").permissionOverrides.NEXDOCS, "MANAGE");
     const reset = await fetch(`${base}/api/platform/tenants/tenant_demo/users`, { method: "POST", headers: ownerHeaders, body: JSON.stringify({ id: "logan", displayName: "Logan", role: "OFFICE_ADMIN", permissionOverrides: {} }) });
     assert.equal((await reset.json()).user.permissionOverrides.NEXDOCS, undefined);
-    const invite = await fetch(`${base}/api/platform/tenants/tenant_demo/invites`, { method: "POST", headers: officeHeaders, body: JSON.stringify({ email: "safe-test@example.test", role: "TECHNICIAN" }) });
-    const inviteBody = await invite.json();
-    assert.equal(invite.status, 201);
-    assert.deepEqual({ status: inviteBody.invite.status, role: inviteBody.invite.role, delivery: inviteBody.delivery }, { status: "PENDING", role: "TECHNICIAN", delivery: "not_sent" });
   } finally {
     await close(server);
   }

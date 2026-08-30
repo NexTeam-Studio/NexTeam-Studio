@@ -26,7 +26,15 @@ export async function linkExistingWorkspaceMembership(
     .flat();
   const uidMatches = memberships.filter((member) => member.authUid === decoded.uid);
   const candidates = memberships.filter((member) => member.active && normalized(member.email) === email);
+  const pendingBoundMembership = uidMatches.find((member) => normalized(member.email) === email && !member.active);
 
+  if (pendingBoundMembership) {
+    // The password-reset action is complete only once Firebase returns a
+    // verified first sign-in. This is the activation boundary for staff
+    // invites; the invite itself deliberately remains inactive.
+    const user = await repository.upsertTenantUser({ ...pendingBoundMembership, active: true, updatedAt: new Date().toISOString() });
+    return { user, linked: true };
+  }
   if (uidMatches.some((member) => member.tenantId !== candidates[0]?.tenantId || member.id !== candidates[0]?.id)) {
     throw new RailError("This sign-in is already linked to a different workspace membership.", { provider: "firebase", op: "workspaceLink", status: 403 });
   }

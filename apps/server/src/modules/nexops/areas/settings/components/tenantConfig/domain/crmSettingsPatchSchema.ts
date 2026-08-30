@@ -102,6 +102,18 @@ export const crmSettingsPatchSchema = z.object({
       templateCategory: z.enum(["review_request_initial", "review_request_nudge"])
     })).optional()
   }).optional(),
+  documentDesign: z.object({
+    quote: z.object({ referToAsEstimate: z.boolean(), showQuantity: z.boolean(), showUnitPrice: z.boolean(), showLineTotal: z.boolean(), showTotalsAndTax: z.boolean(), showSignatureLine: z.boolean(), disclaimer: z.string(), depositLanguage: z.string() }).partial().optional(),
+    job: z.object({ showSignatureLine: z.boolean(), disclaimer: z.string() }).partial().optional(),
+    invoice: z.object({ showQuantity: z.boolean(), showUnitPrice: z.boolean(), showLineTotal: z.boolean(), showReturnPaymentStub: z.boolean(), showLateStamp: z.boolean(), showAccountBalance: z.boolean(), showPaidDate: z.boolean(), disclaimer: z.string() }).partial().optional(),
+    style: z.object({ headerLayout: z.enum(["basic", "compact", "envelope_dual", "envelope_single"]), headerStyle: z.enum(["modern", "clean"]), logoSize: z.number().min(.5).max(2), themeColor: z.enum(["default", "blue", "red", "green", "orange", "purple"]), footerFontSize: z.number().int().min(6).max(10), showCompanyName: z.boolean(), showCompanyPhone: z.boolean(), showCompanyEmail: z.boolean(), showCompanyWebsite: z.boolean(), showClientPhone: z.boolean() }).partial().optional()
+  }).optional(),
+  completionRequirements: z.object({
+    checklistRequired: z.boolean().optional(),
+    photosRequired: z.boolean().optional(),
+    reportRequired: z.boolean().optional(),
+    signatureRequired: z.boolean().optional()
+  }).optional(),
   propertyAssetDefinitions: z.array(z.object({
     kind: z.string().min(1).max(80),
     label: z.string().min(1).max(120),

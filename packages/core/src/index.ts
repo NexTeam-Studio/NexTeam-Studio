@@ -8,4 +8,5 @@ export * from "./approvalQueue.js";
 export * from "./lifecycle.js";
 export * from "./lifecycleSchemas.js";
 export * from "./addressLocation.js";
+export * from "./catalogSnapshots.js";
 

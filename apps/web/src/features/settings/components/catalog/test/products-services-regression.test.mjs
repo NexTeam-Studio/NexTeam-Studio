@@ -4,12 +4,11 @@ import test from "node:test";
 
 const quotePage = new URL("../../../../quotes/components/quoteEngine/NexOpsQuotesPage.tsx", import.meta.url);
 
-test("Selecting a catalog item prefills code, name, description, and unit price while keeping line values editable", async () => {
+test("Selecting a catalog item creates a detached editable snapshot", async () => {
   const source = await readFile(quotePage, "utf8");
-  assert.match(source, /catalogCode: item\.code/);
-  assert.match(source, /name: item\.name/);
-  assert.match(source, /description: item\.description \?\? ""/);
-  assert.match(source, /unitPrice: roundMoney\(item\.price\)/);
+  assert.match(source, /catalogSelectionSnapshot\(\{/);
+  assert.match(source, /code: item\.code, name: item\.name, description: item\.description/);
+  assert.doesNotMatch(source, /catalogItemId: item\.id/);
   assert.match(source, /patch\.unitPrice !== undefined/);
 });
 

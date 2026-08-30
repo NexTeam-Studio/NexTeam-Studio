@@ -240,6 +240,15 @@ function hasPlatformAccess(decoded: DecodedIdToken, env: NodeJS.ProcessEnv): boo
     || roles.includes("platform_operator");
 }
 
+async function applyTenantUserClaims(input: { auth: Pick<FirebaseOwnerActivation, "setCustomUserClaims">; user: Parameters<typeof customClaimsForTenantUser>[0] }): Promise<Record<string, unknown>> {
+  const claims = customClaimsForTenantUser(input.user);
+  if (!input.user.authUid) {
+    throw new RailError("A Firebase identity is required before tenant claims can be applied.", { provider: "firebase", op: "tenantUserClaims", status: 409 });
+  }
+  await input.auth.setCustomUserClaims(input.user.authUid, claims);
+  return claims;
+}
+
 function capabilityForNexCommandRoute(req: Request): PlatformCapability {
   const path = req.path;
   if (path.includes("/prospects")) return req.method === "GET" ? "platform.prospects.view" : "platform.prospects.manage";
@@ -1630,7 +1639,8 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
   });
 
   // Invites are durable pending membership records only. Delivery is deliberately
-  // handled by a separate outbound service and is never triggered by this route.
+  // handled by the same Firebase password-setup and transactional-email rail as
+  // tenant-owner activation. Membership activates only at verified first sign-in.
   app.post("/api/platform/tenants/:tenantId/invites", async (req: Request, res: Response) => {
     try {
       const tenantId = req.params.tenantId;
@@ -1638,23 +1648,37 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const access = await requireTenantCapability(req, env, "team.invite", { requestedTenantId: tenantId, op: "tenantInviteCreate" });
       const input = tenantInviteBodySchema.parse(req.body ?? {});
       if (input.role === "OWNER") throw new RailError("Owner access is assigned through NexCommand, not an invite.", { provider: "platform", op: "tenantInviteCreate", status: 403 });
-      const user = await upsertTenantUser(deps.repository, {
+      const auth = deps.firebaseOwnerActivation ?? getAdminAuth(env);
+      if (!auth || !deps.ownerInviteSender) {
+        throw new RailError("Team invitation delivery is not configured.", { provider: "gmail", op: "tenantInviteCreate", status: 503 });
+      }
+      const existing = (await deps.repository.listTenantUsers(tenantId)).find((member) => member.email?.trim().toLowerCase() === input.email.trim().toLowerCase());
+      if (existing?.active) {
+        throw new RailError("That email already has an active team membership.", { provider: "platform", op: "tenantInviteCreate", status: 409 });
+      }
+      const pending = await upsertTenantUser(deps.repository, {
         tenantId,
+        ...(existing ? { id: existing.id } : {}),
         email: input.email,
         displayName: input.email,
         role: input.role,
         active: false
       });
+      const firebaseUser = await getOrCreateFirebaseOwner(auth, { email: input.email, displayName: input.email });
+      const user = await upsertTenantUser(deps.repository, { ...pending, authUid: firebaseUser.user.uid, active: false });
+      await applyTenantUserClaims({ auth, user });
+      const tenant = await loadTenantFromPlatform(deps.repository, tenantId, env);
+      const receipt = await deps.ownerInviteSender.send({ tenantId, ownerEmail: input.email, ownerName: user.displayName, tenantName: tenant.name });
       await deps.repository.saveTenantMembershipAudit({
         id: `membership_audit_${randomUUID()}`,
         tenantId,
         action: "member.upserted",
         actorId: actorIdForAccess(access),
         targetUserId: user.id,
-        detail: `pending_invite=true; role=${user.role}; delivery=not_sent`,
+        detail: `pending_invite=true; role=${user.role}; authUid=${firebaseUser.user.uid}; claims=applied; delivery=${receipt.provider}`,
         createdAt: new Date().toISOString()
       });
-      res.status(201).json({ ok: true, invite: { ...user, status: "PENDING" }, delivery: "not_sent" });
+      res.status(201).json({ ok: true, invite: { ...user, status: "PENDING" }, delivery: { status: "SENT_TO_PROVIDER", provider: receipt.provider, messageId: receipt.messageId } });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -1677,7 +1701,7 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       const auth = getAdminAuth(env);
       const canApply = Boolean(auth && user.authUid && env.NEXI_FIREBASE_AUTH_REQUIRED !== "false");
       if (canApply && auth && user.authUid) {
-        await auth.setCustomUserClaims(user.authUid, claims);
+        await applyTenantUserClaims({ auth, user });
       }
       await deps.repository.saveTenantMembershipAudit({
         id: `membership_audit_${randomUUID()}`,

@@ -907,6 +907,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           tenantId={operatorContext.tenantId}
           role={operatorContext.role}
           clients={clients}
+          tenantUsers={tenantUsers}
           onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
           onOpenInvoice={openInvoiceWorkspace}
           focusedJobId={focusedJobId}

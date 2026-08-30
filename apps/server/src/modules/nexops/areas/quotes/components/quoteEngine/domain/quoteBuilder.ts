@@ -1,4 +1,4 @@
-import { RailError, type LineItem, type QuoteDraft } from "@nexteam/core";
+import { RailError, catalogSelectionSnapshot, type LineItem, type QuoteDraft } from "@nexteam/core";
 import { z } from "zod";
 
 export const quoteCatalogItemInputSchema = z.object({
@@ -39,19 +39,12 @@ export function buildQuoteDraft(input: DraftQuoteInput): QuoteDraft {
         status: 400
       });
     }
-    const unitPrice = centsToCurrency(item.unitPriceCents ?? Math.round(catalogItem.price * 100));
-    return {
+    return catalogSelectionSnapshot({
       id: `line_${catalogItem.code.toLowerCase()}_${index + 1}`,
-      code: catalogItem.code,
-      name: catalogItem.name,
-      ...(catalogItem.description ? { description: catalogItem.description } : {}),
-      quantity: item.quantity,
-      unitPrice,
-      total: Number((item.quantity * unitPrice).toFixed(2)),
-      source: "catalog",
-      catalogItemId: catalogItem.id,
-      catalogCode: catalogItem.code
-    };
+      code: catalogItem.code, name: catalogItem.name, description: catalogItem.description,
+      price: catalogItem.price, quantity: item.quantity,
+      unitPrice: centsToCurrency(item.unitPriceCents ?? Math.round(catalogItem.price * 100))
+    });
   });
   return {
     tenantId: input.tenantId,

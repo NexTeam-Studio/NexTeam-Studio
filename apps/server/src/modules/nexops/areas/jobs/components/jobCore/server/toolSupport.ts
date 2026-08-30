@@ -1,4 +1,4 @@
-import { RailError, type ApprovalQueueService, type Client, type CrmSettings, type CRMProvider, type Job, type Tenant } from "@nexteam/core";
+import { RailError, catalogSelectionSnapshot, type ApprovalQueueService, type Client, type CrmSettings, type CRMProvider, type Job, type Tenant } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { z } from "zod";
 import { resolveExactClientId } from "../../../../../shared/tools/clientResolution.js";
@@ -52,21 +52,13 @@ async function materializeJobLineItems(
       });
     }
     const quantity = item.quantity ?? 1;
-    const unitPrice = item.kind === "catalog" ? catalogItem!.price : item.unitPrice ?? 0;
-    return {
-      id: `job_line_${index + 1}`,
-      source: item.kind === "catalog" ? "catalog" : "custom",
-      ...(catalogItem ? { catalogItemId: catalogItem.id, catalogCode: catalogItem.code } : {}),
-      code: catalogItem?.code ?? (item.code?.trim() || `LINE-${index + 1}`),
-      name: catalogItem?.name ?? item.name.trim(),
-      ...(catalogItem?.description?.trim() ? { description: catalogItem.description.trim() } : item.description?.trim() ? { description: item.description.trim() } : {}),
-      quantity,
-      unitPrice,
-      total: Number((quantity * unitPrice).toFixed(2)),
-      ...(item.taxable !== undefined ? { taxable: item.taxable } : {}),
-      clientSelectable: false,
-      defaultSelected: true
-    };
+    if (catalogItem) return catalogSelectionSnapshot({
+      id: `job_line_${index + 1}`, code: catalogItem.code, name: catalogItem.name,
+      description: catalogItem.description, price: catalogItem.price, quantity,
+      clientSelectable: false, defaultSelected: true
+    });
+    const unitPrice = item.unitPrice ?? 0;
+    return { id: `job_line_${index + 1}`, source: "custom", code: item.code?.trim() || `LINE-${index + 1}`, name: item.name.trim(), ...(item.description?.trim() ? { description: item.description.trim() } : {}), quantity, unitPrice, total: Number((quantity * unitPrice).toFixed(2)), ...(item.taxable !== undefined ? { taxable: item.taxable } : {}), clientSelectable: false, defaultSelected: true };
   });
 }
 

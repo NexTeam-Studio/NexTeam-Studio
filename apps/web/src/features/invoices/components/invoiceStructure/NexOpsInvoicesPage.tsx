@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { catalogSelectionSnapshot } from "@nexteam/core";
 import type { AddressLike } from "@nexteam/shared";
 import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
 import { PaymentScheduleEditor, blankPaymentSchedule, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "./PaymentScheduleEditor";
@@ -830,18 +831,11 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
   function addCatalogLine(item: ProductServiceCatalogItem): void {
     setInvoiceDraft((current) => current ? {
       ...current,
-      lineItems: [...current.lineItems, {
+      lineItems: [...current.lineItems, catalogSelectionSnapshot({
         id: `invoice_line_${Math.random().toString(36).slice(2, 10)}`,
-        code: item.code,
-        name: item.name,
-        description: item.description ?? "",
-        quantity: 1,
-        unitPrice: roundMoney(item.price),
-        total: roundMoney(item.price)
-        ,source: "catalog",
-        catalogItemId: item.id,
-        catalogCode: item.code
-      }]
+        code: item.code, name: item.name, description: item.description,
+        price: item.price, quantity: 1
+      })]
     } : current);
     setCatalogPickerOpen(false);
     setCatalogSearch("");

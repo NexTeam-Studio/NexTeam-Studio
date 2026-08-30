@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { catalogSelectionSnapshot } from "@nexteam/core";
 import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
 import type { AddressLike } from "@nexteam/shared";
 import { PaymentScheduleEditor, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "../../../../features/invoices/components/invoiceStructure/PaymentScheduleEditor";
@@ -697,33 +698,27 @@ function catalogItem(catalogItems: ProductServiceCatalogItem[], id: string) {
 }
 
 function lineDraftFromCatalogItem(item: ProductServiceCatalogItem): QuoteLineDraft {
+  const snapshot = catalogSelectionSnapshot({
+    id: rowId("catalog"), code: item.code, name: item.name, description: item.description,
+    price: item.price, quantity: 1, clientSelectable: false, defaultSelected: true
+  });
   return {
-    rowId: rowId("catalog"),
-    kind: "catalog",
-    catalogItemId: item.id,
-    catalogCode: item.code,
-    code: item.code,
-    name: item.name,
-    description: item.description ?? "",
-    quantity: 1,
-    unitPrice: roundMoney(item.price),
-    clientSelectable: false,
-    defaultSelected: true
+    rowId: snapshot.id, kind: "custom", catalogItemId: "", catalogCode: "",
+    code: snapshot.code, name: snapshot.name, description: snapshot.description ?? "",
+    quantity: snapshot.quantity, unitPrice: snapshot.unitPrice,
+    clientSelectable: snapshot.clientSelectable ?? false, defaultSelected: snapshot.defaultSelected ?? true
   };
 }
 
 
 
 export function lineDraftFromQuoteItem(item: QuoteLineItem): QuoteLineDraft {
-  // Older tenant templates can contain a priced line before it has been linked
-  // to the newer Products & Services catalog. Preserve that authoritative line
-  // as an editable manual line instead of emitting an invalid catalog payload.
-  const isCatalogLine = item.source !== "custom" && Boolean(item.catalogItemId);
+  // Any stored values are an editable snapshot; catalog identity is never reused.
   return {
     rowId: rowId("line"),
-    kind: isCatalogLine ? "catalog" : "custom",
-    catalogItemId: item.catalogItemId ?? "",
-    catalogCode: item.catalogCode ?? "",
+    kind: "custom",
+    catalogItemId: "",
+    catalogCode: "",
     code: item.code,
     name: item.name,
     description: item.description ?? "",

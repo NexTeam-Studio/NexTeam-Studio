@@ -5,8 +5,11 @@ import { requireAccessContext } from "../../../../../../../auth/accessContext.js
 import { modulesForPlan } from "../../../../../../../platform/plans.js";
 import { hasPermissionLevel, permissionGridFor } from "../../../../../../../platform/tenantPermissionGrid.js";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
-import { detachDraftCatalogSnapshots } from "./catalogReset.js";
+import { detachCatalogSnapshots, detachDraftCatalogSnapshots } from "./catalogReset.js";
 import { communicationTemplateMatchesDefault, defaultCommunicationTemplate, normalizeCommunicationTemplates } from "./communicationTemplates.js";
+import { renderQuotePdf } from "../../../../quotes/components/quoteEngine/server/quoteDocument.js";
+import { renderInvoicePdf } from "../../../../invoices/components/invoiceStructure/server/invoiceDocument.js";
+import { renderJobPdf } from "../../../../jobs/components/jobCore/server/jobDocument.js";
 
 function onboardingLaunchReadiness(settings: CrmSettingsDoc, availableModules: ReadonlySet<PlatformModule>) {
   const onboarding = settings.operatingProfile.onboarding;
@@ -106,6 +109,23 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
     }
   });
 
+  app.post("/api/crm/settings/document-design-preview", async (req: Request, res: Response) => {
+    try {
+      const input = req.body as { tenantId?: string; kind?: "quote" | "job" | "invoice"; documentDesign?: any };
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      await requireQuoteAccess(req, tenantId, "previewDocumentDesign");
+      const line = { id: "preview_line", code: "LEAK", name: "Leak Detection Service", quantity: 2, unitPrice: 125, total: 250, taxable: false };
+      const totals = { subtotal: 250, discount: 0, tax: 20, total: 270 };
+      const design = input.documentDesign;
+      const pdf = input.kind === "invoice"
+        ? renderInvoicePdf({ id: "preview_invoice", tenantId, clientId: "preview_client", title: "Leak Detection Invoice", status: "awaiting_payment", lineItems: [line], totals, ledger: { depositApplied: 0, creditApplied: 0, paymentApplied: 0, refundedAmount: 0, balanceDue: 270, overdue: true }, createdAt: "2026-08-30T00:00:00.000Z", updatedAt: "2026-08-30T00:00:00.000Z" }, undefined, design)
+        : input.kind === "job"
+          ? renderJobPdf({ id: "preview_job", tenantId, clientId: "preview_client", title: "Leak Detection Job", status: "Upcoming", lineItems: [line], totals }, design)
+          : renderQuotePdf({ id: "preview_quote", tenantId, clientId: "preview_client", title: "Leak Detection Estimate", status: "draft", lineItems: [line], totals, approvalRules: { requireSignature: true, requireDeposit: true, requireCardOnFile: false, depositKind: "percent", depositValue: 50 }, deposit: { required: true, kind: "percent", amount: 135 }, createdAt: "2026-08-30T00:00:00.000Z", updatedAt: "2026-08-30T00:00:00.000Z" }, undefined, design);
+      res.setHeader("content-type", "application/pdf"); res.send(pdf);
+    } catch (error) { sendRouteError(res, error); }
+  });
+
   app.post("/api/crm/settings/templates/:category/reset", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim()
@@ -154,6 +174,21 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
     } catch (error) {
       sendRouteError(res, error);
     }
+  });
+
+  app.post("/api/crm/settings/catalog/detach-snapshots", async (req: Request, res: Response) => {
+    try {
+      const input = req.body as { tenantId?: unknown; confirmation?: unknown };
+      if (typeof input.tenantId !== "string" || input.confirmation !== "DETACH_CATALOG_LINE_SNAPSHOTS") {
+        throw new RailError("Detaching existing catalog links requires an explicit confirmation.", { provider: "native", op: "detachCatalogSnapshots", status: 400 });
+      }
+      const access = await requireAccessContext(req, env, { requestedTenantId: input.tenantId, op: "detachCatalogSnapshots" });
+      if (!hasPermissionLevel(permissionGridFor(access.role, access.permissionOverrides), "PRODUCTS_AND_SERVICES", "MANAGE")) {
+        throw new RailError("Your Products & Services permission cannot migrate catalog snapshots.", { provider: "native", op: "detachCatalogSnapshots", status: 403 });
+      }
+      const migration = await detachCatalogSnapshots(repositoryForTenant(), input.tenantId);
+      res.json({ ok: true, tenantId: input.tenantId, migration });
+    } catch (error) { sendRouteError(res, error); }
   });
 
   app.patch("/api/crm/settings", async (req: Request, res: Response) => {
@@ -332,6 +367,19 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
           ...current.reviewDefaults,
           ...(input.reviewDefaults?.enabled !== undefined ? { enabled: input.reviewDefaults.enabled } : {}),
           ...(input.reviewDefaults?.steps ? { steps: input.reviewDefaults.steps } : {})
+        },
+        documentDesign: {
+          quote: { ...current.documentDesign.quote, ...input.documentDesign?.quote } as typeof current.documentDesign.quote,
+          job: { ...current.documentDesign.job, ...input.documentDesign?.job } as typeof current.documentDesign.job,
+          invoice: { ...current.documentDesign.invoice, ...input.documentDesign?.invoice } as typeof current.documentDesign.invoice,
+          style: { ...current.documentDesign.style, ...input.documentDesign?.style } as typeof current.documentDesign.style
+        },
+        completionRequirements: {
+          ...current.completionRequirements,
+          ...(input.completionRequirements?.checklistRequired !== undefined ? { checklistRequired: input.completionRequirements.checklistRequired } : {}),
+          ...(input.completionRequirements?.photosRequired !== undefined ? { photosRequired: input.completionRequirements.photosRequired } : {}),
+          ...(input.completionRequirements?.reportRequired !== undefined ? { reportRequired: input.completionRequirements.reportRequired } : {}),
+          ...(input.completionRequirements?.signatureRequired !== undefined ? { signatureRequired: input.completionRequirements.signatureRequired } : {})
         },
         ...(input.propertyAssetDefinitions ? { propertyAssetDefinitions: input.propertyAssetDefinitions } : {}),
         ...(input.catalogItems ? { catalogItems: input.catalogItems } : {}),

@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { RailError, quoteApprovalRulesSchema, quoteDiscountSchema, paymentSchedulePlanSchema, quoteSchema, type CrmSettings, type IntakeSnapshot, type LineItem, type Quote, type QuoteApprovalRules, type QuoteDepositBridge, type QuoteDiscount, type QuoteStatus, type QuoteTemplate, type QuoteTotals } from "@nexteam/core";
+import { RailError, catalogSelectionSnapshot, quoteApprovalRulesSchema, quoteDiscountSchema, paymentSchedulePlanSchema, quoteSchema, type CrmSettings, type IntakeSnapshot, type LineItem, type Quote, type QuoteApprovalRules, type QuoteDepositBridge, type QuoteDiscount, type QuoteStatus, type QuoteTemplate, type QuoteTotals } from "@nexteam/core";
 import { z } from "zod";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import { reserveDocumentNumber } from "../../../../../../../shared/numbering/numberingService.js";
@@ -130,21 +130,17 @@ function buildLineItem(settings: CrmSettings, input: z.infer<typeof quoteLineIte
     if (!catalogItem) {
       throw new RailError(`Tenant catalog item ${input.catalogItemId ?? input.catalogCode ?? "unknown"} was not found.`, { provider: "native", op: "buildQuoteLineItem", status: 400 });
     }
-    const unitPrice = roundMoney(input.unitPrice ?? catalogItem.price);
-    return {
+    return catalogSelectionSnapshot({
       id: input.code ? `line_${input.code.toLowerCase()}_${index + 1}` : `line_${catalogItem.code.toLowerCase()}_${index + 1}`,
       code: catalogItem.code,
       name: catalogItem.name,
       description: input.description ?? catalogItem.description,
+      price: catalogItem.price,
       quantity: input.quantity,
-      unitPrice,
-      total: roundMoney(input.quantity * unitPrice),
-      source: "catalog",
-      catalogItemId: catalogItem.id,
-      catalogCode: catalogItem.code,
+      unitPrice: input.unitPrice,
       clientSelectable: input.clientSelectable,
       defaultSelected: input.defaultSelected
-    };
+    });
   }
   const code = input.code?.trim() || `CUSTOM-${index + 1}`;
   const unitPrice = roundMoney(input.unitPrice ?? 0);
@@ -269,14 +265,9 @@ export async function materializeQuoteRecord(
   const template = selectedTemplate(templates, input.templateId);
   const defaultLineItems = template?.defaultLineItems ?? EMPTY_LINE_ITEMS;
   const lineItems = buildLineItems(settings, input.items.length ? input.items : defaultLineItems.map((item) => {
-    // Legacy templates predate the catalog reference. They remain valid priced
-    // defaults, but must materialize as manual lines until staff explicitly
-    // selects an authoritative catalog item.
-    const isCatalogLine = item.source !== "custom" && Boolean(item.catalogItemId);
     return {
-      kind: isCatalogLine ? "catalog" : "custom",
-      ...(item.catalogItemId ? { catalogItemId: item.catalogItemId } : {}),
-      ...(item.catalogCode ? { catalogCode: item.catalogCode } : {}),
+      // Template lines are document defaults, never live catalog references.
+      kind: "custom" as const,
       code: item.code,
       name: item.name,
       description: item.description,

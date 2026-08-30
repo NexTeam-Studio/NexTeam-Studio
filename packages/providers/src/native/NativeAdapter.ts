@@ -522,6 +522,8 @@ export function defaultCrmSettings(tenantId: string): CrmSettings {
         }
       ]
     },
+    documentDesign: { quote: { referToAsEstimate: false, showQuantity: true, showUnitPrice: true, showLineTotal: true, showTotalsAndTax: true, showSignatureLine: true, disclaimer: "This quote is valid for the next 30 days, after which values may be subject to change.", depositLanguage: "A deposit of {{DEPOSIT_AMOUNT}} will be required to begin." }, job: { showSignatureLine: true, disclaimer: "We can be called for touch-ups and small changes for the next 3 days. After that all work is final." }, invoice: { showQuantity: true, showUnitPrice: true, showLineTotal: true, showReturnPaymentStub: false, showLateStamp: true, showAccountBalance: true, showPaidDate: true, disclaimer: "Thank you for your business. Please contact us with any questions regarding this invoice." }, style: { headerLayout: "basic", headerStyle: "modern", logoSize: 1, themeColor: "default", footerFontSize: 8, showCompanyName: true, showCompanyPhone: true, showCompanyEmail: true, showCompanyWebsite: true, showClientPhone: false } },
+    completionRequirements: { checklistRequired: false, photosRequired: false, reportRequired: false, signatureRequired: false },
     propertyAssetDefinitions: [],
     catalogItems: defaultCatalogItems(tenantId),
     communicationTemplates: defaultCommunicationTemplates(tenantId),

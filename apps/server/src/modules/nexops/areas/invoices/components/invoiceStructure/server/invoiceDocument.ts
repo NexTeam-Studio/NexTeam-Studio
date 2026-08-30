@@ -1,4 +1,4 @@
-import type { Client, Invoice } from "@nexteam/core";
+import type { Client, DocumentDesignSettings, Invoice } from "@nexteam/core";
 import { escapeDocumentHtml as escapeHtml } from "../../../../../../../shared/documentRendering/htmlEngine.js";
 import { renderTextPdf } from "../../../../../../../shared/documentRendering/pdfEngine.js";
 import { NEXPORTAL_LOGO_SRC, portalChromeStyles, renderPortalChrome, type PortalChromeOptions } from "../../../../../../../shared/documentRendering/portalChrome.js";
@@ -17,8 +17,8 @@ export interface InvoicePortalRenderOptions {
   tipPresets?: number[] | undefined;
 }
 
-export function renderInvoicePdf(invoice: Invoice, client?: Client): Buffer {
-  return renderTextPdf(invoicePdfLines(invoice, client));
+export function renderInvoicePdf(invoice: Invoice, client?: Client, settings?: Partial<DocumentDesignSettings>): Buffer {
+  return renderTextPdf(invoicePdfLines(invoice, client, settings));
 }
 
 export function renderInvoicePortalHtml(

@@ -120,6 +120,13 @@ interface CrmSettingsRecord {
   propertyAssetDefinitions: PropertyAssetDefinition[];
   catalogItems: ProductServiceCatalogItem[];
   communicationTemplates: CommunicationTemplateRecord[];
+  completionRequirements: {
+    checklistRequired: boolean;
+    photosRequired: boolean;
+    reportRequired: boolean;
+    signatureRequired: boolean;
+  };
+  documentDesign: { quote: { referToAsEstimate: boolean; showQuantity: boolean; showUnitPrice: boolean; showLineTotal: boolean; showTotalsAndTax: boolean; showSignatureLine: boolean; disclaimer: string; depositLanguage: string; }; job: { showSignatureLine: boolean; disclaimer: string; }; invoice: { showQuantity: boolean; showUnitPrice: boolean; showLineTotal: boolean; showReturnPaymentStub: boolean; showLateStamp: boolean; showAccountBalance: boolean; showPaidDate: boolean; disclaimer: string; }; style: { headerLayout: "basic" | "compact" | "envelope_dual" | "envelope_single"; headerStyle: "modern" | "clean"; logoSize: number; themeColor: "default" | "blue" | "red" | "green" | "orange" | "purple"; footerFontSize: number; showCompanyName: boolean; showCompanyPhone: boolean; showCompanyEmail: boolean; showCompanyWebsite: boolean; showClientPhone: boolean; }; };
   createdAt: string;
   updatedAt: string;
 }
@@ -242,6 +249,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   const [catalogDraft, setCatalogDraft] = useState<CatalogItemDraft>(blankCatalogItemDraft());
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [templateDraft, setTemplateDraft] = useState<CommunicationTemplateRecord | null>(null);
+  const [documentTab, setDocumentTab] = useState<"quote" | "job" | "invoice" | "style">("quote");
   const [templateDefaults, setTemplateDefaults] = useState<CommunicationTemplateRecord[]>([]);
   const [templatePreviewChannel, setTemplatePreviewChannel] = useState<"email" | "sms">("email");
   const catalogSectionRef = useRef<HTMLElement | null>(null);
@@ -407,6 +415,26 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
     } finally {
       setBusy("");
     }
+  }
+
+  async function saveDocumentDesign(): Promise<void> {
+    if (!settings) return;
+    setBusy("save-document-design");
+    try {
+      const body = await fetch("/api/crm/settings", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ tenantId: props.tenantId, documentDesign: settings.documentDesign }) }).then((response) => response.json() as Promise<CrmSettingsMutationResponse>);
+      if (!body.ok || !body.settings) { setStatusMessage(body.error ?? "Document design could not be saved."); return; }
+      setSettings(body.settings); setStatusMessage("Document design saved."); props.onCrmMutation?.();
+    } catch { setStatusMessage("Document design save failed."); } finally { setBusy(""); }
+  }
+
+  async function saveCompletionRequirements(): Promise<void> {
+    if (!settings) return;
+    setBusy("save-completion-requirements");
+    try {
+      const body = await fetch("/api/crm/settings", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ tenantId: props.tenantId, completionRequirements: settings.completionRequirements }) }).then((response) => response.json() as Promise<CrmSettingsMutationResponse>);
+      if (!body.ok || !body.settings) { setStatusMessage(body.error ?? "Completion requirements could not be saved."); return; }
+      setSettings(body.settings); setStatusMessage("Completion requirements saved."); props.onCrmMutation?.();
+    } catch { setStatusMessage("Completion requirements save failed."); } finally { setBusy(""); }
   }
 
   async function resetTemplate(): Promise<void> {
@@ -1076,6 +1104,18 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
       </div>
 
       <article className="nexops-module-card">
+        <div className="nexops-page-heading"><div><p className="eyebrow">Client documents</p><h2>Document Design</h2><p>PDF layout and wording. Email and SMS delivery copy remains in Templates.</p></div><button type="button" onClick={() => void saveDocumentDesign()} disabled={!settings || busy === "save-document-design"}>{busy === "save-document-design" ? "Saving..." : "Save Document Design"}</button></div>
+        {settings ? <DocumentDesignEditor settings={settings} setSettings={setSettings} tab={documentTab} setTab={setDocumentTab} /> : null}
+      </article>
+
+      <article className="nexops-module-card" id="completion-requirements">
+        <div className="nexops-page-heading"><div><p className="eyebrow">Job closeout</p><h2>Completion Requirements</h2><p>Tenant-wide evidence rules for the Close Job action. Missing evidence is a soft stop with a logged assigned-owner override.</p></div><button type="button" onClick={() => void saveCompletionRequirements()} disabled={!settings || busy === "save-completion-requirements"}>{busy === "save-completion-requirements" ? "Saving..." : "Save Requirements"}</button></div>
+        {settings ? <div className="nexops-quote-toggle-grid">
+          {([ ["checklistRequired", "Checklist required"], ["photosRequired", "Photos required"], ["reportRequired", "Report required"], ["signatureRequired", "Signature required"] ] as const).map(([key, label]) => <label className="nexops-check-field inline" key={key}><input type="checkbox" checked={settings.completionRequirements[key]} onChange={(event) => setSettings((current) => current ? { ...current, completionRequirements: { ...current.completionRequirements, [key]: event.target.checked } } : current)} />{label}</label>)}
+        </div> : null}
+      </article>
+
+      <article className="nexops-module-card">
         <div className="nexops-page-heading">
           <div>
             <p className="eyebrow">Tenant Users</p>
@@ -1110,4 +1150,24 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
       />
     </section>
   );
+}
+
+function DocumentDesignEditor({ settings, setSettings, tab, setTab }: { settings: CrmSettingsRecord; setSettings: React.Dispatch<React.SetStateAction<CrmSettingsRecord | null>>; tab: "quote" | "job" | "invoice" | "style"; setTab: (tab: "quote" | "job" | "invoice" | "style") => void }): React.ReactElement {
+  const save = (documentDesign: CrmSettingsRecord["documentDesign"]) => setSettings({ ...settings, documentDesign });
+  const reset = { quote: "This quote is valid for the next 30 days, after which values may be subject to change.", deposit: "A deposit of {{DEPOSIT_AMOUNT}} will be required to begin.", job: "We can be called for touch-ups and small changes for the next 3 days. After that all work is final.", invoice: "Thank you for your business. Please contact us with any questions regarding this invoice." };
+  const check = (checked: boolean, label: string, change: (value: boolean) => void) => <label className="nexops-check-field inline"><input type="checkbox" checked={checked} onChange={(event) => change(event.target.checked)} />{label}</label>;
+  return <div className="nexops-quote-template-editor">
+    <div className="nexops-settings-template-list">{(["quote", "job", "invoice", "style"] as const).map((item) => <button key={item} type="button" className={"nexops-quote-template-chip" + (item === tab ? " active" : "")} onClick={() => setTab(item)}>{item === "quote" ? "Quotes" : item === "job" ? "Jobs" : item === "invoice" ? "Invoices" : "Style"}</button>)}</div>
+    {tab === "quote" ? <><div className="nexops-quote-toggle-grid">{check(settings.documentDesign.quote.referToAsEstimate, "Refer to Quote as Estimate", (value) => save({ ...settings.documentDesign, quote: { ...settings.documentDesign.quote, referToAsEstimate: value } }))}{check(settings.documentDesign.quote.showQuantity, "Show QTY", (value) => save({ ...settings.documentDesign, quote: { ...settings.documentDesign.quote, showQuantity: value } }))}{check(settings.documentDesign.quote.showUnitPrice, "Show unit price", (value) => save({ ...settings.documentDesign, quote: { ...settings.documentDesign.quote, showUnitPrice: value } }))}{check(settings.documentDesign.quote.showLineTotal, "Show total cost", (value) => save({ ...settings.documentDesign, quote: { ...settings.documentDesign.quote, showLineTotal: value } }))}{check(settings.documentDesign.quote.showTotalsAndTax, "Show totals and tax", (value) => save({ ...settings.documentDesign, quote: { ...settings.documentDesign.quote, showTotalsAndTax: value } }))}{check(settings.documentDesign.quote.showSignatureLine, "Show client signature", (value) => save({ ...settings.documentDesign, quote: { ...settings.documentDesign.quote, showSignatureLine: value } }))}</div><label className="nexops-field"><span>Contract / disclaimer</span><textarea value={settings.documentDesign.quote.disclaimer} onChange={(e) => save({ ...settings.documentDesign, quote: { ...settings.documentDesign.quote, disclaimer: e.target.value } })} /></label><button type="button" onClick={() => save({ ...settings.documentDesign, quote: { ...settings.documentDesign.quote, disclaimer: reset.quote } })}>Reset to Default</button><label className="nexops-field"><span>Deposit language</span><textarea value={settings.documentDesign.quote.depositLanguage} onChange={(e) => save({ ...settings.documentDesign, quote: { ...settings.documentDesign.quote, depositLanguage: e.target.value } })} /></label><button type="button" onClick={() => save({ ...settings.documentDesign, quote: { ...settings.documentDesign.quote, depositLanguage: reset.deposit } })}>Reset to Default</button><p className="nexops-form-note">Live document preview: deposit text appears only for a quote requesting a deposit; {"{{DEPOSIT_AMOUNT}}"} is resolved by Templates.</p></> : null}
+    {tab === "job" ? <>{check(settings.documentDesign.job.showSignatureLine, "Include client signature line", (value) => save({ ...settings.documentDesign, job: { ...settings.documentDesign.job, showSignatureLine: value } }))}<label className="nexops-field"><span>Contract / disclaimer</span><textarea value={settings.documentDesign.job.disclaimer} onChange={(e) => save({ ...settings.documentDesign, job: { ...settings.documentDesign.job, disclaimer: e.target.value } })} /></label><button type="button" onClick={() => save({ ...settings.documentDesign, job: { ...settings.documentDesign.job, disclaimer: reset.job } })}>Reset to Default</button></> : null}
+    {tab === "invoice" ? <><div className="nexops-quote-toggle-grid">{(["showQuantity", "showUnitPrice", "showLineTotal", "showReturnPaymentStub", "showLateStamp", "showAccountBalance", "showPaidDate"] as const).map((key) => check(settings.documentDesign.invoice[key], key.replace(/([A-Z])/g, " $1"), (value) => save({ ...settings.documentDesign, invoice: { ...settings.documentDesign.invoice, [key]: value } })))}</div><label className="nexops-field"><span>Contract / disclaimer</span><textarea value={settings.documentDesign.invoice.disclaimer} onChange={(e) => save({ ...settings.documentDesign, invoice: { ...settings.documentDesign.invoice, disclaimer: e.target.value } })} /></label><button type="button" onClick={() => save({ ...settings.documentDesign, invoice: { ...settings.documentDesign.invoice, disclaimer: reset.invoice } })}>Reset to Default</button></> : null}
+    {tab === "style" ? <div className="nexops-quote-toggle-grid"><label className="nexops-field"><span>Header layout</span><select value={settings.documentDesign.style.headerLayout} onChange={(e) => save({ ...settings.documentDesign, style: { ...settings.documentDesign.style, headerLayout: e.target.value as CrmSettingsRecord["documentDesign"]["style"]["headerLayout"] } })}><option value="basic">Basic</option><option value="compact">Compact</option><option value="envelope_dual">#10 Envelope Dual Window</option><option value="envelope_single">#10 Envelope Single Window</option></select></label><label className="nexops-field"><span>Header style</span><select value={settings.documentDesign.style.headerStyle} onChange={(e) => save({ ...settings.documentDesign, style: { ...settings.documentDesign.style, headerStyle: e.target.value as "modern" | "clean" } })}><option value="modern">Modern</option><option value="clean">Clean</option></select></label><label className="nexops-field"><span>Logo size</span><input type="number" min=".5" max="2" step=".1" value={settings.documentDesign.style.logoSize} onChange={(e) => save({ ...settings.documentDesign, style: { ...settings.documentDesign.style, logoSize: Number(e.target.value) } })} /></label><label className="nexops-field"><span>Theme color</span><select value={settings.documentDesign.style.themeColor} onChange={(e) => save({ ...settings.documentDesign, style: { ...settings.documentDesign.style, themeColor: e.target.value as CrmSettingsRecord["documentDesign"]["style"]["themeColor"] } })}>{["default", "blue", "red", "green", "orange", "purple"].map((color) => <option key={color}>{color}</option>)}</select></label><label className="nexops-field"><span>Footer font size</span><input type="number" min="6" max="10" value={settings.documentDesign.style.footerFontSize} onChange={(e) => save({ ...settings.documentDesign, style: { ...settings.documentDesign.style, footerFontSize: Number(e.target.value) } })} /></label></div> : null}
+    <LivePdfPreview tenantId={settings.tenantId} kind={tab === "style" ? "quote" : tab} design={settings.documentDesign} />
+  </div>;
+}
+
+function LivePdfPreview({ tenantId, kind, design }: { tenantId: string; kind: "quote" | "job" | "invoice"; design: CrmSettingsRecord["documentDesign"] }): React.ReactElement {
+  const [url, setUrl] = useState("");
+  useEffect(() => { const timer = window.setTimeout(() => { void fetch("/api/crm/settings/document-design-preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tenantId, kind, documentDesign: design }) }).then((response) => response.blob()).then((blob) => setUrl((old) => { if (old) URL.revokeObjectURL(old); return URL.createObjectURL(blob); })).catch(() => setUrl("")); }, 250); return () => window.clearTimeout(timer); }, [tenantId, kind, design]);
+  return <section className="nexops-quote-template-editor"><h3>Live PDF Preview</h3>{url ? <iframe title={kind + " PDF preview"} src={url} style={{ width: "100%", height: 520, border: "1px solid #d8e2e3", borderRadius: 12 }} /> : <p className="nexops-empty-copy">Generating preview…</p>}</section>;
 }

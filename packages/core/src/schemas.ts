@@ -1000,6 +1000,7 @@ export const jobSchema = z.object({
   propertyId: idSchema.optional(),
   requestId: idSchema.optional(),
   quoteId: idSchema.optional(),
+  assignedOwnerId: idSchema.optional(),
   status: jobStatusSchema,
   title: z.string(),
   startAt: z.string().optional(),
@@ -1346,6 +1347,13 @@ export const crmSettingsSchema = z.object({
       { id: "review_nudge_2", label: "Final review nudge", offsetDays: 10, channels: "both", templateCategory: "review_request_nudge" }
     ]
   }),
+  documentDesign: z.object({
+    quote: z.object({ referToAsEstimate: z.boolean(), showQuantity: z.boolean(), showUnitPrice: z.boolean(), showLineTotal: z.boolean(), showTotalsAndTax: z.boolean(), showSignatureLine: z.boolean(), disclaimer: z.string(), depositLanguage: z.string() }),
+    job: z.object({ showSignatureLine: z.boolean(), disclaimer: z.string() }),
+    invoice: z.object({ showQuantity: z.boolean(), showUnitPrice: z.boolean(), showLineTotal: z.boolean(), showReturnPaymentStub: z.boolean(), showLateStamp: z.boolean(), showAccountBalance: z.boolean(), showPaidDate: z.boolean(), disclaimer: z.string() }),
+    style: z.object({ headerLayout: z.enum(["basic", "compact", "envelope_dual", "envelope_single"]), headerStyle: z.enum(["modern", "clean"]), logoSize: z.number().min(.5).max(2), themeColor: z.enum(["default", "blue", "red", "green", "orange", "purple"]), footerFontSize: z.number().int().min(6).max(10), showCompanyName: z.boolean(), showCompanyPhone: z.boolean(), showCompanyEmail: z.boolean(), showCompanyWebsite: z.boolean(), showClientPhone: z.boolean() })
+  }).default({ quote: { referToAsEstimate: false, showQuantity: true, showUnitPrice: true, showLineTotal: true, showTotalsAndTax: true, showSignatureLine: true, disclaimer: "This quote is valid for the next 30 days, after which values may be subject to change.", depositLanguage: "A deposit of {{DEPOSIT_AMOUNT}} will be required to begin." }, job: { showSignatureLine: true, disclaimer: "We can be called for touch-ups and small changes for the next 3 days. After that all work is final." }, invoice: { showQuantity: true, showUnitPrice: true, showLineTotal: true, showReturnPaymentStub: false, showLateStamp: true, showAccountBalance: true, showPaidDate: true, disclaimer: "Thank you for your business. Please contact us with any questions regarding this invoice." }, style: { headerLayout: "basic", headerStyle: "modern", logoSize: 1, themeColor: "default", footerFontSize: 8, showCompanyName: true, showCompanyPhone: true, showCompanyEmail: true, showCompanyWebsite: true, showClientPhone: false } }),
+  completionRequirements: z.object({ checklistRequired: z.boolean(), photosRequired: z.boolean(), reportRequired: z.boolean(), signatureRequired: z.boolean() }).default({ checklistRequired: false, photosRequired: false, reportRequired: false, signatureRequired: false }),
   propertyAssetDefinitions: z.array(propertyAssetDefinitionSchema).default([]),
   catalogItems: z.array(productServiceCatalogItemSchema).default([]),
   communicationTemplates: z.array(communicationTemplateRecordSchema).default([]),
@@ -1789,6 +1797,7 @@ export const eventTypeSchema = z.enum([
   "job.completed",
   "job.state_changed",
   "job.closed",
+  "job.completion_overridden",
   "job.requires_invoicing_cleared",
   "visit.booked",
   "visit.confirmed",

@@ -152,7 +152,31 @@ const jobLifecycleService = new JobLifecycleService({
   platformRepository,
   commsRail,
   eventBus,
-  ledgerService
+  ledgerService,
+  completionRequirementsForJob: async ({ tenantId, job }) => {
+    const [settings, checklists, library, signedDocuments] = await Promise.all([
+      nativeCrmRepository.getCrmSettings(tenantId),
+      fieldDocsService.listChecklists({ tenantId, jobId: job.id, status: "completed" }),
+      nexDocsService.listClientLibrary({
+        tenantId,
+        clientId: job.clientId,
+        ...(job.propertyId ? { propertyId: job.propertyId } : {}),
+        jobId: job.id,
+        viewer: "staff",
+        includeClientStatement: false
+      }),
+      mediaRepository.listSignedDocuments(tenantId)
+    ]);
+    return {
+      requirements: settings.completionRequirements,
+      evidence: {
+        checklistComplete: checklists.length > 0,
+        photosPresent: library.nexcam.media.some((entry) => entry.jobId === job.id),
+        reportPresent: library.nexcam.reports.some((entry) => entry.jobId === job.id),
+        signaturePresent: signedDocuments.some((record) => record.jobId === job.id && record.status === "signed")
+      }
+    };
+  }
 });
 const portalHubService = new PortalHubService({
   crmRepository: nativeCrmRepository,

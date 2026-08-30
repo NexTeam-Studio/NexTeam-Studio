@@ -55,6 +55,7 @@ export interface CreateJobInput {
   paymentSchedule?: Job["paymentSchedule"] | undefined;
   intake?: Job["intake"] | undefined;
   createdBy?: string | undefined;
+  assignedOwnerId?: string | undefined;
 }
 
 export interface PerformJobActionInput {
@@ -62,6 +63,26 @@ export interface PerformJobActionInput {
   jobId: string;
   action: "close" | "invoice" | "close_and_invoice" | "dismiss_invoice_reminder";
   actorId: string;
+  completionOverrideReason?: string | undefined;
+}
+
+export interface CompletionEvidence {
+  checklistComplete: boolean;
+  photosPresent: boolean;
+  reportPresent: boolean;
+  signaturePresent: boolean;
+}
+
+export interface CompletionRequirementSettings {
+  checklistRequired: boolean;
+  photosRequired: boolean;
+  reportRequired: boolean;
+  signatureRequired: boolean;
+}
+
+export interface CompletionGate {
+  evidence: CompletionEvidence;
+  missing: string[];
 }
 
 export interface PrepareJobActionPreview {
@@ -145,6 +166,19 @@ interface JobLifecycleDeps {
   commsRail?: CommsRail | undefined;
   eventBus?: EventBus | undefined;
   ledgerService?: Pick<LedgerService, "syncInvoiceAfterCreate"> | undefined;
+  completionRequirementsForJob?: ((input: { tenantId: string; job: Job }) => Promise<{ requirements: CompletionRequirementSettings; evidence: CompletionEvidence }>) | undefined;
+}
+
+function completionGate(requirements: CompletionRequirementSettings, evidence: CompletionEvidence): CompletionGate {
+  return {
+    evidence,
+    missing: [
+      ...(requirements.checklistRequired && !evidence.checklistComplete ? ["Checklist required"] : []),
+      ...(requirements.photosRequired && !evidence.photosPresent ? ["Photos required"] : []),
+      ...(requirements.reportRequired && !evidence.reportPresent ? ["Report required"] : []),
+      ...(requirements.signatureRequired && !evidence.signaturePresent ? ["Signature required"] : [])
+    ]
+  };
 }
 
 function now(input?: Date | string): string {
@@ -969,6 +1003,7 @@ export class JobLifecycleService {
       totals: buildTotals(lineItems),
       ...(input.paymentSchedule ? { paymentSchedule: input.paymentSchedule } : {}),
       intake: input.intake,
+      ...(input.assignedOwnerId ? { assignedOwnerId: input.assignedOwnerId } : {}),
       createdAt: timestamp,
       updatedAt: timestamp
     });
@@ -1097,7 +1132,18 @@ export class JobLifecycleService {
     };
   }
 
-  async performJobAction(input: PerformJobActionInput): Promise<{ job: JobDetailRecord; invoice?: Invoice | undefined; reminder?: InvoiceReminderRecord | undefined }> {
+  async completionStatus(tenantId: string, jobId: string): Promise<CompletionGate> {
+    const rawJob = (await this.hydratedState(tenantId, jobId)).jobs.find((candidate) => candidate.id === jobId);
+    const job = requireJobLifecycleRecord(rawJob, `Native job ${jobId} was not found.`, "completionStatus");
+    const resolver = this.deps.completionRequirementsForJob;
+    if (!resolver) {
+      return { evidence: { checklistComplete: false, photosPresent: false, reportPresent: false, signaturePresent: false }, missing: [] };
+    }
+    const resolved = await resolver({ tenantId, job });
+    return completionGate(resolved.requirements, resolved.evidence);
+  }
+
+  async performJobAction(input: PerformJobActionInput): Promise<{ job: JobDetailRecord; invoice?: Invoice | undefined; reminder?: InvoiceReminderRecord | undefined; completion?: CompletionGate | undefined }> {
     const timestamp = now();
     const state = await this.hydratedState(input.tenantId, input.jobId);
     const rawJob = state.jobs.find((candidate) => candidate.id === input.jobId);
@@ -1142,6 +1188,23 @@ export class JobLifecycleService {
 
     let updatedJob = job;
     if (input.action === "close" || input.action === "close_and_invoice") {
+      const completion = await this.completionStatus(input.tenantId, job.id);
+      if (completion.missing.length) {
+        const reason = input.completionOverrideReason?.trim();
+        if (!reason) {
+          throw new RailError(`Completion requirements are not met: ${completion.missing.join(", ")}. Provide an override reason to close this job.`, { provider: "native", op: "performJobAction", status: 409 });
+        }
+        if (!job.assignedOwnerId || job.assignedOwnerId !== input.actorId) {
+          throw new RailError("Only the user assigned to this job can override completion requirements.", { provider: "native", op: "performJobAction", status: 403 });
+        }
+        await this.emitLifecycleEvent({
+          tenantId: input.tenantId,
+          jobId: job.id,
+          type: "job.completion_overridden",
+          createdAt: timestamp,
+          payload: { action: "completion.override", actorId: job.assignedOwnerId, target: job.id, detail: reason, missing: completion.missing }
+        });
+      }
       updatedJob = await this.deps.crmRepository.updateJob(job.id, {
         tenantId: input.tenantId,
         closedAt: timestamp,
@@ -1210,7 +1273,8 @@ export class JobLifecycleService {
     return {
       job: requireJobLifecycleRecord(await this.getJobDetail(input.tenantId, input.jobId, timestamp), `Native job ${input.jobId} was not found.`, "performJobAction"),
       ...(invoice ? { invoice } : {}),
-      ...(reminder ? { reminder } : {})
+      ...(reminder ? { reminder } : {}),
+      ...((input.action === "close" || input.action === "close_and_invoice") ? { completion: await this.completionStatus(input.tenantId, input.jobId) } : {})
     };
   }
 }

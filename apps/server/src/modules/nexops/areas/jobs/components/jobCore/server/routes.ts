@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
 import { createJobBodySchema, customerDocumentPackageDeliverySchema, customerDocumentPackageSelectionSchema, jobActionSchema, updateJobBodySchema } from "./routeSchemas.js";
+import { renderJobPdf } from "./jobDocument.js";
 
 function packageArtifactKey(entry: { id: string; source: string }): string {
   return `${entry.source}:${entry.id}`;
@@ -59,6 +60,7 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
     nexDocsService,
     providerForTenant,
     publicOrigin,
+    repositoryForTenant,
     requireTenantRole,
     requireBillingAccess,
     requireQuoteAccess,
@@ -96,6 +98,20 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
     } catch (error) {
       sendRouteError(res, error);
     }
+  });
+
+  app.get("/api/crm/jobs/:id/pdf", async (req: Request, res: Response) => {
+    try {
+      const jobId = req.params.id;
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim() ? req.query.tenantId : defaultTenantId(env);
+      if (!jobId) throw new RailError("Job id is required.", { provider: "native", op: "renderJobPdf", status: 400 });
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "renderJobPdf" });
+      const job = await jobLifecycle().getJobDetail(tenantId, jobId);
+      if (!job) throw new RailError("Job was not found.", { provider: "native", op: "renderJobPdf", status: 404 });
+      const settings = await repositoryForTenant().getCrmSettings(tenantId);
+      res.setHeader("content-type", "application/pdf");
+      res.send(renderJobPdf(job, settings.documentDesign));
+    } catch (error) { sendRouteError(res, error); }
   });
 
   app.get("/api/crm/jobs/:id/closeout-package", async (req: Request, res: Response) => {
@@ -189,6 +205,7 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
         ...(input.lineItems ? { lineItems: input.lineItems } : {}),
         ...(input.paymentSchedule ? { paymentSchedule: input.paymentSchedule } : {}),
         ...(input.intake ? { intake: input.intake } : {}),
+        ...(input.assignedOwnerId ? { assignedOwnerId: input.assignedOwnerId } : {}),
         createdBy: access.tenantUserId
       });
       const bundleAttachment = await fieldDocsService().maybeAttachBundleForJob({
@@ -264,10 +281,28 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
         ...(input.title?.trim() ? { title: input.title.trim() } : {}),
         ...(input.paymentSchedule !== undefined ? { paymentSchedule: input.paymentSchedule } : {}),
         ...(input.clientVisibility !== undefined ? { clientVisibility: input.clientVisibility } : {}),
+        ...(input.assignedOwnerId !== undefined ? { assignedOwnerId: input.assignedOwnerId ?? undefined } : {}),
         updatedAt: new Date().toISOString()
       });
       const job = await jobLifecycle().getJobDetail(tenantId, jobId);
       res.json({ ok: true, tenantId, actorRole: access.role, job });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.get("/api/crm/jobs/:id/completion-status", async (req: Request, res: Response) => {
+    try {
+      const jobId = req.params.id;
+      if (!jobId) {
+        throw new RailError("Job id is required.", { provider: "native", op: "completionStatus", status: 400 });
+      }
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
+        ? req.query.tenantId
+        : defaultTenantId(env);
+      const access = await requireQuoteAccess(req, tenantId, "completionStatus");
+      const completion = await jobLifecycle().completionStatus(tenantId, jobId);
+      res.json({ ok: true, tenantId, actorRole: access.role, completion });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -302,7 +337,8 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
         tenantId,
         jobId,
         action: input.action,
-        actorId: access.tenantUserId
+        actorId: access.tenantUserId,
+        ...(input.completionOverrideReason ? { completionOverrideReason: input.completionOverrideReason } : {})
       });
       res.json({ ok: true, tenantId, actorRole: access.role, ...result });
     } catch (error) {

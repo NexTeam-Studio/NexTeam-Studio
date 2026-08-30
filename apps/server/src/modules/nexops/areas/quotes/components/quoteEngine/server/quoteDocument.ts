@@ -1,4 +1,4 @@
-import type { Client, Quote, ReceiptReview } from "@nexteam/core";
+import type { Client, DocumentDesignSettings, Quote, ReceiptReview } from "@nexteam/core";
 import { quotePdfLines } from "./quotePdfTemplate.js";
 import { escapeDocumentHtml as escapeHtml } from "../../../../../../../shared/documentRendering/htmlEngine.js";
 import { renderTextPdf } from "../../../../../../../shared/documentRendering/pdfEngine.js";
@@ -18,8 +18,8 @@ export interface QuotePortalRenderOptions {
   chrome?: PortalChromeOptions | undefined;
 }
 
-export function renderQuotePdf(quote: Quote, client?: Client): Buffer {
-  return renderTextPdf(quotePdfLines(quote, client));
+export function renderQuotePdf(quote: Quote, client?: Client, settings?: Partial<DocumentDesignSettings>): Buffer {
+  return renderTextPdf(quotePdfLines(quote, client, settings));
 }
 
 function portalStatusLabel(value: string): string {

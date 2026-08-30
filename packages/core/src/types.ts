@@ -775,6 +775,7 @@ export interface Job {
   propertyId?: ID;
   requestId?: ID | undefined;
   quoteId?: ID | undefined;
+  assignedOwnerId?: ID | undefined;
   status: JobStatus;
   title: string;
   startAt?: string | undefined;
@@ -1228,11 +1229,20 @@ export interface CrmSettings {
     enabled: boolean;
     steps: ReviewSequenceStepSetting[];
   };
+  documentDesign: DocumentDesignSettings;
+  completionRequirements: { checklistRequired: boolean; photosRequired: boolean; reportRequired: boolean; signatureRequired: boolean; };
   propertyAssetDefinitions: PropertyAssetDefinition[];
   catalogItems: ProductServiceCatalogItem[];
   communicationTemplates: CommunicationTemplateRecord[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DocumentDesignSettings {
+  quote: { referToAsEstimate: boolean; showQuantity: boolean; showUnitPrice: boolean; showLineTotal: boolean; showTotalsAndTax: boolean; showSignatureLine: boolean; disclaimer: string; depositLanguage: string; };
+  job: { showSignatureLine: boolean; disclaimer: string; };
+  invoice: { showQuantity: boolean; showUnitPrice: boolean; showLineTotal: boolean; showReturnPaymentStub: boolean; showLateStamp: boolean; showAccountBalance: boolean; showPaidDate: boolean; disclaimer: string; };
+  style: { headerLayout: "basic" | "compact" | "envelope_dual" | "envelope_single"; headerStyle: "modern" | "clean"; logoSize: number; themeColor: "default" | "blue" | "red" | "green" | "orange" | "purple"; footerFontSize: number; showCompanyName: boolean; showCompanyPhone: boolean; showCompanyEmail: boolean; showCompanyWebsite: boolean; showClientPhone: boolean; };
 }
 
 export type PaymentProvider = "stripe" | "paypal" | "manual" | "quote_bridge";
@@ -1679,6 +1689,7 @@ export type EventType =
   | "job.completed"
   | "job.state_changed"
   | "job.closed"
+  | "job.completion_overridden"
   | "job.requires_invoicing_cleared"
   | "visit.booked"
   | "visit.confirmed"
