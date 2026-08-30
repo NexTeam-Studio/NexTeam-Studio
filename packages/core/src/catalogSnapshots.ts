@@ -37,6 +37,8 @@ export function catalogSelectionSnapshot(input: CatalogSelection & {
 
 /** Converts a formerly-linked stored line into the same inert snapshot shape. */
 export function detachCatalogSnapshot(line: LineItem): LineItem {
-  const { catalogItemId: _catalogItemId, catalogCode: _catalogCode, ...snapshot } = line;
+  const snapshot = { ...line };
+  delete snapshot.catalogItemId;
+  delete snapshot.catalogCode;
   return { ...snapshot, source: "custom" };
 }

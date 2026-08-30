@@ -3,7 +3,7 @@ import type { NativeCrmRepository } from "@nexteam/providers";
 import type { FieldDocsService } from "../fielddocs/fieldDocsService.js";
 import type { MediaRepository } from "../fielddocs/mediaRepository.js";
 import type { SchedulingRepository } from "../scheduling/repository.js";
-import { evaporationRunInputSchema } from "./calculator.js";
+import type { evaporationRunInputSchema } from "./calculator.js";
 import type { EvaporationReportRecord } from "./record.js";
 import type { z } from "zod";
 

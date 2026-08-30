@@ -51,7 +51,7 @@ test("team controls use the persisted permission grid and profile preferences ar
   assert.match(source, /permissionOverrides/);
   assert.match(source, /Change .* resets their individual permission overrides/);
   assert.match(source, /\/api\/platform\/tenants/);
-  assert.match(source, /Create pending invite/);
+  assert.match(source, /Create a pending access record/);
   assert.match(source, /notificationPreferences: \{ \.\.\.current\.notificationPreferences/);
 });
 

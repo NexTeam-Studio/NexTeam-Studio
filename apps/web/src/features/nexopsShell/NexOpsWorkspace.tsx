@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { type Auth, type User } from "firebase/auth";
-import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, hasTenantLogo, tenantDisplayName } from "../../shared/branding/ProductBranding";
+import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "../../shared/branding/ProductBranding";
 import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./components/NexOpsHeader";
 import { NexTeamApplicationShell } from "../../shared/ui/NexTeamApplicationShell";
 import { NexOpsCreateMenu } from "./components/NexOpsCreateMenu";
@@ -677,17 +677,6 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     leadSourceOptions,
     submit: createClientFromForm
   } = contactForm;
-  const style = {
-    "--nexops-brand-primary": "#0c1118",
-    "--nexops-brand-accent": "#A8E600",
-    "--nexops-brand-gradient": "linear-gradient(135deg, #D4FF20 0%, #25D238 100%)",
-    "--nexops-brand-background": "#f5f7f1",
-    "--nexops-brand-surface": "#ffffff",
-    "--nexops-brand-text": "#101822",
-    "--nexops-brand-muted": "#68717c",
-    "--nexops-font-family": "Montserrat, Aptos, Segoe UI, Helvetica Neue, sans-serif"
-  } as React.CSSProperties;
-
   const moduleTitle = NEXOPS_MODULES.find((module) => module.id === activeModule)?.label ?? "NexOps";
 
   function renderHome(): React.ReactElement {

@@ -12,6 +12,7 @@ const files = explicitFiles.length
 
 const collectionPattern = /\.collection\(["']([^"']+)["']\)([\s\S]{0,260})/g;
 const platformAdminCollections = new Set(["tenants"]);
+const platformGlobalAdminCollections = new Set(["admin"]);
 const platformGlobalReadOnlyCollections = new Set([
   "nexcommandControllerStates",
   "nexcommandControllerRuns",
@@ -35,6 +36,9 @@ for (const file of files) {
       continue;
     }
     if (platformAdminCollections.has(collection) && text.includes("@platform-admin-read")) {
+      continue;
+    }
+    if (platformGlobalAdminCollections.has(collection) && text.includes(`@platform-global-admin:${collection}`)) {
       continue;
     }
     if (platformGlobalReadOnlyCollections.has(collection) && text.includes(`@platform-global-readonly:${collection}`)) {

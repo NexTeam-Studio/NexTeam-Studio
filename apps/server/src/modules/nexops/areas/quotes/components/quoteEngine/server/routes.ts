@@ -404,7 +404,7 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         ? req.body.tenantId
         : defaultTenantId(env);
       const access = await requireQuoteAccess(req, tenantId, "convertQuoteToJob");
-      const { provider, quote } = await getQuoteAndClient(tenantId, quoteId);
+      const { quote } = await getQuoteAndClient(tenantId, quoteId);
       if (!["approved", "approved_internal"].includes(quote.status)) {
         throw new RailError("Only approved quotes can convert into jobs.", { provider: "native", op: "convertQuoteToJob", status: 409 });
       }

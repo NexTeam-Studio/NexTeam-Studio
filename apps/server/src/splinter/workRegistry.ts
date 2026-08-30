@@ -5,6 +5,7 @@ import type { SplinterRepository } from "./repository.js";
 import { splinterLifecycleController } from "./lifecycleController.js";
 
 export const SPLINTER_WORK_ITEM_COLLECTION_PATH = "admin/splinter/workItems";
+// @platform-global-admin:admin — the work registry is platform-wide controller state.
 const iso = () => new Date().toISOString();
 
 export interface WorkRegistry { create(item: Omit<SplinterWorkItem, "createdAt" | "updatedAt" | "status">): Promise<SplinterWorkItem>; get(id: string): Promise<SplinterWorkItem | null>; list(): Promise<SplinterWorkItem[]>; update(id: string, patch: Partial<SplinterWorkItem>): Promise<SplinterWorkItem | null>; claim(id: string, jobId: string, stagingSha: string): Promise<SplinterWorkItem | null>; }

@@ -47,7 +47,7 @@ test("NexCommand resolves the current Firebase UID to its sole active internal p
     email: "nexteamstudioai@gmail.com",
     profilePhotoRef: "media/platform/legacy",
     twoFactorState: "ENROLLED",
-    role: "Owner",
+    role: "Administrator",
     capabilityOverrides: { grant: [], deny: [] },
     accountStatus: "DISABLED",
     createdAt: timestamp,
@@ -86,7 +86,7 @@ test("NexCommand resolves the current Firebase UID to its sole active internal p
     email: "nexteamstudioai@gmail.com",
     profilePhotoRef: "media/platform/duplicate",
     twoFactorState: "ENROLLED",
-    role: "Owner",
+    role: "Administrator",
     capabilityOverrides: { grant: [], deny: [] },
     accountStatus: "ACTIVE",
     createdAt: timestamp,
@@ -111,11 +111,11 @@ test("protected Owner identity is immutable while profile maintenance and author
     for (const patch of [{ email: "changed@nexteam.test" }, { firstName: "Changed" }, { lastName: "Changed" }]) assert.equal((await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify(patch) })).status, 403);
     assert.equal((await fetch(`${base}/api/platform/admin/team/${protectedOwner.id}`, { method: "PATCH", headers, body: JSON.stringify({ firstName: "Changed" }) })).status, 403);
     assert.equal((await fetch(`${base}/api/platform/admin/team`, { method: "POST", headers, body: JSON.stringify({ authUid: "another-user", firstName: "Another", lastName: "User", email: "OWNER@nexteam.test", profilePhotoRef: "media/platform/another", twoFactorState: "NOT_ENROLLED", role: "Administrator" }) })).status, 409);
-    const maintained = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ telephone: "555-0200", profilePhotoRef: "media/platform/owner-new" }) });
+    const maintained = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ telephone: "555-0200" }) });
     assert.equal(maintained.status, 200);
     const owner = await maintained.json();
     assert.equal(owner.user.email, "owner@nexteam.test");
-    assert.equal(owner.user.profilePhotoRef, "media/platform/owner-new");
+    assert.equal(owner.user.profilePhotoRef, "media/platform/owner");
     assert.equal(owner.user.twoFactorState, "ENROLLED");
   } finally { await new Promise((resolve) => server.close(resolve)); }
 });

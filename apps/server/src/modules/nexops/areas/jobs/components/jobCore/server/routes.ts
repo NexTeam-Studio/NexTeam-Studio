@@ -11,11 +11,35 @@ function isFinancialArtifact(entry: { kind: string }): boolean {
   return entry.kind === "invoice" || entry.kind === "receipt";
 }
 
+type CloseoutArtifact = {
+  id: string;
+  source: string;
+  kind: string;
+  label?: string | undefined;
+  fileName?: string | undefined;
+  mimeType?: string | undefined;
+  occurredAt?: string | undefined;
+  jobId?: string | undefined;
+  propertyId?: string | undefined;
+  visitId?: string | undefined;
+};
+
+type CloseoutLibrary = {
+  folders: Array<{ documents: CloseoutArtifact[] }>;
+  unfiled: CloseoutArtifact[];
+  officeRecords: CloseoutArtifact[];
+  nexcam: {
+    reports: CloseoutArtifact[];
+    signedDocuments: CloseoutArtifact[];
+    media: CloseoutArtifact[];
+  };
+};
+
 async function resolveCloseoutArtifacts(input: {
   tenantId: string;
   job: { id: string; clientId: string; propertyId?: string | undefined };
   role: "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
-  nexDocsService: () => { listClientLibrary(input: { tenantId: string; clientId: string; propertyId?: string; viewer: "staff"; includeClientStatement: false }): Promise<any> };
+  nexDocsService: () => { listClientLibrary(input: { tenantId: string; clientId: string; propertyId?: string; viewer: "staff"; includeClientStatement: false }): Promise<CloseoutLibrary> };
 }) {
   const library = await input.nexDocsService().listClientLibrary({
     tenantId: input.tenantId,
@@ -25,20 +49,20 @@ async function resolveCloseoutArtifacts(input: {
     includeClientStatement: false
   });
   const entries = [
-    ...library.folders.flatMap((folder: any) => folder.documents),
+    ...library.folders.flatMap((folder) => folder.documents),
     ...library.unfiled,
     ...library.officeRecords,
     ...library.nexcam.reports,
     ...library.nexcam.signedDocuments,
     ...library.nexcam.media
-  ].filter((entry: any) => entry.jobId === input.job.id)
-    .filter((entry: any) => input.role !== "TECHNICIAN" || !isFinancialArtifact(entry));
-  return [...new Map(entries.map((entry: any) => [packageArtifactKey(entry), entry])).values()].map((entry: any) => ({
+  ].filter((entry) => entry.jobId === input.job.id)
+    .filter((entry) => input.role !== "TECHNICIAN" || !isFinancialArtifact(entry));
+  return [...new Map(entries.map((entry) => [packageArtifactKey(entry), entry])).values()].map((entry) => ({
     artifactId: entry.id,
     source: (entry.source === "nexcam" ? "nexcam" : entry.source === "generated" ? "generated" : "nexdocs") as "nexdocs" | "nexcam" | "generated",
     kind: entry.kind,
-    label: entry.label,
-    fileName: entry.fileName,
+    label: entry.label ?? entry.fileName ?? "Untitled document",
+    fileName: entry.fileName ?? entry.label ?? "document",
     mimeType: entry.mimeType,
     occurredAt: entry.occurredAt,
     ...(entry.propertyId ? { propertyId: entry.propertyId } : {}),
@@ -140,7 +164,7 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
       const job = await jobLifecycle().getJobDetail(tenantId, jobId);
       if (!job) throw new RailError(`Native job ${jobId} was not found.`, { provider: "native", op: "saveCloseoutPackage", status: 404 });
       const artifacts = await resolveCloseoutArtifacts({ tenantId, job, role: access.role, nexDocsService });
-      const eligible = new Map(artifacts.map((artifact: any) => [`${artifact.source}:${artifact.artifactId}`, artifact]));
+      const eligible = new Map(artifacts.map((artifact) => [`${artifact.source}:${artifact.artifactId}`, artifact]));
       const selectedArtifactRefs = input.selectedArtifactRefs.map((reference) => {
         const artifact = eligible.get(`${reference.source}:${reference.artifactId}`);
         if (!artifact || artifact.kind !== reference.kind || artifact.visitId !== reference.visitId) {
@@ -177,7 +201,7 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
       const job = await jobLifecycle().getJobDetail(tenantId, jobId);
       if (!job) throw new RailError(`Native job ${jobId} was not found.`, { provider: "native", op: "sendCloseoutPackageDelivery", status: 404 });
       const artifacts = await resolveCloseoutArtifacts({ tenantId, job, role: access.role, nexDocsService });
-      const eligible = new Map(artifacts.map((artifact: any) => [`${artifact.source}:${artifact.artifactId}`, artifact]));
+      const eligible = new Map(artifacts.map((artifact) => [`${artifact.source}:${artifact.artifactId}`, artifact]));
       const selectedArtifactRefs = input.selectedArtifactRefs.map((reference) => {
         const artifact = eligible.get(`${reference.source}:${reference.artifactId}`);
         if (!artifact || artifact.kind !== reference.kind || artifact.visitId !== reference.visitId) {

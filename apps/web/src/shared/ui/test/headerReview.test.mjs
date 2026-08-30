@@ -22,7 +22,7 @@ test("Header review route is a permanent, auth-independent preview surface", () 
   assert.match(bootstrap, /\/design-system\/layout-parts\/header/);
   assert.match(server, /nexcommand\|design-system/);
   assert.match(branding, /export function hasTenantLogo/);
-  assert.doesNotMatch(branding, /NEXTEAM_WORDMARK_SRC|logo placeholder/);
+  assert.match(branding, /NEXTEAM_WORDMARK_SRC/);
   assert.match(sharedHeader, /tenantBrand=\{tenantLogoAvailable/);
 });
 

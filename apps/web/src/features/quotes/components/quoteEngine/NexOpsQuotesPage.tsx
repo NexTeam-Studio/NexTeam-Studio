@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { catalogSelectionSnapshot } from "@nexteam/core";
-import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
 import type { AddressLike } from "@nexteam/shared";
 import { PaymentScheduleEditor, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "../../../../features/invoices/components/invoiceStructure/PaymentScheduleEditor";
 import { blankCatalogItemDraft, catalogItemFromDraft, NexOpsCatalogEditorModal, NexOpsCatalogPicker, type CatalogItemDraft, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";

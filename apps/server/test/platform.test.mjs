@@ -185,13 +185,13 @@ test("platform repository stores tenant branding with text fallback and actor at
   assert.equal(updated.updatedBy, "internal:tenant_user_chris");
 });
 
-test("tenant users are provisioned explicitly and produce Firebase custom claims", async () => {
-  const repository = new InMemoryPlatformRepository([defaultTenant("aquatrace", "suite")]);
-  const users = await repository.listTenantUsers("aquatrace");
+test("a newly created tenant has explicitly provisioned users and produces Firebase custom claims", async () => {
+  const repository = new InMemoryPlatformRepository([defaultTenant("candela", "suite")]);
+  const users = await repository.listTenantUsers("candela");
   assert.deepEqual(users, []);
 
   const office = await upsertTenantUser(repository, {
-    tenantId: "aquatrace",
+    tenantId: "candela",
     id: "office_catherine",
     authUid: "uid_catherine",
     email: "catherine@example.test",
@@ -200,13 +200,14 @@ test("tenant users are provisioned explicitly and produce Firebase custom claims
     now: "2026-07-08T12:00:00.000Z"
   });
   assert.deepEqual(customClaimsForTenantUser(office), {
-    tenantId: "aquatrace",
+    tenantId: "candela",
     tenantRole: "OFFICE_ADMIN",
     tenantUserId: "office_catherine",
     tenantCapabilities: ["team.view", "team.manage", "team.invite"],
+    tenantPermissionOverrides: {},
     roles: ["office_admin"]
   });
-  assert.throws(() => buildTenantUser({ tenantId: "aquatrace", displayName: "Over-granted admin", role: "OFFICE_ADMIN", capabilities: ["tenant.audit.read"] }), /role ceiling/);
+  assert.throws(() => buildTenantUser({ tenantId: "candela", displayName: "Over-granted admin", role: "OFFICE_ADMIN", capabilities: ["tenant.audit.read"] }), /role ceiling/);
   assert.deepEqual(capabilitiesWithinRoleCeiling("OFFICE_ADMIN", []), []);
   assert.deepEqual(capabilitiesForTenantUser({ role: "OFFICE_ADMIN", capabilities: ["team.manage", "tenant.audit.read"] }), ["team.manage"]);
 });
@@ -589,7 +590,7 @@ test("tenant Stripe Connect onboarding persists one account and protects refresh
 });
 
 test("platform routes manage tenant users and job links without leaking token hashes by default", async () => {
-  const repository = new InMemoryPlatformRepository([defaultTenant("aquatrace", "suite")]);
+  const repository = new InMemoryPlatformRepository([defaultTenant("candela", "suite")]);
   const storage = new MemoryStorageWriter();
   const app = express();
   app.use(express.json());
@@ -602,11 +603,11 @@ test("platform routes manage tenant users and job links without leaking token ha
   try {
     const { port } = server.address();
     const base = `http://127.0.0.1:${port}`;
-    const users = await fetch(`${base}/api/platform/tenants/aquatrace/users`).then((response) => response.json());
+    const users = await fetch(`${base}/api/platform/tenants/candela/users`).then((response) => response.json());
     assert.equal(users.ok, true);
     assert.deepEqual(users.users, []);
 
-    const createdUser = await fetch(`${base}/api/platform/tenants/aquatrace/users`, {
+    const createdUser = await fetch(`${base}/api/platform/tenants/candela/users`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ id: "office_admin_1", displayName: "Office Admin", email: "office@example.test", role: "OFFICE_ADMIN" })
@@ -614,21 +615,21 @@ test("platform routes manage tenant users and job links without leaking token ha
     assert.equal(createdUser.ok, true);
     assert.equal(createdUser.claimsPreview.tenantRole, "OFFICE_ADMIN");
 
-    const ownerWrite = await fetch(`${base}/api/platform/tenants/aquatrace/users`, {
+    const ownerWrite = await fetch(`${base}/api/platform/tenants/candela/users`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ id: "owner_denied", displayName: "Owner Denied", role: "OWNER" })
     });
     assert.equal(ownerWrite.status, 403);
 
-    const claims = await fetch(`${base}/api/platform/tenants/aquatrace/users/office_admin_1/custom-claims`, {
+    const claims = await fetch(`${base}/api/platform/tenants/candela/users/office_admin_1/custom-claims`, {
       method: "POST"
     }).then((response) => response.json());
     assert.equal(claims.ok, true);
     assert.equal(claims.applied, false);
     assert.equal(claims.claimsPreview.tenantUserId, "office_admin_1");
 
-    const link = await fetch(`${base}/api/platform/tenants/aquatrace/job-access-links`, {
+    const link = await fetch(`${base}/api/platform/tenants/candela/job-access-links`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -643,7 +644,7 @@ test("platform routes manage tenant users and job links without leaking token ha
     assert.equal(link.oneTimeToken, undefined);
     assert.equal(link.link.tokenHash, "[stored hash]");
 
-    const linkWithToken = await fetch(`${base}/api/platform/tenants/aquatrace/job-access-links`, {
+    const linkWithToken = await fetch(`${base}/api/platform/tenants/candela/job-access-links`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -659,17 +660,17 @@ test("platform routes manage tenant users and job links without leaking token ha
     const verified = await fetch(`${base}/api/platform/job-access-links/verify`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tenantId: "aquatrace", linkId: linkWithToken.link.id, token: linkWithToken.oneTimeToken })
+      body: JSON.stringify({ tenantId: "candela", linkId: linkWithToken.link.id, token: linkWithToken.oneTimeToken })
     }).then((response) => response.json());
     assert.equal(verified.ok, true);
     assert.equal(verified.access.accessKind, "job_link");
     assert.equal(verified.access.jobId, "job_deborah_justice");
 
-    const listedLinks = await fetch(`${base}/api/platform/tenants/aquatrace/job-access-links`).then((response) => response.json());
+    const listedLinks = await fetch(`${base}/api/platform/tenants/candela/job-access-links`).then((response) => response.json());
     assert.equal(listedLinks.ok, true);
     assert.equal(listedLinks.links.every((entry) => entry.tokenHash === "[stored hash]"), true);
 
-    const revoked = await fetch(`${base}/api/platform/tenants/aquatrace/job-access-links/${linkWithToken.link.id}/revoke`, {
+    const revoked = await fetch(`${base}/api/platform/tenants/candela/job-access-links/${linkWithToken.link.id}/revoke`, {
       method: "POST"
     }).then((response) => response.json());
     assert.equal(revoked.ok, true);

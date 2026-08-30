@@ -187,7 +187,7 @@ const verifyJobAccessLinkSchema = z.object({
   token: z.string().min(16)
 });
 
-const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, role: true, capabilityOverrides: true }).strict();
+const platformUserInputSchema = platformUserSchema.pick({ authUid: true, firstName: true, lastName: true, email: true, telephone: true, address: true, profilePhotoRef: true, twoFactorState: true, role: true, capabilityOverrides: true }).strict();
 const platformUserPatchSchema = platformUserInputSchema.omit({ authUid: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const platformSelfProfilePatchSchema = platformUserSchema.pick({ firstName: true, lastName: true, email: true, telephone: true, address: true }).partial().refine((value) => Object.keys(value).length > 0, "At least one profile field is required.");
 const ownershipTransferSchema = z.object({ toUserId: z.string().min(1) }).strict();

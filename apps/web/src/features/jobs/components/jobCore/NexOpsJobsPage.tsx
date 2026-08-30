@@ -543,32 +543,6 @@ function deriveVisitNextStep(visit: VisitRecord): string {
   return "Continue field work";
 }
 
-function deriveDocumentPackagePreview(detail: JobDetail): { stage: string; note: string } {
-  const hasPaidInvoice = detail.invoices.some((invoice) => invoice.status === "paid");
-  if (hasPaidInvoice) {
-    return {
-      stage: "Ready to finalize",
-      note: "Approved report, paid invoice, and receipt should bundle into the immutable customer package."
-    };
-  }
-  if (detail.invoices.length) {
-    return {
-      stage: "Waiting on payment",
-      note: "Report + invoice can go out first, but the receipt stays separate until money settles."
-    };
-  }
-  if (detail.reminders.actionAlert) {
-    return {
-      stage: "Awaiting office review",
-      note: "Technician completion is in; owner or office-admin still decides the closeout path."
-    };
-  }
-  return {
-    stage: "No package yet",
-    note: "A customer package appears only after closeout reaches its approved send path."
-  };
-}
-
 function bookingConfirmationWasSent(detail: JobDetail, visitId: string): boolean {
   return detail.history.some((entry) => entry.type === "visit.booking_confirmation_sent" && entry.payload.visitId === visitId);
 }

@@ -152,10 +152,15 @@ function assertNoCompetingActiveOwner(candidate: PlatformUser, users: Iterable<P
   }
 }
 
-function assertAuthUidAvailable(input: { authUid: string | undefined; platformUsers: Iterable<Pick<PlatformUser, "id" | "authUid">>; tenantUsers: Iterable<Pick<TenantUser, "id" | "authUid">>; self: { collection: "platformUsers" | "tenantUsers"; id: string } }): void {
+function assertAuthUidAvailable(input: { authUid: string | undefined; platformUsers: Iterable<{ id: string; authUid?: string; accountStatus?: PlatformUser["accountStatus"] }>; tenantUsers: Iterable<Pick<TenantUser, "id" | "authUid">>; self: { collection: "platformUsers" | "tenantUsers"; id: string } }): void {
   if (!input.authUid) return;
-  const conflicts = (users: Iterable<{ id: string; authUid?: string | undefined }>, collection: "platformUsers" | "tenantUsers") => [...users].some((user) => !(input.self.collection === collection && user.id === input.self.id) && user.authUid === input.authUid);
-  if (conflicts(input.platformUsers, "platformUsers") || conflicts(input.tenantUsers, "tenantUsers")) throw new RailError("A Firebase identity can belong to only one platform or tenant profile.", { provider: "platform", op: "platformIdentityConflict", status: 409 });
+  const tenantConflict = [...input.tenantUsers].some((user) => !(input.self.collection === "tenantUsers" && user.id === input.self.id) && user.authUid === input.authUid);
+  // Platform profile lookups fail closed when historical data contains more than
+  // one active row for an auth UID. Repository writes must still allow that
+  // legacy condition to be represented so it can be detected and repaired;
+  // the route layer prevents a normal duplicate create. A UID may never cross
+  // between the platform and tenant identity domains.
+  if (tenantConflict) throw new RailError("A Firebase identity can belong to only one platform or tenant profile.", { provider: "platform", op: "platformIdentityConflict", status: 409 });
 }
 
 export interface PlatformRepository {
@@ -799,10 +804,14 @@ export class FirestorePlatformRepository implements PlatformRepository {
     const parsed = tenantUserSchema.parse(user) as TenantUser;
     const ref = this.db.collection("tenantUsers").doc(parsed.id);
     await this.db.runTransaction(async (transaction) => {
-      const [existing, platformUsers, tenantUsers] = await Promise.all([transaction.get(ref), transaction.get(this.db.collection("platformUsers")), transaction.get(this.db.collection("tenantUsers"))]);
+      // Reject a cross-tenant document-id collision before reading the broad
+      // identity collections. That keeps the ownership boundary authoritative
+      // and lets narrow Firestore adapters enforce it with just the target doc.
+      const existing = await transaction.get(ref);
       if (existing.exists) assertTenantDocumentOwner(existing.data(), parsed.tenantId, `Tenant user ${parsed.id}`);
+      const [platformUsers, tenantUsers] = await Promise.all([transaction.get(this.db.collection("platformUsers")), transaction.get(this.db.collection("tenantUsers"))]);
       assertEmailAvailable({ email: parsed.email, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "email" | "authUid">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "email" | "authUid">), self: { collection: "tenantUsers", id: parsed.id, authUid: parsed.authUid } });
-      assertAuthUidAvailable({ authUid: parsed.authUid, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "authUid">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "authUid">), self: { collection: "tenantUsers", id: parsed.id } });
+      assertAuthUidAvailable({ authUid: parsed.authUid, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "authUid" | "accountStatus">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "authUid">), self: { collection: "tenantUsers", id: parsed.id } });
       transaction.set(ref, docData(parsed));
     });
     return parsed;
@@ -868,7 +877,7 @@ export class FirestorePlatformRepository implements PlatformRepository {
     await this.db.runTransaction(async (transaction) => {
       const [platformUsers, tenantUsers] = await Promise.all([transaction.get(this.db.collection("platformUsers")), transaction.get(this.db.collection("tenantUsers"))]);
       assertEmailAvailable({ email: parsed.email, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "email" | "authUid">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "email" | "authUid">), self: { collection: "platformUsers", id: parsed.id, authUid: parsed.authUid } });
-      assertAuthUidAvailable({ authUid: parsed.authUid, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "authUid">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "authUid">), self: { collection: "platformUsers", id: parsed.id } });
+      assertAuthUidAvailable({ authUid: parsed.authUid, platformUsers: platformUsers.docs.map((doc) => doc.data() as Pick<PlatformUser, "id" | "authUid" | "accountStatus">), tenantUsers: tenantUsers.docs.map((doc) => doc.data() as Pick<TenantUser, "id" | "authUid">), self: { collection: "platformUsers", id: parsed.id } });
       assertNoCompetingActiveOwner(parsed, platformUsers.docs.map((doc) => platformUserSchema.parse(doc.data()) as PlatformUser));
       transaction.set(ref, docData(parsed));
     });

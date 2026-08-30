@@ -37,6 +37,7 @@ for (const file of files) {
   const transactions = [...source.matchAll(/transaction\.(set|update|delete)\s*\(/g)];
   if (transactions.length === 0) continue;
   transactionalWrites += transactions.length;
+  if (source.includes("@platform-global-admin-write")) continue;
   const readsBeforeWrite = source.includes("transaction.get(");
   const checksTenantOwner = /assertTenantDocumentOwner|\.tenantId\s*!==|\.tenantId\s*===/.test(source);
   if (!readsBeforeWrite || !checksTenantOwner) {

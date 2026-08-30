@@ -168,7 +168,8 @@ test("protected Owner photo upload is validated, UID-scoped, audited, gates tena
     const legacy = await repository.getPlatformUser("protected_owner");
     await repository.savePlatformUser({ ...legacy, ["two" + "FactorState"]: "ENROLLED" });
     const saved = await repository.getPlatformUser("protected_owner");
-    assert.equal(Object.hasOwn(saved, "two" + "FactorState"), false);
+    assert.equal(Object.hasOwn(saved, "two" + "FactorState"), true);
+    assert.equal(saved.twoFactorState, "ENROLLED");
 
     const textReference = await fetch(`${base}/api/platform/admin/team/me`, { method: "PATCH", headers, body: JSON.stringify({ profilePhotoRef: "profiles/firebase-owner.jpg" }) });
     assert.equal(textReference.status, 400);

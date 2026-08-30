@@ -111,7 +111,7 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
 
   app.post("/api/crm/settings/document-design-preview", async (req: Request, res: Response) => {
     try {
-      const input = req.body as { tenantId?: string; kind?: "quote" | "job" | "invoice"; documentDesign?: any };
+      const input = req.body as { tenantId?: string; kind?: "quote" | "job" | "invoice"; documentDesign?: CrmSettingsDoc["documentDesign"] };
       const tenantId = input.tenantId ?? defaultTenantId(env);
       await requireQuoteAccess(req, tenantId, "previewDocumentDesign");
       const line = { id: "preview_line", code: "LEAK", name: "Leak Detection Service", quantity: 2, unitPrice: 125, total: 250, taxable: false };

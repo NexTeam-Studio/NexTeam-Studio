@@ -10,6 +10,8 @@ import {
 } from "@nexteam/core";
 
 const SPLINTER_JOB_COLLECTION_PATH = "admin/splinter/splinterJobs";
+// @platform-global-admin:admin — Splinter is a platform-owned controller, never tenant data.
+// @platform-global-admin-write — its controller-state transactions cannot have tenant ownership assertions.
 
 export { SPLINTER_JOB_COLLECTION_PATH };
 
