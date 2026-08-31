@@ -13,11 +13,11 @@ test("ModuleHeroCard renders the complete centered approved quote rotation", () 
   assert.equal(quoteEntries.at(-1), '{ text: "Well done is better than well said.", author: "Benjamin Franklin" }');
   assert.match(template, /function HeroQuote[\s\S]*className="module-hero-card__quote"/);
   assert.match(template, /<HeroQuote title=\{props\.title\} \/>/);
-  assert.match(template, /<p className="module-hero-card__detail">\{props\.detail\}<\/p>/);
+  assert.doesNotMatch(template, /module-hero-card__detail/);
   assert.match(styles, /\.module-hero-card__quote \{[\s\S]*text-align: center/);
   assert.match(styles, /\.module-hero-card__copy \{ width: 100%; text-align: center; \}/);
   assert.match(styles, /\.module-hero-card__title \{ width: 100%; justify-content: center; \}/);
-  assert.match(styles, /\.module-hero-card__detail \{ text-align: center; \}/);
+  assert.doesNotMatch(styles, /\.module-hero-card__detail/);
   assert.match(styles, /\.nexops-hero-primary-button \{[\s\S]*background: linear-gradient\(135deg, #d4ff20, #25d238\)/);
   assert.doesNotMatch(styles, /nexops-quote-primary-button/);
 });

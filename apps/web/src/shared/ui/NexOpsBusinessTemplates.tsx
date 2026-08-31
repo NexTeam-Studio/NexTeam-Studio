@@ -190,7 +190,6 @@ export function ModuleHeroCard(props: {
           <span className="module-hero-card__icon" aria-hidden="true">{props.icon}</span>
           <h1>{props.title}</h1>
         </div>
-        <p className="module-hero-card__detail">{props.detail}</p>
         <HeroQuote title={props.title} />
       </div>
       {props.primaryAction || props.secondaryActions ? (

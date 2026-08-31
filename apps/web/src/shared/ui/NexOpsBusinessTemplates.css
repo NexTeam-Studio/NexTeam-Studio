@@ -25,7 +25,6 @@
 .module-hero-card__copy > p:not(.nexops-business-eyebrow) { max-width: 700px; margin-top: 10px; color: rgba(255,255,255,.88); line-height: 1.5; }
 .module-hero-card__copy { width: 100%; text-align: center; }
 .module-hero-card__title { width: 100%; justify-content: center; }
-.module-hero-card__detail { text-align: center; }
 .module-hero-card__quote { max-width: 700px; margin: 16px auto 0; color: rgba(255,255,255,.96); text-align: center; }
 .module-hero-card__quote p { font-style: italic; line-height: 1.5; }
 .module-hero-card__quote cite { display: block; margin-top: 6px; color: #d4ff20; font-size: .86rem; font-style: normal; font-weight: 800; }
