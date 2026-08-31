@@ -22,7 +22,10 @@
 .nexops-business-hero h1,
 .nexops-business-hero p { margin: 0; }
 .nexops-business-hero h1 { color: #d4ff20; font-size: clamp(2rem, 4vw, 3.35rem); line-height: .98; }
-.nexops-business-hero > div:first-child > p:last-child { max-width: 700px; margin-top: 10px; color: rgba(255,255,255,.88); line-height: 1.5; }
+.module-hero-card__copy > p:not(.nexops-business-eyebrow) { max-width: 700px; margin-top: 10px; color: rgba(255,255,255,.88); line-height: 1.5; }
+.module-hero-card__quote { max-width: 700px; margin: 16px auto 0; color: rgba(255,255,255,.96); text-align: center; }
+.module-hero-card__quote p { font-style: italic; line-height: 1.5; }
+.module-hero-card__quote cite { display: block; margin-top: 6px; color: #d4ff20; font-size: .86rem; font-style: normal; font-weight: 800; }
 .nexops-business-eyebrow { margin: 0 0 8px !important; color: #d4ff20 !important; font-size: .78rem; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
 .nexops-business-hero-action { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: end; gap: 10px; }
 .module-hero-card__title { display: flex; align-items: center; gap: 12px; }

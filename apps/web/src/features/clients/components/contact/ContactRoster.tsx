@@ -55,7 +55,6 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
   return (
     <section className="nexops-clients-workspace">
       <NexOpsRosterTemplate
-        eyebrow="NexOps Client Manager"
         title="Clients"
         detail={`${props.status} Open any row to move into the full Client workspace.`}
         icon={<NexOpsNavGlyph module="clients" />}
@@ -67,7 +66,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
       >
       <NexOpsRosterSurface ariaLabel="Search and filter clients" searchTitle="Search Clients" resultCount={visibleClients.length} resultNoun="Client"
         search={<label className="nexops-quote-roster-search"><span className="sr-only">Search Clients</span><input value={props.query} placeholder="Search Clients" onChange={(event) => props.onQueryChange(event.target.value)} /></label>}
-        filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={filterOpen} onClick={() => setFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true">☷</span><span className="nexops-quote-filter-label">Filter</span><small>{visibleClients.length}</small></button>}
+        filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={filterOpen} onClick={() => setFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true">☷</span><span className="nexops-quote-filter-label">Filter</span></button>}
         filterOptions={filterOpen ? <div className="nexops-quote-filter-options" aria-label="Client filters"><label className="nexops-field"><span>Filter by Tag</span><select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}><option value="">All Tags</option>{tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}</select></label>{(["all", "active", "lead", "archived"] as const).map((value) => <button key={value} type="button" role="radio" aria-checked={statusFilter === value} className={`nexops-jobs-filter-pill${statusFilter === value ? " active" : ""}`} onClick={() => setStatusFilter(value)}><span>{value === "all" ? "All Clients" : value === "lead" ? "Leads & Prospects" : `${value[0].toUpperCase()}${value.slice(1)} Clients`}</span><small>{value === "all" ? props.clients.length : props.clients.filter((client) => clientRosterStatusLabel(client, props.clientStatusLabel(client)).toLowerCase() === value).length}</small></button>)}</div> : null}
         empty={!visibleClients.length ? <div className="nexops-quote-filtered-empty"><h2>No Clients Match This View</h2><p>Create one, import a CSV, or change the current filters.</p></div> : undefined}>
           {visibleClients.map((client) => <article className="nexops-quote-filtered-row expanded" key={client.id}>

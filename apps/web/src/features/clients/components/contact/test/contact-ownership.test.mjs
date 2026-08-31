@@ -5,11 +5,19 @@ import { readFileSync } from "node:fs";
 test("Contact owns its roster and editor surfaces without Client Details implementation", () => {
   const contactRoster = readFileSync(new URL("../ContactRoster.tsx", import.meta.url), "utf8");
   const contactEditor = readFileSync(new URL("../ContactEditorSurface.tsx", import.meta.url), "utf8");
+  const clientDetails = readFileSync(new URL("../../clientDetails/ClientDetailsSurface.tsx", import.meta.url), "utf8");
   const shell = readFileSync(new URL("../../../../nexopsShell/NexOpsWorkspace.tsx", import.meta.url), "utf8");
 
   assert.match(contactRoster, /No Clients Match This View/);
   assert.match(contactEditor, /NexOpsCreationTemplate/);
   assert.match(contactEditor, /Create Client/);
+  assert.match(clientDetails, /NexOpsDetailTemplate/);
+  assert.match(clientDetails, /Client workspace/);
+  assert.match(clientDetails, /Back to Client Roster/);
+  assert.doesNotMatch(contactRoster, /eyebrow="NexOps Client Manager"/);
+  assert.doesNotMatch(contactRoster, /<small>\{visibleClients\.length\}<\/small>/);
+  assert.match(contactRoster, /Import CSV/);
+  assert.match(contactRoster, /Refresh/);
   assert.doesNotMatch(shell, /function renderMobileClientProfile/);
   assert.doesNotMatch(shell, /function renderClientProfile/);
   assert.doesNotMatch(shell, /function renderClientDetail/);

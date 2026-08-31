@@ -22,5 +22,5 @@ test("Settings uses Title Case for named controls and sentence case for explanat
     assert.match(settingsPage, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
 
-  assert.match(settingsPage, /One place for tenant catalog, correspondence templates, and the shared office defaults these screens reuse\./);
+  assert.match(settingsPage, /Configure the business rules, documents, team access, and client experience your office uses every day\./);
 });

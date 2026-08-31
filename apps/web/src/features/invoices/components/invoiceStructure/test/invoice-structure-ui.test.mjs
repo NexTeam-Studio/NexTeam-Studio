@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import path from "node:path";
 
 import { invoiceWorkspaceRail } from "../NexOpsInvoicesPage.tsx";
 
@@ -127,4 +128,30 @@ test("named invoice interface areas use Title Case", () => {
   for (const label of ["Payment Schedule", "On Approval", "On Job Close", "Amount Type", "Add Milestone"]) {
     assert.match(scheduleSource, new RegExp(label));
   }
+});
+
+test("all five NexOps business rosters use the Quotes template set, with Client creation and detail owned by their focused surfaces", () => {
+  const read = (relativePath) => readFileSync(path.resolve(relativePath), "utf8");
+  const pages = {
+    clientsRoster: read("apps/web/src/features/clients/components/contact/ContactRoster.tsx"),
+    clientsCreation: read("apps/web/src/features/clients/components/contact/ContactEditorSurface.tsx"),
+    clientsDetail: read("apps/web/src/features/clients/components/clientDetails/ClientDetailsSurface.tsx"),
+    requests: read("apps/web/src/features/requests/components/requestCore/NexOpsRequestsPage.tsx"),
+    quotes: read("apps/web/src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx"),
+    jobs: read("apps/web/src/features/jobs/components/jobCore/NexOpsJobsPage.tsx"),
+    invoices: read("apps/web/src/features/invoices/components/invoiceStructure/NexOpsInvoicesPage.tsx")
+  };
+
+  assert.match(pages.clientsRoster, /NexOpsRosterTemplate/);
+  assert.match(pages.clientsRoster, /NexOpsRosterSurface/);
+  assert.match(pages.clientsCreation, /NexOpsCreationTemplate/);
+  assert.match(pages.clientsDetail, /NexOpsDetailTemplate/);
+  for (const source of [pages.requests, pages.quotes, pages.jobs, pages.invoices]) {
+    assert.match(source, /NexOpsRosterTemplate/);
+    assert.match(source, /NexOpsRosterSurface/);
+    assert.match(source, /NexOpsCreationTemplate/);
+    assert.match(source, /NexOpsDetailTemplate/);
+  }
+  assert.match(pages.invoices, /Back to Invoice Roster/);
+  assert.match(pages.invoices, /setSelectedInvoiceId\(""\)/);
 });

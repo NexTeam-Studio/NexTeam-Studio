@@ -2,6 +2,7 @@ import React from "react";
 import { formatAddress } from "@nexteam/shared";
 import "./clientDetails.css";
 import { NexDocsClientWorkspace } from "../../../nexdocs/areas/clientWorkspace/components/NexDocsClientWorkspace";
+import { NexOpsDetailTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { CLIENT_PROFILE_TABS, type ClientProfileTab, type NexOpsModule } from "../../../nexopsShell/domain/nexopsNavigation";
 import { nexiMapsHref } from "../../../nexi/areas/chat/components/NexiStandalonePrimitives";
 import {
@@ -1145,19 +1146,13 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
     }
 
     return (
-      <section className="nexops-client-profile">
-        <div className="nexops-client-profile-header-card nexops-client-profile-brand-header">
-          <div className="nexops-client-profile-header-actions">
-            <button className="nexops-link-button nexops-client-profile-back-bubble" type="button" onClick={returnToClientRoster}>← Back to Client Roster</button>
-            <span className="nexops-status-pill">{clientStatusLabel(selectedClient)}</span>
-          </div>
-          <div className="nexops-client-profile-heading">
-            <div>
-              <p className="eyebrow">Client workspace</p>
-              <h1>{clientDisplayName(selectedClient)}</h1>
-              <p>{selectedClient.company?.trim() ? `${selectedClient.company} - ` : ""}{clientPrimaryAddress(selectedClient)}</p>
-            </div>
-            <div className="nexops-inline-actions wrap">
+      <NexOpsDetailTemplate
+        back={<button className="nexops-link-button nexops-client-profile-back-bubble" type="button" onClick={returnToClientRoster}>← Back to Client Roster</button>}
+        eyebrow="Client workspace"
+        title={clientDisplayName(selectedClient)}
+        detail={`${selectedClient.company?.trim() ? `${selectedClient.company} - ` : ""}${clientPrimaryAddress(selectedClient)}`}
+        status={<span className="nexops-status-pill">{clientStatusLabel(selectedClient)}</span>}
+        actions={<div className="nexops-inline-actions wrap">
               {selectedPhone ? <a className="nexops-link-button" href={`tel:${selectedPhone.value}`}>Call</a> : <button type="button" disabled>Call</button>}
               {selectedEmail ? <a className="nexops-link-button" href={`mailto:${selectedEmail}`}>Email</a> : <button type="button" disabled>Email</button>}
               <button type="button" onClick={() => setClientProfileTabRoute("portal")}>More actions</button>
@@ -1172,17 +1167,8 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
                   Delete client
                 </button>
               ) : null}
-            </div>
-          </div>
-          <div className="nexops-client-profile-meta">
-            <article><span>Phone</span><strong>{selectedPhone?.value ?? "Not saved yet"}</strong></article>
-            <article><span>Email</span><strong>{selectedEmail ?? "Not saved yet"}</strong></article>
-            <article><span>Properties</span><strong>{selectedProperties.length || 1}</strong></article>
-            <article><span>Tags</span><strong>{selectedClient.tags?.join(", ") || "No tags"}</strong></article>
-          </div>
-        </div>
-
-        <nav className="nexops-client-profile-tab-groups" aria-label="Client workspace sections">
+            </div>}
+        navigation={<div className="nexops-client-profile-tab-groups">
           {(Object.keys(CLIENT_PROFILE_MOBILE_BUCKET_LABELS) as ClientProfileMobileBucket[]).map((bucket) => (
             <section className="nexops-client-profile-tab-group" key={bucket}>
               <p className="eyebrow">{CLIENT_PROFILE_MOBILE_BUCKET_LABELS[bucket]}</p>
@@ -1193,26 +1179,23 @@ export function ClientDetailsSurface({ bindings }: { bindings: ClientDetailsBind
                     return null;
                   }
                   const active = (activeClientProfileTab ?? "overview") === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      className={active ? "active" : ""}
-                      onClick={() => setClientProfileTabRoute(tab.id)}
-                    >
-                      {tab.label}
-                    </button>
-                  );
+                  return <button key={tab.id} type="button" role="tab" aria-selected={active} className={active ? "active" : ""} onClick={() => setClientProfileTabRoute(tab.id)}>{tab.label}</button>;
                 })}
               </div>
             </section>
           ))}
-        </nav>
-
+        </div>}
+      >
+        <section className="nexops-client-profile">
+          <div className="nexops-client-profile-meta">
+            <article><span>Phone</span><strong>{selectedPhone?.value ?? "Not saved yet"}</strong></article>
+            <article><span>Email</span><strong>{selectedEmail ?? "Not saved yet"}</strong></article>
+            <article><span>Properties</span><strong>{selectedProperties.length || 1}</strong></article>
+            <article><span>Tags</span><strong>{selectedClient.tags?.join(", ") || "No tags"}</strong></article>
+          </div>
         {tabContent}
-      </section>
+        </section>
+      </NexOpsDetailTemplate>
     );
   }
 

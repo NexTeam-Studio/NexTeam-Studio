@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { catalogSelectionSnapshot } from "@nexteam/core";
 import type { AddressLike } from "@nexteam/shared";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
-import { NexOpsCreationTemplate, NexOpsRosterSurface, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsCreationTemplate, NexOpsDetailTemplate, NexOpsRosterSurface, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { PaymentScheduleEditor, blankPaymentSchedule, paymentScheduleFromRecord, paymentScheduleToPayload, type PaymentScheduleDraft, type PaymentScheduleRecord } from "./PaymentScheduleEditor";
 import { NexOpsCatalogPicker, type ProductServiceCatalogItem } from "../../../settings/components/catalog/NexOpsCatalog";
 import { invoiceTemplateVariables, type CommunicationTemplateRecord, resolveTemplateDraft } from "../../../../shared/communications/communicationTemplates";
@@ -1360,17 +1360,14 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
 
       <article className="nexops-module-card">
         {detail?.invoice && invoiceDraft && sendDraft && paymentDraft ? (
+          <NexOpsDetailTemplate
+            back={<button type="button" onClick={() => setSelectedInvoiceId("")}>Back to Invoice Roster</button>}
+            eyebrow="Invoice Detail"
+            title={detail.invoice.number ?? detail.invoice.id}
+            detail={detail.invoice.title}
+            status={<span className={`nexops-job-status status-${detail.invoice.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{detail.invoice.status.replaceAll("_", " ")}</span>}
+          >
           <div className="nexops-billing-detail">
-            <div className="nexops-page-heading">
-              <div>
-                <p className="eyebrow">Invoice Detail</p>
-                <h2>{detail.invoice.number ?? detail.invoice.id}</h2>
-                <p>{detail.invoice.title}</p>
-              </div>
-              <div className="nexops-inline-actions">
-                <span className={`nexops-job-status status-${detail.invoice.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{detail.invoice.status.replaceAll("_", " ")}</span>
-              </div>
-            </div>
             <div className="nexops-jobs-filter-row" aria-label="Invoice detail filters">
               {INVOICE_FILTERS.map((filter) => (
                 <button
@@ -1800,6 +1797,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
               )}
             </section>
           </div>
+          </NexOpsDetailTemplate>
         ) : (
           <div className="nexops-quote-empty">
             <h2>No Invoice Selected</h2>

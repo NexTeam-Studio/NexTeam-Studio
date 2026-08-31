@@ -13,6 +13,9 @@ test("Requests uses the shared roster and detail templates", () => {
   assert.match(source, /requests\.find\(\(request\) => request\.id === selectedRequestId\) \?\? null/);
   assert.doesNotMatch(source, /\?\? filteredRequests\[0\]/);
   assert.match(source, /setSelectedRequestId\(\(current\) => current && nextRequests\.some\(\(request\) => request\.id === current\) \? current : ""\)/);
+  assert.doesNotMatch(source, /eyebrow="NexOps Intake"/);
+  assert.doesNotMatch(source, /<small>\{filteredRequests\.length\}<\/small>/);
+  assert.match(source, /Backfill Legacy Leads/);
 });
 
 test("Requests uses Title Case for named interface areas and controls", () => {

@@ -12,6 +12,30 @@ import { ModuleHeroCard } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import { RemainingSettingsSections } from "./RemainingSettingsSections";
 
+type SettingsAreaId = "company" | "document-design" | "templates" | "checklists-reports" | "completion-requirements" | "automations" | "requests-booking" | "products-services" | "tax" | "custom-fields" | "team-permissions" | "schedule" | "nexportal" | "payments" | "integrations";
+
+const SETTINGS_AREAS: Array<{ id: SettingsAreaId; label: string; detail: string; icon: string; color: string; path: string }> = [
+  { id: "company", label: "Company", detail: "Business identity and regional defaults", icon: "⌂", color: "#0b6771", path: "/nexops/settings/company" },
+  { id: "document-design", label: "Document Design", detail: "Quote, job, and invoice PDFs", icon: "▤", color: "#4056a1", path: "/nexops/settings/document-design" },
+  { id: "templates", label: "Templates", detail: "Email and text message defaults", icon: "✉", color: "#7a4ca0", path: "/nexops/settings/templates" },
+  { id: "checklists-reports", label: "Checklists & Reports", detail: "NexCam capture and report defaults", icon: "✓", color: "#147a58", path: "/nexops/settings/checklists-reports" },
+  { id: "completion-requirements", label: "Completion Requirements", detail: "Evidence rules for job closeout", icon: "◆", color: "#8a5b17", path: "/nexops/settings/completion-requirements" },
+  { id: "automations", label: "Automations", detail: "Event sequences and follow-up rules", icon: "↻", color: "#9b3f62", path: "/nexops/settings/automations" },
+  { id: "requests-booking", label: "Requests & Booking", detail: "Intake forms and booking rules", icon: "⌁", color: "#2e6f95", path: "/nexops/settings/requests-booking" },
+  { id: "products-services", label: "Products & Services", detail: "Catalog and property asset types", icon: "▦", color: "#ae5d22", path: "/nexops/settings/products-services" },
+  { id: "tax", label: "Tax", detail: "Rates, groups, and calculation", icon: "%", color: "#6c7541", path: "/nexops/settings/tax" },
+  { id: "custom-fields", label: "Custom Fields", detail: "Reusable fields across records", icon: "＋", color: "#426a7c", path: "/nexops/settings/custom-fields" },
+  { id: "team-permissions", label: "Team & Permissions", detail: "Members, tiers, and access", icon: "♙", color: "#6b4a3b", path: "/nexops/users" },
+  { id: "schedule", label: "Schedule", detail: "Calendar and day-sheet defaults", icon: "◫", color: "#486f3a", path: "/nexops/settings/schedule" },
+  { id: "nexportal", label: "NexPortal", detail: "Client hub visibility and tips", icon: "◌", color: "#1e6671", path: "/nexops/settings/nexportal" },
+  { id: "payments", label: "Payments", detail: "Receipts, ACH, and controls", icon: "$", color: "#a04b41", path: "/nexops/settings/payments" },
+  { id: "integrations", label: "Integrations", detail: "Future adapter connections", icon: "↗", color: "#555f76", path: "/nexops/settings/integrations" }
+];
+
+function settingsAreaFromPath(pathname: string): SettingsAreaId | null {
+  return SETTINGS_AREAS.find((area) => area.path === pathname)?.id ?? null;
+}
+
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 
 interface TenantUserRecord {
@@ -230,6 +254,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   const [templateDefaults, setTemplateDefaults] = useState<CommunicationTemplateRecord[]>([]);
   const [templatePreviewChannel, setTemplatePreviewChannel] = useState<"email" | "sms">("email");
   const catalogSectionRef = useRef<HTMLElement | null>(null);
+  const [activeSettingsArea, setActiveSettingsArea] = useState<SettingsAreaId | null>(() => settingsAreaFromPath(window.location.pathname));
 
   const selectedTemplate = useMemo(
     () => settings?.communicationTemplates.find((template) => template.id === selectedTemplateId) ?? settings?.communicationTemplates[0] ?? null,
@@ -254,9 +279,28 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
 
   useEffect(() => {
     if (props.catalogFocusNonce === undefined) return;
+    setActiveSettingsArea("products-services");
     catalogSectionRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
     catalogSectionRef.current?.querySelector<HTMLInputElement>("input")?.focus();
   }, [props.catalogFocusNonce]);
+
+  useEffect(() => {
+    const onPopState = () => setActiveSettingsArea(settingsAreaFromPath(window.location.pathname));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  function openSettingsArea(area: SettingsAreaId): void {
+    const target = SETTINGS_AREAS.find((candidate) => candidate.id === area);
+    if (!target) return;
+    if (area === "team-permissions") {
+      window.location.assign(target.path);
+      return;
+    }
+    window.history.pushState({}, "", target.path);
+    setActiveSettingsArea(area);
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }
 
   useEffect(() => {
     if (!selectedTemplate) {
@@ -516,13 +560,43 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   }
 
   const activeUsers = props.tenantUsers.filter((user) => user.active);
+  const selectedSettingsArea = SETTINGS_AREAS.find((area) => area.id === activeSettingsArea) ?? null;
+  if (!selectedSettingsArea) {
+    return (
+      <section className="nexops-module-page tenant-config-page nexops-settings-landing">
+        <ModuleHeroCard
+          title="Settings"
+          detail="Configure the business rules, documents, team access, and client experience your office uses every day."
+          icon={<NexOpsNavGlyph module="settings" />}
+          primaryAction={<button type="button" onClick={() => openSettingsArea("company")}>Open Company Settings</button>}
+          className="module-hero-card--quote"
+        />
+        <nav className="nexops-settings-navigation-grid" aria-label="Settings areas">
+          {SETTINGS_AREAS.map((area) => (
+            <button
+              className="nexops-settings-navigation-card"
+              type="button"
+              key={area.id}
+              style={{ "--nexops-settings-tile-color": area.color } as React.CSSProperties}
+              onClick={() => openSettingsArea(area.id)}
+            >
+              <span className="nexops-settings-navigation-card__icon" aria-hidden="true">{area.icon}</span>
+              <strong>{area.label}</strong>
+              <small>{area.detail}</small>
+            </button>
+          ))}
+        </nav>
+      </section>
+    );
+  }
   return (
     <section className="nexops-module-page tenant-config-page">
       <ModuleHeroCard
-        title="Settings"
-        detail="One place for tenant catalog, correspondence templates, and the shared office defaults these screens reuse."
+        title={selectedSettingsArea.label}
+        detail={selectedSettingsArea.detail}
         icon={<NexOpsNavGlyph module="settings" />}
-        primaryAction={props.onOpenCatalog ? <button type="button" onClick={props.onOpenCatalog}>Products &amp; Services</button> : undefined}
+        primaryAction={<button type="button" onClick={() => { window.history.pushState({}, "", "/nexops/settings"); setActiveSettingsArea(null); window.scrollTo({ top: 0, left: 0, behavior: "auto" }); }}>All Settings</button>}
+        className="module-hero-card--quote"
       />
 
       <div className="nexops-density-inline-facts">
@@ -549,7 +623,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
       </div>
 
       <div className="nexops-two-column">
-        <article className="nexops-module-card" ref={catalogSectionRef} id="products-services">
+        {activeSettingsArea === "products-services" ? <article className="nexops-module-card" ref={catalogSectionRef} id="products-services">
           <div className="nexops-page-heading">
             <div><p className="eyebrow">Properties</p><h2>Asset Types</h2></div>
             <div className="nexops-inline-actions">
@@ -574,9 +648,9 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
             </div>
           ))}
           {!settings?.propertyAssetDefinitions.length ? <p className="nexops-empty-copy">No property asset types are configured yet.</p> : null}
-        </article>
+        </article> : null}
 
-        <article className="nexops-module-card">
+        {activeSettingsArea === "company" ? <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
               <p className="eyebrow">Company Foundation</p>
@@ -683,9 +757,9 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
               </div>
             </div>
           ) : <p className="nexops-empty-copy">Company settings load with the tenant configuration.</p>}
-        </article>
+        </article> : null}
 
-        <article className="nexops-module-card">
+        {activeSettingsArea === "nexportal" ? <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
               <p className="eyebrow">Client Hub</p>
@@ -761,9 +835,9 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           ) : (
             <p className="nexops-empty-copy">Portal defaults load with tenant settings.</p>
           )}
-        </article>
+        </article> : null}
 
-        <article className="nexops-module-card">
+        {activeSettingsArea === "automations" ? <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
               <p className="eyebrow">Review Follow-Up</p>
@@ -846,9 +920,9 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           ) : (
             <p className="nexops-empty-copy">Review defaults load with tenant settings.</p>
           )}
-        </article>
+        </article> : null}
 
-        <article className="nexops-module-card">
+        {activeSettingsArea === "products-services" ? <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
               <p className="eyebrow">Products &amp; Services</p>
@@ -883,9 +957,9 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
             ))}
             {!visibleCatalog.length ? <p className="nexops-empty-copy">No catalog items match this search yet.</p> : null}
           </div>
-        </article>
+        </article> : null}
 
-        <article className="nexops-module-card">
+        {activeSettingsArea === "templates" ? <article className="nexops-module-card">
           <div className="nexops-page-heading">
             <div>
               <p className="eyebrow">Email and Text Templates</p>
@@ -959,7 +1033,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
               <p className="nexops-empty-copy">Pick a template category to edit its channels, subject, and message bodies.</p>
             )}
           </div>
-        </article>
+        </article> : null}
       </div>
 
       {settings ? <RemainingSettingsSections
@@ -967,21 +1041,22 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         onChange={(workspaceSettings) => setSettings((current) => current ? { ...current, workspaceSettings } : current)}
         onSave={() => void saveWorkspaceSettings()}
         saving={busy === "save-workspace-settings"}
+        activeSection={activeSettingsArea}
       /> : null}
 
-      <article className="nexops-module-card">
+      {activeSettingsArea === "document-design" ? <article className="nexops-module-card">
         <div className="nexops-page-heading"><div><p className="eyebrow">Client documents</p><h2>Document Design</h2><p>PDF layout and wording. Email and SMS delivery copy remains in Templates.</p></div><button type="button" onClick={() => void saveDocumentDesign()} disabled={!settings || busy === "save-document-design"}>{busy === "save-document-design" ? "Saving..." : "Save Document Design"}</button></div>
         {settings ? <DocumentDesignEditor settings={settings} setSettings={setSettings} tab={documentTab} setTab={setDocumentTab} /> : null}
-      </article>
+      </article> : null}
 
-      <article className="nexops-module-card" id="completion-requirements">
+      {activeSettingsArea === "completion-requirements" ? <article className="nexops-module-card" id="completion-requirements">
         <div className="nexops-page-heading"><div><p className="eyebrow">Job closeout</p><h2>Completion Requirements</h2><p>Tenant-wide evidence rules for the Close Job action. Missing evidence is a soft stop with a logged assigned-owner override.</p></div><button type="button" onClick={() => void saveCompletionRequirements()} disabled={!settings || busy === "save-completion-requirements"}>{busy === "save-completion-requirements" ? "Saving..." : "Save Requirements"}</button></div>
         {settings ? <div className="nexops-quote-toggle-grid">
           {([ ["checklistRequired", "Checklist required"], ["photosRequired", "Photos required"], ["reportRequired", "Report required"], ["signatureRequired", "Signature required"] ] as const).map(([key, label]) => <label className="nexops-check-field inline" key={key}><input type="checkbox" checked={settings.completionRequirements[key]} onChange={(event) => setSettings((current) => current ? { ...current, completionRequirements: { ...current.completionRequirements, [key]: event.target.checked } } : current)} />{label}</label>)}
         </div> : null}
-      </article>
+      </article> : null}
 
-      <article className="nexops-module-card">
+      {activeSettingsArea === "team-permissions" ? <article className="nexops-module-card">
         <div className="nexops-page-heading">
           <div>
             <p className="eyebrow">Tenant Users</p>
@@ -999,7 +1074,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
             </div>
           ))}
         </div>
-      </article>
+      </article> : null}
 
       <NexOpsCatalogEditorModal
         open={catalogEditorOpen}

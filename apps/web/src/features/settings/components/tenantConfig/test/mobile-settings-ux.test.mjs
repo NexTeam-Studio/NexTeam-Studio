@@ -28,3 +28,44 @@ test("Destructive settings actions do not share the primary lime treatment", () 
   assert.match(page, /className="nexops-settings-action--danger"[\s\S]*Remove Step/);
   assert.match(styles, /\.nexops-settings-action--danger[\s\S]*background: #fff8f7/);
 });
+
+test("Settings landing is a Quotes-style hero plus all fifteen distinct routed navigation cards", () => {
+  const labels = [
+    "Company",
+    "Document Design",
+    "Templates",
+    "Checklists & Reports",
+    "Completion Requirements",
+    "Automations",
+    "Requests & Booking",
+    "Products & Services",
+    "Tax",
+    "Custom Fields",
+    "Team & Permissions",
+    "Schedule",
+    "NexPortal",
+    "Payments",
+    "Integrations"
+  ];
+  assert.match(page, /const SETTINGS_AREAS: Array/);
+  assert.equal((page.match(/\{ id: "/g) ?? []).length, 15);
+  for (const label of labels) assert.match(page, new RegExp(`label: "${label.replace(/[&]/g, "\\&")}"`));
+  assert.match(page, /path: "\/nexops\/settings\/company"/);
+  assert.match(page, /path: "\/nexops\/settings\/integrations"/);
+  assert.match(page, /path: "\/nexops\/users"/);
+  assert.match(page, /function openSettingsArea/);
+  assert.match(page, /window\.history\.pushState\(\{\}, "", target\.path\)/);
+  assert.match(page, /className="nexops-settings-navigation-grid"/);
+  assert.match(page, /className="nexops-settings-navigation-card"/);
+  assert.match(page, /--nexops-settings-tile-color/);
+  assert.match(page, /<ModuleHeroCard[\s\S]*className="module-hero-card--quote"/);
+  assert.match(styles, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+});
+
+test("Asset Types moved off the landing into Products & Services without losing its editor or save flow", () => {
+  assert.match(page, /activeSettingsArea === "products-services" \? <article[\s\S]*Asset Types/);
+  assert.match(page, /Save Asset Types/);
+  assert.match(page, /Add Asset Type/);
+  assert.match(page, /savePropertyAssetDefinitions/);
+  assert.match(page, /if \(!selectedSettingsArea\)[\s\S]*nexops-settings-navigation-grid/);
+});
