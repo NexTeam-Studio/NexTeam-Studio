@@ -25,9 +25,15 @@
 .nexops-business-hero > div:first-child > p:last-child { max-width: 700px; margin-top: 10px; color: rgba(255,255,255,.88); line-height: 1.5; }
 .nexops-business-eyebrow { margin: 0 0 8px !important; color: #d4ff20 !important; font-size: .78rem; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
 .nexops-business-hero-action { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: end; gap: 10px; }
+.module-hero-card__title { display: flex; align-items: center; gap: 12px; }
+.module-hero-card__icon { display: inline-flex; flex: 0 0 auto; color: #d4ff20; }
+.module-hero-card__icon svg { width: .86em; height: .86em; }
+.module-hero-card__icon:empty { display: none; }
 .nexops-business-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
 .nexops-business-controls,
 .nexops-business-content { min-width: 0; }
+.nexops-creation-template,
+.nexops-creation-content { display: grid; gap: 20px; min-width: 0; }
 .nexops-business-controls { padding: 14px; border: 1px solid rgba(11, 36, 38, .1); border-radius: 22px; background: rgba(255,255,255,.88); box-shadow: 0 14px 34px rgba(6, 21, 30, .06); }
 .nexops-business-back { display: flex; }
 .nexops-business-back button { min-height: 42px; padding: 9px 15px; border: 0; border-radius: 999px; background: linear-gradient(135deg,#d4ff20,#25d238); color: #08151d; font: inherit; font-weight: 850; cursor: pointer; box-shadow: 0 10px 22px rgba(37,210,56,.22); }
@@ -37,10 +43,75 @@
 .nexops-business-nav button { min-height: 42px; padding: 9px 15px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; background: rgba(255,255,255,.08); color: #fff; font: inherit; font-weight: 780; cursor: pointer; }
 .nexops-business-nav button[aria-current="page"], .nexops-business-nav button.active { border-color: transparent; background: linear-gradient(135deg,#d4ff20,#25d238); color:#07151c; }
 
+/* Approved Roster Template visual source. These values are duplicated from the
+   live Quotes roster so every Roster Page can consume the same Page Template. */
+.nexops-roster-template .module-hero-card--quote .module-hero-card__title { width: 100%; justify-content: center; }
+.nexops-roster-template .module-hero-card--quote .module-hero-card__detail { text-align: center; }
+.nexops-roster-template .module-hero-card--quote .module-hero-card__icon { width: clamp(2rem, 4vw, 3.35rem); height: clamp(2rem, 4vw, 3.35rem); }
+.nexops-roster-template .module-hero-card--quote .module-hero-card__icon svg { width: 100%; height: 100%; }
+.nexops-roster-template .nexops-roster-primary-button {
+  min-height: 46px;
+  padding: 10px 17px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #d4ff20, #25d238);
+  color: #07151c;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(37, 210, 56, .22);
+}
+.nexops-roster-template > .nexops-business-content { display: grid; gap: 20px; }
+.nexops-roster-surface-stack { display: grid; gap: 20px; }
+.nexops-roster-workflow-stack { display: grid; gap: 20px; order: 1; }
+.nexops-roster-workflow-after { order: 2; }
+.nexops-roster-template .nexops-quote-roster-filters { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; justify-items: stretch; gap: 14px; padding: 24px 22px; }
+.nexops-roster-template .nexops-quote-roster-filters h2 { margin: 0; color: #d4ff20; font-size: clamp(1.55rem, 3vw, 2.15rem); line-height: 1; text-align: center; }
+.nexops-roster-template .nexops-quote-roster-search { display: block; width: 100%; justify-self: stretch; }
+.nexops-roster-template .nexops-quote-roster-search input { box-sizing: border-box; width: 100%; min-height: 50px; padding: 12px 16px; border: 1px solid rgba(7, 36, 40, .16); border-radius: 15px; background: #fff; color: #112833; font: inherit; }
+.nexops-roster-template .nexops-quote-roster-filters .nexops-jobs-filter-pill { flex: 1 1 130px; border-color: rgba(255,255,255,.34); background: linear-gradient(135deg, #ffffff 0%, #f0f2f3 100%); color: #112833; box-shadow: 0 8px 18px rgba(2, 22, 28, .12); }
+.nexops-roster-template .nexops-quote-filter-trigger { position: relative; width: 100%; min-height: 52px; justify-content: center; padding-inline: 52px; }
+.nexops-roster-template .nexops-quote-filter-icon { display: inline-grid; width: 28px; height: 28px; place-items: center; border-radius: 9px; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; box-shadow: 0 5px 12px rgba(37, 210, 56, .2); }
+.nexops-roster-template .nexops-quote-filter-trigger .nexops-quote-filter-icon { position: absolute; left: 16px; }
+.nexops-roster-template .nexops-quote-filter-label { font-size: 1.08rem; font-weight: 850; text-align: center; }
+.nexops-roster-template .nexops-quote-filter-icon svg { width: 17px; height: 17px; }
+.nexops-roster-template .nexops-quote-filter-options { display: grid; gap: 8px; }
+.nexops-roster-template .nexops-quote-filter-options .nexops-jobs-filter-pill { width: 100%; min-height: 48px; justify-content: flex-start; padding-inline: 16px; }
+.nexops-roster-template .nexops-quote-filter-options .nexops-jobs-filter-pill small { margin-left: auto; }
+.nexops-roster-template .nexops-quote-roster-filters .nexops-jobs-filter-pill small { background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; box-shadow: 0 4px 10px rgba(37, 210, 56, .18); }
+.nexops-roster-template .nexops-quote-filter-trigger small { position: absolute; right: 16px; }
+.nexops-roster-template .nexops-quote-filter-check:empty { display: none; }
+.nexops-roster-template .nexops-quote-filter-check:not(:empty) { display: inline-grid; width: 24px; height: 24px; place-items: center; border-radius: 8px; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; font-weight: 900; box-shadow: 0 4px 10px rgba(37, 210, 56, .18); }
+.nexops-quote-filtered-roster { overflow: hidden; border: 1px solid rgba(8, 33, 49, .1); border-radius: 26px; background: #ffffff; box-shadow: 0 18px 48px rgba(6, 21, 30, .16); }
+.nexops-quote-filtered-roster-heading { padding: 22px 24px; text-align: center; background: radial-gradient(circle at 88% 16%, rgba(116, 255, 113, .28), transparent 31%), linear-gradient(118deg, #06151e 0%, #07313a 54%, #08723a 100%); }
+.nexops-quote-filtered-roster-heading h2 { margin: 0; color: #d4ff20; font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1; }
+.nexops-quote-filtered-table { display: grid; gap: 12px; padding: 12px; }
+.nexops-quote-filtered-list { display: grid; gap: 12px; }
+.nexops-quote-filtered-row { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(190px, 1fr) minmax(150px, .8fr) minmax(112px, .58fr); gap: 14px; min-height: 0; padding: 0 18px 18px; border: 1px solid rgba(8, 33, 49, 0.1); border-radius: 22px; background: #ffffff; overflow: hidden; box-shadow: 0 10px 24px rgba(8, 33, 49, .045); }
+.nexops-quote-filtered-row:not(.expanded) { padding-bottom: 0; }
+.nexops-quote-filtered-identity-banner { grid-column: 1 / -1; display: grid; width: auto; margin: 0 -18px; padding: 17px 20px; border: 0; border-radius: 21px 21px 16px 16px; color: inherit; background: radial-gradient(circle at right center, rgba(212, 255, 32, .18), transparent 28%), linear-gradient(118deg, #061a2a 0%, #08343b 58%, #0d6d3d 100%); text-align: left; cursor: pointer; }
+.nexops-quote-filtered-identity-banner strong, .nexops-quote-filtered-identity-banner small { display: block; }
+.nexops-quote-filtered-identity-banner strong { color: #d4ff20; font-size: 1.08rem; line-height: 1.2; }
+.nexops-quote-filtered-identity-banner small { margin-top: 3px; color: rgba(255, 255, 255, .88); font-size: .88rem; }
+.nexops-quote-filtered-details { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(190px, 1fr) minmax(150px, .8fr) minmax(112px, .58fr); gap: 14px; }
+.nexops-quote-filtered-title, .nexops-quote-filtered-updated, .nexops-quote-filtered-status, .nexops-quote-filtered-activity { min-width: 0; display: grid; align-content: start; gap: 5px; color: #23404d; font-size: .9rem; overflow-wrap: anywhere; }
+.nexops-quote-filtered-title::before, .nexops-quote-filtered-updated::before, .nexops-quote-filtered-status::before, .nexops-quote-filtered-activity::before { content: attr(data-label); color: #667884; font-size: .68rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+.nexops-quote-filtered-status mark { width: fit-content; border-radius: 999px; padding: 6px 10px; color: #0f5d1b; background: #e6f2e5; }
+.nexops-quote-filtered-activity { justify-self: end; text-align: right; }
+.nexops-quote-filtered-activity small { margin: 0; color: #0b6b43; font-weight: 850; }
+.nexops-quote-filtered-open { appearance: none; padding: 0; border: 0; color: #103548; background: transparent; font: inherit; font-size: .86rem; font-weight: 900; cursor: pointer; }
+.nexops-quote-filtered-open:hover, .nexops-quote-filtered-open:focus-visible { color: #0b6b43; text-decoration: underline; }
+
 @media (max-width: 700px) {
   .nexops-business-hero { align-items: flex-start; flex-direction: column; padding: 22px; border-radius: 26px; }
   .nexops-business-hero-action { width: 100%; justify-content: stretch; }
   .nexops-business-hero-action > * { flex: 1 1 auto; }
   .nexops-business-nav { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
   .nexops-business-nav button { flex: 0 0 auto; }
+  .nexops-quote-filtered-table { gap: 10px; padding: 10px; }
+  .nexops-quote-filtered-row { grid-template-columns: minmax(0, 1fr) auto; gap: 12px 18px; padding: 17px; border-radius: 18px; background: linear-gradient(180deg, #fff 0%, #f8fcf8 100%); }
+  .nexops-quote-filtered-identity-banner { grid-column: 1 / -1; margin: -17px -17px 2px; padding: 16px 17px; border-radius: 17px 17px 14px 14px; }
+  .nexops-quote-filtered-details { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 18px; }
+  .nexops-quote-filtered-title, .nexops-quote-filtered-updated { grid-column: 1 / -1; }
+  .nexops-quote-filtered-activity { justify-self: end; text-align: right; }
 }

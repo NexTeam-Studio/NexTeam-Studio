@@ -1,7 +1,8 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { type Auth, type User } from "firebase/auth";
-import { PlatformMark, ProductLogo, SidebarBrandStack, TenantBrandMark, tenantDisplayName } from "../../shared/branding/ProductBranding";
-import { NexOpsSharedMobileBar, NexOpsSharedWebTopbar } from "./components/NexOpsHeader";
+import { tenantDisplayName } from "../../shared/branding/ProductBranding";
+import { NexSuiteHeader } from "../../shared/ui/NexSuiteHeader";
+import { NexSuiteSidebar, type NexSuiteSidebarItem } from "../../shared/ui/NexSuiteSidebar";
 import { NexTeamApplicationShell } from "../../shared/ui/NexTeamApplicationShell";
 import { NexOpsCreateMenu } from "./components/NexOpsCreateMenu";
 import { NexOpsNotificationPanel } from "./components/NexOpsNotificationPanel";
@@ -9,9 +10,9 @@ import { NexOpsImportPage } from "./components/NexOpsImportPage";
 import { NexOpsLegacyLifecyclePage } from "./components/NexOpsLegacyLifecyclePage";
 import { NexOpsModuleSwitcher } from "./components/NexOpsModuleSwitcher";
 
-import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MOBILE_NAV_GROUPS, NEXOPS_MODULES, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "./domain/nexopsNavigation";
+import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MODULES, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "./domain/nexopsNavigation";
 import type { ClientProfileMobileBucket } from "../../features/clients/components/contact/domain/clientProfile";
-import { getMobileCreateFabScrollIntent, mobileFabShouldHideOverlays, mobileFabVisibleForViewport, NEXOPS_MOBILE_CREATE_FAB_IDLE_MS, NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY, NEXOPS_SHARED_CREATE_MENU_ID, NexOpsMobileCreateFab, shouldPulseMobileCreateFab } from "./components/NexOpsMobileCreateFab";
+import { getMobileCreateFabScrollIntent, mobileFabShouldHideOverlays, mobileFabVisibleForViewport, NEXOPS_MOBILE_CREATE_FAB_IDLE_MS, NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY, NexOpsMobileCreateFab, shouldPulseMobileCreateFab } from "./components/NexOpsMobileCreateFab";
 import { ContactRoster } from "../clients/components/contact/ContactRoster";
 import { ContactEditorSurface } from "../clients/components/contact/ContactEditorSurface";
 import { ClientDetailsSurface } from "../clients/components/clientDetails/ClientDetailsSurface";
@@ -121,6 +122,8 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [createClientContextId, setCreateClientContextId] = useState("");
   const [resumeQuoteAfterClientCreate, setResumeQuoteAfterClientCreate] = useState(false);
+  const [inlineQuoteClientCreateOpen, setInlineQuoteClientCreateOpen] = useState(false);
+  const [inlineQuoteCreatedClientId, setInlineQuoteCreatedClientId] = useState("");
   const [mobileCreateFabCollapsed, setMobileCreateFabCollapsed] = useState(false);
   const [mobileCreateFabPulse, setMobileCreateFabPulse] = useState(false);
   const [creatingClientPage, setCreatingClientPage] = useState(initialPathState.clientDraft === "new");
@@ -367,18 +370,6 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
       setActiveClientProfileTab(null);
     }
     window.history.pushState({}, "", targetPath);
-  }
-
-  function returnToHomeModule(): void {
-    clearWorkspaceTargets();
-    clearWorkspaceFilters();
-    closeHeaderPanels();
-    setCreatingClientPage(false);
-    contactForm.closeDrawer();
-    setSelectedClientId("");
-    setActiveClientProfileTab(null);
-    setActiveModule("home");
-    window.history.pushState({}, "", buildModulePath("home"));
   }
 
   function openClientProfile(clientId: string, tab: ClientProfileTab = "overview"): void {
@@ -649,6 +640,11 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     selectedClientId,
     refresh,
     onSaved: (clientId) => {
+      if (inlineQuoteClientCreateOpen) {
+        setInlineQuoteClientCreateOpen(false);
+        setInlineQuoteCreatedClientId(clientId);
+        return;
+      }
       if (resumeQuoteAfterClientCreate) {
         setResumeQuoteAfterClientCreate(false);
         setCreateClientContextId(clientId);
@@ -882,6 +878,28 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           focusedQuoteId={focusedQuoteId}
           initialClientId={createClientContextId || undefined}
           initialFilter={quoteFilterIntent}
+          inlineClientCreateForm={inlineQuoteClientCreateOpen ? <NexOpsCreateClientPanel
+            tenantId={operatorContext.tenantId}
+            newClient={newClient}
+            setNewClient={setNewClient}
+            createStatus={createStatus}
+            createClientCanSave={createClientCanSave}
+            createClientMissingFields={createClientMissingFields}
+            leadSourceOptions={leadSourceOptions}
+            layout="page"
+            mobile={mobileClientViewport}
+            onClose={() => {
+              contactForm.resetForm();
+              setInlineQuoteClientCreateOpen(false);
+            }}
+            onSubmit={createClientFromForm}
+          /> : null}
+          onOpenInlineClientCreate={() => {
+            contactForm.openCreate("client");
+            setInlineQuoteClientCreateOpen(true);
+          }}
+          inlineCreatedClientId={inlineQuoteCreatedClientId || undefined}
+          onInlineCreatedClientHandled={() => setInlineQuoteCreatedClientId("")}
           onCreateClientRequested={() => {
             setResumeQuoteAfterClientCreate(true);
             openCreateClientDrawer("client");
@@ -897,6 +915,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           role={operatorContext.role}
           clients={clients}
           tenantUsers={tenantUsers}
+          properties={properties}
           onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
           onOpenInvoice={openInvoiceWorkspace}
           focusedJobId={focusedJobId}
@@ -1019,181 +1038,21 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     );
   }
 
+  const nexOpsSidebarItems: NexSuiteSidebarItem[] = [
+    { id: "create", label: "Create", icon: "+", onSelect: () => setCreateMenuOpen(true) },
+    { id: "modules", label: "Modules", icon: "▦", onSelect: toggleModuleSwitcher },
+    { id: "capture", label: "NexCam", icon: <NexOpsNavGlyph module="capture" />, onSelect: () => { if (captureSession) { openCaptureWorkspace("session"); return; } void startCaptureSession(); } },
+    { id: "notifications", label: "Notifications", icon: "●", onSelect: toggleNotifications },
+    { id: "settings", label: "Settings", icon: <NexOpsNavGlyph module="settings" />, onSelect: () => { closeHeaderPanels(); setModule("settings"); } },
+    ...NEXOPS_MODULES.filter((item) => !item.hidden).map((item) => ({ id: item.id, label: item.label, icon: <NexOpsNavGlyph module={item.id} />, active: item.id === activeModule, onSelect: () => setModule(item.id) }))
+  ];
+
   return (
-      <NexTeamApplicationShell className="nexops-app" navigationLabel="NexOps navigation" header={renderWebTopbar()} navigation={<div className="nexops-app-sidebar">
-          <div className="nexops-app-logo">
-            <SidebarBrandStack product="nexops" branding={tenantBranding} tenantId={operatorContext.tenantId} />
-          </div>
-        <button className="nexops-create-button" type="button" aria-controls={NEXOPS_SHARED_CREATE_MENU_ID} aria-expanded={createMenuOpen} onClick={toggleCreateMenu}>Create</button>
-        <nav className="nexops-nav">
-          {NEXOPS_MODULES.filter((item) => !item.hidden).map((item) => (
-            <button className={item.id === activeModule ? "active" : ""} type="button" key={item.id} onClick={() => setModule(item.id)}>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <button className="nexops-sidebar-sign-out" type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
-        </div>}>
+      <NexTeamApplicationShell className="nexops-app" navigationLabel="NexOps navigation" header={renderWebTopbar()} navigation={<NexSuiteSidebar items={nexOpsSidebarItems} />}>
 
       <section className="nexops-web-main">
-        <NexOpsSharedMobileBar
-          tenantBranding={tenantBranding}
-          tenantId={operatorContext.tenantId}
-          onBrandClick={returnToHomeModule}
-          brandAriaLabel="Return to NexOps home"
-          rightControls={(
-            <>
-              <button
-                className="nexops-mobile-icon-button"
-                type="button"
-                aria-label="Open camera capture"
-                onClick={() => {
-                  if (captureSession) {
-                    openCaptureWorkspace("session");
-                    return;
-                  }
-                  void startCaptureSession();
-                }}
-              >
-                <NexOpsNavGlyph module="capture" />
-              </button>
-              <button className="nexops-mobile-icon-button nexops-notification-button" type="button" aria-expanded={notificationsOpen} aria-label="Open notifications" onClick={toggleNotifications}>
-                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 3.7a3.1 3.1 0 0 0-3.1 3.1v1.3c0 .8-.3 1.6-.8 2.2l-.9 1v.8h9.6v-.8l-.9-1c-.5-.6-.8-1.4-.8-2.2V6.8A3.1 3.1 0 0 0 10 3.7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                  <path d="M8.3 14.7a1.8 1.8 0 0 0 3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                </svg>
-                {notificationUnreadCount ? <span className="nexops-notification-badge">{notificationUnreadCount}</span> : null}
-              </button>
-              <button
-                className="nexops-mobile-menu-button"
-                type="button"
-                aria-expanded={mobileNavOpen}
-                aria-controls="nexops-mobile-nav"
-                aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"}
-                onClick={() => setMobileNavOpen((current) => !current)}
-              >
-                <span className="nexops-mobile-menu-glyph" aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                </span>
-                <span className="nexops-mobile-menu-label">Menu</span>
-              </button>
-            </>
-          )}
-        />
-        {mobileNavOpen ? (
-          <div className="nexops-mobile-nav-layer" role="presentation">
-            <button className="nexops-mobile-nav-backdrop" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />
-            <aside className="nexops-mobile-nav-sheet" id="nexops-mobile-nav" role="dialog" aria-modal="true" aria-label="NexOps navigation">
-              <div className="nexops-mobile-nav-header">
-                <div className="nexops-mobile-nav-product-lockup">
-                  <PlatformMark className="nexops-mobile-platform-mark" alt="NexTeam" />
-                  <ProductLogo product="nexops" className="nexops-mobile-product-logo" alt="NexOps" />
-                 </div>
-                 <div className="nexops-mobile-nav-tenant-slot">
-                   <TenantBrandMark branding={tenantBranding} tenantId={operatorContext.tenantId} className="nexops-mobile-tenant-mark" />
-                 </div>
-                <button className="nexops-mobile-close-button" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)}>
-                  <span aria-hidden="true">×</span>
-                </button>
-              </div>
-              <div className="nexops-mobile-nav-quick-actions">
-                <button className="nexops-create-button mobile" type="button" onClick={() => {
-                  setMobileNavOpen(false);
-                  setCreateMenuOpen(true);
-                }}>
-                  Create
-                </button>
-                <button type="button" onClick={() => {
-                  setMobileNavOpen(false);
-                  toggleModuleSwitcher();
-                }}>
-                  Modules
-                </button>
-              </div>
-              <div className="nexops-mobile-nav-utility-grid" aria-label="Mobile quick tools">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileNavOpen(false);
-                    if (captureSession) {
-                      openCaptureWorkspace("session");
-                      return;
-                    }
-                    void startCaptureSession();
-                  }}
-                >
-                  <NexOpsNavGlyph module="capture" />
-                  <span>NexCam</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileNavOpen(false);
-                    toggleNotifications();
-                  }}
-                >
-                  <span className="nexops-mobile-nav-utility-icon nexops-notification-button" aria-hidden="true">
-                    <svg viewBox="0 0 20 20" fill="none">
-                      <path d="M10 3.7a3.1 3.1 0 0 0-3.1 3.1v1.3c0 .8-.3 1.6-.8 2.2l-.9 1v.8h9.6v-.8l-.9-1c-.5-.6-.8-1.4-.8-2.2V6.8A3.1 3.1 0 0 0 10 3.7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                      <path d="M8.3 14.7a1.8 1.8 0 0 0 3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                    </svg>
-                    {notificationUnreadCount ? <span className="nexops-notification-badge">{notificationUnreadCount}</span> : null}
-                  </span>
-                  <span>Notifications</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileNavOpen(false);
-                    closeHeaderPanels();
-                    setModule("settings");
-                  }}
-                >
-                  <NexOpsNavGlyph module="settings" />
-                  <span>Settings</span>
-                </button>
-              </div>
-              {NEXOPS_MOBILE_NAV_GROUPS.map((group) => (
-                <section className="nexops-mobile-nav-group" key={group.title} aria-label={group.title}>
-                  <p>{group.title}</p>
-                  <div className="nexops-mobile-nav-grid">
-                    {group.items.map((moduleId) => {
-                      const module = NEXOPS_MODULES.find((entry) => entry.id === moduleId);
-                      if (!module || module.hidden) {
-                        return null;
-                      }
-                      return (
-                        <button className={module.id === activeModule ? "active" : ""} type="button" key={module.id} onClick={() => setModule(module.id)}>
-                          <NexOpsNavGlyph module={module.id} />
-                          <span>{module.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </section>
-              ))}
-              <div className="nexops-mobile-nav-footer">
-                <button className="nexops-mobile-profile-button" type="button" onClick={() => setModule("users")} aria-label={`Open ${profileName}'s profile`}>
-                  <span className="nexops-mobile-profile-avatar" aria-hidden="true">{profileInitials}</span>
-                  <span className="nexops-mobile-profile-copy">
-                    <strong>{profileName}</strong>
-                    <span>Signed in for this tenant</span>
-                  </span>
-                </button>
-                <button className="nexops-mobile-footer-sign-out" type="button" onClick={() => void signOutOperator(props.auth)}>
-                  <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
-                    <path d="M12 4.5h2a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 14 15.5h-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                    <path d="M9 13.5 12.5 10 9 6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12 10H4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                  </svg>
-                  <span>Sign out</span>
-                </button>
-              </div>
-            </aside>
-          </div>
-        ) : null}
+        <NexSuiteHeader product="nexops" menuOpen={mobileNavOpen} onToggleMenu={() => setMobileNavOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />
+        {mobileNavOpen ? <NexSuiteSidebar id="nexops-mobile-nav" items={nexOpsSidebarItems} open onClose={() => setMobileNavOpen(false)} onSelect={() => setMobileNavOpen(false)} /> : null}
         <NexOpsMobileCreateFab
           collapsed={mobileCreateFabCollapsed}
           expanded={createMenuOpen}

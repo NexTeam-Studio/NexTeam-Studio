@@ -1073,46 +1073,9 @@ export function NexiStandaloneChat(props: { auth: Auth | null; user: User }): Re
         tenantId={operatorContext.tenantId}
         onBrandClick={() => navigateTo(buildModulePath("home"))}
         brandAriaLabel="Return to NexOps home"
-        rightControls={(
-          <div className="nexi-mobile-header-controls">
-            <div className="nexi-mobile-header-icons">
-              <button className="nexops-mobile-icon-button nexi-header-control" type="button" aria-label="Open camera capture" onClick={() => navigateTo("/nexcam")}>
-                <NexOpsNavGlyph module="capture" />
-              </button>
-              <button className="nexops-mobile-icon-button nexi-header-control" type="button" aria-expanded={mobileNavOpen} aria-controls="nexops-mobile-nav" aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"} onClick={() => setMobileNavOpen((current) => !current)}>
-                <span className="nexops-mobile-menu-glyph" aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                </span>
-              </button>
-            </div>
-            <button
-              className={`nexi-voice-toggle ${voiceEnabled ? "on" : ""}`}
-              type="button"
-              role="switch"
-              aria-checked={voiceEnabled}
-              aria-label={voiceEnabled ? "Turn Nexi Voice off" : "Turn Nexi Voice on"}
-              onClick={() => void toggleVoice()}
-            >
-              <span className="nexi-voice-toggle-label" aria-hidden="true">
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
-                  <rect x="7.2" y="3.6" width="5.6" height="9.4" rx="2.8" stroke="currentColor" strokeWidth="1.9" />
-                  <path d="M5.2 10.6c0 3.4 2.6 6 4.8 6s4.8-2.6 4.8-6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-                  <path d="M10 16.6v3.2" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-                  <path d="M7.3 19.8h5.4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-                  <path d="M16.8 8.2c1 .7 1.6 1.7 1.6 2.8 0 1.2-.6 2.2-1.6 2.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  <path d="M19.3 6.3c1.5 1.1 2.4 2.8 2.4 4.7 0 1.9-.9 3.6-2.4 4.7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                </svg>
-              </span>
-              <span className="nexi-voice-toggle-switch" aria-hidden="true">
-                <span className="nexi-voice-toggle-thumb">
-                  <span className="nexi-voice-toggle-mark" aria-hidden="true">{voiceEnabled ? "✓" : "✕"}</span>
-                </span>
-              </span>
-            </button>
-          </div>
-        )}
+        menuControl={<button className="nexops-mobile-menu-button" type="button" aria-expanded={mobileNavOpen} aria-controls="nexops-mobile-nav" aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"} onClick={() => setMobileNavOpen((current) => !current)}><span className="nexops-mobile-menu-glyph" aria-hidden="true"><span /><span /><span /></span></button>}
+        signOutControl={<button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>}
+        rightControls={<div className="nexi-mobile-header-controls"><div className="nexi-mobile-header-icons" aria-hidden="true" /><button className={`nexi-voice-toggle ${voiceEnabled ? "on" : ""}`} type="button" role="switch" aria-checked={voiceEnabled} aria-label={voiceEnabled ? "Turn Nexi Voice off" : "Turn Nexi Voice on"} onClick={() => void toggleVoice()}><span className="nexi-voice-toggle-label" aria-hidden="true"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><rect x="7.2" y="3.6" width="5.6" height="9.4" rx="2.8" stroke="currentColor" strokeWidth="1.9" /><path d="M5.2 10.6c0 3.4 2.6 6 4.8 6s4.8-2.6 4.8-6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /><path d="M10 16.6v3.2" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /><path d="M7.3 19.8h5.4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /><path d="M16.8 8.2c1 .7 1.6 1.7 1.6 2.8 0 1.2-.6 2.2-1.6 2.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /><path d="M19.3 6.3c1.5 1.1 2.4 2.8 2.4 4.7 0 1.9-.9 3.6-2.4 4.7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span><span className="nexi-voice-toggle-switch" aria-hidden="true"><span className="nexi-voice-toggle-thumb"><span className="nexi-voice-toggle-mark" aria-hidden="true">{voiceEnabled ? "✓" : "✕"}</span></span></span></button></div>}
       />
       {renderMobileNav()}
       <NexOpsSharedWebTopbar

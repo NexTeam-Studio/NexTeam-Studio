@@ -108,13 +108,52 @@ test("downstream buttons stay gated with explicit reasons", () => {
   );
 });
 
-test("quote workspace uses the shared business templates and retains client/property context in the focused builder", () => {
+test("quote workspace uses the shared business templates and retains the inline client/property choice flow", () => {
   const source = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx"), "utf8");
   assert.match(source, /NexOpsRosterTemplate/);
   assert.match(source, /NexOpsDetailTemplate/);
-  assert.match(source, /Service Location/);
-  assert.match(source, /Create New Client/);
+  assert.match(source, /Select Client/);
+  assert.match(source, /Existing Property/);
+  assert.match(source, /Save New Property/);
+  assert.match(source, /Gate code needed/);
   assert.match(source, /propertyId: composer\.propertyId/);
+  assert.match(source, /Find Existing Client/);
+  assert.match(source, /Type a client name, email, or phone/);
+  assert.match(source, /Save as New Line Item\?/);
+  assert.match(source, /Yes, Save New Line Item/);
+  assert.match(source, /Quote Name/);
+  assert.match(source, /Search products and services/);
+  assert.match(source, /Quote Builder/);
+  assert.match(source, /From Template/);
+  assert.match(source, /Choose a Template/);
+  assert.match(source, /aria-controls="quote-status-filter-options"/);
+  assert.match(source, /nexops-quote-filter-icon/);
+  assert.match(source, /<NexOpsRosterSurface/);
+  assert.match(source, /expandedFilteredQuoteId/);
+  assert.match(source, /Open Quote/);
+  assert.match(source, /Awaiting Response/);
+  assert.match(source, /Changes Requested/);
+  assert.match(source, /Converted/);
+  assert.match(source, /quoteRosterFilters\.some/);
+  assert.match(source, /quoteBuilderMode \? <>/);
+  assert.match(source, /nexops-mobile-profile-summary/);
+  assert.match(source, /MobileClientSummaryGlyph kind="phone"/);
+  assert.match(source, /MobileClientSummaryGlyph kind="email"/);
+  assert.match(source, /MobileClientSummaryGlyph kind="directions"/);
+  assert.match(source, /Edit Client/);
+});
+
+test("Create Quote uses the editable curated rotating helper-copy list", () => {
+  const source = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx"), "utf8");
+  const copy = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/quoteCreationCopy.ts"), "utf8");
+
+  assert.match(source, /title=\{workspaceView === "builder" \? "Create Quote" : "Quotes"\}/);
+  assert.match(source, /detail=\{workspaceView === "builder" \? quoteCreationLine/);
+  assert.match(source, /QUOTE_CREATION_ROTATING_LINES/);
+  assert.match(source, /module-hero-card--quote/);
+  assert.equal((copy.match(/^  ".*",?$/gm) ?? []).length, 25);
+  assert.match(copy, /This form has strong opinions about your typing speed\./);
+  assert.match(copy, /The checkbox has never once been checked with confidence\./);
 });
 
 test("quote builder keeps office defaults available without mixing configuration into the primary quote flow", () => {

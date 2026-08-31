@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { NexOpsPageTitle } from "../../../nexopsShell/components/NexOpsPageTitle";
+import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
+import { ModuleHeroCard } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { titleCaseInterfaceName } from "./interfaceTitleCase";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
@@ -239,12 +240,11 @@ export function NexOpsHomePage(props: {
 
   return (
     <section className="nexops-dashboard nexops-home-surface">
-      <div className="nexops-page-heading">
-        <div>
-          <NexOpsPageTitle module="home">Home</NexOpsPageTitle>
-          <p>Live queues, recent movement, and the next place the office needs to act.</p>
-        </div>
-      </div>
+      <ModuleHeroCard
+        title="Home"
+        detail="Live queues, recent movement, and the next place the office needs to act."
+        icon={<NexOpsNavGlyph module="home" />}
+      />
 
       {home?.health.length ? (
         <section className="nexops-home-health-strip" aria-label="Business Health">

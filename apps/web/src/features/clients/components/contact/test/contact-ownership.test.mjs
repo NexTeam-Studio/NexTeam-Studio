@@ -7,8 +7,9 @@ test("Contact owns its roster and editor surfaces without Client Details impleme
   const contactEditor = readFileSync(new URL("../ContactEditorSurface.tsx", import.meta.url), "utf8");
   const shell = readFileSync(new URL("../../../../nexopsShell/NexOpsWorkspace.tsx", import.meta.url), "utf8");
 
-  assert.match(contactRoster, /No clients match this view yet/);
-  assert.match(contactEditor, /Ready to save changes/);
+  assert.match(contactRoster, /No Clients Match This View/);
+  assert.match(contactEditor, /NexOpsCreationTemplate/);
+  assert.match(contactEditor, /Create Client/);
   assert.doesNotMatch(shell, /function renderMobileClientProfile/);
   assert.doesNotMatch(shell, /function renderClientProfile/);
   assert.doesNotMatch(shell, /function renderClientDetail/);

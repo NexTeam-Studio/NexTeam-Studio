@@ -7,6 +7,8 @@ import {
   type CatalogItemDraft,
   type ProductServiceCatalogItem
 } from "../catalog/NexOpsCatalog";
+import { ModuleHeroCard } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 
@@ -612,13 +614,12 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
 
   return (
     <section className="nexops-module-page tenant-config-page">
-      <div className="nexops-page-heading">
-        <div>
-          <h1>Settings</h1>
-          <p>One place for tenant catalog, correspondence templates, and the shared office defaults these screens reuse.</p>
-        </div>
-        {props.onOpenCatalog ? <button type="button" onClick={props.onOpenCatalog}>Products &amp; Services</button> : null}
-      </div>
+      <ModuleHeroCard
+        title="Settings"
+        detail="One place for tenant catalog, correspondence templates, and the shared office defaults these screens reuse."
+        icon={<NexOpsNavGlyph module="settings" />}
+        primaryAction={props.onOpenCatalog ? <button type="button" onClick={props.onOpenCatalog}>Products &amp; Services</button> : undefined}
+      />
 
       <div className="nexops-density-inline-facts">
         <article>

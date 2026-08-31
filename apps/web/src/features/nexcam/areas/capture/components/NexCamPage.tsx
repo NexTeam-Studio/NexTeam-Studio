@@ -1,7 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import type { Auth, User } from "firebase/auth";
-import { ProductLogo, SidebarBrandStack, tenantDisplayName } from "../../../../../shared/branding/ProductBranding";
+import { NexSuiteHeader } from "../../../../../shared/ui/NexSuiteHeader";
+import { NexSuiteSidebar, type NexSuiteSidebarItem } from "../../../../../shared/ui/NexSuiteSidebar";
+import { NexTeamApplicationShell } from "../../../../../shared/ui/NexTeamApplicationShell";
+import { NexOpsCreationTemplate, NexOpsRosterSurface } from "../../../../../shared/ui/NexOpsBusinessTemplates";
+import "../../../../../shared/ui/nexSuiteHeaderDrawer.css";
 import { signOutOperator } from "../../../../../shared/auth/authBootstrap";
+import { NexOpsNavGlyph } from "../../../../nexopsShell/workspaceSupport";
 import { NexCamOverviewSurface } from "../../overview/components/NexCamOverviewSurface";
 import { ChecklistTemplatesSurface } from "../../../../nexdocs/areas/checklists/components/ChecklistTemplatesSurface";
 import { MediaLibrarySurface } from "../../../../nexdocs/areas/media/components/MediaLibrarySurface";
@@ -11,31 +16,79 @@ import { NEXCAM_MODULES, useNexCamWorkspace } from "../hooks/useNexCamWorkspace"
 import "../styles/nexcam.css";
 
 export function NexCamPage(props: { auth: Auth | null; user: User }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const workspace = useNexCamWorkspace(props);
   const {
     activeModule,
     createChecklist,
-    operatorContext,
+    recentMedia,
+    reports,
     setModule,
-    status,
     style,
-    tenantBranding
+    templates,
   } = workspace;
 
+  const navigationItems: NexSuiteSidebarItem[] = [
+    {
+      id: "start-checklist",
+      label: "Start Checklist",
+      active: false,
+      onSelect: () => void createChecklist()
+    },
+    ...NEXCAM_MODULES.map((item) => ({
+      id: item.id,
+      label: item.label,
+      active: item.id === activeModule,
+      onSelect: () => setModule(item.id)
+    }))
+  ];
+
   function renderOverview(): React.ReactElement {
-    return <NexCamOverviewSurface workspace={workspace} />;
+    return (
+      <NexOpsCreationTemplate
+        eyebrow="NexCam field documentation"
+        title="Create Field Checklist"
+        detail="Start from the property and visit rail, record the field evidence, and carry property facts forward."
+        icon={<NexOpsNavGlyph module="capture" />}
+        backAction={<button type="button" onClick={() => setModule("overview")}>NexCam Overview</button>}
+        heroClassName="module-hero-card--quote"
+      >
+        <NexCamOverviewSurface workspace={workspace} embedded />
+      </NexOpsCreationTemplate>
+    );
   }
 
   function renderTemplatesPanel(): React.ReactElement {
-    return <ChecklistTemplatesSurface workspace={workspace} />;
+    return renderRosterSurface("Checklist Templates", "Build and maintain reusable field-checklist definitions.", "Template", templates.length, <ChecklistTemplatesSurface workspace={workspace} />);
   }
 
   function renderPhotosPanel(): React.ReactElement {
-    return <MediaLibrarySurface workspace={workspace} />;
+    return renderRosterSurface("Photos & Media", "Review visit-scoped field evidence and media metadata.", "Media workspace", recentMedia.length, <MediaLibrarySurface workspace={workspace} />);
   }
 
   function renderReportsPanel(): React.ReactElement {
-    return <ReportsSurface workspace={workspace} />;
+    return renderRosterSurface("Reports", "Create and review closeout-ready field reports.", "Report", reports.length, <ReportsSurface workspace={workspace} />);
+  }
+
+  function renderRosterSurface(
+    title: string,
+    detail: string,
+    resultNoun: string,
+    resultCount: number,
+    content: React.ReactNode
+  ): React.ReactElement {
+    return (
+      <NexOpsRosterSurface
+        ariaLabel={`NexCam ${title}`}
+        searchTitle={title}
+        search={<p className="nexcam-roster-surface__copy">{detail}</p>}
+        filter={<button className="nexops-quote-filter-trigger" type="button" onClick={() => setModule("overview")}><span className="nexops-quote-filter-label">Field Checklist</span></button>}
+        resultCount={resultCount}
+        resultNoun={resultNoun}
+      >
+        {content}
+      </NexOpsRosterSurface>
+    );
   }
 
   function renderActiveModule(): React.ReactElement {
@@ -45,41 +98,17 @@ export function NexCamPage(props: { auth: Auth | null; user: User }) {
     return renderOverview();
   }
 
-  const tenantName = tenantDisplayName(tenantBranding, operatorContext.tenantId);
-
   return (
-    <main className="nexops-app nexcam-app" style={style}>
-      <aside className="nexops-app-sidebar" aria-label="NexCam navigation">
-        <div className="nexops-app-logo">
-          <SidebarBrandStack product="nexcam" branding={tenantBranding} tenantId={operatorContext.tenantId} />
-        </div>
-        <button className="nexops-create-button" type="button" onClick={() => void createChecklist()}>Start Checklist</button>
-        <nav className="nexops-nav">
-          {NEXCAM_MODULES.map((item) => (
-            <button className={item.id === activeModule ? "active" : ""} type="button" key={item.id} onClick={() => setModule(item.id)}>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-      </aside>
-      <section className="nexops-web-main">
-        <header className="nexops-web-topbar">
-          <div className="nexops-web-brand">
-            <ProductLogo product="nexcam" className="nexops-header-product-logo" alt="NexCam" />
-            <div className="nexops-web-brand-copy">
-              <strong>NexCam</strong>
-              <span>{tenantName}</span>
-            </div>
-          </div>
-          <div className="nexops-web-tools">
-            <span>{status}</span>
-            <span>{props.user.email ?? "Operator"}</span>
-            <button type="button" onClick={() => void signOutOperator(props.auth)}>Sign out</button>
-          </div>
-        </header>
-        {renderActiveModule()}
-      </section>
-      {<MediaReviewSurface workspace={workspace} />}
-    </main>
+    <NexTeamApplicationShell
+      className="nexops-app nexcam-app"
+      style={style}
+      header={<NexSuiteHeader product="nexcam" menuOpen={menuOpen} onToggleMenu={() => setMenuOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />}
+      navigation={<NexSuiteSidebar items={navigationItems} open={menuOpen} onClose={() => setMenuOpen(false)} onSelect={() => setMenuOpen(false)} />}
+      navigationLabel="NexCam navigation"
+      mobileNavigationMode="drawer"
+    >
+      {renderActiveModule()}
+      <MediaReviewSurface workspace={workspace} />
+    </NexTeamApplicationShell>
   );
 }

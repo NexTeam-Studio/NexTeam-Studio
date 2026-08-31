@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsCreationTemplate, NexOpsDetailTemplate, NexOpsRosterSurface, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import type { Address } from "@nexteam/shared";
 import {
   PaymentScheduleEditor,
@@ -28,6 +29,7 @@ type JobFilter = "All" | JobStatus;
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 
 const JOB_FILTERS: JobFilter[] = ["All", "Upcoming", "Today", "Late", "Unscheduled", "Action Required", "Requires Invoicing", "Archived"];
+const JOB_ROSTER_FILTERS: JobStatus[] = ["Upcoming", "Today", "Late", "Unscheduled", "Action Required", "Requires Invoicing", "Archived"];
 
 interface ClientOption {
   id: string;
@@ -37,6 +39,14 @@ interface ClientOption {
   displayNamePreference?: "person" | "company";
   emails: string[];
   phones: string[];
+}
+
+interface PropertyOption {
+  id: string;
+  clientId: string;
+  siteName?: string;
+  label?: string;
+  address?: Address;
 }
 
 interface InlineJobClientDraft {
@@ -197,6 +207,24 @@ interface JobSummary {
   archivedAt?: string;
 }
 
+interface TenantUserOption {
+  id: string;
+  displayName: string;
+  role: TenantRole;
+  active: boolean;
+}
+
+interface CompletionStatus {
+  evidence: { checklistComplete: boolean; photosPresent: boolean; reportPresent: boolean; signaturePresent: boolean };
+  missing: string[];
+}
+
+interface CompletionStatusResponse {
+  ok: boolean;
+  completion?: CompletionStatus;
+  error?: string;
+}
+
 interface JobDetail extends JobSummary {
   quote?: { id: string; number?: string; title: string };
   request?: { id: string; subject: string };
@@ -294,6 +322,7 @@ interface BookingConfirmationPreviewResponse {
 interface InlineJobClientCreateResponse {
   ok: boolean;
   client?: ClientOption & { id: string };
+  property?: PropertyOption | undefined;
   error?: string;
 }
 
@@ -367,14 +396,7 @@ export function followUpDraftFromHistory(job: Pick<JobSummary, "clientId" | "tit
   };
 }
 
-interface TenantUserOption {
-  id: string;
-  displayName: string;
-  role: TenantRole;
-  active: boolean;
-}
-
-interface CloseoutArtifact {
+export interface CloseoutArtifact {
   artifactId: string;
   source: "nexdocs" | "nexcam" | "generated";
   kind: string;
@@ -386,7 +408,7 @@ interface CloseoutArtifact {
   visitId?: string;
 }
 
-interface CloseoutPackage {
+export interface CloseoutPackage {
   id: string;
   packageVersion: number;
   manifestStatus: "draft" | "finalized" | "superseded";
@@ -400,15 +422,50 @@ interface CloseoutPackageResponse {
   error?: string;
 }
 
-interface CompletionStatus {
-  evidence: { checklistComplete: boolean; photosPresent: boolean; reportPresent: boolean; signaturePresent: boolean };
-  missing: string[];
+export type CloseoutHydrationState =
+  | { phase: "idle" }
+  | { phase: "loading"; jobId: string }
+  | { phase: "ready"; jobId: string }
+  | { phase: "error"; jobId: string };
+
+export function closeoutArtifactKey(artifact: Pick<CloseoutArtifact, "source" | "artifactId">): string {
+  return `${artifact.source}:${artifact.artifactId}`;
 }
 
-interface CompletionStatusResponse {
-  ok: boolean;
-  completion?: CompletionStatus;
-  error?: string;
+export function selectedCloseoutArtifactRefs(
+  artifacts: CloseoutArtifact[],
+  selection: readonly string[]
+): CloseoutPackage["selectedArtifactRefs"] {
+  const selectedKeys = new Set(selection);
+  return artifacts
+    .filter((artifact) => selectedKeys.has(closeoutArtifactKey(artifact)))
+    .map((artifact) => ({
+      artifactId: artifact.artifactId,
+      source: artifact.source,
+      kind: artifact.kind,
+      ...(artifact.visitId ? { visitId: artifact.visitId } : {})
+    }));
+}
+
+export function closeoutHydrationView(
+  state: CloseoutHydrationState,
+  jobId: string | undefined,
+  packageRecord: CloseoutPackage | null
+): { loading: boolean; ready: boolean; selectedCount: number; editable: boolean } {
+  const ready = state.phase === "ready" && state.jobId === jobId && Boolean(packageRecord);
+  return {
+    loading: state.phase === "loading" && state.jobId === jobId,
+    ready,
+    selectedCount: ready ? packageRecord!.selectedArtifactRefs.length : 0,
+    editable: ready && packageRecord!.manifestStatus === "draft"
+  };
+}
+
+export function isCurrentCloseoutDeliveryReviewRequest(
+  expected: { loadSequence: number; selectionGeneration: number },
+  current: { loadSequence: number; selectionGeneration: number }
+): boolean {
+  return expected.loadSequence === current.loadSequence && expected.selectionGeneration === current.selectionGeneration;
 }
 
 interface CloseoutDeliveryAttempt {
@@ -483,6 +540,20 @@ function clientLabel(client: ClientOption): string {
     return client.company.trim();
   }
   return person || client.name;
+}
+
+function propertyLabel(property: PropertyOption): string {
+  return property.siteName?.trim() || property.label?.trim() || property.address?.street1?.trim() || "Service location";
+}
+
+export function defaultManualJobPropertyId(properties: PropertyOption[], clientId: string): string {
+  const matching = properties.filter((property) => property.clientId === clientId);
+  return matching.length === 1 ? matching[0]!.id : "";
+}
+
+export function mergeJobPropertyOptions(properties: PropertyOption[], created?: PropertyOption | null): PropertyOption[] {
+  if (!created || properties.some((property) => property.id === created.id)) return properties;
+  return [created, ...properties];
 }
 
 function formatDateTime(value?: string): string {
@@ -601,6 +672,7 @@ export function NexOpsJobsPage(props: {
   role: TenantRole;
   clients: ClientOption[];
   tenantUsers: TenantUserOption[];
+  properties: PropertyOption[];
   onCrmMutation: () => void;
   onOpenInvoice?: (invoiceId: string) => void;
   focusedJobId?: string;
@@ -608,15 +680,18 @@ export function NexOpsJobsPage(props: {
   initialFilter?: JobFilter;
 }): React.ReactElement {
   const [jobs, setJobs] = useState<JobSummary[]>([]);
+  const [workspaceView, setWorkspaceView] = useState<"roster" | "builder">(props.initialClientId ? "builder" : "roster");
   const [selectedJobId, setSelectedJobId] = useState("");
   const [detailOpen, setDetailOpen] = useState(Boolean(props.focusedJobId));
   const [detail, setDetail] = useState<JobDetail | null>(null);
-  const [status, setStatus] = useState("Loading jobs...");
+  const [, setStatus] = useState("Loading jobs...");
   const [detailStatus, setDetailStatus] = useState("Select a job to review visits and actions.");
   const [completion, setCompletion] = useState<CompletionStatus | null>(null);
   const [completionOverrideReason, setCompletionOverrideReason] = useState("");
   const [completionOverrideConfirmed, setCompletionOverrideConfirmed] = useState(false);
   const [createClientId, setCreateClientId] = useState(() => props.initialClientId && props.clients.some((client) => client.id === props.initialClientId) ? props.initialClientId : props.clients[0]?.id ?? "");
+  const [createPropertyId, setCreatePropertyId] = useState("");
+  const [createdPropertyOption, setCreatedPropertyOption] = useState<PropertyOption | null>(null);
   const [showInlineClientCreate, setShowInlineClientCreate] = useState(props.clients.length === 0);
   const [inlineClientDraft, setInlineClientDraft] = useState<InlineJobClientDraft>(() => blankInlineJobClientDraft());
   const [inlineClientBusy, setInlineClientBusy] = useState(false);
@@ -636,6 +711,7 @@ export function NexOpsJobsPage(props: {
   const [closeoutPackage, setCloseoutPackage] = useState<CloseoutPackage | null>(null);
   const [closeoutArtifacts, setCloseoutArtifacts] = useState<CloseoutArtifact[]>([]);
   const [closeoutSelection, setCloseoutSelection] = useState<string[]>([]);
+  const [closeoutHydration, setCloseoutHydration] = useState<CloseoutHydrationState>({ phase: "idle" });
   const [closeoutStatus, setCloseoutStatus] = useState("Load the Job to review closeout artifacts.");
   const [closeoutBusy, setCloseoutBusy] = useState(false);
   const [closeoutDelivery, setCloseoutDelivery] = useState<CloseoutDeliveryPreview | null>(null);
@@ -643,13 +719,18 @@ export function NexOpsJobsPage(props: {
   const [closeoutDeliveryStatus, setCloseoutDeliveryStatus] = useState("");
   const [closeoutDeliveryBusy, setCloseoutDeliveryBusy] = useState(false);
   const [actionBusy, setActionBusy] = useState<JobAction | null>(null);
-  const [statusFilter, setStatusFilter] = useState<JobFilter>("All");
+  const [jobRosterFilters, setJobRosterFilters] = useState<JobStatus[]>([]);
+  const [detailStatusFilter, setDetailStatusFilter] = useState<JobFilter>("All");
   const [jobSearch, setJobSearch] = useState("");
+  const [jobFiltersOpen, setJobFiltersOpen] = useState(false);
+  const [expandedRosterJobId, setExpandedRosterJobId] = useState("");
   const [detailPaymentSchedule, setDetailPaymentSchedule] = useState<PaymentScheduleDraft>(() => blankPaymentSchedule());
   const [bookingPreview, setBookingPreview] = useState<BookingConfirmationPreview | null>(null);
   const [bookingDraft, setBookingDraft] = useState<BookingConfirmationDraft | null>(null);
   const jobDetailRef = React.useRef<HTMLElement | null>(null);
   const mobileDetailFocusJobIdRef = React.useRef("");
+  const closeoutLoadSequenceRef = React.useRef(0);
+  const closeoutSelectionGenerationRef = React.useRef(0);
   const [bookingSheetOpen, setBookingSheetOpen] = useState(false);
   const [bookingBusy, setBookingBusy] = useState(false);
   const [reviewSequences, setReviewSequences] = useState<ReviewSequenceRecord[]>([]);
@@ -670,13 +751,17 @@ export function NexOpsJobsPage(props: {
   const [signatureDraft, setSignatureDraft] = useState<SignatureCaptureValue>(() => blankSignatureCaptureValue());
 
   const filteredJobs = useMemo(
-    () => jobs.filter((job) => (statusFilter === "All" || job.status === statusFilter) && matchesJobSearch(job, jobSearch)),
-    [jobs, statusFilter, jobSearch]
+    () => jobs.filter((job) => (!jobRosterFilters.length || jobRosterFilters.includes(job.status)) && matchesJobSearch(job, jobSearch)),
+    [jobs, jobRosterFilters, jobSearch]
   );
   const createClientOptions = useMemo(
     () => mergeJobClientOptions(props.clients, createdClientOption),
     [props.clients, createdClientOption]
   );
+  const createClientProperties = useMemo(() => {
+    const options = mergeJobPropertyOptions(props.properties, createdPropertyOption);
+    return options.filter((property) => property.clientId === createClientId);
+  }, [createClientId, createdPropertyOption, props.properties]);
   const inlineClientMissingFields = inlineJobClientDraftMissingFields(inlineClientDraft);
   const inlineClientCanSave = inlineClientMissingFields.length === 0;
   const activeTenantUsers = useMemo(() => props.tenantUsers.filter((user) => user.active), [props.tenantUsers]);
@@ -697,6 +782,22 @@ export function NexOpsJobsPage(props: {
     }),
     [jobs]
   );
+
+  const jobRosterCounts = useMemo(
+    () => JOB_ROSTER_FILTERS.reduce<Record<JobStatus, number>>((counts, filter) => {
+      counts[filter] = jobs.filter((job) => job.status === filter).length;
+      return counts;
+    }, {
+      Upcoming: 0,
+      Today: 0,
+      Late: 0,
+      Unscheduled: 0,
+      "Action Required": 0,
+      "Requires Invoicing": 0,
+      Archived: 0
+    }),
+    [jobs]
+  );
   const selectedClient = detail?.clientId ? createClientOptions.find((client) => client.id === detail.clientId) : undefined;
   const prominentJobFacts = prominentIntakeFacts(detail?.intake, "job");
   const jobCarryForwardFacts = intakeDetailFacts(detail?.intake, "job", 10);
@@ -705,6 +806,7 @@ export function NexOpsJobsPage(props: {
     () => signedDocuments.find((record) => record.id === signingDocumentId) ?? null,
     [signedDocuments, signingDocumentId]
   );
+  const closeoutView = closeoutHydrationView(closeoutHydration, detail?.id, closeoutPackage);
 
   function prepareFollowUpFromHistory(job: JobSummary): void {
     const draft = followUpDraftFromHistory(job);
@@ -739,6 +841,8 @@ export function NexOpsJobsPage(props: {
   }
 
   async function loadDetail(jobId: string): Promise<void> {
+    closeoutLoadSequenceRef.current += 1;
+    closeoutSelectionGenerationRef.current += 1;
     setActiveVisitDocumentsId("");
     setJobDocumentsOpen(false);
     setCloseoutPackage(null);
@@ -750,6 +854,7 @@ export function NexOpsJobsPage(props: {
     setCompletion(null);
     setCompletionOverrideReason("");
     setCompletionOverrideConfirmed(false);
+    setCloseoutHydration({ phase: "idle" });
     if (!jobId) {
       setDetail(null);
       setBookingPreview(null);
@@ -787,46 +892,69 @@ export function NexOpsJobsPage(props: {
       const body = await fetch(`/api/crm/jobs/${encodeURIComponent(jobId)}/completion-status?tenantId=${encodeURIComponent(props.tenantId)}`)
         .then((response) => response.json() as Promise<CompletionStatusResponse>);
       setCompletion(body.ok && body.completion ? body.completion : null);
-    } catch { setCompletion(null); }
+    } catch {
+      setCompletion(null);
+    }
   }
 
   async function loadCloseoutPackage(jobId: string): Promise<void> {
+    const loadSequence = ++closeoutLoadSequenceRef.current;
+    closeoutSelectionGenerationRef.current += 1;
+    setCloseoutPackage(null);
+    setCloseoutArtifacts([]);
+    setCloseoutSelection([]);
+    setCloseoutDelivery(null);
+    setCloseoutDeliveryDraft(null);
+    setCloseoutHydration({ phase: "loading", jobId });
     setCloseoutStatus("Loading eligible Closeout artifacts...");
     try {
       const body = await fetch(`/api/crm/jobs/${encodeURIComponent(jobId)}/closeout-package?tenantId=${encodeURIComponent(props.tenantId)}`)
         .then((response) => response.json() as Promise<CloseoutPackageResponse>);
       if (!body.ok || !body.package) {
+        if (loadSequence !== closeoutLoadSequenceRef.current) return;
+        setCloseoutHydration({ phase: "error", jobId });
         setCloseoutStatus(body.error ?? "Closeout artifacts are unavailable right now.");
         return;
       }
+      if (loadSequence !== closeoutLoadSequenceRef.current) return;
       setCloseoutPackage(body.package);
       setCloseoutArtifacts(body.artifacts ?? []);
-      setCloseoutSelection((body.package.selectedArtifactRefs ?? []).map((artifact) => `${artifact.source}:${artifact.artifactId}`));
+      setCloseoutSelection((body.package.selectedArtifactRefs ?? []).map(closeoutArtifactKey));
+      setCloseoutHydration({ phase: "ready", jobId });
       setCloseoutStatus((body.artifacts ?? []).length ? "Choose the artifacts to include in the customer package." : "No eligible Job artifacts are available yet.");
     } catch {
+      if (loadSequence !== closeoutLoadSequenceRef.current) return;
+      setCloseoutHydration({ phase: "error", jobId });
       setCloseoutStatus("Closeout artifacts are unavailable right now.");
     }
   }
 
   async function saveCloseoutPackage(): Promise<void> {
-    if (!detail || !closeoutPackage) return;
+    if (!detail || !closeoutPackage || !closeoutView.ready || !closeoutView.editable) return;
+    const jobId = detail.id;
+    const packageVersion = closeoutPackage.packageVersion;
+    const loadSequence = closeoutLoadSequenceRef.current;
+    const selectedArtifactRefs = selectedCloseoutArtifactRefs(closeoutArtifacts, closeoutSelection);
     setCloseoutBusy(true);
+    closeoutSelectionGenerationRef.current += 1;
+    setCloseoutDelivery(null);
+    setCloseoutDeliveryDraft(null);
+    setCloseoutDeliveryStatus("Selection changed. Save and reopen Delivery Review to use the authoritative package.");
     try {
-      const selectedArtifactRefs = closeoutArtifacts
-        .filter((artifact) => closeoutSelection.includes(`${artifact.source}:${artifact.artifactId}`))
-        .map((artifact) => ({ artifactId: artifact.artifactId, source: artifact.source, kind: artifact.kind, ...(artifact.visitId ? { visitId: artifact.visitId } : {}) }));
-      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}/closeout-package`, {
+      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(jobId)}/closeout-package`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: props.tenantId, expectedPackageVersion: closeoutPackage.packageVersion, selectedArtifactRefs })
+        body: JSON.stringify({ tenantId: props.tenantId, expectedPackageVersion: packageVersion, selectedArtifactRefs })
       }).then((response) => response.json() as Promise<CloseoutPackageResponse>);
+      if (loadSequence !== closeoutLoadSequenceRef.current) return;
       if (!body.ok || !body.package) {
         setCloseoutStatus(body.error ?? "Closeout selection could not be saved.");
         return;
       }
       setCloseoutPackage(body.package);
       setCloseoutArtifacts(body.artifacts ?? closeoutArtifacts);
-      setCloseoutSelection((body.package.selectedArtifactRefs ?? []).map((artifact) => `${artifact.source}:${artifact.artifactId}`));
+      setCloseoutSelection((body.package.selectedArtifactRefs ?? []).map(closeoutArtifactKey));
+      setCloseoutHydration({ phase: "ready", jobId });
       setCloseoutStatus(body.package.selectedArtifactRefs.length ? `${body.package.selectedArtifactRefs.length} artifact${body.package.selectedArtifactRefs.length === 1 ? "" : "s"} selected. Package remains draft until delivery review.` : "No artifacts selected. Package remains a draft.");
     } catch {
       setCloseoutStatus("Closeout selection could not be saved.");
@@ -834,11 +962,19 @@ export function NexOpsJobsPage(props: {
   }
 
   async function loadCloseoutDeliveryReview(): Promise<void> {
-    if (!detail) return;
+    if (!detail || !closeoutView.ready || !closeoutPackage?.selectedArtifactRefs.length) return;
+    const expectedRequest = {
+      loadSequence: closeoutLoadSequenceRef.current,
+      selectionGeneration: closeoutSelectionGenerationRef.current
+    };
     setCloseoutDeliveryStatus("Loading the saved Closeout package for delivery review...");
     try {
       const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}/closeout-package/delivery-review?tenantId=${encodeURIComponent(props.tenantId)}`)
         .then((response) => response.json() as Promise<CloseoutDeliveryResponse>);
+      if (!isCurrentCloseoutDeliveryReviewRequest(expectedRequest, {
+        loadSequence: closeoutLoadSequenceRef.current,
+        selectionGeneration: closeoutSelectionGenerationRef.current
+      })) return;
       if (!body.ok || !body.preview) {
         setCloseoutDelivery(null);
         setCloseoutDeliveryDraft(null);
@@ -847,6 +983,7 @@ export function NexOpsJobsPage(props: {
       }
       setCloseoutDelivery(body.preview);
       setCloseoutPackage(body.preview.package);
+      setCloseoutSelection(body.preview.package.selectedArtifactRefs.map(closeoutArtifactKey));
       setCloseoutDeliveryDraft({
         recipient: body.preview.email.recipient ?? "",
         subject: body.preview.email.subject,
@@ -856,6 +993,10 @@ export function NexOpsJobsPage(props: {
       });
       setCloseoutDeliveryStatus(body.preview.package.selectedArtifactRefs.length ? "Review this package before a separate delivery action." : "Select and save at least one artifact before delivery review.");
     } catch {
+      if (!isCurrentCloseoutDeliveryReviewRequest(expectedRequest, {
+        loadSequence: closeoutLoadSequenceRef.current,
+        selectionGeneration: closeoutSelectionGenerationRef.current
+      })) return;
       setCloseoutDeliveryStatus("Delivery review is unavailable right now.");
     }
   }
@@ -991,7 +1132,8 @@ export function NexOpsJobsPage(props: {
 
   useEffect(() => {
     if (props.initialFilter) {
-      setStatusFilter(props.initialFilter);
+      setDetailStatusFilter(props.initialFilter);
+      setJobRosterFilters(props.initialFilter === "All" ? [] : [props.initialFilter]);
     }
   }, [props.initialFilter]);
 
@@ -1074,14 +1216,27 @@ export function NexOpsJobsPage(props: {
     }
   }, [createClientId, createClientOptions, showInlineClientCreate]);
 
+  useEffect(() => {
+    if (!createClientId || showInlineClientCreate) {
+      if (createPropertyId) setCreatePropertyId("");
+      return;
+    }
+    if (createClientProperties.some((property) => property.id === createPropertyId)) return;
+    setCreatePropertyId(defaultManualJobPropertyId(props.properties, createClientId));
+  }, [createClientId, createClientProperties, createPropertyId, props.properties, showInlineClientCreate]);
+
   function handleClientChoice(value: string): void {
     if (value === NEW_JOB_CLIENT_VALUE) {
       setCreateClientId("");
+      setCreatePropertyId("");
+      setCreatedPropertyOption(null);
       setShowInlineClientCreate(true);
       setInlineClientStatus("Create the client here, then the job draft continues with your title and billing plan still in place.");
       return;
     }
     setCreateClientId(value);
+    setCreatePropertyId(defaultManualJobPropertyId(props.properties, value));
+    setCreatedPropertyOption(null);
     setShowInlineClientCreate(false);
     setInlineClientStatus("Using an existing client on this manual job draft.");
   }
@@ -1139,6 +1294,8 @@ export function NexOpsJobsPage(props: {
       };
       setCreatedClientOption(nextClient);
       setCreateClientId(nextClient.id);
+      setCreatedPropertyOption(body.property ?? null);
+      setCreatePropertyId(body.property?.id ?? "");
       setShowInlineClientCreate(false);
       setInlineClientDraft(blankInlineJobClientDraft());
       setInlineClientStatus(`${clientLabel(nextClient)} is ready. Your job title and draft billing plan stayed in place.`);
@@ -1164,6 +1321,7 @@ export function NexOpsJobsPage(props: {
         body: JSON.stringify({
           tenantId: props.tenantId,
           clientId: createClientId,
+          ...(createPropertyId ? { propertyId: createPropertyId } : {}),
           title: createTitle.trim(),
           ...(createAssignedOwnerId ? { assignedOwnerId: createAssignedOwnerId } : {}),
           ...(paymentScheduleToPayload(createPaymentSchedule) ? { paymentSchedule: paymentScheduleToPayload(createPaymentSchedule) } : {})
@@ -1309,7 +1467,11 @@ export function NexOpsJobsPage(props: {
       setDetailStatus("Visit end must be after the start.");
       return;
     }
-    setActionBusy("close");
+    // Clear a prior client-side validation message before the asynchronous
+    // booking request begins. Otherwise a completed booking can visibly look
+    // rejected while the request is still loading.
+    setDetailStatus("Booking visit...");
+    setActionBusy("visit");
     try {
       const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}/visits`, {
         method: "POST",
@@ -1395,6 +1557,29 @@ export function NexOpsJobsPage(props: {
             : "Job closed.");
     } catch {
       setDetailStatus("Job action failed.");
+    } finally {
+      setActionBusy(null);
+    }
+  }
+
+  async function saveAssignedOwner(assignedOwnerId: string): Promise<void> {
+    if (!detail) return;
+    setActionBusy("close");
+    try {
+      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: props.tenantId, assignedOwnerId: assignedOwnerId || null })
+      }).then((response) => response.json() as Promise<JobMutationResponse>);
+      if (!body.ok || !body.job) {
+        setDetailStatus(body.error ?? "Job owner could not be updated.");
+        return;
+      }
+      props.onCrmMutation();
+      setDetail(body.job);
+      setDetailStatus("Assigned job owner saved.");
+    } catch {
+      setDetailStatus("Job owner update failed.");
     } finally {
       setActionBusy(null);
     }
@@ -1590,21 +1775,6 @@ export function NexOpsJobsPage(props: {
     }
   }
 
-  async function saveAssignedOwner(assignedOwnerId: string): Promise<void> {
-    if (!detail) return;
-    setActionBusy("close");
-    try {
-      const body = await fetch(`/api/crm/jobs/${encodeURIComponent(detail.id)}`, {
-        method: "PATCH", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: props.tenantId, assignedOwnerId: assignedOwnerId || null })
-      }).then((response) => response.json() as Promise<JobMutationResponse>);
-      if (!body.ok || !body.job) { setDetailStatus(body.error ?? "Job owner could not be updated."); return; }
-      props.onCrmMutation();
-      setDetail(body.job);
-      setDetailStatus("Assigned job owner saved.");
-    } catch { setDetailStatus("Job owner update failed."); } finally { setActionBusy(null); }
-  }
-
   function selectJobFromRoster(jobId: string): void {
     mobileDetailFocusJobIdRef.current = jobId;
     setDetailOpen(true);
@@ -1614,43 +1784,24 @@ export function NexOpsJobsPage(props: {
   return (
     <section className="nexops-module-page">
       <NexOpsRosterTemplate
-        eyebrow="Job Engine"
-        title="Jobs"
-        detail="Manage active work, visits, reminders, documents, and closeout from one connected operational rail."
-        primaryAction={<button type="button" onClick={() => document.getElementById("nexops-new-job-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}>New Job</button>}
-        metrics={<>
-          <article><span>Upcoming</span><strong>{filterCounts.Upcoming}</strong><small>Scheduled work</small></article>
-          <article><span>Unscheduled</span><strong>{filterCounts.Unscheduled}</strong><small>Needs booking</small></article>
-          <article><span>Action Required</span><strong>{filterCounts["Action Required"]}</strong><small>Office follow-up</small></article>
-          <article><span>Requires Invoicing</span><strong>{filterCounts["Requires Invoicing"]}</strong><small>Billing handoff</small></article>
-        </>}
-        controls={<>
-          <div className="nexops-jobs-filter-row" aria-label="Job Status Filters">
-            {JOB_FILTERS.map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                className={`nexops-jobs-filter-pill${statusFilter === filter ? " active" : ""}`}
-                onClick={() => setStatusFilter(filter)}
-              >
-                <span>{filter}</span>
-                <small>{filterCounts[filter]}</small>
-              </button>
-            ))}
-          </div>
-          <label className="nexops-jobs-search">
-            <span>Search all jobs, including history</span>
-            <input
-              value={jobSearch}
-              onChange={(event) => setJobSearch(event.target.value)}
-              placeholder="Search by job, client, or job number"
-            />
-          </label>
-          <span className="nexops-status-pill">{status}</span>
-        </>}
+        title={workspaceView === "builder" ? "Create Job" : "Jobs"}
+        detail={workspaceView === "builder" ? "Choose the client, define the work, and set the billing plan." : "Manage active work, visits, reminders, documents, and closeout from one connected operational rail."}
+        icon={<NexOpsNavGlyph module="jobs" />}
+        primaryAction={workspaceView === "builder"
+          ? <button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setWorkspaceView("roster")}>← Jobs</button>
+          : <button className="nexops-quote-primary-button" type="button" onClick={() => setWorkspaceView("builder")}>+ New Job</button>}
+        heroClassName="module-hero-card--quote"
+        showHero={workspaceView !== "builder"}
+        metrics={undefined}
       >
-      <section className="nexops-jobs-layout">
-        <article className="nexops-module-card">
+      {workspaceView === "builder" ? <NexOpsCreationTemplate
+        title="Create Job"
+        detail="Choose the client, define the work, and set the billing plan."
+        icon={<NexOpsNavGlyph module="jobs" />}
+        heroClassName="module-hero-card--quote"
+        backAction={<button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setWorkspaceView("roster")}>← Jobs</button>}
+      ><section className="nexops-jobs-layout">
+        <article className="nexops-module-card nexops-jobs-create-card">
           <p className="eyebrow">Manual Create</p>
           <h2>New Job</h2>
           <form id="nexops-new-job-form" className="nexops-jobs-form" onSubmit={(event) => void createJob(event)}>
@@ -1662,6 +1813,15 @@ export function NexOpsJobsPage(props: {
                 <option value={NEW_JOB_CLIENT_VALUE}>+ Create New Client</option>
               </select>
             </label>
+            {!showInlineClientCreate && createClientId ? (
+              <label>
+                Property / service location
+                <select value={createPropertyId} onChange={(event) => setCreatePropertyId(event.target.value)}>
+                  <option value="">{createClientProperties.length ? "Choose a property" : "No property on file yet"}</option>
+                  {createClientProperties.map((property) => <option key={property.id} value={property.id}>{propertyLabel(property)}</option>)}
+                </select>
+              </label>
+            ) : null}
             {showInlineClientCreate ? (
               <section className="nexops-module-card embedded">
                 <div className="nexops-jobs-card-heading">
@@ -1752,37 +1912,32 @@ export function NexOpsJobsPage(props: {
           </form>
         </article>
 
-        <article className="nexops-module-card">
-          <div className="nexops-jobs-card-heading">
-            <div>
-              <p className="eyebrow">Native List</p>
-              <h2>Job Roster</h2>
-            </div>
-            <span>{filteredJobs.length} shown / {jobs.length} total</span>
-          </div>
-          <div className="nexops-jobs-list">
+      </section></NexOpsCreationTemplate> : null}
+
+      {workspaceView === "roster" ? <NexOpsRosterSurface ariaLabel="Search and filter jobs" searchTitle="Search Jobs" resultNoun="Job" resultCount={filteredJobs.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search all jobs, including history</span><input value={jobSearch} onChange={(event) => setJobSearch(event.target.value)} placeholder="Search jobs" /></label>} filter={<button type="button" className="nexops-jobs-filter-pill nexops-quote-filter-trigger" onClick={() => setJobFiltersOpen((current) => !current)} aria-expanded={jobFiltersOpen}><span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span><span className="nexops-quote-filter-label">Filter</span>{jobRosterFilters.length ? <small>{filteredJobs.length}</small> : null}</button>} filterOptions={jobFiltersOpen ? <div className="nexops-quote-filter-options" aria-label="Job Status Filters">{JOB_ROSTER_FILTERS.map((filter) => { const selected = jobRosterFilters.includes(filter); return <button key={filter} type="button" role="checkbox" aria-checked={selected} className={`nexops-jobs-filter-pill${selected ? " active" : ""}`} onClick={() => setJobRosterFilters((current) => selected ? current.filter((value) => value !== filter) : [...current, filter])}><span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span><span>{filter}</span><small>{jobRosterCounts[filter]}</small></button>; })}</div> : undefined} empty={!jobs.length ? <p className="nexops-empty-copy">No Jobs Yet. Requests and approved quotes can start here, and manual jobs can too.</p> : !filteredJobs.length ? <p className="nexops-empty-copy">No Jobs Match This Search Or Status Right Now.</p> : undefined}>
             {filteredJobs.map((job) => (
-              <button
+              <article
                 key={job.id}
-                type="button"
-                className={`nexops-jobs-list-item${detailOpen && job.id === selectedJobId ? " active" : ""}`}
-                onClick={() => selectJobFromRoster(job.id)}
+                className={`nexops-quote-filtered-row${expandedRosterJobId === job.id ? " expanded" : ""}`}
               >
-                <div>
-                  <strong>{job.title}</strong>
-                  <span>{job.client?.name ?? job.clientId}{isHistoricalJob(job) ? " · Historical record" : ""}</span>
-                </div>
-                <div>
-                  <span className={`nexops-job-status status-${job.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{job.status}</span>
-                  <small>{job.visitCount} visits</small>
-                </div>
-              </button>
+                <button className="nexops-quote-filtered-identity-banner" type="button" aria-expanded={expandedRosterJobId === job.id} onClick={() => setExpandedRosterJobId((current) => current === job.id ? "" : job.id)}>
+                  <span className="nexops-quote-filtered-identity" data-label="Job">
+                    <strong>{job.number ?? job.id}</strong>
+                    <small>{job.client?.name ?? job.clientId}</small>
+                  </span>
+                </button>
+                {expandedRosterJobId === job.id ? <div className="nexops-quote-filtered-details">
+                  <span className="nexops-quote-filtered-title" data-label="Job title">{job.title}</span>
+                  <span className="nexops-quote-filtered-updated" data-label="Updated">{formatDateTime(job.updatedAt ?? job.createdAt)}</span>
+                  <span className="nexops-quote-filtered-status" data-label="Status"><mark>{job.status}</mark></span>
+                  <span className="nexops-quote-filtered-activity" data-label="Job record">
+                    <small>{formatMoney(job.totals?.total)}</small>
+                    <button className="nexops-quote-filtered-open" type="button" onClick={() => selectJobFromRoster(job.id)}>Open Job <span aria-hidden="true">→</span></button>
+                  </span>
+                </div> : null}
+              </article>
             ))}
-            {!jobs.length ? <p className="nexops-empty-copy">No jobs yet. Requests and approved quotes can start here, and manual jobs can too.</p> : null}
-            {jobs.length > 0 && !filteredJobs.length ? <p className="nexops-empty-copy">No jobs match this search or status right now.</p> : null}
-          </div>
-        </article>
-      </section>
+      </NexOpsRosterSurface> : null}
       </NexOpsRosterTemplate>
 
       {detailOpen ? <NexOpsDetailTemplate
@@ -1796,8 +1951,8 @@ export function NexOpsJobsPage(props: {
             <button
               key={`detail-${filter}`}
               type="button"
-              className={`nexops-jobs-filter-pill${statusFilter === filter ? " active" : ""}`}
-              onClick={() => setStatusFilter(filter)}
+              className={`nexops-jobs-filter-pill${detailStatusFilter === filter ? " active" : ""}`}
+              onClick={() => setDetailStatusFilter(filter)}
             >
               <span>{filter}</span>
               <small>{filterCounts[filter]}</small>
@@ -1859,7 +2014,6 @@ export function NexOpsJobsPage(props: {
                     <span>{nextMove?.label ?? deriveWorkPackageAction(detail)}</span>
                   </div>
                 </div>
-                <label className="nexops-field"><span>Assigned Job Owner</span><select value={detail.assignedOwnerId ?? ""} onChange={(event) => void saveAssignedOwner(event.target.value)} disabled={actionBusy !== null}><option value="">Unassigned — override unavailable</option>{activeTenantUsers.map((user) => <option key={user.id} value={user.id}>{user.displayName} — {user.role}</option>)}</select><small>The selected owner alone has authority to account for a completion override.</small></label>
                 <div className="nexops-jobs-actions">
                   {bookingPreview && !bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? (
                     <button type="button" disabled={bookingBusy} onClick={() => setBookingSheetOpen(true)}>Send Booking Confirmation</button>
@@ -1871,6 +2025,7 @@ export function NexOpsJobsPage(props: {
                     <button type="button" disabled={actionBusy !== null} onClick={() => void performAction("dismiss_invoice_reminder")}>Dismiss Reminder</button>
                   ) : null}
                 </div>
+                <label className="nexops-field"><span>Assigned Job Owner</span><select value={detail.assignedOwnerId ?? ""} onChange={(event) => void saveAssignedOwner(event.target.value)} disabled={actionBusy !== null}><option value="">Unassigned — override unavailable</option>{activeTenantUsers.map((user) => <option key={user.id} value={user.id}>{user.displayName} — {user.role}</option>)}</select><small>The selected owner alone has authority to account for a completion override.</small></label>
                 {completion?.missing.length ? <section className="nexops-request-alert-strip" aria-label="Missing completion requirements">
                   <div><strong>Completion requirements missing</strong><p>{completion.missing.join(" · ")}</p></div>
                   <label className="nexops-field"><span>Override reason (assigned job owner only)</span><textarea value={completionOverrideReason} onChange={(event) => setCompletionOverrideReason(event.target.value)} placeholder="Explain why this job may close without the listed evidence." /></label>
@@ -1992,11 +2147,11 @@ export function NexOpsJobsPage(props: {
                 </div>
                 <form className="nexops-jobs-form inline" onSubmit={(event) => void scheduleVisit(event)}>
                   <input aria-label="Visit Title" value={visitTitle} onChange={(event) => setVisitTitle(event.target.value)} placeholder="Visit Title" />
-                  <input aria-label="Visit Date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={visitDate} onChange={(event) => setVisitDate(event.target.value)} />
-                  <input aria-label="Visit Start Time" type="text" inputMode="numeric" placeholder="HH:MM" value={visitStartTime} onChange={(event) => setVisitStartTime(event.target.value)} />
-                  <input aria-label="Visit End Date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={visitEndDate} onChange={(event) => setVisitEndDate(event.target.value)} />
-                  <input aria-label="Visit End Time" type="text" inputMode="numeric" placeholder="HH:MM" value={visitEndTime} onChange={(event) => setVisitEndTime(event.target.value)} />
-                  <button type="submit" disabled={actionBusy !== null}>Book Visit</button>
+                  <input aria-label="Visit Date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={visitDate} onChange={(event) => { setVisitDate(event.target.value); setDetailStatus(""); }} />
+                  <input aria-label="Visit Start Time" type="text" inputMode="numeric" placeholder="HH:MM" value={visitStartTime} onChange={(event) => { setVisitStartTime(event.target.value); setDetailStatus(""); }} />
+                  <input aria-label="Visit End Date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={visitEndDate} onChange={(event) => { setVisitEndDate(event.target.value); setDetailStatus(""); }} />
+                  <input aria-label="Visit End Time" type="text" inputMode="numeric" placeholder="HH:MM" value={visitEndTime} onChange={(event) => { setVisitEndTime(event.target.value); setDetailStatus(""); }} />
+                  <button type="submit" disabled={actionBusy !== null}>{actionBusy === "visit" ? "Booking Visit..." : "Book Visit"}</button>
                 </form>
                 <div className="nexops-jobs-sublist">
                   {detail.visits.map((visit) => (
@@ -2070,6 +2225,22 @@ export function NexOpsJobsPage(props: {
                       : "Client hub visibility is currently on for this job's field reports and photos."}
                   </p>
                   <p className="nexops-empty-copy">{fieldDocsStatus}</p>
+                  {detail.propertyId ? (
+                    <button
+                      className="nexops-link-button"
+                      type="button"
+                      onClick={() => {
+                        const query = new URLSearchParams({
+                          propertyId: detail.propertyId,
+                          jobId: detail.id,
+                          visitId: detail.visits[0]?.id ?? ""
+                        });
+                        window.location.assign(`/nexcam?${query.toString()}`);
+                      }}
+                    >
+                      Open NexCam Checklist
+                    </button>
+                  ) : null}
                   <div className="nexops-density-inline-facts">
                     <article>
                       <h3>Reports</h3>
@@ -2244,18 +2415,26 @@ export function NexOpsJobsPage(props: {
                   <div className="nexops-jobs-section">
                     <div className="nexops-jobs-card-heading">
                       <h3>Closeout Package Review</h3>
-                      <span>{closeoutPackage?.selectedArtifactRefs.length ?? 0} selected</span>
+                      <span>{closeoutView.loading ? "Loading selection..." : closeoutView.ready ? `${closeoutView.selectedCount} selected` : "Selection unavailable"}</span>
                     </div>
-                    <p className="nexops-empty-copy">{closeoutStatus}</p>
-                    <div className="nexops-jobs-sublist">
+                    <p className="nexops-empty-copy" aria-live="polite">{closeoutStatus}</p>
+                    {closeoutView.loading ? <p className="nexops-empty-copy">The authoritative package and its eligible artifacts are loading.</p> : null}
+                    {closeoutView.ready ? <div className="nexops-jobs-sublist">
                       {closeoutArtifacts.map((artifact) => {
-                        const key = `${artifact.source}:${artifact.artifactId}`;
+                        const key = closeoutArtifactKey(artifact);
                         return (
                           <label key={key} className="nexops-jobs-sublist-item">
                             <input
                               type="checkbox"
                               checked={closeoutSelection.includes(key)}
-                              onChange={(event) => setCloseoutSelection((current) => event.target.checked ? [...new Set([...current, key])] : current.filter((value) => value !== key))}
+                              disabled={!closeoutView.editable || closeoutBusy}
+                              onChange={(event) => {
+                                closeoutSelectionGenerationRef.current += 1;
+                                setCloseoutSelection((current) => event.target.checked ? [...new Set([...current, key])] : current.filter((value) => value !== key));
+                                setCloseoutDelivery(null);
+                                setCloseoutDeliveryDraft(null);
+                                setCloseoutDeliveryStatus("Selection changed. Save the package before returning to Delivery Review.");
+                              }}
                             />
                             <div>
                               <strong>{artifact.label || artifact.fileName}</strong>
@@ -2266,12 +2445,13 @@ export function NexOpsJobsPage(props: {
                         );
                       })}
                       {!closeoutArtifacts.length ? <p className="nexops-empty-copy">Visit files, Job documents, NexCam media, and eligible records appear here when they exist.</p> : null}
-                    </div>
+                    </div> : null}
                     <div className="nexops-inline-actions">
-                      <button type="button" disabled={closeoutBusy || !closeoutPackage} onClick={() => void saveCloseoutPackage()}>{closeoutBusy ? "Saving..." : "Save Closeout Selection"}</button>
-                      <button type="button" disabled={closeoutBusy || !closeoutPackage?.selectedArtifactRefs.length} onClick={() => void loadCloseoutDeliveryReview()}>Continue to Delivery Review</button>
-                      <span>{closeoutPackage?.manifestStatus === "draft" ? "Draft only — delivery remains a separate review." : "Package is not editable after finalization."}</span>
+                      <button type="button" disabled={closeoutBusy || !closeoutView.editable} onClick={() => void saveCloseoutPackage()}>{closeoutBusy ? "Saving..." : "Save Closeout Selection"}</button>
+                      <button type="button" disabled={closeoutBusy || !closeoutView.ready || !closeoutPackage?.selectedArtifactRefs.length} onClick={() => void loadCloseoutDeliveryReview()}>Continue to Delivery Review</button>
+                      <span>{closeoutView.loading ? "Package lifecycle is loading." : closeoutView.ready ? closeoutView.editable ? "Draft only — delivery remains a separate review." : "Package is not editable after finalization." : "Package lifecycle is unavailable until the authoritative package loads."}</span>
                     </div>
+                    {closeoutDeliveryStatus ? <p className="nexops-empty-copy" role="status" aria-live="polite">{closeoutDeliveryStatus}</p> : null}
                     {closeoutDelivery ? (
                       <section className="nexops-jobs-section" aria-label="Closeout Delivery Review">
                         <div className="nexops-jobs-card-heading"><h3>Closeout Delivery Review</h3><span>{closeoutDelivery.package.selectedArtifactRefs.length} saved artifact{closeoutDelivery.package.selectedArtifactRefs.length === 1 ? "" : "s"}</span></div>

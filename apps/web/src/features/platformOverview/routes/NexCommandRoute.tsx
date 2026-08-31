@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAuthSession } from "../../../shared/auth/AuthSessionProvider";
-import { PlatformMark } from "../../../shared/branding/ProductBranding";
-import { NexTeamProductHeader } from "../../../shared/ui/NexTeamProductHeader";
+import { NexCommandHeader } from "../../../shared/ui/NexCommandHeader";
 import { NexTeamApplicationShell } from "../../../shared/ui/NexTeamApplicationShell";
+import { ModuleHeroCard } from "../../../shared/ui/NexOpsBusinessTemplates";
 import { TenantOverviewPanel } from "../../tenantOverview/components/TenantOverviewPanel";
 import { useTenantOverview } from "../../tenantOverview/hooks/useTenantOverview";
 import { PlatformProspectIntakePanel } from "../components/PlatformProspectIntakePanel";
@@ -13,7 +13,8 @@ import { PlatformMigrationsPanel } from "../components/PlatformMigrationsPanel";
 import { PlatformSettingsPanel } from "../components/PlatformSettingsPanel";
 import { NexCommandTenantProfilePanel } from "../components/NexCommandTenantProfilePanel";
 import { PlatformTenantOnboardingPanel } from "../components/PlatformTenantOnboardingPanel";
-import { NexCommandSidebar, nexCommandNavigation, type NexCommandArea } from "../components/NexCommandSidebar";
+import { NexCommandNavGlyph, nexCommandNavigation, type NexCommandArea } from "../components/NexCommandSidebar";
+import { NexSuiteSidebar, type NexSuiteSidebarItem } from "../../../shared/ui/NexSuiteSidebar";
 import { TemplatesRoster } from "../components/TemplatesRoster";
 import { usePlatformPlans } from "../hooks/usePlatformPlans";
 import { usePathname } from "../../../shared/router/usePathname";
@@ -37,6 +38,8 @@ function areaFromLocation(): Area {
   return nexCommandNavigation.some(([area]) => area === requested) ? requested as Area : "dashboard";
 }
 
+function liveStatusTone(state: string): "green" | "yellow" | "red" { return state === "COMPLETE" || state === "SUCCEEDED" || state === "IDLE" ? "green" : state === "FAILED" || state === "STALLED" || state === "BLOCKED" ? "red" : "yellow"; }
+
 export function NexCommandRoute(): React.ReactElement {
   const { signOut, user } = useAuthSession();
   const pathname = usePathname();
@@ -55,21 +58,27 @@ export function NexCommandRoute(): React.ReactElement {
     setSelectedTenantId(null);
     setArea(next);
   }
+  const nexCommandSidebarItems: NexSuiteSidebarItem[] = nexCommandNavigation.map(([key, label]) => ({ id: key, label, icon: <NexCommandNavGlyph area={key} />, active: key === area, trailing: key === "live-status" ? <b className={`nexsuite-sidebar__status nexsuite-sidebar__status--${liveStatusTone(liveState)}`} aria-label={`Live build status: ${liveState}`} /> : undefined, onSelect: () => selectArea(key) }));
+  const navigationEntry = nexCommandNavigation.find(([key]) => key === area) ?? nexCommandNavigation[0];
+  const heroTitle = selectedTenantId ? "Tenant details" : navigationEntry[1];
+  const heroDetail = selectedTenantId ? "Review this tenant profile, subscription, and secure access." : `Manage ${navigationEntry[1].toLowerCase()} for NexTeam internal operations.`;
+  const hero = <ModuleHeroCard eyebrow="NexCommand" title={heroTitle} detail={heroDetail} icon={<NexCommandNavGlyph area={selectedTenantId ? "tenants" : navigationEntry[0]} />} primaryAction={area === "tenants" && !selectedTenantId ? <span className="tenant-roster-panel__active-profiles">{rows.length} Active Profiles</span> : undefined} />;
 
   return <NexTeamApplicationShell
     className="nexcommand"
     navigationLabel="NexCommand navigation"
     mobileNavigationMode="drawer"
-    header={<NexTeamProductHeader className="nexcommand__topbar" ariaLabel="NexCommand header" navigation={<button className="nexcommand__menu" aria-label="Open NexCommand navigation" onClick={() => setOpen((value) => !value)}>☰</button>} brand={<div className="nexcommand__brand"><PlatformMark decorative /><span>NexCommand</span></div>} context={<div className="nexcommand__environment"><span>STAGING</span><small>nexstage.nexteam.studio</small></div>} utilities={<button className="nexcommand__signout" onClick={() => void signOut()}>Sign out</button>} />}
-    navigation={<NexCommandSidebar area={area} open={open} liveState={liveState} onSelect={(next) => { selectArea(next); setOpen(false); }} />}
-  ><section className="nexcommand__workspace"><section className="nexcommand__heading"><div><p className="ui-eyebrow">NexTeam internal operations</p><h1>{selectedTenantId ? "Tenant details" : nexCommandNavigation.find(([key]) => key === area)?.[1]}</h1><p>{user?.email ?? "Authorized NexTeam operator"}</p></div><span className="nexcommand__health">Staging connected</span></section>{issue ? <p className="nexcommand__notice">{issue}</p> : null}{selectedTenantId ? <NexCommandTenantProfilePanel user={user} tenantId={selectedTenantId} onBack={() => { void refreshTenantRoster(); window.history.pushState({}, "", "/nexcommand?area=tenants"); setArea("tenants"); setSelectedTenantId(null); }} /> : <NexCommandArea area={area} rows={rows} workingTenant={workingTenant} onRunBackup={runBackup} onRunLifecycle={runLifecycle} user={user} summary={summary} onViewTenant={(tenantId) => { window.history.pushState({}, "", `/nexcommand?area=tenants&tenant=${encodeURIComponent(tenantId)}`); setSelectedTenantId(tenantId); }} />}</section></NexTeamApplicationShell>;
+    hero={hero}
+    header={<NexCommandHeader menuOpen={open} onToggleMenu={() => setOpen((value) => !value)} onSignOut={() => void signOut()} />}
+    navigation={<NexSuiteSidebar items={nexCommandSidebarItems} open={open} onClose={() => setOpen(false)} onSelect={() => setOpen(false)} />}
+  ><section className="nexcommand__workspace">{issue ? <p className="nexcommand__notice">{issue}</p> : null}{selectedTenantId ? <NexCommandTenantProfilePanel user={user} tenantId={selectedTenantId} onBack={() => { void refreshTenantRoster(); window.history.pushState({}, "", "/nexcommand?area=tenants"); setArea("tenants"); setSelectedTenantId(null); }} /> : <NexCommandArea area={area} rows={rows} workingTenant={workingTenant} onRunBackup={runBackup} onRunLifecycle={runLifecycle} user={user} summary={summary} onViewTenant={(tenantId) => { window.history.pushState({}, "", `/nexcommand?area=tenants&tenant=${encodeURIComponent(tenantId)}`); setSelectedTenantId(tenantId); }} />}</section></NexTeamApplicationShell>;
 }
 
 function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOverview>["rows"]; workingTenant: string; onRunBackup: ReturnType<typeof useTenantOverview>["runBackup"]; onRunLifecycle: ReturnType<typeof useTenantOverview>["runLifecycle"]; user: ReturnType<typeof useAuthSession>["user"]; summary: { tenants: number; active: number }; onViewTenant: (tenantId: string) => void }): React.ReactElement {
   if (props.area === "dashboard") return <><section className="nexcommand__metrics"><Metric label="Active tenants" value={String(props.summary.active)} /><Metric label="Tenant records" value={String(props.summary.tenants)} /><Metric label="Pilot package" value="$0.00" /><Metric label="Staging health" value="Connected" /></section><section className="nexcommand__panel"><h2>Operator overview</h2><p>Use NexCommand to manage verified tenant onboarding and platform operations. Metrics appear only when the platform provides the underlying data.</p><a href="/nexcommand?area=team">Open Team</a></section></>;
   if (props.area === "live-status") return <LiveBuildStatusPanel user={props.user} />;
   if (props.area === "team") return <PlatformSettingsPanel user={props.user} />;
-  if (props.area === "tenants") return <section className="nexcommand__panel tenant-roster-panel"><div className="tenant-roster-panel__banner"><div><p className="ui-eyebrow">NexCommand tenant administration</p><h2>Tenant Roster</h2><p>Each tenant has one profile. View details to manage its business profile and review secure access.</p></div><span>{props.rows.length} Active Profiles</span></div><TenantOverviewPanel rows={props.rows} onViewDetails={props.onViewTenant} /></section>;
+  if (props.area === "tenants") return <section className="nexcommand__panel tenant-roster-panel"><TenantOverviewPanel rows={props.rows} onViewDetails={props.onViewTenant} /></section>;
   if (props.area === "prospects") return <PlatformProspectIntakePanel user={props.user} />;
   if (props.area === "subscriptions") return <PlatformSubscriptionCatalogPanel user={props.user} />;
   if (props.area === "blueprints") return <PlatformLifecycleRecordsPanel user={props.user} mode="blueprints" />;
@@ -79,11 +88,11 @@ function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOv
   if (props.area === "modules") return <Directory title="Module directory" items={moduleDirectory} />;
   if (props.area === "templates") return <TemplatesRoster rosterId={new URLSearchParams(window.location.search).get("template")} />;
   if (props.area === "integrations") return <ProviderCredentialsPanel user={props.user} />;
-  if (props.area === "system") return <section className="nexcommand__panel"><h2>Code &amp; System</h2><p>Current system identity, diagnostics, provider health, and green-gate evidence belong here. Embedded build controls are intentionally not enabled in this release.</p><dl className="nexcommand__facts"><div><dt>Staging</dt><dd>nexstage.nexteam.studio</dd></div><div><dt>Production</dt><dd>nexapp.nexteam.studio</dd></div><div><dt>Global Control</dt><dd>Local diagnostic access available to authorized operators.</dd></div></dl></section>;
-  if (props.area === "security") return <section className="nexcommand__panel"><h2>Security &amp; audit</h2><p>NexCommand is for authorized NexTeam platform personnel. Tenant ownership alone does not grant NexCommand access. Provider credentials and tenant secrets remain masked.</p><p>Support access is not active. A future request-and-approval session will require tenant approval, explicit scope, a time limit, revocation, and audit history.</p></section>;
+  if (props.area === "system") return <section className="nexcommand__panel"><p>Current system identity, diagnostics, provider health, and green-gate evidence belong here. Embedded build controls are intentionally not enabled in this release.</p><dl className="nexcommand__facts"><div><dt>Staging</dt><dd>nexstage.nexteam.studio</dd></div><div><dt>Production</dt><dd>nexapp.nexteam.studio</dd></div><div><dt>Global Control</dt><dd>Local diagnostic access available to authorized operators.</dd></div></dl></section>;
+  if (props.area === "security") return <section className="nexcommand__panel"><p>NexCommand is for authorized NexTeam platform personnel. Tenant ownership alone does not grant NexCommand access. Provider credentials and tenant secrets remain masked.</p><p>Support access is not active. A future request-and-approval session will require tenant approval, explicit scope, a time limit, revocation, and audit history.</p></section>;
   if (props.area === "billing") return <StripeBillingPanel user={props.user} />;
   if (props.area === "settings") return <PlatformSettingsPanel user={props.user} />;
-  return <section className="nexcommand__panel"><h2>{props.area === "releases" ? "Release Controls" : "Usage"}</h2><p>This area is prepared for the next authorized platform capability. It does not expose unverified data or production controls.</p></section>;
+  return <section className="nexcommand__panel"><p>This area is prepared for the next authorized platform capability. It does not expose unverified data or production controls.</p></section>;
 }
 
 function Metric(props: { label: string; value: string }): React.ReactElement { return <article><span>{props.label}</span><strong>{props.value}</strong></article>; }

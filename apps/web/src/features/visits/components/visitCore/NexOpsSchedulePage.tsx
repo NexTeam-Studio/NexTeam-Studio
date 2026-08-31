@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
 import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import { NexDocsClientWorkspace } from "../../../nexdocs/areas/clientWorkspace/components/NexDocsClientWorkspace";
 import { visitCanBeCompleted } from "./visitCompletion";
 
@@ -118,6 +119,8 @@ interface FieldDocsReportRecord {
   visitId?: string;
   createdAt?: string;
   postedAt?: string;
+  kind?: "field_report" | "ai_recap" | "evaporation";
+  evaporationReportId?: string;
 }
 
 interface FieldDocsReportsListResponse {
@@ -219,6 +222,14 @@ interface EvaporationDraft {
   windMphOverride: string;
 }
 
+interface StoredEvaporationInputs {
+  surfaceAreaFt2: number;
+  waterTempF: number;
+  observedLossInches: number | null;
+  zip?: string;
+  windMphOverride?: number;
+}
+
 interface EvaporationPreview {
   currentWeather: { city: string; airTempF: number; relativeHumidityPct: number; windMph: number; fetchedAt: string };
   result: { evapInchesPerDay: number; evapGallonsPerDay: number; observedLossInchesPerDay: number | null; leakInchesPerDay: number | null; leakGallonsPerDay: number | null; severity: string; note: string };
@@ -240,22 +251,23 @@ export function isScheduleAnchorDate(value: string): boolean {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
-export function hydrateEvaporationDraft(checklist: ChecklistRecord | null, current: EvaporationDraft): EvaporationDraft {
-  if (!checklist?.fields?.length) {
-    return current;
-  }
+export function hydrateEvaporationDraft(checklist: ChecklistRecord | null, current: EvaporationDraft, stored?: StoredEvaporationInputs | null): EvaporationDraft {
   const numberFor = (...labels: string[]): string | undefined => {
-    const value = checklist.fields?.find((field) => labels.includes(field.label))?.numberValue;
+    const value = checklist?.fields?.find((field) => labels.includes(field.label))?.numberValue;
     return typeof value === "number" && Number.isFinite(value) ? String(value) : undefined;
   };
-  const surfaceAreaFt2 = numberFor("Pool surface area", "Pool/spa surface area");
-  const waterTempF = numberFor("Water temperature");
-  const observedLossInches = numberFor("Reported daily water loss");
+  const storedNumber = (value: number | null | undefined): string | undefined => typeof value === "number" && Number.isFinite(value) ? String(value) : undefined;
+  const surfaceAreaFt2 = numberFor("Pool surface area", "Pool/spa surface area") ?? storedNumber(stored?.surfaceAreaFt2);
+  const waterTempF = numberFor("Water temperature") ?? storedNumber(stored?.waterTempF);
+  const observedLossInches = numberFor("Reported daily water loss") ?? storedNumber(stored?.observedLossInches);
+  const windMphOverride = storedNumber(stored?.windMphOverride);
   return {
     ...current,
     ...(surfaceAreaFt2 ? { surfaceAreaFt2 } : {}),
     ...(waterTempF ? { waterTempF } : {}),
-    ...(observedLossInches ? { observedLossInches } : {})
+    ...(observedLossInches ? { observedLossInches } : {}),
+    ...(stored?.zip ? { zip: stored.zip } : {}),
+    ...(windMphOverride ? { windMphOverride } : {})
   };
 }
 
@@ -717,17 +729,24 @@ export function NexOpsSchedulePage(props: {
     try {
       const checklistParams = new URLSearchParams({ tenantId: props.tenantId, jobId: visit.jobId, visitId: visit.id });
       const libraryParams = new URLSearchParams({ tenantId: props.tenantId, jobId: visit.jobId, visitId: visit.id });
-      const [checklistBody, libraryBody] = await Promise.all([
+      const [checklistBody, libraryBody, reportsBody] = await Promise.all([
         fetch(`/api/fielddocs/checklists?${checklistParams}`).then((response) => response.json() as Promise<{ ok: boolean; checklists?: ChecklistRecord[]; error?: string }>),
-        fetch(`/api/nexdocs/clients/${encodeURIComponent(visit.clientId)}/library?${libraryParams}`).then((response) => response.json() as Promise<{ ok: boolean; library?: { unfiled?: NexDocsMeasurementEntry[]; officeRecords?: NexDocsMeasurementEntry[]; nexcam?: { reports?: NexDocsMeasurementEntry[]; media?: NexDocsMeasurementEntry[]; signedDocuments?: NexDocsMeasurementEntry[] } }; error?: string }>)
+        fetch(`/api/nexdocs/clients/${encodeURIComponent(visit.clientId)}/library?${libraryParams}`).then((response) => response.json() as Promise<{ ok: boolean; library?: { unfiled?: NexDocsMeasurementEntry[]; officeRecords?: NexDocsMeasurementEntry[]; nexcam?: { reports?: NexDocsMeasurementEntry[]; media?: NexDocsMeasurementEntry[]; signedDocuments?: NexDocsMeasurementEntry[] } }; error?: string }>),
+        fetch(`/api/fielddocs/reports?${checklistParams}`).then((response) => response.json() as Promise<FieldDocsReportsListResponse>)
       ]);
-      if (!checklistBody.ok || !libraryBody.ok) {
-        setEvaporationStatus(checklistBody.error ?? libraryBody.error ?? "The measurement workspace is unavailable right now.");
+      if (!checklistBody.ok || !libraryBody.ok || !reportsBody.ok) {
+        setEvaporationStatus(checklistBody.error ?? libraryBody.error ?? reportsBody.error ?? "The measurement workspace is unavailable right now.");
         return;
       }
       const activeChecklist = (checklistBody.checklists ?? []).find((entry) => entry.status === "draft") ?? null;
+      const latestEvaporation = (reportsBody.reports ?? []).find((report) => report.kind === "evaporation" && report.evaporationReportId);
+      const storedInputs = latestEvaporation?.evaporationReportId
+        ? await fetch(`/api/evaporation/reports/${encodeURIComponent(latestEvaporation.evaporationReportId)}?tenantId=${encodeURIComponent(props.tenantId)}&jobId=${encodeURIComponent(visit.jobId)}&visitId=${encodeURIComponent(visit.id)}`)
+          .then((response) => response.json() as Promise<{ ok: boolean; report?: StoredEvaporationInputs }>)
+          .then((body) => body.ok ? body.report ?? null : null)
+        : null;
       setEvaporationChecklist(activeChecklist);
-      setEvaporationDraft((current) => hydrateEvaporationDraft(activeChecklist, current));
+      setEvaporationDraft((current) => hydrateEvaporationDraft(activeChecklist, current, storedInputs));
       const library = libraryBody.library;
       const entries = [...(library?.unfiled ?? []), ...(library?.officeRecords ?? [])]
         .filter((entry) => entry.jobId === visit.jobId && entry.visitId === visit.id);
@@ -860,6 +879,7 @@ export function NexOpsSchedulePage(props: {
         eyebrow="Field schedule"
         title="Visits"
         detail="Place approved work on the board, shift future visits cleanly, and keep unscheduled jobs visible."
+        icon={<NexOpsNavGlyph module="schedule" />}
         primaryAction={<button className="nexops-primary-inline-button" type="button" onClick={() => openComposer()}>New Visit</button>}
         metrics={(
           <>

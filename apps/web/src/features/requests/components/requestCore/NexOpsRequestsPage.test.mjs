@@ -5,7 +5,7 @@ import { test } from "node:test";
 const source = readFileSync(new URL("./NexOpsRequestsPage.tsx", import.meta.url), "utf8");
 
 test("Requests uses the shared roster and detail templates", () => {
-  assert.match(source, /import \{ NexOpsDetailTemplate, NexOpsRosterTemplate \} from "\.\.\/\.\.\/\.\.\/\.\.\/shared\/ui\/NexOpsBusinessTemplates"/);
+  assert.match(source, /NexOpsCreationTemplate/);
   assert.match(source, /<NexOpsRosterTemplate/);
   assert.match(source, /<NexOpsDetailTemplate/);
   assert.match(source, /Back to Request Roster/);
@@ -24,7 +24,7 @@ test("Requests uses Title Case for named interface areas and controls", () => {
     "Request Form",
     "Multi-Form Library",
     "Website Intake Forms",
-    "Request Queue",
+    "Search Requests",
     "Request Detail",
     "Next Office Move",
     "Downstream Field Visibility",

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
-import { isImportedHistoryRecord } from "./domain/clientProfile";
+import { NexOpsRosterSurface, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import {
   clientRosterStatusLabel,
   filterAndSortRosterClients,
@@ -41,7 +41,8 @@ interface ContactRosterProps<Client extends ContactRosterClient> {
 export function ContactRoster<Client extends ContactRosterClient>(props: ContactRosterProps<Client>): React.ReactElement {
   const [statusFilter, setStatusFilter] = useState<"all" | ClientRosterStatus>("all");
   const [tagFilter, setTagFilter] = useState("");
-  const [sort, setSort] = useState<ClientRosterSort>("name-asc");
+  const [sort] = useState<ClientRosterSort>("name-asc");
+  const [filterOpen, setFilterOpen] = useState(false);
   const tagOptions = useMemo(() => rosterTagOptions(props.clients), [props.clients]);
   const visibleClients = useMemo(() => filterAndSortRosterClients({
     clients: props.clients,
@@ -53,92 +54,28 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
 
   return (
     <section className="nexops-clients-workspace">
-      <div className="nexops-clients-heading">
-        <div className="nexops-clients-heading-copy">
-          <span className="nexops-clients-heading-eyebrow">NexOps Client Manager</span>
-          <h1 className="nexops-page-title-with-icon"><NexOpsNavGlyph module="clients" /><span>Clients</span></h1>
-          <p>{props.status} Open any row to move into the full Client workspace.</p>
-        </div>
-        <div className="nexops-client-actions">
-          <button type="button" onClick={props.onNewClient}>New Client</button>
+      <NexOpsRosterTemplate
+        eyebrow="NexOps Client Manager"
+        title="Clients"
+        detail={`${props.status} Open any row to move into the full Client workspace.`}
+        icon={<NexOpsNavGlyph module="clients" />}
+        primaryAction={<button className="nexops-client-primary-action" type="button" onClick={props.onNewClient}>New Client</button>}
+        secondaryActions={<div className="nexops-client-actions">
           <button type="button" onClick={props.onImport}>Import CSV</button>
           <button type="button" onClick={props.onRefresh}>Refresh</button>
-        </div>
-      </div>
-
-      <div className="nexops-client-stats" aria-label="Client metrics">
-        <article><span>Active Clients</span><strong>{props.activeCount}</strong><small>Native NexOps</small></article>
-        <article><span>Leads</span><strong>{props.leadCount}</strong><small>Ready for follow-up</small></article>
-        <article><span>Text-Ready</span><strong>{props.textReadyCount}</strong><small>Mobile confirmed</small></article>
-        <article><span>Sites</span><strong>{props.propertyCount}</strong><small>Multi-site hierarchy</small></article>
-      </div>
-
-      <div className="nexops-client-controls">
-        <label className="nexops-client-control-field">
-          <span>Filter by Tag</span>
-          <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)} aria-label="Filter clients by tag">
-            <option value="">All tags</option>
-            {tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
-          </select>
-        </label>
-        <label className="nexops-client-control-field">
-          <span>Status</span>
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "all" | ClientRosterStatus)} aria-label="Filter clients by status">
-            <option value="all">All statuses</option>
-            <option value="active">Active clients</option>
-            <option value="lead">Leads &amp; prospects</option>
-            <option value="archived">Archived clients</option>
-          </select>
-        </label>
-        <label className="nexops-client-control-field">
-          <span>Sort</span>
-          <select value={sort} onChange={(event) => setSort(event.target.value as ClientRosterSort)} aria-label="Sort clients">
-            <option value="name-asc">Name, A–Z</option>
-            <option value="name-desc">Name, Z–A</option>
-            <option value="status">Status</option>
-          </select>
-        </label>
-        <label className="nexops-client-search-field">
-          <span className="sr-only">Search Clients</span>
-          <input value={props.query} placeholder="Search Clients..." onChange={(event) => props.onQueryChange(event.target.value)} />
-        </label>
-      </div>
-
-      <div className="nexops-client-layout compact">
-        <section className="nexops-client-table-card" aria-label="Client list">
-          <div className="nexops-client-table">
-            <div className="nexops-client-table-head">
-              <span>Name</span><span>Primary Address</span><span>Contact</span><span>Status</span><span>Client record</span>
-            </div>
-            {visibleClients.map((client) => (
-              <button
-                className={`nexops-client-table-row ${props.selectedClientId === client.id ? "selected" : ""}`}
-                key={client.id}
-                type="button"
-                onClick={() => props.onOpenClient(client.id)}
-              >
-                <span className="nexops-client-row-identity-banner">
-                  <span className="nexops-client-row-identity" data-label="Client">
-                    <strong>{props.clientDisplayName(client)}</strong>
-                    <small>{client.company?.trim() ? client.company : props.contactSummary(client)}</small>
-                    {isImportedHistoryRecord(client) ? <small className="nexops-client-imported-history">Imported history</small> : null}
-                  </span>
-                </span>
-                <span className="nexops-client-row-address" data-label="Primary address">{props.clientPrimaryAddress(client)}</span>
-                <span className="nexops-client-row-contact" data-label="Contact">{props.selectedClientId === client.id ? "Open now" : (client.phones[0] ?? client.emails[0] ?? "No contact saved")}</span>
-                <span className="nexops-client-row-status" data-label="Status"><mark>{clientRosterStatusLabel(client, props.clientStatusLabel(client))}</mark></span>
-                <span className="nexops-client-row-activity" data-label="Client record">
-                  <small>{client.tags?.[0] ? `Tag · ${client.tags[0]}` : "No recent activity"}</small>
-                  <span className="nexops-client-row-open">Open Client <span aria-hidden="true">→</span></span>
-                </span>
-              </button>
-            ))}
-            {!visibleClients.length ? (
-              <div className="nexops-client-empty"><h2>No clients match this view yet</h2><p>Create one, import a CSV, or start from a native request.</p></div>
-            ) : null}
-          </div>
-        </section>
-      </div>
+        </div>}
+      >
+      <NexOpsRosterSurface ariaLabel="Search and filter clients" searchTitle="Search Clients" resultCount={visibleClients.length} resultNoun="Client"
+        search={<label className="nexops-quote-roster-search"><span className="sr-only">Search Clients</span><input value={props.query} placeholder="Search Clients" onChange={(event) => props.onQueryChange(event.target.value)} /></label>}
+        filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={filterOpen} onClick={() => setFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true">☷</span><span className="nexops-quote-filter-label">Filter</span><small>{visibleClients.length}</small></button>}
+        filterOptions={filterOpen ? <div className="nexops-quote-filter-options" aria-label="Client filters"><label className="nexops-field"><span>Filter by Tag</span><select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}><option value="">All Tags</option>{tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}</select></label>{(["all", "active", "lead", "archived"] as const).map((value) => <button key={value} type="button" role="radio" aria-checked={statusFilter === value} className={`nexops-jobs-filter-pill${statusFilter === value ? " active" : ""}`} onClick={() => setStatusFilter(value)}><span>{value === "all" ? "All Clients" : value === "lead" ? "Leads & Prospects" : `${value[0].toUpperCase()}${value.slice(1)} Clients`}</span><small>{value === "all" ? props.clients.length : props.clients.filter((client) => clientRosterStatusLabel(client, props.clientStatusLabel(client)).toLowerCase() === value).length}</small></button>)}</div> : null}
+        empty={!visibleClients.length ? <div className="nexops-quote-filtered-empty"><h2>No Clients Match This View</h2><p>Create one, import a CSV, or change the current filters.</p></div> : undefined}>
+          {visibleClients.map((client) => <article className="nexops-quote-filtered-row expanded" key={client.id}>
+            <button className="nexops-quote-filtered-identity-banner" type="button" onClick={() => props.onOpenClient(client.id)}><span className="nexops-quote-filtered-identity"><strong>{props.clientDisplayName(client)}</strong><small>{client.company?.trim() ? client.company : props.contactSummary(client)}</small></span></button>
+            <div className="nexops-quote-filtered-details"><span className="nexops-quote-filtered-title" data-label="Primary Address">{props.clientPrimaryAddress(client)}</span><span className="nexops-quote-filtered-updated" data-label="Contact">{client.phones[0] ?? client.emails[0] ?? "No contact saved"}</span><span className="nexops-quote-filtered-status" data-label="Status"><mark>{clientRosterStatusLabel(client, props.clientStatusLabel(client))}</mark></span><span className="nexops-quote-filtered-activity" data-label="Client Record"><small>{client.tags?.[0] ? `Tag · ${client.tags[0]}` : "No recent activity"}</small><button className="nexops-quote-filtered-open" type="button" onClick={() => props.onOpenClient(client.id)}>Open Client <span aria-hidden="true">→</span></button></span></div>
+          </article>)}
+      </NexOpsRosterSurface>
+      </NexOpsRosterTemplate>
     </section>
   );
 }

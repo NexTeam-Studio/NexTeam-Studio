@@ -27,7 +27,7 @@ test("builders accept only an existing client ID and reuse their current client 
   assert.match(quoteSource, /clients\.find\(\(candidate\) => candidate\.id === initialClientId\) \?\? clients\[0\]/);
   assert.match(jobSource, /props\.clients\.some\(\(client\) => client\.id === props\.initialClientId\)/);
   assert.match(invoiceSource, /initialClientId\?: string/);
-  assert.match(invoiceSource, /const clientContext = props\.clients\.find\(\(client\) => client\.id === props\.initialClientId\)/);
+  assert.match(invoiceSource, /const clientContext = props\.initialClientId \? props\.clients\.find/);
   assert.match(invoiceSource, /clientContext && invoice\.clientId !== clientContext\.id/);
   assert.match(invoiceSource, /!clientContext \|\| job\.clientId === clientContext\.id/);
 });

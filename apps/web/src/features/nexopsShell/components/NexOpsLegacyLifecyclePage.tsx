@@ -1,6 +1,8 @@
 import React from "react";
 import type { CrmClient, CrmInvoice, CrmJob, CrmQuote } from "../contracts/workspaceContracts";
 import { clientDisplayName, clientPrimaryAddress, clientStatusLabel, contactSummary, intakeSurfaceSummary } from "../workspaceSupport";
+import { NexOpsNavGlyph } from "../workspaceSupport";
+import { ModuleHeroCard } from "../../../shared/ui/NexOpsBusinessTemplates";
 import type { NexOpsModule } from "../domain/nexopsNavigation";
 
 export function NexOpsLegacyLifecyclePage(props: {
@@ -100,13 +102,7 @@ export function NexOpsLegacyLifecyclePage(props: {
   };
   return (
     <section className="nexops-module-page">
-      <div className="nexops-page-heading">
-        <div>
-          <h1>{page.title}</h1>
-          <p>{page.subtitle}</p>
-        </div>
-        <button type="button">{page.primaryAction}</button>
-      </div>
+      <ModuleHeroCard title={page.title} detail={page.subtitle} icon={<NexOpsNavGlyph module={module} />} primaryAction={<button type="button">{page.primaryAction}</button>} />
       <div className="nexops-module-grid nexops-module-grid-wide">
         <article className="nexops-module-card">
           <p className="eyebrow">Live native records</p>

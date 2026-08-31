@@ -9,7 +9,6 @@ test("job areas and actions use shared title capitalization", () => {
   for (const label of [
     "Manual Create",
     "New Job",
-    "Job Roster",
     "Next Move",
     "Review Follow-Up",
     "Booking Confirmation",

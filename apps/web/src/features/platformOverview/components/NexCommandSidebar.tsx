@@ -7,8 +7,16 @@ export const nexCommandNavigation: Array<[NexCommandArea, string, string]> = [
   ["dashboard", "Dashboard", "⌂"], ["live-status", "Live Build Status", "●"], ["tenants", "Tenants", "◫"], ["prospects", "Prospects", "◌"], ["blueprints", "Blueprints", "◇"], ["subscriptions", "Subscriptions", "◈"], ["onboarding", "Onboarding", "→"], ["migrations", "Migrations", "↻"], ["support", "Support", "?"], ["modules", "Modules", "▦"], ["templates", "Templates", "▤"], ["integrations", "Integrations", "⌁"], ["system", "Code & System", "⌘"], ["releases", "Releases", "↑"], ["usage", "Usage", "▥"], ["billing", "Billing", "$"], ["security", "Security & Audit", "◉"], ["settings", "Settings", "⚙"]
 ];
 
+export function NexCommandNavGlyph(props: { area: NexCommandArea }): React.ReactElement {
+  if (props.area === "tenants") {
+    return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h3M8 16h8" /></svg>;
+  }
+  const symbol = nexCommandNavigation.find(([area]) => area === props.area)?.[2] ?? "";
+  return <span aria-hidden="true">{symbol}</span>;
+}
+
 function liveStatusTone(state: string): "green" | "yellow" | "red" { return state === "COMPLETE" || state === "SUCCEEDED" || state === "IDLE" ? "green" : state === "FAILED" || state === "STALLED" || state === "BLOCKED" ? "red" : "yellow"; }
 
 export function NexCommandSidebar(props: { area: NexCommandArea; open?: boolean; liveState: string; onSelect: (area: NexCommandArea) => void }): React.ReactElement {
-  return <div className={`nexcommand__nav ${props.open ? "nexcommand__nav--open" : ""}`}><div className="nexcommand__nav-title"><PlatformMark decorative /><div><strong>NexCommand</strong><span>Internal operating console</span></div></div>{nexCommandNavigation.map(([key, label, icon]) => <button key={key} className={props.area === key ? "is-active" : ""} onClick={() => props.onSelect(key)}><i aria-hidden="true">{icon}</i><span>{label}</span>{key === "live-status" ? <b className={`nexcommand__live-status-icon nexcommand__live-status-icon--${liveStatusTone(props.liveState)}`} aria-label={`Live build status: ${props.liveState}`} /> : null}</button>)}</div>;
+  return <div className={`nexcommand__nav ${props.open ? "nexcommand__nav--open" : ""}`}><div className="nexcommand__nav-title"><PlatformMark decorative /><div><strong>NexCommand</strong><span>Internal operating console</span></div></div>{nexCommandNavigation.map(([key, label]) => <button key={key} className={props.area === key ? "is-active" : ""} onClick={() => props.onSelect(key)}><i aria-hidden="true"><NexCommandNavGlyph area={key} /></i><span>{label}</span>{key === "live-status" ? <b className={`nexcommand__live-status-icon nexcommand__live-status-icon--${liveStatusTone(props.liveState)}`} aria-label={`Live build status: ${props.liveState}`} /> : null}</button>)}</div>;
 }

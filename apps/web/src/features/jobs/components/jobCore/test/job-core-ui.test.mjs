@@ -2,13 +2,19 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  closeoutArtifactKey,
+  closeoutHydrationView,
+  defaultManualJobPropertyId,
   followUpDraftFromHistory,
   inlineJobClientDraftCanSave,
   inlineJobClientDraftMissingFields,
   isHistoricalJob,
+  isCurrentCloseoutDeliveryReviewRequest,
   matchesJobSearch,
   mergeJobClientOptions,
-  parseVisitDateTime
+  mergeJobPropertyOptions,
+  parseVisitDateTime,
+  selectedCloseoutArtifactRefs
 } from "../NexOpsJobsPage.tsx";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -16,8 +22,9 @@ import { fileURLToPath } from "node:url";
 const pageSource = readFileSync(fileURLToPath(new URL("../NexOpsJobsPage.tsx", import.meta.url)), "utf8");
 
 test("Jobs uses the shared roster and detail templates with explicit detail exit", () => {
-  assert.match(pageSource, /import \{ NexOpsDetailTemplate, NexOpsRosterTemplate \} from "\.\.\/\.\.\/\.\.\/\.\.\/shared\/ui\/NexOpsBusinessTemplates"/);
+  assert.match(pageSource, /NexOpsRosterSurface/);
   assert.match(pageSource, /<NexOpsRosterTemplate/);
+  assert.match(pageSource, /<NexOpsRosterSurface/);
   assert.match(pageSource, /<NexOpsDetailTemplate/);
   assert.match(pageSource, /Back to Job Roster/);
   assert.match(pageSource, /setDetailOpen\(false\)/);
@@ -115,4 +122,94 @@ test("visit scheduler parses accessible text controls", () => {
   assert.equal(parseVisitDateTime("2026-08-15", "10:00 AM"), null);
   assert.equal(parseVisitDateTime("2026-02-30", "10:00"), null);
   assert.equal(parseVisitDateTime("2026-08-15", "24:00"), null);
+});
+
+test("visit booking clears stale validation feedback and reports in-progress state", () => {
+  assert.match(pageSource, /setDetailStatus\("Booking visit\.\.\."\)/);
+  assert.match(pageSource, /setActionBusy\("visit"\)/);
+  assert.match(pageSource, /actionBusy === "visit" \? "Booking Visit\.\.\." : "Book Visit"/);
+  assert.match(pageSource, /setVisitDate\(event\.target\.value\); setDetailStatus\(""\);/);
+});
+
+test("a Job opens NexCam with its selected property, Job, and Visit context", () => {
+  assert.match(pageSource, /Open NexCam Checklist/);
+  assert.match(pageSource, /propertyId: detail\.propertyId/);
+  assert.match(pageSource, /jobId: detail\.id/);
+  assert.match(pageSource, /visitId: detail\.visits\[0\]\?\.id \?\? ""/);
+});
+
+test("manual Job creation keeps property selection within the selected Client", () => {
+  const properties = [
+    { id: "property_1", clientId: "client_1", label: "Primary location" },
+    { id: "property_2", clientId: "client_2", label: "Other client location" }
+  ];
+  assert.equal(defaultManualJobPropertyId(properties, "client_1"), "property_1");
+  assert.equal(defaultManualJobPropertyId(properties, "client_2"), "property_2");
+  assert.equal(defaultManualJobPropertyId(properties, "missing_client"), "");
+  assert.match(pageSource, /Property \/ service location/);
+  assert.match(pageSource, /propertyId: createPropertyId/);
+});
+
+test("an inline-created Client carries its returned property into the unfinished Job draft", () => {
+  const persisted = [{ id: "property_existing", clientId: "client_existing", label: "Existing" }];
+  const returned = { id: "property_new", clientId: "client_new", label: "New service location" };
+  assert.deepEqual(
+    mergeJobPropertyOptions(persisted, returned).map((property) => property.id),
+    ["property_new", "property_existing"]
+  );
+  assert.deepEqual(
+    mergeJobPropertyOptions([...persisted, returned], returned).map((property) => property.id),
+    ["property_existing", "property_new"]
+  );
+  assert.match(pageSource, /setCreatedPropertyOption\(body\.property \?\? null\)/);
+  assert.match(pageSource, /setCreatePropertyId\(body\.property\?\.id \?\? ""\)/);
+});
+
+test("Closeout saves the exact mixed NexDocs and NexCam artifact selection without duplicate relationships", () => {
+  const artifacts = [
+    { artifactId: "document_1", source: "nexdocs", kind: "upload", label: "Inspection", fileName: "Inspection.pdf", mimeType: "application/pdf", occurredAt: "2026-08-20T12:00:00.000Z", visitId: "visit_1" },
+    { artifactId: "media_1", source: "nexcam", kind: "field_report", label: "Evaporation", fileName: "Evaporation.pdf", mimeType: "application/pdf", occurredAt: "2026-08-20T12:05:00.000Z", visitId: "visit_1" }
+  ];
+  const selection = [closeoutArtifactKey(artifacts[0]), closeoutArtifactKey(artifacts[1]), closeoutArtifactKey(artifacts[1])];
+  assert.deepEqual(selectedCloseoutArtifactRefs(artifacts, selection), [
+    { artifactId: "document_1", source: "nexdocs", kind: "upload", visitId: "visit_1" },
+    { artifactId: "media_1", source: "nexcam", kind: "field_report", visitId: "visit_1" }
+  ]);
+});
+
+test("Closeout hydration never represents an in-flight package as zero selected or finalized", () => {
+  const packageRecord = {
+    id: "package_1",
+    packageVersion: 2,
+    manifestStatus: "draft",
+    selectedArtifactRefs: [{ artifactId: "document_1", source: "nexdocs", kind: "upload", visitId: "visit_1" }]
+  };
+  assert.deepEqual(closeoutHydrationView({ phase: "loading", jobId: "job_1" }, "job_1", packageRecord), {
+    loading: true,
+    ready: false,
+    selectedCount: 0,
+    editable: false
+  });
+  assert.deepEqual(closeoutHydrationView({ phase: "ready", jobId: "job_1" }, "job_1", packageRecord), {
+    loading: false,
+    ready: true,
+    selectedCount: 1,
+    editable: true
+  });
+  assert.match(pageSource, /Selection changed\. Save the package before returning to Delivery Review\./);
+  assert.match(pageSource, /Loading selection\.\.\./);
+});
+
+test("Closeout discards an out-of-order Delivery Review response after a selection or Job change", () => {
+  const request = { loadSequence: 4, selectionGeneration: 9 };
+  assert.equal(isCurrentCloseoutDeliveryReviewRequest(request, { loadSequence: 4, selectionGeneration: 9 }), true);
+  assert.equal(isCurrentCloseoutDeliveryReviewRequest(request, { loadSequence: 4, selectionGeneration: 10 }), false);
+  assert.equal(isCurrentCloseoutDeliveryReviewRequest(request, { loadSequence: 5, selectionGeneration: 9 }), false);
+  assert.match(pageSource, /closeoutSelectionGenerationRef\.current \+= 1/);
+});
+
+test("Closeout keeps Delivery Review loading and failure state visible before a review is available", () => {
+  assert.match(pageSource, /role="status" aria-live="polite">\{closeoutDeliveryStatus\}<\/p>/);
+  assert.match(pageSource, /Loading the saved Closeout package for delivery review/);
+  assert.match(pageSource, /Delivery review is unavailable right now/);
 });

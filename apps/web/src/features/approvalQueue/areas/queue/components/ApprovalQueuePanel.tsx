@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { ModuleHeroCard } from "../../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsNavGlyph } from "../../../../nexopsShell/workspaceSupport";
 import "../styles/approvalQueue.css";
 import "../../../../queueShared/queuePrimitives.css";
 
@@ -183,13 +185,7 @@ export function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElem
 
   return (
     <aside className="approval-card">
-      <div className="schedule-heading">
-        <div>
-          <p className="eyebrow">ApprovalQueue</p>
-          <h2>Approvals</h2>
-        </div>
-        <button className="refresh-button" type="button" onClick={() => void refresh()}>Refresh</button>
-      </div>
+      <ModuleHeroCard title="Approvals" detail="Review the work that needs a deliberate approval before it can continue." icon={<NexOpsNavGlyph module="approvals" />} primaryAction={<button className="refresh-button" type="button" onClick={() => void refresh()}>Refresh</button>} />
       <p className="schedule-status">{status}</p>
       <h3 className="queue-section-heading">Pending</h3>
       <div className="content-list">

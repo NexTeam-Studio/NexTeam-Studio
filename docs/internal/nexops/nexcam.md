@@ -1,7 +1,15 @@
 # NexOps NexCam Field Rail
 
-Last updated: 2026-07-18  
-Build piece: NexCam reconcile and build pass + NexCam v2 refinements + payments/signatures pass
+Last updated: 2026-08-28
+Build piece: NexCam complete-build closure: native checklist, media, report, Nexi, and client-hub rails
+
+## Completion record
+
+- NexCam is the locked product name; legacy documentation uses this name rather than `NexLens`.
+- The default seeded template is `leak_detection_checklist_v1`, derived from the existing Aquatrace R1–R10 extraction contract rather than a second extraction path.
+- The authoritative runtime Page routes are `/nexcam`, `/nexcam/templates`, `/nexcam/photos`, and `/nexcam/reports`.
+- The Page Template and Layout Part taxonomy for the surrounding NexSuite shell is maintained in `DESIGN-HIERARCHY.md`.  NexCam supplies field-work content into that shared product structure; it does not own a separate header or sidebar implementation.
+- Direct public share links remain deliberately deferred. PDF download, receipt attachment, direct email attachment, and client-hub Documents/Appointments delivery are the current supported report-delivery paths.
 
 ## Statuses
 
@@ -278,9 +286,8 @@ Build piece: NexCam reconcile and build pass + NexCam v2 refinements + payments/
 - Client-facing media surfaces intentionally show date/time only; GPS coordinates remain staff-side only even when EXIF GPS is stored internally.
 
 ### Report delivery
-- Reports render through the dedicated field-report PDF renderer today, not the quote/invoice PDF renderer.
-- This is an intentional current divergence because field reports are checklist/media-first rather than commercial-document-first.
-- Even with that dedicated renderer, the downstream delivery path is real:
+- Reports render through the shared NexTeam PDF engine used by commercial documents, with field-report-specific content supplied as the document lines.
+- The downstream delivery path is real:
   - closeout receipt review can attach the report
   - outbound receipt email sends the generated PDF bytes
   - client hub can open the same report PDF route
@@ -344,5 +351,4 @@ Current behavior:
 
 - Public share-link delivery for reports/media packages is deferred and tracked in `NEXTEAM-FUTURE-FEATURE-IDEAS.md`.
 - Client-consent gating for marketing/content reuse of photos is not built in this pass.
-- The field-report PDF renderer is still separate from the quote/invoice/receipt renderer family; this is documented intentionally rather than silently collapsed.
 - Signed-document create/sign flows are live in NexOps, but no separate Nexi toolset is exposed for them yet.

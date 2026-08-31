@@ -36,18 +36,74 @@ const templatesRoot: TemplateNavigationNode = {
         }, {
           id: "sidebar",
           label: "Sidebar",
-          description: "Current NexCommand Sidebar reference specimen.",
+          description: "Reusable NexSuite Sidebar Layout Part.",
           href: "/design-system/layout-parts/sidebar"
+        }, {
+          id: "module-hero-card",
+          label: "Module Hero Card",
+          description: "Shared Page introduction Layout Part.",
+          href: "/design-system/layout-parts/module-hero-card"
         }, {
           id: "application-shell",
           label: "Application Shell",
-          description: "Future Global review item.",
-          disabled: true
+          description: "Shared Page Template with the Hero slot.",
+          href: "/design-system/page-templates/application-shell"
+        }, {
+          id: "nexops-roster-template",
+          label: "NexOps Roster Template",
+          description: "Shared roster Page Template.",
+          href: "/design-system/page-templates/nexops-roster-template"
+        }, {
+          id: "nexops-creation-template",
+          label: "NexOps Creation Template",
+          description: "Shared create/composer Page Template.",
+          href: "/design-system/page-templates/nexops-creation-template"
+        }, {
+          id: "nexops-detail-template",
+          label: "NexOps Detail Template",
+          description: "Shared detail Page Template.",
+          href: "/design-system/page-templates/nexops-detail-template"
         }, {
           id: "footer",
           label: "Footer",
           description: "Future Global review item.",
           disabled: true
+        }]
+      }, {
+        id: "nexops",
+        label: "NexOps",
+        description: "NexOps Page Templates and current Page-owned Layout Parts.",
+        rosterHref: "/nexcommand?area=templates&template=nexops",
+        children: [{
+          id: "nexops-roster-template",
+          label: "NexOps Roster Template",
+          description: "Shared roster Page Template review.",
+          href: "/design-system/page-templates/nexops-roster-template"
+        }, {
+          id: "nexops-detail-template",
+          label: "NexOps Detail Template",
+          description: "Shared single-record Page Template review.",
+          href: "/design-system/page-templates/nexops-detail-template"
+        }, {
+          id: "nexops-creation-template",
+          label: "NexOps Creation Template",
+          description: "Shared create/composer Page Template review.",
+          href: "/design-system/page-templates/nexops-creation-template"
+        }, {
+          id: "quote-search-filter",
+          label: "Quote Search and Filter",
+          description: "Quotes Roster Page Layout Part: search, Filter accordion, statuses, and result tally.",
+          href: "/nexops/quotes#quote-search-filter"
+        }, {
+          id: "quote-results-roster",
+          label: "Quote Results Roster",
+          description: "Quotes Roster Page Layout Part: centered result banner and white roster body.",
+          href: "/nexops/quotes#quote-results-roster"
+        }, {
+          id: "expandable-quote-roster-record",
+          label: "Expandable Quote Roster Record",
+          description: "Quotes Roster Page Layout Part: one-at-a-time expandable quote record and Open Quote action.",
+          href: "/nexops/quotes#expandable-quote-roster-record"
         }]
       }]
     }]

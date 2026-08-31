@@ -12,6 +12,25 @@
   gap: 20px;
 }
 
+.quote-engine-page .module-hero-card--quote .module-hero-card__title {
+  width: 100%;
+  justify-content: center;
+}
+
+.quote-engine-page .module-hero-card--quote .module-hero-card__detail {
+  text-align: center;
+}
+
+.quote-engine-page .module-hero-card--quote .module-hero-card__icon {
+  width: clamp(2rem, 4vw, 3.35rem);
+  height: clamp(2rem, 4vw, 3.35rem);
+}
+
+.quote-engine-page .module-hero-card--quote .module-hero-card__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
 .nexops-quote-primary-button {
   min-height: 46px;
   padding: 10px 17px;
@@ -26,6 +45,56 @@
 }
 
 .nexops-quote-primary-button:disabled { opacity: .58; cursor: not-allowed; }
+
+.quote-engine-page .nexops-quote-roster-filters { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; justify-items: stretch; gap: 14px; padding: 24px 22px; }
+.quote-engine-page .nexops-quote-roster-filters h2 { margin: 0; color: #d4ff20; font-size: clamp(1.55rem, 3vw, 2.15rem); line-height: 1; text-align: center; }
+.quote-engine-page .nexops-quote-roster-search { display: block; width: 100%; justify-self: stretch; }
+.quote-engine-page .nexops-quote-roster-search input { box-sizing: border-box; width: 100%; min-height: 50px; padding: 12px 16px; border: 1px solid rgba(7, 36, 40, .16); border-radius: 15px; background: #fff; color: #112833; font: inherit; }
+.quote-engine-page .nexops-quote-roster-filters .nexops-jobs-filter-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.quote-engine-page .nexops-quote-roster-filters .nexops-jobs-filter-pill { flex: 1 1 130px; border-color: rgba(255,255,255,.34); background: linear-gradient(135deg, #ffffff 0%, #f0f2f3 100%); color: #112833; box-shadow: 0 8px 18px rgba(2, 22, 28, .12); }
+.quote-engine-page .nexops-quote-filter-trigger { position: relative; width: 100%; min-height: 52px; justify-content: center; padding-inline: 52px; }
+.quote-engine-page .nexops-quote-filter-icon { display: inline-grid; width: 28px; height: 28px; place-items: center; border-radius: 9px; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; box-shadow: 0 5px 12px rgba(37, 210, 56, .2); }
+.quote-engine-page .nexops-quote-filter-trigger .nexops-quote-filter-icon { position: absolute; left: 16px; }
+.quote-engine-page .nexops-quote-filter-label { font-size: 1.08rem; font-weight: 850; text-align: center; }
+.quote-engine-page .nexops-quote-filter-icon svg { width: 17px; height: 17px; }
+.quote-engine-page .nexops-quote-filter-options { display: grid; gap: 8px; }
+.quote-engine-page .nexops-quote-filter-options .nexops-jobs-filter-pill { width: 100%; min-height: 48px; justify-content: flex-start; padding-inline: 16px; }
+.quote-engine-page .nexops-quote-filter-options .nexops-jobs-filter-pill small { margin-left: auto; }
+.quote-engine-page .nexops-quote-roster-filters .nexops-jobs-filter-pill small { background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; box-shadow: 0 4px 10px rgba(37, 210, 56, .18); }
+.quote-engine-page .nexops-quote-filter-trigger small { position: absolute; right: 16px; }
+.quote-engine-page .nexops-quote-filter-check:empty { display: none; }
+.quote-engine-page .nexops-quote-filter-check:not(:empty) { display: inline-grid; width: 24px; height: 24px; place-items: center; border-radius: 8px; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; font-weight: 900; box-shadow: 0 4px 10px rgba(37, 210, 56, .18); }
+.nexops-quote-filtered-roster { overflow: hidden; border: 1px solid rgba(8, 33, 49, .1); border-radius: 26px; background: #ffffff; box-shadow: 0 18px 48px rgba(6, 21, 30, .16); }
+.nexops-quote-filtered-roster-heading { padding: 22px 24px; text-align: center; background: radial-gradient(circle at 88% 16%, rgba(116, 255, 113, .28), transparent 31%), linear-gradient(118deg, #06151e 0%, #07313a 54%, #08723a 100%); }
+.nexops-quote-filtered-roster-heading h2 { margin: 0; color: #d4ff20; font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1; }
+.nexops-quote-filtered-table { display: grid; gap: 12px; padding: 12px; }
+.nexops-quote-filtered-list { display: grid; gap: 12px; }
+.nexops-quote-filtered-row { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(190px, 1fr) minmax(150px, .8fr) minmax(112px, .58fr); gap: 14px; min-height: 0; padding: 0 18px 18px; border: 1px solid rgba(8, 33, 49, 0.1); border-radius: 22px; background: #ffffff; overflow: hidden; box-shadow: 0 10px 24px rgba(8, 33, 49, .045); }
+.nexops-quote-filtered-row:not(.expanded) { padding-bottom: 0; }
+.nexops-quote-filtered-identity-banner { grid-column: 1 / -1; display: grid; width: auto; margin: 0 -18px; padding: 17px 20px; border: 0; border-radius: 21px 21px 16px 16px; color: inherit; background: radial-gradient(circle at right center, rgba(212, 255, 32, .18), transparent 28%), linear-gradient(118deg, #061a2a 0%, #08343b 58%, #0d6d3d 100%); text-align: left; cursor: pointer; }
+.nexops-quote-filtered-identity-banner strong, .nexops-quote-filtered-identity-banner small { display: block; }
+.nexops-quote-filtered-identity-banner strong { color: #d4ff20; font-size: 1.08rem; line-height: 1.2; }
+.nexops-quote-filtered-identity-banner small { margin-top: 3px; color: rgba(255, 255, 255, .88); font-size: .88rem; }
+.nexops-quote-filtered-details { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(190px, 1fr) minmax(150px, .8fr) minmax(112px, .58fr); gap: 14px; }
+.nexops-quote-filtered-title, .nexops-quote-filtered-updated, .nexops-quote-filtered-status, .nexops-quote-filtered-activity { min-width: 0; display: grid; align-content: start; gap: 5px; color: #23404d; font-size: .9rem; overflow-wrap: anywhere; }
+.nexops-quote-filtered-title::before, .nexops-quote-filtered-updated::before, .nexops-quote-filtered-status::before, .nexops-quote-filtered-activity::before { content: attr(data-label); color: #667884; font-size: .68rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+.nexops-quote-filtered-status mark { width: fit-content; border-radius: 999px; padding: 6px 10px; color: #0f5d1b; background: #e6f2e5; }
+.nexops-quote-filtered-activity { justify-self: end; text-align: right; }
+.nexops-quote-filtered-activity small { margin: 0; color: #0b6b43; font-weight: 850; }
+.nexops-quote-filtered-open { appearance: none; padding: 0; border: 0; color: #103548; background: transparent; font: inherit; font-size: .86rem; font-weight: 900; cursor: pointer; }
+.nexops-quote-filtered-open:hover, .nexops-quote-filtered-open:focus-visible { color: #0b6b43; text-decoration: underline; }
+.nexops-quote-filtered-empty { margin: 12px; padding: 28px; border: 1px dashed rgba(11, 107, 67, .26); border-radius: 18px; color: #526675; background: linear-gradient(135deg, #f9ffef, #f2faf4); }
+.nexops-quote-filtered-empty h2, .nexops-quote-filtered-empty p { margin: 0; }
+.nexops-quote-filtered-empty p { margin-top: 8px; }
+@media (max-width: 880px) {
+  .nexops-quote-filtered-table { gap: 10px; padding: 10px; }
+  .nexops-quote-filtered-row { grid-template-columns: minmax(0, 1fr) auto; gap: 12px 18px; padding: 17px; border-radius: 18px; background: linear-gradient(180deg, #fff 0%, #f8fcf8 100%); }
+  .nexops-quote-filtered-identity-banner { grid-column: 1 / -1; margin: -17px -17px 2px; padding: 16px 17px; border-radius: 17px 17px 14px 14px; }
+  .nexops-quote-filtered-details { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 18px; }
+  .nexops-quote-filtered-title, .nexops-quote-filtered-updated { grid-column: 1 / -1; }
+  .nexops-quote-filtered-activity { justify-self: end; text-align: right; }
+}
+.quote-engine-page .nexops-quote-template-picker-modal .nexops-catalog-picker-list { padding-top: 14px; }
 
 .nexops-quote-template-tabs {
   display: flex;
@@ -62,6 +131,99 @@
 .nexops-quote-panel > .nexops-quote-line-list,
 .nexops-quote-panel > .nexops-catalog-picker-empty { margin-block: 16px; }
 .nexops-quote-panel > .nexops-quote-totals { margin-bottom: 18px; }
+
+.nexops-quote-setup-body { display: grid; gap: 18px; padding: 18px; }
+.nexops-quote-job-title input { min-height: 52px; font-size: 1.05rem; font-weight: 750; }
+.nexops-quote-client-picker,
+.nexops-quote-property-picker,
+.nexops-quote-new-property-form { display: grid; gap: 14px; padding: 16px; border: 1px solid rgba(9, 49, 49, .11); border-radius: 18px; background: #f8fbf7; }
+.nexops-quote-client-picker__head,
+.nexops-quote-property-picker__head { display: grid; gap: 4px; }
+.nexops-quote-client-picker__head h4,
+.nexops-quote-property-picker__head h4 { margin: 0; color: #102a31; font-size: 1.05rem; }
+.nexops-quote-client-picker__head p,
+.nexops-quote-property-picker__head p { margin: 0; color: #64727a; font-size: .88rem; line-height: 1.45; }
+.nexops-quote-choice-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nexops-quote-choice-tabs button { min-height: 44px; border: 1px solid rgba(8, 42, 45, .16); border-radius: 12px; background: #fff; color: #16303a; font: inherit; font-weight: 800; cursor: pointer; }
+.nexops-quote-choice-tabs button.active { border-color: transparent; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; box-shadow: 0 8px 18px rgba(37, 210, 56, .18); }
+.nexops-quote-inline-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border-radius: 14px; background: #fff9e8; color: #573c03; }
+.nexops-quote-inline-notice button { border: 0; background: none; color: inherit; font: inherit; font-weight: 850; text-decoration: underline; cursor: pointer; }
+.nexops-quote-new-property-form > .nexops-quote-primary-button { justify-self: start; }
+.nexops-quote-pricing-summary { display: grid; margin: 18px; border-top: 1px solid rgba(9, 49, 49, .12); }
+.nexops-quote-pricing-summary > div { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 50px; padding: 0 14px; border-bottom: 1px solid rgba(9, 49, 49, .09); color: #263b42; }
+.nexops-quote-pricing-summary strong { font-size: 1.05rem; color: #112831; }
+.nexops-quote-pricing-summary__total { margin: 4px -1px; border: 0 !important; background: rgba(7, 36, 40, .08); font-weight: 850; }
+.nexops-quote-pricing-summary__total strong { font-size: 1.3rem; }
+
+/* The Create Quote Page is deliberately a short, single-column working flow. */
+.quote-engine-page .nexops-quote-composer-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.quote-engine-page .nexops-quote-composer-card { overflow: visible; padding: 0; border: 0; border-radius: 24px; background: transparent; box-shadow: none; }
+.quote-engine-page .nexops-quote-composer-card > .nexops-quote-composer-grid > .nexops-quote-panel { padding: 0; overflow: hidden; }
+.quote-engine-page .nexops-quote-panel > .nexops-quote-simple-heading,
+.quote-engine-page .nexops-quote-panel > .nexops-quote-setup-body,
+.quote-engine-page .nexops-quote-panel > .nexops-quote-line-list,
+.quote-engine-page .nexops-quote-panel > .nexops-catalog-picker-empty,
+.quote-engine-page .nexops-quote-panel > .nexops-quote-pricing-summary { margin-inline: 0; }
+.quote-engine-page .nexops-quote-simple-heading { display: grid; gap: 5px; padding: 24px 24px 0; }
+.quote-engine-page .nexops-quote-simple-heading h3 { margin: 0; color: #102a31; font-size: 1.35rem; }
+.quote-engine-page .nexops-quote-simple-heading span { color: #64727a; font-size: .94rem; line-height: 1.45; }
+.quote-engine-page .nexops-quote-simple-section { padding: 22px; }
+.quote-engine-page .nexops-quote-simple-section h3,
+.quote-engine-page .nexops-quote-panel > h3 { margin: 0; color: #102a31; font-size: 1.15rem; }
+.quote-engine-page .nexops-quote-final-action { display: grid; padding: 4px 0 0; }
+.quote-engine-page .nexops-quote-final-action .nexops-quote-primary-button { width: min(100%, 460px); justify-self: center; min-height: 56px; font-size: 1.04rem; }
+.quote-engine-page .nexops-quote-line-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.quote-engine-page .nexops-quote-client-hero {
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+  border-radius: 20px;
+  background: linear-gradient(118deg, #071923, #073b40 58%, #08723a);
+  color: #fff;
+  text-align: center;
+}
+.quote-engine-page .nexops-quote-client-hero h3 { margin: 0; color: #d4ff20; font-size: clamp(1.75rem, 6vw, 2.3rem); }
+.quote-engine-page .nexops-quote-client-hero .nexops-quote-choice-tabs button { border: 0; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; box-shadow: 0 8px 18px rgba(37, 210, 56, .18); }
+.quote-engine-page .nexops-quote-client-profile-panel { border: 0; background: transparent; box-shadow: none; overflow: visible; }
+.quote-engine-page .nexops-quote-details-banner { padding: 24px; border-radius: 21px 21px 0 0; background: linear-gradient(118deg, #071923, #073b40 58%, #08723a); }
+.quote-engine-page .nexops-quote-details-banner h3 { color: #d4ff20; }
+.quote-engine-page .nexops-quote-details-banner span { color: rgba(255,255,255,.86); }
+.quote-engine-page .nexops-quote-line-search > div { display: grid; grid-template-columns: minmax(0, 1fr) 52px; gap: 8px; }
+.quote-engine-page .nexops-quote-line-search button { border: 0; border-radius: 14px; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; font: inherit; font-size: 1.65rem; font-weight: 850; cursor: pointer; }
+.quote-engine-page .nexops-modal-layer { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 16px; }
+.quote-engine-page .nexops-modal-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: rgba(4, 14, 19, .66); cursor: default; }
+.quote-engine-page .nexops-modal-card { position: relative; z-index: 1; width: min(640px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; border: 1px solid rgba(212,255,32,.3); border-radius: 24px; background: #fff; box-shadow: 0 24px 60px rgba(1,10,14,.45); }
+.quote-engine-page .nexops-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 22px; background: linear-gradient(118deg, #071923, #073b40 58%, #08723a); color: #fff; }
+.quote-engine-page .nexops-modal-head .eyebrow { margin: 0 0 7px; color: #d4ff20; }
+.quote-engine-page .nexops-modal-head h2 { margin: 0; color: #d4ff20; }
+.quote-engine-page .nexops-modal-head button { min-height: 38px; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; background: rgba(255,255,255,.1); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.quote-engine-page .nexops-quote-client-search-modal > .nexops-field { display: grid; gap: 8px; padding: 18px 22px; }
+.quote-engine-page .nexops-quote-client-search-modal .nexops-catalog-picker-list { padding: 0 22px 22px; }
+.quote-engine-page .nexops-quote-client-search-modal .nexops-catalog-picker-item { width: 100%; min-height: 0; padding: 14px; border: 1px solid rgba(8, 42, 45, .14); border-radius: 14px; background: #fff; color: #102a31; font: inherit; cursor: pointer; }
+.quote-engine-page .nexops-quote-template-picker-modal .nexops-modal-head button { border: 0; background: linear-gradient(135deg, #d4ff20, #25d238); color: #07151c; box-shadow: 0 8px 18px rgba(37, 210, 56, .18); }
+.quote-engine-page .nexops-quote-client-search-modal .nexops-quote-template-picker-item { min-height: 86px; border: 0; background: linear-gradient(118deg, #071923, #073b40 58%, #08723a); color: #fff; box-shadow: 0 8px 18px rgba(4, 42, 38, .2); text-align: left; }
+.quote-engine-page .nexops-quote-template-picker-item strong { display: block; color: #d4ff20; font-size: 1.08rem; font-weight: 850; }
+.quote-engine-page .nexops-quote-template-picker-item small { display: block; margin-top: 5px; color: rgba(255,255,255,.9); font-size: .9rem; line-height: 1.35; }
+.quote-engine-page .nexops-quote-client-search-modal .nexops-catalog-picker-empty { border: 1px dashed rgba(8, 42, 45, .18); background: #f8fbf7; }
+.nexops-quote-client-search-modal,
+.nexops-quote-client-create-modal,
+.nexops-quote-property-modal,
+.nexops-quote-confirm-modal { width: min(640px, calc(100vw - 32px)); max-height: min(82vh, 760px); overflow: auto; }
+.nexops-quote-client-create-modal { padding: 0; }
+.nexops-quote-client-create-modal .nexops-client-form-page { border: 0; border-radius: 0; box-shadow: none; }
+.nexops-quote-confirm-modal { display: grid; gap: 16px; padding: 26px; }
+.nexops-quote-confirm-modal .eyebrow,
+.nexops-quote-confirm-modal h2,
+.nexops-quote-confirm-modal p { margin: 0; }
+
+@media (max-width: 700px) {
+  .quote-engine-page .nexops-quote-simple-heading { padding: 20px 18px 0; }
+  .quote-engine-page .nexops-quote-setup-body { padding: 18px; }
+  .quote-engine-page .nexops-quote-client-picker,
+  .quote-engine-page .nexops-quote-property-picker,
+  .quote-engine-page .nexops-quote-new-property-form { padding: 16px; }
+  .quote-engine-page .nexops-quote-client-hero { padding: 20px 18px; }
+}
 
 .nexops-quote-client-create { display: grid; align-content: end; gap: 7px; }
 .nexops-quote-client-create span { color: #52626b; font-size: .8rem; font-weight: 750; }

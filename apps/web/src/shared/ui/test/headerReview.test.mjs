@@ -12,12 +12,12 @@ const sidebar = fs.readFileSync(new URL("../../../features/platformOverview/comp
 
 test("Header review route is a permanent, auth-independent preview surface", () => {
   assert.match(page, /NexSuite design system · layout part/);
-  assert.match(page, /Tenant \/ Operational/);
-  assert.match(page, /Internal \/ Admin/);
-  assert.match(page, /Harbor & Hearth Services/);
+  assert.match(page, /NexSuiteHeader/);
+  assert.match(page, /NexCommandHeader/);
+  assert.match(page, /Header variant/);
   assert.match(page, /NexTeamApplicationShell/);
   assert.match(page, /NexSuite design navigation/);
-  assert.match(page, /href="\/nexcommand\?area=templates"/);
+  assert.match(page, /href="\/nexcommand\?area=templates&template=global"/);
   assert.doesNotMatch(page, /Back to Templates/);
   assert.match(bootstrap, /\/design-system\/layout-parts\/header/);
   assert.match(server, /nexcommand\|design-system/);
@@ -28,9 +28,9 @@ test("Header review route is a permanent, auth-independent preview surface", () 
 
 test("Sidebar review route renders the reusable current NexCommand sidebar as a labeled specimen", () => {
   assert.match(sidebarPage, /NexTeamApplicationShell/);
-  assert.match(sidebarPage, /Sidebar specimen under review/);
-  assert.match(sidebarPage, /NexCommand Sidebar — current reference/);
-  assert.match(sidebarPage, /<NexCommandSidebar/);
+  assert.match(sidebarPage, /NexSuite Sidebar Layout Part/);
+  assert.match(sidebarPage, /NexSuiteSidebar/);
+  assert.match(sidebarPage, /<NexSuiteSidebar/);
   assert.match(sidebar, /Live Build Status/);
   assert.match(bootstrap, /\/design-system\/layout-parts\/sidebar/);
   assert.match(server, /nexcommand\|design-system/);

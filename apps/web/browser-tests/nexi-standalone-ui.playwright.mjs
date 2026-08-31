@@ -85,7 +85,15 @@ test("standalone Nexi shell keeps the header and composer pinned while the threa
 });
 
 test("standalone Nexi mobile header keeps the tenant mark clear of the voice-toggle rail at phone widths", async () => {
-  const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  const styles = [
+    "../src/shared/styles/base.css",
+    "../src/shared/styles/visualFoundation.css",
+    "../src/shared/styles/responsiveComposition.css",
+    "../src/features/nexopsShell/styles/shellCore.css",
+    "../src/features/nexopsShell/styles/shellHeader.css",
+    "../src/features/nexopsShell/styles/shellResponsiveLegacy.css",
+    "../src/features/nexi/areas/chat/styles/chat.css"
+  ].map((path) => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n");
   const headerMarkup = `
     <header class="nexops-mobile-bar nexops-mobile-nexi">
         <div class="nexops-mobile-header-grid">

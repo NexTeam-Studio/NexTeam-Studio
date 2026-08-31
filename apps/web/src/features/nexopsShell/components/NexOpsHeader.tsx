@@ -7,7 +7,9 @@ export function NexOpsSharedMobileBar(props: {
   tenantBranding: TenantBranding | null;
   tenantId: string;
   product?: ProductBrand;
-  rightControls: React.ReactNode;
+  menuControl?: React.ReactNode;
+  signOutControl?: React.ReactNode;
+  rightControls?: React.ReactNode;
   secondaryControls?: React.ReactNode;
   onBrandClick?: () => void;
   brandAriaLabel?: string;
@@ -15,41 +17,13 @@ export function NexOpsSharedMobileBar(props: {
   const product = props.product ?? "nexops";
   const tenantLogoAvailable = hasTenantLogo(props.tenantBranding, props.tenantId);
   const brandLockup = (
-    <div className="nexops-mobile-brand-lockup">
-      <PlatformMark className="nexops-mobile-platform-mark" alt="NexTeam" />
-      <ProductLogo product={product} className="nexops-mobile-product-logo" alt={productLabel(product)} />
+    <div className="nexsuite-header__brand-lockup">
+      <PlatformMark className="nexsuite-header__platform-mark" alt="NexTeam" />
+      <span className="nexsuite-header__brand-name">{productLabel(product)}</span>
     </div>
   );
   return (
-    <header className="nexops-mobile-bar">
-      <div className="nexops-mobile-header-grid">
-        <div className="nexops-mobile-header-left">
-          {props.onBrandClick ? (
-            <button
-              className="nexops-mobile-brand-button"
-              type="button"
-              aria-label={props.brandAriaLabel ?? `Open ${productLabel(product)}`}
-              onClick={props.onBrandClick}
-            >
-              {brandLockup}
-            </button>
-          ) : brandLockup}
-        </div>
-        {tenantLogoAvailable ? <div className="nexops-mobile-header-center">
-          <TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-mobile-tenant-mark" />
-        </div> : null}
-        <div className="nexops-mobile-header-right">
-          <div className="nexops-mobile-controls">
-            {props.rightControls}
-          </div>
-          {props.secondaryControls ? (
-            <div className="nexops-mobile-secondary-controls">
-              {props.secondaryControls}
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </header>
+    <header className="nexops-mobile-bar"><div className="nexops-mobile-header-grid"><div className="nexops-mobile-header-left">{props.onBrandClick ? <button className="nexops-mobile-brand-button" type="button" aria-label={props.brandAriaLabel ?? `Open ${productLabel(product)}`} onClick={props.onBrandClick}>{brandLockup}</button> : brandLockup}</div>{tenantLogoAvailable ? <div className="nexops-mobile-header-center"><TenantBrandMark branding={props.tenantBranding} tenantId={props.tenantId} className="nexops-mobile-tenant-mark" /></div> : null}<div className="nexops-mobile-header-right"><div className="nexops-mobile-controls">{props.rightControls}</div>{props.secondaryControls ? <div className="nexops-mobile-secondary-controls">{props.secondaryControls}</div> : null}</div></div></header>
   );
 }
 
