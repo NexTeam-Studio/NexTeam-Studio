@@ -37,3 +37,19 @@ test("NexOps uses the shared application shell while retaining product navigatio
   assert.match(source, /navigationLabel="NexOps navigation"/);
   assert.match(source, /NexOpsSharedWebTopbar/);
 });
+
+test("NexOps sidebar follows the approved lifecycle order with only Billing and Admin / Tools grouped", () => {
+  const order = ["sidebarModuleItem(\"home\")", "sidebarModuleItem(\"clients\")", "sidebarModuleItem(\"requests\")", "sidebarModuleItem(\"quotes\")", "sidebarModuleItem(\"jobs\")", "sidebarModuleItem(\"schedule\")", "label: \"NexCam\"", "label: \"Billing\"", "sidebarModuleItem(\"approvals\")", "label: \"Admin / Tools\"", "label: \"Settings\""];
+  let previous = -1;
+  for (const token of order) {
+    const next = source.indexOf(token);
+    assert.ok(next > previous, `${token} must follow the approved order`);
+    previous = next;
+  }
+  assert.match(source, /id: \"billing\"[\s\S]*children: \[sidebarModuleItem\(\"invoices\"\), sidebarModuleItem\(\"payments\"\)\]/);
+  assert.match(source, /id: \"admin-tools\"[\s\S]*children: \[sidebarModuleItem\(\"imports\"\)\]/);
+  assert.doesNotMatch(source, /id: \"create\", label: \"Create\", icon: \"\+\"/);
+  assert.doesNotMatch(source, /id: \"modules\", label: \"Modules\"/);
+  assert.doesNotMatch(source, /id: \"notifications\", label: \"Notifications\"/);
+  assert.match(source, /utilityControls=\{<>[\s\S]*aria-label="Open create menu"[\s\S]*aria-label="Open notifications"[\s\S]*aria-label="Open modules"/);
+});

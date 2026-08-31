@@ -1014,6 +1014,10 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
         onToggleModuleSwitcher={toggleModuleSwitcher}
         accountTools={(
           <>
+            <button className="nexops-web-icon-button" type="button" aria-label="Open create menu" onClick={() => {
+              closeHeaderPanels();
+              setCreateMenuOpen(true);
+            }}>+</button>
             <button className="nexops-web-icon-button" type="button" aria-label="Open camera capture" onClick={() => {
               if (captureSession) {
                 openCaptureWorkspace("session");
@@ -1044,20 +1048,37 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     );
   }
 
+  const sidebarModuleItem = (id: NexOpsModule): NexSuiteSidebarItem => {
+    const entry = NEXOPS_MODULES.find((item) => item.id === id);
+    return { id, label: entry?.label ?? id, icon: <NexOpsNavGlyph module={id} />, active: id === activeModule, onSelect: () => setModule(id) };
+  };
+
   const nexOpsSidebarItems: NexSuiteSidebarItem[] = [
-    { id: "create", label: "Create", icon: "+", onSelect: () => setCreateMenuOpen(true) },
-    { id: "modules", label: "Modules", icon: "▦", onSelect: toggleModuleSwitcher },
-    { id: "capture", label: "NexCam", icon: <NexOpsNavGlyph module="capture" />, onSelect: () => { if (captureSession) { openCaptureWorkspace("session"); return; } void startCaptureSession(); } },
-    { id: "notifications", label: "Notifications", icon: "●", onSelect: toggleNotifications },
-    { id: "settings", label: "Settings", icon: <NexOpsNavGlyph module="settings" />, onSelect: () => { closeHeaderPanels(); setModule("settings"); } },
-    ...NEXOPS_MODULES.filter((item) => !item.hidden).map((item) => ({ id: item.id, label: item.label, icon: <NexOpsNavGlyph module={item.id} />, active: item.id === activeModule, onSelect: () => setModule(item.id) }))
+    sidebarModuleItem("home"),
+    sidebarModuleItem("clients"),
+    sidebarModuleItem("requests"),
+    sidebarModuleItem("quotes"),
+    sidebarModuleItem("jobs"),
+    sidebarModuleItem("schedule"),
+    { id: "capture", label: "NexCam", icon: <NexOpsNavGlyph module="capture" />, active: activeModule === "capture", onSelect: () => { if (captureSession) { openCaptureWorkspace("session"); return; } void startCaptureSession(); } },
+    { id: "billing", label: "Billing", icon: <NexOpsNavGlyph module="invoices" />, children: [sidebarModuleItem("invoices"), sidebarModuleItem("payments")] },
+    sidebarModuleItem("approvals"),
+    { id: "admin-tools", label: "Admin / Tools", icon: "⌘", children: [sidebarModuleItem("imports")] },
+    { id: "settings", label: "Settings", icon: <NexOpsNavGlyph module="settings" />, active: activeModule === "settings", onSelect: () => { closeHeaderPanels(); setModule("settings"); } }
   ];
 
   return (
       <NexTeamApplicationShell className="nexops-app" navigationLabel="NexOps navigation" header={renderWebTopbar()} navigation={<NexSuiteSidebar items={nexOpsSidebarItems} />}>
 
       <section className="nexops-web-main">
-        <NexSuiteHeader product="nexops" menuOpen={mobileNavOpen} onToggleMenu={() => setMobileNavOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />
+        <NexSuiteHeader product="nexops" menuOpen={mobileNavOpen} onToggleMenu={() => setMobileNavOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} utilityControls={<>
+          <button className="nexsuite__utility-button" type="button" aria-label="Open create menu" onClick={() => { closeHeaderPanels(); setCreateMenuOpen(true); }}>+</button>
+          <button className="nexsuite__utility-button" type="button" aria-expanded={notificationsOpen} aria-label="Open notifications" onClick={toggleNotifications}>
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M10 3.7a3.1 3.1 0 0 0-3.1 3.1v1.3c0 .8-.3 1.6-.8 2.2l-.9 1v.8h9.6v-.8l-.9-1c-.5-.6-.8-1.4-.8-2.2V6.8A3.1 3.1 0 0 0 10 3.7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M8.3 14.7a1.8 1.8 0 0 0 3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+            {notificationUnreadCount ? <span className="nexsuite__utility-badge">{notificationUnreadCount}</span> : null}
+          </button>
+          <button className="nexsuite__utility-button" type="button" aria-expanded={moduleSwitcherOpen} aria-label="Open modules" onClick={toggleModuleSwitcher}>▦</button>
+        </>} />
         {mobileNavOpen ? <NexSuiteSidebar id="nexops-mobile-nav" items={nexOpsSidebarItems} open onClose={() => setMobileNavOpen(false)} onSelect={() => setMobileNavOpen(false)} /> : null}
         <NexOpsMobileCreateFab
           collapsed={mobileCreateFabCollapsed}

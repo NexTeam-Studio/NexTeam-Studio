@@ -19,12 +19,20 @@
 .nexops-home-surface {
   display: grid;
   gap: 20px;
+  min-width: 0;
 }
 
 .nexops-home-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
   gap: 18px;
+  min-width: 0;
+}
+
+.nexops-home-surface > *,
+.nexops-home-layout > *,
+.nexops-home-health-strip > * {
+  min-width: 0;
 }
 
 .nexops-home-health-strip {
