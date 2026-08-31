@@ -714,10 +714,19 @@ export function NexOpsSchedulePage(props: {
   }
 
   function renderVisitCard(visit: ScheduleWorkspaceVisit, compact = false): React.ReactElement {
+    // Tenant display settings may key a color by the API status label or its
+    // normalized presentation tone.  Prefer the explicit status, preserving
+    // the existing tone CSS whenever no color has been configured.
+    const configuredColor = displaySettings.calendarColors[visit.status]
+      ?? displaySettings.calendarColors[visit.statusTone];
+    const colorStyle = configuredColor
+      ? ({ borderInlineStartColor: configuredColor, "--nexops-schedule-accent": configuredColor } as React.CSSProperties)
+      : undefined;
     return (
       <article
         className={`nexops-schedule-visit nexops-tone-${visitToneClass(visit.statusTone)}${compact ? " compact" : ""}${visit.readOnly ? " read-only" : ""}`}
         key={visit.id}
+        style={colorStyle}
         draggable={!visit.readOnly && (view === "day" || view === "week")}
         onDragStart={(event) => event.dataTransfer.setData("text/plain", visit.id)}
       >

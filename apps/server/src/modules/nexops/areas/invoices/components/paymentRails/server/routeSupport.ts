@@ -76,12 +76,26 @@ export function createPaymentRouteSupport(input: {
     paypalReturnPath?: string | undefined;
   }) {
     const provider = input.providerForTenant(request.tenantId);
+    const workspaceSettings = (await input.repositoryForTenant().getCrmSettings(request.tenantId)).workspaceSettings;
+    const paymentSettings = workspaceSettings.payments;
     if (["paid", "void", "bad_debt"].includes(request.invoice.status)) {
       throw new RailError("Only open invoices can create checkout sessions.", { provider: request.provider, op: "createInvoiceCheckout", status: 409 });
     }
     const tipAmount = Number((request.tipAmount ?? 0).toFixed(2));
     if (tipAmount < 0) throw new RailError("Tip amount must be zero or greater.", { provider: request.provider, op: "createInvoiceCheckout", status: 400 });
+    if (tipAmount > 0) {
+      const portalSettings = workspaceSettings.portal;
+      if (!portalSettings.tipPromptEnabled) {
+        throw new RailError("Tips are disabled in this tenant's NexPortal settings.", { provider: request.provider, op: "createInvoiceCheckout", status: 409 });
+      }
+      if (!portalSettings.allowCustomTip && !portalSettings.tipPresetPercentages.some((percent) => Math.abs((request.invoice.ledger?.balanceDue ?? request.invoice.totals.total) * percent / 100 - tipAmount) < 0.01)) {
+        throw new RailError("Only configured preset tip amounts are available for this tenant.", { provider: request.provider, op: "createInvoiceCheckout", status: 409 });
+      }
+    }
     const totalCheckoutAmount = Number(((request.invoice.ledger?.balanceDue ?? request.invoice.totals.total) + tipAmount).toFixed(2));
+    if (paymentSettings.transactionLimit !== undefined && totalCheckoutAmount > paymentSettings.transactionLimit) {
+      throw new RailError("This checkout exceeds the tenant transaction limit.", { provider: request.provider, op: "createInvoiceCheckout", status: 409 });
+    }
     if (request.provider === "stripe") {
       const connectedAccountId = await input.stripeConnectedAccountForTenant(request.tenantId);
       if (!connectedAccountId) {
