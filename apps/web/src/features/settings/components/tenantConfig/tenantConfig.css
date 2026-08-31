@@ -2,6 +2,13 @@
   container-type: inline-size;
 }
 
+/* A Settings detail route mounts one editor only.  The native hidden
+   attribute is the semantic boundary; make it explicit here because the
+   shared module-card display rule otherwise wins in some mobile bundles. */
+.tenant-config-page [hidden] {
+  display: none !important;
+}
+
 .nexops-settings-navigation-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

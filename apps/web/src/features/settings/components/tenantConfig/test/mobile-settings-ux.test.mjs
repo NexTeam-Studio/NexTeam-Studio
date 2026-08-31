@@ -11,6 +11,10 @@ test("Settings mobile actions stay in the viewport and the global create control
   assert.match(styles, /\.tenant-config-page \.nexops-module-card[\s\S]*padding: 15px/);
 });
 
+test("A settings detail route cannot visually leak inactive editors into its page", () => {
+  assert.match(styles, /\.tenant-config-page \[hidden\] \{[\s\S]*display: none !important;/);
+});
+
 test("Settings isolate onboarding instead of rendering the guided wizard inline", () => {
   assert.doesNotMatch(page, /Secure Post-Subscription Onboarding/);
   assert.doesNotMatch(page, /Guided Configuration/);
