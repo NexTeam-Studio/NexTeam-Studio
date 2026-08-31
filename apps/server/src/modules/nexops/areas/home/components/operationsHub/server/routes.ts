@@ -46,6 +46,26 @@ export function registerOperationsHubRoutes(context: CrmRouteContext): void {
     }
   });
 
+  app.get("/api/crm/dashboard", async (req: Request, res: Response) => {
+    try {
+      const query = activityFeedQuerySchema.parse(req.query);
+      const tenantId = query.tenantId?.trim() || defaultTenantId(env);
+      const access = await requireAccessContext(req, env, { requestedTenantId: tenantId, op: "dashboardSnapshot" });
+      const [home, entries, documentation] = await Promise.all([
+        operationsHub().getHomeSnapshot({ access }),
+        operationsHub().getActivityFeed({
+          access,
+          ...(query.objectType ? { objectType: query.objectType } : {}),
+          ...(query.limit !== undefined ? { limit: query.limit } : {})
+        }),
+        operationsHub().getDocumentationActivity({ access })
+      ]);
+      res.json({ ok: true, tenantId: access.tenantId, actorRole: access.role, home, entries, documentation });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.get("/api/crm/activity", async (req: Request, res: Response) => {
     try {
       const query = activityFeedQuerySchema.parse(req.query);

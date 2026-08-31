@@ -72,19 +72,6 @@ interface ActivityEntry {
   };
 }
 
-interface HomeResponse {
-  ok: boolean;
-  actorRole?: TenantRole;
-  home?: HomeSnapshot;
-  error?: string;
-}
-
-interface ActivityResponse {
-  ok: boolean;
-  entries?: ActivityEntry[];
-  error?: string;
-}
-
 interface DocumentationActivityRow {
   tenantUserId: string;
   displayName: string;
@@ -101,8 +88,10 @@ interface DocumentationActivitySnapshot {
   rows: DocumentationActivityRow[];
 }
 
-interface DocumentationActivityResponse {
+interface DashboardResponse {
   ok: boolean;
+  home?: HomeSnapshot;
+  entries?: ActivityEntry[];
   documentation?: DocumentationActivitySnapshot;
   error?: string;
 }
@@ -204,85 +193,49 @@ export function NexOpsHomePage(props: {
   const [documentationStatus, setDocumentationStatus] = useState("Loading documentation activity...");
   const queueGroups = useMemo(() => queueGroupsForRole(home), [home]);
 
-  async function loadHome(): Promise<void> {
+  async function loadDashboard(filter: "all" | ActivityFilter): Promise<void> {
     setHomeStatus("Loading live queues...");
-    try {
-      const body = await fetch(`/api/crm/home?tenantId=${encodeURIComponent(props.tenantId)}`)
-        .then((response) => response.json() as Promise<HomeResponse>);
-      if (!body.ok || !body.home) {
-        setHome(null);
-        setHomeStatus(body.error ?? "Home queues are unavailable right now.");
-        return;
-      }
-      setHome(body.home);
-      setHomeStatus("");
-    } catch {
-      setHome(null);
-      setHomeStatus("Home API unreachable.");
-    }
-  }
-
-  async function loadActivity(filter: "all" | ActivityFilter): Promise<void> {
     setActivityStatus("Loading recent activity...");
+    setDocumentationStatus("Loading documentation activity...");
     try {
       const params = new URLSearchParams({ tenantId: props.tenantId });
       if (filter !== "all") {
         params.set("objectType", filter);
       }
-      const body = await fetch(`/api/crm/activity?${params.toString()}`)
-        .then((response) => response.json() as Promise<ActivityResponse>);
-      if (!body.ok) {
+      const body = await fetch(`/api/crm/dashboard?${params.toString()}`)
+        .then((response) => response.json() as Promise<DashboardResponse>);
+      if (!body.ok || !body.home || !body.documentation) {
+        setHome(null);
+        setHomeStatus(body.error ?? "Home queues are unavailable right now.");
         setActivity([]);
         setActivityStatus(body.error ?? "Activity feed is unavailable right now.");
-        return;
-      }
-      const nextEntries = body.entries ?? [];
-      setActivity(nextEntries);
-      setActivityStatus(nextEntries.length ? "" : "No lifecycle events have landed in this feed yet.");
-    } catch {
-      setActivity([]);
-      setActivityStatus("Activity feed API unreachable.");
-    }
-  }
-
-  async function loadDocumentationActivity(): Promise<void> {
-    setDocumentationStatus("Loading documentation activity...");
-    try {
-      const body = await fetch(`/api/crm/documentation-activity?tenantId=${encodeURIComponent(props.tenantId)}`)
-        .then((response) => response.json() as Promise<DocumentationActivityResponse>);
-      if (!body.ok || !body.documentation) {
         setDocumentation(null);
         setDocumentationStatus(body.error ?? "Documentation activity is unavailable right now.");
         return;
       }
+      setHome(body.home);
+      setHomeStatus("");
+      const nextEntries = body.entries ?? [];
+      setActivity(nextEntries);
+      setActivityStatus(nextEntries.length ? "" : "No lifecycle events have landed in this feed yet.");
       setDocumentation(body.documentation);
       setDocumentationStatus(body.documentation.rows.length ? "" : "No photo uploads or checklist completions landed in this window yet.");
     } catch {
+      setHome(null);
+      setHomeStatus("Home API unreachable.");
+      setActivity([]);
+      setActivityStatus("Activity feed API unreachable.");
       setDocumentation(null);
       setDocumentationStatus("Documentation activity API unreachable.");
     }
   }
 
   useEffect(() => {
-    void loadHome();
-    const onMutation = () => void loadHome();
-    window.addEventListener("nexops:crm-mutated", onMutation);
-    return () => window.removeEventListener("nexops:crm-mutated", onMutation);
-  }, [props.tenantId]);
-
-  useEffect(() => {
-    void loadActivity(activityFilter);
-    const onMutation = () => void loadActivity(activityFilter);
+    void loadDashboard(activityFilter);
+    const onMutation = () => void loadDashboard(activityFilter);
     window.addEventListener("nexops:crm-mutated", onMutation);
     return () => window.removeEventListener("nexops:crm-mutated", onMutation);
   }, [activityFilter, props.tenantId]);
-
-  useEffect(() => {
-    void loadDocumentationActivity();
-    const onMutation = () => void loadDocumentationActivity();
-    window.addEventListener("nexops:crm-mutated", onMutation);
-    return () => window.removeEventListener("nexops:crm-mutated", onMutation);
-  }, [props.tenantId]);
 
   return (
     <section className="nexops-dashboard nexops-home-surface">

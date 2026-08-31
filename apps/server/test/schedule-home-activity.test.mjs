@@ -1034,6 +1034,14 @@ test("CRM schedule, home, activity, and notification routes expose live workspac
       true
     );
 
+    const dashboardResponse = await fetch(`${base}/api/crm/dashboard?tenantId=aquatrace&objectType=quotes&limit=20`);
+    const dashboardBody = await dashboardResponse.json();
+    assert.equal(dashboardBody.ok, true);
+    assert.equal(dashboardBody.home.queues.length > 0, true);
+    assert.equal(dashboardBody.documentation.rows.length >= 0, true);
+    assert.equal(dashboardBody.entries.length >= 1, true);
+    assert.equal(dashboardBody.entries.every((entry) => entry.objectType === "quotes"), true);
+
     const activityResponse = await fetch(`${base}/api/crm/activity?tenantId=aquatrace&objectType=quotes&limit=20`);
     const activityBody = await activityResponse.json();
     assert.equal(activityBody.ok, true);
