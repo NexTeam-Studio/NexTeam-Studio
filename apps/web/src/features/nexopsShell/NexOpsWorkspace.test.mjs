@@ -35,7 +35,9 @@ test("builders accept only an existing client ID and reuse their current client 
 test("NexOps uses the shared application shell while retaining product navigation", () => {
   assert.match(source, /NexTeamApplicationShell/);
   assert.match(source, /navigationLabel="NexOps navigation"/);
-  assert.match(source, /NexOpsSharedWebTopbar/);
+  assert.match(source, /header=\{nexOpsDesktopSidebarHeader\}/);
+  assert.match(source, /presentation="sidebar"/);
+  assert.match(source, /<NexSuiteSidebar items=\{nexOpsSidebarItems\} header=\{nexOpsDesktopSidebarHeader\}/);
 });
 
 test("NexOps sidebar follows the approved lifecycle order with only Billing and Admin / Tools grouped", () => {
@@ -51,5 +53,5 @@ test("NexOps sidebar follows the approved lifecycle order with only Billing and 
   assert.doesNotMatch(source, /id: \"create\", label: \"Create\", icon: \"\+\"/);
   assert.doesNotMatch(source, /id: \"modules\", label: \"Modules\"/);
   assert.doesNotMatch(source, /id: \"notifications\", label: \"Notifications\"/);
-  assert.match(source, /utilityControls=\{<>[\s\S]*aria-label="Open create menu"[\s\S]*aria-label="Open notifications"[\s\S]*aria-label="Open modules"/);
+  assert.match(source, /renderNexOpsHeaderUtilities[\s\S]*aria-label="Open create menu"[\s\S]*aria-label="Open notifications"[\s\S]*aria-label="Open modules"/);
 });
