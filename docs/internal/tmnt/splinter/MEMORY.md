@@ -1,19 +1,20 @@
 # Splinter - MEMORY.md
 - status: active
-- last_updated: 2026-04-26
+- last_updated: 2026-08-30
 
 ## 1. Current status
-- Documentation foundation complete.
-- Used as an internal standards concept, not a standalone runtime agent.
+- Splinter has a durable internal runtime for authorized engineering programs.
+- The runtime persists program objectives, work scope, worker leases, scoped approvals, audit history, and terminal state in `admin/splinter/programs`.
 
 ## 2. Active lane
-- Parked until a standards review lane is explicitly assigned.
+- Internal standards-and-approval runtime, exercised through the authenticated Splinter relay.
 
 ## 3. Recent completed work
 - TMNT governance documentation created.
+- Program reconciliation, lease recovery, and revision-bound approval consumption wired through `apps/server/src/splinter/programService.ts`.
 
 ## 4. Open blockers
-- No dedicated runtime workflow is wired yet.
+- A production worker/relay deployment must use the existing authenticated relay boundary; the runtime itself does not authorize external side effects.
 
 ## 5. Known decisions
 - Splinter is internal only.
@@ -34,7 +35,7 @@
 - formal review checklist templates
 
 ## 10. Next action
-- Stay documented and ready for future review workflows.
+- Use the program runtime when authorized multi-work-item engineering work needs durable proof, an owner hold, or a worker lease.
 
 ## 11. Last updated field
 - 2026-04-26

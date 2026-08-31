@@ -821,3 +821,101 @@ test("single-use program approvals are consumed once and stale workers lose thei
   const program = await programs.create({ objective: "Approval", workItemIds: ["approval-work"] }); await programs.grantApproval(program.programId, "single", "approval-work@r1");
   const consumed = await Promise.allSettled([programs.consumeApproval(program.programId, "single", "approval-work@r1"), programs.consumeApproval(program.programId, "single", "approval-work@r1")]); assert.equal(consumed.filter(value => value.status === "fulfilled").length, 1);
 });
+
+test("Splinter runtime holds scoped work, consumes its revision-bound approval, leases it to a worker, and resolves the program", async () => {
+  const work = new InMemoryWorkRegistry();
+  const jobs = new InMemorySplinterRepository();
+  const selector = new SplinterWorkSelector(work, jobs);
+  const programs = new SplinterProgramService(new InMemorySplinterProgramRepository(), work, jobs, selector);
+  await work.create(workItem({
+    workItemId: "runtime-approval-work",
+    title: "Runtime approval proof",
+    goal: "Prove the durable Splinter program approval flow.",
+    ownerDecisionRequired: true
+  }));
+
+  const created = await programs.create({
+    programId: "runtime-approval-program",
+    objective: "Hold weak work until its approved revision is released.",
+    workItemIds: ["runtime-approval-work"]
+  });
+  const held = await programs.reconcile(created.programId, "abcdef1");
+  assert.equal(held.program.state, "GLOBAL_OWNER_REQUIRED");
+  assert.equal(held.dispatch, undefined);
+
+  const granted = await programs.grantApproval(created.programId, "runtime-approval", "runtime-approval-work@r1");
+  assert.equal(granted.approvals[0].state, "GRANTED");
+  const released = await programs.consumeApproval(created.programId, "runtime-approval", "runtime-approval-work@r1");
+  assert.equal(released.state, "ACTIVE");
+  assert.equal(released.approvals[0].state, "CONSUMED");
+  assert.equal((await work.get("runtime-approval-work")).status, "APPROVED");
+
+  const dispatched = await programs.reconcile(created.programId, "abcdef1");
+  assert.ok(dispatched.dispatch);
+  const leased = await programs.claimWorker(created.programId, "donatello-runtime-worker");
+  assert.equal(leased.workerLease.workerId, "donatello-runtime-worker");
+
+  const job = await jobs.get(dispatched.dispatch.jobId);
+  const service = new SplinterJobService(jobs);
+  await service.transition(job.id, "RUNNING");
+  await service.submitWorkerOutcome(job.id, {
+    workerRunId: "donatello-runtime-worker",
+    status: "SUCCEEDED",
+    summary: "Durable runtime proof completed.",
+    filesInspected: [], filesChanged: [], testsPerformed: [],
+    startedAt: timestamps[0], completedAt: timestamps[1]
+  });
+  const completed = await selector.reconcile("runtime-approval-work", ["proof:splinter-runtime-approval-flow"]);
+  assert.equal(completed.status, "COMPLETED");
+  const resolved = await programs.reconcile(created.programId, "abcdef1");
+  assert.equal(resolved.program.state, "COMPLETE");
+});
+
+test("Splinter's authenticated runtime routes carry a held program through approval, lease, and completion", async () => {
+  const work = new InMemoryWorkRegistry();
+  const jobs = new InMemorySplinterRepository();
+  const selector = new SplinterWorkSelector(work, jobs);
+  const programs = new SplinterProgramService(new InMemorySplinterProgramRepository(), work, jobs, selector);
+  const service = new SplinterJobService(jobs);
+  const app = express();
+  app.use(express.json());
+  registerSplinterRelayRoutes(app, {
+    repository: jobs,
+    service,
+    workRegistry: work,
+    workSelector: selector,
+    programService: programs,
+    env: { SPLINTER_RELAY_SERVICE_TOKEN: "relay-secret", SPLINTER_OWNER_SERVICE_TOKEN: "owner-secret" }
+  });
+  const server = app.listen(0);
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const owner = { "content-type": "application/json", "x-splinter-owner-token": "owner-secret" };
+  const relay = { "content-type": "application/json", "x-splinter-relay-token": "relay-secret" };
+  try {
+    const { completedEvidenceRefs: _ignored, ...pendingWork } = workItem({
+      workItemId: "runtime-route-work",
+      title: "Runtime route proof",
+      goal: "Exercise Splinter's authenticated program runtime.",
+      ownerDecisionRequired: true
+    });
+    assert.equal((await fetch(`${base}/api/internal/splinter/work-items`, { method: "POST", headers: owner, body: JSON.stringify(pendingWork) })).status, 201);
+    const create = await fetch(`${base}/api/internal/splinter/programs`, { method: "POST", headers: owner, body: JSON.stringify({ programId: "runtime-route-program", objective: "Prove Splinter's runtime relay.", workItemIds: ["runtime-route-work"] }) });
+    assert.equal(create.status, 201);
+    assert.equal((await (await fetch(`${base}/api/internal/splinter/programs/runtime-route-program/reconcile`, { method: "POST", headers: relay, body: JSON.stringify({ stagingSha: "abcdef1" }) })).json()).program.state, "GLOBAL_OWNER_REQUIRED");
+    assert.equal((await fetch(`${base}/api/internal/splinter/programs/runtime-route-program/approvals`, { method: "POST", headers: owner, body: JSON.stringify({ approvalId: "runtime-route-approval", scopeFingerprint: "runtime-route-work@r1" }) })).status, 200);
+    const consumed = await fetch(`${base}/api/internal/splinter/programs/runtime-route-program/approvals/runtime-route-approval/consume`, { method: "POST", headers: relay, body: JSON.stringify({ scopeFingerprint: "runtime-route-work@r1" }) });
+    assert.equal(consumed.status, 200);
+    assert.equal((await consumed.json()).program.approvals[0].state, "CONSUMED");
+    const dispatched = await (await fetch(`${base}/api/internal/splinter/programs/runtime-route-program/reconcile`, { method: "POST", headers: relay, body: JSON.stringify({ stagingSha: "abcdef1" }) })).json();
+    assert.ok(dispatched.dispatch);
+    assert.equal((await fetch(`${base}/api/internal/splinter/programs/runtime-route-program/claim`, { method: "POST", headers: relay, body: JSON.stringify({ workerId: "donatello-route-worker" }) })).status, 200);
+    assert.equal((await fetch(`${base}/api/internal/splinter/programs/runtime-route-program/heartbeat`, { method: "POST", headers: relay, body: JSON.stringify({ workerId: "donatello-route-worker" }) })).status, 200);
+    const job = await jobs.get(dispatched.dispatch.jobId);
+    await service.transition(job.id, "RUNNING");
+    await service.submitWorkerOutcome(job.id, { workerRunId: "donatello-route-worker", status: "SUCCEEDED", summary: "Runtime relay proof completed.", filesInspected: [], filesChanged: [], testsPerformed: [], startedAt: timestamps[0], completedAt: timestamps[1] });
+    assert.equal((await selector.reconcile("runtime-route-work", ["proof:splinter-runtime-route-flow"])).status, "COMPLETED");
+    assert.equal((await programs.reconcile("runtime-route-program", "abcdef1")).program.state, "COMPLETE");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

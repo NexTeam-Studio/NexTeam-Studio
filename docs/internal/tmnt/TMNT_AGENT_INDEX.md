@@ -1,7 +1,7 @@
 # TMNT Agent Index
 - version: 1.0
 - status: active
-- last_updated: 2026-05-02
+- last_updated: 2026-08-30
 - scope: NexTeam internal only
 
 This index tracks the internal NexTeam TMNT and operator roles referenced in the repo. `SOUL.md` files define stable identity and boundaries. `MEMORY.md` files define changeable operating truth. Client-facing Norse agents are not part of this index.
@@ -13,7 +13,7 @@ Permanent role authority:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Clawdia | KLAW-dee-uh | NexTeam general contractor and operator | lane control, proof gates, escalation, delegation, internal team routing | direct code execution, live publish, live campaigns without approval | Chris, Leonardo, Splinter, Atlas/Codex | `docs/internal/CLAWDIA_SOUL.md` | `docs/internal/CLAWDIA_MEMORY.md` | complete |
 | Nexi | NECK-see | Public-facing NexTeam intake and blueprint guide | lead capture, discovery framing, first-pass solution shaping | internal governance, client memory, code execution | April, Leonardo, Bebop, Clawdia | `docs/internal/tmnt/nexi/SOUL.md` | `docs/internal/tmnt/nexi/MEMORY.md` | complete |
-| Splinter | SPLIN-ter | Senior guide, architect, and standards keeper | policy, review, standards, role boundaries, approval logic | delivery execution, prospect outreach, direct code changes | Clawdia, Leonardo, Raphael | `docs/internal/tmnt/splinter/SOUL.md` | `docs/internal/tmnt/splinter/MEMORY.md` | complete |
+| Splinter | SPLIN-ter | Senior guide, architect, and standards keeper with a durable internal program/approval runtime | policy, review, standards, role boundaries, revision-bound approval holds, program completion authority | delivery execution, prospect outreach, direct code changes, executive priority | Clawdia, Leonardo, Raphael | `docs/internal/tmnt/splinter/SOUL.md` | `docs/internal/tmnt/splinter/MEMORY.md` | complete |
 | Leonardo | LEE-oh-NAR-doh | Internal coordination and project leadership lead | orchestration, lane routing, internal sequencing, internal priorities | final executive priority setting, code execution, client publishing | Clawdia, April, Donatello, Krang | `docs/internal/tmnt/leonardo/SOUL.md` | `docs/internal/tmnt/leonardo/MEMORY.md` | complete |
 | Donatello | DON-uh-TELL-oh | Technical builder and systems engineer for NexTeam internal systems | NexTeam.Studio website/workspace build and maintenance, technical architecture, implementation structure | Brokk-style client website execution, live credentials handling, client-facing commitments | Leonardo, Atlas/Codex, Metalhead | `docs/internal/tmnt/donatello/SOUL.md` | `docs/internal/tmnt/donatello/MEMORY.md` | complete |
 | Raphael | RAF-ee-el | Escalation, risk, and pressure-testing lane | risk surfacing, edge cases, hard blockers, weak-proof challenges | routine scheduling, client nurture, publishing | Clawdia, Splinter, Shredder | `docs/internal/tmnt/raphael/SOUL.md` | `docs/internal/tmnt/raphael/MEMORY.md` | complete |
@@ -38,3 +38,4 @@ Notes:
 - Bragi owns client articles, SEO, and content workflow, not core website build/layout.
 - Client-specific memory belongs in client folders, not TMNT `SOUL.md` files.
 - Norse agents remain client-facing and isolated from this internal TMNT layer.
+- Splinter's runtime lives in `apps/server/src/splinter/`; it coordinates authorized internal engineering work and does not replace Chris or Clawdia's approval authority.
