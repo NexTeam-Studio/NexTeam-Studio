@@ -140,21 +140,13 @@ interface CrmSettingsResponse {
   ok: boolean;
   settings?: CrmSettingsRecord;
   templateDefaults?: CommunicationTemplateRecord[];
-  onboardingLaunch?: OnboardingLaunch;
   error?: string;
 }
 
 interface CrmSettingsMutationResponse {
   ok: boolean;
   settings?: CrmSettingsRecord;
-  onboardingLaunch?: OnboardingLaunch;
   error?: string;
-}
-
-interface OnboardingLaunch {
-  ready: boolean;
-  reasons: string[];
-  availableModules: string[];
 }
 
 interface NexOpsSettingsPageProps {
@@ -225,28 +217,8 @@ function defaultPropertyAssetDefinition(): PropertyAssetDefinition {
   return { kind: "equipment", label: "Equipment", fields: [{ key: "model", label: "Model", type: "text" }] };
 }
 
-const ONBOARDING_STEPS = [
-  { id: "company-profile", label: "Business profile", help: "Confirm the business name, industry, and time zone." },
-  { id: "module-selection", label: "Choose modules", help: "Select the NexTeam capabilities this tenant will set up." },
-  { id: "office-defaults", label: "Office defaults", help: "Review locations, hours, tax, and approval defaults." },
-  { id: "launch-review", label: "Launch review", help: "Confirm this configuration is ready for the next phase." }
-] as const;
-
-const MODULE_CHOICES = [
-  { id: "nexi", label: "Nexi", help: "Assistant and guided operations." },
-  { id: "crm", label: "NexOps", help: "Clients, requests, quotes, jobs, and invoices." },
-  { id: "fielddocs", label: "NexCam", help: "Field photos, checklists, and reports." },
-  { id: "comms", label: "Communications", help: "Approved email and text workflows." },
-  { id: "content", label: "NexReach Content", help: "Content drafts from approved business facts." },
-  { id: "reputation", label: "NexReach Reputation", help: "Review-request workflows." },
-  { id: "sites", label: "NexPortal", help: "Tenant-branded client-facing site and portal surfaces." }
-] as const;
-
-const ONBOARDING_TASK_STATUSES = ["not_started", "in_progress", "complete", "skipped"] as const;
-
 export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactElement {
   const [settings, setSettings] = useState<CrmSettingsRecord | null>(null);
-  const [onboardingLaunch, setOnboardingLaunch] = useState<OnboardingLaunch | null>(null);
   const [statusMessage, setStatusMessage] = useState("Loading settings...");
   const [busy, setBusy] = useState("");
   const [catalogSearch, setCatalogSearch] = useState("");
@@ -305,7 +277,6 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
       }
       setSettings(body.settings);
       setTemplateDefaults(body.templateDefaults ?? []);
-      setOnboardingLaunch(body.onboardingLaunch ?? null);
       setSelectedTemplateId((current) => current && body.settings?.communicationTemplates.some((template) => template.id === current)
         ? current
         : body.settings.communicationTemplates[0]?.id ?? "");
@@ -498,7 +469,6 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         return;
       }
       setSettings(body.settings);
-      setOnboardingLaunch(body.onboardingLaunch ?? null);
       setStatusMessage("Property asset types saved.");
       props.onCrmMutation?.();
     } catch {
@@ -508,87 +478,6 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
     }
   }
 
-  async function saveOnboarding(onboarding: TenantOperatingProfile["onboarding"]): Promise<void> {
-    if (!settings) {
-      return;
-    }
-    setBusy("save-onboarding");
-    setStatusMessage("Saving guided onboarding...");
-    try {
-      const body = await fetch("/api/crm/settings", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: props.tenantId, operatingProfile: { onboarding } })
-      }).then((response) => response.json() as Promise<CrmSettingsMutationResponse>);
-      if (!body.ok || !body.settings) {
-        setStatusMessage(body.error ?? "Guided onboarding could not be saved.");
-        return;
-      }
-      setSettings(body.settings);
-      setOnboardingLaunch(body.onboardingLaunch ?? null);
-      setStatusMessage("Guided onboarding saved.");
-      props.onCrmMutation?.();
-    } catch {
-      setStatusMessage("Guided onboarding save failed.");
-    } finally {
-      setBusy("");
-    }
-  }
-
-  async function runOnboardingCommand(command: { action: "claim"; taskId: string } | { action: "set-status"; taskId: string; status: "not_started" | "in_progress" | "complete" | "skipped" } | { action: "reassign"; taskId: string; ownerUserId: string }): Promise<void> {
-    setBusy(`onboarding-${command.taskId}`);
-    setStatusMessage("Saving secure onboarding checklist...");
-    try {
-      const body = await fetch("/api/crm/settings", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: props.tenantId, onboardingCommand: command })
-      }).then((response) => response.json() as Promise<CrmSettingsMutationResponse>);
-      if (!body.ok || !body.settings) {
-        setStatusMessage(body.error ?? "Secure onboarding checklist could not be saved.");
-        return;
-      }
-      setSettings(body.settings);
-      setOnboardingLaunch(body.onboardingLaunch ?? null);
-      setStatusMessage("Secure onboarding checklist saved.");
-      props.onCrmMutation?.();
-    } catch {
-      setStatusMessage("Secure onboarding checklist save failed.");
-    } finally {
-      setBusy("");
-    }
-  }
-
-  function toggleModule(moduleId: string, checked: boolean): void {
-    setSettings((current) => current ? {
-      ...current,
-      operatingProfile: {
-        ...current.operatingProfile,
-        onboarding: {
-          ...current.operatingProfile.onboarding,
-          selectedModules: checked
-            ? [...current.operatingProfile.onboarding.selectedModules, moduleId]
-            : current.operatingProfile.onboarding.selectedModules.filter((entry) => entry !== moduleId)
-        }
-      }
-    } : current);
-  }
-
-  function completeNextOnboardingStep(): void {
-    if (!settings) {
-      return;
-    }
-    const onboarding = settings.operatingProfile.onboarding;
-    const nextStep = ONBOARDING_STEPS[onboarding.completedSteps.length];
-    if (!nextStep) {
-      return;
-    }
-    void saveOnboarding({
-      ...onboarding,
-      completedSteps: [...onboarding.completedSteps, nextStep.id],
-      ...(nextStep.id === "launch-review" ? { launchReviewedAt: new Date().toISOString() } : {})
-    });
-  }
 
   function patchReviewStep(stepId: string, updater: (step: ReviewSequenceStepSetting) => ReviewSequenceStepSetting): void {
     setSettings((current) => current ? {
@@ -627,11 +516,6 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   }
 
   const activeUsers = props.tenantUsers.filter((user) => user.active);
-  const onboardingTasks = settings?.operatingProfile.onboarding.checklist.tasks ?? [];
-  const requiredOnboardingTasks = onboardingTasks.filter((task) => task.required);
-  const completedRequiredOnboardingTasks = requiredOnboardingTasks.filter((task) => task.status === "complete");
-  const onboardingProgress = requiredOnboardingTasks.length ? Math.round((completedRequiredOnboardingTasks.length / requiredOnboardingTasks.length) * 100) : 0;
-
   return (
     <section className="nexops-module-page tenant-config-page">
       <ModuleHeroCard
@@ -686,7 +570,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                 <label className="nexops-field"><span>Field Type</span><select value={field.type} onChange={(event) => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.map((item, index) => index === definitionIndex ? { ...item, fields: item.fields.map((entry, nestedIndex) => nestedIndex === fieldIndex ? { ...entry, type: event.target.value as PropertyAssetDefinition["fields"][number]["type"] } : entry) } : item) } : current)}><option value="text">Text</option><option value="number">Number</option><option value="boolean">Yes / No</option></select></label>
                 <label className="nexops-check-field inline"><input type="checkbox" checked={field.required === true} onChange={(event) => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.map((item, index) => index === definitionIndex ? { ...item, fields: item.fields.map((entry, nestedIndex) => nestedIndex === fieldIndex ? { ...entry, required: event.target.checked } : entry) } : item) } : current)} /> Required</label>
               </div>)}
-              <div className="nexops-inline-actions"><button type="button" onClick={() => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.map((item, index) => index === definitionIndex ? { ...item, fields: [...item.fields, { key: "serial", label: "Serial Number", type: "text" }] } : item) } : current)}>Add Field</button><button type="button" onClick={() => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.filter((_, index) => index !== definitionIndex) } : current)}>Remove Type</button></div>
+              <div className="nexops-inline-actions"><button type="button" onClick={() => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.map((item, index) => index === definitionIndex ? { ...item, fields: [...item.fields, { key: "serial", label: "Serial Number", type: "text" }] } : item) } : current)}>Add Field</button><button className="nexops-settings-action--danger" type="button" onClick={() => setSettings((current) => current ? { ...current, propertyAssetDefinitions: current.propertyAssetDefinitions.filter((_, index) => index !== definitionIndex) } : current)}>Remove Type</button></div>
             </div>
           ))}
           {!settings?.propertyAssetDefinitions.length ? <p className="nexops-empty-copy">No property asset types are configured yet.</p> : null}
@@ -696,7 +580,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           <div className="nexops-page-heading">
             <div>
               <p className="eyebrow">Company Foundation</p>
-              <h2>Business Profile and Launch Controls</h2>
+              <h2>Business Profile</h2>
             </div>
             <button type="button" onClick={() => void saveOperationalDefaults()} disabled={busy === "save-defaults" || !settings}>
               {busy === "save-defaults" ? "Saving..." : "Save Company Settings"}
@@ -796,52 +680,6 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                     })} /></label>
                   </div>
                 ))}
-              </div>
-              <div className="nexops-mini-list">
-                <div className="nexops-quote-section-head">
-                  <div><h3>Secure Post-Subscription Onboarding</h3><span>{completedRequiredOnboardingTasks.length} of {requiredOnboardingTasks.length} required tasks complete ({onboardingProgress}%). Owners, handoffs, and audit history are stored in this tenant settings record.</span></div>
-                  <button type="button" onClick={() => void saveOnboarding(settings.operatingProfile.onboarding)} disabled={busy === "save-onboarding"}>
-                    {busy === "save-onboarding" ? "Saving..." : "Save Module Choices"}
-                  </button>
-                </div>
-                {onboardingTasks.map((task) => {
-                  const taskBusy = busy === `onboarding-${task.id}`;
-                  return <div className="nexops-quote-template-editor" key={task.id}>
-                    <div className="nexops-quote-section-head">
-                      <div><h3>{task.label} {task.required ? "(Required)" : "(Optional)"}</h3><span>{task.description}</span></div>
-                      <small>{task.completedAt ? `Completed ${new Date(task.completedAt).toLocaleString()}` : "Not completed"}</small>
-                    </div>
-                    <div className="nexops-quote-toggle-grid">
-                      <label className="nexops-field"><span>Status</span><select value={task.status} disabled={taskBusy} onChange={(event) => void runOnboardingCommand({ action: "set-status", taskId: task.id, status: event.target.value as typeof ONBOARDING_TASK_STATUSES[number] })}>{ONBOARDING_TASK_STATUSES.filter((status) => !task.required || status !== "skipped").map((status) => <option key={status} value={status}>{status.replace("_", " ")}</option>)}</select></label>
-                      <label className="nexops-field"><span>Owner</span><select value={task.ownerUserId ?? ""} disabled={taskBusy} onChange={(event) => { if (event.target.value) void runOnboardingCommand({ action: "reassign", taskId: task.id, ownerUserId: event.target.value }); }}><option value="">Unassigned</option>{activeUsers.map((user) => <option key={user.id} value={user.id}>{user.displayName} ({user.role})</option>)}</select></label>
-                      <button type="button" disabled={taskBusy} onClick={() => void runOnboardingCommand({ action: "claim", taskId: task.id })}>{taskBusy ? "Saving..." : task.ownerUserId ? "Take Ownership" : "Claim Task"}</button>
-                    </div>
-                  </div>;
-                })}
-                <div className="nexops-quote-template-editor">
-                  <h3>Audit History</h3>
-                  {(settings.operatingProfile.onboarding.checklist.auditHistory ?? []).length ? settings.operatingProfile.onboarding.checklist.auditHistory.slice().reverse().map((event) => <p key={event.id}><strong>{event.action}</strong> — {event.detail} <small>{new Date(event.createdAt).toLocaleString()}</small></p>) : <p className="nexops-empty-copy">No secure onboarding changes have been recorded yet.</p>}
-                </div>
-                <div className="nexops-quote-section-head"><div><h3>Guided Configuration</h3><span>Only modules included in this tenant's subscription can be selected. Launch requires every required checklist task, module selection, and launch review.</span></div></div>
-                <div className="nexops-quote-toggle-grid">
-                  {MODULE_CHOICES.filter((module) => onboardingLaunch?.availableModules.includes(module.id) ?? true).map((module) => (
-                    <label className="nexops-check-field inline" key={module.id}>
-                      <input type="checkbox" checked={settings.operatingProfile.onboarding.selectedModules.includes(module.id)} onChange={(event) => toggleModule(module.id, event.target.checked)} />
-                      <span><strong>{module.label}</strong><small>{module.help}</small></span>
-                    </label>
-                  ))}
-                </div>
-                {ONBOARDING_STEPS.map((step, index) => {
-                  const complete = settings.operatingProfile.onboarding.completedSteps.includes(step.id);
-                  const current = !complete && index === settings.operatingProfile.onboarding.completedSteps.length;
-                  return <div className="nexops-density-inline-facts" key={step.id}>
-                    <article><h3>{index + 1}. {step.label}</h3><p>{complete ? "Complete" : current ? "Next" : "Locked"}</p><small>{step.help}</small></article>
-                  </div>;
-                })}
-                {onboardingLaunch ? <div className="nexops-quote-template-editor"><h3>{onboardingLaunch.ready ? "Launch criteria met" : "Launch criteria remaining"}</h3>{onboardingLaunch.ready ? <p>Required onboarding work is complete and the selected modules are covered by this tenant's subscription.</p> : <ul>{onboardingLaunch.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>}</div> : null}
-                <button type="button" onClick={completeNextOnboardingStep} disabled={busy === "save-onboarding" || settings.operatingProfile.onboarding.completedSteps.length === ONBOARDING_STEPS.length}>
-                  {settings.operatingProfile.onboarding.completedSteps.length === ONBOARDING_STEPS.length ? "Onboarding Complete" : `Complete ${ONBOARDING_STEPS[settings.operatingProfile.onboarding.completedSteps.length]?.label}`}
-                </button>
               </div>
             </div>
           ) : <p className="nexops-empty-copy">Company settings load with the tenant configuration.</p>}
@@ -1000,7 +838,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                     </select>
                   </label>
                   <div className="nexops-inline-actions">
-                    <button type="button" onClick={() => removeReviewStep(step.id)} disabled={settings.reviewDefaults.steps.length <= 1}>Remove Step</button>
+                    <button className="nexops-settings-action--danger" type="button" onClick={() => removeReviewStep(step.id)} disabled={settings.reviewDefaults.steps.length <= 1}>Remove Step</button>
                   </div>
                 </div>
               ))}
@@ -1196,6 +1034,23 @@ function DocumentDesignEditor({ settings, setSettings, tab, setTab }: { settings
 
 function LivePdfPreview({ tenantId, kind, design }: { tenantId: string; kind: "quote" | "job" | "invoice"; design: CrmSettingsRecord["documentDesign"] }): React.ReactElement {
   const [url, setUrl] = useState("");
-  useEffect(() => { const timer = window.setTimeout(() => { void fetch("/api/crm/settings/document-design-preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tenantId, kind, documentDesign: design }) }).then((response) => response.blob()).then((blob) => setUrl((old) => { if (old) URL.revokeObjectURL(old); return URL.createObjectURL(blob); })).catch(() => setUrl("")); }, 250); return () => window.clearTimeout(timer); }, [tenantId, kind, design]);
-  return <section className="nexops-quote-template-editor"><h3>Live PDF Preview</h3>{url ? <iframe title={kind + " PDF preview"} src={url} style={{ width: "100%", height: 520, border: "1px solid #d8e2e3", borderRadius: 12 }} /> : <p className="nexops-empty-copy">Generating preview…</p>}</section>;
+  const [state, setState] = useState<"loading" | "error">("loading");
+  useEffect(() => {
+    setState("loading");
+    const timer = window.setTimeout(() => {
+      void fetch("/api/crm/settings/document-design-preview", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId, kind, documentDesign: design })
+      })
+        .then(async (response) => {
+          if (!response.ok || !response.headers.get("content-type")?.includes("application/pdf")) throw new Error("Preview was not a PDF.");
+          return response.blob();
+        })
+        .then((blob) => setUrl((old) => { if (old) URL.revokeObjectURL(old); setState("loading"); return URL.createObjectURL(blob); }))
+        .catch(() => { setUrl(""); setState("error"); });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [tenantId, kind, design]);
+  return <section className="nexops-quote-template-editor"><h3>Live PDF Preview</h3>{url ? <iframe className="nexops-pdf-preview-frame" title={kind + " PDF preview"} src={url} /> : <div className="nexops-pdf-preview-status" role="status"><strong>{state === "error" ? "Preview unavailable" : "Refreshing your live preview"}</strong><span>{state === "error" ? "Check your connection, then adjust a setting to retry." : "Using representative document data and your current unsaved settings."}</span></div>}</section>;
 }

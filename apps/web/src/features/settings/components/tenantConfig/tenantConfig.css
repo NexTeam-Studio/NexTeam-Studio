@@ -14,8 +14,106 @@
   gap: 8px;
 }
 
+/* Settings use one action grammar: lime is an intentional primary action,
+   while destructive actions are visibly separate from normal save/add work. */
+.tenant-config-page .nexops-module-card button:not(.nexops-quote-template-chip),
+.tenant-config-page .nexops-module-card .nexops-link-button {
+  box-sizing: border-box;
+  max-width: 100%;
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 15px;
+  color: #08100c;
+  background: var(--nexops-brand-gradient, var(--nexteam-gradient));
+  font-weight: 900;
+  box-shadow: 0 10px 22px rgba(37, 210, 56, 0.16);
+}
+
+.tenant-config-page .nexops-module-card button.nexops-settings-action--danger {
+  border: 1px solid #f1c5c1;
+  color: #8f2c26;
+  background: #fff8f7;
+  box-shadow: none;
+}
+
+.tenant-config-page .nexops-module-card button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.nexops-pdf-preview-status {
+  display: grid;
+  min-height: 132px;
+  align-content: center;
+  gap: 6px;
+  padding: 18px;
+  border: 1px dashed rgba(8, 33, 49, 0.22);
+  border-radius: 14px;
+  color: #526675;
+  background: linear-gradient(135deg, rgba(247, 252, 245, 0.96), rgba(235, 247, 241, 0.92));
+}
+
+.nexops-pdf-preview-status strong {
+  color: #082131;
+}
+
+.nexops-pdf-preview-frame {
+  display: block;
+  width: 100%;
+  height: 520px;
+  border: 1px solid #d8e2e3;
+  border-radius: 12px;
+  background: #fff;
+}
+
 @container (max-width: 760px) {
   .nexops-settings-template-layout {
     grid-template-columns: 1fr;
+  }
+
+  /* Do not allow a narrow viewport to clip an add/save action. */
+  .tenant-config-page .nexops-page-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .tenant-config-page .nexops-page-heading > button,
+  .tenant-config-page .nexops-page-heading > .nexops-link-button,
+  .tenant-config-page .nexops-page-heading .nexops-inline-actions,
+  .tenant-config-page .nexops-page-heading .nexops-inline-actions button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .tenant-config-page .nexops-module-card {
+    gap: 10px;
+    padding: 15px;
+  }
+
+  .tenant-config-page .nexops-quote-template-editor {
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .tenant-config-page .nexops-check-field.inline {
+    min-height: 48px;
+    padding: 0 12px;
+  }
+
+  .tenant-config-page {
+    padding-bottom: max(48px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .nexops-pdf-preview-frame {
+    height: 440px;
+  }
+}
+
+@media (max-width: 760px) {
+  /* The global create control has no useful action on Settings and previously
+     covered the page's own save controls. */
+  body:has(.tenant-config-page) .nexops-mobile-create-fab {
+    display: none;
   }
 }
