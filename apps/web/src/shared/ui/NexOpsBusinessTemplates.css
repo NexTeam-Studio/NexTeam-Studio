@@ -31,8 +31,8 @@
 .nexops-business-eyebrow { margin: 0 0 8px !important; color: #d4ff20 !important; font-size: .78rem; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
 .nexops-business-hero-action { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: end; gap: 10px; }
 .module-hero-card__title { display: flex; align-items: center; gap: 12px; }
-.module-hero-card__icon { display: inline-flex; flex: 0 0 auto; color: #d4ff20; }
-.module-hero-card__icon svg { width: .86em; height: .86em; }
+.module-hero-card__icon { display: inline-flex; flex: 0 0 auto; width: clamp(2.1rem, 4.2vw, 3.52rem); height: clamp(2.1rem, 4.2vw, 3.52rem); color: #d4ff20; }
+.module-hero-card__icon svg { width: 100%; height: 100%; }
 .module-hero-card__icon:empty { display: none; }
 .nexops-business-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
 .nexops-business-controls,
@@ -61,10 +61,6 @@
 }
 .nexops-hero-primary-button:disabled { opacity: .58; cursor: not-allowed; }
 
-/* Approved Roster Template visual source. These values are duplicated from the
-   live Quotes roster so every Roster Page can consume the same Page Template. */
-.nexops-roster-template .module-hero-card--quote .module-hero-card__icon { width: clamp(2rem, 4vw, 3.35rem); height: clamp(2rem, 4vw, 3.35rem); }
-.nexops-roster-template .module-hero-card--quote .module-hero-card__icon svg { width: 100%; height: 100%; }
 .nexops-roster-template > .nexops-business-content { display: grid; gap: 20px; }
 .nexops-roster-surface-stack { display: grid; gap: 20px; }
 .nexops-roster-workflow-stack { display: grid; gap: 20px; order: 1; }

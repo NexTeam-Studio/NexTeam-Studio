@@ -17,6 +17,8 @@ test("ModuleHeroCard renders the complete centered approved quote rotation", () 
   assert.match(styles, /\.module-hero-card__quote \{[\s\S]*text-align: center/);
   assert.match(styles, /\.module-hero-card__copy \{ width: 100%; text-align: center; \}/);
   assert.match(styles, /\.module-hero-card__title \{ width: 100%; justify-content: center; \}/);
+  assert.match(styles, /\.module-hero-card__icon \{[\s\S]*width: clamp\(2\.1rem, 4\.2vw, 3\.52rem\); height: clamp\(2\.1rem, 4\.2vw, 3\.52rem\)/);
+  assert.match(styles, /\.module-hero-card__icon svg \{ width: 100%; height: 100%; \}/);
   assert.doesNotMatch(styles, /\.module-hero-card__detail/);
   assert.match(styles, /\.nexops-hero-primary-button \{[\s\S]*background: linear-gradient\(135deg, #d4ff20, #25d238\)/);
   assert.doesNotMatch(styles, /nexops-quote-primary-button/);
