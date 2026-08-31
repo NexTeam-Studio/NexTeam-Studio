@@ -1022,22 +1022,13 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     { id: "settings", label: "Settings", icon: <NexOpsNavGlyph module="settings" />, active: activeModule === "settings", onSelect: () => { closeHeaderPanels(); setModule("settings"); } }
   ];
 
-  const renderNexOpsHeaderUtilities = (): React.ReactElement => <>
-    <button className="nexsuite__utility-button" type="button" aria-label="Open create menu" onClick={() => { closeHeaderPanels(); setCreateMenuOpen(true); }}>+</button>
-    <button className="nexsuite__utility-button" type="button" aria-expanded={notificationsOpen} aria-label="Open notifications" onClick={toggleNotifications}>
-      <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M10 3.7a3.1 3.1 0 0 0-3.1 3.1v1.3c0 .8-.3 1.6-.8 2.2l-.9 1v.8h9.6v-.8l-.9-1c-.5-.6-.8-1.4-.8-2.2V6.8A3.1 3.1 0 0 0 10 3.7Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M8.3 14.7a1.8 1.8 0 0 0 3.4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
-      {notificationUnreadCount ? <span className="nexsuite__utility-badge">{notificationUnreadCount}</span> : null}
-    </button>
-    <button className="nexsuite__utility-button" type="button" aria-expanded={moduleSwitcherOpen} aria-label="Open modules" onClick={toggleModuleSwitcher}>▦</button>
-  </>;
-
-  const nexOpsDesktopSidebarHeader = <NexSuiteHeader product="nexops" presentation="sidebar" menuOpen={false} onToggleMenu={() => undefined} onSignOut={() => void signOutOperator(props.auth)} utilityControls={renderNexOpsHeaderUtilities()} />;
+  const nexOpsDesktopSidebarHeader = <NexSuiteHeader product="nexops" presentation="sidebar" menuOpen={false} onToggleMenu={() => undefined} onSignOut={() => void signOutOperator(props.auth)} />;
 
   return (
       <NexTeamApplicationShell className="nexops-app" navigationLabel="NexOps navigation" navigation={<NexSuiteSidebar items={nexOpsSidebarItems} header={nexOpsDesktopSidebarHeader} />}>
 
       <section className="nexops-web-main">
-        <NexSuiteHeader product="nexops" menuOpen={mobileNavOpen} onToggleMenu={() => setMobileNavOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} utilityControls={renderNexOpsHeaderUtilities()} />
+        <NexSuiteHeader product="nexops" menuOpen={mobileNavOpen} onToggleMenu={() => setMobileNavOpen((current) => !current)} onSignOut={() => void signOutOperator(props.auth)} />
         {mobileNavOpen ? <NexSuiteSidebar id="nexops-mobile-nav" items={nexOpsSidebarItems} open onClose={() => setMobileNavOpen(false)} onSelect={() => setMobileNavOpen(false)} /> : null}
         <NexOpsMobileCreateFab
           collapsed={mobileCreateFabCollapsed}

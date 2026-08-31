@@ -53,5 +53,6 @@ test("NexOps sidebar follows the approved lifecycle order with only Billing and 
   assert.doesNotMatch(source, /id: \"create\", label: \"Create\", icon: \"\+\"/);
   assert.doesNotMatch(source, /id: \"modules\", label: \"Modules\"/);
   assert.doesNotMatch(source, /id: \"notifications\", label: \"Notifications\"/);
-  assert.match(source, /renderNexOpsHeaderUtilities[\s\S]*aria-label="Open create menu"[\s\S]*aria-label="Open notifications"[\s\S]*aria-label="Open modules"/);
+  assert.doesNotMatch(source, /renderNexOpsHeaderUtilities/);
+  assert.doesNotMatch(source, /utilityControls=\{/);
 });
