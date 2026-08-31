@@ -7,3 +7,6 @@ Step 1: the primary worktree created and pushed this commit.
 
 Step 2: a deliberately stale worktree was rejected, then rebased onto the
 canonical head and resolved before its follow-up commit was pushed.
+
+Step 3: this canonical-branch commit triggers the staging deployment from the
+protected GitHub branch, rather than from a local upload archive.
