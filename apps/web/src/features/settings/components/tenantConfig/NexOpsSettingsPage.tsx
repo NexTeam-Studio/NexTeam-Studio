@@ -180,6 +180,7 @@ interface NexOpsSettingsPageProps {
   tenantUsers: TenantUserRecord[];
   onCrmMutation?: () => void;
   catalogFocusNonce?: number;
+  settingsRouteNonce?: number;
   onOpenCatalog?: () => void;
 }
 
@@ -278,11 +279,15 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   }, [props.tenantId]);
 
   useEffect(() => {
-    if (props.catalogFocusNonce === undefined) return;
+    if (!props.catalogFocusNonce) return;
     setActiveSettingsArea("products-services");
     catalogSectionRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
     catalogSectionRef.current?.querySelector<HTMLInputElement>("input")?.focus();
   }, [props.catalogFocusNonce]);
+
+  useEffect(() => {
+    setActiveSettingsArea(settingsAreaFromPath(window.location.pathname));
+  }, [props.settingsRouteNonce]);
 
   useEffect(() => {
     const onPopState = () => setActiveSettingsArea(settingsAreaFromPath(window.location.pathname));

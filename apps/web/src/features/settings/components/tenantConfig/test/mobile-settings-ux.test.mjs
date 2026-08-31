@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const page = await readFile(new URL("../NexOpsSettingsPage.tsx", import.meta.url), "utf8");
+const workspace = await readFile(new URL("../../../../nexopsShell/NexOpsWorkspace.tsx", import.meta.url), "utf8");
 const styles = await readFile(new URL("../tenantConfig.css", import.meta.url), "utf8");
 
 test("Settings mobile actions stay in the viewport and the global create control does not cover them", () => {
@@ -64,6 +65,15 @@ test("Settings landing is a Quotes-style hero plus all fifteen distinct routed n
   assert.match(page, /--nexops-settings-tile-color/);
   assert.match(page, /<ModuleHeroCard[\s\S]*className="module-hero-card--quote"/);
   assert.match(styles, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+});
+
+test("sidebar Settings always resets the detail selection to the Settings landing", () => {
+  assert.match(workspace, /const \[catalogFocusNonce, setCatalogFocusNonce\] = useState\(0\)/);
+  assert.match(workspace, /const \[settingsRouteNonce, setSettingsRouteNonce\] = useState\(0\)/);
+  assert.match(workspace, /window\.history\.pushState\(\{\}, "", targetPath\);[\s\S]*if \(module === "settings"\) \{[\s\S]*setSettingsRouteNonce/);
+  assert.match(workspace, /settingsRouteNonce=\{settingsRouteNonce\}/);
+  assert.match(page, /if \(!props\.catalogFocusNonce\) return;/);
+  assert.match(page, /setActiveSettingsArea\(settingsAreaFromPath\(window\.location\.pathname\)\);[\s\S]*\[props\.settingsRouteNonce\]/);
 });
 
 test("Asset Types moved off the landing into Products & Services without losing its editor or save flow", () => {

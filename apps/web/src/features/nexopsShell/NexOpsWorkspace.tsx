@@ -108,7 +108,8 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     setSelectedClientId
   });
   const [activeModule, setActiveModule] = useState<NexOpsModule>(initialPathState.module);
-  const [catalogFocusNonce, setCatalogFocusNonce] = useState(() => window.location.pathname === "/nexops/settings/products-services" ? 1 : 0);
+  const [catalogFocusNonce, setCatalogFocusNonce] = useState(0);
+  const [settingsRouteNonce, setSettingsRouteNonce] = useState(0);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [focusedRequestId, setFocusedRequestId] = useState("");
   const [focusedQuoteId, setFocusedQuoteId] = useState("");
@@ -371,6 +372,9 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
       setActiveClientProfileTab(null);
     }
     window.history.pushState({}, "", targetPath);
+    if (module === "settings") {
+      setSettingsRouteNonce((current) => current + 1);
+    }
   }
 
   function openClientProfile(clientId: string, tab: ClientProfileTab = "overview"): void {
@@ -797,6 +801,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
         role={operatorContext.role}
         tenantUsers={tenantUsers}
         catalogFocusNonce={catalogFocusNonce}
+        settingsRouteNonce={settingsRouteNonce}
         onOpenCatalog={() => {
           window.history.pushState({}, "", "/nexops/settings/products-services");
           setCatalogFocusNonce((current) => current + 1);
