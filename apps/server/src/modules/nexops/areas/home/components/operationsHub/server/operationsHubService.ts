@@ -380,6 +380,15 @@ function notificationEventTypes(): Set<string> {
 }
 
 export class OperationsHubService {
+  /**
+   * The Home surface asks for its queues, activity, and documentation in
+   * parallel.  All three need the identical tenant context, which otherwise
+   * fans one screen load into three full Firestore read sets (and three sets
+   * of job-detail reads).  Share only concurrent builds: completed contexts
+   * are never cached, so a later mutation always reads current data.
+   */
+  private readonly contextBuilds = new Map<string, Promise<TenantContext>>();
+
   constructor(private readonly deps: OperationsHubDeps) {}
 
   private async tenantUsers(tenantId: string): Promise<TenantUser[]> {
@@ -387,6 +396,22 @@ export class OperationsHubService {
   }
 
   private async buildContext(tenantId: string, referenceTime = now()): Promise<TenantContext> {
+    const pending = this.contextBuilds.get(tenantId);
+    if (pending) {
+      return pending;
+    }
+    const build = this.buildContextUncached(tenantId, referenceTime);
+    this.contextBuilds.set(tenantId, build);
+    try {
+      return await build;
+    } finally {
+      if (this.contextBuilds.get(tenantId) === build) {
+        this.contextBuilds.delete(tenantId);
+      }
+    }
+  }
+
+  private async buildContextUncached(tenantId: string, referenceTime = now()): Promise<TenantContext> {
     const [requests, quotes, invoices, rawJobs, clients, properties, users, alerts, invoiceReminders, visits] = await Promise.all([
       this.deps.crmRepository.listRequests(tenantId),
       this.deps.crmRepository.listQuotes(tenantId),
