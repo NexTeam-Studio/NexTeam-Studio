@@ -395,23 +395,33 @@ export class OperationsHubService {
     return this.deps.platformRepository ? this.deps.platformRepository.listTenantUsers(tenantId) : [];
   }
 
-  private async buildContext(tenantId: string, referenceTime = now()): Promise<TenantContext> {
-    const pending = this.contextBuilds.get(tenantId);
+  private async buildContext(
+    tenantId: string,
+    referenceTime = now(),
+    options: { includeJobDetails?: boolean } = {}
+  ): Promise<TenantContext> {
+    const includeJobDetails = options.includeJobDetails === true;
+    const contextKey = `${tenantId}:${includeJobDetails ? "with-job-details" : "summary-only"}`;
+    const pending = this.contextBuilds.get(contextKey);
     if (pending) {
       return pending;
     }
-    const build = this.buildContextUncached(tenantId, referenceTime);
-    this.contextBuilds.set(tenantId, build);
+    const build = this.buildContextUncached(tenantId, referenceTime, { includeJobDetails });
+    this.contextBuilds.set(contextKey, build);
     try {
       return await build;
     } finally {
-      if (this.contextBuilds.get(tenantId) === build) {
-        this.contextBuilds.delete(tenantId);
+      if (this.contextBuilds.get(contextKey) === build) {
+        this.contextBuilds.delete(contextKey);
       }
     }
   }
 
-  private async buildContextUncached(tenantId: string, referenceTime = now()): Promise<TenantContext> {
+  private async buildContextUncached(
+    tenantId: string,
+    referenceTime = now(),
+    options: { includeJobDetails?: boolean } = {}
+  ): Promise<TenantContext> {
     const [requests, quotes, invoices, rawJobs, clients, properties, users, alerts, invoiceReminders, visits] = await Promise.all([
       this.deps.crmRepository.listRequests(tenantId),
       this.deps.crmRepository.listQuotes(tenantId),
@@ -475,7 +485,7 @@ export class OperationsHubService {
         invoiceCount: (invoicesByJobId.get(job.id) ?? []).length
       };
     });
-    const detailIds = [...new Set(visits.map((visit) => visit.jobId))];
+    const detailIds = options.includeJobDetails ? [...new Set(visits.map((visit) => visit.jobId))] : [];
     const details = await Promise.all(detailIds.map(async (jobId) => this.deps.jobLifecycleService.getJobDetail(tenantId, jobId, referenceTime)));
     const detailByJobId = new Map(
       details
@@ -506,7 +516,7 @@ export class OperationsHubService {
     referenceTime?: string | undefined;
   }): Promise<ScheduleWorkspace> {
     const referenceTime = input.referenceTime ?? now();
-    const context = await this.buildContext(input.access.tenantId, referenceTime);
+    const context = await this.buildContext(input.access.tenantId, referenceTime, { includeJobDetails: true });
     const range = {
       ...(input.from ? { from: input.from } : {}),
       ...(input.to ? { to: input.to } : {})

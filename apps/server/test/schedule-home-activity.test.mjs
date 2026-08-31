@@ -757,11 +757,17 @@ test("operations hub schedule, home queues, and activity stay role-aware for own
 test("parallel Home reads share one in-flight tenant context without caching completed data", async () => {
   const fixture = createFixture();
   const originalListRequests = fixture.repository.listRequests.bind(fixture.repository);
+  const originalGetJobDetail = fixture.jobLifecycleService.getJobDetail.bind(fixture.jobLifecycleService);
   let listRequestsCalls = 0;
+  let jobDetailCalls = 0;
   fixture.repository.listRequests = async (...args) => {
     listRequestsCalls += 1;
     await new Promise((resolve) => setTimeout(resolve, 5));
     return originalListRequests(...args);
+  };
+  fixture.jobLifecycleService.getJobDetail = async (...args) => {
+    jobDetailCalls += 1;
+    return originalGetJobDetail(...args);
   };
 
   await Promise.all([
@@ -770,6 +776,7 @@ test("parallel Home reads share one in-flight tenant context without caching com
     fixture.operationsHubService.getDocumentationActivity({ access: access("OWNER", "owner_1") })
   ]);
   assert.equal(listRequestsCalls, 1, "the three initial Home panels share one in-flight read context");
+  assert.equal(jobDetailCalls, 0, "the dashboard summary does not expand every scheduled job detail");
 
   await fixture.operationsHubService.getHomeSnapshot({ access: access("OWNER", "owner_1") });
   assert.equal(listRequestsCalls, 2, "a later refresh rebuilds context instead of serving cached business data");
